@@ -1,0 +1,31 @@
+{
+  "name": "cli-proxy-api-webui",
+  "version": "1.0.0",
+  "description": "CLI Proxy API 管理界面",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve . --port 3000",
+    "build": "echo '无需构建，直接使用静态文件'",
+    "lint": "echo '使用浏览器开发者工具检查代码'"
+  },
+  "keywords": [
+    "cli-proxy-api",
+    "webui",
+    "management",
+    "api"
+  ],
+  "author": "CLI Proxy API WebUI",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "local"
+  },
+  "dependencies": {}
+}
