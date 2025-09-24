@@ -3,54 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CLI Proxy API 管理界面</title>
+    <title data-i18n="title.login">CLI Proxy API Management Center</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="i18n.js"></script>
 </head>
 <body>
-    <div class="container">
+    <!-- 自动登录加载页面 -->
+    <div id="auto-login-loading" class="login-container" style="display: none;">
+        <div class="login-card">
+            <div class="auto-login-content">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                </div>
+                <h2 data-i18n="auto_login.title">正在自动登录...</h2>
+                <p data-i18n="auto_login.message">正在使用本地保存的连接信息尝试连接服务器</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录页面 -->
+    <div id="login-page" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-header-top">
+                    <h1 class="login-title">
+                        <img id="login-logo" alt="Logo" style="display:none" />
+                        <span data-i18n="title.login">CLI Proxy API Management Center</span>
+                    </h1>
+                    <div class="header-controls">
+                        <div class="language-switcher">
+                            <button id="language-toggle" class="btn btn-secondary language-btn">
+                                <i class="fas fa-globe"></i>
+                                <span data-i18n="language.switch">语言</span>
+                            </button>
+                        </div>
+                        <div class="theme-switcher">
+                            <button id="theme-toggle" class="btn btn-secondary theme-btn">
+                                <i class="fas fa-moon"></i>
+                                <span data-i18n="theme.switch">主题</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 选项卡导航 -->
+            <div class="connection-tabs">
+                <button class="tab-button active" data-tab="local">
+                    <i class="fas fa-home"></i>
+                    <div class="tab-content">
+                        <span class="tab-title" data-i18n="login.tab_local_title">Local</span>
+                        <span class="tab-subtitle" data-i18n="login.tab_local_subtitle">Run CLI Web server on your local machine</span>
+                    </div>
+                </button>
+                <button class="tab-button" data-tab="remote">
+                    <i class="fas fa-cloud"></i>
+                    <div class="tab-content">
+                        <span class="tab-title" data-i18n="login.tab_remote_title">Remote</span>
+                        <span class="tab-subtitle" data-i18n="login.tab_remote_subtitle">Remote connection for a remote CLI Web server</span>
+                    </div>
+                </button>
+            </div>
+            
+            <!-- 代理服务器设置（可选） -->
+            <div class="proxy-settings">
+                <label data-i18n="login.proxy_label">Proxy Server (Optional):</label>
+                <input type="text" id="login-proxy-url" data-i18n="login.proxy_placeholder" placeholder="http://ip:port or https://ip:port or socks5://user:pass@ip:port">
+            </div>
+            
+            <!-- 本地连接表单 -->
+            <div id="local-form" class="connection-form active">
+                <form class="login-form">
+                    <div class="form-group">
+                        <label for="local-port" data-i18n="login.local_port_label">端口号:</label>
+                        <div class="local-url-group">
+                            <span class="url-prefix">http://localhost:</span>
+                            <input type="number" id="local-port" value="8317" min="1" max="65535" data-i18n="login.local_port_placeholder" placeholder="8317" required>
+                        </div>
+                        <div class="form-hint" data-i18n="login.local_url_hint">将连接到 http://localhost:端口/v0/management</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="local-management-key" data-i18n="login.management_key_label">管理密钥:</label>
+                        <div class="input-group">
+                            <input type="password" id="local-management-key" data-i18n="login.management_key_placeholder" placeholder="请输入管理密钥" required>
+                            <button type="button" class="btn btn-secondary toggle-key-visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 远程连接表单 -->
+            <div id="remote-form" class="connection-form">
+                <form class="login-form">
+                    <div class="form-group">
+                        <label for="remote-api-url" data-i18n="login.api_url_label">API 基础地址:</label>
+                        <input type="text" id="remote-api-url" data-i18n="login.remote_api_url_placeholder" placeholder="例如: https://example.com:8317" required>
+                        <div class="form-hint" data-i18n="login.api_url_hint">将自动补全 /v0/management</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="remote-management-key" data-i18n="login.management_key_label">管理密钥:</label>
+                        <div class="input-group">
+                            <input type="password" id="remote-management-key" data-i18n="login.management_key_placeholder" placeholder="请输入管理密钥" required>
+                            <button type="button" class="btn btn-secondary toggle-key-visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 连接按钮 -->
+            <div class="form-actions">
+                <button type="button" id="login-submit" class="btn btn-primary login-btn">
+                    <i class="fas fa-plug"></i> <span data-i18n="login.connect_button">Connect</span>
+                </button>
+            </div>
+            
+            <div id="login-error" class="login-error" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="login-error-message"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主页面 -->
+    <div id="main-page" class="container" style="display: none;">
         <!-- 头部导航 -->
         <header class="header">
             <div class="header-content">
                 <h1 class="brand">
                     <img id="site-logo" alt="Logo" style="display:none" />
-                    <span class="brand-title">CLI Proxy API Management Center</span>
+                    <span class="brand-title" data-i18n="title.main">CLI Proxy API Management Center</span>
                 </h1>
                 <div class="header-actions">
+                    <div class="header-controls">
+                        <div class="language-switcher">
+                            <button id="language-toggle-main" class="btn btn-secondary language-btn">
+                                <i class="fas fa-globe"></i>
+                                <span data-i18n="language.switch">语言</span>
+                            </button>
+                        </div>
+                        <div class="theme-switcher">
+                            <button id="theme-toggle-main" class="btn btn-secondary theme-btn">
+                                <i class="fas fa-moon"></i>
+                                <span data-i18n="theme.switch">主题</span>
+                            </button>
+                        </div>
+                    </div>
                     <button id="connection-status" class="btn btn-secondary">
-                        <i class="fas fa-circle"></i> 检查连接
+                        <i class="fas fa-circle"></i> <span data-i18n="header.check_connection">检查连接</span>
                     </button>
                     <button id="refresh-all" class="btn btn-primary">
-                        <i class="fas fa-sync-alt"></i> 刷新全部
+                        <i class="fas fa-sync-alt"></i> <span data-i18n="header.refresh_all">刷新全部</span>
+                    </button>
+                    <button id="logout-btn" class="btn btn-danger">
+                        <i class="fas fa-sign-out-alt"></i> <span data-i18n="header.logout">登出</span>
                     </button>
                 </div>
             </div>
         </header>
 
-        <!-- 认证配置 -->
+        <!-- 连接信息 -->
         <section class="auth-section">
             <div class="card">
                 <div class="card-header">
-                    <h2><i class="fas fa-key"></i> 认证配置</h2>
+                    <h2><i class="fas fa-server"></i> <span data-i18n="connection.title">连接信息</span></h2>
                 </div>
                 <div class="card-content">
-                    <div class="form-group">
-                        <label for="api-url">API 基础地址:</label>
-                        <input type="text" id="api-url" value="http://localhost:8317" placeholder="例如: http://localhost:8317 或 127.0.0.1:8317">
-                        <div class="form-hint">将自动补全 /v0/management</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="management-key">管理密钥:</label>
-                        <div class="input-group">
-                            <input type="password" id="management-key" placeholder="请输入管理密钥">
-                            <button type="button" id="toggle-key-visibility" class="btn btn-secondary">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                    <div class="connection-info">
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="fas fa-globe"></i>
+                                <span data-i18n="connection.server_address">服务器地址:</span>
+                            </div>
+                            <div class="info-value" id="display-api-url">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="fas fa-key"></i>
+                                <span data-i18n="connection.management_key">管理密钥:</span>
+                            </div>
+                            <div class="info-value" id="display-management-key">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">
+                                <i class="fas fa-circle"></i>
+                                <span data-i18n="connection.status">连接状态:</span>
+                            </div>
+                            <div class="info-value" id="display-connection-status">
+                                <span class="status-indicator disconnected" data-i18n="common.disconnected">未连接</span>
+                            </div>
                         </div>
                     </div>
-                    <button id="test-connection" class="btn btn-primary">
-                        <i class="fas fa-plug"></i> 测试连接
-                    </button>
                 </div>
             </div>
         </section>
@@ -61,19 +210,19 @@
             <nav class="sidebar">
                 <ul class="nav-menu">
                     <li><a href="#basic-settings" class="nav-item active" data-section="basic-settings">
-                        <i class="fas fa-sliders-h"></i> 基础设置
+                        <i class="fas fa-sliders-h"></i> <span data-i18n="nav.basic_settings">基础设置</span>
                     </a></li>
                     <li><a href="#api-keys" class="nav-item" data-section="api-keys">
-                        <i class="fas fa-key"></i> API 密钥
+                        <i class="fas fa-key"></i> <span data-i18n="nav.api_keys">API 密钥</span>
                     </a></li>
                     <li><a href="#ai-providers" class="nav-item" data-section="ai-providers">
-                        <i class="fas fa-robot"></i> AI 提供商
+                        <i class="fas fa-robot"></i> <span data-i18n="nav.ai_providers">AI 提供商</span>
                     </a></li>
                     <li><a href="#auth-files" class="nav-item" data-section="auth-files">
-                        <i class="fas fa-file-alt"></i> 认证文件
+                        <i class="fas fa-file-alt"></i> <span data-i18n="nav.auth_files">认证文件</span>
                     </a></li>
                     <li><a href="#system-info" class="nav-item" data-section="system-info">
-                        <i class="fas fa-info-circle"></i> 系统信息
+                        <i class="fas fa-info-circle"></i> <span data-i18n="nav.system_info">系统信息</span>
                     </a></li>
                 </ul>
             </nav>
@@ -82,12 +231,12 @@
             <div class="content-area">
                 <!-- 基础设置 -->
                 <section id="basic-settings" class="content-section active">
-                    <h2>基础设置</h2>
+                    <h2 data-i18n="basic_settings.title">基础设置</h2>
                     
                     <!-- Debug 设置 -->
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-bug"></i> 调试模式</h3>
+                            <h3><i class="fas fa-bug"></i> <span data-i18n="basic_settings.debug_title">调试模式</span></h3>
                         </div>
                         <div class="card-content">
                             <div class="toggle-group">
@@ -95,7 +244,7 @@
                                     <input type="checkbox" id="debug-toggle">
                                     <span class="slider"></span>
                                 </label>
-                                <span class="toggle-label">启用调试模式</span>
+                                <span class="toggle-label" data-i18n="basic_settings.debug_enable">启用调试模式</span>
                             </div>
                         </div>
                     </div>
@@ -103,15 +252,15 @@
                     <!-- 代理设置 -->
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-network-wired"></i> 代理设置</h3>
+                            <h3><i class="fas fa-network-wired"></i> <span data-i18n="basic_settings.proxy_title">代理设置</span></h3>
                         </div>
                         <div class="card-content">
                             <div class="form-group">
-                                <label for="proxy-url">代理 URL:</label>
+                                <label for="proxy-url" data-i18n="basic_settings.proxy_url_label">代理 URL:</label>
                                 <div class="input-group">
-                                    <input type="text" id="proxy-url" placeholder="例如: socks5://user:pass@127.0.0.1:1080/">
-                                    <button id="update-proxy" class="btn btn-primary">更新</button>
-                                    <button id="clear-proxy" class="btn btn-danger">清空</button>
+                                    <input type="text" id="proxy-url" data-i18n="basic_settings.proxy_url_placeholder" placeholder="例如: socks5://user:pass@127.0.0.1:1080/">
+                                    <button id="update-proxy" class="btn btn-primary" data-i18n="basic_settings.proxy_update">更新</button>
+                                    <button id="clear-proxy" class="btn btn-danger" data-i18n="basic_settings.proxy_clear">清空</button>
                                 </div>
                             </div>
                         </div>
@@ -120,14 +269,14 @@
                     <!-- 请求重试设置 -->
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-redo"></i> 请求重试</h3>
+                            <h3><i class="fas fa-redo"></i> <span data-i18n="basic_settings.retry_title">请求重试</span></h3>
                         </div>
                         <div class="card-content">
                             <div class="form-group">
-                                <label for="request-retry">重试次数:</label>
+                                <label for="request-retry" data-i18n="basic_settings.retry_count_label">重试次数:</label>
                                 <div class="input-group">
                                     <input type="number" id="request-retry" min="0" max="10" value="3">
-                                    <button id="update-retry" class="btn btn-primary">更新</button>
+                                    <button id="update-retry" class="btn btn-primary" data-i18n="basic_settings.retry_update">更新</button>
                                 </div>
                             </div>
                         </div>
@@ -136,7 +285,7 @@
                     <!-- 配额超出行为 -->
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-exclamation-triangle"></i> 配额超出行为</h3>
+                            <h3><i class="fas fa-exclamation-triangle"></i> <span data-i18n="basic_settings.quota_title">配额超出行为</span></h3>
                         </div>
                         <div class="card-content">
                             <div class="toggle-group">
@@ -144,14 +293,14 @@
                                     <input type="checkbox" id="switch-project-toggle">
                                     <span class="slider"></span>
                                 </label>
-                                <span class="toggle-label">自动切换项目</span>
+                                <span class="toggle-label" data-i18n="basic_settings.quota_switch_project">自动切换项目</span>
                             </div>
                             <div class="toggle-group">
                                 <label class="toggle-switch">
                                     <input type="checkbox" id="switch-preview-model-toggle">
                                     <span class="slider"></span>
                                 </label>
-                                <span class="toggle-label">切换到预览模型</span>
+                                <span class="toggle-label" data-i18n="basic_settings.quota_switch_preview">切换到预览模型</span>
                             </div>
                         </div>
                     </div>
@@ -159,7 +308,7 @@
                     <!-- 本地访问设置 -->
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-home"></i> 本地访问</h3>
+                            <h3><i class="fas fa-home"></i> <span data-i18n="basic_settings.localhost_title">本地访问</span></h3>
                         </div>
                         <div class="card-content">
                             <div class="toggle-group">
@@ -167,7 +316,7 @@
                                     <input type="checkbox" id="allow-localhost-toggle">
                                     <span class="slider"></span>
                                 </label>
-                                <span class="toggle-label">允许本地未认证访问</span>
+                                <span class="toggle-label" data-i18n="basic_settings.localhost_allow">允许本地未认证访问</span>
                             </div>
                         </div>
                     </div>
@@ -175,13 +324,13 @@
 
                 <!-- API 密钥管理 -->
                 <section id="api-keys" class="content-section">
-                    <h2>API 密钥管理</h2>
+                    <h2 data-i18n="api_keys.title">API 密钥管理</h2>
                     
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-key"></i> 代理服务认证密钥</h3>
+                            <h3><i class="fas fa-key"></i> <span data-i18n="api_keys.proxy_auth_title">代理服务认证密钥</span></h3>
                             <button id="add-api-key" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> 添加密钥
+                                <i class="fas fa-plus"></i> <span data-i18n="api_keys.add_button">添加密钥</span>
                             </button>
                         </div>
                         <div class="card-content">
@@ -192,14 +341,14 @@
 
                 <!-- AI 提供商 -->
                 <section id="ai-providers" class="content-section">
-                    <h2>AI 提供商配置</h2>
+                    <h2 data-i18n="ai_providers.title">AI 提供商配置</h2>
 
                     <!-- Gemini API Keys -->
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fab fa-google"></i> Gemini API 密钥</h3>
+                            <h3><i class="fab fa-google"></i> <span data-i18n="ai_providers.gemini_title">Gemini API 密钥</span></h3>
                             <button id="add-gemini-key" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> 添加密钥
+                                <i class="fas fa-plus"></i> <span data-i18n="ai_providers.gemini_add_button">添加密钥</span>
                             </button>
                         </div>
                         <div class="card-content">
@@ -210,9 +359,9 @@
                     <!-- Codex API Keys -->
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-code"></i> Codex API 配置</h3>
+                            <h3><i class="fas fa-code"></i> <span data-i18n="ai_providers.codex_title">Codex API 配置</span></h3>
                             <button id="add-codex-key" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> 添加配置
+                                <i class="fas fa-plus"></i> <span data-i18n="ai_providers.codex_add_button">添加配置</span>
                             </button>
                         </div>
                         <div class="card-content">
@@ -223,9 +372,9 @@
                     <!-- Claude API Keys -->
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-brain"></i> Claude API 配置</h3>
+                            <h3><i class="fas fa-brain"></i> <span data-i18n="ai_providers.claude_title">Claude API 配置</span></h3>
                             <button id="add-claude-key" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> 添加配置
+                                <i class="fas fa-plus"></i> <span data-i18n="ai_providers.claude_add_button">添加配置</span>
                             </button>
                         </div>
                         <div class="card-content">
@@ -236,9 +385,9 @@
                     <!-- OpenAI 兼容提供商 -->
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-plug"></i> OpenAI 兼容提供商</h3>
+                            <h3><i class="fas fa-plug"></i> <span data-i18n="ai_providers.openai_title">OpenAI 兼容提供商</span></h3>
                             <button id="add-openai-provider" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> 添加提供商
+                                <i class="fas fa-plus"></i> <span data-i18n="ai_providers.openai_add_button">添加提供商</span>
                             </button>
                         </div>
                         <div class="card-content">
@@ -249,17 +398,17 @@
 
                 <!-- 认证文件管理 -->
                 <section id="auth-files" class="content-section">
-                    <h2>认证文件管理</h2>
+                    <h2 data-i18n="auth_files.title">认证文件管理</h2>
                     
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-file-alt"></i> 认证文件</h3>
+                            <h3><i class="fas fa-file-alt"></i> <span data-i18n="auth_files.title_section">认证文件</span></h3>
                             <div class="header-actions">
                                 <button id="upload-auth-file" class="btn btn-primary">
-                                    <i class="fas fa-upload"></i> 上传文件
+                                    <i class="fas fa-upload"></i> <span data-i18n="auth_files.upload_button">上传文件</span>
                                 </button>
                                 <button id="delete-all-auth-files" class="btn btn-danger">
-                                    <i class="fas fa-trash"></i> 删除全部
+                                    <i class="fas fa-trash"></i> <span data-i18n="auth_files.delete_all_button">删除全部</span>
                                 </button>
                             </div>
                         </div>
@@ -272,20 +421,24 @@
 
                 <!-- 系统信息 -->
                 <section id="system-info" class="content-section">
-                    <h2>系统信息</h2>
+                    <h2 data-i18n="system_info.title">系统信息</h2>
                     
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-info-circle"></i> 连接状态</h3>
+                            <h3><i class="fas fa-info-circle"></i> <span data-i18n="system_info.connection_status_title">连接状态</span></h3>
                         </div>
                         <div class="card-content">
                             <div id="system-status" class="status-info">
                                 <div class="status-item">
-                                    <span class="status-label">API 状态:</span>
-                                    <span id="api-status" class="status-value">未连接</span>
+                                    <span class="status-label" data-i18n="system_info.api_status_label">API 状态:</span>
+                                    <span id="api-status" class="status-value" data-i18n="common.disconnected">未连接</span>
                                 </div>
                                 <div class="status-item">
-                                    <span class="status-label">最后更新:</span>
+                                    <span class="status-label" data-i18n="system_info.config_status_label">配置状态:</span>
+                                    <span id="config-status" class="status-value" data-i18n="system_info.not_loaded">未加载</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label" data-i18n="system_info.last_update_label">最后更新:</span>
                                     <span id="last-update" class="status-value">-</span>
                                 </div>
                             </div>
@@ -306,6 +459,8 @@
 
     <!-- 通知 -->
     <div id="notification" class="notification"></div>
+
+    </div>
 
     <script src="app.js"></script>
 </body>
