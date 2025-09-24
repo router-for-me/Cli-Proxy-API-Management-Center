@@ -6,6 +6,18 @@ class CLIProxyManager {
         this.apiUrl = this.computeApiUrl(this.apiBase);
         this.managementKey = '';
         this.isConnected = false;
+        this.isLoggedIn = false;
+        
+        // 配置缓存
+        this.configCache = null;
+        this.cacheTimestamp = null;
+        this.cacheExpiry = 30000; // 30秒缓存过期时间
+        
+        // 状态更新定时器
+        this.statusUpdateTimer = null;
+        
+        // 主题管理
+        this.currentTheme = 'light';
         
         this.init();
     }
@@ -19,47 +31,585 @@ class CLIProxyManager {
         };
     }
 
+    // 初始化主题
+    initializeTheme() {
+        // 从本地存储获取用户偏好主题
+        const savedTheme = localStorage.getItem('preferredTheme');
+        if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
+            this.currentTheme = savedTheme;
+        } else {
+            // 根据系统偏好自动选择
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                this.currentTheme = 'dark';
+            } else {
+                this.currentTheme = 'light';
+            }
+        }
+        
+        this.applyTheme(this.currentTheme);
+        this.updateThemeButtons();
+        
+        // 监听系统主题变化
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem('preferredTheme')) {
+                    this.currentTheme = e.matches ? 'dark' : 'light';
+                    this.applyTheme(this.currentTheme);
+                    this.updateThemeButtons();
+                }
+            });
+        }
+    }
+
+    // 应用主题
+    applyTheme(theme) {
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        this.currentTheme = theme;
+    }
+
+    // 切换主题
+    toggleTheme() {
+        const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+        this.applyTheme(newTheme);
+        this.updateThemeButtons();
+        localStorage.setItem('preferredTheme', newTheme);
+    }
+
+    // 更新主题按钮状态
+    updateThemeButtons() {
+        const loginThemeBtn = document.getElementById('theme-toggle');
+        const mainThemeBtn = document.getElementById('theme-toggle-main');
+        
+        const updateButton = (btn) => {
+            if (!btn) return;
+            const icon = btn.querySelector('i');
+            if (this.currentTheme === 'dark') {
+                icon.className = 'fas fa-sun';
+                btn.title = i18n.t('theme.switch_to_light');
+            } else {
+                icon.className = 'fas fa-moon';
+                btn.title = i18n.t('theme.switch_to_dark');
+            }
+        };
+        
+        updateButton(loginThemeBtn);
+        updateButton(mainThemeBtn);
+    }
+
     init() {
+        this.initializeTheme();
+        this.checkLoginStatus();
         this.bindEvents();
-        this.loadSettings();
         this.setupNavigation();
+        this.setupLanguageSwitcher();
+        this.setupThemeSwitcher();
+        // loadSettings 将在登录成功后调用
+    }
+
+    // 检查登录状态
+    async checkLoginStatus() {
+        // 检查是否有保存的连接信息
+        const savedBase = localStorage.getItem('apiBase');
+        const savedKey = localStorage.getItem('managementKey');
+        const wasLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        
+        // 如果有完整的连接信息且之前已登录，尝试自动登录
+        if (savedBase && savedKey && wasLoggedIn) {
+            try {
+                console.log('检测到本地连接数据，尝试自动登录...');
+                this.showAutoLoginLoading();
+                await this.attemptAutoLogin(savedBase, savedKey);
+                return; // 自动登录成功，不显示登录页面
+            } catch (error) {
+                console.log('自动登录失败:', error.message);
+                // 清除无效的登录状态
+                localStorage.removeItem('isLoggedIn');
+                this.hideAutoLoginLoading();
+            }
+        }
+        
+        // 如果没有连接信息或自动登录失败，显示登录页面
+        this.showLoginPage();
+        this.loadLoginSettings();
+    }
+
+    // 显示自动登录加载页面
+    showAutoLoginLoading() {
+        document.getElementById('auto-login-loading').style.display = 'flex';
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('main-page').style.display = 'none';
+    }
+
+    // 隐藏自动登录加载页面
+    hideAutoLoginLoading() {
+        document.getElementById('auto-login-loading').style.display = 'none';
+    }
+
+    // 尝试自动登录
+    async attemptAutoLogin(apiBase, managementKey) {
+        try {
+            // 设置API基础地址和密钥
+            this.setApiBase(apiBase);
+            this.managementKey = managementKey;
+            
+            // 恢复代理设置（如果有）
+            const savedProxy = localStorage.getItem('proxyUrl');
+            if (savedProxy) {
+                // 代理设置会在后续的API请求中自动使用
+            }
+            
+            // 测试连接
+            await this.testConnection();
+            
+            // 自动登录成功
+            this.isLoggedIn = true;
+            this.hideAutoLoginLoading();
+            this.showMainPage();
+            
+            console.log('自动登录成功');
+            return true;
+        } catch (error) {
+            console.error('自动登录失败:', error);
+            // 重置状态
+            this.isLoggedIn = false;
+            this.isConnected = false;
+            throw error;
+        }
+    }
+
+    // 显示登录页面
+    showLoginPage() {
+        document.getElementById('login-page').style.display = 'flex';
+        document.getElementById('main-page').style.display = 'none';
+        this.isLoggedIn = false;
+    }
+
+    // 显示主页面
+    showMainPage() {
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('main-page').style.display = 'block';
+        this.isLoggedIn = true;
+        this.updateConnectionInfo();
+    }
+
+    // 登录验证
+    async login(apiBase, managementKey) {
+        try {
+            // 设置API基础地址和密钥
+            this.setApiBase(apiBase);
+            this.managementKey = managementKey;
+            localStorage.setItem('managementKey', this.managementKey);
+            
+            // 测试连接并加载所有数据
+            await this.testConnection();
+            
+            // 登录成功
+            this.isLoggedIn = true;
+            localStorage.setItem('isLoggedIn', 'true');
+            
+            this.showMainPage();
+            // 不需要再调用loadSettings，因为内部状态已经在上面设置了
+            
+            return true;
+        } catch (error) {
+            console.error('登录失败:', error);
+            throw error;
+        }
+    }
+
+    // 登出
+    logout() {
+        this.isLoggedIn = false;
+        this.isConnected = false;
+        this.clearCache();
+        this.stopStatusUpdateTimer();
+        
+        // 清除本地存储
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('managementKey');
+        
+        this.showLoginPage();
+    }
+
+    // 处理登录表单提交
+    async handleLogin() {
+        // 获取当前活动的选项卡
+        const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
+        
+        let apiUrl, managementKey;
+        
+        if (activeTab === 'local') {
+            // 本地连接：从端口号构建URL
+            const port = document.getElementById('local-port').value.trim();
+            managementKey = document.getElementById('local-management-key').value.trim();
+            
+            if (!port || !managementKey) {
+                this.showLoginError(i18n.t('login.error_required'));
+                return;
+            }
+            
+            apiUrl = `http://localhost:${port}`;
+        } else {
+            // 远程连接：使用完整URL
+            apiUrl = document.getElementById('remote-api-url').value.trim();
+            managementKey = document.getElementById('remote-management-key').value.trim();
+            
+            if (!apiUrl || !managementKey) {
+                this.showLoginError(i18n.t('login.error_required'));
+                return;
+            }
+        }
+        
+        const proxyUrl = document.getElementById('login-proxy-url').value.trim();
+        
+        const submitBtn = document.getElementById('login-submit');
+        const originalText = submitBtn.innerHTML;
+        
+        try {
+            submitBtn.innerHTML = `<div class="loading"></div> ${i18n.t('login.submitting')}`;
+            submitBtn.disabled = true;
+            this.hideLoginError();
+            
+            // 如果设置了代理，先保存代理设置
+            if (proxyUrl) {
+                localStorage.setItem('proxyUrl', proxyUrl);
+            }
+            
+            await this.login(apiUrl, managementKey);
+            
+        } catch (error) {
+            this.showLoginError(`${i18n.t('login.error_title')}: ${error.message}`);
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    // 切换登录页面密钥可见性
+    toggleLoginKeyVisibility(button) {
+        const inputGroup = button.closest('.input-group');
+        const keyInput = inputGroup.querySelector('input[type="password"], input[type="text"]');
+        
+        if (keyInput.type === 'password') {
+            keyInput.type = 'text';
+            button.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        } else {
+            keyInput.type = 'password';
+            button.innerHTML = '<i class="fas fa-eye"></i>';
+        }
+    }
+
+    // 显示登录错误
+    showLoginError(message) {
+        const errorDiv = document.getElementById('login-error');
+        const errorMessage = document.getElementById('login-error-message');
+        
+        errorMessage.textContent = message;
+        errorDiv.style.display = 'flex';
+    }
+
+    // 隐藏登录错误
+    hideLoginError() {
+        const errorDiv = document.getElementById('login-error');
+        errorDiv.style.display = 'none';
+    }
+
+    // 更新连接信息显示
+    updateConnectionInfo() {
+        const apiUrlElement = document.getElementById('display-api-url');
+        const keyElement = document.getElementById('display-management-key');
+        const statusElement = document.getElementById('display-connection-status');
+        
+        // 显示API地址
+        if (apiUrlElement) {
+            apiUrlElement.textContent = this.apiBase || '-';
+        }
+        
+        // 显示密钥（遮蔽显示）
+        if (keyElement) {
+            if (this.managementKey) {
+                const maskedKey = this.maskApiKey(this.managementKey);
+                keyElement.textContent = maskedKey;
+            } else {
+                keyElement.textContent = '-';
+            }
+        }
+        
+        // 显示连接状态
+        if (statusElement) {
+            let statusHtml = '';
+            if (this.isConnected) {
+                statusHtml = `<span class="status-indicator connected"><i class="fas fa-circle"></i> ${i18n.t('common.connected')}</span>`;
+            } else {
+                statusHtml = `<span class="status-indicator disconnected"><i class="fas fa-circle"></i> ${i18n.t('common.disconnected')}</span>`;
+            }
+            statusElement.innerHTML = statusHtml;
+        }
+    }
+
+
+    // 加载登录页面设置
+    loadLoginSettings() {
+        const savedBase = localStorage.getItem('apiBase');
+        const savedKey = localStorage.getItem('managementKey');
+        const savedProxy = localStorage.getItem('proxyUrl');
+        
+        // 检查元素是否存在（确保在登录页面）
+        const localPortInput = document.getElementById('local-port');
+        const remoteApiInput = document.getElementById('remote-api-url');
+        const localKeyInput = document.getElementById('local-management-key');
+        const remoteKeyInput = document.getElementById('remote-management-key');
+        const proxyInput = document.getElementById('login-proxy-url');
+        
+        // 设置本地端口和远程API地址
+        if (savedBase) {
+            if (savedBase.includes('localhost')) {
+                // 从本地URL中提取端口号
+                const match = savedBase.match(/localhost:(\d+)/);
+                if (match && localPortInput) {
+                    localPortInput.value = match[1];
+                }
+            } else if (remoteApiInput) {
+                remoteApiInput.value = savedBase;
+            }
+        }
+        
+        // 设置密钥
+        if (localKeyInput && savedKey) {
+            localKeyInput.value = savedKey;
+        }
+        if (remoteKeyInput && savedKey) {
+            remoteKeyInput.value = savedKey;
+        }
+        
+        // 设置代理
+        if (proxyInput && savedProxy) {
+            proxyInput.value = savedProxy;
+        }
+        
+        // 设置实时保存监听器
+        this.setupLoginAutoSave();
+    }
+
+    // 设置登录页面自动保存
+    setupLoginAutoSave() {
+        const localPortInput = document.getElementById('local-port');
+        const remoteApiInput = document.getElementById('remote-api-url');
+        const localKeyInput = document.getElementById('local-management-key');
+        const remoteKeyInput = document.getElementById('remote-management-key');
+        const proxyInput = document.getElementById('login-proxy-url');
+
+        const saveLocalBase = (port) => {
+            if (port.trim()) {
+                const apiUrl = `http://localhost:${port}`;
+                this.setApiBase(apiUrl);
+            }
+        };
+        const saveLocalBaseDebounced = this.debounce(saveLocalBase, 500);
+
+        const saveRemoteBase = (val) => {
+            if (val.trim()) {
+                this.setApiBase(val);
+            }
+        };
+        const saveRemoteBaseDebounced = this.debounce(saveRemoteBase, 500);
+
+        const saveKey = (val) => {
+            if (val.trim()) {
+                this.managementKey = val;
+                localStorage.setItem('managementKey', this.managementKey);
+            }
+        };
+        const saveKeyDebounced = this.debounce(saveKey, 500);
+
+        const saveProxy = (val) => {
+            if (val.trim()) {
+                localStorage.setItem('proxyUrl', val);
+            }
+        };
+        const saveProxyDebounced = this.debounce(saveProxy, 500);
+
+        // 绑定本地端口输入框
+        if (localPortInput) {
+            localPortInput.addEventListener('change', (e) => saveLocalBase(e.target.value));
+            localPortInput.addEventListener('input', (e) => saveLocalBaseDebounced(e.target.value));
+        }
+
+        // 绑定远程API输入框
+        if (remoteApiInput) {
+            remoteApiInput.addEventListener('change', (e) => saveRemoteBase(e.target.value));
+            remoteApiInput.addEventListener('input', (e) => saveRemoteBaseDebounced(e.target.value));
+        }
+
+        // 绑定本地密钥输入框
+        if (localKeyInput) {
+            localKeyInput.addEventListener('change', (e) => saveKey(e.target.value));
+            localKeyInput.addEventListener('input', (e) => saveKeyDebounced(e.target.value));
+        }
+
+        // 绑定远程密钥输入框
+        if (remoteKeyInput) {
+            remoteKeyInput.addEventListener('change', (e) => saveKey(e.target.value));
+            remoteKeyInput.addEventListener('input', (e) => saveKeyDebounced(e.target.value));
+        }
+
+        // 绑定代理输入框
+        if (proxyInput) {
+            proxyInput.addEventListener('change', (e) => saveProxy(e.target.value));
+            proxyInput.addEventListener('input', (e) => saveProxyDebounced(e.target.value));
+        }
     }
 
     // 事件绑定
     bindEvents() {
-        // 认证相关
-        document.getElementById('test-connection').addEventListener('click', () => this.testConnection());
-        document.getElementById('toggle-key-visibility').addEventListener('click', () => this.toggleKeyVisibility());
+        // 登录相关（安全绑定）
+        const loginSubmit = document.getElementById('login-submit');
+        const logoutBtn = document.getElementById('logout-btn');
         
+        if (loginSubmit) {
+            loginSubmit.addEventListener('click', () => this.handleLogin());
+        }
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.logout());
+        }
+        
+        // 选项卡切换事件
+        this.setupTabSwitching();
+        
+        // 密钥可见性切换事件
+        this.setupKeyVisibilityToggle();
+        
+        // 主页面元素（延迟绑定，在显示主页面时绑定）
+        this.bindMainPageEvents();
+    }
+    
+    // 设置选项卡切换
+    setupTabSwitching() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const connectionForms = document.querySelectorAll('.connection-form');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTab = button.getAttribute('data-tab');
+                
+                // 更新选项卡状态
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // 切换表单
+                connectionForms.forEach(form => {
+                    form.classList.remove('active');
+                    if (form.id === `${targetTab}-form`) {
+                        form.classList.add('active');
+                    }
+                });
+            });
+        });
+    }
+    
+    // 设置密钥可见性切换
+    setupKeyVisibilityToggle() {
+        const toggleButtons = document.querySelectorAll('.toggle-key-visibility');
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', () => this.toggleLoginKeyVisibility(button));
+        });
+    }
+
+    // 绑定主页面事件
+    bindMainPageEvents() {
         // 连接状态检查
-        document.getElementById('connection-status').addEventListener('click', () => this.checkConnectionStatus());
-        document.getElementById('refresh-all').addEventListener('click', () => this.refreshAllData());
+        const connectionStatus = document.getElementById('connection-status');
+        const refreshAll = document.getElementById('refresh-all');
+        
+        if (connectionStatus) {
+            connectionStatus.addEventListener('click', () => this.checkConnectionStatus());
+        }
+        if (refreshAll) {
+            refreshAll.addEventListener('click', () => this.refreshAllData());
+        }
         
         // 基础设置
-        document.getElementById('debug-toggle').addEventListener('change', (e) => this.updateDebug(e.target.checked));
-        document.getElementById('update-proxy').addEventListener('click', () => this.updateProxyUrl());
-        document.getElementById('clear-proxy').addEventListener('click', () => this.clearProxyUrl());
-        document.getElementById('update-retry').addEventListener('click', () => this.updateRequestRetry());
-        document.getElementById('switch-project-toggle').addEventListener('change', (e) => this.updateSwitchProject(e.target.checked));
-        document.getElementById('switch-preview-model-toggle').addEventListener('change', (e) => this.updateSwitchPreviewModel(e.target.checked));
-        document.getElementById('allow-localhost-toggle').addEventListener('change', (e) => this.updateAllowLocalhost(e.target.checked));
+        const debugToggle = document.getElementById('debug-toggle');
+        const updateProxy = document.getElementById('update-proxy');
+        const clearProxy = document.getElementById('clear-proxy');
+        const updateRetry = document.getElementById('update-retry');
+        const switchProjectToggle = document.getElementById('switch-project-toggle');
+        const switchPreviewToggle = document.getElementById('switch-preview-model-toggle');
+        const allowLocalhostToggle = document.getElementById('allow-localhost-toggle');
+        
+        if (debugToggle) {
+            debugToggle.addEventListener('change', (e) => this.updateDebug(e.target.checked));
+        }
+        if (updateProxy) {
+            updateProxy.addEventListener('click', () => this.updateProxyUrl());
+        }
+        if (clearProxy) {
+            clearProxy.addEventListener('click', () => this.clearProxyUrl());
+        }
+        if (updateRetry) {
+            updateRetry.addEventListener('click', () => this.updateRequestRetry());
+        }
+        if (switchProjectToggle) {
+            switchProjectToggle.addEventListener('change', (e) => this.updateSwitchProject(e.target.checked));
+        }
+        if (switchPreviewToggle) {
+            switchPreviewToggle.addEventListener('change', (e) => this.updateSwitchPreviewModel(e.target.checked));
+        }
+        if (allowLocalhostToggle) {
+            allowLocalhostToggle.addEventListener('change', (e) => this.updateAllowLocalhost(e.target.checked));
+        }
         
         // API 密钥管理
-        document.getElementById('add-api-key').addEventListener('click', () => this.showAddApiKeyModal());
-        document.getElementById('add-gemini-key').addEventListener('click', () => this.showAddGeminiKeyModal());
-        document.getElementById('add-codex-key').addEventListener('click', () => this.showAddCodexKeyModal());
-        document.getElementById('add-claude-key').addEventListener('click', () => this.showAddClaudeKeyModal());
-        document.getElementById('add-openai-provider').addEventListener('click', () => this.showAddOpenAIProviderModal());
+        const addApiKey = document.getElementById('add-api-key');
+        const addGeminiKey = document.getElementById('add-gemini-key');
+        const addCodexKey = document.getElementById('add-codex-key');
+        const addClaudeKey = document.getElementById('add-claude-key');
+        const addOpenaiProvider = document.getElementById('add-openai-provider');
+        
+        if (addApiKey) {
+            addApiKey.addEventListener('click', () => this.showAddApiKeyModal());
+        }
+        if (addGeminiKey) {
+            addGeminiKey.addEventListener('click', () => this.showAddGeminiKeyModal());
+        }
+        if (addCodexKey) {
+            addCodexKey.addEventListener('click', () => this.showAddCodexKeyModal());
+        }
+        if (addClaudeKey) {
+            addClaudeKey.addEventListener('click', () => this.showAddClaudeKeyModal());
+        }
+        if (addOpenaiProvider) {
+            addOpenaiProvider.addEventListener('click', () => this.showAddOpenAIProviderModal());
+        }
         
         // 认证文件管理
-        document.getElementById('upload-auth-file').addEventListener('click', () => this.uploadAuthFile());
-        document.getElementById('delete-all-auth-files').addEventListener('click', () => this.deleteAllAuthFiles());
-        document.getElementById('auth-file-input').addEventListener('change', (e) => this.handleFileUpload(e));
+        const uploadAuthFile = document.getElementById('upload-auth-file');
+        const deleteAllAuthFiles = document.getElementById('delete-all-auth-files');
+        const authFileInput = document.getElementById('auth-file-input');
+        
+        if (uploadAuthFile) {
+            uploadAuthFile.addEventListener('click', () => this.uploadAuthFile());
+        }
+        if (deleteAllAuthFiles) {
+            deleteAllAuthFiles.addEventListener('click', () => this.deleteAllAuthFiles());
+        }
+        if (authFileInput) {
+            authFileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+        }
         
         // 模态框
-        document.querySelector('.close').addEventListener('click', () => this.closeModal());
+        const closeBtn = document.querySelector('.close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.closeModal());
+        }
+        
         window.addEventListener('click', (e) => {
-            if (e.target === document.getElementById('modal')) {
+            const modal = document.getElementById('modal');
+            if (modal && e.target === modal) {
                 this.closeModal();
             }
         });
@@ -82,6 +632,50 @@ class CLIProxyManager {
                 document.getElementById(sectionId).classList.add('active');
             });
         });
+    }
+
+    // 设置语言切换
+    setupLanguageSwitcher() {
+        const loginToggle = document.getElementById('language-toggle');
+        const mainToggle = document.getElementById('language-toggle-main');
+        
+        if (loginToggle) {
+            loginToggle.addEventListener('click', () => this.toggleLanguage());
+        }
+        if (mainToggle) {
+            mainToggle.addEventListener('click', () => this.toggleLanguage());
+        }
+    }
+
+    // 设置主题切换
+    setupThemeSwitcher() {
+        const loginToggle = document.getElementById('theme-toggle');
+        const mainToggle = document.getElementById('theme-toggle-main');
+        
+        if (loginToggle) {
+            loginToggle.addEventListener('click', () => this.toggleTheme());
+        }
+        if (mainToggle) {
+            mainToggle.addEventListener('click', () => this.toggleTheme());
+        }
+    }
+
+    // 切换语言
+    toggleLanguage() {
+        const currentLang = i18n.currentLanguage;
+        const newLang = currentLang === 'zh-CN' ? 'en-US' : 'zh-CN';
+        i18n.setLanguage(newLang);
+        
+        // 更新主题按钮文本
+        this.updateThemeButtons();
+        
+        // 更新连接状态显示
+        this.updateConnectionStatus();
+        
+        // 重新加载所有数据以更新动态内容
+        if (this.isLoggedIn && this.isConnected) {
+            this.loadAllData(true);
+        }
     }
 
     // 规范化基础地址，移除尾部斜杠与 /v0/management
@@ -112,47 +706,28 @@ class CLIProxyManager {
         localStorage.setItem('apiUrl', this.apiUrl); // 兼容旧字段
     }
 
-    // 加载设置
+    // 加载设置（简化版，仅加载内部状态）
     loadSettings() {
         const savedBase = localStorage.getItem('apiBase');
         const savedUrl = localStorage.getItem('apiUrl');
         const savedKey = localStorage.getItem('managementKey');
         
+        // 只设置内部状态，不操作DOM元素
         if (savedBase) {
             this.setApiBase(savedBase);
-            document.getElementById('api-url').value = this.apiBase;
         } else if (savedUrl) {
             const base = (savedUrl || '').replace(/\/?v0\/management\/?$/i, '');
             this.setApiBase(base);
-            document.getElementById('api-url').value = this.apiBase;
         } else {
             this.setApiBase(this.apiBase);
-            document.getElementById('api-url').value = this.apiBase;
         }
         
         if (savedKey) {
-            document.getElementById('management-key').value = savedKey;
             this.managementKey = savedKey;
         }
         
-        // 监听API URL和密钥变化
-        const apiInput = document.getElementById('api-url');
-        const keyInput = document.getElementById('management-key');
-
-        const saveBase = (val) => this.setApiBase(val);
-        const saveBaseDebounced = this.debounce(saveBase, 500);
-
-        apiInput.addEventListener('change', (e) => saveBase(e.target.value));
-        apiInput.addEventListener('input', (e) => saveBaseDebounced(e.target.value));
-
-        const saveKey = (val) => {
-            this.managementKey = val;
-            localStorage.setItem('managementKey', this.managementKey);
-        };
-        const saveKeyDebounced = this.debounce(saveKey, 500);
-
-        keyInput.addEventListener('change', (e) => saveKey(e.target.value));
-        keyInput.addEventListener('input', (e) => saveKeyDebounced(e.target.value));
+        // 注意：不再处理DOM元素，因为认证配置已改为只读显示
+        // DOM更新由updateConnectionInfo()方法处理
     }
 
     // API 请求方法
@@ -208,27 +783,20 @@ class CLIProxyManager {
         }
     }
 
-    // 测试连接
+    // 测试连接（简化版，用于内部调用）
     async testConnection() {
-        const button = document.getElementById('test-connection');
-        const originalText = button.innerHTML;
-        
-        button.innerHTML = '<div class="loading"></div> 连接中...';
-        button.disabled = true;
-        
         try {
             await this.makeRequest('/debug');
             this.isConnected = true;
-            this.showNotification('连接成功！', 'success');
             this.updateConnectionStatus();
+            this.startStatusUpdateTimer();
             await this.loadAllData();
+            return true;
         } catch (error) {
             this.isConnected = false;
-            this.showNotification(`连接失败: ${error.message}`, 'error');
             this.updateConnectionStatus();
-        } finally {
-            button.innerHTML = originalText;
-            button.disabled = false;
+            this.stopStatusUpdateTimer();
+            throw error;
         }
     }
 
@@ -236,19 +804,38 @@ class CLIProxyManager {
     updateConnectionStatus() {
         const statusButton = document.getElementById('connection-status');
         const apiStatus = document.getElementById('api-status');
+        const configStatus = document.getElementById('config-status');
         const lastUpdate = document.getElementById('last-update');
         
         if (this.isConnected) {
-            statusButton.innerHTML = '<i class="fas fa-circle connection-indicator connected"></i> 已连接';
+            statusButton.innerHTML = `<i class="fas fa-circle connection-indicator connected"></i> ${i18n.t('common.connected')}`;
             statusButton.className = 'btn btn-success';
-            apiStatus.textContent = '已连接';
+            apiStatus.textContent = i18n.t('common.connected');
+            
+            // 更新配置状态
+            if (this.isCacheValid()) {
+                const cacheAge = Math.floor((Date.now() - this.cacheTimestamp) / 1000);
+                configStatus.textContent = `${i18n.t('system_info.cache_data')} (${cacheAge}${i18n.t('system_info.seconds_ago')})`;
+                configStatus.style.color = '#f59e0b'; // 橙色表示缓存
+            } else if (this.configCache) {
+                configStatus.textContent = i18n.t('system_info.real_time_data');
+                configStatus.style.color = '#10b981'; // 绿色表示实时
+            } else {
+                configStatus.textContent = i18n.t('system_info.not_loaded');
+                configStatus.style.color = '#6b7280'; // 灰色表示未加载
+            }
         } else {
-            statusButton.innerHTML = '<i class="fas fa-circle connection-indicator disconnected"></i> 未连接';
+            statusButton.innerHTML = `<i class="fas fa-circle connection-indicator disconnected"></i> ${i18n.t('common.disconnected')}`;
             statusButton.className = 'btn btn-danger';
-            apiStatus.textContent = '未连接';
+            apiStatus.textContent = i18n.t('common.disconnected');
+            configStatus.textContent = i18n.t('system_info.not_loaded');
+            configStatus.style.color = '#6b7280';
         }
         
         lastUpdate.textContent = new Date().toLocaleString('zh-CN');
+        
+        // 更新连接信息显示
+        this.updateConnectionInfo();
     }
 
     // 检查连接状态
@@ -259,29 +846,163 @@ class CLIProxyManager {
     // 刷新所有数据
     async refreshAllData() {
         if (!this.isConnected) {
-            this.showNotification('请先建立连接', 'error');
+            this.showNotification(i18n.t('notification.connection_required'), 'error');
             return;
         }
         
         const button = document.getElementById('refresh-all');
         const originalText = button.innerHTML;
         
-        button.innerHTML = '<div class="loading"></div> 刷新中...';
+        button.innerHTML = `<div class="loading"></div> ${i18n.t('common.loading')}`;
         button.disabled = true;
         
         try {
-            await this.loadAllData();
-            this.showNotification('数据刷新成功', 'success');
+            // 强制刷新，清除缓存
+            await this.loadAllData(true);
+            this.showNotification(i18n.t('notification.data_refreshed'), 'success');
         } catch (error) {
-            this.showNotification(`刷新失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.refresh_failed')}: ${error.message}`, 'error');
         } finally {
             button.innerHTML = originalText;
             button.disabled = false;
         }
     }
 
-    // 加载所有数据
-    async loadAllData() {
+    // 检查缓存是否有效
+    isCacheValid() {
+        if (!this.configCache || !this.cacheTimestamp) {
+            return false;
+        }
+        return (Date.now() - this.cacheTimestamp) < this.cacheExpiry;
+    }
+
+    // 获取配置（优先使用缓存）
+    async getConfig(forceRefresh = false) {
+        if (!forceRefresh && this.isCacheValid()) {
+            this.updateConnectionStatus(); // 更新状态显示
+            return this.configCache;
+        }
+        
+        try {
+            const config = await this.makeRequest('/config');
+            this.configCache = config;
+            this.cacheTimestamp = Date.now();
+            this.updateConnectionStatus(); // 更新状态显示
+            return config;
+        } catch (error) {
+            console.error('获取配置失败:', error);
+            throw error;
+        }
+    }
+
+    // 清除缓存
+    clearCache() {
+        this.configCache = null;
+        this.cacheTimestamp = null;
+    }
+
+    // 启动状态更新定时器
+    startStatusUpdateTimer() {
+        if (this.statusUpdateTimer) {
+            clearInterval(this.statusUpdateTimer);
+        }
+        this.statusUpdateTimer = setInterval(() => {
+            if (this.isConnected) {
+                this.updateConnectionStatus();
+            }
+        }, 1000); // 每秒更新一次
+    }
+
+    // 停止状态更新定时器
+    stopStatusUpdateTimer() {
+        if (this.statusUpdateTimer) {
+            clearInterval(this.statusUpdateTimer);
+            this.statusUpdateTimer = null;
+        }
+    }
+
+    // 加载所有数据 - 使用新的 /config 端点一次性获取所有配置
+    async loadAllData(forceRefresh = false) {
+        try {
+            console.log('使用新的 /config 端点加载所有配置...');
+            // 使用新的 /config 端点一次性获取所有配置
+            const config = await this.getConfig(forceRefresh);
+            
+            // 从配置中提取并设置各个设置项
+            this.updateSettingsFromConfig(config);
+            
+            // 认证文件需要单独加载，因为不在配置中
+            await this.loadAuthFiles();
+            
+            console.log('配置加载完成，使用缓存:', !forceRefresh && this.isCacheValid());
+        } catch (error) {
+            console.error('加载配置失败:', error);
+            console.log('回退到逐个加载方式...');
+            // 如果新方法失败，回退到原来的逐个加载方式
+            await this.loadAllDataLegacy();
+        }
+    }
+
+    // 从配置对象更新所有设置
+    updateSettingsFromConfig(config) {
+        // 调试设置
+        if (config.debug !== undefined) {
+            document.getElementById('debug-toggle').checked = config.debug;
+        }
+        
+        // 代理设置
+        if (config['proxy-url'] !== undefined) {
+            document.getElementById('proxy-url').value = config['proxy-url'] || '';
+        }
+        
+        // 请求重试设置
+        if (config['request-retry'] !== undefined) {
+            document.getElementById('request-retry').value = config['request-retry'];
+        }
+        
+        // 配额超出行为
+        if (config['quota-exceeded']) {
+            if (config['quota-exceeded']['switch-project'] !== undefined) {
+                document.getElementById('switch-project-toggle').checked = config['quota-exceeded']['switch-project'];
+            }
+            if (config['quota-exceeded']['switch-preview-model'] !== undefined) {
+                document.getElementById('switch-preview-model-toggle').checked = config['quota-exceeded']['switch-preview-model'];
+            }
+        }
+        
+        // 本地访问设置
+        if (config['allow-localhost-unauthenticated'] !== undefined) {
+            document.getElementById('allow-localhost-toggle').checked = config['allow-localhost-unauthenticated'];
+        }
+        
+        // API 密钥
+        if (config['api-keys']) {
+            this.renderApiKeys(config['api-keys']);
+        }
+        
+        // Gemini 密钥
+        if (config['generative-language-api-key']) {
+            this.renderGeminiKeys(config['generative-language-api-key']);
+        }
+        
+        // Codex 密钥
+        if (config['codex-api-key']) {
+            this.renderCodexKeys(config['codex-api-key']);
+        }
+        
+        // Claude 密钥
+        if (config['claude-api-key']) {
+            this.renderClaudeKeys(config['claude-api-key']);
+        }
+        
+        // OpenAI 兼容提供商
+        if (config['openai-compatibility']) {
+            this.renderOpenAIProviders(config['openai-compatibility']);
+        }
+    }
+
+    // 回退方法：原来的逐个加载方式
+    async loadAllDataLegacy() {
         await Promise.all([
             this.loadDebugSettings(),
             this.loadProxySettings(),
@@ -300,8 +1021,10 @@ class CLIProxyManager {
     // 加载调试设置
     async loadDebugSettings() {
         try {
-            const data = await this.makeRequest('/debug');
-            document.getElementById('debug-toggle').checked = data.debug;
+            const config = await this.getConfig();
+            if (config.debug !== undefined) {
+                document.getElementById('debug-toggle').checked = config.debug;
+            }
         } catch (error) {
             console.error('加载调试设置失败:', error);
         }
@@ -314,9 +1037,10 @@ class CLIProxyManager {
                 method: 'PUT',
                 body: JSON.stringify({ value: enabled })
             });
-            this.showNotification('调试设置已更新', 'success');
+            this.clearCache(); // 清除缓存
+            this.showNotification(i18n.t('notification.debug_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新调试设置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
             // 恢复原状态
             document.getElementById('debug-toggle').checked = !enabled;
         }
@@ -325,8 +1049,10 @@ class CLIProxyManager {
     // 加载代理设置
     async loadProxySettings() {
         try {
-            const data = await this.makeRequest('/proxy-url');
-            document.getElementById('proxy-url').value = data['proxy-url'] || '';
+            const config = await this.getConfig();
+            if (config['proxy-url'] !== undefined) {
+                document.getElementById('proxy-url').value = config['proxy-url'] || '';
+            }
         } catch (error) {
             console.error('加载代理设置失败:', error);
         }
@@ -341,9 +1067,10 @@ class CLIProxyManager {
                 method: 'PUT',
                 body: JSON.stringify({ value: proxyUrl })
             });
-            this.showNotification('代理设置已更新', 'success');
+            this.clearCache(); // 清除缓存
+            this.showNotification(i18n.t('notification.proxy_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新代理设置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -352,17 +1079,20 @@ class CLIProxyManager {
         try {
             await this.makeRequest('/proxy-url', { method: 'DELETE' });
             document.getElementById('proxy-url').value = '';
-            this.showNotification('代理设置已清空', 'success');
+            this.clearCache(); // 清除缓存
+            this.showNotification(i18n.t('notification.proxy_cleared'), 'success');
         } catch (error) {
-            this.showNotification(`清空代理设置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
         }
     }
 
     // 加载重试设置
     async loadRetrySettings() {
         try {
-            const data = await this.makeRequest('/request-retry');
-            document.getElementById('request-retry').value = data['request-retry'];
+            const config = await this.getConfig();
+            if (config['request-retry'] !== undefined) {
+                document.getElementById('request-retry').value = config['request-retry'];
+            }
         } catch (error) {
             console.error('加载重试设置失败:', error);
         }
@@ -377,22 +1107,25 @@ class CLIProxyManager {
                 method: 'PUT',
                 body: JSON.stringify({ value: retryCount })
             });
-            this.showNotification('重试设置已更新', 'success');
+            this.clearCache(); // 清除缓存
+            this.showNotification(i18n.t('notification.retry_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新重试设置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
         }
     }
 
     // 加载配额设置
     async loadQuotaSettings() {
         try {
-            const [switchProject, switchPreview] = await Promise.all([
-                this.makeRequest('/quota-exceeded/switch-project'),
-                this.makeRequest('/quota-exceeded/switch-preview-model')
-            ]);
-            
-            document.getElementById('switch-project-toggle').checked = switchProject['switch-project'];
-            document.getElementById('switch-preview-model-toggle').checked = switchPreview['switch-preview-model'];
+            const config = await this.getConfig();
+            if (config['quota-exceeded']) {
+                if (config['quota-exceeded']['switch-project'] !== undefined) {
+                    document.getElementById('switch-project-toggle').checked = config['quota-exceeded']['switch-project'];
+                }
+                if (config['quota-exceeded']['switch-preview-model'] !== undefined) {
+                    document.getElementById('switch-preview-model-toggle').checked = config['quota-exceeded']['switch-preview-model'];
+                }
+            }
         } catch (error) {
             console.error('加载配额设置失败:', error);
         }
@@ -405,9 +1138,10 @@ class CLIProxyManager {
                 method: 'PUT',
                 body: JSON.stringify({ value: enabled })
             });
-            this.showNotification('项目切换设置已更新', 'success');
+            this.clearCache(); // 清除缓存
+            this.showNotification(i18n.t('notification.quota_switch_project_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新项目切换设置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
             document.getElementById('switch-project-toggle').checked = !enabled;
         }
     }
@@ -419,9 +1153,10 @@ class CLIProxyManager {
                 method: 'PUT',
                 body: JSON.stringify({ value: enabled })
             });
-            this.showNotification('预览模型切换设置已更新', 'success');
+            this.clearCache(); // 清除缓存
+            this.showNotification(i18n.t('notification.quota_switch_preview_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新预览模型切换设置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
             document.getElementById('switch-preview-model-toggle').checked = !enabled;
         }
     }
@@ -429,8 +1164,10 @@ class CLIProxyManager {
     // 加载本地访问设置
     async loadLocalhostSettings() {
         try {
-            const data = await this.makeRequest('/allow-localhost-unauthenticated');
-            document.getElementById('allow-localhost-toggle').checked = data['allow-localhost-unauthenticated'];
+            const config = await this.getConfig();
+            if (config['allow-localhost-unauthenticated'] !== undefined) {
+                document.getElementById('allow-localhost-toggle').checked = config['allow-localhost-unauthenticated'];
+            }
         } catch (error) {
             console.error('加载本地访问设置失败:', error);
         }
@@ -443,9 +1180,10 @@ class CLIProxyManager {
                 method: 'PUT',
                 body: JSON.stringify({ value: enabled })
             });
-            this.showNotification('本地访问设置已更新', 'success');
+            this.clearCache(); // 清除缓存
+            this.showNotification(i18n.t('notification.localhost_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新本地访问设置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
             document.getElementById('allow-localhost-toggle').checked = !enabled;
         }
     }
@@ -453,8 +1191,10 @@ class CLIProxyManager {
     // 加载API密钥
     async loadApiKeys() {
         try {
-            const data = await this.makeRequest('/api-keys');
-            this.renderApiKeys(data['api-keys'] || []);
+            const config = await this.getConfig();
+            if (config['api-keys']) {
+                this.renderApiKeys(config['api-keys']);
+            }
         } catch (error) {
             console.error('加载API密钥失败:', error);
         }
@@ -468,8 +1208,8 @@ class CLIProxyManager {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-key"></i>
-                    <h3>暂无API密钥</h3>
-                    <p>点击上方按钮添加第一个密钥</p>
+                    <h3>${i18n.t('api_keys.empty_title')}</h3>
+                    <p>${i18n.t('api_keys.empty_desc')}</p>
                 </div>
             `;
             return;
@@ -478,7 +1218,7 @@ class CLIProxyManager {
         container.innerHTML = keys.map((key, index) => `
             <div class="key-item">
                 <div class="item-content">
-                    <div class="item-title">API密钥 #${index + 1}</div>
+                    <div class="item-title">${i18n.t('api_keys.item_title')} #${index + 1}</div>
                     <div class="item-value">${this.maskApiKey(key)}</div>
                 </div>
                 <div class="item-actions">
@@ -505,14 +1245,14 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
         
         modalBody.innerHTML = `
-            <h3>添加API密钥</h3>
+            <h3>${i18n.t('api_keys.add_modal_title')}</h3>
             <div class="form-group">
-                <label for="new-api-key">API密钥:</label>
-                <input type="text" id="new-api-key" placeholder="请输入API密钥">
+                <label for="new-api-key">${i18n.t('api_keys.add_modal_key_label')}</label>
+                <input type="text" id="new-api-key" placeholder="${i18n.t('api_keys.add_modal_key_placeholder')}">
             </div>
-            <div style="text-align: right; margin-top: 20px;">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.addApiKey()" style="margin-left: 10px;">添加</button>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.addApiKey()">${i18n.t('common.add')}</button>
             </div>
         `;
         
@@ -524,7 +1264,7 @@ class CLIProxyManager {
         const newKey = document.getElementById('new-api-key').value.trim();
         
         if (!newKey) {
-            this.showNotification('请输入API密钥', 'error');
+            this.showNotification(`${i18n.t('notification.please_enter')} ${i18n.t('notification.api_key')}`, 'error');
             return;
         }
         
@@ -538,11 +1278,12 @@ class CLIProxyManager {
                 body: JSON.stringify(currentKeys)
             });
             
+            this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadApiKeys();
-            this.showNotification('API密钥添加成功', 'success');
+            this.showNotification(i18n.t('notification.api_key_added'), 'success');
         } catch (error) {
-            this.showNotification(`添加API密钥失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.add_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -552,14 +1293,14 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
         
         modalBody.innerHTML = `
-            <h3>编辑API密钥</h3>
+            <h3>${i18n.t('api_keys.edit_modal_title')}</h3>
             <div class="form-group">
-                <label for="edit-api-key">API密钥:</label>
+                <label for="edit-api-key">${i18n.t('api_keys.edit_modal_key_label')}</label>
                 <input type="text" id="edit-api-key" value="${currentKey}">
             </div>
-            <div style="text-align: right; margin-top: 20px;">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.updateApiKey(${index})" style="margin-left: 10px;">更新</button>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.updateApiKey(${index})">${i18n.t('common.update')}</button>
             </div>
         `;
         
@@ -571,7 +1312,7 @@ class CLIProxyManager {
         const newKey = document.getElementById('edit-api-key').value.trim();
         
         if (!newKey) {
-            this.showNotification('请输入API密钥', 'error');
+            this.showNotification(`${i18n.t('notification.please_enter')} ${i18n.t('notification.api_key')}`, 'error');
             return;
         }
         
@@ -581,32 +1322,36 @@ class CLIProxyManager {
                 body: JSON.stringify({ index, value: newKey })
             });
             
+            this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadApiKeys();
-            this.showNotification('API密钥更新成功', 'success');
+            this.showNotification(i18n.t('notification.api_key_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新API密钥失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
         }
     }
 
     // 删除API密钥
     async deleteApiKey(index) {
-        if (!confirm('确定要删除这个API密钥吗？')) return;
+        if (!confirm(i18n.t('api_keys.delete_confirm'))) return;
         
         try {
             await this.makeRequest(`/api-keys?index=${index}`, { method: 'DELETE' });
+            this.clearCache(); // 清除缓存
             this.loadApiKeys();
-            this.showNotification('API密钥删除成功', 'success');
+            this.showNotification(i18n.t('notification.api_key_deleted'), 'success');
         } catch (error) {
-            this.showNotification(`删除API密钥失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
     }
 
     // 加载Gemini密钥
     async loadGeminiKeys() {
         try {
-            const data = await this.makeRequest('/generative-language-api-key');
-            this.renderGeminiKeys(data['generative-language-api-key'] || []);
+            const config = await this.getConfig();
+            if (config['generative-language-api-key']) {
+                this.renderGeminiKeys(config['generative-language-api-key']);
+            }
         } catch (error) {
             console.error('加载Gemini密钥失败:', error);
         }
@@ -620,8 +1365,8 @@ class CLIProxyManager {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fab fa-google"></i>
-                    <h3>暂无Gemini密钥</h3>
-                    <p>点击上方按钮添加第一个密钥</p>
+                    <h3>${i18n.t('ai_providers.gemini_empty_title')}</h3>
+                    <p>${i18n.t('ai_providers.gemini_empty_desc')}</p>
                 </div>
             `;
             return;
@@ -630,7 +1375,7 @@ class CLIProxyManager {
         container.innerHTML = keys.map((key, index) => `
             <div class="key-item">
                 <div class="item-content">
-                    <div class="item-title">Gemini密钥 #${index + 1}</div>
+                    <div class="item-title">${i18n.t('ai_providers.gemini_item_title')} #${index + 1}</div>
                     <div class="item-value">${this.maskApiKey(key)}</div>
                 </div>
                 <div class="item-actions">
@@ -656,9 +1401,9 @@ class CLIProxyManager {
                 <label for="new-gemini-key">API密钥:</label>
                 <input type="text" id="new-gemini-key" placeholder="请输入Gemini API密钥">
             </div>
-            <div style="text-align: right; margin-top: 20px;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.addGeminiKey()" style="margin-left: 10px;">添加</button>
+                <button class="btn btn-primary" onclick="manager.addGeminiKey()">添加</button>
             </div>
         `;
         
@@ -684,6 +1429,7 @@ class CLIProxyManager {
                 body: JSON.stringify(currentKeys)
             });
             
+            this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadGeminiKeys();
             this.showNotification('Gemini密钥添加成功', 'success');
@@ -703,9 +1449,9 @@ class CLIProxyManager {
                 <label for="edit-gemini-key">API密钥:</label>
                 <input type="text" id="edit-gemini-key" value="${currentKey}">
             </div>
-            <div style="text-align: right; margin-top: 20px;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.updateGeminiKey('${currentKey}')" style="margin-left: 10px;">更新</button>
+                <button class="btn btn-primary" onclick="manager.updateGeminiKey('${currentKey}')">更新</button>
             </div>
         `;
         
@@ -727,6 +1473,7 @@ class CLIProxyManager {
                 body: JSON.stringify({ old: oldKey, new: newKey })
             });
             
+            this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadGeminiKeys();
             this.showNotification('Gemini密钥更新成功', 'success');
@@ -737,10 +1484,11 @@ class CLIProxyManager {
 
     // 删除Gemini密钥
     async deleteGeminiKey(key) {
-        if (!confirm('确定要删除这个Gemini密钥吗？')) return;
+        if (!confirm(i18n.t('ai_providers.gemini_delete_confirm'))) return;
         
         try {
             await this.makeRequest(`/generative-language-api-key?value=${encodeURIComponent(key)}`, { method: 'DELETE' });
+            this.clearCache(); // 清除缓存
             this.loadGeminiKeys();
             this.showNotification('Gemini密钥删除成功', 'success');
         } catch (error) {
@@ -751,8 +1499,10 @@ class CLIProxyManager {
     // 加载Codex密钥
     async loadCodexKeys() {
         try {
-            const data = await this.makeRequest('/codex-api-key');
-            this.renderCodexKeys(data['codex-api-key'] || []);
+            const config = await this.getConfig();
+            if (config['codex-api-key']) {
+                this.renderCodexKeys(config['codex-api-key']);
+            }
         } catch (error) {
             console.error('加载Codex密钥失败:', error);
         }
@@ -766,8 +1516,8 @@ class CLIProxyManager {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-code"></i>
-                    <h3>暂无Codex配置</h3>
-                    <p>点击上方按钮添加第一个配置</p>
+                    <h3>${i18n.t('ai_providers.codex_empty_title')}</h3>
+                    <p>${i18n.t('ai_providers.codex_empty_desc')}</p>
                 </div>
             `;
             return;
@@ -776,9 +1526,9 @@ class CLIProxyManager {
         container.innerHTML = keys.map((config, index) => `
             <div class="provider-item">
                 <div class="item-content">
-                    <div class="item-title">Codex配置 #${index + 1}</div>
-                    <div class="item-subtitle">密钥: ${this.maskApiKey(config['api-key'])}</div>
-                    ${config['base-url'] ? `<div class="item-subtitle">地址: ${config['base-url']}</div>` : ''}
+                    <div class="item-title">${i18n.t('ai_providers.codex_item_title')} #${index + 1}</div>
+                    <div class="item-subtitle">${i18n.t('common.api_key')}: ${this.maskApiKey(config['api-key'])}</div>
+                    ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${config['base-url']}</div>` : ''}
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary" onclick="manager.editCodexKey(${index}, ${JSON.stringify(config).replace(/"/g, '&quot;')})">
@@ -807,9 +1557,9 @@ class CLIProxyManager {
                 <label for="new-codex-url">Base URL (可选):</label>
                 <input type="text" id="new-codex-url" placeholder="例如: https://api.example.com">
             </div>
-            <div style="text-align: right; margin-top: 20px;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.addCodexKey()" style="margin-left: 10px;">添加</button>
+                <button class="btn btn-primary" onclick="manager.addCodexKey()">添加</button>
             </div>
         `;
         
@@ -842,6 +1592,7 @@ class CLIProxyManager {
                 body: JSON.stringify(currentKeys)
             });
             
+            this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadCodexKeys();
             this.showNotification('Codex配置添加成功', 'success');
@@ -865,9 +1616,9 @@ class CLIProxyManager {
                 <label for="edit-codex-url">Base URL (可选):</label>
                 <input type="text" id="edit-codex-url" value="${config['base-url'] || ''}">
             </div>
-            <div style="text-align: right; margin-top: 20px;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.updateCodexKey(${index})" style="margin-left: 10px;">更新</button>
+                <button class="btn btn-primary" onclick="manager.updateCodexKey(${index})">更新</button>
             </div>
         `;
         
@@ -895,6 +1646,7 @@ class CLIProxyManager {
                 body: JSON.stringify({ index, value: newConfig })
             });
             
+            this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadCodexKeys();
             this.showNotification('Codex配置更新成功', 'success');
@@ -905,10 +1657,11 @@ class CLIProxyManager {
 
     // 删除Codex密钥
     async deleteCodexKey(apiKey) {
-        if (!confirm('确定要删除这个Codex配置吗？')) return;
+        if (!confirm(i18n.t('ai_providers.codex_delete_confirm'))) return;
         
         try {
             await this.makeRequest(`/codex-api-key?api-key=${encodeURIComponent(apiKey)}`, { method: 'DELETE' });
+            this.clearCache(); // 清除缓存
             this.loadCodexKeys();
             this.showNotification('Codex配置删除成功', 'success');
         } catch (error) {
@@ -919,8 +1672,10 @@ class CLIProxyManager {
     // 加载Claude密钥
     async loadClaudeKeys() {
         try {
-            const data = await this.makeRequest('/claude-api-key');
-            this.renderClaudeKeys(data['claude-api-key'] || []);
+            const config = await this.getConfig();
+            if (config['claude-api-key']) {
+                this.renderClaudeKeys(config['claude-api-key']);
+            }
         } catch (error) {
             console.error('加载Claude密钥失败:', error);
         }
@@ -934,8 +1689,8 @@ class CLIProxyManager {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-brain"></i>
-                    <h3>暂无Claude配置</h3>
-                    <p>点击上方按钮添加第一个配置</p>
+                    <h3>${i18n.t('ai_providers.claude_empty_title')}</h3>
+                    <p>${i18n.t('ai_providers.claude_empty_desc')}</p>
                 </div>
             `;
             return;
@@ -944,9 +1699,9 @@ class CLIProxyManager {
         container.innerHTML = keys.map((config, index) => `
             <div class="provider-item">
                 <div class="item-content">
-                    <div class="item-title">Claude配置 #${index + 1}</div>
-                    <div class="item-subtitle">密钥: ${this.maskApiKey(config['api-key'])}</div>
-                    ${config['base-url'] ? `<div class="item-subtitle">地址: ${config['base-url']}</div>` : ''}
+                    <div class="item-title">${i18n.t('ai_providers.claude_item_title')} #${index + 1}</div>
+                    <div class="item-subtitle">${i18n.t('common.api_key')}: ${this.maskApiKey(config['api-key'])}</div>
+                    ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${config['base-url']}</div>` : ''}
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary" onclick="manager.editClaudeKey(${index}, ${JSON.stringify(config).replace(/"/g, '&quot;')})">
@@ -975,9 +1730,9 @@ class CLIProxyManager {
                 <label for="new-claude-url">Base URL (可选):</label>
                 <input type="text" id="new-claude-url" placeholder="例如: https://api.anthropic.com">
             </div>
-            <div style="text-align: right; margin-top: 20px;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.addClaudeKey()" style="margin-left: 10px;">添加</button>
+                <button class="btn btn-primary" onclick="manager.addClaudeKey()">添加</button>
             </div>
         `;
         
@@ -1010,6 +1765,7 @@ class CLIProxyManager {
                 body: JSON.stringify(currentKeys)
             });
             
+            this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadClaudeKeys();
             this.showNotification('Claude配置添加成功', 'success');
@@ -1033,9 +1789,9 @@ class CLIProxyManager {
                 <label for="edit-claude-url">Base URL (可选):</label>
                 <input type="text" id="edit-claude-url" value="${config['base-url'] || ''}">
             </div>
-            <div style="text-align: right; margin-top: 20px;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.updateClaudeKey(${index})" style="margin-left: 10px;">更新</button>
+                <button class="btn btn-primary" onclick="manager.updateClaudeKey(${index})">更新</button>
             </div>
         `;
         
@@ -1063,6 +1819,7 @@ class CLIProxyManager {
                 body: JSON.stringify({ index, value: newConfig })
             });
             
+            this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadClaudeKeys();
             this.showNotification('Claude配置更新成功', 'success');
@@ -1073,10 +1830,11 @@ class CLIProxyManager {
 
     // 删除Claude密钥
     async deleteClaudeKey(apiKey) {
-        if (!confirm('确定要删除这个Claude配置吗？')) return;
+        if (!confirm(i18n.t('ai_providers.claude_delete_confirm'))) return;
         
         try {
             await this.makeRequest(`/claude-api-key?api-key=${encodeURIComponent(apiKey)}`, { method: 'DELETE' });
+            this.clearCache(); // 清除缓存
             this.loadClaudeKeys();
             this.showNotification('Claude配置删除成功', 'success');
         } catch (error) {
@@ -1087,8 +1845,10 @@ class CLIProxyManager {
     // 加载OpenAI提供商
     async loadOpenAIProviders() {
         try {
-            const data = await this.makeRequest('/openai-compatibility');
-            this.renderOpenAIProviders(data['openai-compatibility'] || []);
+            const config = await this.getConfig();
+            if (config['openai-compatibility']) {
+                this.renderOpenAIProviders(config['openai-compatibility']);
+            }
         } catch (error) {
             console.error('加载OpenAI提供商失败:', error);
         }
@@ -1102,8 +1862,8 @@ class CLIProxyManager {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-plug"></i>
-                    <h3>暂无OpenAI兼容提供商</h3>
-                    <p>点击上方按钮添加第一个提供商</p>
+                    <h3>${i18n.t('ai_providers.openai_empty_title')}</h3>
+                    <p>${i18n.t('ai_providers.openai_empty_desc')}</p>
                 </div>
             `;
             return;
@@ -1113,9 +1873,9 @@ class CLIProxyManager {
             <div class="provider-item">
                 <div class="item-content">
                     <div class="item-title">${provider.name}</div>
-                    <div class="item-subtitle">地址: ${provider['base-url']}</div>
-                    <div class="item-subtitle">密钥数量: ${(provider['api-keys'] || []).length}</div>
-                    <div class="item-subtitle">模型数量: ${(provider.models || []).length}</div>
+                    <div class="item-subtitle">${i18n.t('common.base_url')}: ${provider['base-url']}</div>
+                    <div class="item-subtitle">${i18n.t('ai_providers.openai_keys_count')}: ${(provider['api-keys'] || []).length}</div>
+                    <div class="item-subtitle">${i18n.t('ai_providers.openai_models_count')}: ${(provider.models || []).length}</div>
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary" onclick="manager.editOpenAIProvider(${index}, ${JSON.stringify(provider).replace(/"/g, '&quot;')})">
@@ -1148,9 +1908,9 @@ class CLIProxyManager {
                 <label for="new-provider-keys">API密钥 (每行一个):</label>
                 <textarea id="new-provider-keys" rows="3" placeholder="sk-key1&#10;sk-key2"></textarea>
             </div>
-            <div style="text-align: right; margin-top: 20px;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.addOpenAIProvider()" style="margin-left: 10px;">添加</button>
+                <button class="btn btn-primary" onclick="manager.addOpenAIProvider()">添加</button>
             </div>
         `;
         
@@ -1188,6 +1948,7 @@ class CLIProxyManager {
                 body: JSON.stringify(currentProviders)
             });
             
+            this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadOpenAIProviders();
             this.showNotification('OpenAI提供商添加成功', 'success');
@@ -1217,9 +1978,9 @@ class CLIProxyManager {
                 <label for="edit-provider-keys">API密钥 (每行一个):</label>
                 <textarea id="edit-provider-keys" rows="3">${apiKeysText}</textarea>
             </div>
-            <div style="text-align: right; margin-top: 20px;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.updateOpenAIProvider(${index})" style="margin-left: 10px;">更新</button>
+                <button class="btn btn-primary" onclick="manager.updateOpenAIProvider(${index})">更新</button>
             </div>
         `;
         
@@ -1252,6 +2013,7 @@ class CLIProxyManager {
                 body: JSON.stringify({ index, value: updatedProvider })
             });
             
+            this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadOpenAIProviders();
             this.showNotification('OpenAI提供商更新成功', 'success');
@@ -1262,10 +2024,11 @@ class CLIProxyManager {
 
     // 删除OpenAI提供商
     async deleteOpenAIProvider(name) {
-        if (!confirm('确定要删除这个OpenAI提供商吗？')) return;
+        if (!confirm(i18n.t('ai_providers.openai_delete_confirm'))) return;
         
         try {
             await this.makeRequest(`/openai-compatibility?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
+            this.clearCache(); // 清除缓存
             this.loadOpenAIProviders();
             this.showNotification('OpenAI提供商删除成功', 'success');
         } catch (error) {
@@ -1291,8 +2054,8 @@ class CLIProxyManager {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-file-alt"></i>
-                    <h3>暂无认证文件</h3>
-                    <p>点击上方按钮上传第一个文件</p>
+                    <h3>${i18n.t('auth_files.empty_title')}</h3>
+                    <p>${i18n.t('auth_files.empty_desc')}</p>
                 </div>
             `;
             return;
@@ -1302,8 +2065,8 @@ class CLIProxyManager {
             <div class="file-item">
                 <div class="item-content">
                     <div class="item-title">${file.name}</div>
-                    <div class="item-subtitle">大小: ${this.formatFileSize(file.size)}</div>
-                    <div class="item-subtitle">修改时间: ${new Date(file.modtime).toLocaleString('zh-CN')}</div>
+                    <div class="item-subtitle">${i18n.t('auth_files.file_size')}: ${this.formatFileSize(file.size)}</div>
+                    <div class="item-subtitle">${i18n.t('auth_files.file_modified')}: ${new Date(file.modtime).toLocaleString(i18n.currentLanguage === 'zh-CN' ? 'zh-CN' : 'en-US')}</div>
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-primary" onclick="manager.downloadAuthFile('${file.name}')">
@@ -1337,7 +2100,7 @@ class CLIProxyManager {
         if (!file) return;
         
         if (!file.name.endsWith('.json')) {
-            this.showNotification('只能上传JSON文件', 'error');
+            this.showNotification(i18n.t('auth_files.upload_error_json'), 'error');
             return;
         }
         
@@ -1358,8 +2121,9 @@ class CLIProxyManager {
                 throw new Error(errorData.error || `HTTP ${response.status}`);
             }
             
+            this.clearCache(); // 清除缓存
             this.loadAuthFiles();
-            this.showNotification('文件上传成功', 'success');
+            this.showNotification(i18n.t('auth_files.upload_success'), 'success');
         } catch (error) {
             this.showNotification(`文件上传失败: ${error.message}`, 'error');
         }
@@ -1389,7 +2153,7 @@ class CLIProxyManager {
             a.click();
             window.URL.revokeObjectURL(url);
             
-            this.showNotification('文件下载成功', 'success');
+            this.showNotification(i18n.t('auth_files.download_success'), 'success');
         } catch (error) {
             this.showNotification(`文件下载失败: ${error.message}`, 'error');
         }
@@ -1397,12 +2161,13 @@ class CLIProxyManager {
 
     // 删除认证文件
     async deleteAuthFile(filename) {
-        if (!confirm(`确定要删除文件 "${filename}" 吗？`)) return;
+        if (!confirm(`${i18n.t('auth_files.delete_confirm')} "${filename}" 吗？`)) return;
         
         try {
             await this.makeRequest(`/auth-files?name=${encodeURIComponent(filename)}`, { method: 'DELETE' });
+            this.clearCache(); // 清除缓存
             this.loadAuthFiles();
-            this.showNotification('文件删除成功', 'success');
+            this.showNotification(i18n.t('auth_files.delete_success'), 'success');
         } catch (error) {
             this.showNotification(`文件删除失败: ${error.message}`, 'error');
         }
@@ -1410,12 +2175,13 @@ class CLIProxyManager {
 
     // 删除所有认证文件
     async deleteAllAuthFiles() {
-        if (!confirm('确定要删除所有认证文件吗？此操作不可恢复！')) return;
+        if (!confirm(i18n.t('auth_files.delete_all_confirm'))) return;
         
         try {
             const response = await this.makeRequest('/auth-files?all=true', { method: 'DELETE' });
+            this.clearCache(); // 清除缓存
             this.loadAuthFiles();
-            this.showNotification(`成功删除 ${response.deleted} 个文件`, 'success');
+            this.showNotification(`${i18n.t('auth_files.delete_all_success')} ${response.deleted} ${i18n.t('auth_files.files_count')}`, 'success');
         } catch (error) {
             this.showNotification(`删除文件失败: ${error.message}`, 'error');
         }
@@ -1433,7 +2199,9 @@ let manager;
 // 尝试自动加载根目录 Logo（支持多种常见文件名/扩展名）
 function setupSiteLogo() {
     const img = document.getElementById('site-logo');
-    if (!img) return;
+    const loginImg = document.getElementById('login-logo');
+    if (!img && !loginImg) return;
+    
     const candidates = [
         '../logo.svg', '../logo.png', '../logo.jpg', '../logo.jpeg', '../logo.webp', '../logo.gif',
         'logo.svg', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'logo.gif',
@@ -1444,8 +2212,14 @@ function setupSiteLogo() {
         if (idx >= candidates.length) return;
         const test = new Image();
         test.onload = () => {
-            img.src = test.src;
-            img.style.display = 'inline-block';
+            if (img) {
+                img.src = test.src;
+                img.style.display = 'inline-block';
+            }
+            if (loginImg) {
+                loginImg.src = test.src;
+                loginImg.style.display = 'inline-block';
+            }
         };
         test.onerror = () => {
             idx++;
@@ -1458,6 +2232,9 @@ function setupSiteLogo() {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
+    // 初始化国际化
+    i18n.init();
+    
     setupSiteLogo();
     manager = new CLIProxyManager();
 });
