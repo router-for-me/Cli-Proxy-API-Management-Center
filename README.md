@@ -1,137 +1,140 @@
 # Cli-Proxy-API-Management-Center
-这是一个用于管理 CLI Proxy API 的现代化 Web 界面。
-主项目
+This is a modern web interface for managing the CLI Proxy API.
+
+[中文](README_CN.md)
+
+Main Project:
 https://github.com/router-for-me/CLIProxyAPI
 
-最低可用版本 ≥ 5.0.0
-推荐版本 ≥ 5.1.1
+Minimum required version: ≥ 5.0.0
+Recommended version: ≥ 5.1.1
 
-## 功能特点
+## Features
 
-### 认证管理
-- 支持管理密钥认证
-- 可配置 API 基础地址
-- 实时连接状态检测
+### Authentication Management
+- Supports management key authentication
+- Configurable API base address
+- Real-time connection status detection
 
-### 基础设置
-- **调试模式**: 开启/关闭调试功能
-- **代理设置**: 配置代理服务器 URL
-- **请求重试**: 设置请求重试次数
-- **配额管理**: 配置超出配额时的行为
-- **本地访问**: 管理本地未认证访问
+### Basic Settings
+- **Debug Mode**: Enable/disable debugging
+- **Proxy Settings**: Configure proxy server URL
+- **Request Retries**: Set the number of request retries
+- **Quota Management**: Configure behavior when the quota is exceeded
+- **Local Access**: Manage local unauthenticated access
 
-### API 密钥管理
-- **代理服务认证密钥**: 管理用于代理服务的 API 密钥
-- **Gemini API**: 管理 Google Gemini 生成式语言 API 密钥
-- **Codex API**: 管理 OpenAI Codex API 配置
-- **Claude API**: 管理 Anthropic Claude API 配置
-- **OpenAI 兼容提供商**: 管理 OpenAI 兼容的第三方提供商
+### API Key Management
+- **Proxy Service Authentication Key**: Manage API keys for the proxy service
+- **Gemini API**: Manage Google Gemini generative language API keys
+- **Codex API**: Manage OpenAI Codex API configuration
+- **Claude API**: Manage Anthropic Claude API configuration
+- **OpenAI-Compatible Providers**: Manage OpenAI-compatible third-party providers
 
-### 认证文件管理
-- 上传认证 JSON 文件
-- 下载现有认证文件
-- 删除单个或所有认证文件
-- 显示文件详细信息
+### Authentication File Management
+- Upload authentication JSON files
+- Download existing authentication files
+- Delete single or all authentication files
+- Display file details
 
 
-## 使用方法
+## How to Use
 
-### 1. 直接使用（推荐）
-直接用浏览器打开 `index.html` 文件即可使用。
+### 1. Direct Use (Recommended)
+Simply open the `index.html` file directly in your browser to use it.
 
-### 2. 使用本地服务器
+### 2. Use a Local Server
 ```bash
-# 安装依赖
+# Install dependencies
 npm install
 
-# 使用默认端口(3000）
+# Start the server on the default port (3000)
 npm start
 ```
 
-### 3. 配置 API 连接
-1. 打开管理界面
-2. 在登录界面上输入：
-   - **远程地址**: `http://localhost:8317`/v0/management将会自动为您补全
-   - **管理密钥**: 您的管理密钥
-3. 点击"连接"按钮
-4. 连接成功后即可使用所有功能
+### 3. Configure API Connection
+1. Open the management interface.
+2. On the login screen, enter:
+   - **Remote Address**: `http://localhost:8317` (`/v0/management` will be auto-completed for you)
+   - **Management Key**: Your management key
+3. Click the "Connect" button.
+4. Once connected successfully, all features will be available.
 
-## 界面说明
+## Interface Description
 
-### 导航菜单
-- **基础设置**: 调试、代理、重试等基本配置
-- **API 密钥**: 各种 API 服务的密钥管理
-- **AI 提供商**: AI 服务提供商配置
-- **认证文件**: 认证文件的上传下载管理
-- **系统信息**: 连接状态和系统信息
+### Navigation Menu
+- **Basic Settings**: Basic configurations like debugging, proxy, retries, etc.
+- **API Keys**: Management of keys for various API services.
+- **AI Providers**: Configuration for AI service providers.
+- **Auth Files**: Upload and download management for authentication files.
+- **System Info**: Connection status and system information.
 
-## 特性亮点
+## Feature Highlights
 
-### 现代化 UI
-- 响应式设计，支持各种屏幕尺寸
-- 美观的渐变色彩和阴影效果
-- 流畅的动画和过渡效果
-- 直观的图标和状态指示
+### Modern UI
+- Responsive design, supports all screen sizes
+- Beautiful gradient colors and shadow effects
+- Smooth animations and transition effects
+- Intuitive icons and status indicators
 
-### 实时更新
-- 配置更改立即生效
-- 实时状态反馈
-- 自动数据刷新
+### Real-time Updates
+- Configuration changes take effect immediately
+- Real-time status feedback
+- Automatic data refresh
 
-### 安全特性
-- 密钥遮蔽显示
+### Security Features
+- Masked display for keys
 
-### 响应式设计
-- 完美适配桌面和移动设备
-- 自适应布局
-- 触摸友好的交互
+### Responsive Design
+- Perfectly adapts to desktop and mobile devices
+- Adaptive layout
+- Touch-friendly interactions
 
-## 技术栈
+## Tech Stack
 
-- **前端**: 纯 HTML、CSS、JavaScript
-- **样式**: CSS3 + Flexbox/Grid
-- **图标**: Font Awesome 6.4.0
-- **字体**: Segoe UI 系统字体
-- **API**: RESTful API 调用
+- **Frontend**: Plain HTML, CSS, JavaScript
+- **Styling**: CSS3 + Flexbox/Grid
+- **Icons**: Font Awesome 6.4.0
+- **Fonts**: Segoe UI system font
+- **API**: RESTful API calls
 
-## 故障排除
+## Troubleshooting
 
-### 连接问题
-1. 确认 CLI Proxy API 服务正在运行
-2. 检查 API 地址是否正确
-3. 验证管理密钥是否有效
-4. 确认防火墙设置允许连接
+### Connection Issues
+1. Confirm that the CLI Proxy API service is running.
+2. Check if the API address is correct.
+3. Verify that the management key is valid.
+4. Ensure your firewall settings allow the connection.
 
-### 数据不更新
-1. 点击"刷新全部"按钮
-2. 检查网络连接
-3. 查看浏览器控制台错误信息
+### Data Not Updating
+1. Click the "Refresh All" button.
+2. Check your network connection.
+3. Check the browser's console for any error messages.
 
-## 开发说明
+## Development Information
 
-### 文件结构
+### File Structure
 ```
 webui/
-├── index.html      # 主页面
-├── styles.css      # 样式文件
-├── app.js          # 应用逻辑
-├── package.json    # 项目配置
-├── i18n.js         # 国际化支持
-└── README.md       # 说明文档
+├── index.html      # Main page
+├── styles.css      # Stylesheet
+├── app.js          # Application logic
+├── package.json    # Project configuration
+├── i18n.js         # Internationalization support
+└── README.md       # README document
 ```
 
-### API 调用
-所有 API 调用都通过 `ManagerAPI` 类的 `makeRequest` 方法处理，包含：
-- 自动添加认证头
-- 错误处理
-- JSON 响应解析
+### API Calls
+All API calls are handled through the `makeRequest` method of the `ManagerAPI` class, which includes:
+- Automatic addition of authentication headers
+- Error handling
+- JSON response parsing
 
-### 状态管理
-- 本地存储保存 API 地址和密钥
-- 内存中维护连接状态
-- 实时数据刷新机制
+### State Management
+- API address and key are saved in local storage
+- Connection status is maintained in memory
+- Real-time data refresh mechanism
 
-## 贡献
-欢迎提交 Issue 和 Pull Request 来改进这个项目！我们欢迎更多的大佬来对这个WebUI进行更新！
+## Contributing
+We welcome Issues and Pull Requests to improve this project! We encourage more developers to contribute to the enhancement of this WebUI!
 
-本项目采用MIT许可
+This project is licensed under the MIT License.
