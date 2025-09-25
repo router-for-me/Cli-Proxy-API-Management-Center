@@ -3,8 +3,11 @@
 主项目
 https://github.com/router-for-me/CLIProxyAPI
 
+示例网站:
+https://remote.router-for.me/
+
 最低可用版本 ≥ 5.0.0
-推荐版本 ≥ 5.1.1
+推荐版本 ≥ 5.2.6
 
 ## 功能特点
 
