@@ -1,7 +1,7 @@
 # Cli-Proxy-API-Management-Center
 This is a modern web interface for managing the CLI Proxy API.
 
-[中文](README_CN.md)
+[中文文档](README_CN.md)
 
 Main Project:
 https://github.com/router-for-me/CLIProxyAPI
