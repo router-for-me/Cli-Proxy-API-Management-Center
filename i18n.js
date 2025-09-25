@@ -182,9 +182,11 @@ const i18n = {
             'ai_providers.openai_keys_count': '密钥数量',
             'ai_providers.openai_models_count': '模型数量',
             
+            
             // 认证文件管理
             'auth_files.title': '认证文件管理',
             'auth_files.title_section': '认证文件',
+            'auth_files.description': '这里管理 Qwen 和 Gemini 的认证配置文件。上传 JSON 格式的认证文件以启用相应的 AI 服务。',
             'auth_files.upload_button': '上传文件',
             'auth_files.delete_all_button': '删除全部',
             'auth_files.empty_title': '暂无认证文件',
@@ -201,6 +203,16 @@ const i18n = {
             'auth_files.delete_success': '文件删除成功',
             'auth_files.delete_all_success': '成功删除',
             'auth_files.files_count': '个文件',
+            
+            // Gemini Web Token
+            'auth_login.gemini_web_title': 'Gemini Web Token',
+            'auth_login.gemini_web_button': '保存 Gemini Web Token',
+            'auth_login.gemini_web_hint': '从浏览器开发者工具中获取 Gemini 网页版的 Cookie 值，用于直接认证访问 Gemini。',
+            'auth_login.secure_1psid_label': '__Secure-1PSID Cookie:',
+            'auth_login.secure_1psid_placeholder': '输入 __Secure-1PSID cookie 值',
+            'auth_login.secure_1psidts_label': '__Secure-1PSIDTS Cookie:',
+            'auth_login.secure_1psidts_placeholder': '输入 __Secure-1PSIDTS cookie 值',
+            'auth_login.gemini_web_saved': 'Gemini Web Token 保存成功',
             
             // 系统信息
             'system_info.title': '系统信息',
@@ -443,9 +455,11 @@ const i18n = {
             'ai_providers.openai_keys_count': 'Keys Count',
             'ai_providers.openai_models_count': 'Models Count',
             
+            
             // Auth files management
             'auth_files.title': 'Auth Files Management',
             'auth_files.title_section': 'Auth Files',
+            'auth_files.description': 'Here you can manage authentication configuration files for Qwen and Gemini. Upload JSON format authentication files to enable the corresponding AI services.',
             'auth_files.upload_button': 'Upload File',
             'auth_files.delete_all_button': 'Delete All',
             'auth_files.empty_title': 'No Auth Files',
@@ -462,6 +476,16 @@ const i18n = {
             'auth_files.delete_success': 'File deleted successfully',
             'auth_files.delete_all_success': 'Successfully deleted',
             'auth_files.files_count': 'files',
+            
+            // Gemini Web Token
+            'auth_login.gemini_web_title': 'Gemini Web Token',
+            'auth_login.gemini_web_button': 'Save Gemini Web Token',
+            'auth_login.gemini_web_hint': 'Obtain the Cookie value of the Gemini web version from the browser\'s developer tools, used for direct authentication to access Gemini.',
+            'auth_login.secure_1psid_label': '__Secure-1PSID Cookie:',
+            'auth_login.secure_1psid_placeholder': 'Enter __Secure-1PSID cookie value',
+            'auth_login.secure_1psidts_label': '__Secure-1PSIDTS Cookie:',
+            'auth_login.secure_1psidts_placeholder': 'Enter __Secure-1PSIDTS cookie value',
+            'auth_login.gemini_web_saved': 'Gemini Web Token saved successfully',
             
             // System info
             'system_info.title': 'System Information',
