@@ -1816,3 +1816,34 @@ input:checked + .slider:before {
     background: var(--bg-tertiary);
 }
 
+/* 版本信息样式 */
+.version-footer {
+    margin-top: 2rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary);
+}
+
+.version-info {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.version-info .separator {
+    margin: 0 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+/* 暗黑主题下的版本信息 */
+[data-theme="dark"] .version-footer {
+    border-top-color: var(--border);
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .version-info {
+    color: var(--text-secondary);
+}
+

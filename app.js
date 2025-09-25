@@ -538,7 +538,6 @@ class CLIProxyManager {
         const updateRetry = document.getElementById('update-retry');
         const switchProjectToggle = document.getElementById('switch-project-toggle');
         const switchPreviewToggle = document.getElementById('switch-preview-model-toggle');
-        const allowLocalhostToggle = document.getElementById('allow-localhost-toggle');
         
         if (debugToggle) {
             debugToggle.addEventListener('change', (e) => this.updateDebug(e.target.checked));
@@ -557,9 +556,6 @@ class CLIProxyManager {
         }
         if (switchPreviewToggle) {
             switchPreviewToggle.addEventListener('change', (e) => this.updateSwitchPreviewModel(e.target.checked));
-        }
-        if (allowLocalhostToggle) {
-            allowLocalhostToggle.addEventListener('change', (e) => this.updateAllowLocalhost(e.target.checked));
         }
         
         // API 密钥管理
@@ -1001,10 +997,6 @@ class CLIProxyManager {
             }
         }
         
-        // 本地访问设置
-        if (config['allow-localhost-unauthenticated'] !== undefined) {
-            document.getElementById('allow-localhost-toggle').checked = config['allow-localhost-unauthenticated'];
-        }
         
         // API 密钥
         if (config['api-keys']) {
@@ -1039,7 +1031,6 @@ class CLIProxyManager {
             this.loadProxySettings(),
             this.loadRetrySettings(),
             this.loadQuotaSettings(),
-            this.loadLocalhostSettings(),
             this.loadApiKeys(),
             this.loadGeminiKeys(),
             this.loadCodexKeys(),
@@ -1192,32 +1183,6 @@ class CLIProxyManager {
         }
     }
 
-    // 加载本地访问设置
-    async loadLocalhostSettings() {
-        try {
-            const config = await this.getConfig();
-            if (config['allow-localhost-unauthenticated'] !== undefined) {
-                document.getElementById('allow-localhost-toggle').checked = config['allow-localhost-unauthenticated'];
-            }
-        } catch (error) {
-            console.error('加载本地访问设置失败:', error);
-        }
-    }
-
-    // 更新本地访问设置
-    async updateAllowLocalhost(enabled) {
-        try {
-            await this.makeRequest('/allow-localhost-unauthenticated', {
-                method: 'PUT',
-                body: JSON.stringify({ value: enabled })
-            });
-            this.clearCache(); // 清除缓存
-            this.showNotification(i18n.t('notification.localhost_updated'), 'success');
-        } catch (error) {
-            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
-            document.getElementById('allow-localhost-toggle').checked = !enabled;
-        }
-    }
 
     // 加载API密钥
     async loadApiKeys() {

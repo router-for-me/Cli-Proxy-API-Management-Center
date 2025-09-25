@@ -103,8 +103,6 @@ const i18n = {
             'basic_settings.quota_title': '配额超出行为',
             'basic_settings.quota_switch_project': '自动切换项目',
             'basic_settings.quota_switch_preview': '切换到预览模型',
-            'basic_settings.localhost_title': '本地访问',
-            'basic_settings.localhost_allow': '允许本地未认证访问',
             
             // API 密钥管理
             'api_keys.title': 'API 密钥管理',
@@ -253,7 +251,6 @@ const i18n = {
             'notification.retry_updated': '重试设置已更新',
             'notification.quota_switch_project_updated': '项目切换设置已更新',
             'notification.quota_switch_preview_updated': '预览模型切换设置已更新',
-            'notification.localhost_updated': '本地访问设置已更新',
             'notification.api_key_added': 'API密钥添加成功',
             'notification.api_key_updated': 'API密钥更新成功',
             'notification.api_key_deleted': 'API密钥删除成功',
@@ -297,7 +294,11 @@ const i18n = {
             'theme.dark': '暗色',
             'theme.switch_to_light': '切换到亮色模式',
             'theme.switch_to_dark': '切换到暗色模式',
-            'theme.auto': '跟随系统'
+            'theme.auto': '跟随系统',
+            
+            // 页脚
+            'footer.version': '版本',
+            'footer.author': '作者'
         },
         
         'en-US': {
@@ -397,8 +398,6 @@ const i18n = {
             'basic_settings.quota_title': 'Quota Exceeded Behavior',
             'basic_settings.quota_switch_project': 'Auto Switch Project',
             'basic_settings.quota_switch_preview': 'Switch to Preview Model',
-            'basic_settings.localhost_title': 'Local Access',
-            'basic_settings.localhost_allow': 'Allow Localhost Unauthenticated Access',
             
             // API Keys management
             'api_keys.title': 'API Keys Management',
@@ -547,7 +546,6 @@ const i18n = {
             'notification.retry_updated': 'Retry settings updated',
             'notification.quota_switch_project_updated': 'Project switch settings updated',
             'notification.quota_switch_preview_updated': 'Preview model switch settings updated',
-            'notification.localhost_updated': 'Localhost access settings updated',
             'notification.api_key_added': 'API key added successfully',
             'notification.api_key_updated': 'API key updated successfully',
             'notification.api_key_deleted': 'API key deleted successfully',
@@ -591,7 +589,11 @@ const i18n = {
             'theme.dark': 'Dark',
             'theme.switch_to_light': 'Switch to light mode',
             'theme.switch_to_dark': 'Switch to dark mode',
-            'theme.auto': 'Follow system'
+            'theme.auto': 'Follow system',
+            
+            // Footer
+            'footer.version': 'Version',
+            'footer.author': 'Author'
         }
     },
     
