@@ -6,8 +6,11 @@ This is a modern web interface for managing the CLI Proxy API.
 Main Project:
 https://github.com/router-for-me/CLIProxyAPI
 
+Example URL:
+https://remote.router-for.me/
+
 Minimum required version: ≥ 5.0.0
-Recommended version: ≥ 5.1.1
+Recommended version: ≥ 5.2.6
 
 ## Features
 
