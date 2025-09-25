@@ -589,7 +589,7 @@ class CLIProxyManager {
         // Gemini Web Token
         const geminiWebTokenBtn = document.getElementById('gemini-web-token-btn');
         if (geminiWebTokenBtn) {
-            geminiWebTokenBtn.addEventListener('click', () => this.saveGeminiWebTokenDirect());
+            geminiWebTokenBtn.addEventListener('click', () => this.showGeminiWebTokenModal());
         }
         
         // 认证文件管理
@@ -2192,188 +2192,14 @@ class CLIProxyManager {
         }
     }
 
-    // === OAuth 认证方法 ===
-
-    // 显示/隐藏 Gemini CLI 项目表单
-    showGeminiCliProjectForm() {
-        document.getElementById('gemini-cli-project-group').style.display = 'block';
-    }
-
-    hideGeminiCliProjectForm() {
-        document.getElementById('gemini-cli-project-group').style.display = 'none';
-        document.getElementById('gemini-cli-project-id').value = '';
-    }
-
-    // 开始 Anthropic (Claude) OAuth 认证
-    async startAnthropicAuth() {
-        try {
-            const response = await this.makeRequest('/anthropic-auth-url');
-            this.handleOAuthFlow(response.url, 'Anthropic (Claude)');
-        } catch (error) {
-            this.showNotification(`启动 Anthropic 认证失败: ${error.message}`, 'error');
-        }
-    }
-
-    // 开始 Codex OAuth 认证
-    async startCodexAuth() {
-        try {
-            const response = await this.makeRequest('/codex-auth-url');
-            this.handleOAuthFlow(response.url, 'Codex');
-        } catch (error) {
-            this.showNotification(`启动 Codex 认证失败: ${error.message}`, 'error');
-        }
-    }
-
-    // 开始 Gemini CLI OAuth 认证
-    async startGeminiCliAuth() {
-        try {
-            const projectId = document.getElementById('gemini-cli-project-id').value.trim();
-            let url = '/gemini-cli-auth-url';
-            if (projectId) {
-                url += `?project_id=${encodeURIComponent(projectId)}`;
-            }
-            
-            const response = await this.makeRequest(url);
-            this.hideGeminiCliProjectForm();
-            this.handleOAuthFlow(response.url, 'Gemini CLI');
-        } catch (error) {
-            this.showNotification(`启动 Gemini CLI 认证失败: ${error.message}`, 'error');
-        }
-    }
 
 
-    // 处理 OAuth 流程
-    handleOAuthFlow(authUrl, providerName) {
-        // 从 URL 中提取 state 参数
-        const url = new URL(authUrl);
-        const state = url.searchParams.get('state');
-        
-        // 显示 OAuth 状态模态框
-        this.showOAuthStatusModal(authUrl, providerName, state);
-    }
 
-    // 显示 OAuth 状态模态框
-    showOAuthStatusModal(authUrl, providerName, state) {
-        const modalBody = document.getElementById('modal-body');
-        modalBody.innerHTML = `
-            <div class="oauth-status-modal loading">
-                <div class="oauth-icon">
-                    <i class="fas fa-spinner"></i>
-                </div>
-                <h3>${i18n.t('auth_login.oauth_in_progress')}</h3>
-                <p>${providerName} ${i18n.t('auth_login.oauth_open_browser')}</p>
-                
-                <div class="oauth-url-display">
-                    ${authUrl}
-                </div>
-                
-                <div class="oauth-actions">
-                    <button class="btn btn-primary" onclick="navigator.clipboard.writeText('${authUrl}')">
-                        <i class="fas fa-copy"></i> ${i18n.t('auth_login.copy_url')}
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.open('${authUrl}', '_blank')">
-                        <i class="fas fa-external-link-alt"></i> ${i18n.t('auth_login.open_browser')}
-                    </button>
-                </div>
-                
-                <p style="margin-top: 20px; color: var(--text-tertiary); font-size: 14px;">
-                    ${i18n.t('auth_login.oauth_waiting')}
-                </p>
-            </div>
-        `;
-        
-        this.showModal();
-        
-        // 如果有 state，开始轮询认证状态
-        if (state) {
-            this.pollOAuthStatus(state, providerName);
-        }
-    }
-
-    // 轮询 OAuth 认证状态
-    async pollOAuthStatus(state, providerName) {
-        const maxAttempts = 60; // 最多轮询 5 分钟（每 5 秒一次）
-        let attempts = 0;
-        
-        const poll = async () => {
-            attempts++;
-            
-            try {
-                const response = await this.makeRequest(`/get-auth-status?state=${encodeURIComponent(state)}`);
-                
-                if (response.status === 'ok') {
-                    // 认证成功
-                    this.showOAuthSuccess(providerName);
-                    this.loadAuthFiles(); // 刷新认证文件列表
-                    return;
-                } else if (response.status === 'error') {
-                    // 认证失败
-                    this.showOAuthError(response.error || '认证失败');
-                    return;
-                } else if (response.status === 'wait') {
-                    // 继续等待
-                    if (attempts < maxAttempts) {
-                        setTimeout(poll, 5000); // 5 秒后重试
-                    } else {
-                        this.showOAuthError(i18n.t('auth_login.oauth_timeout'));
-                    }
-                }
-            } catch (error) {
-                console.error('OAuth 状态轮询失败:', error);
-                if (attempts < maxAttempts) {
-                    setTimeout(poll, 5000); // 5 秒后重试
-                } else {
-                    this.showOAuthError(`${i18n.t('auth_login.oauth_failed')}: ${error.message}`);
-                }
-            }
-        };
-        
-        // 开始轮询
-        setTimeout(poll, 2000); // 2 秒后开始第一次检查
-    }
-
-    // 显示 OAuth 认证成功
-    showOAuthSuccess(providerName) {
-        const modalBody = document.getElementById('modal-body');
-        modalBody.innerHTML = `
-            <div class="oauth-status-modal success">
-                <div class="oauth-icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <h3>${i18n.t('auth_login.oauth_success')}</h3>
-                <p>${providerName} 认证已完成！</p>
-                
-                <div class="oauth-actions">
-                    <button class="btn btn-primary" onclick="manager.closeModal()">
-                        <i class="fas fa-check"></i> ${i18n.t('common.confirm')}
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    // 显示 OAuth 认证失败
-    showOAuthError(errorMessage) {
-        const modalBody = document.getElementById('modal-body');
-        modalBody.innerHTML = `
-            <div class="oauth-status-modal error">
-                <div class="oauth-icon">
-                    <i class="fas fa-times-circle"></i>
-                </div>
-                <h3>${i18n.t('auth_login.oauth_failed')}</h3>
-                <p>${errorMessage}</p>
-                
-                <div class="oauth-actions">
-                    <button class="btn btn-danger" onclick="manager.closeModal()">
-                        <i class="fas fa-times"></i> ${i18n.t('common.close')}
-                    </button>
-                </div>
-            </div>
-        `;
-    }
 
     // 显示 Gemini Web Token 模态框
     showGeminiWebTokenModal() {
+        const inlineSecure1psid = document.getElementById('secure-1psid-input');
+        const inlineSecure1psidts = document.getElementById('secure-1psidts-input');
         const modalBody = document.getElementById('modal-body');
         modalBody.innerHTML = `
             <h3>${i18n.t('auth_login.gemini_web_button')}</h3>
@@ -2395,6 +2221,20 @@ class CLIProxyManager {
             </div>
         `;
         this.showModal();
+
+        const modalSecure1psid = document.getElementById('modal-secure-1psid');
+        const modalSecure1psidts = document.getElementById('modal-secure-1psidts');
+
+        if (modalSecure1psid && inlineSecure1psid) {
+            modalSecure1psid.value = inlineSecure1psid.value.trim();
+        }
+        if (modalSecure1psidts && inlineSecure1psidts) {
+            modalSecure1psidts.value = inlineSecure1psidts.value.trim();
+        }
+
+        if (modalSecure1psid) {
+            modalSecure1psid.focus();
+        }
     }
 
     // 保存 Gemini Web Token
@@ -2421,9 +2261,24 @@ class CLIProxyManager {
             
             this.closeModal();
             this.loadAuthFiles(); // 刷新认证文件列表
+            const inlineSecure1psid = document.getElementById('secure-1psid-input');
+            const inlineSecure1psidts = document.getElementById('secure-1psidts-input');
+            if (inlineSecure1psid) {
+                inlineSecure1psid.value = secure1psid;
+            }
+            if (inlineSecure1psidts) {
+                inlineSecure1psidts.value = secure1psidts;
+            }
             this.showNotification(`${i18n.t('auth_login.gemini_web_saved')}: ${response.file}`, 'success');
         } catch (error) {
             this.showNotification(`保存失败: ${error.message}`, 'error');
+        }
+    }
+
+    showModal() {
+        const modal = document.getElementById('modal');
+        if (modal) {
+            modal.style.display = 'block';
         }
     }
 
