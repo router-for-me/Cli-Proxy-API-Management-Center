@@ -27,6 +27,9 @@
     --accent-primary: linear-gradient(135deg, #475569, #334155);
     --accent-secondary: #e2e8f0;
     --accent-tertiary: #f8fafc;
+    --primary-color: #3b82f6;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
     
     --success-bg: linear-gradient(135deg, #dcfce7, #bbf7d0);
     --success-text: #166534;
@@ -69,6 +72,9 @@
     --accent-primary: linear-gradient(135deg, #64748b, #475569);
     --accent-secondary: #334155;
     --accent-tertiary: #1e293b;
+    --primary-color: #38bdf8;
+    --card-bg: #1e293b;
+    --border-color: #334155;
     
     --success-bg: linear-gradient(135deg, #064e3b, #047857);
     --success-text: #bbf7d0;
@@ -1611,5 +1617,202 @@ input:checked + .slider:before {
     color: var(--text-tertiary);
     font-size: 12px;
     line-height: 1.4;
+}
+
+/* 使用统计样式 */
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card:hover {
+    border-color: var(--border-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-color);
+    color: white;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.stat-icon.success {
+    background: #10b981;
+}
+
+.stat-icon.error {
+    background: #ef4444;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.charts-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 1200px) {
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chart-card {
+    min-height: 400px;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.btn.btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn.btn-small:hover {
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+}
+
+.btn.btn-small.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.api-stats-table {
+    overflow-x: auto;
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+}
+
+.stats-table th,
+.stats-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stats-table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.stats-table td {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.stats-table tr:hover {
+    background: var(--bg-secondary);
+}
+
+.model-details {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.model-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    color: var(--text-tertiary);
+}
+
+.model-name {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.loading-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+    color: var(--text-tertiary);
+    font-size: 14px;
+}
+
+.no-data-message {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-style: italic;
+    padding: 40px;
+}
+
+/* 暗色主题适配 */
+[data-theme="dark"] .stat-card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .btn.btn-small {
+    background: var(--bg-tertiary);
 }
 

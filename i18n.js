@@ -85,6 +85,7 @@ const i18n = {
             'nav.api_keys': 'API 密钥',
             'nav.ai_providers': 'AI 提供商',
             'nav.auth_files': '认证文件',
+            'nav.usage_stats': '使用统计',
             'nav.system_info': '系统信息',
             
             // 基础设置
@@ -213,6 +214,26 @@ const i18n = {
             'auth_login.secure_1psidts_label': '__Secure-1PSIDTS Cookie:',
             'auth_login.secure_1psidts_placeholder': '输入 __Secure-1PSIDTS cookie 值',
             'auth_login.gemini_web_saved': 'Gemini Web Token 保存成功',
+            
+            // 使用统计
+            'usage_stats.title': '使用统计',
+            'usage_stats.total_requests': '总请求数',
+            'usage_stats.success_requests': '成功请求',
+            'usage_stats.failed_requests': '失败请求',
+            'usage_stats.total_tokens': '总Token数',
+            'usage_stats.requests_trend': '请求趋势',
+            'usage_stats.tokens_trend': 'Token 使用趋势',
+            'usage_stats.api_details': 'API 详细统计',
+            'usage_stats.by_hour': '按小时',
+            'usage_stats.by_day': '按天',
+            'usage_stats.refresh': '刷新',
+            'usage_stats.no_data': '暂无数据',
+            'usage_stats.loading_error': '加载失败',
+            'usage_stats.api_endpoint': 'API端点',
+            'usage_stats.requests_count': '请求次数',
+            'usage_stats.tokens_count': 'Token数量',
+            'usage_stats.models': '模型统计',
+            'usage_stats.success_rate': '成功率',
             
             // 系统信息
             'system_info.title': '系统信息',
@@ -358,6 +379,7 @@ const i18n = {
             'nav.api_keys': 'API Keys',
             'nav.ai_providers': 'AI Providers',
             'nav.auth_files': 'Auth Files',
+            'nav.usage_stats': 'Usage Statistics',
             'nav.system_info': 'System Info',
             
             // Basic settings
@@ -486,6 +508,26 @@ const i18n = {
             'auth_login.secure_1psidts_label': '__Secure-1PSIDTS Cookie:',
             'auth_login.secure_1psidts_placeholder': 'Enter __Secure-1PSIDTS cookie value',
             'auth_login.gemini_web_saved': 'Gemini Web Token saved successfully',
+            
+            // Usage Statistics
+            'usage_stats.title': 'Usage Statistics',
+            'usage_stats.total_requests': 'Total Requests',
+            'usage_stats.success_requests': 'Success Requests',
+            'usage_stats.failed_requests': 'Failed Requests',
+            'usage_stats.total_tokens': 'Total Tokens',
+            'usage_stats.requests_trend': 'Request Trends',
+            'usage_stats.tokens_trend': 'Token Usage Trends',
+            'usage_stats.api_details': 'API Details',
+            'usage_stats.by_hour': 'By Hour',
+            'usage_stats.by_day': 'By Day',
+            'usage_stats.refresh': 'Refresh',
+            'usage_stats.no_data': 'No Data Available',
+            'usage_stats.loading_error': 'Loading Failed',
+            'usage_stats.api_endpoint': 'API Endpoint',
+            'usage_stats.requests_count': 'Request Count',
+            'usage_stats.tokens_count': 'Token Count',
+            'usage_stats.models': 'Model Statistics',
+            'usage_stats.success_rate': 'Success Rate',
             
             // System info
             'system_info.title': 'System Information',

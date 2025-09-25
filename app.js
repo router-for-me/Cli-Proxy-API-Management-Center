@@ -607,6 +607,29 @@ class CLIProxyManager {
             authFileInput.addEventListener('change', (e) => this.handleFileUpload(e));
         }
         
+        // 使用统计
+        const refreshUsageStats = document.getElementById('refresh-usage-stats');
+        const requestsHourBtn = document.getElementById('requests-hour-btn');
+        const requestsDayBtn = document.getElementById('requests-day-btn');
+        const tokensHourBtn = document.getElementById('tokens-hour-btn');
+        const tokensDayBtn = document.getElementById('tokens-day-btn');
+        
+        if (refreshUsageStats) {
+            refreshUsageStats.addEventListener('click', () => this.loadUsageStats());
+        }
+        if (requestsHourBtn) {
+            requestsHourBtn.addEventListener('click', () => this.switchRequestsPeriod('hour'));
+        }
+        if (requestsDayBtn) {
+            requestsDayBtn.addEventListener('click', () => this.switchRequestsPeriod('day'));
+        }
+        if (tokensHourBtn) {
+            tokensHourBtn.addEventListener('click', () => this.switchTokensPeriod('hour'));
+        }
+        if (tokensDayBtn) {
+            tokensDayBtn.addEventListener('click', () => this.switchTokensPeriod('day'));
+        }
+        
         // 模态框
         const closeBtn = document.querySelector('.close');
         if (closeBtn) {
@@ -938,6 +961,9 @@ class CLIProxyManager {
             
             // 认证文件需要单独加载，因为不在配置中
             await this.loadAuthFiles();
+            
+            // 使用统计需要单独加载
+            await this.loadUsageStats();
             
             console.log('配置加载完成，使用缓存:', !forceRefresh && this.isCacheValid());
         } catch (error) {
@@ -2273,6 +2299,343 @@ class CLIProxyManager {
         } catch (error) {
             this.showNotification(`保存失败: ${error.message}`, 'error');
         }
+    }
+
+    // ===== 使用统计相关方法 =====
+    
+    // 初始化图表变量
+    requestsChart = null;
+    tokensChart = null;
+    currentUsageData = null;
+    
+    // 加载使用统计
+    async loadUsageStats() {
+        try {
+            const response = await this.makeRequest('/usage');
+            const usage = response?.usage || null;
+            this.currentUsageData = usage;
+
+            if (!usage) {
+                throw new Error('usage payload missing');
+            }
+
+            // 更新概览卡片
+            this.updateUsageOverview(usage);
+
+            // 读取当前图表周期
+            const requestsHourActive = document.getElementById('requests-hour-btn')?.classList.contains('active');
+            const tokensHourActive = document.getElementById('tokens-hour-btn')?.classList.contains('active');
+            const requestsPeriod = requestsHourActive ? 'hour' : 'day';
+            const tokensPeriod = tokensHourActive ? 'hour' : 'day';
+
+            // 初始化图表（使用当前周期）
+            this.initializeRequestsChart(requestsPeriod);
+            this.initializeTokensChart(tokensPeriod);
+
+            // 更新API详细统计表格
+            this.updateApiStatsTable(usage);
+
+        } catch (error) {
+            console.error('加载使用统计失败:', error);
+            this.currentUsageData = null;
+
+            // 清空概览数据
+            ['total-requests', 'success-requests', 'failed-requests', 'total-tokens'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = '-';
+            });
+
+            // 清空图表
+            if (this.requestsChart) {
+                this.requestsChart.destroy();
+                this.requestsChart = null;
+            }
+            if (this.tokensChart) {
+                this.tokensChart.destroy();
+                this.tokensChart = null;
+            }
+
+            const tableElement = document.getElementById('api-stats-table');
+            if (tableElement) {
+                tableElement.innerHTML = `<div class="no-data-message">${i18n.t('usage_stats.loading_error')}: ${error.message}</div>`;
+            }
+        }
+    }
+
+    // 更新使用统计概览
+    updateUsageOverview(data) {
+        const safeData = data || {};
+        document.getElementById('total-requests').textContent = safeData.total_requests ?? 0;
+        document.getElementById('success-requests').textContent = safeData.success_count ?? 0;
+        document.getElementById('failed-requests').textContent = safeData.failure_count ?? 0;
+        document.getElementById('total-tokens').textContent = safeData.total_tokens ?? 0;
+    }
+
+    // 初始化图表
+    initializeCharts() {
+        const requestsHourActive = document.getElementById('requests-hour-btn')?.classList.contains('active');
+        const tokensHourActive = document.getElementById('tokens-hour-btn')?.classList.contains('active');
+        this.initializeRequestsChart(requestsHourActive ? 'hour' : 'day');
+        this.initializeTokensChart(tokensHourActive ? 'hour' : 'day');
+    }
+
+    // 初始化请求趋势图表
+    initializeRequestsChart(period = 'day') {
+        const ctx = document.getElementById('requests-chart');
+        if (!ctx) return;
+
+        // 销毁现有图表
+        if (this.requestsChart) {
+            this.requestsChart.destroy();
+        }
+
+        const data = this.getRequestsChartData(period);
+
+        this.requestsChart = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: i18n.t(period === 'hour' ? 'usage_stats.by_hour' : 'usage_stats.by_day')
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: i18n.t('usage_stats.requests_count')
+                        }
+                    }
+                },
+                elements: {
+                    line: {
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    point: {
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        radius: 4
+                    }
+                }
+            }
+        });
+    }
+
+    // 初始化Token使用趋势图表
+    initializeTokensChart(period = 'day') {
+        const ctx = document.getElementById('tokens-chart');
+        if (!ctx) return;
+
+        // 销毁现有图表
+        if (this.tokensChart) {
+            this.tokensChart.destroy();
+        }
+
+        const data = this.getTokensChartData(period);
+
+        this.tokensChart = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: i18n.t(period === 'hour' ? 'usage_stats.by_hour' : 'usage_stats.by_day')
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: i18n.t('usage_stats.tokens_count')
+                        }
+                    }
+                },
+                elements: {
+                    line: {
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    point: {
+                        backgroundColor: '#10b981',
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        radius: 4
+                    }
+                }
+            }
+        });
+    }
+
+    // 获取请求图表数据
+    getRequestsChartData(period) {
+        if (!this.currentUsageData) {
+            return { labels: [], datasets: [{ data: [] }] };
+        }
+        
+        let dataSource, labels, values;
+        
+        if (period === 'hour') {
+            dataSource = this.currentUsageData.requests_by_hour || {};
+            labels = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+            values = labels.map(hour => dataSource[hour] || 0);
+        } else {
+            dataSource = this.currentUsageData.requests_by_day || {};
+            labels = Object.keys(dataSource).sort();
+            values = labels.map(day => dataSource[day] || 0);
+        }
+        
+        return {
+            labels: labels,
+            datasets: [{
+                data: values
+            }]
+        };
+    }
+    
+    // 获取Token图表数据
+    getTokensChartData(period) {
+        if (!this.currentUsageData) {
+            return { labels: [], datasets: [{ data: [] }] };
+        }
+        
+        let dataSource, labels, values;
+        
+        if (period === 'hour') {
+            dataSource = this.currentUsageData.tokens_by_hour || {};
+            labels = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+            values = labels.map(hour => dataSource[hour] || 0);
+        } else {
+            dataSource = this.currentUsageData.tokens_by_day || {};
+            labels = Object.keys(dataSource).sort();
+            values = labels.map(day => dataSource[day] || 0);
+        }
+        
+        return {
+            labels: labels,
+            datasets: [{
+                data: values
+            }]
+        };
+    }
+    
+    // 切换请求图表时间周期
+    switchRequestsPeriod(period) {
+        // 更新按钮状态
+        document.getElementById('requests-hour-btn').classList.toggle('active', period === 'hour');
+        document.getElementById('requests-day-btn').classList.toggle('active', period === 'day');
+        
+        // 更新图表数据
+        if (this.requestsChart) {
+            const newData = this.getRequestsChartData(period);
+            this.requestsChart.data = newData;
+            this.requestsChart.options.scales.x.title.text = i18n.t(period === 'hour' ? 'usage_stats.by_hour' : 'usage_stats.by_day');
+            this.requestsChart.update();
+        }
+    }
+    
+    // 切换Token图表时间周期
+    switchTokensPeriod(period) {
+        // 更新按钮状态
+        document.getElementById('tokens-hour-btn').classList.toggle('active', period === 'hour');
+        document.getElementById('tokens-day-btn').classList.toggle('active', period === 'day');
+        
+        // 更新图表数据
+        if (this.tokensChart) {
+            const newData = this.getTokensChartData(period);
+            this.tokensChart.data = newData;
+            this.tokensChart.options.scales.x.title.text = i18n.t(period === 'hour' ? 'usage_stats.by_hour' : 'usage_stats.by_day');
+            this.tokensChart.update();
+        }
+    }
+    
+    // 更新API详细统计表格
+    updateApiStatsTable(data) {
+        const container = document.getElementById('api-stats-table');
+        if (!container) return;
+        
+        const apis = data.apis || {};
+        
+        if (Object.keys(apis).length === 0) {
+            container.innerHTML = `<div class="no-data-message">${i18n.t('usage_stats.no_data')}</div>`;
+            return;
+        }
+        
+        let tableHtml = `
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>${i18n.t('usage_stats.api_endpoint')}</th>
+                        <th>${i18n.t('usage_stats.requests_count')}</th>
+                        <th>${i18n.t('usage_stats.tokens_count')}</th>
+                        <th>${i18n.t('usage_stats.success_rate')}</th>
+                        <th>${i18n.t('usage_stats.models')}</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        Object.entries(apis).forEach(([endpoint, apiData]) => {
+            const totalRequests = apiData.total_requests || 0;
+            const successCount = apiData.success_count ?? null;
+            const successRate = successCount !== null && totalRequests > 0
+                ? Math.round((successCount / totalRequests) * 100)
+                : null;
+
+            // 构建模型详情
+            let modelsHtml = '';
+            if (apiData.models && Object.keys(apiData.models).length > 0) {
+                modelsHtml = '<div class="model-details">';
+                Object.entries(apiData.models).forEach(([modelName, modelData]) => {
+                    const modelRequests = modelData.total_requests ?? 0;
+                    const modelTokens = modelData.total_tokens ?? 0;
+                    modelsHtml += `
+                        <div class="model-item">
+                            <span class="model-name">${modelName}</span>
+                            <span>${modelRequests} 请求 / ${modelTokens} tokens</span>
+                        </div>
+                    `;
+                });
+                modelsHtml += '</div>';
+            }
+
+            tableHtml += `
+                <tr>
+                    <td>${endpoint}</td>
+                    <td>${totalRequests}</td>
+                    <td>${apiData.total_tokens || 0}</td>
+                    <td>${successRate !== null ? successRate + '%' : '-'}</td>
+                    <td>${modelsHtml || '-'}</td>
+                </tr>
+            `;
+        });
+        
+        tableHtml += '</tbody></table>';
+        container.innerHTML = tableHtml;
     }
 
     showModal() {
