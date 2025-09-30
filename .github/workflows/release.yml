@@ -31,18 +31,18 @@ jobs:
       - name: Prepare release assets
         run: |
           cd dist
-          mv index.html cli-proxy-api-management-center.html
-          ls -lh cli-proxy-api-management-center.html
+          mv index.html management.html
+          ls -lh management.html
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/cli-proxy-api-management-center.html
+          files: dist/management.html
           body: |
             ## CLI Proxy API Management Center - ${{ github.ref_name }}
 
             ### Download and Usage
-            1. Download the `cli-proxy-api-management-center.html` file
+            1. Download the `management.html` file
             2. Open it directly in your browser
             3. All assets (CSS, JavaScript, images) are bundled into this single file
 
