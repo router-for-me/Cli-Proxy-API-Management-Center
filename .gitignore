@@ -1,0 +1,22 @@
+# Node modules
+node_modules/
+
+# Build output
+dist/
+
+# Temporary build files
+index.build.html
+
+# npm lock files
+package-lock.json
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -6,7 +6,9 @@
   "scripts": {
     "start": "npx serve .",
     "dev": "npx serve . --port 3000",
-    "build": "echo '无需构建，直接使用静态文件'",
+    "prebuild": "node build-scripts/prepare-html.js",
+    "build": "webpack --config webpack.config.js",
+    "postbuild": "rm -f index.build.html",
     "lint": "echo '使用浏览器开发者工具检查代码'"
   },
   "keywords": [
@@ -18,7 +20,14 @@
   "author": "CLI Proxy API WebUI",
   "license": "MIT",
   "devDependencies": {
-    "serve": "^14.2.1"
+    "css-loader": "^6.8.1",
+    "html-inline-script-webpack-plugin": "^3.2.1",
+    "html-loader": "^4.2.0",
+    "html-webpack-plugin": "^5.5.4",
+    "serve": "^14.2.1",
+    "style-loader": "^3.3.3",
+    "webpack": "^5.102.0",
+    "webpack-cli": "^5.1.4"
   },
   "engines": {
     "node": ">=14.0.0"
@@ -26,6 +35,5 @@
   "repository": {
     "type": "git",
     "url": "local"
-  },
-  "dependencies": {}
+  }
 }
