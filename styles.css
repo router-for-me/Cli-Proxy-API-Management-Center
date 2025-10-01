@@ -296,155 +296,6 @@
     margin-bottom: 25px;
 }
 
-/* 选项卡导航样式 */
-.connection-tabs {
-    display: flex;
-    margin-bottom: 25px;
-    margin-top: 10px;
-    border-radius: 12px;
-    background: var(--bg-tertiary);
-    padding: 4px;
-    border: 1px solid var(--border-primary);
-}
-
-.tab-button {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px;
-    border: none;
-    background: transparent;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: left;
-    color: var(--text-tertiary);
-}
-
-.tab-button:hover {
-    background: var(--accent-tertiary);
-}
-
-.tab-button.active {
-    background: var(--accent-primary);
-    color: var(--text-inverse);
-    box-shadow: var(--shadow-primary);
-}
-
-.tab-button i {
-    font-size: 20px;
-    min-width: 20px;
-}
-
-.tab-content {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.tab-title {
-    font-weight: 600;
-    font-size: 16px;
-}
-
-.tab-subtitle {
-    font-size: 12px;
-    opacity: 0.8;
-    line-height: 1.3;
-}
-
-/* 代理设置样式 */
-.proxy-settings {
-    margin-bottom: 25px;
-    padding: 16px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    border-radius: 10px;
-}
-
-.proxy-settings label {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--text-secondary);
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.proxy-settings input {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid var(--border-primary);
-    border-radius: 8px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-}
-
-.proxy-settings input:focus {
-    outline: none;
-    border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px var(--border-primary);
-}
-
-/* 连接表单样式 */
-.connection-form {
-    display: none;
-}
-
-.connection-form.active {
-    display: block;
-}
-
-/* 本地URL组合输入框样式 */
-.local-url-group {
-    display: flex;
-    align-items: center;
-    border: 2px solid var(--border-primary);
-    border-radius: 8px;
-    background: var(--bg-secondary);
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-
-.local-url-group:focus-within {
-    border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px var(--border-primary);
-}
-
-.url-prefix {
-    padding: 12px 16px;
-    background: var(--bg-tertiary);
-    color: var(--text-tertiary);
-    font-weight: 500;
-    font-size: 14px;
-    border-right: 1px solid var(--border-primary);
-    white-space: nowrap;
-}
-
-.local-url-group input {
-    flex: 1;
-    padding: 12px 16px;
-    border: none;
-    font-size: 14px;
-    background: transparent;
-    color: var(--text-primary);
-    outline: none;
-    min-width: 80px;
-}
-
-.local-url-group input::-webkit-outer-spin-button,
-.local-url-group input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-.local-url-group input[type="number"] {
-    -moz-appearance: textfield;
-    appearance: textfield;
-}
-
 .login-title {
     display: flex;
     align-items: center;
@@ -475,8 +326,63 @@
     text-align: center;
 }
 
+.login-body {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.login-connection-info {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+[data-theme="dark"] .login-connection-info {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(100, 116, 139, 0.3);
+}
+
+.connection-summary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-secondary);
+}
+
+.connection-summary i {
+    font-size: 24px;
+    color: var(--primary-color);
+}
+
+.connection-url {
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.connection-url-separator {
+    margin: 0 8px;
+    color: var(--text-tertiary);
+}
+
+#login-connection-url {
+    font-family: "Fira Code", "Consolas", "Courier New", monospace;
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+[data-theme="dark"] #login-connection-url {
+    color: var(--text-secondary);
+}
+
 .login-form {
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .login-form .form-group {
@@ -642,41 +548,6 @@
     
     #login-logo {
         height: 50px;
-    }
-    
-    .connection-tabs {
-        flex-direction: column;
-        gap: 4px;
-    }
-    
-    .tab-button {
-        flex-direction: row;
-        gap: 12px;
-        padding: 14px;
-    }
-    
-    .tab-subtitle {
-        display: none;
-    }
-    
-    .proxy-settings {
-        padding: 12px;
-    }
-    
-    .local-url-group {
-        flex-direction: column;
-    }
-    
-    .url-prefix {
-        border-right: none;
-        border-bottom: 1px solid #e2e8f0;
-        border-radius: 8px 8px 0 0;
-        text-align: center;
-    }
-    
-    .local-url-group input {
-        border-radius: 0 0 8px 8px;
-        text-align: center;
     }
     
     .login-form .input-group {
@@ -1845,5 +1716,31 @@ input:checked + .slider:before {
 
 [data-theme="dark"] .version-info {
     color: var(--text-secondary);
+}
+
+.connection-reset-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.connection-reset-btn i {
+    margin: 0;
+}
+
+.connection-reset-btn span {
+    font-size: 13px;
+}
+
+[data-theme="dark"] .connection-reset-btn {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(100, 116, 139, 0.4);
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .connection-reset-btn:hover {
+    background: rgba(51, 65, 85, 0.95);
+    border-color: rgba(100, 116, 139, 0.6);
 }
 

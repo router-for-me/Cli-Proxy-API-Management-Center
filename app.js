@@ -2,7 +2,8 @@
 class CLIProxyManager {
     constructor() {
         // 仅保存基础地址（不含 /v0/management），请求时自动补齐
-        this.apiBase = 'http://localhost:8317';
+        const detectedBase = this.detectApiBaseFromLocation();
+        this.apiBase = detectedBase;
         this.apiUrl = this.computeApiUrl(this.apiBase);
         this.managementKey = '';
         this.isConnected = false;
@@ -107,6 +108,7 @@ class CLIProxyManager {
         this.setupLanguageSwitcher();
         this.setupThemeSwitcher();
         // loadSettings 将在登录成功后调用
+        this.updateLoginConnectionInfo();
     }
 
     // 检查登录状态
@@ -185,6 +187,7 @@ class CLIProxyManager {
         document.getElementById('login-page').style.display = 'flex';
         document.getElementById('main-page').style.display = 'none';
         this.isLoggedIn = false;
+        this.updateLoginConnectionInfo();
     }
 
     // 显示主页面
@@ -236,55 +239,40 @@ class CLIProxyManager {
 
     // 处理登录表单提交
     async handleLogin() {
-        // 获取当前活动的选项卡
-        const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
-        
-        let apiUrl, managementKey;
-        
-        if (activeTab === 'local') {
-            // 本地连接：从端口号构建URL
-            const port = document.getElementById('local-port').value.trim();
-            managementKey = document.getElementById('local-management-key').value.trim();
-            
-            if (!port || !managementKey) {
-                this.showLoginError(i18n.t('login.error_required'));
-                return;
-            }
-            
-            apiUrl = `http://localhost:${port}`;
-        } else {
-            // 远程连接：使用完整URL
-            apiUrl = document.getElementById('remote-api-url').value.trim();
-            managementKey = document.getElementById('remote-management-key').value.trim();
-            
-            if (!apiUrl || !managementKey) {
-                this.showLoginError(i18n.t('login.error_required'));
-                return;
-            }
+        const apiBaseInput = document.getElementById('login-api-base');
+        const managementKeyInput = document.getElementById('login-management-key');
+        const managementKey = managementKeyInput ? managementKeyInput.value.trim() : '';
+
+        if (!managementKey) {
+            this.showLoginError(i18n.t('login.error_required'));
+            return;
         }
-        
-        const proxyUrl = document.getElementById('login-proxy-url').value.trim();
-        
+
+        if (apiBaseInput && apiBaseInput.value.trim()) {
+            this.setApiBase(apiBaseInput.value.trim());
+        }
+
         const submitBtn = document.getElementById('login-submit');
-        const originalText = submitBtn.innerHTML;
-        
+        const originalText = submitBtn ? submitBtn.innerHTML : '';
+
         try {
-            submitBtn.innerHTML = `<div class="loading"></div> ${i18n.t('login.submitting')}`;
-            submitBtn.disabled = true;
-            this.hideLoginError();
-            
-            // 如果设置了代理，先保存代理设置
-            if (proxyUrl) {
-                localStorage.setItem('proxyUrl', proxyUrl);
+            if (submitBtn) {
+                submitBtn.innerHTML = `<div class="loading"></div> ${i18n.t('login.submitting')}`;
+                submitBtn.disabled = true;
             }
-            
-            await this.login(apiUrl, managementKey);
-            
+            this.hideLoginError();
+
+            this.managementKey = managementKey;
+            localStorage.setItem('managementKey', this.managementKey);
+
+            await this.login(this.apiBase, this.managementKey);
         } catch (error) {
             this.showLoginError(`${i18n.t('login.error_title')}: ${error.message}`);
         } finally {
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
+            if (submitBtn) {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
         }
     }
 
@@ -355,67 +343,30 @@ class CLIProxyManager {
     loadLoginSettings() {
         const savedBase = localStorage.getItem('apiBase');
         const savedKey = localStorage.getItem('managementKey');
-        const savedProxy = localStorage.getItem('proxyUrl');
-        
-        // 检查元素是否存在（确保在登录页面）
-        const localPortInput = document.getElementById('local-port');
-        const remoteApiInput = document.getElementById('remote-api-url');
-        const localKeyInput = document.getElementById('local-management-key');
-        const remoteKeyInput = document.getElementById('remote-management-key');
-        const proxyInput = document.getElementById('login-proxy-url');
-        
-        // 设置本地端口和远程API地址
+        const loginKeyInput = document.getElementById('login-management-key');
+        const apiBaseInput = document.getElementById('login-api-base');
+
         if (savedBase) {
-            if (savedBase.includes('localhost')) {
-                // 从本地URL中提取端口号
-                const match = savedBase.match(/localhost:(\d+)/);
-                if (match && localPortInput) {
-                    localPortInput.value = match[1];
-                }
-            } else if (remoteApiInput) {
-                remoteApiInput.value = savedBase;
-            }
+            this.setApiBase(savedBase);
+        } else {
+            this.setApiBase(this.detectApiBaseFromLocation());
         }
-        
-        // 设置密钥
-        if (localKeyInput && savedKey) {
-            localKeyInput.value = savedKey;
+
+        if (apiBaseInput) {
+            apiBaseInput.value = this.apiBase || '';
         }
-        if (remoteKeyInput && savedKey) {
-            remoteKeyInput.value = savedKey;
+
+        if (loginKeyInput && savedKey) {
+            loginKeyInput.value = savedKey;
         }
-        
-        // 设置代理
-        if (proxyInput && savedProxy) {
-            proxyInput.value = savedProxy;
-        }
-        
-        // 设置实时保存监听器
+
         this.setupLoginAutoSave();
     }
 
-    // 设置登录页面自动保存
     setupLoginAutoSave() {
-        const localPortInput = document.getElementById('local-port');
-        const remoteApiInput = document.getElementById('remote-api-url');
-        const localKeyInput = document.getElementById('local-management-key');
-        const remoteKeyInput = document.getElementById('remote-management-key');
-        const proxyInput = document.getElementById('login-proxy-url');
-
-        const saveLocalBase = (port) => {
-            if (port.trim()) {
-                const apiUrl = `http://localhost:${port}`;
-                this.setApiBase(apiUrl);
-            }
-        };
-        const saveLocalBaseDebounced = this.debounce(saveLocalBase, 500);
-
-        const saveRemoteBase = (val) => {
-            if (val.trim()) {
-                this.setApiBase(val);
-            }
-        };
-        const saveRemoteBaseDebounced = this.debounce(saveRemoteBase, 500);
+        const loginKeyInput = document.getElementById('login-management-key');
+        const apiBaseInput = document.getElementById('login-api-base');
+        const resetButton = document.getElementById('login-reset-api-base');
 
         const saveKey = (val) => {
             if (val.trim()) {
@@ -425,41 +376,32 @@ class CLIProxyManager {
         };
         const saveKeyDebounced = this.debounce(saveKey, 500);
 
-        const saveProxy = (val) => {
-            if (val.trim()) {
-                localStorage.setItem('proxyUrl', val);
-            }
-        };
-        const saveProxyDebounced = this.debounce(saveProxy, 500);
-
-        // 绑定本地端口输入框
-        if (localPortInput) {
-            localPortInput.addEventListener('change', (e) => saveLocalBase(e.target.value));
-            localPortInput.addEventListener('input', (e) => saveLocalBaseDebounced(e.target.value));
+        if (loginKeyInput) {
+            loginKeyInput.addEventListener('change', (e) => saveKey(e.target.value));
+            loginKeyInput.addEventListener('input', (e) => saveKeyDebounced(e.target.value));
         }
 
-        // 绑定远程API输入框
-        if (remoteApiInput) {
-            remoteApiInput.addEventListener('change', (e) => saveRemoteBase(e.target.value));
-            remoteApiInput.addEventListener('input', (e) => saveRemoteBaseDebounced(e.target.value));
+        if (apiBaseInput) {
+            const persistBase = (val) => {
+                const normalized = this.normalizeBase(val);
+                if (normalized) {
+                    this.setApiBase(normalized);
+                }
+            };
+            const persistBaseDebounced = this.debounce(persistBase, 500);
+
+            apiBaseInput.addEventListener('change', (e) => persistBase(e.target.value));
+            apiBaseInput.addEventListener('input', (e) => persistBaseDebounced(e.target.value));
         }
 
-        // 绑定本地密钥输入框
-        if (localKeyInput) {
-            localKeyInput.addEventListener('change', (e) => saveKey(e.target.value));
-            localKeyInput.addEventListener('input', (e) => saveKeyDebounced(e.target.value));
-        }
-
-        // 绑定远程密钥输入框
-        if (remoteKeyInput) {
-            remoteKeyInput.addEventListener('change', (e) => saveKey(e.target.value));
-            remoteKeyInput.addEventListener('input', (e) => saveKeyDebounced(e.target.value));
-        }
-
-        // 绑定代理输入框
-        if (proxyInput) {
-            proxyInput.addEventListener('change', (e) => saveProxy(e.target.value));
-            proxyInput.addEventListener('input', (e) => saveProxyDebounced(e.target.value));
+        if (resetButton) {
+            resetButton.addEventListener('click', () => {
+                const detected = this.detectApiBaseFromLocation();
+                this.setApiBase(detected);
+                if (apiBaseInput) {
+                    apiBaseInput.value = detected;
+                }
+            });
         }
     }
 
@@ -476,38 +418,11 @@ class CLIProxyManager {
             logoutBtn.addEventListener('click', () => this.logout());
         }
         
-        // 选项卡切换事件
-        this.setupTabSwitching();
-        
         // 密钥可见性切换事件
         this.setupKeyVisibilityToggle();
         
         // 主页面元素（延迟绑定，在显示主页面时绑定）
         this.bindMainPageEvents();
-    }
-    
-    // 设置选项卡切换
-    setupTabSwitching() {
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const connectionForms = document.querySelectorAll('.connection-form');
-        
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const targetTab = button.getAttribute('data-tab');
-                
-                // 更新选项卡状态
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                
-                // 切换表单
-                connectionForms.forEach(form => {
-                    form.classList.remove('active');
-                    if (form.id === `${targetTab}-form`) {
-                        form.classList.add('active');
-                    }
-                });
-            });
-        });
     }
     
     // 设置密钥可见性切换
@@ -729,6 +644,7 @@ class CLIProxyManager {
         this.apiUrl = this.computeApiUrl(this.apiBase);
         localStorage.setItem('apiBase', this.apiBase);
         localStorage.setItem('apiUrl', this.apiUrl); // 兼容旧字段
+        this.updateLoginConnectionInfo();
     }
 
     // 加载设置（简化版，仅加载内部状态）
@@ -736,22 +652,21 @@ class CLIProxyManager {
         const savedBase = localStorage.getItem('apiBase');
         const savedUrl = localStorage.getItem('apiUrl');
         const savedKey = localStorage.getItem('managementKey');
-        
-        // 只设置内部状态，不操作DOM元素
+
         if (savedBase) {
             this.setApiBase(savedBase);
         } else if (savedUrl) {
             const base = (savedUrl || '').replace(/\/?v0\/management\/?$/i, '');
             this.setApiBase(base);
         } else {
-            this.setApiBase(this.apiBase);
+            this.setApiBase(this.detectApiBaseFromLocation());
         }
-        
+
         if (savedKey) {
             this.managementKey = savedKey;
         }
-        
-    
+
+        this.updateLoginConnectionInfo();
     }
 
     // API 请求方法
@@ -2191,6 +2106,7 @@ class CLIProxyManager {
     showGeminiWebTokenModal() {
         const inlineSecure1psid = document.getElementById('secure-1psid-input');
         const inlineSecure1psidts = document.getElementById('secure-1psidts-input');
+        const inlineLabel = document.getElementById('gemini-web-label-input');
         const modalBody = document.getElementById('modal-body');
         modalBody.innerHTML = `
             <h3>${i18n.t('auth_login.gemini_web_button')}</h3>
@@ -2205,6 +2121,11 @@ class CLIProxyManager {
                     <input type="text" id="modal-secure-1psidts" placeholder="${i18n.t('auth_login.secure_1psidts_placeholder')}" required>
                     <div class="form-hint">从浏览器开发者工具 → Application → Cookies 中获取</div>
                 </div>
+                <div class="form-group">
+                    <label for="modal-gemini-web-label">${i18n.t('auth_login.gemini_web_label_label')}</label>
+                    <input type="text" id="modal-gemini-web-label" placeholder="${i18n.t('auth_login.gemini_web_label_placeholder')}">
+                    <div class="form-hint">为此认证文件设置一个标签名称（可选）</div>
+                </div>
                 <div class="modal-actions">
                     <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                     <button class="btn btn-primary" onclick="manager.saveGeminiWebToken()">${i18n.t('common.save')}</button>
@@ -2215,12 +2136,16 @@ class CLIProxyManager {
 
         const modalSecure1psid = document.getElementById('modal-secure-1psid');
         const modalSecure1psidts = document.getElementById('modal-secure-1psidts');
+        const modalLabel = document.getElementById('modal-gemini-web-label');
 
         if (modalSecure1psid && inlineSecure1psid) {
             modalSecure1psid.value = inlineSecure1psid.value.trim();
         }
         if (modalSecure1psidts && inlineSecure1psidts) {
             modalSecure1psidts.value = inlineSecure1psidts.value.trim();
+        }
+        if (modalLabel && inlineLabel) {
+            modalLabel.value = inlineLabel.value.trim();
         }
 
         if (modalSecure1psid) {
@@ -2232,6 +2157,7 @@ class CLIProxyManager {
     async saveGeminiWebToken() {
         const secure1psid = document.getElementById('modal-secure-1psid').value.trim();
         const secure1psidts = document.getElementById('modal-secure-1psidts').value.trim();
+        const label = document.getElementById('modal-gemini-web-label').value.trim();
         
         if (!secure1psid || !secure1psidts) {
             this.showNotification('请填写完整的 Cookie 信息', 'error');
@@ -2239,26 +2165,37 @@ class CLIProxyManager {
         }
         
         try {
+            const requestBody = {
+                secure_1psid: secure1psid,
+                secure_1psidts: secure1psidts
+            };
+            
+            // 如果提供了 label，则添加到请求体中
+            if (label) {
+                requestBody.label = label;
+            }
+            
             const response = await this.makeRequest('/gemini-web-token', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    secure_1psid: secure1psid,
-                    secure_1psidts: secure1psidts
-                })
+                body: JSON.stringify(requestBody)
             });
             
             this.closeModal();
             this.loadAuthFiles(); // 刷新认证文件列表
             const inlineSecure1psid = document.getElementById('secure-1psid-input');
             const inlineSecure1psidts = document.getElementById('secure-1psidts-input');
+            const inlineLabel = document.getElementById('gemini-web-label-input');
             if (inlineSecure1psid) {
                 inlineSecure1psid.value = secure1psid;
             }
             if (inlineSecure1psidts) {
                 inlineSecure1psidts.value = secure1psidts;
+            }
+            if (inlineLabel) {
+                inlineLabel.value = label;
             }
             this.showNotification(`${i18n.t('auth_login.gemini_web_saved')}: ${response.file}`, 'success');
         } catch (error) {
@@ -2614,6 +2551,28 @@ class CLIProxyManager {
     closeModal() {
         document.getElementById('modal').style.display = 'none';
     }
+
+    detectApiBaseFromLocation() {
+        try {
+            const { protocol, hostname, port } = window.location;
+            const normalizedPort = port ? `:${port}` : '';
+            return this.normalizeBase(`${protocol}//${hostname}${normalizedPort}`);
+        } catch (error) {
+            console.warn('无法从当前地址检测 API 基础地址，使用默认设置', error);
+            return this.normalizeBase(this.apiBase || 'http://localhost:8317');
+        }
+    }
+
+    updateLoginConnectionInfo() {
+        const connectionUrlElement = document.getElementById('login-connection-url');
+        const customInput = document.getElementById('login-api-base');
+        if (connectionUrlElement) {
+            connectionUrlElement.textContent = this.apiBase || '-';
+        }
+        if (customInput && customInput !== document.activeElement) {
+            customInput.value = this.apiBase || '';
+        }
+    }
 }
 
 // 全局管理器实例
@@ -2625,6 +2584,19 @@ function setupSiteLogo() {
     const loginImg = document.getElementById('login-logo');
     if (!img && !loginImg) return;
     
+    const inlineLogo = typeof window !== 'undefined' ? window.__INLINE_LOGO__ : null;
+    if (inlineLogo) {
+        if (img) {
+            img.src = inlineLogo;
+            img.style.display = 'inline-block';
+        }
+        if (loginImg) {
+            loginImg.src = inlineLogo;
+            loginImg.style.display = 'inline-block';
+        }
+        return;
+    }
+
     const candidates = [
         '../logo.svg', '../logo.png', '../logo.jpg', '../logo.jpeg', '../logo.webp', '../logo.gif',
         'logo.svg', 'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'logo.gif',

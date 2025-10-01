@@ -49,67 +49,39 @@
                 </div>
             </div>
             
-            <!-- 选项卡导航 -->
-            <div class="connection-tabs">
-                <button class="tab-button active" data-tab="local">
-                    <i class="fas fa-home"></i>
-                    <div class="tab-content">
-                        <span class="tab-title" data-i18n="login.tab_local_title">Local</span>
-                        <span class="tab-subtitle" data-i18n="login.tab_local_subtitle">Run CLI Web server on your local machine</span>
+            <div class="login-body">
+                <div class="login-connection-info">
+                    <div class="connection-summary">
+                        <i class="fas fa-link"></i>
+                        <div>
+                            <h3 data-i18n="login.connection_title">连接地址</h3>
+                            <p class="connection-url">
+                                <span data-i18n="login.connection_current">当前地址</span>
+                                <span class="connection-url-separator">:</span>
+                                <span id="login-connection-url">-</span>
+                            </p>
+                        </div>
                     </div>
-                </button>
-                <button class="tab-button" data-tab="remote">
-                    <i class="fas fa-cloud"></i>
-                    <div class="tab-content">
-                        <span class="tab-title" data-i18n="login.tab_remote_title">Remote</span>
-                        <span class="tab-subtitle" data-i18n="login.tab_remote_subtitle">Remote connection for a remote CLI Web server</span>
-                    </div>
-                </button>
-            </div>
-            
-            <!-- 代理服务器设置（可选） -->
-            <div class="proxy-settings">
-                <label data-i18n="login.proxy_label">Proxy Server (Optional):</label>
-                <input type="text" id="login-proxy-url" data-i18n="login.proxy_placeholder" placeholder="http://ip:port or https://ip:port or socks5://user:pass@ip:port">
-            </div>
-            
-            <!-- 本地连接表单 -->
-            <div id="local-form" class="connection-form active">
+                    <p class="form-hint" data-i18n="login.connection_auto_hint">系统将自动使用当前访问地址进行连接</p>
+                </div>
+
                 <form class="login-form">
                     <div class="form-group">
-                        <label for="local-port" data-i18n="login.local_port_label">端口号:</label>
-                        <div class="local-url-group">
-                            <span class="url-prefix">http://localhost:</span>
-                            <input type="number" id="local-port" value="8317" min="1" max="65535" data-i18n="login.local_port_placeholder" placeholder="8317" required>
-                        </div>
-                        <div class="form-hint" data-i18n="login.local_url_hint">将连接到 http://localhost:端口/v0/management</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="local-management-key" data-i18n="login.management_key_label">管理密钥:</label>
+                        <label for="login-api-base" data-i18n="login.custom_connection_label">自定义连接地址:</label>
                         <div class="input-group">
-                            <input type="password" id="local-management-key" data-i18n="login.management_key_placeholder" placeholder="请输入管理密钥" required>
-                            <button type="button" class="btn btn-secondary toggle-key-visibility">
-                                <i class="fas fa-eye"></i>
+                            <input type="text" id="login-api-base" data-i18n="login.custom_connection_placeholder" placeholder="例如: https://example.com:8317">
+                            <button type="button" id="login-reset-api-base" class="btn btn-secondary connection-reset-btn">
+                                <i class="fas fa-location-arrow"></i>
+                                <span data-i18n="login.use_current_address">使用当前地址</span>
                             </button>
                         </div>
+                        <p class="form-hint" data-i18n="login.custom_connection_hint">默认使用当前访问地址，若需要可手动输入其他地址。</p>
                     </div>
-                </form>
-            </div>
-            
-            <!-- 远程连接表单 -->
-            <div id="remote-form" class="connection-form">
-                <form class="login-form">
+
                     <div class="form-group">
-                        <label for="remote-api-url" data-i18n="login.api_url_label">API 基础地址:</label>
-                        <input type="text" id="remote-api-url" data-i18n="login.remote_api_url_placeholder" placeholder="例如: https://example.com:8317" required>
-                        <div class="form-hint" data-i18n="login.api_url_hint">将自动补全 /v0/management</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="remote-management-key" data-i18n="login.management_key_label">管理密钥:</label>
+                        <label for="login-management-key" data-i18n="login.management_key_label">管理密钥:</label>
                         <div class="input-group">
-                            <input type="password" id="remote-management-key" data-i18n="login.management_key_placeholder" placeholder="请输入管理密钥" required>
+                            <input type="password" id="login-management-key" data-i18n="login.management_key_placeholder" placeholder="请输入管理密钥" required>
                             <button type="button" class="btn btn-secondary toggle-key-visibility">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -383,8 +355,20 @@
                             <div id="openai-providers-list" class="provider-list"></div>
                         </div>
                     </div>
+                </section>
 
-
+                <!-- 认证文件管理 -->
+                <section id="auth-files" class="content-section">
+                    <h2 data-i18n="auth_files.title">认证文件管理</h2>
+                    
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div class="card-content">
+                            <p class="form-hint" data-i18n="auth_files.description">
+                                这里管理 Qwen 和 Gemini 的认证配置文件。上传 JSON 格式的认证文件以启用相应的 AI 服务。
+                            </p>
+                        </div>
+                    </div>
+                    
                     <!-- Gemini Web Token -->
                     <div class="card">
                         <div class="card-header">
@@ -405,19 +389,10 @@
                                 <label for="secure-1psidts-input" data-i18n="auth_login.secure_1psidts_label">__Secure-1PSIDTS Cookie:</label>
                                 <input type="text" id="secure-1psidts-input" data-i18n="auth_login.secure_1psidts_placeholder" placeholder="输入 __Secure-1PSIDTS cookie 值">
                             </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 认证文件管理 -->
-                <section id="auth-files" class="content-section">
-                    <h2 data-i18n="auth_files.title">认证文件管理</h2>
-                    
-                    <div class="card" style="margin-bottom: 20px;">
-                        <div class="card-content">
-                            <p class="form-hint" data-i18n="auth_files.description">
-                                这里管理 Qwen 和 Gemini 的认证配置文件。上传 JSON 格式的认证文件以启用相应的 AI 服务。
-                            </p>
+                            <div class="form-group">
+                                <label for="gemini-web-label-input" data-i18n="auth_login.gemini_web_label_label">Label (Optional):</label>
+                                <input type="text" id="gemini-web-label-input" data-i18n="auth_login.gemini_web_label_placeholder" placeholder="输入标签名称 (可选)">
+                            </div>
                         </div>
                     </div>
                     
@@ -579,7 +554,7 @@
         <!-- 版本信息 -->
         <footer class="version-footer">
             <div class="version-info">
-                <span data-i18n="footer.version">版本</span>: v0.0.3
+                <span data-i18n="footer.version">版本</span>: v0.0.5
                 <span class="separator">•</span>
                 <span data-i18n="footer.author">作者</span>: Supra4E8C
             </div>
