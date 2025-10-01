@@ -11,6 +11,7 @@ https://remote.router-for.me/
 
 Minimum required version: ≥ 6.0.0
 Recommended version: ≥ 6.0.19
+
 Starting from version 6.0.19, the WebUI has been integrated into the main program and is accessible via `/management.html`.
 
 ## Features
