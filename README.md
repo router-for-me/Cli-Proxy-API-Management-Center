@@ -9,8 +9,9 @@ https://github.com/router-for-me/CLIProxyAPI
 Example URL:
 https://remote.router-for.me/
 
-Minimum required version: ≥ 5.0.0
-Recommended version: ≥ 5.2.6
+Minimum required version: ≥ 6.0.0
+Recommended version: ≥ 6.0.19
+Starting from version 6.0.19, the WebUI has been integrated into the main program and is accessible via `/management.html`.
 
 ## Features
 
