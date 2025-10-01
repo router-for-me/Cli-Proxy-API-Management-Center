@@ -8,6 +8,7 @@ https://remote.router-for.me/
 
 最低可用版本 ≥ 5.0.0
 推荐版本 ≥ 5.2.6
+自6.0.19起WebUI已经集成在主程序中 可以通过/management.html访问
 
 ## 功能特点
 
