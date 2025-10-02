@@ -1150,6 +1150,17 @@ class CLIProxyManager {
         return key.substring(0, 4) + '...' + key.substring(key.length - 4);
     }
 
+    // HTML 转义，防止 XSS
+    escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     // 显示添加API密钥模态框
     showAddApiKeyModal() {
         const modal = document.getElementById('modal');
@@ -1439,7 +1450,8 @@ class CLIProxyManager {
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.codex_item_title')} #${index + 1}</div>
                     <div class="item-subtitle">${i18n.t('common.api_key')}: ${this.maskApiKey(config['api-key'])}</div>
-                    ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${config['base-url']}</div>` : ''}
+                    ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
+                    ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary" onclick="manager.editCodexKey(${index}, ${JSON.stringify(config).replace(/"/g, '&quot;')})">
@@ -1459,18 +1471,22 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
         
         modalBody.innerHTML = `
-            <h3>添加Codex API配置</h3>
+            <h3>${i18n.t('ai_providers.codex_add_modal_title')}</h3>
             <div class="form-group">
-                <label for="new-codex-key">API密钥:</label>
-                <input type="text" id="new-codex-key" placeholder="请输入Codex API密钥">
+                <label for="new-codex-key">${i18n.t('ai_providers.codex_add_modal_key_label')}</label>
+                <input type="text" id="new-codex-key" placeholder="${i18n.t('ai_providers.codex_add_modal_key_placeholder')}">
             </div>
             <div class="form-group">
-                <label for="new-codex-url">Base URL (可选):</label>
-                <input type="text" id="new-codex-url" placeholder="例如: https://api.example.com">
+                <label for="new-codex-url">${i18n.t('ai_providers.codex_add_modal_url_label')}</label>
+                <input type="text" id="new-codex-url" placeholder="${i18n.t('ai_providers.codex_add_modal_url_placeholder')}">
+            </div>
+            <div class="form-group">
+                <label for="new-codex-proxy">${i18n.t('ai_providers.codex_add_modal_proxy_label')}</label>
+                <input type="text" id="new-codex-proxy" placeholder="${i18n.t('ai_providers.codex_add_modal_proxy_placeholder')}">
             </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.addCodexKey()">添加</button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.addCodexKey()">${i18n.t('common.add')}</button>
             </div>
         `;
         
@@ -1481,9 +1497,10 @@ class CLIProxyManager {
     async addCodexKey() {
         const apiKey = document.getElementById('new-codex-key').value.trim();
         const baseUrl = document.getElementById('new-codex-url').value.trim();
+        const proxyUrl = document.getElementById('new-codex-proxy').value.trim();
         
         if (!apiKey) {
-            this.showNotification('请输入API密钥', 'error');
+            this.showNotification(i18n.t('notification.field_required'), 'error');
             return;
         }
         
@@ -1494,6 +1511,9 @@ class CLIProxyManager {
             const newConfig = { 'api-key': apiKey };
             if (baseUrl) {
                 newConfig['base-url'] = baseUrl;
+            }
+            if (proxyUrl) {
+                newConfig['proxy-url'] = proxyUrl;
             }
             
             currentKeys.push(newConfig);
@@ -1518,18 +1538,22 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
         
         modalBody.innerHTML = `
-            <h3>编辑Codex API配置</h3>
+            <h3>${i18n.t('ai_providers.codex_edit_modal_title')}</h3>
             <div class="form-group">
-                <label for="edit-codex-key">API密钥:</label>
+                <label for="edit-codex-key">${i18n.t('ai_providers.codex_edit_modal_key_label')}</label>
                 <input type="text" id="edit-codex-key" value="${config['api-key']}">
             </div>
             <div class="form-group">
-                <label for="edit-codex-url">Base URL (可选):</label>
+                <label for="edit-codex-url">${i18n.t('ai_providers.codex_edit_modal_url_label')}</label>
                 <input type="text" id="edit-codex-url" value="${config['base-url'] || ''}">
             </div>
+            <div class="form-group">
+                <label for="edit-codex-proxy">${i18n.t('ai_providers.codex_edit_modal_proxy_label')}</label>
+                <input type="text" id="edit-codex-proxy" value="${config['proxy-url'] || ''}">
+            </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.updateCodexKey(${index})">更新</button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.updateCodexKey(${index})">${i18n.t('common.update')}</button>
             </div>
         `;
         
@@ -1540,9 +1564,10 @@ class CLIProxyManager {
     async updateCodexKey(index) {
         const apiKey = document.getElementById('edit-codex-key').value.trim();
         const baseUrl = document.getElementById('edit-codex-url').value.trim();
+        const proxyUrl = document.getElementById('edit-codex-proxy').value.trim();
         
         if (!apiKey) {
-            this.showNotification('请输入API密钥', 'error');
+            this.showNotification(i18n.t('notification.field_required'), 'error');
             return;
         }
         
@@ -1550,6 +1575,9 @@ class CLIProxyManager {
             const newConfig = { 'api-key': apiKey };
             if (baseUrl) {
                 newConfig['base-url'] = baseUrl;
+            }
+            if (proxyUrl) {
+                newConfig['proxy-url'] = proxyUrl;
             }
             
             await this.makeRequest('/codex-api-key', {
@@ -1612,7 +1640,8 @@ class CLIProxyManager {
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.claude_item_title')} #${index + 1}</div>
                     <div class="item-subtitle">${i18n.t('common.api_key')}: ${this.maskApiKey(config['api-key'])}</div>
-                    ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${config['base-url']}</div>` : ''}
+                    ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
+                    ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary" onclick="manager.editClaudeKey(${index}, ${JSON.stringify(config).replace(/"/g, '&quot;')})">
@@ -1632,18 +1661,22 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
         
         modalBody.innerHTML = `
-            <h3>添加Claude API配置</h3>
+            <h3>${i18n.t('ai_providers.claude_add_modal_title')}</h3>
             <div class="form-group">
-                <label for="new-claude-key">API密钥:</label>
-                <input type="text" id="new-claude-key" placeholder="请输入Claude API密钥">
+                <label for="new-claude-key">${i18n.t('ai_providers.claude_add_modal_key_label')}</label>
+                <input type="text" id="new-claude-key" placeholder="${i18n.t('ai_providers.claude_add_modal_key_placeholder')}">
             </div>
             <div class="form-group">
-                <label for="new-claude-url">Base URL (可选):</label>
-                <input type="text" id="new-claude-url" placeholder="例如: https://api.anthropic.com">
+                <label for="new-claude-url">${i18n.t('ai_providers.claude_add_modal_url_label')}</label>
+                <input type="text" id="new-claude-url" placeholder="${i18n.t('ai_providers.claude_add_modal_url_placeholder')}">
+            </div>
+            <div class="form-group">
+                <label for="new-claude-proxy">${i18n.t('ai_providers.claude_add_modal_proxy_label')}</label>
+                <input type="text" id="new-claude-proxy" placeholder="${i18n.t('ai_providers.claude_add_modal_proxy_placeholder')}">
             </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.addClaudeKey()">添加</button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.addClaudeKey()">${i18n.t('common.add')}</button>
             </div>
         `;
         
@@ -1654,9 +1687,10 @@ class CLIProxyManager {
     async addClaudeKey() {
         const apiKey = document.getElementById('new-claude-key').value.trim();
         const baseUrl = document.getElementById('new-claude-url').value.trim();
+        const proxyUrl = document.getElementById('new-claude-proxy').value.trim();
         
         if (!apiKey) {
-            this.showNotification('请输入API密钥', 'error');
+            this.showNotification(i18n.t('notification.field_required'), 'error');
             return;
         }
         
@@ -1667,6 +1701,9 @@ class CLIProxyManager {
             const newConfig = { 'api-key': apiKey };
             if (baseUrl) {
                 newConfig['base-url'] = baseUrl;
+            }
+            if (proxyUrl) {
+                newConfig['proxy-url'] = proxyUrl;
             }
             
             currentKeys.push(newConfig);
@@ -1691,18 +1728,22 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
         
         modalBody.innerHTML = `
-            <h3>编辑Claude API配置</h3>
+            <h3>${i18n.t('ai_providers.claude_edit_modal_title')}</h3>
             <div class="form-group">
-                <label for="edit-claude-key">API密钥:</label>
+                <label for="edit-claude-key">${i18n.t('ai_providers.claude_edit_modal_key_label')}</label>
                 <input type="text" id="edit-claude-key" value="${config['api-key']}">
             </div>
             <div class="form-group">
-                <label for="edit-claude-url">Base URL (可选):</label>
+                <label for="edit-claude-url">${i18n.t('ai_providers.claude_edit_modal_url_label')}</label>
                 <input type="text" id="edit-claude-url" value="${config['base-url'] || ''}">
             </div>
+            <div class="form-group">
+                <label for="edit-claude-proxy">${i18n.t('ai_providers.claude_edit_modal_proxy_label')}</label>
+                <input type="text" id="edit-claude-proxy" value="${config['proxy-url'] || ''}">
+            </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.updateClaudeKey(${index})">更新</button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.updateClaudeKey(${index})">${i18n.t('common.update')}</button>
             </div>
         `;
         
@@ -1713,9 +1754,10 @@ class CLIProxyManager {
     async updateClaudeKey(index) {
         const apiKey = document.getElementById('edit-claude-key').value.trim();
         const baseUrl = document.getElementById('edit-claude-url').value.trim();
+        const proxyUrl = document.getElementById('edit-claude-proxy').value.trim();
         
         if (!apiKey) {
-            this.showNotification('请输入API密钥', 'error');
+            this.showNotification(i18n.t('notification.field_required'), 'error');
             return;
         }
         
@@ -1723,6 +1765,9 @@ class CLIProxyManager {
             const newConfig = { 'api-key': apiKey };
             if (baseUrl) {
                 newConfig['base-url'] = baseUrl;
+            }
+            if (proxyUrl) {
+                newConfig['proxy-url'] = proxyUrl;
             }
             
             await this.makeRequest('/claude-api-key', {
@@ -1783,10 +1828,11 @@ class CLIProxyManager {
         container.innerHTML = providers.map((provider, index) => `
             <div class="provider-item">
                 <div class="item-content">
-                    <div class="item-title">${provider.name}</div>
-                    <div class="item-subtitle">${i18n.t('common.base_url')}: ${provider['base-url']}</div>
-                    <div class="item-subtitle">${i18n.t('ai_providers.openai_keys_count')}: ${(provider['api-keys'] || []).length}</div>
+                    <div class="item-title">${this.escapeHtml(provider.name)}</div>
+                    <div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(provider['base-url'])}</div>
+                    <div class="item-subtitle">${i18n.t('ai_providers.openai_keys_count')}: ${(provider['api-key-entries'] || []).length}</div>
                     <div class="item-subtitle">${i18n.t('ai_providers.openai_models_count')}: ${(provider.models || []).length}</div>
+                    ${this.renderOpenAIModelBadges(provider.models || [])}
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary" onclick="manager.editOpenAIProvider(${index}, ${JSON.stringify(provider).replace(/"/g, '&quot;')})">
@@ -1806,26 +1852,37 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
         
         modalBody.innerHTML = `
-            <h3>添加OpenAI兼容提供商</h3>
+            <h3>${i18n.t('ai_providers.openai_add_modal_title')}</h3>
             <div class="form-group">
-                <label for="new-provider-name">提供商名称:</label>
-                <input type="text" id="new-provider-name" placeholder="例如: openrouter">
+                <label for="new-provider-name">${i18n.t('ai_providers.openai_add_modal_name_label')}</label>
+                <input type="text" id="new-provider-name" placeholder="${i18n.t('ai_providers.openai_add_modal_name_placeholder')}">
             </div>
             <div class="form-group">
-                <label for="new-provider-url">Base URL:</label>
-                <input type="text" id="new-provider-url" placeholder="例如: https://openrouter.ai/api/v1">
+                <label for="new-provider-url">${i18n.t('ai_providers.openai_add_modal_url_label')}</label>
+                <input type="text" id="new-provider-url" placeholder="${i18n.t('ai_providers.openai_add_modal_url_placeholder')}">
             </div>
             <div class="form-group">
-                <label for="new-provider-keys">API密钥 (每行一个):</label>
-                <textarea id="new-provider-keys" rows="3" placeholder="sk-key1&#10;sk-key2"></textarea>
+                <label for="new-provider-keys">${i18n.t('ai_providers.openai_add_modal_keys_label')}</label>
+                <textarea id="new-provider-keys" rows="3" placeholder="${i18n.t('ai_providers.openai_add_modal_keys_placeholder')}"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="new-provider-proxies">${i18n.t('ai_providers.openai_add_modal_keys_proxy_label')}</label>
+                <textarea id="new-provider-proxies" rows="3" placeholder="${i18n.t('ai_providers.openai_add_modal_keys_proxy_placeholder')}"></textarea>
+            </div>
+            <div class="form-group">
+                <label>${i18n.t('ai_providers.openai_add_modal_models_label')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.openai_models_hint')}</p>
+                <div id="new-provider-models-wrapper" class="model-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addModelField('new-provider-models-wrapper')">${i18n.t('ai_providers.openai_models_add_btn')}</button>
             </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.addOpenAIProvider()">添加</button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.addOpenAIProvider()">${i18n.t('common.add')}</button>
             </div>
         `;
         
         modal.style.display = 'block';
+        this.populateModelFields('new-provider-models-wrapper', []);
     }
 
     // 添加OpenAI提供商
@@ -1833,9 +1890,10 @@ class CLIProxyManager {
         const name = document.getElementById('new-provider-name').value.trim();
         const baseUrl = document.getElementById('new-provider-url').value.trim();
         const keysText = document.getElementById('new-provider-keys').value.trim();
+        const proxiesText = document.getElementById('new-provider-proxies').value.trim();
+        const models = this.collectModelInputs('new-provider-models-wrapper');
         
-        if (!name || !baseUrl) {
-            this.showNotification('请填写提供商名称和Base URL', 'error');
+        if (!this.validateOpenAIProviderInput(name, baseUrl, models)) {
             return;
         }
         
@@ -1844,12 +1902,17 @@ class CLIProxyManager {
             const currentProviders = data['openai-compatibility'] || [];
             
             const apiKeys = keysText ? keysText.split('\n').map(k => k.trim()).filter(k => k) : [];
+            const proxies = proxiesText ? proxiesText.split('\n').map(p => p.trim()).filter(p => p) : [];
+            const apiKeyEntries = apiKeys.map((key, idx) => ({
+                'api-key': key,
+                'proxy-url': proxies[idx] || ''
+            }));
             
             const newProvider = {
                 name,
                 'base-url': baseUrl,
-                'api-keys': apiKeys,
-                models: []
+                'api-key-entries': apiKeyEntries,
+                models
             };
             
             currentProviders.push(newProvider);
@@ -1873,29 +1936,42 @@ class CLIProxyManager {
         const modal = document.getElementById('modal');
         const modalBody = document.getElementById('modal-body');
         
-        const apiKeysText = (provider['api-keys'] || []).join('\n');
+        const apiKeyEntries = provider['api-key-entries'] || [];
+        const apiKeysText = apiKeyEntries.map(entry => entry['api-key'] || '').join('\n');
+        const proxiesText = apiKeyEntries.map(entry => entry['proxy-url'] || '').join('\n');
         
         modalBody.innerHTML = `
-            <h3>编辑OpenAI兼容提供商</h3>
+            <h3>${i18n.t('ai_providers.openai_edit_modal_title')}</h3>
             <div class="form-group">
-                <label for="edit-provider-name">提供商名称:</label>
+                <label for="edit-provider-name">${i18n.t('ai_providers.openai_edit_modal_name_label')}</label>
                 <input type="text" id="edit-provider-name" value="${provider.name}">
             </div>
             <div class="form-group">
-                <label for="edit-provider-url">Base URL:</label>
+                <label for="edit-provider-url">${i18n.t('ai_providers.openai_edit_modal_url_label')}</label>
                 <input type="text" id="edit-provider-url" value="${provider['base-url']}">
             </div>
             <div class="form-group">
-                <label for="edit-provider-keys">API密钥 (每行一个):</label>
+                <label for="edit-provider-keys">${i18n.t('ai_providers.openai_edit_modal_keys_label')}</label>
                 <textarea id="edit-provider-keys" rows="3">${apiKeysText}</textarea>
             </div>
+            <div class="form-group">
+                <label for="edit-provider-proxies">${i18n.t('ai_providers.openai_edit_modal_keys_proxy_label')}</label>
+                <textarea id="edit-provider-proxies" rows="3">${proxiesText}</textarea>
+            </div>
+            <div class="form-group">
+                <label>${i18n.t('ai_providers.openai_edit_modal_models_label')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.openai_models_hint')}</p>
+                <div id="edit-provider-models-wrapper" class="model-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addModelField('edit-provider-models-wrapper')">${i18n.t('ai_providers.openai_models_add_btn')}</button>
+            </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.updateOpenAIProvider(${index})">更新</button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.updateOpenAIProvider(${index})">${i18n.t('common.update')}</button>
             </div>
         `;
         
         modal.style.display = 'block';
+        this.populateModelFields('edit-provider-models-wrapper', provider.models || []);
     }
 
     // 更新OpenAI提供商
@@ -1903,20 +1979,26 @@ class CLIProxyManager {
         const name = document.getElementById('edit-provider-name').value.trim();
         const baseUrl = document.getElementById('edit-provider-url').value.trim();
         const keysText = document.getElementById('edit-provider-keys').value.trim();
+        const proxiesText = document.getElementById('edit-provider-proxies').value.trim();
+        const models = this.collectModelInputs('edit-provider-models-wrapper');
         
-        if (!name || !baseUrl) {
-            this.showNotification('请填写提供商名称和Base URL', 'error');
+        if (!this.validateOpenAIProviderInput(name, baseUrl, models)) {
             return;
         }
         
         try {
             const apiKeys = keysText ? keysText.split('\n').map(k => k.trim()).filter(k => k) : [];
+            const proxies = proxiesText ? proxiesText.split('\n').map(p => p.trim()).filter(p => p) : [];
+            const apiKeyEntries = apiKeys.map((key, idx) => ({
+                'api-key': key,
+                'proxy-url': proxies[idx] || ''
+            }));
             
             const updatedProvider = {
                 name,
                 'base-url': baseUrl,
-                'api-keys': apiKeys,
-                models: []
+                'api-key-entries': apiKeyEntries,
+                models
             };
             
             await this.makeRequest('/openai-compatibility', {
@@ -2572,6 +2654,100 @@ class CLIProxyManager {
         if (customInput && customInput !== document.activeElement) {
             customInput.value = this.apiBase || '';
         }
+    }
+
+    addModelField(wrapperId, model = {}) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+
+        const row = document.createElement('div');
+        row.className = 'model-input-row';
+        row.innerHTML = `
+            <div class="input-group">
+                <input type="text" class="model-name-input" placeholder="${i18n.t('ai_providers.openai_model_name_placeholder')}" value="${model.name ? this.escapeHtml(model.name) : ''}">
+                <input type="text" class="model-alias-input" placeholder="${i18n.t('ai_providers.openai_model_alias_placeholder')}" value="${model.alias ? this.escapeHtml(model.alias) : ''}">
+                <button type="button" class="btn btn-small btn-danger model-remove-btn"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+
+        const removeBtn = row.querySelector('.model-remove-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                wrapper.removeChild(row);
+            });
+        }
+
+        wrapper.appendChild(row);
+    }
+
+    populateModelFields(wrapperId, models = []) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+        wrapper.innerHTML = '';
+
+        if (!models.length) {
+            this.addModelField(wrapperId);
+            return;
+        }
+
+        models.forEach(model => this.addModelField(wrapperId, model));
+    }
+
+    collectModelInputs(wrapperId) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return [];
+
+        const rows = Array.from(wrapper.querySelectorAll('.model-input-row'));
+        const models = [];
+
+        rows.forEach(row => {
+            const nameInput = row.querySelector('.model-name-input');
+            const aliasInput = row.querySelector('.model-alias-input');
+            const name = nameInput ? nameInput.value.trim() : '';
+            const alias = aliasInput ? aliasInput.value.trim() : '';
+
+            if (name) {
+                const model = { name };
+                if (alias) {
+                    model.alias = alias;
+                }
+                models.push(model);
+            }
+        });
+
+        return models;
+    }
+
+    renderOpenAIModelBadges(models) {
+        if (!models || models.length === 0) {
+            return '';
+        }
+
+        return `
+            <div class="provider-models">
+                ${models.map(model => `
+                    <span class="provider-model-tag">
+                        <span class="model-name">${this.escapeHtml(model.name || '')}</span>
+                        ${model.alias ? `<span class="model-alias">${this.escapeHtml(model.alias)}</span>` : ''}
+                    </span>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    validateOpenAIProviderInput(name, baseUrl, models) {
+        if (!name || !baseUrl) {
+            this.showNotification(i18n.t('notification.openai_provider_required'), 'error');
+            return false;
+        }
+
+        const invalidModel = models.find(model => !model.name);
+        if (invalidModel) {
+            this.showNotification(i18n.t('notification.openai_model_name_required'), 'error');
+            return false;
+        }
+
+        return true;
     }
 }
 

@@ -926,20 +926,20 @@ body {
 
 /* 表单元素 */
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     color: var(--text-secondary);
     font-weight: 500;
 }
 
 .form-hint {
-    margin-top: 6px;
+    font-size: 0.85rem;
     color: var(--text-tertiary);
-    font-size: 12px;
+    margin: 4px 0 8px;
 }
 
 .input-group {
@@ -1080,6 +1080,35 @@ input:checked + .slider:before {
     font-size: 0.9rem;
 }
 
+.provider-item .provider-models {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.provider-model-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-quinary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 14px;
+    padding: 4px 10px;
+    margin-right: 6px;
+    margin-top: 6px;
+    font-size: 0.85rem;
+}
+
+.provider-model-tag .model-name {
+    font-weight: 600;
+}
+
+.provider-model-tag .model-alias {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
 .item-value {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     background: var(--bg-tertiary);
@@ -1136,7 +1165,7 @@ input:checked + .slider:before {
 
 .modal-content {
     background-color: var(--bg-secondary);
-    margin: 8% auto;
+    margin: 4% auto;
     padding: 0;
     border-radius: 15px;
     width: 90%;
@@ -1149,7 +1178,7 @@ input:checked + .slider:before {
 @keyframes modalSlideIn {
     from {
         opacity: 0;
-        transform: translateY(-50px);
+        transform: translateY(-30px);
     }
     to {
         opacity: 1;
@@ -1182,28 +1211,28 @@ input:checked + .slider:before {
 }
 
 #modal-body {
-    padding: 50px 35px 35px 35px;
+    padding: 35px 30px 30px 30px;
 }
 
 /* 模态框标题样式 */
 #modal-body h3 {
     color: var(--text-secondary);
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    margin: 0 0 25px 0;
+    margin: 0 0 20px 0;
     text-align: center;
     border-bottom: 2px solid var(--border-primary);
-    padding-bottom: 15px;
+    padding-bottom: 12px;
 }
 
 /* 模态框表单组 */
 #modal-body .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 #modal-body .form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     color: var(--text-secondary);
     font-weight: 600;
     font-size: 14px;
@@ -1241,8 +1270,8 @@ input:checked + .slider:before {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    margin-top: 30px;
-    padding-top: 20px;
+    margin-top: 24px;
+    padding-top: 18px;
     border-top: 1px solid var(--border-primary);
 }
 
@@ -1742,5 +1771,29 @@ input:checked + .slider:before {
 [data-theme="dark"] .connection-reset-btn:hover {
     background: rgba(51, 65, 85, 0.95);
     border-color: rgba(100, 116, 139, 0.6);
+}
+
+.model-input-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.model-input-row .input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.model-input-row .model-name-input,
+.model-input-row .model-alias-input {
+    flex: 1;
+}
+
+.model-input-row .model-alias-input {
+    max-width: 220px;
+}
+
+.model-input-row .model-remove-btn {
+    align-self: center;
 }
 
