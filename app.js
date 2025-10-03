@@ -567,6 +567,32 @@ class CLIProxyManager {
             sidebarOverlay.addEventListener('click', () => this.closeMobileSidebar());
         }
         
+        // 侧边栏收起/展开按钮（桌面端）
+        const sidebarToggleBtnDesktop = document.getElementById('sidebar-toggle-btn-desktop');
+        if (sidebarToggleBtnDesktop) {
+            sidebarToggleBtnDesktop.addEventListener('click', () => this.toggleSidebar());
+        }
+        
+        // 从本地存储恢复侧边栏状态
+        this.restoreSidebarState();
+        
+        // 监听窗口大小变化
+        window.addEventListener('resize', () => {
+            const sidebar = document.getElementById('sidebar');
+            const layout = document.getElementById('layout-container');
+            
+            if (window.innerWidth <= 1024) {
+                // 移动端：移除收起状态
+                if (sidebar && layout) {
+                    sidebar.classList.remove('collapsed');
+                    layout.classList.remove('sidebar-collapsed');
+                }
+            } else {
+                // 桌面端：恢复保存的状态
+                this.restoreSidebarState();
+            }
+        });
+        
         // 点击侧边栏导航项时在移动端关闭侧边栏
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
@@ -582,10 +608,18 @@ class CLIProxyManager {
     toggleMobileSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
+        const layout = document.getElementById('layout-container');
+        const mainWrapper = document.getElementById('main-wrapper');
         
         if (sidebar && overlay) {
-            sidebar.classList.toggle('mobile-open');
+            const isOpen = sidebar.classList.toggle('mobile-open');
             overlay.classList.toggle('active');
+            if (layout) {
+                layout.classList.toggle('sidebar-open', isOpen);
+            }
+            if (mainWrapper) {
+                mainWrapper.classList.toggle('sidebar-open', isOpen);
+            }
         }
     }
     
@@ -593,10 +627,61 @@ class CLIProxyManager {
     closeMobileSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
+        const layout = document.getElementById('layout-container');
+        const mainWrapper = document.getElementById('main-wrapper');
         
         if (sidebar && overlay) {
             sidebar.classList.remove('mobile-open');
             overlay.classList.remove('active');
+            if (layout) {
+                layout.classList.remove('sidebar-open');
+            }
+            if (mainWrapper) {
+                mainWrapper.classList.remove('sidebar-open');
+            }
+        }
+    }
+    
+    // 切换侧边栏收起/展开状态
+    toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const layout = document.getElementById('layout-container');
+        
+        if (sidebar && layout) {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            layout.classList.toggle('sidebar-collapsed', isCollapsed);
+            
+            // 保存状态到本地存储
+            localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
+            
+            // 更新按钮提示文本
+            const toggleBtn = document.getElementById('sidebar-toggle-btn-desktop');
+            if (toggleBtn) {
+                toggleBtn.setAttribute('title', isCollapsed ? '展开侧边栏' : '收起侧边栏');
+            }
+        }
+    }
+    
+    // 恢复侧边栏状态
+    restoreSidebarState() {
+        // 只在桌面端恢复侧栏状态
+        if (window.innerWidth > 1024) {
+            const savedState = localStorage.getItem('sidebarCollapsed');
+            if (savedState === 'true') {
+                const sidebar = document.getElementById('sidebar');
+                const layout = document.getElementById('layout-container');
+                
+                if (sidebar && layout) {
+                    sidebar.classList.add('collapsed');
+                    layout.classList.add('sidebar-collapsed');
+                    
+                    // 更新按钮提示文本
+                    const toggleBtn = document.getElementById('sidebar-toggle-btn-desktop');
+                    if (toggleBtn) {
+                        toggleBtn.setAttribute('title', '展开侧边栏');
+                    }
+                }
+            }
         }
     }
 

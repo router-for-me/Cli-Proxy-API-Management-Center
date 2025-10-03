@@ -105,77 +105,79 @@
     </div>
 
     <!-- 主页面 -->
-    <div id="main-page" class="container" style="display: none;">
-        <!-- 侧边栏 -->
-        <nav class="sidebar" id="sidebar">
-            <!-- 品牌区域 -->
-            <div class="sidebar-brand">
-                <img id="site-logo" class="sidebar-brand-logo" alt="Logo" style="display:none" />
-                <span class="sidebar-brand-text" data-i18n="title.main">CLI Proxy API Management Center</span>
-            </div>
-            
-            <!-- 导航菜单 -->
-            <ul class="nav-menu">
-                <li><a href="#basic-settings" class="nav-item active" data-section="basic-settings">
-                    <i class="fas fa-sliders-h"></i> <span data-i18n="nav.basic_settings">基础设置</span>
-                </a></li>
-                <li><a href="#api-keys" class="nav-item" data-section="api-keys">
-                    <i class="fas fa-key"></i> <span data-i18n="nav.api_keys">API 密钥</span>
-                </a></li>
-                <li><a href="#ai-providers" class="nav-item" data-section="ai-providers">
-                    <i class="fas fa-robot"></i> <span data-i18n="nav.ai_providers">AI 提供商</span>
-                </a></li>
-                <li><a href="#auth-files" class="nav-item" data-section="auth-files">
-                    <i class="fas fa-file-alt"></i> <span data-i18n="nav.auth_files">认证文件</span>
-                </a></li>
-                <li><a href="#usage-stats" class="nav-item" data-section="usage-stats">
-                    <i class="fas fa-chart-line"></i> <span data-i18n="nav.usage_stats">使用统计</span>
-                </a></li>
-                <li><a href="#system-info" class="nav-item" data-section="system-info">
-                    <i class="fas fa-info-circle"></i> <span data-i18n="nav.system_info">系统信息</span>
-                </a></li>
-            </ul>
-        </nav>
-        
-        <!-- 侧边栏遮罩（移动端） -->
-        <div class="sidebar-overlay" id="sidebar-overlay"></div>
-        
-        <!-- 主内容包装器 -->
-        <div class="main-wrapper">
-            <!-- 顶部导航栏 -->
-            <div class="top-navbar">
-                <div class="top-navbar-left">
-                    <button class="mobile-menu-btn" id="mobile-menu-btn">
-                        <i class="fas fa-bars"></i>
-                    </button>
+    <div id="main-page" style="display: none;">
+        <!-- 顶部导航栏 -->
+        <div class="top-navbar">
+            <div class="top-navbar-left">
+                <button class="mobile-menu-btn" id="mobile-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <button class="sidebar-toggle-btn-desktop" id="sidebar-toggle-btn-desktop" title="收起/展开侧边栏">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="top-navbar-brand">
+                    <img id="site-logo" class="top-navbar-brand-logo" alt="Logo" style="display:none" />
+                    <span class="top-navbar-brand-text" data-i18n="title.main">CLI Proxy API Management Center</span>
                 </div>
-                <div class="top-navbar-actions">
-                    <div class="header-controls">
-                        <div class="language-switcher">
-                            <button id="language-toggle-main" class="btn btn-secondary language-btn">
-                                <i class="fas fa-globe"></i>
-                            </button>
-                        </div>
-                        <div class="theme-switcher">
-                            <button id="theme-toggle-main" class="btn btn-secondary theme-btn">
-                                <i class="fas fa-moon"></i>
-                            </button>
-                        </div>
+            </div>
+            <div class="top-navbar-actions">
+                <div class="header-controls">
+                    <div class="language-switcher">
+                        <button id="language-toggle-main" class="btn btn-secondary language-btn">
+                            <i class="fas fa-globe"></i>
+                        </button>
                     </div>
-                    <button id="connection-status" class="btn btn-secondary">
-                        <i class="fas fa-circle"></i> <span data-i18n="header.check_connection">检查连接</span>
-                    </button>
-                    <button id="refresh-all" class="btn btn-primary">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                    <button id="logout-btn" class="btn btn-danger">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
+                    <div class="theme-switcher">
+                        <button id="theme-toggle-main" class="btn btn-secondary theme-btn">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                    </div>
                 </div>
+                <button id="connection-status" class="btn btn-secondary">
+                    <i class="fas fa-circle"></i> <span data-i18n="header.check_connection">检查连接</span>
+                </button>
+                <button id="refresh-all" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button id="logout-btn" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
+        </div>
 
-            <!-- 主内容区域 -->
-            <div class="main-content">
+        <div class="layout" id="layout-container">
+            <!-- 侧边栏 -->
+            <nav class="sidebar" id="sidebar">
+                <!-- 导航菜单 -->
+                <ul class="nav-menu">
+                    <li data-tooltip="基础设置"><a href="#basic-settings" class="nav-item active" data-section="basic-settings">
+                        <i class="fas fa-sliders-h"></i> <span data-i18n="nav.basic_settings">基础设置</span>
+                    </a></li>
+                    <li data-tooltip="API 密钥"><a href="#api-keys" class="nav-item" data-section="api-keys">
+                        <i class="fas fa-key"></i> <span data-i18n="nav.api_keys">API 密钥</span>
+                    </a></li>
+                    <li data-tooltip="AI 提供商"><a href="#ai-providers" class="nav-item" data-section="ai-providers">
+                        <i class="fas fa-robot"></i> <span data-i18n="nav.ai_providers">AI 提供商</span>
+                    </a></li>
+                    <li data-tooltip="认证文件"><a href="#auth-files" class="nav-item" data-section="auth-files">
+                        <i class="fas fa-file-alt"></i> <span data-i18n="nav.auth_files">认证文件</span>
+                    </a></li>
+                    <li data-tooltip="使用统计"><a href="#usage-stats" class="nav-item" data-section="usage-stats">
+                        <i class="fas fa-chart-line"></i> <span data-i18n="nav.usage_stats">使用统计</span>
+                    </a></li>
+                    <li data-tooltip="系统信息"><a href="#system-info" class="nav-item" data-section="system-info">
+                        <i class="fas fa-info-circle"></i> <span data-i18n="nav.system_info">系统信息</span>
+                    </a></li>
+                </ul>
+            </nav>
+
+            <!-- 侧边栏遮罩（移动端） -->
+            <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+            <!-- 主内容包装器 -->
+            <div class="main-wrapper" id="main-wrapper">
+                <!-- 主内容区域 -->
+                <div class="main-content">
                 <!-- 内容区域 -->
                 <div class="content-area">
                 <!-- 基础设置 -->

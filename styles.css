@@ -7,6 +7,9 @@
 
 /* CSS变量主题系统 */
 :root {
+    /* 布局尺寸 */
+    --navbar-height: 69px;
+    
     /* 亮色主题（默认） */
     --bg-primary: #f5f7fa;
     --bg-secondary: #ffffff;
@@ -605,28 +608,90 @@ body {
     overflow-x: hidden;
 }
 
-.container {
-    display: flex;
-    min-height: 100vh;
-    position: relative;
+/* 侧边栏样式 */
+.layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: calc(100vh - var(--navbar-height, 69px));
+    width: 100%;
+    transition: grid-template-columns 0.3s ease;
 }
 
-/* 侧边栏样式 */
+.layout.sidebar-collapsed {
+    grid-template-columns: 64px 1fr;
+}
+
 .sidebar {
     width: 240px;
     background: var(--sidebar-bg);
     border-right: 1px solid var(--sidebar-border);
-    height: 100vh;
-    position: fixed;
-    left: 0;
-    top: 0;
+    height: calc(100vh - var(--navbar-height, 69px));
+    position: sticky;
+    top: var(--navbar-height, 69px);
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
-    z-index: 100;
+    z-index: 5;
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
+}
+
+.sidebar.collapsed {
+    width: 64px;
+}
+
+.sidebar.collapsed .nav-item span {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.sidebar.collapsed .nav-item i {
+    margin-right: 0;
+}
+
+/* 侧边栏切换按钮（桌面端-在顶栏） */
+.sidebar-toggle-btn-desktop {
+    display: none;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.sidebar-toggle-btn-desktop:hover {
+    background: var(--bg-tertiary);
+    color: var(--primary-color);
+}
+
+.sidebar-toggle-btn-desktop i {
+    transition: transform 0.3s ease;
+}
+
+.layout.sidebar-collapsed .sidebar-toggle-btn-desktop i {
+    transform: rotate(90deg);
+}
+
+/* 在大屏幕上显示桌面端切换按钮 */
+@media (min-width: 1025px) {
+    .sidebar-toggle-btn-desktop {
+        display: flex;
+    }
 }
 
 /* 侧边栏品牌区域 */
@@ -662,6 +727,7 @@ body {
 
 .sidebar .nav-menu li {
     margin-bottom: 4px;
+    position: relative;
 }
 
 .sidebar .nav-item {
@@ -675,6 +741,7 @@ body {
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
+    position: relative;
 }
 
 .sidebar .nav-item:hover {
@@ -692,16 +759,43 @@ body {
     width: 18px;
     font-size: 16px;
     text-align: center;
+    transition: margin 0.3s ease;
+}
+
+/* 收起状态时的工具提示 */
+.sidebar.collapsed .nav-menu li:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 68px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-primary);
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+    animation: tooltipFadeIn 0.2s ease forwards;
+}
+
+@keyframes tooltipFadeIn {
+    to {
+        opacity: 1;
+    }
 }
 
 /* 主内容区域包装器 */
 .main-wrapper {
-    margin-left: 240px;
-    min-height: 100vh;
-    width: calc(100% - 240px);
     display: flex;
     flex-direction: column;
     background: var(--bg-primary);
+    min-height: 100%;
 }
 
 /* 顶部导航栏 */
@@ -714,27 +808,47 @@ body {
     align-items: center;
     position: sticky;
     top: 0;
-    z-index: 90;
+    z-index: 200;
     box-shadow: var(--shadow-sm);
+    height: var(--navbar-height, 69px);
+    min-height: var(--navbar-height, 69px);
+    box-sizing: border-box;
 }
 
 .top-navbar-left {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
+    flex: 1;
 }
 
-.top-navbar-title {
-    font-size: 20px;
+.top-navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: max-content;
+}
+
+.top-navbar-brand-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.top-navbar-brand-text {
+    font-size: 18px;
     font-weight: 600;
     color: var(--text-primary);
-    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .top-navbar-actions {
     display: flex;
     align-items: center;
     gap: 10px;
+    margin-left: auto;
 }
 
 .top-navbar-actions > * {
@@ -1476,17 +1590,54 @@ input:checked + .slider:before {
 
 /* 响应式设计 */
 @media (max-width: 1024px) {
-    .sidebar {
-        transform: translateX(-100%);
+    .layout {
+        position: relative;
+        grid-template-columns: 1fr;
+        min-height: calc(100vh - var(--navbar-height, 69px));
     }
-    
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: var(--navbar-height, 69px);
+        height: calc(100vh - var(--navbar-height, 69px));
+        transform: translateX(-100%);
+        z-index: 150;
+        box-shadow: var(--shadow-sm);
+        background: var(--sidebar-bg);
+        width: 240px !important;
+    }
+
     .sidebar.mobile-open {
         transform: translateX(0);
+        box-shadow: var(--shadow-secondary);
+    }
+    
+    /* 移动端强制恢复侧栏展开状态 */
+    .sidebar.collapsed {
+        width: 240px !important;
+    }
+    
+    .sidebar.collapsed .nav-item span {
+        opacity: 1 !important;
+        width: auto !important;
+        overflow: visible !important;
+    }
+    
+    .sidebar.collapsed .nav-item {
+        justify-content: flex-start !important;
+        padding: 10px 14px !important;
+    }
+    
+    .sidebar.collapsed .nav-item i {
+        margin-right: 12px !important;
     }
     
     .main-wrapper {
         margin-left: 0;
         width: 100%;
+        min-height: calc(100vh - var(--navbar-height, 69px));
+        overflow: hidden;
     }
     
     .main-content {
@@ -1605,29 +1756,38 @@ input:checked + .slider:before {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 99;
+    z-index: 120;
 }
 
-@media (max-width: 1024px) {
-    .sidebar-overlay.active {
-        display: block;
-    }
+.sidebar-overlay.active {
+    display: block;
 }
 
 /* 移动端菜单按钮 */
 .mobile-menu-btn {
     display: none;
-    background: none;
+    width: 40px;
+    height: 40px;
+    background: transparent;
     border: none;
-    padding: 8px;
+    padding: 0;
     cursor: pointer;
     color: var(--text-primary);
     font-size: 20px;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.mobile-menu-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--primary-color);
 }
 
 @media (max-width: 1024px) {
     .mobile-menu-btn {
-        display: block;
+        display: flex;
     }
 }
 
