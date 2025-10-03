@@ -12,7 +12,7 @@ https://remote.router-for.me/
 Minimum required version: ≥ 6.0.0
 Recommended version: ≥ 6.0.19
 
-Starting from version 6.0.19, the WebUI has been integrated into the main program and is accessible via `/management.html`.
+Since version 6.0.19, the WebUI has been rolled into the main program. You can access it by going to /management.html on the external port after firing up the main project.
 
 ## Features
 
@@ -20,13 +20,16 @@ Starting from version 6.0.19, the WebUI has been integrated into the main progra
 - Supports management key authentication
 - Configurable API base address
 - Real-time connection status detection
+- Auto-login with saved credentials
+- Language and theme switching
 
 ### Basic Settings
 - **Debug Mode**: Enable/disable debugging
 - **Proxy Settings**: Configure proxy server URL
 - **Request Retries**: Set the number of request retries
 - **Quota Management**: Configure behavior when the quota is exceeded
-- **Local Access**: Manage local unauthenticated access
+  - Auto-switch project when quota exceeded
+  - Switch to preview models when quota exceeded
 
 ### API Key Management
 - **Proxy Service Authentication Key**: Manage API keys for the proxy service
@@ -40,6 +43,20 @@ Starting from version 6.0.19, the WebUI has been integrated into the main progra
 - Download existing authentication files
 - Delete single or all authentication files
 - Display file details
+- **Gemini Web Token**: Direct authentication using browser cookies
+
+### Usage Statistics
+- **Real-time Analytics**: Track API usage with interactive charts
+- **Request Trends**: Visualize request patterns by hour/day
+- **Token Usage**: Monitor token consumption over time
+- **API Details**: Detailed statistics for each API endpoint
+- **Success/Failure Rates**: Track API reliability metrics
+
+### System Information
+- **Connection Status**: Real-time connection monitoring
+- **Configuration Status**: Track configuration loading state
+- **Server Information**: Display server address and management key
+- **Last Update**: Show when data was last refreshed
 
 
 ## How to Use
@@ -48,6 +65,8 @@ Starting from version 6.0.19, the WebUI has been integrated into the main progra
 Simply open the `index.html` file directly in your browser to use it.
 
 ### 2. Use a Local Server
+
+#### Option A: Using Node.js (npm)
 ```bash
 # Install dependencies
 npm install
@@ -56,10 +75,19 @@ npm install
 npm start
 ```
 
-### 3. Configure API Connection
+#### Option B: Using Python
+```bash
+# Python 3.x
+python -m http.server 8000
+
+```
+
+Then open `http://localhost:8000` in your browser.
+
+### 3. Configure Connection
 1. Open the management interface.
 2. On the login screen, enter:
-   - **Remote Address**: `http://localhost:8317` (`/v0/management` will be auto-completed for you)
+   - **Remote Address**: The current version automatically picks up the remote address from where you're connecting. But you can also set your own address if you prefer.
    - **Management Key**: Your management key
 3. Click the "Connect" button.
 4. Once connected successfully, all features will be available.
@@ -71,7 +99,15 @@ npm start
 - **API Keys**: Management of keys for various API services.
 - **AI Providers**: Configuration for AI service providers.
 - **Auth Files**: Upload and download management for authentication files.
+- **Usage Stats**: Real-time analytics and usage statistics with interactive charts.
 - **System Info**: Connection status and system information.
+
+### Login Interface
+- **Auto-connection**: Automatically attempts to connect using saved credentials
+- **Custom Connection**: Manual configuration of API base address
+- **Current Address Detection**: Automatically detects and uses current access address
+- **Language Switching**: Support for multiple languages (English/Chinese)
+- **Theme Switching**: Light and dark theme support
 
 ## Feature Highlights
 
@@ -80,27 +116,45 @@ npm start
 - Beautiful gradient colors and shadow effects
 - Smooth animations and transition effects
 - Intuitive icons and status indicators
+- Dark/Light theme support with system preference detection
+- Mobile-friendly sidebar with overlay
 
 ### Real-time Updates
 - Configuration changes take effect immediately
 - Real-time status feedback
 - Automatic data refresh
+- Live usage statistics with interactive charts
+- Real-time connection status monitoring
 
 ### Security Features
 - Masked display for keys
+- Secure credential storage
+- Auto-login with encrypted local storage
 
 ### Responsive Design
 - Perfectly adapts to desktop and mobile devices
-- Adaptive layout
+- Adaptive layout with collapsible sidebar
 - Touch-friendly interactions
+- Mobile menu with overlay
+
+### Analytics & Monitoring
+- Interactive charts powered by Chart.js
+- Real-time usage statistics
+- Request trend visualization
+- Token consumption tracking
+- API performance metrics
 
 ## Tech Stack
 
-- **Frontend**: Plain HTML, CSS, JavaScript
-- **Styling**: CSS3 + Flexbox/Grid
+- **Frontend**: Plain HTML, CSS, JavaScript (ES6+)
+- **Styling**: CSS3 + Flexbox/Grid with CSS Variables
 - **Icons**: Font Awesome 6.4.0
+- **Charts**: Chart.js for interactive data visualization
 - **Fonts**: Segoe UI system font
-- **API**: RESTful API calls
+- **API**: RESTful API calls with automatic authentication
+- **Internationalization**: Custom i18n system with English/Chinese support
+- **Theme System**: CSS custom properties for dynamic theming
+- **Storage**: LocalStorage for user preferences and credentials
 
 ## Troubleshooting
 
@@ -120,12 +174,20 @@ npm start
 ### File Structure
 ```
 webui/
-├── index.html      # Main page
-├── styles.css      # Stylesheet
-├── app.js          # Application logic
-├── package.json    # Project configuration
-├── i18n.js         # Internationalization support
-└── README.md       # README document
+├── index.html          # Main page with responsive layout
+├── styles.css          # Stylesheet with theme support
+├── app.js              # Application logic and API management
+├── i18n.js             # Internationalization support (EN/CN)
+├── package.json        # Project configuration
+├── build.js            # Build script for production
+├── bundle-entry.js     # Entry point for bundling
+├── build-scripts/      # Build utilities
+│   └── prepare-html.js # HTML preparation script
+├── logo.jpg            # Application logo
+├── LICENSE             # MIT License
+├── README.md           # English documentation
+├── README_CN.md        # Chinese documentation
+└── BUILD_RELEASE.md    # Build and release notes
 ```
 
 ### API Calls
