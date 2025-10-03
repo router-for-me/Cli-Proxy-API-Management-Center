@@ -1,5 +1,6 @@
 # Cli-Proxy-API-Management-Center
 这是一个用于管理 CLI Proxy API 的现代化 Web 界面。
+
 主项目
 https://github.com/router-for-me/CLIProxyAPI
 
@@ -57,10 +58,13 @@ https://remote.router-for.me/
 
 ## 使用方法
 
-### 1. 直接使用（推荐）
+### 1. 在CLI Proxy API程序启动后使用 （推荐）
+在启动了CLI Proxy API程序后 访问`http://您的服务器IP:8317/management.html`使用
+
+### 2. 直接使用
 直接用浏览器打开 `index.html` 文件即可使用。
 
-### 2. 使用本地服务器
+### 3. 使用本地服务器
 
 #### 方法A：使用 Node.js (npm)
 ```bash
@@ -83,7 +87,7 @@ python -m http.server 8000
 ### 3. 配置连接
 1. 打开管理界面
 2. 在登录界面上输入：
-   - **远程地址**: 现版本远程地址将会自动从您的访问地址中获取 当然您也可以自定义连接地址
+   - **远程地址**: 现版本远程地址将会自动从您的访问地址中获取 当然您也可以自定义
    - **管理密钥**: 您的管理密钥
 3. 点击"连接"按钮
 4. 连接成功后即可使用所有功能

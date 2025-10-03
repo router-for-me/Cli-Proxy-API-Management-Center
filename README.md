@@ -61,10 +61,13 @@ Since version 6.0.19, the WebUI has been rolled into the main program. You can a
 
 ## How to Use
 
-### 1. Direct Use (Recommended)
+### 1. Using After CLI Proxy API Program Launch (Recommended)
+Once the CLI Proxy API program is up and running, you can access the WebUI at `http://your-server-IP:8317/management.html`.
+
+### 2. Direct Use
 Simply open the `index.html` file directly in your browser to use it.
 
-### 2. Use a Local Server
+### 3. Use a Local Server
 
 #### Option A: Using Node.js (npm)
 ```bash
