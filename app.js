@@ -553,6 +553,51 @@ class CLIProxyManager {
                 this.closeModal();
             }
         });
+        
+        // 移动端菜单按钮
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => this.toggleMobileSidebar());
+        }
+        
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => this.closeMobileSidebar());
+        }
+        
+        // 点击侧边栏导航项时在移动端关闭侧边栏
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 1024) {
+                    this.closeMobileSidebar();
+                }
+            });
+        });
+    }
+    
+    // 切换移动端侧边栏
+    toggleMobileSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        
+        if (sidebar && overlay) {
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+        }
+    }
+    
+    // 关闭移动端侧边栏
+    closeMobileSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        
+        if (sidebar && overlay) {
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+        }
     }
 
     // 设置导航

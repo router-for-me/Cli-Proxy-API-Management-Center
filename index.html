@@ -106,25 +106,59 @@
 
     <!-- 主页面 -->
     <div id="main-page" class="container" style="display: none;">
-        <!-- 头部导航 -->
-        <header class="header">
-            <div class="header-content">
-                <h1 class="brand">
-                    <img id="site-logo" alt="Logo" style="display:none" />
-                    <span class="brand-title" data-i18n="title.main">CLI Proxy API Management Center</span>
-                </h1>
-                <div class="header-actions">
+        <!-- 侧边栏 -->
+        <nav class="sidebar" id="sidebar">
+            <!-- 品牌区域 -->
+            <div class="sidebar-brand">
+                <img id="site-logo" class="sidebar-brand-logo" alt="Logo" style="display:none" />
+                <span class="sidebar-brand-text" data-i18n="title.main">CLI Proxy API Management Center</span>
+            </div>
+            
+            <!-- 导航菜单 -->
+            <ul class="nav-menu">
+                <li><a href="#basic-settings" class="nav-item active" data-section="basic-settings">
+                    <i class="fas fa-sliders-h"></i> <span data-i18n="nav.basic_settings">基础设置</span>
+                </a></li>
+                <li><a href="#api-keys" class="nav-item" data-section="api-keys">
+                    <i class="fas fa-key"></i> <span data-i18n="nav.api_keys">API 密钥</span>
+                </a></li>
+                <li><a href="#ai-providers" class="nav-item" data-section="ai-providers">
+                    <i class="fas fa-robot"></i> <span data-i18n="nav.ai_providers">AI 提供商</span>
+                </a></li>
+                <li><a href="#auth-files" class="nav-item" data-section="auth-files">
+                    <i class="fas fa-file-alt"></i> <span data-i18n="nav.auth_files">认证文件</span>
+                </a></li>
+                <li><a href="#usage-stats" class="nav-item" data-section="usage-stats">
+                    <i class="fas fa-chart-line"></i> <span data-i18n="nav.usage_stats">使用统计</span>
+                </a></li>
+                <li><a href="#system-info" class="nav-item" data-section="system-info">
+                    <i class="fas fa-info-circle"></i> <span data-i18n="nav.system_info">系统信息</span>
+                </a></li>
+            </ul>
+        </nav>
+        
+        <!-- 侧边栏遮罩（移动端） -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        
+        <!-- 主内容包装器 -->
+        <div class="main-wrapper">
+            <!-- 顶部导航栏 -->
+            <div class="top-navbar">
+                <div class="top-navbar-left">
+                    <button class="mobile-menu-btn" id="mobile-menu-btn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+                <div class="top-navbar-actions">
                     <div class="header-controls">
                         <div class="language-switcher">
                             <button id="language-toggle-main" class="btn btn-secondary language-btn">
                                 <i class="fas fa-globe"></i>
-                                <span data-i18n="language.switch">语言</span>
                             </button>
                         </div>
                         <div class="theme-switcher">
                             <button id="theme-toggle-main" class="btn btn-secondary theme-btn">
                                 <i class="fas fa-moon"></i>
-                                <span data-i18n="theme.switch">主题</span>
                             </button>
                         </div>
                     </div>
@@ -132,79 +166,18 @@
                         <i class="fas fa-circle"></i> <span data-i18n="header.check_connection">检查连接</span>
                     </button>
                     <button id="refresh-all" class="btn btn-primary">
-                        <i class="fas fa-sync-alt"></i> <span data-i18n="header.refresh_all">刷新全部</span>
+                        <i class="fas fa-sync-alt"></i>
                     </button>
                     <button id="logout-btn" class="btn btn-danger">
-                        <i class="fas fa-sign-out-alt"></i> <span data-i18n="header.logout">登出</span>
+                        <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </div>
             </div>
-        </header>
 
-        <!-- 连接信息 -->
-        <section class="auth-section">
-            <div class="card">
-                <div class="card-header">
-                    <h2><i class="fas fa-server"></i> <span data-i18n="connection.title">连接信息</span></h2>
-                </div>
-                <div class="card-content">
-                    <div class="connection-info">
-                        <div class="info-item">
-                            <div class="info-label">
-                                <i class="fas fa-globe"></i>
-                                <span data-i18n="connection.server_address">服务器地址:</span>
-                            </div>
-                            <div class="info-value" id="display-api-url">-</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">
-                                <i class="fas fa-key"></i>
-                                <span data-i18n="connection.management_key">管理密钥:</span>
-                            </div>
-                            <div class="info-value" id="display-management-key">-</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">
-                                <i class="fas fa-circle"></i>
-                                <span data-i18n="connection.status">连接状态:</span>
-                            </div>
-                            <div class="info-value" id="display-connection-status">
-                                <span class="status-indicator disconnected" data-i18n="common.disconnected">未连接</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 主要内容区域 -->
-        <main class="main-content">
-            <!-- 侧边栏导航 -->
-            <nav class="sidebar">
-                <ul class="nav-menu">
-                    <li><a href="#basic-settings" class="nav-item active" data-section="basic-settings">
-                        <i class="fas fa-sliders-h"></i> <span data-i18n="nav.basic_settings">基础设置</span>
-                    </a></li>
-                    <li><a href="#api-keys" class="nav-item" data-section="api-keys">
-                        <i class="fas fa-key"></i> <span data-i18n="nav.api_keys">API 密钥</span>
-                    </a></li>
-                    <li><a href="#ai-providers" class="nav-item" data-section="ai-providers">
-                        <i class="fas fa-robot"></i> <span data-i18n="nav.ai_providers">AI 提供商</span>
-                    </a></li>
-                    <li><a href="#auth-files" class="nav-item" data-section="auth-files">
-                        <i class="fas fa-file-alt"></i> <span data-i18n="nav.auth_files">认证文件</span>
-                    </a></li>
-                    <li><a href="#usage-stats" class="nav-item" data-section="usage-stats">
-                        <i class="fas fa-chart-line"></i> <span data-i18n="nav.usage_stats">使用统计</span>
-                    </a></li>
-                    <li><a href="#system-info" class="nav-item" data-section="system-info">
-                        <i class="fas fa-info-circle"></i> <span data-i18n="nav.system_info">系统信息</span>
-                    </a></li>
-                </ul>
-            </nav>
-
-            <!-- 内容区域 -->
-            <div class="content-area">
+            <!-- 主内容区域 -->
+            <div class="main-content">
+                <!-- 内容区域 -->
+                <div class="content-area">
                 <!-- 基础设置 -->
                 <section id="basic-settings" class="content-section active">
                     <h2 data-i18n="basic_settings.title">基础设置</h2>
@@ -526,6 +499,40 @@
                 <section id="system-info" class="content-section">
                     <h2 data-i18n="system_info.title">系统信息</h2>
                     
+                    <!-- 连接信息卡片 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-server"></i> <span data-i18n="connection.title">连接信息</span></h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="connection-info">
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        <i class="fas fa-globe"></i>
+                                        <span data-i18n="connection.server_address">服务器地址:</span>
+                                    </div>
+                                    <div class="info-value" id="display-api-url">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        <i class="fas fa-key"></i>
+                                        <span data-i18n="connection.management_key">管理密钥:</span>
+                                    </div>
+                                    <div class="info-value" id="display-management-key">-</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        <i class="fas fa-circle"></i>
+                                        <span data-i18n="connection.status">连接状态:</span>
+                                    </div>
+                                    <div class="info-value" id="display-connection-status">
+                                        <span class="status-indicator disconnected" data-i18n="common.disconnected">未连接</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="card">
                         <div class="card-header">
                             <h3><i class="fas fa-info-circle"></i> <span data-i18n="system_info.connection_status_title">连接状态</span></h3>
@@ -548,18 +555,23 @@
                         </div>
                     </div>
                 </section>
+                </div>
+                <!-- /内容区域 -->
+                
+                <!-- 版本信息 -->
+                <footer class="version-footer">
+                    <div class="version-info">
+                        <span data-i18n="footer.version">版本</span>: v0.1.0
+                        <span class="separator">•</span>
+                        <span data-i18n="footer.author">作者</span>: Supra4E8C
+                    </div>
+                </footer>
             </div>
-        </main>
-        
-        <!-- 版本信息 -->
-        <footer class="version-footer">
-            <div class="version-info">
-                <span data-i18n="footer.version">版本</span>: v0.0.6
-                <span class="separator">•</span>
-                <span data-i18n="footer.author">作者</span>: Supra4E8C
-            </div>
-        </footer>
+            <!-- /主内容区域 -->
+        </div>
+        <!-- /主内容包装器 -->
     </div>
+    <!-- /主页面 -->
 
     <!-- 模态框 -->
     <div id="modal" class="modal">
