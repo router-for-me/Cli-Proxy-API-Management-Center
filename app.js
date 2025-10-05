@@ -109,6 +109,47 @@ class CLIProxyManager {
         this.setupThemeSwitcher();
         // loadSettings 将在登录成功后调用
         this.updateLoginConnectionInfo();
+        // 检查主机名，如果不是 localhost 或 127.0.0.1，则隐藏 OAuth 登录框
+        this.checkHostAndHideOAuth();
+    }
+
+    // 检查主机名并隐藏 OAuth 登录框
+    checkHostAndHideOAuth() {
+        const hostname = window.location.hostname;
+        const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+
+        if (!isLocalhost) {
+            // 隐藏所有 OAuth 登录卡片
+            const oauthCards = [
+                'codex-oauth-card',
+                'anthropic-oauth-card',
+                'gemini-cli-oauth-card',
+                'qwen-oauth-card',
+                'iflow-oauth-card'
+            ];
+
+            oauthCards.forEach(cardId => {
+                const card = document.getElementById(cardId);
+                if (card) {
+                    card.style.display = 'none';
+                }
+            });
+
+            // 如果找不到具体的卡片 ID，尝试通过类名查找
+            const oauthCardElements = document.querySelectorAll('.card');
+            oauthCardElements.forEach(card => {
+                const cardText = card.textContent || '';
+                if (cardText.includes('Codex OAuth') ||
+                    cardText.includes('Anthropic OAuth') ||
+                    cardText.includes('Gemini CLI OAuth') ||
+                    cardText.includes('Qwen OAuth') ||
+                    cardText.includes('iFlow OAuth')) {
+                    card.style.display = 'none';
+                }
+            });
+
+            console.log(`当前主机名: ${hostname}，已隐藏 OAuth 登录框`);
+        }
     }
 
     // 检查登录状态
