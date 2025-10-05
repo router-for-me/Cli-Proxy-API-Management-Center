@@ -467,6 +467,159 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Anthropic OAuth -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-brain"></i> <span
+                                            data-i18n="auth_login.anthropic_oauth_title">Anthropic OAuth</span></h3>
+                                    <button id="anthropic-oauth-btn" class="btn btn-primary">
+                                        <i class="fas fa-sign-in-alt"></i> <span
+                                            data-i18n="auth_login.anthropic_oauth_button">开始 Anthropic 登录</span>
+                                    </button>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" style="margin-bottom: 20px;"
+                                        data-i18n="auth_login.anthropic_oauth_hint">
+                                        通过 OAuth 流程登录 Anthropic (Claude) 服务，自动获取并保存认证文件。
+                                    </p>
+                                    <div id="anthropic-oauth-content" style="display: none;">
+                                        <div class="form-group">
+                                            <label data-i18n="auth_login.anthropic_oauth_url_label">授权链接:</label>
+                                            <div class="input-group">
+                                                <input type="text" id="anthropic-oauth-url" readonly>
+                                                <button id="anthropic-open-link" class="btn btn-primary">
+                                                    <i class="fas fa-external-link-alt"></i> <span
+                                                        data-i18n="auth_login.anthropic_open_link">打开链接</span>
+                                                </button>
+                                                <button id="anthropic-copy-link" class="btn btn-secondary">
+                                                    <i class="fas fa-copy"></i> <span
+                                                        data-i18n="auth_login.anthropic_copy_link">复制链接</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="anthropic-oauth-status" class="form-hint" style="margin-top: 10px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gemini CLI OAuth -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="fab fa-google"></i> <span
+                                            data-i18n="auth_login.gemini_cli_oauth_title">Gemini CLI OAuth</span></h3>
+                                    <button id="gemini-cli-oauth-btn" class="btn btn-primary">
+                                        <i class="fas fa-sign-in-alt"></i> <span
+                                            data-i18n="auth_login.gemini_cli_oauth_button">开始 Gemini CLI 登录</span>
+                                    </button>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" style="margin-bottom: 20px;"
+                                        data-i18n="auth_login.gemini_cli_oauth_hint">
+                                        通过 OAuth 流程登录 Google Gemini CLI 服务，自动获取并保存认证文件。
+                                    </p>
+                                    <div class="form-group" style="margin-bottom: 20px;">
+                                        <label for="gemini-cli-project-id"
+                                            data-i18n="auth_login.gemini_cli_project_id_label">Google Cloud 项目 ID
+                                            (可选):</label>
+                                        <input type="text" id="gemini-cli-project-id"
+                                            data-i18n="auth_login.gemini_cli_project_id_placeholder"
+                                            placeholder="输入 Google Cloud 项目 ID (可选)">
+                                        <div class="form-hint" data-i18n="auth_login.gemini_cli_project_id_hint">
+                                            如果指定了项目 ID，将使用该项目的认证信息。
+                                        </div>
+                                    </div>
+                                    <div id="gemini-cli-oauth-content" style="display: none;">
+                                        <div class="form-group">
+                                            <label data-i18n="auth_login.gemini_cli_oauth_url_label">授权链接:</label>
+                                            <div class="input-group">
+                                                <input type="text" id="gemini-cli-oauth-url" readonly>
+                                                <button id="gemini-cli-open-link" class="btn btn-primary">
+                                                    <i class="fas fa-external-link-alt"></i> <span
+                                                        data-i18n="auth_login.gemini_cli_open_link">打开链接</span>
+                                                </button>
+                                                <button id="gemini-cli-copy-link" class="btn btn-secondary">
+                                                    <i class="fas fa-copy"></i> <span
+                                                        data-i18n="auth_login.gemini_cli_copy_link">复制链接</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="gemini-cli-oauth-status" class="form-hint" style="margin-top: 10px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Qwen OAuth -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-robot"></i> <span data-i18n="auth_login.qwen_oauth_title">Qwen
+                                            OAuth</span></h3>
+                                    <button id="qwen-oauth-btn" class="btn btn-primary">
+                                        <i class="fas fa-sign-in-alt"></i> <span
+                                            data-i18n="auth_login.qwen_oauth_button">开始 Qwen 登录</span>
+                                    </button>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" style="margin-bottom: 20px;"
+                                        data-i18n="auth_login.qwen_oauth_hint">
+                                        通过设备授权流程登录 Qwen 服务，自动获取并保存认证文件。
+                                    </p>
+                                    <div id="qwen-oauth-content" style="display: none;">
+                                        <div class="form-group">
+                                            <label data-i18n="auth_login.qwen_oauth_url_label">授权链接:</label>
+                                            <div class="input-group">
+                                                <input type="text" id="qwen-oauth-url" readonly>
+                                                <button id="qwen-open-link" class="btn btn-primary">
+                                                    <i class="fas fa-external-link-alt"></i> <span
+                                                        data-i18n="auth_login.qwen_open_link">打开链接</span>
+                                                </button>
+                                                <button id="qwen-copy-link" class="btn btn-secondary">
+                                                    <i class="fas fa-copy"></i> <span
+                                                        data-i18n="auth_login.qwen_copy_link">复制链接</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="qwen-oauth-status" class="form-hint" style="margin-top: 10px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- iFlow OAuth -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-stream"></i> <span
+                                            data-i18n="auth_login.iflow_oauth_title">iFlow OAuth</span></h3>
+                                    <button id="iflow-oauth-btn" class="btn btn-primary">
+                                        <i class="fas fa-sign-in-alt"></i> <span
+                                            data-i18n="auth_login.iflow_oauth_button">开始 iFlow 登录</span>
+                                    </button>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" style="margin-bottom: 20px;"
+                                        data-i18n="auth_login.iflow_oauth_hint">
+                                        通过 OAuth 流程登录 iFlow 服务，自动获取并保存认证文件。
+                                    </p>
+                                    <div id="iflow-oauth-content" style="display: none;">
+                                        <div class="form-group">
+                                            <label data-i18n="auth_login.iflow_oauth_url_label">授权链接:</label>
+                                            <div class="input-group">
+                                                <input type="text" id="iflow-oauth-url" readonly>
+                                                <button id="iflow-open-link" class="btn btn-primary">
+                                                    <i class="fas fa-external-link-alt"></i> <span
+                                                        data-i18n="auth_login.iflow_open_link">打开链接</span>
+                                                </button>
+                                                <button id="iflow-copy-link" class="btn btn-secondary">
+                                                    <i class="fas fa-copy"></i> <span
+                                                        data-i18n="auth_login.iflow_copy_link">复制链接</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="iflow-oauth-status" class="form-hint" style="margin-top: 10px;"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </section>
 
                         <!-- 使用统计 -->

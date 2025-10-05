@@ -2317,3 +2317,389 @@ input:checked+.slider:before {
         font-size: 12px;
     }
 }
+
+/* Anthropic OAuth 样式 */
+#anthropic-oauth-content {
+    transition: all 0.3s ease;
+}
+
+#anthropic-oauth-url {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+}
+
+#anthropic-oauth-url:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#anthropic-oauth-status {
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    transition: all 0.3s ease;
+}
+
+#anthropic-oauth-status.success {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+    color: var(--success-text);
+}
+
+#anthropic-oauth-status.error {
+    background: var(--error-bg);
+    border-color: var(--error-border);
+    color: var(--error-text);
+}
+
+#anthropic-oauth-status.warning {
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
+    color: var(--warning-text);
+}
+
+/* Anthropic OAuth 按钮样式 */
+#anthropic-open-link,
+#anthropic-copy-link {
+    min-width: 100px;
+    white-space: nowrap;
+}
+
+#anthropic-open-link {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+#anthropic-open-link:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+#anthropic-copy-link {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+#anthropic-copy-link:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+    color: var(--text-primary);
+}
+
+/* 响应式设计 - Anthropic OAuth */
+@media (max-width: 768px) {
+    #anthropic-oauth-content .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #anthropic-open-link,
+    #anthropic-copy-link {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    #anthropic-oauth-url {
+        font-size: 12px;
+    }
+}
+
+/* Gemini CLI OAuth 样式 */
+#gemini-cli-oauth-content {
+    transition: all 0.3s ease;
+}
+
+#gemini-cli-oauth-url {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+}
+
+#gemini-cli-oauth-url:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#gemini-cli-oauth-status {
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    transition: all 0.3s ease;
+}
+
+#gemini-cli-oauth-status.success {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+    color: var(--success-text);
+}
+
+#gemini-cli-oauth-status.error {
+    background: var(--error-bg);
+    border-color: var(--error-border);
+    color: var(--error-text);
+}
+
+#gemini-cli-oauth-status.warning {
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
+    color: var(--warning-text);
+}
+
+/* Gemini CLI OAuth 按钮样式 */
+#gemini-cli-open-link,
+#gemini-cli-copy-link {
+    min-width: 100px;
+    white-space: nowrap;
+}
+
+#gemini-cli-open-link {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+#gemini-cli-open-link:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+#gemini-cli-copy-link {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+#gemini-cli-copy-link:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+    color: var(--text-primary);
+}
+
+/* Gemini CLI 项目 ID 输入框样式 */
+#gemini-cli-project-id {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+}
+
+#gemini-cli-project-id:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 响应式设计 - Gemini CLI OAuth */
+@media (max-width: 768px) {
+    #gemini-cli-oauth-content .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #gemini-cli-open-link,
+    #gemini-cli-copy-link {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    #gemini-cli-oauth-url {
+        font-size: 12px;
+    }
+
+    #gemini-cli-project-id {
+        font-size: 12px;
+    }
+}
+
+/* Qwen OAuth 样式 */
+#qwen-oauth-content {
+    transition: all 0.3s ease;
+}
+
+#qwen-oauth-url {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+}
+
+#qwen-oauth-url:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#qwen-oauth-status {
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    transition: all 0.3s ease;
+}
+
+#qwen-oauth-status.success {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+    color: var(--success-text);
+}
+
+#qwen-oauth-status.error {
+    background: var(--error-bg);
+    border-color: var(--error-border);
+    color: var(--error-text);
+}
+
+#qwen-oauth-status.warning {
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
+    color: var(--warning-text);
+}
+
+/* Qwen OAuth 按钮样式 */
+#qwen-open-link,
+#qwen-copy-link {
+    min-width: 100px;
+    white-space: nowrap;
+}
+
+#qwen-open-link {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+#qwen-open-link:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+#qwen-copy-link {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+#qwen-copy-link:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+    color: var(--text-primary);
+}
+
+/* 响应式设计 - Qwen OAuth */
+@media (max-width: 768px) {
+    #qwen-oauth-content .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #qwen-open-link,
+    #qwen-copy-link {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    #qwen-oauth-url {
+        font-size: 12px;
+    }
+}
+
+/* iFlow OAuth 样式 */
+#iflow-oauth-content {
+    transition: all 0.3s ease;
+}
+
+#iflow-oauth-url {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+}
+
+#iflow-oauth-url:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#iflow-oauth-status {
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    transition: all 0.3s ease;
+}
+
+#iflow-oauth-status.success {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+    color: var(--success-text);
+}
+
+#iflow-oauth-status.error {
+    background: var(--error-bg);
+    border-color: var(--error-border);
+    color: var(--error-text);
+}
+
+#iflow-oauth-status.warning {
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
+    color: var(--warning-text);
+}
+
+/* iFlow OAuth 按钮样式 */
+#iflow-open-link,
+#iflow-copy-link {
+    min-width: 100px;
+    white-space: nowrap;
+}
+
+#iflow-open-link {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+#iflow-open-link:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+#iflow-copy-link {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+#iflow-copy-link:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+    color: var(--text-primary);
+}
+
+/* 响应式设计 - iFlow OAuth */
+@media (max-width: 768px) {
+    #iflow-oauth-content .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #iflow-open-link,
+    #iflow-copy-link {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    #iflow-oauth-url {
+        font-size: 12px;
+    }
+}
