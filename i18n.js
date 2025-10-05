@@ -3,7 +3,7 @@ const i18n = {
     // 语言配置
     currentLanguage: 'zh-CN',
     fallbackLanguage: 'zh-CN',
-    
+
     // 语言包
     translations: {
         'zh-CN': {
@@ -38,15 +38,15 @@ const i18n = {
             'common.base_url': '地址',
             'common.proxy_url': '代理',
             'common.alias': '别名',
-            
+
             // 页面标题
             'title.main': 'CLI Proxy API Management Center',
             'title.login': 'CLI Proxy API Management Center',
-            
+
             // 自动登录
             'auto_login.title': '正在自动登录...',
             'auto_login.message': '正在使用本地保存的连接信息尝试连接服务器',
-            
+
             // 登录页面
             'login.subtitle': '请输入连接信息以访问管理界面',
             'login.connection_title': '连接地址',
@@ -64,18 +64,18 @@ const i18n = {
             'login.error_title': '登录失败',
             'login.error_required': '请填写完整的连接信息',
             'login.error_invalid': '连接失败，请检查地址和密钥',
-            
+
             // 头部导航
             'header.check_connection': '检查连接',
             'header.refresh_all': '刷新全部',
             'header.logout': '登出',
-            
+
             // 连接信息
             'connection.title': '连接信息',
             'connection.server_address': '服务器地址:',
             'connection.management_key': '管理密钥:',
             'connection.status': '连接状态:',
-            
+
             // 侧边栏导航
             'nav.basic_settings': '基础设置',
             'nav.api_keys': 'API 密钥',
@@ -83,7 +83,7 @@ const i18n = {
             'nav.auth_files': '认证文件',
             'nav.usage_stats': '使用统计',
             'nav.system_info': '系统信息',
-            
+
             // 基础设置
             'basic_settings.title': '基础设置',
             'basic_settings.debug_title': '调试模式',
@@ -99,7 +99,7 @@ const i18n = {
             'basic_settings.quota_title': '配额超出行为',
             'basic_settings.quota_switch_project': '自动切换项目',
             'basic_settings.quota_switch_preview': '切换到预览模型',
-            
+
             // API 密钥管理
             'api_keys.title': 'API 密钥管理',
             'api_keys.proxy_auth_title': '代理服务认证密钥',
@@ -113,7 +113,7 @@ const i18n = {
             'api_keys.edit_modal_title': '编辑API密钥',
             'api_keys.edit_modal_key_label': 'API密钥:',
             'api_keys.delete_confirm': '确定要删除这个API密钥吗？',
-            
+
             // AI 提供商
             'ai_providers.title': 'AI 提供商配置',
             'ai_providers.gemini_title': 'Gemini API 密钥',
@@ -127,7 +127,7 @@ const i18n = {
             'ai_providers.gemini_edit_modal_title': '编辑Gemini API密钥',
             'ai_providers.gemini_edit_modal_key_label': 'API密钥:',
             'ai_providers.gemini_delete_confirm': '确定要删除这个Gemini密钥吗？',
-            
+
             'ai_providers.codex_title': 'Codex API 配置',
             'ai_providers.codex_add_button': '添加配置',
             'ai_providers.codex_empty_title': '暂无Codex配置',
@@ -145,7 +145,7 @@ const i18n = {
             'ai_providers.codex_edit_modal_url_label': 'Base URL (可选):',
             'ai_providers.codex_edit_modal_proxy_label': '代理 URL (可选):',
             'ai_providers.codex_delete_confirm': '确定要删除这个Codex配置吗？',
-            
+
             'ai_providers.claude_title': 'Claude API 配置',
             'ai_providers.claude_add_button': '添加配置',
             'ai_providers.claude_empty_title': '暂无Claude配置',
@@ -163,7 +163,7 @@ const i18n = {
             'ai_providers.claude_edit_modal_url_label': 'Base URL (可选):',
             'ai_providers.claude_edit_modal_proxy_label': '代理 URL (可选):',
             'ai_providers.claude_delete_confirm': '确定要删除这个Claude配置吗？',
-            
+
             'ai_providers.openai_title': 'OpenAI 兼容提供商',
             'ai_providers.openai_add_button': '添加提供商',
             'ai_providers.openai_empty_title': '暂无OpenAI兼容提供商',
@@ -191,8 +191,8 @@ const i18n = {
             'ai_providers.openai_delete_confirm': '确定要删除这个OpenAI提供商吗？',
             'ai_providers.openai_keys_count': '密钥数量',
             'ai_providers.openai_models_count': '模型数量',
-            
-            
+
+
             // 认证文件管理
             'auth_files.title': '认证文件管理',
             'auth_files.title_section': '认证文件',
@@ -213,7 +213,7 @@ const i18n = {
             'auth_files.delete_success': '文件删除成功',
             'auth_files.delete_all_success': '成功删除',
             'auth_files.files_count': '个文件',
-            
+
             // Gemini Web Token
             'auth_login.gemini_web_title': 'Gemini Web Token',
             'auth_login.gemini_web_button': '保存 Gemini Web Token',
@@ -225,7 +225,20 @@ const i18n = {
             'auth_login.gemini_web_label_label': '标签 (可选):',
             'auth_login.gemini_web_label_placeholder': '输入标签名称 (可选)',
             'auth_login.gemini_web_saved': 'Gemini Web Token 保存成功',
-            
+
+            // Codex OAuth
+            'auth_login.codex_oauth_title': 'Codex OAuth',
+            'auth_login.codex_oauth_button': '开始 Codex 登录',
+            'auth_login.codex_oauth_hint': '通过 OAuth 流程登录 Codex 服务，自动获取并保存认证文件。',
+            'auth_login.codex_oauth_url_label': '授权链接:',
+            'auth_login.codex_open_link': '打开链接',
+            'auth_login.codex_copy_link': '复制链接',
+            'auth_login.codex_oauth_status_waiting': '等待认证中...',
+            'auth_login.codex_oauth_status_success': '认证成功！',
+            'auth_login.codex_oauth_status_error': '认证失败:',
+            'auth_login.codex_oauth_start_error': '启动 Codex OAuth 失败:',
+            'auth_login.codex_oauth_polling_error': '检查认证状态失败:',
+
             // 使用统计
             'usage_stats.title': '使用统计',
             'usage_stats.total_requests': '总请求数',
@@ -245,7 +258,7 @@ const i18n = {
             'usage_stats.tokens_count': 'Token数量',
             'usage_stats.models': '模型统计',
             'usage_stats.success_rate': '成功率',
-            
+
             // 系统信息
             'system_info.title': '系统信息',
             'system_info.connection_status_title': '连接状态',
@@ -256,7 +269,7 @@ const i18n = {
             'system_info.real_time_data': '实时数据',
             'system_info.not_loaded': '未加载',
             'system_info.seconds_ago': '秒前',
-            
+
             // 通知消息
             'notification.debug_updated': '调试设置已更新',
             'notification.proxy_updated': '代理设置已更新',
@@ -298,12 +311,12 @@ const i18n = {
             'notification.gemini_api_key': 'Gemini API密钥',
             'notification.codex_api_key': 'Codex API密钥',
             'notification.claude_api_key': 'Claude API密钥',
-            
+
             // 语言切换
             'language.switch': '语言',
             'language.chinese': '中文',
             'language.english': 'English',
-            
+
             // 主题切换
             'theme.switch': '主题',
             'theme.light': '亮色',
@@ -311,12 +324,12 @@ const i18n = {
             'theme.switch_to_light': '切换到亮色模式',
             'theme.switch_to_dark': '切换到暗色模式',
             'theme.auto': '跟随系统',
-            
+
             // 页脚
             'footer.version': '版本',
             'footer.author': '作者'
         },
-        
+
         'en-US': {
             // Common
             'common.login': 'Login',
@@ -347,15 +360,15 @@ const i18n = {
             'common.required': 'Required',
             'common.api_key': 'Key',
             'common.base_url': 'Address',
-            
+
             // Page titles
             'title.main': 'CLI Proxy API Management Center',
             'title.login': 'CLI Proxy API Management Center',
-            
+
             // Auto login
             'auto_login.title': 'Auto Login in Progress...',
             'auto_login.message': 'Attempting to connect to server using locally saved connection information',
-            
+
             // Login page
             'login.subtitle': 'Please enter connection information to access the management interface',
             'login.connection_title': 'Connection Address',
@@ -373,18 +386,18 @@ const i18n = {
             'login.error_title': 'Login Failed',
             'login.error_required': 'Please fill in complete connection information',
             'login.error_invalid': 'Connection failed, please check address and key',
-            
+
             // Header navigation
             'header.check_connection': 'Check Connection',
             'header.refresh_all': 'Refresh All',
             'header.logout': 'Logout',
-            
+
             // Connection info
             'connection.title': 'Connection Information',
             'connection.server_address': 'Server Address:',
             'connection.management_key': 'Management Key:',
             'connection.status': 'Connection Status:',
-            
+
             // Sidebar navigation
             'nav.basic_settings': 'Basic Settings',
             'nav.api_keys': 'API Keys',
@@ -392,7 +405,7 @@ const i18n = {
             'nav.auth_files': 'Auth Files',
             'nav.usage_stats': 'Usage Statistics',
             'nav.system_info': 'System Info',
-            
+
             // Basic settings
             'basic_settings.title': 'Basic Settings',
             'basic_settings.debug_title': 'Debug Mode',
@@ -408,7 +421,7 @@ const i18n = {
             'basic_settings.quota_title': 'Quota Exceeded Behavior',
             'basic_settings.quota_switch_project': 'Auto Switch Project',
             'basic_settings.quota_switch_preview': 'Switch to Preview Model',
-            
+
             // API Keys management
             'api_keys.title': 'API Keys Management',
             'api_keys.proxy_auth_title': 'Proxy Service Authentication Keys',
@@ -422,7 +435,7 @@ const i18n = {
             'api_keys.edit_modal_title': 'Edit API Key',
             'api_keys.edit_modal_key_label': 'API Key:',
             'api_keys.delete_confirm': 'Are you sure you want to delete this API key?',
-            
+
             // AI Providers
             'ai_providers.title': 'AI Providers Configuration',
             'ai_providers.gemini_title': 'Gemini API Keys',
@@ -436,7 +449,7 @@ const i18n = {
             'ai_providers.gemini_edit_modal_title': 'Edit Gemini API Key',
             'ai_providers.gemini_edit_modal_key_label': 'API Key:',
             'ai_providers.gemini_delete_confirm': 'Are you sure you want to delete this Gemini key?',
-            
+
             'ai_providers.codex_title': 'Codex API Configuration',
             'ai_providers.codex_add_button': 'Add Configuration',
             'ai_providers.codex_empty_title': 'No Codex Configuration',
@@ -451,7 +464,7 @@ const i18n = {
             'ai_providers.codex_edit_modal_key_label': 'API Key:',
             'ai_providers.codex_edit_modal_url_label': 'Base URL (Optional):',
             'ai_providers.codex_delete_confirm': 'Are you sure you want to delete this Codex configuration?',
-            
+
             'ai_providers.claude_title': 'Claude API Configuration',
             'ai_providers.claude_add_button': 'Add Configuration',
             'ai_providers.claude_empty_title': 'No Claude Configuration',
@@ -466,7 +479,7 @@ const i18n = {
             'ai_providers.claude_edit_modal_key_label': 'API Key:',
             'ai_providers.claude_edit_modal_url_label': 'Base URL (Optional):',
             'ai_providers.claude_delete_confirm': 'Are you sure you want to delete this Claude configuration?',
-            
+
             'ai_providers.openai_title': 'OpenAI Compatible Providers',
             'ai_providers.openai_add_button': 'Add Provider',
             'ai_providers.openai_empty_title': 'No OpenAI Compatible Providers',
@@ -485,8 +498,8 @@ const i18n = {
             'ai_providers.openai_delete_confirm': 'Are you sure you want to delete this OpenAI provider?',
             'ai_providers.openai_keys_count': 'Keys Count',
             'ai_providers.openai_models_count': 'Models Count',
-            
-            
+
+
             // Auth files management
             'auth_files.title': 'Auth Files Management',
             'auth_files.title_section': 'Auth Files',
@@ -507,7 +520,7 @@ const i18n = {
             'auth_files.delete_success': 'File deleted successfully',
             'auth_files.delete_all_success': 'Successfully deleted',
             'auth_files.files_count': 'files',
-            
+
             // Gemini Web Token
             'auth_login.gemini_web_title': 'Gemini Web Token',
             'auth_login.gemini_web_button': 'Save Gemini Web Token',
@@ -519,7 +532,20 @@ const i18n = {
             'auth_login.gemini_web_label_label': 'Label (Optional):',
             'auth_login.gemini_web_label_placeholder': 'Enter label name (optional)',
             'auth_login.gemini_web_saved': 'Gemini Web Token saved successfully',
-            
+
+            // Codex OAuth
+            'auth_login.codex_oauth_title': 'Codex OAuth',
+            'auth_login.codex_oauth_button': 'Start Codex Login',
+            'auth_login.codex_oauth_hint': 'Login to Codex service through OAuth flow, automatically obtain and save authentication files.',
+            'auth_login.codex_oauth_url_label': 'Authorization URL:',
+            'auth_login.codex_open_link': 'Open Link',
+            'auth_login.codex_copy_link': 'Copy Link',
+            'auth_login.codex_oauth_status_waiting': 'Waiting for authentication...',
+            'auth_login.codex_oauth_status_success': 'Authentication successful!',
+            'auth_login.codex_oauth_status_error': 'Authentication failed:',
+            'auth_login.codex_oauth_start_error': 'Failed to start Codex OAuth:',
+            'auth_login.codex_oauth_polling_error': 'Failed to check authentication status:',
+
             // Usage Statistics
             'usage_stats.title': 'Usage Statistics',
             'usage_stats.total_requests': 'Total Requests',
@@ -539,7 +565,7 @@ const i18n = {
             'usage_stats.tokens_count': 'Token Count',
             'usage_stats.models': 'Model Statistics',
             'usage_stats.success_rate': 'Success Rate',
-            
+
             // System info
             'system_info.title': 'System Information',
             'system_info.connection_status_title': 'Connection Status',
@@ -550,7 +576,7 @@ const i18n = {
             'system_info.real_time_data': 'Real-time Data',
             'system_info.not_loaded': 'Not Loaded',
             'system_info.seconds_ago': 'seconds ago',
-            
+
             // Notification messages
             'notification.debug_updated': 'Debug settings updated',
             'notification.proxy_updated': 'Proxy settings updated',
@@ -590,12 +616,12 @@ const i18n = {
             'notification.gemini_api_key': 'Gemini API key',
             'notification.codex_api_key': 'Codex API key',
             'notification.claude_api_key': 'Claude API key',
-            
+
             // Language switch
             'language.switch': 'Language',
             'language.chinese': '中文',
             'language.english': 'English',
-            
+
             // Theme switch
             'theme.switch': 'Theme',
             'theme.light': 'Light',
@@ -603,25 +629,25 @@ const i18n = {
             'theme.switch_to_light': 'Switch to light mode',
             'theme.switch_to_dark': 'Switch to dark mode',
             'theme.auto': 'Follow system',
-            
+
             // Footer
             'footer.version': 'Version',
             'footer.author': 'Author'
         }
     },
-    
+
     // 获取翻译文本
     t(key, params = {}) {
-        const translation = this.translations[this.currentLanguage]?.[key] || 
-                           this.translations[this.fallbackLanguage]?.[key] || 
-                           key;
-        
+        const translation = this.translations[this.currentLanguage]?.[key] ||
+            this.translations[this.fallbackLanguage]?.[key] ||
+            key;
+
         // 简单的参数替换
         return translation.replace(/\{(\w+)\}/g, (match, param) => {
             return params[param] || match;
         });
     },
-    
+
     // 设置语言
     setLanguage(lang) {
         if (this.translations[lang]) {
@@ -631,19 +657,19 @@ const i18n = {
             this.updateAllTexts();
         }
     },
-    
+
     // 更新页面语言属性
     updatePageLanguage() {
         document.documentElement.lang = this.currentLanguage;
     },
-    
+
     // 更新所有文本
     updateAllTexts() {
         // 更新所有带有 data-i18n 属性的元素
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
             const text = this.t(key);
-            
+
             if (element.tagName === 'INPUT' && (element.type === 'text' || element.type === 'password')) {
                 element.placeholder = text;
             } else if (element.tagName === 'TITLE') {
@@ -652,7 +678,7 @@ const i18n = {
                 element.textContent = text;
             }
         });
-        
+
         // 更新所有带有 data-i18n-html 属性的元素（支持HTML）
         document.querySelectorAll('[data-i18n-html]').forEach(element => {
             const key = element.getAttribute('data-i18n-html');
@@ -660,7 +686,7 @@ const i18n = {
             element.innerHTML = html;
         });
     },
-    
+
     // 初始化
     init() {
         // 从本地存储获取用户偏好语言
@@ -676,7 +702,7 @@ const i18n = {
                 this.currentLanguage = 'en-US';
             }
         }
-        
+
         this.updatePageLanguage();
         this.updateAllTexts();
     }
