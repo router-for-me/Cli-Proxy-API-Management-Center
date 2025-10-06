@@ -10,7 +10,7 @@ Example URL:
 https://remote.router-for.me/
 
 Minimum required version: ≥ 6.0.0
-Recommended version: ≥ 6.0.19
+Recommended version: ≥ 6.1.3
 
 Since version 6.0.19, the WebUI has been rolled into the main program. You can access it by going to `/management.html` on the external port after firing up the main project.
 
