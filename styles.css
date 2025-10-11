@@ -1923,44 +1923,6 @@ input:checked+.slider:before {
 }
 
 
-/* Gemini Web Token 模态框样式 */
-.gemini-web-form .form-group {
-    margin-bottom: 20px;
-}
-
-.gemini-web-form .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--text-secondary);
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.gemini-web-form .form-group input {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid var(--border-primary);
-    border-radius: 8px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-}
-
-.gemini-web-form .form-group input:focus {
-    outline: none;
-    border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px var(--border-primary);
-}
-
-.gemini-web-form .form-hint {
-    margin-top: 6px;
-    color: var(--text-tertiary);
-    font-size: 12px;
-    line-height: 1.4;
-}
-
 /* 使用统计样式 */
 .stats-overview {
     display: grid;

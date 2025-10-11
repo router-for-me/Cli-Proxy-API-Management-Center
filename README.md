@@ -43,7 +43,6 @@ Since version 6.0.19, the WebUI has been rolled into the main program. You can a
 - Download existing authentication files
 - Delete single or all authentication files
 - Display file details
-- **Gemini Web Token**: Direct authentication using browser cookies
 
 ### Usage Statistics
 - **Real-time Analytics**: Track API usage with interactive charts

@@ -42,7 +42,6 @@ https://remote.router-for.me/
 - 下载现有认证文件
 - 删除单个或所有认证文件
 - 显示文件详细信息
-- **Gemini Web Token**: 使用浏览器 Cookie 直接认证
 
 ### 使用统计
 - **实时分析**: 通过交互式图表跟踪 API 使用情况

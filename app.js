@@ -538,12 +538,6 @@ class CLIProxyManager {
         }
 
 
-        // Gemini Web Token
-        const geminiWebTokenBtn = document.getElementById('gemini-web-token-btn');
-        if (geminiWebTokenBtn) {
-            geminiWebTokenBtn.addEventListener('click', () => this.showGeminiWebTokenModal());
-        }
-
         // 认证文件管理
         const uploadAuthFile = document.getElementById('upload-auth-file');
         const deleteAllAuthFiles = document.getElementById('delete-all-auth-files');
@@ -2429,107 +2423,6 @@ class CLIProxyManager {
 
 
 
-
-    // 显示 Gemini Web Token 模态框
-    showGeminiWebTokenModal() {
-        const inlineSecure1psid = document.getElementById('secure-1psid-input');
-        const inlineSecure1psidts = document.getElementById('secure-1psidts-input');
-        const inlineLabel = document.getElementById('gemini-web-label-input');
-        const modalBody = document.getElementById('modal-body');
-        modalBody.innerHTML = `
-            <h3>${i18n.t('auth_login.gemini_web_button')}</h3>
-            <div class="gemini-web-form">
-                <div class="form-group">
-                    <label for="modal-secure-1psid">${i18n.t('auth_login.secure_1psid_label')}</label>
-                    <input type="text" id="modal-secure-1psid" placeholder="${i18n.t('auth_login.secure_1psid_placeholder')}" required>
-                    <div class="form-hint">从浏览器开发者工具 → Application → Cookies 中获取</div>
-                </div>
-                <div class="form-group">
-                    <label for="modal-secure-1psidts">${i18n.t('auth_login.secure_1psidts_label')}</label>
-                    <input type="text" id="modal-secure-1psidts" placeholder="${i18n.t('auth_login.secure_1psidts_placeholder')}" required>
-                    <div class="form-hint">从浏览器开发者工具 → Application → Cookies 中获取</div>
-                </div>
-                <div class="form-group">
-                    <label for="modal-gemini-web-label">${i18n.t('auth_login.gemini_web_label_label')}</label>
-                    <input type="text" id="modal-gemini-web-label" placeholder="${i18n.t('auth_login.gemini_web_label_placeholder')}">
-                    <div class="form-hint">为此认证文件设置一个标签名称（可选）</div>
-                </div>
-                <div class="modal-actions">
-                    <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
-                    <button class="btn btn-primary" onclick="manager.saveGeminiWebToken()">${i18n.t('common.save')}</button>
-                </div>
-            </div>
-        `;
-        this.showModal();
-
-        const modalSecure1psid = document.getElementById('modal-secure-1psid');
-        const modalSecure1psidts = document.getElementById('modal-secure-1psidts');
-        const modalLabel = document.getElementById('modal-gemini-web-label');
-
-        if (modalSecure1psid && inlineSecure1psid) {
-            modalSecure1psid.value = inlineSecure1psid.value.trim();
-        }
-        if (modalSecure1psidts && inlineSecure1psidts) {
-            modalSecure1psidts.value = inlineSecure1psidts.value.trim();
-        }
-        if (modalLabel && inlineLabel) {
-            modalLabel.value = inlineLabel.value.trim();
-        }
-
-        if (modalSecure1psid) {
-            modalSecure1psid.focus();
-        }
-    }
-
-    // 保存 Gemini Web Token
-    async saveGeminiWebToken() {
-        const secure1psid = document.getElementById('modal-secure-1psid').value.trim();
-        const secure1psidts = document.getElementById('modal-secure-1psidts').value.trim();
-        const label = document.getElementById('modal-gemini-web-label').value.trim();
-
-        if (!secure1psid || !secure1psidts) {
-            this.showNotification('请填写完整的 Cookie 信息', 'error');
-            return;
-        }
-
-        try {
-            const requestBody = {
-                secure_1psid: secure1psid,
-                secure_1psidts: secure1psidts
-            };
-
-            // 如果提供了 label，则添加到请求体中
-            if (label) {
-                requestBody.label = label;
-            }
-
-            const response = await this.makeRequest('/gemini-web-token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            this.closeModal();
-            this.loadAuthFiles(); // 刷新认证文件列表
-            const inlineSecure1psid = document.getElementById('secure-1psid-input');
-            const inlineSecure1psidts = document.getElementById('secure-1psidts-input');
-            const inlineLabel = document.getElementById('gemini-web-label-input');
-            if (inlineSecure1psid) {
-                inlineSecure1psid.value = secure1psid;
-            }
-            if (inlineSecure1psidts) {
-                inlineSecure1psidts.value = secure1psidts;
-            }
-            if (inlineLabel) {
-                inlineLabel.value = label;
-            }
-            this.showNotification(`${i18n.t('auth_login.gemini_web_saved')}: ${response.file}`, 'success');
-        } catch (error) {
-            this.showNotification(`保存失败: ${error.message}`, 'error');
-        }
-    }
 
     // ===== Codex OAuth 相关方法 =====
 

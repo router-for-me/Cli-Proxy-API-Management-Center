@@ -214,17 +214,6 @@ const i18n = {
             'auth_files.delete_all_success': '成功删除',
             'auth_files.files_count': '个文件',
 
-            // Gemini Web Token
-            'auth_login.gemini_web_title': 'Gemini Web Token',
-            'auth_login.gemini_web_button': '保存 Gemini Web Token',
-            'auth_login.gemini_web_hint': '从浏览器开发者工具中获取 Gemini 网页版的 Cookie 值，用于直接认证访问 Gemini。',
-            'auth_login.secure_1psid_label': '__Secure-1PSID Cookie:',
-            'auth_login.secure_1psid_placeholder': '输入 __Secure-1PSID cookie 值',
-            'auth_login.secure_1psidts_label': '__Secure-1PSIDTS Cookie:',
-            'auth_login.secure_1psidts_placeholder': '输入 __Secure-1PSIDTS cookie 值',
-            'auth_login.gemini_web_label_label': '标签 (可选):',
-            'auth_login.gemini_web_label_placeholder': '输入标签名称 (可选)',
-            'auth_login.gemini_web_saved': 'Gemini Web Token 保存成功',
 
             // Codex OAuth
             'auth_login.codex_oauth_title': 'Codex OAuth',
@@ -592,18 +581,6 @@ const i18n = {
             'auth_files.delete_success': 'File deleted successfully',
             'auth_files.delete_all_success': 'Successfully deleted',
             'auth_files.files_count': 'files',
-
-            // Gemini Web Token
-            'auth_login.gemini_web_title': 'Gemini Web Token',
-            'auth_login.gemini_web_button': 'Save Gemini Web Token',
-            'auth_login.gemini_web_hint': 'Obtain the Cookie value of the Gemini web version from the browser\'s developer tools, used for direct authentication to access Gemini.',
-            'auth_login.secure_1psid_label': '__Secure-1PSID Cookie:',
-            'auth_login.secure_1psid_placeholder': 'Enter __Secure-1PSID cookie value',
-            'auth_login.secure_1psidts_label': '__Secure-1PSIDTS Cookie:',
-            'auth_login.secure_1psidts_placeholder': 'Enter __Secure-1PSIDTS cookie value',
-            'auth_login.gemini_web_label_label': 'Label (Optional):',
-            'auth_login.gemini_web_label_placeholder': 'Enter label name (optional)',
-            'auth_login.gemini_web_saved': 'Gemini Web Token saved successfully',
 
             // Codex OAuth
             'auth_login.codex_oauth_title': 'Codex OAuth',
