@@ -494,6 +494,7 @@ class CLIProxyManager {
         const updateRetry = document.getElementById('update-retry');
         const switchProjectToggle = document.getElementById('switch-project-toggle');
         const switchPreviewToggle = document.getElementById('switch-preview-model-toggle');
+        const usageStatisticsToggle = document.getElementById('usage-statistics-enabled-toggle');
 
         if (debugToggle) {
             debugToggle.addEventListener('change', (e) => this.updateDebug(e.target.checked));
@@ -512,6 +513,9 @@ class CLIProxyManager {
         }
         if (switchPreviewToggle) {
             switchPreviewToggle.addEventListener('change', (e) => this.updateSwitchPreviewModel(e.target.checked));
+        }
+        if (usageStatisticsToggle) {
+            usageStatisticsToggle.addEventListener('change', (e) => this.updateUsageStatisticsEnabled(e.target.checked));
         }
 
         // API 密钥管理
@@ -1152,6 +1156,13 @@ class CLIProxyManager {
             }
         }
 
+        if (config['usage-statistics-enabled'] !== undefined) {
+            const usageToggle = document.getElementById('usage-statistics-enabled-toggle');
+            if (usageToggle) {
+                usageToggle.checked = config['usage-statistics-enabled'];
+            }
+        }
+
 
         // API 密钥
         if (config['api-keys']) {
@@ -1186,6 +1197,7 @@ class CLIProxyManager {
             this.loadProxySettings(),
             this.loadRetrySettings(),
             this.loadQuotaSettings(),
+            this.loadUsageStatisticsSettings(),
             this.loadApiKeys(),
             this.loadGeminiKeys(),
             this.loadCodexKeys(),
@@ -1305,6 +1317,39 @@ class CLIProxyManager {
             }
         } catch (error) {
             console.error('加载配额设置失败:', error);
+        }
+    }
+
+    // 加载使用统计设置
+    async loadUsageStatisticsSettings() {
+        try {
+            const config = await this.getConfig();
+            if (config['usage-statistics-enabled'] !== undefined) {
+                const usageToggle = document.getElementById('usage-statistics-enabled-toggle');
+                if (usageToggle) {
+                    usageToggle.checked = config['usage-statistics-enabled'];
+                }
+            }
+        } catch (error) {
+            console.error('加载使用统计设置失败:', error);
+        }
+    }
+
+    // 更新使用统计设置
+    async updateUsageStatisticsEnabled(enabled) {
+        try {
+            await this.makeRequest('/usage-statistics-enabled', {
+                method: 'PUT',
+                body: JSON.stringify({ value: enabled })
+            });
+            this.clearCache();
+            this.showNotification(i18n.t('notification.usage_statistics_updated'), 'success');
+        } catch (error) {
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
+            const usageToggle = document.getElementById('usage-statistics-enabled-toggle');
+            if (usageToggle) {
+                usageToggle.checked = !enabled;
+            }
         }
     }
 

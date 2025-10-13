@@ -99,6 +99,8 @@ const i18n = {
             'basic_settings.quota_title': '配额超出行为',
             'basic_settings.quota_switch_project': '自动切换项目',
             'basic_settings.quota_switch_preview': '切换到预览模型',
+            'basic_settings.usage_statistics_title': '使用统计',
+            'basic_settings.usage_statistics_enable': '启用使用统计',
 
             // API 密钥管理
             'api_keys.title': 'API 密钥管理',
@@ -321,6 +323,7 @@ const i18n = {
             'notification.retry_updated': '重试设置已更新',
             'notification.quota_switch_project_updated': '项目切换设置已更新',
             'notification.quota_switch_preview_updated': '预览模型切换设置已更新',
+            'notification.usage_statistics_updated': '使用统计设置已更新',
             'notification.api_key_added': 'API密钥添加成功',
             'notification.api_key_updated': 'API密钥更新成功',
             'notification.api_key_deleted': 'API密钥删除成功',
@@ -467,6 +470,8 @@ const i18n = {
             'basic_settings.quota_title': 'Quota Exceeded Behavior',
             'basic_settings.quota_switch_project': 'Auto Switch Project',
             'basic_settings.quota_switch_preview': 'Switch to Preview Model',
+            'basic_settings.usage_statistics_title': 'Usage Statistics',
+            'basic_settings.usage_statistics_enable': 'Enable usage statistics',
 
             // API Keys management
             'api_keys.title': 'API Keys Management',
@@ -688,6 +693,7 @@ const i18n = {
             'notification.retry_updated': 'Retry settings updated',
             'notification.quota_switch_project_updated': 'Project switch settings updated',
             'notification.quota_switch_preview_updated': 'Preview model switch settings updated',
+            'notification.usage_statistics_updated': 'Usage statistics settings updated',
             'notification.api_key_added': 'API key added successfully',
             'notification.api_key_updated': 'API key updated successfully',
             'notification.api_key_deleted': 'API key deleted successfully',
