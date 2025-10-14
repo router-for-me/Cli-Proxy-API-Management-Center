@@ -38,6 +38,7 @@ const i18n = {
             'common.base_url': '地址',
             'common.proxy_url': '代理',
             'common.alias': '别名',
+            'common.link_copied': '链接已复制到剪贴板',
 
             // 页面标题
             'title.main': 'CLI Proxy API Management Center',
@@ -153,7 +154,7 @@ const i18n = {
             'sidebar.collapse': '收起侧边栏',
             
             // Usage statistics
-            'usage_stats.requests_tokens': ' requests / {tokens} tokens',
+            'usage_stats.requests_tokens': '{requests} 请求 / {tokens} tokens',
 
             'ai_providers.codex_title': 'Codex API 配置',
             'ai_providers.codex_add_button': '添加配置',
@@ -444,6 +445,7 @@ const i18n = {
             'common.base_url': 'Address',
             'common.proxy_url': 'Proxy',
             'common.alias': 'Alias',
+            'common.link_copied': 'Link copied to clipboard',
 
             // Page titles
             'title.main': 'CLI Proxy API Management Center',
