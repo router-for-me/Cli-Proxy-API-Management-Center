@@ -127,6 +127,33 @@ const i18n = {
             'ai_providers.gemini_edit_modal_title': '编辑Gemini API密钥',
             'ai_providers.gemini_edit_modal_key_label': 'API密钥:',
             'ai_providers.gemini_delete_confirm': '确定要删除这个Gemini密钥吗？',
+            
+            // Gemini API modals and forms
+            'gemini.add_modal_title': '添加Gemini API密钥',
+            'gemini.add_modal_key_label': 'API密钥:',
+            'gemini.add_modal_key_placeholder': '请输入Gemini API密钥',
+            'gemini.add_modal_cancel': '取消',
+            'gemini.add_modal_add': '添加',
+            'gemini.edit_modal_title': '编辑Gemini API密钥',
+            'gemini.edit_modal_update': '更新',
+            'gemini.edit_modal_key_placeholder': '请输入Gemini API密钥',
+            'gemini.form_hint_cookies': '从浏览器开发者工具 → Application → Cookies 中获取',
+            'gemini.form_hint_label': '为此认证文件设置一个标签名称（可选）',
+            'gemini.full_cookie_required': '请填写完整的 Cookie 信息',
+            'gemini.link_copied': '链接已复制到剪贴板',
+            'gemini.key_added_success': 'Gemini密钥添加成功',
+            'gemini.key_add_failed': '添加Gemini密钥失败: {message}',
+            'gemini.key_updated_success': 'Gemini密钥更新成功',
+            'gemini.key_update_failed': '更新Gemini密钥失败: {message}',
+            'gemini.key_deleted_success': 'Gemini密钥删除成功',
+            'gemini.key_delete_failed': '删除Gemini密钥失败: {message}',
+            
+            // Sidebar
+            'sidebar.expand': '展开侧边栏',
+            'sidebar.collapse': '收起侧边栏',
+            
+            // Usage statistics
+            'usage_stats.requests_tokens': ' requests / {tokens} tokens',
 
             'ai_providers.codex_title': 'Codex API 配置',
             'ai_providers.codex_add_button': '添加配置',
@@ -506,6 +533,33 @@ const i18n = {
             'ai_providers.gemini_edit_modal_title': 'Edit Gemini API Key',
             'ai_providers.gemini_edit_modal_key_label': 'API Key:',
             'ai_providers.gemini_delete_confirm': 'Are you sure you want to delete this Gemini key?',
+            
+            // Gemini API modals and forms
+            'gemini.add_modal_title': 'Add Gemini API Key',
+            'gemini.add_modal_key_label': 'API Key:',
+            'gemini.add_modal_key_placeholder': 'Please enter Gemini API key',
+            'gemini.add_modal_cancel': 'Cancel',
+            'gemini.add_modal_add': 'Add',
+            'gemini.edit_modal_title': 'Edit Gemini API Key',
+            'gemini.edit_modal_update': 'Update',
+            'gemini.edit_modal_key_placeholder': 'Please enter Gemini API key',
+            'gemini.form_hint_cookies': 'Obtain from browser developer tools → Application → Cookies',
+            'gemini.form_hint_label': 'Set a label name for this auth file (optional)',
+            'gemini.full_cookie_required': 'Please fill in complete Cookie information',
+            'gemini.link_copied': 'Link copied to clipboard',
+            'gemini.key_added_success': 'Gemini key added successfully',
+            'gemini.key_add_failed': 'Failed to add Gemini key: {message}',
+            'gemini.key_updated_success': 'Gemini key updated successfully',
+            'gemini.key_update_failed': 'Failed to update Gemini key: {message}',
+            'gemini.key_deleted_success': 'Gemini key deleted successfully',
+            'gemini.key_delete_failed': 'Failed to delete Gemini key: {message}',
+            
+            // Sidebar
+            'sidebar.expand': 'Expand sidebar',
+            'sidebar.collapse': 'Collapse sidebar',
+            
+            // Usage statistics
+            'usage_stats.requests_tokens': '{requests} requests / {tokens} tokens',
 
             'ai_providers.codex_title': 'Codex API Configuration',
             'ai_providers.codex_add_button': 'Add Configuration',

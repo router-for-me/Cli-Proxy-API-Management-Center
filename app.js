@@ -773,7 +773,7 @@ class CLIProxyManager {
             // 更新按钮提示文本
             const toggleBtn = document.getElementById('sidebar-toggle-btn-desktop');
             if (toggleBtn) {
-                toggleBtn.setAttribute('title', isCollapsed ? '展开侧边栏' : '收起侧边栏');
+                toggleBtn.setAttribute('title', isCollapsed ? t('sidebar.expand') : t('sidebar.collapse'));
             }
         }
     }
@@ -794,7 +794,7 @@ class CLIProxyManager {
                     // 更新按钮提示文本
                     const toggleBtn = document.getElementById('sidebar-toggle-btn-desktop');
                     if (toggleBtn) {
-                        toggleBtn.setAttribute('title', '展开侧边栏');
+                        toggleBtn.setAttribute('title', t('sidebar.expand'));
                     }
                 }
             }
@@ -1564,14 +1564,14 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
 
         modalBody.innerHTML = `
-            <h3>添加Gemini API密钥</h3>
+            <h3>\${t('gemini.add_modal_title')}</h3>
             <div class="form-group">
-                <label for="new-gemini-key">API密钥:</label>
-                <input type="text" id="new-gemini-key" placeholder="请输入Gemini API密钥">
+                <label for="new-gemini-key">\${t('gemini.add_modal_key_label')}</label>
+                <input type="text" id="new-gemini-key" placeholder="\${t('gemini.add_modal_key_placeholder')}">
             </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.addGeminiKey()">添加</button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">\${t('gemini.add_modal_cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.addGeminiKey()">\${t('gemini.add_modal_add')}</button>
             </div>
         `;
 
@@ -1583,7 +1583,7 @@ class CLIProxyManager {
         const newKey = document.getElementById('new-gemini-key').value.trim();
 
         if (!newKey) {
-            this.showNotification('请输入Gemini API密钥', 'error');
+            this.showNotification(t('gemini.add_modal_key_placeholder'), 'error');
             return;
         }
 
@@ -1600,9 +1600,9 @@ class CLIProxyManager {
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadGeminiKeys();
-            this.showNotification('Gemini密钥添加成功', 'success');
+            this.showNotification(t('gemini.key_added_success'), 'success');
         } catch (error) {
-            this.showNotification(`添加Gemini密钥失败: ${error.message}`, 'error');
+            this.showNotification(t('gemini.key_add_failed', { message: error.message }), 'error');
         }
     }
 
@@ -1612,14 +1612,14 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
 
         modalBody.innerHTML = `
-            <h3>编辑Gemini API密钥</h3>
+            <h3>\${t('gemini.edit_modal_title')}</h3>
             <div class="form-group">
-                <label for="edit-gemini-key">API密钥:</label>
-                <input type="text" id="edit-gemini-key" value="${currentKey}">
+                <label for="edit-gemini-key">\${t('gemini.add_modal_key_label')}</label>
+                <input type="text" id="edit-gemini-key" value="\${currentKey}">
             </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.updateGeminiKey('${currentKey}')">更新</button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">\${t('gemini.add_modal_cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.updateGeminiKey('\${currentKey}')">\${t('gemini.edit_modal_update')}</button>
             </div>
         `;
 
@@ -1631,7 +1631,7 @@ class CLIProxyManager {
         const newKey = document.getElementById('edit-gemini-key').value.trim();
 
         if (!newKey) {
-            this.showNotification('请输入Gemini API密钥', 'error');
+            this.showNotification(t('gemini.edit_modal_key_placeholder'), 'error');
             return;
         }
 
@@ -1644,9 +1644,9 @@ class CLIProxyManager {
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadGeminiKeys();
-            this.showNotification('Gemini密钥更新成功', 'success');
+            this.showNotification(t('gemini.key_updated_success'), 'success');
         } catch (error) {
-            this.showNotification(`更新Gemini密钥失败: ${error.message}`, 'error');
+            this.showNotification(t('gemini.key_update_failed', { message: error.message }), 'error');
         }
     }
 
@@ -1658,9 +1658,9 @@ class CLIProxyManager {
             await this.makeRequest(`/generative-language-api-key?value=${encodeURIComponent(key)}`, { method: 'DELETE' });
             this.clearCache(); // 清除缓存
             this.loadGeminiKeys();
-            this.showNotification('Gemini密钥删除成功', 'success');
+            this.showNotification(t('gemini.key_deleted_success'), 'success');
         } catch (error) {
-            this.showNotification(`删除Gemini密钥失败: ${error.message}`, 'error');
+            this.showNotification(t('gemini.key_delete_failed', { message: error.message }), 'error');
         }
     }
 
@@ -2437,26 +2437,26 @@ class CLIProxyManager {
         const inlineLabel = document.getElementById('gemini-web-label-input');
         const modalBody = document.getElementById('modal-body');
         modalBody.innerHTML = `
-            <h3>${i18n.t('auth_login.gemini_web_button')}</h3>
+            <h3>\${i18n.t('auth_login.gemini_web_button')}</h3>
             <div class="gemini-web-form">
                 <div class="form-group">
-                    <label for="modal-secure-1psid">${i18n.t('auth_login.secure_1psid_label')}</label>
-                    <input type="text" id="modal-secure-1psid" placeholder="${i18n.t('auth_login.secure_1psid_placeholder')}" required>
-                    <div class="form-hint">从浏览器开发者工具 → Application → Cookies 中获取</div>
+                    <label for="modal-secure-1psid">\${i18n.t('auth_login.secure_1psid_label')}</label>
+                    <input type="text" id="modal-secure-1psid" placeholder="\${i18n.t('auth_login.secure_1psid_placeholder')}" required>
+                    <div class="form-hint">\${t('gemini.form_hint_cookies')}</div>
                 </div>
                 <div class="form-group">
-                    <label for="modal-secure-1psidts">${i18n.t('auth_login.secure_1psidts_label')}</label>
-                    <input type="text" id="modal-secure-1psidts" placeholder="${i18n.t('auth_login.secure_1psidts_placeholder')}" required>
-                    <div class="form-hint">从浏览器开发者工具 → Application → Cookies 中获取</div>
+                    <label for="modal-secure-1psidts">\${i18n.t('auth_login.secure_1psidts_label')}</label>
+                    <input type="text" id="modal-secure-1psidts" placeholder="\${i18n.t('auth_login.secure_1psidts_placeholder')}" required>
+                    <div class="form-hint">\${t('gemini.form_hint_cookies')}</div>
                 </div>
                 <div class="form-group">
-                    <label for="modal-gemini-web-label">${i18n.t('auth_login.gemini_web_label_label')}</label>
-                    <input type="text" id="modal-gemini-web-label" placeholder="${i18n.t('auth_login.gemini_web_label_placeholder')}">
-                    <div class="form-hint">为此认证文件设置一个标签名称（可选）</div>
+                    <label for="modal-gemini-web-label">\${i18n.t('auth_login.gemini_web_label_label')}</label>
+                    <input type="text" id="modal-gemini-web-label" placeholder="\${i18n.t('auth_login.gemini_web_label_placeholder')}">
+                    <div class="form-hint">\${t('gemini.form_hint_label')}</div>
                 </div>
                 <div class="modal-actions">
-                    <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
-                    <button class="btn btn-primary" onclick="manager.saveGeminiWebToken()">${i18n.t('common.save')}</button>
+                    <button class="btn btn-secondary" onclick="manager.closeModal()">\${i18n.t('common.cancel')}</button>
+                    <button class="btn btn-primary" onclick="manager.saveGeminiWebToken()">\${i18n.t('common.save')}</button>
                 </div>
             </div>
         `;
@@ -2488,7 +2488,7 @@ class CLIProxyManager {
         const label = document.getElementById('modal-gemini-web-label').value.trim();
 
         if (!secure1psid || !secure1psidts) {
-            this.showNotification('请填写完整的 Cookie 信息', 'error');
+            this.showNotification(t('gemini.full_cookie_required'), 'error');
             return;
         }
 
@@ -2527,7 +2527,7 @@ class CLIProxyManager {
             }
             this.showNotification(`${i18n.t('auth_login.gemini_web_saved')}: ${response.file}`, 'success');
         } catch (error) {
-            this.showNotification(`保存失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('common.error')}: ${error.message}`, 'error');
         }
     }
 
@@ -2589,12 +2589,12 @@ class CLIProxyManager {
         if (urlInput && urlInput.value) {
             try {
                 await navigator.clipboard.writeText(urlInput.value);
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(t('gemini.link_copied'), 'success');
             } catch (error) {
                 // 降级方案：使用传统的复制方法
                 urlInput.select();
                 document.execCommand('copy');
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(t('gemini.link_copied'), 'success');
             }
         }
     }
@@ -2734,12 +2734,12 @@ class CLIProxyManager {
         if (urlInput && urlInput.value) {
             try {
                 await navigator.clipboard.writeText(urlInput.value);
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(t('gemini.link_copied'), 'success');
             } catch (error) {
                 // 降级方案：使用传统的复制方法
                 urlInput.select();
                 document.execCommand('copy');
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(t('gemini.link_copied'), 'success');
             }
         }
     }
@@ -2888,12 +2888,12 @@ class CLIProxyManager {
         if (urlInput && urlInput.value) {
             try {
                 await navigator.clipboard.writeText(urlInput.value);
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(t('gemini.link_copied'), 'success');
             } catch (error) {
                 // 降级方案：使用传统的复制方法
                 urlInput.select();
                 document.execCommand('copy');
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(t('gemini.link_copied'), 'success');
             }
         }
     }
@@ -3033,12 +3033,12 @@ class CLIProxyManager {
         if (urlInput && urlInput.value) {
             try {
                 await navigator.clipboard.writeText(urlInput.value);
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(t('gemini.link_copied'), 'success');
             } catch (error) {
                 // 降级方案：使用传统的复制方法
                 urlInput.select();
                 document.execCommand('copy');
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(t('gemini.link_copied'), 'success');
             }
         }
     }
@@ -3178,12 +3178,12 @@ class CLIProxyManager {
         if (urlInput && urlInput.value) {
             try {
                 await navigator.clipboard.writeText(urlInput.value);
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(t('gemini.link_copied'), 'success');
             } catch (error) {
                 // 降级方案：使用传统的复制方法
                 urlInput.select();
                 document.execCommand('copy');
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(t('gemini.link_copied'), 'success');
             }
         }
     }
@@ -3591,7 +3591,7 @@ class CLIProxyManager {
                     modelsHtml += `
                         <div class="model-item">
                             <span class="model-name">${modelName}</span>
-                            <span>${modelRequests} 请求 / ${modelTokens} tokens</span>
+                            <span>\${t('usage_stats.requests_tokens', { requests: modelRequests, tokens: modelTokens })}</span>
                         </div>
                     `;
                 });
