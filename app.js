@@ -2119,7 +2119,6 @@ class CLIProxyManager {
                 <label>${i18n.t('ai_providers.openai_add_modal_models_label')}</label>
                 <p class="form-hint">${i18n.t('ai_providers.openai_models_hint')}</p>
                 <div id="new-provider-models-wrapper" class="model-input-list"></div>
-                <button type="button" class="btn btn-secondary" onclick="manager.addModelField('new-provider-models-wrapper')">${i18n.t('ai_providers.openai_models_add_btn')}</button>
             </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
@@ -2208,7 +2207,6 @@ class CLIProxyManager {
                 <label>${i18n.t('ai_providers.openai_edit_modal_models_label')}</label>
                 <p class="form-hint">${i18n.t('ai_providers.openai_models_hint')}</p>
                 <div id="edit-provider-models-wrapper" class="model-input-list"></div>
-                <button type="button" class="btn btn-secondary" onclick="manager.addModelField('edit-provider-models-wrapper')">${i18n.t('ai_providers.openai_models_add_btn')}</button>
             </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
@@ -3657,18 +3655,53 @@ class CLIProxyManager {
             <div class="input-group">
                 <input type="text" class="model-name-input" placeholder="${i18n.t('ai_providers.openai_model_name_placeholder')}" value="${model.name ? this.escapeHtml(model.name) : ''}">
                 <input type="text" class="model-alias-input" placeholder="${i18n.t('ai_providers.openai_model_alias_placeholder')}" value="${model.alias ? this.escapeHtml(model.alias) : ''}">
-                <button type="button" class="btn btn-small btn-danger model-remove-btn"><i class="fas fa-trash"></i></button>
+                <div class="model-row-actions">
+                    <button type="button" class="btn btn-small btn-danger model-remove-btn"><i class="fas fa-trash"></i></button>
+                </div>
             </div>
         `;
 
         const removeBtn = row.querySelector('.model-remove-btn');
         if (removeBtn) {
             removeBtn.addEventListener('click', () => {
-                wrapper.removeChild(row);
+                if (wrapper.contains(row)) {
+                    wrapper.removeChild(row);
+                    if (!wrapper.querySelector('.model-input-row')) {
+                        this.addModelField(wrapperId);
+                    } else {
+                        this.refreshModelActionButtons(wrapperId);
+                    }
+                }
             });
         }
 
         wrapper.appendChild(row);
+        this.refreshModelActionButtons(wrapperId);
+    }
+
+    refreshModelActionButtons(wrapperId) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+
+        const rows = Array.from(wrapper.querySelectorAll('.model-input-row'));
+        rows.forEach((row, index) => {
+            const actions = row.querySelector('.model-row-actions');
+            if (!actions) return;
+
+            const existingAddBtn = actions.querySelector('.model-add-btn');
+            if (existingAddBtn) {
+                existingAddBtn.remove();
+            }
+
+            if (index === rows.length - 1) {
+                const addBtn = document.createElement('button');
+                addBtn.type = 'button';
+                addBtn.className = 'btn btn-small btn-secondary model-add-btn';
+                addBtn.innerHTML = '<i class="fas fa-plus"></i>';
+                addBtn.addEventListener('click', () => this.addModelField(wrapperId));
+                actions.appendChild(addBtn);
+            }
+        });
     }
 
     populateModelFields(wrapperId, models = []) {
