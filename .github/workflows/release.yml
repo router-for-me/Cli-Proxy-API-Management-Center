@@ -27,6 +27,8 @@ jobs:
 
       - name: Build all-in-one HTML
         run: npm run build
+        env:
+          VERSION: ${{ github.ref_name }}
 
       - name: Prepare release assets
         run: |

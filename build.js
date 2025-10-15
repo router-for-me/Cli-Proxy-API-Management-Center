@@ -49,6 +49,35 @@ function escapeForStyle(content) {
     return content.replace(/<\/(style)/gi, '<\\/$1');
 }
 
+function getVersion() {
+    // 1. 优先从环境变量获取（GitHub Actions 会设置）
+    if (process.env.VERSION) {
+        return process.env.VERSION;
+    }
+    
+    // 2. 尝试从 git tag 获取
+    try {
+        const { execSync } = require('child_process');
+        const gitTag = execSync('git describe --tags --exact-match 2>/dev/null || git describe --tags 2>/dev/null || echo ""', { encoding: 'utf8' }).trim();
+        if (gitTag) {
+            return gitTag;
+        }
+    } catch (err) {
+        console.warn('无法从 git 获取版本号');
+    }
+    
+    // 3. 回退到 package.json
+    try {
+        const packageJson = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8'));
+        return 'v' + packageJson.version;
+    } catch (err) {
+        console.warn('无法从 package.json 读取版本号');
+    }
+    
+    // 4. 最后使用默认值
+    return 'v0.0.0-dev';
+}
+
 function ensureDistDir() {
     if (fs.existsSync(distDir)) {
         fs.rmSync(distDir, { recursive: true, force: true });
@@ -82,6 +111,11 @@ function build() {
     const css = escapeForStyle(readFile(sourceFiles.css));
     const i18n = escapeForScript(readFile(sourceFiles.i18n));
     const app = escapeForScript(readFile(sourceFiles.app));
+    
+    // 获取版本号并替换
+    const version = getVersion();
+    console.log(`使用版本号: ${version}`);
+    html = html.replace(/__VERSION__/g, version);
 
     html = html.replace(
         '<link rel="stylesheet" href="styles.css">',
