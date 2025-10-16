@@ -171,6 +171,9 @@
                     <li data-tooltip="使用统计"><a href="#usage-stats" class="nav-item" data-section="usage-stats">
                             <i class="fas fa-chart-line"></i> <span data-i18n="nav.usage_stats">使用统计</span>
                         </a></li>
+                    <li id="logs-nav-item" data-tooltip="日志查看" style="display: none;"><a href="#logs" class="nav-item" data-section="logs">
+                            <i class="fas fa-scroll"></i> <span data-i18n="nav.logs">日志查看</span>
+                        </a></li>
                     <li data-tooltip="系统信息"><a href="#system-info" class="nav-item" data-section="system-info">
                             <i class="fas fa-info-circle"></i> <span data-i18n="nav.system_info">系统信息</span>
                         </a></li>
@@ -289,6 +292,24 @@
                                         </label>
                                         <span class="toggle-label"
                                             data-i18n="basic_settings.usage_statistics_enable">启用使用统计</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 日志记录设置 -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-file-alt"></i> <span
+                                            data-i18n="basic_settings.logging_title">日志记录</span></h3>
+                                </div>
+                                <div class="card-content">
+                                    <div class="toggle-group">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="logging-to-file-toggle">
+                                            <span class="slider"></span>
+                                        </label>
+                                        <span class="toggle-label"
+                                            data-i18n="basic_settings.logging_to_file_enable">启用日志记录到文件</span>
                                     </div>
                                 </div>
                             </div>
@@ -596,6 +617,40 @@
                                             </div>
                                         </div>
                                         <div id="iflow-oauth-status" class="form-hint" style="margin-top: 10px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 日志查看 -->
+                        <section id="logs" class="content-section">
+                            <h2 data-i18n="logs.title">日志查看</h2>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-scroll"></i> <span data-i18n="logs.log_content">日志内容</span></h3>
+                                    <div class="header-actions">
+                                        <div class="toggle-group" style="margin-right: 15px;">
+                                            <label class="toggle-switch" style="margin-right: 5px;">
+                                                <input type="checkbox" id="logs-auto-refresh-toggle">
+                                                <span class="slider"></span>
+                                            </label>
+                                            <span class="toggle-label" data-i18n="logs.auto_refresh" style="font-size: 0.9em;">自动刷新</span>
+                                        </div>
+                                        <button id="refresh-logs" class="btn btn-primary">
+                                            <i class="fas fa-sync-alt"></i> <span data-i18n="logs.refresh_button">刷新日志</span>
+                                        </button>
+                                        <button id="download-logs" class="btn btn-secondary">
+                                            <i class="fas fa-download"></i> <span data-i18n="logs.download_button">下载日志</span>
+                                        </button>
+                                        <button id="clear-logs" class="btn btn-danger">
+                                            <i class="fas fa-trash"></i> <span data-i18n="logs.clear_button">清空日志</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-content">
+                                    <div id="logs-content" class="logs-container">
+                                        <div class="loading-placeholder" data-i18n="logs.loading">正在加载日志...</div>
                                     </div>
                                 </div>
                             </div>

@@ -17,6 +17,12 @@ class CLIProxyManager {
         // 状态更新定时器
         this.statusUpdateTimer = null;
 
+        // 日志自动刷新定时器
+        this.logsRefreshTimer = null;
+
+        // 日志时间戳（用于增量加载）
+        this.latestLogTimestamp = null;
+
         // 主题管理
         this.currentTheme = 'light';
 
@@ -518,6 +524,31 @@ class CLIProxyManager {
             usageStatisticsToggle.addEventListener('change', (e) => this.updateUsageStatisticsEnabled(e.target.checked));
         }
 
+        // 日志记录设置
+        const loggingToFileToggle = document.getElementById('logging-to-file-toggle');
+        if (loggingToFileToggle) {
+            loggingToFileToggle.addEventListener('change', (e) => this.updateLoggingToFile(e.target.checked));
+        }
+
+        // 日志查看
+        const refreshLogs = document.getElementById('refresh-logs');
+        const downloadLogs = document.getElementById('download-logs');
+        const clearLogs = document.getElementById('clear-logs');
+        const logsAutoRefreshToggle = document.getElementById('logs-auto-refresh-toggle');
+
+        if (refreshLogs) {
+            refreshLogs.addEventListener('click', () => this.refreshLogs());
+        }
+        if (downloadLogs) {
+            downloadLogs.addEventListener('click', () => this.downloadLogs());
+        }
+        if (clearLogs) {
+            clearLogs.addEventListener('click', () => this.clearLogs());
+        }
+        if (logsAutoRefreshToggle) {
+            logsAutoRefreshToggle.addEventListener('change', (e) => this.toggleLogsAutoRefresh(e.target.checked));
+        }
+
         // API 密钥管理
         const addApiKey = document.getElementById('add-api-key');
         const addGeminiKey = document.getElementById('add-gemini-key');
@@ -814,6 +845,11 @@ class CLIProxyManager {
                 item.classList.add('active');
                 const sectionId = item.getAttribute('data-section');
                 document.getElementById(sectionId).classList.add('active');
+
+                // 如果点击的是日志查看页面，自动加载日志
+                if (sectionId === 'logs') {
+                    this.refreshLogs(false);
+                }
             });
         });
     }
@@ -1163,6 +1199,15 @@ class CLIProxyManager {
             }
         }
 
+        // 日志记录设置
+        if (config['logging-to-file'] !== undefined) {
+            const loggingToggle = document.getElementById('logging-to-file-toggle');
+            if (loggingToggle) {
+                loggingToggle.checked = config['logging-to-file'];
+            }
+            // 显示或隐藏日志查看栏目
+            this.toggleLogsNavItem(config['logging-to-file']);
+        }
 
         // API 密钥
         if (config['api-keys']) {
@@ -1351,6 +1396,292 @@ class CLIProxyManager {
                 usageToggle.checked = !enabled;
             }
         }
+    }
+
+    // 更新日志记录到文件设置
+    async updateLoggingToFile(enabled) {
+        try {
+            await this.makeRequest('/logging-to-file', {
+                method: 'PUT',
+                body: JSON.stringify({ value: enabled })
+            });
+            this.clearCache();
+            this.showNotification(i18n.t('notification.logging_to_file_updated'), 'success');
+            // 显示或隐藏日志查看栏目
+            this.toggleLogsNavItem(enabled);
+            // 如果启用了日志记录，自动刷新日志
+            if (enabled) {
+                setTimeout(() => this.refreshLogs(), 500);
+            }
+        } catch (error) {
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
+            const loggingToggle = document.getElementById('logging-to-file-toggle');
+            if (loggingToggle) {
+                loggingToggle.checked = !enabled;
+            }
+        }
+    }
+
+    // 切换日志查看栏目的显示/隐藏
+    toggleLogsNavItem(show) {
+        const logsNavItem = document.getElementById('logs-nav-item');
+        if (logsNavItem) {
+            logsNavItem.style.display = show ? '' : 'none';
+        }
+    }
+
+    // 刷新日志
+    async refreshLogs(incremental = false) {
+        const logsContent = document.getElementById('logs-content');
+        if (!logsContent) return;
+
+        try {
+            // 如果是增量加载且没有时间戳，则转为全量加载
+            if (incremental && !this.latestLogTimestamp) {
+                incremental = false;
+            }
+
+            // 全量加载时显示加载提示
+            if (!incremental) {
+                logsContent.innerHTML = '<div class="loading-placeholder" data-i18n="logs.loading">' + i18n.t('logs.loading') + '</div>';
+            }
+
+            // 构建请求 URL
+            let url = '/logs';
+            if (incremental && this.latestLogTimestamp) {
+                url += `?after=${this.latestLogTimestamp}`;
+            }
+
+            const response = await this.makeRequest(url, {
+                method: 'GET'
+            });
+
+            if (response && response.lines) {
+                // 更新最新时间戳
+                if (response['latest-timestamp']) {
+                    this.latestLogTimestamp = response['latest-timestamp'];
+                }
+
+                if (incremental && response.lines.length > 0) {
+                    // 增量加载：追加新日志
+                    this.appendLogs(response.lines, response['line-count'] || 0);
+                } else if (!incremental && response.lines.length > 0) {
+                    // 全量加载：重新渲染
+                    this.renderLogs(response.lines, response['line-count'] || response.lines.length, false);
+                } else if (!incremental) {
+                    // 全量加载但没有日志
+                    logsContent.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p data-i18n="logs.empty_title">' +
+                        i18n.t('logs.empty_title') + '</p><p data-i18n="logs.empty_desc">' +
+                        i18n.t('logs.empty_desc') + '</p></div>';
+                    this.latestLogTimestamp = null;
+                }
+                // 增量加载但没有新日志，不做任何操作
+            } else if (!incremental) {
+                logsContent.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p data-i18n="logs.empty_title">' +
+                    i18n.t('logs.empty_title') + '</p><p data-i18n="logs.empty_desc">' +
+                    i18n.t('logs.empty_desc') + '</p></div>';
+                this.latestLogTimestamp = null;
+            }
+        } catch (error) {
+            console.error('加载日志失败:', error);
+            if (!incremental) {
+                // 检查是否是 404 错误（API 不存在）
+                const is404 = error.message && (error.message.includes('404') || error.message.includes('Not Found'));
+
+                if (is404) {
+                    // API 不存在，提示升级
+                    logsContent.innerHTML = '<div class="upgrade-notice"><i class="fas fa-arrow-circle-up"></i><h3 data-i18n="logs.upgrade_required_title">' +
+                        i18n.t('logs.upgrade_required_title') + '</h3><p data-i18n="logs.upgrade_required_desc">' +
+                        i18n.t('logs.upgrade_required_desc') + '</p></div>';
+                } else {
+                    // 其他错误
+                    logsContent.innerHTML = '<div class="error-state"><i class="fas fa-exclamation-triangle"></i><p data-i18n="logs.load_error">' +
+                        i18n.t('logs.load_error') + '</p><p>' + error.message + '</p></div>';
+                }
+            }
+        }
+    }
+
+    // 渲染日志内容
+    renderLogs(lines, lineCount, scrollToBottom = true) {
+        const logsContent = document.getElementById('logs-content');
+        if (!logsContent) return;
+
+        if (!lines || lines.length === 0) {
+            logsContent.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p data-i18n="logs.empty_title">' +
+                i18n.t('logs.empty_title') + '</p><p data-i18n="logs.empty_desc">' +
+                i18n.t('logs.empty_desc') + '</p></div>';
+            return;
+        }
+
+        // 过滤掉 /v0/management/logs 相关的日志
+        const filteredLines = lines.filter(line => !line.includes('/v0/management/logs'));
+
+        // 限制前端显示的最大行数为 10000 行
+        const MAX_DISPLAY_LINES = 10000;
+        let displayedLines = filteredLines;
+        let displayedLineCount = filteredLines.length;
+
+        if (filteredLines.length > MAX_DISPLAY_LINES) {
+            const linesToRemove = filteredLines.length - MAX_DISPLAY_LINES;
+            displayedLines = filteredLines.slice(linesToRemove);
+            displayedLineCount = MAX_DISPLAY_LINES;
+        }
+
+        // 将数组转换为文本
+        const logsText = displayedLines.join('\n');
+        const logHtml = `
+            <div class="logs-info">
+                <span><i class="fas fa-list-ol"></i> ${displayedLineCount} ${i18n.t('logs.lines')}</span>
+            </div>
+            <pre class="logs-text">${this.escapeHtml(logsText)}</pre>
+        `;
+        logsContent.innerHTML = logHtml;
+
+        // 自动滚动到底部
+        if (scrollToBottom) {
+            const logsTextElement = logsContent.querySelector('.logs-text');
+            if (logsTextElement) {
+                logsTextElement.scrollTop = logsTextElement.scrollHeight;
+            }
+        }
+    }
+
+    // 追加新日志（增量加载）
+    appendLogs(newLines, totalLineCount) {
+        const logsContent = document.getElementById('logs-content');
+        if (!logsContent) return;
+
+        const logsTextElement = logsContent.querySelector('.logs-text');
+        const logsInfoElement = logsContent.querySelector('.logs-info');
+
+        if (!logsTextElement || !newLines || newLines.length === 0) {
+            return;
+        }
+
+        // 过滤掉 /v0/management/logs 相关的日志
+        const filteredNewLines = newLines.filter(line => !line.includes('/v0/management/logs'));
+        if (filteredNewLines.length === 0) {
+            return; // 如果过滤后没有新日志，直接返回
+        }
+
+        // 检查用户是否正在查看底部（判断是否需要自动滚动）
+        const isAtBottom = logsTextElement.scrollHeight - logsTextElement.scrollTop - logsTextElement.clientHeight < 50;
+
+        // 追加新日志文本
+        const newLogsText = '\n' + filteredNewLines.join('\n');
+        logsTextElement.textContent += newLogsText;
+
+        // 限制前端显示的最大行数为 10000 行
+        const MAX_DISPLAY_LINES = 10000;
+        const allLines = logsTextElement.textContent.split('\n').filter(line => line.trim());
+        if (allLines.length > MAX_DISPLAY_LINES) {
+            const linesToRemove = allLines.length - MAX_DISPLAY_LINES;
+            logsTextElement.textContent = allLines.slice(linesToRemove).join('\n');
+        }
+
+        // 更新行数统计（只显示实际显示的行数，最多 10000 行）
+        if (logsInfoElement) {
+            const displayedLines = logsTextElement.textContent.split('\n').filter(line => line.trim()).length;
+            logsInfoElement.innerHTML = `<span><i class="fas fa-list-ol"></i> ${displayedLines} ${i18n.t('logs.lines')}</span>`;
+        }
+
+        // 如果用户在底部，自动滚动到新内容
+        if (isAtBottom) {
+            logsTextElement.scrollTop = logsTextElement.scrollHeight;
+        }
+    }
+
+    // 下载日志
+    async downloadLogs() {
+        try {
+            const response = await this.makeRequest('/logs', {
+                method: 'GET'
+            });
+
+            if (response && response.lines && response.lines.length > 0) {
+                // 将数组转换为文本
+                const logsText = response.lines.join('\n');
+                const blob = new Blob([logsText], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `cli-proxy-api-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.log`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                this.showNotification(i18n.t('logs.download_success'), 'success');
+            } else {
+                this.showNotification(i18n.t('logs.empty_title'), 'info');
+            }
+        } catch (error) {
+            console.error('下载日志失败:', error);
+            this.showNotification(`${i18n.t('notification.download_failed')}: ${error.message}`, 'error');
+        }
+    }
+
+    // 清空日志
+    async clearLogs() {
+        if (!confirm(i18n.t('logs.clear_confirm'))) {
+            return;
+        }
+
+        try {
+            const response = await this.makeRequest('/logs', {
+                method: 'DELETE'
+            });
+
+            // 根据返回的 removed 数量显示通知
+            if (response && response.status === 'ok') {
+                const removedCount = response.removed || 0;
+                const message = `${i18n.t('logs.clear_success')} (${i18n.t('logs.removed')}: ${removedCount} ${i18n.t('logs.lines')})`;
+                this.showNotification(message, 'success');
+            } else {
+                this.showNotification(i18n.t('logs.clear_success'), 'success');
+            }
+
+            // 重置时间戳
+            this.latestLogTimestamp = null;
+            // 全量刷新
+            await this.refreshLogs(false);
+        } catch (error) {
+            console.error('清空日志失败:', error);
+            this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
+        }
+    }
+
+    // 切换日志自动刷新
+    toggleLogsAutoRefresh(enabled) {
+        if (enabled) {
+            // 启动自动刷新
+            if (this.logsRefreshTimer) {
+                clearInterval(this.logsRefreshTimer);
+            }
+            this.logsRefreshTimer = setInterval(() => {
+                const logsSection = document.getElementById('logs');
+                // 只在日志页面可见时刷新
+                if (logsSection && logsSection.classList.contains('active')) {
+                    // 使用增量加载
+                    this.refreshLogs(true);
+                }
+            }, 5000); // 每5秒刷新一次
+            this.showNotification(i18n.t('logs.auto_refresh_enabled'), 'success');
+        } else {
+            // 停止自动刷新
+            if (this.logsRefreshTimer) {
+                clearInterval(this.logsRefreshTimer);
+                this.logsRefreshTimer = null;
+            }
+            this.showNotification(i18n.t('logs.auto_refresh_disabled'), 'info');
+        }
+    }
+
+    // HTML转义工具函数
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // 更新项目切换设置

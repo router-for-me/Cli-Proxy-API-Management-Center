@@ -82,6 +82,7 @@ const i18n = {
             'nav.ai_providers': 'AI 提供商',
             'nav.auth_files': '认证文件',
             'nav.usage_stats': '使用统计',
+            'nav.logs': '日志查看',
             'nav.system_info': '系统信息',
 
             // 基础设置
@@ -101,6 +102,8 @@ const i18n = {
             'basic_settings.quota_switch_preview': '切换到预览模型',
             'basic_settings.usage_statistics_title': '使用统计',
             'basic_settings.usage_statistics_enable': '启用使用统计',
+            'basic_settings.logging_title': '日志记录',
+            'basic_settings.logging_to_file_enable': '启用日志记录到文件',
 
             // API 密钥管理
             'api_keys.title': 'API 密钥管理',
@@ -305,6 +308,27 @@ const i18n = {
             'usage_stats.models': '模型统计',
             'usage_stats.success_rate': '成功率',
 
+            // 日志查看
+            'logs.title': '日志查看',
+            'logs.refresh_button': '刷新日志',
+            'logs.clear_button': '清空日志',
+            'logs.download_button': '下载日志',
+            'logs.empty_title': '暂无日志记录',
+            'logs.empty_desc': '当启用"日志记录到文件"功能后，日志将显示在这里',
+            'logs.log_content': '日志内容',
+            'logs.loading': '正在加载日志...',
+            'logs.load_error': '加载日志失败',
+            'logs.clear_confirm': '确定要清空所有日志吗？此操作不可恢复！',
+            'logs.clear_success': '日志已清空',
+            'logs.download_success': '日志下载成功',
+            'logs.auto_refresh': '自动刷新',
+            'logs.auto_refresh_enabled': '自动刷新已开启',
+            'logs.auto_refresh_disabled': '自动刷新已关闭',
+            'logs.lines': '行',
+            'logs.removed': '已删除',
+            'logs.upgrade_required_title': '需要升级 CLI Proxy API',
+            'logs.upgrade_required_desc': '当前服务器版本不支持日志查看功能，请升级到最新版本的 CLI Proxy API 以使用此功能。',
+
             // 系统信息
             'system_info.title': '系统信息',
             'system_info.connection_status_title': '连接状态',
@@ -324,6 +348,7 @@ const i18n = {
             'notification.quota_switch_project_updated': '项目切换设置已更新',
             'notification.quota_switch_preview_updated': '预览模型切换设置已更新',
             'notification.usage_statistics_updated': '使用统计设置已更新',
+            'notification.logging_to_file_updated': '日志记录设置已更新',
             'notification.api_key_added': 'API密钥添加成功',
             'notification.api_key_updated': 'API密钥更新成功',
             'notification.api_key_deleted': 'API密钥删除成功',
@@ -453,6 +478,7 @@ const i18n = {
             'nav.ai_providers': 'AI Providers',
             'nav.auth_files': 'Auth Files',
             'nav.usage_stats': 'Usage Statistics',
+            'nav.logs': 'Logs Viewer',
             'nav.system_info': 'System Info',
 
             // Basic settings
@@ -472,6 +498,8 @@ const i18n = {
             'basic_settings.quota_switch_preview': 'Switch to Preview Model',
             'basic_settings.usage_statistics_title': 'Usage Statistics',
             'basic_settings.usage_statistics_enable': 'Enable usage statistics',
+            'basic_settings.logging_title': 'Logging',
+            'basic_settings.logging_to_file_enable': 'Enable logging to file',
 
             // API Keys management
             'api_keys.title': 'API Keys Management',
@@ -675,6 +703,27 @@ const i18n = {
             'usage_stats.models': 'Model Statistics',
             'usage_stats.success_rate': 'Success Rate',
 
+            // Logs viewer
+            'logs.title': 'Logs Viewer',
+            'logs.refresh_button': 'Refresh Logs',
+            'logs.clear_button': 'Clear Logs',
+            'logs.download_button': 'Download Logs',
+            'logs.empty_title': 'No Logs Available',
+            'logs.empty_desc': 'When "Enable logging to file" is enabled, logs will be displayed here',
+            'logs.log_content': 'Log Content',
+            'logs.loading': 'Loading logs...',
+            'logs.load_error': 'Failed to load logs',
+            'logs.clear_confirm': 'Are you sure you want to clear all logs? This action cannot be undone!',
+            'logs.clear_success': 'Logs cleared successfully',
+            'logs.download_success': 'Logs downloaded successfully',
+            'logs.auto_refresh': 'Auto Refresh',
+            'logs.auto_refresh_enabled': 'Auto refresh enabled',
+            'logs.auto_refresh_disabled': 'Auto refresh disabled',
+            'logs.lines': 'lines',
+            'logs.removed': 'Removed',
+            'logs.upgrade_required_title': 'Please Upgrade CLI Proxy API',
+            'logs.upgrade_required_desc': 'The current server version does not support the logs viewing feature. Please upgrade to the latest version of CLI Proxy API to use this feature.',
+
             // System info
             'system_info.title': 'System Information',
             'system_info.connection_status_title': 'Connection Status',
@@ -694,6 +743,7 @@ const i18n = {
             'notification.quota_switch_project_updated': 'Project switch settings updated',
             'notification.quota_switch_preview_updated': 'Preview model switch settings updated',
             'notification.usage_statistics_updated': 'Usage statistics settings updated',
+            'notification.logging_to_file_updated': 'Logging settings updated',
             'notification.api_key_added': 'API key added successfully',
             'notification.api_key_updated': 'API key updated successfully',
             'notification.api_key_deleted': 'API key deleted successfully',

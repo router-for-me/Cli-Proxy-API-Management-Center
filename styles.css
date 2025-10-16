@@ -2665,3 +2665,183 @@ input:checked+.slider:before {
         font-size: 12px;
     }
 }
+/* 日志查看样式 */
+.logs-container {
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 16px;
+    min-height: 500px;
+    max-height: calc(100vh - 400px);
+    overflow-y: auto;
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Ubuntu Mono', monospace;
+}
+
+.logs-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-primary);
+    font-size: 13px;
+    color: var(--text-tertiary);
+}
+
+.logs-info span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.logs-text {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 16px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: calc(100vh - 480px);
+    min-height: 450px;
+    overflow-y: auto;
+    margin: 0;
+}
+
+.logs-text::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.logs-text::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.logs-text::-webkit-scrollbar-thumb {
+    background: var(--border-secondary);
+    border-radius: 4px;
+}
+
+.logs-text::-webkit-scrollbar-thumb:hover {
+    background: var(--text-quaternary);
+}
+
+/* 空状态和错误状态 */
+.logs-container .empty-state,
+.logs-container .error-state,
+.logs-container .upgrade-notice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    text-align: center;
+    color: var(--text-tertiary);
+}
+
+.logs-container .empty-state i,
+.logs-container .error-state i,
+.logs-container .upgrade-notice i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: var(--border-secondary);
+}
+
+.logs-container .error-state i {
+    color: var(--error-text);
+}
+
+.logs-container .upgrade-notice i {
+    color: var(--primary-color);
+}
+
+.logs-container .empty-state p,
+.logs-container .error-state p,
+.logs-container .upgrade-notice p {
+    margin: 4px 0;
+    font-size: 14px;
+}
+
+.logs-container .empty-state p:first-of-type,
+.logs-container .error-state p:first-of-type {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 16px;
+}
+
+.logs-container .upgrade-notice h3 {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.logs-container .upgrade-notice p {
+    color: var(--text-tertiary);
+    max-width: 500px;
+    line-height: 1.6;
+}
+
+/* 日志页面头部操作区域 */
+#logs .card-header .header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+#logs .card-header .header-actions .toggle-group {
+    margin-bottom: 0;
+}
+
+/* 响应式设计 - 日志查看 */
+@media (max-width: 768px) {
+    .logs-container {
+        min-height: 300px;
+        max-height: calc(100vh - 350px);
+        padding: 12px;
+    }
+
+    .logs-text {
+        font-size: 11px;
+        padding: 12px;
+        max-height: calc(100vh - 430px);
+        min-height: 250px;
+    }
+
+    .logs-info {
+        font-size: 12px;
+    }
+
+    #logs .card-header .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    #logs .card-header .header-actions .btn {
+        flex: 1;
+        min-width: 0;
+    }
+
+    #logs .card-header .header-actions .btn span {
+        display: none;
+    }
+
+    #logs .card-header .header-actions .toggle-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* 暗色主题适配 */
+[data-theme="dark"] .logs-text {
+    background: rgba(15, 23, 42, 0.5);
+    border-color: var(--border-primary);
+    color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .logs-container {
+    background: rgba(15, 23, 42, 0.3);
+}
