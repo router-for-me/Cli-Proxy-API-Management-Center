@@ -2845,3 +2845,83 @@ input:checked+.slider:before {
 [data-theme="dark"] .logs-container {
     background: rgba(15, 23, 42, 0.3);
 }
+
+/* ===== AI提供商统计徽章样式 ===== */
+
+/* 统计信息容器 */
+.item-stats {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+/* 统计徽章基础样式 */
+.stat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+/* 成功统计徽章 */
+.stat-badge.stat-success {
+    background-color: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid var(--success-border);
+}
+
+.stat-badge.stat-success i {
+    font-size: 13px;
+}
+
+/* 失败统计徽章 */
+.stat-badge.stat-failure {
+    background-color: var(--error-bg);
+    color: var(--error-text);
+    border: 1px solid var(--error-border);
+}
+
+.stat-badge.stat-failure i {
+    font-size: 13px;
+}
+
+/* 悬停效果 */
+.stat-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* 暗色主题适配 */
+[data-theme="dark"] .stat-badge.stat-success {
+    background-color: rgba(6, 78, 59, 0.3);
+    color: #6ee7b7;
+    border-color: rgba(5, 150, 105, 0.5);
+}
+
+[data-theme="dark"] .stat-badge.stat-failure {
+    background-color: rgba(153, 27, 27, 0.3);
+    color: #fca5a5;
+    border-color: rgba(220, 38, 38, 0.5);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .item-stats {
+        gap: 6px;
+        margin-top: 8px;
+    }
+    
+    .stat-badge {
+        padding: 3px 8px;
+        font-size: 11px;
+    }
+    
+    .stat-badge i {
+        font-size: 11px !important;
+    }
+}

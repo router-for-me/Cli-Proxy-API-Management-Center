@@ -355,7 +355,6 @@ class CLIProxyManager {
     // 更新连接信息显示
     updateConnectionInfo() {
         const apiUrlElement = document.getElementById('display-api-url');
-        const keyElement = document.getElementById('display-management-key');
         const statusElement = document.getElementById('display-connection-status');
 
         // 显示API地址
@@ -364,14 +363,6 @@ class CLIProxyManager {
         }
 
         // 显示密钥（遮蔽显示）
-        if (keyElement) {
-            if (this.managementKey) {
-                const maskedKey = this.maskApiKey(this.managementKey);
-                keyElement.textContent = maskedKey;
-            } else {
-                keyElement.textContent = '-';
-            }
-        }
 
         // 显示连接状态
         if (statusElement) {
@@ -1148,7 +1139,7 @@ class CLIProxyManager {
             const config = await this.getConfig(forceRefresh);
 
             // 从配置中提取并设置各个设置项
-            this.updateSettingsFromConfig(config);
+            await this.updateSettingsFromConfig(config);
 
             // 认证文件需要单独加载，因为不在配置中
             await this.loadAuthFiles();
@@ -1166,7 +1157,7 @@ class CLIProxyManager {
     }
 
     // 从配置对象更新所有设置
-    updateSettingsFromConfig(config) {
+    async updateSettingsFromConfig(config) {
         // 调试设置
         if (config.debug !== undefined) {
             document.getElementById('debug-toggle').checked = config.debug;
@@ -1216,22 +1207,22 @@ class CLIProxyManager {
 
         // Gemini 密钥
         if (config['generative-language-api-key']) {
-            this.renderGeminiKeys(config['generative-language-api-key']);
+            await this.renderGeminiKeys(config['generative-language-api-key']);
         }
 
         // Codex 密钥
         if (config['codex-api-key']) {
-            this.renderCodexKeys(config['codex-api-key']);
+            await this.renderCodexKeys(config['codex-api-key']);
         }
 
         // Claude 密钥
         if (config['claude-api-key']) {
-            this.renderClaudeKeys(config['claude-api-key']);
+            await this.renderClaudeKeys(config['claude-api-key']);
         }
 
         // OpenAI 兼容提供商
         if (config['openai-compatibility']) {
-            this.renderOpenAIProviders(config['openai-compatibility']);
+            await this.renderOpenAIProviders(config['openai-compatibility']);
         }
     }
 
@@ -1888,7 +1879,7 @@ class CLIProxyManager {
         try {
             const config = await this.getConfig();
             if (config['generative-language-api-key']) {
-                this.renderGeminiKeys(config['generative-language-api-key']);
+                await this.renderGeminiKeys(config['generative-language-api-key']);
             }
         } catch (error) {
             console.error('加载Gemini密钥失败:', error);
@@ -1896,7 +1887,7 @@ class CLIProxyManager {
     }
 
     // 渲染Gemini密钥列表
-    renderGeminiKeys(keys) {
+    async renderGeminiKeys(keys) {
         const container = document.getElementById('gemini-keys-list');
 
         if (keys.length === 0) {
@@ -1910,11 +1901,24 @@ class CLIProxyManager {
             return;
         }
 
-        container.innerHTML = keys.map((key, index) => `
+        // 获取使用统计，按 source 聚合
+        const stats = await this.getKeyStats();
+
+        container.innerHTML = keys.map((key, index) => {
+            const keyStats = stats[key] || { success: 0, failure: 0 };
+            return `
             <div class="key-item">
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.gemini_item_title')} #${index + 1}</div>
                     <div class="item-value">${this.maskApiKey(key)}</div>
+                    <div class="item-stats">
+                        <span class="stat-badge stat-success">
+                            <i class="fas fa-check-circle"></i> 成功: ${keyStats.success}
+                        </span>
+                        <span class="stat-badge stat-failure">
+                            <i class="fas fa-times-circle"></i> 失败: ${keyStats.failure}
+                        </span>
+                    </div>
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary" onclick="manager.editGeminiKey(${index}, '${key}')">
@@ -1925,7 +1929,7 @@ class CLIProxyManager {
                     </button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
 
     // 显示添加Gemini密钥模态框
@@ -2039,7 +2043,7 @@ class CLIProxyManager {
         try {
             const config = await this.getConfig();
             if (config['codex-api-key']) {
-                this.renderCodexKeys(config['codex-api-key']);
+                await this.renderCodexKeys(config['codex-api-key']);
             }
         } catch (error) {
             console.error('加载Codex密钥失败:', error);
@@ -2047,7 +2051,7 @@ class CLIProxyManager {
     }
 
     // 渲染Codex密钥列表
-    renderCodexKeys(keys) {
+    async renderCodexKeys(keys) {
         const container = document.getElementById('codex-keys-list');
 
         if (keys.length === 0) {
@@ -2061,13 +2065,26 @@ class CLIProxyManager {
             return;
         }
 
-        container.innerHTML = keys.map((config, index) => `
+        // 获取使用统计，按 source 聚合
+        const stats = await this.getKeyStats();
+
+        container.innerHTML = keys.map((config, index) => {
+            const keyStats = stats[config['api-key']] || { success: 0, failure: 0 };
+            return `
             <div class="provider-item">
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.codex_item_title')} #${index + 1}</div>
                     <div class="item-subtitle">${i18n.t('common.api_key')}: ${this.maskApiKey(config['api-key'])}</div>
                     ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
                     ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
+                    <div class="item-stats">
+                        <span class="stat-badge stat-success">
+                            <i class="fas fa-check-circle"></i> 成功: ${keyStats.success}
+                        </span>
+                        <span class="stat-badge stat-failure">
+                            <i class="fas fa-times-circle"></i> 失败: ${keyStats.failure}
+                        </span>
+                    </div>
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary" onclick="manager.editCodexKey(${index}, ${JSON.stringify(config).replace(/"/g, '&quot;')})">
@@ -2078,7 +2095,7 @@ class CLIProxyManager {
                     </button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
 
     // 显示添加Codex密钥模态框
@@ -2229,7 +2246,7 @@ class CLIProxyManager {
         try {
             const config = await this.getConfig();
             if (config['claude-api-key']) {
-                this.renderClaudeKeys(config['claude-api-key']);
+                await this.renderClaudeKeys(config['claude-api-key']);
             }
         } catch (error) {
             console.error('加载Claude密钥失败:', error);
@@ -2237,7 +2254,7 @@ class CLIProxyManager {
     }
 
     // 渲染Claude密钥列表
-    renderClaudeKeys(keys) {
+    async renderClaudeKeys(keys) {
         const container = document.getElementById('claude-keys-list');
 
         if (keys.length === 0) {
@@ -2251,13 +2268,26 @@ class CLIProxyManager {
             return;
         }
 
-        container.innerHTML = keys.map((config, index) => `
+        // 获取使用统计，按 source 聚合
+        const stats = await this.getKeyStats();
+
+        container.innerHTML = keys.map((config, index) => {
+            const keyStats = stats[config['api-key']] || { success: 0, failure: 0 };
+            return `
             <div class="provider-item">
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.claude_item_title')} #${index + 1}</div>
                     <div class="item-subtitle">${i18n.t('common.api_key')}: ${this.maskApiKey(config['api-key'])}</div>
                     ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
                     ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
+                    <div class="item-stats">
+                        <span class="stat-badge stat-success">
+                            <i class="fas fa-check-circle"></i> 成功: ${keyStats.success}
+                        </span>
+                        <span class="stat-badge stat-failure">
+                            <i class="fas fa-times-circle"></i> 失败: ${keyStats.failure}
+                        </span>
+                    </div>
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary" onclick="manager.editClaudeKey(${index}, ${JSON.stringify(config).replace(/"/g, '&quot;')})">
@@ -2268,7 +2298,7 @@ class CLIProxyManager {
                     </button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
 
     // 显示添加Claude密钥模态框
@@ -2419,7 +2449,7 @@ class CLIProxyManager {
         try {
             const config = await this.getConfig();
             if (config['openai-compatibility']) {
-                this.renderOpenAIProviders(config['openai-compatibility']);
+                await this.renderOpenAIProviders(config['openai-compatibility']);
             }
         } catch (error) {
             console.error('加载OpenAI提供商失败:', error);
@@ -2427,7 +2457,7 @@ class CLIProxyManager {
     }
 
     // 渲染OpenAI提供商列表
-    renderOpenAIProviders(providers) {
+    async renderOpenAIProviders(providers) {
         const container = document.getElementById('openai-providers-list');
 
         if (providers.length === 0) {
@@ -2441,7 +2471,21 @@ class CLIProxyManager {
             return;
         }
 
-        container.innerHTML = providers.map((provider, index) => `
+        // 获取使用统计，按 source 聚合
+        const stats = await this.getKeyStats();
+
+        container.innerHTML = providers.map((provider, index) => {
+            const apiKeyEntries = provider['api-key-entries'] || [];
+            let totalSuccess = 0;
+            let totalFailure = 0;
+
+            apiKeyEntries.forEach(entry => {
+                const keyStats = stats[entry['api-key']] || { success: 0, failure: 0 };
+                totalSuccess += keyStats.success;
+                totalFailure += keyStats.failure;
+            });
+
+            return `
             <div class="provider-item">
                 <div class="item-content">
                     <div class="item-title">${this.escapeHtml(provider.name)}</div>
@@ -2449,6 +2493,14 @@ class CLIProxyManager {
                     <div class="item-subtitle">${i18n.t('ai_providers.openai_keys_count')}: ${(provider['api-key-entries'] || []).length}</div>
                     <div class="item-subtitle">${i18n.t('ai_providers.openai_models_count')}: ${(provider.models || []).length}</div>
                     ${this.renderOpenAIModelBadges(provider.models || [])}
+                    <div class="item-stats">
+                        <span class="stat-badge stat-success">
+                            <i class="fas fa-check-circle"></i> 成功: ${totalSuccess}
+                        </span>
+                        <span class="stat-badge stat-failure">
+                            <i class="fas fa-times-circle"></i> 失败: ${totalFailure}
+                        </span>
+                    </div>
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary" onclick="manager.editOpenAIProvider(${index}, ${JSON.stringify(provider).replace(/"/g, '&quot;')})">
@@ -2459,7 +2511,7 @@ class CLIProxyManager {
                     </button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
 
     // 显示添加OpenAI提供商模态框
@@ -3551,6 +3603,53 @@ class CLIProxyManager {
     requestsChart = null;
     tokensChart = null;
     currentUsageData = null;
+
+    // 获取API密钥的统计信息
+    async getKeyStats() {
+        try {
+            const response = await this.makeRequest('/usage');
+            const usage = response?.usage || null;
+
+            if (!usage) {
+                return {};
+            }
+
+            const sourceStats = {};
+            const apis = usage.apis || {};
+
+            Object.values(apis).forEach(apiEntry => {
+                const models = apiEntry.models || {};
+
+                Object.values(models).forEach(modelEntry => {
+                    const details = modelEntry.details || [];
+
+                    details.forEach(detail => {
+                        const source = detail.source;
+                        if (!source) return;
+
+                        if (!sourceStats[source]) {
+                            sourceStats[source] = {
+                                success: 0,
+                                failure: 0
+                            };
+                        }
+
+                        const success = detail.success;
+                        if (success === false) {
+                            sourceStats[source].failure += 1;
+                        } else {
+                            sourceStats[source].success += 1;
+                        }
+                    });
+                });
+            });
+
+            return sourceStats;
+        } catch (error) {
+            console.error('获取统计信息失败:', error);
+            return {};
+        }
+    }
 
     // 加载使用统计
     async loadUsageStats() {
