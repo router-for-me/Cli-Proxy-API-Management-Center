@@ -1278,6 +1278,133 @@ textarea::placeholder {
     height: 0;
 }
 
+/* 配置管理编辑器 */
+.editor-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.editor-actions .btn {
+    white-space: nowrap;
+}
+
+.yaml-editor-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#config-management .card {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 360px);
+    margin-bottom: 12px;
+}
+
+#config-management .card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#config-management .yaml-editor-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.yaml-editor {
+    width: 100%;
+    flex: 1;
+    min-height: 360px;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 12px 14px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    overflow-y: auto;
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+#config-management .CodeMirror {
+    flex: 1;
+    height: 100%;
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+#config-management .CodeMirror-scroll {
+    min-height: 0;
+    max-height: calc(100vh - 440px);
+    overflow-y: auto;
+}
+
+#config-management .CodeMirror.cm-s-default {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+#config-management .CodeMirror-gutters {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+}
+
+#config-management .CodeMirror-linenumber {
+    color: var(--text-tertiary);
+}
+
+#config-management .CodeMirror .CodeMirror-lines {
+    padding: 12px;
+}
+
+#config-management .CodeMirror .cm-comment {
+    color: #6b7280;
+}
+
+[data-theme="dark"] #config-management .CodeMirror.cm-s-default {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] #config-management .CodeMirror-gutters {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-secondary);
+}
+
+[data-theme="dark"] #config-management .CodeMirror .cm-comment {
+    color: #9ca3af;
+}
+
+#config-management .CodeMirror.cm-readonly {
+    opacity: 0.6;
+}
+
+.editor-status {
+    font-size: 13px;
+    color: var(--text-quaternary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 18px;
+}
+
+.editor-status.success {
+    color: #059669;
+}
+
+.editor-status.error {
+    color: #dc2626;
+}
+
 .slider {
     position: absolute;
     cursor: pointer;
@@ -2924,4 +3051,7 @@ input:checked+.slider:before {
     .stat-badge i {
         font-size: 11px !important;
     }
+}
+#config-management .CodeMirror .CodeMirror-lines {
+    padding: 12px;
 }

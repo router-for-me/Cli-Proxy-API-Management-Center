@@ -7,7 +7,13 @@
     <title data-i18n="title.login">CLI Proxy API Management Center</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <script src="i18n.js"></script>
 </head>
 
@@ -170,6 +176,9 @@
                         </a></li>
                     <li data-tooltip="使用统计"><a href="#usage-stats" class="nav-item" data-section="usage-stats">
                             <i class="fas fa-chart-line"></i> <span data-i18n="nav.usage_stats">使用统计</span>
+                        </a></li>
+                    <li data-tooltip="配置管理"><a href="#config-management" class="nav-item" data-section="config-management">
+                            <i class="fas fa-cog"></i> <span data-i18n="nav.config_management">配置管理</span>
                         </a></li>
                     <li id="logs-nav-item" data-tooltip="日志查看" style="display: none;"><a href="#logs" class="nav-item" data-section="logs">
                             <i class="fas fa-scroll"></i> <span data-i18n="nav.logs">日志查看</span>
@@ -761,6 +770,32 @@
                                 <div class="card-content">
                                     <div id="api-stats-table" class="api-stats-table">
                                         <div class="loading-placeholder" data-i18n="common.loading">正在加载...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 配置管理 -->
+                        <section id="config-management" class="content-section">
+                            <h2 data-i18n="config_management.title">配置管理</h2>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-file-code"></i> <span data-i18n="config_management.editor_title">配置文件</span></h3>
+                                    <div class="editor-actions">
+                                        <button id="config-reload-btn" class="btn btn-secondary">
+                                            <i class="fas fa-sync-alt"></i> <span data-i18n="config_management.reload">重新加载</span>
+                                        </button>
+                                        <button id="config-save-btn" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> <span data-i18n="config_management.save">保存</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" data-i18n="config_management.description">查看并编辑服务器上的 config.yaml 配置文件。保存前请确认语法正确。</p>
+                                    <div class="yaml-editor-container">
+                                        <textarea id="config-editor" class="yaml-editor" spellcheck="false" placeholder="key: value"></textarea>
+                                        <div id="config-editor-status" class="editor-status" data-i18n="config_management.status_idle">等待操作</div>
                                     </div>
                                 </div>
                             </div>

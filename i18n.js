@@ -82,6 +82,7 @@ const i18n = {
             'nav.ai_providers': 'AI 提供商',
             'nav.auth_files': '认证文件',
             'nav.usage_stats': '使用统计',
+            'nav.config_management': '配置管理',
             'nav.logs': '日志查看',
             'nav.system_info': '系统信息',
 
@@ -329,6 +330,24 @@ const i18n = {
             'logs.upgrade_required_title': '需要升级 CLI Proxy API',
             'logs.upgrade_required_desc': '当前服务器版本不支持日志查看功能，请升级到最新版本的 CLI Proxy API 以使用此功能。',
 
+            // 配置管理
+            'config_management.title': '配置管理',
+            'config_management.editor_title': '配置文件',
+            'config_management.reload': '重新加载',
+            'config_management.save': '保存',
+            'config_management.description': '查看并编辑服务器上的 config.yaml 配置文件。保存前请确认语法正确。',
+            'config_management.status_idle': '等待操作',
+            'config_management.status_loading': '加载配置中...',
+            'config_management.status_loaded': '配置已加载',
+            'config_management.status_dirty': '有未保存的更改',
+            'config_management.status_disconnected': '请先连接服务器以加载配置',
+            'config_management.status_load_failed': '加载失败',
+            'config_management.status_saving': '正在保存配置...',
+            'config_management.status_saved': '配置保存完成',
+            'config_management.status_save_failed': '保存失败',
+            'config_management.save_success': '配置已保存',
+            'config_management.error_yaml_not_supported': '服务器未返回 YAML 格式，请确认 /config.yaml 接口可用',
+
             // 系统信息
             'system_info.title': '系统信息',
             'system_info.connection_status_title': '连接状态',
@@ -478,6 +497,7 @@ const i18n = {
             'nav.ai_providers': 'AI Providers',
             'nav.auth_files': 'Auth Files',
             'nav.usage_stats': 'Usage Statistics',
+            'nav.config_management': 'Config Management',
             'nav.logs': 'Logs Viewer',
             'nav.system_info': 'System Info',
 
@@ -723,6 +743,24 @@ const i18n = {
             'logs.removed': 'Removed',
             'logs.upgrade_required_title': 'Please Upgrade CLI Proxy API',
             'logs.upgrade_required_desc': 'The current server version does not support the logs viewing feature. Please upgrade to the latest version of CLI Proxy API to use this feature.',
+
+            // Config management
+            'config_management.title': 'Config Management',
+            'config_management.editor_title': 'Configuration File',
+            'config_management.reload': 'Reload',
+            'config_management.save': 'Save',
+            'config_management.description': 'View and edit the server-side config.yaml file. Validate the syntax before saving.',
+            'config_management.status_idle': 'Waiting for action',
+            'config_management.status_loading': 'Loading configuration...',
+            'config_management.status_loaded': 'Configuration loaded',
+            'config_management.status_dirty': 'Unsaved changes',
+            'config_management.status_disconnected': 'Connect to the server to load the configuration',
+            'config_management.status_load_failed': 'Load failed',
+            'config_management.status_saving': 'Saving configuration...',
+            'config_management.status_saved': 'Configuration saved',
+            'config_management.status_save_failed': 'Save failed',
+            'config_management.save_success': 'Configuration saved successfully',
+            'config_management.error_yaml_not_supported': 'Server did not return YAML. Verify the /config.yaml endpoint is available.',
 
             // System info
             'system_info.title': 'System Information',

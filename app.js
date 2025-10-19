@@ -26,6 +26,18 @@ class CLIProxyManager {
         // 主题管理
         this.currentTheme = 'light';
 
+        // 配置文件编辑器状态
+        this.configYamlCache = '';
+        this.isConfigEditorDirty = false;
+        this.configEditorElements = {
+            textarea: null,
+            editorInstance: null,
+            saveBtn: null,
+            reloadBtn: null,
+            statusEl: null
+        };
+        this.lastConfigFetchUrl = null;
+
         this.init();
     }
 
@@ -113,6 +125,8 @@ class CLIProxyManager {
         this.setupNavigation();
         this.setupLanguageSwitcher();
         this.setupThemeSwitcher();
+        this.setupConfigEditor();
+        this.updateConfigEditorAvailability();
         // loadSettings 将在登录成功后调用
         this.updateLoginConnectionInfo();
         // 检查主机名，如果不是 localhost 或 127.0.0.1，则隐藏 OAuth 登录框
@@ -840,6 +854,9 @@ class CLIProxyManager {
                 // 如果点击的是日志查看页面，自动加载日志
                 if (sectionId === 'logs') {
                     this.refreshLogs(false);
+                } else if (sectionId === 'config-management') {
+                    this.loadConfigFileEditor();
+                    this.refreshConfigEditor();
                 }
             });
         });
@@ -868,6 +885,272 @@ class CLIProxyManager {
         }
         if (mainToggle) {
             mainToggle.addEventListener('click', () => this.toggleTheme());
+        }
+    }
+
+    // 初始化配置文件编辑器
+    setupConfigEditor() {
+        const textarea = document.getElementById('config-editor');
+        const saveBtn = document.getElementById('config-save-btn');
+        const reloadBtn = document.getElementById('config-reload-btn');
+        const statusEl = document.getElementById('config-editor-status');
+
+        this.configEditorElements = {
+            textarea,
+            editorInstance: null,
+            saveBtn,
+            reloadBtn,
+            statusEl
+        };
+
+        if (!textarea || !saveBtn || !reloadBtn || !statusEl) {
+            return;
+        }
+
+        if (window.CodeMirror) {
+            const editorInstance = window.CodeMirror.fromTextArea(textarea, {
+                mode: 'yaml',
+                theme: 'default',
+                lineNumbers: true,
+                indentUnit: 2,
+                tabSize: 2,
+                lineWrapping: true,
+                autoCloseBrackets: true,
+                extraKeys: {
+                    'Ctrl-/': 'toggleComment',
+                    'Cmd-/': 'toggleComment'
+                }
+            });
+
+            editorInstance.setSize('100%', '100%');
+            editorInstance.on('change', () => {
+                this.isConfigEditorDirty = true;
+                this.updateConfigEditorStatus('info', i18n.t('config_management.status_dirty'));
+            });
+
+            this.configEditorElements.editorInstance = editorInstance;
+        } else {
+            textarea.addEventListener('input', () => {
+                this.isConfigEditorDirty = true;
+                this.updateConfigEditorStatus('info', i18n.t('config_management.status_dirty'));
+            });
+        }
+
+        saveBtn.addEventListener('click', () => this.saveConfigFile());
+        reloadBtn.addEventListener('click', () => this.loadConfigFileEditor(true));
+
+        this.refreshConfigEditor();
+    }
+
+    // 更新配置编辑器可用状态
+    updateConfigEditorAvailability() {
+        const { textarea, editorInstance, saveBtn, reloadBtn } = this.configEditorElements;
+        if ((!textarea && !editorInstance) || !saveBtn || !reloadBtn) {
+            return;
+        }
+
+        const disabled = !this.isConnected;
+        if (editorInstance) {
+            editorInstance.setOption('readOnly', disabled ? 'nocursor' : false);
+            const wrapper = editorInstance.getWrapperElement();
+            if (wrapper) {
+                wrapper.classList.toggle('cm-readonly', disabled);
+            }
+        } else if (textarea) {
+            textarea.disabled = disabled;
+        }
+
+        saveBtn.disabled = disabled;
+        reloadBtn.disabled = disabled;
+
+        if (disabled) {
+            this.updateConfigEditorStatus('info', i18n.t('config_management.status_disconnected'));
+        }
+
+        this.refreshConfigEditor();
+    }
+
+    refreshConfigEditor() {
+        const instance = this.configEditorElements && this.configEditorElements.editorInstance;
+        if (instance && typeof instance.refresh === 'function') {
+            setTimeout(() => instance.refresh(), 0);
+        }
+    }
+
+    // 更新配置编辑器状态显示
+    updateConfigEditorStatus(type, message) {
+        const statusEl = (this.configEditorElements && this.configEditorElements.statusEl) || document.getElementById('config-editor-status');
+        if (!statusEl) {
+            return;
+        }
+
+        statusEl.textContent = message;
+        statusEl.classList.remove('success', 'error');
+
+        if (type === 'success') {
+            statusEl.classList.add('success');
+        } else if (type === 'error') {
+            statusEl.classList.add('error');
+        }
+    }
+
+    // 加载配置文件内容
+    async loadConfigFileEditor(forceRefresh = false) {
+        const { textarea, editorInstance, reloadBtn } = this.configEditorElements;
+        if (!textarea && !editorInstance) {
+            return;
+        }
+
+        if (!this.isConnected) {
+            this.updateConfigEditorStatus('info', i18n.t('config_management.status_disconnected'));
+            return;
+        }
+
+        if (reloadBtn) {
+            reloadBtn.disabled = true;
+        }
+        this.updateConfigEditorStatus('info', i18n.t('config_management.status_loading'));
+
+        try {
+            const yamlText = await this.fetchConfigFile(forceRefresh);
+
+            if (editorInstance) {
+                editorInstance.setValue(yamlText || '');
+                if (typeof editorInstance.markClean === 'function') {
+                    editorInstance.markClean();
+                }
+            } else if (textarea) {
+                textarea.value = yamlText || '';
+            }
+
+            this.isConfigEditorDirty = false;
+            this.updateConfigEditorStatus('success', i18n.t('config_management.status_loaded'));
+            this.refreshConfigEditor();
+        } catch (error) {
+            console.error('加载配置文件失败:', error);
+            this.updateConfigEditorStatus('error', `${i18n.t('config_management.status_load_failed')}: ${error.message}`);
+        } finally {
+            if (reloadBtn) {
+                reloadBtn.disabled = !this.isConnected;
+            }
+        }
+    }
+
+    // 获取配置文件内容
+    async fetchConfigFile(forceRefresh = false) {
+        if (!forceRefresh && this.configYamlCache) {
+            return this.configYamlCache;
+        }
+
+        const requestUrl = '/config.yaml';
+
+        try {
+            const response = await fetch(`${this.apiUrl}${requestUrl}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.managementKey}`,
+                    'Accept': 'application/yaml'
+                }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => '');
+                const message = errorText || `HTTP ${response.status}`;
+                throw new Error(message);
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (!/yaml/i.test(contentType)) {
+                throw new Error(i18n.t('config_management.error_yaml_not_supported'));
+            }
+
+            const text = await response.text();
+            this.lastConfigFetchUrl = requestUrl;
+            this.configYamlCache = text;
+            return text;
+        } catch (error) {
+            throw error instanceof Error ? error : new Error(String(error));
+        }
+    }
+
+    // 保存配置文件
+    async saveConfigFile() {
+        const { textarea, editorInstance, saveBtn, reloadBtn } = this.configEditorElements;
+        if ((!textarea && !editorInstance) || !saveBtn) {
+            return;
+        }
+
+        if (!this.isConnected) {
+            this.updateConfigEditorStatus('error', i18n.t('config_management.status_disconnected'));
+            return;
+        }
+
+        const yamlText = editorInstance ? editorInstance.getValue() : (textarea ? textarea.value : '');
+
+        saveBtn.disabled = true;
+        if (reloadBtn) {
+            reloadBtn.disabled = true;
+        }
+        this.updateConfigEditorStatus('info', i18n.t('config_management.status_saving'));
+
+        try {
+            try {
+                await this.writeConfigFile('/config.yaml', yamlText);
+                this.lastConfigFetchUrl = '/config.yaml';
+                this.configYamlCache = yamlText;
+                this.isConfigEditorDirty = false;
+                if (editorInstance && typeof editorInstance.markClean === 'function') {
+                    editorInstance.markClean();
+                }
+                this.showNotification(i18n.t('config_management.save_success'), 'success');
+                this.updateConfigEditorStatus('success', i18n.t('config_management.status_saved'));
+                this.clearCache();
+                await this.loadAllData(true);
+                return;
+            } catch (error) {
+                const errorMessage = `${i18n.t('config_management.status_save_failed')}: ${error.message}`;
+                this.updateConfigEditorStatus('error', errorMessage);
+                this.showNotification(errorMessage, 'error');
+                this.isConfigEditorDirty = true;
+            }
+        } finally {
+            saveBtn.disabled = !this.isConnected;
+            if (reloadBtn) {
+                reloadBtn.disabled = !this.isConnected;
+            }
+        }
+    }
+
+    // 写入配置文件到指定端点
+    async writeConfigFile(endpoint, yamlText) {
+        const response = await fetch(`${this.apiUrl}${endpoint}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${this.managementKey}`,
+                'Content-Type': 'application/yaml',
+                'Accept': 'application/json, text/plain, */*'
+            },
+            body: yamlText
+        });
+
+        if (!response.ok) {
+            const contentType = response.headers.get('content-type') || '';
+            let errorText = '';
+            if (contentType.includes('application/json')) {
+                const data = await response.json().catch(() => ({}));
+                errorText = data.message || data.error || '';
+            } else {
+                errorText = await response.text().catch(() => '');
+            }
+            throw new Error(errorText || `HTTP ${response.status}`);
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            const data = await response.json().catch(() => null);
+            if (data && data.ok === false) {
+                throw new Error(data.message || data.error || 'Server rejected the update');
+            }
         }
     }
 
@@ -1044,6 +1327,8 @@ class CLIProxyManager {
 
         lastUpdate.textContent = new Date().toLocaleString('zh-CN');
 
+        this.updateConfigEditorAvailability();
+
         // 更新连接信息显示
         this.updateConnectionInfo();
     }
@@ -1109,6 +1394,7 @@ class CLIProxyManager {
     clearCache() {
         this.configCache = null;
         this.cacheTimestamp = null;
+        this.configYamlCache = '';
     }
 
     // 启动状态更新定时器
@@ -1146,6 +1432,10 @@ class CLIProxyManager {
 
             // 使用统计需要单独加载
             await this.loadUsageStats();
+
+            // 加载配置文件编辑器内容
+            await this.loadConfigFileEditor(forceRefresh);
+            this.refreshConfigEditor();
 
             console.log('配置加载完成，使用缓存:', !forceRefresh && this.isCacheValid());
         } catch (error) {
@@ -1241,6 +1531,9 @@ class CLIProxyManager {
             this.loadOpenAIProviders(),
             this.loadAuthFiles()
         ]);
+
+        await this.loadConfigFileEditor(true);
+        this.refreshConfigEditor();
     }
 
     // 加载调试设置
