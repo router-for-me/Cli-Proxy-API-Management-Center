@@ -22,5 +22,6 @@ package-lock.json
 Thumbs.db
 
 CLAUDE.md
+.claude
 AGENTS.md
 .serena

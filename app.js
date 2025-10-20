@@ -1750,8 +1750,8 @@ class CLIProxyManager {
                     // 增量加载：追加新日志
                     this.appendLogs(response.lines, response['line-count'] || 0);
                 } else if (!incremental && response.lines.length > 0) {
-                    // 全量加载：重新渲染
-                    this.renderLogs(response.lines, response['line-count'] || response.lines.length, false);
+                    // 全量加载：重新渲染，默认滚动到底部显示最新日志
+                    this.renderLogs(response.lines, response['line-count'] || response.lines.length, true);
                 } else if (!incremental) {
                     // 全量加载但没有日志
                     logsContent.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p data-i18n="logs.empty_title">' +
