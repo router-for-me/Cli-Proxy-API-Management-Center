@@ -2753,7 +2753,7 @@ class CLIProxyManager {
     async renderOpenAIProviders(providers) {
         const container = document.getElementById('openai-providers-list');
 
-        if (providers.length === 0) {
+        if (!Array.isArray(providers) || providers.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-plug"></i>
@@ -2768,12 +2768,19 @@ class CLIProxyManager {
         const stats = await this.getKeyStats();
 
         container.innerHTML = providers.map((provider, index) => {
-            const apiKeyEntries = provider['api-key-entries'] || [];
+            const item = typeof provider === 'object' && provider !== null ? provider : {};
+            const apiKeyEntries = Array.isArray(item['api-key-entries']) ? item['api-key-entries'] : [];
+            const models = Array.isArray(item.models) ? item.models : [];
+            const name = item.name || '';
+            const baseUrl = item['base-url'] || '';
+
             let totalSuccess = 0;
             let totalFailure = 0;
 
             apiKeyEntries.forEach(entry => {
-                const keyStats = stats[entry['api-key']] || { success: 0, failure: 0 };
+                const key = entry && entry['api-key'] ? entry['api-key'] : '';
+                if (!key) return;
+                const keyStats = stats[key] || { success: 0, failure: 0 };
                 totalSuccess += keyStats.success;
                 totalFailure += keyStats.failure;
             });
@@ -2781,11 +2788,11 @@ class CLIProxyManager {
             return `
             <div class="provider-item">
                 <div class="item-content">
-                    <div class="item-title">${this.escapeHtml(provider.name)}</div>
-                    <div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(provider['base-url'])}</div>
-                    <div class="item-subtitle">${i18n.t('ai_providers.openai_keys_count')}: ${(provider['api-key-entries'] || []).length}</div>
-                    <div class="item-subtitle">${i18n.t('ai_providers.openai_models_count')}: ${(provider.models || []).length}</div>
-                    ${this.renderOpenAIModelBadges(provider.models || [])}
+                    <div class="item-title">${this.escapeHtml(name)}</div>
+                    <div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(baseUrl)}</div>
+                    <div class="item-subtitle">${i18n.t('ai_providers.openai_keys_count')}: ${apiKeyEntries.length}</div>
+                    <div class="item-subtitle">${i18n.t('ai_providers.openai_models_count')}: ${models.length}</div>
+                    ${this.renderOpenAIModelBadges(models)}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
                             <i class="fas fa-check-circle"></i> 成功: ${totalSuccess}
@@ -2796,15 +2803,15 @@ class CLIProxyManager {
                     </div>
                 </div>
                 <div class="item-actions">
-                    <button class="btn btn-secondary" onclick="manager.editOpenAIProvider(${index}, ${JSON.stringify(provider).replace(/"/g, '&quot;')})">
+                    <button class="btn btn-secondary" onclick="manager.editOpenAIProvider(${index}, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-danger" onclick="manager.deleteOpenAIProvider('${provider.name}')">
+                    <button class="btn btn-danger" onclick="manager.deleteOpenAIProvider('${this.escapeHtml(name)}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>
-        `}).join('');
+        `;}).join('');
     }
 
     // 显示添加OpenAI提供商模态框
@@ -2897,27 +2904,28 @@ class CLIProxyManager {
         const modal = document.getElementById('modal');
         const modalBody = document.getElementById('modal-body');
 
-        const apiKeyEntries = provider['api-key-entries'] || [];
-        const apiKeysText = apiKeyEntries.map(entry => entry['api-key'] || '').join('\n');
-        const proxiesText = apiKeyEntries.map(entry => entry['proxy-url'] || '').join('\n');
+        const apiKeyEntries = Array.isArray(provider?.['api-key-entries']) ? provider['api-key-entries'] : [];
+        const apiKeysText = apiKeyEntries.map(entry => entry?.['api-key'] || '').join('\n');
+        const proxiesText = apiKeyEntries.map(entry => entry?.['proxy-url'] || '').join('\n');
+        const models = Array.isArray(provider?.models) ? provider.models : [];
 
         modalBody.innerHTML = `
             <h3>${i18n.t('ai_providers.openai_edit_modal_title')}</h3>
             <div class="form-group">
                 <label for="edit-provider-name">${i18n.t('ai_providers.openai_edit_modal_name_label')}</label>
-                <input type="text" id="edit-provider-name" value="${provider.name}">
+                <input type="text" id="edit-provider-name" value="${provider?.name ? this.escapeHtml(provider.name) : ''}">
             </div>
             <div class="form-group">
                 <label for="edit-provider-url">${i18n.t('ai_providers.openai_edit_modal_url_label')}</label>
-                <input type="text" id="edit-provider-url" value="${provider['base-url']}">
+                <input type="text" id="edit-provider-url" value="${provider?.['base-url'] ? this.escapeHtml(provider['base-url']) : ''}">
             </div>
             <div class="form-group">
                 <label for="edit-provider-keys">${i18n.t('ai_providers.openai_edit_modal_keys_label')}</label>
-                <textarea id="edit-provider-keys" rows="3">${apiKeysText}</textarea>
+                <textarea id="edit-provider-keys" rows="3">${this.escapeHtml(apiKeysText)}</textarea>
             </div>
             <div class="form-group">
                 <label for="edit-provider-proxies">${i18n.t('ai_providers.openai_edit_modal_keys_proxy_label')}</label>
-                <textarea id="edit-provider-proxies" rows="3">${proxiesText}</textarea>
+                <textarea id="edit-provider-proxies" rows="3">${this.escapeHtml(proxiesText)}</textarea>
             </div>
             <div class="form-group">
                 <label>${i18n.t('ai_providers.openai_edit_modal_models_label')}</label>
@@ -2932,7 +2940,7 @@ class CLIProxyManager {
         `;
 
         modal.style.display = 'block';
-        this.populateModelFields('edit-provider-models-wrapper', provider.models || []);
+        this.populateModelFields('edit-provider-models-wrapper', models);
     }
 
     // 更新OpenAI提供商
