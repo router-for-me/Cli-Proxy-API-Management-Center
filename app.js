@@ -2046,8 +2046,14 @@ class CLIProxyManager {
 
     // 遮蔽API密钥显示
     maskApiKey(key) {
-        if (key.length <= 8) return key;
-        return key.substring(0, 4) + '...' + key.substring(key.length - 4);
+        if (key.length > 8) {
+            return key.substring(0, 4) + '...' + key.substring(key.length - 4);
+        } else if (key.length > 4) {
+            return key.substring(0, 2) + '...' + key.substring(key.length - 2);
+        } else if (key.length > 2) {
+            return key.substring(0, 1) + '...' + key.substring(key.length - 1);
+        }
+        return key;
     }
 
     // HTML 转义，防止 XSS
@@ -2198,7 +2204,8 @@ class CLIProxyManager {
         const stats = await this.getKeyStats();
 
         container.innerHTML = keys.map((key, index) => {
-            const keyStats = stats[key] || { success: 0, failure: 0 };
+            const masked = this.maskApiKey(key);
+            const keyStats = stats[key] || stats[masked] || { success: 0, failure: 0 };
             return `
             <div class="key-item">
                 <div class="item-content">
@@ -2362,7 +2369,9 @@ class CLIProxyManager {
         const stats = await this.getKeyStats();
 
         container.innerHTML = keys.map((config, index) => {
-            const keyStats = stats[config['api-key']] || { success: 0, failure: 0 };
+            const rawKey = config['api-key'];
+            const masked = rawKey ? this.maskApiKey(rawKey) : '';
+            const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
             return `
             <div class="provider-item">
                 <div class="item-content">
@@ -2565,7 +2574,9 @@ class CLIProxyManager {
         const stats = await this.getKeyStats();
 
         container.innerHTML = keys.map((config, index) => {
-            const keyStats = stats[config['api-key']] || { success: 0, failure: 0 };
+            const rawKey = config['api-key'];
+            const masked = rawKey ? this.maskApiKey(rawKey) : '';
+            const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
             return `
             <div class="provider-item">
                 <div class="item-content">
@@ -2761,7 +2772,19 @@ class CLIProxyManager {
                     <p>${i18n.t('ai_providers.openai_empty_desc')}</p>
                 </div>
             `;
+            // 重置样式
+            container.style.maxHeight = '';
+            container.style.overflowY = '';
             return;
+        }
+
+        // 根据提供商数量设置滚动条
+        if (providers.length > 5) {
+            container.style.maxHeight = '400px';
+            container.style.overflowY = 'auto';
+        } else {
+            container.style.maxHeight = '';
+            container.style.overflowY = '';
         }
 
         // 获取使用统计，按 source 聚合
@@ -2769,7 +2792,17 @@ class CLIProxyManager {
 
         container.innerHTML = providers.map((provider, index) => {
             const item = typeof provider === 'object' && provider !== null ? provider : {};
-            const apiKeyEntries = Array.isArray(item['api-key-entries']) ? item['api-key-entries'] : [];
+
+            // 处理两种API密钥格式：新的 api-key-entries 和旧的 api-keys
+            let apiKeyEntries = [];
+            if (Array.isArray(item['api-key-entries'])) {
+                // 新格式：{api-key: "...", proxy-url: "..."}
+                apiKeyEntries = item['api-key-entries'];
+            } else if (Array.isArray(item['api-keys'])) {
+                // 旧格式：简单的字符串数组
+                apiKeyEntries = item['api-keys'].map(key => ({ 'api-key': key }));
+            }
+
             const models = Array.isArray(item.models) ? item.models : [];
             const name = item.name || '';
             const baseUrl = item['base-url'] || '';
@@ -2780,7 +2813,8 @@ class CLIProxyManager {
             apiKeyEntries.forEach(entry => {
                 const key = entry && entry['api-key'] ? entry['api-key'] : '';
                 if (!key) return;
-                const keyStats = stats[key] || { success: 0, failure: 0 };
+                const masked = this.maskApiKey(key);
+                const keyStats = stats[key] || stats[masked] || { success: 0, failure: 0 };
                 totalSuccess += keyStats.success;
                 totalFailure += keyStats.failure;
             });
@@ -2904,7 +2938,16 @@ class CLIProxyManager {
         const modal = document.getElementById('modal');
         const modalBody = document.getElementById('modal-body');
 
-        const apiKeyEntries = Array.isArray(provider?.['api-key-entries']) ? provider['api-key-entries'] : [];
+        // 处理两种API密钥格式：新的 api-key-entries 和旧的 api-keys
+        let apiKeyEntries = [];
+        if (Array.isArray(provider?.['api-key-entries'])) {
+            // 新格式：{api-key: "...", proxy-url: "..."}
+            apiKeyEntries = provider['api-key-entries'];
+        } else if (Array.isArray(provider?.['api-keys'])) {
+            // 旧格式：简单的字符串数组
+            apiKeyEntries = provider['api-keys'].map(key => ({ 'api-key': key, 'proxy-url': '' }));
+        }
+
         const apiKeysText = apiKeyEntries.map(entry => entry?.['api-key'] || '').join('\n');
         const proxiesText = apiKeyEntries.map(entry => entry?.['proxy-url'] || '').join('\n');
         const models = Array.isArray(provider?.models) ? provider.models : [];
@@ -3935,8 +3978,8 @@ class CLIProxyManager {
                             };
                         }
 
-                        const success = detail.success;
-                        if (success === false) {
+                        const isFailed = detail.failed === true;
+                        if (isFailed) {
                             sourceStats[source].failure += 1;
                         } else {
                             sourceStats[source].success += 1;

@@ -1446,10 +1446,13 @@ input:checked+.slider:before {
 
 /* 列表样式 */
 .key-list,
-.provider-list,
 .file-list {
     max-height: 400px;
     overflow-y: auto;
+}
+
+.provider-list {
+    /* 默认不限制高度，动态设置 */
 }
 
 .key-item,
