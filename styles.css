@@ -1445,9 +1445,14 @@ input:checked+.slider:before {
 }
 
 /* 列表样式 */
-.key-list,
-.file-list {
+.key-list {
     max-height: 400px;
+    overflow-y: auto;
+}
+
+.file-list {
+    /* 认证文件列表填满页面，保留版本信息空间 */
+    max-height: calc(100vh - 300px); /* 减去导航栏、padding和版本信息的高度 */
     overflow-y: auto;
 }
 

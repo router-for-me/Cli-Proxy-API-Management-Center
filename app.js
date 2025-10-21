@@ -3045,14 +3045,14 @@ class CLIProxyManager {
     async loadAuthFiles() {
         try {
             const data = await this.makeRequest('/auth-files');
-            this.renderAuthFiles(data.files || []);
+            await this.renderAuthFiles(data.files || []);
         } catch (error) {
             console.error('加载认证文件失败:', error);
         }
     }
 
     // 渲染认证文件列表
-    renderAuthFiles(files) {
+    async renderAuthFiles(files) {
         const container = document.getElementById('auth-files-list');
 
         if (files.length === 0) {
@@ -3066,12 +3066,70 @@ class CLIProxyManager {
             return;
         }
 
-        container.innerHTML = files.map(file => `
+        // 获取使用统计，按 source 聚合
+        const stats = await this.getKeyStats();
+
+        container.innerHTML = files.map(file => {
+            // 认证文件的统计匹配逻辑：
+            // 1. 首先尝试完整文件名匹配
+            // 2. 如果没有匹配，尝试脱敏文件名匹配（去掉扩展名后的脱敏版本）
+            let fileStats = stats[file.name] || { success: 0, failure: 0 };
+
+            // 如果完整文件名没有统计，尝试基于文件名的脱敏版本匹配
+            if (fileStats.success === 0 && fileStats.failure === 0) {
+                const nameWithoutExt = file.name.replace(/\.[^/.]+$/, ""); // 去掉扩展名
+
+                // 后端有两种脱敏规则，都要尝试：
+                // 规则1：完整描述脱敏 - mikiunameina@gmail.com (ethereal-advice-465201-t0) -> 脱敏 -> miki...-t0)
+                // 规则2：直接整体脱敏 - mikiunameina@gmail.com-ethereal-advice-465201-t0 -> 脱敏 -> ???
+
+                const possibleSources = [];
+
+                // 规则1：尝试完整描述脱敏
+                const match = nameWithoutExt.match(/^([^@]+@[^-]+)-(.+)$/);
+                if (match) {
+                    const email = match[1];        // mikiunameina@gmail.com
+                    const projectName = match[2];  // ethereal-advice-465201-t0
+
+                    // 组合成完整的描述格式
+                    const fullDescription = `${email} (${projectName})`;
+
+                    // 对完整描述进行脱敏
+                    const maskedDescription = this.maskApiKey(fullDescription);
+                    possibleSources.push(maskedDescription);
+                }
+
+                // 规则2：类型-个人标识.json 格式，去掉类型前缀后脱敏
+                const typeMatch = nameWithoutExt.match(/^[^-]+-(.+)$/);
+                if (typeMatch) {
+                    const personalId = typeMatch[1];  // 个人标识部分
+                    const maskedPersonalId = this.maskApiKey(personalId);
+                    possibleSources.push(maskedPersonalId);
+                }
+
+                // 查找第一个有统计数据的匹配
+                for (const source of possibleSources) {
+                    if (stats[source] && (stats[source].success > 0 || stats[source].failure > 0)) {
+                        fileStats = stats[source];
+                        break;
+                    }
+                }
+            }
+
+            return `
             <div class="file-item">
                 <div class="item-content">
                     <div class="item-title">${file.name}</div>
                     <div class="item-subtitle">${i18n.t('auth_files.file_size')}: ${this.formatFileSize(file.size)}</div>
                     <div class="item-subtitle">${i18n.t('auth_files.file_modified')}: ${new Date(file.modtime).toLocaleString(i18n.currentLanguage === 'zh-CN' ? 'zh-CN' : 'en-US')}</div>
+                    <div class="item-stats">
+                        <span class="stat-badge stat-success">
+                            <i class="fas fa-check-circle"></i> 成功: ${fileStats.success}
+                        </span>
+                        <span class="stat-badge stat-failure">
+                            <i class="fas fa-times-circle"></i> 失败: ${fileStats.failure}
+                        </span>
+                    </div>
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-primary" onclick="manager.downloadAuthFile('${file.name}')">
@@ -3082,7 +3140,8 @@ class CLIProxyManager {
                     </button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
     }
 
     // 格式化文件大小
