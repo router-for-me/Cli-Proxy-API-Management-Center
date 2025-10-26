@@ -3071,6 +3071,17 @@ class CLIProxyManager {
         // 获取使用统计，按 source 聚合
         const stats = await this.getKeyStats();
 
+        // 收集所有文件类型（使用API返回的type字段）
+        const existingTypes = new Set(['all']); // 'all' 总是存在
+        files.forEach(file => {
+            if (file.type) {
+                existingTypes.add(file.type);
+            }
+        });
+
+        // 更新筛选按钮显示
+        this.updateFilterButtons(existingTypes);
+
         container.innerHTML = files.map(file => {
             // 认证文件的统计匹配逻辑：
             // 1. 首先尝试完整文件名匹配
@@ -3118,32 +3129,145 @@ class CLIProxyManager {
                 }
             }
 
+            // 使用API返回的文件类型
+            const fileType = file.type || 'unknown';
+            // 首字母大写显示类型，特殊处理 iFlow
+            let typeDisplay;
+            if (fileType === 'iflow') {
+                typeDisplay = 'iFlow';
+            } else {
+                typeDisplay = fileType.charAt(0).toUpperCase() + fileType.slice(1);
+            }
+            const typeBadge = `<span class="file-type-badge ${fileType}">${typeDisplay}</span>`;
+
             return `
-            <div class="file-item">
+            <div class="file-item" data-file-type="${fileType}">
                 <div class="item-content">
-                    <div class="item-title">${file.name}</div>
-                    <div class="item-subtitle">${i18n.t('auth_files.file_size')}: ${this.formatFileSize(file.size)}</div>
-                    <div class="item-subtitle">${i18n.t('auth_files.file_modified')}: ${new Date(file.modtime).toLocaleString(i18n.currentLanguage === 'zh-CN' ? 'zh-CN' : 'en-US')}</div>
-                    <div class="item-stats">
-                        <span class="stat-badge stat-success">
-                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${fileStats.success}
-                        </span>
-                        <span class="stat-badge stat-failure">
-                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${fileStats.failure}
-                        </span>
+                    <div class="item-title">${typeBadge}${file.name}</div>
+                    <div class="item-meta">
+                        <span class="item-subtitle">${i18n.t('auth_files.file_modified')}: ${new Date(file.modtime).toLocaleString(i18n.currentLanguage === 'zh-CN' ? 'zh-CN' : 'en-US')}</span>
+                        <span class="item-subtitle">${i18n.t('auth_files.file_size')}: ${this.formatFileSize(file.size)}</span>
                     </div>
-                </div>
-                <div class="item-actions">
-                    <button class="btn btn-primary" onclick="manager.downloadAuthFile('${file.name}')">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="btn btn-danger" onclick="manager.deleteAuthFile('${file.name}')">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="item-footer">
+                        <div class="item-stats">
+                            <span class="stat-badge stat-success">
+                                <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${fileStats.success}
+                            </span>
+                            <span class="stat-badge stat-failure">
+                                <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${fileStats.failure}
+                            </span>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-small btn-info" onclick="manager.showAuthFileDetails('${file.name}')" title="详细信息">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                            <button class="btn-small btn-primary" onclick="manager.downloadAuthFile('${file.name}')" title="下载">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="btn-small btn-danger" onclick="manager.deleteAuthFile('${file.name}')" title="删除">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
         }).join('');
+
+        // 绑定筛选按钮事件
+        this.bindAuthFileFilterEvents();
+    }
+
+    // 更新筛选按钮显示
+    updateFilterButtons(existingTypes) {
+        const filterContainer = document.querySelector('.auth-file-filter');
+        if (!filterContainer) return;
+
+        // 预定义的按钮顺序和显示文本
+        const predefinedTypes = [
+            { type: 'all', label: 'All' },
+            { type: 'qwen', label: 'Qwen' },
+            { type: 'gemini', label: 'Gemini' },
+            { type: 'claude', label: 'Claude' },
+            { type: 'codex', label: 'Codex' },
+            { type: 'iflow', label: 'iFlow' },
+            { type: 'empty', label: 'Empty' }
+        ];
+
+        // 获取现有按钮
+        const existingButtons = filterContainer.querySelectorAll('.filter-btn');
+        const existingButtonTypes = new Set();
+        existingButtons.forEach(btn => {
+            existingButtonTypes.add(btn.dataset.type);
+        });
+
+        // 显示/隐藏预定义按钮
+        existingButtons.forEach(btn => {
+            const btnType = btn.dataset.type;
+            if (existingTypes.has(btnType)) {
+                btn.style.display = 'inline-block';
+            } else {
+                btn.style.display = 'none';
+            }
+        });
+
+        // 为未知类型添加新按钮
+        const predefinedTypeSet = new Set(predefinedTypes.map(t => t.type));
+        existingTypes.forEach(type => {
+            if (type !== 'all' && !predefinedTypeSet.has(type) && !existingButtonTypes.has(type)) {
+                // 创建新按钮
+                const btn = document.createElement('button');
+                btn.className = 'filter-btn';
+                btn.dataset.type = type;
+                // 首字母大写
+                btn.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                
+                // 插入到 Empty 按钮之前（如果存在）
+                const emptyBtn = filterContainer.querySelector('[data-type="empty"]');
+                if (emptyBtn) {
+                    filterContainer.insertBefore(btn, emptyBtn);
+                } else {
+                    filterContainer.appendChild(btn);
+                }
+                
+                // 添加点击事件
+                btn.addEventListener('click', (e) => {
+                    this.handleFilterClick(e.target);
+                });
+            }
+        });
+    }
+
+    // 处理筛选按钮点击
+    handleFilterClick(clickedBtn) {
+        const filterBtns = document.querySelectorAll('.auth-file-filter .filter-btn');
+        
+        // 更新按钮状态
+        filterBtns.forEach(b => b.classList.remove('active'));
+        clickedBtn.classList.add('active');
+
+        // 获取筛选类型
+        const filterType = clickedBtn.dataset.type;
+        
+        // 筛选文件
+        const fileItems = document.querySelectorAll('.file-item');
+        fileItems.forEach(item => {
+            if (filterType === 'all' || item.dataset.fileType === filterType) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    // 绑定认证文件筛选事件
+    bindAuthFileFilterEvents() {
+        const filterBtns = document.querySelectorAll('.auth-file-filter .filter-btn');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.handleFilterClick(e.target);
+            });
+        });
     }
 
     // 格式化文件大小
@@ -3196,6 +3320,104 @@ class CLIProxyManager {
 
         // 清空文件输入
         event.target.value = '';
+    }
+
+    // 显示认证文件详细信息
+    async showAuthFileDetails(filename) {
+        try {
+            const response = await fetch(`${this.apiUrl}/auth-files/download?name=${encodeURIComponent(filename)}`, {
+                headers: {
+                    'Authorization': `Bearer ${this.managementKey}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const jsonData = await response.json();
+            
+            // 格式化JSON数据
+            const formattedJson = JSON.stringify(jsonData, null, 2);
+            
+            // 显示模态框
+            this.showJsonModal(filename, formattedJson);
+        } catch (error) {
+            this.showNotification(`读取文件详情失败: ${error.message}`, 'error');
+        }
+    }
+
+    // 显示JSON模态框
+    showJsonModal(filename, jsonContent) {
+        // 创建模态框HTML
+        const modalHtml = `
+            <div id="json-modal" class="json-modal">
+                <div class="json-modal-content">
+                    <div class="json-modal-header">
+                        <h3><i class="fas fa-file-code"></i> ${filename}</h3>
+                        <button class="json-modal-close" onclick="manager.closeJsonModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="json-modal-body">
+                        <pre class="json-content">${this.escapeHtml(jsonContent)}</pre>
+                    </div>
+                    <div class="json-modal-footer">
+                        <button class="btn btn-secondary" onclick="manager.copyJsonContent()">
+                            <i class="fas fa-copy"></i> ${i18n.t('common.copy')}
+                        </button>
+                        <button class="btn btn-secondary" onclick="manager.closeJsonModal()">
+                            ${i18n.t('common.close')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除旧的模态框（如果存在）
+        const oldModal = document.getElementById('json-modal');
+        if (oldModal) {
+            oldModal.remove();
+        }
+
+        // 添加新模态框
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // 添加点击背景关闭功能
+        const modal = document.getElementById('json-modal');
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeJsonModal();
+            }
+        });
+    }
+
+    // 关闭JSON模态框
+    closeJsonModal() {
+        const modal = document.getElementById('json-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    // 复制JSON内容
+    copyJsonContent() {
+        const jsonContent = document.querySelector('.json-content');
+        if (jsonContent) {
+            const text = jsonContent.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                this.showNotification('内容已复制到剪贴板', 'success');
+            }).catch(() => {
+                this.showNotification('复制失败', 'error');
+            });
+        }
+    }
+
+    // HTML转义函数
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // 下载认证文件
