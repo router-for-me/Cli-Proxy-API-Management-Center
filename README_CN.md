@@ -9,7 +9,7 @@ https://remote.router-for.me/
 
 最低可用版本 ≥ 6.0.0
 
-推荐版本 ≥ 6.1.3
+推荐版本 ≥ 6.2.32
 
 自6.0.19起WebUI已经集成在主程序中 可以通过主项目开启的外部端口的`/management.html`访问
 
