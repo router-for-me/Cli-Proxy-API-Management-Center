@@ -3260,12 +3260,23 @@ class CLIProxyManager {
 
     // 绑定认证文件筛选事件
     bindAuthFileFilterEvents() {
-        const filterBtns = document.querySelectorAll('.auth-file-filter .filter-btn');
-        filterBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.handleFilterClick(e.target);
-            });
-        });
+        const filterContainer = document.querySelector('.auth-file-filter');
+        if (!filterContainer) return;
+
+        // 清理旧的监听器，避免重复绑定
+        if (filterContainer._filterListener) {
+            filterContainer.removeEventListener('click', filterContainer._filterListener);
+        }
+
+        const listener = (event) => {
+            const button = event.target.closest('.filter-btn');
+            if (!button || !filterContainer.contains(button)) return;
+            event.preventDefault();
+            this.handleFilterClick(button);
+        };
+
+        filterContainer._filterListener = listener;
+        filterContainer.addEventListener('click', listener);
     }
 
     // 绑定认证文件操作按钮事件（使用事件委托）
