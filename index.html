@@ -77,8 +77,7 @@
                     <div class="form-group">
                         <label for="login-api-base" data-i18n="login.custom_connection_label">自定义连接地址:</label>
                         <div class="input-group">
-                            <input type="text" id="login-api-base" data-i18n="login.custom_connection_placeholder"
-                                placeholder="例如: https://example.com:8317">
+                            <input type="text" id="login-api-base" data-i18n-placeholder="login.custom_connection_placeholder">
                             <button type="button" id="login-reset-api-base"
                                 class="btn btn-secondary connection-reset-btn">
                                 <i class="fas fa-location-arrow"></i>
@@ -91,8 +90,7 @@
                     <div class="form-group">
                         <label for="login-management-key" data-i18n="login.management_key_label">管理密钥:</label>
                         <div class="input-group">
-                            <input type="password" id="login-management-key"
-                                data-i18n="login.management_key_placeholder" placeholder="请输入管理密钥" required>
+                            <input type="password" id="login-management-key" data-i18n-placeholder="login.management_key_placeholder" required>
                             <button type="button" class="btn btn-secondary toggle-key-visibility">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -123,7 +121,7 @@
                 <button class="mobile-menu-btn" id="mobile-menu-btn">
                     <i class="fas fa-bars"></i>
                 </button>
-                <button class="sidebar-toggle-btn-desktop" id="sidebar-toggle-btn-desktop" title="收起/展开侧边栏">
+                <button class="sidebar-toggle-btn-desktop" id="sidebar-toggle-btn-desktop" data-i18n-title="sidebar.toggle_collapse">
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="top-navbar-brand">
@@ -161,29 +159,29 @@
             <nav class="sidebar" id="sidebar">
                 <!-- 导航菜单 -->
                 <ul class="nav-menu">
-                    <li data-tooltip="基础设置"><a href="#basic-settings" class="nav-item active"
+                    <li data-i18n-tooltip="nav.basic_settings"><a href="#basic-settings" class="nav-item active"
                             data-section="basic-settings">
                             <i class="fas fa-sliders-h"></i> <span data-i18n="nav.basic_settings">基础设置</span>
                         </a></li>
-                    <li data-tooltip="API 密钥"><a href="#api-keys" class="nav-item" data-section="api-keys">
+                    <li data-i18n-tooltip="nav.api_keys"><a href="#api-keys" class="nav-item" data-section="api-keys">
                             <i class="fas fa-key"></i> <span data-i18n="nav.api_keys">API 密钥</span>
                         </a></li>
-                    <li data-tooltip="AI 提供商"><a href="#ai-providers" class="nav-item" data-section="ai-providers">
+                    <li data-i18n-tooltip="nav.ai_providers"><a href="#ai-providers" class="nav-item" data-section="ai-providers">
                             <i class="fas fa-robot"></i> <span data-i18n="nav.ai_providers">AI 提供商</span>
                         </a></li>
-                    <li data-tooltip="认证文件"><a href="#auth-files" class="nav-item" data-section="auth-files">
+                    <li data-i18n-tooltip="nav.auth_files"><a href="#auth-files" class="nav-item" data-section="auth-files">
                             <i class="fas fa-file-alt"></i> <span data-i18n="nav.auth_files">认证文件</span>
                         </a></li>
-                    <li data-tooltip="使用统计"><a href="#usage-stats" class="nav-item" data-section="usage-stats">
+                    <li data-i18n-tooltip="nav.usage_stats"><a href="#usage-stats" class="nav-item" data-section="usage-stats">
                             <i class="fas fa-chart-line"></i> <span data-i18n="nav.usage_stats">使用统计</span>
                         </a></li>
-                    <li data-tooltip="配置管理"><a href="#config-management" class="nav-item" data-section="config-management">
+                    <li data-i18n-tooltip="nav.config_management"><a href="#config-management" class="nav-item" data-section="config-management">
                             <i class="fas fa-cog"></i> <span data-i18n="nav.config_management">配置管理</span>
                         </a></li>
-                    <li id="logs-nav-item" data-tooltip="日志查看" style="display: none;"><a href="#logs" class="nav-item" data-section="logs">
+                    <li id="logs-nav-item" data-i18n-tooltip="nav.logs" style="display: none;"><a href="#logs" class="nav-item" data-section="logs">
                             <i class="fas fa-scroll"></i> <span data-i18n="nav.logs">日志查看</span>
                         </a></li>
-                    <li data-tooltip="系统信息"><a href="#system-info" class="nav-item" data-section="system-info">
+                    <li data-i18n-tooltip="nav.system_info"><a href="#system-info" class="nav-item" data-section="system-info">
                             <i class="fas fa-info-circle"></i> <span data-i18n="nav.system_info">系统信息</span>
                         </a></li>
                 </ul>
@@ -230,9 +228,7 @@
                                         <label for="proxy-url" data-i18n="basic_settings.proxy_url_label">代理
                                             URL:</label>
                                         <div class="input-group">
-                                            <input type="text" id="proxy-url"
-                                                data-i18n="basic_settings.proxy_url_placeholder"
-                                                placeholder="例如: socks5://user:pass@127.0.0.1:1080/">
+                                            <input type="text" id="proxy-url" data-i18n-placeholder="basic_settings.proxy_url_placeholder">
                                             <button id="update-proxy" class="btn btn-primary"
                                                 data-i18n="basic_settings.proxy_update">更新</button>
                                             <button id="clear-proxy" class="btn btn-danger"
@@ -461,7 +457,7 @@
                                         <div class="form-group">
                                             <label data-i18n="auth_login.codex_oauth_url_label">授权链接:</label>
                                             <div class="input-group">
-                                                <input type="text" id="codex-oauth-url" readonly>
+                                        <input type="text" id="codex-oauth-url" readonly>
                                                 <button id="codex-open-link" class="btn btn-primary">
                                                     <i class="fas fa-external-link-alt"></i> <span
                                                         data-i18n="auth_login.codex_open_link">打开链接</span>
@@ -533,11 +529,10 @@
                                             data-i18n="auth_login.gemini_cli_project_id_label">Google Cloud 项目 ID
                                             (可选):</label>
                                         <input type="text" id="gemini-cli-project-id"
-                                            data-i18n="auth_login.gemini_cli_project_id_placeholder"
-                                            placeholder="输入 Google Cloud 项目 ID (可选)">
-                                        <div class="form-hint" data-i18n="auth_login.gemini_cli_project_id_hint">
-                                            如果指定了项目 ID，将使用该项目的认证信息。
-                                        </div>
+                                            data-i18n-placeholder="auth_login.gemini_cli_project_id_placeholder">
+                            <div class="form-hint" data-i18n="auth_login.gemini_cli_project_id_hint">
+                                如果指定了项目 ID，将使用该项目的认证信息。
+                            </div>
                                     </div>
                                     <div id="gemini-cli-oauth-content" style="display: none;">
                                         <div class="form-group">
@@ -794,7 +789,7 @@
                                 <div class="card-content">
                                     <p class="form-hint" data-i18n="config_management.description">查看并编辑服务器上的 config.yaml 配置文件。保存前请确认语法正确。</p>
                                     <div class="yaml-editor-container">
-                                        <textarea id="config-editor" class="yaml-editor" spellcheck="false" placeholder="key: value"></textarea>
+                                        <textarea id="config-editor" class="yaml-editor" spellcheck="false" data-i18n="config_management.editor_placeholder"></textarea>
                                         <div id="config-editor-status" class="editor-status" data-i18n="config_management.status_idle">等待操作</div>
                                     </div>
                                 </div>

@@ -182,12 +182,12 @@ class CLIProxyManager {
         // 如果有完整的连接信息且之前已登录，尝试自动登录
         if (savedBase && savedKey && wasLoggedIn) {
             try {
-                console.log('检测到本地连接数据，尝试自动登录...');
+                console.log(i18n.t('auto_login.title'));
                 this.showAutoLoginLoading();
                 await this.attemptAutoLogin(savedBase, savedKey);
                 return; // 自动登录成功，不显示登录页面
             } catch (error) {
-                console.log('自动登录失败:', error.message);
+                console.log(`${i18n.t('notification.login_failed')}: ${error.message}`);
                 // 清除无效的登录状态
                 localStorage.removeItem('isLoggedIn');
                 this.hideAutoLoginLoading();
@@ -232,7 +232,7 @@ class CLIProxyManager {
             this.hideAutoLoginLoading();
             this.showMainPage();
 
-            console.log('自动登录成功');
+            console.log(i18n.t('auto_login.title'));
             return true;
         } catch (error) {
             console.error('自动登录失败:', error);
@@ -807,7 +807,8 @@ class CLIProxyManager {
             // 更新按钮提示文本
             const toggleBtn = document.getElementById('sidebar-toggle-btn-desktop');
             if (toggleBtn) {
-                toggleBtn.setAttribute('title', isCollapsed ? '展开侧边栏' : '收起侧边栏');
+                toggleBtn.setAttribute('data-i18n-title', isCollapsed ? 'sidebar.toggle_expand' : 'sidebar.toggle_collapse');
+                toggleBtn.title = i18n.t(isCollapsed ? 'sidebar.toggle_expand' : 'sidebar.toggle_collapse');
             }
         }
     }
@@ -828,7 +829,8 @@ class CLIProxyManager {
                     // 更新按钮提示文本
                     const toggleBtn = document.getElementById('sidebar-toggle-btn-desktop');
                     if (toggleBtn) {
-                        toggleBtn.setAttribute('title', '展开侧边栏');
+                        toggleBtn.setAttribute('data-i18n-title', 'sidebar.toggle_expand');
+                        toggleBtn.title = i18n.t('sidebar.toggle_expand');
                     }
                 }
             }
@@ -1420,7 +1422,7 @@ class CLIProxyManager {
     // 加载所有数据 - 使用新的 /config 端点一次性获取所有配置
     async loadAllData(forceRefresh = false) {
         try {
-            console.log('使用新的 /config 端点加载所有配置...');
+            console.log(i18n.t('system_info.real_time_data'));
             // 使用新的 /config 端点一次性获取所有配置
             const config = await this.getConfig(forceRefresh);
 
@@ -2213,10 +2215,10 @@ class CLIProxyManager {
                     <div class="item-value">${this.maskApiKey(key)}</div>
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
-                            <i class="fas fa-check-circle"></i> 成功: ${keyStats.success}
+                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
                         </span>
                         <span class="stat-badge stat-failure">
-                            <i class="fas fa-times-circle"></i> 失败: ${keyStats.failure}
+                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${keyStats.failure}
                         </span>
                     </div>
                 </div>
@@ -2238,14 +2240,14 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
 
         modalBody.innerHTML = `
-            <h3>添加Gemini API密钥</h3>
+            <h3>${i18n.t('ai_providers.gemini_add_modal_title')}</h3>
             <div class="form-group">
-                <label for="new-gemini-key">API密钥:</label>
-                <input type="text" id="new-gemini-key" placeholder="请输入Gemini API密钥">
+                <label for="new-gemini-key">${i18n.t('ai_providers.gemini_add_modal_key_label')}</label>
+                <input type="text" id="new-gemini-key" placeholder="${i18n.t('ai_providers.gemini_add_modal_key_placeholder')}">
             </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.addGeminiKey()">添加</button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.addGeminiKey()">${i18n.t('common.add')}</button>
             </div>
         `;
 
@@ -2257,7 +2259,7 @@ class CLIProxyManager {
         const newKey = document.getElementById('new-gemini-key').value.trim();
 
         if (!newKey) {
-            this.showNotification('请输入Gemini API密钥', 'error');
+            this.showNotification(i18n.t('notification.please_enter') + ' ' + i18n.t('notification.gemini_api_key'), 'error');
             return;
         }
 
@@ -2274,9 +2276,9 @@ class CLIProxyManager {
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadGeminiKeys();
-            this.showNotification('Gemini密钥添加成功', 'success');
+            this.showNotification(i18n.t('notification.gemini_key_added'), 'success');
         } catch (error) {
-            this.showNotification(`添加Gemini密钥失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.add_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -2286,14 +2288,14 @@ class CLIProxyManager {
         const modalBody = document.getElementById('modal-body');
 
         modalBody.innerHTML = `
-            <h3>编辑Gemini API密钥</h3>
+            <h3>${i18n.t('ai_providers.gemini_edit_modal_title')}</h3>
             <div class="form-group">
-                <label for="edit-gemini-key">API密钥:</label>
+                <label for="edit-gemini-key">${i18n.t('ai_providers.gemini_edit_modal_key_label')}</label>
                 <input type="text" id="edit-gemini-key" value="${currentKey}">
             </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="manager.closeModal()">取消</button>
-                <button class="btn btn-primary" onclick="manager.updateGeminiKey('${currentKey}')">更新</button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.updateGeminiKey('${currentKey}')">${i18n.t('common.update')}</button>
             </div>
         `;
 
@@ -2305,7 +2307,7 @@ class CLIProxyManager {
         const newKey = document.getElementById('edit-gemini-key').value.trim();
 
         if (!newKey) {
-            this.showNotification('请输入Gemini API密钥', 'error');
+            this.showNotification(i18n.t('notification.please_enter') + ' ' + i18n.t('notification.gemini_api_key'), 'error');
             return;
         }
 
@@ -2318,9 +2320,9 @@ class CLIProxyManager {
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadGeminiKeys();
-            this.showNotification('Gemini密钥更新成功', 'success');
+            this.showNotification(i18n.t('notification.gemini_key_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新Gemini密钥失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -2332,9 +2334,9 @@ class CLIProxyManager {
             await this.makeRequest(`/generative-language-api-key?value=${encodeURIComponent(key)}`, { method: 'DELETE' });
             this.clearCache(); // 清除缓存
             this.loadGeminiKeys();
-            this.showNotification('Gemini密钥删除成功', 'success');
+            this.showNotification(i18n.t('notification.gemini_key_deleted'), 'success');
         } catch (error) {
-            this.showNotification(`删除Gemini密钥失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -2381,10 +2383,10 @@ class CLIProxyManager {
                     ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
-                            <i class="fas fa-check-circle"></i> 成功: ${keyStats.success}
+                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
                         </span>
                         <span class="stat-badge stat-failure">
-                            <i class="fas fa-times-circle"></i> 失败: ${keyStats.failure}
+                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${keyStats.failure}
                         </span>
                     </div>
                 </div>
@@ -2461,9 +2463,9 @@ class CLIProxyManager {
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadCodexKeys();
-            this.showNotification('Codex配置添加成功', 'success');
+            this.showNotification(i18n.t('notification.codex_config_added'), 'success');
         } catch (error) {
-            this.showNotification(`添加Codex配置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.add_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -2523,9 +2525,9 @@ class CLIProxyManager {
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadCodexKeys();
-            this.showNotification('Codex配置更新成功', 'success');
+            this.showNotification(i18n.t('notification.codex_config_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新Codex配置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -2537,9 +2539,9 @@ class CLIProxyManager {
             await this.makeRequest(`/codex-api-key?api-key=${encodeURIComponent(apiKey)}`, { method: 'DELETE' });
             this.clearCache(); // 清除缓存
             this.loadCodexKeys();
-            this.showNotification('Codex配置删除成功', 'success');
+            this.showNotification(i18n.t('notification.codex_config_deleted'), 'success');
         } catch (error) {
-            this.showNotification(`删除Codex配置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -2586,10 +2588,10 @@ class CLIProxyManager {
                     ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
-                            <i class="fas fa-check-circle"></i> 成功: ${keyStats.success}
+                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
                         </span>
                         <span class="stat-badge stat-failure">
-                            <i class="fas fa-times-circle"></i> 失败: ${keyStats.failure}
+                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${keyStats.failure}
                         </span>
                     </div>
                 </div>
@@ -2666,9 +2668,9 @@ class CLIProxyManager {
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadClaudeKeys();
-            this.showNotification('Claude配置添加成功', 'success');
+            this.showNotification(i18n.t('notification.claude_config_added'), 'success');
         } catch (error) {
-            this.showNotification(`添加Claude配置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.add_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -2728,9 +2730,9 @@ class CLIProxyManager {
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadClaudeKeys();
-            this.showNotification('Claude配置更新成功', 'success');
+            this.showNotification(i18n.t('notification.claude_config_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新Claude配置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -2742,9 +2744,9 @@ class CLIProxyManager {
             await this.makeRequest(`/claude-api-key?api-key=${encodeURIComponent(apiKey)}`, { method: 'DELETE' });
             this.clearCache(); // 清除缓存
             this.loadClaudeKeys();
-            this.showNotification('Claude配置删除成功', 'success');
+            this.showNotification(i18n.t('notification.claude_config_deleted'), 'success');
         } catch (error) {
-            this.showNotification(`删除Claude配置失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -2829,10 +2831,10 @@ class CLIProxyManager {
                     ${this.renderOpenAIModelBadges(models)}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
-                            <i class="fas fa-check-circle"></i> 成功: ${totalSuccess}
+                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${totalSuccess}
                         </span>
                         <span class="stat-badge stat-failure">
-                            <i class="fas fa-times-circle"></i> 失败: ${totalFailure}
+                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${totalFailure}
                         </span>
                     </div>
                 </div>
@@ -2927,9 +2929,9 @@ class CLIProxyManager {
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadOpenAIProviders();
-            this.showNotification('OpenAI提供商添加成功', 'success');
+            this.showNotification(i18n.t('notification.openai_provider_added'), 'success');
         } catch (error) {
-            this.showNotification(`添加OpenAI提供商失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.add_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -3021,9 +3023,9 @@ class CLIProxyManager {
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadOpenAIProviders();
-            this.showNotification('OpenAI提供商更新成功', 'success');
+            this.showNotification(i18n.t('notification.openai_provider_updated'), 'success');
         } catch (error) {
-            this.showNotification(`更新OpenAI提供商失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -3035,9 +3037,9 @@ class CLIProxyManager {
             await this.makeRequest(`/openai-compatibility?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
             this.clearCache(); // 清除缓存
             this.loadOpenAIProviders();
-            this.showNotification('OpenAI提供商删除成功', 'success');
+            this.showNotification(i18n.t('notification.openai_provider_deleted'), 'success');
         } catch (error) {
-            this.showNotification(`删除OpenAI提供商失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -3124,10 +3126,10 @@ class CLIProxyManager {
                     <div class="item-subtitle">${i18n.t('auth_files.file_modified')}: ${new Date(file.modtime).toLocaleString(i18n.currentLanguage === 'zh-CN' ? 'zh-CN' : 'en-US')}</div>
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
-                            <i class="fas fa-check-circle"></i> 成功: ${fileStats.success}
+                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${fileStats.success}
                         </span>
                         <span class="stat-badge stat-failure">
-                            <i class="fas fa-times-circle"></i> 失败: ${fileStats.failure}
+                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${fileStats.failure}
                         </span>
                     </div>
                 </div>
@@ -3189,7 +3191,7 @@ class CLIProxyManager {
             this.loadAuthFiles();
             this.showNotification(i18n.t('auth_files.upload_success'), 'success');
         } catch (error) {
-            this.showNotification(`文件上传失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.upload_failed')}: ${error.message}`, 'error');
         }
 
         // 清空文件输入
@@ -3219,7 +3221,7 @@ class CLIProxyManager {
 
             this.showNotification(i18n.t('auth_files.download_success'), 'success');
         } catch (error) {
-            this.showNotification(`文件下载失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.download_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -3233,7 +3235,7 @@ class CLIProxyManager {
             this.loadAuthFiles();
             this.showNotification(i18n.t('auth_files.delete_success'), 'success');
         } catch (error) {
-            this.showNotification(`文件删除失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -3247,7 +3249,7 @@ class CLIProxyManager {
             this.loadAuthFiles();
             this.showNotification(`${i18n.t('auth_files.delete_all_success')} ${response.deleted} ${i18n.t('auth_files.files_count')}`, 'success');
         } catch (error) {
-            this.showNotification(`删除文件失败: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
     }
 
@@ -3313,12 +3315,12 @@ class CLIProxyManager {
         if (urlInput && urlInput.value) {
             try {
                 await navigator.clipboard.writeText(urlInput.value);
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
             } catch (error) {
                 // 降级方案：使用传统的复制方法
                 urlInput.select();
                 document.execCommand('copy');
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
             }
         }
     }
@@ -3326,7 +3328,7 @@ class CLIProxyManager {
     // 开始轮询 OAuth 状态
     startCodexOAuthPolling(state) {
         if (!state) {
-            this.showNotification('无法获取认证状态参数', 'error');
+            this.showNotification(i18n.t('auth_login.missing_state'), 'error');
             return;
         }
 
@@ -3458,12 +3460,12 @@ class CLIProxyManager {
         if (urlInput && urlInput.value) {
             try {
                 await navigator.clipboard.writeText(urlInput.value);
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
             } catch (error) {
                 // 降级方案：使用传统的复制方法
                 urlInput.select();
                 document.execCommand('copy');
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
             }
         }
     }
@@ -3471,7 +3473,7 @@ class CLIProxyManager {
     // 开始轮询 Anthropic OAuth 状态
     startAnthropicOAuthPolling(state) {
         if (!state) {
-            this.showNotification('无法获取认证状态参数', 'error');
+            this.showNotification(i18n.t('auth_login.missing_state'), 'error');
             return;
         }
 
@@ -3612,12 +3614,12 @@ class CLIProxyManager {
         if (urlInput && urlInput.value) {
             try {
                 await navigator.clipboard.writeText(urlInput.value);
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
             } catch (error) {
                 // 降级方案：使用传统的复制方法
                 urlInput.select();
                 document.execCommand('copy');
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
             }
         }
     }
@@ -3625,7 +3627,7 @@ class CLIProxyManager {
     // 开始轮询 Gemini CLI OAuth 状态
     startGeminiCliOAuthPolling(state) {
         if (!state) {
-            this.showNotification('无法获取认证状态参数', 'error');
+            this.showNotification(i18n.t('auth_login.missing_state'), 'error');
             return;
         }
 
@@ -3757,12 +3759,12 @@ class CLIProxyManager {
         if (urlInput && urlInput.value) {
             try {
                 await navigator.clipboard.writeText(urlInput.value);
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
             } catch (error) {
                 // 降级方案：使用传统的复制方法
                 urlInput.select();
                 document.execCommand('copy');
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
             }
         }
     }
@@ -3770,7 +3772,7 @@ class CLIProxyManager {
     // 开始轮询 Qwen OAuth 状态
     startQwenOAuthPolling(state) {
         if (!state) {
-            this.showNotification('无法获取认证状态参数', 'error');
+            this.showNotification(i18n.t('auth_login.missing_state'), 'error');
             return;
         }
 
@@ -3902,12 +3904,12 @@ class CLIProxyManager {
         if (urlInput && urlInput.value) {
             try {
                 await navigator.clipboard.writeText(urlInput.value);
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
             } catch (error) {
                 // 降级方案：使用传统的复制方法
                 urlInput.select();
                 document.execCommand('copy');
-                this.showNotification('链接已复制到剪贴板', 'success');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
             }
         }
     }
@@ -3915,7 +3917,7 @@ class CLIProxyManager {
     // 开始轮询 iFlow OAuth 状态
     startIflowOAuthPolling(state) {
         if (!state) {
-            this.showNotification('无法获取认证状态参数', 'error');
+            this.showNotification(i18n.t('auth_login.missing_state'), 'error');
             return;
         }
 

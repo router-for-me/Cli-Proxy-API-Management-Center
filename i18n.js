@@ -38,6 +38,8 @@ const i18n = {
             'common.base_url': '地址',
             'common.proxy_url': '代理',
             'common.alias': '别名',
+            'common.failure': '失败',
+            'common.unknown_error': '未知错误',
 
             // 页面标题
             'title.main': 'CLI Proxy API Management Center',
@@ -275,6 +277,7 @@ const i18n = {
             'auth_login.qwen_oauth_status_error': '认证失败:',
             'auth_login.qwen_oauth_start_error': '启动 Qwen OAuth 失败:',
             'auth_login.qwen_oauth_polling_error': '检查认证状态失败:',
+            'auth_login.missing_state': '无法获取认证状态参数',
 
             // iFlow OAuth
             'auth_login.iflow_oauth_title': 'iFlow OAuth',
@@ -308,6 +311,8 @@ const i18n = {
             'usage_stats.tokens_count': 'Token数量',
             'usage_stats.models': '模型统计',
             'usage_stats.success_rate': '成功率',
+            'stats.success': '成功',
+            'stats.failure': '失败',
 
             // 日志查看
             'logs.title': '日志查看',
@@ -347,6 +352,7 @@ const i18n = {
             'config_management.status_save_failed': '保存失败',
             'config_management.save_success': '配置已保存',
             'config_management.error_yaml_not_supported': '服务器未返回 YAML 格式，请确认 /config.yaml 接口可用',
+            'config_management.editor_placeholder': 'key: value',
 
             // 系统信息
             'system_info.title': '系统信息',
@@ -402,6 +408,7 @@ const i18n = {
             'notification.gemini_api_key': 'Gemini API密钥',
             'notification.codex_api_key': 'Codex API密钥',
             'notification.claude_api_key': 'Claude API密钥',
+            'notification.link_copied': '链接已复制到剪贴板',
 
             // 语言切换
             'language.switch': '语言',
@@ -415,6 +422,10 @@ const i18n = {
             'theme.switch_to_light': '切换到亮色模式',
             'theme.switch_to_dark': '切换到暗色模式',
             'theme.auto': '跟随系统',
+
+            // 侧边栏
+            'sidebar.toggle_expand': '展开侧边栏',
+            'sidebar.toggle_collapse': '收起侧边栏',
 
             // 页脚
             'footer.version': '版本',
@@ -453,6 +464,8 @@ const i18n = {
             'common.base_url': 'Address',
             'common.proxy_url': 'Proxy',
             'common.alias': 'Alias',
+            'common.failure': 'Failure',
+            'common.unknown_error': 'Unknown error',
 
             // Page titles
             'title.main': 'CLI Proxy API Management Center',
@@ -689,6 +702,7 @@ const i18n = {
             'auth_login.qwen_oauth_status_error': 'Authentication failed:',
             'auth_login.qwen_oauth_start_error': 'Failed to start Qwen OAuth:',
             'auth_login.qwen_oauth_polling_error': 'Failed to check authentication status:',
+            'auth_login.missing_state': 'Unable to retrieve authentication state parameter',
 
             // iFlow OAuth
             'auth_login.iflow_oauth_title': 'iFlow OAuth',
@@ -722,6 +736,8 @@ const i18n = {
             'usage_stats.tokens_count': 'Token Count',
             'usage_stats.models': 'Model Statistics',
             'usage_stats.success_rate': 'Success Rate',
+            'stats.success': 'Success',
+            'stats.failure': 'Failure',
 
             // Logs viewer
             'logs.title': 'Logs Viewer',
@@ -761,6 +777,7 @@ const i18n = {
             'config_management.status_save_failed': 'Save failed',
             'config_management.save_success': 'Configuration saved successfully',
             'config_management.error_yaml_not_supported': 'Server did not return YAML. Verify the /config.yaml endpoint is available.',
+            'config_management.editor_placeholder': 'key: value',
 
             // System info
             'system_info.title': 'System Information',
@@ -816,6 +833,7 @@ const i18n = {
             'notification.gemini_api_key': 'Gemini API key',
             'notification.codex_api_key': 'Codex API key',
             'notification.claude_api_key': 'Claude API key',
+            'notification.link_copied': 'Link copied to clipboard',
 
             // Language switch
             'language.switch': 'Language',
@@ -829,6 +847,10 @@ const i18n = {
             'theme.switch_to_light': 'Switch to light mode',
             'theme.switch_to_dark': 'Switch to dark mode',
             'theme.auto': 'Follow system',
+
+            // Sidebar
+            'sidebar.toggle_expand': 'Expand sidebar',
+            'sidebar.toggle_collapse': 'Collapse sidebar',
 
             // Footer
             'footer.version': 'Version',
@@ -877,6 +899,30 @@ const i18n = {
             } else {
                 element.textContent = text;
             }
+        });
+
+        // 更新所有包含 data-i18n-placeholder 的输入框占位符
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+            const key = element.getAttribute('data-i18n-placeholder');
+            element.placeholder = this.t(key);
+        });
+
+        // 更新 data-i18n-title
+        document.querySelectorAll('[data-i18n-title]').forEach(element => {
+            const key = element.getAttribute('data-i18n-title');
+            element.title = this.t(key);
+        });
+
+        // 更新 data-i18n-tooltip
+        document.querySelectorAll('[data-i18n-tooltip]').forEach(element => {
+            const key = element.getAttribute('data-i18n-tooltip');
+            element.setAttribute('data-tooltip', this.t(key));
+        });
+
+        // 更新 data-i18n-text（常用于按钮或标签）
+        document.querySelectorAll('[data-i18n-text]').forEach(element => {
+            const key = element.getAttribute('data-i18n-text');
+            element.textContent = this.t(key);
         });
 
         // 更新所有带有 data-i18n-html 属性的元素（支持HTML）
