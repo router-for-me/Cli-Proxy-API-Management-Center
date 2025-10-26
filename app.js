@@ -3132,13 +3132,31 @@ class CLIProxyManager {
             // 使用API返回的文件类型
             const fileType = file.type || 'unknown';
             // 首字母大写显示类型，特殊处理 iFlow
-            let typeDisplay;
-            if (fileType === 'iflow') {
-                typeDisplay = 'iFlow';
-            } else {
-                typeDisplay = fileType.charAt(0).toUpperCase() + fileType.slice(1);
+            let typeDisplayKey;
+            switch (fileType) {
+                case 'qwen':
+                    typeDisplayKey = 'auth_files.type_qwen';
+                    break;
+                case 'gemini':
+                    typeDisplayKey = 'auth_files.type_gemini';
+                    break;
+                case 'claude':
+                    typeDisplayKey = 'auth_files.type_claude';
+                    break;
+                case 'codex':
+                    typeDisplayKey = 'auth_files.type_codex';
+                    break;
+                case 'iflow':
+                    typeDisplayKey = 'auth_files.type_iflow';
+                    break;
+                case 'empty':
+                    typeDisplayKey = 'auth_files.type_empty';
+                    break;
+                default:
+                    typeDisplayKey = 'auth_files.type_unknown';
+                    break;
             }
-            const typeBadge = `<span class="file-type-badge ${fileType}">${typeDisplay}</span>`;
+            const typeBadge = `<span class="file-type-badge ${fileType}">${i18n.t(typeDisplayKey)}</span>`;
 
             return `
             <div class="file-item" data-file-type="${fileType}">
@@ -3188,13 +3206,13 @@ class CLIProxyManager {
 
         // 预定义的按钮顺序和显示文本
         const predefinedTypes = [
-            { type: 'all', label: 'All' },
-            { type: 'qwen', label: 'Qwen' },
-            { type: 'gemini', label: 'Gemini' },
-            { type: 'claude', label: 'Claude' },
-            { type: 'codex', label: 'Codex' },
-            { type: 'iflow', label: 'iFlow' },
-            { type: 'empty', label: 'Empty' }
+            { type: 'all', labelKey: 'auth_files.filter_all' },
+            { type: 'qwen', labelKey: 'auth_files.filter_qwen' },
+            { type: 'gemini', labelKey: 'auth_files.filter_gemini' },
+            { type: 'claude', labelKey: 'auth_files.filter_claude' },
+            { type: 'codex', labelKey: 'auth_files.filter_codex' },
+            { type: 'iflow', labelKey: 'auth_files.filter_iflow' },
+            { type: 'empty', labelKey: 'auth_files.filter_empty' }
         ];
 
         // 获取现有按钮
@@ -3209,6 +3227,11 @@ class CLIProxyManager {
             const btnType = btn.dataset.type;
             if (existingTypes.has(btnType)) {
                 btn.style.display = 'inline-block';
+                const match = predefinedTypes.find(item => item.type === btnType);
+                if (match) {
+                    btn.textContent = i18n.t(match.labelKey);
+                    btn.setAttribute('data-i18n-text', match.labelKey);
+                }
             } else {
                 btn.style.display = 'none';
             }
@@ -3222,8 +3245,27 @@ class CLIProxyManager {
                 const btn = document.createElement('button');
                 btn.className = 'filter-btn';
                 btn.dataset.type = type;
-                // 首字母大写
-                btn.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+
+                const match = predefinedTypes.find(item => item.type === type);
+                if (match) {
+                    btn.setAttribute('data-i18n-text', match.labelKey);
+                    btn.textContent = i18n.t(match.labelKey);
+                } else {
+                    const dynamicKey = `auth_files.filter_${type}`;
+                    btn.setAttribute('data-i18n-text', dynamicKey);
+                    btn.textContent = this.generateDynamicTypeLabel(type);
+                }
+    // 生成动态类型标签
+    generateDynamicTypeLabel(type) {
+        if (!type) return '';
+        const key = `auth_files.type_${type}`;
+        const translated = i18n.t(key);
+        if (translated && translated !== key) {
+            return translated;
+        }
+        if (type.toLowerCase() === 'iflow') return 'iFlow';
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    }
                 
                 // 插入到 Empty 按钮之前（如果存在）
                 const emptyBtn = filterContainer.querySelector('[data-type="empty"]');
@@ -3256,6 +3298,9 @@ class CLIProxyManager {
                 item.classList.add('hidden');
             }
         });
+
+        // 更新筛选按钮文本（以防语言切换后新按钮未刷新）
+        this.refreshFilterButtonTexts();
     }
 
     // 绑定认证文件筛选事件
@@ -3277,6 +3322,19 @@ class CLIProxyManager {
 
         filterContainer._filterListener = listener;
         filterContainer.addEventListener('click', listener);
+
+        // 首次渲染时刷新按钮文本
+        this.refreshFilterButtonTexts();
+    }
+
+    // 刷新筛选按钮文本（根据 data-i18n-text）
+    refreshFilterButtonTexts() {
+        document.querySelectorAll('.auth-file-filter .filter-btn[data-i18n-text]').forEach(btn => {
+            const key = btn.getAttribute('data-i18n-text');
+            if (key) {
+                btn.textContent = i18n.t(key);
+            }
+        });
     }
 
     // 绑定认证文件操作按钮事件（使用事件委托）
