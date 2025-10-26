@@ -3157,14 +3157,14 @@ class CLIProxyManager {
                                 <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${fileStats.failure}
                             </span>
                         </div>
-                        <div class="item-actions">
-                            <button class="btn-small btn-info" onclick="manager.showAuthFileDetails('${file.name}')" title="详细信息">
+                        <div class="item-actions" data-filename="${file.name}">
+                            <button class="btn-small btn-info" data-action="showDetails" title="详细信息">
                                 <i class="fas fa-info-circle"></i>
                             </button>
-                            <button class="btn-small btn-primary" onclick="manager.downloadAuthFile('${file.name}')" title="下载">
+                            <button class="btn-small btn-primary" data-action="download" title="下载">
                                 <i class="fas fa-download"></i>
                             </button>
-                            <button class="btn-small btn-danger" onclick="manager.deleteAuthFile('${file.name}')" title="删除">
+                            <button class="btn-small btn-danger" data-action="delete" title="删除">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -3176,6 +3176,9 @@ class CLIProxyManager {
 
         // 绑定筛选按钮事件
         this.bindAuthFileFilterEvents();
+        
+        // 绑定认证文件操作按钮事件（使用事件委托）
+        this.bindAuthFileActionEvents();
     }
 
     // 更新筛选按钮显示
@@ -3229,11 +3232,6 @@ class CLIProxyManager {
                 } else {
                     filterContainer.appendChild(btn);
                 }
-                
-                // 添加点击事件
-                btn.addEventListener('click', (e) => {
-                    this.handleFilterClick(e.target);
-                });
             }
         });
     }
@@ -3253,9 +3251,9 @@ class CLIProxyManager {
         const fileItems = document.querySelectorAll('.file-item');
         fileItems.forEach(item => {
             if (filterType === 'all' || item.dataset.fileType === filterType) {
-                item.style.display = 'flex';
+                item.classList.remove('hidden');
             } else {
-                item.style.display = 'none';
+                item.classList.add('hidden');
             }
         });
     }
@@ -3268,6 +3266,52 @@ class CLIProxyManager {
                 this.handleFilterClick(e.target);
             });
         });
+    }
+
+    // 绑定认证文件操作按钮事件（使用事件委托）
+    bindAuthFileActionEvents() {
+        const container = document.getElementById('auth-files-list');
+        if (!container) return;
+
+        // 移除旧的事件监听器（如果存在）
+        const oldListener = container._authFileActionListener;
+        if (oldListener) {
+            container.removeEventListener('click', oldListener);
+        }
+
+        // 创建新的事件监听器
+        const listener = (e) => {
+            // 查找最近的按钮元素
+            const button = e.target.closest('button[data-action]');
+            if (!button) return;
+
+            // 获取操作类型和文件名
+            const action = button.dataset.action;
+            const actionsContainer = button.closest('.item-actions');
+            if (!actionsContainer) return;
+
+            const filename = actionsContainer.dataset.filename;
+            if (!filename) return;
+
+            // 根据操作类型调用相应的方法
+            switch (action) {
+                case 'showDetails':
+                    this.showAuthFileDetails(filename);
+                    break;
+                case 'download':
+                    this.downloadAuthFile(filename);
+                    break;
+                case 'delete':
+                    this.deleteAuthFile(filename);
+                    break;
+            }
+        };
+
+        // 保存监听器引用以便后续移除
+        container._authFileActionListener = listener;
+        
+        // 添加事件监听器
+        container.addEventListener('click', listener);
     }
 
     // 格式化文件大小
@@ -3355,7 +3399,7 @@ class CLIProxyManager {
                 <div class="json-modal-content">
                     <div class="json-modal-header">
                         <h3><i class="fas fa-file-code"></i> ${filename}</h3>
-                        <button class="json-modal-close" onclick="manager.closeJsonModal()">
+                        <button class="json-modal-close" data-action="close">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -3363,10 +3407,10 @@ class CLIProxyManager {
                         <pre class="json-content">${this.escapeHtml(jsonContent)}</pre>
                     </div>
                     <div class="json-modal-footer">
-                        <button class="btn btn-secondary" onclick="manager.copyJsonContent()">
+                        <button class="btn btn-secondary" data-action="copy">
                             <i class="fas fa-copy"></i> ${i18n.t('common.copy')}
                         </button>
-                        <button class="btn btn-secondary" onclick="manager.closeJsonModal()">
+                        <button class="btn btn-secondary" data-action="close">
                             ${i18n.t('common.close')}
                         </button>
                     </div>
@@ -3383,11 +3427,38 @@ class CLIProxyManager {
         // 添加新模态框
         document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-        // 添加点击背景关闭功能
+        // 获取模态框元素
         const modal = document.getElementById('json-modal');
+        
+        // 添加点击背景关闭功能
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 this.closeJsonModal();
+            }
+        });
+
+        // 绑定模态框按钮事件（使用事件委托）
+        this.bindJsonModalEvents(modal);
+    }
+
+    // 绑定JSON模态框按钮事件（使用事件委托）
+    bindJsonModalEvents(modal) {
+        modal.addEventListener('click', (e) => {
+            // 查找最近的按钮元素
+            const button = e.target.closest('button[data-action]');
+            if (!button) return;
+
+            // 获取操作类型
+            const action = button.dataset.action;
+
+            // 根据操作类型调用相应的方法
+            switch (action) {
+                case 'copy':
+                    this.copyJsonContent();
+                    break;
+                case 'close':
+                    this.closeJsonModal();
+                    break;
             }
         });
     }
@@ -3411,13 +3482,6 @@ class CLIProxyManager {
                 this.showNotification('复制失败', 'error');
             });
         }
-    }
-
-    // HTML转义函数
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 
     // 下载认证文件

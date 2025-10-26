@@ -1701,6 +1701,10 @@ input:checked+.slider:before {
     transition: all 0.3s ease;
 }
 
+.file-item.hidden {
+    display: none;
+}
+
 .key-item:hover,
 .provider-item:hover,
 .file-item:hover {
