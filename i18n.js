@@ -40,6 +40,7 @@ const i18n = {
             'common.alias': '别名',
             'common.failure': '失败',
             'common.unknown_error': '未知错误',
+            'common.copy': '复制',
 
             // 页面标题
             'title.main': 'CLI Proxy API Management Center',
@@ -466,6 +467,7 @@ const i18n = {
             'common.alias': 'Alias',
             'common.failure': 'Failure',
             'common.unknown_error': 'Unknown error',
+            'common.copy': 'Copy',
 
             // Page titles
             'title.main': 'CLI Proxy API Management Center',

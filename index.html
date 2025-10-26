@@ -418,9 +418,21 @@
 
                             <!-- 认证文件 -->
                             <div class="card">
-                                <div class="card-header">
-                                    <h3><i class="fas fa-file-alt"></i> <span
-                                            data-i18n="auth_files.title_section">认证文件</span></h3>
+                                <div class="card-header card-header-with-filter">
+                                    <div class="header-left">
+                                        <h3><i class="fas fa-file-alt"></i> <span
+                                                data-i18n="auth_files.title_section">认证文件</span></h3>
+                                        <!-- 类型筛选 -->
+                                        <div class="auth-file-filter">
+                                            <button class="filter-btn active" data-type="all">All</button>
+                                            <button class="filter-btn" data-type="qwen">Qwen</button>
+                                            <button class="filter-btn" data-type="gemini">Gemini</button>
+                                            <button class="filter-btn" data-type="claude">Claude</button>
+                                            <button class="filter-btn" data-type="codex">Codex</button>
+                                            <button class="filter-btn" data-type="iflow">iFlow</button>
+                                            <button class="filter-btn" data-type="empty">Empty</button>
+                                        </div>
+                                    </div>
                                     <div class="header-actions">
                                         <button id="upload-auth-file" class="btn btn-primary">
                                             <i class="fas fa-upload"></i> <span
@@ -433,7 +445,7 @@
                                     </div>
                                 </div>
                                 <div class="card-content">
-                                    <div id="auth-files-list" class="file-list"></div>
+                                    <div id="auth-files-list" class="file-list file-grid"></div>
                                     <input type="file" id="auth-file-input" accept=".json" style="display: none;">
                                 </div>
                             </div>
