@@ -1498,24 +1498,16 @@ class CLIProxyManager {
         }
 
         // Gemini 密钥
-        if (config['generative-language-api-key']) {
-            await this.renderGeminiKeys(config['generative-language-api-key']);
-        }
+        await this.renderGeminiKeys(Array.isArray(config['generative-language-api-key']) ? config['generative-language-api-key'] : []);
 
         // Codex 密钥
-        if (config['codex-api-key']) {
-            await this.renderCodexKeys(config['codex-api-key']);
-        }
+        await this.renderCodexKeys(Array.isArray(config['codex-api-key']) ? config['codex-api-key'] : []);
 
         // Claude 密钥
-        if (config['claude-api-key']) {
-            await this.renderClaudeKeys(config['claude-api-key']);
-        }
+        await this.renderClaudeKeys(Array.isArray(config['claude-api-key']) ? config['claude-api-key'] : []);
 
         // OpenAI 兼容提供商
-        if (config['openai-compatibility']) {
-            await this.renderOpenAIProviders(config['openai-compatibility']);
-        }
+        await this.renderOpenAIProviders(Array.isArray(config['openai-compatibility']) ? config['openai-compatibility'] : []);
     }
 
     // 回退方法：原来的逐个加载方式
@@ -2179,9 +2171,8 @@ class CLIProxyManager {
     async loadGeminiKeys() {
         try {
             const config = await this.getConfig();
-            if (config['generative-language-api-key']) {
-                await this.renderGeminiKeys(config['generative-language-api-key']);
-            }
+            const keys = Array.isArray(config['generative-language-api-key']) ? config['generative-language-api-key'] : [];
+            await this.renderGeminiKeys(keys);
         } catch (error) {
             console.error('加载Gemini密钥失败:', error);
         }
@@ -2190,8 +2181,12 @@ class CLIProxyManager {
     // 渲染Gemini密钥列表
     async renderGeminiKeys(keys) {
         const container = document.getElementById('gemini-keys-list');
+        if (!container) {
+            return;
+        }
+        const list = Array.isArray(keys) ? keys : [];
 
-        if (keys.length === 0) {
+        if (list.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fab fa-google"></i>
@@ -2205,7 +2200,7 @@ class CLIProxyManager {
         // 获取使用统计，按 source 聚合
         const stats = await this.getKeyStats();
 
-        container.innerHTML = keys.map((key, index) => {
+        container.innerHTML = list.map((key, index) => {
             const masked = this.maskApiKey(key);
             const keyStats = stats[key] || stats[masked] || { success: 0, failure: 0 };
             return `
@@ -2344,9 +2339,8 @@ class CLIProxyManager {
     async loadCodexKeys() {
         try {
             const config = await this.getConfig();
-            if (config['codex-api-key']) {
-                await this.renderCodexKeys(config['codex-api-key']);
-            }
+            const keys = Array.isArray(config['codex-api-key']) ? config['codex-api-key'] : [];
+            await this.renderCodexKeys(keys);
         } catch (error) {
             console.error('加载Codex密钥失败:', error);
         }
@@ -2355,8 +2349,12 @@ class CLIProxyManager {
     // 渲染Codex密钥列表
     async renderCodexKeys(keys) {
         const container = document.getElementById('codex-keys-list');
+        if (!container) {
+            return;
+        }
+        const list = Array.isArray(keys) ? keys : [];
 
-        if (keys.length === 0) {
+        if (list.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-code"></i>
@@ -2370,7 +2368,7 @@ class CLIProxyManager {
         // 获取使用统计，按 source 聚合
         const stats = await this.getKeyStats();
 
-        container.innerHTML = keys.map((config, index) => {
+        container.innerHTML = list.map((config, index) => {
             const rawKey = config['api-key'];
             const masked = rawKey ? this.maskApiKey(rawKey) : '';
             const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
@@ -2549,9 +2547,8 @@ class CLIProxyManager {
     async loadClaudeKeys() {
         try {
             const config = await this.getConfig();
-            if (config['claude-api-key']) {
-                await this.renderClaudeKeys(config['claude-api-key']);
-            }
+            const keys = Array.isArray(config['claude-api-key']) ? config['claude-api-key'] : [];
+            await this.renderClaudeKeys(keys);
         } catch (error) {
             console.error('加载Claude密钥失败:', error);
         }
@@ -2560,8 +2557,12 @@ class CLIProxyManager {
     // 渲染Claude密钥列表
     async renderClaudeKeys(keys) {
         const container = document.getElementById('claude-keys-list');
+        if (!container) {
+            return;
+        }
+        const list = Array.isArray(keys) ? keys : [];
 
-        if (keys.length === 0) {
+        if (list.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-brain"></i>
@@ -2575,7 +2576,7 @@ class CLIProxyManager {
         // 获取使用统计，按 source 聚合
         const stats = await this.getKeyStats();
 
-        container.innerHTML = keys.map((config, index) => {
+        container.innerHTML = list.map((config, index) => {
             const rawKey = config['api-key'];
             const masked = rawKey ? this.maskApiKey(rawKey) : '';
             const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
@@ -2754,9 +2755,8 @@ class CLIProxyManager {
     async loadOpenAIProviders() {
         try {
             const config = await this.getConfig();
-            if (config['openai-compatibility']) {
-                await this.renderOpenAIProviders(config['openai-compatibility']);
-            }
+            const providers = Array.isArray(config['openai-compatibility']) ? config['openai-compatibility'] : [];
+            await this.renderOpenAIProviders(providers);
         } catch (error) {
             console.error('加载OpenAI提供商失败:', error);
         }
@@ -2765,8 +2765,12 @@ class CLIProxyManager {
     // 渲染OpenAI提供商列表
     async renderOpenAIProviders(providers) {
         const container = document.getElementById('openai-providers-list');
+        if (!container) {
+            return;
+        }
+        const list = Array.isArray(providers) ? providers : [];
 
-        if (!Array.isArray(providers) || providers.length === 0) {
+        if (list.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-plug"></i>
@@ -2781,7 +2785,7 @@ class CLIProxyManager {
         }
 
         // 根据提供商数量设置滚动条
-        if (providers.length > 5) {
+        if (list.length > 5) {
             container.style.maxHeight = '400px';
             container.style.overflowY = 'auto';
         } else {
@@ -2792,7 +2796,7 @@ class CLIProxyManager {
         // 获取使用统计，按 source 聚合
         const stats = await this.getKeyStats();
 
-        container.innerHTML = providers.map((provider, index) => {
+        container.innerHTML = list.map((provider, index) => {
             const item = typeof provider === 'object' && provider !== null ? provider : {};
 
             // 处理两种API密钥格式：新的 api-key-entries 和旧的 api-keys
