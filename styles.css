@@ -3280,15 +3280,143 @@ input:checked+.slider:before {
     border: 1px solid var(--border-primary);
     border-radius: 6px;
     padding: 16px;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.6;
     color: var(--text-secondary);
+    font-weight: 600;
     white-space: pre-wrap;
     word-wrap: break-word;
     max-height: calc(100vh - 480px);
     min-height: 450px;
     overflow-y: auto;
     margin: 0;
+}
+
+.logs-text .log-line {
+    display: block;
+    padding: 2px 0;
+    margin: 0;
+    color: inherit;
+}
+
+.logs-text .log-line + .log-line {
+    margin-top: 2px;
+}
+
+.logs-text .log-status-tag {
+    display: inline-block;
+    padding: 0 8px;
+    margin-right: 6px;
+    border-radius: 6px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.logs-text .log-status-tag.log-status-2xx {
+    background: rgba(16, 185, 129, 0.18);
+    color: #047857;
+}
+
+.logs-text .log-status-tag.log-status-3xx {
+    background: rgba(6, 182, 212, 0.2);
+    color: #0f766e;
+}
+
+.logs-text .log-status-tag.log-status-4xx {
+    background: rgba(251, 191, 36, 0.26);
+    color: #92400e;
+}
+
+.logs-text .log-status-tag.log-status-5xx {
+    background: rgba(239, 68, 68, 0.22);
+    color: #b91c1c;
+}
+
+.logs-text .log-status-tag.log-status-1xx {
+    background: rgba(165, 180, 252, 0.22);
+    color: #4338ca;
+}
+
+/* 日志高亮样式 */
+
+/* 时间戳高亮 */
+.logs-text .log-timestamp {
+    color: #8b5cf6;
+    font-weight: 600;
+}
+
+/* 日志级别高亮 */
+.logs-text .log-level {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.95em;
+    letter-spacing: 0.5px;
+}
+
+.logs-text .log-level-error {
+    background: rgba(239, 68, 68, 0.20);
+    color: #dc2626;
+}
+
+.logs-text .log-level-warn {
+    background: rgba(251, 191, 36, 0.25);
+    color: #d97706;
+}
+
+.logs-text .log-level-info {
+    background: rgba(59, 130, 246, 0.20);
+    color: #2563eb;
+}
+
+.logs-text .log-level-debug {
+    background: rgba(107, 114, 128, 0.18);
+    color: #6b7280;
+}
+
+/* HTTP 方法高亮 */
+.logs-text .log-http-method {
+    color: #0891b2;
+    font-weight: 700;
+}
+
+/* 路径/URL 高亮 */
+.logs-text .log-path {
+    color: #059669;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: rgba(5, 150, 105, 0.3);
+}
+
+/* IP 地址高亮 */
+.logs-text .log-ip {
+    color: #7c3aed;
+    font-weight: 600;
+}
+
+/* 关键字高亮 - 成功 */
+.logs-text .log-keyword-success {
+    color: #059669;
+    font-weight: 600;
+}
+
+/* 关键字高亮 - 错误 */
+.logs-text .log-keyword-error {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* 关键字高亮 - 警告 */
+.logs-text .log-keyword-warn {
+    color: #ea580c;
+    font-weight: 600;
+}
+
+/* 数字和单位高亮 */
+.logs-text .log-number-unit {
+    color: #db2777;
+    font-weight: 600;
 }
 
 .logs-text::-webkit-scrollbar {
@@ -3424,8 +3552,87 @@ input:checked+.slider:before {
     color: var(--text-tertiary);
 }
 
+[data-theme="dark"] .logs-text .log-status-tag.log-status-2xx {
+    background: rgba(16, 185, 129, 0.32);
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .logs-text .log-status-tag.log-status-3xx {
+    background: rgba(6, 182, 212, 0.34);
+    color: #5eead4;
+}
+
+[data-theme="dark"] .logs-text .log-status-tag.log-status-4xx {
+    background: rgba(251, 191, 36, 0.38);
+    color: #fcd34d;
+}
+
+[data-theme="dark"] .logs-text .log-status-tag.log-status-5xx {
+    background: rgba(239, 68, 68, 0.38);
+    color: #fca5a5;
+}
+
+[data-theme="dark"] .logs-text .log-status-tag.log-status-1xx {
+    background: rgba(165, 180, 252, 0.38);
+    color: #c7d2fe;
+}
+
 [data-theme="dark"] .logs-container {
     background: rgba(15, 23, 42, 0.3);
+}
+
+/* 暗色主题 - 日志高亮样式 */
+[data-theme="dark"] .logs-text .log-timestamp {
+    color: #c4b5fd;
+}
+
+[data-theme="dark"] .logs-text .log-level-error {
+    background: rgba(239, 68, 68, 0.32);
+    color: #fca5a5;
+}
+
+[data-theme="dark"] .logs-text .log-level-warn {
+    background: rgba(251, 191, 36, 0.35);
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .logs-text .log-level-info {
+    background: rgba(59, 130, 246, 0.32);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .logs-text .log-level-debug {
+    background: rgba(107, 114, 128, 0.28);
+    color: #9ca3af;
+}
+
+[data-theme="dark"] .logs-text .log-http-method {
+    color: #22d3ee;
+}
+
+[data-theme="dark"] .logs-text .log-path {
+    color: #34d399;
+    text-decoration-color: rgba(52, 211, 153, 0.3);
+}
+
+[data-theme="dark"] .logs-text .log-ip {
+    color: #a78bfa;
+}
+
+[data-theme="dark"] .logs-text .log-keyword-success {
+    color: #34d399;
+}
+
+[data-theme="dark"] .logs-text .log-keyword-error {
+    color: #f87171;
+}
+
+[data-theme="dark"] .logs-text .log-keyword-warn {
+    color: #fb923c;
+}
+
+[data-theme="dark"] .logs-text .log-number-unit {
+    color: #f472b6;
 }
 
 /* ===== AI提供商统计徽章样式 ===== */

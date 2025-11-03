@@ -20,6 +20,10 @@ class CLIProxyManager {
         // 日志自动刷新定时器
         this.logsRefreshTimer = null;
 
+        // 当前展示的日志行
+        this.displayedLogLines = [];
+        this.maxDisplayLogLines = 10000;
+
         // 日志时间戳（用于增量加载）
         this.latestLogTimestamp = null;
 
@@ -1786,6 +1790,7 @@ class CLIProxyManager {
         if (!logsContent) return;
 
         if (!lines || lines.length === 0) {
+            this.displayedLogLines = [];
             logsContent.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p data-i18n="logs.empty_title">' +
                 i18n.t('logs.empty_title') + '</p><p data-i18n="logs.empty_desc">' +
                 i18n.t('logs.empty_desc') + '</p></div>';
@@ -1795,26 +1800,22 @@ class CLIProxyManager {
         // 过滤掉 /v0/management/logs 相关的日志
         const filteredLines = lines.filter(line => !line.includes('/v0/management/logs'));
 
-        // 限制前端显示的最大行数为 10000 行
-        const MAX_DISPLAY_LINES = 10000;
+        // 限制前端显示的最大行数
         let displayedLines = filteredLines;
-        let displayedLineCount = filteredLines.length;
-
-        if (filteredLines.length > MAX_DISPLAY_LINES) {
-            const linesToRemove = filteredLines.length - MAX_DISPLAY_LINES;
+        if (filteredLines.length > this.maxDisplayLogLines) {
+            const linesToRemove = filteredLines.length - this.maxDisplayLogLines;
             displayedLines = filteredLines.slice(linesToRemove);
-            displayedLineCount = MAX_DISPLAY_LINES;
         }
 
-        // 将数组转换为文本
-        const logsText = displayedLines.join('\n');
-        const logHtml = `
+        this.displayedLogLines = displayedLines.slice();
+
+        const displayedLineCount = this.displayedLogLines.length;
+        logsContent.innerHTML = `
             <div class="logs-info">
                 <span><i class="fas fa-list-ol"></i> ${displayedLineCount} ${i18n.t('logs.lines')}</span>
             </div>
-            <pre class="logs-text">${this.escapeHtml(logsText)}</pre>
+            <pre class="logs-text">${this.buildLogsHtml(this.displayedLogLines)}</pre>
         `;
-        logsContent.innerHTML = logHtml;
 
         // 自动滚动到底部
         if (scrollToBottom) {
@@ -1830,12 +1831,12 @@ class CLIProxyManager {
         const logsContent = document.getElementById('logs-content');
         if (!logsContent) return;
 
-        const logsTextElement = logsContent.querySelector('.logs-text');
-        const logsInfoElement = logsContent.querySelector('.logs-info');
-
-        if (!logsTextElement || !newLines || newLines.length === 0) {
+        if (!newLines || newLines.length === 0) {
             return;
         }
+
+        const logsTextElement = logsContent.querySelector('.logs-text');
+        const logsInfoElement = logsContent.querySelector('.logs-info');
 
         // 过滤掉 /v0/management/logs 相关的日志
         const filteredNewLines = newLines.filter(line => !line.includes('/v0/management/logs'));
@@ -1843,24 +1844,24 @@ class CLIProxyManager {
             return; // 如果过滤后没有新日志，直接返回
         }
 
+        if (!logsTextElement) {
+            this.renderLogs(filteredNewLines, totalLineCount || filteredNewLines.length, true);
+            return;
+        }
+
         // 检查用户是否正在查看底部（判断是否需要自动滚动）
         const isAtBottom = logsTextElement.scrollHeight - logsTextElement.scrollTop - logsTextElement.clientHeight < 50;
 
-        // 追加新日志文本
-        const newLogsText = '\n' + filteredNewLines.join('\n');
-        logsTextElement.textContent += newLogsText;
-
-        // 限制前端显示的最大行数为 10000 行
-        const MAX_DISPLAY_LINES = 10000;
-        const allLines = logsTextElement.textContent.split('\n').filter(line => line.trim());
-        if (allLines.length > MAX_DISPLAY_LINES) {
-            const linesToRemove = allLines.length - MAX_DISPLAY_LINES;
-            logsTextElement.textContent = allLines.slice(linesToRemove).join('\n');
+        this.displayedLogLines = this.displayedLogLines.concat(filteredNewLines);
+        if (this.displayedLogLines.length > this.maxDisplayLogLines) {
+            this.displayedLogLines = this.displayedLogLines.slice(this.displayedLogLines.length - this.maxDisplayLogLines);
         }
+
+        logsTextElement.innerHTML = this.buildLogsHtml(this.displayedLogLines);
 
         // 更新行数统计（只显示实际显示的行数，最多 10000 行）
         if (logsInfoElement) {
-            const displayedLines = logsTextElement.textContent.split('\n').filter(line => line.trim()).length;
+            const displayedLines = this.displayedLogLines.length;
             logsInfoElement.innerHTML = `<span><i class="fas fa-list-ol"></i> ${displayedLines} ${i18n.t('logs.lines')}</span>`;
         }
 
@@ -1868,6 +1869,259 @@ class CLIProxyManager {
         if (isAtBottom) {
             logsTextElement.scrollTop = logsTextElement.scrollHeight;
         }
+    }
+
+    // 根据日志内容构造高亮 HTML
+    buildLogsHtml(lines) {
+        if (!lines || lines.length === 0) {
+            return '';
+        }
+        return lines.map(line => {
+            // 先过滤掉 [GIN] 2025/11/03 - 18:32:59 部分
+            // 匹配模式：[GIN] 后面跟着日期 - 时间
+            let processedLine = line.replace(/\[GIN\]\s+\d{4}\/\d{2}\/\d{2}\s+-\s+\d{2}:\d{2}:\d{2}\s+/g, '');
+
+            // 创建标记数组来跟踪需要高亮的位置
+            const highlights = [];
+
+            // 1. 检测 HTTP 状态码
+            const statusInfo = this.detectHttpStatus(line);
+            if (statusInfo) {
+                const statusPattern = new RegExp(`\\b${statusInfo.code}\\b`);
+                const match = statusPattern.exec(processedLine);
+                if (match) {
+                    highlights.push({
+                        start: match.index,
+                        end: match.index + match[0].length,
+                        className: `log-status-tag log-status-${statusInfo.bucket}`,
+                        priority: 10
+                    });
+                }
+            }
+
+            // 2. 时间戳（只匹配标准格式，排除日期和时间被分隔符分开的情况）
+            // 匹配格式：
+            // - 2024-01-01 12:00:00 或 2024/01/01 12:00:00（中间只有一个空格）
+            // - 2024-01-01T12:00:00
+            // - [12:00:00]
+            // 排除：2024/01/01 - 12:00:00（中间有 - 分隔符）
+            const timestampPattern = /\d{4}[-/]\d{2}[-/]\d{2}[T]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?|\[\d{2}:\d{2}:\d{2}\]/g;
+            let match;
+            while ((match = timestampPattern.exec(processedLine)) !== null) {
+                highlights.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    className: 'log-timestamp',
+                    priority: 5
+                });
+            }
+
+            // 2b. 只匹配在方括号内的完整日期时间（如 [2025-11-03 18:23:14]）
+            const bracketTimestampPattern = /\[\d{4}[-/]\d{2}[-/]\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?\]/g;
+            while ((match = bracketTimestampPattern.exec(processedLine)) !== null) {
+                highlights.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    className: 'log-timestamp',
+                    priority: 5
+                });
+            }
+
+            // 3. 日志级别（只匹配在方括号内的，避免匹配路径中的关键字）
+            const levelPattern = /\[(ERROR|ERRO|ERR|FATAL|CRITICAL|CRIT|WARN|WARNING|INFO|DEBUG|TRACE|PANIC)\]/gi;
+            while ((match = levelPattern.exec(processedLine)) !== null) {
+                const level = match[1].toUpperCase();
+                let className = 'log-level';
+                if (['ERROR', 'ERRO', 'ERR', 'FATAL', 'CRITICAL', 'CRIT', 'PANIC'].includes(level)) {
+                    className += ' log-level-error';
+                } else if (['WARN', 'WARNING'].includes(level)) {
+                    className += ' log-level-warn';
+                } else if (level === 'INFO') {
+                    className += ' log-level-info';
+                } else if (['DEBUG', 'TRACE'].includes(level)) {
+                    className += ' log-level-debug';
+                }
+                highlights.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    className: className,
+                    priority: 8
+                });
+            }
+
+            // 4. HTTP 方法
+            const methodPattern = /\b(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)\b/g;
+            while ((match = methodPattern.exec(processedLine)) !== null) {
+                highlights.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    className: 'log-http-method',
+                    priority: 6
+                });
+            }
+
+            // 5. URL（仅匹配 HTTP(S) 完整URL，不匹配路径）
+            const urlPattern = /(https?:\/\/[^\s<>"]+)/g;
+            while ((match = urlPattern.exec(processedLine)) !== null) {
+                highlights.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    className: 'log-path',
+                    priority: 4
+                });
+            }
+
+            // 6. IP 地址
+            const ipPattern = /\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g;
+            while ((match = ipPattern.exec(processedLine)) !== null) {
+                highlights.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    className: 'log-ip',
+                    priority: 7
+                });
+            }
+
+            // 7. 关键字
+            const successPattern = /\b(success|successful|succeeded|completed|ok|done|passed)\b/gi;
+            while ((match = successPattern.exec(processedLine)) !== null) {
+                highlights.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    className: 'log-keyword-success',
+                    priority: 3
+                });
+            }
+
+            const errorPattern = /\b(failed|failure|error|exception|panic|fatal|critical|aborted|denied|refused|timeout|invalid)\b/gi;
+            while ((match = errorPattern.exec(processedLine)) !== null) {
+                highlights.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    className: 'log-keyword-error',
+                    priority: 3
+                });
+            }
+
+            const warnPattern = /\b(warning|warn|deprecated|slow|retry|retrying)\b/gi;
+            while ((match = warnPattern.exec(processedLine)) !== null) {
+                highlights.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    className: 'log-keyword-warn',
+                    priority: 3
+                });
+            }
+
+            // 8. 数字和单位
+            const numberPattern = /\b(\d+(?:\.\d+)?)(ms|μs|ns|s|KB|MB|GB|TB|B|%)\b/g;
+            while ((match = numberPattern.exec(processedLine)) !== null) {
+                highlights.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    className: 'log-number-unit',
+                    priority: 2
+                });
+            }
+
+            // 移除重叠的高亮（保留优先级高的）
+            highlights.sort((a, b) => {
+                if (a.start !== b.start) return a.start - b.start;
+                return b.priority - a.priority;
+            });
+
+            const filteredHighlights = [];
+            for (const h of highlights) {
+                const overlaps = filteredHighlights.some(existing =>
+                    (h.start >= existing.start && h.start < existing.end) ||
+                    (h.end > existing.start && h.end <= existing.end) ||
+                    (h.start <= existing.start && h.end >= existing.end)
+                );
+                if (!overlaps) {
+                    filteredHighlights.push(h);
+                }
+            }
+
+            // 构建最终的 HTML
+            filteredHighlights.sort((a, b) => a.start - b.start);
+            let result = '';
+            let lastIndex = 0;
+
+            for (const h of filteredHighlights) {
+                // 添加高亮之前的文本
+                if (h.start > lastIndex) {
+                    result += this.escapeHtml(processedLine.substring(lastIndex, h.start));
+                }
+                // 添加高亮的文本
+                result += `<span class="${h.className}">${this.escapeHtml(processedLine.substring(h.start, h.end))}</span>`;
+                lastIndex = h.end;
+            }
+
+            // 添加剩余的文本
+            if (lastIndex < processedLine.length) {
+                result += this.escapeHtml(processedLine.substring(lastIndex));
+            }
+
+            return `<span class="log-line">${result}</span>`;
+        }).join('');
+    }
+
+    // 检测 HTTP 状态码
+    detectHttpStatus(line) {
+        if (!line) return null;
+
+        // 更精确的 HTTP 状态码匹配模式
+        // 匹配：
+        // 1. "| 状态码 |"（如：| 200 | 或 |200|）
+        // 2. "状态码 -" 或 "状态码-"（如：200 - 45ms 或 200-45ms）
+        // 3. "HTTP方法 路径 状态码"（如：GET /api 200）
+        // 4. "状态码 OK/Error/等状态文本"（如：200 OK）
+        // 5. "status: 状态码" 或 "code: 状态码"
+        // 排除：
+        // - 文件路径中的数字（如 .go:396）
+        // - 端口号（如 :8080）
+        // - 普通数字序列
+
+        const patterns = [
+            // 匹配 "| 状态码 |" 或 "|状态码|"（日志中常见格式）
+            /\|\s*([1-5]\d{2})\s*\|/,
+            // 匹配 "状态码 -" 或 "状态码-"
+            /\b([1-5]\d{2})\s*-/,
+            // 匹配 HTTP 方法后的状态码（GET/POST/等 路径 状态码）
+            /\b(?:GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)\s+\S+\s+([1-5]\d{2})\b/,
+            // 匹配 "status:" 或 "code:" 后的状态码
+            /\b(?:status|code|http)[:\s]+([1-5]\d{2})\b/i,
+            // 匹配状态码后跟状态文本（200 OK, 404 Not Found 等）
+            /\b([1-5]\d{2})\s+(?:OK|Created|Accepted|No Content|Moved|Found|Bad Request|Unauthorized|Forbidden|Not Found|Method Not Allowed|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout)\b/i
+        ];
+
+        for (const pattern of patterns) {
+            const match = line.match(pattern);
+            if (match) {
+                const code = parseInt(match[1], 10);
+                if (Number.isNaN(code)) {
+                    continue;
+                }
+
+                if (code >= 500) {
+                    return { code, bucket: '5xx', match: match[1] };
+                }
+                if (code >= 400) {
+                    return { code, bucket: '4xx', match: match[1] };
+                }
+                if (code >= 300) {
+                    return { code, bucket: '3xx', match: match[1] };
+                }
+                if (code >= 200) {
+                    return { code, bucket: '2xx', match: match[1] };
+                }
+                if (code >= 100) {
+                    return { code, bucket: '1xx', match: match[1] };
+                }
+            }
+        }
+
+        return null;
     }
 
     // 下载日志
