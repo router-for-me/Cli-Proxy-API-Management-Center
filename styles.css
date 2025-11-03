@@ -1699,6 +1699,7 @@ input:checked+.slider:before {
     display: flex;
     flex-direction: column;
     transition: all 0.3s ease;
+    position: relative;
 }
 
 .file-item.hidden {
@@ -1718,6 +1719,13 @@ input:checked+.slider:before {
     width: 100%;
 }
 
+/* 为 API Keys 和 AI Providers 的项优化按钮位置 */
+.key-item .item-content,
+.provider-item .item-content {
+    padding-right: 120px; /* 为按钮预留空间，防止内容重叠 */
+    min-width: 0; /* 确保内容可以正常换行 */
+}
+
 .item-footer {
     display: flex;
     justify-content: space-between;
@@ -1725,6 +1733,7 @@ input:checked+.slider:before {
     margin-top: 12px;
     flex-wrap: wrap;
     gap: 10px;
+    align-items: flex-start;
 }
 
 .item-stats {
@@ -1736,9 +1745,46 @@ input:checked+.slider:before {
 
 .item-actions {
     display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+    gap: 8px;
+    flex-wrap: nowrap;
     align-items: center;
+    justify-content: flex-end;
+}
+
+/* API Keys 和 AI Providers 的按钮组 - 绝对定位到右侧垂直居中 */
+.key-item .item-actions,
+.provider-item .item-actions {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    gap: 8px;
+}
+
+/* 按钮样式优化 */
+.key-item .item-actions .btn,
+.provider-item .item-actions .btn {
+    min-width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.key-item .item-actions .btn:hover,
+.provider-item .item-actions .btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.key-item .item-actions .btn i,
+.provider-item .item-actions .btn i {
+    font-size: 16px;
+    margin: 0;
 }
 
 .item-title {
@@ -3460,6 +3506,44 @@ input:checked+.slider:before {
         font-size: 11px !important;
     }
 }
+
+/* 响应式设计 - API Keys 和 AI Providers 按钮优化 */
+@media (max-width: 768px) {
+    /* 移动端按钮位置调整 */
+    .key-item .item-actions,
+    .provider-item .item-actions {
+        position: relative;
+        top: auto;
+        right: auto;
+        transform: none;
+        margin-top: 12px;
+        justify-content: flex-start;
+    }
+
+    /* 移动端移除内容右侧内边距 */
+    .key-item .item-content,
+    .provider-item .item-content {
+        padding-right: 0;
+    }
+
+    /* 移动端按钮尺寸调整 */
+    .key-item .item-actions .btn,
+    .provider-item .item-actions .btn {
+        min-width: 36px;
+        height: 36px;
+    }
+
+    .key-item .item-actions .btn:hover,
+    .provider-item .item-actions .btn:hover {
+        transform: scale(1.05);
+    }
+
+    .key-item .item-actions .btn i,
+    .provider-item .item-actions .btn i {
+        font-size: 14px;
+    }
+}
+
 #config-management .CodeMirror .CodeMirror-lines {
     padding: 12px;
 }
