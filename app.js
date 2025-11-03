@@ -3259,18 +3259,7 @@ class CLIProxyManager {
                     btn.setAttribute('data-i18n-text', dynamicKey);
                     btn.textContent = this.generateDynamicTypeLabel(type);
                 }
-    // 生成动态类型标签
-    generateDynamicTypeLabel(type) {
-        if (!type) return '';
-        const key = `auth_files.type_${type}`;
-        const translated = i18n.t(key);
-        if (translated && translated !== key) {
-            return translated;
-        }
-        if (type.toLowerCase() === 'iflow') return 'iFlow';
-        return type.charAt(0).toUpperCase() + type.slice(1);
-    }
-                
+
                 // 插入到 Empty 按钮之前（如果存在）
                 const emptyBtn = filterContainer.querySelector('[data-type="empty"]');
                 if (emptyBtn) {
@@ -3305,6 +3294,18 @@ class CLIProxyManager {
 
         // 更新筛选按钮文本（以防语言切换后新按钮未刷新）
         this.refreshFilterButtonTexts();
+    }
+
+    // 生成动态类型标签
+    generateDynamicTypeLabel(type) {
+        if (!type) return '';
+        const key = `auth_files.type_${type}`;
+        const translated = i18n.t(key);
+        if (translated && translated !== key) {
+            return translated;
+        }
+        if (type.toLowerCase() === 'iflow') return 'iFlow';
+        return type.charAt(0).toUpperCase() + type.slice(1);
     }
 
     // 绑定认证文件筛选事件
