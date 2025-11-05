@@ -2315,6 +2315,30 @@ class CLIProxyManager {
             .replace(/'/g, '&#39;');
     }
 
+    // 兼容服务端返回的数组结构
+    normalizeArrayResponse(data, key) {
+        if (Array.isArray(data)) {
+            return data;
+        }
+        if (data && Array.isArray(data[key])) {
+            return data[key];
+        }
+        if (data && Array.isArray(data.items)) {
+            return data.items;
+        }
+        return [];
+    }
+
+    // 构造Codex配置，保持未展示的字段
+    buildCodexConfig(apiKey, baseUrl, proxyUrl, original = {}) {
+        return {
+            ...original,
+            'api-key': apiKey,
+            'base-url': baseUrl || '',
+            'proxy-url': proxyUrl || ''
+        };
+    }
+
     // 显示添加API密钥模态框
     showAddApiKeyModal() {
         const modal = document.getElementById('modal');
@@ -2695,15 +2719,9 @@ class CLIProxyManager {
 
         try {
             const data = await this.makeRequest('/codex-api-key');
-            const currentKeys = data['codex-api-key'] || [];
+            const currentKeys = this.normalizeArrayResponse(data, 'codex-api-key').map(item => ({ ...item }));
 
-            const newConfig = { 'api-key': apiKey };
-            if (baseUrl) {
-                newConfig['base-url'] = baseUrl;
-            }
-            if (proxyUrl) {
-                newConfig['proxy-url'] = proxyUrl;
-            }
+            const newConfig = this.buildCodexConfig(apiKey, baseUrl, proxyUrl);
 
             currentKeys.push(newConfig);
 
@@ -2761,13 +2779,15 @@ class CLIProxyManager {
         }
 
         try {
-            const newConfig = { 'api-key': apiKey };
-            if (baseUrl) {
-                newConfig['base-url'] = baseUrl;
+            const listResponse = await this.makeRequest('/codex-api-key');
+            const currentList = this.normalizeArrayResponse(listResponse, 'codex-api-key');
+
+            if (!Array.isArray(currentList) || index < 0 || index >= currentList.length) {
+                throw new Error('Invalid codex configuration index');
             }
-            if (proxyUrl) {
-                newConfig['proxy-url'] = proxyUrl;
-            }
+
+            const original = currentList[index] ? { ...currentList[index] } : {};
+            const newConfig = this.buildCodexConfig(apiKey, baseUrl, proxyUrl, original);
 
             await this.makeRequest('/codex-api-key', {
                 method: 'PATCH',
