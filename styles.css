@@ -1751,6 +1751,22 @@ input:checked+.slider:before {
     justify-content: flex-end;
 }
 
+/* 认证文件项的底部布局优化 - 确保状态标签和操作按钮垂直对齐 */
+.file-item .item-footer {
+    align-items: center; /* 垂直居中对齐 */
+    gap: 12px; /* 增加状态标签和按钮之间的间距 */
+}
+
+.file-item .item-stats {
+    align-items: center; /* 状态徽章垂直居中 */
+    margin: 0; /* 移除默认外边距 */
+}
+
+.file-item .item-actions {
+    align-items: center; /* 操作按钮垂直居中 */
+    gap: 6px; /* 按钮之间适当间距 */
+}
+
 /* API Keys 和 AI Providers 的按钮组 - 绝对定位到右侧垂直居中 */
 .key-item .item-actions,
 .provider-item .item-actions {
@@ -3642,6 +3658,7 @@ input:checked+.slider:before {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    margin-top: 8px;
 }
 
 /* 统计徽章基础样式 */
