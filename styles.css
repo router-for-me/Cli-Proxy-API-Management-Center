@@ -1683,6 +1683,27 @@ input:checked+.slider:before {
     border: 1px dashed #666666;
 }
 
+/* 虚拟认证文件标记样式 */
+.virtual-auth-badge {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+    color: white;
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    text-align: center;
+    display: inline-block;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25);
+    letter-spacing: 0.3px;
+}
+
+[data-theme="dark"] .virtual-auth-badge {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+    box-shadow: 0 2px 4px rgba(96, 165, 250, 0.25);
+}
+
+
 .provider-list {
     /* 默认不限制高度，动态设置 */
     min-height: 0;

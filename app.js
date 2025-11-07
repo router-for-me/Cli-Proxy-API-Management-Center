@@ -3370,17 +3370,13 @@ class CLIProxyManager {
             if (fileStats.success === 0 && fileStats.failure === 0) {
                 const nameWithoutExt = file.name.replace(/\.[^/.]+$/, ""); // 去掉扩展名
 
-                // 后端有两种脱敏规则，都要尝试：
-                // 规则1：完整描述脱敏 - mikiunameina@gmail.com (ethereal-advice-465201-t0) -> 脱敏 -> miki...-t0)
-                // 规则2：直接整体脱敏 - mikiunameina@gmail.com-ethereal-advice-465201-t0 -> 脱敏 -> ???
-
                 const possibleSources = [];
 
                 // 规则1：尝试完整描述脱敏
                 const match = nameWithoutExt.match(/^([^@]+@[^-]+)-(.+)$/);
                 if (match) {
-                    const email = match[1];        // mikiunameina@gmail.com
-                    const projectName = match[2];  // ethereal-advice-465201-t0
+                    const email = match[1]; 
+                    const projectName = match[2];
 
                     // 组合成完整的描述格式
                     const fullDescription = `${email} (${projectName})`;
@@ -3448,8 +3444,28 @@ class CLIProxyManager {
             }
             const typeBadge = `<span class="file-type-badge ${fileType}">${i18n.t(typeDisplayKey)}</span>`;
 
+            // 检查是否为 runtime-only 文件
+            const isRuntimeOnly = file.runtime_only === true;
+
+            // 生成操作按钮 HTML，runtime-only 文件显示虚拟标记
+            const actionsHtml = isRuntimeOnly ? `
+                        <div class="item-actions">
+                            <span class="virtual-auth-badge">虚拟认证文件</span>
+                        </div>` : `
+                        <div class="item-actions" data-filename="${file.name}">
+                            <button class="btn-small btn-info" data-action="showDetails" title="详细信息">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                            <button class="btn-small btn-primary" data-action="download" title="下载">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="btn-small btn-danger" data-action="delete" title="删除">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>`;
+
             return `
-            <div class="file-item" data-file-type="${fileType}">
+            <div class="file-item" data-file-type="${fileType}" ${isRuntimeOnly ? 'data-runtime-only="true"' : ''}>
                 <div class="item-content">
                     <div class="item-title">${typeBadge}${file.name}</div>
                     <div class="item-meta">
@@ -3465,17 +3481,7 @@ class CLIProxyManager {
                                 <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${fileStats.failure}
                             </span>
                         </div>
-                        <div class="item-actions" data-filename="${file.name}">
-                            <button class="btn-small btn-info" data-action="showDetails" title="详细信息">
-                                <i class="fas fa-info-circle"></i>
-                            </button>
-                            <button class="btn-small btn-primary" data-action="download" title="下载">
-                                <i class="fas fa-download"></i>
-                            </button>
-                            <button class="btn-small btn-danger" data-action="delete" title="删除">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+                        ${actionsHtml}
                     </div>
                 </div>
             </div>
