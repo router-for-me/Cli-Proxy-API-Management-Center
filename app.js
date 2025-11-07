@@ -3398,6 +3398,12 @@ class CLIProxyManager {
                     possibleSources.push(maskedPersonalId);
                 }
 
+                // 规则3：AI Studio 特殊处理 - 对完整文件名脱敏
+                if (nameWithoutExt.startsWith('aistudio-')) {
+                    const maskedFullName = this.maskApiKey(nameWithoutExt);
+                    possibleSources.push(maskedFullName);
+                }
+
                 // 查找第一个有统计数据的匹配
                 for (const source of possibleSources) {
                     if (stats[source] && (stats[source].success > 0 || stats[source].failure > 0)) {
@@ -3417,6 +3423,12 @@ class CLIProxyManager {
                     break;
                 case 'gemini':
                     typeDisplayKey = 'auth_files.type_gemini';
+                    break;
+                case 'gemini-cli':
+                    typeDisplayKey = 'auth_files.type_gemini-cli';
+                    break;
+                case 'aistudio':
+                    typeDisplayKey = 'auth_files.type_aistudio';
                     break;
                 case 'claude':
                     typeDisplayKey = 'auth_files.type_claude';
@@ -3487,6 +3499,8 @@ class CLIProxyManager {
             { type: 'all', labelKey: 'auth_files.filter_all' },
             { type: 'qwen', labelKey: 'auth_files.filter_qwen' },
             { type: 'gemini', labelKey: 'auth_files.filter_gemini' },
+            { type: 'gemini-cli', labelKey: 'auth_files.filter_gemini-cli' },
+            { type: 'aistudio', labelKey: 'auth_files.filter_aistudio' },
             { type: 'claude', labelKey: 'auth_files.filter_claude' },
             { type: 'codex', labelKey: 'auth_files.filter_codex' },
             { type: 'iflow', labelKey: 'auth_files.filter_iflow' },
@@ -4648,7 +4662,7 @@ class CLIProxyManager {
         try {
             const response = await this.makeRequest('/usage');
             const usage = response?.usage || null;
-
+            
             if (!usage) {
                 return {};
             }
@@ -4665,7 +4679,7 @@ class CLIProxyManager {
                     details.forEach(detail => {
                         const source = detail.source;
                         if (!source) return;
-
+                        
                         if (!sourceStats[source]) {
                             sourceStats[source] = {
                                 success: 0,
