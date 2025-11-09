@@ -2526,7 +2526,8 @@ class CLIProxyManager {
             <h3>${i18n.t('ai_providers.gemini_add_modal_title')}</h3>
             <div class="form-group">
                 <label for="new-gemini-key">${i18n.t('ai_providers.gemini_add_modal_key_label')}</label>
-                <input type="text" id="new-gemini-key" placeholder="${i18n.t('ai_providers.gemini_add_modal_key_placeholder')}">
+                <textarea id="new-gemini-key" rows="6" placeholder="${i18n.t('ai_providers.gemini_add_modal_key_placeholder')}"></textarea>
+                <p class="form-hint">${i18n.t('ai_providers.gemini_add_modal_key_hint')}</p>
             </div>
             <div class="form-group">
                 <label for="new-gemini-url">${i18n.t('ai_providers.gemini_add_modal_url_label')}</label>
@@ -2543,35 +2544,90 @@ class CLIProxyManager {
 
     // 添加Gemini密钥
     async addGeminiKey() {
-        const newKey = document.getElementById('new-gemini-key').value.trim();
+        const keyInput = document.getElementById('new-gemini-key');
         const baseUrlInput = document.getElementById('new-gemini-url');
+        if (!keyInput) {
+            return;
+        }
+
+        const keys = keyInput.value
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
         const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : '';
 
-        if (!newKey) {
-            this.showNotification(i18n.t('notification.please_enter') + ' ' + i18n.t('notification.gemini_api_key'), 'error');
+        if (keys.length === 0) {
+            this.showNotification(i18n.t('notification.gemini_multi_input_required'), 'error');
             return;
         }
 
         try {
             const data = await this.makeRequest('/gemini-api-key');
-            const currentKeys = data['gemini-api-key'] || [];
-            const newConfig = { 'api-key': newKey };
-            if (baseUrl) {
-                newConfig['base-url'] = baseUrl;
-            }
-            currentKeys.push(newConfig);
+            let currentKeys = Array.isArray(data['gemini-api-key']) ? data['gemini-api-key'] : [];
+            const existingKeys = new Set(currentKeys.map(item => item && item['api-key']).filter(Boolean));
+            const batchSeen = new Set();
 
-            await this.makeRequest('/gemini-api-key', {
-                method: 'PUT',
-                body: JSON.stringify(currentKeys)
-            });
+            let successCount = 0;
+            let skippedCount = 0;
+            let failedCount = 0;
+
+            for (const apiKey of keys) {
+                if (!apiKey) {
+                    continue;
+                }
+
+                if (batchSeen.has(apiKey)) {
+                    skippedCount++;
+                    continue;
+                }
+                batchSeen.add(apiKey);
+
+                if (existingKeys.has(apiKey)) {
+                    skippedCount++;
+                    continue;
+                }
+
+                const newConfig = { 'api-key': apiKey };
+                if (baseUrl) {
+                    newConfig['base-url'] = baseUrl;
+                } else {
+                    delete newConfig['base-url'];
+                }
+
+                const nextKeys = [...currentKeys, newConfig];
+
+                try {
+                    await this.makeRequest('/gemini-api-key', {
+                        method: 'PUT',
+                        body: JSON.stringify(nextKeys)
+                    });
+                    currentKeys = nextKeys;
+                    existingKeys.add(apiKey);
+                    successCount++;
+                } catch (error) {
+                    failedCount++;
+                    console.error('Gemini key add failed:', error);
+                }
+            }
 
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadGeminiKeys();
-            this.showNotification(i18n.t('notification.gemini_key_added'), 'success');
+
+            if (successCount === 1 && skippedCount === 0 && failedCount === 0) {
+                this.showNotification(i18n.t('notification.gemini_key_added'), 'success');
+                return;
+            }
+
+            const summaryTemplate = i18n.t('notification.gemini_multi_summary');
+            const summary = summaryTemplate
+                .replace('{success}', successCount)
+                .replace('{skipped}', skippedCount)
+                .replace('{failed}', failedCount);
+            const status = failedCount > 0 ? 'warning' : (successCount > 0 ? 'success' : 'info');
+            this.showNotification(summary, status);
         } catch (error) {
-            this.showNotification(`${i18n.t('notification.add_failed')}: ${error.message}`, 'error');
+            this.showNotification(`${i18n.t('notification.gemini_multi_failed')}: ${error.message}`, 'error');
         }
     }
 
