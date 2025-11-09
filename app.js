@@ -2322,14 +2322,122 @@ class CLIProxyManager {
         return [];
     }
 
+    // 添加一行自定义请求头输入
+    addHeaderField(wrapperId, header = {}) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+
+        const row = document.createElement('div');
+        row.className = 'header-input-row';
+        const keyValue = typeof header.key === 'string' ? header.key : '';
+        const valueValue = typeof header.value === 'string' ? header.value : '';
+        row.innerHTML = `
+            <div class="input-group header-input-group">
+                <input type="text" class="header-key-input" placeholder="${i18n.t('common.custom_headers_key_placeholder')}" value="${this.escapeHtml(keyValue)}">
+                <span class="header-separator">:</span>
+                <input type="text" class="header-value-input" placeholder="${i18n.t('common.custom_headers_value_placeholder')}" value="${this.escapeHtml(valueValue)}">
+                <button type="button" class="btn btn-small btn-danger header-remove-btn"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+
+        const removeBtn = row.querySelector('.header-remove-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                wrapper.removeChild(row);
+                if (wrapper.childElementCount === 0) {
+                    this.addHeaderField(wrapperId);
+                }
+            });
+        }
+
+        wrapper.appendChild(row);
+    }
+
+    // 填充自定义请求头输入
+    populateHeaderFields(wrapperId, headers = null) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+        wrapper.innerHTML = '';
+
+        const entries = (headers && typeof headers === 'object')
+            ? Object.entries(headers).filter(([key, value]) => key && value !== undefined && value !== null)
+            : [];
+
+        if (!entries.length) {
+            this.addHeaderField(wrapperId);
+            return;
+        }
+
+        entries.forEach(([key, value]) => this.addHeaderField(wrapperId, { key, value: String(value ?? '') }));
+    }
+
+    // 收集自定义请求头输入
+    collectHeaderInputs(wrapperId) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return null;
+
+        const rows = Array.from(wrapper.querySelectorAll('.header-input-row'));
+        const headers = {};
+
+        rows.forEach(row => {
+            const keyInput = row.querySelector('.header-key-input');
+            const valueInput = row.querySelector('.header-value-input');
+            const key = keyInput ? keyInput.value.trim() : '';
+            const value = valueInput ? valueInput.value.trim() : '';
+            if (key && value) {
+                headers[key] = value;
+            }
+        });
+
+        return Object.keys(headers).length ? headers : null;
+    }
+
+    // 规范化并写入请求头
+    applyHeadersToConfig(target, headers) {
+        if (!target) {
+            return;
+        }
+        if (headers && typeof headers === 'object' && Object.keys(headers).length) {
+            target.headers = { ...headers };
+        } else {
+            delete target.headers;
+        }
+    }
+
+    // 渲染请求头徽章
+    renderHeaderBadges(headers) {
+        if (!headers || typeof headers !== 'object') {
+            return '';
+        }
+        const entries = Object.entries(headers).filter(([key, value]) => key && value !== undefined && value !== null && value !== '');
+        if (!entries.length) {
+            return '';
+        }
+
+        const badges = entries.map(([key, value]) => `
+            <span class="header-badge"><strong>${this.escapeHtml(key)}:</strong> ${this.escapeHtml(String(value))}</span>
+        `).join('');
+
+        return `
+            <div class="item-subtitle header-badges-wrapper">
+                <span class="header-badges-label">${i18n.t('common.custom_headers_label')}:</span>
+                <div class="header-badge-list">
+                    ${badges}
+                </div>
+            </div>
+        `;
+    }
+
     // 构造Codex配置，保持未展示的字段
-    buildCodexConfig(apiKey, baseUrl, proxyUrl, original = {}) {
-        return {
+    buildCodexConfig(apiKey, baseUrl, proxyUrl, original = {}, headers = null) {
+        const result = {
             ...original,
             'api-key': apiKey,
             'base-url': baseUrl || '',
             'proxy-url': proxyUrl || ''
         };
+        this.applyHeadersToConfig(result, headers);
+        return result;
     }
 
     // 显示添加API密钥模态框
@@ -2496,6 +2604,7 @@ class CLIProxyManager {
                     <div class="item-title">${i18n.t('ai_providers.gemini_item_title')} #${index + 1}</div>
                     <div class="item-value">${this.maskApiKey(rawKey || '')}</div>
                     ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
+                    ${this.renderHeaderBadges(config.headers)}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
                             <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
@@ -2533,6 +2642,12 @@ class CLIProxyManager {
                 <label for="new-gemini-url">${i18n.t('ai_providers.gemini_add_modal_url_label')}</label>
                 <input type="text" id="new-gemini-url" placeholder="${i18n.t('ai_providers.gemini_add_modal_url_placeholder')}">
             </div>
+            <div class="form-group">
+                <label>${i18n.t('common.custom_headers_label')}</label>
+                <p class="form-hint">${i18n.t('common.custom_headers_hint')}</p>
+                <div id="new-gemini-headers-wrapper" class="header-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('new-gemini-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.addGeminiKey()">${i18n.t('common.add')}</button>
@@ -2540,6 +2655,7 @@ class CLIProxyManager {
         `;
 
         modal.style.display = 'block';
+        this.populateHeaderFields('new-gemini-headers-wrapper');
     }
 
     // 添加Gemini密钥
@@ -2555,6 +2671,7 @@ class CLIProxyManager {
             .map(line => line.trim())
             .filter(line => line.length > 0);
         const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : '';
+        const headers = this.collectHeaderInputs('new-gemini-headers-wrapper');
 
         if (keys.length === 0) {
             this.showNotification(i18n.t('notification.gemini_multi_input_required'), 'error');
@@ -2593,6 +2710,7 @@ class CLIProxyManager {
                 } else {
                     delete newConfig['base-url'];
                 }
+                this.applyHeadersToConfig(newConfig, headers);
 
                 const nextKeys = [...currentKeys, newConfig];
 
@@ -2647,6 +2765,12 @@ class CLIProxyManager {
                 <label for="edit-gemini-url">${i18n.t('ai_providers.gemini_edit_modal_url_label')}</label>
                 <input type="text" id="edit-gemini-url" value="${config['base-url'] ? this.escapeHtml(config['base-url']) : ''}" placeholder="${i18n.t('ai_providers.gemini_add_modal_url_placeholder')}">
             </div>
+            <div class="form-group">
+                <label>${i18n.t('common.custom_headers_label')}</label>
+                <p class="form-hint">${i18n.t('common.custom_headers_hint')}</p>
+                <div id="edit-gemini-headers-wrapper" class="header-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('edit-gemini-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.updateGeminiKey(${index})">${i18n.t('common.update')}</button>
@@ -2654,6 +2778,7 @@ class CLIProxyManager {
         `;
 
         modal.style.display = 'block';
+        this.populateHeaderFields('edit-gemini-headers-wrapper', config.headers || null);
     }
 
     // 更新Gemini密钥
@@ -2661,6 +2786,7 @@ class CLIProxyManager {
         const newKey = document.getElementById('edit-gemini-key').value.trim();
         const baseUrlInput = document.getElementById('edit-gemini-url');
         const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : '';
+        const headers = this.collectHeaderInputs('edit-gemini-headers-wrapper');
 
         if (!newKey) {
             this.showNotification(i18n.t('notification.please_enter') + ' ' + i18n.t('notification.gemini_api_key'), 'error');
@@ -2675,6 +2801,7 @@ class CLIProxyManager {
             } else {
                 delete newConfig['base-url'];
             }
+            this.applyHeadersToConfig(newConfig, headers);
 
             await this.makeRequest('/gemini-api-key', {
                 method: 'PATCH',
@@ -2749,6 +2876,7 @@ class CLIProxyManager {
                     <div class="item-subtitle">${i18n.t('common.api_key')}: ${this.maskApiKey(config['api-key'])}</div>
                     ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
                     ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
+                    ${this.renderHeaderBadges(config.headers)}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
                             <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
@@ -2789,6 +2917,12 @@ class CLIProxyManager {
                 <label for="new-codex-proxy">${i18n.t('ai_providers.codex_add_modal_proxy_label')}</label>
                 <input type="text" id="new-codex-proxy" placeholder="${i18n.t('ai_providers.codex_add_modal_proxy_placeholder')}">
             </div>
+            <div class="form-group">
+                <label>${i18n.t('common.custom_headers_label')}</label>
+                <p class="form-hint">${i18n.t('common.custom_headers_hint')}</p>
+                <div id="new-codex-headers-wrapper" class="header-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('new-codex-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.addCodexKey()">${i18n.t('common.add')}</button>
@@ -2796,6 +2930,7 @@ class CLIProxyManager {
         `;
 
         modal.style.display = 'block';
+        this.populateHeaderFields('new-codex-headers-wrapper');
     }
 
     // 添加Codex密钥
@@ -2803,6 +2938,7 @@ class CLIProxyManager {
         const apiKey = document.getElementById('new-codex-key').value.trim();
         const baseUrl = document.getElementById('new-codex-url').value.trim();
         const proxyUrl = document.getElementById('new-codex-proxy').value.trim();
+        const headers = this.collectHeaderInputs('new-codex-headers-wrapper');
 
         if (!apiKey) {
             this.showNotification(i18n.t('notification.field_required'), 'error');
@@ -2813,7 +2949,7 @@ class CLIProxyManager {
             const data = await this.makeRequest('/codex-api-key');
             const currentKeys = this.normalizeArrayResponse(data, 'codex-api-key').map(item => ({ ...item }));
 
-            const newConfig = this.buildCodexConfig(apiKey, baseUrl, proxyUrl);
+            const newConfig = this.buildCodexConfig(apiKey, baseUrl, proxyUrl, {}, headers);
 
             currentKeys.push(newConfig);
 
@@ -2850,6 +2986,12 @@ class CLIProxyManager {
                 <label for="edit-codex-proxy">${i18n.t('ai_providers.codex_edit_modal_proxy_label')}</label>
                 <input type="text" id="edit-codex-proxy" value="${config['proxy-url'] || ''}">
             </div>
+            <div class="form-group">
+                <label>${i18n.t('common.custom_headers_label')}</label>
+                <p class="form-hint">${i18n.t('common.custom_headers_hint')}</p>
+                <div id="edit-codex-headers-wrapper" class="header-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('edit-codex-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.updateCodexKey(${index})">${i18n.t('common.update')}</button>
@@ -2857,6 +2999,7 @@ class CLIProxyManager {
         `;
 
         modal.style.display = 'block';
+        this.populateHeaderFields('edit-codex-headers-wrapper', config.headers || null);
     }
 
     // 更新Codex密钥
@@ -2864,6 +3007,7 @@ class CLIProxyManager {
         const apiKey = document.getElementById('edit-codex-key').value.trim();
         const baseUrl = document.getElementById('edit-codex-url').value.trim();
         const proxyUrl = document.getElementById('edit-codex-proxy').value.trim();
+        const headers = this.collectHeaderInputs('edit-codex-headers-wrapper');
 
         if (!apiKey) {
             this.showNotification(i18n.t('notification.field_required'), 'error');
@@ -2879,7 +3023,7 @@ class CLIProxyManager {
             }
 
             const original = currentList[index] ? { ...currentList[index] } : {};
-            const newConfig = this.buildCodexConfig(apiKey, baseUrl, proxyUrl, original);
+            const newConfig = this.buildCodexConfig(apiKey, baseUrl, proxyUrl, original, headers);
 
             await this.makeRequest('/codex-api-key', {
                 method: 'PATCH',
@@ -2953,6 +3097,7 @@ class CLIProxyManager {
                     <div class="item-subtitle">${i18n.t('common.api_key')}: ${this.maskApiKey(config['api-key'])}</div>
                     ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
                     ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
+                    ${this.renderHeaderBadges(config.headers)}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
                             <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
@@ -2993,6 +3138,12 @@ class CLIProxyManager {
                 <label for="new-claude-proxy">${i18n.t('ai_providers.claude_add_modal_proxy_label')}</label>
                 <input type="text" id="new-claude-proxy" placeholder="${i18n.t('ai_providers.claude_add_modal_proxy_placeholder')}">
             </div>
+            <div class="form-group">
+                <label>${i18n.t('common.custom_headers_label')}</label>
+                <p class="form-hint">${i18n.t('common.custom_headers_hint')}</p>
+                <div id="new-claude-headers-wrapper" class="header-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('new-claude-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.addClaudeKey()">${i18n.t('common.add')}</button>
@@ -3000,6 +3151,7 @@ class CLIProxyManager {
         `;
 
         modal.style.display = 'block';
+        this.populateHeaderFields('new-claude-headers-wrapper');
     }
 
     // 添加Claude密钥
@@ -3007,6 +3159,7 @@ class CLIProxyManager {
         const apiKey = document.getElementById('new-claude-key').value.trim();
         const baseUrl = document.getElementById('new-claude-url').value.trim();
         const proxyUrl = document.getElementById('new-claude-proxy').value.trim();
+        const headers = this.collectHeaderInputs('new-claude-headers-wrapper');
 
         if (!apiKey) {
             this.showNotification(i18n.t('notification.field_required'), 'error');
@@ -3024,6 +3177,7 @@ class CLIProxyManager {
             if (proxyUrl) {
                 newConfig['proxy-url'] = proxyUrl;
             }
+            this.applyHeadersToConfig(newConfig, headers);
 
             currentKeys.push(newConfig);
 
@@ -3060,6 +3214,12 @@ class CLIProxyManager {
                 <label for="edit-claude-proxy">${i18n.t('ai_providers.claude_edit_modal_proxy_label')}</label>
                 <input type="text" id="edit-claude-proxy" value="${config['proxy-url'] || ''}">
             </div>
+            <div class="form-group">
+                <label>${i18n.t('common.custom_headers_label')}</label>
+                <p class="form-hint">${i18n.t('common.custom_headers_hint')}</p>
+                <div id="edit-claude-headers-wrapper" class="header-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('edit-claude-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.updateClaudeKey(${index})">${i18n.t('common.update')}</button>
@@ -3067,6 +3227,7 @@ class CLIProxyManager {
         `;
 
         modal.style.display = 'block';
+        this.populateHeaderFields('edit-claude-headers-wrapper', config.headers || null);
     }
 
     // 更新Claude密钥
@@ -3074,6 +3235,7 @@ class CLIProxyManager {
         const apiKey = document.getElementById('edit-claude-key').value.trim();
         const baseUrl = document.getElementById('edit-claude-url').value.trim();
         const proxyUrl = document.getElementById('edit-claude-proxy').value.trim();
+        const headers = this.collectHeaderInputs('edit-claude-headers-wrapper');
 
         if (!apiKey) {
             this.showNotification(i18n.t('notification.field_required'), 'error');
@@ -3088,6 +3250,7 @@ class CLIProxyManager {
             if (proxyUrl) {
                 newConfig['proxy-url'] = proxyUrl;
             }
+            this.applyHeadersToConfig(newConfig, headers);
 
             await this.makeRequest('/claude-api-key', {
                 method: 'PATCH',
@@ -3196,6 +3359,7 @@ class CLIProxyManager {
                 <div class="item-content">
                     <div class="item-title">${this.escapeHtml(name)}</div>
                     <div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(baseUrl)}</div>
+                    ${this.renderHeaderBadges(item.headers)}
                     <div class="item-subtitle">${i18n.t('ai_providers.openai_keys_count')}: ${apiKeyEntries.length}</div>
                     <div class="item-subtitle">${i18n.t('ai_providers.openai_models_count')}: ${models.length}</div>
                     ${this.renderOpenAIModelBadges(models)}
@@ -3244,6 +3408,12 @@ class CLIProxyManager {
                 <textarea id="new-provider-proxies" rows="3" placeholder="${i18n.t('ai_providers.openai_add_modal_keys_proxy_placeholder')}"></textarea>
             </div>
             <div class="form-group">
+                <label>${i18n.t('common.custom_headers_label')}</label>
+                <p class="form-hint">${i18n.t('common.custom_headers_hint')}</p>
+                <div id="new-openai-headers-wrapper" class="header-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('new-openai-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
+            </div>
+            <div class="form-group">
                 <label>${i18n.t('ai_providers.openai_add_modal_models_label')}</label>
                 <p class="form-hint">${i18n.t('ai_providers.openai_models_hint')}</p>
                 <div id="new-provider-models-wrapper" class="model-input-list"></div>
@@ -3257,6 +3427,7 @@ class CLIProxyManager {
 
         modal.style.display = 'block';
         this.populateModelFields('new-provider-models-wrapper', []);
+        this.populateHeaderFields('new-openai-headers-wrapper');
     }
 
     // 添加OpenAI提供商
@@ -3266,6 +3437,7 @@ class CLIProxyManager {
         const keysText = document.getElementById('new-provider-keys').value.trim();
         const proxiesText = document.getElementById('new-provider-proxies').value.trim();
         const models = this.collectModelInputs('new-provider-models-wrapper');
+        const headers = this.collectHeaderInputs('new-openai-headers-wrapper');
 
         if (!this.validateOpenAIProviderInput(name, baseUrl, models)) {
             return;
@@ -3288,6 +3460,7 @@ class CLIProxyManager {
                 'api-key-entries': apiKeyEntries,
                 models
             };
+            this.applyHeadersToConfig(newProvider, headers);
 
             currentProviders.push(newProvider);
 
@@ -3343,6 +3516,12 @@ class CLIProxyManager {
                 <textarea id="edit-provider-proxies" rows="3">${this.escapeHtml(proxiesText)}</textarea>
             </div>
             <div class="form-group">
+                <label>${i18n.t('common.custom_headers_label')}</label>
+                <p class="form-hint">${i18n.t('common.custom_headers_hint')}</p>
+                <div id="edit-openai-headers-wrapper" class="header-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('edit-openai-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
+            </div>
+            <div class="form-group">
                 <label>${i18n.t('ai_providers.openai_edit_modal_models_label')}</label>
                 <p class="form-hint">${i18n.t('ai_providers.openai_models_hint')}</p>
                 <div id="edit-provider-models-wrapper" class="model-input-list"></div>
@@ -3356,6 +3535,7 @@ class CLIProxyManager {
 
         modal.style.display = 'block';
         this.populateModelFields('edit-provider-models-wrapper', models);
+        this.populateHeaderFields('edit-openai-headers-wrapper', provider?.headers || null);
     }
 
     // 更新OpenAI提供商
@@ -3365,6 +3545,7 @@ class CLIProxyManager {
         const keysText = document.getElementById('edit-provider-keys').value.trim();
         const proxiesText = document.getElementById('edit-provider-proxies').value.trim();
         const models = this.collectModelInputs('edit-provider-models-wrapper');
+        const headers = this.collectHeaderInputs('edit-openai-headers-wrapper');
 
         if (!this.validateOpenAIProviderInput(name, baseUrl, models)) {
             return;
@@ -3384,6 +3565,7 @@ class CLIProxyManager {
                 'api-key-entries': apiKeyEntries,
                 models
             };
+            this.applyHeadersToConfig(updatedProvider, headers);
 
             await this.makeRequest('/openai-compatibility', {
                 method: 'PATCH',

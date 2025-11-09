@@ -2814,6 +2814,68 @@ input:checked+.slider:before {
     align-self: center;
 }
 
+.header-input-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.header-input-row .header-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-key-input {
+    flex: 1;
+}
+
+.header-value-input {
+    flex: 2;
+}
+
+.header-separator {
+    color: var(--text-tertiary);
+}
+
+.header-badges-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.header-badge-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.header-badge {
+    background: var(--accent-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: inline-flex;
+    gap: 4px;
+}
+
+.header-badge strong {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .header-badge {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .header-badge strong {
+    color: var(--text-secondary);
+}
+
 /* Codex OAuth 样式 */
 #codex-oauth-content {
     transition: all 0.3s ease;

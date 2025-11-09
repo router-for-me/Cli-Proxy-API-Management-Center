@@ -41,6 +41,11 @@ const i18n = {
             'common.failure': '失败',
             'common.unknown_error': '未知错误',
             'common.copy': '复制',
+            'common.custom_headers_label': '自定义请求头',
+            'common.custom_headers_hint': '可选，设置需要附带到请求中的 HTTP 头，名称和值均不能为空。',
+            'common.custom_headers_add': '添加请求头',
+            'common.custom_headers_key_placeholder': 'Header 名称，例如 X-Custom-Header',
+            'common.custom_headers_value_placeholder': 'Header 值',
 
             // 页面标题
             'title.main': 'CLI Proxy API Management Center',
@@ -494,6 +499,11 @@ const i18n = {
             'common.failure': 'Failure',
             'common.unknown_error': 'Unknown error',
             'common.copy': 'Copy',
+            'common.custom_headers_label': 'Custom Headers',
+            'common.custom_headers_hint': 'Optional HTTP headers to send with the request. Leave blank to remove.',
+            'common.custom_headers_add': 'Add Header',
+            'common.custom_headers_key_placeholder': 'Header name, e.g. X-Custom-Header',
+            'common.custom_headers_value_placeholder': 'Header value',
 
             // Page titles
             'title.main': 'CLI Proxy API Management Center',
