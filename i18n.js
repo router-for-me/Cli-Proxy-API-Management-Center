@@ -133,8 +133,11 @@ const i18n = {
             'ai_providers.gemini_add_modal_title': '添加Gemini API密钥',
             'ai_providers.gemini_add_modal_key_label': 'API密钥:',
             'ai_providers.gemini_add_modal_key_placeholder': '请输入Gemini API密钥',
+            'ai_providers.gemini_add_modal_url_label': 'Base URL (可选):',
+            'ai_providers.gemini_add_modal_url_placeholder': '例如: https://generativelanguage.googleapis.com',
             'ai_providers.gemini_edit_modal_title': '编辑Gemini API密钥',
             'ai_providers.gemini_edit_modal_key_label': 'API密钥:',
+            'ai_providers.gemini_edit_modal_url_label': 'Base URL (可选):',
             'ai_providers.gemini_delete_confirm': '确定要删除这个Gemini密钥吗？',
 
             'ai_providers.codex_title': 'Codex API 配置',
@@ -579,8 +582,11 @@ const i18n = {
             'ai_providers.gemini_add_modal_title': 'Add Gemini API Key',
             'ai_providers.gemini_add_modal_key_label': 'API Key:',
             'ai_providers.gemini_add_modal_key_placeholder': 'Please enter Gemini API key',
+            'ai_providers.gemini_add_modal_url_label': 'Base URL (optional):',
+            'ai_providers.gemini_add_modal_url_placeholder': 'e.g. https://generativelanguage.googleapis.com',
             'ai_providers.gemini_edit_modal_title': 'Edit Gemini API Key',
             'ai_providers.gemini_edit_modal_key_label': 'API Key:',
+            'ai_providers.gemini_edit_modal_url_label': 'Base URL (optional):',
             'ai_providers.gemini_delete_confirm': 'Are you sure you want to delete this Gemini key?',
 
             'ai_providers.codex_title': 'Codex API Configuration',

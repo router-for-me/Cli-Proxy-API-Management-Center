@@ -2442,7 +2442,11 @@ class CLIProxyManager {
     async loadGeminiKeys() {
         try {
             const config = await this.getConfig();
-            const keys = Array.isArray(config['generative-language-api-key']) ? config['generative-language-api-key'] : [];
+            let keys = Array.isArray(config['gemini-api-key']) ? config['gemini-api-key'] : [];
+            if (keys.length === 0) {
+                const legacyKeys = Array.isArray(config['generative-language-api-key']) ? config['generative-language-api-key'] : [];
+                keys = legacyKeys.map(key => ({ 'api-key': key }));
+            }
             await this.renderGeminiKeys(keys);
         } catch (error) {
             console.error('加载Gemini密钥失败:', error);
@@ -2455,9 +2459,18 @@ class CLIProxyManager {
         if (!container) {
             return;
         }
-        const list = Array.isArray(keys) ? keys : [];
+        const normalizedList = (Array.isArray(keys) ? keys : []).map(item => {
+            if (item && typeof item === 'object') {
+                return { ...item };
+            }
+            if (typeof item === 'string') {
+                return { 'api-key': item };
+            }
+            return null;
+        }).filter(config => config && config['api-key']);
+        this.cachedGeminiKeys = normalizedList;
 
-        if (list.length === 0) {
+        if (normalizedList.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fab fa-google"></i>
@@ -2471,14 +2484,18 @@ class CLIProxyManager {
         // 获取使用统计，按 source 聚合
         const stats = await this.getKeyStats();
 
-        container.innerHTML = list.map((key, index) => {
-            const masked = this.maskApiKey(key);
-            const keyStats = stats[key] || stats[masked] || { success: 0, failure: 0 };
+        container.innerHTML = normalizedList.map((config, index) => {
+            const rawKey = config['api-key'] || '';
+            const masked = rawKey ? this.maskApiKey(rawKey) : '';
+            const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
+            const configJson = JSON.stringify(config).replace(/"/g, '&quot;');
+            const apiKeyJson = JSON.stringify(rawKey || '').replace(/"/g, '&quot;');
             return `
             <div class="key-item">
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.gemini_item_title')} #${index + 1}</div>
-                    <div class="item-value">${this.maskApiKey(key)}</div>
+                    <div class="item-value">${this.maskApiKey(rawKey || '')}</div>
+                    ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
                             <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
@@ -2489,10 +2506,10 @@ class CLIProxyManager {
                     </div>
                 </div>
                 <div class="item-actions">
-                    <button class="btn btn-secondary" onclick="manager.editGeminiKey(${index}, '${key}')">
+                    <button class="btn btn-secondary" onclick="manager.editGeminiKey(${index}, ${configJson})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-danger" onclick="manager.deleteGeminiKey('${key}')">
+                    <button class="btn btn-danger" onclick="manager.deleteGeminiKey(${apiKeyJson})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -2511,6 +2528,10 @@ class CLIProxyManager {
                 <label for="new-gemini-key">${i18n.t('ai_providers.gemini_add_modal_key_label')}</label>
                 <input type="text" id="new-gemini-key" placeholder="${i18n.t('ai_providers.gemini_add_modal_key_placeholder')}">
             </div>
+            <div class="form-group">
+                <label for="new-gemini-url">${i18n.t('ai_providers.gemini_add_modal_url_label')}</label>
+                <input type="text" id="new-gemini-url" placeholder="${i18n.t('ai_providers.gemini_add_modal_url_placeholder')}">
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.addGeminiKey()">${i18n.t('common.add')}</button>
@@ -2523,6 +2544,8 @@ class CLIProxyManager {
     // 添加Gemini密钥
     async addGeminiKey() {
         const newKey = document.getElementById('new-gemini-key').value.trim();
+        const baseUrlInput = document.getElementById('new-gemini-url');
+        const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : '';
 
         if (!newKey) {
             this.showNotification(i18n.t('notification.please_enter') + ' ' + i18n.t('notification.gemini_api_key'), 'error');
@@ -2530,11 +2553,15 @@ class CLIProxyManager {
         }
 
         try {
-            const data = await this.makeRequest('/generative-language-api-key');
-            const currentKeys = data['generative-language-api-key'] || [];
-            currentKeys.push(newKey);
+            const data = await this.makeRequest('/gemini-api-key');
+            const currentKeys = data['gemini-api-key'] || [];
+            const newConfig = { 'api-key': newKey };
+            if (baseUrl) {
+                newConfig['base-url'] = baseUrl;
+            }
+            currentKeys.push(newConfig);
 
-            await this.makeRequest('/generative-language-api-key', {
+            await this.makeRequest('/gemini-api-key', {
                 method: 'PUT',
                 body: JSON.stringify(currentKeys)
             });
@@ -2549,19 +2576,24 @@ class CLIProxyManager {
     }
 
     // 编辑Gemini密钥
-    editGeminiKey(index, currentKey) {
+    editGeminiKey(index, config) {
         const modal = document.getElementById('modal');
         const modalBody = document.getElementById('modal-body');
+        this.currentGeminiEditConfig = config || {};
 
         modalBody.innerHTML = `
             <h3>${i18n.t('ai_providers.gemini_edit_modal_title')}</h3>
             <div class="form-group">
                 <label for="edit-gemini-key">${i18n.t('ai_providers.gemini_edit_modal_key_label')}</label>
-                <input type="text" id="edit-gemini-key" value="${currentKey}">
+                <input type="text" id="edit-gemini-key" value="${config['api-key'] ? this.escapeHtml(config['api-key']) : ''}">
+            </div>
+            <div class="form-group">
+                <label for="edit-gemini-url">${i18n.t('ai_providers.gemini_edit_modal_url_label')}</label>
+                <input type="text" id="edit-gemini-url" value="${config['base-url'] ? this.escapeHtml(config['base-url']) : ''}" placeholder="${i18n.t('ai_providers.gemini_add_modal_url_placeholder')}">
             </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
-                <button class="btn btn-primary" onclick="manager.updateGeminiKey('${currentKey}')">${i18n.t('common.update')}</button>
+                <button class="btn btn-primary" onclick="manager.updateGeminiKey(${index})">${i18n.t('common.update')}</button>
             </div>
         `;
 
@@ -2569,8 +2601,10 @@ class CLIProxyManager {
     }
 
     // 更新Gemini密钥
-    async updateGeminiKey(oldKey) {
+    async updateGeminiKey(index) {
         const newKey = document.getElementById('edit-gemini-key').value.trim();
+        const baseUrlInput = document.getElementById('edit-gemini-url');
+        const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : '';
 
         if (!newKey) {
             this.showNotification(i18n.t('notification.please_enter') + ' ' + i18n.t('notification.gemini_api_key'), 'error');
@@ -2578,14 +2612,23 @@ class CLIProxyManager {
         }
 
         try {
-            await this.makeRequest('/generative-language-api-key', {
+            const existingConfig = (this.cachedGeminiKeys && this.cachedGeminiKeys[index]) || this.currentGeminiEditConfig || {};
+            const newConfig = { ...existingConfig, 'api-key': newKey };
+            if (baseUrl) {
+                newConfig['base-url'] = baseUrl;
+            } else {
+                delete newConfig['base-url'];
+            }
+
+            await this.makeRequest('/gemini-api-key', {
                 method: 'PATCH',
-                body: JSON.stringify({ old: oldKey, new: newKey })
+                body: JSON.stringify({ index, value: newConfig })
             });
 
             this.clearCache(); // 清除缓存
             this.closeModal();
             this.loadGeminiKeys();
+            this.currentGeminiEditConfig = null;
             this.showNotification(i18n.t('notification.gemini_key_updated'), 'success');
         } catch (error) {
             this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
@@ -2593,11 +2636,11 @@ class CLIProxyManager {
     }
 
     // 删除Gemini密钥
-    async deleteGeminiKey(key) {
+    async deleteGeminiKey(apiKey) {
         if (!confirm(i18n.t('ai_providers.gemini_delete_confirm'))) return;
 
         try {
-            await this.makeRequest(`/generative-language-api-key?value=${encodeURIComponent(key)}`, { method: 'DELETE' });
+            await this.makeRequest(`/gemini-api-key?api-key=${encodeURIComponent(apiKey)}`, { method: 'DELETE' });
             this.clearCache(); // 清除缓存
             this.loadGeminiKeys();
             this.showNotification(i18n.t('notification.gemini_key_deleted'), 'success');
