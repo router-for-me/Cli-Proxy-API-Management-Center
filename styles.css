@@ -2076,9 +2076,13 @@ input:checked+.slider:before {
     border-radius: 15px;
     width: 90%;
     max-width: 550px;
+    max-height: 90vh;
     box-shadow: var(--shadow-modal);
     animation: modalSlideIn 0.3s ease;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 @keyframes modalSlideIn {
@@ -2119,6 +2123,9 @@ input:checked+.slider:before {
 
 #modal-body {
     padding: 35px 30px 30px 30px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 /* 模态框标题样式 */

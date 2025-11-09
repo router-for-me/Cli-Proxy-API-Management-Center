@@ -26,6 +26,5 @@
   "repository": {
     "type": "git",
     "url": "local"
-  },
-  "dependencies": {}
+  }
 }
