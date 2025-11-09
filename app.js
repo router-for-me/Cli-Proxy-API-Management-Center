@@ -701,13 +701,6 @@ class CLIProxyManager {
             closeBtn.addEventListener('click', () => this.closeModal());
         }
 
-        window.addEventListener('click', (e) => {
-            const modal = document.getElementById('modal');
-            if (modal && e.target === modal) {
-                this.closeModal();
-            }
-        });
-
         // 移动端菜单按钮
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
