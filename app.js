@@ -1423,14 +1423,58 @@ class CLIProxyManager {
             // 使用新的 /config 端点一次性获取所有配置
             const config = await this.getConfig(forceRefresh);
 
-            // 从配置中提取并设置各个设置项
-            await this.updateSettingsFromConfig(config);
+            // 获取一次usage统计数据，供渲染函数和loadUsageStats复用
+            let usageData = null;
+            let keyStats = null;
+            try {
+                const response = await this.makeRequest('/usage');
+                usageData = response?.usage || null;
+                if (usageData) {
+                    // 从usage数据中提取keyStats
+                    const sourceStats = {};
+                    const apis = usageData.apis || {};
+
+                    Object.values(apis).forEach(apiEntry => {
+                        const models = apiEntry.models || {};
+
+                        Object.values(models).forEach(modelEntry => {
+                            const details = modelEntry.details || [];
+
+                            details.forEach(detail => {
+                                const source = detail.source;
+                                if (!source) return;
+
+                                if (!sourceStats[source]) {
+                                    sourceStats[source] = {
+                                        success: 0,
+                                        failure: 0
+                                    };
+                                }
+
+                                const isFailed = detail.failed === true;
+                                if (isFailed) {
+                                    sourceStats[source].failure += 1;
+                                } else {
+                                    sourceStats[source].success += 1;
+                                }
+                            });
+                        });
+                    });
+
+                    keyStats = sourceStats;
+                }
+            } catch (error) {
+                console.warn('获取usage统计失败:', error);
+            }
+
+            // 从配置中提取并设置各个设置项（现在传递keyStats）
+            await this.updateSettingsFromConfig(config, keyStats);
 
             // 认证文件需要单独加载，因为不在配置中
-            await this.loadAuthFiles();
+            await this.loadAuthFiles(keyStats);
 
-            // 使用统计需要单独加载
-            await this.loadUsageStats();
+            // 使用统计需要单独加载，复用已获取的usage数据
+            await this.loadUsageStats(usageData);
 
             // 加载配置文件编辑器内容
             await this.loadConfigFileEditor(forceRefresh);
@@ -1446,7 +1490,7 @@ class CLIProxyManager {
     }
 
     // 从配置对象更新所有设置
-    async updateSettingsFromConfig(config) {
+    async updateSettingsFromConfig(config, keyStats = null) {
         // 调试设置
         if (config.debug !== undefined) {
             document.getElementById('debug-toggle').checked = config.debug;
@@ -1495,16 +1539,16 @@ class CLIProxyManager {
         }
 
         // Gemini 密钥
-        await this.renderGeminiKeys(Array.isArray(config['generative-language-api-key']) ? config['generative-language-api-key'] : []);
+        await this.renderGeminiKeys(Array.isArray(config['generative-language-api-key']) ? config['generative-language-api-key'] : [], keyStats);
 
         // Codex 密钥
-        await this.renderCodexKeys(Array.isArray(config['codex-api-key']) ? config['codex-api-key'] : []);
+        await this.renderCodexKeys(Array.isArray(config['codex-api-key']) ? config['codex-api-key'] : [], keyStats);
 
         // Claude 密钥
-        await this.renderClaudeKeys(Array.isArray(config['claude-api-key']) ? config['claude-api-key'] : []);
+        await this.renderClaudeKeys(Array.isArray(config['claude-api-key']) ? config['claude-api-key'] : [], keyStats);
 
         // OpenAI 兼容提供商
-        await this.renderOpenAIProviders(Array.isArray(config['openai-compatibility']) ? config['openai-compatibility'] : []);
+        await this.renderOpenAIProviders(Array.isArray(config['openai-compatibility']) ? config['openai-compatibility'] : [], keyStats);
     }
 
     // 回退方法：原来的逐个加载方式
@@ -2562,7 +2606,7 @@ class CLIProxyManager {
     }
 
     // 渲染Gemini密钥列表
-    async renderGeminiKeys(keys) {
+    async renderGeminiKeys(keys, keyStats = null) {
         const container = document.getElementById('gemini-keys-list');
         if (!container) {
             return;
@@ -2589,8 +2633,11 @@ class CLIProxyManager {
             return;
         }
 
-        // 获取使用统计，按 source 聚合
-        const stats = await this.getKeyStats();
+        // 使用传入的keyStats，如果没有则获取一次
+        if (!keyStats) {
+            keyStats = await this.getKeyStats();
+        }
+        const stats = keyStats;
 
         container.innerHTML = normalizedList.map((config, index) => {
             const rawKey = config['api-key'] || '';
@@ -2844,7 +2891,7 @@ class CLIProxyManager {
     }
 
     // 渲染Codex密钥列表
-    async renderCodexKeys(keys) {
+    async renderCodexKeys(keys, keyStats = null) {
         const container = document.getElementById('codex-keys-list');
         if (!container) {
             return;
@@ -2862,8 +2909,11 @@ class CLIProxyManager {
             return;
         }
 
-        // 获取使用统计，按 source 聚合
-        const stats = await this.getKeyStats();
+        // 使用传入的keyStats，如果没有则获取一次
+        if (!keyStats) {
+            keyStats = await this.getKeyStats();
+        }
+        const stats = keyStats;
 
         container.innerHTML = list.map((config, index) => {
             const rawKey = config['api-key'];
@@ -3065,7 +3115,7 @@ class CLIProxyManager {
     }
 
     // 渲染Claude密钥列表
-    async renderClaudeKeys(keys) {
+    async renderClaudeKeys(keys, keyStats = null) {
         const container = document.getElementById('claude-keys-list');
         if (!container) {
             return;
@@ -3083,8 +3133,11 @@ class CLIProxyManager {
             return;
         }
 
-        // 获取使用统计，按 source 聚合
-        const stats = await this.getKeyStats();
+        // 使用传入的keyStats，如果没有则获取一次
+        if (!keyStats) {
+            keyStats = await this.getKeyStats();
+        }
+        const stats = keyStats;
 
         container.innerHTML = list.map((config, index) => {
             const rawKey = config['api-key'];
@@ -3292,7 +3345,7 @@ class CLIProxyManager {
     }
 
     // 渲染OpenAI提供商列表
-    async renderOpenAIProviders(providers) {
+    async renderOpenAIProviders(providers, keyStats = null) {
         const container = document.getElementById('openai-providers-list');
         if (!container) {
             return;
@@ -3322,8 +3375,11 @@ class CLIProxyManager {
             container.style.overflowY = '';
         }
 
-        // 获取使用统计，按 source 聚合
-        const stats = await this.getKeyStats();
+        // 使用传入的keyStats，如果没有则获取一次
+        if (!keyStats) {
+            keyStats = await this.getKeyStats();
+        }
+        const stats = keyStats;
 
         container.innerHTML = list.map((provider, index) => {
             const item = typeof provider === 'object' && provider !== null ? provider : {};
@@ -3596,17 +3652,21 @@ class CLIProxyManager {
     }
 
     // 加载认证文件
-    async loadAuthFiles() {
+    async loadAuthFiles(keyStats = null) {
         try {
             const data = await this.makeRequest('/auth-files');
-            await this.renderAuthFiles(data.files || []);
+            // 如果没有传入keyStats，则获取一次
+            if (!keyStats) {
+                keyStats = await this.getKeyStats();
+            }
+            await this.renderAuthFiles(data.files || [], keyStats);
         } catch (error) {
             console.error('加载认证文件失败:', error);
         }
     }
 
     // 渲染认证文件列表
-    async renderAuthFiles(files) {
+    async renderAuthFiles(files, keyStats = null) {
         const container = document.getElementById('auth-files-list');
 
         if (files.length === 0) {
@@ -3620,8 +3680,11 @@ class CLIProxyManager {
             return;
         }
 
-        // 获取使用统计，按 source 聚合
-        const stats = await this.getKeyStats();
+        // 使用传入的keyStats，如果没有则获取一次
+        if (!keyStats) {
+            keyStats = await this.getKeyStats();
+        }
+        const stats = keyStats;
 
         // 收集所有文件类型（使用API返回的type字段）
         const existingTypes = new Set(['all']); // 'all' 总是存在
@@ -4985,10 +5048,14 @@ class CLIProxyManager {
     }
 
     // 加载使用统计
-    async loadUsageStats() {
+    async loadUsageStats(usageData = null) {
         try {
-            const response = await this.makeRequest('/usage');
-            const usage = response?.usage || null;
+            let usage = usageData;
+            // 如果没有传入usage数据，则调用API获取
+            if (!usage) {
+                const response = await this.makeRequest('/usage');
+                usage = response?.usage || null;
+            }
             this.currentUsageData = usage;
 
             if (!usage) {
