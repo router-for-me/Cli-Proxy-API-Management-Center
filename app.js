@@ -1834,8 +1834,8 @@ class CLIProxyManager {
             return;
         }
 
-        // 过滤掉 /v0/management/logs 相关的日志
-        const filteredLines = lines.filter(line => !line.includes('/v0/management/logs'));
+        // 过滤掉 /v0/management/ 相关的日志
+        const filteredLines = lines.filter(line => !line.includes('/v0/management/'));
 
         // 限制前端显示的最大行数
         let displayedLines = filteredLines;
@@ -1875,8 +1875,8 @@ class CLIProxyManager {
         const logsTextElement = logsContent.querySelector('.logs-text');
         const logsInfoElement = logsContent.querySelector('.logs-info');
 
-        // 过滤掉 /v0/management/logs 相关的日志
-        const filteredNewLines = newLines.filter(line => !line.includes('/v0/management/logs'));
+        // 过滤掉 /v0/management/ 相关的日志
+        const filteredNewLines = newLines.filter(line => !line.includes('/v0/management/'));
         if (filteredNewLines.length === 0) {
             return; // 如果过滤后没有新日志，直接返回
         }
