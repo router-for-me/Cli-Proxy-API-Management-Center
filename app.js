@@ -2961,7 +2961,7 @@ class CLIProxyManager {
             </div>
             <div class="form-group">
                 <label for="new-codex-url">${i18n.t('ai_providers.codex_add_modal_url_label')}</label>
-                <input type="text" id="new-codex-url" placeholder="${i18n.t('ai_providers.codex_add_modal_url_placeholder')}">
+                <input type="text" id="new-codex-url" placeholder="${i18n.t('ai_providers.codex_add_modal_url_placeholder')}" required>
             </div>
             <div class="form-group">
                 <label for="new-codex-proxy">${i18n.t('ai_providers.codex_add_modal_proxy_label')}</label>
@@ -2992,6 +2992,10 @@ class CLIProxyManager {
 
         if (!apiKey) {
             this.showNotification(i18n.t('notification.field_required'), 'error');
+            return;
+        }
+        if (!baseUrl) {
+            this.showNotification(i18n.t('notification.codex_base_url_required'), 'error');
             return;
         }
 
@@ -3030,7 +3034,7 @@ class CLIProxyManager {
             </div>
             <div class="form-group">
                 <label for="edit-codex-url">${i18n.t('ai_providers.codex_edit_modal_url_label')}</label>
-                <input type="text" id="edit-codex-url" value="${config['base-url'] || ''}">
+                <input type="text" id="edit-codex-url" value="${config['base-url'] || ''}" required>
             </div>
             <div class="form-group">
                 <label for="edit-codex-proxy">${i18n.t('ai_providers.codex_edit_modal_proxy_label')}</label>
@@ -3061,6 +3065,10 @@ class CLIProxyManager {
 
         if (!apiKey) {
             this.showNotification(i18n.t('notification.field_required'), 'error');
+            return;
+        }
+        if (!baseUrl) {
+            this.showNotification(i18n.t('notification.codex_base_url_required'), 'error');
             return;
         }
 
