@@ -1364,6 +1364,7 @@ textarea::placeholder {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    min-height: 520px;
 }
 
 #config-management .card {
@@ -1383,12 +1384,13 @@ textarea::placeholder {
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 520px;
 }
 
 .yaml-editor {
     width: 100%;
     flex: 1;
-    min-height: 360px;
+    min-height: 520px;
     border: 1px solid var(--border-primary);
     border-radius: 6px;
     padding: 12px 14px;
@@ -1402,6 +1404,7 @@ textarea::placeholder {
 
 #config-management .CodeMirror {
     flex: 1;
+    min-height: 520px;
     height: 100%;
     font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
     font-size: 14px;
@@ -1414,8 +1417,10 @@ textarea::placeholder {
 
 #config-management .CodeMirror-scroll {
     min-height: 0;
-    max-height: calc(100vh - 440px);
+    height: 100%;
+    max-height: none;
     overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 #config-management .CodeMirror.cm-s-default {
@@ -1456,6 +1461,18 @@ textarea::placeholder {
 
 #config-management .CodeMirror.cm-readonly {
     opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+    .yaml-editor-container,
+    #config-management .yaml-editor-container {
+        min-height: 360px;
+    }
+
+    .yaml-editor,
+    #config-management .CodeMirror {
+        min-height: 360px;
+    }
 }
 
 .editor-status {

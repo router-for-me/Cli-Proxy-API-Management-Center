@@ -41,6 +41,7 @@ class CLIProxyManager {
             statusEl: null
         };
         this.lastConfigFetchUrl = null;
+        this.lastEditorConnectionState = null;
 
         this.init();
     }
@@ -967,6 +968,7 @@ class CLIProxyManager {
         }
 
         this.refreshConfigEditor();
+        this.lastEditorConnectionState = this.isConnected;
     }
 
     refreshConfigEditor() {
@@ -1326,7 +1328,9 @@ class CLIProxyManager {
 
         lastUpdate.textContent = new Date().toLocaleString('zh-CN');
 
-        this.updateConfigEditorAvailability();
+        if (this.lastEditorConnectionState !== this.isConnected) {
+            this.updateConfigEditorAvailability();
+        }
 
         // 更新连接信息显示
         this.updateConnectionInfo();
