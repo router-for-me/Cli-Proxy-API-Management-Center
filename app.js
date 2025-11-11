@@ -27,6 +27,10 @@ class CLIProxyManager {
         // 日志时间戳（用于增量加载）
         this.latestLogTimestamp = null;
 
+        // Auth file filter state cache
+        this.currentAuthFileFilter = 'all';
+        this.cachedAuthFiles = [];
+
         // 主题管理
         this.currentTheme = 'light';
 
@@ -1542,8 +1546,8 @@ class CLIProxyManager {
             this.renderApiKeys(config['api-keys']);
         }
 
-        // Gemini 密钥
-        await this.renderGeminiKeys(Array.isArray(config['generative-language-api-key']) ? config['generative-language-api-key'] : [], keyStats);
+        // Gemini keys
+        await this.renderGeminiKeys(this.getGeminiKeysFromConfig(config), keyStats);
 
         // Codex 密钥
         await this.renderCodexKeys(Array.isArray(config['codex-api-key']) ? config['codex-api-key'] : [], keyStats);
@@ -2594,35 +2598,67 @@ class CLIProxyManager {
         }
     }
 
-    // 加载Gemini密钥
+    // Load Gemini keys
     async loadGeminiKeys() {
         try {
             const config = await this.getConfig();
-            let keys = Array.isArray(config['gemini-api-key']) ? config['gemini-api-key'] : [];
-            if (keys.length === 0) {
-                const legacyKeys = Array.isArray(config['generative-language-api-key']) ? config['generative-language-api-key'] : [];
-                keys = legacyKeys.map(key => ({ 'api-key': key }));
-            }
+            const keys = this.getGeminiKeysFromConfig(config);
             await this.renderGeminiKeys(keys);
         } catch (error) {
             console.error('加载Gemini密钥失败:', error);
         }
     }
 
-    // 渲染Gemini密钥列表
+    // Extract Gemini keys from config with backward compatibility
+    getGeminiKeysFromConfig(config) {
+        if (!config) {
+            return [];
+        }
+
+        const geminiKeys = Array.isArray(config['gemini-api-key']) ? config['gemini-api-key'] : [];
+        if (geminiKeys.length > 0) {
+            return geminiKeys;
+        }
+
+        const legacyKeys = Array.isArray(config['generative-language-api-key']) ? config['generative-language-api-key'] : [];
+        return legacyKeys
+            .map(item => {
+                if (item && typeof item === 'object') {
+                    return { ...item };
+                }
+                if (typeof item === 'string') {
+                    const trimmed = item.trim();
+                    if (trimmed) {
+                        return { 'api-key': trimmed };
+                    }
+                }
+                return null;
+            })
+            .filter(Boolean);
+    }
+
+    // Render Gemini key list
     async renderGeminiKeys(keys, keyStats = null) {
         const container = document.getElementById('gemini-keys-list');
         if (!container) {
             return;
         }
         const normalizedList = (Array.isArray(keys) ? keys : []).map(item => {
+            let normalized = null;
             if (item && typeof item === 'object') {
-                return { ...item };
+                normalized = { ...item };
+            } else if (typeof item === 'string') {
+                const trimmed = item.trim();
+                if (trimmed) {
+                    normalized = { 'api-key': trimmed };
+                }
             }
-            if (typeof item === 'string') {
-                return { 'api-key': item };
+
+            if (normalized && !normalized['base-url'] && normalized['base_url']) {
+                normalized['base-url'] = normalized['base_url'];
             }
-            return null;
+
+            return normalized;
         }).filter(config => config && config['api-key']);
         this.cachedGeminiKeys = normalizedList;
 
@@ -2649,12 +2685,13 @@ class CLIProxyManager {
             const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
             const configJson = JSON.stringify(config).replace(/"/g, '&quot;');
             const apiKeyJson = JSON.stringify(rawKey || '').replace(/"/g, '&quot;');
+            const baseUrl = config['base-url'] || config['base_url'] || '';
             return `
             <div class="key-item">
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.gemini_item_title')} #${index + 1}</div>
                     <div class="item-value">${this.maskApiKey(rawKey || '')}</div>
-                    ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
+                    ${baseUrl ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(baseUrl)}</div>` : ''}
                     ${this.renderHeaderBadges(config.headers)}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
@@ -3680,8 +3717,10 @@ class CLIProxyManager {
     // 渲染认证文件列表
     async renderAuthFiles(files, keyStats = null) {
         const container = document.getElementById('auth-files-list');
+        const visibleFiles = Array.isArray(files) ? files.filter(file => file.disabled !== true) : [];
+        this.cachedAuthFiles = visibleFiles.map(file => ({ ...file }));
 
-        if (files.length === 0) {
+        if (visibleFiles.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-file-alt"></i>
@@ -3689,6 +3728,9 @@ class CLIProxyManager {
                     <p>${i18n.t('auth_files.empty_desc')}</p>
                 </div>
             `;
+            this.updateFilterButtons(new Set(['all']));
+            this.bindAuthFileFilterEvents();
+            this.applyAuthFileFilterState();
             return;
         }
 
@@ -3700,7 +3742,7 @@ class CLIProxyManager {
 
         // 收集所有文件类型（使用API返回的type字段）
         const existingTypes = new Set(['all']); // 'all' 总是存在
-        files.forEach(file => {
+        visibleFiles.forEach(file => {
             if (file.type) {
                 existingTypes.add(file.type);
             }
@@ -3709,7 +3751,7 @@ class CLIProxyManager {
         // 更新筛选按钮显示
         this.updateFilterButtons(existingTypes);
 
-        container.innerHTML = files.map(file => {
+        container.innerHTML = visibleFiles.map(file => {
             // 认证文件的统计匹配逻辑：
             // 1. 首先尝试完整文件名匹配
             // 2. 如果没有匹配，尝试脱敏文件名匹配（去掉扩展名后的脱敏版本）
@@ -3814,7 +3856,7 @@ class CLIProxyManager {
                         </div>`;
 
             return `
-            <div class="file-item" data-file-type="${fileType}" ${isRuntimeOnly ? 'data-runtime-only="true"' : ''}>
+            <div class="file-item" data-file-type="${fileType}" data-file-name="${this.escapeHtml(file.name)}" ${isRuntimeOnly ? 'data-runtime-only="true"' : ''}>
                 <div class="item-content">
                     <div class="item-title">${typeBadge}${file.name}</div>
                     <div class="item-meta">
@@ -3842,6 +3884,9 @@ class CLIProxyManager {
         
         // 绑定认证文件操作按钮事件（使用事件委托）
         this.bindAuthFileActionEvents();
+
+        // Reapply current filter state
+        this.applyAuthFileFilterState();
     }
 
     // 更新筛选按钮显示
@@ -3924,6 +3969,7 @@ class CLIProxyManager {
 
         // 获取筛选类型
         const filterType = clickedBtn.dataset.type;
+        this.currentAuthFileFilter = filterType || 'all';
         
         // 筛选文件
         const fileItems = document.querySelectorAll('.file-item');
@@ -3973,6 +4019,65 @@ class CLIProxyManager {
 
         // 首次渲染时刷新按钮文本
         this.refreshFilterButtonTexts();
+    }
+
+    // Apply current filter selection to the list
+    applyAuthFileFilterState() {
+        const filterContainer = document.querySelector('.auth-file-filter');
+        if (!filterContainer) return;
+
+        const currentType = this.currentAuthFileFilter || 'all';
+        const buttons = filterContainer.querySelectorAll('.filter-btn');
+        if (buttons.length === 0) return;
+
+        let targetButton = null;
+        buttons.forEach(btn => {
+            if (btn.dataset.type === currentType) {
+                targetButton = btn;
+            }
+        });
+
+        if (!targetButton) {
+            targetButton = filterContainer.querySelector('.filter-btn[data-type="all"]') || buttons[0];
+            if (targetButton) {
+                this.currentAuthFileFilter = targetButton.dataset.type || 'all';
+            }
+        }
+
+        if (targetButton) {
+            this.handleFilterClick(targetButton);
+        }
+    }
+
+    // Remove deleted auth files from cache and DOM instantly
+    removeAuthFileElements(filenames = []) {
+        if (!Array.isArray(filenames) || filenames.length === 0) {
+            return;
+        }
+
+        const removalSet = new Set(filenames);
+        this.cachedAuthFiles = (this.cachedAuthFiles || []).filter(file => file && !removalSet.has(file.name));
+
+        const container = document.getElementById('auth-files-list');
+        if (!container) return;
+
+        const fileItems = container.querySelectorAll('.file-item');
+        fileItems.forEach(item => {
+            const fileNameAttr = item.getAttribute('data-file-name');
+            if (fileNameAttr && removalSet.has(fileNameAttr)) {
+                item.remove();
+            }
+        });
+
+        if (!container.querySelector('.file-item')) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>${i18n.t('auth_files.empty_title')}</h3>
+                    <p>${i18n.t('auth_files.empty_desc')}</p>
+                </div>
+            `;
+        }
     }
 
     // 刷新筛选按钮文本（根据 data-i18n-text）
@@ -4234,23 +4339,86 @@ class CLIProxyManager {
 
         try {
             await this.makeRequest(`/auth-files?name=${encodeURIComponent(filename)}`, { method: 'DELETE' });
+            this.removeAuthFileElements([filename]);
             this.clearCache(); // 清除缓存
-            this.loadAuthFiles();
+            await this.loadAuthFiles();
             this.showNotification(i18n.t('auth_files.delete_success'), 'success');
         } catch (error) {
             this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
     }
 
-    // 删除所有认证文件
+    // Delete auth files (respect current filter)
     async deleteAllAuthFiles() {
-        if (!confirm(i18n.t('auth_files.delete_all_confirm'))) return;
+        const filterType = (this.currentAuthFileFilter || 'all').toLowerCase();
+        const isFiltered = filterType !== 'all';
+        const typeLabel = this.generateDynamicTypeLabel(filterType);
+        const confirmMessage = isFiltered
+            ? i18n.t('auth_files.delete_filtered_confirm').replace('{type}', typeLabel)
+            : i18n.t('auth_files.delete_all_confirm');
+
+        if (!confirm(confirmMessage)) return;
 
         try {
-            const response = await this.makeRequest('/auth-files?all=true', { method: 'DELETE' });
+            if (!isFiltered) {
+                const response = await this.makeRequest('/auth-files?all=true', { method: 'DELETE' });
+                const currentNames = (this.cachedAuthFiles || []).map(file => file.name).filter(Boolean);
+                if (currentNames.length > 0) {
+                    this.removeAuthFileElements(currentNames);
+                }
+                this.clearCache(); // 清除缓存
+                this.currentAuthFileFilter = 'all';
+                await this.loadAuthFiles();
+                this.showNotification(`${i18n.t('auth_files.delete_all_success')} ${response.deleted} ${i18n.t('auth_files.files_count')}`, 'success');
+                return;
+            }
+
+            const deletableFiles = (this.cachedAuthFiles || []).filter(file => {
+                if (!file || file.runtime_only) return false;
+                const fileType = (file.type || 'unknown').toLowerCase();
+                return fileType === filterType;
+            });
+
+            if (deletableFiles.length === 0) {
+                this.showNotification(i18n.t('auth_files.delete_filtered_none').replace('{type}', typeLabel), 'info');
+                return;
+            }
+
+            let success = 0;
+            let failed = 0;
+            const deletedNames = [];
+
+            for (const file of deletableFiles) {
+                try {
+                    await this.makeRequest(`/auth-files?name=${encodeURIComponent(file.name)}`, { method: 'DELETE' });
+                    success++;
+                    deletedNames.push(file.name);
+                } catch (error) {
+                    console.error('删除认证文件失败:', file?.name, error);
+                    failed++;
+                }
+            }
+
+            if (deletedNames.length > 0) {
+                this.removeAuthFileElements(deletedNames);
+            }
+
             this.clearCache(); // 清除缓存
-            this.loadAuthFiles();
-            this.showNotification(`${i18n.t('auth_files.delete_all_success')} ${response.deleted} ${i18n.t('auth_files.files_count')}`, 'success');
+            this.currentAuthFileFilter = 'all';
+            await this.loadAuthFiles();
+
+            if (failed === 0) {
+                const successMsg = i18n.t('auth_files.delete_filtered_success')
+                    .replace('{count}', success)
+                    .replace('{type}', typeLabel);
+                this.showNotification(successMsg, 'success');
+            } else {
+                const warningMsg = i18n.t('auth_files.delete_filtered_partial')
+                    .replace('{success}', success)
+                    .replace('{failed}', failed)
+                    .replace('{type}', typeLabel);
+                this.showNotification(warningMsg, 'warning');
+            }
         } catch (error) {
             this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
