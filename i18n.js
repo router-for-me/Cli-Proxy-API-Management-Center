@@ -113,6 +113,9 @@ const i18n = {
             'basic_settings.usage_statistics_enable': '启用使用统计',
             'basic_settings.logging_title': '日志记录',
             'basic_settings.logging_to_file_enable': '启用日志记录到文件',
+            'basic_settings.request_log_enable': '启用请求日志',
+            'basic_settings.ws_auth_title': 'WebSocket 鉴权',
+            'basic_settings.ws_auth_enable': '启用 /ws/* 鉴权',
 
             // API 密钥管理
             'api_keys.title': 'API 密钥管理',
@@ -407,6 +410,8 @@ const i18n = {
             'notification.quota_switch_preview_updated': '预览模型切换设置已更新',
             'notification.usage_statistics_updated': '使用统计设置已更新',
             'notification.logging_to_file_updated': '日志记录设置已更新',
+            'notification.request_log_updated': '请求日志设置已更新',
+            'notification.ws_auth_updated': 'WebSocket 鉴权设置已更新',
             'notification.api_key_added': 'API密钥添加成功',
             'notification.api_key_updated': 'API密钥更新成功',
             'notification.api_key_deleted': 'API密钥删除成功',
@@ -576,6 +581,9 @@ const i18n = {
             'basic_settings.usage_statistics_enable': 'Enable usage statistics',
             'basic_settings.logging_title': 'Logging',
             'basic_settings.logging_to_file_enable': 'Enable logging to file',
+            'basic_settings.request_log_enable': 'Enable request logging',
+            'basic_settings.ws_auth_title': 'WebSocket Authentication',
+            'basic_settings.ws_auth_enable': 'Require auth for /ws/*',
 
             // API Keys management
             'api_keys.title': 'API Keys Management',
@@ -869,6 +877,8 @@ const i18n = {
             'notification.quota_switch_preview_updated': 'Preview model switch settings updated',
             'notification.usage_statistics_updated': 'Usage statistics settings updated',
             'notification.logging_to_file_updated': 'Logging settings updated',
+            'notification.request_log_updated': 'Request logging setting updated',
+            'notification.ws_auth_updated': 'WebSocket authentication setting updated',
             'notification.api_key_added': 'API key added successfully',
             'notification.api_key_updated': 'API key updated successfully',
             'notification.api_key_deleted': 'API key deleted successfully',

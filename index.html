@@ -316,6 +316,32 @@
                                         <span class="toggle-label"
                                             data-i18n="basic_settings.logging_to_file_enable">启用日志记录到文件</span>
                                     </div>
+                                    <div class="toggle-group">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="request-log-toggle">
+                                            <span class="slider"></span>
+                                        </label>
+                                        <span class="toggle-label"
+                                            data-i18n="basic_settings.request_log_enable">启用请求日志</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- WebSocket 鉴权 -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-shield-alt"></i> <span
+                                            data-i18n="basic_settings.ws_auth_title">WebSocket 鉴权</span></h3>
+                                </div>
+                                <div class="card-content">
+                                    <div class="toggle-group">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="ws-auth-toggle">
+                                            <span class="slider"></span>
+                                        </label>
+                                        <span class="toggle-label"
+                                            data-i18n="basic_settings.ws_auth_enable">启用 /ws/* 鉴权</span>
+                                    </div>
                                 </div>
                             </div>
 

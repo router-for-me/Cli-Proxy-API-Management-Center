@@ -515,6 +515,8 @@ class CLIProxyManager {
         const switchProjectToggle = document.getElementById('switch-project-toggle');
         const switchPreviewToggle = document.getElementById('switch-preview-model-toggle');
         const usageStatisticsToggle = document.getElementById('usage-statistics-enabled-toggle');
+        const requestLogToggle = document.getElementById('request-log-toggle');
+        const wsAuthToggle = document.getElementById('ws-auth-toggle');
 
         if (debugToggle) {
             debugToggle.addEventListener('change', (e) => this.updateDebug(e.target.checked));
@@ -536,6 +538,12 @@ class CLIProxyManager {
         }
         if (usageStatisticsToggle) {
             usageStatisticsToggle.addEventListener('change', (e) => this.updateUsageStatisticsEnabled(e.target.checked));
+        }
+        if (requestLogToggle) {
+            requestLogToggle.addEventListener('change', (e) => this.updateRequestLog(e.target.checked));
+        }
+        if (wsAuthToggle) {
+            wsAuthToggle.addEventListener('change', (e) => this.updateWsAuth(e.target.checked));
         }
 
         // 日志记录设置
@@ -1540,6 +1548,18 @@ class CLIProxyManager {
             // 显示或隐藏日志查看栏目
             this.toggleLogsNavItem(config['logging-to-file']);
         }
+        if (config['request-log'] !== undefined) {
+            const requestLogToggle = document.getElementById('request-log-toggle');
+            if (requestLogToggle) {
+                requestLogToggle.checked = config['request-log'];
+            }
+        }
+        if (config['ws-auth'] !== undefined) {
+            const wsAuthToggle = document.getElementById('ws-auth-toggle');
+            if (wsAuthToggle) {
+                wsAuthToggle.checked = config['ws-auth'];
+            }
+        }
 
         // API 密钥
         if (config['api-keys']) {
@@ -1567,6 +1587,8 @@ class CLIProxyManager {
             this.loadRetrySettings(),
             this.loadQuotaSettings(),
             this.loadUsageStatisticsSettings(),
+            this.loadRequestLogSetting(),
+            this.loadWsAuthSetting(),
             this.loadApiKeys(),
             this.loadGeminiKeys(),
             this.loadCodexKeys(),
@@ -1707,6 +1729,36 @@ class CLIProxyManager {
         }
     }
 
+    // 加载请求日志设置
+    async loadRequestLogSetting() {
+        try {
+            const config = await this.getConfig();
+            if (config['request-log'] !== undefined) {
+                const requestLogToggle = document.getElementById('request-log-toggle');
+                if (requestLogToggle) {
+                    requestLogToggle.checked = config['request-log'];
+                }
+            }
+        } catch (error) {
+            console.error('加载请求日志设置失败:', error);
+        }
+    }
+
+    // 加载 WebSocket 鉴权设置
+    async loadWsAuthSetting() {
+        try {
+            const config = await this.getConfig();
+            if (config['ws-auth'] !== undefined) {
+                const wsAuthToggle = document.getElementById('ws-auth-toggle');
+                if (wsAuthToggle) {
+                    wsAuthToggle.checked = config['ws-auth'];
+                }
+            }
+        } catch (error) {
+            console.error('加载 WebSocket 鉴权设置失败:', error);
+        }
+    }
+
     // 更新使用统计设置
     async updateUsageStatisticsEnabled(enabled) {
         try {
@@ -1721,6 +1773,42 @@ class CLIProxyManager {
             const usageToggle = document.getElementById('usage-statistics-enabled-toggle');
             if (usageToggle) {
                 usageToggle.checked = !enabled;
+            }
+        }
+    }
+
+    // 更新请求日志设置
+    async updateRequestLog(enabled) {
+        try {
+            await this.makeRequest('/request-log', {
+                method: 'PUT',
+                body: JSON.stringify({ value: enabled })
+            });
+            this.clearCache();
+            this.showNotification(i18n.t('notification.request_log_updated'), 'success');
+        } catch (error) {
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
+            const requestLogToggle = document.getElementById('request-log-toggle');
+            if (requestLogToggle) {
+                requestLogToggle.checked = !enabled;
+            }
+        }
+    }
+
+    // 更新 WebSocket 鉴权设置
+    async updateWsAuth(enabled) {
+        try {
+            await this.makeRequest('/ws-auth', {
+                method: 'PUT',
+                body: JSON.stringify({ value: enabled })
+            });
+            this.clearCache();
+            this.showNotification(i18n.t('notification.ws_auth_updated'), 'success');
+        } catch (error) {
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
+            const wsAuthToggle = document.getElementById('ws-auth-toggle');
+            if (wsAuthToggle) {
+                wsAuthToggle.checked = !enabled;
             }
         }
     }
