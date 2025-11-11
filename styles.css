@@ -3758,6 +3758,60 @@ input:checked+.slider:before {
     color: #f472b6;
 }
 
+/* Vertex AI Credential Import */
+.vertex-import-actions {
+    text-align: left;
+    margin-top: 10px;
+}
+
+.vertex-import-result {
+    margin-top: 20px;
+    border: 1px dashed var(--border-primary);
+    border-radius: 12px;
+    padding: 16px;
+    background: var(--bg-quaternary);
+    color: var(--text-primary);
+}
+
+.vertex-import-result-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--success-text);
+}
+
+.vertex-import-result ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.vertex-import-result li {
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.vertex-import-result code {
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .vertex-import-result {
+    border-color: rgba(96, 165, 250, 0.4);
+    background: rgba(15, 23, 42, 0.4);
+}
+
+[data-theme="dark"] .vertex-import-result code {
+    background: rgba(7, 11, 22, 0.8);
+    color: #f3f4f6;
+}
+
 /* ===== AI提供商统计徽章样式 ===== */
 
 /* 统计信息容器 */

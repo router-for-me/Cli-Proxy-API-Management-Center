@@ -458,6 +458,7 @@
                                             <button class="filter-btn" data-type="claude" data-i18n-text="auth_files.filter_claude">Claude</button>
                                             <button class="filter-btn" data-type="codex" data-i18n-text="auth_files.filter_codex">Codex</button>
                                             <button class="filter-btn" data-type="iflow" data-i18n-text="auth_files.filter_iflow">iFlow</button>
+                                            <button class="filter-btn" data-type="vertex" data-i18n-text="auth_files.filter_vertex">Vertex</button>
                                             <button class="filter-btn" data-type="empty" data-i18n-text="auth_files.filter_empty">Empty</button>
                                         </div>
                                     </div>
@@ -475,6 +476,51 @@
                                 <div class="card-content">
                                     <div id="auth-files-list" class="file-list file-grid"></div>
                                     <input type="file" id="auth-file-input" accept=".json" style="display: none;">
+                                </div>
+                            </div>
+
+                            <!-- Vertex AI Credential Import -->
+                            <div class="card" id="vertex-import-card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-cloud-upload-alt"></i> <span data-i18n="vertex_import.title">Vertex AI 凭证导入</span></h3>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" data-i18n="vertex_import.description">
+                                        上传 Google 服务账号 JSON 并保存为 vertex-<project>.json。
+                                    </p>
+                                    <div class="form-group">
+                                        <label for="vertex-location" data-i18n="vertex_import.location_label">区域 (可选)</label>
+                                        <input type="text" id="vertex-location" data-i18n-placeholder="vertex_import.location_placeholder" value="us-central1">
+                                        <p class="form-hint" data-i18n="vertex_import.location_hint">留空则使用默认 us-central1。</p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label data-i18n="vertex_import.file_label">服务账号密钥 JSON</label>
+                                        <div class="input-group">
+                                            <input type="text" id="vertex-file-display" readonly data-i18n-placeholder="vertex_import.file_placeholder" placeholder="尚未选择文件">
+                                            <input type="file" id="vertex-file-input" accept=".json" style="display: none;">
+                                            <button type="button" id="vertex-select-file" class="btn btn-secondary">
+                                                <i class="fas fa-file-upload"></i> <span data-i18n="vertex_import.choose_file">选择文件</span>
+                                            </button>
+                                        </div>
+                                        <p class="form-hint" data-i18n="vertex_import.file_hint">仅支持 Google Cloud service account JSON。</p>
+                                    </div>
+                                    <div class="form-actions vertex-import-actions">
+                                        <button type="button" id="vertex-import-btn" class="btn btn-primary" disabled>
+                                            <i class="fas fa-cloud-upload-alt"></i> <span data-i18n="vertex_import.import_button">导入 Vertex 凭证</span>
+                                        </button>
+                                    </div>
+                                    <div id="vertex-import-result" class="vertex-import-result" style="display: none;">
+                                        <div class="vertex-import-result-header">
+                                            <i class="fas fa-check-circle"></i>
+                                            <span data-i18n="vertex_import.result_title">凭证已保存</span>
+                                        </div>
+                                        <ul>
+                                            <li><span data-i18n="vertex_import.result_project">项目 ID</span>: <code id="vertex-result-project">-</code></li>
+                                            <li><span data-i18n="vertex_import.result_email">服务账号</span>: <code id="vertex-result-email">-</code></li>
+                                            <li><span data-i18n="vertex_import.result_location">区域</span>: <code id="vertex-result-location">-</code></li>
+                                            <li><span data-i18n="vertex_import.result_file">存储文件</span>: <code id="vertex-result-file">-</code></li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
 

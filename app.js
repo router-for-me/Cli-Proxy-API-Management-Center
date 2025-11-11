@@ -31,6 +31,13 @@ class CLIProxyManager {
         this.currentAuthFileFilter = 'all';
         this.cachedAuthFiles = [];
 
+        // Vertex AI credential import state
+        this.vertexImportState = {
+            file: null,
+            loading: false,
+            result: null
+        };
+
         // 主题管理
         this.currentTheme = 'light';
 
@@ -609,6 +616,24 @@ class CLIProxyManager {
         if (authFileInput) {
             authFileInput.addEventListener('change', (e) => this.handleFileUpload(e));
         }
+
+        // Vertex AI credential import
+        const vertexSelectFile = document.getElementById('vertex-select-file');
+        const vertexFileInput = document.getElementById('vertex-file-input');
+        const vertexImportBtn = document.getElementById('vertex-import-btn');
+
+        if (vertexSelectFile) {
+            vertexSelectFile.addEventListener('click', () => this.openVertexFilePicker());
+        }
+        if (vertexFileInput) {
+            vertexFileInput.addEventListener('change', (e) => this.handleVertexFileSelection(e));
+        }
+        if (vertexImportBtn) {
+            vertexImportBtn.addEventListener('click', () => this.importVertexCredential());
+        }
+        this.updateVertexFileDisplay();
+        this.updateVertexImportButtonState();
+        this.renderVertexImportResult(this.vertexImportState.result);
 
         // Codex OAuth
         const codexOauthBtn = document.getElementById('codex-oauth-btn');
@@ -3914,6 +3939,9 @@ class CLIProxyManager {
                 case 'iflow':
                     typeDisplayKey = 'auth_files.type_iflow';
                     break;
+                case 'vertex':
+                    typeDisplayKey = 'auth_files.type_vertex';
+                    break;
                 case 'empty':
                     typeDisplayKey = 'auth_files.type_empty';
                     break;
@@ -3992,6 +4020,7 @@ class CLIProxyManager {
             { type: 'claude', labelKey: 'auth_files.filter_claude' },
             { type: 'codex', labelKey: 'auth_files.filter_codex' },
             { type: 'iflow', labelKey: 'auth_files.filter_iflow' },
+            { type: 'vertex', labelKey: 'auth_files.filter_vertex' },
             { type: 'empty', labelKey: 'auth_files.filter_empty' }
         ];
 
@@ -4231,6 +4260,136 @@ class CLIProxyManager {
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // ===== Vertex AI Credential Import =====
+    openVertexFilePicker() {
+        const fileInput = document.getElementById('vertex-file-input');
+        if (fileInput) {
+            fileInput.click();
+        }
+    }
+
+    handleVertexFileSelection(event) {
+        const fileInput = event?.target;
+        const file = fileInput?.files?.[0] || null;
+
+        if (fileInput) {
+            fileInput.value = '';
+        }
+
+        if (file && !file.name.toLowerCase().endsWith('.json')) {
+            this.showNotification(i18n.t('vertex_import.file_required'), 'error');
+            this.vertexImportState.file = null;
+            this.updateVertexFileDisplay();
+            this.updateVertexImportButtonState();
+            return;
+        }
+
+        this.vertexImportState.file = file;
+        this.updateVertexFileDisplay(file ? file.name : '');
+        this.updateVertexImportButtonState();
+    }
+
+    updateVertexFileDisplay(filename = '') {
+        const displayInput = document.getElementById('vertex-file-display');
+        if (!displayInput) return;
+        displayInput.value = filename || '';
+    }
+
+    updateVertexImportButtonState() {
+        const importBtn = document.getElementById('vertex-import-btn');
+        if (!importBtn) return;
+        const disabled = !this.vertexImportState.file || this.vertexImportState.loading;
+        importBtn.disabled = disabled;
+    }
+
+    async importVertexCredential() {
+        if (!this.vertexImportState.file) {
+            this.showNotification(i18n.t('vertex_import.file_required'), 'error');
+            return;
+        }
+
+        const locationInput = document.getElementById('vertex-location');
+        const location = locationInput ? locationInput.value.trim() : '';
+        const formData = new FormData();
+        formData.append('file', this.vertexImportState.file, this.vertexImportState.file.name);
+        if (location) {
+            formData.append('location', location);
+        }
+
+        try {
+            this.vertexImportState.loading = true;
+            this.updateVertexImportButtonState();
+
+            const response = await fetch(`${this.apiUrl}/vertex/import`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.managementKey}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                let errorMessage = `HTTP ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData?.message || errorData?.error || errorMessage;
+                } catch (parseError) {
+                    const text = await response.text();
+                    if (text) {
+                        errorMessage = text;
+                    }
+                }
+                throw new Error(errorMessage);
+            }
+
+            const result = await response.json();
+            this.showNotification(i18n.t('vertex_import.success'), 'success');
+            this.renderVertexImportResult(result);
+            this.vertexImportState.file = null;
+            this.updateVertexFileDisplay();
+            this.clearCache();
+            await this.loadAuthFiles();
+        } catch (error) {
+            this.showNotification(`${i18n.t('notification.upload_failed')}: ${error.message}`, 'error');
+        } finally {
+            this.vertexImportState.loading = false;
+            this.updateVertexImportButtonState();
+            const fileInput = document.getElementById('vertex-file-input');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        }
+    }
+
+    renderVertexImportResult(result = null) {
+        const container = document.getElementById('vertex-import-result');
+        const projectEl = document.getElementById('vertex-result-project');
+        const emailEl = document.getElementById('vertex-result-email');
+        const locationEl = document.getElementById('vertex-result-location');
+        const fileEl = document.getElementById('vertex-result-file');
+
+        if (!container || !projectEl || !emailEl || !locationEl || !fileEl) {
+            return;
+        }
+
+        if (!result) {
+            this.vertexImportState.result = null;
+            container.style.display = 'none';
+            projectEl.textContent = '-';
+            emailEl.textContent = '-';
+            locationEl.textContent = '-';
+            fileEl.textContent = '-';
+            return;
+        }
+
+        this.vertexImportState.result = result;
+        projectEl.textContent = result.project_id || '-';
+        emailEl.textContent = result.email || '-';
+        locationEl.textContent = result.location || 'us-central1';
+        fileEl.textContent = result['auth-file'] || result.auth_file || '-';
+        container.style.display = 'block';
     }
 
     // 上传认证文件
