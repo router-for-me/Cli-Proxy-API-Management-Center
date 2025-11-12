@@ -2432,14 +2432,18 @@ class CLIProxyManager {
             return;
         }
 
-        container.innerHTML = keys.map((key, index) => `
+        container.innerHTML = keys.map((key, index) => {
+            const normalizedKey = typeof key === 'string' ? key : String(key ?? '');
+            const maskedDisplay = this.escapeHtml(this.maskApiKey(normalizedKey));
+            const keyArgument = JSON.stringify(normalizedKey).replace(/"/g, '&quot;');
+            return `
             <div class="key-item">
                 <div class="item-content">
                     <div class="item-title">${i18n.t('api_keys.item_title')} #${index + 1}</div>
-                    <div class="item-value">${this.maskApiKey(key)}</div>
+                    <div class="item-value">${maskedDisplay}</div>
                 </div>
                 <div class="item-actions">
-                    <button class="btn btn-secondary" onclick="manager.editApiKey(${index}, '${key}')">
+                    <button class="btn btn-secondary" onclick="manager.editApiKey(${index}, ${keyArgument})">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button class="btn btn-danger" onclick="manager.deleteApiKey(${index})">
@@ -2447,19 +2451,24 @@ class CLIProxyManager {
                     </button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
     }
 
     // 遮蔽API密钥显示
     maskApiKey(key) {
-        if (key.length > 8) {
-            return key.substring(0, 4) + '...' + key.substring(key.length - 4);
-        } else if (key.length > 4) {
-            return key.substring(0, 2) + '...' + key.substring(key.length - 2);
-        } else if (key.length > 2) {
-            return key.substring(0, 1) + '...' + key.substring(key.length - 1);
+        if (key === null || key === undefined) {
+            return '';
         }
-        return key;
+        const normalizedKey = typeof key === 'string' ? key : String(key);
+        if (normalizedKey.length > 8) {
+            return normalizedKey.substring(0, 4) + '...' + normalizedKey.substring(normalizedKey.length - 4);
+        } else if (normalizedKey.length > 4) {
+            return normalizedKey.substring(0, 2) + '...' + normalizedKey.substring(normalizedKey.length - 2);
+        } else if (normalizedKey.length > 2) {
+            return normalizedKey.substring(0, 1) + '...' + normalizedKey.substring(normalizedKey.length - 1);
+        }
+        return normalizedKey;
     }
 
     // HTML 转义，防止 XSS
@@ -2794,7 +2803,8 @@ class CLIProxyManager {
 
         container.innerHTML = normalizedList.map((config, index) => {
             const rawKey = config['api-key'] || '';
-            const masked = rawKey ? this.maskApiKey(rawKey) : '';
+            const masked = this.maskApiKey(rawKey || '');
+            const maskedDisplay = this.escapeHtml(masked);
             const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
             const configJson = JSON.stringify(config).replace(/"/g, '&quot;');
             const apiKeyJson = JSON.stringify(rawKey || '').replace(/"/g, '&quot;');
@@ -2803,7 +2813,7 @@ class CLIProxyManager {
             <div class="key-item">
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.gemini_item_title')} #${index + 1}</div>
-                    <div class="item-value">${this.maskApiKey(rawKey || '')}</div>
+                    <div class="item-value">${maskedDisplay}</div>
                     ${baseUrl ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(baseUrl)}</div>` : ''}
                     ${this.renderHeaderBadges(config.headers)}
                     <div class="item-stats">
@@ -3070,14 +3080,16 @@ class CLIProxyManager {
         const stats = keyStats;
 
         container.innerHTML = list.map((config, index) => {
-            const rawKey = config['api-key'];
-            const masked = rawKey ? this.maskApiKey(rawKey) : '';
+            const rawKey = config['api-key'] || '';
+            const masked = this.maskApiKey(rawKey || '');
+            const maskedDisplay = this.escapeHtml(masked);
             const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
+            const deleteArg = JSON.stringify(rawKey).replace(/"/g, '&quot;');
             return `
             <div class="provider-item">
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.codex_item_title')} #${index + 1}</div>
-                    <div class="item-subtitle">${i18n.t('common.api_key')}: ${this.maskApiKey(config['api-key'])}</div>
+                    <div class="item-subtitle">${i18n.t('common.api_key')}: ${maskedDisplay}</div>
                     ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
                     ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
                     ${this.renderHeaderBadges(config.headers)}
@@ -3094,7 +3106,7 @@ class CLIProxyManager {
                     <button class="btn btn-secondary" onclick="manager.editCodexKey(${index}, ${JSON.stringify(config).replace(/"/g, '&quot;')})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-danger" onclick="manager.deleteCodexKey('${config['api-key']}')">
+                    <button class="btn btn-danger" onclick="manager.deleteCodexKey(${deleteArg})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -3302,14 +3314,16 @@ class CLIProxyManager {
         const stats = keyStats;
 
         container.innerHTML = list.map((config, index) => {
-            const rawKey = config['api-key'];
-            const masked = rawKey ? this.maskApiKey(rawKey) : '';
+            const rawKey = config['api-key'] || '';
+            const masked = this.maskApiKey(rawKey || '');
+            const maskedDisplay = this.escapeHtml(masked);
             const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
+            const deleteArg = JSON.stringify(rawKey).replace(/"/g, '&quot;');
             return `
             <div class="provider-item">
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.claude_item_title')} #${index + 1}</div>
-                    <div class="item-subtitle">${i18n.t('common.api_key')}: ${this.maskApiKey(config['api-key'])}</div>
+                    <div class="item-subtitle">${i18n.t('common.api_key')}: ${maskedDisplay}</div>
                     ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
                     ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
                     ${this.renderHeaderBadges(config.headers)}
@@ -3326,7 +3340,7 @@ class CLIProxyManager {
                     <button class="btn btn-secondary" onclick="manager.editClaudeKey(${index}, ${JSON.stringify(config).replace(/"/g, '&quot;')})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-danger" onclick="manager.deleteClaudeKey('${config['api-key']}')">
+                    <button class="btn btn-danger" onclick="manager.deleteClaudeKey(${deleteArg})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -3572,6 +3586,7 @@ class CLIProxyManager {
                 totalFailure += keyStats.failure;
             });
 
+            const deleteArg = JSON.stringify(name).replace(/"/g, '&quot;');
             return `
             <div class="provider-item">
                 <div class="item-content">
@@ -3594,7 +3609,7 @@ class CLIProxyManager {
                     <button class="btn btn-secondary" onclick="manager.editOpenAIProvider(${index}, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-danger" onclick="manager.deleteOpenAIProvider('${this.escapeHtml(name)}')">
+                    <button class="btn btn-danger" onclick="manager.deleteOpenAIProvider(${deleteArg})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -3865,14 +3880,16 @@ class CLIProxyManager {
         this.updateFilterButtons(existingTypes);
 
         container.innerHTML = visibleFiles.map(file => {
+            const rawFileName = typeof file.name === 'string' ? file.name : '';
+            const safeFileName = this.escapeHtml(rawFileName);
             // 认证文件的统计匹配逻辑：
             // 1. 首先尝试完整文件名匹配
             // 2. 如果没有匹配，尝试脱敏文件名匹配（去掉扩展名后的脱敏版本）
-            let fileStats = stats[file.name] || { success: 0, failure: 0 };
+            let fileStats = stats[rawFileName] || { success: 0, failure: 0 };
 
             // 如果完整文件名没有统计，尝试基于文件名的脱敏版本匹配
             if (fileStats.success === 0 && fileStats.failure === 0) {
-                const nameWithoutExt = file.name.replace(/\.[^/.]+$/, ""); // 去掉扩展名
+                const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, ""); // 去掉扩展名
 
                 const possibleSources = [];
 
@@ -3959,7 +3976,7 @@ class CLIProxyManager {
                         <div class="item-actions">
                             <span class="virtual-auth-badge">虚拟认证文件</span>
                         </div>` : `
-                        <div class="item-actions" data-filename="${file.name}">
+                        <div class="item-actions" data-filename="${safeFileName}">
                             <button class="btn-small btn-info" data-action="showDetails" title="详细信息">
                                 <i class="fas fa-info-circle"></i>
                             </button>
@@ -3972,9 +3989,9 @@ class CLIProxyManager {
                         </div>`;
 
             return `
-            <div class="file-item" data-file-type="${fileType}" data-file-name="${this.escapeHtml(file.name)}" ${isRuntimeOnly ? 'data-runtime-only="true"' : ''}>
+            <div class="file-item" data-file-type="${fileType}" data-file-name="${safeFileName}" ${isRuntimeOnly ? 'data-runtime-only="true"' : ''}>
                 <div class="item-content">
-                    <div class="item-title">${typeBadge}${file.name}</div>
+                    <div class="item-title">${typeBadge}${safeFileName}</div>
                     <div class="item-meta">
                         <span class="item-subtitle">${i18n.t('auth_files.file_modified')}: ${new Date(file.modtime).toLocaleString(i18n.currentLanguage === 'zh-CN' ? 'zh-CN' : 'en-US')}</span>
                         <span class="item-subtitle">${i18n.t('auth_files.file_size')}: ${this.formatFileSize(file.size)}</span>
@@ -4463,11 +4480,12 @@ class CLIProxyManager {
     // 显示JSON模态框
     showJsonModal(filename, jsonContent) {
         // 创建模态框HTML
+        const safeFilename = this.escapeHtml(filename || '');
         const modalHtml = `
             <div id="json-modal" class="json-modal">
                 <div class="json-modal-content">
                     <div class="json-modal-header">
-                        <h3><i class="fas fa-file-code"></i> ${filename}</h3>
+                        <h3><i class="fas fa-file-code"></i> ${safeFilename}</h3>
                         <button class="json-modal-close" data-action="close">
                             <i class="fas fa-times"></i>
                         </button>
