@@ -1248,6 +1248,21 @@ body {
     transform: translateY(-1px);
 }
 
+.btn-small.btn-warning {
+    background: #ff9800;
+    color: #fff;
+    border-color: #ff9800;
+    cursor: default;
+}
+
+.btn-small.btn-warning:disabled,
+.btn-small.btn-warning[disabled] {
+    background: #fb8c00;
+    border-color: #fb8c00;
+    color: #fff;
+    opacity: 1;
+}
+
 .btn-small i {
     font-size: 13px;
 }

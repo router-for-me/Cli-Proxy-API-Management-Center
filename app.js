@@ -3845,7 +3845,22 @@ class CLIProxyManager {
     // 渲染认证文件列表
     async renderAuthFiles(files, keyStats = null) {
         const container = document.getElementById('auth-files-list');
-        const visibleFiles = Array.isArray(files) ? files.filter(file => file.disabled !== true) : [];
+        const isRuntimeOnlyFile = (file) => {
+            if (!file) return false;
+            const runtimeValue = file.runtime_only;
+            return runtimeValue === true || runtimeValue === 'true';
+        };
+        const shouldDisplayDisabledGeminiCli = (file) => {
+            if (!file) return false;
+            const provider = typeof file.provider === 'string' ? file.provider.toLowerCase() : '';
+            const type = typeof file.type === 'string' ? file.type.toLowerCase() : '';
+            const isGeminiCli = provider === 'gemini-cli' || type === 'gemini-cli';
+            return isGeminiCli && !isRuntimeOnlyFile(file);
+        };
+        const visibleFiles = Array.isArray(files) ? files.filter(file => {
+            if (!file) return false;
+            return shouldDisplayDisabledGeminiCli(file) || file.disabled !== true;
+        }) : [];
         this.cachedAuthFiles = visibleFiles.map(file => ({ ...file }));
 
         if (visibleFiles.length === 0) {
@@ -3968,15 +3983,20 @@ class CLIProxyManager {
             }
             const typeBadge = `<span class="file-type-badge ${fileType}">${i18n.t(typeDisplayKey)}</span>`;
 
-            // 检查是否为 runtime-only 文件
-            const isRuntimeOnly = file.runtime_only === true;
+            // Determine whether the entry is runtime-only
+            const isRuntimeOnly = isRuntimeOnlyFile(file);
 
-            // 生成操作按钮 HTML，runtime-only 文件显示虚拟标记
+            const shouldShowMainFlag = shouldDisplayDisabledGeminiCli(file);
+            const mainFlagButton = shouldShowMainFlag ? `
+                            <button class="btn-small btn-warning main-flag-btn" title="主" disabled>主</button>` : '';
+
+            // Build action buttons; runtime-only entries display placeholder badge
             const actionsHtml = isRuntimeOnly ? `
                         <div class="item-actions">
                             <span class="virtual-auth-badge">虚拟认证文件</span>
                         </div>` : `
                         <div class="item-actions" data-filename="${safeFileName}">
+                            ${mainFlagButton}
                             <button class="btn-small btn-info" data-action="showDetails" title="详细信息">
                                 <i class="fas fa-info-circle"></i>
                             </button>
