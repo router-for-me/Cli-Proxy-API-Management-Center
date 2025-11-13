@@ -46,6 +46,8 @@ const i18n = {
             'common.custom_headers_add': '添加请求头',
             'common.custom_headers_key_placeholder': 'Header 名称，例如 X-Custom-Header',
             'common.custom_headers_value_placeholder': 'Header 值',
+            'common.model_name_placeholder': '模型名称，例如 claude-3-5-sonnet-20241022',
+            'common.model_alias_placeholder': '模型别名 (可选)',
 
             // 页面标题
             'title.main': 'CLI Proxy API Management Center',
@@ -184,6 +186,10 @@ const i18n = {
             'ai_providers.claude_edit_modal_url_label': 'Base URL (可选):',
             'ai_providers.claude_edit_modal_proxy_label': '代理 URL (可选):',
             'ai_providers.claude_delete_confirm': '确定要删除这个Claude配置吗？',
+            'ai_providers.claude_models_label': '自定义模型 (可选):',
+            'ai_providers.claude_models_hint': '为空表示使用全部模型；可填写 name[, alias] 以限制或重命名模型。',
+            'ai_providers.claude_models_add_btn': '添加模型',
+            'ai_providers.claude_models_count': '模型数量',
 
             'ai_providers.openai_title': 'OpenAI 兼容提供商',
             'ai_providers.openai_add_button': '添加提供商',
@@ -533,6 +539,8 @@ const i18n = {
             'common.custom_headers_add': 'Add Header',
             'common.custom_headers_key_placeholder': 'Header name, e.g. X-Custom-Header',
             'common.custom_headers_value_placeholder': 'Header value',
+            'common.model_name_placeholder': 'Model name, e.g. claude-3-5-sonnet-20241022',
+            'common.model_alias_placeholder': 'Model alias (optional)',
 
             // Page titles
             'title.main': 'CLI Proxy API Management Center',
@@ -671,6 +679,10 @@ const i18n = {
             'ai_providers.claude_edit_modal_url_label': 'Base URL (Optional):',
             'ai_providers.claude_edit_modal_proxy_label': 'Proxy URL (Optional):',
             'ai_providers.claude_delete_confirm': 'Are you sure you want to delete this Claude configuration?',
+            'ai_providers.claude_models_label': 'Custom Models (Optional):',
+            'ai_providers.claude_models_hint': 'Leave empty to allow all models, or add name[, alias] entries to limit/alias them.',
+            'ai_providers.claude_models_add_btn': 'Add Model',
+            'ai_providers.claude_models_count': 'Models Count',
 
             'ai_providers.openai_title': 'OpenAI Compatible Providers',
             'ai_providers.openai_add_button': 'Add Provider',

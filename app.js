@@ -3319,6 +3319,11 @@ class CLIProxyManager {
             const maskedDisplay = this.escapeHtml(masked);
             const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
             const deleteArg = JSON.stringify(rawKey).replace(/"/g, '&quot;');
+            const models = Array.isArray(config.models) ? config.models : [];
+            const modelsCountHtml = models.length
+                ? `<div class="item-subtitle">${i18n.t('ai_providers.claude_models_count')}: ${models.length}</div>`
+                : '';
+            const modelsBadgesHtml = this.renderModelBadges(models);
             return `
             <div class="provider-item">
                 <div class="item-content">
@@ -3327,6 +3332,8 @@ class CLIProxyManager {
                     ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
                     ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
                     ${this.renderHeaderBadges(config.headers)}
+                    ${modelsCountHtml}
+                    ${modelsBadgesHtml}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
                             <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
@@ -3373,6 +3380,12 @@ class CLIProxyManager {
                 <div id="new-claude-headers-wrapper" class="header-input-list"></div>
                 <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('new-claude-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
             </div>
+            <div class="form-group">
+                <label>${i18n.t('ai_providers.claude_models_label')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.claude_models_hint')}</p>
+                <div id="new-claude-models-wrapper" class="model-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addModelField('new-claude-models-wrapper')">${i18n.t('ai_providers.claude_models_add_btn')}</button>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.addClaudeKey()">${i18n.t('common.add')}</button>
@@ -3381,6 +3394,7 @@ class CLIProxyManager {
 
         modal.style.display = 'block';
         this.populateHeaderFields('new-claude-headers-wrapper');
+        this.populateModelFields('new-claude-models-wrapper');
     }
 
     // 添加Claude密钥
@@ -3389,6 +3403,7 @@ class CLIProxyManager {
         const baseUrl = document.getElementById('new-claude-url').value.trim();
         const proxyUrl = document.getElementById('new-claude-proxy').value.trim();
         const headers = this.collectHeaderInputs('new-claude-headers-wrapper');
+        const models = this.collectModelInputs('new-claude-models-wrapper');
 
         if (!apiKey) {
             this.showNotification(i18n.t('notification.field_required'), 'error');
@@ -3407,6 +3422,9 @@ class CLIProxyManager {
                 newConfig['proxy-url'] = proxyUrl;
             }
             this.applyHeadersToConfig(newConfig, headers);
+            if (models.length) {
+                newConfig.models = models;
+            }
 
             currentKeys.push(newConfig);
 
@@ -3449,6 +3467,12 @@ class CLIProxyManager {
                 <div id="edit-claude-headers-wrapper" class="header-input-list"></div>
                 <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('edit-claude-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
             </div>
+            <div class="form-group">
+                <label>${i18n.t('ai_providers.claude_models_label')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.claude_models_hint')}</p>
+                <div id="edit-claude-models-wrapper" class="model-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addModelField('edit-claude-models-wrapper')">${i18n.t('ai_providers.claude_models_add_btn')}</button>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.updateClaudeKey(${index})">${i18n.t('common.update')}</button>
@@ -3457,6 +3481,7 @@ class CLIProxyManager {
 
         modal.style.display = 'block';
         this.populateHeaderFields('edit-claude-headers-wrapper', config.headers || null);
+        this.populateModelFields('edit-claude-models-wrapper', Array.isArray(config.models) ? config.models : []);
     }
 
     // 更新Claude密钥
@@ -3465,6 +3490,7 @@ class CLIProxyManager {
         const baseUrl = document.getElementById('edit-claude-url').value.trim();
         const proxyUrl = document.getElementById('edit-claude-proxy').value.trim();
         const headers = this.collectHeaderInputs('edit-claude-headers-wrapper');
+        const models = this.collectModelInputs('edit-claude-models-wrapper');
 
         if (!apiKey) {
             this.showNotification(i18n.t('notification.field_required'), 'error');
@@ -3480,6 +3506,9 @@ class CLIProxyManager {
                 newConfig['proxy-url'] = proxyUrl;
             }
             this.applyHeadersToConfig(newConfig, headers);
+            if (models.length) {
+                newConfig.models = models;
+            }
 
             await this.makeRequest('/claude-api-key', {
                 method: 'PATCH',
@@ -3595,7 +3624,7 @@ class CLIProxyManager {
                     ${this.renderHeaderBadges(item.headers)}
                     <div class="item-subtitle">${i18n.t('ai_providers.openai_keys_count')}: ${apiKeyEntries.length}</div>
                     <div class="item-subtitle">${i18n.t('ai_providers.openai_models_count')}: ${models.length}</div>
-                    ${this.renderOpenAIModelBadges(models)}
+                    ${this.renderModelBadges(models)}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
                             <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${totalSuccess}
@@ -5888,8 +5917,8 @@ class CLIProxyManager {
         row.className = 'model-input-row';
         row.innerHTML = `
             <div class="input-group">
-                <input type="text" class="model-name-input" placeholder="${i18n.t('ai_providers.openai_model_name_placeholder')}" value="${model.name ? this.escapeHtml(model.name) : ''}">
-                <input type="text" class="model-alias-input" placeholder="${i18n.t('ai_providers.openai_model_alias_placeholder')}" value="${model.alias ? this.escapeHtml(model.alias) : ''}">
+                <input type="text" class="model-name-input" placeholder="${i18n.t('common.model_name_placeholder')}" value="${model.name ? this.escapeHtml(model.name) : ''}">
+                <input type="text" class="model-alias-input" placeholder="${i18n.t('common.model_alias_placeholder')}" value="${model.alias ? this.escapeHtml(model.alias) : ''}">
                 <button type="button" class="btn btn-small btn-danger model-remove-btn"><i class="fas fa-trash"></i></button>
             </div>
         `;
@@ -5942,7 +5971,7 @@ class CLIProxyManager {
         return models;
     }
 
-    renderOpenAIModelBadges(models) {
+    renderModelBadges(models) {
         if (!models || models.length === 0) {
             return '';
         }
