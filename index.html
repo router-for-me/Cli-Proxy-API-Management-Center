@@ -520,6 +520,17 @@
                                 </div>
                                 <div class="card-content">
                                     <div id="auth-files-list" class="file-list file-grid"></div>
+                                    <div id="auth-files-pagination" class="pagination-controls" style="display: none;">
+                                        <button class="btn btn-secondary pagination-btn" data-action="prev">
+                                            <i class="fas fa-chevron-left"></i>
+                                            <span data-i18n="auth_files.pagination_prev">上一页</span>
+                                        </button>
+                                        <div id="auth-files-pagination-info" class="pagination-info">-</div>
+                                        <button class="btn btn-secondary pagination-btn" data-action="next">
+                                            <span data-i18n="auth_files.pagination_next">下一页</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
                                     <input type="file" id="auth-file-input" accept=".json" style="display: none;">
                                 </div>
                             </div>

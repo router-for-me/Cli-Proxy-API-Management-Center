@@ -30,6 +30,12 @@ class CLIProxyManager {
         // Auth file filter state cache
         this.currentAuthFileFilter = 'all';
         this.cachedAuthFiles = [];
+        this.authFilesPagination = {
+            pageSize: 9,
+            currentPage: 1,
+            totalPages: 1
+        };
+        this.authFileStatsCache = {};
 
         // Vertex AI credential import state
         this.vertexImportState = {
@@ -616,6 +622,7 @@ class CLIProxyManager {
         if (authFileInput) {
             authFileInput.addEventListener('change', (e) => this.handleFileUpload(e));
         }
+        this.bindAuthFilesPaginationEvents();
 
         // Vertex AI credential import
         const vertexSelectFile = document.getElementById('vertex-select-file');
@@ -3874,25 +3881,21 @@ class CLIProxyManager {
     // 渲染认证文件列表
     async renderAuthFiles(files, keyStats = null) {
         const container = document.getElementById('auth-files-list');
-        const isRuntimeOnlyFile = (file) => {
-            if (!file) return false;
-            const runtimeValue = file.runtime_only;
-            return runtimeValue === true || runtimeValue === 'true';
-        };
-        const shouldDisplayDisabledGeminiCli = (file) => {
-            if (!file) return false;
-            const provider = typeof file.provider === 'string' ? file.provider.toLowerCase() : '';
-            const type = typeof file.type === 'string' ? file.type.toLowerCase() : '';
-            const isGeminiCli = provider === 'gemini-cli' || type === 'gemini-cli';
-            return isGeminiCli && !isRuntimeOnlyFile(file);
-        };
-        const visibleFiles = Array.isArray(files) ? files.filter(file => {
-            if (!file) return false;
-            return shouldDisplayDisabledGeminiCli(file) || file.disabled !== true;
-        }) : [];
-        this.cachedAuthFiles = visibleFiles.map(file => ({ ...file }));
+        if (!container) {
+            return;
+        }
 
-        if (visibleFiles.length === 0) {
+        const allFiles = Array.isArray(files) ? files : [];
+        const visibleFiles = allFiles.filter(file => {
+            if (!file) return false;
+            return this.shouldDisplayDisabledGeminiCli(file) || file.disabled !== true;
+        });
+        const stats = keyStats || await this.getKeyStats();
+
+        this.cachedAuthFiles = visibleFiles.map(file => ({ ...file }));
+        this.authFileStatsCache = stats || {};
+
+        if (this.cachedAuthFiles.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-file-alt"></i>
@@ -3902,125 +3905,130 @@ class CLIProxyManager {
             `;
             this.updateFilterButtons(new Set(['all']));
             this.bindAuthFileFilterEvents();
-            this.applyAuthFileFilterState();
+            this.applyAuthFileFilterState(false);
+            this.authFilesPagination.currentPage = 1;
+            this.authFilesPagination.totalPages = 1;
+            this.updatePaginationControls(0);
             return;
         }
 
-        // 使用传入的keyStats，如果没有则获取一次
-        if (!keyStats) {
-            keyStats = await this.getKeyStats();
-        }
-        const stats = keyStats;
-
-        // 收集所有文件类型（使用API返回的type字段）
-        const existingTypes = new Set(['all']); // 'all' 总是存在
-        visibleFiles.forEach(file => {
+        const existingTypes = new Set(['all']);
+        this.cachedAuthFiles.forEach(file => {
             if (file.type) {
                 existingTypes.add(file.type);
             }
         });
 
-        // 更新筛选按钮显示
         this.updateFilterButtons(existingTypes);
+        this.bindAuthFileFilterEvents();
+        this.applyAuthFileFilterState(false);
+        this.renderAuthFilesPage(this.authFilesPagination.currentPage);
+        this.bindAuthFileActionEvents();
+    }
 
-        container.innerHTML = visibleFiles.map(file => {
-            const rawFileName = typeof file.name === 'string' ? file.name : '';
-            const safeFileName = this.escapeHtml(rawFileName);
-            // 认证文件的统计匹配逻辑：
-            // 1. 首先尝试完整文件名匹配
-            // 2. 如果没有匹配，尝试脱敏文件名匹配（去掉扩展名后的脱敏版本）
-            let fileStats = stats[rawFileName] || { success: 0, failure: 0 };
+    isRuntimeOnlyAuthFile(file) {
+        if (!file) return false;
+        const runtimeValue = file.runtime_only;
+        return runtimeValue === true || runtimeValue === 'true';
+    }
 
-            // 如果完整文件名没有统计，尝试基于文件名的脱敏版本匹配
-            if (fileStats.success === 0 && fileStats.failure === 0) {
-                const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, ""); // 去掉扩展名
+    shouldDisplayDisabledGeminiCli(file) {
+        if (!file) return false;
+        const provider = typeof file.provider === 'string' ? file.provider.toLowerCase() : '';
+        const type = typeof file.type === 'string' ? file.type.toLowerCase() : '';
+        const isGeminiCli = provider === 'gemini-cli' || type === 'gemini-cli';
+        return isGeminiCli && !this.isRuntimeOnlyAuthFile(file);
+    }
 
-                const possibleSources = [];
+    resolveAuthFileStats(file, stats = {}) {
+        const rawFileName = typeof file?.name === 'string' ? file.name : '';
+        const defaultStats = { success: 0, failure: 0 };
+        if (!rawFileName) {
+            return defaultStats;
+        }
 
-                // 规则1：尝试完整描述脱敏
-                const match = nameWithoutExt.match(/^([^@]+@[^-]+)-(.+)$/);
-                if (match) {
-                    const email = match[1]; 
-                    const projectName = match[2];
+        const fromName = stats[rawFileName];
+        if (fromName && (fromName.success > 0 || fromName.failure > 0)) {
+            return fromName;
+        }
 
-                    // 组合成完整的描述格式
-                    const fullDescription = `${email} (${projectName})`;
+        let fileStats = fromName || defaultStats;
+        if (fileStats.success === 0 && fileStats.failure === 0) {
+            const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, "");
+            const possibleSources = [];
 
-                    // 对完整描述进行脱敏
-                    const maskedDescription = this.maskApiKey(fullDescription);
-                    possibleSources.push(maskedDescription);
-                }
-
-                // 规则2：类型-个人标识.json 格式，去掉类型前缀后脱敏
-                const typeMatch = nameWithoutExt.match(/^[^-]+-(.+)$/);
-                if (typeMatch) {
-                    const personalId = typeMatch[1];  // 个人标识部分
-                    const maskedPersonalId = this.maskApiKey(personalId);
-                    possibleSources.push(maskedPersonalId);
-                }
-
-                // 规则3：AI Studio 特殊处理 - 对完整文件名脱敏
-                if (nameWithoutExt.startsWith('aistudio-')) {
-                    const maskedFullName = this.maskApiKey(nameWithoutExt);
-                    possibleSources.push(maskedFullName);
-                }
-
-                // 查找第一个有统计数据的匹配
-                for (const source of possibleSources) {
-                    if (stats[source] && (stats[source].success > 0 || stats[source].failure > 0)) {
-                        fileStats = stats[source];
-                        break;
-                    }
-                }
+            const match = nameWithoutExt.match(/^([^@]+@[^-]+)-(.+)$/);
+            if (match) {
+                const email = match[1];
+                const projectName = match[2];
+                const fullDescription = `${email} (${projectName})`;
+                possibleSources.push(this.maskApiKey(fullDescription));
             }
 
-            // 使用API返回的文件类型
-            const fileType = file.type || 'unknown';
-            // 首字母大写显示类型，特殊处理 iFlow
-            let typeDisplayKey;
-            switch (fileType) {
-                case 'qwen':
-                    typeDisplayKey = 'auth_files.type_qwen';
-                    break;
-                case 'gemini':
-                    typeDisplayKey = 'auth_files.type_gemini';
-                    break;
-                case 'gemini-cli':
-                    typeDisplayKey = 'auth_files.type_gemini-cli';
-                    break;
-                case 'aistudio':
-                    typeDisplayKey = 'auth_files.type_aistudio';
-                    break;
-                case 'claude':
-                    typeDisplayKey = 'auth_files.type_claude';
-                    break;
-                case 'codex':
-                    typeDisplayKey = 'auth_files.type_codex';
-                    break;
-                case 'iflow':
-                    typeDisplayKey = 'auth_files.type_iflow';
-                    break;
-                case 'vertex':
-                    typeDisplayKey = 'auth_files.type_vertex';
-                    break;
-                case 'empty':
-                    typeDisplayKey = 'auth_files.type_empty';
-                    break;
-                default:
-                    typeDisplayKey = 'auth_files.type_unknown';
-                    break;
+            const typeMatch = nameWithoutExt.match(/^[^-]+-(.+)$/);
+            if (typeMatch) {
+                possibleSources.push(this.maskApiKey(typeMatch[1]));
             }
-            const typeBadge = `<span class="file-type-badge ${fileType}">${i18n.t(typeDisplayKey)}</span>`;
 
-            // Determine whether the entry is runtime-only
-            const isRuntimeOnly = isRuntimeOnlyFile(file);
+            if (nameWithoutExt.startsWith('aistudio-')) {
+                possibleSources.push(this.maskApiKey(nameWithoutExt));
+            }
 
-            const shouldShowMainFlag = shouldDisplayDisabledGeminiCli(file);
-            const mainFlagButton = shouldShowMainFlag ? `
+            for (const source of possibleSources) {
+                if (stats[source] && (stats[source].success > 0 || stats[source].failure > 0)) {
+                    return stats[source];
+                }
+            }
+        }
+
+        return fileStats;
+    }
+
+    buildAuthFileItemHtml(file) {
+        const rawFileName = typeof file?.name === 'string' ? file.name : '';
+        const safeFileName = this.escapeHtml(rawFileName);
+        const stats = this.authFileStatsCache || {};
+        const fileStats = this.resolveAuthFileStats(file, stats);
+        const fileType = file.type || 'unknown';
+        let typeDisplayKey;
+        switch (fileType) {
+            case 'qwen':
+                typeDisplayKey = 'auth_files.type_qwen';
+                break;
+            case 'gemini':
+                typeDisplayKey = 'auth_files.type_gemini';
+                break;
+            case 'gemini-cli':
+                typeDisplayKey = 'auth_files.type_gemini-cli';
+                break;
+            case 'aistudio':
+                typeDisplayKey = 'auth_files.type_aistudio';
+                break;
+            case 'claude':
+                typeDisplayKey = 'auth_files.type_claude';
+                break;
+            case 'codex':
+                typeDisplayKey = 'auth_files.type_codex';
+                break;
+            case 'iflow':
+                typeDisplayKey = 'auth_files.type_iflow';
+                break;
+            case 'vertex':
+                typeDisplayKey = 'auth_files.type_vertex';
+                break;
+            case 'empty':
+                typeDisplayKey = 'auth_files.type_empty';
+                break;
+            default:
+                typeDisplayKey = 'auth_files.type_unknown';
+                break;
+        }
+        const typeBadge = `<span class="file-type-badge ${fileType}">${i18n.t(typeDisplayKey)}</span>`;
+        const isRuntimeOnly = this.isRuntimeOnlyAuthFile(file);
+        const shouldShowMainFlag = this.shouldDisplayDisabledGeminiCli(file);
+        const mainFlagButton = shouldShowMainFlag ? `
                             <button class="btn-small btn-warning main-flag-btn" title="主" disabled>主</button>` : '';
-
-            // Build action buttons; runtime-only entries display placeholder badge
-            const actionsHtml = isRuntimeOnly ? `
+        const actionsHtml = isRuntimeOnly ? `
                         <div class="item-actions">
                             <span class="virtual-auth-badge">虚拟认证文件</span>
                         </div>` : `
@@ -4037,7 +4045,7 @@ class CLIProxyManager {
                             </button>
                         </div>`;
 
-            return `
+        return `
             <div class="file-item" data-file-type="${fileType}" data-file-name="${safeFileName}" ${isRuntimeOnly ? 'data-runtime-only="true"' : ''}>
                 <div class="item-content">
                     <div class="item-title">${typeBadge}${safeFileName}</div>
@@ -4059,19 +4067,110 @@ class CLIProxyManager {
                 </div>
             </div>
         `;
-        }).join('');
-
-        // 绑定筛选按钮事件
-        this.bindAuthFileFilterEvents();
-        
-        // 绑定认证文件操作按钮事件（使用事件委托）
-        this.bindAuthFileActionEvents();
-
-        // Reapply current filter state
-        this.applyAuthFileFilterState();
     }
 
-    // 更新筛选按钮显示
+    getFilteredAuthFiles(filterType = this.currentAuthFileFilter) {
+        const files = Array.isArray(this.cachedAuthFiles) ? this.cachedAuthFiles : [];
+        const filterValue = (filterType || 'all').toLowerCase();
+        if (filterValue === 'all') {
+            return files;
+        }
+        return files.filter(file => {
+            const type = (file?.type || 'unknown').toLowerCase();
+            return type === filterValue;
+        });
+    }
+
+    renderAuthFilesPage(page = null) {
+        const container = document.getElementById('auth-files-list');
+        if (!container) return;
+
+        const pageSize = this.authFilesPagination?.pageSize || 9;
+        const filteredFiles = this.getFilteredAuthFiles();
+        const totalItems = filteredFiles.length;
+
+        if (totalItems === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>${i18n.t('auth_files.empty_title')}</h3>
+                    <p>${i18n.t('auth_files.empty_desc')}</p>
+                </div>
+            `;
+            this.authFilesPagination.currentPage = 1;
+            this.authFilesPagination.totalPages = 1;
+            this.updatePaginationControls(0);
+            return;
+        }
+
+        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+        let targetPage = typeof page === 'number' ? page : (this.authFilesPagination.currentPage || 1);
+        targetPage = Math.max(1, Math.min(targetPage, totalPages));
+
+        this.authFilesPagination.currentPage = targetPage;
+        this.authFilesPagination.totalPages = totalPages;
+
+        const startIndex = (targetPage - 1) * pageSize;
+        const pageFiles = filteredFiles.slice(startIndex, startIndex + pageSize);
+        container.innerHTML = pageFiles.map(file => this.buildAuthFileItemHtml(file)).join('');
+
+        this.updatePaginationControls(totalItems);
+    }
+
+    updatePaginationControls(totalItems = 0) {
+        const paginationContainer = document.getElementById('auth-files-pagination');
+        const infoEl = document.getElementById('auth-files-pagination-info');
+        if (!paginationContainer || !infoEl) return;
+
+        const prevBtn = paginationContainer.querySelector('button[data-action="prev"]');
+        const nextBtn = paginationContainer.querySelector('button[data-action="next"]');
+        const pageSize = this.authFilesPagination?.pageSize || 9;
+        const totalPages = this.authFilesPagination?.totalPages || 1;
+        const currentPage = Math.min(this.authFilesPagination?.currentPage || 1, totalPages);
+        const shouldShow = totalItems > pageSize;
+
+        paginationContainer.style.display = shouldShow ? 'flex' : 'none';
+
+        const infoParams = totalItems === 0
+            ? { current: 0, total: 0, count: 0 }
+            : { current: currentPage, total: totalPages, count: totalItems };
+        infoEl.textContent = i18n.t('auth_files.pagination_info', infoParams);
+
+        if (prevBtn) {
+            prevBtn.disabled = currentPage <= 1;
+        }
+        if (nextBtn) {
+            nextBtn.disabled = currentPage >= totalPages;
+        }
+    }
+
+    bindAuthFilesPaginationEvents() {
+        const container = document.getElementById('auth-files-pagination');
+        if (!container) return;
+
+        const oldListener = container._paginationListener;
+        if (oldListener) {
+            container.removeEventListener('click', oldListener);
+        }
+
+        const listener = (event) => {
+            const button = event.target.closest('button[data-action]');
+            if (!button || !container.contains(button)) return;
+            event.preventDefault();
+            const action = button.dataset.action;
+            const currentPage = this.authFilesPagination?.currentPage || 1;
+            if (action === 'prev') {
+                this.renderAuthFilesPage(currentPage - 1);
+            } else if (action === 'next') {
+                this.renderAuthFilesPage(currentPage + 1);
+            }
+        };
+
+        container._paginationListener = listener;
+        container.addEventListener('click', listener);
+    }
+
+// 更新筛选按钮显示
     updateFilterButtons(existingTypes) {
         const filterContainer = document.querySelector('.auth-file-filter');
         if (!filterContainer) return;
@@ -4143,28 +4242,22 @@ class CLIProxyManager {
     }
 
     // 处理筛选按钮点击
-    handleFilterClick(clickedBtn) {
+    handleFilterClick(clickedBtn, options = {}) {
+        if (!clickedBtn) return;
+        const { skipRender = false } = options;
         const filterBtns = document.querySelectorAll('.auth-file-filter .filter-btn');
-        
-        // 更新按钮状态
+
         filterBtns.forEach(b => b.classList.remove('active'));
         clickedBtn.classList.add('active');
 
-        // 获取筛选类型
         const filterType = clickedBtn.dataset.type;
         this.currentAuthFileFilter = filterType || 'all';
-        
-        // 筛选文件
-        const fileItems = document.querySelectorAll('.file-item');
-        fileItems.forEach(item => {
-            if (filterType === 'all' || item.dataset.fileType === filterType) {
-                item.classList.remove('hidden');
-            } else {
-                item.classList.add('hidden');
-            }
-        });
 
-        // 更新筛选按钮文本（以防语言切换后新按钮未刷新）
+        if (!skipRender) {
+            this.authFilesPagination.currentPage = 1;
+            this.renderAuthFilesPage(1);
+        }
+
         this.refreshFilterButtonTexts();
     }
 
@@ -4205,7 +4298,7 @@ class CLIProxyManager {
     }
 
     // Apply current filter selection to the list
-    applyAuthFileFilterState() {
+    applyAuthFileFilterState(shouldRender = false) {
         const filterContainer = document.querySelector('.auth-file-filter');
         if (!filterContainer) return;
 
@@ -4228,7 +4321,7 @@ class CLIProxyManager {
         }
 
         if (targetButton) {
-            this.handleFilterClick(targetButton);
+            this.handleFilterClick(targetButton, { skipRender: !shouldRender });
         }
     }
 
@@ -4241,26 +4334,10 @@ class CLIProxyManager {
         const removalSet = new Set(filenames);
         this.cachedAuthFiles = (this.cachedAuthFiles || []).filter(file => file && !removalSet.has(file.name));
 
-        const container = document.getElementById('auth-files-list');
-        if (!container) return;
-
-        const fileItems = container.querySelectorAll('.file-item');
-        fileItems.forEach(item => {
-            const fileNameAttr = item.getAttribute('data-file-name');
-            if (fileNameAttr && removalSet.has(fileNameAttr)) {
-                item.remove();
-            }
-        });
-
-        if (!container.querySelector('.file-item')) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-file-alt"></i>
-                    <h3>${i18n.t('auth_files.empty_title')}</h3>
-                    <p>${i18n.t('auth_files.empty_desc')}</p>
-                </div>
-            `;
+        if (!this.cachedAuthFiles.length) {
+            this.authFilesPagination.currentPage = 1;
         }
+        this.renderAuthFilesPage(this.authFilesPagination.currentPage);
     }
 
     // 刷新筛选按钮文本（根据 data-i18n-text）

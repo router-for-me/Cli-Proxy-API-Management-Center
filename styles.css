@@ -1567,6 +1567,33 @@ input:checked+.slider:before {
     gap: 15px;
 }
 
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    gap: 6px;
+    min-width: 120px;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
 /* 响应式：中等屏幕2列 */
 @media (max-width: 1400px) {
     .file-grid {
