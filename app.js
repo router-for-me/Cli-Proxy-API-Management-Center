@@ -3955,6 +3955,46 @@ class CLIProxyManager {
         let fileStats = fromName || defaultStats;
         if (fileStats.success === 0 && fileStats.failure === 0) {
             const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, "");
+
+            if (nameWithoutExt && nameWithoutExt !== rawFileName) {
+                const candidateNames = new Set([nameWithoutExt]);
+                const normalizedName = nameWithoutExt.toLowerCase();
+                const typePrefix = typeof file?.type === 'string' ? file.type.trim().toLowerCase() : '';
+                const providerPrefix = typeof file?.provider === 'string' ? file.provider.trim().toLowerCase() : '';
+                const prefixList = [];
+
+                if (typePrefix) {
+                    prefixList.push(`${typePrefix}-`);
+                }
+                if (providerPrefix && providerPrefix !== typePrefix) {
+                    prefixList.push(`${providerPrefix}-`);
+                }
+
+                prefixList.forEach(prefix => {
+                    if (prefix && normalizedName.startsWith(prefix)) {
+                        const trimmed = nameWithoutExt.substring(prefix.length);
+                        if (trimmed) {
+                            candidateNames.add(trimmed);
+                        }
+                    }
+                });
+
+                for (const candidate of candidateNames) {
+                    const statsByName = stats[candidate];
+                    if (statsByName && (statsByName.success > 0 || statsByName.failure > 0)) {
+                        return statsByName;
+                    }
+
+                    const maskedCandidate = this.maskApiKey(candidate);
+                    if (maskedCandidate && maskedCandidate !== candidate) {
+                        const statsByMaskedName = stats[maskedCandidate];
+                        if (statsByMaskedName && (statsByMaskedName.success > 0 || statsByMaskedName.failure > 0)) {
+                            return statsByMaskedName;
+                        }
+                    }
+                }
+            }
+
             const possibleSources = [];
 
             const match = nameWithoutExt.match(/^([^@]+@[^-]+)-(.+)$/);
