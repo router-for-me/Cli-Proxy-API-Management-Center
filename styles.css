@@ -2940,6 +2940,7 @@ input:checked+.slider:before {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    margin-bottom: 10px;
 }
 
 .model-input-row .input-group {
@@ -2964,6 +2965,7 @@ input:checked+.slider:before {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    margin-bottom: 10px;
 }
 
 .api-key-input-group {
@@ -2985,10 +2987,18 @@ input:checked+.slider:before {
     align-self: center;
 }
 
+.api-key-input-list + .btn,
+.model-input-list + .btn,
+.header-input-list + .btn {
+    margin-top: 4px;
+    align-self: flex-start;
+}
+
 .header-input-list {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    margin-bottom: 10px;
 }
 
 .header-input-row .header-input-group {
