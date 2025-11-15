@@ -1630,6 +1630,93 @@ input:checked+.slider:before {
     white-space: nowrap;
 }
 
+/* 认证文件工具栏 */
+.auth-file-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-end;
+    margin-bottom: 18px;
+}
+
+.auth-file-search-group {
+    flex: 1;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.auth-file-search-group label,
+.auth-file-page-size label {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.auth-file-search {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    padding: 0 12px;
+    background: var(--bg-secondary);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .auth-file-search {
+    background: var(--bg-tertiary);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.04);
+}
+
+.auth-file-search i {
+    color: var(--text-tertiary);
+    margin-right: 8px;
+}
+
+.auth-file-search input {
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    width: 100%;
+    padding: 10px 0;
+    font-size: 0.95rem;
+}
+
+.auth-file-search input:focus {
+    outline: none;
+}
+
+.auth-file-page-size {
+    min-width: 180px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.page-size-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: var(--bg-quaternary);
+}
+
+.page-size-input input {
+    width: 80px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.page-size-input span {
+    font-size: 0.9rem;
+    color: var(--text-tertiary);
+}
+
 /* 认证文件筛选按钮 */
 .auth-file-filter {
     display: flex;
@@ -2870,6 +2957,31 @@ input:checked+.slider:before {
 }
 
 .model-input-row .model-remove-btn {
+    align-self: center;
+}
+
+.api-key-input-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.api-key-input-group {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.api-key-input-group .api-key-value-input {
+    flex: 2;
+}
+
+.api-key-input-group .api-key-proxy-input {
+    flex: 1;
+    min-width: 180px;
+}
+
+.api-key-input-group .api-key-remove-btn {
     align-self: center;
 }
 

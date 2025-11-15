@@ -36,6 +36,9 @@ class CLIProxyManager {
             totalPages: 1
         };
         this.authFileStatsCache = {};
+        this.authFileSearchQuery = '';
+        this.authFilesPageSizeKey = 'authFilesPageSize';
+        this.loadAuthFilePreferences();
 
         // Vertex AI credential import state
         this.vertexImportState = {
@@ -61,6 +64,31 @@ class CLIProxyManager {
         this.lastEditorConnectionState = null;
 
         this.init();
+    }
+
+    loadAuthFilePreferences() {
+        try {
+            if (typeof localStorage === 'undefined') {
+                return;
+            }
+            const savedPageSize = parseInt(localStorage.getItem(this.authFilesPageSizeKey), 10);
+            if (Number.isFinite(savedPageSize)) {
+                this.authFilesPagination.pageSize = this.normalizeAuthFilesPageSize(savedPageSize);
+            }
+        } catch (error) {
+            console.warn('Failed to restore auth file preferences:', error);
+        }
+    }
+
+    normalizeAuthFilesPageSize(value) {
+        const defaultSize = 9;
+        const minSize = 3;
+        const maxSize = 60;
+        const parsed = parseInt(value, 10);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+            return defaultSize;
+        }
+        return Math.min(maxSize, Math.max(minSize, parsed));
     }
 
     // 简易防抖，减少频繁写 localStorage
@@ -623,6 +651,9 @@ class CLIProxyManager {
             authFileInput.addEventListener('change', (e) => this.handleFileUpload(e));
         }
         this.bindAuthFilesPaginationEvents();
+        this.bindAuthFilesSearchControl();
+        this.bindAuthFilesPageSizeControl();
+        this.syncAuthFileControls();
 
         // Vertex AI credential import
         const vertexSelectFile = document.getElementById('vertex-select-file');
@@ -2573,6 +2604,68 @@ class CLIProxyManager {
         return Object.keys(headers).length ? headers : null;
     }
 
+    addApiKeyEntryField(wrapperId, entry = {}) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+
+        const row = document.createElement('div');
+        row.className = 'api-key-input-row';
+        const keyValue = typeof entry?.['api-key'] === 'string' ? entry['api-key'] : '';
+        const proxyValue = typeof entry?.['proxy-url'] === 'string' ? entry['proxy-url'] : '';
+        row.innerHTML = `
+            <div class="input-group api-key-input-group">
+                <input type="text" class="api-key-value-input" placeholder="${i18n.t('ai_providers.openai_key_placeholder')}" value="${this.escapeHtml(keyValue)}">
+                <input type="text" class="api-key-proxy-input" placeholder="${i18n.t('ai_providers.openai_proxy_placeholder')}" value="${this.escapeHtml(proxyValue)}">
+                <button type="button" class="btn btn-small btn-danger api-key-remove-btn"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+
+        const removeBtn = row.querySelector('.api-key-remove-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                wrapper.removeChild(row);
+                if (wrapper.childElementCount === 0) {
+                    this.addApiKeyEntryField(wrapperId);
+                }
+            });
+        }
+
+        wrapper.appendChild(row);
+    }
+
+    populateApiKeyEntryFields(wrapperId, entries = []) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+        wrapper.innerHTML = '';
+
+        if (!Array.isArray(entries) || entries.length === 0) {
+            this.addApiKeyEntryField(wrapperId);
+            return;
+        }
+
+        entries.forEach(entry => this.addApiKeyEntryField(wrapperId, entry));
+    }
+
+    collectApiKeyEntryInputs(wrapperId) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return [];
+
+        const rows = Array.from(wrapper.querySelectorAll('.api-key-input-row'));
+        const entries = [];
+
+        rows.forEach(row => {
+            const keyInput = row.querySelector('.api-key-value-input');
+            const proxyInput = row.querySelector('.api-key-proxy-input');
+            const key = keyInput ? keyInput.value.trim() : '';
+            const proxy = proxyInput ? proxyInput.value.trim() : '';
+            if (key) {
+                entries.push({ 'api-key': key, 'proxy-url': proxy });
+            }
+        });
+
+        return entries;
+    }
+
     // 规范化并写入请求头
     applyHeadersToConfig(target, headers) {
         if (!target) {
@@ -2852,13 +2945,10 @@ class CLIProxyManager {
         modalBody.innerHTML = `
             <h3>${i18n.t('ai_providers.gemini_add_modal_title')}</h3>
             <div class="form-group">
-                <label for="new-gemini-key">${i18n.t('ai_providers.gemini_add_modal_key_label')}</label>
-                <textarea id="new-gemini-key" rows="6" placeholder="${i18n.t('ai_providers.gemini_add_modal_key_placeholder')}"></textarea>
+                <label>${i18n.t('ai_providers.gemini_add_modal_key_label')}</label>
                 <p class="form-hint">${i18n.t('ai_providers.gemini_add_modal_key_hint')}</p>
-            </div>
-            <div class="form-group">
-                <label for="new-gemini-url">${i18n.t('ai_providers.gemini_add_modal_url_label')}</label>
-                <input type="text" id="new-gemini-url" placeholder="${i18n.t('ai_providers.gemini_add_modal_url_placeholder')}">
+                <div id="new-gemini-keys-wrapper" class="api-key-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addGeminiKeyField('new-gemini-keys-wrapper')">${i18n.t('ai_providers.gemini_keys_add_btn')}</button>
             </div>
             <div class="form-group">
                 <label>${i18n.t('common.custom_headers_label')}</label>
@@ -2873,25 +2963,16 @@ class CLIProxyManager {
         `;
 
         modal.style.display = 'block';
+        this.populateGeminiKeyFields('new-gemini-keys-wrapper');
         this.populateHeaderFields('new-gemini-headers-wrapper');
     }
 
     // 添加Gemini密钥
     async addGeminiKey() {
-        const keyInput = document.getElementById('new-gemini-key');
-        const baseUrlInput = document.getElementById('new-gemini-url');
-        if (!keyInput) {
-            return;
-        }
-
-        const keys = keyInput.value
-            .split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0);
-        const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : '';
+        const entries = this.collectGeminiKeyFieldInputs('new-gemini-keys-wrapper');
         const headers = this.collectHeaderInputs('new-gemini-headers-wrapper');
 
-        if (keys.length === 0) {
+        if (!entries.length) {
             this.showNotification(i18n.t('notification.gemini_multi_input_required'), 'error');
             return;
         }
@@ -2906,7 +2987,8 @@ class CLIProxyManager {
             let skippedCount = 0;
             let failedCount = 0;
 
-            for (const apiKey of keys) {
+            for (const entry of entries) {
+                const apiKey = entry['api-key'];
                 if (!apiKey) {
                     continue;
                 }
@@ -2923,6 +3005,7 @@ class CLIProxyManager {
                 }
 
                 const newConfig = { 'api-key': apiKey };
+                const baseUrl = entry['base-url'];
                 if (baseUrl) {
                     newConfig['base-url'] = baseUrl;
                 } else {
@@ -2967,6 +3050,76 @@ class CLIProxyManager {
         }
     }
 
+    addGeminiKeyField(wrapperId, entry = {}, options = {}) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+
+        const row = document.createElement('div');
+        row.className = 'api-key-input-row';
+        const apiKeyValue = typeof entry?.['api-key'] === 'string' ? entry['api-key'] : '';
+        const baseUrlValue = typeof entry?.['base-url'] === 'string'
+            ? entry['base-url']
+            : (typeof entry?.['base_url'] === 'string' ? entry['base_url'] : '');
+        const allowRemoval = options.allowRemoval !== false;
+        const removeButtonHtml = allowRemoval
+            ? `<button type="button" class="btn btn-small btn-danger gemini-key-remove-btn"><i class="fas fa-trash"></i></button>`
+            : '';
+        row.innerHTML = `
+            <div class="input-group api-key-input-group">
+                <input type="text" class="api-key-value-input" placeholder="${i18n.t('ai_providers.gemini_add_modal_key_placeholder')}" value="${this.escapeHtml(apiKeyValue)}">
+                <input type="text" class="api-key-proxy-input" placeholder="${i18n.t('ai_providers.gemini_base_url_placeholder')}" value="${this.escapeHtml(baseUrlValue)}">
+                ${removeButtonHtml}
+            </div>
+        `;
+
+        if (allowRemoval) {
+            const removeBtn = row.querySelector('.gemini-key-remove-btn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    wrapper.removeChild(row);
+                    if (wrapper.childElementCount === 0) {
+                        this.addGeminiKeyField(wrapperId, {}, options);
+                    }
+                });
+            }
+        }
+
+        wrapper.appendChild(row);
+    }
+
+    populateGeminiKeyFields(wrapperId, entries = [], options = {}) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+        wrapper.innerHTML = '';
+
+        if (!Array.isArray(entries) || entries.length === 0) {
+            this.addGeminiKeyField(wrapperId, {}, options);
+            return;
+        }
+
+        entries.forEach(entry => this.addGeminiKeyField(wrapperId, entry, options));
+    }
+
+    collectGeminiKeyFieldInputs(wrapperId) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return [];
+
+        const rows = Array.from(wrapper.querySelectorAll('.api-key-input-row'));
+        const entries = [];
+
+        rows.forEach(row => {
+            const keyInput = row.querySelector('.api-key-value-input');
+            const urlInput = row.querySelector('.api-key-proxy-input');
+            const apiKey = keyInput ? keyInput.value.trim() : '';
+            const baseUrl = urlInput ? urlInput.value.trim() : '';
+            if (apiKey) {
+                entries.push({ 'api-key': apiKey, 'base-url': baseUrl });
+            }
+        });
+
+        return entries;
+    }
+
     // 编辑Gemini密钥
     editGeminiKey(index, config) {
         const modal = document.getElementById('modal');
@@ -2976,12 +3129,8 @@ class CLIProxyManager {
         modalBody.innerHTML = `
             <h3>${i18n.t('ai_providers.gemini_edit_modal_title')}</h3>
             <div class="form-group">
-                <label for="edit-gemini-key">${i18n.t('ai_providers.gemini_edit_modal_key_label')}</label>
-                <input type="text" id="edit-gemini-key" value="${config['api-key'] ? this.escapeHtml(config['api-key']) : ''}">
-            </div>
-            <div class="form-group">
-                <label for="edit-gemini-url">${i18n.t('ai_providers.gemini_edit_modal_url_label')}</label>
-                <input type="text" id="edit-gemini-url" value="${config['base-url'] ? this.escapeHtml(config['base-url']) : ''}" placeholder="${i18n.t('ai_providers.gemini_add_modal_url_placeholder')}">
+                <label>${i18n.t('ai_providers.gemini_edit_modal_key_label')}</label>
+                <div id="edit-gemini-keys-wrapper" class="api-key-input-list"></div>
             </div>
             <div class="form-group">
                 <label>${i18n.t('common.custom_headers_label')}</label>
@@ -2996,14 +3145,20 @@ class CLIProxyManager {
         `;
 
         modal.style.display = 'block';
+        this.populateGeminiKeyFields('edit-gemini-keys-wrapper', [config], { allowRemoval: false });
         this.populateHeaderFields('edit-gemini-headers-wrapper', config.headers || null);
     }
 
     // 更新Gemini密钥
     async updateGeminiKey(index) {
-        const newKey = document.getElementById('edit-gemini-key').value.trim();
-        const baseUrlInput = document.getElementById('edit-gemini-url');
-        const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : '';
+        const entries = this.collectGeminiKeyFieldInputs('edit-gemini-keys-wrapper');
+        if (!entries.length) {
+            this.showNotification(i18n.t('notification.please_enter') + ' ' + i18n.t('notification.gemini_api_key'), 'error');
+            return;
+        }
+        const entry = entries[0];
+        const newKey = entry['api-key'];
+        const baseUrl = entry['base-url'] || '';
         const headers = this.collectHeaderInputs('edit-gemini-headers-wrapper');
 
         if (!newKey) {
@@ -3669,12 +3824,10 @@ class CLIProxyManager {
                 <input type="text" id="new-provider-url" placeholder="${i18n.t('ai_providers.openai_add_modal_url_placeholder')}">
             </div>
             <div class="form-group">
-                <label for="new-provider-keys">${i18n.t('ai_providers.openai_add_modal_keys_label')}</label>
-                <textarea id="new-provider-keys" rows="3" placeholder="${i18n.t('ai_providers.openai_add_modal_keys_placeholder')}"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="new-provider-proxies">${i18n.t('ai_providers.openai_add_modal_keys_proxy_label')}</label>
-                <textarea id="new-provider-proxies" rows="3" placeholder="${i18n.t('ai_providers.openai_add_modal_keys_proxy_placeholder')}"></textarea>
+                <label>${i18n.t('ai_providers.openai_add_modal_keys_label')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.openai_keys_hint')}</p>
+                <div id="new-openai-keys-wrapper" class="api-key-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addApiKeyEntryField('new-openai-keys-wrapper')">${i18n.t('ai_providers.openai_keys_add_btn')}</button>
             </div>
             <div class="form-group">
                 <label>${i18n.t('common.custom_headers_label')}</label>
@@ -3697,14 +3850,14 @@ class CLIProxyManager {
         modal.style.display = 'block';
         this.populateModelFields('new-provider-models-wrapper', []);
         this.populateHeaderFields('new-openai-headers-wrapper');
+        this.populateApiKeyEntryFields('new-openai-keys-wrapper');
     }
 
     // 添加OpenAI提供商
     async addOpenAIProvider() {
         const name = document.getElementById('new-provider-name').value.trim();
         const baseUrl = document.getElementById('new-provider-url').value.trim();
-        const keysText = document.getElementById('new-provider-keys').value.trim();
-        const proxiesText = document.getElementById('new-provider-proxies').value.trim();
+        const apiKeyEntries = this.collectApiKeyEntryInputs('new-openai-keys-wrapper');
         const models = this.collectModelInputs('new-provider-models-wrapper');
         const headers = this.collectHeaderInputs('new-openai-headers-wrapper');
 
@@ -3715,13 +3868,6 @@ class CLIProxyManager {
         try {
             const data = await this.makeRequest('/openai-compatibility');
             const currentProviders = data['openai-compatibility'] || [];
-
-            const apiKeys = keysText ? keysText.split('\n').map(k => k.trim()).filter(k => k) : [];
-            const proxies = proxiesText ? proxiesText.split('\n').map(p => p.trim()).filter(p => p) : [];
-            const apiKeyEntries = apiKeys.map((key, idx) => ({
-                'api-key': key,
-                'proxy-url': proxies[idx] || ''
-            }));
 
             const newProvider = {
                 name,
@@ -3762,8 +3908,6 @@ class CLIProxyManager {
             apiKeyEntries = provider['api-keys'].map(key => ({ 'api-key': key, 'proxy-url': '' }));
         }
 
-        const apiKeysText = apiKeyEntries.map(entry => entry?.['api-key'] || '').join('\n');
-        const proxiesText = apiKeyEntries.map(entry => entry?.['proxy-url'] || '').join('\n');
         const models = Array.isArray(provider?.models) ? provider.models : [];
 
         modalBody.innerHTML = `
@@ -3777,12 +3921,10 @@ class CLIProxyManager {
                 <input type="text" id="edit-provider-url" value="${provider?.['base-url'] ? this.escapeHtml(provider['base-url']) : ''}">
             </div>
             <div class="form-group">
-                <label for="edit-provider-keys">${i18n.t('ai_providers.openai_edit_modal_keys_label')}</label>
-                <textarea id="edit-provider-keys" rows="3">${this.escapeHtml(apiKeysText)}</textarea>
-            </div>
-            <div class="form-group">
-                <label for="edit-provider-proxies">${i18n.t('ai_providers.openai_edit_modal_keys_proxy_label')}</label>
-                <textarea id="edit-provider-proxies" rows="3">${this.escapeHtml(proxiesText)}</textarea>
+                <label>${i18n.t('ai_providers.openai_edit_modal_keys_label')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.openai_keys_hint')}</p>
+                <div id="edit-openai-keys-wrapper" class="api-key-input-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="manager.addApiKeyEntryField('edit-openai-keys-wrapper')">${i18n.t('ai_providers.openai_keys_add_btn')}</button>
             </div>
             <div class="form-group">
                 <label>${i18n.t('common.custom_headers_label')}</label>
@@ -3805,14 +3947,14 @@ class CLIProxyManager {
         modal.style.display = 'block';
         this.populateModelFields('edit-provider-models-wrapper', models);
         this.populateHeaderFields('edit-openai-headers-wrapper', provider?.headers || null);
+        this.populateApiKeyEntryFields('edit-openai-keys-wrapper', apiKeyEntries);
     }
 
     // 更新OpenAI提供商
     async updateOpenAIProvider(index) {
         const name = document.getElementById('edit-provider-name').value.trim();
         const baseUrl = document.getElementById('edit-provider-url').value.trim();
-        const keysText = document.getElementById('edit-provider-keys').value.trim();
-        const proxiesText = document.getElementById('edit-provider-proxies').value.trim();
+        const apiKeyEntries = this.collectApiKeyEntryInputs('edit-openai-keys-wrapper');
         const models = this.collectModelInputs('edit-provider-models-wrapper');
         const headers = this.collectHeaderInputs('edit-openai-headers-wrapper');
 
@@ -3821,13 +3963,6 @@ class CLIProxyManager {
         }
 
         try {
-            const apiKeys = keysText ? keysText.split('\n').map(k => k.trim()).filter(k => k) : [];
-            const proxies = proxiesText ? proxiesText.split('\n').map(p => p.trim()).filter(p => p) : [];
-            const apiKeyEntries = apiKeys.map((key, idx) => ({
-                'api-key': key,
-                'proxy-url': proxies[idx] || ''
-            }));
-
             const updatedProvider = {
                 name,
                 'base-url': baseUrl,
@@ -3894,6 +4029,7 @@ class CLIProxyManager {
 
         this.cachedAuthFiles = visibleFiles.map(file => ({ ...file }));
         this.authFileStatsCache = stats || {};
+        this.syncAuthFileControls();
 
         if (this.cachedAuthFiles.length === 0) {
             container.innerHTML = `
@@ -4112,13 +4248,114 @@ class CLIProxyManager {
     getFilteredAuthFiles(filterType = this.currentAuthFileFilter) {
         const files = Array.isArray(this.cachedAuthFiles) ? this.cachedAuthFiles : [];
         const filterValue = (filterType || 'all').toLowerCase();
-        if (filterValue === 'all') {
-            return files;
-        }
+        const keyword = (this.authFileSearchQuery || '').trim().toLowerCase();
+
         return files.filter(file => {
-            const type = (file?.type || 'unknown').toLowerCase();
-            return type === filterValue;
+            if (!file) return false;
+            const type = (file.type || 'unknown').toLowerCase();
+            const name = (file.name || '').toLowerCase();
+            const provider = (file.provider || '').toLowerCase();
+
+            const matchesType = filterValue === 'all' ? true : type === filterValue;
+            if (!matchesType) return false;
+
+            if (!keyword) return true;
+            return name.includes(keyword) || type.includes(keyword) || provider.includes(keyword);
         });
+    }
+
+    updateAuthFileSearchQuery(value = '') {
+        const normalized = (value || '').trim();
+        if (this.authFileSearchQuery === normalized) {
+            return;
+        }
+        this.authFileSearchQuery = normalized;
+        this.authFilesPagination.currentPage = 1;
+        this.renderAuthFilesPage(1);
+    }
+
+    updateAuthFilesPageSize(value) {
+        const normalized = this.normalizeAuthFilesPageSize(value);
+        if (this.authFilesPagination?.pageSize === normalized) {
+            this.syncAuthFileControls();
+            return;
+        }
+        this.authFilesPagination.pageSize = normalized;
+        this.authFilesPagination.currentPage = 1;
+        try {
+            localStorage.setItem(this.authFilesPageSizeKey, `${normalized}`);
+        } catch (error) {
+            console.warn('Failed to persist auth files page size:', error);
+        }
+        this.syncAuthFileControls();
+        this.renderAuthFilesPage(1);
+    }
+
+    syncAuthFileControls() {
+        const searchInput = document.getElementById('auth-files-search-input');
+        if (searchInput && searchInput.value !== this.authFileSearchQuery) {
+            searchInput.value = this.authFileSearchQuery;
+        }
+
+        const pageSizeInput = document.getElementById('auth-files-page-size-input');
+        const targetSize = this.authFilesPagination?.pageSize || 9;
+        if (pageSizeInput && parseInt(pageSizeInput.value, 10) !== targetSize) {
+            pageSizeInput.value = targetSize;
+        }
+    }
+
+    bindAuthFilesSearchControl() {
+        const searchInput = document.getElementById('auth-files-search-input');
+        if (!searchInput) return;
+
+        if (searchInput._authFileSearchListener) {
+            searchInput.removeEventListener('input', searchInput._authFileSearchListener);
+        }
+
+        const debounced = this.debounce((value) => {
+            this.updateAuthFileSearchQuery(value);
+        }, 250);
+
+        const listener = (event) => {
+            const value = event?.target?.value ?? '';
+            debounced(value);
+        };
+
+        searchInput._authFileSearchListener = listener;
+        searchInput.addEventListener('input', listener);
+    }
+
+    bindAuthFilesPageSizeControl() {
+        const pageSizeInput = document.getElementById('auth-files-page-size-input');
+        if (!pageSizeInput) return;
+
+        if (pageSizeInput._authFilePageSizeListener) {
+            pageSizeInput.removeEventListener('change', pageSizeInput._authFilePageSizeListener);
+        }
+
+        const listener = (event) => {
+            const value = parseInt(event?.target?.value, 10);
+            if (!Number.isFinite(value)) {
+                return;
+            }
+            this.updateAuthFilesPageSize(value);
+        };
+
+        pageSizeInput._authFilePageSizeListener = listener;
+        pageSizeInput.addEventListener('change', listener);
+
+        if (pageSizeInput._authFilePageSizeBlur) {
+            pageSizeInput.removeEventListener('blur', pageSizeInput._authFilePageSizeBlur);
+        }
+
+        const blurListener = () => {
+            if (!pageSizeInput.value) {
+                this.syncAuthFileControls();
+            }
+        };
+
+        pageSizeInput._authFilePageSizeBlur = blurListener;
+        pageSizeInput.addEventListener('blur', blurListener);
     }
 
     renderAuthFilesPage(page = null) {
@@ -4128,13 +4365,22 @@ class CLIProxyManager {
         const pageSize = this.authFilesPagination?.pageSize || 9;
         const filteredFiles = this.getFilteredAuthFiles();
         const totalItems = filteredFiles.length;
+        const hasCachedFiles = Array.isArray(this.cachedAuthFiles) && this.cachedAuthFiles.length > 0;
+        const filterApplied = (this.currentAuthFileFilter && this.currentAuthFileFilter !== 'all');
+        const searchApplied = Boolean((this.authFileSearchQuery || '').trim());
 
         if (totalItems === 0) {
+            const titleKey = hasCachedFiles && (filterApplied || searchApplied)
+                ? 'auth_files.search_empty_title'
+                : 'auth_files.empty_title';
+            const descKey = hasCachedFiles && (filterApplied || searchApplied)
+                ? 'auth_files.search_empty_desc'
+                : 'auth_files.empty_desc';
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-file-alt"></i>
-                    <h3>${i18n.t('auth_files.empty_title')}</h3>
-                    <p>${i18n.t('auth_files.empty_desc')}</p>
+                    <h3>${i18n.t(titleKey)}</h3>
+                    <p>${i18n.t(descKey)}</p>
                 </div>
             `;
             this.authFilesPagination.currentPage = 1;

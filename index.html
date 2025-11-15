@@ -519,6 +519,27 @@
                                     </div>
                                 </div>
                                 <div class="card-content">
+                                    <div class="auth-file-toolbar">
+                                        <div class="auth-file-search-group">
+                                            <label for="auth-files-search-input"
+                                                data-i18n="auth_files.search_label">搜索配置文件</label>
+                                            <div class="auth-file-search">
+                                                <i class="fas fa-search"></i>
+                                                <input type="text" id="auth-files-search-input"
+                                                    data-i18n-placeholder="auth_files.search_placeholder"
+                                                    placeholder="搜索文件名或类型">
+                                            </div>
+                                        </div>
+                                        <div class="auth-file-page-size">
+                                            <label for="auth-files-page-size-input"
+                                                data-i18n="auth_files.page_size_label">单页数量</label>
+                                            <div class="page-size-input">
+                                                <input type="number" id="auth-files-page-size-input" min="3" max="60"
+                                                    step="1">
+                                                <span data-i18n="auth_files.page_size_unit">个/页</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div id="auth-files-list" class="file-list file-grid"></div>
                                     <div id="auth-files-pagination" class="pagination-controls" style="display: none;">
                                         <button class="btn btn-secondary pagination-btn" data-action="prev">
