@@ -85,6 +85,38 @@ function ensureDistDir() {
     fs.mkdirSync(distDir);
 }
 
+const importRegex = /^import\s+.+?from\s+['"](.+?)['"];?$/gm;
+const exportRegex = /^export\s+/gm;
+
+function bundleApp(entryPath) {
+    const visited = new Set();
+
+    function inlineFile(filePath) {
+        let content = readFile(filePath);
+        const dir = path.dirname(filePath);
+
+        content = content.replace(importRegex, (match, specifier) => {
+            const targetPath = path.resolve(dir, specifier);
+            const normalized = path.normalize(targetPath);
+            if (!fs.existsSync(normalized)) {
+                throw new Error(`无法解析模块: ${specifier} (from ${filePath})`);
+            }
+            if (visited.has(normalized)) {
+                return '';
+            }
+            visited.add(normalized);
+            let moduleContent = inlineFile(normalized);
+            moduleContent = moduleContent.replace(exportRegex, '');
+            const relativePath = path.relative(projectRoot, normalized);
+            return `\n// ${relativePath}\n${moduleContent}\n`;
+        });
+
+        return content;
+    }
+
+    return inlineFile(entryPath);
+}
+
 function loadLogoDataUrl() {
     for (const candidate of logoCandidates) {
         const filePath = path.join(projectRoot, candidate);
@@ -110,7 +142,8 @@ function build() {
     let html = readFile(sourceFiles.html);
     const css = escapeForStyle(readFile(sourceFiles.css));
     const i18n = escapeForScript(readFile(sourceFiles.i18n));
-    const app = escapeForScript(readFile(sourceFiles.app));
+    const bundledApp = bundleApp(sourceFiles.app);
+    const app = escapeForScript(bundledApp);
     
     // 获取版本号并替换
     const version = getVersion();
@@ -131,12 +164,17 @@ ${i18n}
 </script>`
     );
 
-    html = html.replace(
-        '<script src="app.js"></script>',
-        `<script>
+    const scriptTagRegex = /<script[^>]*src="app\.js"[^>]*><\/script>/i;
+    if (scriptTagRegex.test(html)) {
+        html = html.replace(
+            scriptTagRegex,
+            `<script>
 ${app}
 </script>`
-    );
+        );
+    } else {
+        console.warn('未找到 app.js 脚本标签，未内联应用代码。');
+    }
 
     const logoDataUrl = loadLogoDataUrl();
     if (logoDataUrl) {
