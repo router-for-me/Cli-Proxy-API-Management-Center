@@ -1014,7 +1014,13 @@ class CLIProxyManager {
     requestsChart = null;
     tokensChart = null;
     currentUsageData = null;
-    currentModelFilter = 'all';
+    chartLineSelections = ['none', 'none', 'none'];
+    chartLineSelectIds = ['chart-line-select-0', 'chart-line-select-1', 'chart-line-select-2'];
+    chartLineStyles = [
+        { borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)' },
+        { borderColor: '#a855f7', backgroundColor: 'rgba(168, 85, 247, 0.15)' },
+        { borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)' }
+    ];
 
     showModal() {
         const modal = document.getElementById('modal');

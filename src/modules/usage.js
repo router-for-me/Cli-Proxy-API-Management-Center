@@ -62,7 +62,7 @@ export async function loadUsageStats(usageData = null) {
 
         // 更新概览卡片
         this.updateUsageOverview(usage);
-        this.updateModelFilterOptions(usage);
+        this.updateChartLineSelectors(usage);
 
         // 读取当前图表周期
         const requestsHourActive = document.getElementById('requests-hour-btn')?.classList.contains('active');
@@ -80,7 +80,7 @@ export async function loadUsageStats(usageData = null) {
     } catch (error) {
         console.error('加载使用统计失败:', error);
         this.currentUsageData = null;
-        this.updateModelFilterOptions(null);
+        this.updateChartLineSelectors(null);
 
         // 清空概览数据
         ['total-requests', 'success-requests', 'failed-requests', 'total-tokens'].forEach(id => {
@@ -131,50 +131,92 @@ export function getModelNamesFromUsage(usage) {
     return Array.from(names).sort((a, b) => a.localeCompare(b));
 }
 
-export function updateModelFilterOptions(usage) {
-    const select = document.getElementById('model-filter-select');
-    if (!select) {
+export function updateChartLineSelectors(usage) {
+    const modelNames = this.getModelNamesFromUsage(usage);
+    const selectors = this.chartLineSelectIds
+        .map(id => document.getElementById(id))
+        .filter(Boolean);
+
+    if (!selectors.length) {
+        this.chartLineSelections = ['none', 'none', 'none'];
         return;
     }
 
-    const modelNames = this.getModelNamesFromUsage(usage);
-    const previousSelection = this.currentModelFilter || 'all';
-    const fragment = document.createDocumentFragment();
+    const optionsFragment = () => {
+        const fragment = document.createDocumentFragment();
+        const hiddenOption = document.createElement('option');
+        hiddenOption.value = 'none';
+        hiddenOption.textContent = i18n.t('usage_stats.chart_line_hidden');
+        fragment.appendChild(hiddenOption);
+        modelNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            fragment.appendChild(option);
+        });
+        return fragment;
+    };
 
-    const allOption = document.createElement('option');
-    allOption.value = 'all';
-    allOption.textContent = i18n.t('usage_stats.model_filter_all');
-    fragment.appendChild(allOption);
-
-    modelNames.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        fragment.appendChild(option);
+    const hasModels = modelNames.length > 0;
+    selectors.forEach(select => {
+        select.innerHTML = '';
+        select.appendChild(optionsFragment());
+        select.disabled = !hasModels;
     });
 
-    select.innerHTML = '';
-    select.appendChild(fragment);
-
-    let nextSelection = previousSelection;
-    if (nextSelection !== 'all' && !modelNames.includes(nextSelection)) {
-        nextSelection = 'all';
-    }
-    this.currentModelFilter = nextSelection;
-    select.value = nextSelection;
-    select.disabled = modelNames.length === 0;
-}
-
-export function handleModelFilterChange(value) {
-    const normalized = value || 'all';
-    if (this.currentModelFilter === normalized) {
+    if (!hasModels) {
+        this.chartLineSelections = ['none', 'none', 'none'];
+        selectors.forEach(select => {
+            select.value = 'none';
+        });
         return;
     }
-    this.currentModelFilter = normalized;
-    this.refreshChartsForModelFilter();
+
+    const nextSelections = Array.isArray(this.chartLineSelections)
+        ? [...this.chartLineSelections]
+        : ['none', 'none', 'none'];
+
+    const validNames = new Set(modelNames);
+    let hasActiveSelection = false;
+    for (let i = 0; i < nextSelections.length; i++) {
+        const selection = nextSelections[i];
+        if (selection && selection !== 'none' && !validNames.has(selection)) {
+            nextSelections[i] = 'none';
+        }
+        if (nextSelections[i] !== 'none') {
+            hasActiveSelection = true;
+        }
+    }
+
+    if (!hasActiveSelection) {
+        modelNames.slice(0, nextSelections.length).forEach((name, index) => {
+            nextSelections[index] = name;
+        });
+    }
+
+    this.chartLineSelections = nextSelections;
+    selectors.forEach((select, index) => {
+        const value = this.chartLineSelections[index] || 'none';
+        select.value = value;
+    });
 }
 
-export function refreshChartsForModelFilter() {
+export function handleChartLineSelectionChange(index, value) {
+    if (!Array.isArray(this.chartLineSelections)) {
+        this.chartLineSelections = ['none', 'none', 'none'];
+    }
+    if (index < 0 || index >= this.chartLineSelections.length) {
+        return;
+    }
+    const normalized = value || 'none';
+    if (this.chartLineSelections[index] === normalized) {
+        return;
+    }
+    this.chartLineSelections[index] = normalized;
+    this.refreshChartsForSelections();
+}
+
+export function refreshChartsForSelections() {
     if (!this.currentUsageData) {
         return;
     }
@@ -196,6 +238,15 @@ export function refreshChartsForModelFilter() {
     } else {
         this.initializeTokensChart(tokensPeriod);
     }
+}
+
+export function getActiveChartLineSelections() {
+    if (!Array.isArray(this.chartLineSelections)) {
+        this.chartLineSelections = ['none', 'none', 'none'];
+    }
+    return this.chartLineSelections
+        .map((value, index) => ({ model: value, index }))
+        .filter(item => item.model && item.model !== 'none');
 }
 
 // 收集所有请求明细，供图表等复用
@@ -226,14 +277,7 @@ export function collectUsageDetails() {
     return this.collectUsageDetailsFromUsage(this.currentUsageData);
 }
 
-// 构建最近24小时的统计序列
-export function buildRecentHourlySeries(metric = 'requests') {
-    const details = this.collectUsageDetails();
-    if (!details.length) {
-        return null;
-    }
-
-    const modelFilter = this.currentModelFilter || 'all';
+export function createHourlyBucketMeta() {
     const hourMs = 60 * 60 * 1000;
     const now = new Date();
     const currentHour = new Date(now);
@@ -243,20 +287,30 @@ export function buildRecentHourlySeries(metric = 'requests') {
     earliestBucket.setHours(earliestBucket.getHours() - 23);
     const earliestTime = earliestBucket.getTime();
     const labels = [];
-    const values = new Array(24).fill(0);
-
     for (let i = 0; i < 24; i++) {
         const bucketStart = earliestTime + i * hourMs;
         labels.push(this.formatHourLabel(new Date(bucketStart)));
     }
 
-    const latestBucketStart = earliestTime + (values.length - 1) * hourMs;
-    let hasMatch = false;
+    return {
+        labels,
+        earliestTime,
+        bucketSize: hourMs,
+        lastBucketTime: earliestTime + (labels.length - 1) * hourMs
+    };
+}
+
+export function buildHourlySeriesByModel(metric = 'requests') {
+    const meta = this.createHourlyBucketMeta();
+    const details = this.collectUsageDetails();
+    const dataByModel = new Map();
+    let hasData = false;
+
+    if (!details.length) {
+        return { labels: meta.labels, dataByModel, hasData };
+    }
 
     details.forEach(detail => {
-        if (modelFilter !== 'all' && detail.__modelName !== modelFilter) {
-            return;
-        }
         const timestamp = Date.parse(detail.timestamp);
         if (Number.isNaN(timestamp)) {
             return;
@@ -265,44 +319,43 @@ export function buildRecentHourlySeries(metric = 'requests') {
         const normalized = new Date(timestamp);
         normalized.setMinutes(0, 0, 0);
         const bucketStart = normalized.getTime();
-        if (bucketStart < earliestTime || bucketStart > latestBucketStart) {
+        if (bucketStart < meta.earliestTime || bucketStart > meta.lastBucketTime) {
             return;
         }
 
-        const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
-        if (bucketIndex < 0 || bucketIndex >= values.length) {
+        const bucketIndex = Math.floor((bucketStart - meta.earliestTime) / meta.bucketSize);
+        if (bucketIndex < 0 || bucketIndex >= meta.labels.length) {
             return;
         }
 
+        const modelName = detail.__modelName || 'Unknown';
+        if (!dataByModel.has(modelName)) {
+            dataByModel.set(modelName, new Array(meta.labels.length).fill(0));
+        }
+
+        const bucketValues = dataByModel.get(modelName);
         if (metric === 'tokens') {
-            values[bucketIndex] += this.extractTotalTokens(detail);
+            bucketValues[bucketIndex] += this.extractTotalTokens(detail);
         } else {
-            values[bucketIndex] += 1;
+            bucketValues[bucketIndex] += 1;
         }
-        hasMatch = true;
+        hasData = true;
     });
 
-    if (!hasMatch) {
-        return modelFilter === 'all' ? null : { labels, values };
-    }
-
-    return { labels, values };
+    return { labels: meta.labels, dataByModel, hasData };
 }
 
-export function buildDailySeries(metric = 'requests') {
+export function buildDailySeriesByModel(metric = 'requests') {
     const details = this.collectUsageDetails();
+    const valuesByModel = new Map();
+    const labelsSet = new Set();
+    let hasData = false;
+
     if (!details.length) {
-        return null;
+        return { labels: [], dataByModel: new Map(), hasData };
     }
 
-    const modelFilter = this.currentModelFilter || 'all';
-    const dayBuckets = {};
-    let hasMatch = false;
-
     details.forEach(detail => {
-        if (modelFilter !== 'all' && detail.__modelName !== modelFilter) {
-            return;
-        }
         const timestamp = Date.parse(detail.timestamp);
         if (Number.isNaN(timestamp)) {
             return;
@@ -312,24 +365,53 @@ export function buildDailySeries(metric = 'requests') {
             return;
         }
 
-        if (!dayBuckets[dayLabel]) {
-            dayBuckets[dayLabel] = 0;
+        const modelName = detail.__modelName || 'Unknown';
+        if (!valuesByModel.has(modelName)) {
+            valuesByModel.set(modelName, new Map());
         }
-        if (metric === 'tokens') {
-            dayBuckets[dayLabel] += this.extractTotalTokens(detail);
-        } else {
-            dayBuckets[dayLabel] += 1;
-        }
-        hasMatch = true;
+        const modelDayMap = valuesByModel.get(modelName);
+        const increment = metric === 'tokens' ? this.extractTotalTokens(detail) : 1;
+        modelDayMap.set(dayLabel, (modelDayMap.get(dayLabel) || 0) + increment);
+        labelsSet.add(dayLabel);
+        hasData = true;
     });
 
-    if (!hasMatch) {
-        return modelFilter === 'all' ? null : { labels: [], values: [] };
-    }
+    const labels = Array.from(labelsSet).sort();
+    const dataByModel = new Map();
+    valuesByModel.forEach((dayMap, modelName) => {
+        const series = labels.map(label => dayMap.get(label) || 0);
+        dataByModel.set(modelName, series);
+    });
 
-    const labels = Object.keys(dayBuckets).sort();
-    const values = labels.map(label => dayBuckets[label] || 0);
-    return { labels, values };
+    return { labels, dataByModel, hasData };
+}
+
+export function buildChartDataForMetric(period = 'day', metric = 'requests') {
+    const baseSeries = period === 'hour'
+        ? this.buildHourlySeriesByModel(metric)
+        : this.buildDailySeriesByModel(metric);
+
+    const labels = baseSeries?.labels || [];
+    const dataByModel = baseSeries?.dataByModel || new Map();
+    const activeSelections = this.getActiveChartLineSelections();
+    const datasets = activeSelections.map(selection => {
+        const values = dataByModel.get(selection.model) || new Array(labels.length).fill(0);
+        const style = this.chartLineStyles[selection.index] || this.chartLineStyles[0];
+        return {
+            label: selection.model,
+            data: values,
+            borderColor: style.borderColor,
+            backgroundColor: style.backgroundColor,
+            fill: false,
+            tension: 0.35,
+            pointBackgroundColor: style.borderColor,
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: values.some(v => v > 0) ? 4 : 3
+        };
+    });
+
+    return { labels, datasets };
 }
 
 // 统一格式化小时标签
@@ -391,9 +473,18 @@ export function initializeRequestsChart(period = 'day') {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             plugins: {
                 legend: {
-                    display: false
+                    display: true,
+                    position: 'top',
+                    align: 'start',
+                    labels: {
+                        usePointStyle: true
+                    }
                 }
             },
             scales: {
@@ -413,14 +504,10 @@ export function initializeRequestsChart(period = 'day') {
             },
             elements: {
                 line: {
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.4
+                    tension: 0.35,
+                    borderWidth: 2
                 },
                 point: {
-                    backgroundColor: '#3b82f6',
-                    borderColor: '#ffffff',
                     borderWidth: 2,
                     radius: 4
                 }
@@ -447,9 +534,18 @@ export function initializeTokensChart(period = 'day') {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             plugins: {
                 legend: {
-                    display: false
+                    display: true,
+                    position: 'top',
+                    align: 'start',
+                    labels: {
+                        usePointStyle: true
+                    }
                 }
             },
             scales: {
@@ -469,14 +565,10 @@ export function initializeTokensChart(period = 'day') {
             },
             elements: {
                 line: {
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    fill: true,
-                    tension: 0.4
+                    tension: 0.35,
+                    borderWidth: 2
                 },
                 point: {
-                    backgroundColor: '#10b981',
-                    borderColor: '#ffffff',
                     borderWidth: 2,
                     radius: 4
                 }
@@ -488,77 +580,17 @@ export function initializeTokensChart(period = 'day') {
 // 获取请求图表数据
 export function getRequestsChartData(period) {
     if (!this.currentUsageData) {
-        return { labels: [], datasets: [{ data: [] }] };
+        return { labels: [], datasets: [] };
     }
-
-    let dataSource, labels, values;
-
-    if (period === 'hour') {
-        const hourlySeries = this.buildRecentHourlySeries('requests');
-        if (hourlySeries) {
-            labels = hourlySeries.labels;
-            values = hourlySeries.values;
-        } else {
-            dataSource = this.currentUsageData.requests_by_hour || {};
-            labels = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-            values = labels.map(hour => dataSource[hour] || 0);
-        }
-    } else {
-        const dailySeries = this.buildDailySeries('requests');
-        if (dailySeries) {
-            labels = dailySeries.labels;
-            values = dailySeries.values;
-        } else {
-            dataSource = this.currentUsageData.requests_by_day || {};
-            labels = Object.keys(dataSource).sort();
-            values = labels.map(day => dataSource[day] || 0);
-        }
-    }
-
-    return {
-        labels: labels,
-        datasets: [{
-            data: values
-        }]
-    };
+    return this.buildChartDataForMetric(period, 'requests');
 }
 
 // 获取Token图表数据
 export function getTokensChartData(period) {
     if (!this.currentUsageData) {
-        return { labels: [], datasets: [{ data: [] }] };
+        return { labels: [], datasets: [] };
     }
-
-    let dataSource, labels, values;
-
-    if (period === 'hour') {
-        const hourlySeries = this.buildRecentHourlySeries('tokens');
-        if (hourlySeries) {
-            labels = hourlySeries.labels;
-            values = hourlySeries.values;
-        } else {
-            dataSource = this.currentUsageData.tokens_by_hour || {};
-            labels = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-            values = labels.map(hour => dataSource[hour] || 0);
-        }
-    } else {
-        const dailySeries = this.buildDailySeries('tokens');
-        if (dailySeries) {
-            labels = dailySeries.labels;
-            values = dailySeries.values;
-        } else {
-            dataSource = this.currentUsageData.tokens_by_day || {};
-            labels = Object.keys(dataSource).sort();
-            values = labels.map(day => dataSource[day] || 0);
-        }
-    }
-
-    return {
-        labels: labels,
-        datasets: [{
-            data: values
-        }]
-    };
+    return this.buildChartDataForMetric(period, 'tokens');
 }
 
 // 切换请求图表时间周期
@@ -661,13 +693,16 @@ export const usageModule = {
     loadUsageStats,
     updateUsageOverview,
     getModelNamesFromUsage,
-    updateModelFilterOptions,
-    handleModelFilterChange,
-    refreshChartsForModelFilter,
+    updateChartLineSelectors,
+    handleChartLineSelectionChange,
+    refreshChartsForSelections,
+    getActiveChartLineSelections,
     collectUsageDetailsFromUsage,
     collectUsageDetails,
-    buildRecentHourlySeries,
-    buildDailySeries,
+    createHourlyBucketMeta,
+    buildHourlySeriesByModel,
+    buildDailySeriesByModel,
+    buildChartDataForMetric,
     formatHourLabel,
     formatDayLabel,
     extractTotalTokens,
