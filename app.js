@@ -5971,6 +5971,107 @@ class CLIProxyManager {
         document.getElementById('total-tokens').textContent = safeData.total_tokens ?? 0;
     }
 
+    // 收集所有请求明细，供图表等复用
+    collectUsageDetailsFromUsage(usage) {
+        if (!usage) {
+            return [];
+        }
+        const apis = usage.apis || {};
+        const details = [];
+        Object.values(apis).forEach(apiEntry => {
+            const models = apiEntry.models || {};
+            Object.values(models).forEach(modelEntry => {
+                const modelDetails = Array.isArray(modelEntry.details) ? modelEntry.details : [];
+                modelDetails.forEach(detail => {
+                    if (detail && detail.timestamp) {
+                        details.push(detail);
+                    }
+                });
+            });
+        });
+        return details;
+    }
+
+    collectUsageDetails() {
+        return this.collectUsageDetailsFromUsage(this.currentUsageData);
+    }
+
+    // 构建最近24小时的统计序列
+    buildRecentHourlySeries(metric = 'requests') {
+        const details = this.collectUsageDetails();
+        if (!details.length) {
+            return null;
+        }
+
+        const hourMs = 60 * 60 * 1000;
+        const now = new Date();
+        const currentHour = new Date(now);
+        currentHour.setMinutes(0, 0, 0);
+
+        const earliestBucket = new Date(currentHour);
+        earliestBucket.setHours(earliestBucket.getHours() - 23);
+        const earliestTime = earliestBucket.getTime();
+        const labels = [];
+        const values = new Array(24).fill(0);
+
+        for (let i = 0; i < 24; i++) {
+            const bucketStart = earliestTime + i * hourMs;
+            labels.push(this.formatHourLabel(new Date(bucketStart)));
+        }
+
+        const latestBucketStart = earliestTime + (values.length - 1) * hourMs;
+
+        details.forEach(detail => {
+            const timestamp = Date.parse(detail.timestamp);
+            if (Number.isNaN(timestamp)) {
+                return;
+            }
+
+            const normalized = new Date(timestamp);
+            normalized.setMinutes(0, 0, 0);
+            const bucketStart = normalized.getTime();
+            if (bucketStart < earliestTime || bucketStart > latestBucketStart) {
+                return;
+            }
+
+            const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
+            if (bucketIndex < 0 || bucketIndex >= values.length) {
+                return;
+            }
+
+            if (metric === 'tokens') {
+                values[bucketIndex] += this.extractTotalTokens(detail);
+            } else {
+                values[bucketIndex] += 1;
+            }
+        });
+
+        return { labels, values };
+    }
+
+    // 统一格式化小时标签
+    formatHourLabel(date) {
+        if (!(date instanceof Date)) {
+            return '';
+        }
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hour = date.getHours().toString().padStart(2, '0');
+        return `${month}-${day} ${hour}:00`;
+    }
+
+    extractTotalTokens(detail) {
+        const tokens = detail?.tokens || {};
+        if (typeof tokens.total_tokens === 'number') {
+            return tokens.total_tokens;
+        }
+        const tokenKeys = ['input_tokens', 'output_tokens', 'reasoning_tokens', 'cached_tokens'];
+        return tokenKeys.reduce((sum, key) => {
+            const value = tokens[key];
+            return sum + (typeof value === 'number' ? value : 0);
+        }, 0);
+    }
+
     // 初始化图表
     initializeCharts() {
         const requestsHourActive = document.getElementById('requests-hour-btn')?.classList.contains('active');
@@ -6100,9 +6201,15 @@ class CLIProxyManager {
         let dataSource, labels, values;
 
         if (period === 'hour') {
-            dataSource = this.currentUsageData.requests_by_hour || {};
-            labels = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-            values = labels.map(hour => dataSource[hour] || 0);
+            const hourlySeries = this.buildRecentHourlySeries('requests');
+            if (hourlySeries) {
+                labels = hourlySeries.labels;
+                values = hourlySeries.values;
+            } else {
+                dataSource = this.currentUsageData.requests_by_hour || {};
+                labels = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+                values = labels.map(hour => dataSource[hour] || 0);
+            }
         } else {
             dataSource = this.currentUsageData.requests_by_day || {};
             labels = Object.keys(dataSource).sort();
@@ -6126,9 +6233,15 @@ class CLIProxyManager {
         let dataSource, labels, values;
 
         if (period === 'hour') {
-            dataSource = this.currentUsageData.tokens_by_hour || {};
-            labels = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-            values = labels.map(hour => dataSource[hour] || 0);
+            const hourlySeries = this.buildRecentHourlySeries('tokens');
+            if (hourlySeries) {
+                labels = hourlySeries.labels;
+                values = hourlySeries.values;
+            } else {
+                dataSource = this.currentUsageData.tokens_by_hour || {};
+                labels = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+                values = labels.map(hour => dataSource[hour] || 0);
+            }
         } else {
             dataSource = this.currentUsageData.tokens_by_day || {};
             labels = Object.keys(dataSource).sort();
