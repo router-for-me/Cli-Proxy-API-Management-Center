@@ -414,67 +414,83 @@ export const authFilesModule = {
         const infoEl = document.getElementById('auth-files-pagination-info');
         if (!paginationContainer || !infoEl) return;
 
+        const prevBtn = paginationContainer.querySelector('button[data-action=\"prev\"]');
+        const nextBtn = paginationContainer.querySelector('button[data-action=\"next\"]');
         const pageSize = this.authFilesPagination?.pageSize || 9;
-        const currentPage = this.authFilesPagination?.currentPage || 1;
-        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+        const totalPages = this.authFilesPagination?.totalPages || 1;
+        const currentPage = Math.min(this.authFilesPagination?.currentPage || 1, totalPages);
+        const shouldShow = totalItems > pageSize;
 
-        const start = (totalItems === 0) ? 0 : (currentPage - 1) * pageSize + 1;
-        const end = Math.min(totalItems, currentPage * pageSize);
+        paginationContainer.style.display = shouldShow ? 'flex' : 'none';
 
-        infoEl.textContent = totalItems === 0
-            ? i18n.t('auth_files.pagination_empty')
-            : i18n.t('auth_files.pagination_info')
-                .replace('{start}', start)
-                .replace('{end}', end)
-                .replace('{total}', totalItems);
+        const infoParams = totalItems === 0
+            ? { current: 0, total: 0, count: 0 }
+            : { current: currentPage, total: totalPages, count: totalItems };
+        infoEl.textContent = i18n.t('auth_files.pagination_info', infoParams);
 
-        const prevBtn = paginationContainer.querySelector('button[data-page=\"prev\"]');
-        const nextBtn = paginationContainer.querySelector('button[data-page=\"next\"]');
-        if (!prevBtn || !nextBtn) return;
-        prevBtn.disabled = currentPage <= 1;
-        nextBtn.disabled = currentPage >= totalPages;
-
-        prevBtn.onclick = () => {
-            if (this.authFilesPagination.currentPage <= 1) return;
-            this.renderAuthFilesPage(currentPage - 1);
-        };
-
-        nextBtn.onclick = () => {
-            if (this.authFilesPagination.currentPage >= totalPages) return;
-            this.renderAuthFilesPage(currentPage + 1);
-        };
+        if (prevBtn) {
+            prevBtn.disabled = currentPage <= 1;
+        }
+        if (nextBtn) {
+            nextBtn.disabled = currentPage >= totalPages;
+        }
     },
 
     updateFilterButtons(existingTypes) {
         const filterContainer = document.querySelector('.auth-file-filter');
         if (!filterContainer) return;
 
-        const existingButtons = Array.from(filterContainer.querySelectorAll('.filter-btn'));
-        const buttonMap = new Map();
+        const predefinedTypes = [
+            { type: 'all', labelKey: 'auth_files.filter_all' },
+            { type: 'qwen', labelKey: 'auth_files.filter_qwen' },
+            { type: 'gemini', labelKey: 'auth_files.filter_gemini' },
+            { type: 'gemini-cli', labelKey: 'auth_files.filter_gemini-cli' },
+            { type: 'aistudio', labelKey: 'auth_files.filter_aistudio' },
+            { type: 'claude', labelKey: 'auth_files.filter_claude' },
+            { type: 'codex', labelKey: 'auth_files.filter_codex' },
+            { type: 'iflow', labelKey: 'auth_files.filter_iflow' },
+            { type: 'vertex', labelKey: 'auth_files.filter_vertex' },
+            { type: 'empty', labelKey: 'auth_files.filter_empty' }
+        ];
+
+        const existingButtons = filterContainer.querySelectorAll('.filter-btn');
+        const existingButtonTypes = new Set();
         existingButtons.forEach(btn => {
-            const type = btn.dataset.type || '';
-            if (type) {
-                buttonMap[type] = btn;
+            existingButtonTypes.add(btn.dataset.type);
+        });
+
+        existingButtons.forEach(btn => {
+            const btnType = btn.dataset.type;
+            if (existingTypes.has(btnType)) {
+                btn.style.display = 'inline-block';
+                const match = predefinedTypes.find(item => item.type === btnType);
+                if (match) {
+                    btn.textContent = i18n.t(match.labelKey);
+                    btn.setAttribute('data-i18n-text', match.labelKey);
+                }
+            } else {
+                btn.style.display = 'none';
             }
         });
 
+        const predefinedTypeSet = new Set(predefinedTypes.map(t => t.type));
         existingTypes.forEach(type => {
-            const typeKey = type || 'all';
-            const normalized = typeKey.toLowerCase();
-            let btn = filterContainer.querySelector(`.filter-btn[data-type=\"${normalized}\"]`);
+            if (type !== 'all' && !predefinedTypeSet.has(type) && !existingButtonTypes.has(type)) {
+                const btn = document.createElement('button');
+                btn.className = 'filter-btn';
+                btn.dataset.type = type;
 
-            if (!btn) {
-                const labelKey = normalized === 'all'
-                    ? 'auth_files.filter_all'
-                    : `auth_files.filter_${normalized}`;
-                const label = i18n.t(labelKey);
-                btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'btn btn-small filter-btn';
-                btn.dataset.type = normalized;
-                btn.setAttribute('data-i18n-text', labelKey);
-                btn.textContent = label;
-                const emptyBtn = filterContainer.querySelector('.filter-btn[data-type=\"all\"]');
+                const match = predefinedTypes.find(item => item.type === type);
+                if (match) {
+                    btn.setAttribute('data-i18n-text', match.labelKey);
+                    btn.textContent = i18n.t(match.labelKey);
+                } else {
+                    const dynamicKey = `auth_files.filter_${type}`;
+                    btn.setAttribute('data-i18n-text', dynamicKey);
+                    btn.textContent = this.generateDynamicTypeLabel(type);
+                }
+
+                const emptyBtn = filterContainer.querySelector('[data-type=\"empty\"]');
                 if (emptyBtn) {
                     filterContainer.insertBefore(btn, emptyBtn);
                 } else {
