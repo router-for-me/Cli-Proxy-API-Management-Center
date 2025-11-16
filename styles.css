@@ -2703,6 +2703,42 @@ input:checked+.slider:before {
     margin-bottom: 30px;
 }
 
+.usage-filter-bar {
+    display: flex;
+    justify-content: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.usage-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 220px;
+}
+
+.usage-filter-group label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.model-filter-select {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 14px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 40px;
+    font-size: 14px;
+}
+
+.model-filter-select:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
 .stat-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);

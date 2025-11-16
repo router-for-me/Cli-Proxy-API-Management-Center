@@ -754,6 +754,7 @@ class CLIProxyManager {
         const requestsDayBtn = document.getElementById('requests-day-btn');
         const tokensHourBtn = document.getElementById('tokens-hour-btn');
         const tokensDayBtn = document.getElementById('tokens-day-btn');
+        const modelFilterSelect = document.getElementById('model-filter-select');
 
         if (refreshUsageStats) {
             refreshUsageStats.addEventListener('click', () => this.loadUsageStats());
@@ -769,6 +770,9 @@ class CLIProxyManager {
         }
         if (tokensDayBtn) {
             tokensDayBtn.addEventListener('click', () => this.switchTokensPeriod('day'));
+        }
+        if (modelFilterSelect) {
+            modelFilterSelect.addEventListener('change', (e) => this.handleModelFilterChange(e.target.value));
         }
 
         // 模态框
@@ -5856,6 +5860,7 @@ class CLIProxyManager {
     requestsChart = null;
     tokensChart = null;
     currentUsageData = null;
+    currentModelFilter = 'all';
 
     // 获取API密钥的统计信息
     async getKeyStats() {
@@ -5921,6 +5926,7 @@ class CLIProxyManager {
 
             // 更新概览卡片
             this.updateUsageOverview(usage);
+            this.updateModelFilterOptions(usage);
 
             // 读取当前图表周期
             const requestsHourActive = document.getElementById('requests-hour-btn')?.classList.contains('active');
@@ -5938,6 +5944,7 @@ class CLIProxyManager {
         } catch (error) {
             console.error('加载使用统计失败:', error);
             this.currentUsageData = null;
+            this.updateModelFilterOptions(null);
 
             // 清空概览数据
             ['total-requests', 'success-requests', 'failed-requests', 'total-tokens'].forEach(id => {
@@ -5971,6 +5978,90 @@ class CLIProxyManager {
         document.getElementById('total-tokens').textContent = safeData.total_tokens ?? 0;
     }
 
+    getModelNamesFromUsage(usage) {
+        if (!usage) {
+            return [];
+        }
+        const apis = usage.apis || {};
+        const names = new Set();
+        Object.values(apis).forEach(apiEntry => {
+            const models = apiEntry.models || {};
+            Object.keys(models).forEach(modelName => {
+                if (modelName) {
+                    names.add(modelName);
+                }
+            });
+        });
+        return Array.from(names).sort((a, b) => a.localeCompare(b));
+    }
+
+    updateModelFilterOptions(usage) {
+        const select = document.getElementById('model-filter-select');
+        if (!select) {
+            return;
+        }
+
+        const modelNames = this.getModelNamesFromUsage(usage);
+        const previousSelection = this.currentModelFilter || 'all';
+        const fragment = document.createDocumentFragment();
+
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = i18n.t('usage_stats.model_filter_all');
+        fragment.appendChild(allOption);
+
+        modelNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            fragment.appendChild(option);
+        });
+
+        select.innerHTML = '';
+        select.appendChild(fragment);
+
+        let nextSelection = previousSelection;
+        if (nextSelection !== 'all' && !modelNames.includes(nextSelection)) {
+            nextSelection = 'all';
+        }
+        this.currentModelFilter = nextSelection;
+        select.value = nextSelection;
+        select.disabled = modelNames.length === 0;
+    }
+
+    handleModelFilterChange(value) {
+        const normalized = value || 'all';
+        if (this.currentModelFilter === normalized) {
+            return;
+        }
+        this.currentModelFilter = normalized;
+        this.refreshChartsForModelFilter();
+    }
+
+    refreshChartsForModelFilter() {
+        if (!this.currentUsageData) {
+            return;
+        }
+        const requestsHourActive = document.getElementById('requests-hour-btn')?.classList.contains('active');
+        const tokensHourActive = document.getElementById('tokens-hour-btn')?.classList.contains('active');
+        const requestsPeriod = requestsHourActive ? 'hour' : 'day';
+        const tokensPeriod = tokensHourActive ? 'hour' : 'day';
+
+        if (this.requestsChart) {
+            this.requestsChart.data = this.getRequestsChartData(requestsPeriod);
+            this.requestsChart.update();
+        } else {
+            this.initializeRequestsChart(requestsPeriod);
+        }
+
+        if (this.tokensChart) {
+            this.tokensChart.data = this.getTokensChartData(tokensPeriod);
+            this.tokensChart.update();
+        } else {
+            this.initializeTokensChart(tokensPeriod);
+        }
+    }
+
     // 收集所有请求明细，供图表等复用
     collectUsageDetailsFromUsage(usage) {
         if (!usage) {
@@ -5980,11 +6071,14 @@ class CLIProxyManager {
         const details = [];
         Object.values(apis).forEach(apiEntry => {
             const models = apiEntry.models || {};
-            Object.values(models).forEach(modelEntry => {
+            Object.entries(models).forEach(([modelName, modelEntry]) => {
                 const modelDetails = Array.isArray(modelEntry.details) ? modelEntry.details : [];
                 modelDetails.forEach(detail => {
                     if (detail && detail.timestamp) {
-                        details.push(detail);
+                        details.push({
+                            ...detail,
+                            __modelName: modelName
+                        });
                     }
                 });
             });
@@ -6003,6 +6097,7 @@ class CLIProxyManager {
             return null;
         }
 
+        const modelFilter = this.currentModelFilter || 'all';
         const hourMs = 60 * 60 * 1000;
         const now = new Date();
         const currentHour = new Date(now);
@@ -6020,8 +6115,12 @@ class CLIProxyManager {
         }
 
         const latestBucketStart = earliestTime + (values.length - 1) * hourMs;
+        let hasMatch = false;
 
         details.forEach(detail => {
+            if (modelFilter !== 'all' && detail.__modelName !== modelFilter) {
+                return;
+            }
             const timestamp = Date.parse(detail.timestamp);
             if (Number.isNaN(timestamp)) {
                 return;
@@ -6044,8 +6143,56 @@ class CLIProxyManager {
             } else {
                 values[bucketIndex] += 1;
             }
+            hasMatch = true;
         });
 
+        if (!hasMatch) {
+            return modelFilter === 'all' ? null : { labels, values };
+        }
+
+        return { labels, values };
+    }
+
+    buildDailySeries(metric = 'requests') {
+        const details = this.collectUsageDetails();
+        if (!details.length) {
+            return null;
+        }
+
+        const modelFilter = this.currentModelFilter || 'all';
+        const dayBuckets = {};
+        let hasMatch = false;
+
+        details.forEach(detail => {
+            if (modelFilter !== 'all' && detail.__modelName !== modelFilter) {
+                return;
+            }
+            const timestamp = Date.parse(detail.timestamp);
+            if (Number.isNaN(timestamp)) {
+                return;
+            }
+            const dayLabel = this.formatDayLabel(new Date(timestamp));
+            if (!dayLabel) {
+                return;
+            }
+
+            if (!dayBuckets[dayLabel]) {
+                dayBuckets[dayLabel] = 0;
+            }
+            if (metric === 'tokens') {
+                dayBuckets[dayLabel] += this.extractTotalTokens(detail);
+            } else {
+                dayBuckets[dayLabel] += 1;
+            }
+            hasMatch = true;
+        });
+
+        if (!hasMatch) {
+            return modelFilter === 'all' ? null : { labels: [], values: [] };
+        }
+
+        const labels = Object.keys(dayBuckets).sort();
+        const values = labels.map(label => dayBuckets[label] || 0);
         return { labels, values };
     }
 
@@ -6058,6 +6205,16 @@ class CLIProxyManager {
         const day = date.getDate().toString().padStart(2, '0');
         const hour = date.getHours().toString().padStart(2, '0');
         return `${month}-${day} ${hour}:00`;
+    }
+
+    formatDayLabel(date) {
+        if (!(date instanceof Date)) {
+            return '';
+        }
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     extractTotalTokens(detail) {
@@ -6211,9 +6368,15 @@ class CLIProxyManager {
                 values = labels.map(hour => dataSource[hour] || 0);
             }
         } else {
-            dataSource = this.currentUsageData.requests_by_day || {};
-            labels = Object.keys(dataSource).sort();
-            values = labels.map(day => dataSource[day] || 0);
+            const dailySeries = this.buildDailySeries('requests');
+            if (dailySeries) {
+                labels = dailySeries.labels;
+                values = dailySeries.values;
+            } else {
+                dataSource = this.currentUsageData.requests_by_day || {};
+                labels = Object.keys(dataSource).sort();
+                values = labels.map(day => dataSource[day] || 0);
+            }
         }
 
         return {
@@ -6243,9 +6406,15 @@ class CLIProxyManager {
                 values = labels.map(hour => dataSource[hour] || 0);
             }
         } else {
-            dataSource = this.currentUsageData.tokens_by_day || {};
-            labels = Object.keys(dataSource).sort();
-            values = labels.map(day => dataSource[day] || 0);
+            const dailySeries = this.buildDailySeries('tokens');
+            if (dailySeries) {
+                labels = dailySeries.labels;
+                values = dailySeries.values;
+            } else {
+                dataSource = this.currentUsageData.tokens_by_day || {};
+                labels = Object.keys(dataSource).sort();
+                values = labels.map(day => dataSource[day] || 0);
+            }
         }
 
         return {
