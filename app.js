@@ -1,3 +1,4 @@
+// 模块导入
 import { themeModule } from './src/modules/theme.js';
 import { navigationModule } from './src/modules/navigation.js';
 import { languageModule } from './src/modules/language.js';
@@ -10,6 +11,24 @@ import { oauthModule } from './src/modules/oauth.js';
 import { usageModule } from './src/modules/usage.js';
 import { settingsModule } from './src/modules/settings.js';
 import { aiProvidersModule } from './src/modules/ai-providers.js';
+
+// 工具函数导入
+import { escapeHtml } from './src/utils/html.js';
+import { maskApiKey } from './src/utils/string.js';
+import { normalizeArrayResponse } from './src/utils/array.js';
+import {
+    CACHE_EXPIRY_MS,
+    MAX_LOG_LINES,
+    DEFAULT_API_PORT,
+    DEFAULT_AUTH_FILES_PAGE_SIZE,
+    MIN_AUTH_FILES_PAGE_SIZE,
+    MAX_AUTH_FILES_PAGE_SIZE,
+    OAUTH_CARD_IDS,
+    STORAGE_KEY_AUTH_FILES_PAGE_SIZE
+} from './src/utils/constants.js';
+
+// 核心服务导入
+import { createErrorHandler } from './src/core/error-handler.js';
 
 // CLI Proxy API 管理界面 JavaScript
 class CLIProxyManager {
@@ -25,7 +44,7 @@ class CLIProxyManager {
         // 配置缓存
         this.configCache = null;
         this.cacheTimestamp = null;
-        this.cacheExpiry = 30000; // 30秒缓存过期时间
+        this.cacheExpiry = CACHE_EXPIRY_MS;
 
         // 状态更新定时器
         this.statusUpdateTimer = null;
@@ -35,7 +54,7 @@ class CLIProxyManager {
 
         // 当前展示的日志行
         this.displayedLogLines = [];
-        this.maxDisplayLogLines = 10000;
+        this.maxDisplayLogLines = MAX_LOG_LINES;
 
         // 日志时间戳（用于增量加载）
         this.latestLogTimestamp = null;
@@ -44,13 +63,13 @@ class CLIProxyManager {
         this.currentAuthFileFilter = 'all';
         this.cachedAuthFiles = [];
         this.authFilesPagination = {
-            pageSize: 9,
+            pageSize: DEFAULT_AUTH_FILES_PAGE_SIZE,
             currentPage: 1,
             totalPages: 1
         };
         this.authFileStatsCache = {};
         this.authFileSearchQuery = '';
-        this.authFilesPageSizeKey = 'authFilesPageSize';
+        this.authFilesPageSizeKey = STORAGE_KEY_AUTH_FILES_PAGE_SIZE;
         this.loadAuthFilePreferences();
 
         // Vertex AI credential import state
@@ -76,6 +95,9 @@ class CLIProxyManager {
         this.lastConfigFetchUrl = null;
         this.lastEditorConnectionState = null;
 
+        // 初始化错误处理器
+        this.errorHandler = createErrorHandler((message, type) => this.showNotification(message, type));
+
         this.init();
     }
 
@@ -94,9 +116,9 @@ class CLIProxyManager {
     }
 
     normalizeAuthFilesPageSize(value) {
-        const defaultSize = 9;
-        const minSize = 3;
-        const maxSize = 60;
+        const defaultSize = DEFAULT_AUTH_FILES_PAGE_SIZE;
+        const minSize = MIN_AUTH_FILES_PAGE_SIZE;
+        const maxSize = MAX_AUTH_FILES_PAGE_SIZE;
         const parsed = parseInt(value, 10);
         if (!Number.isFinite(parsed) || parsed <= 0) {
             return defaultSize;
@@ -135,15 +157,7 @@ class CLIProxyManager {
 
         if (!isLocalhost) {
             // 隐藏所有 OAuth 登录卡片
-            const oauthCards = [
-                'codex-oauth-card',
-                'anthropic-oauth-card',
-                'gemini-cli-oauth-card',
-                'qwen-oauth-card',
-                'iflow-oauth-card'
-            ];
-
-            oauthCards.forEach(cardId => {
+            OAUTH_CARD_IDS.forEach(cardId => {
                 const card = document.getElementById(cardId);
                 if (card) {
                     card.style.display = 'none';
@@ -894,14 +908,6 @@ class CLIProxyManager {
         await this.renderOpenAIProviders(Array.isArray(config['openai-compatibility']) ? config['openai-compatibility'] : [], keyStats);
     }
 
-    // HTML转义工具函数
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-
     // 显示添加API密钥模态框
     showAddApiKeyModal() {
         const modal = document.getElementById('modal');
@@ -1041,7 +1047,7 @@ class CLIProxyManager {
             return this.normalizeBase(`${protocol}//${hostname}${normalizedPort}`);
         } catch (error) {
             console.warn('无法从当前地址检测 API 基础地址，使用默认设置', error);
-            return this.normalizeBase(this.apiBase || 'http://localhost:8317');
+            return this.normalizeBase(this.apiBase || `http://localhost:${DEFAULT_API_PORT}`);
         }
     }
 
@@ -1155,6 +1161,11 @@ Object.assign(
     settingsModule,
     aiProvidersModule
 );
+
+// 将工具函数绑定到原型上，供模块使用
+CLIProxyManager.prototype.escapeHtml = escapeHtml;
+CLIProxyManager.prototype.maskApiKey = maskApiKey;
+CLIProxyManager.prototype.normalizeArrayResponse = normalizeArrayResponse;
 
 // 全局管理器实例
 let manager;

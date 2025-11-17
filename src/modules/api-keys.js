@@ -49,46 +49,8 @@ export const apiKeysModule = {
         }).join('');
     },
 
-    // 遮蔽API密钥显示
-    maskApiKey(key) {
-        if (key === null || key === undefined) {
-            return '';
-        }
-        const normalizedKey = typeof key === 'string' ? key : String(key);
-        if (normalizedKey.length > 8) {
-            return normalizedKey.substring(0, 4) + '...' + normalizedKey.substring(normalizedKey.length - 4);
-        } else if (normalizedKey.length > 4) {
-            return normalizedKey.substring(0, 2) + '...' + normalizedKey.substring(normalizedKey.length - 2);
-        } else if (normalizedKey.length > 2) {
-            return normalizedKey.substring(0, 1) + '...' + normalizedKey.substring(normalizedKey.length - 1);
-        }
-        return normalizedKey;
-    },
-
-    // HTML 转义，防止 XSS
-    escapeHtml(value) {
-        if (value === null || value === undefined) return '';
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    },
-
-    // 兼容服务端返回的数组结构
-    normalizeArrayResponse(data, key) {
-        if (Array.isArray(data)) {
-            return data;
-        }
-        if (data && Array.isArray(data[key])) {
-            return data[key];
-        }
-        if (data && Array.isArray(data.items)) {
-            return data.items;
-        }
-        return [];
-    },
+    // 注意: escapeHtml, maskApiKey, normalizeArrayResponse
+    // 现在由 app.js 通过工具模块提供，通过 this 访问
 
     // 添加一行自定义请求头输入
     addHeaderField(wrapperId, header = {}) {

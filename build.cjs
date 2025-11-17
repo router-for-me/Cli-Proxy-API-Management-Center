@@ -85,37 +85,56 @@ function ensureDistDir() {
     fs.mkdirSync(distDir);
 }
 
-const importRegex = /^import\s+.+?from\s+['"](.+?)['"];?$/gm;
-const exportRegex = /^export\s+/gm;
+// 匹配各种 import 语句
+const importRegex = /import\s+(?:{[^}]*}|[\w*\s,{}]+)\s+from\s+['"]([^'"]+)['"];?/gm;
+// 匹配 export 关键字（包括 export const, export function, export class, export async function 等）
+const exportRegex = /^export\s+(?=const|let|var|function|class|default|async)/gm;
+// 匹配单独的 export {} 或 export { ... } from '...'
+const exportBraceRegex = /^export\s*{[^}]*}\s*(?:from\s+['"][^'"]+['"];?)?$/gm;
 
 function bundleApp(entryPath) {
     const visited = new Set();
+    const modules = [];
 
     function inlineFile(filePath) {
         let content = readFile(filePath);
         const dir = path.dirname(filePath);
 
+        // 收集所有 import 语句
+        const imports = [];
         content = content.replace(importRegex, (match, specifier) => {
             const targetPath = path.resolve(dir, specifier);
             const normalized = path.normalize(targetPath);
             if (!fs.existsSync(normalized)) {
                 throw new Error(`无法解析模块: ${specifier} (from ${filePath})`);
             }
-            if (visited.has(normalized)) {
-                return '';
+            if (!visited.has(normalized)) {
+                visited.add(normalized);
+                imports.push(normalized);
             }
-            visited.add(normalized);
-            let moduleContent = inlineFile(normalized);
-            moduleContent = moduleContent.replace(exportRegex, '');
-            const relativePath = path.relative(projectRoot, normalized);
-            return `\n// ${relativePath}\n${moduleContent}\n`;
+            return ''; // 移除 import 语句
         });
+
+        // 移除 export 关键字
+        content = content.replace(exportRegex, '');
+        content = content.replace(exportBraceRegex, '');
+
+        // 处理依赖的模块
+        for (const importPath of imports) {
+            const moduleContent = inlineFile(importPath);
+            const relativePath = path.relative(projectRoot, importPath);
+            modules.push(`\n// ============ ${relativePath} ============\n${moduleContent}\n`);
+        }
 
         return content;
     }
 
-    return inlineFile(entryPath);
+    const mainContent = inlineFile(entryPath);
+
+    // 将所有模块内容组合在一起，模块在前，主文件在后
+    return modules.join('\n') + '\n// ============ Main ============\n' + mainContent;
 }
+
 
 function loadLogoDataUrl() {
     for (const candidate of logoCandidates) {

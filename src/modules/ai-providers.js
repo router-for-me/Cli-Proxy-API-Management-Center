@@ -1,4 +1,4 @@
-// AI 提供商配置相关方法模块（当前只抽取 Gemini 相关逻辑）
+// AI 提供商配置相关方法模块
 // 这些函数依赖于 CLIProxyManager 实例上的 makeRequest/getConfig/clearCache/showNotification 等能力，
 // 以及 apiKeysModule 中的工具方法（如 applyHeadersToConfig/renderHeaderBadges）。
 
