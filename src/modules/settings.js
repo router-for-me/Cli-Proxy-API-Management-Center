@@ -1,81 +1,106 @@
 // 设置与开关相关方法模块
-// 注意：这些函数依赖于在 CLIProxyManager 实例上提供的 makeRequest/clearCache/showNotification 等基础能力
+// 注意：这些函数依赖于在 CLIProxyManager 实例上提供的 makeRequest/clearCache/showNotification/errorHandler 等基础能力
 
 export async function updateDebug(enabled) {
+    const previousValue = !enabled;
     try {
         await this.makeRequest('/debug', {
             method: 'PUT',
             body: JSON.stringify({ value: enabled })
         });
-        this.clearCache(); // 清除缓存
+        this.clearCache('debug'); // 仅清除 debug 配置段的缓存
         this.showNotification(i18n.t('notification.debug_updated'), 'success');
     } catch (error) {
-        this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
-        // 恢复原状态
-        document.getElementById('debug-toggle').checked = !enabled;
+        this.errorHandler.handleUpdateError(
+            error,
+            i18n.t('settings.debug_mode') || '调试模式',
+            () => document.getElementById('debug-toggle').checked = previousValue
+        );
     }
 }
 
 export async function updateProxyUrl() {
     const proxyUrl = document.getElementById('proxy-url').value.trim();
+    const previousValue = document.getElementById('proxy-url').getAttribute('data-previous-value') || '';
 
     try {
         await this.makeRequest('/proxy-url', {
             method: 'PUT',
             body: JSON.stringify({ value: proxyUrl })
         });
-        this.clearCache(); // 清除缓存
+        this.clearCache('proxy-url'); // 仅清除 proxy-url 配置段的缓存
+        document.getElementById('proxy-url').setAttribute('data-previous-value', proxyUrl);
         this.showNotification(i18n.t('notification.proxy_updated'), 'success');
     } catch (error) {
-        this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
+        this.errorHandler.handleUpdateError(
+            error,
+            i18n.t('settings.proxy_url') || '代理设置',
+            () => document.getElementById('proxy-url').value = previousValue
+        );
     }
 }
 
 export async function clearProxyUrl() {
+    const previousValue = document.getElementById('proxy-url').value;
+
     try {
         await this.makeRequest('/proxy-url', { method: 'DELETE' });
         document.getElementById('proxy-url').value = '';
-        this.clearCache(); // 清除缓存
+        document.getElementById('proxy-url').setAttribute('data-previous-value', '');
+        this.clearCache('proxy-url'); // 仅清除 proxy-url 配置段的缓存
         this.showNotification(i18n.t('notification.proxy_cleared'), 'success');
     } catch (error) {
-        this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
+        this.errorHandler.handleUpdateError(
+            error,
+            i18n.t('settings.proxy_url') || '代理设置',
+            () => document.getElementById('proxy-url').value = previousValue
+        );
     }
 }
 
 export async function updateRequestRetry() {
-    const retryCount = parseInt(document.getElementById('request-retry').value);
+    const retryInput = document.getElementById('request-retry');
+    const retryCount = parseInt(retryInput.value);
+    const previousValue = retryInput.getAttribute('data-previous-value') || '0';
 
     try {
         await this.makeRequest('/request-retry', {
             method: 'PUT',
             body: JSON.stringify({ value: retryCount })
         });
-        this.clearCache(); // 清除缓存
+        this.clearCache('request-retry'); // 仅清除 request-retry 配置段的缓存
+        retryInput.setAttribute('data-previous-value', retryCount.toString());
         this.showNotification(i18n.t('notification.retry_updated'), 'success');
     } catch (error) {
-        this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
+        this.errorHandler.handleUpdateError(
+            error,
+            i18n.t('settings.request_retry') || '重试设置',
+            () => retryInput.value = previousValue
+        );
     }
 }
 
 export async function loadDebugSettings() {
     try {
-        const config = await this.getConfig();
-        if (config.debug !== undefined) {
-            document.getElementById('debug-toggle').checked = config.debug;
+        const debugValue = await this.getConfig('debug'); // 仅获取 debug 配置段
+        if (debugValue !== undefined) {
+            document.getElementById('debug-toggle').checked = debugValue;
         }
     } catch (error) {
-        console.error('加载调试设置失败:', error);
+        this.errorHandler.handleLoadError(error, i18n.t('settings.debug_mode') || '调试设置');
     }
 }
 
 export async function loadProxySettings() {
     try {
-        const config = await this.getConfig();
-        if (config['proxy-url'] !== undefined) {
-            document.getElementById('proxy-url').value = config['proxy-url'] || '';
+        const proxyUrl = await this.getConfig('proxy-url'); // 仅获取 proxy-url 配置段
+        const proxyInput = document.getElementById('proxy-url');
+        if (proxyUrl !== undefined) {
+            proxyInput.value = proxyUrl || '';
+            proxyInput.setAttribute('data-previous-value', proxyUrl || '');
         }
     } catch (error) {
-        console.error('加载代理设置失败:', error);
+        this.errorHandler.handleLoadError(error, i18n.t('settings.proxy_settings') || '代理设置');
     }
 }
 

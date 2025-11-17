@@ -24,7 +24,8 @@ import {
     MIN_AUTH_FILES_PAGE_SIZE,
     MAX_AUTH_FILES_PAGE_SIZE,
     OAUTH_CARD_IDS,
-    STORAGE_KEY_AUTH_FILES_PAGE_SIZE
+    STORAGE_KEY_AUTH_FILES_PAGE_SIZE,
+    STATUS_UPDATE_INTERVAL_MS
 } from './src/utils/constants.js';
 
 // 核心服务导入
@@ -41,9 +42,9 @@ class CLIProxyManager {
         this.isConnected = false;
         this.isLoggedIn = false;
 
-        // 配置缓存
-        this.configCache = null;
-        this.cacheTimestamp = null;
+        // 配置缓存 - 改为分段缓存
+        this.configCache = {};  // 改为对象，按配置段缓存
+        this.cacheTimestamps = {};  // 每个配置段的时间戳
         this.cacheExpiry = CACHE_EXPIRY_MS;
 
         // 状态更新定时器
@@ -708,37 +709,91 @@ class CLIProxyManager {
     }
 
     // 检查缓存是否有效
-    isCacheValid() {
-        if (!this.configCache || !this.cacheTimestamp) {
+    isCacheValid(section = null) {
+        if (section) {
+            // 检查特定配置段的缓存
+            // 注意：配置值可能是 false、0、'' 等 falsy 值，不能用 ! 判断
+            if (!(section in this.configCache) || !(section in this.cacheTimestamps)) {
+                return false;
+            }
+            return (Date.now() - this.cacheTimestamps[section]) < this.cacheExpiry;
+        }
+        // 检查全局缓存（兼容旧代码）
+        if (!this.configCache['__full__'] || !this.cacheTimestamps['__full__']) {
             return false;
         }
-        return (Date.now() - this.cacheTimestamp) < this.cacheExpiry;
+        return (Date.now() - this.cacheTimestamps['__full__']) < this.cacheExpiry;
     }
 
-    // 获取配置（优先使用缓存）
-    async getConfig(forceRefresh = false) {
-        if (!forceRefresh && this.isCacheValid()) {
-            this.updateConnectionStatus(); // 更新状态显示
-            return this.configCache;
+    // 获取配置（优先使用缓存，支持按段获取）
+    async getConfig(section = null, forceRefresh = false) {
+        const now = Date.now();
+
+        // 如果请求特定配置段且该段缓存有效
+        if (section && !forceRefresh && this.isCacheValid(section)) {
+            this.updateConnectionStatus();
+            return this.configCache[section];
+        }
+
+        // 如果请求全部配置且全局缓存有效
+        if (!section && !forceRefresh && this.isCacheValid()) {
+            this.updateConnectionStatus();
+            return this.configCache['__full__'];
         }
 
         try {
             const config = await this.makeRequest('/config');
-            this.configCache = config;
-            this.cacheTimestamp = Date.now();
-            this.updateConnectionStatus(); // 更新状态显示
-            return config;
+
+            if (section) {
+                // 缓存特定配置段
+                this.configCache[section] = config[section];
+                this.cacheTimestamps[section] = now;
+                // 同时更新全局缓存中的这一段
+                if (this.configCache['__full__']) {
+                    this.configCache['__full__'][section] = config[section];
+                } else {
+                    // 如果全局缓存不存在，也创建它
+                    this.configCache['__full__'] = config;
+                    this.cacheTimestamps['__full__'] = now;
+                }
+                this.updateConnectionStatus();
+                return config[section];
+            } else {
+                // 缓存全部配置
+                this.configCache['__full__'] = config;
+                this.cacheTimestamps['__full__'] = now;
+
+                // 同时缓存各个配置段
+                Object.keys(config).forEach(key => {
+                    this.configCache[key] = config[key];
+                    this.cacheTimestamps[key] = now;
+                });
+
+                this.updateConnectionStatus();
+                return config;
+            }
         } catch (error) {
             console.error('获取配置失败:', error);
             throw error;
         }
     }
 
-    // 清除缓存
-    clearCache() {
-        this.configCache = null;
-        this.cacheTimestamp = null;
-        this.configYamlCache = '';
+    // 清除缓存（支持清除特定配置段）
+    clearCache(section = null) {
+        if (section) {
+            // 清除特定配置段的缓存
+            delete this.configCache[section];
+            delete this.cacheTimestamps[section];
+            // 同时清除全局缓存中的这一段
+            if (this.configCache['__full__']) {
+                delete this.configCache['__full__'][section];
+            }
+        } else {
+            // 清除所有缓存
+            this.configCache = {};
+            this.cacheTimestamps = {};
+            this.configYamlCache = '';
+        }
     }
 
     // 启动状态更新定时器
@@ -750,7 +805,7 @@ class CLIProxyManager {
             if (this.isConnected) {
                 this.updateConnectionStatus();
             }
-        }, 1000); // 每秒更新一次
+        }, STATUS_UPDATE_INTERVAL_MS);
     }
 
     // 停止状态更新定时器
@@ -766,7 +821,8 @@ class CLIProxyManager {
         try {
             console.log(i18n.t('system_info.real_time_data'));
             // 使用新的 /config 端点一次性获取所有配置
-            const config = await this.getConfig(forceRefresh);
+            // 注意：getConfig(section, forceRefresh)，不传 section 表示获取全部
+            const config = await this.getConfig(null, forceRefresh);
 
             // 获取一次usage统计数据，供渲染函数和loadUsageStats复用
             let usageData = null;
