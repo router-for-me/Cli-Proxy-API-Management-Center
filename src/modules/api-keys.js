@@ -230,6 +230,111 @@ export const apiKeysModule = {
         };
         this.applyHeadersToConfig(result, headers);
         return result;
+    },
+
+    // 显示添加API密钥模态框
+    showAddApiKeyModal() {
+        const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modal-body');
+
+        modalBody.innerHTML = `
+            <h3>${i18n.t('api_keys.add_modal_title')}</h3>
+            <div class="form-group">
+                <label for="new-api-key">${i18n.t('api_keys.add_modal_key_label')}</label>
+                <input type="text" id="new-api-key" placeholder="${i18n.t('api_keys.add_modal_key_placeholder')}">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.addApiKey()">${i18n.t('common.add')}</button>
+            </div>
+        `;
+
+        modal.style.display = 'block';
+    },
+
+    // 添加API密钥
+    async addApiKey() {
+        const newKey = document.getElementById('new-api-key').value.trim();
+
+        if (!newKey) {
+            this.showNotification(`${i18n.t('notification.please_enter')} ${i18n.t('notification.api_key')}`, 'error');
+            return;
+        }
+
+        try {
+            const data = await this.makeRequest('/api-keys');
+            const currentKeys = data['api-keys'] || [];
+            currentKeys.push(newKey);
+
+            await this.makeRequest('/api-keys', {
+                method: 'PUT',
+                body: JSON.stringify(currentKeys)
+            });
+
+            this.clearCache(); // 清除缓存
+            this.closeModal();
+            this.loadApiKeys();
+            this.showNotification(i18n.t('notification.api_key_added'), 'success');
+        } catch (error) {
+            this.showNotification(`${i18n.t('notification.add_failed')}: ${error.message}`, 'error');
+        }
+    },
+
+    // 编辑API密钥
+    editApiKey(index, currentKey) {
+        const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modal-body');
+
+        modalBody.innerHTML = `
+            <h3>${i18n.t('api_keys.edit_modal_title')}</h3>
+            <div class="form-group">
+                <label for="edit-api-key">${i18n.t('api_keys.edit_modal_key_label')}</label>
+                <input type="text" id="edit-api-key" value="${currentKey}">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" onclick="manager.updateApiKey(${index})">${i18n.t('common.update')}</button>
+            </div>
+        `;
+
+        modal.style.display = 'block';
+    },
+
+    // 更新API密钥
+    async updateApiKey(index) {
+        const newKey = document.getElementById('edit-api-key').value.trim();
+
+        if (!newKey) {
+            this.showNotification(`${i18n.t('notification.please_enter')} ${i18n.t('notification.api_key')}`, 'error');
+            return;
+        }
+
+        try {
+            await this.makeRequest('/api-keys', {
+                method: 'PATCH',
+                body: JSON.stringify({ index, value: newKey })
+            });
+
+            this.clearCache(); // 清除缓存
+            this.closeModal();
+            this.loadApiKeys();
+            this.showNotification(i18n.t('notification.api_key_updated'), 'success');
+        } catch (error) {
+            this.showNotification(`${i18n.t('notification.update_failed')}: ${error.message}`, 'error');
+        }
+    },
+
+    // 删除API密钥
+    async deleteApiKey(index) {
+        if (!confirm(i18n.t('api_keys.delete_confirm'))) return;
+
+        try {
+            await this.makeRequest(`/api-keys?index=${index}`, { method: 'DELETE' });
+            this.clearCache(); // 清除缓存
+            this.loadApiKeys();
+            this.showNotification(i18n.t('notification.api_key_deleted'), 'success');
+        } catch (error) {
+            this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
+        }
     }
 };
-
