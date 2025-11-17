@@ -271,7 +271,7 @@ export const apiKeysModule = {
                 body: JSON.stringify(currentKeys)
             });
 
-            this.clearCache(); // 清除缓存
+            this.clearCache('api-keys'); // 仅清除 api-keys 段缓存
             this.closeModal();
             this.loadApiKeys();
             this.showNotification(i18n.t('notification.api_key_added'), 'success');
@@ -315,7 +315,7 @@ export const apiKeysModule = {
                 body: JSON.stringify({ index, value: newKey })
             });
 
-            this.clearCache(); // 清除缓存
+            this.clearCache('api-keys'); // 仅清除 api-keys 段缓存
             this.closeModal();
             this.loadApiKeys();
             this.showNotification(i18n.t('notification.api_key_updated'), 'success');
@@ -330,7 +330,7 @@ export const apiKeysModule = {
 
         try {
             await this.makeRequest(`/api-keys?index=${index}`, { method: 'DELETE' });
-            this.clearCache(); // 清除缓存
+            this.clearCache('api-keys'); // 仅清除 api-keys 段缓存
             this.loadApiKeys();
             this.showNotification(i18n.t('notification.api_key_deleted'), 'success');
         } catch (error) {

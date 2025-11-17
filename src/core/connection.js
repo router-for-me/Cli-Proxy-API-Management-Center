@@ -297,38 +297,7 @@ export const connectionModule = {
                 const response = await this.makeRequest('/usage');
                 usageData = response?.usage || null;
                 if (usageData) {
-                    // 从usage数据中提取keyStats
-                    const sourceStats = {};
-                    const apis = usageData.apis || {};
-
-                    Object.values(apis).forEach(apiEntry => {
-                        const models = apiEntry.models || {};
-
-                        Object.values(models).forEach(modelEntry => {
-                            const details = modelEntry.details || [];
-
-                            details.forEach(detail => {
-                                const source = detail.source;
-                                if (!source) return;
-
-                                if (!sourceStats[source]) {
-                                    sourceStats[source] = {
-                                        success: 0,
-                                        failure: 0
-                                    };
-                                }
-
-                                const isFailed = detail.failed === true;
-                                if (isFailed) {
-                                    sourceStats[source].failure += 1;
-                                } else {
-                                    sourceStats[source].success += 1;
-                                }
-                            });
-                        });
-                    });
-
-                    keyStats = sourceStats;
+                    keyStats = await this.getKeyStats(usageData);
                 }
             } catch (error) {
                 console.warn('获取usage统计失败:', error);
@@ -438,4 +407,3 @@ export const connectionModule = {
         }
     }
 };
-

@@ -24,7 +24,8 @@ import {
     MIN_AUTH_FILES_PAGE_SIZE,
     MAX_AUTH_FILES_PAGE_SIZE,
     OAUTH_CARD_IDS,
-    STORAGE_KEY_AUTH_FILES_PAGE_SIZE
+    STORAGE_KEY_AUTH_FILES_PAGE_SIZE,
+    NOTIFICATION_DURATION_MS
 } from './src/utils/constants.js';
 
 // 核心服务导入
@@ -514,7 +515,7 @@ class CLIProxyManager {
 
         setTimeout(() => {
             notification.classList.remove('show');
-        }, 3000);
+        }, NOTIFICATION_DURATION_MS);
     }
 
     // 密钥可见性切换

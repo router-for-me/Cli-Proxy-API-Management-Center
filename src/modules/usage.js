@@ -1,9 +1,12 @@
 // 获取API密钥的统计信息
-export async function getKeyStats() {
+export async function getKeyStats(usageData = null) {
     try {
-        const response = await this.makeRequest('/usage');
-        const usage = response?.usage || null;
-        
+        let usage = usageData;
+        if (!usage) {
+            const response = await this.makeRequest('/usage');
+            usage = response?.usage || null;
+        }
+
         if (!usage) {
             return {};
         }
@@ -20,7 +23,7 @@ export async function getKeyStats() {
                 details.forEach(detail => {
                     const source = detail.source;
                     if (!source) return;
-                    
+
                     if (!sourceStats[source]) {
                         sourceStats[source] = {
                             success: 0,
