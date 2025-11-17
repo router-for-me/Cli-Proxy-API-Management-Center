@@ -979,5 +979,52 @@ export const authFilesModule = {
         } catch (error) {
             this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
+    },
+
+    // 触发文件上传选择器
+    uploadAuthFile() {
+        const authFileInput = document.getElementById('auth-file-input');
+        if (authFileInput) {
+            authFileInput.click();
+        }
+    },
+
+    // 处理文件上传
+    async handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.name.endsWith('.json')) {
+            this.showNotification(i18n.t('auth_files.upload_error_json'), 'error');
+            event.target.value = '';
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file, file.name);
+
+            const response = await fetch(`${this.apiUrl}/auth-files`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.managementKey}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP ${response.status}`);
+            }
+
+            this.clearCache(); // 清除缓存
+            await this.loadAuthFiles();
+            this.showNotification(i18n.t('auth_files.upload_success'), 'success');
+        } catch (error) {
+            this.showNotification(`${i18n.t('notification.upload_failed')}: ${error.message}`, 'error');
+        } finally {
+            // 清空文件输入框,允许重复上传同一文件
+            event.target.value = '';
+        }
     }
 };
