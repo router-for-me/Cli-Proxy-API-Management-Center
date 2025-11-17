@@ -51,7 +51,7 @@ export const OAUTH_MAX_POLL_DURATION_MS = 5 * 60 * 1000;
  * 最大日志显示行数
  * 限制内存占用，避免大量日志导致页面卡顿
  */
-export const MAX_LOG_LINES = 10000;
+export const MAX_LOG_LINES = 2000;
 
 /**
  * 认证文件列表默认每页显示数量

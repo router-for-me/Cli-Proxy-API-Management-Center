@@ -2,10 +2,10 @@ export const apiKeysModule = {
     // 加载API密钥
     async loadApiKeys() {
         try {
-            const config = await this.getConfig();
-            if (config['api-keys']) {
-                this.renderApiKeys(config['api-keys']);
-            }
+            const data = await this.makeRequest('/api-keys');
+            const apiKeysValue = data?.['api-keys'] || [];
+            const keys = Array.isArray(apiKeysValue) ? apiKeysValue : [];
+            this.renderApiKeys(keys);
         } catch (error) {
             console.error('加载API密钥失败:', error);
         }
