@@ -2,6 +2,7 @@
 // 提供 API 基础地址规范化、请求封装、配置缓存以及统一数据加载能力
 
 import { STATUS_UPDATE_INTERVAL_MS, DEFAULT_API_PORT } from '../utils/constants.js';
+import { secureStorage } from '../utils/secure-storage.js';
 
 export const connectionModule = {
     // 规范化基础地址，移除尾部斜杠与 /v0/management
@@ -28,16 +29,18 @@ export const connectionModule = {
     setApiBase(newBase) {
         this.apiBase = this.normalizeBase(newBase);
         this.apiUrl = this.computeApiUrl(this.apiBase);
-        localStorage.setItem('apiBase', this.apiBase);
-        localStorage.setItem('apiUrl', this.apiUrl); // 兼容旧字段
+        secureStorage.setItem('apiBase', this.apiBase);
+        secureStorage.setItem('apiUrl', this.apiUrl); // 兼容旧字段
         this.updateLoginConnectionInfo();
     },
 
     // 加载设置（简化版，仅加载内部状态）
     loadSettings() {
-        const savedBase = localStorage.getItem('apiBase');
-        const savedUrl = localStorage.getItem('apiUrl');
-        const savedKey = localStorage.getItem('managementKey');
+        secureStorage.migratePlaintextKeys(['apiBase', 'apiUrl', 'managementKey']);
+
+        const savedBase = secureStorage.getItem('apiBase');
+        const savedUrl = secureStorage.getItem('apiUrl');
+        const savedKey = secureStorage.getItem('managementKey');
 
         if (savedBase) {
             this.setApiBase(savedBase);

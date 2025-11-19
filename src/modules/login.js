@@ -1,7 +1,12 @@
+import { secureStorage } from '../utils/secure-storage.js';
+
 export const loginModule = {
     async checkLoginStatus() {
-        const savedBase = localStorage.getItem('apiBase');
-        const savedKey = localStorage.getItem('managementKey');
+        // 将旧的明文缓存迁移为加密格式
+        secureStorage.migratePlaintextKeys(['apiBase', 'apiUrl', 'managementKey']);
+
+        const savedBase = secureStorage.getItem('apiBase');
+        const savedKey = secureStorage.getItem('managementKey');
         const wasLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
 
         if (savedBase && savedKey && wasLoggedIn) {
@@ -75,7 +80,7 @@ export const loginModule = {
         try {
             this.setApiBase(apiBase);
             this.managementKey = managementKey;
-            localStorage.setItem('managementKey', this.managementKey);
+            secureStorage.setItem('managementKey', this.managementKey);
 
             await this.testConnection();
 
@@ -97,7 +102,7 @@ export const loginModule = {
         this.stopStatusUpdateTimer();
 
         localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('managementKey');
+        secureStorage.removeItem('managementKey');
 
         this.showLoginPage();
     },
@@ -127,7 +132,7 @@ export const loginModule = {
             this.hideLoginError();
 
             this.managementKey = managementKey;
-            localStorage.setItem('managementKey', this.managementKey);
+            secureStorage.setItem('managementKey', this.managementKey);
 
             await this.login(this.apiBase, this.managementKey);
         } catch (error) {
@@ -186,8 +191,8 @@ export const loginModule = {
     },
 
     loadLoginSettings() {
-        const savedBase = localStorage.getItem('apiBase');
-        const savedKey = localStorage.getItem('managementKey');
+        const savedBase = secureStorage.getItem('apiBase');
+        const savedKey = secureStorage.getItem('managementKey');
         const loginKeyInput = document.getElementById('login-management-key');
         const apiBaseInput = document.getElementById('login-api-base');
 
@@ -216,7 +221,7 @@ export const loginModule = {
         const saveKey = (val) => {
             if (val.trim()) {
                 this.managementKey = val;
-                localStorage.setItem('managementKey', this.managementKey);
+                secureStorage.setItem('managementKey', this.managementKey);
             }
         };
         const saveKeyDebounced = this.debounce(saveKey, 500);
