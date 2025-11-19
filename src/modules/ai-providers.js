@@ -91,7 +91,7 @@ export async function renderGeminiKeys(keys, keyStats = null) {
             <div class="key-item">
                 <div class="item-content">
                     <div class="item-title">${i18n.t('ai_providers.gemini_item_title')} #${index + 1}</div>
-                    <div class="item-value">${maskedDisplay}</div>
+                    <div class="item-subtitle">${i18n.t('common.api_key')}: ${maskedDisplay}</div>
                     ${baseUrl ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(baseUrl)}</div>` : ''}
                     ${this.renderHeaderBadges(config.headers)}
                     <div class="item-stats">
