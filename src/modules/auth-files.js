@@ -788,9 +788,6 @@ export const authFilesModule = {
     },
 
     showAuthFileDetails(filename, content) {
-        const detailsElement = document.getElementById('auth-file-details');
-        if (!detailsElement) return;
-
         const file = (this.cachedAuthFiles || []).find(f => f && f.name === filename);
         if (!file) return;
 
@@ -802,13 +799,14 @@ export const authFilesModule = {
 
         const jsonContent = content || JSON.stringify(file, null, 2);
 
+        // 使用独立的 JSON 弹窗样式，避免被通用 .modal 的 display:none 覆盖
         const modalHtml = `
-            <div class="modal-overlay" id="json-modal">
-                <div class="modal json-modal">
-                    <div class="modal-header">
+            <div class="json-modal" id="json-modal">
+                <div class="json-modal-content">
+                    <div class="json-modal-header">
                         <h3>${i18n.t('auth_files.details_title')} - ${this.escapeHtml(filename)}</h3>
                     </div>
-                    <div class="modal-body">
+                    <div class="json-modal-body">
                         <div class="auth-file-meta">
                             <div><strong>${i18n.t('auth_files.details_type')}:</strong> ${this.escapeHtml(type)}</div>
                             <div><strong>${i18n.t('auth_files.details_provider')}:</strong> ${this.escapeHtml(provider)}</div>
@@ -819,7 +817,7 @@ export const authFilesModule = {
                         </div>
                         <pre class="json-content">${this.escapeHtml(jsonContent)}</pre>
                     </div>
-                    <div class="modal-footer">
+                    <div class="json-modal-footer">
                         <button class="btn btn-secondary" data-action="copy">
                             <i class="fas fa-copy"></i>
                             ${i18n.t('common.copy')}

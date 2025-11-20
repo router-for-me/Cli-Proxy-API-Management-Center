@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "npx serve .",
-    "dev": "npx serve . --port 3000",
+    "dev": "npx serve . -l 3090",
     "build": "node build.cjs",
     "lint": "echo '使用浏览器开发者工具检查代码'"
   },
