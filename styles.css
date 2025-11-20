@@ -1776,6 +1776,26 @@ input:checked+.slider:before {
     color: #64b5f6;
 }
 
+.file-type-badge.gemini-cli {
+    background: #4f8de2;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .file-type-badge.gemini-cli {
+    background: #4f8de2;
+    color: #eaf1fb;
+}
+
+.file-type-badge.aistudio {
+    background: #2a2b2e;
+    color: #f1f1f3;
+}
+
+[data-theme="dark"] .file-type-badge.aistudio {
+    background: #2a2b2e;
+    color: #d8dbe1;
+}
+
 .file-type-badge.claude {
     background: #fce4ec;
     color: #c2185b;
@@ -1817,13 +1837,13 @@ input:checked+.slider:before {
 }
 
 /* 未知类型通用样式 */
-.file-type-badge:not(.qwen):not(.gemini):not(.claude):not(.codex):not(.iflow):not(.empty) {
+.file-type-badge:not(.qwen):not(.gemini):not(.gemini-cli):not(.aistudio):not(.claude):not(.codex):not(.iflow):not(.empty) {
     background: #f0f0f0;
     color: #666666;
     border: 1px dashed #999999;
 }
 
-[data-theme="dark"] .file-type-badge:not(.qwen):not(.gemini):not(.claude):not(.codex):not(.iflow):not(.empty) {
+[data-theme="dark"] .file-type-badge:not(.qwen):not(.gemini):not(.gemini-cli):not(.aistudio):not(.claude):not(.codex):not(.iflow):not(.empty) {
     background: #3a3a3a;
     color: #aaaaaa;
     border: 1px dashed #666666;
