@@ -100,6 +100,7 @@ export const loginModule = {
         this.isConnected = false;
         this.clearCache();
         this.stopStatusUpdateTimer();
+        this.resetVersionInfo();
 
         localStorage.removeItem('isLoggedIn');
         secureStorage.removeItem('managementKey');

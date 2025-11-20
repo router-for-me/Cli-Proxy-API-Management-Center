@@ -732,6 +732,8 @@ export const authFilesModule = {
                 body: formData
             });
 
+            this.updateVersionFromHeaders(response.headers);
+
             if (!response.ok) {
                 let errorMessage = `HTTP ${response.status}`;
                 try {
@@ -891,6 +893,8 @@ export const authFilesModule = {
                 }
             });
 
+            this.updateVersionFromHeaders(response.headers);
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
@@ -1028,6 +1032,8 @@ export const authFilesModule = {
                 },
                 body: formData
             });
+
+            this.updateVersionFromHeaders(response.headers);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));

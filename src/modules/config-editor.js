@@ -160,6 +160,8 @@ export const configEditorModule = {
                 }
             });
 
+            this.updateVersionFromHeaders(response.headers);
+
             if (!response.ok) {
                 const errorText = await response.text().catch(() => '');
                 const message = errorText || `HTTP ${response.status}`;
@@ -234,6 +236,8 @@ export const configEditorModule = {
             },
             body: yamlText
         });
+
+        this.updateVersionFromHeaders(response.headers);
 
         if (!response.ok) {
             const contentType = response.headers.get('content-type') || '';

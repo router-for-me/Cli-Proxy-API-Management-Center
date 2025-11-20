@@ -58,6 +58,95 @@ export const connectionModule = {
         this.updateLoginConnectionInfo();
     },
 
+    // 读取并填充管理中心版本号（可能来自构建时注入或占位符）
+    initUiVersion() {
+        const uiVersion = this.readUiVersionFromDom();
+        this.uiVersion = uiVersion;
+        this.renderVersionInfo();
+    },
+
+    // 从 DOM 获取版本占位符，并处理空值、引号或未替换的占位符
+    readUiVersionFromDom() {
+        const el = document.getElementById('ui-version');
+        if (!el) return null;
+
+        const raw = (el.dataset && el.dataset.uiVersion) ? el.dataset.uiVersion : el.textContent;
+        if (typeof raw !== 'string') return null;
+
+        const cleaned = raw.replace(/^"+|"+$/g, '').trim();
+        if (!cleaned || cleaned === '__VERSION__') {
+            return null;
+        }
+        return cleaned;
+    },
+
+    // 根据响应头更新版本与构建时间
+    updateVersionFromHeaders(headers) {
+        if (!headers || typeof headers.get !== 'function') {
+            return;
+        }
+
+        const version = headers.get('X-CPA-VERSION');
+        const buildDate = headers.get('X-CPA-BUILD-DATE');
+        let updated = false;
+
+        if (version && version !== this.serverVersion) {
+            this.serverVersion = version;
+            updated = true;
+        }
+
+        if (buildDate && buildDate !== this.serverBuildDate) {
+            this.serverBuildDate = buildDate;
+            updated = true;
+        }
+
+        if (updated) {
+            this.renderVersionInfo();
+        }
+    },
+
+    // 渲染底栏的版本与构建时间
+    renderVersionInfo() {
+        const versionEl = document.getElementById('api-version');
+        const buildDateEl = document.getElementById('api-build-date');
+        const uiVersionEl = document.getElementById('ui-version');
+
+        if (versionEl) {
+            versionEl.textContent = this.serverVersion || '-';
+        }
+
+        if (buildDateEl) {
+            buildDateEl.textContent = this.serverBuildDate
+                ? this.formatBuildDate(this.serverBuildDate)
+                : '-';
+        }
+
+        if (uiVersionEl) {
+            const domVersion = this.readUiVersionFromDom();
+            uiVersionEl.textContent = this.uiVersion || domVersion || 'v0.0.0-dev';
+        }
+    },
+
+    // 清空版本信息（例如登出时）
+    resetVersionInfo() {
+        this.serverVersion = null;
+        this.serverBuildDate = null;
+        this.renderVersionInfo();
+    },
+
+    // 格式化构建时间，优先使用界面语言对应的本地格式
+    formatBuildDate(buildDate) {
+        if (!buildDate) return '-';
+
+        const parsed = Date.parse(buildDate);
+        if (!Number.isNaN(parsed)) {
+            const locale = i18n?.currentLanguage || undefined;
+            return new Date(parsed).toLocaleString(locale);
+        }
+
+        return buildDate;
+    },
+
     // API 请求方法
     async makeRequest(endpoint, options = {}) {
         const url = `${this.apiUrl}${endpoint}`;
@@ -72,6 +161,8 @@ export const connectionModule = {
                 ...options,
                 headers
             });
+
+            this.updateVersionFromHeaders(response.headers);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));

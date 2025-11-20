@@ -508,7 +508,9 @@ const i18n = {
             'sidebar.toggle_collapse': '收起侧边栏',
 
             // 页脚
-            'footer.version': '版本',
+            'footer.api_version': 'CLI Proxy API 版本',
+            'footer.build_date': '构建时间',
+            'footer.version': '管理中心版本',
             'footer.author': '作者'
         },
 
@@ -1013,7 +1015,9 @@ const i18n = {
             'sidebar.toggle_collapse': 'Collapse sidebar',
 
             // Footer
-            'footer.version': 'Version',
+            'footer.api_version': 'CLI Proxy API Version',
+            'footer.build_date': 'Build Time',
+            'footer.version': 'Management UI Version',
             'footer.author': 'Author'
         }
     },

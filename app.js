@@ -42,6 +42,9 @@ class CLIProxyManager {
         this.managementKey = '';
         this.isConnected = false;
         this.isLoggedIn = false;
+        this.uiVersion = null;
+        this.serverVersion = null;
+        this.serverBuildDate = null;
 
         // 配置缓存 - 改为分段缓存
         this.configCache = {};  // 改为对象，按配置段缓存
@@ -129,6 +132,7 @@ class CLIProxyManager {
     }
 
     init() {
+        this.initUiVersion();
         this.initializeTheme();
         this.checkLoginStatus();
         this.bindEvents();
