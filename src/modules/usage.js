@@ -8,10 +8,27 @@ export async function getKeyStats(usageData = null) {
         }
 
         if (!usage) {
-            return {};
+            return { bySource: {}, byAuthIndex: {} };
         }
 
         const sourceStats = {};
+        const authIndexStats = {};
+        const ensureBucket = (bucket, key) => {
+            if (!bucket[key]) {
+                bucket[key] = { success: 0, failure: 0 };
+            }
+            return bucket[key];
+        };
+        const normalizeAuthIndex = (value) => {
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                return value.toString();
+            }
+            if (typeof value === 'string') {
+                const trimmed = value.trim();
+                return trimmed ? trimmed : null;
+            }
+            return null;
+        };
         const apis = usage.apis || {};
 
         Object.values(apis).forEach(apiEntry => {
@@ -22,29 +39,37 @@ export async function getKeyStats(usageData = null) {
 
                 details.forEach(detail => {
                     const source = detail.source;
-                    if (!source) return;
+                    const authIndexKey = normalizeAuthIndex(detail?.auth_index);
+                    const isFailed = detail.failed === true;
 
-                    if (!sourceStats[source]) {
-                        sourceStats[source] = {
-                            success: 0,
-                            failure: 0
-                        };
+                    if (source) {
+                        const bucket = ensureBucket(sourceStats, source);
+                        if (isFailed) {
+                            bucket.failure += 1;
+                        } else {
+                            bucket.success += 1;
+                        }
                     }
 
-                    const isFailed = detail.failed === true;
-                    if (isFailed) {
-                        sourceStats[source].failure += 1;
-                    } else {
-                        sourceStats[source].success += 1;
+                    if (authIndexKey) {
+                        const bucket = ensureBucket(authIndexStats, authIndexKey);
+                        if (isFailed) {
+                            bucket.failure += 1;
+                        } else {
+                            bucket.success += 1;
+                        }
                     }
                 });
             });
         });
 
-        return sourceStats;
+        return {
+            bySource: sourceStats,
+            byAuthIndex: authIndexStats
+        };
     } catch (error) {
         console.error('获取统计信息失败:', error);
-        return {};
+        return { bySource: {}, byAuthIndex: {} };
     }
 }
 

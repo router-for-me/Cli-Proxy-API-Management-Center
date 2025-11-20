@@ -2,6 +2,13 @@
 // 这些函数依赖于 CLIProxyManager 实例上的 makeRequest/getConfig/clearCache/showNotification 等能力，
 // 以及 apiKeysModule 中的工具方法（如 applyHeadersToConfig/renderHeaderBadges）。
 
+const getStatsBySource = (stats) => {
+    if (stats && typeof stats === 'object' && stats.bySource) {
+        return stats.bySource;
+    }
+    return stats || {};
+};
+
 export async function loadGeminiKeys() {
     try {
         const config = await this.getConfig();
@@ -77,13 +84,13 @@ export async function renderGeminiKeys(keys, keyStats = null) {
     if (!keyStats) {
         keyStats = await this.getKeyStats();
     }
-    const stats = keyStats;
+    const statsBySource = getStatsBySource(keyStats);
 
     container.innerHTML = normalizedList.map((config, index) => {
         const rawKey = config['api-key'] || '';
         const masked = this.maskApiKey(rawKey || '');
         const maskedDisplay = this.escapeHtml(masked);
-        const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
+        const usageStats = (rawKey && (statsBySource[rawKey] || statsBySource[masked])) || { success: 0, failure: 0 };
         const configJson = JSON.stringify(config).replace(/"/g, '&quot;');
         const apiKeyJson = JSON.stringify(rawKey || '').replace(/"/g, '&quot;');
         const baseUrl = config['base-url'] || config['base_url'] || '';
@@ -96,10 +103,10 @@ export async function renderGeminiKeys(keys, keyStats = null) {
                     ${this.renderHeaderBadges(config.headers)}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
-                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
+                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${usageStats.success}
                         </span>
                         <span class="stat-badge stat-failure">
-                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${keyStats.failure}
+                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${usageStats.failure}
                         </span>
                     </div>
                 </div>
@@ -412,13 +419,13 @@ export async function renderCodexKeys(keys, keyStats = null) {
     if (!keyStats) {
         keyStats = await this.getKeyStats();
     }
-    const stats = keyStats;
+    const statsBySource = getStatsBySource(keyStats);
 
     container.innerHTML = list.map((config, index) => {
         const rawKey = config['api-key'] || '';
         const masked = this.maskApiKey(rawKey || '');
         const maskedDisplay = this.escapeHtml(masked);
-        const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
+        const usageStats = (rawKey && (statsBySource[rawKey] || statsBySource[masked])) || { success: 0, failure: 0 };
         const deleteArg = JSON.stringify(rawKey).replace(/"/g, '&quot;');
         return `
             <div class="provider-item">
@@ -430,10 +437,10 @@ export async function renderCodexKeys(keys, keyStats = null) {
                     ${this.renderHeaderBadges(config.headers)}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
-                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
+                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${usageStats.success}
                         </span>
                         <span class="stat-badge stat-failure">
-                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${keyStats.failure}
+                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${usageStats.failure}
                         </span>
                     </div>
                 </div>
@@ -641,13 +648,13 @@ export async function renderClaudeKeys(keys, keyStats = null) {
     if (!keyStats) {
         keyStats = await this.getKeyStats();
     }
-    const stats = keyStats;
+    const statsBySource = getStatsBySource(keyStats);
 
     container.innerHTML = list.map((config, index) => {
         const rawKey = config['api-key'] || '';
         const masked = this.maskApiKey(rawKey || '');
         const maskedDisplay = this.escapeHtml(masked);
-        const keyStats = (rawKey && (stats[rawKey] || stats[masked])) || { success: 0, failure: 0 };
+        const usageStats = (rawKey && (statsBySource[rawKey] || statsBySource[masked])) || { success: 0, failure: 0 };
         const deleteArg = JSON.stringify(rawKey).replace(/"/g, '&quot;');
         const models = Array.isArray(config.models) ? config.models : [];
         const modelsCountHtml = models.length
@@ -666,10 +673,10 @@ export async function renderClaudeKeys(keys, keyStats = null) {
                     ${modelsBadgesHtml}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
-                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${keyStats.success}
+                            <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${usageStats.success}
                         </span>
                         <span class="stat-badge stat-failure">
-                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${keyStats.failure}
+                            <i class="fas fa-times-circle"></i> ${i18n.t('stats.failure')}: ${usageStats.failure}
                         </span>
                     </div>
                 </div>
@@ -909,7 +916,7 @@ export async function renderOpenAIProviders(providers, keyStats = null) {
     if (!keyStats) {
         keyStats = await this.getKeyStats();
     }
-    const stats = keyStats;
+    const statsBySource = getStatsBySource(keyStats);
 
     container.innerHTML = list.map((provider, index) => {
         const item = typeof provider === 'object' && provider !== null ? provider : {};
@@ -935,9 +942,9 @@ export async function renderOpenAIProviders(providers, keyStats = null) {
             const key = entry && entry['api-key'] ? entry['api-key'] : '';
             if (!key) return;
             const masked = this.maskApiKey(key);
-            const keyStats = stats[key] || stats[masked] || { success: 0, failure: 0 };
-            totalSuccess += keyStats.success;
-            totalFailure += keyStats.failure;
+            const usageStats = statsBySource[key] || statsBySource[masked] || { success: 0, failure: 0 };
+            totalSuccess += usageStats.success;
+            totalFailure += usageStats.failure;
         });
 
         const deleteArg = JSON.stringify(name).replace(/"/g, '&quot;');

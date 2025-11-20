@@ -27,7 +27,7 @@ export const authFilesModule = {
         const stats = keyStats || await this.getKeyStats();
 
         this.cachedAuthFiles = visibleFiles.map(file => ({ ...file }));
-        this.authFileStatsCache = stats || {};
+        this.authFileStatsCache = stats || { bySource: {}, byAuthIndex: {} };
         this.syncAuthFileControls();
 
         if (this.cachedAuthFiles.length === 0) {
@@ -76,13 +76,21 @@ export const authFilesModule = {
     },
 
     resolveAuthFileStats(file, stats = {}) {
+        const statsBySource = (stats && stats.bySource) || stats || {};
+        const statsByAuthIndex = (stats && stats.byAuthIndex) || {};
         const rawFileName = typeof file?.name === 'string' ? file.name : '';
         const defaultStats = { success: 0, failure: 0 };
+        const authIndexKey = this.normalizeAuthIndexValue(file?.auth_index);
+
+        if (authIndexKey && statsByAuthIndex[authIndexKey]) {
+            return statsByAuthIndex[authIndexKey];
+        }
+
         if (!rawFileName) {
             return defaultStats;
         }
 
-        const fromName = stats[rawFileName];
+        const fromName = statsBySource[rawFileName];
         if (fromName && (fromName.success > 0 || fromName.failure > 0)) {
             return fromName;
         }
@@ -115,7 +123,7 @@ export const authFilesModule = {
                 });
 
                 for (const candidate of candidateNames) {
-                    const candidateStats = stats[candidate];
+                    const candidateStats = statsBySource[candidate];
                     if (candidateStats && (candidateStats.success > 0 || candidateStats.failure > 0)) {
                         fileStats = candidateStats;
                         break;
@@ -125,6 +133,17 @@ export const authFilesModule = {
         }
 
         return fileStats || defaultStats;
+    },
+
+    normalizeAuthIndexValue(value) {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return value.toString();
+        }
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            return trimmed ? trimmed : null;
+        }
+        return null;
     },
 
     buildAuthFileItemHtml(file) {
