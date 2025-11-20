@@ -806,17 +806,9 @@ export const authFilesModule = {
             <div class="json-modal" id="json-modal">
                 <div class="json-modal-content">
                     <div class="json-modal-header">
-                        <h3>${i18n.t('auth_files.details_title')} - ${this.escapeHtml(filename)}</h3>
+                        <h3>${this.escapeHtml(filename)}</h3>
                     </div>
                     <div class="json-modal-body">
-                        <div class="auth-file-meta">
-                            <div><strong>${i18n.t('auth_files.details_type')}:</strong> ${this.escapeHtml(type)}</div>
-                            <div><strong>${i18n.t('auth_files.details_provider')}:</strong> ${this.escapeHtml(provider)}</div>
-                            <div><strong>${i18n.t('auth_files.details_size')}:</strong> ${this.escapeHtml(size)}</div>
-                            <div><strong>${i18n.t('auth_files.details_created_at')}:</strong> ${this.escapeHtml(createdAt)}</div>
-                            <div><strong>${i18n.t('auth_files.details_success')}:</strong> ${stats.success}</div>
-                            <div><strong>${i18n.t('auth_files.details_failure')}:</strong> ${stats.failure}</div>
-                        </div>
                         <pre class="json-content">${this.escapeHtml(jsonContent)}</pre>
                     </div>
                     <div class="json-modal-footer">
