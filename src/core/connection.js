@@ -349,78 +349,11 @@ export const connectionModule = {
         }
     },
 
-    // 从配置对象更新所有设置
+    // 从配置对象更新所有设置 —— 委派给 settings 模块，保持兼容旧调用
     async updateSettingsFromConfig(config, keyStats = null) {
-        // 调试设置
-        if (config.debug !== undefined) {
-            document.getElementById('debug-toggle').checked = config.debug;
+        if (typeof this.applySettingsFromConfig === 'function') {
+            return this.applySettingsFromConfig(config, keyStats);
         }
-
-        // 代理设置
-        if (config['proxy-url'] !== undefined) {
-            document.getElementById('proxy-url').value = config['proxy-url'] || '';
-        }
-
-        // 请求重试设置
-        if (config['request-retry'] !== undefined) {
-            document.getElementById('request-retry').value = config['request-retry'];
-        }
-
-        // 配额超出行为
-        if (config['quota-exceeded']) {
-            if (config['quota-exceeded']['switch-project'] !== undefined) {
-                document.getElementById('switch-project-toggle').checked = config['quota-exceeded']['switch-project'];
-            }
-            if (config['quota-exceeded']['switch-preview-model'] !== undefined) {
-                document.getElementById('switch-preview-model-toggle').checked = config['quota-exceeded']['switch-preview-model'];
-            }
-        }
-
-        if (config['usage-statistics-enabled'] !== undefined) {
-            const usageToggle = document.getElementById('usage-statistics-enabled-toggle');
-            if (usageToggle) {
-                usageToggle.checked = config['usage-statistics-enabled'];
-            }
-        }
-
-        // 日志记录设置
-        if (config['logging-to-file'] !== undefined) {
-            const loggingToggle = document.getElementById('logging-to-file-toggle');
-            if (loggingToggle) {
-                loggingToggle.checked = config['logging-to-file'];
-            }
-            // 显示或隐藏日志查看栏目
-            this.toggleLogsNavItem(config['logging-to-file']);
-        }
-        if (config['request-log'] !== undefined) {
-            const requestLogToggle = document.getElementById('request-log-toggle');
-            if (requestLogToggle) {
-                requestLogToggle.checked = config['request-log'];
-            }
-        }
-        if (config['ws-auth'] !== undefined) {
-            const wsAuthToggle = document.getElementById('ws-auth-toggle');
-            if (wsAuthToggle) {
-                wsAuthToggle.checked = config['ws-auth'];
-            }
-        }
-
-        // API 密钥
-        if (config['api-keys']) {
-            this.renderApiKeys(config['api-keys']);
-        }
-
-        // Gemini keys
-        await this.renderGeminiKeys(this.getGeminiKeysFromConfig(config), keyStats);
-
-        // Codex 密钥
-        await this.renderCodexKeys(Array.isArray(config['codex-api-key']) ? config['codex-api-key'] : [], keyStats);
-
-        // Claude 密钥
-        await this.renderClaudeKeys(Array.isArray(config['claude-api-key']) ? config['claude-api-key'] : [], keyStats);
-
-        // OpenAI 兼容提供商
-        await this.renderOpenAIProviders(Array.isArray(config['openai-compatibility']) ? config['openai-compatibility'] : [], keyStats);
     },
 
     detectApiBaseFromLocation() {

@@ -148,6 +148,7 @@ class CLIProxyManager {
     init() {
         this.initUiVersion();
         this.initializeTheme();
+        this.registerSettingsListeners();
         this.checkLoginStatus();
         this.bindEvents();
         this.setupNavigation();

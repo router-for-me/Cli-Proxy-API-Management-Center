@@ -275,6 +275,119 @@ export async function updateSwitchPreviewModel(enabled) {
     }
 }
 
+// 统一应用配置到界面，供 connection 模块或事件总线调用
+export async function applySettingsFromConfig(config = {}, keyStats = null) {
+    if (!config || typeof config !== 'object') {
+        return;
+    }
+
+    // 调试设置
+    if (config.debug !== undefined) {
+        const toggle = document.getElementById('debug-toggle');
+        if (toggle) {
+            toggle.checked = config.debug;
+        }
+    }
+
+    // 代理设置
+    if (config['proxy-url'] !== undefined) {
+        const proxyInput = document.getElementById('proxy-url');
+        if (proxyInput) {
+            proxyInput.value = config['proxy-url'] || '';
+        }
+    }
+
+    // 请求重试设置
+    if (config['request-retry'] !== undefined) {
+        const retryInput = document.getElementById('request-retry');
+        if (retryInput) {
+            retryInput.value = config['request-retry'];
+        }
+    }
+
+    // 配额超出行为
+    if (config['quota-exceeded']) {
+        if (config['quota-exceeded']['switch-project'] !== undefined) {
+            const toggle = document.getElementById('switch-project-toggle');
+            if (toggle) {
+                toggle.checked = config['quota-exceeded']['switch-project'];
+            }
+        }
+        if (config['quota-exceeded']['switch-preview-model'] !== undefined) {
+            const toggle = document.getElementById('switch-preview-model-toggle');
+            if (toggle) {
+                toggle.checked = config['quota-exceeded']['switch-preview-model'];
+            }
+        }
+    }
+
+    if (config['usage-statistics-enabled'] !== undefined) {
+        const usageToggle = document.getElementById('usage-statistics-enabled-toggle');
+        if (usageToggle) {
+            usageToggle.checked = config['usage-statistics-enabled'];
+        }
+    }
+
+    // 日志记录设置
+    if (config['logging-to-file'] !== undefined) {
+        const loggingToggle = document.getElementById('logging-to-file-toggle');
+        if (loggingToggle) {
+            loggingToggle.checked = config['logging-to-file'];
+        }
+        if (typeof this.toggleLogsNavItem === 'function') {
+            this.toggleLogsNavItem(config['logging-to-file']);
+        }
+    }
+    if (config['request-log'] !== undefined) {
+        const requestLogToggle = document.getElementById('request-log-toggle');
+        if (requestLogToggle) {
+            requestLogToggle.checked = config['request-log'];
+        }
+    }
+    if (config['ws-auth'] !== undefined) {
+        const wsAuthToggle = document.getElementById('ws-auth-toggle');
+        if (wsAuthToggle) {
+            wsAuthToggle.checked = config['ws-auth'];
+        }
+    }
+
+    // API 密钥
+    if (config['api-keys'] && typeof this.renderApiKeys === 'function') {
+        this.renderApiKeys(config['api-keys']);
+    }
+
+    // Gemini keys
+    if (typeof this.renderGeminiKeys === 'function') {
+        await this.renderGeminiKeys(this.getGeminiKeysFromConfig(config), keyStats);
+    }
+
+    // Codex 密钥
+    if (typeof this.renderCodexKeys === 'function') {
+        await this.renderCodexKeys(Array.isArray(config['codex-api-key']) ? config['codex-api-key'] : [], keyStats);
+    }
+
+    // Claude 密钥
+    if (typeof this.renderClaudeKeys === 'function') {
+        await this.renderClaudeKeys(Array.isArray(config['claude-api-key']) ? config['claude-api-key'] : [], keyStats);
+    }
+
+    // OpenAI 兼容提供商
+    if (typeof this.renderOpenAIProviders === 'function') {
+        await this.renderOpenAIProviders(Array.isArray(config['openai-compatibility']) ? config['openai-compatibility'] : [], keyStats);
+    }
+}
+
+// 设置模块订阅全局事件，减少与连接层耦合
+export function registerSettingsListeners() {
+    if (!this.events || typeof this.events.on !== 'function') {
+        return;
+    }
+    this.events.on('data:config-loaded', (event) => {
+        const detail = event?.detail || {};
+        this.applySettingsFromConfig(detail.config || {}, detail.keyStats || null);
+    });
+}
+
 export const settingsModule = {
     updateDebug,
     updateProxyUrl,
@@ -292,5 +405,7 @@ export const settingsModule = {
     updateWsAuth,
     updateLoggingToFile,
     updateSwitchProject,
-    updateSwitchPreviewModel
+    updateSwitchPreviewModel,
+    applySettingsFromConfig,
+    registerSettingsListeners
 };
