@@ -12,6 +12,11 @@ export const languageModule = {
     },
 
     toggleLanguage() {
+        if (this.isLanguageRefreshInProgress) {
+            return;
+        }
+        this.isLanguageRefreshInProgress = true;
+
         const currentLang = i18n.currentLanguage;
         const newLang = currentLang === 'zh-CN' ? 'en-US' : 'zh-CN';
         i18n.setLanguage(newLang);
@@ -19,8 +24,13 @@ export const languageModule = {
         this.updateThemeButtons();
         this.updateConnectionStatus();
 
-        if (this.isLoggedIn && this.isConnected) {
-            this.loadAllData(true);
+        if (this.isLoggedIn && this.isConnected && this.events && typeof this.events.emit === 'function') {
+            this.events.emit('config:refresh-requested', { forceRefresh: true });
         }
+
+        // 简单释放锁，避免短时间内的重复触发
+        setTimeout(() => {
+            this.isLanguageRefreshInProgress = false;
+        }, 500);
     }
 };

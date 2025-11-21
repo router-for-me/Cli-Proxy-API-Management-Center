@@ -68,6 +68,9 @@ class CLIProxyManager {
         // 状态更新定时器
         this.statusUpdateTimer = null;
         this.lastConnectionStatusEmitted = null;
+        this.isGlobalRefreshInProgress = false;
+
+        this.registerCoreEventHandlers();
 
         // 日志自动刷新定时器
         this.logsRefreshTimer = null;
@@ -149,6 +152,7 @@ class CLIProxyManager {
     init() {
         this.initUiVersion();
         this.initializeTheme();
+        this.registerCoreEventHandlers();
         this.registerSettingsListeners();
         this.registerUsageListeners();
         if (typeof this.registerLogsListeners === 'function') {
@@ -170,6 +174,30 @@ class CLIProxyManager {
         this.checkHostAndHideOAuth();
         if (typeof this.registerAuthFilesListeners === 'function') {
             this.registerAuthFilesListeners();
+        }
+    }
+
+    registerCoreEventHandlers() {
+        if (!this.events || typeof this.events.on !== 'function') {
+            return;
+        }
+        this.events.on('config:refresh-requested', async (event) => {
+            const detail = event?.detail || {};
+            const forceRefresh = detail.forceRefresh !== false;
+            // 避免并发触发导致重复请求
+            if (this.isGlobalRefreshInProgress) {
+                return;
+            }
+            await this.runGlobalRefresh(forceRefresh);
+        });
+    }
+
+    async runGlobalRefresh(forceRefresh = false) {
+        this.isGlobalRefreshInProgress = true;
+        try {
+            await this.loadAllData(forceRefresh);
+        } finally {
+            this.isGlobalRefreshInProgress = false;
         }
     }
 

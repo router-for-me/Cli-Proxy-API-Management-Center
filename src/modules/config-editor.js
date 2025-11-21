@@ -209,7 +209,9 @@ export const configEditorModule = {
             this.showNotification(i18n.t('config_management.save_success'), 'success');
             this.updateConfigEditorStatus('success', i18n.t('config_management.status_saved'));
             this.clearCache();
-            await this.loadAllData(true);
+            if (this.events && typeof this.events.emit === 'function') {
+                this.events.emit('config:refresh-requested', { forceRefresh: true });
+            }
         } catch (error) {
             const errorMessage = `${i18n.t('config_management.status_save_failed')}: ${error.message}`;
             this.updateConfigEditorStatus('error', errorMessage);
