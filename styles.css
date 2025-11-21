@@ -1816,6 +1816,16 @@ input:checked+.slider:before {
     color: #ffb74d;
 }
 
+.file-type-badge.antigravity {
+    background: #e0f7fa;
+    color: #006064;
+}
+
+[data-theme="dark"] .file-type-badge.antigravity {
+    background: #004d40;
+    color: #80deea;
+}
+
 .file-type-badge.iflow {
     background: #f3e5f5;
     color: #7b1fa2;
@@ -1837,13 +1847,13 @@ input:checked+.slider:before {
 }
 
 /* 未知类型通用样式 */
-.file-type-badge:not(.qwen):not(.gemini):not(.gemini-cli):not(.aistudio):not(.claude):not(.codex):not(.iflow):not(.empty) {
+.file-type-badge:not(.qwen):not(.gemini):not(.gemini-cli):not(.aistudio):not(.claude):not(.codex):not(.antigravity):not(.iflow):not(.empty) {
     background: #f0f0f0;
     color: #666666;
     border: 1px dashed #999999;
 }
 
-[data-theme="dark"] .file-type-badge:not(.qwen):not(.gemini):not(.gemini-cli):not(.aistudio):not(.claude):not(.codex):not(.iflow):not(.empty) {
+[data-theme="dark"] .file-type-badge:not(.qwen):not(.gemini):not(.gemini-cli):not(.aistudio):not(.claude):not(.codex):not(.antigravity):not(.iflow):not(.empty) {
     background: #3a3a3a;
     color: #aaaaaa;
     border: 1px dashed #666666;

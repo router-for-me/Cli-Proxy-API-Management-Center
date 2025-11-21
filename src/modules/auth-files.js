@@ -172,6 +172,9 @@ export const authFilesModule = {
             case 'codex':
                 typeDisplayKey = 'auth_files.type_codex';
                 break;
+            case 'antigravity':
+                typeDisplayKey = 'auth_files.type_antigravity';
+                break;
             case 'iflow':
                 typeDisplayKey = 'auth_files.type_iflow';
                 break;
@@ -467,6 +470,7 @@ export const authFilesModule = {
             { type: 'aistudio', labelKey: 'auth_files.filter_aistudio' },
             { type: 'claude', labelKey: 'auth_files.filter_claude' },
             { type: 'codex', labelKey: 'auth_files.filter_codex' },
+            { type: 'antigravity', labelKey: 'auth_files.filter_antigravity' },
             { type: 'iflow', labelKey: 'auth_files.filter_iflow' },
             { type: 'vertex', labelKey: 'auth_files.filter_vertex' },
             { type: 'empty', labelKey: 'auth_files.filter_empty' }
