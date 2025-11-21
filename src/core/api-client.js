@@ -8,6 +8,21 @@ export class ApiClient {
         this.setApiBase(apiBase);
     }
 
+    buildHeaders(options = {}) {
+        const customHeaders = options.headers || {};
+        const headers = {
+            'Authorization': `Bearer ${this.managementKey}`,
+            ...customHeaders
+        };
+        const hasContentType = Object.keys(headers).some(key => key.toLowerCase() === 'content-type');
+        const body = options.body;
+        const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+        if (!hasContentType && !isFormData) {
+            headers['Content-Type'] = 'application/json';
+        }
+        return headers;
+    }
+
     normalizeBase(input) {
         let base = (input || '').trim();
         if (!base) return '';
@@ -37,11 +52,7 @@ export class ApiClient {
 
     async request(endpoint, options = {}) {
         const url = `${this.apiUrl}${endpoint}`;
-        const headers = {
-            'Authorization': `Bearer ${this.managementKey}`,
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
+        const headers = this.buildHeaders(options);
 
         const response = await fetch(url, {
             ...options,
@@ -58,5 +69,19 @@ export class ApiClient {
         }
 
         return await response.json();
+    }
+
+    // 返回原始 Response，供下载/自定义解析使用
+    async requestRaw(endpoint, options = {}) {
+        const url = `${this.apiUrl}${endpoint}`;
+        const headers = this.buildHeaders(options);
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+        if (typeof this.onVersionUpdate === 'function') {
+            this.onVersionUpdate(response.headers);
+        }
+        return response;
     }
 }

@@ -724,15 +724,10 @@ export const authFilesModule = {
             this.vertexImportState.loading = true;
             this.updateVertexImportButtonState();
 
-            const response = await fetch(`${this.apiUrl}/vertex/import`, {
+            const response = await this.apiClient.requestRaw('/vertex/import', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.managementKey}`
-                },
                 body: formData
             });
-
-            this.updateVersionFromHeaders(response.headers);
 
             if (!response.ok) {
                 let errorMessage = `HTTP ${response.status}`;
@@ -879,13 +874,7 @@ export const authFilesModule = {
 
     async downloadAuthFile(filename) {
         try {
-            const response = await fetch(`${this.apiUrl}/auth-files/download?name=${encodeURIComponent(filename)}`, {
-                headers: {
-                    'Authorization': `Bearer ${this.managementKey}`
-                }
-            });
-
-            this.updateVersionFromHeaders(response.headers);
+            const response = await this.apiClient.requestRaw(`/auth-files/download?name=${encodeURIComponent(filename)}`);
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
@@ -1017,15 +1006,10 @@ export const authFilesModule = {
             const formData = new FormData();
             formData.append('file', file, file.name);
 
-            const response = await fetch(`${this.apiUrl}/auth-files`, {
+            const response = await this.apiClient.requestRaw('/auth-files', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.managementKey}`
-                },
                 body: formData
             });
-
-            this.updateVersionFromHeaders(response.headers);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));

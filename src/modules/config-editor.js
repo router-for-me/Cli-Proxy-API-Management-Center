@@ -152,15 +152,12 @@ export const configEditorModule = {
         const requestUrl = '/config.yaml';
 
         try {
-            const response = await fetch(`${this.apiUrl}${requestUrl}`, {
+            const response = await this.apiClient.requestRaw(requestUrl, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${this.managementKey}`,
                     'Accept': 'application/yaml'
                 }
             });
-
-            this.updateVersionFromHeaders(response.headers);
 
             if (!response.ok) {
                 const errorText = await response.text().catch(() => '');
@@ -227,17 +224,14 @@ export const configEditorModule = {
     },
 
     async writeConfigFile(endpoint, yamlText) {
-        const response = await fetch(`${this.apiUrl}${endpoint}`, {
+        const response = await this.apiClient.requestRaw(endpoint, {
             method: 'PUT',
             headers: {
-                'Authorization': `Bearer ${this.managementKey}`,
                 'Content-Type': 'application/yaml',
                 'Accept': 'application/json, text/plain, */*'
             },
             body: yamlText
         });
-
-        this.updateVersionFromHeaders(response.headers);
 
         if (!response.ok) {
             const contentType = response.headers.get('content-type') || '';
