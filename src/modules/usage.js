@@ -741,5 +741,18 @@ export const usageModule = {
     getTokensChartData,
     switchRequestsPeriod,
     switchTokensPeriod,
-    updateApiStatsTable
+    updateApiStatsTable,
+    registerUsageListeners
 };
+
+// 订阅全局事件，基于配置加载结果渲染使用统计
+export function registerUsageListeners() {
+    if (!this.events || typeof this.events.on !== 'function') {
+        return;
+    }
+    this.events.on('data:config-loaded', (event) => {
+        const detail = event?.detail || {};
+        const usageData = detail.usageData || null;
+        this.loadUsageStats(usageData);
+    });
+}

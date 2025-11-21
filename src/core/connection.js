@@ -328,9 +328,6 @@ export const connectionModule = {
             // 认证文件需要单独加载，因为不在配置中
             await this.loadAuthFiles(keyStats);
 
-            // 使用统计需要单独加载，复用已获取的usage数据
-            await this.loadUsageStats(usageData);
-
             // 加载配置文件编辑器内容
             await this.loadConfigFileEditor(forceRefresh);
             this.refreshConfigEditor();
