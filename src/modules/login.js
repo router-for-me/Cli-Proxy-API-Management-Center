@@ -39,7 +39,7 @@ export const loginModule = {
     async attemptAutoLogin(apiBase, managementKey) {
         try {
             this.setApiBase(apiBase);
-            this.managementKey = managementKey;
+            this.setManagementKey(managementKey);
 
             const savedProxy = localStorage.getItem('proxyUrl');
             if (savedProxy) {
@@ -79,8 +79,7 @@ export const loginModule = {
     async login(apiBase, managementKey) {
         try {
             this.setApiBase(apiBase);
-            this.managementKey = managementKey;
-            secureStorage.setItem('managementKey', this.managementKey);
+            this.setManagementKey(managementKey);
 
             await this.testConnection();
 
@@ -101,6 +100,7 @@ export const loginModule = {
         this.clearCache();
         this.stopStatusUpdateTimer();
         this.resetVersionInfo();
+        this.setManagementKey('', { persist: false });
 
         localStorage.removeItem('isLoggedIn');
         secureStorage.removeItem('managementKey');
@@ -132,8 +132,7 @@ export const loginModule = {
             }
             this.hideLoginError();
 
-            this.managementKey = managementKey;
-            secureStorage.setItem('managementKey', this.managementKey);
+            this.setManagementKey(managementKey);
 
             await this.login(this.apiBase, this.managementKey);
         } catch (error) {
@@ -210,6 +209,7 @@ export const loginModule = {
         if (loginKeyInput && savedKey) {
             loginKeyInput.value = savedKey;
         }
+        this.setManagementKey(savedKey || '', { persist: false });
 
         this.setupLoginAutoSave();
     },
@@ -220,9 +220,9 @@ export const loginModule = {
         const resetButton = document.getElementById('login-reset-api-base');
 
         const saveKey = (val) => {
-            if (val.trim()) {
-                this.managementKey = val;
-                secureStorage.setItem('managementKey', this.managementKey);
+            const trimmed = val.trim();
+            if (trimmed) {
+                this.setManagementKey(trimmed);
             }
         };
         const saveKeyDebounced = this.debounce(saveKey, 500);

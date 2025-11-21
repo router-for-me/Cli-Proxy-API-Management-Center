@@ -31,14 +31,24 @@ import {
 // 核心服务导入
 import { createErrorHandler } from './src/core/error-handler.js';
 import { connectionModule } from './src/core/connection.js';
+import { ApiClient } from './src/core/api-client.js';
+import { ConfigService } from './src/core/config-service.js';
+import { createEventBus } from './src/core/event-bus.js';
 
 // CLI Proxy API 管理界面 JavaScript
 class CLIProxyManager {
     constructor() {
-        // 仅保存基础地址（不含 /v0/management），请求时自动补齐
+        // 事件总线
+        this.events = createEventBus();
+
+        // API 客户端（规范化基础地址、封装请求）
+        this.apiClient = new ApiClient({
+            onVersionUpdate: (headers) => this.updateVersionFromHeaders(headers)
+        });
         const detectedBase = this.detectApiBaseFromLocation();
-        this.apiBase = detectedBase;
-        this.apiUrl = this.computeApiUrl(this.apiBase);
+        this.apiClient.setApiBase(detectedBase);
+        this.apiBase = this.apiClient.apiBase;
+        this.apiUrl = this.apiClient.apiUrl;
         this.managementKey = '';
         this.isConnected = false;
         this.isLoggedIn = false;
@@ -46,10 +56,14 @@ class CLIProxyManager {
         this.serverVersion = null;
         this.serverBuildDate = null;
 
-        // 配置缓存 - 改为分段缓存
-        this.configCache = {};  // 改为对象，按配置段缓存
-        this.cacheTimestamps = {};  // 每个配置段的时间戳
+        // 配置缓存 - 改为分段缓存（交由 ConfigService 管理）
         this.cacheExpiry = CACHE_EXPIRY_MS;
+        this.configService = new ConfigService({
+            apiClient: this.apiClient,
+            cacheExpiry: this.cacheExpiry
+        });
+        this.configCache = this.configService.cache;
+        this.cacheTimestamps = this.configService.cacheTimestamps;
 
         // 状态更新定时器
         this.statusUpdateTimer = null;

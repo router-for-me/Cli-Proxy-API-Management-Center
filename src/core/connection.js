@@ -7,31 +7,29 @@ import { secureStorage } from '../utils/secure-storage.js';
 export const connectionModule = {
     // 规范化基础地址，移除尾部斜杠与 /v0/management
     normalizeBase(input) {
-        let base = (input || '').trim();
-        if (!base) return '';
-        // 若用户粘贴了完整地址，剥离后缀
-        base = base.replace(/\/?v0\/management\/?$/i, '');
-        base = base.replace(/\/+$/i, '');
-        // 自动补 http://
-        if (!/^https?:\/\//i.test(base)) {
-            base = 'http://' + base;
-        }
-        return base;
+        return this.apiClient.normalizeBase(input);
     },
 
     // 由基础地址生成完整管理 API 地址
     computeApiUrl(base) {
-        const b = this.normalizeBase(base);
-        if (!b) return '';
-        return b.replace(/\/$/, '') + '/v0/management';
+        return this.apiClient.computeApiUrl(base);
     },
 
     setApiBase(newBase) {
-        this.apiBase = this.normalizeBase(newBase);
-        this.apiUrl = this.computeApiUrl(this.apiBase);
+        this.apiClient.setApiBase(newBase);
+        this.apiBase = this.apiClient.apiBase;
+        this.apiUrl = this.apiClient.apiUrl;
         secureStorage.setItem('apiBase', this.apiBase);
         secureStorage.setItem('apiUrl', this.apiUrl); // 兼容旧字段
         this.updateLoginConnectionInfo();
+    },
+
+    setManagementKey(key, { persist = true } = {}) {
+        this.managementKey = key || '';
+        this.apiClient.setManagementKey(this.managementKey);
+        if (persist) {
+            secureStorage.setItem('managementKey', this.managementKey);
+        }
     },
 
     // 加载设置（简化版，仅加载内部状态）
@@ -51,9 +49,7 @@ export const connectionModule = {
             this.setApiBase(this.detectApiBaseFromLocation());
         }
 
-        if (savedKey) {
-            this.managementKey = savedKey;
-        }
+        this.setManagementKey(savedKey || '', { persist: false });
 
         this.updateLoginConnectionInfo();
     },
@@ -149,27 +145,8 @@ export const connectionModule = {
 
     // API 请求方法
     async makeRequest(endpoint, options = {}) {
-        const url = `${this.apiUrl}${endpoint}`;
-        const headers = {
-            'Authorization': `Bearer ${this.managementKey}`,
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-
         try {
-            const response = await fetch(url, {
-                ...options,
-                headers
-            });
-
-            this.updateVersionFromHeaders(response.headers);
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || `HTTP ${response.status}`);
-            }
-
-            return await response.json();
+            return await this.apiClient.request(endpoint, options);
         } catch (error) {
             console.error('API请求失败:', error);
             throw error;
@@ -236,6 +213,13 @@ export const connectionModule = {
 
         // 更新连接信息显示
         this.updateConnectionInfo();
+
+        if (this.events && typeof this.events.emit === 'function') {
+            this.events.emit('connection:status-changed', {
+                isConnected: this.isConnected,
+                apiBase: this.apiBase
+            });
+        }
     },
 
     // 检查连接状态
@@ -270,66 +254,15 @@ export const connectionModule = {
 
     // 检查缓存是否有效
     isCacheValid(section = null) {
-        if (section) {
-            // 检查特定配置段的缓存
-            // 注意：配置值可能是 false、0、'' 等 falsy 值，不能用 ! 判断
-            if (!(section in this.configCache) || !(section in this.cacheTimestamps)) {
-                return false;
-            }
-            return (Date.now() - this.cacheTimestamps[section]) < this.cacheExpiry;
-        }
-        // 检查全局缓存（兼容旧代码）
-        if (!this.configCache['__full__'] || !this.cacheTimestamps['__full__']) {
-            return false;
-        }
-        return (Date.now() - this.cacheTimestamps['__full__']) < this.cacheExpiry;
+        return this.configService.isCacheValid(section);
     },
 
     // 获取配置（优先使用缓存，支持按段获取）
     async getConfig(section = null, forceRefresh = false) {
-        const now = Date.now();
-
-        // 如果请求特定配置段且该段缓存有效
-        if (section && !forceRefresh && this.isCacheValid(section)) {
-            this.updateConnectionStatus();
-            return this.configCache[section];
-        }
-
-        // 如果请求全部配置且全局缓存有效
-        if (!section && !forceRefresh && this.isCacheValid()) {
-            this.updateConnectionStatus();
-            return this.configCache['__full__'];
-        }
-
         try {
-            const config = await this.makeRequest('/config');
-
-            if (section) {
-                // 缓存特定配置段
-                this.configCache[section] = config[section];
-                this.cacheTimestamps[section] = now;
-                // 同时更新全局缓存中的这一段
-                if (this.configCache['__full__']) {
-                    this.configCache['__full__'][section] = config[section];
-                } else {
-                    // 如果全局缓存不存在，也创建它
-                    this.configCache['__full__'] = config;
-                    this.cacheTimestamps['__full__'] = now;
-                }
-                this.updateConnectionStatus();
-                return config[section];
-            }
-
-            // 缓存全部配置
-            this.configCache['__full__'] = config;
-            this.cacheTimestamps['__full__'] = now;
-
-            // 同时缓存各个配置段
-            Object.keys(config).forEach(key => {
-                this.configCache[key] = config[key];
-                this.cacheTimestamps[key] = now;
-            });
-
+            const config = await this.configService.getConfig(section, forceRefresh);
+            this.configCache = this.configService.cache;
+            this.cacheTimestamps = this.configService.cacheTimestamps;
             this.updateConnectionStatus();
             return config;
         } catch (error) {
@@ -340,18 +273,10 @@ export const connectionModule = {
 
     // 清除缓存（支持清除特定配置段）
     clearCache(section = null) {
-        if (section) {
-            // 清除特定配置段的缓存
-            delete this.configCache[section];
-            delete this.cacheTimestamps[section];
-            // 同时清除全局缓存中的这一段
-            if (this.configCache['__full__']) {
-                delete this.configCache['__full__'][section];
-            }
-        } else {
-            // 清除所有缓存
-            this.configCache = {};
-            this.cacheTimestamps = {};
+        this.configService.clearCache(section);
+        this.configCache = this.configService.cache;
+        this.cacheTimestamps = this.configService.cacheTimestamps;
+        if (!section) {
             this.configYamlCache = '';
         }
     },
@@ -409,6 +334,14 @@ export const connectionModule = {
             // 加载配置文件编辑器内容
             await this.loadConfigFileEditor(forceRefresh);
             this.refreshConfigEditor();
+
+            if (this.events && typeof this.events.emit === 'function') {
+                this.events.emit('data:config-loaded', {
+                    config,
+                    usageData,
+                    keyStats
+                });
+            }
 
             console.log('配置加载完成，使用缓存:', !forceRefresh && this.isCacheValid());
         } catch (error) {
