@@ -150,6 +150,9 @@ class CLIProxyManager {
         this.initializeTheme();
         this.registerSettingsListeners();
         this.registerUsageListeners();
+        if (typeof this.registerConfigEditorListeners === 'function') {
+            this.registerConfigEditorListeners();
+        }
         this.checkLoginStatus();
         this.bindEvents();
         this.setupNavigation();
@@ -161,6 +164,10 @@ class CLIProxyManager {
         this.updateLoginConnectionInfo();
         // 检查主机名，如果不是 localhost 或 127.0.0.1，则隐藏 OAuth 登录框
         this.checkHostAndHideOAuth();
+
+        if (typeof this.registerAuthFilesListeners === 'function') {
+            this.registerAuthFilesListeners();
+        }
     }
 
     // 检查主机名并隐藏 OAuth 登录框

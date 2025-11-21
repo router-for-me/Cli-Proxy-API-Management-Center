@@ -1025,5 +1025,20 @@ export const authFilesModule = {
             // 清空文件输入框,允许重复上传同一文件
             event.target.value = '';
         }
+    },
+
+    registerAuthFilesListeners() {
+        if (!this.events || typeof this.events.on !== 'function') {
+            return;
+        }
+        this.events.on('data:config-loaded', async (event) => {
+            const detail = event?.detail || {};
+            const keyStats = detail.keyStats || null;
+            try {
+                await this.loadAuthFiles(keyStats);
+            } catch (error) {
+                console.error('加载认证文件失败:', error);
+            }
+        });
     }
 };

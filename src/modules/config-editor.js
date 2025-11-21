@@ -252,5 +252,20 @@ export const configEditorModule = {
                 throw new Error(data.message || data.error || 'Server rejected the update');
             }
         }
+    },
+
+    registerConfigEditorListeners() {
+        if (!this.events || typeof this.events.on !== 'function') {
+            return;
+        }
+        this.events.on('data:config-loaded', async (event) => {
+            const detail = event?.detail || {};
+            try {
+                await this.loadConfigFileEditor(detail.forceRefresh || false);
+                this.refreshConfigEditor();
+            } catch (error) {
+                console.error('加载配置文件失败:', error);
+            }
+        });
     }
 };

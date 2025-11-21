@@ -328,15 +328,12 @@ export const connectionModule = {
             // 认证文件需要单独加载，因为不在配置中
             await this.loadAuthFiles(keyStats);
 
-            // 加载配置文件编辑器内容
-            await this.loadConfigFileEditor(forceRefresh);
-            this.refreshConfigEditor();
-
             if (this.events && typeof this.events.emit === 'function') {
                 this.events.emit('data:config-loaded', {
                     config,
                     usageData,
-                    keyStats
+                    keyStats,
+                    forceRefresh
                 });
             }
 
