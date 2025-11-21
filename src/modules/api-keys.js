@@ -29,7 +29,7 @@ export const apiKeysModule = {
         container.innerHTML = keys.map((key, index) => {
             const normalizedKey = typeof key === 'string' ? key : String(key ?? '');
             const maskedDisplay = this.escapeHtml(this.maskApiKey(normalizedKey));
-            const keyArgument = JSON.stringify(normalizedKey).replace(/"/g, '&quot;');
+            const keyArgument = encodeURIComponent(normalizedKey);
             return `
             <div class="key-item">
                 <div class="item-content">
@@ -37,16 +37,18 @@ export const apiKeysModule = {
                     <div class="item-value">${maskedDisplay}</div>
                 </div>
                 <div class="item-actions">
-                    <button class="btn btn-secondary" onclick="manager.editApiKey(${index}, ${keyArgument})">
+                    <button class="btn btn-secondary" data-action="edit-api-key" data-index="${index}" data-key="${keyArgument}">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-danger" onclick="manager.deleteApiKey(${index})">
+                    <button class="btn btn-danger" data-action="delete-api-key" data-index="${index}">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>
         `;
         }).join('');
+
+        this.bindApiKeyListEvents(container);
     },
 
     // 注意: escapeHtml, maskApiKey, normalizeArrayResponse
@@ -336,5 +338,43 @@ export const apiKeysModule = {
         } catch (error) {
             this.showNotification(`${i18n.t('notification.delete_failed')}: ${error.message}`, 'error');
         }
+    },
+
+    bindApiKeyListEvents(container = null) {
+        if (this.apiKeyListEventsBound) {
+            return;
+        }
+        const listContainer = container || document.getElementById('api-keys-list');
+        if (!listContainer) return;
+
+        listContainer.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-action][data-index]');
+            if (!button || !listContainer.contains(button)) return;
+
+            const action = button.dataset.action;
+            const index = Number(button.dataset.index);
+            if (!Number.isFinite(index)) return;
+
+            switch (action) {
+                case 'edit-api-key': {
+                    const rawKey = button.dataset.key || '';
+                    let decodedKey = '';
+                    try {
+                        decodedKey = decodeURIComponent(rawKey);
+                    } catch (e) {
+                        decodedKey = rawKey;
+                    }
+                    this.editApiKey(index, decodedKey);
+                    break;
+                }
+                case 'delete-api-key':
+                    this.deleteApiKey(index);
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        this.apiKeyListEventsBound = true;
     }
 };
