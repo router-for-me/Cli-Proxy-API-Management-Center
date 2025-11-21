@@ -406,5 +406,29 @@ export const logsModule = {
             }
             this.showNotification(i18n.t('logs.auto_refresh_disabled'), 'info');
         }
+    },
+
+    registerLogsListeners() {
+        if (!this.events || typeof this.events.on !== 'function') {
+            return;
+        }
+        this.events.on('connection:status-changed', (event) => {
+            const detail = event?.detail || {};
+            if (detail.isConnected) {
+                // 仅在日志页激活时刷新，避免非日志页面触发请求
+                const logsSection = document.getElementById('logs');
+                if (logsSection && logsSection.classList.contains('active')) {
+                    this.refreshLogs(false);
+                }
+            } else {
+                this.latestLogTimestamp = null;
+            }
+        });
+        this.events.on('navigation:section-activated', (event) => {
+            const detail = event?.detail || {};
+            if (detail.sectionId === 'logs' && this.isConnected) {
+                this.refreshLogs(false);
+            }
+        });
     }
 };

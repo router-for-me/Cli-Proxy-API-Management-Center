@@ -215,10 +215,14 @@ export const connectionModule = {
         this.updateConnectionInfo();
 
         if (this.events && typeof this.events.emit === 'function') {
-            this.events.emit('connection:status-changed', {
-                isConnected: this.isConnected,
-                apiBase: this.apiBase
-            });
+            const shouldEmit = this.lastConnectionStatusEmitted !== this.isConnected;
+            if (shouldEmit) {
+                this.events.emit('connection:status-changed', {
+                    isConnected: this.isConnected,
+                    apiBase: this.apiBase
+                });
+                this.lastConnectionStatusEmitted = this.isConnected;
+            }
         }
     },
 
@@ -324,9 +328,6 @@ export const connectionModule = {
 
             // 从配置中提取并设置各个设置项（现在传递keyStats）
             await this.updateSettingsFromConfig(config, keyStats);
-
-            // 认证文件需要单独加载，因为不在配置中
-            await this.loadAuthFiles(keyStats);
 
             if (this.events && typeof this.events.emit === 'function') {
                 this.events.emit('data:config-loaded', {

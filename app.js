@@ -67,6 +67,7 @@ class CLIProxyManager {
 
         // 状态更新定时器
         this.statusUpdateTimer = null;
+        this.lastConnectionStatusEmitted = null;
 
         // 日志自动刷新定时器
         this.logsRefreshTimer = null;
@@ -150,6 +151,9 @@ class CLIProxyManager {
         this.initializeTheme();
         this.registerSettingsListeners();
         this.registerUsageListeners();
+        if (typeof this.registerLogsListeners === 'function') {
+            this.registerLogsListeners();
+        }
         if (typeof this.registerConfigEditorListeners === 'function') {
             this.registerConfigEditorListeners();
         }
@@ -164,7 +168,6 @@ class CLIProxyManager {
         this.updateLoginConnectionInfo();
         // 检查主机名，如果不是 localhost 或 127.0.0.1，则隐藏 OAuth 登录框
         this.checkHostAndHideOAuth();
-
         if (typeof this.registerAuthFilesListeners === 'function') {
             this.registerAuthFilesListeners();
         }

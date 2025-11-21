@@ -15,11 +15,12 @@ export const navigationModule = {
                     section.classList.add('active');
                 }
 
-                if (sectionId === 'logs') {
-                    this.refreshLogs(false);
-                } else if (sectionId === 'config-management') {
+                if (sectionId === 'config-management') {
                     this.loadConfigFileEditor();
                     this.refreshConfigEditor();
+                }
+                if (this.events && typeof this.events.emit === 'function') {
+                    this.events.emit('navigation:section-activated', { sectionId });
                 }
             });
         });
