@@ -11,12 +11,14 @@ const getStatsBySource = (stats) => {
 
 const buildModelEndpoint = (baseUrl) => {
     if (!baseUrl) return '';
-    try {
-        return new URL('/v1/model', baseUrl).toString();
-    } catch (_) {
-        const trimmed = String(baseUrl).trim().replace(/\/+$/g, '');
-        return trimmed ? `${trimmed}/v1/model` : '';
+    const trimmed = String(baseUrl).trim().replace(/\/+$/g, '');
+    if (!trimmed) return '';
+
+    // 如果 base 已以 /v1 结尾，直接拼 /models；否则拼 /v1/models，避免丢失中间路径
+    if (trimmed.endsWith('/v1')) {
+        return `${trimmed}/models`;
     }
+    return `${trimmed}/v1/models`;
 };
 
 const normalizeModelList = (payload) => {
@@ -1116,7 +1118,7 @@ export function renderOpenAIModelDiscoveryList(models = []) {
         const desc = model.description ? `<div class="model-discovery-desc">${this.escapeHtml(model.description)}</div>` : '';
         return `
             <label class="model-discovery-row">
-                <input type="checkbox" class="model-discovery-checkbox" data-model-index="${index}" checked>
+                <input type="checkbox" class="model-discovery-checkbox" data-model-index="${index}">
                 <div class="model-discovery-meta">
                     <div class="model-discovery-name">${name} ${alias}</div>
                     ${desc}
