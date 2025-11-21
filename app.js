@@ -614,6 +614,9 @@ class CLIProxyManager {
     // 关闭模态框
     closeModal() {
         document.getElementById('modal').style.display = 'none';
+        if (typeof this.closeOpenAIModelDiscovery === 'function') {
+            this.closeOpenAIModelDiscovery();
+        }
     }
 
 }

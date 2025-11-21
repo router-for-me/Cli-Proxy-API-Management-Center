@@ -2251,6 +2251,148 @@ input:checked+.slider:before {
     overflow: hidden;
 }
 
+.model-actions-inline {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.model-discovery-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 18px;
+}
+
+.model-discovery-overlay.active {
+    display: flex;
+}
+
+.model-discovery-card {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    width: 95%;
+    max-width: 760px;
+    max-height: 90vh;
+    border-radius: 14px;
+    box-shadow: var(--shadow-modal);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow: hidden;
+}
+
+.model-discovery-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.model-discovery-header h3 {
+    margin: 0 0 6px 0;
+}
+
+.model-discovery-status {
+    min-height: 22px;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+.model-discovery-status.error {
+    color: #dc2626;
+}
+
+.model-discovery-status.warning {
+    color: #d97706;
+}
+
+.model-discovery-list {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 8px;
+    overflow-y: auto;
+    max-height: 46vh;
+}
+
+.model-discovery-row {
+    display: flex;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.model-discovery-row:hover {
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.model-discovery-checkbox {
+    margin-top: 4px;
+}
+
+.model-discovery-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.model-discovery-name {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.model-discovery-alias {
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.model-discovery-desc {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.model-discovery-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 18px 12px;
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .model-discovery-card {
+    background: var(--bg-secondary);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .model-discovery-list {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .model-discovery-row:hover {
+    background: rgba(96, 165, 250, 0.18);
+}
+
+[data-theme="dark"] .model-discovery-alias {
+    background: #312e81;
+    color: #c7d2fe;
+}
+
 @keyframes modalSlideIn {
     from {
         opacity: 0;

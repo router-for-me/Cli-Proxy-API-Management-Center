@@ -9,6 +9,54 @@ const getStatsBySource = (stats) => {
     return stats || {};
 };
 
+const buildModelEndpoint = (baseUrl) => {
+    if (!baseUrl) return '';
+    try {
+        return new URL('/v1/model', baseUrl).toString();
+    } catch (_) {
+        const trimmed = String(baseUrl).trim().replace(/\/+$/g, '');
+        return trimmed ? `${trimmed}/v1/model` : '';
+    }
+};
+
+const normalizeModelList = (payload) => {
+    const toModel = (entry) => {
+        if (typeof entry === 'string') {
+            return { name: entry };
+        }
+        if (!entry || typeof entry !== 'object') {
+            return null;
+        }
+        const name = entry.id || entry.name || entry.model || entry.value;
+        if (!name) return null;
+        const alias = entry.alias || entry.display_name || entry.displayName;
+        const description = entry.description || entry.note || entry.comment;
+        const model = { name: String(name) };
+        if (alias && alias !== name) {
+            model.alias = String(alias);
+        }
+        if (description) {
+            model.description = String(description);
+        }
+        return model;
+    };
+
+    if (Array.isArray(payload)) {
+        return payload.map(toModel).filter(Boolean);
+    }
+
+    if (payload && typeof payload === 'object') {
+        if (Array.isArray(payload.data)) {
+            return payload.data.map(toModel).filter(Boolean);
+        }
+        if (Array.isArray(payload.models)) {
+            return payload.models.map(toModel).filter(Boolean);
+        }
+    }
+
+    return [];
+};
+
 export async function loadGeminiKeys() {
     try {
         const config = await this.getConfig();
@@ -979,6 +1027,251 @@ export async function renderOpenAIProviders(providers, keyStats = null) {
     }).join('');
 }
 
+const getOpenAIContext = (mode = 'new') => {
+    const isEdit = mode === 'edit';
+    return {
+        mode: isEdit ? 'edit' : 'new',
+        baseUrlInputId: isEdit ? 'edit-provider-url' : 'new-provider-url',
+        apiKeyWrapperId: isEdit ? 'edit-openai-keys-wrapper' : 'new-openai-keys-wrapper',
+        headerWrapperId: isEdit ? 'edit-openai-headers-wrapper' : 'new-openai-headers-wrapper',
+        modelWrapperId: isEdit ? 'edit-provider-models-wrapper' : 'new-provider-models-wrapper'
+    };
+};
+
+function ensureOpenAIModelDiscoveryCard(manager) {
+    let overlay = document.getElementById('openai-model-discovery');
+    if (overlay) {
+        return overlay;
+    }
+
+    overlay = document.createElement('div');
+    overlay.id = 'openai-model-discovery';
+    overlay.className = 'model-discovery-overlay';
+    overlay.innerHTML = `
+        <div class="model-discovery-card">
+            <div class="model-discovery-header">
+                <div class="model-discovery-title">
+                    <h3>${i18n.t('ai_providers.openai_models_fetch_title')}</h3>
+                    <p class="form-hint">${i18n.t('ai_providers.openai_models_fetch_hint')}</p>
+                </div>
+                <button type="button" class="btn btn-secondary" id="openai-model-discovery-back">${i18n.t('ai_providers.openai_models_fetch_back')}</button>
+            </div>
+            <div class="form-group">
+                <label>${i18n.t('ai_providers.openai_models_fetch_url_label')}</label>
+                <div class="input-group">
+                    <input type="text" id="openai-model-discovery-url" readonly>
+                    <button type="button" class="btn btn-secondary" id="openai-model-discovery-refresh">${i18n.t('ai_providers.openai_models_fetch_refresh')}</button>
+                </div>
+            </div>
+            <div id="openai-model-discovery-status" class="model-discovery-status"></div>
+            <div id="openai-model-discovery-list" class="model-discovery-list"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="openai-model-discovery-cancel">${i18n.t('common.cancel')}</button>
+                <button class="btn btn-primary" id="openai-model-discovery-apply">${i18n.t('ai_providers.openai_models_fetch_apply')}</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const bind = (id, handler) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('click', handler);
+        }
+    };
+
+    bind('openai-model-discovery-back', () => manager.closeOpenAIModelDiscovery());
+    bind('openai-model-discovery-cancel', () => manager.closeOpenAIModelDiscovery());
+    bind('openai-model-discovery-refresh', () => manager.refreshOpenAIModelDiscovery());
+    bind('openai-model-discovery-apply', () => manager.applyOpenAIModelDiscoverySelection());
+
+    return overlay;
+}
+
+export function setOpenAIModelDiscoveryStatus(message = '', type = 'info') {
+    const status = document.getElementById('openai-model-discovery-status');
+    if (!status) return;
+    status.textContent = message;
+    status.className = `model-discovery-status ${type}`;
+}
+
+export function renderOpenAIModelDiscoveryList(models = []) {
+    const list = document.getElementById('openai-model-discovery-list');
+    if (!list) return;
+
+    if (!models.length) {
+        list.innerHTML = `
+            <div class="model-discovery-empty">
+                <i class="fas fa-box-open"></i>
+                <span>${i18n.t('ai_providers.openai_models_fetch_empty')}</span>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = models.map((model, index) => {
+        const name = this.escapeHtml(model.name || '');
+        const alias = model.alias ? `<span class="model-discovery-alias">${this.escapeHtml(model.alias)}</span>` : '';
+        const desc = model.description ? `<div class="model-discovery-desc">${this.escapeHtml(model.description)}</div>` : '';
+        return `
+            <label class="model-discovery-row">
+                <input type="checkbox" class="model-discovery-checkbox" data-model-index="${index}" checked>
+                <div class="model-discovery-meta">
+                    <div class="model-discovery-name">${name} ${alias}</div>
+                    ${desc}
+                </div>
+            </label>
+        `;
+    }).join('');
+}
+
+export function openOpenAIModelDiscovery(mode = 'new') {
+    const context = getOpenAIContext(mode);
+    const baseInput = document.getElementById(context.baseUrlInputId);
+    const baseUrl = baseInput ? baseInput.value.trim() : '';
+
+    if (!baseUrl) {
+        this.showNotification(i18n.t('ai_providers.openai_models_fetch_invalid_url'), 'error');
+        return;
+    }
+
+    const endpoint = buildModelEndpoint(baseUrl);
+    if (!endpoint) {
+        this.showNotification(i18n.t('ai_providers.openai_models_fetch_invalid_url'), 'error');
+        return;
+    }
+
+    const apiKeyEntries = this.collectApiKeyEntryInputs(context.apiKeyWrapperId);
+    const firstKey = Array.isArray(apiKeyEntries) ? apiKeyEntries.find(entry => entry && entry['api-key']) : null;
+    const headers = this.collectHeaderInputs(context.headerWrapperId) || {};
+
+    if (firstKey && !headers.Authorization && !headers.authorization) {
+        headers.Authorization = `Bearer ${firstKey['api-key']}`;
+    }
+
+    ensureOpenAIModelDiscoveryCard(this).classList.add('active');
+    this.openAIModelDiscoveryContext = {
+        ...context,
+        endpoint,
+        headers,
+        discoveredModels: []
+    };
+
+    const urlInput = document.getElementById('openai-model-discovery-url');
+    if (urlInput) {
+        urlInput.value = endpoint;
+    }
+
+    this.renderOpenAIModelDiscoveryList([]);
+    this.setOpenAIModelDiscoveryStatus(i18n.t('ai_providers.openai_models_fetch_loading'), 'info');
+    this.refreshOpenAIModelDiscovery();
+}
+
+export async function refreshOpenAIModelDiscovery() {
+    const context = this.openAIModelDiscoveryContext;
+    if (!context || !context.endpoint) {
+        return;
+    }
+
+    this.setOpenAIModelDiscoveryStatus(i18n.t('ai_providers.openai_models_fetch_loading'), 'info');
+    const list = document.getElementById('openai-model-discovery-list');
+    if (list) {
+        list.innerHTML = '<div class="model-discovery-empty"><i class="fas fa-spinner fa-spin"></i></div>';
+    }
+
+    try {
+        const response = await fetch(context.endpoint, {
+            headers: context.headers || {}
+        });
+
+        if (!response.ok) {
+            throw new Error(`${response.status} ${response.statusText}`);
+        }
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (err) {
+            const text = await response.text();
+            throw new Error(text || err.message || 'Invalid JSON');
+        }
+
+        const models = normalizeModelList(data);
+        context.discoveredModels = models;
+
+        this.renderOpenAIModelDiscoveryList(models);
+        if (!models.length) {
+            this.setOpenAIModelDiscoveryStatus(i18n.t('ai_providers.openai_models_fetch_empty'), 'warning');
+        } else {
+            this.setOpenAIModelDiscoveryStatus('', 'info');
+        }
+    } catch (error) {
+        context.discoveredModels = [];
+        this.renderOpenAIModelDiscoveryList([]);
+        this.setOpenAIModelDiscoveryStatus(`${i18n.t('ai_providers.openai_models_fetch_error')}: ${error.message}`, 'error');
+    }
+}
+
+export function applyOpenAIModelDiscoverySelection() {
+    const context = this.openAIModelDiscoveryContext;
+    if (!context || !Array.isArray(context.discoveredModels) || !context.discoveredModels.length) {
+        this.closeOpenAIModelDiscovery();
+        return;
+    }
+
+    const list = document.getElementById('openai-model-discovery-list');
+    if (!list) {
+        this.closeOpenAIModelDiscovery();
+        return;
+    }
+
+    const selectedIndices = Array.from(list.querySelectorAll('.model-discovery-checkbox:checked'))
+        .map(input => Number.parseInt(input.getAttribute('data-model-index') || '-1', 10))
+        .filter(index => Number.isFinite(index) && index >= 0 && index < context.discoveredModels.length);
+
+    const selectedModels = selectedIndices.map(index => context.discoveredModels[index]);
+    if (!selectedModels.length) {
+        this.closeOpenAIModelDiscovery();
+        return;
+    }
+
+    const existing = this.collectModelInputs(context.modelWrapperId);
+    const mergedMap = new Map();
+    existing.forEach(model => {
+        if (model && model.name) {
+            mergedMap.set(model.name, { ...model });
+        }
+    });
+
+    let addedCount = 0;
+    selectedModels.forEach(model => {
+        const name = model && model.name;
+        if (!name) return;
+        if (!mergedMap.has(name)) {
+            mergedMap.set(name, { name, ...(model.alias ? { alias: model.alias } : {}) });
+            addedCount++;
+        }
+    });
+
+    this.populateModelFields(context.modelWrapperId, Array.from(mergedMap.values()));
+    this.closeOpenAIModelDiscovery();
+
+    if (addedCount > 0) {
+        const template = i18n.t('ai_providers.openai_models_fetch_added');
+        const message = template.replace('{count}', addedCount);
+        this.showNotification(message, 'success');
+    }
+}
+
+export function closeOpenAIModelDiscovery() {
+    const overlay = document.getElementById('openai-model-discovery');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+    this.openAIModelDiscoveryContext = null;
+}
+
 export function showAddOpenAIProviderModal() {
     const modal = document.getElementById('modal');
     const modalBody = document.getElementById('modal-body');
@@ -1009,7 +1302,12 @@ export function showAddOpenAIProviderModal() {
                 <label>${i18n.t('ai_providers.openai_add_modal_models_label')}</label>
                 <p class="form-hint">${i18n.t('ai_providers.openai_models_hint')}</p>
                 <div id="new-provider-models-wrapper" class="model-input-list"></div>
-                <button type="button" class="btn btn-secondary" onclick="manager.addModelField('new-provider-models-wrapper')">${i18n.t('ai_providers.openai_models_add_btn')}</button>
+                <div class="model-actions-inline">
+                    <button type="button" class="btn btn-secondary" onclick="manager.addModelField('new-provider-models-wrapper')">${i18n.t('ai_providers.openai_models_add_btn')}</button>
+                    <button type="button" class="btn btn-secondary" onclick="manager.openOpenAIModelDiscovery('new')">
+                        <i class="fas fa-download"></i> ${i18n.t('ai_providers.openai_models_fetch_button')}
+                    </button>
+                </div>
             </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
@@ -1104,7 +1402,12 @@ export function editOpenAIProvider(index, provider) {
                 <label>${i18n.t('ai_providers.openai_edit_modal_models_label')}</label>
                 <p class="form-hint">${i18n.t('ai_providers.openai_models_hint')}</p>
                 <div id="edit-provider-models-wrapper" class="model-input-list"></div>
-                <button type="button" class="btn btn-secondary" onclick="manager.addModelField('edit-provider-models-wrapper')">${i18n.t('ai_providers.openai_models_add_btn')}</button>
+                <div class="model-actions-inline">
+                    <button type="button" class="btn btn-secondary" onclick="manager.addModelField('edit-provider-models-wrapper')">${i18n.t('ai_providers.openai_models_add_btn')}</button>
+                    <button type="button" class="btn btn-secondary" onclick="manager.openOpenAIModelDiscovery('edit')">
+                        <i class="fas fa-download"></i> ${i18n.t('ai_providers.openai_models_fetch_button')}
+                    </button>
+                </div>
             </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
@@ -1292,6 +1595,12 @@ export const aiProvidersModule = {
     editOpenAIProvider,
     updateOpenAIProvider,
     deleteOpenAIProvider,
+    openOpenAIModelDiscovery,
+    refreshOpenAIModelDiscovery,
+    renderOpenAIModelDiscoveryList,
+    setOpenAIModelDiscoveryStatus,
+    applyOpenAIModelDiscoverySelection,
+    closeOpenAIModelDiscovery,
     addModelField,
     populateModelFields,
     collectModelInputs,
