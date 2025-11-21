@@ -1777,23 +1777,23 @@ input:checked+.slider:before {
 }
 
 .file-type-badge.gemini-cli {
-    background: #4f8de2;
-    color: #ffffff;
+    background: #e7efff;
+    color: #1e4fa3;
 }
 
 [data-theme="dark"] .file-type-badge.gemini-cli {
-    background: #4f8de2;
-    color: #eaf1fb;
+    background: #1c3f73;
+    color: #a8c7ff;
 }
 
 .file-type-badge.aistudio {
-    background: #2a2b2e;
-    color: #f1f1f3;
+    background: #f0f2f5;
+    color: #2f343c;
 }
 
 [data-theme="dark"] .file-type-badge.aistudio {
-    background: #2a2b2e;
-    color: #d8dbe1;
+    background: #373c42;
+    color: #cfd3db;
 }
 
 .file-type-badge.claude {
