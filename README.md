@@ -95,8 +95,6 @@ Tip: The Logs navigation item appears after enabling "Logging to file" in Basic 
 ├── build-scripts/      # Build utilities
 │   └── prepare-html.js
 ├── dist/               # Bundled single-file output
-├── api.md
-├── management-guide_CN.md
 ├── BUILD_RELEASE.md
 ├── LICENSE
 ├── README.md
