@@ -333,6 +333,19 @@ const i18n = {
             'auth_login.anthropic_oauth_start_error': '启动 Anthropic OAuth 失败:',
             'auth_login.anthropic_oauth_polling_error': '检查认证状态失败:',
 
+            // Antigravity OAuth
+            'auth_login.antigravity_oauth_title': 'Antigravity OAuth',
+            'auth_login.antigravity_oauth_button': '开始 Antigravity 登录',
+            'auth_login.antigravity_oauth_hint': '通过 OAuth 流程登录 Antigravity（Google 账号）服务，自动获取并保存认证文件。',
+            'auth_login.antigravity_oauth_url_label': '授权链接:',
+            'auth_login.antigravity_open_link': '打开链接',
+            'auth_login.antigravity_copy_link': '复制链接',
+            'auth_login.antigravity_oauth_status_waiting': '等待认证中...',
+            'auth_login.antigravity_oauth_status_success': '认证成功！',
+            'auth_login.antigravity_oauth_status_error': '认证失败:',
+            'auth_login.antigravity_oauth_start_error': '启动 Antigravity OAuth 失败:',
+            'auth_login.antigravity_oauth_polling_error': '检查认证状态失败:',
+
             // Gemini CLI OAuth
             'auth_login.gemini_cli_oauth_title': 'Gemini CLI OAuth',
             'auth_login.gemini_cli_oauth_button': '开始 Gemini CLI 登录',
@@ -853,6 +866,19 @@ const i18n = {
             'auth_login.anthropic_oauth_status_error': 'Authentication failed:',
             'auth_login.anthropic_oauth_start_error': 'Failed to start Anthropic OAuth:',
             'auth_login.anthropic_oauth_polling_error': 'Failed to check authentication status:',
+
+            // Antigravity OAuth
+            'auth_login.antigravity_oauth_title': 'Antigravity OAuth',
+            'auth_login.antigravity_oauth_button': 'Start Antigravity Login',
+            'auth_login.antigravity_oauth_hint': 'Login to Antigravity service (Google account) through OAuth flow, automatically obtain and save authentication files.',
+            'auth_login.antigravity_oauth_url_label': 'Authorization URL:',
+            'auth_login.antigravity_open_link': 'Open Link',
+            'auth_login.antigravity_copy_link': 'Copy Link',
+            'auth_login.antigravity_oauth_status_waiting': 'Waiting for authentication...',
+            'auth_login.antigravity_oauth_status_success': 'Authentication successful!',
+            'auth_login.antigravity_oauth_status_error': 'Authentication failed:',
+            'auth_login.antigravity_oauth_start_error': 'Failed to start Antigravity OAuth:',
+            'auth_login.antigravity_oauth_polling_error': 'Failed to check authentication status:',
 
             // Gemini CLI OAuth
             'auth_login.gemini_cli_oauth_title': 'Gemini CLI OAuth',

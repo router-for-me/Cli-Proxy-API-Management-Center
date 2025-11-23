@@ -300,6 +300,135 @@ export const oauthModule = {
         }
     },
 
+    // ===== Antigravity OAuth 相关方法 =====
+
+    // 开始 Antigravity OAuth 流程
+    async startAntigravityOAuth() {
+        try {
+            const response = await this.makeRequest('/antigravity-auth-url?is_webui=1');
+            const authUrl = response.url;
+            const state = response.state || this.extractStateFromUrl(authUrl);
+
+            // 显示授权链接
+            const urlInput = document.getElementById('antigravity-oauth-url');
+            const content = document.getElementById('antigravity-oauth-content');
+            const status = document.getElementById('antigravity-oauth-status');
+
+            if (urlInput) {
+                urlInput.value = authUrl;
+            }
+            if (content) {
+                content.style.display = 'block';
+            }
+            if (status) {
+                status.textContent = i18n.t('auth_login.antigravity_oauth_status_waiting');
+                status.style.color = 'var(--warning-text)';
+            }
+
+            // 开始轮询认证状态
+            this.startAntigravityOAuthPolling(state);
+
+        } catch (error) {
+            this.showNotification(`${i18n.t('auth_login.antigravity_oauth_start_error')} ${error.message}`, 'error');
+        }
+    },
+
+    // 打开 Antigravity 授权链接
+    openAntigravityLink() {
+        const urlInput = document.getElementById('antigravity-oauth-url');
+        if (urlInput && urlInput.value) {
+            window.open(urlInput.value, '_blank');
+        }
+    },
+
+    // 复制 Antigravity 授权链接
+    async copyAntigravityLink() {
+        const urlInput = document.getElementById('antigravity-oauth-url');
+        if (urlInput && urlInput.value) {
+            try {
+                await navigator.clipboard.writeText(urlInput.value);
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
+            } catch (error) {
+                urlInput.select();
+                document.execCommand('copy');
+                this.showNotification(i18n.t('notification.link_copied'), 'success');
+            }
+        }
+    },
+
+    // 开始轮询 Antigravity OAuth 状态
+    startAntigravityOAuthPolling(state) {
+        if (!state) {
+            this.showNotification(i18n.t('auth_login.missing_state'), 'error');
+            return;
+        }
+
+        const pollInterval = setInterval(async () => {
+            try {
+                const response = await this.makeRequest(`/get-auth-status?state=${encodeURIComponent(state)}`);
+                const status = response.status;
+                const statusElement = document.getElementById('antigravity-oauth-status');
+
+                if (status === 'ok') {
+                    clearInterval(pollInterval);
+                    this.resetAntigravityOAuthUI();
+                    this.showNotification(i18n.t('auth_login.antigravity_oauth_status_success'), 'success');
+                    this.loadAuthFiles();
+                } else if (status === 'error') {
+                    clearInterval(pollInterval);
+                    const errorMessage = response.error || 'Unknown error';
+                    if (statusElement) {
+                        statusElement.textContent = `${i18n.t('auth_login.antigravity_oauth_status_error')} ${errorMessage}`;
+                        statusElement.style.color = 'var(--error-text)';
+                    }
+                    this.showNotification(`${i18n.t('auth_login.antigravity_oauth_status_error')} ${errorMessage}`, 'error');
+                    setTimeout(() => {
+                        this.resetAntigravityOAuthUI();
+                    }, 3000);
+                } else if (status === 'wait') {
+                    if (statusElement) {
+                        statusElement.textContent = i18n.t('auth_login.antigravity_oauth_status_waiting');
+                        statusElement.style.color = 'var(--warning-text)';
+                    }
+                }
+            } catch (error) {
+                clearInterval(pollInterval);
+                const statusElement = document.getElementById('antigravity-oauth-status');
+                if (statusElement) {
+                    statusElement.textContent = `${i18n.t('auth_login.antigravity_oauth_polling_error')} ${error.message}`;
+                    statusElement.style.color = 'var(--error-text)';
+                }
+                this.showNotification(`${i18n.t('auth_login.antigravity_oauth_polling_error')} ${error.message}`, 'error');
+                setTimeout(() => {
+                    this.resetAntigravityOAuthUI();
+                }, 3000);
+            }
+        }, 2000);
+
+        setTimeout(() => {
+            clearInterval(pollInterval);
+        }, 5 * 60 * 1000);
+    },
+
+    // 重置 Antigravity OAuth UI 到初始状态
+    resetAntigravityOAuthUI() {
+        const urlInput = document.getElementById('antigravity-oauth-url');
+        const content = document.getElementById('antigravity-oauth-content');
+        const status = document.getElementById('antigravity-oauth-status');
+
+        if (urlInput) {
+            urlInput.value = '';
+        }
+        if (content) {
+            content.style.display = 'none';
+        }
+        if (status) {
+            status.textContent = '';
+            status.style.color = '';
+            status.className = '';
+        }
+    },
+
     // ===== Gemini CLI OAuth 相关方法 =====
 
     // 开始 Gemini CLI OAuth 流程

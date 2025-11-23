@@ -221,6 +221,7 @@ class CLIProxyManager {
                 const cardText = card.textContent || '';
                 if (cardText.includes('Codex OAuth') ||
                     cardText.includes('Anthropic OAuth') ||
+                    cardText.includes('Antigravity OAuth') ||
                     cardText.includes('Gemini CLI OAuth') ||
                     cardText.includes('Qwen OAuth') ||
                     cardText.includes('iFlow OAuth')) {
@@ -428,6 +429,21 @@ class CLIProxyManager {
         }
         if (anthropicCopyLink) {
             anthropicCopyLink.addEventListener('click', () => this.copyAnthropicLink());
+        }
+
+        // Antigravity OAuth
+        const antigravityOauthBtn = document.getElementById('antigravity-oauth-btn');
+        const antigravityOpenLink = document.getElementById('antigravity-open-link');
+        const antigravityCopyLink = document.getElementById('antigravity-copy-link');
+
+        if (antigravityOauthBtn) {
+            antigravityOauthBtn.addEventListener('click', () => this.startAntigravityOAuth());
+        }
+        if (antigravityOpenLink) {
+            antigravityOpenLink.addEventListener('click', () => this.openAntigravityLink());
+        }
+        if (antigravityCopyLink) {
+            antigravityCopyLink.addEventListener('click', () => this.copyAntigravityLink());
         }
 
         // Gemini CLI OAuth

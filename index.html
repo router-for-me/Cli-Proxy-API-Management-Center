@@ -628,6 +628,42 @@
                                 </div>
                             </div>
 
+                            <!-- Antigravity OAuth -->
+                            <div class="card" id="antigravity-oauth-card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-rocket"></i> <span
+                                            data-i18n="auth_login.antigravity_oauth_title">Antigravity OAuth</span></h3>
+                                    <button id="antigravity-oauth-btn" class="btn btn-primary">
+                                        <i class="fas fa-sign-in-alt"></i> <span
+                                            data-i18n="auth_login.antigravity_oauth_button">开始 Antigravity 登录</span>
+                                    </button>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" style="margin-bottom: 20px;"
+                                        data-i18n="auth_login.antigravity_oauth_hint">
+                                        通过 OAuth 流程登录 Antigravity（Google 账号）服务，自动获取并保存认证文件。
+                                    </p>
+                                    <div id="antigravity-oauth-content" style="display: none;">
+                                        <div class="form-group">
+                                            <label data-i18n="auth_login.antigravity_oauth_url_label">授权链接:</label>
+                                            <div class="input-group">
+                                                <input type="text" id="antigravity-oauth-url" readonly>
+                                                <button id="antigravity-open-link" class="btn btn-primary">
+                                                    <i class="fas fa-external-link-alt"></i> <span
+                                                        data-i18n="auth_login.antigravity_open_link">打开链接</span>
+                                                </button>
+                                                <button id="antigravity-copy-link" class="btn btn-secondary">
+                                                    <i class="fas fa-copy"></i> <span
+                                                        data-i18n="auth_login.antigravity_copy_link">复制链接</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="antigravity-oauth-status" class="form-hint" style="margin-top: 10px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Gemini CLI OAuth -->
                             <div class="card" id="gemini-cli-oauth-card">
                                 <div class="card-header">

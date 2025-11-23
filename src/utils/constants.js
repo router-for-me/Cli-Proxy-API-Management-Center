@@ -109,6 +109,7 @@ export const REQUEST_TIMEOUT_MS = 30 * 1000;
 export const OAUTH_CARD_IDS = [
     'codex-oauth-card',
     'anthropic-oauth-card',
+    'antigravity-oauth-card',
     'gemini-cli-oauth-card',
     'qwen-oauth-card',
     'iflow-oauth-card'
@@ -120,6 +121,7 @@ export const OAUTH_CARD_IDS = [
 export const OAUTH_PROVIDERS = {
     CODEX: 'codex',
     ANTHROPIC: 'anthropic',
+    ANTIGRAVITY: 'antigravity',
     GEMINI_CLI: 'gemini-cli',
     QWEN: 'qwen',
     IFLOW: 'iflow'
