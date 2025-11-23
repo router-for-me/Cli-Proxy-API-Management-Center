@@ -778,6 +778,34 @@
                                         <div id="iflow-oauth-status" class="form-hint" style="margin-top: 10px;"></div>
                                     </div>
                                 </div>
+                                <div class="card-content" style="border-top: 1px solid var(--border-color); margin-top: 16px; padding-top: 16px;">
+                                    <h4 style="margin-bottom: 10px;" data-i18n="auth_login.iflow_cookie_title">iFlow Cookie 登录</h4>
+                                    <p class="form-hint" data-i18n="auth_login.iflow_cookie_hint">
+                                        直接提交 Cookie 完成登录并保存凭据，无需打开授权链接。
+                                    </p>
+                                    <div class="form-group">
+                                        <label for="iflow-cookie-input" data-i18n="auth_login.iflow_cookie_label">Cookie 内容:</label>
+                                        <textarea id="iflow-cookie-input" rows="3" data-i18n-placeholder="auth_login.iflow_cookie_placeholder" placeholder="粘贴浏览器中的 Cookie"></textarea>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button id="iflow-cookie-submit" class="btn btn-primary">
+                                            <i class="fas fa-cookie-bite"></i> <span data-i18n="auth_login.iflow_cookie_button">提交 Cookie 登录</span>
+                                        </button>
+                                    </div>
+                                    <div id="iflow-cookie-status" class="form-hint" style="margin-top: 10px;"></div>
+                                    <div id="iflow-cookie-result" class="vertex-import-result" style="display: none;">
+                                        <div class="vertex-import-result-header">
+                                            <i class="fas fa-check-circle"></i>
+                                            <span data-i18n="auth_login.iflow_cookie_result_title">Cookie 登录结果</span>
+                                        </div>
+                                        <ul>
+                                            <li><span data-i18n="auth_login.iflow_cookie_result_email">账号</span>: <code id="iflow-cookie-result-email">-</code></li>
+                                            <li><span data-i18n="auth_login.iflow_cookie_result_expired">过期时间</span>: <code id="iflow-cookie-result-expired">-</code></li>
+                                            <li><span data-i18n="auth_login.iflow_cookie_result_path">保存路径</span>: <code id="iflow-cookie-result-path">-</code></li>
+                                            <li><span data-i18n="auth_login.iflow_cookie_result_type">类型</span>: <code id="iflow-cookie-result-type">-</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </section>
 

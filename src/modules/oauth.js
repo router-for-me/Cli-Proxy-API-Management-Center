@@ -862,6 +862,88 @@ export const oauthModule = {
             status.style.color = '';
             status.className = '';
         }
+    },
+
+    // 提交 iFlow Cookie 登录
+    async submitIflowCookieLogin() {
+        const cookieInput = document.getElementById('iflow-cookie-input');
+        const statusEl = document.getElementById('iflow-cookie-status');
+        const submitBtn = document.getElementById('iflow-cookie-submit');
+        const cookieValue = cookieInput ? cookieInput.value.trim() : '';
+
+        this.renderIflowCookieResult(null);
+
+        if (!cookieValue) {
+            this.showNotification(i18n.t('auth_login.iflow_cookie_required'), 'error');
+            if (statusEl) {
+                statusEl.textContent = `${i18n.t('auth_login.iflow_cookie_status_error')} ${i18n.t('auth_login.iflow_cookie_required')}`;
+                statusEl.style.color = 'var(--error-text)';
+            }
+            return;
+        }
+
+        try {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+            if (statusEl) {
+                statusEl.textContent = i18n.t('auth_login.iflow_oauth_status_waiting');
+                statusEl.style.color = 'var(--warning-text)';
+            }
+
+            const response = await this.makeRequest('/iflow-auth-url', {
+                method: 'POST',
+                body: JSON.stringify({ cookie: cookieValue })
+            });
+
+            this.renderIflowCookieResult(response);
+            if (statusEl) {
+                statusEl.textContent = i18n.t('auth_login.iflow_cookie_status_success');
+                statusEl.style.color = 'var(--success-text)';
+            }
+            if (cookieInput) {
+                cookieInput.value = '';
+            }
+
+            this.showNotification(i18n.t('auth_login.iflow_cookie_status_success'), 'success');
+            this.loadAuthFiles();
+        } catch (error) {
+            if (statusEl) {
+                statusEl.textContent = `${i18n.t('auth_login.iflow_cookie_status_error')} ${error.message}`;
+                statusEl.style.color = 'var(--error-text)';
+            }
+            this.showNotification(`${i18n.t('auth_login.iflow_cookie_start_error')} ${error.message}`, 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+            }
+        }
+    },
+
+    renderIflowCookieResult(result = null) {
+        const container = document.getElementById('iflow-cookie-result');
+        const emailEl = document.getElementById('iflow-cookie-result-email');
+        const expiredEl = document.getElementById('iflow-cookie-result-expired');
+        const pathEl = document.getElementById('iflow-cookie-result-path');
+        const typeEl = document.getElementById('iflow-cookie-result-type');
+
+        if (!container || !emailEl || !expiredEl || !pathEl || !typeEl) {
+            return;
+        }
+
+        if (!result) {
+            container.style.display = 'none';
+            emailEl.textContent = '-';
+            expiredEl.textContent = '-';
+            pathEl.textContent = '-';
+            typeEl.textContent = '-';
+            return;
+        }
+
+        emailEl.textContent = result.email || '-';
+        expiredEl.textContent = result.expired || '-';
+        pathEl.textContent = result.saved_path || result.savedPath || result.path || '-';
+        typeEl.textContent = result.type || '-';
+        container.style.display = 'block';
     }
 };
-

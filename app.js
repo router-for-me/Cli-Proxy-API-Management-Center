@@ -480,6 +480,7 @@ class CLIProxyManager {
         const iflowOauthBtn = document.getElementById('iflow-oauth-btn');
         const iflowOpenLink = document.getElementById('iflow-open-link');
         const iflowCopyLink = document.getElementById('iflow-copy-link');
+        const iflowCookieSubmit = document.getElementById('iflow-cookie-submit');
 
         if (iflowOauthBtn) {
             iflowOauthBtn.addEventListener('click', () => this.startIflowOAuth());
@@ -489,6 +490,9 @@ class CLIProxyManager {
         }
         if (iflowCopyLink) {
             iflowCopyLink.addEventListener('click', () => this.copyIflowLink());
+        }
+        if (iflowCookieSubmit) {
+            iflowCookieSubmit.addEventListener('click', () => this.submitIflowCookieLogin());
         }
 
         // 使用统计
