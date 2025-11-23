@@ -1552,6 +1552,118 @@ input:checked+.slider:before {
     overflow-y: auto;
 }
 
+
+/* API 密钥列表压缩布局 */
+.key-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.key-table-row {
+    display: grid;
+    grid-template-columns: 72px 1fr auto;
+    align-items: center;
+    background: var(--bg-quaternary);
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    padding: 10px 12px;
+    transition: all 0.2s ease;
+}
+
+.key-table-row:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+    transform: translateY(-1px);
+}
+
+.key-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    min-width: 52px;
+    padding: 0 10px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 14px;
+    border: 1px solid var(--border-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.key-table-value {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.key-table .item-title {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.key-value {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.item-actions.compact {
+    position: static;
+    transform: none;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.item-actions.compact .btn {
+    min-width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.item-actions.compact .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+.item-actions.compact .btn i {
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .key-table-row {
+        grid-template-columns: 1fr;
+        row-gap: 10px;
+    }
+
+    .item-actions.compact {
+        justify-content: flex-start;
+    }
+
+    .key-badge {
+        width: fit-content;
+    }
+
+    .key-value {
+        white-space: normal;
+        word-break: break-all;
+    }
+}
+
 .file-list {
     /* 认证文件列表填满页面，保留版本信息空间 */
     max-height: calc(100vh - 300px); /* 减去导航栏、padding和版本信息的高度 */

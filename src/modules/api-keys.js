@@ -26,27 +26,34 @@ export const apiKeysModule = {
             return;
         }
 
-        container.innerHTML = keys.map((key, index) => {
+        const rows = keys.map((key, index) => {
             const normalizedKey = typeof key === 'string' ? key : String(key ?? '');
             const maskedDisplay = this.escapeHtml(this.maskApiKey(normalizedKey));
             const keyArgument = encodeURIComponent(normalizedKey);
             return `
-            <div class="key-item">
-                <div class="item-content">
-                    <div class="item-title">${i18n.t('api_keys.item_title')} #${index + 1}</div>
-                    <div class="item-value">${maskedDisplay}</div>
+                <div class="key-table-row">
+                    <div class="key-badge">#${index + 1}</div>
+                    <div class="key-table-value">
+                        <div class="item-title">${i18n.t('api_keys.item_title')}</div>
+                        <div class="key-value">${maskedDisplay}</div>
+                    </div>
+                    <div class="item-actions compact">
+                        <button class="btn btn-secondary" data-action="edit-api-key" data-index="${index}" data-key="${keyArgument}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" data-action="delete-api-key" data-index="${index}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="item-actions">
-                    <button class="btn btn-secondary" data-action="edit-api-key" data-index="${index}" data-key="${keyArgument}">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-danger" data-action="delete-api-key" data-index="${index}">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = `
+            <div class="key-table">
+                ${rows}
             </div>
         `;
-        }).join('');
 
         this.bindApiKeyListEvents(container);
     },
