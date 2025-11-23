@@ -721,4 +721,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupSiteLogo();
     manager = new CLIProxyManager();
+    // Expose manager globally for inline onclick handlers
+    window.manager = manager;
 });
