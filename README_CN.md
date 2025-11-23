@@ -1,149 +1,49 @@
 # Cli-Proxy-API-Management-Center
 这是一个用于管理 CLI Proxy API 的现代化 Web 界面。
 
-主项目
-https://github.com/router-for-me/CLIProxyAPI
+[English](README.md)
 
-示例网站:
-https://remote.router-for.me/
+主项目: https://github.com/router-for-me/CLIProxyAPI  
+示例网站: https://remote.router-for.me/  
+最低版本 ≥ 6.3.0（推荐 ≥ 6.5.0）
 
-最低可用版本 ≥ 6.0.0
-
-推荐版本 ≥ 6.2.32
-
-自6.0.19起WebUI已经集成在主程序中 可以通过主项目开启的外部端口的`/management.html`访问
+自 6.0.19 起 WebUI 已集成到主程序中，启动后可通过 `/management.html` 访问。
 
 ## 功能特点
 
-### 认证管理
-- 支持管理密钥认证
-- 可配置 API 基础地址
-- 实时连接状态检测
-- 自动登录保存的凭据
-- 语言和主题切换
-
-### 基础设置
-- **调试模式**: 开启/关闭调试功能
-- **代理设置**: 配置代理服务器 URL
-- **请求重试**: 设置请求重试次数
-- **配额管理**: 配置超出配额时的行为
-  - 超出配额时自动切换项目
-  - 超出配额时切换到预览模型
-
-### API 密钥管理
-- **代理服务认证密钥**: 管理用于代理服务的 API 密钥
-- **Gemini API**: 管理 Google Gemini 生成式语言 API 密钥
-- **Codex API**: 管理 OpenAI Codex API 配置
-- **Claude API**: 管理 Anthropic Claude API 配置
-- **OpenAI 兼容提供商**: 管理 OpenAI 兼容的第三方提供商
-
-### 认证文件管理
-- 上传认证 JSON 文件
-- 下载现有认证文件
-- 删除单个或所有认证文件
-- 显示文件详细信息
-
-### 使用统计
-- **实时分析**: 通过交互式图表跟踪 API 使用情况
-- **请求趋势**: 按小时/天可视化请求模式
-- **Token 使用**: 监控 Token 消耗随时间变化
-- **API 详情**: 每个 API 端点的详细统计
-- **成功率/失败率**: 跟踪 API 可靠性指标
-
-### 系统信息
-- **连接状态**: 实时连接监控
-- **配置状态**: 跟踪配置加载状态
-- **服务器信息**: 显示服务器地址和管理密钥
-- **最后更新**: 显示数据最后刷新时间
-
+### 主要能力
+- **登录与体验**: 自动检测当前地址（可自定义/重置），加密自动登录，语言/主题切换，响应式布局与移动端侧边栏。
+- **基础设置**: 调试、代理 URL、请求重试，配额溢出自动切换项目/预览模型，使用统计开关，请求日志与文件日志开关，WebSocket `/ws/*` 鉴权开关。
+- **密钥与提供商**: 管理代理服务密钥，Gemini/Codex/Claude 配置，OpenAI 兼容提供商（自定义 Base URL/Headers/Proxy/模型别名），Vertex AI 服务账号导入（可选区域）。
+- **认证文件与 OAuth**: 上传/下载/搜索/分页 JSON 凭据，类型筛选（Qwen/Gemini/GeminiCLI/AIStudio/Claude/Codex/Antigravity/iFlow/Vertex/Empty），一键删除全部；Codex、Anthropic(Claude)、Antigravity(Google)、Gemini CLI（可选项目）、Qwen 设备码、iFlow OAuth 与 Cookie 登录。
+- **日志**: 实时查看并增量刷新，支持下载和清空；启用“写入日志文件”后出现日志栏目。
+- **使用统计**: 概览卡片、小时/天切换、最多三条模型曲线、按 API 统计表（Chart.js）。
+- **配置管理**: 内置 CodeMirror YAML 编辑器，在线读取/保存 `/config.yaml`，语法高亮与状态提示。
+- **系统与版本**: 连接/配置缓存状态、最后刷新时间，底栏显示服务版本、构建时间与 UI 版本。
+- **安全与偏好**: 密钥遮蔽、加密本地存储，主题/语言/侧边栏状态持久化，实时状态反馈。
 
 ## 使用方法
 
-### 1. 在CLI Proxy API程序启动后使用 （推荐）
-在启动了CLI Proxy API程序后 访问`http://您的服务器IP:8317/management.html`使用
+1) **主程序启动后使用（推荐）**  
+   访问 `http://您的服务器:8317/management.html`。
 
-### 2. 直接使用
-直接用浏览器打开 `index.html` 文件即可使用。
+2) **直接静态打开**  
+   浏览器打开 `index.html`（或 `npm run build` 生成的 `dist/index.html` 单文件）。
 
-### 3. 使用本地服务器
-
-#### 方法A：使用 Node.js (npm)
+3) **本地服务器**
 ```bash
-# 安装依赖
 npm install
-
-# 使用默认端口(3000）
-npm start
-```
-
-#### 方法B：使用 Python
-```bash
-# Python 3.x
+npm start        # 默认 http://localhost:3000
+npm run dev      # 可选开发端口 3090
+# 或
 python -m http.server 8000
-
 ```
+   然后在浏览器打开对应的 localhost 地址。
 
-然后在浏览器中打开 `http://localhost:8000`。
+4) **配置连接**  
+   登录页会显示自动检测的地址，可自行修改，填入管理密钥后点击连接。凭据将加密保存以便下次自动登录。
 
-### 3. 配置连接
-1. 打开管理界面
-2. 在登录界面上输入：
-   - **远程地址**: 现版本远程地址将会自动从您的访问地址中获取 当然您也可以自定义
-   - **管理密钥**: 您的管理密钥
-3. 点击"连接"按钮
-4. 连接成功后即可使用所有功能
-
-## 界面说明
-
-### 导航菜单
-- **基础设置**: 调试、代理、重试等基本配置
-- **API 密钥**: 各种 API 服务的密钥管理
-- **AI 提供商**: AI 服务提供商配置
-- **认证文件**: 认证文件的上传下载管理
-- **使用统计**: 实时分析和使用统计，包含交互式图表
-- **系统信息**: 连接状态和系统信息
-
-### 登录界面
-- **自动连接**: 使用保存的凭据自动尝试连接
-- **自定义连接**: 手动配置 API 基础地址
-- **当前地址检测**: 自动检测并使用当前访问地址
-- **语言切换**: 支持多种语言（英文/中文）
-- **主题切换**: 支持明暗主题
-
-## 特性亮点
-
-### 现代化 UI
-- 响应式设计，支持各种屏幕尺寸
-- 美观的渐变色彩和阴影效果
-- 流畅的动画和过渡效果
-- 直观的图标和状态指示
-- 明暗主题支持，自动检测系统偏好
-- 移动端友好的侧边栏和遮罩
-
-### 实时更新
-- 配置更改立即生效
-- 实时状态反馈
-- 自动数据刷新
-- 实时使用统计和交互式图表
-- 实时连接状态监控
-
-### 安全特性
-- 密钥遮蔽显示
-- 安全凭据存储
-- 加密本地存储自动登录
-
-### 响应式设计
-- 完美适配桌面和移动设备
-- 自适应布局，可折叠侧边栏
-- 触摸友好的交互
-- 移动端菜单和遮罩
-
-### 分析与监控
-- Chart.js 驱动的交互式图表
-- 实时使用统计
-- 请求趋势可视化
-- Token 消耗跟踪
-- API 性能指标
+提示: 开启“写入日志文件”后才会显示“日志查看”导航。
 
 ## 技术栈
 
@@ -151,11 +51,16 @@ python -m http.server 8000
 - **样式**: CSS3 + Flexbox/Grid，支持 CSS 变量
 - **图标**: Font Awesome 6.4.0
 - **图表**: Chart.js 交互式数据可视化
-- **字体**: Segoe UI 系统字体
-- **API**: RESTful API 调用，自动认证
-- **国际化**: 自定义 i18n 系统，支持中英文
-- **主题系统**: CSS 自定义属性动态主题
-- **存储**: LocalStorage 用户偏好和凭据存储
+- **编辑/解析**: CodeMirror + js-yaml
+- **国际化**: 自定义 i18n（中/英）与主题系统（明/暗）
+- **API**: RESTful 管理接口，自动附加认证
+- **存储**: LocalStorage 轻量加密存储偏好与凭据
+
+## 构建与开发
+
+- `npm run build` 通过 webpack（`build.cjs`、`bundle-entry.js`、`build-scripts/prepare-html.js`）打包为 `dist/index.html`。
+- Font Awesome、Chart.js、CodeMirror 仍走 CDN，减小打包体积。
+- 开发可用 `npm start` (3000) / `npm run dev` (3090) 或 `python -m http.server` 静态托管。
 
 ## 故障排除
 
@@ -170,39 +75,34 @@ python -m http.server 8000
 2. 检查网络连接
 3. 查看浏览器控制台错误信息
 
-## 开发说明
+### 日志与配置编辑
+- 日志: 需要服务端开启写文件日志；返回 404 说明版本过旧或未启用。
+- 配置编辑: 依赖 `/config.yaml` 接口，保存前请确保 YAML 语法正确。
 
-### 文件结构
+### 使用统计
+- 若图表为空，请开启“使用统计”；数据在服务重启后会清空。
+
+## 项目结构
 ```
-webui/
-├── index.html          # 主页面，响应式布局
-├── styles.css          # 样式文件，支持主题
-├── app.js              # 应用逻辑和 API 管理
-├── i18n.js             # 国际化支持（中英文）
-├── package.json        # 项目配置
-├── build.js            # 生产环境构建脚本
-├── bundle-entry.js     # 打包入口文件
+├── index.html
+├── styles.css
+├── app.js
+├── i18n.js
+├── src/                # 核心/模块/工具源码
+├── build.cjs           # Webpack 构建脚本
+├── bundle-entry.js     # 打包入口
 ├── build-scripts/      # 构建工具
-│   └── prepare-html.js # HTML 准备脚本
-├── logo.jpg            # 应用图标
-├── LICENSE             # MIT 许可证
-├── README.md           # 英文文档
-├── README_CN.md        # 中文文档
-└── BUILD_RELEASE.md    # 构建和发布说明
+│   └── prepare-html.js
+├── dist/               # 打包输出单文件
+├── api.md
+├── management-guide_CN.md
+├── BUILD_RELEASE.md
+├── LICENSE
+├── README.md
+└── README_CN.md
 ```
-
-### API 调用
-所有 API 调用都通过 `ManagerAPI` 类的 `makeRequest` 方法处理，包含：
-- 自动添加认证头
-- 错误处理
-- JSON 响应解析
-
-### 状态管理
-- 本地存储保存 API 地址和密钥
-- 内存中维护连接状态
-- 实时数据刷新机制
 
 ## 贡献
-欢迎提交 Issue 和 Pull Request 来改进这个项目！我们欢迎更多的大佬来对这个WebUI进行更新！
+欢迎提交 Issue 和 Pull Request 来改进这个项目！我们欢迎更多的大佬来对这个 WebUI 进行更新！
 
-本项目采用MIT许可
+本项目采用 MIT 许可。

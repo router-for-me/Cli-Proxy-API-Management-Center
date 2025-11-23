@@ -1,150 +1,49 @@
 # Cli-Proxy-API-Management-Center
-This is a modern web interface for managing the CLI Proxy API.
+This is the modern WebUI for managing the CLI Proxy API.
 
 [中文文档](README_CN.md)
 
-Main Project:
-https://github.com/router-for-me/CLIProxyAPI
+Main Project: https://github.com/router-for-me/CLIProxyAPI  
+Example URL: https://remote.router-for.me/  
+Minimum required version: ≥ 6.3.0 (recommended ≥ 6.5.0)
 
-Example URL:
-https://remote.router-for.me/
-
-Minimum required version: ≥ 6.0.0
-Recommended version: ≥ 6.2.32
-
-Since version 6.0.19, the WebUI has been rolled into the main program. You can access it by going to `/management.html` on the external port after firing up the main project.
+Since 6.0.19 the WebUI ships with the main program; access it via `/management.html` on the API port once the service is running.
 
 ## Features
 
-### Authentication Management
-- Supports management key authentication
-- Configurable API base address
-- Real-time connection status detection
-- Auto-login with saved credentials
-- Language and theme switching
-
-### Basic Settings
-- **Debug Mode**: Enable/disable debugging
-- **Proxy Settings**: Configure proxy server URL
-- **Request Retries**: Set the number of request retries
-- **Quota Management**: Configure behavior when the quota is exceeded
-  - Auto-switch project when quota exceeded
-  - Switch to preview models when quota exceeded
-
-### API Key Management
-- **Proxy Service Authentication Key**: Manage API keys for the proxy service
-- **Gemini API**: Manage Google Gemini generative language API keys
-- **Codex API**: Manage OpenAI Codex API configuration
-- **Claude API**: Manage Anthropic Claude API configuration
-- **OpenAI-Compatible Providers**: Manage OpenAI-compatible third-party providers
-
-### Authentication File Management
-- Upload authentication JSON files
-- Download existing authentication files
-- Delete single or all authentication files
-- Display file details
-
-### Usage Statistics
-- **Real-time Analytics**: Track API usage with interactive charts
-- **Request Trends**: Visualize request patterns by hour/day
-- **Token Usage**: Monitor token consumption over time
-- **API Details**: Detailed statistics for each API endpoint
-- **Success/Failure Rates**: Track API reliability metrics
-
-### System Information
-- **Connection Status**: Real-time connection monitoring
-- **Configuration Status**: Track configuration loading state
-- **Server Information**: Display server address and management key
-- **Last Update**: Show when data was last refreshed
-
+### Capabilities
+- **Login & UX**: Auto-detects the current address (manual override/reset supported), encrypted auto-login, language/theme toggles, responsive layout with mobile sidebar.
+- **Basic Settings**: Debug, proxy URL, request retries, quota fallback (auto-switch project/preview models), usage-statistics toggle, request logging & logging-to-file switches, WebSocket `/ws/*` auth switch.
+- **Keys & Providers**: Manage proxy auth keys, Gemini/Codex/Claude configs, OpenAI-compatible providers (custom base URLs/headers/proxy/model aliases), Vertex AI credential import from service-account JSON with optional location.
+- **Auth Files & OAuth**: Upload/download/search/paginate JSON credentials; type filters (Qwen/Gemini/GeminiCLI/AIStudio/Claude/Codex/Antigravity/iFlow/Vertex/Empty); delete-all; OAuth/Device flows for Codex, Anthropic (Claude), Antigravity (Google), Gemini CLI (optional project), Qwen; iFlow OAuth and cookie login.
+- **Logs**: Live viewer with auto-refresh/incremental updates, download and clear; section appears when logging-to-file is enabled.
+- **Usage Analytics**: Overview cards, hourly/daily toggles, up to three model lines per chart, per-API stats table (Chart.js).
+- **Config Management**: In-browser CodeMirror YAML editor for `/config.yaml` with reload/save, syntax highlighting, and status feedback.
+- **System Info & Versioning**: Connection/config cache status, last refresh time, server version/build date, and UI version in the footer.
+- **Security & Preferences**: Masked secrets, secure local storage, persistent theme/language/sidebar state, real-time status feedback.
 
 ## How to Use
 
-### 1. Using After CLI Proxy API Program Launch (Recommended)
-Once the CLI Proxy API program is up and running, you can access the WebUI at `http://your-server-IP:8317/management.html`.
+1) **After CLI Proxy API is running (recommended)**  
+   Visit `http://your-server:8317/management.html`.
 
-### 2. Direct Use
-Simply open the `index.html` file directly in your browser to use it.
+2) **Direct static use**  
+   Open `index.html` (or the bundled `dist/index.html` from `npm run build`) directly in your browser.
 
-### 3. Use a Local Server
-
-#### Option A: Using Node.js (npm)
+3) **Local server**
 ```bash
-# Install dependencies
 npm install
-
-# Start the server on the default port (3000)
-npm start
-```
-
-#### Option B: Using Python
-```bash
-# Python 3.x
+npm start        # http://localhost:3000
+npm run dev      # optional dev port: 3090
+# or
 python -m http.server 8000
-
 ```
+   Then open the corresponding localhost URL.
 
-Then open `http://localhost:8000` in your browser.
+4) **Configure connection**  
+   The login page shows the detected address; you can override it, enter the management key, and click Connect. Saved credentials use encrypted local storage for auto-login.
 
-### 3. Configure Connection
-1. Open the management interface.
-2. On the login screen, enter:
-   - **Remote Address**: The current version automatically picks up the remote address from where you're connecting. But you can also set your own address if you prefer.
-   - **Management Key**: Your management key
-3. Click the "Connect" button.
-4. Once connected successfully, all features will be available.
-
-## Interface Description
-
-### Navigation Menu
-- **Basic Settings**: Basic configurations like debugging, proxy, retries, etc.
-- **API Keys**: Management of keys for various API services.
-- **AI Providers**: Configuration for AI service providers.
-- **Auth Files**: Upload and download management for authentication files.
-- **Usage Stats**: Real-time analytics and usage statistics with interactive charts.
-- **System Info**: Connection status and system information.
-
-### Login Interface
-- **Auto-connection**: Automatically attempts to connect using saved credentials
-- **Custom Connection**: Manual configuration of API base address
-- **Current Address Detection**: Automatically detects and uses current access address
-- **Language Switching**: Support for multiple languages (English/Chinese)
-- **Theme Switching**: Light and dark theme support
-
-## Feature Highlights
-
-### Modern UI
-- Responsive design, supports all screen sizes
-- Beautiful gradient colors and shadow effects
-- Smooth animations and transition effects
-- Intuitive icons and status indicators
-- Dark/Light theme support with system preference detection
-- Mobile-friendly sidebar with overlay
-
-### Real-time Updates
-- Configuration changes take effect immediately
-- Real-time status feedback
-- Automatic data refresh
-- Live usage statistics with interactive charts
-- Real-time connection status monitoring
-
-### Security Features
-- Masked display for keys
-- Secure credential storage
-- Auto-login with encrypted local storage
-
-### Responsive Design
-- Perfectly adapts to desktop and mobile devices
-- Adaptive layout with collapsible sidebar
-- Touch-friendly interactions
-- Mobile menu with overlay
-
-### Analytics & Monitoring
-- Interactive charts powered by Chart.js
-- Real-time usage statistics
-- Request trend visualization
-- Token consumption tracking
-- API performance metrics
+Tip: The Logs navigation item appears after enabling "Logging to file" in Basic Settings.
 
 ## Tech Stack
 
@@ -152,11 +51,17 @@ Then open `http://localhost:8000` in your browser.
 - **Styling**: CSS3 + Flexbox/Grid with CSS Variables
 - **Icons**: Font Awesome 6.4.0
 - **Charts**: Chart.js for interactive data visualization
+- **Editor/Parsing**: CodeMirror + js-yaml
 - **Fonts**: Segoe UI system font
-- **API**: RESTful API calls with automatic authentication
-- **Internationalization**: Custom i18n system with English/Chinese support
-- **Theme System**: CSS custom properties for dynamic theming
-- **Storage**: LocalStorage for user preferences and credentials
+- **Internationalization**: Custom i18n (EN/CN) and theme system (light/dark)
+- **API**: RESTful management endpoints with automatic authentication
+- **Storage**: LocalStorage with lightweight encryption for preferences/credentials
+
+## Build & Development
+
+- `npm run build` bundles everything into `dist/index.html` via webpack (`build.cjs`, `bundle-entry.js`, `build-scripts/prepare-html.js`).
+- External CDNs remain for Font Awesome, Chart.js, and CodeMirror to keep the bundle lean.
+- Development servers: `npm start` (3000) or `npm run dev` (3090); Python `http.server` also works for static hosting.
 
 ## Troubleshooting
 
@@ -171,37 +76,32 @@ Then open `http://localhost:8000` in your browser.
 2. Check your network connection.
 3. Check the browser's console for any error messages.
 
-## Development Information
+### Logs & Config Editor
+- Logs: Requires server-side logging-to-file; 404 indicates the server build is too old or logging is disabled.
+- Config editor: Requires `/config.yaml` endpoint; keep YAML valid before saving.
 
-### File Structure
+### Usage Stats
+- Enable "Usage statistics" if charts stay empty; data resets on server restart.
+
+## Project Structure
 ```
-webui/
-├── index.html          # Main page with responsive layout
-├── styles.css          # Stylesheet with theme support
-├── app.js              # Application logic and API management
-├── i18n.js             # Internationalization support (EN/CN)
-├── package.json        # Project configuration
-├── build.js            # Build script for production
-├── bundle-entry.js     # Entry point for bundling
+├── index.html
+├── styles.css
+├── app.js
+├── i18n.js
+├── src/                # Core/modules/utils source code
+├── build.cjs           # Webpack build script
+├── bundle-entry.js     # Bundling entry
 ├── build-scripts/      # Build utilities
-│   └── prepare-html.js # HTML preparation script
-├── logo.jpg            # Application logo
-├── LICENSE             # MIT License
-├── README.md           # English documentation
-├── README_CN.md        # Chinese documentation
-└── BUILD_RELEASE.md    # Build and release notes
+│   └── prepare-html.js
+├── dist/               # Bundled single-file output
+├── api.md
+├── management-guide_CN.md
+├── BUILD_RELEASE.md
+├── LICENSE
+├── README.md
+└── README_CN.md
 ```
-
-### API Calls
-All API calls are handled through the `makeRequest` method of the `ManagerAPI` class, which includes:
-- Automatic addition of authentication headers
-- Error handling
-- JSON response parsing
-
-### State Management
-- API address and key are saved in local storage
-- Connection status is maintained in memory
-- Real-time data refresh mechanism
 
 ## Contributing
 We welcome Issues and Pull Requests to improve this project! We encourage more developers to contribute to the enhancement of this WebUI!
