@@ -94,8 +94,6 @@ python -m http.server 8000
 ├── build-scripts/      # 构建工具
 │   └── prepare-html.js
 ├── dist/               # 打包输出单文件
-├── api.md
-├── management-guide_CN.md
 ├── BUILD_RELEASE.md
 ├── LICENSE
 ├── README.md
