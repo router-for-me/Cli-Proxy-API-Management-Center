@@ -1548,7 +1548,8 @@ input:checked+.slider:before {
 
 /* 列表样式 */
 .key-list {
-    max-height: 400px;
+    /* 便于一次展示 6 条密钥记录（约 6*80px 高度） */
+    max-height: 520px;
     overflow-y: auto;
 }
 
