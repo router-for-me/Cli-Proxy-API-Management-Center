@@ -1563,6 +1563,7 @@ input:checked+.slider:before {
 .key-table-row {
     display: grid;
     grid-template-columns: 72px 1fr auto;
+    column-gap: 14px;
     align-items: center;
     background: var(--bg-quaternary);
     border: 1px solid var(--border-primary);
@@ -1583,14 +1584,15 @@ input:checked+.slider:before {
     justify-content: center;
     height: 32px;
     min-width: 52px;
-    padding: 0 10px;
+    padding: 0 12px;
     border-radius: 10px;
     background: var(--bg-secondary);
     color: var(--primary-color);
     font-weight: 700;
     font-size: 14px;
     border: 1px solid var(--border-primary);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    letter-spacing: 0.2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .key-table-value {
@@ -1598,6 +1600,7 @@ input:checked+.slider:before {
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+    padding: 2px 0;
 }
 
 .key-table .item-title {
@@ -1608,8 +1611,9 @@ input:checked+.slider:before {
 
 .key-value {
     background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
     border-radius: 8px;
-    padding: 7px 10px;
+    padding: 8px 12px;
     font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
     font-size: 13px;
     color: var(--text-primary);
@@ -1625,6 +1629,7 @@ input:checked+.slider:before {
     transform: none;
     gap: 6px;
     justify-content: flex-end;
+    justify-self: end;
 }
 
 .item-actions.compact .btn {
@@ -1647,7 +1652,7 @@ input:checked+.slider:before {
 @media (max-width: 768px) {
     .key-table-row {
         grid-template-columns: 1fr;
-        row-gap: 10px;
+        row-gap: 8px;
     }
 
     .item-actions.compact {
