@@ -804,7 +804,6 @@ body {
     display: flex;
     flex-direction: column;
     background: var(--bg-primary);
-    min-height: 100%;
 }
 
 /* 顶部导航栏 */
@@ -3866,8 +3865,6 @@ input:checked+.slider:before {
     border-radius: 8px;
     padding: 16px;
     min-height: 500px;
-    max-height: calc(100vh - 400px);
-    overflow-y: auto;
     font-family: 'Monaco', 'Menlo', 'Consolas', 'Ubuntu Mono', monospace;
 }
 
@@ -4123,7 +4120,6 @@ input:checked+.slider:before {
 @media (max-width: 768px) {
     .logs-container {
         min-height: 300px;
-        max-height: calc(100vh - 350px);
         padding: 12px;
     }
 
