@@ -54,6 +54,12 @@ export const OAUTH_MAX_POLL_DURATION_MS = 5 * 60 * 1000;
 export const MAX_LOG_LINES = 2000;
 
 /**
+ * 日志接口获取数量上限
+ * 限制后端返回的日志行数，避免一次拉取过多数据
+ */
+export const LOG_FETCH_LIMIT = 2500;
+
+/**
  * 认证文件列表默认每页显示数量
  */
 export const DEFAULT_AUTH_FILES_PAGE_SIZE = 9;

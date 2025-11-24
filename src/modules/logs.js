@@ -20,8 +20,20 @@ export const logsModule = {
             }
 
             let url = '/logs';
+            const params = new URLSearchParams();
+
             if (incremental && this.latestLogTimestamp) {
-                url += `?after=${this.latestLogTimestamp}`;
+                params.set('after', this.latestLogTimestamp);
+            }
+
+            const logFetchLimit = Number.isFinite(this.logFetchLimit) ? this.logFetchLimit : 2500;
+            if (logFetchLimit > 0) {
+                params.set('limit', logFetchLimit);
+            }
+
+            const queryString = params.toString();
+            if (queryString) {
+                url += `?${queryString}`;
             }
 
             const response = await this.makeRequest(url, {

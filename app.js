@@ -20,6 +20,7 @@ import { debounce } from './src/utils/dom.js';
 import {
     CACHE_EXPIRY_MS,
     MAX_LOG_LINES,
+    LOG_FETCH_LIMIT,
     DEFAULT_AUTH_FILES_PAGE_SIZE,
     MIN_AUTH_FILES_PAGE_SIZE,
     MAX_AUTH_FILES_PAGE_SIZE,
@@ -78,6 +79,7 @@ class CLIProxyManager {
         // 当前展示的日志行
         this.displayedLogLines = [];
         this.maxDisplayLogLines = MAX_LOG_LINES;
+        this.logFetchLimit = LOG_FETCH_LIMIT;
 
         // 日志时间戳（用于增量加载）
         this.latestLogTimestamp = null;
