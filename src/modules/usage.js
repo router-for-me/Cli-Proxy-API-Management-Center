@@ -111,7 +111,7 @@ export async function loadUsageStats(usageData = null) {
         this.updateChartLineSelectors(null);
 
         // 清空概览数据
-        ['total-requests', 'success-requests', 'failed-requests', 'total-tokens', 'rpm-30m', 'tpm-30m'].forEach(id => {
+        ['total-requests', 'success-requests', 'failed-requests', 'total-tokens', 'cached-tokens', 'reasoning-tokens', 'rpm-30m', 'tpm-30m'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.textContent = '-';
         });
@@ -141,6 +141,16 @@ export function updateUsageOverview(data) {
     document.getElementById('failed-requests').textContent = safeData.failure_count ?? 0;
     const totalTokensValue = safeData.total_tokens ?? 0;
     document.getElementById('total-tokens').textContent = this.formatTokensInMillions(totalTokensValue);
+
+    const tokenBreakdown = this.calculateTokenBreakdown(safeData);
+    const cachedEl = document.getElementById('cached-tokens');
+    const reasoningEl = document.getElementById('reasoning-tokens');
+    if (cachedEl) {
+        cachedEl.textContent = this.formatTokensInMillions(tokenBreakdown.cachedTokens);
+    }
+    if (reasoningEl) {
+        reasoningEl.textContent = this.formatTokensInMillions(tokenBreakdown.reasoningTokens);
+    }
 
     const recentRate = this.calculateRecentPerMinuteRates(30, safeData);
     document.getElementById('rpm-30m').textContent = this.formatPerMinuteValue(recentRate.rpm);
@@ -334,6 +344,28 @@ export function collectUsageDetailsFromUsage(usage) {
 
 export function collectUsageDetails() {
     return this.collectUsageDetailsFromUsage(this.currentUsageData);
+}
+
+export function calculateTokenBreakdown(usage = null) {
+    const details = this.collectUsageDetailsFromUsage(usage || this.currentUsageData);
+    if (!details.length) {
+        return { cachedTokens: 0, reasoningTokens: 0 };
+    }
+
+    let cachedTokens = 0;
+    let reasoningTokens = 0;
+
+    details.forEach(detail => {
+        const tokens = detail?.tokens || {};
+        if (typeof tokens.cached_tokens === 'number') {
+            cachedTokens += tokens.cached_tokens;
+        }
+        if (typeof tokens.reasoning_tokens === 'number') {
+            reasoningTokens += tokens.reasoning_tokens;
+        }
+    });
+
+    return { cachedTokens, reasoningTokens };
 }
 
 export function calculateRecentPerMinuteRates(windowMinutes = 30, usage = null) {
@@ -792,6 +824,7 @@ export const usageModule = {
     getActiveChartLineSelections,
     collectUsageDetailsFromUsage,
     collectUsageDetails,
+    calculateTokenBreakdown,
     calculateRecentPerMinuteRates,
     createHourlyBucketMeta,
     buildHourlySeriesByModel,
