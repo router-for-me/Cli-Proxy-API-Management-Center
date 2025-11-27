@@ -1283,6 +1283,29 @@ export function updateApiStatsTable(data) {
         return;
     }
 
+    const hasPrices = Object.keys(this.modelPrices || {}).length > 0;
+    const calculateEndpointCost = (apiData) => {
+        if (!hasPrices) return 0;
+        let cost = 0;
+        const models = apiData.models || {};
+        Object.entries(models).forEach(([modelName, modelData]) => {
+            const price = this.modelPrices?.[modelName];
+            if (!price) return;
+            const details = Array.isArray(modelData.details) ? modelData.details : [];
+            details.forEach(detail => {
+                const tokens = detail?.tokens || {};
+                const promptTokens = Number(tokens.input_tokens) || 0;
+                const completionTokens = Number(tokens.output_tokens) || 0;
+                const detailCost = (promptTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.prompt) || 0)
+                    + (completionTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.completion) || 0);
+                if (Number.isFinite(detailCost) && detailCost > 0) {
+                    cost += detailCost;
+                }
+            });
+        });
+        return Number(cost.toFixed(4));
+    };
+
     let tableHtml = `
         <table class="stats-table">
             <thead>
@@ -1290,7 +1313,7 @@ export function updateApiStatsTable(data) {
                     <th>${i18n.t('usage_stats.api_endpoint')}</th>
                     <th>${i18n.t('usage_stats.requests_count')}</th>
                     <th>${i18n.t('usage_stats.tokens_count')}</th>
-                    <th>${i18n.t('usage_stats.success_rate')}</th>
+                    <th>${i18n.t('usage_stats.total_cost')}</th>
                     <th>${i18n.t('usage_stats.models')}</th>
                 </tr>
             </thead>
@@ -1299,10 +1322,7 @@ export function updateApiStatsTable(data) {
 
     Object.entries(apis).forEach(([endpoint, apiData]) => {
         const totalRequests = apiData.total_requests || 0;
-        const successCount = apiData.success_count ?? null;
-        const successRate = successCount !== null && totalRequests > 0
-            ? Math.round((successCount / totalRequests) * 100)
-            : null;
+        const endpointCost = calculateEndpointCost(apiData);
 
         // 构建模型详情
         let modelsHtml = '';
@@ -1326,7 +1346,7 @@ export function updateApiStatsTable(data) {
                 <td>${endpoint}</td>
                 <td>${totalRequests}</td>
                 <td>${this.formatTokensInMillions(apiData.total_tokens || 0)}</td>
-                <td>${successRate !== null ? successRate + '%' : '-'}</td>
+                <td>${hasPrices && endpointCost > 0 ? this.formatUsd(endpointCost) : '--'}</td>
                 <td>${modelsHtml || '-'}</td>
             </tr>
         `;
