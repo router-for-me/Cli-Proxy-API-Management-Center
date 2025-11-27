@@ -111,7 +111,7 @@ export async function loadUsageStats(usageData = null) {
         this.updateChartLineSelectors(null);
 
         // 清空概览数据
-        ['total-requests', 'success-requests', 'failed-requests', 'total-tokens'].forEach(id => {
+        ['total-requests', 'success-requests', 'failed-requests', 'total-tokens', 'rpm-30m', 'tpm-30m'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.textContent = '-';
         });
@@ -139,7 +139,38 @@ export function updateUsageOverview(data) {
     document.getElementById('total-requests').textContent = safeData.total_requests ?? 0;
     document.getElementById('success-requests').textContent = safeData.success_count ?? 0;
     document.getElementById('failed-requests').textContent = safeData.failure_count ?? 0;
-    document.getElementById('total-tokens').textContent = safeData.total_tokens ?? 0;
+    const totalTokensValue = safeData.total_tokens ?? 0;
+    document.getElementById('total-tokens').textContent = this.formatTokensInMillions(totalTokensValue);
+
+    const recentRate = this.calculateRecentPerMinuteRates(30, safeData);
+    document.getElementById('rpm-30m').textContent = this.formatPerMinuteValue(recentRate.rpm);
+    document.getElementById('tpm-30m').textContent = this.formatPerMinuteValue(recentRate.tpm);
+}
+
+export function formatTokensInMillions(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+        return '0.00M';
+    }
+    return `${(num / 1_000_000).toFixed(2)}M`;
+}
+
+export function formatPerMinuteValue(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+        return '0.00';
+    }
+    const abs = Math.abs(num);
+    if (abs >= 1000) {
+        return Math.round(num).toLocaleString();
+    }
+    if (abs >= 100) {
+        return num.toFixed(0);
+    }
+    if (abs >= 10) {
+        return num.toFixed(1);
+    }
+    return num.toFixed(2);
 }
 
 export function getModelNamesFromUsage(usage) {
@@ -303,6 +334,40 @@ export function collectUsageDetailsFromUsage(usage) {
 
 export function collectUsageDetails() {
     return this.collectUsageDetailsFromUsage(this.currentUsageData);
+}
+
+export function calculateRecentPerMinuteRates(windowMinutes = 30, usage = null) {
+    const details = this.collectUsageDetailsFromUsage(usage || this.currentUsageData);
+    const effectiveWindow = Number.isFinite(windowMinutes) && windowMinutes > 0
+        ? windowMinutes
+        : 30;
+
+    if (!details.length) {
+        return { rpm: 0, tpm: 0, windowMinutes: effectiveWindow, requestCount: 0, tokenCount: 0 };
+    }
+
+    const now = Date.now();
+    const windowStart = now - effectiveWindow * 60 * 1000;
+    let requestCount = 0;
+    let tokenCount = 0;
+
+    details.forEach(detail => {
+        const timestamp = Date.parse(detail.timestamp);
+        if (Number.isNaN(timestamp) || timestamp < windowStart) {
+            return;
+        }
+        requestCount += 1;
+        tokenCount += this.extractTotalTokens(detail);
+    });
+
+    const denominator = effectiveWindow > 0 ? effectiveWindow : 1;
+    return {
+        rpm: requestCount / denominator,
+        tpm: tokenCount / denominator,
+        windowMinutes: effectiveWindow,
+        requestCount,
+        tokenCount
+    };
 }
 
 export function createHourlyBucketMeta() {
@@ -690,7 +755,7 @@ export function updateApiStatsTable(data) {
             modelsHtml = '<div class="model-details">';
             Object.entries(apiData.models).forEach(([modelName, modelData]) => {
                 const modelRequests = modelData.total_requests ?? 0;
-                const modelTokens = modelData.total_tokens ?? 0;
+                const modelTokens = this.formatTokensInMillions(modelData.total_tokens ?? 0);
                 modelsHtml += `
                     <div class="model-item">
                         <span class="model-name">${modelName}</span>
@@ -705,7 +770,7 @@ export function updateApiStatsTable(data) {
             <tr>
                 <td>${endpoint}</td>
                 <td>${totalRequests}</td>
-                <td>${apiData.total_tokens || 0}</td>
+                <td>${this.formatTokensInMillions(apiData.total_tokens || 0)}</td>
                 <td>${successRate !== null ? successRate + '%' : '-'}</td>
                 <td>${modelsHtml || '-'}</td>
             </tr>
@@ -727,11 +792,14 @@ export const usageModule = {
     getActiveChartLineSelections,
     collectUsageDetailsFromUsage,
     collectUsageDetails,
+    calculateRecentPerMinuteRates,
     createHourlyBucketMeta,
     buildHourlySeriesByModel,
     buildDailySeriesByModel,
     buildChartDataForMetric,
     formatHourLabel,
+    formatTokensInMillions,
+    formatPerMinuteValue,
     formatDayLabel,
     extractTotalTokens,
     initializeCharts,
