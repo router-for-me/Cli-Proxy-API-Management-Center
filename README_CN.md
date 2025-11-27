@@ -27,8 +27,8 @@
 1) **主程序启动后使用（推荐）**  
    访问 `http://您的服务器:8317/management.html`。
 
-2) **直接静态打开**  
-   浏览器打开 `index.html`（或 `npm run build` 生成的 `dist/index.html` 单文件）。
+2) **构建后直接静态打开**  
+   `npm run build` 生成的 `dist/index.html` 单文件
 
 3) **本地服务器**
 ```bash
