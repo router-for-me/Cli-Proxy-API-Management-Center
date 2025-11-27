@@ -669,6 +669,15 @@ CLIProxyManager.prototype.debounce = debounce;
 // 全局管理器实例
 let manager;
 
+// 让内联事件处理器可以访问到 manager 实例
+function exposeManagerInstance(instance) {
+    if (typeof window !== 'undefined') {
+        window.manager = instance;
+    } else if (typeof globalThis !== 'undefined') {
+        globalThis.manager = instance;
+    }
+}
+
 // 尝试自动加载根目录 Logo（支持多种常见文件名/扩展名）
 function setupSiteLogo() {
     const img = document.getElementById('site-logo');
@@ -723,4 +732,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupSiteLogo();
     manager = new CLIProxyManager();
+    exposeManagerInstance(manager);
 });
