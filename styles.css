@@ -3108,6 +3108,10 @@ input:checked+.slider:before {
     margin-top: 6px;
 }
 
+.cost-summary-card .stat-icon {
+    background: #f59e0b;
+}
+
 .charts-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -3197,6 +3201,84 @@ input:checked+.slider:before {
     background: var(--bg-tertiary);
     border-radius: 6px;
     font-size: 12px;
+}
+
+.cost-config-card .card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.model-price-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.price-input-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+@media (max-width: 768px) {
+    .price-input-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.price-form-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.model-price-list {
+    margin-top: 6px;
+}
+
+.model-price-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.model-price-header,
+.model-price-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    align-items: center;
+}
+
+.model-price-header {
+    font-weight: 700;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+
+.model-price-row {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+}
+
+.chart-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--text-tertiary);
+    background: var(--bg-primary);
+    border: 1px dashed var(--border-color);
+    border-radius: 12px;
+}
+
+.cost-chart-card {
+    grid-column: 1 / -1;
 }
 
 .model-item {

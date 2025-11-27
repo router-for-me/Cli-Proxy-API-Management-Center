@@ -916,6 +916,17 @@
                                         <div class="stat-label" data-i18n="usage_stats.tpm_30m">TPM（近30分钟）</div>
                                     </div>
                                 </div>
+
+                                <div class="stat-card cost-summary-card">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-number" id="total-cost">--</div>
+                                        <div class="stat-label" data-i18n="usage_stats.total_cost">总花费</div>
+                                        <div class="stat-subtext" id="total-cost-hint" data-i18n="usage_stats.total_cost_hint">基于已设置的模型单价</div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- 图表曲线选择 -->
@@ -984,6 +995,18 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="card chart-card cost-chart-card">
+                                    <div class="card-header">
+                                        <h3><i class="fas fa-sack-dollar"></i> <span data-i18n="usage_stats.cost_trend">花费统计</span></h3>
+                                    </div>
+                                    <div class="card-content">
+                                        <div class="chart-container">
+                                            <canvas id="cost-chart"></canvas>
+                                            <div id="cost-chart-placeholder" class="chart-placeholder" data-i18n="usage_stats.cost_need_price">请先设置模型价格</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- API详细统计 -->
@@ -997,6 +1020,46 @@
                                 </div>
                                 <div class="card-content">
                                     <div id="api-stats-table" class="api-stats-table">
+                                        <div class="loading-placeholder" data-i18n="common.loading">正在加载...</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card cost-config-card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-tags"></i> <span data-i18n="usage_stats.model_price_title">模型价格</span></h3>
+                                    <div class="card-actions">
+                                        <button type="button" id="reset-model-prices" class="btn btn-secondary">
+                                            <i class="fas fa-rotate-left"></i> <span data-i18n="usage_stats.model_price_reset">清除价格</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-content">
+                                    <form id="model-price-form" class="model-price-form">
+                                        <div class="form-group">
+                                            <label for="model-price-model-select" data-i18n="usage_stats.model_price_model_label">选择模型</label>
+                                            <select id="model-price-model-select" class="model-filter-select">
+                                                <option value="" data-i18n="usage_stats.model_price_select_placeholder">选择模型</option>
+                                            </select>
+                                            <p class="form-hint" data-i18n="usage_stats.model_price_select_hint">模型列表来自使用统计</p>
+                                        </div>
+                                        <div class="price-input-grid">
+                                            <div class="form-group">
+                                                <label for="model-price-prompt" data-i18n="usage_stats.model_price_prompt">提示价格 ($/1M tokens)</label>
+                                                <input type="number" step="0.0001" min="0" id="model-price-prompt" placeholder="0.0000">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="model-price-completion" data-i18n="usage_stats.model_price_completion">补全价格 ($/1M tokens)</label>
+                                                <input type="number" step="0.0001" min="0" id="model-price-completion" placeholder="0.0000">
+                                            </div>
+                                        </div>
+                                        <div class="price-form-actions">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> <span data-i18n="usage_stats.model_price_save">保存价格</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <div class="model-price-list" id="model-price-list">
                                         <div class="loading-placeholder" data-i18n="common.loading">正在加载...</div>
                                     </div>
                                 </div>

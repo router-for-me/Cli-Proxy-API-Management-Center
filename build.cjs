@@ -171,14 +171,14 @@ function build() {
 
     html = html.replace(
         '<link rel="stylesheet" href="styles.css">',
-        `<style>
+        () => `<style>
 ${css}
 </style>`
     );
 
     html = html.replace(
         '<script src="i18n.js"></script>',
-        `<script>
+        () => `<script>
 ${i18n}
 </script>`
     );
@@ -187,7 +187,7 @@ ${i18n}
     if (scriptTagRegex.test(html)) {
         html = html.replace(
             scriptTagRegex,
-            `<script>
+            () => `<script>
 ${app}
 </script>`
         );
@@ -198,8 +198,10 @@ ${app}
     const logoDataUrl = loadLogoDataUrl();
     if (logoDataUrl) {
         const logoScript = `<script>window.__INLINE_LOGO__ = "${logoDataUrl}";</script>`;
-        if (html.includes('</body>')) {
-            html = html.replace('</body>', `${logoScript}\n</body>`);
+        const closingBodyTag = '</body>';
+        const closingBodyIndex = html.lastIndexOf(closingBodyTag);
+        if (closingBodyIndex !== -1) {
+            html = `${html.slice(0, closingBodyIndex)}${logoScript}\n${closingBodyTag}${html.slice(closingBodyIndex + closingBodyTag.length)}`;
         } else {
             html += `\n${logoScript}`;
         }

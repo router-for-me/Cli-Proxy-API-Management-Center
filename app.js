@@ -504,6 +504,9 @@ class CLIProxyManager {
         const tokensHourBtn = document.getElementById('tokens-hour-btn');
         const tokensDayBtn = document.getElementById('tokens-day-btn');
         const chartLineSelects = document.querySelectorAll('.chart-line-select');
+        const modelPriceForm = document.getElementById('model-price-form');
+        const resetModelPricesBtn = document.getElementById('reset-model-prices');
+        const modelPriceSelect = document.getElementById('model-price-model-select');
 
         if (refreshUsageStats) {
             refreshUsageStats.addEventListener('click', () => this.loadUsageStats());
@@ -527,6 +530,18 @@ class CLIProxyManager {
                     this.handleChartLineSelectionChange(Number.isNaN(index) ? -1 : index, event.target.value);
                 });
             });
+        }
+        if (modelPriceForm) {
+            modelPriceForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                this.handleModelPriceSubmit();
+            });
+        }
+        if (resetModelPricesBtn) {
+            resetModelPricesBtn.addEventListener('click', () => this.handleModelPriceReset());
+        }
+        if (modelPriceSelect) {
+            modelPriceSelect.addEventListener('change', () => this.prefillModelPriceInputs());
         }
 
         // 模态框
@@ -617,6 +632,7 @@ class CLIProxyManager {
     // 使用统计状态
     requestsChart = null;
     tokensChart = null;
+    costChart = null;
     currentUsageData = null;
     chartLineSelections = ['none', 'none', 'none'];
     chartLineSelectIds = ['chart-line-select-0', 'chart-line-select-1', 'chart-line-select-2'];
@@ -625,6 +641,9 @@ class CLIProxyManager {
         { borderColor: '#a855f7', backgroundColor: 'rgba(168, 85, 247, 0.15)' },
         { borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)' }
     ];
+    modelPriceStorageKey = 'cli-proxy-model-prices-v2';
+    modelPrices = {};
+    modelPriceInitialized = false;
 
     showModal() {
         const modal = document.getElementById('modal');

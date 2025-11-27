@@ -1,3 +1,7 @@
+const DEFAULT_MODEL_PRICE_STORAGE_KEY = 'cli-proxy-model-prices-v2';
+const LEGACY_MODEL_PRICE_STORAGE_KEY = 'cli-proxy-model-prices';
+const TOKENS_PER_PRICE_UNIT = 1_000_000;
+
 // 获取API密钥的统计信息
 export async function getKeyStats(usageData = null) {
     try {
@@ -83,6 +87,7 @@ export async function loadUsageStats(usageData = null) {
             usage = response?.usage || null;
         }
         this.currentUsageData = usage;
+        this.ensureModelPriceState();
 
         if (!usage) {
             throw new Error('usage payload missing');
@@ -91,6 +96,8 @@ export async function loadUsageStats(usageData = null) {
         // 更新概览卡片
         this.updateUsageOverview(usage);
         this.updateChartLineSelectors(usage);
+        this.renderModelPriceOptions(usage);
+        this.renderSavedModelPrices();
 
         // 读取当前图表周期
         const requestsHourActive = document.getElementById('requests-hour-btn')?.classList.contains('active');
@@ -104,11 +111,16 @@ export async function loadUsageStats(usageData = null) {
 
         // 更新API详细统计表格
         this.updateApiStatsTable(usage);
+        this.updateCostSummaryAndChart(usage);
 
     } catch (error) {
         console.error('加载使用统计失败:', error);
         this.currentUsageData = null;
         this.updateChartLineSelectors(null);
+        this.ensureModelPriceState();
+        this.renderModelPriceOptions(null);
+        this.renderSavedModelPrices();
+        this.updateCostSummaryAndChart(null);
 
         // 清空概览数据
         ['total-requests', 'success-requests', 'failed-requests', 'total-tokens', 'cached-tokens', 'reasoning-tokens', 'rpm-30m', 'tpm-30m'].forEach(id => {
@@ -346,6 +358,234 @@ export function collectUsageDetails() {
     return this.collectUsageDetailsFromUsage(this.currentUsageData);
 }
 
+export function migrateLegacyModelPrices() {
+    try {
+        if (typeof localStorage === 'undefined') {
+            return;
+        }
+        const storageKey = this.modelPriceStorageKey || DEFAULT_MODEL_PRICE_STORAGE_KEY;
+        const hasCurrent = localStorage.getItem(storageKey);
+        const legacyRaw = localStorage.getItem(LEGACY_MODEL_PRICE_STORAGE_KEY);
+
+        if (!legacyRaw || hasCurrent) {
+            return;
+        }
+
+        const parsed = JSON.parse(legacyRaw);
+        if (!parsed || typeof parsed !== 'object') {
+            return;
+        }
+
+        const migrated = {};
+        Object.entries(parsed).forEach(([model, price]) => {
+            if (!model) return;
+            const prompt = Number(price?.prompt);
+            const completion = Number(price?.completion);
+            const hasPrompt = Number.isFinite(prompt);
+            const hasCompletion = Number.isFinite(completion);
+            if (!hasPrompt && !hasCompletion) {
+                return;
+            }
+            migrated[model] = {
+                prompt: hasPrompt && prompt >= 0 ? prompt * 1000 : 0,
+                completion: hasCompletion && completion >= 0 ? completion * 1000 : 0
+            };
+        });
+
+        if (Object.keys(migrated).length) {
+            localStorage.setItem(storageKey, JSON.stringify(migrated));
+        }
+        localStorage.removeItem(LEGACY_MODEL_PRICE_STORAGE_KEY);
+    } catch (error) {
+        console.warn('迁移模型价格失败:', error);
+    }
+}
+
+export function ensureModelPriceState() {
+    if (this.modelPriceInitialized) {
+        return;
+    }
+    this.modelPriceStorageKey = this.modelPriceStorageKey || DEFAULT_MODEL_PRICE_STORAGE_KEY;
+    this.migrateLegacyModelPrices();
+    this.modelPrices = this.loadModelPricesFromStorage();
+    this.modelPriceInitialized = true;
+}
+
+export function loadModelPricesFromStorage() {
+    const storageKey = this.modelPriceStorageKey || DEFAULT_MODEL_PRICE_STORAGE_KEY;
+    try {
+        if (typeof localStorage === 'undefined') {
+            return {};
+        }
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) {
+            return {};
+        }
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') {
+            return {};
+        }
+        const normalized = {};
+        Object.entries(parsed).forEach(([model, price]) => {
+            if (!model) return;
+            const prompt = Number(price?.prompt);
+            const completion = Number(price?.completion);
+            if (!Number.isFinite(prompt) && !Number.isFinite(completion)) {
+                return;
+            }
+            normalized[model] = {
+                prompt: Number.isFinite(prompt) && prompt >= 0 ? prompt : 0,
+                completion: Number.isFinite(completion) && completion >= 0 ? completion : 0
+            };
+        });
+        return normalized;
+    } catch (error) {
+        console.warn('读取模型价格失败:', error);
+        return {};
+    }
+}
+
+export function persistModelPrices(prices = {}) {
+    const storageKey = this.modelPriceStorageKey || DEFAULT_MODEL_PRICE_STORAGE_KEY;
+    this.modelPrices = prices;
+    try {
+        if (typeof localStorage === 'undefined') {
+            return;
+        }
+        localStorage.setItem(storageKey, JSON.stringify(prices));
+    } catch (error) {
+        console.warn('保存模型价格失败:', error);
+    }
+}
+
+export function renderModelPriceOptions(usage = null) {
+    const select = document.getElementById('model-price-model-select');
+    if (!select) return;
+    const models = this.getModelNamesFromUsage(usage);
+    const previousValue = select.value;
+    select.innerHTML = '';
+
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = i18n.t('usage_stats.model_price_select_placeholder');
+    select.appendChild(placeholderOption);
+
+    models.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+
+    select.disabled = models.length === 0;
+    if (models.includes(previousValue)) {
+        select.value = previousValue;
+    } else {
+        select.value = '';
+    }
+    this.prefillModelPriceInputs();
+}
+
+export function renderSavedModelPrices() {
+    const container = document.getElementById('model-price-list');
+    if (!container) return;
+    const entries = Object.entries(this.modelPrices || {});
+    if (!entries.length) {
+        container.innerHTML = `<div class="no-data-message">${i18n.t('usage_stats.model_price_empty')}</div>`;
+        return;
+    }
+
+    const rows = entries.map(([model, price]) => {
+        const prompt = Number(price?.prompt) || 0;
+        const completion = Number(price?.completion) || 0;
+        return `
+            <div class="model-price-row">
+                <span class="model-name">${model}</span>
+                <span>$${prompt.toFixed(4)} / 1M</span>
+                <span>$${completion.toFixed(4)} / 1M</span>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="model-price-table">
+            <div class="model-price-header">
+                <span>${i18n.t('usage_stats.model_price_model')}</span>
+                <span>${i18n.t('usage_stats.model_price_prompt')}</span>
+                <span>${i18n.t('usage_stats.model_price_completion')}</span>
+            </div>
+            ${rows}
+        </div>
+    `;
+}
+
+export function prefillModelPriceInputs() {
+    const select = document.getElementById('model-price-model-select');
+    const promptInput = document.getElementById('model-price-prompt');
+    const completionInput = document.getElementById('model-price-completion');
+    if (!select || !promptInput || !completionInput) {
+        return;
+    }
+    const model = (select.value || '').trim();
+    const price = this.modelPrices?.[model];
+    if (price) {
+        promptInput.value = Number.isFinite(price.prompt) ? price.prompt : '';
+        completionInput.value = Number.isFinite(price.completion) ? price.completion : '';
+    } else {
+        promptInput.value = '';
+        completionInput.value = '';
+    }
+}
+
+export function normalizePriceValue(value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+        return 0;
+    }
+    return Number(parsed.toFixed(6));
+}
+
+export function handleModelPriceSubmit() {
+    this.ensureModelPriceState();
+    const select = document.getElementById('model-price-model-select');
+    const promptInput = document.getElementById('model-price-prompt');
+    const completionInput = document.getElementById('model-price-completion');
+    if (!select || !promptInput || !completionInput) {
+        return;
+    }
+
+    const model = (select.value || '').trim();
+    if (!model) {
+        this.showNotification(i18n.t('usage_stats.model_price_model_required'), 'warning');
+        return;
+    }
+    const prompt = this.normalizePriceValue(promptInput.value);
+    const completion = this.normalizePriceValue(completionInput.value);
+
+    const next = { ...(this.modelPrices || {}) };
+    next[model] = { prompt, completion };
+    this.persistModelPrices(next);
+    this.renderSavedModelPrices();
+    this.updateCostSummaryAndChart();
+    this.showNotification(i18n.t('usage_stats.model_price_saved'), 'success');
+}
+
+export function handleModelPriceReset() {
+    this.persistModelPrices({});
+    if (typeof localStorage !== 'undefined') {
+        const key = this.modelPriceStorageKey || DEFAULT_MODEL_PRICE_STORAGE_KEY;
+        try {
+            localStorage.removeItem(key);
+            localStorage.removeItem(LEGACY_MODEL_PRICE_STORAGE_KEY);
+        } catch (error) {
+            console.warn('清除模型价格失败:', error);
+        }
+    }
+    this.renderSavedModelPrices();
+    this.prefillModelPriceInputs();
+    this.updateCostSummaryAndChart();
+}
+
 export function calculateTokenBreakdown(usage = null) {
     const details = this.collectUsageDetailsFromUsage(usage || this.currentUsageData);
     if (!details.length) {
@@ -570,6 +810,231 @@ export function extractTotalTokens(detail) {
         const value = tokens[key];
         return sum + (typeof value === 'number' ? value : 0);
     }, 0);
+}
+
+export function formatUsd(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+        return '$0.00';
+    }
+    const fixed = num.toFixed(2);
+    const parts = Number(fixed).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    return `$${parts}`;
+}
+
+export function calculateCostData(prices = null, usage = null) {
+    const priceTable = prices || this.modelPrices || {};
+    const usagePayload = usage || this.currentUsageData;
+    const entries = Object.entries(priceTable || {});
+    const result = { totalCost: 0, labels: [], datasets: [] };
+
+    if (!entries.length || !usagePayload) {
+        return result;
+    }
+
+    const details = this.collectUsageDetailsFromUsage(usagePayload);
+    if (!details.length) {
+        return result;
+    }
+
+    const labelSet = new Set();
+    const costByModelDay = new Map();
+    let totalCost = 0;
+
+    details.forEach(detail => {
+        const parsedTimestamp = Date.parse(detail.timestamp);
+        if (Number.isNaN(parsedTimestamp)) {
+            return;
+        }
+        const dayLabel = this.formatDayLabel(new Date(parsedTimestamp));
+        if (!dayLabel) {
+            return;
+        }
+
+        const modelName = detail.__modelName || 'Unknown';
+        const price = priceTable[modelName];
+        if (!price) {
+            return;
+        }
+
+        const tokens = detail?.tokens || {};
+        const promptTokens = Number(tokens.input_tokens) || 0;
+        const completionTokens = Number(tokens.output_tokens) || 0;
+        const promptCost = (promptTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.prompt) || 0);
+        const completionCost = (completionTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.completion) || 0);
+        const detailCost = promptCost + completionCost;
+
+        if (!Number.isFinite(detailCost) || detailCost <= 0) {
+            return;
+        }
+
+        totalCost += detailCost;
+        labelSet.add(dayLabel);
+
+        if (!costByModelDay.has(modelName)) {
+            costByModelDay.set(modelName, new Map());
+        }
+        const dayMap = costByModelDay.get(modelName);
+        dayMap.set(dayLabel, (dayMap.get(dayLabel) || 0) + detailCost);
+    });
+
+    const labels = Array.from(labelSet).sort();
+    const datasets = [];
+    costByModelDay.forEach((dayMap, modelName) => {
+        const series = labels.map(label => Number((dayMap.get(label) || 0).toFixed(4)));
+        datasets.push({ label: modelName, data: series });
+    });
+
+    return { totalCost, labels, datasets };
+}
+
+export function setCostChartPlaceholder(messageKey = null) {
+    const placeholder = document.getElementById('cost-chart-placeholder');
+    const canvas = document.getElementById('cost-chart');
+    if (!placeholder || !canvas) {
+        return;
+    }
+    if (messageKey) {
+        placeholder.textContent = i18n.t(messageKey);
+        placeholder.style.display = 'flex';
+        canvas.style.display = 'none';
+    } else {
+        placeholder.style.display = 'none';
+        canvas.style.display = 'block';
+    }
+}
+
+export function destroyCostChart() {
+    if (this.costChart) {
+        this.costChart.destroy();
+        this.costChart = null;
+    }
+}
+
+export function initializeCostChart(costData) {
+    const canvas = document.getElementById('cost-chart');
+    if (!canvas) {
+        return;
+    }
+    this.destroyCostChart();
+
+    const datasets = (costData.datasets || []).map((dataset, index) => {
+        const style = this.chartLineStyles[index % this.chartLineStyles.length] || this.chartLineStyles[0];
+        return {
+            ...dataset,
+            borderColor: style.borderColor,
+            backgroundColor: style.backgroundColor || 'rgba(59, 130, 246, 0.15)',
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: style.borderColor,
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: dataset.data.some(v => v > 0) ? 4 : 3
+        };
+    });
+
+    this.costChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: costData.labels || [],
+            datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    align: 'start',
+                    labels: {
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: context => {
+                            const label = context.dataset.label || '';
+                            const value = Number(context.parsed.y) || 0;
+                            return `${label}: ${this.formatUsd(value)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: i18n.t('usage_stats.by_day')
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: i18n.t('usage_stats.cost_axis_label')
+                    },
+                    ticks: {
+                        callback: (value) => this.formatUsd(value).replace('$', '')
+                    }
+                }
+            },
+            elements: {
+                line: {
+                    borderWidth: 2
+                },
+                point: {
+                    borderWidth: 2
+                }
+            }
+        }
+    });
+    this.setCostChartPlaceholder(null);
+}
+
+export function updateCostSummaryAndChart(usage = null) {
+    this.ensureModelPriceState();
+    const totalCostEl = document.getElementById('total-cost');
+    const hasPrices = Object.keys(this.modelPrices || {}).length > 0;
+    const usagePayload = usage || this.currentUsageData;
+
+    if (!hasPrices) {
+        if (totalCostEl) {
+            totalCostEl.textContent = '--';
+        }
+        this.destroyCostChart();
+        this.setCostChartPlaceholder('usage_stats.cost_need_price');
+        return;
+    }
+
+    if (!usagePayload) {
+        if (totalCostEl) {
+            totalCostEl.textContent = '--';
+        }
+        this.destroyCostChart();
+        this.setCostChartPlaceholder('usage_stats.cost_need_usage');
+        return;
+    }
+
+    const costData = this.calculateCostData(this.modelPrices, usagePayload);
+    if (totalCostEl) {
+        totalCostEl.textContent = this.formatUsd(costData.totalCost);
+    }
+
+    if (!costData.labels.length || !costData.datasets.length) {
+        this.destroyCostChart();
+        this.setCostChartPlaceholder('usage_stats.cost_no_data');
+        return;
+    }
+
+    this.initializeCostChart(costData);
 }
 
 // 初始化图表
@@ -824,6 +1289,16 @@ export const usageModule = {
     getActiveChartLineSelections,
     collectUsageDetailsFromUsage,
     collectUsageDetails,
+    migrateLegacyModelPrices,
+    ensureModelPriceState,
+    loadModelPricesFromStorage,
+    persistModelPrices,
+    renderModelPriceOptions,
+    renderSavedModelPrices,
+    prefillModelPriceInputs,
+    normalizePriceValue,
+    handleModelPriceSubmit,
+    handleModelPriceReset,
     calculateTokenBreakdown,
     calculateRecentPerMinuteRates,
     createHourlyBucketMeta,
@@ -835,6 +1310,12 @@ export const usageModule = {
     formatPerMinuteValue,
     formatDayLabel,
     extractTotalTokens,
+    formatUsd,
+    calculateCostData,
+    setCostChartPlaceholder,
+    destroyCostChart,
+    initializeCostChart,
+    updateCostSummaryAndChart,
     initializeCharts,
     initializeRequestsChart,
     initializeTokensChart,
