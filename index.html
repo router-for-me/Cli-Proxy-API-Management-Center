@@ -997,9 +997,17 @@
                                 </div>
 
                                 <div class="card chart-card cost-chart-card">
-                                    <div class="card-header">
-                                        <h3><i class="fas fa-sack-dollar"></i> <span data-i18n="usage_stats.cost_trend">花费统计</span></h3>
+                                <div class="card-header">
+                                    <h3><i class="fas fa-sack-dollar"></i> <span data-i18n="usage_stats.cost_trend">花费统计</span></h3>
+                                    <div class="chart-controls">
+                                        <button class="btn btn-small" data-period="hour" id="cost-hour-btn">
+                                            <span data-i18n="usage_stats.by_hour">按小时</span>
+                                        </button>
+                                        <button class="btn btn-small active" data-period="day" id="cost-day-btn">
+                                            <span data-i18n="usage_stats.by_day">按天</span>
+                                        </button>
                                     </div>
+                                </div>
                                     <div class="card-content">
                                         <div class="chart-container">
                                             <canvas id="cost-chart"></canvas>

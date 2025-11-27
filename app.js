@@ -503,6 +503,8 @@ class CLIProxyManager {
         const requestsDayBtn = document.getElementById('requests-day-btn');
         const tokensHourBtn = document.getElementById('tokens-hour-btn');
         const tokensDayBtn = document.getElementById('tokens-day-btn');
+        const costHourBtn = document.getElementById('cost-hour-btn');
+        const costDayBtn = document.getElementById('cost-day-btn');
         const chartLineSelects = document.querySelectorAll('.chart-line-select');
         const modelPriceForm = document.getElementById('model-price-form');
         const resetModelPricesBtn = document.getElementById('reset-model-prices');
@@ -522,6 +524,12 @@ class CLIProxyManager {
         }
         if (tokensDayBtn) {
             tokensDayBtn.addEventListener('click', () => this.switchTokensPeriod('day'));
+        }
+        if (costHourBtn) {
+            costHourBtn.addEventListener('click', () => this.switchCostPeriod('hour'));
+        }
+        if (costDayBtn) {
+            costDayBtn.addEventListener('click', () => this.switchCostPeriod('day'));
         }
         if (chartLineSelects.length) {
             chartLineSelects.forEach(select => {

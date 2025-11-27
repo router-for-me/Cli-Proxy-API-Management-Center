@@ -102,16 +102,18 @@ export async function loadUsageStats(usageData = null) {
         // 读取当前图表周期
         const requestsHourActive = document.getElementById('requests-hour-btn')?.classList.contains('active');
         const tokensHourActive = document.getElementById('tokens-hour-btn')?.classList.contains('active');
+        const costHourActive = document.getElementById('cost-hour-btn')?.classList.contains('active');
         const requestsPeriod = requestsHourActive ? 'hour' : 'day';
         const tokensPeriod = tokensHourActive ? 'hour' : 'day';
+        const costPeriod = costHourActive ? 'hour' : 'day';
 
         // 初始化图表（使用当前周期）
         this.initializeRequestsChart(requestsPeriod);
         this.initializeTokensChart(tokensPeriod);
+        this.updateCostSummaryAndChart(usage, costPeriod);
 
         // 更新API详细统计表格
         this.updateApiStatsTable(usage);
-        this.updateCostSummaryAndChart(usage);
 
     } catch (error) {
         console.error('加载使用统计失败:', error);
@@ -566,7 +568,7 @@ export function handleModelPriceSubmit() {
     next[model] = { prompt, completion };
     this.persistModelPrices(next);
     this.renderSavedModelPrices();
-    this.updateCostSummaryAndChart();
+    this.updateCostSummaryAndChart(this.currentUsageData, this.getCostChartPeriod());
     this.showNotification(i18n.t('usage_stats.model_price_saved'), 'success');
 }
 
@@ -583,7 +585,7 @@ export function handleModelPriceReset() {
     }
     this.renderSavedModelPrices();
     this.prefillModelPriceInputs();
-    this.updateCostSummaryAndChart();
+    this.updateCostSummaryAndChart(this.currentUsageData, this.getCostChartPeriod());
 }
 
 export function calculateTokenBreakdown(usage = null) {
@@ -825,7 +827,7 @@ export function formatUsd(value) {
     return `$${parts}`;
 }
 
-export function calculateCostData(prices = null, usage = null) {
+export function calculateCostData(prices = null, usage = null, period = 'day') {
     const priceTable = prices || this.modelPrices || {};
     const usagePayload = usage || this.currentUsageData;
     const entries = Object.entries(priceTable || {});
@@ -840,24 +842,11 @@ export function calculateCostData(prices = null, usage = null) {
         return result;
     }
 
-    const labelSet = new Set();
-    const costByModelDay = new Map();
-    let totalCost = 0;
-
-    details.forEach(detail => {
-        const parsedTimestamp = Date.parse(detail.timestamp);
-        if (Number.isNaN(parsedTimestamp)) {
-            return;
-        }
-        const dayLabel = this.formatDayLabel(new Date(parsedTimestamp));
-        if (!dayLabel) {
-            return;
-        }
-
+    const normalizedDetails = details.map(detail => {
         const modelName = detail.__modelName || 'Unknown';
         const price = priceTable[modelName];
         if (!price) {
-            return;
+            return null;
         }
 
         const tokens = detail?.tokens || {};
@@ -866,19 +855,66 @@ export function calculateCostData(prices = null, usage = null) {
         const promptCost = (promptTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.prompt) || 0);
         const completionCost = (completionTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.completion) || 0);
         const detailCost = promptCost + completionCost;
+        const parsedTimestamp = Date.parse(detail.timestamp);
 
-        if (!Number.isFinite(detailCost) || detailCost <= 0) {
-            return;
+        if (!Number.isFinite(detailCost) || detailCost <= 0 || Number.isNaN(parsedTimestamp)) {
+            return null;
         }
 
-        totalCost += detailCost;
-        labelSet.add(dayLabel);
+        return { modelName, cost: detailCost, timestamp: parsedTimestamp };
+    }).filter(Boolean);
+
+    if (!normalizedDetails.length) {
+        return result;
+    }
+
+    const totalCost = normalizedDetails.reduce((sum, item) => sum + item.cost, 0);
+
+    if (period === 'hour') {
+        const meta = this.createHourlyBucketMeta();
+        const dataByModel = new Map();
+
+        normalizedDetails.forEach(({ modelName, cost, timestamp }) => {
+            const normalized = new Date(timestamp);
+            normalized.setMinutes(0, 0, 0);
+            const bucketStart = normalized.getTime();
+            if (bucketStart < meta.earliestTime || bucketStart > meta.lastBucketTime) {
+                return;
+            }
+            const bucketIndex = Math.floor((bucketStart - meta.earliestTime) / meta.bucketSize);
+            if (bucketIndex < 0 || bucketIndex >= meta.labels.length) {
+                return;
+            }
+            if (!dataByModel.has(modelName)) {
+                dataByModel.set(modelName, new Array(meta.labels.length).fill(0));
+            }
+            const bucketValues = dataByModel.get(modelName);
+            bucketValues[bucketIndex] += cost;
+        });
+
+        const datasets = [];
+        dataByModel.forEach((series, modelName) => {
+            datasets.push({ label: modelName, data: series.map(value => Number(value.toFixed(4))) });
+        });
+
+        return { totalCost, labels: meta.labels, datasets };
+    }
+
+    const labelSet = new Set();
+    const costByModelDay = new Map();
+
+    normalizedDetails.forEach(({ modelName, cost, timestamp }) => {
+        const dayLabel = this.formatDayLabel(new Date(timestamp));
+        if (!dayLabel) {
+            return;
+        }
 
         if (!costByModelDay.has(modelName)) {
             costByModelDay.set(modelName, new Map());
         }
         const dayMap = costByModelDay.get(modelName);
-        dayMap.set(dayLabel, (dayMap.get(dayLabel) || 0) + detailCost);
+        dayMap.set(dayLabel, (dayMap.get(dayLabel) || 0) + cost);
+        labelSet.add(dayLabel);
     });
 
     const labels = Array.from(labelSet).sort();
@@ -914,7 +950,7 @@ export function destroyCostChart() {
     }
 }
 
-export function initializeCostChart(costData) {
+export function initializeCostChart(costData, period = 'day') {
     const canvas = document.getElementById('cost-chart');
     if (!canvas) {
         return;
@@ -972,7 +1008,7 @@ export function initializeCostChart(costData) {
                 x: {
                     title: {
                         display: true,
-                        text: i18n.t('usage_stats.by_day')
+                        text: i18n.t(period === 'hour' ? 'usage_stats.by_hour' : 'usage_stats.by_day')
                     }
                 },
                 y: {
@@ -999,11 +1035,17 @@ export function initializeCostChart(costData) {
     this.setCostChartPlaceholder(null);
 }
 
-export function updateCostSummaryAndChart(usage = null) {
+export function getCostChartPeriod() {
+    const costHourActive = document.getElementById('cost-hour-btn')?.classList.contains('active');
+    return costHourActive ? 'hour' : 'day';
+}
+
+export function updateCostSummaryAndChart(usage = null, period = null) {
     this.ensureModelPriceState();
     const totalCostEl = document.getElementById('total-cost');
     const hasPrices = Object.keys(this.modelPrices || {}).length > 0;
     const usagePayload = usage || this.currentUsageData;
+    const resolvedPeriod = period || this.getCostChartPeriod();
 
     if (!hasPrices) {
         if (totalCostEl) {
@@ -1023,7 +1065,7 @@ export function updateCostSummaryAndChart(usage = null) {
         return;
     }
 
-    const costData = this.calculateCostData(this.modelPrices, usagePayload);
+    const costData = this.calculateCostData(this.modelPrices, usagePayload, resolvedPeriod);
     if (totalCostEl) {
         totalCostEl.textContent = this.formatUsd(costData.totalCost);
     }
@@ -1034,15 +1076,17 @@ export function updateCostSummaryAndChart(usage = null) {
         return;
     }
 
-    this.initializeCostChart(costData);
+    this.initializeCostChart(costData, resolvedPeriod);
 }
 
 // 初始化图表
 export function initializeCharts() {
     const requestsHourActive = document.getElementById('requests-hour-btn')?.classList.contains('active');
     const tokensHourActive = document.getElementById('tokens-hour-btn')?.classList.contains('active');
+    const costHourActive = document.getElementById('cost-hour-btn')?.classList.contains('active');
     this.initializeRequestsChart(requestsHourActive ? 'hour' : 'day');
     this.initializeTokensChart(tokensHourActive ? 'hour' : 'day');
+    this.updateCostSummaryAndChart(this.currentUsageData, costHourActive ? 'hour' : 'day');
 }
 
 // 初始化请求趋势图表
@@ -1213,6 +1257,20 @@ export function switchTokensPeriod(period) {
     }
 }
 
+export function switchCostPeriod(period) {
+    if (period !== 'hour' && period !== 'day') {
+        return;
+    }
+    const hourBtn = document.getElementById('cost-hour-btn');
+    const dayBtn = document.getElementById('cost-day-btn');
+    if (hourBtn && dayBtn) {
+        hourBtn.classList.toggle('active', period === 'hour');
+        dayBtn.classList.toggle('active', period === 'day');
+    }
+
+    this.updateCostSummaryAndChart(this.currentUsageData, period);
+}
+
 // 更新API详细统计表格
 export function updateApiStatsTable(data) {
     const container = document.getElementById('api-stats-table');
@@ -1312,6 +1370,7 @@ export const usageModule = {
     extractTotalTokens,
     formatUsd,
     calculateCostData,
+    getCostChartPeriod,
     setCostChartPlaceholder,
     destroyCostChart,
     initializeCostChart,
@@ -1323,6 +1382,7 @@ export const usageModule = {
     getTokensChartData,
     switchRequestsPeriod,
     switchTokensPeriod,
+    switchCostPeriod,
     updateApiStatsTable,
     registerUsageListeners
 };
