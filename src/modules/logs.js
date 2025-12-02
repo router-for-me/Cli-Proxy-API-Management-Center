@@ -346,6 +346,162 @@ export const logsModule = {
         return null;
     },
 
+    async openErrorLogsModal() {
+        const modalBody = document.getElementById('modal-body');
+        if (!modalBody) return;
+
+        modalBody.innerHTML = `
+            <h3>${i18n.t('logs.error_logs_modal_title')}</h3>
+            <div class="provider-item">
+                <div class="item-content">
+                    <p class="form-hint">${i18n.t('logs.error_logs_description')}</p>
+                    <div class="loading-placeholder">${i18n.t('common.loading')}</div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.close')}</button>
+            </div>
+        `;
+        this.showModal();
+
+        try {
+            const response = await this.makeRequest('/request-error-logs', {
+                method: 'GET'
+            });
+            const files = Array.isArray(response?.files) ? response.files.slice() : [];
+            if (files.length > 1) {
+                files.sort((a, b) => (b.modified || 0) - (a.modified || 0));
+            }
+            modalBody.innerHTML = this.buildErrorLogsModal(files);
+            this.showModal();
+            this.bindErrorLogDownloadButtons();
+        } catch (error) {
+            console.error('加载错误日志列表失败:', error);
+            modalBody.innerHTML = `
+                <h3>${i18n.t('logs.error_logs_modal_title')}</h3>
+                <div class="provider-item">
+                    <div class="item-content">
+                        <div class="error-state">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>${i18n.t('logs.error_logs_load_error')}</p>
+                            <p>${this.escapeHtml(error.message || '')}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.close')}</button>
+                </div>
+            `;
+            this.showNotification(`${i18n.t('logs.error_logs_load_error')}: ${error.message}`, 'error');
+        }
+    },
+
+    buildErrorLogsModal(files) {
+        const listHtml = Array.isArray(files) && files.length > 0
+            ? files.map(file => this.buildErrorLogCard(file)).join('')
+            : `
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <h3>${i18n.t('logs.error_logs_empty')}</h3>
+                    <p>${i18n.t('logs.error_logs_description')}</p>
+                </div>
+            `;
+
+        return `
+            <h3>${i18n.t('logs.error_logs_modal_title')}</h3>
+            <p class="form-hint">${i18n.t('logs.error_logs_description')}</p>
+            <div class="provider-list">
+                ${listHtml}
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.close')}</button>
+            </div>
+        `;
+    },
+
+    buildErrorLogCard(file) {
+        const name = file?.name || '';
+        const size = typeof file?.size === 'number' ? this.formatFileSize(file.size) : '-';
+        const modified = file?.modified ? this.formatErrorLogTime(file.modified) : '-';
+        return `
+            <div class="provider-item">
+                <div class="item-content">
+                    <div class="item-title">${this.escapeHtml(name)}</div>
+                    <div class="item-subtitle">${i18n.t('logs.error_logs_size')}: ${this.escapeHtml(size)}</div>
+                    <div class="item-subtitle">${i18n.t('logs.error_logs_modified')}: ${this.escapeHtml(modified)}</div>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-secondary error-log-download-btn" data-log-name="${this.escapeHtml(name)}">
+                        <i class="fas fa-download"></i> ${i18n.t('logs.error_logs_download')}
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    bindErrorLogDownloadButtons() {
+        const modalBody = document.getElementById('modal-body');
+        if (!modalBody) return;
+        const buttons = modalBody.querySelectorAll('.error-log-download-btn');
+        buttons.forEach(button => {
+            button.onclick = () => {
+                const filename = button.getAttribute('data-log-name');
+                if (filename) {
+                    this.downloadErrorLog(filename);
+                }
+            };
+        });
+    },
+
+    formatErrorLogTime(timestamp) {
+        const numeric = Number(timestamp);
+        if (!Number.isFinite(numeric) || numeric <= 0) {
+            return '-';
+        }
+        const date = new Date(numeric * 1000);
+        if (Number.isNaN(date.getTime())) {
+            return '-';
+        }
+        const locale = i18n?.currentLanguage || undefined;
+        return date.toLocaleString(locale);
+    },
+
+    async downloadErrorLog(filename) {
+        if (!filename) return;
+        try {
+            const response = await this.apiClient.requestRaw(`/request-error-logs/${encodeURIComponent(filename)}`, {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                let errorMessage = `HTTP ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    if (errorData && errorData.error) {
+                        errorMessage = errorData.error;
+                    }
+                } catch (parseError) {
+                    // ignore JSON parse error and use default message
+                }
+                throw new Error(errorMessage);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.showNotification(i18n.t('logs.error_log_download_success'), 'success');
+        } catch (error) {
+            console.error('下载错误日志失败:', error);
+            this.showNotification(`${i18n.t('notification.download_failed')}: ${error.message}`, 'error');
+        }
+    },
+
     async downloadLogs() {
         try {
             const response = await this.makeRequest('/logs', {

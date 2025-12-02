@@ -14,7 +14,7 @@ import { aiProvidersModule } from './src/modules/ai-providers.js';
 
 // 工具函数导入
 import { escapeHtml } from './src/utils/html.js';
-import { maskApiKey } from './src/utils/string.js';
+import { maskApiKey, formatFileSize } from './src/utils/string.js';
 import { normalizeArrayResponse } from './src/utils/array.js';
 import { debounce } from './src/utils/dom.js';
 import {
@@ -329,12 +329,16 @@ class CLIProxyManager {
 
         // 日志查看
         const refreshLogs = document.getElementById('refresh-logs');
+        const selectErrorLog = document.getElementById('select-error-log');
         const downloadLogs = document.getElementById('download-logs');
         const clearLogs = document.getElementById('clear-logs');
         const logsAutoRefreshToggle = document.getElementById('logs-auto-refresh-toggle');
 
         if (refreshLogs) {
             refreshLogs.addEventListener('click', () => this.refreshLogs());
+        }
+        if (selectErrorLog) {
+            selectErrorLog.addEventListener('click', () => this.openErrorLogsModal());
         }
         if (downloadLogs) {
             downloadLogs.addEventListener('click', () => this.downloadLogs());
@@ -705,6 +709,7 @@ Object.assign(
 // 将工具函数绑定到原型上，供模块使用
 CLIProxyManager.prototype.escapeHtml = escapeHtml;
 CLIProxyManager.prototype.maskApiKey = maskApiKey;
+CLIProxyManager.prototype.formatFileSize = formatFileSize;
 CLIProxyManager.prototype.normalizeArrayResponse = normalizeArrayResponse;
 CLIProxyManager.prototype.debounce = debounce;
 
