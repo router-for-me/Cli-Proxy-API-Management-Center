@@ -230,7 +230,7 @@ export const apiKeysModule = {
     },
 
     // 构造Codex配置，保持未展示的字段
-    buildCodexConfig(apiKey, baseUrl, proxyUrl, original = {}, headers = null) {
+    buildCodexConfig(apiKey, baseUrl, proxyUrl, original = {}, headers = null, excludedModels = null) {
         const result = {
             ...original,
             'api-key': apiKey,
@@ -238,6 +238,9 @@ export const apiKeysModule = {
             'proxy-url': proxyUrl || ''
         };
         this.applyHeadersToConfig(result, headers);
+        if (Array.isArray(excludedModels)) {
+            result['excluded-models'] = excludedModels;
+        }
         return result;
     },
 

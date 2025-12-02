@@ -2221,6 +2221,12 @@ input:checked+.slider:before {
     font-size: 0.85rem;
 }
 
+.provider-item .excluded-models .provider-model-tag {
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
+    color: var(--warning-text);
+}
+
 .provider-model-tag .model-name {
     font-weight: 600;
 }

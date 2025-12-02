@@ -59,6 +59,59 @@ const normalizeModelList = (payload) => {
     return [];
 };
 
+const normalizeExcludedModels = (input) => {
+    const rawList = Array.isArray(input)
+        ? input
+        : (typeof input === 'string' ? input.split(/[\n,]/) : []);
+    const seen = new Set();
+    const normalized = [];
+
+    rawList.forEach(item => {
+        if (item === undefined || item === null) {
+            return;
+        }
+        const trimmed = String(item).trim();
+        if (!trimmed) return;
+        const key = trimmed.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        normalized.push(trimmed);
+    });
+
+    return normalized;
+};
+
+export function collectExcludedModels(textareaId) {
+    const textarea = document.getElementById(textareaId);
+    if (!textarea) return [];
+    return normalizeExcludedModels(textarea.value);
+}
+
+export function setExcludedModelsValue(textareaId, models = []) {
+    const textarea = document.getElementById(textareaId);
+    if (!textarea) return;
+    textarea.value = normalizeExcludedModels(models).join('\n');
+}
+
+export function renderExcludedModelBadges(models) {
+    const normalized = normalizeExcludedModels(models);
+    if (!normalized.length) {
+        return '';
+    }
+    const badges = normalized.map(model => `
+        <span class="provider-model-tag excluded-model-tag">
+            <span class="model-name">${this.escapeHtml(model)}</span>
+        </span>
+    `).join('');
+
+    return `
+            <div class="item-subtitle">${i18n.t('ai_providers.excluded_models_count', { count: normalized.length })}</div>
+            <div class="provider-models excluded-models">
+                ${badges}
+            </div>
+        `;
+}
+
 export async function loadGeminiKeys() {
     try {
         const config = await this.getConfig();
@@ -144,6 +197,7 @@ export async function renderGeminiKeys(keys, keyStats = null) {
         const configJson = JSON.stringify(config).replace(/"/g, '&quot;');
         const apiKeyJson = JSON.stringify(rawKey || '').replace(/"/g, '&quot;');
         const baseUrl = config['base-url'] || config['base_url'] || '';
+        const excludedModelsHtml = this.renderExcludedModelBadges(config['excluded-models']);
         return `
             <div class="key-item">
                 <div class="item-content">
@@ -151,6 +205,7 @@ export async function renderGeminiKeys(keys, keyStats = null) {
                     <div class="item-subtitle">${i18n.t('common.api_key')}: ${maskedDisplay}</div>
                     ${baseUrl ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(baseUrl)}</div>` : ''}
                     ${this.renderHeaderBadges(config.headers)}
+                    ${excludedModelsHtml}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
                             <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${usageStats.success}
@@ -191,6 +246,11 @@ export function showAddGeminiKeyModal() {
                 <div id="new-gemini-headers-wrapper" class="header-input-list"></div>
                 <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('new-gemini-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
             </div>
+            <div class="form-group">
+                <label for="new-gemini-excluded-models">${i18n.t('ai_providers.excluded_models_label')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.excluded_models_hint')}</p>
+                <textarea id="new-gemini-excluded-models" rows="3" data-i18n-placeholder="ai_providers.excluded_models_placeholder" placeholder="${i18n.t('ai_providers.excluded_models_placeholder')}"></textarea>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.addGeminiKey()">${i18n.t('common.add')}</button>
@@ -200,11 +260,13 @@ export function showAddGeminiKeyModal() {
     modal.style.display = 'block';
     this.populateGeminiKeyFields('new-gemini-keys-wrapper');
     this.populateHeaderFields('new-gemini-headers-wrapper');
+    this.setExcludedModelsValue('new-gemini-excluded-models');
 }
 
 export async function addGeminiKey() {
     const entries = this.collectGeminiKeyFieldInputs('new-gemini-keys-wrapper');
     const headers = this.collectHeaderInputs('new-gemini-headers-wrapper');
+    const excludedModels = this.collectExcludedModels('new-gemini-excluded-models');
 
     if (!entries.length) {
         this.showNotification(i18n.t('notification.gemini_multi_input_required'), 'error');
@@ -245,6 +307,7 @@ export async function addGeminiKey() {
             } else {
                 delete newConfig['base-url'];
             }
+            newConfig['excluded-models'] = excludedModels;
             this.applyHeadersToConfig(newConfig, headers);
 
             const nextKeys = [...currentKeys, newConfig];
@@ -371,6 +434,11 @@ export function editGeminiKey(index, config) {
                 <div id="edit-gemini-headers-wrapper" class="header-input-list"></div>
                 <button type="button" class="btn btn-secondary" onclick="manager.addHeaderField('edit-gemini-headers-wrapper')">${i18n.t('common.custom_headers_add')}</button>
             </div>
+            <div class="form-group">
+                <label for="edit-gemini-excluded-models">${i18n.t('ai_providers.excluded_models_label')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.excluded_models_hint')}</p>
+                <textarea id="edit-gemini-excluded-models" rows="3" data-i18n-placeholder="ai_providers.excluded_models_placeholder" placeholder="${i18n.t('ai_providers.excluded_models_placeholder')}"></textarea>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.updateGeminiKey(${index})">${i18n.t('common.update')}</button>
@@ -380,6 +448,7 @@ export function editGeminiKey(index, config) {
     modal.style.display = 'block';
     this.populateGeminiKeyFields('edit-gemini-keys-wrapper', [config], { allowRemoval: false });
     this.populateHeaderFields('edit-gemini-headers-wrapper', config.headers || null);
+    this.setExcludedModelsValue('edit-gemini-excluded-models', config['excluded-models'] || []);
 }
 
 export async function updateGeminiKey(index) {
@@ -392,6 +461,7 @@ export async function updateGeminiKey(index) {
     const newKey = entry['api-key'];
     const baseUrl = entry['base-url'] || '';
     const headers = this.collectHeaderInputs('edit-gemini-headers-wrapper');
+    const excludedModels = this.collectExcludedModels('edit-gemini-excluded-models');
 
     if (!newKey) {
         this.showNotification(i18n.t('notification.please_enter') + ' ' + i18n.t('notification.gemini_api_key'), 'error');
@@ -406,6 +476,7 @@ export async function updateGeminiKey(index) {
         } else {
             delete newConfig['base-url'];
         }
+        newConfig['excluded-models'] = excludedModels;
         this.applyHeadersToConfig(newConfig, headers);
 
         await this.makeRequest('/gemini-api-key', {
@@ -477,6 +548,7 @@ export async function renderCodexKeys(keys, keyStats = null) {
         const maskedDisplay = this.escapeHtml(masked);
         const usageStats = (rawKey && (statsBySource[rawKey] || statsBySource[masked])) || { success: 0, failure: 0 };
         const deleteArg = JSON.stringify(rawKey).replace(/"/g, '&quot;');
+        const excludedModelsHtml = this.renderExcludedModelBadges(config['excluded-models']);
         return `
             <div class="provider-item">
                 <div class="item-content">
@@ -485,6 +557,7 @@ export async function renderCodexKeys(keys, keyStats = null) {
                     ${config['base-url'] ? `<div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(config['base-url'])}</div>` : ''}
                     ${config['proxy-url'] ? `<div class="item-subtitle">${i18n.t('common.proxy_url')}: ${this.escapeHtml(config['proxy-url'])}</div>` : ''}
                     ${this.renderHeaderBadges(config.headers)}
+                    ${excludedModelsHtml}
                     <div class="item-stats">
                         <span class="stat-badge stat-success">
                             <i class="fas fa-check-circle"></i> ${i18n.t('stats.success')}: ${usageStats.success}
@@ -526,6 +599,11 @@ export function showAddCodexKeyModal() {
                 <input type="text" id="new-codex-proxy" placeholder="${i18n.t('ai_providers.codex_add_modal_proxy_placeholder')}">
             </div>
             <div class="form-group">
+                <label for="new-codex-excluded-models">${i18n.t('ai_providers.excluded_models_label')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.excluded_models_hint')}</p>
+                <textarea id="new-codex-excluded-models" rows="3" data-i18n-placeholder="ai_providers.excluded_models_placeholder" placeholder="${i18n.t('ai_providers.excluded_models_placeholder')}"></textarea>
+            </div>
+            <div class="form-group">
                 <label>${i18n.t('common.custom_headers_label')}</label>
                 <p class="form-hint">${i18n.t('common.custom_headers_hint')}</p>
                 <div id="new-codex-headers-wrapper" class="header-input-list"></div>
@@ -539,6 +617,7 @@ export function showAddCodexKeyModal() {
 
     modal.style.display = 'block';
     this.populateHeaderFields('new-codex-headers-wrapper');
+    this.setExcludedModelsValue('new-codex-excluded-models');
 }
 
 export async function addCodexKey() {
@@ -546,6 +625,7 @@ export async function addCodexKey() {
     const baseUrl = document.getElementById('new-codex-url').value.trim();
     const proxyUrl = document.getElementById('new-codex-proxy').value.trim();
     const headers = this.collectHeaderInputs('new-codex-headers-wrapper');
+    const excludedModels = this.collectExcludedModels('new-codex-excluded-models');
 
     if (!apiKey) {
         this.showNotification(i18n.t('notification.field_required'), 'error');
@@ -560,7 +640,7 @@ export async function addCodexKey() {
         const data = await this.makeRequest('/codex-api-key');
         const currentKeys = this.normalizeArrayResponse(data, 'codex-api-key').map(item => ({ ...item }));
 
-        const newConfig = this.buildCodexConfig(apiKey, baseUrl, proxyUrl, {}, headers);
+        const newConfig = this.buildCodexConfig(apiKey, baseUrl, proxyUrl, {}, headers, excludedModels);
 
         currentKeys.push(newConfig);
 
@@ -597,6 +677,11 @@ export function editCodexKey(index, config) {
                 <input type="text" id="edit-codex-proxy" value="${config['proxy-url'] || ''}">
             </div>
             <div class="form-group">
+                <label for="edit-codex-excluded-models">${i18n.t('ai_providers.excluded_models_label')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.excluded_models_hint')}</p>
+                <textarea id="edit-codex-excluded-models" rows="3" data-i18n-placeholder="ai_providers.excluded_models_placeholder" placeholder="${i18n.t('ai_providers.excluded_models_placeholder')}"></textarea>
+            </div>
+            <div class="form-group">
                 <label>${i18n.t('common.custom_headers_label')}</label>
                 <p class="form-hint">${i18n.t('common.custom_headers_hint')}</p>
                 <div id="edit-codex-headers-wrapper" class="header-input-list"></div>
@@ -610,6 +695,7 @@ export function editCodexKey(index, config) {
 
     modal.style.display = 'block';
     this.populateHeaderFields('edit-codex-headers-wrapper', config.headers || null);
+    this.setExcludedModelsValue('edit-codex-excluded-models', config['excluded-models'] || []);
 }
 
 export async function updateCodexKey(index) {
@@ -617,6 +703,7 @@ export async function updateCodexKey(index) {
     const baseUrl = document.getElementById('edit-codex-url').value.trim();
     const proxyUrl = document.getElementById('edit-codex-proxy').value.trim();
     const headers = this.collectHeaderInputs('edit-codex-headers-wrapper');
+    const excludedModels = this.collectExcludedModels('edit-codex-excluded-models');
 
     if (!apiKey) {
         this.showNotification(i18n.t('notification.field_required'), 'error');
@@ -636,7 +723,7 @@ export async function updateCodexKey(index) {
         }
 
         const original = currentList[index] ? { ...currentList[index] } : {};
-        const newConfig = this.buildCodexConfig(apiKey, baseUrl, proxyUrl, original, headers);
+        const newConfig = this.buildCodexConfig(apiKey, baseUrl, proxyUrl, original, headers, excludedModels);
 
         await this.makeRequest('/codex-api-key', {
             method: 'PATCH',
@@ -1607,5 +1694,8 @@ export const aiProvidersModule = {
     populateModelFields,
     collectModelInputs,
     renderModelBadges,
+    renderExcludedModelBadges,
+    collectExcludedModels,
+    setExcludedModelsValue,
     validateOpenAIProviderInput
 };

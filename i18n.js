@@ -149,6 +149,10 @@ const i18n = {
             'ai_providers.gemini_edit_modal_title': '编辑Gemini API密钥',
             'ai_providers.gemini_edit_modal_key_label': 'API密钥:',
             'ai_providers.gemini_delete_confirm': '确定要删除这个Gemini密钥吗？',
+            'ai_providers.excluded_models_label': '排除的模型 (可选):',
+            'ai_providers.excluded_models_placeholder': '用逗号或换行分隔，例如: gemini-1.5-pro, gemini-1.5-flash',
+            'ai_providers.excluded_models_hint': '留空表示不过滤；保存时会自动去重并忽略空白。',
+            'ai_providers.excluded_models_count': '排除 {count} 个模型',
 
             'ai_providers.codex_title': 'Codex API 配置',
             'ai_providers.codex_add_button': '添加配置',
@@ -755,6 +759,10 @@ const i18n = {
             'ai_providers.gemini_edit_modal_title': 'Edit Gemini API Key',
             'ai_providers.gemini_edit_modal_key_label': 'API Key:',
             'ai_providers.gemini_delete_confirm': 'Are you sure you want to delete this Gemini key?',
+            'ai_providers.excluded_models_label': 'Excluded models (optional):',
+            'ai_providers.excluded_models_placeholder': 'Comma or newline separated, e.g. gemini-1.5-pro, gemini-1.5-flash',
+            'ai_providers.excluded_models_hint': 'Leave empty to allow all models; values are trimmed and deduplicated automatically.',
+            'ai_providers.excluded_models_count': 'Excluding {count} models',
 
             'ai_providers.codex_title': 'Codex API Configuration',
             'ai_providers.codex_add_button': 'Add Configuration',
