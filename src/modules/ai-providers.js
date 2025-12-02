@@ -1089,7 +1089,7 @@ export async function renderOpenAIProviders(providers, keyStats = null) {
             <div class="provider-item">
                 <div class="item-content">
                     <div class="item-title">${this.escapeHtml(name)}</div>
-                    <div class="item-subtitle">${i18n.t('common.base_url')}: ${this.escapeHtml(baseUrl)}</div>
+                    <div class="item-subtitle provider-base-url" title="${this.escapeHtml(baseUrl)}">${i18n.t('common.base_url')}: ${this.escapeHtml(baseUrl)}</div>
                     ${this.renderHeaderBadges(item.headers)}
                     <div class="item-subtitle">${i18n.t('ai_providers.openai_keys_count')}: ${apiKeyEntries.length}</div>
                     <div class="item-subtitle">${i18n.t('ai_providers.openai_models_count')}: ${models.length}</div>

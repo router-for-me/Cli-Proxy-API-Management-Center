@@ -2201,6 +2201,13 @@ input:checked+.slider:before {
     font-size: 0.9rem;
 }
 
+.provider-base-url {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    display: block;
+}
+
 .provider-item .provider-models {
     margin-top: 8px;
     display: flex;
