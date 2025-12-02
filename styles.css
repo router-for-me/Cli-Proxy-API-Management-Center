@@ -1748,6 +1748,71 @@ input:checked+.slider:before {
     white-space: nowrap;
 }
 
+.oauth-excluded-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 8px;
+}
+
+.oauth-excluded-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.oauth-excluded-scope {
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin: 0;
+}
+
+.oauth-excluded-list {
+    margin-top: 12px;
+}
+
+.oauth-excluded-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    align-items: stretch;
+}
+
+.oauth-excluded-card {
+    height: 100%;
+}
+
+.oauth-excluded-card .provider-models {
+    margin-top: 6px;
+}
+
+.oauth-excluded-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.oauth-excluded-card .item-actions {
+    top: 14px;
+    right: 14px;
+    transform: none;
+}
+
+.oauth-excluded-editor-card .item-content {
+    padding-right: 0;
+}
+
+.oauth-excluded-editor-card textarea {
+    min-height: 140px;
+}
+
+.oauth-excluded-empty {
+    color: var(--text-tertiary);
+    font-size: 0.95rem;
+}
+
 /* 认证文件工具栏 */
 .auth-file-toolbar {
     display: flex;

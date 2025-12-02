@@ -557,6 +557,31 @@
                                 </div>
                             </div>
 
+                            <!-- OAuth 排除列表 -->
+                            <div class="card" id="oauth-excluded-card">
+                                <div class="card-header card-header-with-filter">
+                                    <div class="header-left">
+                                        <h3><i class="fas fa-ban"></i> <span data-i18n="oauth_excluded.title">OAuth 排除列表</span></h3>
+                                        <div class="oauth-excluded-scope" id="oauth-excluded-scope"></div>
+                                    </div>
+                                    <div class="card-actions">
+                                        <button id="oauth-excluded-refresh" class="btn btn-secondary">
+                                            <i class="fas fa-sync-alt"></i> <span data-i18n="oauth_excluded.refresh">刷新</span>
+                                        </button>
+                                        <button id="oauth-excluded-add" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i> <span data-i18n="oauth_excluded.add">新增排除</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" data-i18n="oauth_excluded.description">为 OAuth/文件凭据配置模型黑名单，支持通配符。</p>
+                                    <div id="oauth-excluded-status" class="form-hint subtle"></div>
+                                    <div id="oauth-excluded-list" class="oauth-excluded-list oauth-excluded-grid provider-list">
+                                        <div class="loading-placeholder" data-i18n="common.loading">正在加载...</div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Codex OAuth -->
                             <div class="card" id="codex-oauth-card">
                                 <div class="card-header">

@@ -101,6 +101,11 @@ export const loginModule = {
         this.stopStatusUpdateTimer();
         this.resetVersionInfo();
         this.setManagementKey('', { persist: false });
+        this.oauthExcludedModels = {};
+        this._oauthExcludedLoading = false;
+        if (typeof this.renderOauthExcludedModels === 'function') {
+            this.renderOauthExcludedModels('all');
+        }
 
         localStorage.removeItem('isLoggedIn');
         secureStorage.removeItem('managementKey');

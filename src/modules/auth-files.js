@@ -540,6 +540,7 @@ export const authFilesModule = {
         }
 
         this.refreshFilterButtonTexts();
+        this.renderOauthExcludedModels();
     },
 
     generateDynamicTypeLabel(type) {
@@ -1031,6 +1032,469 @@ export const authFilesModule = {
         }
     },
 
+    normalizeOauthExcludedMap(payload = {}) {
+        const raw = (payload && (payload['oauth-excluded-models'] || payload.items)) || payload || {};
+        if (!raw || typeof raw !== 'object') {
+            return {};
+        }
+        const normalized = {};
+        Object.entries(raw).forEach(([provider, models]) => {
+            const key = typeof provider === 'string' ? provider.trim() : '';
+            if (!key) return;
+            const list = Array.isArray(models)
+                ? models.map(item => String(item || '').trim()).filter(Boolean)
+                : [];
+            normalized[key.toLowerCase()] = list;
+        });
+        return normalized;
+    },
+
+    getFilteredOauthExcludedMap(filterType = this.currentAuthFileFilter) {
+        const map = this.oauthExcludedModels || {};
+        if (!map || typeof map !== 'object') {
+            return {};
+        }
+        const type = (filterType || 'all').toLowerCase();
+        if (type === 'all') {
+            return map;
+        }
+        const result = {};
+        Object.entries(map).forEach(([provider, models]) => {
+            if ((provider || '').toLowerCase() === type) {
+                result[provider] = models;
+            }
+        });
+        return result;
+    },
+
+    findOauthExcludedEntry(provider) {
+        if (!provider || provider === 'all') {
+            return null;
+        }
+        const normalized = provider.toLowerCase();
+        const map = this.oauthExcludedModels || {};
+        for (const [key, models] of Object.entries(map)) {
+            if ((key || '').toLowerCase() === normalized) {
+                return { provider: key, models: Array.isArray(models) ? models : [] };
+            }
+        }
+        return null;
+    },
+
+    setOauthExcludedForm(provider = '', models = null) {
+        const providerSelect = document.getElementById('oauth-excluded-provider-select');
+        const modelsInput = document.getElementById('oauth-excluded-models');
+
+        const normalizedProvider = (provider || '').trim();
+        if (providerSelect) {
+            const options = Array.from(providerSelect.options || []);
+            let match = options.find(opt => (opt.value || '').toLowerCase() === normalizedProvider.toLowerCase());
+            if (!match && normalizedProvider) {
+                match = new Option(this.generateDynamicTypeLabel(normalizedProvider) || normalizedProvider, normalizedProvider);
+                providerSelect.appendChild(match);
+            }
+            if (normalizedProvider && match) {
+                providerSelect.value = match.value;
+            } else {
+                providerSelect.value = 'auto';
+            }
+        }
+
+        if (modelsInput && models !== null && models !== undefined) {
+            const list = Array.isArray(models) ? models : [];
+            modelsInput.value = list.map(item => item || '').join('\n');
+        }
+    },
+
+    syncOauthExcludedFormWithFilter(overrideModels = false) {
+        const filterType = (this.currentAuthFileFilter || 'all').toLowerCase();
+        const entry = this.findOauthExcludedEntry(filterType);
+
+        if (filterType === 'all') {
+            if (overrideModels) {
+                if (entry) {
+                    this.setOauthExcludedForm(entry.provider, entry.models);
+                } else {
+                    this.setOauthExcludedForm('', '');
+                }
+            }
+            return;
+        }
+
+        if (overrideModels) {
+            this.setOauthExcludedForm(filterType, entry ? entry.models : []);
+        } else {
+            this.setOauthExcludedForm(filterType);
+        }
+    },
+
+    getOauthExcludedProviderValue() {
+        const providerSelect = document.getElementById('oauth-excluded-provider-select');
+        const filterFallback = (this.currentAuthFileFilter && this.currentAuthFileFilter !== 'all')
+            ? this.currentAuthFileFilter
+            : '';
+
+        let selected = (providerSelect && providerSelect.value) ? providerSelect.value.trim() : '';
+        if (!selected || selected === 'auto') {
+            return filterFallback;
+        }
+        return selected;
+    },
+
+    refreshOauthProviderOptions() {
+        const providerSelect = document.getElementById('oauth-excluded-provider-select');
+        if (!providerSelect) return;
+
+        const allowedProviders = ['gemini-cli', 'vertex', 'aistudio', 'antigravity', 'claude', 'codex', 'qwen', 'iflow'];
+        const mapProviders = Object.keys(this.oauthExcludedModels || {});
+        const filterType = (this.currentAuthFileFilter || '').toLowerCase();
+        const providers = Array.from(new Set([...allowedProviders, ...mapProviders].filter(Boolean)));
+
+        const prevValue = providerSelect.value || 'auto';
+
+        providerSelect.innerHTML = '';
+        const addOption = (value, textKey, fallbackText = null) => {
+            const opt = document.createElement('option');
+            opt.value = value;
+            if (textKey) {
+                opt.setAttribute('data-i18n-text', textKey);
+                opt.textContent = i18n.t(textKey);
+            } else {
+                opt.textContent = fallbackText || value;
+            }
+            providerSelect.appendChild(opt);
+        };
+
+        addOption('auto', 'oauth_excluded.provider_auto');
+        providers.sort((a, b) => a.localeCompare(b)).forEach(item => addOption(item, null, this.generateDynamicTypeLabel(item) || item));
+
+        const restoreValue = (() => {
+            if (prevValue && Array.from(providerSelect.options).some(opt => opt.value === prevValue)) {
+                return prevValue;
+            }
+            if (filterType && Array.from(providerSelect.options).some(opt => opt.value === filterType)) {
+                return filterType;
+            }
+            return 'auto';
+        })();
+        providerSelect.value = restoreValue;
+    },
+
+    parseOauthExcludedModelsInput(input = '') {
+        const tokens = (input || '').split(/[\n,]/).map(token => token.trim()).filter(Boolean);
+        const unique = [];
+        tokens.forEach(token => {
+            if (!unique.includes(token)) {
+                unique.push(token);
+            }
+        });
+        return unique;
+    },
+
+    openOauthExcludedEditor(provider = '', models = null) {
+        const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modal-body');
+        if (!modal || !modalBody) return;
+
+        const normalizedProvider = (provider || '').trim();
+        const fallbackProvider = normalizedProvider
+            || ((this.currentAuthFileFilter && this.currentAuthFileFilter !== 'all') ? this.currentAuthFileFilter : '');
+        let targetModels = models;
+
+        if ((targetModels === null || targetModels === undefined) && fallbackProvider) {
+            const existing = this.findOauthExcludedEntry(fallbackProvider);
+            if (existing) {
+                targetModels = existing.models;
+            }
+        }
+
+        modalBody.innerHTML = `
+            <h3>${fallbackProvider
+                ? i18n.t('oauth_excluded.edit_title', { provider: this.generateDynamicTypeLabel(fallbackProvider) })
+                : i18n.t('oauth_excluded.add_title')
+            }</h3>
+            <div class="provider-item oauth-excluded-editor-card">
+                <div class="item-content">
+                    <div class="form-group">
+                        <label for="oauth-excluded-provider-select" data-i18n="oauth_excluded.provider_label">${i18n.t('oauth_excluded.provider_label')}</label>
+                        <select id="oauth-excluded-provider-select"></select>
+                        <p class="form-hint" data-i18n="oauth_excluded.provider_hint">${i18n.t('oauth_excluded.provider_hint')}</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="oauth-excluded-models" data-i18n="oauth_excluded.models_label">${i18n.t('oauth_excluded.models_label')}</label>
+                        <textarea id="oauth-excluded-models" rows="5" data-i18n-placeholder="oauth_excluded.models_placeholder" placeholder="${i18n.t('oauth_excluded.models_placeholder')}"></textarea>
+                        <p class="form-hint" data-i18n="oauth_excluded.models_hint">${i18n.t('oauth_excluded.models_hint')}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="oauth-excluded-save">
+                    <i class="fas fa-save"></i> ${i18n.t('oauth_excluded.save')}
+                </button>
+                <button class="btn btn-danger" id="oauth-excluded-delete">
+                    <i class="fas fa-trash"></i> ${i18n.t('oauth_excluded.delete')}
+                </button>
+                <button class="btn btn-secondary" onclick="manager.closeModal()">
+                    ${i18n.t('common.cancel')}
+                </button>
+            </div>
+        `;
+
+        this.refreshOauthProviderOptions();
+        this.setOauthExcludedForm(fallbackProvider, targetModels != null ? targetModels : []);
+        this.showModal();
+
+        const saveBtn = document.getElementById('oauth-excluded-save');
+        if (saveBtn) {
+            saveBtn.onclick = () => this.saveOauthExcludedEntry();
+        }
+        const deleteBtn = document.getElementById('oauth-excluded-delete');
+        if (deleteBtn) {
+            deleteBtn.onclick = () => this.deleteOauthExcludedEntry();
+        }
+
+        const providerSelect = document.getElementById('oauth-excluded-provider-select');
+        const syncDeleteState = () => {
+            if (deleteBtn) {
+                deleteBtn.disabled = !this.getOauthExcludedProviderValue();
+            }
+        };
+        if (providerSelect) {
+            providerSelect.addEventListener('change', syncDeleteState);
+        }
+        syncDeleteState();
+        this.updateOauthExcludedButtonsState(false);
+    },
+
+    buildOauthExcludedItem(provider, models = []) {
+        const providerLabel = this.generateDynamicTypeLabel(provider) || provider;
+        const normalizedModels = Array.isArray(models) ? models.filter(Boolean) : [];
+        const tags = normalizedModels.length
+            ? normalizedModels.map(model => `<span class="provider-model-tag"><span class="model-name">${this.escapeHtml(String(model))}</span></span>`).join('')
+            : `<span class="oauth-excluded-empty">${i18n.t('oauth_excluded.no_models')}</span>`;
+        const modelCount = normalizedModels.length;
+
+        return `
+            <div class="provider-item oauth-excluded-card" data-provider="${this.escapeHtml(provider)}">
+                <div class="item-content">
+                    <div class="item-title">${this.escapeHtml(providerLabel)}</div>
+                    <div class="item-meta">
+                        <span class="item-subtitle">
+                            ${modelCount > 0
+                                ? i18n.t('oauth_excluded.model_count', { count: modelCount })
+                                : i18n.t('oauth_excluded.no_models')}
+                        </span>
+                    </div>
+                    <div class="provider-models oauth-excluded-tags">
+                        ${tags}
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-secondary" data-action="edit" data-provider="${this.escapeHtml(provider)}">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button class="btn btn-danger" data-action="delete" data-provider="${this.escapeHtml(provider)}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    renderOauthExcludedModels(filterType = this.currentAuthFileFilter) {
+        const container = document.getElementById('oauth-excluded-list');
+        const scopeEl = document.getElementById('oauth-excluded-scope');
+        if (!container) return;
+
+        const currentType = (filterType || 'all').toLowerCase();
+        const map = this.getFilteredOauthExcludedMap(currentType);
+        const providers = Object.keys(map || {});
+
+        if (scopeEl) {
+            const label = currentType === 'all'
+                ? i18n.t('oauth_excluded.scope_all')
+                : i18n.t('oauth_excluded.scope_provider', { provider: this.generateDynamicTypeLabel(currentType) });
+            scopeEl.textContent = label;
+        }
+
+        if (!this.isConnected) {
+            container.innerHTML = `<div class="oauth-excluded-empty">${i18n.t('oauth_excluded.disconnected')}</div>`;
+            return;
+        }
+
+        if (this._oauthExcludedLoading) {
+            container.innerHTML = `<div class="loading-placeholder">${i18n.t('common.loading')}</div>`;
+            return;
+        }
+
+        if (!providers.length) {
+            const emptyKey = currentType === 'all'
+                ? 'oauth_excluded.list_empty_all'
+                : 'oauth_excluded.list_empty_filtered';
+            container.innerHTML = `<div class="oauth-excluded-empty">${i18n.t(emptyKey)}</div>`;
+            return;
+        }
+
+        const itemsHtml = providers
+            .sort((a, b) => a.localeCompare(b))
+            .map(provider => this.buildOauthExcludedItem(provider, map[provider]))
+            .join('');
+        container.innerHTML = itemsHtml;
+        this.refreshOauthProviderOptions();
+        this.bindOauthExcludedActionEvents();
+    },
+
+    bindOauthExcludedActionEvents() {
+        const container = document.getElementById('oauth-excluded-list');
+        if (!container) return;
+
+        if (container._oauthExcludedListener) {
+            container.removeEventListener('click', container._oauthExcludedListener);
+        }
+
+        const listener = (event) => {
+            const button = event.target.closest('button[data-action]');
+            if (!button || !container.contains(button)) return;
+            const provider = button.dataset.provider;
+            if (!provider) return;
+
+            const entry = this.findOauthExcludedEntry(provider);
+            if (button.dataset.action === 'edit') {
+                this.openOauthExcludedEditor(provider, entry ? entry.models : []);
+            } else if (button.dataset.action === 'delete') {
+                this.deleteOauthExcludedEntry(provider);
+            }
+        };
+
+        container._oauthExcludedListener = listener;
+        container.addEventListener('click', listener);
+    },
+
+    updateOauthExcludedButtonsState(isLoading = false) {
+        const refreshBtn = document.getElementById('oauth-excluded-refresh');
+        const saveBtn = document.getElementById('oauth-excluded-save');
+        const deleteBtn = document.getElementById('oauth-excluded-delete');
+        const addBtn = document.getElementById('oauth-excluded-add');
+        const disabled = isLoading || !this.isConnected;
+        [refreshBtn, saveBtn, deleteBtn, addBtn].forEach(btn => {
+            if (btn) {
+                btn.disabled = disabled;
+            }
+        });
+    },
+
+    setOauthExcludedStatus(message = '') {
+        const statusEl = document.getElementById('oauth-excluded-status');
+        if (statusEl) {
+            statusEl.textContent = message || '';
+        }
+    },
+
+    async loadOauthExcludedModels(forceRefresh = false) {
+        if (!this.isConnected) {
+            this.renderOauthExcludedModels();
+            this.updateOauthExcludedButtonsState();
+            return;
+        }
+
+        if (this._oauthExcludedLoading) {
+            return;
+        }
+
+        this._oauthExcludedLoading = true;
+        this.updateOauthExcludedButtonsState(true);
+        this.setOauthExcludedStatus(i18n.t('oauth_excluded.refreshing'));
+        this.renderOauthExcludedModels();
+
+        try {
+            const data = await this.makeRequest('/oauth-excluded-models');
+            this.oauthExcludedModels = this.normalizeOauthExcludedMap(data);
+            this.refreshOauthProviderOptions();
+            this.setOauthExcludedStatus('');
+        } catch (error) {
+            console.error('加载 OAuth 排除列表失败:', error);
+            const message = `${i18n.t('oauth_excluded.load_failed')}: ${error.message}`;
+            this.setOauthExcludedStatus(message);
+            this.showNotification(message, 'error');
+        } finally {
+            this._oauthExcludedLoading = false;
+            this.updateOauthExcludedButtonsState(false);
+            this.renderOauthExcludedModels();
+        }
+    },
+
+    async saveOauthExcludedEntry() {
+        if (!this.isConnected) {
+            this.showNotification(i18n.t('notification.connection_required'), 'error');
+            return;
+        }
+        const modelsInput = document.getElementById('oauth-excluded-models');
+        if (!modelsInput) return;
+
+        const providerValue = this.getOauthExcludedProviderValue();
+        if (!providerValue) {
+            this.showNotification(i18n.t('oauth_excluded.provider_required'), 'error');
+            return;
+        }
+
+        const models = this.parseOauthExcludedModelsInput(modelsInput.value);
+        this.updateOauthExcludedButtonsState(true);
+        this.setOauthExcludedStatus(i18n.t('oauth_excluded.saving'));
+
+        try {
+            await this.makeRequest('/oauth-excluded-models', {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    provider: providerValue,
+                    models
+                })
+            });
+            const successKey = models.length === 0 ? 'oauth_excluded.delete_success' : 'oauth_excluded.save_success';
+            this.showNotification(i18n.t(successKey), 'success');
+            this.clearCache('oauth-excluded-models');
+            await this.loadOauthExcludedModels(true);
+            this.closeModal();
+        } catch (error) {
+            this.showNotification(`${i18n.t('oauth_excluded.save_failed')}: ${error.message}`, 'error');
+        } finally {
+            this.setOauthExcludedStatus('');
+            this.updateOauthExcludedButtonsState(false);
+        }
+    },
+
+    async deleteOauthExcludedEntry(providerOverride = null) {
+        if (!this.isConnected) {
+            this.showNotification(i18n.t('notification.connection_required'), 'error');
+            return;
+        }
+        const providerValue = (providerOverride || this.getOauthExcludedProviderValue() || '').trim();
+
+        if (!providerValue) {
+            this.showNotification(i18n.t('oauth_excluded.provider_required'), 'error');
+            return;
+        }
+
+        if (!confirm(i18n.t('oauth_excluded.delete_confirm', { provider: providerValue }))) {
+            return;
+        }
+
+        this.updateOauthExcludedButtonsState(true);
+        this.setOauthExcludedStatus(i18n.t('oauth_excluded.deleting'));
+
+        try {
+            await this.makeRequest(`/oauth-excluded-models?provider=${encodeURIComponent(providerValue)}`, { method: 'DELETE' });
+            this.showNotification(i18n.t('oauth_excluded.delete_success'), 'success');
+            this.clearCache('oauth-excluded-models');
+            await this.loadOauthExcludedModels(true);
+            this.closeModal();
+        } catch (error) {
+            this.showNotification(`${i18n.t('oauth_excluded.delete_failed')}: ${error.message}`, 'error');
+        } finally {
+            this.setOauthExcludedStatus('');
+            this.updateOauthExcludedButtonsState(false);
+        }
+    },
+
     registerAuthFilesListeners() {
         if (!this.events || typeof this.events.on !== 'function') {
             return;
@@ -1042,6 +1506,21 @@ export const authFilesModule = {
                 await this.loadAuthFiles(keyStats);
             } catch (error) {
                 console.error('加载认证文件失败:', error);
+            }
+            try {
+                await this.loadOauthExcludedModels(true);
+            } catch (error) {
+                console.error('加载 OAuth 排除列表失败:', error);
+            }
+        });
+
+        this.events.on('connection:status-changed', (event) => {
+            const detail = event?.detail || {};
+            this.updateOauthExcludedButtonsState(false);
+            if (detail.isConnected) {
+                this.loadOauthExcludedModels(true);
+            } else {
+                this.renderOauthExcludedModels();
             }
         });
     }

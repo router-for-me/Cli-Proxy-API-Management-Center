@@ -97,6 +97,10 @@ class CLIProxyManager {
         this.authFilesPageSizeKey = STORAGE_KEY_AUTH_FILES_PAGE_SIZE;
         this.loadAuthFilePreferences();
 
+        // OAuth 模型排除列表状态
+        this.oauthExcludedModels = {};
+        this._oauthExcludedLoading = false;
+
         // Vertex AI credential import state
         this.vertexImportState = {
             file: null,
@@ -384,6 +388,17 @@ class CLIProxyManager {
         this.bindAuthFilesSearchControl();
         this.bindAuthFilesPageSizeControl();
         this.syncAuthFileControls();
+
+        // OAuth 排除列表
+        const oauthExcludedAdd = document.getElementById('oauth-excluded-add');
+        const oauthExcludedRefresh = document.getElementById('oauth-excluded-refresh');
+
+        if (oauthExcludedAdd) {
+            oauthExcludedAdd.addEventListener('click', () => this.openOauthExcludedEditor());
+        }
+        if (oauthExcludedRefresh) {
+            oauthExcludedRefresh.addEventListener('click', () => this.loadOauthExcludedModels(true));
+        }
 
         // Vertex AI credential import
         const vertexSelectFile = document.getElementById('vertex-select-file');
