@@ -958,22 +958,73 @@
                             </div>
 
                             <!-- 图表曲线选择 -->
-                            <div class="usage-filter-bar">
-                                <div class="usage-filter-group">
+                            <div class="usage-filter-bar" id="chart-line-bar">
+                                <div class="usage-filter-group usage-filter-actions">
+                                    <label data-i18n="usage_stats.chart_line_actions_label">曲线数量</label>
+                                    <div class="chart-line-actions">
+                                        <button type="button" class="btn btn-small" id="add-chart-line">
+                                            <i class="fas fa-plus"></i>
+                                            <span data-i18n="usage_stats.chart_line_add">增加曲线</span>
+                                        </button>
+                                        <button type="button" class="btn btn-small btn-secondary" id="remove-chart-line">
+                                            <i class="fas fa-minus"></i>
+                                            <span data-i18n="usage_stats.chart_line_remove">减少曲线</span>
+                                        </button>
+                                        <span class="chart-line-count" id="chart-line-count">3/9</span>
+                                    </div>
+                                    <div class="chart-line-hint" data-i18n="usage_stats.chart_line_hint">最多显示 9 条模型曲线</div>
+                                </div>
+                                <div class="usage-filter-group chart-line-group" data-line-index="0">
                                     <label for="chart-line-select-0" data-i18n="usage_stats.chart_line_label_1">曲线 1</label>
                                     <select id="chart-line-select-0" class="model-filter-select chart-line-select" data-line-index="0" disabled>
                                         <option value="none" data-i18n="usage_stats.chart_line_hidden">不显示</option>
                                     </select>
                                 </div>
-                                <div class="usage-filter-group">
+                                <div class="usage-filter-group chart-line-group" data-line-index="1">
                                     <label for="chart-line-select-1" data-i18n="usage_stats.chart_line_label_2">曲线 2</label>
                                     <select id="chart-line-select-1" class="model-filter-select chart-line-select" data-line-index="1" disabled>
                                         <option value="none" data-i18n="usage_stats.chart_line_hidden">不显示</option>
                                     </select>
                                 </div>
-                                <div class="usage-filter-group">
+                                <div class="usage-filter-group chart-line-group" data-line-index="2">
                                     <label for="chart-line-select-2" data-i18n="usage_stats.chart_line_label_3">曲线 3</label>
                                     <select id="chart-line-select-2" class="model-filter-select chart-line-select" data-line-index="2" disabled>
+                                        <option value="none" data-i18n="usage_stats.chart_line_hidden">不显示</option>
+                                    </select>
+                                </div>
+                                <div class="usage-filter-group chart-line-group chart-line-hidden" data-line-index="3">
+                                    <label for="chart-line-select-3" data-i18n="usage_stats.chart_line_label_4">曲线 4</label>
+                                    <select id="chart-line-select-3" class="model-filter-select chart-line-select" data-line-index="3" disabled>
+                                        <option value="none" data-i18n="usage_stats.chart_line_hidden">不显示</option>
+                                    </select>
+                                </div>
+                                <div class="usage-filter-group chart-line-group chart-line-hidden" data-line-index="4">
+                                    <label for="chart-line-select-4" data-i18n="usage_stats.chart_line_label_5">曲线 5</label>
+                                    <select id="chart-line-select-4" class="model-filter-select chart-line-select" data-line-index="4" disabled>
+                                        <option value="none" data-i18n="usage_stats.chart_line_hidden">不显示</option>
+                                    </select>
+                                </div>
+                                <div class="usage-filter-group chart-line-group chart-line-hidden" data-line-index="5">
+                                    <label for="chart-line-select-5" data-i18n="usage_stats.chart_line_label_6">曲线 6</label>
+                                    <select id="chart-line-select-5" class="model-filter-select chart-line-select" data-line-index="5" disabled>
+                                        <option value="none" data-i18n="usage_stats.chart_line_hidden">不显示</option>
+                                    </select>
+                                </div>
+                                <div class="usage-filter-group chart-line-group chart-line-hidden" data-line-index="6">
+                                    <label for="chart-line-select-6" data-i18n="usage_stats.chart_line_label_7">曲线 7</label>
+                                    <select id="chart-line-select-6" class="model-filter-select chart-line-select" data-line-index="6" disabled>
+                                        <option value="none" data-i18n="usage_stats.chart_line_hidden">不显示</option>
+                                    </select>
+                                </div>
+                                <div class="usage-filter-group chart-line-group chart-line-hidden" data-line-index="7">
+                                    <label for="chart-line-select-7" data-i18n="usage_stats.chart_line_label_8">曲线 8</label>
+                                    <select id="chart-line-select-7" class="model-filter-select chart-line-select" data-line-index="7" disabled>
+                                        <option value="none" data-i18n="usage_stats.chart_line_hidden">不显示</option>
+                                    </select>
+                                </div>
+                                <div class="usage-filter-group chart-line-group chart-line-hidden" data-line-index="8">
+                                    <label for="chart-line-select-8" data-i18n="usage_stats.chart_line_label_9">曲线 9</label>
+                                    <select id="chart-line-select-8" class="model-filter-select chart-line-select" data-line-index="8" disabled>
                                         <option value="none" data-i18n="usage_stats.chart_line_hidden">不显示</option>
                                     </select>
                                 </div>

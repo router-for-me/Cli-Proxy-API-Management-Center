@@ -3098,10 +3098,39 @@ input:checked+.slider:before {
     min-width: 220px;
 }
 
+.usage-filter-actions {
+    min-width: 260px;
+}
+
 .usage-filter-group label {
     font-weight: 600;
     color: var(--text-secondary);
     font-size: 14px;
+}
+
+.chart-line-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.chart-line-count {
+    padding: 6px 10px;
+    border-radius: 20px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 13px;
+    border: 1px solid var(--border-color);
+}
+
+.chart-line-hint {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.chart-line-group.chart-line-hidden {
+    display: none;
 }
 
 .model-filter-select {

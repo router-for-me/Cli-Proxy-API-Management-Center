@@ -524,6 +524,8 @@ class CLIProxyManager {
         const tokensDayBtn = document.getElementById('tokens-day-btn');
         const costHourBtn = document.getElementById('cost-hour-btn');
         const costDayBtn = document.getElementById('cost-day-btn');
+        const addChartLineBtn = document.getElementById('add-chart-line');
+        const removeChartLineBtn = document.getElementById('remove-chart-line');
         const chartLineSelects = document.querySelectorAll('.chart-line-select');
         const modelPriceForm = document.getElementById('model-price-form');
         const resetModelPricesBtn = document.getElementById('reset-model-prices');
@@ -550,6 +552,12 @@ class CLIProxyManager {
         if (costDayBtn) {
             costDayBtn.addEventListener('click', () => this.switchCostPeriod('day'));
         }
+        if (addChartLineBtn) {
+            addChartLineBtn.addEventListener('click', () => this.changeChartLineCount(1));
+        }
+        if (removeChartLineBtn) {
+            removeChartLineBtn.addEventListener('click', () => this.changeChartLineCount(-1));
+        }
         if (chartLineSelects.length) {
             chartLineSelects.forEach(select => {
                 select.addEventListener('change', (event) => {
@@ -558,6 +566,7 @@ class CLIProxyManager {
                 });
             });
         }
+        this.updateChartLineControlsUI();
         if (modelPriceForm) {
             modelPriceForm.addEventListener('submit', (event) => {
                 event.preventDefault();
@@ -661,12 +670,20 @@ class CLIProxyManager {
     tokensChart = null;
     costChart = null;
     currentUsageData = null;
-    chartLineSelections = ['none', 'none', 'none'];
-    chartLineSelectIds = ['chart-line-select-0', 'chart-line-select-1', 'chart-line-select-2'];
+    chartLineMaxCount = 9;
+    chartLineVisibleCount = 3;
+    chartLineSelections = Array(3).fill('none');
+    chartLineSelectIds = Array.from({ length: 9 }, (_, idx) => `chart-line-select-${idx}`);
     chartLineStyles = [
         { borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)' },
         { borderColor: '#a855f7', backgroundColor: 'rgba(168, 85, 247, 0.15)' },
-        { borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)' }
+        { borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)' },
+        { borderColor: '#f97316', backgroundColor: 'rgba(249, 115, 22, 0.15)' },
+        { borderColor: '#ec4899', backgroundColor: 'rgba(236, 72, 153, 0.15)' },
+        { borderColor: '#14b8a6', backgroundColor: 'rgba(20, 184, 166, 0.15)' },
+        { borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.15)' },
+        { borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.15)' },
+        { borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.15)' }
     ];
     modelPriceStorageKey = 'cli-proxy-model-prices-v2';
     modelPrices = {};

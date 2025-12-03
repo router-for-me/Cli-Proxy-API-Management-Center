@@ -1,6 +1,8 @@
 const DEFAULT_MODEL_PRICE_STORAGE_KEY = 'cli-proxy-model-prices-v2';
 const LEGACY_MODEL_PRICE_STORAGE_KEY = 'cli-proxy-model-prices';
 const TOKENS_PER_PRICE_UNIT = 1_000_000;
+const DEFAULT_CHART_LINE_COUNT = 3;
+const MIN_CHART_LINE_COUNT = 1;
 
 // 获取API密钥的统计信息
 export async function getKeyStats(usageData = null) {
@@ -214,14 +216,101 @@ export function getModelNamesFromUsage(usage) {
     return Array.from(names).sort((a, b) => a.localeCompare(b));
 }
 
+export function getChartLineMaxCount() {
+    const idCount = Array.isArray(this.chartLineSelectIds) ? this.chartLineSelectIds.length : 0;
+    const configuredMax = Number(this.chartLineMaxCount);
+    const fallback = idCount || DEFAULT_CHART_LINE_COUNT;
+    const resolvedMax = Number.isFinite(configuredMax) ? configuredMax : fallback;
+    if (idCount > 0) {
+        return Math.max(MIN_CHART_LINE_COUNT, Math.min(resolvedMax, idCount));
+    }
+    return Math.max(MIN_CHART_LINE_COUNT, resolvedMax);
+}
+
+export function getVisibleChartLineCount() {
+    const maxCount = this.getChartLineMaxCount();
+    const stored = Number(this.chartLineVisibleCount);
+    const base = Number.isFinite(stored)
+        ? stored
+        : (Array.isArray(this.chartLineSelections) ? this.chartLineSelections.length : DEFAULT_CHART_LINE_COUNT);
+    const resolved = Math.min(Math.max(base, MIN_CHART_LINE_COUNT), maxCount);
+    this.chartLineVisibleCount = resolved;
+    return resolved;
+}
+
+export function ensureChartLineSelectionLength(targetLength = null) {
+    const maxCount = this.getChartLineMaxCount();
+    const desiredLength = Math.min(
+        Math.max(targetLength ?? this.getVisibleChartLineCount(), MIN_CHART_LINE_COUNT),
+        maxCount
+    );
+
+    if (!Array.isArray(this.chartLineSelections)) {
+        this.chartLineSelections = Array(desiredLength).fill('none');
+        return this.chartLineSelections;
+    }
+
+    const trimmed = this.chartLineSelections.slice(0, maxCount);
+    if (trimmed.length < desiredLength) {
+        this.chartLineSelections = [...trimmed, ...Array(desiredLength - trimmed.length).fill('none')];
+    } else if (trimmed.length > desiredLength) {
+        this.chartLineSelections = trimmed.slice(0, desiredLength);
+    } else {
+        this.chartLineSelections = trimmed;
+    }
+    return this.chartLineSelections;
+}
+
+export function updateChartLineControlsUI() {
+    const maxCount = this.getChartLineMaxCount();
+    const visibleCount = this.getVisibleChartLineCount();
+    const counter = document.getElementById('chart-line-count');
+    if (counter) {
+        counter.textContent = `${visibleCount}/${maxCount}`;
+    }
+    const addBtn = document.getElementById('add-chart-line');
+    const removeBtn = document.getElementById('remove-chart-line');
+    if (addBtn) {
+        addBtn.disabled = visibleCount >= maxCount;
+    }
+    if (removeBtn) {
+        removeBtn.disabled = visibleCount <= MIN_CHART_LINE_COUNT;
+    }
+}
+
+export function setChartLineVisibleCount(count) {
+    const maxCount = this.getChartLineMaxCount();
+    const nextCount = Math.min(Math.max(count, MIN_CHART_LINE_COUNT), maxCount);
+    const current = this.getVisibleChartLineCount();
+    if (nextCount === current) {
+        this.updateChartLineControlsUI();
+        return;
+    }
+    this.chartLineVisibleCount = nextCount;
+    this.ensureChartLineSelectionLength(nextCount);
+    this.updateChartLineSelectors(this.currentUsageData);
+    this.refreshChartsForSelections();
+}
+
+export function changeChartLineCount(delta = 0) {
+    const current = this.getVisibleChartLineCount();
+    this.setChartLineVisibleCount(current + delta);
+}
+
 export function updateChartLineSelectors(usage) {
     const modelNames = this.getModelNamesFromUsage(usage);
     const selectors = this.chartLineSelectIds
         .map(id => document.getElementById(id))
         .filter(Boolean);
 
+    const availableCount = selectors.length || this.getChartLineMaxCount();
+    const visibleCount = Math.min(this.getVisibleChartLineCount(), availableCount);
+    this.chartLineVisibleCount = visibleCount;
+    this.ensureChartLineSelectionLength(visibleCount);
+
     if (!selectors.length) {
-        this.chartLineSelections = ['none', 'none', 'none'];
+        this.chartLineSelections = Array(visibleCount).fill('none');
+        this.updateChartLineControlsUI();
         return;
     }
 
@@ -241,23 +330,34 @@ export function updateChartLineSelectors(usage) {
     };
 
     const hasModels = modelNames.length > 0;
-    selectors.forEach(select => {
+    selectors.forEach((select, index) => {
+        const group = select.closest('.chart-line-group');
+        const isVisible = index < visibleCount;
+        if (group) {
+            group.classList.toggle('chart-line-hidden', !isVisible);
+        }
         select.innerHTML = '';
         select.appendChild(optionsFragment());
-        select.disabled = !hasModels;
+        select.disabled = !hasModels || !isVisible;
+        if (!isVisible) {
+            select.value = 'none';
+        }
     });
 
     if (!hasModels) {
-        this.chartLineSelections = ['none', 'none', 'none'];
-        selectors.forEach(select => {
+        this.chartLineSelections = Array(visibleCount).fill('none');
+        selectors.forEach((select, index) => {
+            const group = select.closest('.chart-line-group');
+            if (group) {
+                group.classList.toggle('chart-line-hidden', index >= visibleCount);
+            }
             select.value = 'none';
         });
+        this.updateChartLineControlsUI();
         return;
     }
 
-    const nextSelections = Array.isArray(this.chartLineSelections)
-        ? [...this.chartLineSelections]
-        : ['none', 'none', 'none'];
+    const nextSelections = this.ensureChartLineSelectionLength(visibleCount).slice(0, visibleCount);
 
     const validNames = new Set(modelNames);
     let hasActiveSelection = false;
@@ -280,17 +380,17 @@ export function updateChartLineSelectors(usage) {
     this.chartLineSelections = nextSelections;
     selectors.forEach((select, index) => {
         const value = this.chartLineSelections[index] || 'none';
-        select.value = value;
+        select.value = index < visibleCount ? value : 'none';
     });
+    this.updateChartLineControlsUI();
 }
 
 export function handleChartLineSelectionChange(index, value) {
-    if (!Array.isArray(this.chartLineSelections)) {
-        this.chartLineSelections = ['none', 'none', 'none'];
-    }
-    if (index < 0 || index >= this.chartLineSelections.length) {
+    const visibleCount = this.getVisibleChartLineCount();
+    if (index < 0 || index >= visibleCount) {
         return;
     }
+    this.ensureChartLineSelectionLength(visibleCount);
     const normalized = value || 'none';
     if (this.chartLineSelections[index] === normalized) {
         return;
@@ -324,10 +424,9 @@ export function refreshChartsForSelections() {
 }
 
 export function getActiveChartLineSelections() {
-    if (!Array.isArray(this.chartLineSelections)) {
-        this.chartLineSelections = ['none', 'none', 'none'];
-    }
-    return this.chartLineSelections
+    const visibleCount = this.getVisibleChartLineCount();
+    const selections = this.ensureChartLineSelectionLength(visibleCount).slice(0, visibleCount);
+    return selections
         .map((value, index) => ({ model: value, index }))
         .filter(item => item.model && item.model !== 'none');
 }
@@ -763,7 +862,7 @@ export function buildChartDataForMetric(period = 'day', metric = 'requests') {
     const activeSelections = this.getActiveChartLineSelections();
     const datasets = activeSelections.map(selection => {
         const values = dataByModel.get(selection.model) || new Array(labels.length).fill(0);
-        const style = this.chartLineStyles[selection.index] || this.chartLineStyles[0];
+        const style = this.chartLineStyles[selection.index % this.chartLineStyles.length] || this.chartLineStyles[0];
         return {
             label: selection.model,
             data: values,
@@ -1361,6 +1460,12 @@ export const usageModule = {
     loadUsageStats,
     updateUsageOverview,
     getModelNamesFromUsage,
+    getChartLineMaxCount,
+    getVisibleChartLineCount,
+    ensureChartLineSelectionLength,
+    updateChartLineControlsUI,
+    setChartLineVisibleCount,
+    changeChartLineCount,
     updateChartLineSelectors,
     handleChartLineSelectionChange,
     refreshChartsForSelections,
