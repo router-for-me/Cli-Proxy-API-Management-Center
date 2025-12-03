@@ -128,25 +128,7 @@ export function getGeminiKeysFromConfig(config) {
     }
 
     const geminiKeys = Array.isArray(config['gemini-api-key']) ? config['gemini-api-key'] : [];
-    if (geminiKeys.length > 0) {
-        return geminiKeys;
-    }
-
-    const legacyKeys = Array.isArray(config['generative-language-api-key']) ? config['generative-language-api-key'] : [];
-    return legacyKeys
-        .map(item => {
-            if (item && typeof item === 'object') {
-                return { ...item };
-            }
-            if (typeof item === 'string') {
-                const trimmed = item.trim();
-                if (trimmed) {
-                    return { 'api-key': trimmed };
-                }
-            }
-            return null;
-        })
-        .filter(Boolean);
+    return geminiKeys;
 }
 
 export async function renderGeminiKeys(keys, keyStats = null) {
