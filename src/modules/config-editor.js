@@ -32,7 +32,6 @@ export const configEditorModule = {
                 }
             });
 
-            editorInstance.setSize('100%', '100%');
             editorInstance.on('change', () => {
                 this.isConfigEditorDirty = true;
                 this.updateConfigEditorStatus('info', i18n.t('config_management.status_dirty'));

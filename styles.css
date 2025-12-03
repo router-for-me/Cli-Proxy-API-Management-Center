@@ -1404,8 +1404,6 @@ textarea::placeholder {
 
 .yaml-editor {
     width: 100%;
-    flex: 1;
-    min-height: 520px;
     border: 1px solid var(--border-primary);
     border-radius: 6px;
     padding: 12px 14px;
@@ -1417,10 +1415,12 @@ textarea::placeholder {
     resize: vertical;
 }
 
+#config-management .yaml-editor {
+    height: 520px;
+}
+
 #config-management .CodeMirror {
-    flex: 1;
-    min-height: 520px;
-    height: 100%;
+    height: 520px;
     font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
     font-size: 14px;
     line-height: 1.5;
@@ -1433,7 +1433,7 @@ textarea::placeholder {
 #config-management .CodeMirror-scroll {
     min-height: 0;
     height: 100%;
-    max-height: none;
+    max-height: 100%;
     overflow-y: auto;
     overscroll-behavior: contain;
 }
@@ -1484,9 +1484,9 @@ textarea::placeholder {
         min-height: 360px;
     }
 
-    .yaml-editor,
+    #config-management .yaml-editor,
     #config-management .CodeMirror {
-        min-height: 360px;
+        height: 360px;
     }
 }
 
