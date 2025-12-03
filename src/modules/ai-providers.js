@@ -1152,6 +1152,10 @@ function ensureOpenAIModelDiscoveryCard(manager) {
                     <button type="button" class="btn btn-secondary" id="openai-model-discovery-refresh">${i18n.t('ai_providers.openai_models_fetch_refresh')}</button>
                 </div>
             </div>
+            <div class="form-group">
+                <label for="openai-model-discovery-search">${i18n.t('ai_providers.openai_models_search_label')}</label>
+                <input type="text" id="openai-model-discovery-search" placeholder="${i18n.t('ai_providers.openai_models_search_placeholder')}">
+            </div>
             <div id="openai-model-discovery-status" class="model-discovery-status"></div>
             <div id="openai-model-discovery-list" class="model-discovery-list"></div>
             <div class="modal-actions">
@@ -1174,6 +1178,13 @@ function ensureOpenAIModelDiscoveryCard(manager) {
     bind('openai-model-discovery-cancel', () => manager.closeOpenAIModelDiscovery());
     bind('openai-model-discovery-refresh', () => manager.refreshOpenAIModelDiscovery());
     bind('openai-model-discovery-apply', () => manager.applyOpenAIModelDiscoverySelection());
+    const searchInput = document.getElementById('openai-model-discovery-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', (event) => {
+            const query = event?.target?.value || '';
+            manager.setOpenAIModelDiscoverySearch(query);
+        });
+    }
 
     return overlay;
 }
@@ -1185,9 +1196,29 @@ export function setOpenAIModelDiscoveryStatus(message = '', type = 'info') {
     status.className = `model-discovery-status ${type}`;
 }
 
+export function setOpenAIModelDiscoverySearch(query = '') {
+    if (!this.openAIModelDiscoveryContext) return;
+    const normalized = (query || '').trim();
+    this.openAIModelDiscoveryContext.modelSearchQuery = normalized;
+    const models = this.openAIModelDiscoveryContext.discoveredModels || [];
+    this.renderOpenAIModelDiscoveryList(models);
+}
+
 export function renderOpenAIModelDiscoveryList(models = []) {
     const list = document.getElementById('openai-model-discovery-list');
     if (!list) return;
+
+    const context = this.openAIModelDiscoveryContext || {};
+    const filter = (context.modelSearchQuery || '').trim().toLowerCase();
+    const filtered = models
+        .map((model, index) => ({ model, index }))
+        .filter(({ model }) => {
+            if (!filter) return true;
+            const name = (model?.name || '').toLowerCase();
+            const alias = (model?.alias || '').toLowerCase();
+            const desc = (model?.description || '').toLowerCase();
+            return name.includes(filter) || alias.includes(filter) || desc.includes(filter);
+        });
 
     if (!models.length) {
         list.innerHTML = `
@@ -1199,10 +1230,20 @@ export function renderOpenAIModelDiscoveryList(models = []) {
         return;
     }
 
-    list.innerHTML = models.map((model, index) => {
-        const name = this.escapeHtml(model.name || '');
-        const alias = model.alias ? `<span class="model-discovery-alias">${this.escapeHtml(model.alias)}</span>` : '';
-        const desc = model.description ? `<div class="model-discovery-desc">${this.escapeHtml(model.description)}</div>` : '';
+    if (!filtered.length) {
+        list.innerHTML = `
+            <div class="model-discovery-empty">
+                <i class="fas fa-search"></i>
+                <span>${i18n.t('ai_providers.openai_models_search_empty')}</span>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = filtered.map(({ model, index }) => {
+        const name = this.escapeHtml(model?.name || '');
+        const alias = model?.alias ? `<span class="model-discovery-alias">${this.escapeHtml(model.alias)}</span>` : '';
+        const desc = model?.description ? `<div class="model-discovery-desc">${this.escapeHtml(model.description)}</div>` : '';
         return `
             <label class="model-discovery-row">
                 <input type="checkbox" class="model-discovery-checkbox" data-model-index="${index}">
@@ -1244,12 +1285,17 @@ export function openOpenAIModelDiscovery(mode = 'new') {
         ...context,
         endpoint,
         headers,
-        discoveredModels: []
+        discoveredModels: [],
+        modelSearchQuery: ''
     };
 
     const urlInput = document.getElementById('openai-model-discovery-url');
     if (urlInput) {
         urlInput.value = endpoint;
+    }
+    const searchInput = document.getElementById('openai-model-discovery-search');
+    if (searchInput) {
+        searchInput.value = '';
     }
 
     this.renderOpenAIModelDiscoveryList([]);
@@ -1688,6 +1734,7 @@ export const aiProvidersModule = {
     refreshOpenAIModelDiscovery,
     renderOpenAIModelDiscoveryList,
     setOpenAIModelDiscoveryStatus,
+    setOpenAIModelDiscoverySearch,
     applyOpenAIModelDiscoverySelection,
     closeOpenAIModelDiscovery,
     addModelField,
