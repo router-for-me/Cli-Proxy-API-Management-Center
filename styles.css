@@ -1385,7 +1385,6 @@ textarea::placeholder {
 #config-management .card {
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 360px);
     margin-bottom: 12px;
 }
 
