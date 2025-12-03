@@ -3128,6 +3128,20 @@ input:checked+.slider:before {
     font-size: 13px;
 }
 
+.chart-line-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chart-line-control .model-filter-select {
+    flex: 1;
+}
+
+.chart-line-delete {
+    white-space: nowrap;
+}
+
 .chart-line-group.chart-line-hidden {
     display: none;
 }

@@ -525,8 +525,8 @@ class CLIProxyManager {
         const costHourBtn = document.getElementById('cost-hour-btn');
         const costDayBtn = document.getElementById('cost-day-btn');
         const addChartLineBtn = document.getElementById('add-chart-line');
-        const removeChartLineBtn = document.getElementById('remove-chart-line');
         const chartLineSelects = document.querySelectorAll('.chart-line-select');
+        const chartLineDeleteButtons = document.querySelectorAll('.chart-line-delete');
         const modelPriceForm = document.getElementById('model-price-form');
         const resetModelPricesBtn = document.getElementById('reset-model-prices');
         const modelPriceSelect = document.getElementById('model-price-model-select');
@@ -555,14 +555,19 @@ class CLIProxyManager {
         if (addChartLineBtn) {
             addChartLineBtn.addEventListener('click', () => this.changeChartLineCount(1));
         }
-        if (removeChartLineBtn) {
-            removeChartLineBtn.addEventListener('click', () => this.changeChartLineCount(-1));
-        }
         if (chartLineSelects.length) {
             chartLineSelects.forEach(select => {
                 select.addEventListener('change', (event) => {
                     const index = Number.parseInt(select.getAttribute('data-line-index'), 10);
                     this.handleChartLineSelectionChange(Number.isNaN(index) ? -1 : index, event.target.value);
+                });
+            });
+        }
+        if (chartLineDeleteButtons.length) {
+            chartLineDeleteButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const index = Number.parseInt(button.getAttribute('data-line-index'), 10);
+                    this.removeChartLine(Number.isNaN(index) ? -1 : index);
                 });
             });
         }
@@ -673,6 +678,7 @@ class CLIProxyManager {
     chartLineMaxCount = 9;
     chartLineVisibleCount = 3;
     chartLineSelections = Array(3).fill('none');
+    chartLineSelectionsInitialized = false;
     chartLineSelectIds = Array.from({ length: 9 }, (_, idx) => `chart-line-select-${idx}`);
     chartLineStyles = [
         { borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)' },

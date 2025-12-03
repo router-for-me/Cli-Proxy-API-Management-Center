@@ -3,6 +3,7 @@ const LEGACY_MODEL_PRICE_STORAGE_KEY = 'cli-proxy-model-prices';
 const TOKENS_PER_PRICE_UNIT = 1_000_000;
 const DEFAULT_CHART_LINE_COUNT = 3;
 const MIN_CHART_LINE_COUNT = 1;
+const ALL_MODELS_VALUE = 'all';
 
 // 获取API密钥的统计信息
 export async function getKeyStats(usageData = null) {
@@ -269,12 +270,19 @@ export function updateChartLineControlsUI() {
         counter.textContent = `${visibleCount}/${maxCount}`;
     }
     const addBtn = document.getElementById('add-chart-line');
-    const removeBtn = document.getElementById('remove-chart-line');
     if (addBtn) {
         addBtn.disabled = visibleCount >= maxCount;
     }
-    if (removeBtn) {
-        removeBtn.disabled = visibleCount <= MIN_CHART_LINE_COUNT;
+    const deleteButtons = document.querySelectorAll('.chart-line-delete');
+    if (deleteButtons.length) {
+        deleteButtons.forEach(button => {
+            const group = button.closest('.chart-line-group');
+            const index = Number.parseInt(button.getAttribute('data-line-index'), 10);
+            const isVisible = group
+                ? !group.classList.contains('chart-line-hidden')
+                : (Number.isFinite(index) ? index < visibleCount : true);
+            button.disabled = visibleCount <= MIN_CHART_LINE_COUNT || !isVisible;
+        });
     }
 }
 
@@ -297,6 +305,23 @@ export function changeChartLineCount(delta = 0) {
     this.setChartLineVisibleCount(current + delta);
 }
 
+export function removeChartLine(index) {
+    const visibleCount = this.getVisibleChartLineCount();
+    const normalizedIndex = Number.parseInt(index, 10);
+    if (!Number.isFinite(normalizedIndex) || normalizedIndex < 0 || normalizedIndex >= visibleCount) {
+        return;
+    }
+    if (visibleCount <= MIN_CHART_LINE_COUNT) {
+        return;
+    }
+    const nextSelections = this.ensureChartLineSelectionLength(visibleCount).slice(0, visibleCount);
+    nextSelections.splice(normalizedIndex, 1);
+    this.chartLineSelections = nextSelections;
+    this.chartLineVisibleCount = Math.max(MIN_CHART_LINE_COUNT, visibleCount - 1);
+    this.updateChartLineSelectors(this.currentUsageData);
+    this.refreshChartsForSelections();
+}
+
 export function updateChartLineSelectors(usage) {
     const modelNames = this.getModelNamesFromUsage(usage);
     const selectors = this.chartLineSelectIds
@@ -307,19 +332,21 @@ export function updateChartLineSelectors(usage) {
     const visibleCount = Math.min(this.getVisibleChartLineCount(), availableCount);
     this.chartLineVisibleCount = visibleCount;
     this.ensureChartLineSelectionLength(visibleCount);
+    const wasInitialized = this.chartLineSelectionsInitialized === true;
 
     if (!selectors.length) {
         this.chartLineSelections = Array(visibleCount).fill('none');
+        this.chartLineSelectionsInitialized = false;
         this.updateChartLineControlsUI();
         return;
     }
 
     const optionsFragment = () => {
         const fragment = document.createDocumentFragment();
-        const hiddenOption = document.createElement('option');
-        hiddenOption.value = 'none';
-        hiddenOption.textContent = i18n.t('usage_stats.chart_line_hidden');
-        fragment.appendChild(hiddenOption);
+        const allOption = document.createElement('option');
+        allOption.value = ALL_MODELS_VALUE;
+        allOption.textContent = i18n.t('usage_stats.chart_line_all');
+        fragment.appendChild(allOption);
         modelNames.forEach(name => {
             const option = document.createElement('option');
             option.value = name;
@@ -336,22 +363,27 @@ export function updateChartLineSelectors(usage) {
         if (group) {
             group.classList.toggle('chart-line-hidden', !isVisible);
         }
+        const deleteBtn = group ? group.querySelector('.chart-line-delete') : null;
         select.innerHTML = '';
         select.appendChild(optionsFragment());
-        select.disabled = !hasModels || !isVisible;
+        select.disabled = !isVisible;
+        if (deleteBtn) {
+            deleteBtn.disabled = !isVisible || visibleCount <= MIN_CHART_LINE_COUNT;
+        }
         if (!isVisible) {
-            select.value = 'none';
+            select.value = ALL_MODELS_VALUE;
         }
     });
 
     if (!hasModels) {
-        this.chartLineSelections = Array(visibleCount).fill('none');
+        this.chartLineSelections = Array(visibleCount).fill(ALL_MODELS_VALUE);
+        this.chartLineSelectionsInitialized = false;
         selectors.forEach((select, index) => {
             const group = select.closest('.chart-line-group');
             if (group) {
                 group.classList.toggle('chart-line-hidden', index >= visibleCount);
             }
-            select.value = 'none';
+            select.value = ALL_MODELS_VALUE;
         });
         this.updateChartLineControlsUI();
         return;
@@ -359,29 +391,38 @@ export function updateChartLineSelectors(usage) {
 
     const nextSelections = this.ensureChartLineSelectionLength(visibleCount).slice(0, visibleCount);
 
-    const validNames = new Set(modelNames);
+    const validNames = new Set([...modelNames, ALL_MODELS_VALUE]);
     let hasActiveSelection = false;
     for (let i = 0; i < nextSelections.length; i++) {
         const selection = nextSelections[i];
         if (selection && selection !== 'none' && !validNames.has(selection)) {
-            nextSelections[i] = 'none';
+            nextSelections[i] = ALL_MODELS_VALUE;
         }
-        if (nextSelections[i] !== 'none') {
+        if (nextSelections[i] && nextSelections[i] !== 'none') {
             hasActiveSelection = true;
         }
     }
 
-    if (!hasActiveSelection) {
+    const allSelectionsAreAll = nextSelections.length > 0 && nextSelections.every(value => value === ALL_MODELS_VALUE);
+
+    if (!hasActiveSelection || (!wasInitialized && allSelectionsAreAll)) {
         modelNames.slice(0, nextSelections.length).forEach((name, index) => {
             nextSelections[index] = name;
         });
     }
 
+    for (let i = 0; i < nextSelections.length; i++) {
+        if (!nextSelections[i] || nextSelections[i] === 'none') {
+            nextSelections[i] = modelNames[i % Math.max(modelNames.length, 1)] || ALL_MODELS_VALUE;
+        }
+    }
+
     this.chartLineSelections = nextSelections;
     selectors.forEach((select, index) => {
-        const value = this.chartLineSelections[index] || 'none';
-        select.value = index < visibleCount ? value : 'none';
+        const value = this.chartLineSelections[index] || ALL_MODELS_VALUE;
+        select.value = index < visibleCount ? value : ALL_MODELS_VALUE;
     });
+    this.chartLineSelectionsInitialized = hasModels;
     this.updateChartLineControlsUI();
 }
 
@@ -391,7 +432,7 @@ export function handleChartLineSelectionChange(index, value) {
         return;
     }
     this.ensureChartLineSelectionLength(visibleCount);
-    const normalized = value || 'none';
+    const normalized = (value && value !== 'none') ? value : ALL_MODELS_VALUE;
     if (this.chartLineSelections[index] === normalized) {
         return;
     }
@@ -860,11 +901,37 @@ export function buildChartDataForMetric(period = 'day', metric = 'requests') {
     const labels = baseSeries?.labels || [];
     const dataByModel = baseSeries?.dataByModel || new Map();
     const activeSelections = this.getActiveChartLineSelections();
+    let allSeriesCache = null;
+
+    const getAllSeries = () => {
+        if (allSeriesCache) {
+            return allSeriesCache;
+        }
+        const summed = new Array(labels.length).fill(0);
+        dataByModel.forEach(values => {
+            values.forEach((value, idx) => {
+                summed[idx] = (summed[idx] || 0) + value;
+            });
+        });
+        allSeriesCache = summed;
+        return summed;
+    };
+
+    const getSeriesForSelection = (selectionValue) => {
+        if (selectionValue === ALL_MODELS_VALUE) {
+            return getAllSeries();
+        }
+        return dataByModel.get(selectionValue) || new Array(labels.length).fill(0);
+    };
+
     const datasets = activeSelections.map(selection => {
-        const values = dataByModel.get(selection.model) || new Array(labels.length).fill(0);
+        const values = getSeriesForSelection(selection.model);
         const style = this.chartLineStyles[selection.index % this.chartLineStyles.length] || this.chartLineStyles[0];
+        const label = selection.model === ALL_MODELS_VALUE
+            ? i18n.t('usage_stats.chart_line_all')
+            : selection.model;
         return {
-            label: selection.model,
+            label,
             data: values,
             borderColor: style.borderColor,
             backgroundColor: style.backgroundColor,
@@ -1466,6 +1533,7 @@ export const usageModule = {
     updateChartLineControlsUI,
     setChartLineVisibleCount,
     changeChartLineCount,
+    removeChartLine,
     updateChartLineSelectors,
     handleChartLineSelectionChange,
     refreshChartsForSelections,
