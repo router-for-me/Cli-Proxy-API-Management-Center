@@ -65,6 +65,9 @@ class CLIProxyManager {
         });
         this.configCache = this.configService.cache;
         this.cacheTimestamps = this.configService.cacheTimestamps;
+        this.availableModels = [];
+        this.availableModelApiKeysCache = null;
+        this.availableModelsLoading = false;
 
         // 状态更新定时器
         this.statusUpdateTimer = null;
@@ -276,12 +279,16 @@ class CLIProxyManager {
         // 连接状态检查
         const connectionStatus = document.getElementById('connection-status');
         const refreshAll = document.getElementById('refresh-all');
+        const availableModelsRefresh = document.getElementById('available-models-refresh');
 
         if (connectionStatus) {
             connectionStatus.addEventListener('click', () => this.checkConnectionStatus());
         }
         if (refreshAll) {
             refreshAll.addEventListener('click', () => this.refreshAllData());
+        }
+        if (availableModelsRefresh) {
+            availableModelsRefresh.addEventListener('click', () => this.loadAvailableModels({ forceRefresh: true }));
         }
 
         // 基础设置

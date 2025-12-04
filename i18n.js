@@ -94,7 +94,7 @@ const i18n = {
             'nav.usage_stats': '使用统计',
             'nav.config_management': '配置管理',
             'nav.logs': '日志查看',
-            'nav.system_info': '系统信息',
+            'nav.system_info': '管理中心信息',
 
             // 基础设置
             'basic_settings.title': '基础设置',
@@ -557,7 +557,7 @@ const i18n = {
             'config_management.editor_placeholder': 'key: value',
 
             // 系统信息
-            'system_info.title': '系统信息',
+            'system_info.title': '管理中心信息',
             'system_info.connection_status_title': '连接状态',
             'system_info.api_status_label': 'API 状态:',
             'system_info.config_status_label': '配置状态:',
@@ -566,6 +566,12 @@ const i18n = {
             'system_info.real_time_data': '实时数据',
             'system_info.not_loaded': '未加载',
             'system_info.seconds_ago': '秒前',
+            'system_info.models_title': '可用模型列表',
+            'system_info.models_desc': '展示 /v1/models 返回的模型，并自动使用服务器保存的 API Key 进行鉴权。',
+            'system_info.models_loading': '正在加载可用模型...',
+            'system_info.models_empty': '未从 /v1/models 获取到模型数据',
+            'system_info.models_error': '获取模型列表失败',
+            'system_info.models_count': '可用模型 {count} 个',
 
             // 通知消息
             'notification.debug_updated': '调试设置已更新',
@@ -730,7 +736,7 @@ const i18n = {
             'nav.usage_stats': 'Usage Statistics',
             'nav.config_management': 'Config Management',
             'nav.logs': 'Logs Viewer',
-            'nav.system_info': 'System Info',
+            'nav.system_info': 'Management Center Info',
 
             // Basic settings
             'basic_settings.title': 'Basic Settings',
@@ -1192,7 +1198,7 @@ const i18n = {
             'config_management.editor_placeholder': 'key: value',
 
             // System info
-            'system_info.title': 'System Information',
+            'system_info.title': 'Management Center Info',
             'system_info.connection_status_title': 'Connection Status',
             'system_info.api_status_label': 'API Status:',
             'system_info.config_status_label': 'Config Status:',
@@ -1201,6 +1207,12 @@ const i18n = {
             'system_info.real_time_data': 'Real-time Data',
             'system_info.not_loaded': 'Not Loaded',
             'system_info.seconds_ago': 'seconds ago',
+            'system_info.models_title': 'Available Models',
+            'system_info.models_desc': 'Shows the /v1/models response and uses saved API keys for auth automatically.',
+            'system_info.models_loading': 'Loading available models...',
+            'system_info.models_empty': 'No models returned by /v1/models',
+            'system_info.models_error': 'Failed to load model list',
+            'system_info.models_count': '{count} available models',
 
             // Notification messages
             'notification.debug_updated': 'Debug settings updated',

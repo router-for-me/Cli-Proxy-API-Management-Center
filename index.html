@@ -182,7 +182,7 @@
                             <i class="fas fa-scroll"></i> <span data-i18n="nav.logs">日志查看</span>
                         </a></li>
                     <li data-i18n-tooltip="nav.system_info"><a href="#system-info" class="nav-item" data-section="system-info">
-                            <i class="fas fa-info-circle"></i> <span data-i18n="nav.system_info">系统信息</span>
+                            <i class="fas fa-info-circle"></i> <span data-i18n="nav.system_info">管理中心信息</span>
                         </a></li>
                 </ul>
             </nav>
@@ -1235,9 +1235,23 @@
                             </div>
                         </section>
 
-                        <!-- 系统信息 -->
+                        <!-- 管理中心信息 -->
                         <section id="system-info" class="content-section">
-                            <h2 data-i18n="system_info.title">系统信息</h2>
+                            <h2 data-i18n="system_info.title">管理中心信息</h2>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-layer-group"></i> <span data-i18n="system_info.models_title">可用模型列表</span></h3>
+                                    <button type="button" id="available-models-refresh" class="btn btn-secondary">
+                                        <i class="fas fa-sync-alt"></i> <span data-i18n="common.refresh">刷新</span>
+                                    </button>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" data-i18n="system_info.models_desc">展示当前服务返回的 /v1/models 列表（使用服务器保存的 API Key 自动鉴权）。</p>
+                                    <div id="available-models-status" class="available-models-status" data-i18n="common.loading">加载中...</div>
+                                    <div id="available-models-list" class="available-models-list"></div>
+                                </div>
+                            </div>
 
                             <!-- 连接信息卡片 -->
                             <div class="card">

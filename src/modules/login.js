@@ -106,6 +106,9 @@ export const loginModule = {
         if (typeof this.renderOauthExcludedModels === 'function') {
             this.renderOauthExcludedModels('all');
         }
+        if (typeof this.clearAvailableModels === 'function') {
+            this.clearAvailableModels('common.disconnected');
+        }
 
         localStorage.removeItem('isLoggedIn');
         secureStorage.removeItem('managementKey');

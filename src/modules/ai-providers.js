@@ -2,6 +2,8 @@
 // 这些函数依赖于 CLIProxyManager 实例上的 makeRequest/getConfig/clearCache/showNotification 等能力，
 // 以及 apiKeysModule 中的工具方法（如 applyHeadersToConfig/renderHeaderBadges）。
 
+import { normalizeModelList } from '../utils/models.js';
+
 const getStatsBySource = (stats) => {
     if (stats && typeof stats === 'object' && stats.bySource) {
         return stats.bySource;
@@ -19,44 +21,6 @@ const buildModelEndpoint = (baseUrl) => {
         return `${trimmed}/models`;
     }
     return `${trimmed}/v1/models`;
-};
-
-const normalizeModelList = (payload) => {
-    const toModel = (entry) => {
-        if (typeof entry === 'string') {
-            return { name: entry };
-        }
-        if (!entry || typeof entry !== 'object') {
-            return null;
-        }
-        const name = entry.id || entry.name || entry.model || entry.value;
-        if (!name) return null;
-        const alias = entry.alias || entry.display_name || entry.displayName;
-        const description = entry.description || entry.note || entry.comment;
-        const model = { name: String(name) };
-        if (alias && alias !== name) {
-            model.alias = String(alias);
-        }
-        if (description) {
-            model.description = String(description);
-        }
-        return model;
-    };
-
-    if (Array.isArray(payload)) {
-        return payload.map(toModel).filter(Boolean);
-    }
-
-    if (payload && typeof payload === 'object') {
-        if (Array.isArray(payload.data)) {
-            return payload.data.map(toModel).filter(Boolean);
-        }
-        if (Array.isArray(payload.models)) {
-            return payload.models.map(toModel).filter(Boolean);
-        }
-    }
-
-    return [];
 };
 
 const normalizeExcludedModels = (input) => {

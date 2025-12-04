@@ -3,6 +3,34 @@
 
 import { STATUS_UPDATE_INTERVAL_MS, DEFAULT_API_PORT } from '../utils/constants.js';
 import { secureStorage } from '../utils/secure-storage.js';
+import { normalizeModelList, classifyModels } from '../utils/models.js';
+
+const buildModelsEndpoint = (baseUrl) => {
+    if (!baseUrl) return '';
+    const trimmed = String(baseUrl).trim().replace(/\/+$/g, '');
+    if (!trimmed) return '';
+    return trimmed.endsWith('/v1') ? `${trimmed}/models` : `${trimmed}/v1/models`;
+};
+
+const normalizeApiKeyList = (input) => {
+    if (!Array.isArray(input)) return [];
+    const seen = new Set();
+    const keys = [];
+
+    input.forEach(item => {
+        const value = typeof item === 'string'
+            ? item
+            : (item && item['api-key'] ? item['api-key'] : '');
+        const trimmed = String(value || '').trim();
+        if (!trimmed || seen.has(trimmed)) {
+            return;
+        }
+        seen.add(trimmed);
+        keys.push(trimmed);
+    });
+
+    return keys;
+};
 
 export const connectionModule = {
     // 规范化基础地址，移除尾部斜杠与 /v0/management
@@ -153,6 +181,178 @@ export const connectionModule = {
         }
     },
 
+    buildAvailableModelsEndpoint() {
+        return buildModelsEndpoint(this.apiBase || this.apiClient?.apiBase || '');
+    },
+
+    setAvailableModelsStatus(message = '', type = 'info') {
+        const statusEl = document.getElementById('available-models-status');
+        if (!statusEl) return;
+        statusEl.textContent = message || '';
+        statusEl.className = `available-models-status ${type}`;
+    },
+
+    renderAvailableModels(models = []) {
+        const listEl = document.getElementById('available-models-list');
+        if (!listEl) return;
+
+        if (!models.length) {
+            listEl.innerHTML = `
+                <div class="available-models-empty">
+                    <i class="fas fa-inbox"></i>
+                    <span>${i18n.t('system_info.models_empty')}</span>
+                </div>
+            `;
+            return;
+        }
+
+        const language = (i18n?.currentLanguage || '').toLowerCase();
+        const otherLabel = language.startsWith('zh') ? '其他' : 'Other';
+        const groups = classifyModels(models, { otherLabel });
+
+        const groupHtml = groups.map(group => {
+            const pills = group.items.map(model => {
+                const name = this.escapeHtml(model.name || '');
+                const alias = model.alias ? `<span class="model-alias">${this.escapeHtml(model.alias)}</span>` : '';
+                const description = model.description ? this.escapeHtml(model.description) : '';
+                const titleAttr = description ? ` title="${description}"` : '';
+                return `
+                    <span class="provider-model-tag available-model-tag"${titleAttr}>
+                        <span class="model-name">${name}</span>
+                        ${alias}
+                    </span>
+                `;
+            }).join('');
+
+            const label = this.escapeHtml(group.label || group.id || '');
+            return `
+                <div class="available-model-group">
+                    <div class="available-model-group-header">
+                        <div class="available-model-group-title">
+                            <span class="available-model-group-label">${label}</span>
+                            <span class="available-model-group-count">${group.items.length}</span>
+                        </div>
+                    </div>
+                    <div class="available-model-group-body">
+                        ${pills}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        listEl.innerHTML = groupHtml;
+    },
+
+    clearAvailableModels(messageKey = 'system_info.models_empty') {
+        this.availableModels = [];
+        this.availableModelApiKeysCache = null;
+        const listEl = document.getElementById('available-models-list');
+        if (listEl) {
+            listEl.innerHTML = '';
+        }
+        this.setAvailableModelsStatus(i18n.t(messageKey), 'warning');
+    },
+
+    async resolveApiKeysForModels({ config = null, forceRefresh = false } = {}) {
+        if (!forceRefresh && Array.isArray(this.availableModelApiKeysCache) && this.availableModelApiKeysCache.length) {
+            return this.availableModelApiKeysCache;
+        }
+
+        const configKeys = normalizeApiKeyList(config?.['api-keys'] || this.configCache?.['api-keys']);
+        if (configKeys.length) {
+            this.availableModelApiKeysCache = configKeys;
+            return configKeys;
+        }
+
+        try {
+            const data = await this.makeRequest('/api-keys');
+            const keys = normalizeApiKeyList(data?.['api-keys']);
+            if (keys.length) {
+                this.availableModelApiKeysCache = keys;
+            }
+            return keys;
+        } catch (error) {
+            console.warn('自动获取 API Key 失败:', error);
+            return [];
+        }
+    },
+
+    async loadAvailableModels({ config = null, forceRefresh = false } = {}) {
+        const listEl = document.getElementById('available-models-list');
+        const statusEl = document.getElementById('available-models-status');
+
+        if (!listEl || !statusEl) {
+            return;
+        }
+
+        if (!this.isConnected) {
+            this.setAvailableModelsStatus(i18n.t('common.disconnected'), 'warning');
+            listEl.innerHTML = '';
+            return;
+        }
+
+        const endpoint = this.buildAvailableModelsEndpoint();
+        if (!endpoint) {
+            this.setAvailableModelsStatus(i18n.t('system_info.models_error'), 'error');
+            listEl.innerHTML = `
+                <div class="available-models-empty">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>${i18n.t('login.error_invalid')}</span>
+                </div>
+            `;
+            return;
+        }
+
+        this.availableModelsLoading = true;
+        this.setAvailableModelsStatus(i18n.t('system_info.models_loading'), 'info');
+        listEl.innerHTML = '<div class="available-models-placeholder"><i class="fas fa-spinner fa-spin"></i></div>';
+
+        try {
+            const headers = {};
+            const keys = await this.resolveApiKeysForModels({ config, forceRefresh });
+            if (keys.length) {
+                headers.Authorization = `Bearer ${keys[0]}`;
+            }
+
+            const response = await fetch(endpoint, { headers });
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText}`);
+            }
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (err) {
+                const text = await response.text();
+                throw new Error(text || err.message || 'Invalid JSON');
+            }
+
+            const models = normalizeModelList(data, { dedupe: true });
+            this.availableModels = models;
+
+            if (!models.length) {
+                this.setAvailableModelsStatus(i18n.t('system_info.models_empty'), 'warning');
+                this.renderAvailableModels([]);
+                return;
+            }
+
+            this.setAvailableModelsStatus(i18n.t('system_info.models_count', { count: models.length }), 'success');
+            this.renderAvailableModels(models);
+        } catch (error) {
+            console.error('加载可用模型失败:', error);
+            this.availableModels = [];
+            this.setAvailableModelsStatus(`${i18n.t('system_info.models_error')}: ${error.message}`, 'error');
+            listEl.innerHTML = `
+                <div class="available-models-empty">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>${this.escapeHtml(error.message || '')}</span>
+                </div>
+            `;
+        } finally {
+            this.availableModelsLoading = false;
+        }
+    },
+
     // 测试连接（简化版，用于内部调用）
     async testConnection() {
         try {
@@ -203,6 +403,11 @@ export const connectionModule = {
             apiStatus.textContent = i18n.t('common.disconnected');
             configStatus.textContent = i18n.t('system_info.not_loaded');
             configStatus.style.color = '#6b7280';
+            this.setAvailableModelsStatus(i18n.t('common.disconnected'), 'warning');
+            const modelsList = document.getElementById('available-models-list');
+            if (modelsList) {
+                modelsList.innerHTML = '';
+            }
         }
 
         lastUpdate.textContent = new Date().toLocaleString('zh-CN');
@@ -280,8 +485,12 @@ export const connectionModule = {
         this.configService.clearCache(section);
         this.configCache = this.configService.cache;
         this.cacheTimestamps = this.configService.cacheTimestamps;
+        if (!section || section === 'api-keys') {
+            this.availableModelApiKeysCache = null;
+        }
         if (!section) {
             this.configYamlCache = '';
+            this.availableModels = [];
         }
     },
 
@@ -328,6 +537,8 @@ export const connectionModule = {
 
             // 从配置中提取并设置各个设置项（现在传递keyStats）
             await this.updateSettingsFromConfig(config, keyStats);
+
+            await this.loadAvailableModels({ config, forceRefresh });
 
             if (this.events && typeof this.events.emit === 'function') {
                 this.events.emit('data:config-loaded', {
