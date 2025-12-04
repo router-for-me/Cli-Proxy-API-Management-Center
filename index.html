@@ -839,27 +839,33 @@
                             <h2 data-i18n="logs.title">日志查看</h2>
 
                             <div class="card">
-                                <div class="card-header">
-                                    <h3><i class="fas fa-scroll"></i> <span data-i18n="logs.log_content">日志内容</span></h3>
+                                <div class="card-header logs-header">
+                                    <div class="logs-header-main">
+                                        <h3><i class="fas fa-scroll"></i> <span data-i18n="logs.log_content">日志内容</span></h3>
+                                        <div class="logs-search">
+                                            <i class="fas fa-search"></i>
+                                            <input type="text" id="logs-search-input" aria-label="搜索日志" data-i18n-placeholder="logs.search_placeholder" placeholder="搜索日志...">
+                                        </div>
+                                    </div>
                                     <div class="header-actions">
                                         <div class="toggle-group" style="margin-right: 15px;">
                                             <label class="toggle-switch" style="margin-right: 5px;">
                                                 <input type="checkbox" id="logs-auto-refresh-toggle">
                                                 <span class="slider"></span>
                                             </label>
-                                        <span class="toggle-label" data-i18n="logs.auto_refresh" style="font-size: 0.9em;">自动刷新</span>
-                                    </div>
-                                    <button id="refresh-logs" class="btn btn-primary">
-                                        <i class="fas fa-sync-alt"></i> <span data-i18n="logs.refresh_button">刷新日志</span>
-                                    </button>
-                                    <button id="select-error-log" class="btn btn-secondary">
-                                        <i class="fas fa-file-circle-exclamation"></i> <span data-i18n="logs.error_log_button">选择错误日志</span>
-                                    </button>
-                                    <button id="download-logs" class="btn btn-secondary">
-                                        <i class="fas fa-download"></i> <span data-i18n="logs.download_button">下载日志</span>
-                                    </button>
-                                    <button id="clear-logs" class="btn btn-danger">
-                                        <i class="fas fa-trash"></i> <span data-i18n="logs.clear_button">清空日志</span>
+                                            <span class="toggle-label" data-i18n="logs.auto_refresh" style="font-size: 0.9em;">自动刷新</span>
+                                        </div>
+                                        <button id="refresh-logs" class="btn btn-primary">
+                                            <i class="fas fa-sync-alt"></i> <span data-i18n="logs.refresh_button">刷新日志</span>
+                                        </button>
+                                        <button id="select-error-log" class="btn btn-secondary">
+                                            <i class="fas fa-file-circle-exclamation"></i> <span data-i18n="logs.error_log_button">选择错误日志</span>
+                                        </button>
+                                        <button id="download-logs" class="btn btn-secondary">
+                                            <i class="fas fa-download"></i> <span data-i18n="logs.download_button">下载日志</span>
+                                        </button>
+                                        <button id="clear-logs" class="btn btn-danger">
+                                            <i class="fas fa-trash"></i> <span data-i18n="logs.clear_button">清空日志</span>
                                         </button>
                                     </div>
                                 </div>

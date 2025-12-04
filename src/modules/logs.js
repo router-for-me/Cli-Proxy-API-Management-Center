@@ -50,20 +50,19 @@ export const logsModule = {
                 } else if (!incremental && response.lines.length > 0) {
                     this.renderLogs(response.lines, response['line-count'] || response.lines.length, true);
                 } else if (!incremental) {
-                    logsContent.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p data-i18n="logs.empty_title">' +
-                        i18n.t('logs.empty_title') + '</p><p data-i18n="logs.empty_desc">' +
-                        i18n.t('logs.empty_desc') + '</p></div>';
                     this.latestLogTimestamp = null;
+                    this.renderLogs([], 0, false);
                 }
             } else if (!incremental) {
-                logsContent.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p data-i18n="logs.empty_title">' +
-                    i18n.t('logs.empty_title') + '</p><p data-i18n="logs.empty_desc">' +
-                    i18n.t('logs.empty_desc') + '</p></div>';
                 this.latestLogTimestamp = null;
+                this.renderLogs([], 0, false);
             }
         } catch (error) {
             console.error('加载日志失败:', error);
             if (!incremental) {
+                this.allLogLines = [];
+                this.displayedLogLines = [];
+                this.latestLogTimestamp = null;
                 const is404 = error.message && (error.message.includes('404') || error.message.includes('Not Found'));
 
                 if (is404) {
@@ -82,7 +81,17 @@ export const logsModule = {
         const logsContent = document.getElementById('logs-content');
         if (!logsContent) return;
 
-        if (!lines || lines.length === 0) {
+        const sourceLines = Array.isArray(lines) ? lines : [];
+        const filteredLines = sourceLines.filter(line => !line.includes('/v0/management/'));
+        let displayedLines = filteredLines;
+        if (filteredLines.length > this.maxDisplayLogLines) {
+            const linesToRemove = filteredLines.length - this.maxDisplayLogLines;
+            displayedLines = filteredLines.slice(linesToRemove);
+        }
+
+        this.allLogLines = displayedLines.slice();
+
+        if (displayedLines.length === 0) {
             this.displayedLogLines = [];
             logsContent.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p data-i18n="logs.empty_title">' +
                 i18n.t('logs.empty_title') + '</p><p data-i18n="logs.empty_desc">' +
@@ -90,14 +99,15 @@ export const logsModule = {
             return;
         }
 
-        const filteredLines = lines.filter(line => !line.includes('/v0/management/'));
-        let displayedLines = filteredLines;
-        if (filteredLines.length > this.maxDisplayLogLines) {
-            const linesToRemove = filteredLines.length - this.maxDisplayLogLines;
-            displayedLines = filteredLines.slice(linesToRemove);
-        }
+        const visibleLines = this.filterLogLinesBySearch(displayedLines);
+        this.displayedLogLines = visibleLines.slice();
 
-        this.displayedLogLines = displayedLines.slice();
+        if (visibleLines.length === 0) {
+            logsContent.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p data-i18n="logs.search_empty_title">' +
+                i18n.t('logs.search_empty_title') + '</p><p data-i18n="logs.search_empty_desc">' +
+                i18n.t('logs.search_empty_desc') + '</p></div>';
+            return;
+        }
 
         const displayedLineCount = this.displayedLogLines.length;
         logsContent.innerHTML = `
@@ -107,7 +117,7 @@ export const logsModule = {
             <pre class="logs-text">${this.buildLogsHtml(this.displayedLogLines)}</pre>
         `;
 
-        if (scrollToBottom) {
+        if (scrollToBottom && !this.logSearchQuery) {
             const logsTextElement = logsContent.querySelector('.logs-text');
             if (logsTextElement) {
                 logsTextElement.scrollTop = logsTextElement.scrollHeight;
@@ -138,9 +148,21 @@ export const logsModule = {
 
         const isAtBottom = logsTextElement.scrollHeight - logsTextElement.scrollTop - logsTextElement.clientHeight < 50;
 
-        this.displayedLogLines = this.displayedLogLines.concat(filteredNewLines);
-        if (this.displayedLogLines.length > this.maxDisplayLogLines) {
-            this.displayedLogLines = this.displayedLogLines.slice(this.displayedLogLines.length - this.maxDisplayLogLines);
+        const baseLines = Array.isArray(this.allLogLines) && this.allLogLines.length > 0
+            ? this.allLogLines
+            : (Array.isArray(this.displayedLogLines) ? this.displayedLogLines : []);
+
+        this.allLogLines = baseLines.concat(filteredNewLines);
+        if (this.allLogLines.length > this.maxDisplayLogLines) {
+            this.allLogLines = this.allLogLines.slice(this.allLogLines.length - this.maxDisplayLogLines);
+        }
+
+        const visibleLines = this.filterLogLinesBySearch(this.allLogLines);
+        this.displayedLogLines = visibleLines.slice();
+
+        if (visibleLines.length === 0) {
+            this.renderLogs(this.allLogLines, this.allLogLines.length, false);
+            return;
         }
 
         logsTextElement.innerHTML = this.buildLogsHtml(this.displayedLogLines);
@@ -150,9 +172,42 @@ export const logsModule = {
             logsInfoElement.innerHTML = `<span><i class="fas fa-list-ol"></i> ${displayedLines} ${i18n.t('logs.lines')}</span>`;
         }
 
-        if (isAtBottom) {
+        if (isAtBottom && !this.logSearchQuery) {
             logsTextElement.scrollTop = logsTextElement.scrollHeight;
         }
+    },
+
+    filterLogLinesBySearch(lines) {
+        const keyword = (this.logSearchQuery || '').toLowerCase();
+        if (!keyword) {
+            return Array.isArray(lines) ? lines.slice() : [];
+        }
+        if (!Array.isArray(lines) || lines.length === 0) {
+            return [];
+        }
+        return lines.filter(line => (line || '').toLowerCase().includes(keyword));
+    },
+
+    updateLogSearchQuery(value = '') {
+        const normalized = (value || '').trim();
+        if (this.logSearchQuery === normalized) {
+            return;
+        }
+        this.logSearchQuery = normalized;
+        this.applyLogSearchFilter();
+    },
+
+    applyLogSearchFilter() {
+        const logsContent = document.getElementById('logs-content');
+        if (!logsContent) return;
+        if (logsContent.querySelector('.upgrade-notice') || logsContent.querySelector('.error-state')) {
+            return;
+        }
+        const baseLines = Array.isArray(this.allLogLines) ? this.allLogLines : [];
+        if (baseLines.length === 0 && logsContent.querySelector('.loading-placeholder')) {
+            return;
+        }
+        this.renderLogs(baseLines, baseLines.length, false);
     },
 
     buildLogsHtml(lines) {

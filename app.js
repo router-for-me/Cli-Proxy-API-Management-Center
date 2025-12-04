@@ -77,7 +77,9 @@ class CLIProxyManager {
         this.logsRefreshTimer = null;
 
         // 当前展示的日志行
+        this.allLogLines = [];
         this.displayedLogLines = [];
+        this.logSearchQuery = '';
         this.maxDisplayLogLines = MAX_LOG_LINES;
         this.logFetchLimit = LOG_FETCH_LIMIT;
 
@@ -333,6 +335,7 @@ class CLIProxyManager {
         const downloadLogs = document.getElementById('download-logs');
         const clearLogs = document.getElementById('clear-logs');
         const logsAutoRefreshToggle = document.getElementById('logs-auto-refresh-toggle');
+        const logsSearchInput = document.getElementById('logs-search-input');
 
         if (refreshLogs) {
             refreshLogs.addEventListener('click', () => this.refreshLogs());
@@ -348,6 +351,14 @@ class CLIProxyManager {
         }
         if (logsAutoRefreshToggle) {
             logsAutoRefreshToggle.addEventListener('change', (e) => this.toggleLogsAutoRefresh(e.target.checked));
+        }
+        if (logsSearchInput) {
+            const debouncedLogSearch = this.debounce((value) => {
+                this.updateLogSearchQuery(value);
+            }, 200);
+            logsSearchInput.addEventListener('input', (e) => {
+                debouncedLogSearch(e?.target?.value ?? '');
+            });
         }
 
         // API 密钥管理

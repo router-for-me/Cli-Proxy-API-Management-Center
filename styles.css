@@ -4331,6 +4331,60 @@ input:checked+.slider:before {
     line-height: 1.6;
 }
 
+/* 日志页面头部布局 */
+#logs .card-header.logs-header {
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.logs-header-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 280px;
+}
+
+.logs-header-main h3 {
+    margin: 0;
+}
+
+.logs-search {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    padding: 0 12px;
+    background: var(--bg-secondary);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+    min-width: 240px;
+    max-width: 420px;
+    flex: 1;
+}
+
+[data-theme="dark"] .logs-search {
+    background: var(--bg-tertiary);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.04);
+}
+
+.logs-search i {
+    color: var(--text-tertiary);
+    margin-right: 8px;
+}
+
+.logs-search input {
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    width: 100%;
+    padding: 10px 0;
+    font-size: 0.95rem;
+}
+
+.logs-search input:focus {
+    outline: none;
+}
+
 /* 日志页面头部操作区域 */
 #logs .card-header .header-actions {
     display: flex;
@@ -4360,6 +4414,21 @@ input:checked+.slider:before {
 
     .logs-info {
         font-size: 12px;
+    }
+
+    #logs .card-header.logs-header {
+        align-items: flex-start;
+    }
+
+    .logs-header-main {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .logs-search {
+        width: 100%;
+        max-width: none;
     }
 
     #logs .card-header .header-actions {
