@@ -1543,10 +1543,7 @@ export function updateApiStatsTable(data) {
         if (apiData.models && Object.keys(apiData.models).length > 0) {
             modelsHtml = '<div class="model-details">';
             Object.entries(apiData.models).forEach(([modelName, modelData]) => {
-                const maskedModel = (this.maskUsageSensitiveValue
-                    ? this.maskUsageSensitiveValue(modelName)
-                    : modelName) || '';
-                const safeModel = this.escapeHtml ? this.escapeHtml(maskedModel) : maskedModel;
+                const safeModel = this.escapeHtml ? this.escapeHtml(modelName || '') : (modelName || '');
                 const modelRequests = modelData.total_requests ?? 0;
                 const modelTokens = this.formatTokensInMillions(modelData.total_tokens ?? 0);
                 modelsHtml += `
