@@ -66,6 +66,7 @@ export const loginModule = {
         document.getElementById('login-page').style.display = 'flex';
         document.getElementById('main-page').style.display = 'none';
         this.isLoggedIn = false;
+        this.resetBrandTitleState();
         this.updateLoginConnectionInfo();
     },
 
@@ -74,6 +75,7 @@ export const loginModule = {
         document.getElementById('main-page').style.display = 'block';
         this.isLoggedIn = true;
         this.updateConnectionInfo();
+        this.startBrandCollapseCycle();
     },
 
     async login(apiBase, managementKey) {

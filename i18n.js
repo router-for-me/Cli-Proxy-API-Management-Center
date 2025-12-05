@@ -52,6 +52,7 @@ const i18n = {
             // 页面标题
             'title.main': 'CLI Proxy API Management Center',
             'title.login': 'CLI Proxy API Management Center',
+            'title.abbr': 'CPAMC',
 
             // 自动登录
             'auto_login.title': '正在自动登录...',
@@ -572,6 +573,18 @@ const i18n = {
             'system_info.models_empty': '未从 /v1/models 获取到模型数据',
             'system_info.models_error': '获取模型列表失败',
             'system_info.models_count': '可用模型 {count} 个',
+            'system_info.version_check_title': '版本检查',
+            'system_info.version_check_desc': '调用 /latest-version 接口比对服务器版本，提示是否有可用更新。',
+            'system_info.version_current_label': '当前版本',
+            'system_info.version_latest_label': '最新版本',
+            'system_info.version_check_button': '检查更新',
+            'system_info.version_check_idle': '点击检查更新',
+            'system_info.version_checking': '正在检查最新版本...',
+            'system_info.version_update_available': '有新版本可用：{version}',
+            'system_info.version_is_latest': '当前已是最新版本',
+            'system_info.version_check_error': '检查更新失败',
+            'system_info.version_current_missing': '未获取到服务器版本号，暂无法比对',
+            'system_info.version_unknown': '未知',
 
             // 通知消息
             'notification.debug_updated': '调试设置已更新',
@@ -694,6 +707,7 @@ const i18n = {
             // Page titles
             'title.main': 'CLI Proxy API Management Center',
             'title.login': 'CLI Proxy API Management Center',
+            'title.abbr': 'CPAMC',
 
             // Auto login
             'auto_login.title': 'Auto Login in Progress...',
@@ -1213,6 +1227,18 @@ const i18n = {
             'system_info.models_empty': 'No models returned by /v1/models',
             'system_info.models_error': 'Failed to load model list',
             'system_info.models_count': '{count} available models',
+            'system_info.version_check_title': 'Update Check',
+            'system_info.version_check_desc': 'Call the /latest-version endpoint to compare with the server version and see if an update is available.',
+            'system_info.version_current_label': 'Current version',
+            'system_info.version_latest_label': 'Latest version',
+            'system_info.version_check_button': 'Check for updates',
+            'system_info.version_check_idle': 'Click to check for updates',
+            'system_info.version_checking': 'Checking for the latest version...',
+            'system_info.version_update_available': 'An update is available: {version}',
+            'system_info.version_is_latest': 'You are on the latest version',
+            'system_info.version_check_error': 'Update check failed',
+            'system_info.version_current_missing': 'Server version is unavailable; cannot compare',
+            'system_info.version_unknown': 'Unknown',
 
             // Notification messages
             'notification.debug_updated': 'Debug settings updated',

@@ -56,6 +56,9 @@ class CLIProxyManager {
         this.uiVersion = null;
         this.serverVersion = null;
         this.serverBuildDate = null;
+        this.latestVersion = null;
+        this.versionCheckStatus = 'muted';
+        this.versionCheckMessage = i18n.t('system_info.version_check_idle');
 
         // 配置缓存 - 改为分段缓存（交由 ConfigService 管理）
         this.cacheExpiry = CACHE_EXPIRY_MS;
@@ -112,6 +115,20 @@ class CLIProxyManager {
             loading: false,
             result: null
         };
+
+        // 顶栏标题动画状态
+        this.brandCollapseTimer = null;
+        this.brandCollapseDelayMs = 5000;
+        this.brandIsCollapsed = false;
+        this.brandAnimationReady = false;
+        this.brandElements = {
+            toggle: null,
+            wrapper: null,
+            fullText: null,
+            shortText: null
+        };
+        this.brandResizeHandler = null;
+        this.brandToggleHandler = null;
 
         // 主题管理
         this.currentTheme = 'light';
@@ -280,6 +297,7 @@ class CLIProxyManager {
         const connectionStatus = document.getElementById('connection-status');
         const refreshAll = document.getElementById('refresh-all');
         const availableModelsRefresh = document.getElementById('available-models-refresh');
+        const versionCheckBtn = document.getElementById('version-check-btn');
 
         if (connectionStatus) {
             connectionStatus.addEventListener('click', () => this.checkConnectionStatus());
@@ -289,6 +307,9 @@ class CLIProxyManager {
         }
         if (availableModelsRefresh) {
             availableModelsRefresh.addEventListener('click', () => this.loadAvailableModels({ forceRefresh: true }));
+        }
+        if (versionCheckBtn) {
+            versionCheckBtn.addEventListener('click', () => this.checkLatestVersion());
         }
 
         // 基础设置
@@ -657,6 +678,152 @@ class CLIProxyManager {
                 }
             });
         });
+    }
+
+    // 顶栏标题动画与状态
+    setupBrandTitleAnimation() {
+        const mainPage = document.getElementById('main-page');
+        if (mainPage && mainPage.style.display === 'none') {
+            return;
+        }
+
+        const toggle = document.getElementById('brand-name-toggle');
+        const wrapper = document.getElementById('brand-texts');
+        const fullText = document.querySelector('.brand-text-full');
+        const shortText = document.querySelector('.brand-text-short');
+
+        if (!toggle || !wrapper || !fullText || !shortText) {
+            return;
+        }
+
+        this.brandElements = { toggle, wrapper, fullText, shortText };
+
+        if (!this.brandToggleHandler) {
+            this.brandToggleHandler = () => this.handleBrandToggle();
+            toggle.addEventListener('click', this.brandToggleHandler);
+        }
+        if (!this.brandResizeHandler) {
+            this.brandResizeHandler = () => this.updateBrandTextWidths({ immediate: true });
+            window.addEventListener('resize', this.brandResizeHandler);
+        }
+
+        this.brandAnimationReady = true;
+    }
+
+    getBrandTextWidth(element) {
+        if (!element) {
+            return 0;
+        }
+        const width = element.scrollWidth || element.getBoundingClientRect().width || 0;
+        return Number.isFinite(width) ? Math.ceil(width) : 0;
+    }
+
+    applyBrandWidth(targetWidth, { animate = true } = {}) {
+        const wrapper = this.brandElements?.wrapper;
+        if (!wrapper || !Number.isFinite(targetWidth)) {
+            return;
+        }
+
+        if (!animate) {
+            const previousTransition = wrapper.style.transition;
+            wrapper.style.transition = 'none';
+            wrapper.style.width = `${targetWidth}px`;
+            wrapper.getBoundingClientRect(); // 强制重绘以应用无动画的宽度
+            wrapper.style.transition = previousTransition;
+            return;
+        }
+
+        wrapper.style.width = `${targetWidth}px`;
+    }
+
+    updateBrandTextWidths(options = {}) {
+        const { wrapper, fullText, shortText } = this.brandElements || {};
+        if (!wrapper || !fullText || !shortText) {
+            return;
+        }
+
+        const targetSpan = this.brandIsCollapsed ? shortText : fullText;
+        const targetWidth = this.getBrandTextWidth(targetSpan);
+        this.applyBrandWidth(targetWidth, { animate: !options.immediate });
+    }
+
+    setBrandCollapsed(collapsed, options = {}) {
+        const { toggle, fullText, shortText } = this.brandElements || {};
+        if (!toggle || !fullText || !shortText) {
+            return;
+        }
+
+        this.brandIsCollapsed = collapsed;
+        const targetSpan = collapsed ? shortText : fullText;
+        const targetWidth = this.getBrandTextWidth(targetSpan);
+
+        this.applyBrandWidth(targetWidth, { animate: options.animate !== false });
+        toggle.classList.toggle('collapsed', collapsed);
+        toggle.classList.toggle('expanded', !collapsed);
+    }
+
+    scheduleBrandCollapse(delayMs = this.brandCollapseDelayMs) {
+        this.clearBrandCollapseTimer();
+        this.brandCollapseTimer = window.setTimeout(() => {
+            this.setBrandCollapsed(true);
+            this.brandCollapseTimer = null;
+        }, delayMs);
+    }
+
+    clearBrandCollapseTimer() {
+        if (this.brandCollapseTimer) {
+            clearTimeout(this.brandCollapseTimer);
+            this.brandCollapseTimer = null;
+        }
+    }
+
+    startBrandCollapseCycle() {
+        this.setupBrandTitleAnimation();
+        if (!this.brandAnimationReady) {
+            return;
+        }
+
+        this.clearBrandCollapseTimer();
+        this.brandIsCollapsed = false;
+        this.setBrandCollapsed(false, { animate: false });
+        this.scheduleBrandCollapse(this.brandCollapseDelayMs);
+    }
+
+    resetBrandTitleState() {
+        this.clearBrandCollapseTimer();
+        const mainPage = document.getElementById('main-page');
+        if (!this.brandAnimationReady || (mainPage && mainPage.style.display === 'none')) {
+            this.brandIsCollapsed = false;
+            return;
+        }
+
+        this.brandIsCollapsed = false;
+        this.setBrandCollapsed(false, { animate: false });
+    }
+
+    refreshBrandTitleAfterTextChange() {
+        if (!this.brandAnimationReady) {
+            return;
+        }
+        this.updateBrandTextWidths({ immediate: true });
+        if (!this.brandIsCollapsed) {
+            this.scheduleBrandCollapse(this.brandCollapseDelayMs);
+        }
+    }
+
+    handleBrandToggle() {
+        if (!this.brandAnimationReady) {
+            return;
+        }
+
+        const nextCollapsed = !this.brandIsCollapsed;
+        this.setBrandCollapsed(nextCollapsed);
+        this.clearBrandCollapseTimer();
+
+        if (!nextCollapsed) {
+            // 展开后给用户留出一点时间阅读再收起
+            this.scheduleBrandCollapse(this.brandCollapseDelayMs + 1500);
+        }
     }
 
 

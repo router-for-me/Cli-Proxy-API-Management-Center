@@ -129,6 +129,56 @@ export const connectionModule = {
         }
     },
 
+    renderVersionCheckStatus({
+        currentVersion,
+        latestVersion,
+        message,
+        status
+    } = {}) {
+        const resolvedCurrent = (typeof currentVersion === 'undefined' || currentVersion === null)
+            ? this.serverVersion
+            : currentVersion;
+        const resolvedLatest = (typeof latestVersion === 'undefined' || latestVersion === null)
+            ? this.latestVersion
+            : latestVersion;
+        const resolvedMessage = (typeof message === 'undefined' || message === null)
+            ? (this.versionCheckMessage || i18n.t('system_info.version_check_idle'))
+            : message;
+        const resolvedStatus = status || this.versionCheckStatus || 'muted';
+
+        this.latestVersion = resolvedLatest || null;
+        this.versionCheckMessage = resolvedMessage;
+        this.versionCheckStatus = resolvedStatus;
+
+        const currentEl = document.getElementById('version-check-current');
+        if (currentEl) {
+            currentEl.textContent = resolvedCurrent || i18n.t('system_info.version_unknown');
+        }
+
+        const latestEl = document.getElementById('version-check-latest');
+        if (latestEl) {
+            latestEl.textContent = resolvedLatest || '-';
+        }
+
+        const resultEl = document.getElementById('version-check-result');
+        if (resultEl) {
+            resultEl.textContent = resolvedMessage;
+            resultEl.className = `version-check-result ${resolvedStatus}`.trim();
+        }
+    },
+
+    resetVersionCheckStatus() {
+        this.latestVersion = null;
+        this.versionCheckMessage = i18n.t('system_info.version_check_idle');
+        this.versionCheckStatus = 'muted';
+        this.renderVersionCheckStatus({
+            currentVersion: this.serverVersion,
+            latestVersion: this.latestVersion,
+            message: this.versionCheckMessage,
+            status: this.versionCheckStatus
+        });
+    },
+
     // 渲染底栏的版本与构建时间
     renderVersionInfo() {
         const versionEl = document.getElementById('api-version');
@@ -149,12 +199,20 @@ export const connectionModule = {
             const domVersion = this.readUiVersionFromDom();
             uiVersionEl.textContent = this.uiVersion || domVersion || 'v0.0.0-dev';
         }
+
+        this.renderVersionCheckStatus({
+            currentVersion: this.serverVersion,
+            latestVersion: this.latestVersion,
+            message: this.versionCheckMessage,
+            status: this.versionCheckStatus
+        });
     },
 
     // 清空版本信息（例如登出时）
     resetVersionInfo() {
         this.serverVersion = null;
         this.serverBuildDate = null;
+        this.resetVersionCheckStatus();
         this.renderVersionInfo();
     },
 
@@ -169,6 +227,119 @@ export const connectionModule = {
         }
 
         return buildDate;
+    },
+
+    parseVersionSegments(version) {
+        if (!version || typeof version !== 'string') return null;
+        const cleaned = version.trim().replace(/^v/i, '');
+        if (!cleaned) return null;
+        const parts = cleaned.split(/[^0-9]+/).filter(Boolean).map(segment => {
+            const parsed = parseInt(segment, 10);
+            return Number.isFinite(parsed) ? parsed : 0;
+        });
+        return parts.length ? parts : null;
+    },
+
+    compareVersions(latestVersion, currentVersion) {
+        const latestParts = this.parseVersionSegments(latestVersion);
+        const currentParts = this.parseVersionSegments(currentVersion);
+        if (!latestParts || !currentParts) {
+            return null;
+        }
+
+        const length = Math.max(latestParts.length, currentParts.length);
+        for (let i = 0; i < length; i++) {
+            const latest = latestParts[i] || 0;
+            const current = currentParts[i] || 0;
+            if (latest > current) return 1;
+            if (latest < current) return -1;
+        }
+
+        return 0;
+    },
+
+    async checkLatestVersion() {
+        if (!this.isConnected) {
+            const message = i18n.t('notification.connection_required');
+            this.renderVersionCheckStatus({
+                currentVersion: this.serverVersion,
+                latestVersion: this.latestVersion,
+                message,
+                status: 'warning'
+            });
+            this.showNotification(message, 'error');
+            return;
+        }
+
+        const button = document.getElementById('version-check-btn');
+        const originalLabel = button ? button.innerHTML : '';
+
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = `<div class="loading"></div> ${i18n.t('system_info.version_checking')}`;
+        }
+
+        this.renderVersionCheckStatus({
+            currentVersion: this.serverVersion,
+            latestVersion: this.latestVersion,
+            message: i18n.t('system_info.version_checking'),
+            status: 'info'
+        });
+
+        try {
+            const data = await this.makeRequest('/latest-version');
+            const latestVersion = data?.['latest-version'] || data?.latest_version || '';
+            const latestParts = this.parseVersionSegments(latestVersion);
+            const currentParts = this.parseVersionSegments(this.serverVersion);
+            const comparison = (latestParts && currentParts)
+                ? this.compareVersions(latestVersion, this.serverVersion)
+                : null;
+            let messageKey = 'system_info.version_check_error';
+            let statusClass = 'error';
+
+            if (!latestParts) {
+                messageKey = 'system_info.version_check_error';
+            } else if (!currentParts) {
+                messageKey = 'system_info.version_current_missing';
+                statusClass = 'warning';
+            } else if (comparison > 0) {
+                messageKey = 'system_info.version_update_available';
+                statusClass = 'warning';
+            } else {
+                messageKey = 'system_info.version_is_latest';
+                statusClass = 'success';
+            }
+
+            const message = i18n.t(messageKey, latestVersion ? { version: latestVersion } : undefined);
+            this.renderVersionCheckStatus({
+                currentVersion: this.serverVersion,
+                latestVersion,
+                message,
+                status: statusClass
+            });
+
+            if (latestVersion && comparison !== null) {
+                const notifyKey = comparison > 0
+                    ? 'system_info.version_update_available'
+                    : 'system_info.version_is_latest';
+                const notifyType = comparison > 0 ? 'warning' : 'success';
+                this.showNotification(i18n.t(notifyKey, { version: latestVersion }), notifyType);
+            }
+        } catch (error) {
+            const message = `${i18n.t('system_info.version_check_error')}: ${error.message}`;
+            this.renderVersionCheckStatus({
+                currentVersion: this.serverVersion,
+                latestVersion: this.latestVersion,
+                message,
+                status: 'error'
+            });
+            this.showNotification(message, 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalLabel;
+            }
+        }
     },
 
     // API 请求方法

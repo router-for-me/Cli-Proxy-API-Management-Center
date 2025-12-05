@@ -21,6 +21,7 @@ export const languageModule = {
         const newLang = currentLang === 'zh-CN' ? 'en-US' : 'zh-CN';
         i18n.setLanguage(newLang);
 
+        this.refreshBrandTitleAfterTextChange();
         this.updateThemeButtons();
         this.updateConnectionStatus();
 

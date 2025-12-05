@@ -126,7 +126,12 @@
                 </button>
                 <div class="top-navbar-brand">
                     <img id="site-logo" class="top-navbar-brand-logo" alt="Logo" style="display:none" />
-                    <span class="top-navbar-brand-text" data-i18n="title.main">CLI Proxy API Management Center</span>
+                    <button class="top-navbar-brand-toggle expanded" id="brand-name-toggle" type="button" aria-label="展开标题">
+                        <span class="brand-texts" id="brand-texts">
+                            <span class="top-navbar-brand-text brand-text brand-text-full" data-i18n="title.main">CLI Proxy API Management Center</span>
+                            <span class="top-navbar-brand-text brand-text brand-text-short" data-i18n="title.abbr">CPAMC</span>
+                        </span>
+                    </button>
                 </div>
             </div>
             <div class="top-navbar-actions">
@@ -875,6 +880,7 @@
                                     </div>
                                 </div>
                             </div>
+
                         </section>
 
                         <!-- 使用统计 -->
@@ -1306,6 +1312,31 @@
                                                 data-i18n="system_info.last_update_label">最后更新:</span>
                                             <span id="last-update" class="status-value">-</span>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="fas fa-arrows-rotate"></i> <span data-i18n="system_info.version_check_title">版本检查</span></h3>
+                                </div>
+                                <div class="card-content version-check">
+                                    <p class="form-hint" data-i18n="system_info.version_check_desc">调用 /latest-version 接口比对服务器版本，提示是否有可用更新。</p>
+                                    <div class="version-check-rows">
+                                        <div class="version-check-row">
+                                            <span class="status-label" data-i18n="system_info.version_current_label">当前版本</span>
+                                            <span id="version-check-current" class="version-check-value">-</span>
+                                        </div>
+                                        <div class="version-check-row">
+                                            <span class="status-label" data-i18n="system_info.version_latest_label">最新版本</span>
+                                            <span id="version-check-latest" class="version-check-value">-</span>
+                                        </div>
+                                    </div>
+                                    <div class="version-check-actions">
+                                        <button type="button" id="version-check-btn" class="btn btn-primary">
+                                            <i class="fas fa-search"></i> <span data-i18n="system_info.version_check_button">检查更新</span>
+                                        </button>
+                                        <span id="version-check-result" class="version-check-result" data-i18n="system_info.version_check_idle">点击检查更新</span>
                                     </div>
                                 </div>
                             </div>
