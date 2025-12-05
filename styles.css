@@ -2725,6 +2725,49 @@ input:checked+.slider:before {
     color: #d97706;
 }
 
+.openai-test-status {
+    min-height: 22px;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+.openai-test-status.success {
+    color: #16a34a;
+}
+
+.openai-test-status.error {
+    color: #dc2626;
+}
+
+.openai-test-status.warning {
+    color: #d97706;
+}
+
+.openai-test-group select {
+    min-width: 200px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.openai-test-group select:disabled {
+    opacity: 0.6;
+}
+
+.openai-test-btn-success {
+    background: #16a34a !important;
+    border-color: #16a34a !important;
+    color: #ffffff !important;
+}
+
+.openai-test-btn-error {
+    background: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: #ffffff !important;
+}
+
 .model-discovery-list {
     background: var(--bg-primary);
     border: 1px solid var(--border-color);

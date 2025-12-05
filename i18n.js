@@ -238,6 +238,15 @@ const i18n = {
             'ai_providers.openai_delete_confirm': '确定要删除这个OpenAI提供商吗？',
             'ai_providers.openai_keys_count': '密钥数量',
             'ai_providers.openai_models_count': '模型数量',
+            'ai_providers.openai_test_title': '连通性测试',
+            'ai_providers.openai_test_hint': '使用当前配置向 /v1/chat/completions 请求，验证是否可用。',
+            'ai_providers.openai_test_model_placeholder': '选择或输入要测试的模型',
+            'ai_providers.openai_test_action': '发送测试',
+            'ai_providers.openai_test_running': '正在发送测试请求...',
+            'ai_providers.openai_test_success': '测试成功，模型可用。',
+            'ai_providers.openai_test_failed': '测试失败',
+            'ai_providers.openai_test_select_placeholder': '从当前模型列表选择',
+            'ai_providers.openai_test_select_empty': '当前未配置模型，可直接输入',
 
 
             // 认证文件管理
@@ -619,6 +628,9 @@ const i18n = {
             'notification.openai_provider_updated': 'OpenAI提供商更新成功',
             'notification.openai_provider_deleted': 'OpenAI提供商删除成功',
             'notification.openai_model_name_required': '请填写模型名称',
+            'notification.openai_test_url_required': '请先填写有效的 Base URL 以进行测试',
+            'notification.openai_test_key_required': '请至少填写一个 API 密钥以进行测试',
+            'notification.openai_test_model_required': '请选择或输入要测试的模型',
             'notification.data_refreshed': '数据刷新成功',
             'notification.connection_required': '请先建立连接',
             'notification.refresh_failed': '刷新失败',
@@ -893,6 +905,15 @@ const i18n = {
             'ai_providers.openai_delete_confirm': 'Are you sure you want to delete this OpenAI provider?',
             'ai_providers.openai_keys_count': 'Keys Count',
             'ai_providers.openai_models_count': 'Models Count',
+            'ai_providers.openai_test_title': 'Connection Test',
+            'ai_providers.openai_test_hint': 'Send a /v1/chat/completions request with the current settings to verify availability.',
+            'ai_providers.openai_test_model_placeholder': 'Model to test',
+            'ai_providers.openai_test_action': 'Run Test',
+            'ai_providers.openai_test_running': 'Sending test request...',
+            'ai_providers.openai_test_success': 'Test succeeded. The model responded.',
+            'ai_providers.openai_test_failed': 'Test failed',
+            'ai_providers.openai_test_select_placeholder': 'Choose from current models',
+            'ai_providers.openai_test_select_empty': 'No models configured, enter manually',
 
 
             // Auth files management
@@ -1273,6 +1294,9 @@ const i18n = {
             'notification.openai_provider_updated': 'OpenAI provider updated successfully',
             'notification.openai_provider_deleted': 'OpenAI provider deleted successfully',
             'notification.openai_model_name_required': 'Model name is required',
+            'notification.openai_test_url_required': 'Please provide a valid Base URL before testing',
+            'notification.openai_test_key_required': 'Please add at least one API key before testing',
+            'notification.openai_test_model_required': 'Please select or enter a model to test',
             'notification.data_refreshed': 'Data refreshed successfully',
             'notification.connection_required': 'Please establish connection first',
             'notification.refresh_failed': 'Refresh failed',

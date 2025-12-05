@@ -23,6 +23,19 @@ const buildModelEndpoint = (baseUrl) => {
     return `${trimmed}/v1/models`;
 };
 
+const buildChatCompletionsEndpoint = (baseUrl) => {
+    if (!baseUrl) return '';
+    const trimmed = String(baseUrl).trim().replace(/\/+$/g, '');
+    if (!trimmed) return '';
+    if (trimmed.endsWith('/chat/completions')) {
+        return trimmed;
+    }
+    if (trimmed.endsWith('/v1')) {
+        return `${trimmed}/chat/completions`;
+    }
+    return `${trimmed}/v1/chat/completions`;
+};
+
 const normalizeExcludedModels = (input) => {
     const rawList = Array.isArray(input)
         ? input
@@ -1336,6 +1349,9 @@ export function applyOpenAIModelDiscoverySelection() {
     });
 
     this.populateModelFields(context.modelWrapperId, Array.from(mergedMap.values()));
+    if (context.mode === 'edit' && typeof this.populateOpenAITestModelOptions === 'function') {
+        this.populateOpenAITestModelOptions(Array.from(mergedMap.values()), { preserveInput: true });
+    }
     this.closeOpenAIModelDiscovery();
 
     if (addedCount > 0) {
@@ -1351,6 +1367,180 @@ export function closeOpenAIModelDiscovery() {
         overlay.classList.remove('active');
     }
     this.openAIModelDiscoveryContext = null;
+}
+
+export function populateOpenAITestModelOptions(models = [], { preserveInput = true } = {}) {
+    const select = document.getElementById('openai-test-model-select');
+    const input = document.getElementById('openai-test-model-input');
+    if (!select) return;
+
+    const names = [];
+    const seen = new Set();
+    (Array.isArray(models) ? models : []).forEach(model => {
+        const name = model?.name ? String(model.name).trim() : '';
+        if (!name || seen.has(name)) return;
+        seen.add(name);
+        names.push(name);
+    });
+
+    if (!names.length) {
+        select.disabled = true;
+        select.innerHTML = `<option value="">${i18n.t('ai_providers.openai_test_select_empty')}</option>`;
+        if (input && !preserveInput) {
+            input.value = '';
+        }
+        return;
+    }
+
+    select.disabled = false;
+    const placeholder = `<option value="">${i18n.t('ai_providers.openai_test_select_placeholder')}</option>`;
+    const options = names.map(name => `<option value="${this.escapeHtml(name)}">${this.escapeHtml(name)}</option>`).join('');
+    select.innerHTML = `${placeholder}${options}`;
+
+    if (input) {
+        if (!preserveInput || !input.value) {
+            const firstName = names[0];
+            if (firstName) {
+                input.value = firstName;
+                select.value = firstName;
+                return;
+            }
+        }
+
+        const current = input.value.trim();
+        if (current && names.includes(current)) {
+            select.value = current;
+        } else {
+            select.value = '';
+        }
+    }
+}
+
+export function setOpenAITestStatus(message = '', type = 'info') {
+    const statusEl = document.getElementById('openai-test-status');
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.className = `openai-test-status ${type || ''}`.trim();
+}
+
+const setOpenAITestButtonState = (state = 'idle') => {
+    const button = document.getElementById('openai-test-button');
+    if (!button) return;
+    button.disabled = state === 'loading';
+    button.classList.remove('openai-test-btn-success', 'openai-test-btn-error');
+
+    switch (state) {
+        case 'loading':
+            button.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+            break;
+        case 'success':
+            button.classList.add('openai-test-btn-success');
+            button.innerHTML = `<i class="fas fa-check"></i>`;
+            break;
+        case 'error':
+            button.classList.add('openai-test-btn-error');
+            button.innerHTML = `<i class="fas fa-times"></i>`;
+            break;
+        default:
+            button.innerHTML = `<i class="fas fa-stethoscope"></i> ${i18n.t('ai_providers.openai_test_action')}`;
+            break;
+    }
+};
+
+export async function testOpenAIProviderConnection() {
+    const baseUrlInput = document.getElementById('edit-provider-url');
+    const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : '';
+    if (!baseUrl) {
+        const message = i18n.t('notification.openai_test_url_required');
+        this.setOpenAITestStatus(message, 'error');
+        this.showNotification(message, 'error');
+        return;
+    }
+
+    const endpoint = buildChatCompletionsEndpoint(baseUrl);
+    if (!endpoint) {
+        const message = i18n.t('notification.openai_test_url_required');
+        this.setOpenAITestStatus(message, 'error');
+        this.showNotification(message, 'error');
+        return;
+    }
+
+    const apiKeyEntries = this.collectApiKeyEntryInputs('edit-openai-keys-wrapper');
+    const firstKeyEntry = Array.isArray(apiKeyEntries) ? apiKeyEntries.find(entry => entry && entry['api-key']) : null;
+    if (!firstKeyEntry) {
+        const message = i18n.t('notification.openai_test_key_required');
+        this.setOpenAITestStatus(message, 'error');
+        this.showNotification(message, 'error');
+        return;
+    }
+
+    const models = this.collectModelInputs('edit-provider-models-wrapper');
+    this.populateOpenAITestModelOptions(models);
+
+    const modelInput = document.getElementById('openai-test-model-input');
+    let modelName = modelInput ? modelInput.value.trim() : '';
+    if (!modelName) {
+        const firstModel = Array.isArray(models) ? models.find(model => model && model.name) : null;
+        if (firstModel && firstModel.name) {
+            modelName = firstModel.name;
+            if (modelInput) {
+                modelInput.value = firstModel.name;
+            }
+        }
+    }
+
+    if (!modelName) {
+        const message = i18n.t('notification.openai_test_model_required');
+        this.setOpenAITestStatus(message, 'error');
+        this.showNotification(message, 'error');
+        return;
+    }
+
+    const customHeaders = this.collectHeaderInputs('edit-openai-headers-wrapper') || {};
+    const headers = {
+        'Content-Type': 'application/json',
+        ...customHeaders
+    };
+    if (!headers.Authorization && !headers.authorization) {
+        headers.Authorization = `Bearer ${firstKeyEntry['api-key']}`;
+    }
+
+    this.setOpenAITestStatus('', 'info');
+    setOpenAITestButtonState('loading');
+
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                model: modelName,
+                messages: [{ role: 'user', content: 'Hi' }],
+                stream: false,
+                max_tokens: 5
+            })
+        });
+
+        const rawText = await response.text();
+
+        if (!response.ok) {
+            let errorMessage = `${response.status} ${response.statusText}`;
+            try {
+                const parsed = rawText ? JSON.parse(rawText) : null;
+                errorMessage = parsed?.error?.message || parsed?.message || errorMessage;
+            } catch (error) {
+                if (rawText) {
+                    errorMessage = rawText;
+                }
+            }
+            throw new Error(errorMessage);
+        }
+
+        this.setOpenAITestStatus('', 'info');
+        setOpenAITestButtonState('success');
+    } catch (error) {
+        this.setOpenAITestStatus(`${i18n.t('ai_providers.openai_test_failed')}: ${error.message}`, 'error');
+        setOpenAITestButtonState('error');
+    }
 }
 
 export function showAddOpenAIProviderModal() {
@@ -1490,6 +1680,18 @@ export function editOpenAIProvider(index, provider) {
                     </button>
                 </div>
             </div>
+            <div class="form-group">
+                <label>${i18n.t('ai_providers.openai_test_title')}</label>
+                <p class="form-hint">${i18n.t('ai_providers.openai_test_hint')}</p>
+                <div class="input-group openai-test-group">
+                    <select id="openai-test-model-select" aria-label="${i18n.t('ai_providers.openai_test_model_placeholder')}"></select>
+                    <input type="text" id="openai-test-model-input" placeholder="${i18n.t('ai_providers.openai_test_model_placeholder')}">
+                    <button type="button" class="btn btn-secondary" id="openai-test-button" onclick="manager.testOpenAIProviderConnection()">
+                        <i class="fas fa-stethoscope"></i> ${i18n.t('ai_providers.openai_test_action')}
+                    </button>
+                </div>
+                <div id="openai-test-status" class="openai-test-status"></div>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="manager.closeModal()">${i18n.t('common.cancel')}</button>
                 <button class="btn btn-primary" onclick="manager.updateOpenAIProvider(${index})">${i18n.t('common.update')}</button>
@@ -1500,6 +1702,28 @@ export function editOpenAIProvider(index, provider) {
     this.populateModelFields('edit-provider-models-wrapper', models);
     this.populateHeaderFields('edit-openai-headers-wrapper', provider?.headers || null);
     this.populateApiKeyEntryFields('edit-openai-keys-wrapper', apiKeyEntries);
+    this.populateOpenAITestModelOptions(models);
+    this.setOpenAITestStatus('', 'info');
+    setOpenAITestButtonState('idle');
+
+    const modelWrapper = document.getElementById('edit-provider-models-wrapper');
+    if (modelWrapper) {
+        modelWrapper.addEventListener('input', () => {
+            const currentModels = this.collectModelInputs('edit-provider-models-wrapper');
+            this.populateOpenAITestModelOptions(currentModels, { preserveInput: true });
+        });
+    }
+
+    const modelSelect = document.getElementById('openai-test-model-select');
+    if (modelSelect) {
+        modelSelect.addEventListener('change', (event) => {
+            const value = event?.target?.value || '';
+            const input = document.getElementById('openai-test-model-input');
+            if (input && value) {
+                input.value = value;
+            }
+        });
+    }
 }
 
 export async function updateOpenAIProvider(index) {
@@ -1683,6 +1907,9 @@ export const aiProvidersModule = {
     setOpenAIModelDiscoverySearch,
     applyOpenAIModelDiscoverySelection,
     closeOpenAIModelDiscovery,
+    populateOpenAITestModelOptions,
+    setOpenAITestStatus,
+    testOpenAIProviderConnection,
     addModelField,
     populateModelFields,
     collectModelInputs,
