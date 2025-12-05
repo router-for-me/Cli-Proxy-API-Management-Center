@@ -94,7 +94,7 @@ const i18n = {
             'nav.usage_stats': '使用统计',
             'nav.config_management': '配置管理',
             'nav.logs': '日志查看',
-            'nav.system_info': '管理中心信息',
+            'nav.system_info': '中心信息',
 
             // 基础设置
             'basic_settings.title': '基础设置',

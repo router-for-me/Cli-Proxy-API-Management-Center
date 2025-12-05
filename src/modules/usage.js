@@ -5,6 +5,46 @@ const DEFAULT_CHART_LINE_COUNT = 3;
 const MIN_CHART_LINE_COUNT = 1;
 const ALL_MODELS_VALUE = 'all';
 
+export function maskUsageSensitiveValue(value) {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    const raw = typeof value === 'string' ? value : String(value);
+    if (!raw) {
+        return '';
+    }
+    const maskFn = (this && typeof this.maskApiKey === 'function') ? this.maskApiKey : (v) => v;
+    let masked = raw;
+
+    const queryRegex = /([?&])(api[-_]?key|key|token|access_token|authorization)=([^&#\s]+)/ig;
+    masked = masked.replace(queryRegex, (full, prefix, keyName, valuePart) => `${prefix}${keyName}=${maskFn(valuePart)}`);
+
+    const headerRegex = /(api[-_]?key|key|token|access[-_]?token|authorization)\s*([:=])\s*([A-Za-z0-9._-]+)/ig;
+    masked = masked.replace(headerRegex, (full, keyName, separator, valuePart) => `${keyName}${separator}${maskFn(valuePart)}`);
+
+    const keyLikeRegex = /(sk-[A-Za-z0-9]{6,}|AI[a-zA-Z0-9_-]{6,}|AIza[0-9A-Za-z-_]{8,}|hf_[A-Za-z0-9]{6,}|pk_[A-Za-z0-9]{6,}|rk_[A-Za-z0-9]{6,})/g;
+    masked = masked.replace(keyLikeRegex, match => maskFn(match));
+
+    if (masked === raw) {
+        const trimmed = raw.trim();
+        if (trimmed && !/\s/.test(trimmed)) {
+            const looksLikeKey = /^sk-/i.test(trimmed)
+                || /^AI/i.test(trimmed)
+                || /^AIza/i.test(trimmed)
+                || /^hf_/i.test(trimmed)
+                || /^pk_/i.test(trimmed)
+                || /^rk_/i.test(trimmed)
+                || (!/[\\/]/.test(trimmed) && (/\d/.test(trimmed) || trimmed.length >= 10))
+                || trimmed.length >= 24;
+            if (looksLikeKey) {
+                return maskFn(trimmed);
+            }
+        }
+    }
+
+    return masked;
+}
+
 // 获取API密钥的统计信息
 export async function getKeyStats(usageData = null) {
     try {
@@ -45,7 +85,9 @@ export async function getKeyStats(usageData = null) {
                 const details = modelEntry.details || [];
 
                 details.forEach(detail => {
-                    const source = detail.source;
+                    const source = this.maskUsageSensitiveValue
+                        ? this.maskUsageSensitiveValue(detail.source)
+                        : detail.source;
                     const authIndexKey = normalizeAuthIndex(detail?.auth_index);
                     const isFailed = detail.failed === true;
 
@@ -1489,17 +1531,27 @@ export function updateApiStatsTable(data) {
     Object.entries(apis).forEach(([endpoint, apiData]) => {
         const totalRequests = apiData.total_requests || 0;
         const endpointCost = calculateEndpointCost(apiData);
+        const displayEndpoint = (this.maskUsageSensitiveValue
+            ? this.maskUsageSensitiveValue(endpoint)
+            : (endpoint ?? '')) || '-';
+        const safeEndpoint = this.escapeHtml
+            ? this.escapeHtml(displayEndpoint)
+            : displayEndpoint;
 
         // 构建模型详情
         let modelsHtml = '';
         if (apiData.models && Object.keys(apiData.models).length > 0) {
             modelsHtml = '<div class="model-details">';
             Object.entries(apiData.models).forEach(([modelName, modelData]) => {
+                const maskedModel = (this.maskUsageSensitiveValue
+                    ? this.maskUsageSensitiveValue(modelName)
+                    : modelName) || '';
+                const safeModel = this.escapeHtml ? this.escapeHtml(maskedModel) : maskedModel;
                 const modelRequests = modelData.total_requests ?? 0;
                 const modelTokens = this.formatTokensInMillions(modelData.total_tokens ?? 0);
                 modelsHtml += `
                     <div class="model-item">
-                        <span class="model-name">${modelName}</span>
+                        <span class="model-name">${safeModel}</span>
                         <span>${modelRequests} 请求 / ${modelTokens} tokens</span>
                     </div>
                 `;
@@ -1509,7 +1561,7 @@ export function updateApiStatsTable(data) {
 
         tableHtml += `
             <tr>
-                <td>${endpoint}</td>
+                <td>${safeEndpoint}</td>
                 <td>${totalRequests}</td>
                 <td>${this.formatTokensInMillions(apiData.total_tokens || 0)}</td>
                 <td>${hasPrices && endpointCost > 0 ? this.formatUsd(endpointCost) : '--'}</td>
@@ -1526,6 +1578,7 @@ export const usageModule = {
     getKeyStats,
     loadUsageStats,
     updateUsageOverview,
+    maskUsageSensitiveValue,
     getModelNamesFromUsage,
     getChartLineMaxCount,
     getVisibleChartLineCount,
