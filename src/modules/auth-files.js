@@ -998,37 +998,65 @@ export const authFilesModule = {
 
     // 处理文件上传
     async handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+        const input = event?.target;
+        const files = Array.from(input?.files || []);
+        if (input) {
+            input.value = '';
+        }
+        if (!files.length) return;
 
-        if (!file.name.endsWith('.json')) {
+        const validFiles = [];
+        const invalidFiles = [];
+        files.forEach(file => {
+            if (file && file.name.endsWith('.json')) {
+                validFiles.push(file);
+            } else if (file) {
+                invalidFiles.push(file.name);
+            }
+        });
+
+        if (invalidFiles.length) {
             this.showNotification(i18n.t('auth_files.upload_error_json'), 'error');
-            event.target.value = '';
-            return;
+        }
+        if (!validFiles.length) return;
+
+        let successCount = 0;
+        const failed = [];
+
+        for (const file of validFiles) {
+            try {
+                await this.uploadSingleAuthFile(file);
+                successCount++;
+            } catch (error) {
+                failed.push({ name: file.name, message: error.message });
+            }
         }
 
-        try {
-            const formData = new FormData();
-            formData.append('file', file, file.name);
-
-            const response = await this.apiClient.requestRaw('/auth-files', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || `HTTP ${response.status}`);
-            }
-
-            this.clearCache(); // 清除缓存
+        if (successCount > 0) {
+            this.clearCache();
             await this.loadAuthFiles();
-            this.showNotification(i18n.t('auth_files.upload_success'), 'success');
-        } catch (error) {
-            this.showNotification(`${i18n.t('notification.upload_failed')}: ${error.message}`, 'error');
-        } finally {
-            // 清空文件输入框,允许重复上传同一文件
-            event.target.value = '';
+            const suffix = validFiles.length > 1 ? ` (${successCount}/${validFiles.length})` : '';
+            this.showNotification(`${i18n.t('auth_files.upload_success')}${suffix}`, failed.length ? 'warning' : 'success');
+        }
+
+        if (failed.length) {
+            const details = failed.map(item => `${item.name}: ${item.message}`).join('; ');
+            this.showNotification(`${i18n.t('notification.upload_failed')}: ${details}`, 'error');
+        }
+    },
+
+    async uploadSingleAuthFile(file) {
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+
+        const response = await this.apiClient.requestRaw('/auth-files', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}`);
         }
     },
 
