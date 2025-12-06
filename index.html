@@ -890,81 +890,91 @@
                             <!-- 概览统计卡片 -->
                             <div class="stats-overview">
                                 <div class="stat-card">
-                                    <div class="stat-icon">
-                                        <i class="fas fa-paper-plane"></i>
-                                    </div>
-                                    <div class="stat-content">
-                                        <div class="stat-number" id="total-requests">0</div>
-                                        <div class="stat-label" data-i18n="usage_stats.total_requests">总请求数</div>
-                                    </div>
-                                </div>
-
-                                <div class="stat-card">
-                                    <div class="stat-icon success">
-                                        <i class="fas fa-check-circle"></i>
-                                    </div>
-                                    <div class="stat-content">
-                                        <div class="stat-number" id="success-requests">0</div>
-                                        <div class="stat-label" data-i18n="usage_stats.success_requests">成功请求</div>
-                                    </div>
-                                </div>
-
-                                <div class="stat-card">
-                                    <div class="stat-icon error">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                    </div>
-                                    <div class="stat-content">
-                                        <div class="stat-number" id="failed-requests">0</div>
-                                        <div class="stat-label" data-i18n="usage_stats.failed_requests">失败请求</div>
-                                    </div>
-                                </div>
-
-                                <div class="stat-card">
-                                    <div class="stat-icon">
-                                        <i class="fas fa-coins"></i>
-                                    </div>
-                                    <div class="stat-content">
-                                        <div class="stat-number" id="total-tokens">0</div>
-                                        <div class="stat-label" data-i18n="usage_stats.total_tokens">总Token数</div>
-                                        <div class="stat-subtext">
-                                            <span data-i18n="usage_stats.cached_tokens">缓存 Token 数</span>:
-                                            <span id="cached-tokens">0</span>
+                                    <div class="stat-card-header">
+                                        <div class="stat-meta">
+                                            <div class="stat-label" data-i18n="usage_stats.total_requests">总请求数</div>
+                                            <div class="stat-number" id="total-requests">0</div>
+                                            <div class="stat-subtext stat-subtext-inline">
+                                                <span><span data-i18n="usage_stats.success_requests">成功请求</span> <span id="success-requests">0</span></span>
+                                                <span class="dot-divider">•</span>
+                                                <span><span data-i18n="usage_stats.failed_requests">失败请求</span> <span id="failed-requests">0</span></span>
+                                            </div>
                                         </div>
-                                        <div class="stat-subtext">
-                                            <span data-i18n="usage_stats.reasoning_tokens">思考 Token 数</span>:
-                                            <span id="reasoning-tokens">0</span>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-paper-plane"></i>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="stat-card">
-                                    <div class="stat-icon">
-                                        <i class="fas fa-gauge-high"></i>
-                                    </div>
-                                    <div class="stat-content">
-                                        <div class="stat-number" id="rpm-30m">0</div>
-                                        <div class="stat-label" data-i18n="usage_stats.rpm_30m">RPM（近30分钟）</div>
+                                    <div class="stat-sparkline" aria-label="30分钟请求趋势">
+                                        <canvas id="requests-sparkline"></canvas>
                                     </div>
                                 </div>
 
                                 <div class="stat-card">
-                                    <div class="stat-icon">
-                                        <i class="fas fa-stopwatch"></i>
+                                    <div class="stat-card-header">
+                                        <div class="stat-meta">
+                                            <div class="stat-label" data-i18n="usage_stats.total_tokens">总Token数</div>
+                                            <div class="stat-number" id="total-tokens">0</div>
+                                            <div class="stat-subtext">
+                                                <span data-i18n="usage_stats.cached_tokens">缓存 Token 数</span>:
+                                                <span id="cached-tokens">0</span>
+                                            </div>
+                                            <div class="stat-subtext">
+                                                <span data-i18n="usage_stats.reasoning_tokens">思考 Token 数</span>:
+                                                <span id="reasoning-tokens">0</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-coins"></i>
+                                        </div>
                                     </div>
-                                    <div class="stat-content">
-                                        <div class="stat-number" id="tpm-30m">0</div>
-                                        <div class="stat-label" data-i18n="usage_stats.tpm_30m">TPM（近30分钟）</div>
+                                    <div class="stat-sparkline" aria-label="30分钟Token趋势">
+                                        <canvas id="tokens-sparkline"></canvas>
+                                    </div>
+                                </div>
+
+                                <div class="stat-card">
+                                    <div class="stat-card-header">
+                                        <div class="stat-meta">
+                                            <div class="stat-label" data-i18n="usage_stats.rpm_30m">RPM（近30分钟）</div>
+                                            <div class="stat-number" id="rpm-30m">0</div>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-gauge-high"></i>
+                                        </div>
+                                    </div>
+                                    <div class="stat-sparkline" aria-label="30分钟RPM趋势">
+                                        <canvas id="rpm-sparkline"></canvas>
+                                    </div>
+                                </div>
+
+                                <div class="stat-card">
+                                    <div class="stat-card-header">
+                                        <div class="stat-meta">
+                                            <div class="stat-label" data-i18n="usage_stats.tpm_30m">TPM（近30分钟）</div>
+                                            <div class="stat-number" id="tpm-30m">0</div>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-stopwatch"></i>
+                                        </div>
+                                    </div>
+                                    <div class="stat-sparkline" aria-label="30分钟TPM趋势">
+                                        <canvas id="tpm-sparkline"></canvas>
                                     </div>
                                 </div>
 
                                 <div class="stat-card cost-summary-card">
-                                    <div class="stat-icon">
-                                        <i class="fas fa-dollar-sign"></i>
+                                    <div class="stat-card-header">
+                                        <div class="stat-meta">
+                                            <div class="stat-label" data-i18n="usage_stats.total_cost">总花费</div>
+                                            <div class="stat-number" id="total-cost">--</div>
+                                            <div class="stat-subtext" id="total-cost-hint" data-i18n="usage_stats.total_cost_hint">基于已设置的模型单价</div>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-dollar-sign"></i>
+                                        </div>
                                     </div>
-                                    <div class="stat-content">
-                                        <div class="stat-number" id="total-cost">--</div>
-                                        <div class="stat-label" data-i18n="usage_stats.total_cost">总花费</div>
-                                        <div class="stat-subtext" id="total-cost-hint" data-i18n="usage_stats.total_cost_hint">基于已设置的模型单价</div>
+                                    <div class="stat-sparkline" aria-label="30分钟花费趋势">
+                                        <canvas id="cost-sparkline"></canvas>
                                     </div>
                                 </div>
                             </div>
