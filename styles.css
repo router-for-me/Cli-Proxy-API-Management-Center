@@ -267,6 +267,8 @@
     display: inline-flex;
     align-items: center;
     height: 36px;
+    min-width: 36px;
+    justify-content: center;
 }
 
 /* 登录页面的按钮样式优化 */
@@ -916,6 +918,26 @@ body {
     position: relative;
 }
 
+@media (max-width: 768px) {
+    .top-navbar-brand-toggle {
+        pointer-events: none;
+        cursor: default;
+    }
+
+    .brand-texts {
+        transition: none;
+    }
+
+    .top-navbar-brand-toggle .brand-text-full {
+        display: none;
+    }
+
+    .top-navbar-brand-toggle .brand-text-short {
+        position: relative;
+        opacity: 1;
+    }
+}
+
 .top-navbar-actions {
     display: flex;
     align-items: center;
@@ -926,63 +948,99 @@ body {
 .top-navbar-actions>* {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     height: 36px;
+    min-width: 44px;
 }
 
 .top-navbar .header-controls {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    height: 100%;
+    height: auto;
 }
 
 .top-navbar .language-btn,
 .top-navbar .theme-btn {
-    width: 36px;
     height: 36px;
     min-height: 36px;
-    padding: 0;
+    min-width: 44px;
+    padding: 0 12px;
     justify-content: center;
+    line-height: 1;
 }
 
 .top-navbar-actions .btn {
     height: 36px;
     min-height: 36px;
+    min-width: 44px;
+    padding: 0 12px;
+    justify-content: center;
+    line-height: 1;
 }
 
 @media (max-width: 768px) {
+    .top-navbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        height: auto;
+        min-height: var(--navbar-height, 69px);
+    }
+
+    .top-navbar-left {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
     .top-navbar-actions {
+        width: 100%;
         flex-wrap: wrap;
         justify-content: flex-end;
         gap: 8px;
+        margin-left: 0;
+        align-items: center;
     }
 
     .top-navbar .header-controls {
-        width: 100%;
+        width: auto;
+        order: 0;
         justify-content: flex-end;
-        order: 99;
         gap: 8px;
+        height: auto;
+        align-items: center;
     }
 
     .top-navbar-actions>* {
-        height: 34px;
-        min-height: 34px;
+        height: 36px;
+        min-height: 36px;
+        min-width: 44px;
+        justify-content: center;
     }
 
     .top-navbar .language-btn,
     .top-navbar .theme-btn {
-        width: 34px;
-        height: 34px;
+        height: 36px;
+        min-height: 36px;
+        min-width: 44px;
+        padding: 0 12px;
+        justify-content: center;
+        line-height: 1;
     }
 
     .top-navbar-actions .btn {
-        height: 34px;
-        min-height: 34px;
-        padding: 0 10px;
+        height: 36px;
+        min-height: 36px;
+        min-width: 44px;
+        padding: 0 12px;
+        justify-content: center;
+        line-height: 1;
     }
 
-    .top-navbar-actions .btn span {
-        display: none;
+    .top-navbar .language-btn i,
+    .top-navbar .theme-btn i,
+    .top-navbar-actions .btn i {
+        margin: 0;
     }
 }
 
@@ -3048,38 +3106,51 @@ input:checked+.slider:before {
 @media (max-width: 768px) {
     .top-navbar {
         padding: 12px 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        height: auto;
+        min-height: var(--navbar-height, 69px);
     }
 
     .top-navbar-title {
         font-size: 18px;
     }
 
+    .top-navbar-left {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
     .top-navbar-actions {
         gap: 6px;
         flex-wrap: wrap;
         justify-content: flex-end;
+        width: 100%;
+        margin-left: 0;
     }
 
     .top-navbar-actions>* {
-        height: 34px;
-        min-height: 34px;
+        height: 36px;
+        min-height: 36px;
+        min-width: 44px;
     }
 
     .top-navbar .header-controls {
-        height: 34px;
-        gap: 6px;
+        height: 36px;
+        gap: 8px;
+        width: auto;
+        order: 0;
+        justify-content: flex-end;
     }
 
     .top-navbar-actions .btn,
     .top-navbar .language-btn,
     .top-navbar .theme-btn {
-        height: 34px;
-        min-height: 34px;
-        padding: 0 10px;
-    }
-
-    .top-navbar-actions .btn span {
-        display: none;
+        height: 36px;
+        min-height: 36px;
+        min-width: 44px;
+        padding: 8px 12px;
     }
 
     .btn {

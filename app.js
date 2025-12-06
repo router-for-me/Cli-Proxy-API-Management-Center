@@ -681,6 +681,10 @@ class CLIProxyManager {
     }
 
     // 顶栏标题动画与状态
+    isMobileViewport() {
+        return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+    }
+
     setupBrandTitleAnimation() {
         const mainPage = document.getElementById('main-page');
         if (mainPage && mainPage.style.display === 'none') {
@@ -703,11 +707,43 @@ class CLIProxyManager {
             toggle.addEventListener('click', this.brandToggleHandler);
         }
         if (!this.brandResizeHandler) {
-            this.brandResizeHandler = () => this.updateBrandTextWidths({ immediate: true });
+            this.brandResizeHandler = () => this.handleBrandResize();
             window.addEventListener('resize', this.brandResizeHandler);
         }
 
+        if (this.isMobileViewport()) {
+            this.applyMobileBrandState();
+        } else {
+            this.enableBrandAnimation();
+        }
+    }
+
+    enableBrandAnimation() {
+        const { toggle } = this.brandElements || {};
+        if (toggle) {
+            toggle.removeAttribute('aria-disabled');
+            toggle.style.pointerEvents = '';
+        }
         this.brandAnimationReady = true;
+    }
+
+    applyMobileBrandState() {
+        const { toggle, wrapper, shortText } = this.brandElements || {};
+        if (!toggle || !wrapper || !shortText) {
+            return;
+        }
+
+        this.clearBrandCollapseTimer();
+        this.brandIsCollapsed = true;
+        this.brandAnimationReady = false;
+
+        toggle.classList.add('collapsed');
+        toggle.classList.remove('expanded');
+        toggle.setAttribute('aria-disabled', 'true');
+        toggle.style.pointerEvents = 'none';
+
+        const targetWidth = this.getBrandTextWidth(shortText);
+        this.applyBrandWidth(targetWidth, { animate: false });
     }
 
     getBrandTextWidth(element) {
@@ -762,6 +798,27 @@ class CLIProxyManager {
         toggle.classList.toggle('expanded', !collapsed);
     }
 
+    handleBrandResize() {
+        if (!this.brandElements?.wrapper) {
+            return;
+        }
+
+        if (this.isMobileViewport()) {
+            this.applyMobileBrandState();
+            return;
+        }
+
+        if (!this.brandAnimationReady) {
+            this.enableBrandAnimation();
+            this.brandIsCollapsed = false;
+            this.setBrandCollapsed(false, { animate: false });
+            this.scheduleBrandCollapse(this.brandCollapseDelayMs);
+            return;
+        }
+
+        this.updateBrandTextWidths({ immediate: true });
+    }
+
     scheduleBrandCollapse(delayMs = this.brandCollapseDelayMs) {
         this.clearBrandCollapseTimer();
         this.brandCollapseTimer = window.setTimeout(() => {
@@ -779,6 +836,12 @@ class CLIProxyManager {
 
     startBrandCollapseCycle() {
         this.setupBrandTitleAnimation();
+
+        if (this.isMobileViewport()) {
+            this.applyMobileBrandState();
+            return;
+        }
+
         if (!this.brandAnimationReady) {
             return;
         }
@@ -792,6 +855,12 @@ class CLIProxyManager {
     resetBrandTitleState() {
         this.clearBrandCollapseTimer();
         const mainPage = document.getElementById('main-page');
+
+        if (this.isMobileViewport()) {
+            this.applyMobileBrandState();
+            return;
+        }
+
         if (!this.brandAnimationReady || (mainPage && mainPage.style.display === 'none')) {
             this.brandIsCollapsed = false;
             return;
@@ -802,6 +871,11 @@ class CLIProxyManager {
     }
 
     refreshBrandTitleAfterTextChange() {
+        if (this.isMobileViewport()) {
+            this.applyMobileBrandState();
+            return;
+        }
+
         if (!this.brandAnimationReady) {
             return;
         }
