@@ -3420,6 +3420,13 @@ input:checked+.slider:before {
 
 .usage-filter-actions {
     min-width: 260px;
+    flex: 1 0 100%;
+    order: 0;
+}
+
+.chart-line-group {
+    flex: 1 1 260px;
+    order: 1;
 }
 
 .usage-filter-group label {
