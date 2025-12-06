@@ -3713,34 +3713,18 @@ input:checked+.slider:before {
 
 .model-price-list {
     margin-top: 6px;
-}
-
-.model-price-table {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
-.model-price-header,
-.model-price-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    align-items: center;
+.model-price-item {
+    cursor: pointer;
 }
 
-.model-price-header {
-    font-weight: 700;
-    color: var(--text-primary);
-    background: var(--bg-secondary);
-}
-
-.model-price-row {
-    background: var(--bg-primary);
-    color: var(--text-secondary);
+.model-price-item .item-meta {
+    margin-bottom: 0;
+    gap: 10px;
 }
 
 .chart-placeholder {
@@ -4982,6 +4966,12 @@ input:checked+.slider:before {
     background-color: var(--success-bg);
     color: var(--success-text);
     border: 1px solid var(--success-border);
+}
+
+.stat-badge.stat-neutral {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
 }
 
 .stat-badge.stat-success i {

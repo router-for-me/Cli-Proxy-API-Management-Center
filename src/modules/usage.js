@@ -710,29 +710,65 @@ export function renderSavedModelPrices() {
         container.innerHTML = `<div class="no-data-message">${i18n.t('usage_stats.model_price_empty')}</div>`;
         return;
     }
-
     const rows = entries.map(([model, price]) => {
         const prompt = Number(price?.prompt) || 0;
         const completion = Number(price?.completion) || 0;
+        const safeModel = this.escapeHtml ? this.escapeHtml(model) : model;
+        const editArg = JSON.stringify(model).replace(/"/g, '&quot;');
         return `
-            <div class="model-price-row">
-                <span class="model-name">${model}</span>
-                <span>$${prompt.toFixed(4)} / 1M</span>
-                <span>$${completion.toFixed(4)} / 1M</span>
+            <div class="provider-item model-price-item" onclick="manager.handleModelPriceEdit(${editArg})">
+                <div class="item-content">
+                    <div class="item-title">${safeModel}</div>
+                    <div class="item-meta">
+                        <span class="stat-badge stat-neutral">${i18n.t('usage_stats.model_price_prompt')}: $${prompt.toFixed(4)} / 1M</span>
+                        <span class="stat-badge stat-neutral">${i18n.t('usage_stats.model_price_completion')}: $${completion.toFixed(4)} / 1M</span>
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-secondary" onclick="event.stopPropagation(); manager.handleModelPriceEdit(${editArg});">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
             </div>
         `;
     }).join('');
 
-    container.innerHTML = `
-        <div class="model-price-table">
-            <div class="model-price-header">
-                <span>${i18n.t('usage_stats.model_price_model')}</span>
-                <span>${i18n.t('usage_stats.model_price_prompt')}</span>
-                <span>${i18n.t('usage_stats.model_price_completion')}</span>
-            </div>
-            ${rows}
-        </div>
-    `;
+    container.innerHTML = rows;
+}
+
+export function handleModelPriceEdit(modelName) {
+    const model = (modelName || '').trim();
+    const select = document.getElementById('model-price-model-select');
+    const promptInput = document.getElementById('model-price-prompt');
+    const completionInput = document.getElementById('model-price-completion');
+    const form = document.getElementById('model-price-form');
+    if (!select || !promptInput || !completionInput) {
+        return;
+    }
+
+    const options = Array.from(select.options).map(opt => opt.value);
+    if (model && !options.includes(model)) {
+        const opt = document.createElement('option');
+        opt.value = model;
+        opt.textContent = model;
+        select.appendChild(opt);
+    }
+
+    select.disabled = false;
+    select.value = model;
+    const price = this.modelPrices?.[model];
+    if (price) {
+        promptInput.value = Number.isFinite(price.prompt) ? price.prompt : '';
+        completionInput.value = Number.isFinite(price.completion) ? price.completion : '';
+    } else {
+        promptInput.value = '';
+        completionInput.value = '';
+    }
+
+    promptInput.focus();
+    if (form && typeof form.scrollIntoView === 'function') {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 export function prefillModelPriceInputs() {
@@ -1824,6 +1860,7 @@ export const usageModule = {
     persistModelPrices,
     renderModelPriceOptions,
     renderSavedModelPrices,
+    handleModelPriceEdit,
     prefillModelPriceInputs,
     normalizePriceValue,
     handleModelPriceSubmit,
