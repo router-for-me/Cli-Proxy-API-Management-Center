@@ -1275,9 +1275,25 @@ export async function refreshOpenAIModelDiscovery() {
     }
 
     try {
-        const response = await fetch(context.endpoint, {
-            headers: context.headers || {}
-        });
+        let response;
+        let usedSimpleRequest = false;
+
+        try {
+            // 首先尝试正常的带自定义headers的请求
+            response = await fetch(context.endpoint, {
+                headers: context.headers || {}
+            });
+        } catch (error) {
+            // 如果fetch失败(通常是CORS预检失败),尝试简单GET请求
+            console.warn('Normal fetch failed, trying simple GET request:', error);
+            usedSimpleRequest = true;
+            response = await fetch(context.endpoint, {
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'omit'
+                // 不发送自定义headers,避免触发OPTIONS预检
+            });
+        }
 
         if (!response.ok) {
             throw new Error(`${response.status} ${response.statusText}`);
@@ -1298,6 +1314,10 @@ export async function refreshOpenAIModelDiscovery() {
         if (!models.length) {
             this.setOpenAIModelDiscoveryStatus(i18n.t('ai_providers.openai_models_fetch_empty'), 'warning');
         } else {
+            if (usedSimpleRequest) {
+                // 如果使用了简单请求,提示用户
+                console.info('Models fetched using simple request (without custom headers)');
+            }
             this.setOpenAIModelDiscoveryStatus('', 'info');
         }
     } catch (error) {
