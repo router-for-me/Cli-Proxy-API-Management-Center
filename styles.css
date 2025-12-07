@@ -3057,8 +3057,9 @@ input:checked+.slider:before {
     .sidebar {
         position: fixed;
         left: 0;
-        top: var(--navbar-height, 69px);
-        height: calc(100vh - var(--navbar-height, 69px));
+        top: 0;
+        height: 100vh;
+        padding-top: calc(var(--navbar-height, 69px) + 20px);
         transform: translateX(-100%);
         z-index: 150;
         box-shadow: var(--shadow-sm);
@@ -3110,7 +3111,7 @@ input:checked+.slider:before {
         align-items: stretch;
         gap: 8px;
         height: auto;
-        min-height: var(--navbar-height, 69px);
+        min-height: 60px;
     }
 
     .top-navbar-title {
