@@ -1011,7 +1011,8 @@ function exposeManagerInstance(instance) {
 function setupSiteLogo() {
     const img = document.getElementById('site-logo');
     const loginImg = document.getElementById('login-logo');
-    if (!img && !loginImg) return;
+    const favicon = document.getElementById('favicon-link');
+    if (!img && !loginImg && !favicon) return;
 
     const inlineLogo = typeof window !== 'undefined' ? window.__INLINE_LOGO__ : null;
     if (inlineLogo) {
@@ -1022,6 +1023,9 @@ function setupSiteLogo() {
         if (loginImg) {
             loginImg.src = inlineLogo;
             loginImg.style.display = 'inline-block';
+        }
+        if (favicon) {
+            favicon.href = inlineLogo;
         }
         return;
     }
@@ -1043,6 +1047,9 @@ function setupSiteLogo() {
             if (loginImg) {
                 loginImg.src = test.src;
                 loginImg.style.display = 'inline-block';
+            }
+            if (favicon) {
+                favicon.href = test.src;
             }
         };
         test.onerror = () => {
