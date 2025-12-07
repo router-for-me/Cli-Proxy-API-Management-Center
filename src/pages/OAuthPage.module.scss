@@ -1,0 +1,59 @@
+.container {
+  width: 100%;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 $spacing-xl 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+.oauthSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.oauthGrid {
+  display: grid;
+  gap: $spacing-lg;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.oauthCard {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.oauthStatus {
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  font-size: 14px;
+
+  &.success {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+  }
+
+  &.error {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+
+  &.waiting {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+  }
+}

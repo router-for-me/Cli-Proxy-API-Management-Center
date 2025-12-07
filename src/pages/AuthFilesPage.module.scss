@@ -1,0 +1,58 @@
+.container {
+  width: 100%;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 $spacing-md 0;
+}
+
+.description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 $spacing-xl 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-md;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.filters {
+  display: flex;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.fileGrid {
+  display: grid;
+  gap: $spacing-md;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: $spacing-md;
+  margin-top: $spacing-lg;
+}

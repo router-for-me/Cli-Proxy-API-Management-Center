@@ -1,0 +1,24 @@
+import type { ReactNode } from 'react';
+
+interface EmptyStateProps {
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}
+
+export function EmptyState({ title, description, action }: EmptyStateProps) {
+  return (
+    <div className="empty-state">
+      <div className="empty-content">
+        <div className="empty-icon" aria-hidden="true">
+          ◦
+        </div>
+        <div>
+          <div className="empty-title">{title}</div>
+          {description && <div className="empty-desc">{description}</div>}
+        </div>
+      </div>
+      {action && <div className="empty-action">{action}</div>}
+    </div>
+  );
+}

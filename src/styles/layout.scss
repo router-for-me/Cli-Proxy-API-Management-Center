@@ -1,0 +1,212 @@
+@import './variables.scss';
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.sidebar {
+  width: 240px;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
+  padding: $spacing-lg $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  transition: transform $transition-normal;
+
+  .brand {
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--text-primary);
+  }
+
+  .nav-section {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  .nav-item {
+    padding: 10px 12px;
+    border-radius: $radius-md;
+    color: var(--text-primary);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    cursor: pointer;
+    transition: background $transition-fast, color $transition-fast;
+
+    &:hover {
+      background: var(--bg-secondary);
+    }
+
+    &.active {
+      background: rgba(59, 130, 246, 0.12);
+      color: var(--primary-color);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+  }
+
+  @media (max-width: $breakpoint-mobile) {
+    position: fixed;
+    z-index: $z-dropdown;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: $shadow-lg;
+
+    &.open {
+      transform: translateX(0);
+    }
+  }
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+
+  .left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .connection {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    color: var(--text-secondary);
+
+    .base {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+  }
+}
+
+.main-content {
+  flex: 1;
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.footer {
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  padding: $spacing-lg;
+
+  .login-card {
+    width: 100%;
+    max-width: 520px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: $radius-lg;
+    box-shadow: var(--shadow-lg);
+    padding: $spacing-xl;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+  }
+
+  .login-header {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+    }
+  }
+
+  .connection-box {
+    background: var(--bg-secondary);
+    border: 1px dashed var(--border-color);
+    border-radius: $radius-md;
+    padding: $spacing-md;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+
+    .label {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .value {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+  }
+
+  .toggle-advanced {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: $spacing-xs;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .error-box {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: $radius-md;
+    padding: $spacing-sm $spacing-md;
+    color: $error-color;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: $spacing-lg;
+}
+
+@media (min-width: $breakpoint-tablet) {
+  .grid.cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

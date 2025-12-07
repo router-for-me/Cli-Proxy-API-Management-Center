@@ -1,0 +1,81 @@
+.container {
+  width: 100%;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 $spacing-xl 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-md;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: $spacing-sm;
+
+  @include mobile {
+    flex-wrap: wrap;
+  }
+}
+
+.logViewer {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  padding: $spacing-lg;
+  border-radius: $radius-lg;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  max-height: 600px;
+  overflow-y: auto;
+
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+}
+
+.searchBox {
+  margin-bottom: $spacing-md;
+}
+
+.emptyState {
+  text-align: center;
+  padding: $spacing-2xl;
+  color: var(--text-secondary);
+
+  i {
+    font-size: 48px;
+    margin-bottom: $spacing-md;
+    opacity: 0.5;
+  }
+
+  h3 {
+    margin: 0 0 $spacing-sm 0;
+    color: var(--text-primary);
+  }
+
+  p {
+    margin: 0;
+  }
+}

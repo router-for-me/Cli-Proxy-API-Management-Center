@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear LocalStorage</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        button {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 10px 10px 0;
+        }
+        button:hover {
+            background: #b91c1c;
+        }
+        button.info {
+            background: #3b82f6;
+        }
+        button.info:hover {
+            background: #2563eb;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+        .message.info {
+            background: #dbeafe;
+            color: #1e40af;
+            display: block;
+        }
+        pre {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 LocalStorage 清理工具</h1>
+        <p>用于清理旧版本的 CLI Proxy Web UI 遗留的 localStorage 数据</p>
+
+        <button onclick="showStorage()">📋 查看当前存储</button>
+        <button onclick="clearStorage()">🗑️ 清空 LocalStorage</button>
+
+        <div id="message" class="message"></div>
+
+        <div id="storageInfo" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        function showStorage() {
+            const info = document.getElementById('storageInfo');
+            const message = document.getElementById('message');
+
+            const items = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                items[key] = value.length > 100 ? value.substring(0, 100) + '...' : value;
+            }
+
+            if (Object.keys(items).length === 0) {
+                info.innerHTML = '<p style="color: #666;">LocalStorage 为空</p>';
+            } else {
+                info.innerHTML = '<h3>当前存储项:</h3><pre>' + JSON.stringify(items, null, 2) + '</pre>';
+            }
+
+            message.className = 'message info';
+            message.textContent = `共有 ${localStorage.length} 个存储项`;
+        }
+
+        function clearStorage() {
+            if (confirm('确定要清空所有 LocalStorage 数据吗?这将删除所有保存的登录信息。')) {
+                const count = localStorage.length;
+                localStorage.clear();
+
+                const message = document.getElementById('message');
+                message.className = 'message success';
+                message.textContent = `✅ 已成功清空 ${count} 个存储项`;
+
+                document.getElementById('storageInfo').innerHTML = '';
+
+                setTimeout(() => {
+                    message.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // 页面加载时自动显示
+        window.onload = showStorage;
+    </script>
+</body>
+</html>

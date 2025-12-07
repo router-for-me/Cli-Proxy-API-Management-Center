@@ -1,0 +1,109 @@
+.container {
+  width: 100%;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 $spacing-xl 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 $spacing-md 0;
+}
+
+.sectionDescription {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 $spacing-md 0;
+}
+
+.infoGrid {
+  display: grid;
+  gap: $spacing-sm;
+
+  .infoRow {
+    display: flex;
+    justify-content: space-between;
+    padding: $spacing-sm $spacing-md;
+    background-color: var(--bg-secondary);
+    border-radius: $radius-md;
+
+    .label {
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .value {
+      color: var(--text-primary);
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    }
+  }
+}
+
+.modelsList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.modelItem {
+  padding: $spacing-sm $spacing-md;
+  background-color: var(--bg-secondary);
+  border-radius: $radius-md;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+
+  &:hover {
+    background-color: var(--bg-hover);
+  }
+}
+
+.versionCheck {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.versionInfo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $spacing-md;
+
+  .versionItem {
+    padding: $spacing-md;
+    background-color: var(--bg-secondary);
+    border-radius: $radius-md;
+
+    .label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: $spacing-xs;
+    }
+
+    .version {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    }
+  }
+}

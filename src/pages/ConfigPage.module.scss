@@ -1,0 +1,65 @@
+.container {
+  width: 100%;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 $spacing-md 0;
+}
+
+.description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 $spacing-xl 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-md;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.status {
+  font-size: 14px;
+  color: var(--text-secondary);
+
+  &.modified {
+    color: #f59e0b;
+  }
+
+  &.saved {
+    color: #16a34a;
+  }
+
+  &.error {
+    color: #dc2626;
+  }
+}
+
+.editorWrapper {
+  width: 100%;
+  height: 500px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  overflow: hidden;
+}
+
+.actions {
+  display: flex;
+  gap: $spacing-sm;
+  justify-content: flex-end;
+}
