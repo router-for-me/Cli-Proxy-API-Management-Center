@@ -235,7 +235,7 @@ class CLIProxyManager {
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 
         if (!isLocalhost) {
-            // 隐藏所有 OAuth 登录卡片
+            // 隐藏所有 OAuth 登录卡片(除了iFlow,因为它有Cookie登录功能可远程使用)
             OAUTH_CARD_IDS.forEach(cardId => {
                 const card = document.getElementById(cardId);
                 if (card) {
@@ -243,21 +243,39 @@ class CLIProxyManager {
                 }
             });
 
+            // 对于 iFlow card,只隐藏 OAuth 部分,保留 Cookie 登录部分
+            const iflowCard = document.getElementById('iflow-oauth-card');
+            if (iflowCard) {
+                // 隐藏 OAuth 部分
+                const oauthContent = document.getElementById('iflow-oauth-content');
+                const oauthButton = iflowCard.querySelector('button[onclick*="startIflowOAuth"]');
+                const oauthStatus = document.getElementById('iflow-oauth-status');
+                const oauthUrlGroup = iflowCard.querySelector('.form-group:has(#iflow-oauth-url)');
+
+                if (oauthContent) oauthContent.style.display = 'none';
+                if (oauthButton) oauthButton.style.display = 'none';
+                if (oauthStatus) oauthStatus.style.display = 'none';
+                if (oauthUrlGroup) oauthUrlGroup.style.display = 'none';
+
+                // 保持整个card可见,因为Cookie登录部分仍然可用
+                iflowCard.style.display = 'block';
+            }
+
             // 如果找不到具体的卡片 ID，尝试通过类名查找
             const oauthCardElements = document.querySelectorAll('.card');
             oauthCardElements.forEach(card => {
                 const cardText = card.textContent || '';
+                // 不再隐藏包含 'iFlow' 的卡片
                 if (cardText.includes('Codex OAuth') ||
                     cardText.includes('Anthropic OAuth') ||
                     cardText.includes('Antigravity OAuth') ||
                     cardText.includes('Gemini CLI OAuth') ||
-                    cardText.includes('Qwen OAuth') ||
-                    cardText.includes('iFlow OAuth')) {
+                    cardText.includes('Qwen OAuth')) {
                     card.style.display = 'none';
                 }
             });
 
-            console.log(`当前主机名: ${hostname}，已隐藏 OAuth 登录框`);
+            console.log(`当前主机名: ${hostname}，已隐藏 OAuth 登录框(保留 iFlow Cookie 登录)`);
         }
     }
 

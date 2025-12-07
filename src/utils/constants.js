@@ -111,14 +111,14 @@ export const REQUEST_TIMEOUT_MS = 30 * 1000;
 /**
  * OAuth 卡片元素 ID 列表
  * 用于根据主机环境隐藏/显示不同的 OAuth 选项
+ * 注意: iflow-oauth-card 不在此列表中,因为它包含Cookie登录功能,该功能可在远程使用
  */
 export const OAUTH_CARD_IDS = [
     'codex-oauth-card',
     'anthropic-oauth-card',
     'antigravity-oauth-card',
     'gemini-cli-oauth-card',
-    'qwen-oauth-card',
-    'iflow-oauth-card'
+    'qwen-oauth-card'
 ];
 
 /**
