@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore, useConfigStore, useLanguageStore, useNotificationStore, useThemeStore } from '@/stores';
@@ -34,15 +34,12 @@ const compareVersions = (latest?: string | null, current?: string | null) => {
 
 export function MainLayout() {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
   const { showNotification } = useNotificationStore();
 
   const apiBase = useAuthStore((state) => state.apiBase);
   const serverVersion = useAuthStore((state) => state.serverVersion);
   const serverBuildDate = useAuthStore((state) => state.serverBuildDate);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
-  const checkAuth = useAuthStore((state) => state.checkAuth);
-  const logout = useAuthStore((state) => state.logout);
 
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
@@ -54,7 +51,7 @@ export function MainLayout() {
   const toggleLanguage = useLanguageStore((state) => state.toggleLanguage);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [checkingConnection, setCheckingConnection] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
 
   const isLocal = useMemo(() => isLocalhost(window.location.hostname), []);
@@ -96,22 +93,6 @@ export function MainLayout() {
     }
   };
 
-  const handleCheckConnection = async () => {
-    setCheckingConnection(true);
-    try {
-      const ok = await checkAuth();
-      if (ok) {
-        showNotification(t('common.connected_status'), 'success');
-      } else {
-        showNotification(t('common.disconnected_status'), 'warning');
-      }
-    } catch (error: any) {
-      showNotification(`${t('notification.login_failed')}: ${error?.message || ''}`, 'error');
-    } finally {
-      setCheckingConnection(false);
-    }
-  };
-
   const handleVersionCheck = async () => {
     setCheckingVersion(true);
     try {
@@ -141,15 +122,10 @@ export function MainLayout() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
-  };
-
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="brand">{t('title.abbr')}</div>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="brand">{sidebarCollapsed ? t('title.abbr').charAt(0) : t('title.abbr')}</div>
         <div className="nav-section">
           {navItems.map((item) => (
             <NavLink
@@ -157,11 +133,19 @@ export function MainLayout() {
               to={item.path}
               className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
               onClick={() => setSidebarOpen(false)}
+              title={sidebarCollapsed ? item.label : undefined}
             >
-              {item.label}
+              {sidebarCollapsed ? item.label.charAt(0) : item.label}
             </NavLink>
           ))}
         </div>
+        <button
+          className="sidebar-toggle"
+          onClick={() => setSidebarCollapsed((prev) => !prev)}
+          title={sidebarCollapsed ? t('sidebar.expand', { defaultValue: '展开' }) : t('sidebar.collapse', { defaultValue: '收起' })}
+        >
+          {sidebarCollapsed ? '»' : '«'}
+        </button>
       </aside>
 
       <div className="content">
@@ -185,9 +169,6 @@ export function MainLayout() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Button variant="secondary" size="sm" onClick={handleCheckConnection} loading={checkingConnection}>
-              {t('header.check_connection')}
-            </Button>
             <Button variant="secondary" size="sm" onClick={handleRefreshAll}>
               {t('header.refresh_all')}
             </Button>
@@ -199,9 +180,6 @@ export function MainLayout() {
             </Button>
             <Button variant="ghost" size="sm" onClick={toggleTheme}>
               {t('theme.switch')}: {theme === 'dark' ? t('theme.dark') : t('theme.light')}
-            </Button>
-            <Button variant="danger" size="sm" onClick={handleLogout}>
-              {t('header.logout')}
             </Button>
           </div>
         </header>

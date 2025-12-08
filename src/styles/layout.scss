@@ -15,7 +15,25 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
-  transition: transform $transition-normal;
+  transition: width $transition-normal, transform $transition-normal;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+
+  &.collapsed {
+    width: 60px;
+    padding: $spacing-lg $spacing-sm;
+
+    .brand {
+      text-align: center;
+    }
+
+    .nav-item {
+      justify-content: center;
+      padding: 10px;
+    }
+  }
 
   .brand {
     font-weight: 800;
@@ -27,6 +45,7 @@
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
+    flex: 1;
   }
 
   .nav-item {
@@ -48,6 +67,24 @@
       background: rgba(59, 130, 246, 0.12);
       color: var(--primary-color);
       border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+  }
+
+  .sidebar-toggle {
+    margin-top: auto;
+    padding: $spacing-sm;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background $transition-fast, color $transition-fast;
+
+    &:hover {
+      background: var(--bg-tertiary, var(--border-color));
+      color: var(--text-primary);
     }
   }
 
