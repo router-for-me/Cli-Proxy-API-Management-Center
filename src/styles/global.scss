@@ -2,12 +2,12 @@
  * 全局样式
  */
 
-@import './variables.scss';
-@import './mixins.scss';
-@import './reset.scss';
-@import './themes.scss';
-@import './components.scss';
-@import './layout.scss';
+@use './variables.scss' as *;
+@use './mixins.scss' as *;
+@use './reset.scss';
+@use './themes.scss';
+@use './components.scss';
+@use './layout.scss';
 
 body {
   background-color: var(--bg-secondary);

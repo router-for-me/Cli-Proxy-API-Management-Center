@@ -2,6 +2,8 @@
  * SCSS 混入
  */
 
+@use './variables.scss' as *;
+
 // 响应式断点
 @mixin mobile {
   @media (max-width: #{$breakpoint-mobile}) {

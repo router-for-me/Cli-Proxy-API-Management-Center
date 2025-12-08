@@ -77,6 +77,33 @@
   }
 }
 
+.modelTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.modelTag {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: 4px 10px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.modelName {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.modelAlias {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .versionCheck {
   display: flex;
   flex-direction: column;

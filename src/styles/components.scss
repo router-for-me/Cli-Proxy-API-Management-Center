@@ -1,4 +1,5 @@
-@import './variables.scss';
+@use 'sass:color';
+@use './variables.scss' as *;
 
 .btn {
   display: inline-flex;
@@ -52,7 +53,7 @@
     color: #fff;
 
     &:hover {
-      background-color: darken($error-color, 5%);
+      background-color: color.adjust($error-color, $lightness: -5%);
     }
   }
 

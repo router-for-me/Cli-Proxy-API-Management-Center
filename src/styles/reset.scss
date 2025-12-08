@@ -2,6 +2,8 @@
  * CSS Reset
  */
 
+@use './variables.scss' as *;
+
 *,
 *::before,
 *::after {
