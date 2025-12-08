@@ -59,6 +59,28 @@
     cursor: pointer;
     transition: background $transition-fast, color $transition-fast;
 
+    .nav-icon {
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      opacity: 0.9;
+
+      svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+      }
+    }
+
+    .nav-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     &:hover {
       background: var(--bg-secondary);
     }

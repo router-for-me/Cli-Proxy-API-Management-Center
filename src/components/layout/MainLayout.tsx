@@ -1,10 +1,99 @@
-import { useEffect, useMemo, useState } from 'react';
+import { ReactNode, SVGProps, useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore, useConfigStore, useLanguageStore, useNotificationStore, useThemeStore } from '@/stores';
 import { versionApi } from '@/services/api';
 import { isLocalhost } from '@/utils/connection';
+
+const iconProps: SVGProps<SVGSVGElement> = {
+  width: 18,
+  height: 18,
+  viewBox: '0 0 20 20',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.5,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': 'true',
+  focusable: 'false'
+};
+
+const sidebarIcons: Record<string, ReactNode> = {
+  settings: (
+    <svg {...iconProps}>
+      <path d="M4 6.5h12" />
+      <circle cx="9" cy="6.5" r="2" />
+      <path d="M4 10h12" />
+      <circle cx="7" cy="10" r="2" />
+      <path d="M4 13.5h12" />
+      <circle cx="12" cy="13.5" r="2" />
+    </svg>
+  ),
+  apiKeys: (
+    <svg {...iconProps}>
+      <circle cx="7.2" cy="10" r="2.4" />
+      <path d="M9.6 10h6" />
+      <path d="M12.8 10v2.4" />
+      <path d="M14.8 10v1.4" />
+    </svg>
+  ),
+  aiProviders: (
+    <svg {...iconProps}>
+      <circle cx="10" cy="5.2" r="2.2" />
+      <circle cx="6" cy="13.2" r="2" />
+      <circle cx="14" cy="13.2" r="2" />
+      <path d="M8.6 6.8 6.8 10.8" />
+      <path d="M11.4 6.8 13.2 10.8" />
+      <path d="M7.8 13.2h4.4" />
+    </svg>
+  ),
+  authFiles: (
+    <svg {...iconProps}>
+      <path d="M7 3.5h4.8L15 6.8V16H7Z" />
+      <path d="M11.8 3.5V7h3.2" />
+      <path d="m8.9 11.8 1.7 1.6 3.4-3.5" />
+    </svg>
+  ),
+  oauth: (
+    <svg {...iconProps}>
+      <path d="M10 3.5 15.2 5.6v3.6c0 3-2 5.8-5.2 7-3.2-1.2-5.2-4-5.2-7V5.6Z" />
+      <path d="M8.2 9.6h3.6" />
+      <path d="m9.6 8.2-1.4 1.4 1.4 1.4" />
+      <path d="m11.8 8.2 1.4 1.4-1.4 1.4" />
+    </svg>
+  ),
+  usage: (
+    <svg {...iconProps}>
+      <path d="M4 14.5h12" />
+      <path d="m6.2 11.3 3-3 2.4 2 2.9-3.7" />
+    </svg>
+  ),
+  config: (
+    <svg {...iconProps}>
+      <path d="M5.2 8 10 5.8l4.8 2.2L10 10.2Z" />
+      <path d="M5.2 12 10 9.8l4.8 2.2L10 14.2Z" />
+      <path d="M10 10.2v3.6" />
+    </svg>
+  ),
+  logs: (
+    <svg {...iconProps}>
+      <path d="M6.4 6h9" />
+      <path d="M6.4 10h9" />
+      <path d="M6.4 14h9" />
+      <circle cx="4.2" cy="6" r="0.9" />
+      <circle cx="4.2" cy="10" r="0.9" />
+      <circle cx="4.2" cy="14" r="0.9" />
+    </svg>
+  ),
+  system: (
+    <svg {...iconProps}>
+      <circle cx="10" cy="10" r="6.2" />
+      <path d="M10 8.8v3.6" />
+      <circle cx="10" cy="6.2" r="0.8" fill="currentColor" stroke="none" />
+    </svg>
+  )
+};
 
 const parseVersionSegments = (version?: string | null) => {
   if (!version) return null;
@@ -72,15 +161,15 @@ export function MainLayout() {
           : 'muted';
 
   const navItems = [
-    { path: '/settings', label: t('nav.basic_settings') },
-    { path: '/api-keys', label: t('nav.api_keys') },
-    { path: '/ai-providers', label: t('nav.ai_providers') },
-    { path: '/auth-files', label: t('nav.auth_files') },
-    ...(isLocal ? [{ path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }) }] : []),
-    { path: '/usage', label: t('nav.usage_stats') },
-    { path: '/config', label: t('nav.config_management') },
-    ...(config?.loggingToFile ? [{ path: '/logs', label: t('nav.logs') }] : []),
-    { path: '/system', label: t('nav.system_info') }
+    { path: '/settings', label: t('nav.basic_settings'), icon: sidebarIcons.settings },
+    { path: '/api-keys', label: t('nav.api_keys'), icon: sidebarIcons.apiKeys },
+    { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
+    { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
+    ...(isLocal ? [{ path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth }] : []),
+    { path: '/usage', label: t('nav.usage_stats'), icon: sidebarIcons.usage },
+    { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
+    ...(config?.loggingToFile ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }] : []),
+    { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system }
   ];
 
   const handleRefreshAll = async () => {
@@ -135,7 +224,8 @@ export function MainLayout() {
               onClick={() => setSidebarOpen(false)}
               title={sidebarCollapsed ? item.label : undefined}
             >
-              {sidebarCollapsed ? item.label.charAt(0) : item.label}
+              <span className="nav-icon">{item.icon}</span>
+              {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
             </NavLink>
           ))}
         </div>
