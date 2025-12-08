@@ -168,18 +168,18 @@ export function MainLayout() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Button variant="secondary" size="sm" onClick={handleRefreshAll}>
-              {t('header.refresh_all')}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Button variant="ghost" size="sm" onClick={handleRefreshAll} title={t('header.refresh_all')}>
+              ↻
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleVersionCheck} loading={checkingVersion}>
-              {t('system_info.version_check_button')}
+            <Button variant="ghost" size="sm" onClick={handleVersionCheck} loading={checkingVersion} title={t('system_info.version_check_button')}>
+              ⬆
             </Button>
-            <Button variant="ghost" size="sm" onClick={toggleLanguage}>
-              {t('language.switch')}: {language === 'zh-CN' ? t('language.chinese') : t('language.english')}
+            <Button variant="ghost" size="sm" onClick={toggleLanguage} title={t('language.switch')}>
+              {language === 'zh-CN' ? '中' : 'En'}
             </Button>
-            <Button variant="ghost" size="sm" onClick={toggleTheme}>
-              {t('theme.switch')}: {theme === 'dark' ? t('theme.dark') : t('theme.light')}
+            <Button variant="ghost" size="sm" onClick={toggleTheme} title={t('theme.switch')}>
+              {theme === 'dark' ? '☀' : '☾'}
             </Button>
           </div>
         </header>
