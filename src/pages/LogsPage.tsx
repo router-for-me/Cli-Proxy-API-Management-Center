@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -12,38 +12,69 @@ interface ErrorLogItem {
   modified?: number;
 }
 
+// 限制显示的最大日志行数，防止渲染过多导致卡死
+const MAX_DISPLAY_LINES = 500;
+
 export function LogsPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
 
-  const [logs, setLogs] = useState<string>('');
+  const [logLines, setLogLines] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const [intervalId, setIntervalId] = useState<number | null>(null);
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
 
+  // 保存最新时间戳用于增量获取
+  const latestTimestampRef = useRef<number>(0);
+
   const disableControls = connectionStatus !== 'connected';
 
-  const loadLogs = async () => {
+  const loadLogs = async (incremental = false) => {
     if (connectionStatus !== 'connected') {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!incremental) {
+      setLoading(true);
+    }
     setError('');
+
     try {
-      const data = await logsApi.fetchLogs({ limit: 500 });
-      const text = Array.isArray(data) ? data.join('\n') : data?.logs || data || '';
-      setLogs(text);
+      const params = incremental && latestTimestampRef.current > 0
+        ? { after: latestTimestampRef.current }
+        : {};
+      const data = await logsApi.fetchLogs(params);
+
+      // 更新时间戳
+      if (data['latest-timestamp']) {
+        latestTimestampRef.current = data['latest-timestamp'];
+      }
+
+      const newLines = Array.isArray(data.lines) ? data.lines : [];
+
+      if (incremental && newLines.length > 0) {
+        // 增量更新：追加新日志并限制总行数
+        setLogLines(prev => {
+          const combined = [...prev, ...newLines];
+          return combined.slice(-MAX_DISPLAY_LINES);
+        });
+      } else if (!incremental) {
+        // 全量加载：只取最后 MAX_DISPLAY_LINES 行
+        setLogLines(newLines.slice(-MAX_DISPLAY_LINES));
+      }
     } catch (err: any) {
       console.error('Failed to load logs:', err);
-      setError(err?.message || t('logs.load_error'));
+      if (!incremental) {
+        setError(err?.message || t('logs.load_error'));
+      }
     } finally {
-      setLoading(false);
+      if (!incremental) {
+        setLoading(false);
+      }
     }
   };
 
@@ -51,7 +82,8 @@ export function LogsPage() {
     if (!window.confirm(t('logs.clear_confirm'))) return;
     try {
       await logsApi.clearLogs();
-      setLogs('');
+      setLogLines([]);
+      latestTimestampRef.current = 0;
       showNotification(t('logs.clear_success'), 'success');
     } catch (err: any) {
       showNotification(`${t('notification.delete_failed')}: ${err?.message || ''}`, 'error');
@@ -59,7 +91,8 @@ export function LogsPage() {
   };
 
   const downloadLogs = () => {
-    const blob = new Blob([logs], { type: 'text/plain' });
+    const text = logLines.join('\n');
+    const blob = new Blob([text], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -78,13 +111,15 @@ export function LogsPage() {
     setLoadingErrors(true);
     try {
       const res = await logsApi.fetchErrorLogs();
-      const list: ErrorLogItem[] = Array.isArray(res)
-        ? res
-        : Object.entries(res || {}).map(([name, meta]) => ({
-            name,
-            size: (meta as any)?.size,
-            modified: (meta as any)?.modified
-          }));
+      // API 返回 { files: [...] }
+      const files = (res as any)?.files;
+      const list: ErrorLogItem[] = Array.isArray(files)
+        ? files.map((f: any) => ({
+            name: f.name,
+            size: f.size,
+            modified: f.modified
+          }))
+        : [];
       setErrorLogs(list);
     } catch (err: any) {
       console.error('Failed to load error logs:', err);
@@ -113,23 +148,25 @@ export function LogsPage() {
 
   useEffect(() => {
     if (connectionStatus === 'connected') {
-      loadLogs();
+      latestTimestampRef.current = 0;
+      loadLogs(false);
       loadErrorLogs();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionStatus]);
 
   useEffect(() => {
-    if (autoRefresh) {
-      const id = window.setInterval(loadLogs, 8000);
-      setIntervalId(id);
-      return () => window.clearInterval(id);
+    if (!autoRefresh || connectionStatus !== 'connected') {
+      return;
     }
-    if (intervalId) {
-      window.clearInterval(intervalId);
-      setIntervalId(null);
-    }
-  }, [autoRefresh]);
+    const id = window.setInterval(() => {
+      loadLogs(true);
+    }, 8000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefresh, connectionStatus]);
+
+  const logsText = logLines.join('\n');
 
   return (
     <div className="stack">
@@ -137,13 +174,13 @@ export function LogsPage() {
         title={t('logs.title')}
         extra={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Button variant="secondary" size="sm" onClick={loadLogs} disabled={loading}>
+            <Button variant="secondary" size="sm" onClick={() => loadLogs(false)} disabled={loading}>
               {t('logs.refresh_button')}
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setAutoRefresh((v) => !v)}>
               {t('logs.auto_refresh')}: {autoRefresh ? t('common.yes') : t('common.no')}
             </Button>
-            <Button variant="secondary" size="sm" onClick={downloadLogs} disabled={!logs}>
+            <Button variant="secondary" size="sm" onClick={downloadLogs} disabled={logLines.length === 0}>
               {t('logs.download_button')}
             </Button>
             <Button variant="danger" size="sm" onClick={clearLogs} disabled={disableControls}>
@@ -155,8 +192,8 @@ export function LogsPage() {
         {error && <div className="error-box">{error}</div>}
         {loading ? (
           <div className="hint">{t('logs.loading')}</div>
-        ) : logs ? (
-          <pre className="log-viewer">{logs}</pre>
+        ) : logsText ? (
+          <pre className="log-viewer">{logsText}</pre>
         ) : (
           <EmptyState title={t('logs.empty_title')} description={t('logs.empty_desc')} />
         )}

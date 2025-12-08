@@ -5,12 +5,18 @@
 import { apiClient } from './client';
 
 export interface LogsQuery {
-  after?: string | number;
-  limit?: number;
+  after?: number;
+}
+
+export interface LogsResponse {
+  lines: string[];
+  'line-count': number;
+  'latest-timestamp': number;
 }
 
 export const logsApi = {
-  fetchLogs: (params: LogsQuery = {}) => apiClient.get('/logs', { params }),
+  fetchLogs: (params: LogsQuery = {}): Promise<LogsResponse> =>
+    apiClient.get('/logs', { params }),
 
   clearLogs: () => apiClient.delete('/logs'),
 

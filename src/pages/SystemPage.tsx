@@ -12,10 +12,8 @@ export function SystemPage() {
   const { t, i18n } = useTranslation();
   const { showNotification } = useNotificationStore();
   const auth = useAuthStore();
-  const { config, fetchConfig } = useConfigStore((state) => ({
-    config: state.config,
-    fetchConfig: state.fetchConfig
-  }));
+  const config = useConfigStore((state) => state.config);
+  const fetchConfig = useConfigStore((state) => state.fetchConfig);
 
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
@@ -70,50 +68,47 @@ export function SystemPage() {
     }
   }, [config?.apiKeys]);
 
-  const fetchModels = useCallback(
-    async ({ forceRefreshKeys = false }: { forceRefreshKeys?: boolean } = {}) => {
-      if (auth.connectionStatus !== 'connected') {
-        setModelStatus({
-          type: 'warning',
-          message: t('notification.connection_required')
-        });
-        setModels([]);
-        return;
-      }
+  const fetchModels = async ({ forceRefreshKeys = false }: { forceRefreshKeys?: boolean } = {}) => {
+    if (auth.connectionStatus !== 'connected') {
+      setModelStatus({
+        type: 'warning',
+        message: t('notification.connection_required')
+      });
+      setModels([]);
+      return;
+    }
 
-      if (!auth.apiBase) {
-        showNotification(t('notification.connection_required'), 'warning');
-        return;
-      }
+    if (!auth.apiBase) {
+      showNotification(t('notification.connection_required'), 'warning');
+      return;
+    }
 
-      if (forceRefreshKeys) {
-        apiKeysCache.current = [];
-      }
+    if (forceRefreshKeys) {
+      apiKeysCache.current = [];
+    }
 
-      setLoadingModels(true);
-      setError('');
-      setModelStatus({ type: 'muted', message: t('system_info.models_loading') });
-      try {
-        const apiKeys = await resolveApiKeysForModels();
-        const primaryKey = apiKeys[0];
-        const list = await modelsApi.fetchModels(auth.apiBase, primaryKey);
-        setModels(list);
-        const hasModels = list.length > 0;
-        setModelStatus({
-          type: hasModels ? 'success' : 'warning',
-          message: hasModels ? t('system_info.models_count', { count: list.length }) : t('system_info.models_empty')
-        });
-      } catch (err: any) {
-        const message = `${t('system_info.models_error')}: ${err?.message || ''}`;
-        setError(message);
-        setModels([]);
-        setModelStatus({ type: 'error', message });
-      } finally {
-        setLoadingModels(false);
-      }
-    },
-    [auth.apiBase, auth.connectionStatus, resolveApiKeysForModels, showNotification, t]
-  );
+    setLoadingModels(true);
+    setError('');
+    setModelStatus({ type: 'muted', message: t('system_info.models_loading') });
+    try {
+      const apiKeys = await resolveApiKeysForModels();
+      const primaryKey = apiKeys[0];
+      const list = await modelsApi.fetchModels(auth.apiBase, primaryKey);
+      setModels(list);
+      const hasModels = list.length > 0;
+      setModelStatus({
+        type: hasModels ? 'success' : 'warning',
+        message: hasModels ? t('system_info.models_count', { count: list.length }) : t('system_info.models_empty')
+      });
+    } catch (err: any) {
+      const message = `${t('system_info.models_error')}: ${err?.message || ''}`;
+      setError(message);
+      setModels([]);
+      setModelStatus({ type: 'error', message });
+    } finally {
+      setLoadingModels(false);
+    }
+  };
 
   useEffect(() => {
     fetchConfig().catch(() => {
@@ -123,7 +118,8 @@ export function SystemPage() {
 
   useEffect(() => {
     fetchModels();
-  }, [fetchModels]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.connectionStatus, auth.apiBase]);
 
   return (
     <div className="stack">
