@@ -723,6 +723,17 @@ export const oauthModule = {
 
     // 开始 iFlow OAuth 流程
     async startIflowOAuth() {
+        if (!this.isIflowOAuthAllowed()) {
+            const statusEl = document.getElementById('iflow-oauth-status');
+            if (statusEl) {
+                statusEl.textContent = i18n.t('auth_login.iflow_oauth_local_only');
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--warning-text)';
+            }
+            this.showNotification(i18n.t('auth_login.iflow_oauth_local_only'), 'error');
+            return;
+        }
+
         try {
             const response = await this.makeRequest('/iflow-auth-url?is_webui=1');
             const authUrl = response.url;

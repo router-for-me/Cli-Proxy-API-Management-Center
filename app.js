@@ -229,37 +229,31 @@ class CLIProxyManager {
         }
     }
 
+    isLocalHostname(hostname = (typeof window !== 'undefined' ? window.location.hostname : '')) {
+        const host = (hostname || '').toLowerCase();
+        return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    }
+
+    isIflowOAuthAllowed(hostname = (typeof window !== 'undefined' ? window.location.hostname : '')) {
+        const host = (hostname || '').toLowerCase();
+        // iFlow OAuth 仅允许在本机回环地址访问
+        return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+    }
+
     // 检查主机名并隐藏 OAuth 登录框
     checkHostAndHideOAuth() {
         const hostname = window.location.hostname;
-        const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+        const isLocalhost = this.isLocalHostname(hostname);
+        const isIflowOAuthAllowed = this.isIflowOAuthAllowed(hostname);
 
         if (!isLocalhost) {
-            // 隐藏所有 OAuth 登录卡片(除了iFlow,因为它有Cookie登录功能可远程使用)
+            // 隐藏所有 OAuth 登录卡片(除了 iFlow, 因为它有 Cookie 登录功能可远程使用)
             OAUTH_CARD_IDS.forEach(cardId => {
                 const card = document.getElementById(cardId);
                 if (card) {
                     card.style.display = 'none';
                 }
             });
-
-            // 对于 iFlow card,只隐藏 OAuth 部分,保留 Cookie 登录部分
-            const iflowCard = document.getElementById('iflow-oauth-card');
-            if (iflowCard) {
-                // 隐藏 OAuth 部分
-                const oauthContent = document.getElementById('iflow-oauth-content');
-                const oauthButton = iflowCard.querySelector('button[onclick*="startIflowOAuth"]');
-                const oauthStatus = document.getElementById('iflow-oauth-status');
-                const oauthUrlGroup = iflowCard.querySelector('.form-group:has(#iflow-oauth-url)');
-
-                if (oauthContent) oauthContent.style.display = 'none';
-                if (oauthButton) oauthButton.style.display = 'none';
-                if (oauthStatus) oauthStatus.style.display = 'none';
-                if (oauthUrlGroup) oauthUrlGroup.style.display = 'none';
-
-                // 保持整个card可见,因为Cookie登录部分仍然可用
-                iflowCard.style.display = 'block';
-            }
 
             // 如果找不到具体的卡片 ID，尝试通过类名查找
             const oauthCardElements = document.querySelectorAll('.card');
@@ -276,6 +270,33 @@ class CLIProxyManager {
             });
 
             console.log(`当前主机名: ${hostname}，已隐藏 OAuth 登录框(保留 iFlow Cookie 登录)`);
+        }
+
+        if (!isIflowOAuthAllowed) {
+            // 对于 iFlow card, 仅在本机允许 OAuth，其余情况只保留 Cookie 登录
+            const iflowCard = document.getElementById('iflow-oauth-card');
+            if (iflowCard) {
+                const oauthContent = document.getElementById('iflow-oauth-content');
+                const oauthButton = document.getElementById('iflow-oauth-btn');
+                const oauthStatus = document.getElementById('iflow-oauth-status');
+                const oauthUrlGroup = document.getElementById('iflow-oauth-url')?.closest('.form-group');
+                const oauthHint = iflowCard.querySelector('[data-i18n="auth_login.iflow_oauth_hint"]');
+
+                if (oauthContent) oauthContent.style.display = 'none';
+                if (oauthButton) oauthButton.style.display = 'none';
+                if (oauthStatus) {
+                    oauthStatus.textContent = i18n.t('auth_login.iflow_oauth_local_only');
+                    oauthStatus.style.display = 'block';
+                    oauthStatus.style.color = 'var(--warning-text)';
+                }
+                if (oauthUrlGroup) oauthUrlGroup.style.display = 'none';
+                if (oauthHint) oauthHint.style.display = 'none';
+
+                // 保持整个 card 可见, 因为 Cookie 登录部分仍然可用
+                iflowCard.style.display = 'block';
+            }
+
+            console.log(`当前主机名: ${hostname}，iFlow OAuth 已限制为本机访问，仅保留 Cookie 登录`);
         }
     }
 
