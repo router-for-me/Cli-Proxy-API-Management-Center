@@ -585,8 +585,7 @@ export function AiProvidersPage() {
           ),
           (index) => openOpenaiModal(index),
           (item) => deleteOpenai(item.name),
-          t('ai_providers.openai_add_button'),
-          t('ai_providers.openai_delete_confirm')
+          t('ai_providers.openai_add_button')
         )}
       </Card>
 
