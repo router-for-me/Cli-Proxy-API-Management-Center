@@ -184,6 +184,7 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .sidebar {
@@ -197,8 +198,6 @@
   transition: width $transition-normal, transform $transition-normal;
   overflow-y: auto;
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
   height: calc(100vh - 57px); // 减去顶栏高度
 
   &.collapsed {
