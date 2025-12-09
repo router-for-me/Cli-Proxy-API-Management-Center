@@ -2,43 +2,213 @@
 
 .app-shell {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: var(--bg-secondary);
   color: var(--text-primary);
+}
+
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  width: 100%;
+
+  @media (max-width: $breakpoint-mobile) {
+    padding: $spacing-sm $spacing-md;
+    gap: $spacing-sm;
+  }
+
+  .left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    min-width: 0;
+  }
+
+  .sidebar-toggle-header {
+    padding: $spacing-xs $spacing-sm;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background $transition-fast, color $transition-fast;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+
+    &:hover {
+      background: var(--bg-tertiary, var(--border-color));
+      color: var(--text-primary);
+    }
+
+    @media (max-width: $breakpoint-mobile) {
+      display: none;
+    }
+  }
+
+  .brand-header {
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--text-primary);
+    margin-right: $spacing-md;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    .brand-full,
+    .brand-abbr {
+      display: inline-block;
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .brand-full {
+      max-width: 320px;
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .brand-abbr {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%) translateX(20px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    &.collapsed {
+      .brand-full {
+        max-width: 0;
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+
+      .brand-abbr {
+        position: relative;
+        transform: translateY(0) translateX(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+
+    &:hover {
+      color: var(--primary-color);
+    }
+
+    // 移动端：禁用动画，只显示缩写
+    @media (max-width: $breakpoint-mobile) {
+      margin-right: $spacing-sm;
+      cursor: default;
+
+      .brand-full,
+      .brand-abbr {
+        transition: none;
+      }
+
+      .brand-full {
+        display: none;
+      }
+
+      .brand-abbr {
+        position: relative;
+        transform: none;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      &:hover {
+        color: var(--text-primary);
+      }
+    }
+  }
+
+  .mobile-menu-btn {
+    display: none;
+    flex-shrink: 0;
+
+    @media (max-width: $breakpoint-mobile) {
+      display: flex;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex-shrink: 0;
+
+    @media (max-width: $breakpoint-mobile) {
+      gap: 2px;
+    }
+  }
+
+  .connection {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    color: var(--text-secondary);
+    min-width: 0;
+
+    .base {
+      font-weight: 600;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (max-width: $breakpoint-mobile) {
+      display: none;
+    }
+  }
+}
+
+.main-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sidebar {
   width: 240px;
   background: var(--bg-primary);
   border-right: 1px solid var(--border-color);
-  padding: $spacing-lg $spacing-md;
+  padding: $spacing-md;
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
   transition: width $transition-normal, transform $transition-normal;
+  overflow-y: auto;
+  flex-shrink: 0;
   position: sticky;
   top: 0;
-  height: 100vh;
-  overflow-y: auto;
+  height: calc(100vh - 57px); // 减去顶栏高度
 
   &.collapsed {
     width: 60px;
-    padding: $spacing-lg $spacing-sm;
-
-    .brand {
-      text-align: center;
-    }
+    padding: $spacing-md $spacing-sm;
 
     .nav-item {
       justify-content: center;
       padding: 10px;
     }
-  }
-
-  .brand {
-    font-weight: 800;
-    font-size: 18px;
-    color: var(--text-primary);
   }
 
   .nav-section {
@@ -92,29 +262,11 @@
     }
   }
 
-  .sidebar-toggle {
-    margin-top: auto;
-    padding: $spacing-sm;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: $radius-md;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    transition: background $transition-fast, color $transition-fast;
-
-    &:hover {
-      background: var(--bg-tertiary, var(--border-color));
-      color: var(--text-primary);
-    }
-  }
-
   @media (max-width: $breakpoint-mobile) {
     position: fixed;
     z-index: $z-dropdown;
     left: 0;
-    top: 0;
+    top: 56px;
     bottom: 0;
     transform: translateX(-100%);
     box-shadow: $shadow-lg;
@@ -130,37 +282,8 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-}
-
-.main-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $spacing-md;
-  padding: $spacing-md $spacing-lg;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
-  position: sticky;
-  top: 0;
-  z-index: 5;
-
-  .left {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-  }
-
-  .connection {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    color: var(--text-secondary);
-
-    .base {
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-  }
+  overflow-y: auto;
+  height: calc(100vh - 57px); // 减去顶栏高度
 }
 
 .main-content {
@@ -169,6 +292,10 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+
+  @media (max-width: $breakpoint-mobile) {
+    padding: $spacing-md;
+  }
 }
 
 .footer {

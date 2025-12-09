@@ -1,4 +1,4 @@
-import { ReactNode, SVGProps, useEffect, useMemo, useState } from 'react';
+import { ReactNode, SVGProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
@@ -142,8 +142,39 @@ export function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
+  const [brandExpanded, setBrandExpanded] = useState(true);
+  const brandCollapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isLocal = useMemo(() => isLocalhost(window.location.hostname), []);
+
+  const fullBrandName = 'CLI Proxy API Management Center';
+  const abbrBrandName = t('title.abbr');
+
+  // 5秒后自动收起品牌名称
+  useEffect(() => {
+    brandCollapseTimer.current = setTimeout(() => {
+      setBrandExpanded(false);
+    }, 5000);
+
+    return () => {
+      if (brandCollapseTimer.current) {
+        clearTimeout(brandCollapseTimer.current);
+      }
+    };
+  }, []);
+
+  const handleBrandClick = useCallback(() => {
+    if (!brandExpanded) {
+      setBrandExpanded(true);
+      // 点击展开后，5秒后再次收起
+      if (brandCollapseTimer.current) {
+        clearTimeout(brandCollapseTimer.current);
+      }
+      brandCollapseTimer.current = setTimeout(() => {
+        setBrandExpanded(false);
+      }, 5000);
+    }
+  }, [brandExpanded]);
 
   useEffect(() => {
     fetchConfig().catch(() => {
@@ -213,38 +244,27 @@ export function MainLayout() {
 
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
-        <div className="brand">{sidebarCollapsed ? t('title.abbr').charAt(0) : t('title.abbr')}</div>
-        <div className="nav-section">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => setSidebarOpen(false)}
-              title={sidebarCollapsed ? item.label : undefined}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
-            </NavLink>
-          ))}
-        </div>
-        <button
-          className="sidebar-toggle"
-          onClick={() => setSidebarCollapsed((prev) => !prev)}
-          title={sidebarCollapsed ? t('sidebar.expand', { defaultValue: '展开' }) : t('sidebar.collapse', { defaultValue: '收起' })}
-        >
-          {sidebarCollapsed ? '»' : '«'}
-        </button>
-      </aside>
-
-      <div className="content">
-        <header className="main-header">
-          <div className="left">
-            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen((prev) => !prev)}>
-              ☰
-            </Button>
-            <div className="connection">
+      <header className="main-header">
+        <div className="left">
+          <button
+            className="sidebar-toggle-header"
+            onClick={() => setSidebarCollapsed((prev) => !prev)}
+            title={sidebarCollapsed ? t('sidebar.expand', { defaultValue: '展开' }) : t('sidebar.collapse', { defaultValue: '收起' })}
+          >
+            {sidebarCollapsed ? '»' : '«'}
+          </button>
+          <div
+            className={`brand-header ${brandExpanded ? 'expanded' : 'collapsed'}`}
+            onClick={handleBrandClick}
+            title={brandExpanded ? undefined : fullBrandName}
+          >
+            <span className="brand-full">{fullBrandName}</span>
+            <span className="brand-abbr">{abbrBrandName}</span>
+          </div>
+          <Button className="mobile-menu-btn" variant="ghost" size="sm" onClick={() => setSidebarOpen((prev) => !prev)}>
+            ☰
+          </Button>
+          <div className="connection">
               <span className={`status-badge ${statusClass}`}>
                 {t(
                   connectionStatus === 'connected'
@@ -258,7 +278,7 @@ export function MainLayout() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className="header-actions">
             <Button variant="ghost" size="sm" onClick={handleRefreshAll} title={t('header.refresh_all')}>
               ↻
             </Button>
@@ -274,19 +294,39 @@ export function MainLayout() {
           </div>
         </header>
 
-        <main className="main-content">
-          <Outlet />
-        </main>
+      <div className="main-body">
+        <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          <div className="nav-section">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => setSidebarOpen(false)}
+                title={sidebarCollapsed ? item.label : undefined}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
+              </NavLink>
+            ))}
+          </div>
+        </aside>
 
-        <footer className="footer">
-          <span>
-            {t('footer.api_version')}: {serverVersion || t('system_info.version_unknown')}
-          </span>
-          <span>
-            {t('footer.build_date')}:{' '}
-            {serverBuildDate ? new Date(serverBuildDate).toLocaleString(i18n.language) : t('system_info.version_unknown')}
-          </span>
-        </footer>
+        <div className="content">
+          <main className="main-content">
+            <Outlet />
+          </main>
+
+          <footer className="footer">
+            <span>
+              {t('footer.api_version')}: {serverVersion || t('system_info.version_unknown')}
+            </span>
+            <span>
+              {t('footer.build_date')}:{' '}
+              {serverBuildDate ? new Date(serverBuildDate).toLocaleString(i18n.language) : t('system_info.version_unknown')}
+            </span>
+          </footer>
+        </div>
       </div>
     </div>
   );
