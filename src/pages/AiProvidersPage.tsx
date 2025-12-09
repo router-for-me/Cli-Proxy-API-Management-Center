@@ -28,7 +28,6 @@ interface OpenAIFormState {
   name: string;
   baseUrl: string;
   headers: HeaderEntry[];
-  priority?: number;
   testModel?: string;
   modelsText: string;
   apiKeyEntries: ApiKeyEntry[];
@@ -167,7 +166,6 @@ export function AiProvidersPage() {
       headers: [],
       apiKeyEntries: [buildApiKeyEntry()],
       modelsText: '',
-      priority: undefined,
       testModel: undefined
     });
   };
@@ -202,7 +200,6 @@ export function AiProvidersPage() {
         name: entry.name,
         baseUrl: entry.baseUrl,
         headers: headersToEntries(entry.headers),
-        priority: entry.priority,
         testModel: entry.testModel,
         modelsText: modelsToText(entry.models),
         apiKeyEntries: entry.apiKeyEntries?.length ? entry.apiKeyEntries : [buildApiKeyEntry()]
@@ -255,11 +252,17 @@ export function AiProvidersPage() {
   };
 
   const saveProvider = async (type: 'codex' | 'claude') => {
+    const baseUrl = (providerForm.baseUrl ?? '').trim();
+    if (!baseUrl) {
+      showNotification(t('codex_base_url_required'), 'error');
+      return;
+    }
+
     setSaving(true);
     try {
       const payload: ProviderKeyConfig = {
         apiKey: providerForm.apiKey.trim(),
-        baseUrl: providerForm.baseUrl?.trim() || undefined,
+        baseUrl,
         proxyUrl: providerForm.proxyUrl?.trim() || undefined,
         headers: buildHeaderObject(headersToEntries(providerForm.headers as any)),
         models: parseModelsText(providerForm.modelsText)
@@ -333,7 +336,6 @@ export function AiProvidersPage() {
           headers: entry.headers
         }))
       };
-      if (openaiForm.priority !== undefined) payload.priority = openaiForm.priority;
       if (openaiForm.testModel) payload.testModel = openaiForm.testModel.trim();
       const models = parseModelsText(openaiForm.modelsText);
       if (models.length) payload.models = models;
@@ -578,7 +580,6 @@ export function AiProvidersPage() {
               <div className="pill">
                 {t('ai_providers.openai_models_count')}: {item.models?.length || 0}
               </div>
-              {item.priority !== undefined && <div className="pill">Priority: {item.priority}</div>}
               {item.testModel && <div className="pill">{item.testModel}</div>}
             </Fragment>
           ),
@@ -737,14 +738,6 @@ export function AiProvidersPage() {
           label={t('ai_providers.openai_add_modal_url_label')}
           value={openaiForm.baseUrl}
           onChange={(e) => setOpenaiForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
-        />
-        <Input
-          label="Priority"
-          type="number"
-          value={openaiForm.priority ?? ''}
-          onChange={(e) =>
-            setOpenaiForm((prev) => ({ ...prev, priority: e.target.value ? Number(e.target.value) : undefined }))
-          }
         />
         <Input
           label={t('ai_providers.openai_test_model_placeholder')}

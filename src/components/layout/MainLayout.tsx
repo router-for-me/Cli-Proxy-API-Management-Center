@@ -1,4 +1,4 @@
-import { ReactNode, SVGProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, SVGProps, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
@@ -144,11 +144,39 @@ export function MainLayout() {
   const [checkingVersion, setCheckingVersion] = useState(false);
   const [brandExpanded, setBrandExpanded] = useState(true);
   const brandCollapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
 
   const isLocal = useMemo(() => isLocalhost(window.location.hostname), []);
 
   const fullBrandName = 'CLI Proxy API Management Center';
   const abbrBrandName = t('title.abbr');
+
+  // 将顶栏高度写入 CSS 变量，确保侧栏/内容区计算一致，防止滚动时抖动
+  useLayoutEffect(() => {
+    const updateHeaderHeight = () => {
+      const height = headerRef.current?.offsetHeight;
+      if (height) {
+        document.documentElement.style.setProperty('--header-height', `${height}px`);
+      }
+    };
+
+    updateHeaderHeight();
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' && headerRef.current ? new ResizeObserver(updateHeaderHeight) : null;
+    if (resizeObserver && headerRef.current) {
+      resizeObserver.observe(headerRef.current);
+    }
+
+    window.addEventListener('resize', updateHeaderHeight);
+
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      window.removeEventListener('resize', updateHeaderHeight);
+    };
+  }, []);
 
   // 5秒后自动收起品牌名称
   useEffect(() => {
@@ -244,7 +272,7 @@ export function MainLayout() {
 
   return (
     <div className="app-shell">
-      <header className="main-header">
+      <header className="main-header" ref={headerRef}>
         <div className="left">
           <button
             className="sidebar-toggle-header"

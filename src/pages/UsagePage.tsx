@@ -29,6 +29,8 @@ import {
   loadModelPrices,
   saveModelPrices,
   buildChartData,
+  collectUsageDetails,
+  extractTotalTokens,
   type ModelPrice
 } from '@/utils/usage';
 import styles from './UsagePage.module.scss';
@@ -97,7 +99,9 @@ export function UsagePage() {
 
   // Calculate derived data
   const tokenBreakdown = usage ? calculateTokenBreakdown(usage) : { cachedTokens: 0, reasoningTokens: 0 };
-  const rateStats = usage ? calculateRecentPerMinuteRates(30, usage) : { rpm: 0, tpm: 0 };
+  const rateStats = usage
+    ? calculateRecentPerMinuteRates(30, usage)
+    : { rpm: 0, tpm: 0, windowMinutes: 30, requestCount: 0, tokenCount: 0 };
   const totalCost = usage ? calculateTotalCost(usage, modelPrices) : 0;
   const modelNames = usage ? getModelNamesFromUsage(usage) : [];
   const apiStats = usage ? getApiStats(usage, modelPrices) : [];
@@ -114,6 +118,102 @@ export function UsagePage() {
     if (!usage) return { labels: [], datasets: [] };
     return buildChartData(usage, tokensPeriod, 'tokens', chartLines);
   }, [usage, tokensPeriod, chartLines]);
+
+  const sparklineOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: { x: { display: false }, y: { display: false } },
+      elements: { line: { tension: 0.45 }, point: { radius: 0 } }
+    }),
+    []
+  );
+
+  const buildLastHourSeries = useCallback(
+    (metric: 'requests' | 'tokens'): { labels: string[]; data: number[] } => {
+      if (!usage) return { labels: [], data: [] };
+      const details = collectUsageDetails(usage);
+      if (!details.length) return { labels: [], data: [] };
+
+      const windowMinutes = 60;
+      const now = Date.now();
+      const windowStart = now - windowMinutes * 60 * 1000;
+      const buckets = new Array(windowMinutes).fill(0);
+
+      details.forEach(detail => {
+        const timestamp = Date.parse(detail.timestamp);
+        if (Number.isNaN(timestamp) || timestamp < windowStart) {
+          return;
+        }
+        const minuteIndex = Math.min(
+          windowMinutes - 1,
+          Math.floor((timestamp - windowStart) / 60000)
+        );
+        const increment = metric === 'tokens' ? extractTotalTokens(detail) : 1;
+        buckets[minuteIndex] += increment;
+      });
+
+      const labels = buckets.map((_, idx) => {
+        const date = new Date(windowStart + (idx + 1) * 60000);
+        const h = date.getHours().toString().padStart(2, '0');
+        const m = date.getMinutes().toString().padStart(2, '0');
+        return `${h}:${m}`;
+      });
+
+      return { labels, data: buckets };
+    },
+    [usage]
+  );
+
+  const buildSparkline = useCallback(
+    (series: { labels: string[]; data: number[] }, color: string, backgroundColor: string) => {
+      if (loading || !series?.data?.length) {
+        return null;
+      }
+      const sliceStart = Math.max(series.data.length - 60, 0);
+      const labels = series.labels.slice(sliceStart);
+      const points = series.data.slice(sliceStart);
+      return {
+        data: {
+          labels,
+          datasets: [
+            {
+              data: points,
+              borderColor: color,
+              backgroundColor,
+              fill: true,
+              tension: 0.45,
+              pointRadius: 0,
+              borderWidth: 2
+            }
+          ]
+        }
+      };
+    },
+    [loading]
+  );
+
+  const requestsSparkline = useMemo(
+    () => buildSparkline(buildLastHourSeries('requests'), '#2563eb', 'rgba(37, 99, 235, 0.12)'),
+    [buildLastHourSeries, buildSparkline]
+  );
+  const tokensSparkline = useMemo(
+    () => buildSparkline(buildLastHourSeries('tokens'), '#8b5cf6', 'rgba(139, 92, 246, 0.12)'),
+    [buildLastHourSeries, buildSparkline]
+  );
+  const rpmSparkline = useMemo(
+    () => buildSparkline(buildLastHourSeries('requests'), '#22c55e', 'rgba(34, 197, 94, 0.12)'),
+    [buildLastHourSeries, buildSparkline]
+  );
+  const tpmSparkline = useMemo(
+    () => buildSparkline(buildLastHourSeries('tokens'), '#f97316', 'rgba(249, 115, 22, 0.12)'),
+    [buildLastHourSeries, buildSparkline]
+  );
+  const costSparkline = useMemo(
+    () => buildSparkline(buildLastHourSeries('tokens'), '#f59e0b', 'rgba(245, 158, 11, 0.12)'),
+    [buildLastHourSeries, buildSparkline]
+  );
 
   const chartOptions = {
     responsive: true,
@@ -215,6 +315,93 @@ export function UsagePage() {
     });
   };
 
+  const statsCards = [
+    {
+      key: 'requests',
+      label: t('usage_stats.total_requests'),
+      icon: '🛰️',
+      accent: '#2563eb',
+      value: loading ? '-' : (usage?.total_requests ?? 0).toLocaleString(),
+      meta: (
+        <>
+          <span className={styles.statMetaItem}>
+            <span className={styles.statMetaDot} style={{ backgroundColor: '#10b981' }} />
+            {t('usage_stats.success_requests')}: {loading ? '-' : (usage?.success_count ?? 0)}
+          </span>
+          <span className={styles.statMetaItem}>
+            <span className={styles.statMetaDot} style={{ backgroundColor: '#ef4444' }} />
+            {t('usage_stats.failed_requests')}: {loading ? '-' : (usage?.failure_count ?? 0)}
+          </span>
+        </>
+      ),
+      trend: requestsSparkline
+    },
+    {
+      key: 'tokens',
+      label: t('usage_stats.total_tokens'),
+      icon: '💠',
+      accent: '#8b5cf6',
+      value: loading ? '-' : formatTokensInMillions(usage?.total_tokens ?? 0),
+      meta: (
+        <>
+          <span className={styles.statMetaItem}>
+            {t('usage_stats.cached_tokens')}: {loading ? '-' : formatTokensInMillions(tokenBreakdown.cachedTokens)}
+          </span>
+          <span className={styles.statMetaItem}>
+            {t('usage_stats.reasoning_tokens')}: {loading ? '-' : formatTokensInMillions(tokenBreakdown.reasoningTokens)}
+          </span>
+        </>
+      ),
+      trend: tokensSparkline
+    },
+    {
+      key: 'rpm',
+      label: t('usage_stats.rpm_30m'),
+      icon: '⏱️',
+      accent: '#22c55e',
+      value: loading ? '-' : formatPerMinuteValue(rateStats.rpm),
+      meta: (
+        <span className={styles.statMetaItem}>
+          {t('usage_stats.total_requests')}: {loading ? '-' : rateStats.requestCount.toLocaleString()}
+        </span>
+      ),
+      trend: rpmSparkline
+    },
+    {
+      key: 'tpm',
+      label: t('usage_stats.tpm_30m'),
+      icon: '📈',
+      accent: '#f97316',
+      value: loading ? '-' : formatPerMinuteValue(rateStats.tpm),
+      meta: (
+        <span className={styles.statMetaItem}>
+          {t('usage_stats.total_tokens')}: {loading ? '-' : formatTokensInMillions(rateStats.tokenCount)}
+        </span>
+      ),
+      trend: tpmSparkline
+    },
+    {
+      key: 'cost',
+      label: t('usage_stats.total_cost'),
+      icon: '💰',
+      accent: '#f59e0b',
+      value: loading ? '-' : hasPrices ? formatUsd(totalCost) : '--',
+      meta: (
+        <>
+          <span className={styles.statMetaItem}>
+            {t('usage_stats.total_tokens')}: {loading ? '-' : formatTokensInMillions(usage?.total_tokens ?? 0)}
+          </span>
+          {!hasPrices && (
+            <span className={`${styles.statMetaItem} ${styles.statSubtle}`}>
+              {t('usage_stats.cost_need_price')}
+            </span>
+          )}
+        </>
+      ),
+      trend: hasPrices ? costSparkline : null
+    }
+  ];
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -233,77 +420,30 @@ export function UsagePage() {
 
       {/* Stats Overview Cards */}
       <div className={styles.statsGrid}>
-        {/* Total Requests Card */}
-        <div className={styles.statCard}>
-          <div className={styles.statHeader}>
-            <span className={styles.statIcon}>📊</span>
-            <span className={styles.statLabel}>{t('usage_stats.total_requests')}</span>
-          </div>
-          <div className={styles.statValue}>
-            {loading ? '-' : (usage?.total_requests ?? 0).toLocaleString()}
-          </div>
-          <div className={styles.statMeta}>
-            <span className={styles.statSuccess}>
-              ✓ {t('usage_stats.success_requests')}: {loading ? '-' : (usage?.success_count ?? 0)}
-            </span>
-            <span className={styles.statFailure}>
-              ✗ {t('usage_stats.failed_requests')}: {loading ? '-' : (usage?.failure_count ?? 0)}
-            </span>
-          </div>
-        </div>
-
-        {/* Total Tokens Card */}
-        <div className={styles.statCard}>
-          <div className={styles.statHeader}>
-            <span className={styles.statIcon}>🔤</span>
-            <span className={styles.statLabel}>{t('usage_stats.total_tokens')}</span>
-          </div>
-          <div className={styles.statValue}>
-            {loading ? '-' : formatTokensInMillions(usage?.total_tokens ?? 0)}
-          </div>
-          <div className={styles.statMeta}>
-            <span className={styles.statNeutral}>
-              💾 {t('usage_stats.cached_tokens')}: {loading ? '-' : formatTokensInMillions(tokenBreakdown.cachedTokens)}
-            </span>
-            <span className={styles.statNeutral}>
-              🧠 {t('usage_stats.reasoning_tokens')}: {loading ? '-' : formatTokensInMillions(tokenBreakdown.reasoningTokens)}
-            </span>
-          </div>
-        </div>
-
-        {/* RPM/TPM Card */}
-        <div className={styles.statCard}>
-          <div className={styles.statHeader}>
-            <span className={styles.statIcon}>⚡</span>
-            <span className={styles.statLabel}>{t('usage_stats.rate_30m')}</span>
-          </div>
-          <div className={styles.statValueRow}>
-            <div className={styles.statValueSmall}>
-              <span className={styles.statValueLabel}>{t('usage_stats.rpm_30m')}</span>
-              <span className={styles.statValueNum}>{loading ? '-' : formatPerMinuteValue(rateStats.rpm)}</span>
+        {statsCards.map(card => (
+          <div key={card.key} className={styles.statCard}>
+            <div className={styles.statCardHeader}>
+              <div className={styles.statLabelGroup}>
+                <span className={styles.statLabel}>{card.label}</span>
+              </div>
+              <span
+                className={styles.statIconBadge}
+                style={{ backgroundColor: card.accent }}
+              >
+                {card.icon}
+              </span>
             </div>
-            <div className={styles.statValueSmall}>
-              <span className={styles.statValueLabel}>{t('usage_stats.tpm_30m')}</span>
-              <span className={styles.statValueNum}>{loading ? '-' : formatPerMinuteValue(rateStats.tpm)}</span>
+            <div className={styles.statValue}>{card.value}</div>
+            {card.meta && <div className={styles.statMetaRow}>{card.meta}</div>}
+            <div className={styles.statTrend}>
+              {card.trend ? (
+                <Line className={styles.sparkline} data={card.trend.data} options={sparklineOptions} />
+              ) : (
+                <div className={styles.statTrendPlaceholder}></div>
+              )}
             </div>
           </div>
-        </div>
-
-        {/* Total Cost Card */}
-        <div className={styles.statCard}>
-          <div className={styles.statHeader}>
-            <span className={styles.statIcon}>💰</span>
-            <span className={styles.statLabel}>{t('usage_stats.total_cost')}</span>
-          </div>
-          <div className={styles.statValue}>
-            {loading ? '-' : hasPrices ? formatUsd(totalCost) : '--'}
-          </div>
-          {!hasPrices && (
-            <div className={styles.statMeta}>
-              <span className={styles.statHint}>{t('usage_stats.cost_need_price')}</span>
-            </div>
-          )}
-        </div>
+        ))}
       </div>
 
       {/* Chart Line Selection */}

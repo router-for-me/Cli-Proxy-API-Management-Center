@@ -72,9 +72,4 @@ export const configApi = {
    * WebSocket 鉴权开关
    */
   updateWsAuth: (enabled: boolean) => apiClient.put('/ws-auth', { value: enabled }),
-
-  /**
-   * 重载配置
-   */
-  reloadConfig: () => apiClient.post('/config/reload')
 };

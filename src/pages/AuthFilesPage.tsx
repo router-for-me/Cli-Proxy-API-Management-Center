@@ -40,6 +40,17 @@ export function AuthFilesPage() {
 
   const disableControls = connectionStatus !== 'connected';
 
+  const formatModified = (item: AuthFileItem): string => {
+    const raw = (item as any).modtime ?? item.modified;
+    if (!raw) return t('auth_files.file_modified');
+    const asNumber = Number(raw);
+    const date =
+      Number.isFinite(asNumber) && !Number.isNaN(asNumber)
+        ? new Date(asNumber < 1e12 ? asNumber * 1000 : asNumber)
+        : new Date(String(raw));
+    return Number.isNaN(date.getTime()) ? t('auth_files.file_modified') : date.toLocaleString();
+  };
+
   const loadFiles = async () => {
     setLoading(true);
     setError('');
@@ -134,7 +145,7 @@ export function AuthFilesPage() {
 
   const handleDownload = async (name: string) => {
     try {
-      const response = await apiClient.getRaw(`/auth-files/${encodeURIComponent(name)}`, {
+      const response = await apiClient.getRaw(`/auth-files/download?name=${encodeURIComponent(name)}`, {
         responseType: 'blob'
       });
       const blob = new Blob([response.data]);
@@ -298,7 +309,7 @@ export function AuthFilesPage() {
                 </div>
                 <div className="cell">{item.size ? formatFileSize(item.size) : '-'}</div>
                 <div className="cell">
-                  {item.modified ? new Date(item.modified).toLocaleString() : t('auth_files.file_modified')}
+                  {formatModified(item)}
                 </div>
                 <div className="cell">
                   <div className="item-actions">

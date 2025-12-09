@@ -17,8 +17,13 @@ export interface OAuthStartResponse {
   state?: string;
 }
 
+const WEBUI_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'iflow'];
+
 export const oauthApi = {
-  startAuth: (provider: OAuthProvider) => apiClient.get<OAuthStartResponse>(`/${provider}-auth-url`, { params: { is_webui: 1 } }),
+  startAuth: (provider: OAuthProvider) =>
+    apiClient.get<OAuthStartResponse>(`/${provider}-auth-url`, {
+      params: WEBUI_SUPPORTED.includes(provider) ? { is_webui: true } : undefined
+    }),
 
   getAuthStatus: (state: string) =>
     apiClient.get<{ status: 'ok' | 'wait' | 'error'; error?: string }>(`/get-auth-status`, {

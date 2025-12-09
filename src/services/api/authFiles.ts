@@ -19,7 +19,11 @@ export const authFilesApi = {
   deleteAll: () => apiClient.delete('/auth-files', { params: { all: true } }),
 
   // OAuth 排除模型
-  getOauthExcludedModels: () => apiClient.get('/oauth-excluded-models'),
+  async getOauthExcludedModels(): Promise<Record<string, string[]>> {
+    const data = await apiClient.get('/oauth-excluded-models');
+    const payload = (data && (data['oauth-excluded-models'] ?? data.items ?? data)) as any;
+    return payload && typeof payload === 'object' ? payload : {};
+  },
 
   saveOauthExcludedModels: (provider: string, models: string[]) =>
     apiClient.patch('/oauth-excluded-models', { provider, models }),

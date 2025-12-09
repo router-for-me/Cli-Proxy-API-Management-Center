@@ -1,9 +1,15 @@
 @use './variables.scss' as *;
 
+:root {
+  --header-height: 64px;
+}
+
 .app-shell {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
@@ -183,8 +189,13 @@
   display: flex;
   flex: 1;
   min-height: 0;
+  height: calc(100vh - var(--header-height));
   overflow: hidden;
   position: relative;
+
+  @supports (height: 100dvh) {
+    height: calc(100dvh - var(--header-height));
+  }
 }
 
 .sidebar {
@@ -198,7 +209,7 @@
   transition: width $transition-normal, transform $transition-normal;
   overflow-y: auto;
   flex-shrink: 0;
-  height: calc(100vh - 57px); // 减去顶栏高度
+  height: 100%;
 
   &.collapsed {
     width: 60px;
@@ -265,7 +276,7 @@
     position: fixed;
     z-index: $z-dropdown;
     left: 0;
-    top: 56px;
+    top: var(--header-height);
     bottom: 0;
     transform: translateX(-100%);
     box-shadow: $shadow-lg;
@@ -282,7 +293,7 @@
   flex-direction: column;
   min-width: 0;
   overflow-y: auto;
-  height: calc(100vh - 57px); // 减去顶栏高度
+  height: 100%;
 }
 
 .main-content {
