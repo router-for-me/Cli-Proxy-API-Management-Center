@@ -5,7 +5,21 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: 16px;
+
+  // 覆盖Card组件样式 (80%比例)
+  :global(.card) {
+    padding: 12px;
+    border-radius: $radius-md;
+  }
+
+  :global(.card-header) {
+    margin-bottom: 10px;
+
+    .title {
+      font-size: 14px;
+    }
+  }
 }
 
 .header {
@@ -13,37 +27,37 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: $spacing-md;
+  gap: 10px;
 }
 
 .pageTitle {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
 }
 
 .errorBox {
-  padding: $spacing-md;
+  padding: 10px;
   background-color: rgba(239, 68, 68, 0.1);
   border: 1px solid var(--danger-color);
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
   color: var(--danger-color);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .hint {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 12px;
   text-align: center;
-  padding: $spacing-lg;
+  padding: 16px;
 }
 
-// Stats Grid
+// Stats Grid - 五个卡片并排显示 (80%比例)
 .statsGrid {
   display: grid;
-  gap: $spacing-md;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 6px;
+  grid-template-columns: repeat(5, 1fr);
 
   @include tablet {
     grid-template-columns: repeat(3, 1fr);
@@ -55,14 +69,14 @@
 }
 
 .statCard {
-  padding: $spacing-lg;
+  padding: 12px;
   background-color: var(--bg-primary);
-  border-radius: $radius-lg;
+  border-radius: $radius-md;
   border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
-  min-height: 200px;
+  gap: 4px;
+  min-height: 130px;
   box-shadow: $shadow-sm;
   transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
   overflow: hidden;
@@ -78,24 +92,25 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: $spacing-sm;
+  gap: 4px;
 }
 
 .statLabelGroup {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .statIconBadge {
-  width: 40px;
-  height: 40px;
-  border-radius: $radius-md;
+  width: 26px;
+  height: 26px;
+  border-radius: $radius-sm;
   display: grid;
   place-items: center;
   color: #fff;
-  font-size: 18px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
 }
 
 .statHeader {
@@ -109,7 +124,7 @@
 }
 
 .statLabel {
-  font-size: 13px;
+  font-size: 10px;
   color: var(--text-secondary);
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -117,7 +132,7 @@
 }
 
 .statValue {
-  font-size: 30px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
@@ -167,20 +182,20 @@
 .statMetaRow {
   display: flex;
   flex-wrap: wrap;
-  gap: $spacing-sm;
-  font-size: 12px;
+  gap: 3px;
+  font-size: 9px;
   color: var(--text-secondary);
 }
 
 .statMetaItem {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
 }
 
 .statMetaDot {
-  width: 8px;
-  height: 8px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background-color: var(--text-secondary);
 }
@@ -192,9 +207,9 @@
 .statTrend {
   margin-top: auto;
   background: var(--bg-secondary, #f6f8fb);
-  border-radius: $radius-md;
-  padding: $spacing-xs $spacing-sm;
-  height: 72px;
+  border-radius: $radius-sm;
+  padding: 3px;
+  height: 40px;
   border: 1px solid var(--border-color);
 }
 
@@ -215,16 +230,16 @@
   font-style: italic;
 }
 
-// API List
+// API List (80%比例)
 .apiList {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  gap: 6px;
 }
 
 .apiItem {
   background-color: var(--bg-secondary);
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
   border: 1px solid var(--border-color);
   overflow: hidden;
 }
@@ -233,7 +248,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: $spacing-md;
+  padding: 10px;
   cursor: pointer;
   transition: background-color 0.15s ease;
 
@@ -245,7 +260,7 @@
 .apiInfo {
   display: flex;
   flex-direction: column;
-  gap: $spacing-xs;
+  gap: 3px;
   min-width: 0;
   flex: 1;
 }
@@ -253,53 +268,53 @@
 .apiEndpoint {
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 12px;
   word-break: break-all;
 }
 
 .apiStats {
   display: flex;
   flex-wrap: wrap;
-  gap: $spacing-xs;
+  gap: 3px;
 }
 
 .apiBadge {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--text-secondary);
   background-color: var(--bg-tertiary);
-  padding: 2px 8px;
+  padding: 1px 6px;
   border-radius: $radius-sm;
 }
 
 .expandIcon {
   color: var(--text-secondary);
-  font-size: 12px;
-  margin-left: $spacing-sm;
+  font-size: 10px;
+  margin-left: 6px;
 }
 
 .apiModels {
-  padding: $spacing-md;
+  padding: 10px;
   padding-top: 0;
   display: flex;
   flex-direction: column;
-  gap: $spacing-xs;
+  gap: 3px;
   border-top: 1px solid var(--border-color);
   margin-top: 0;
-  padding-top: $spacing-md;
+  padding-top: 10px;
 }
 
 .modelRow {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: $spacing-md;
-  padding: $spacing-xs $spacing-sm;
+  gap: 10px;
+  padding: 3px 6px;
   background-color: var(--bg-primary);
   border-radius: $radius-sm;
-  font-size: 13px;
+  font-size: 11px;
 
   @include mobile {
     grid-template-columns: 1fr;
-    gap: $spacing-xs;
+    gap: 3px;
   }
 }
 
@@ -318,7 +333,7 @@
   }
 }
 
-// Table
+// Table (80%比例)
 .tableWrapper {
   overflow-x: auto;
 }
@@ -326,10 +341,10 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 11px;
 
   th, td {
-    padding: $spacing-sm $spacing-md;
+    padding: 6px 10px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
   }
@@ -352,27 +367,27 @@
 
 .modelCell {
   font-weight: 500;
-  max-width: 300px;
+  max-width: 240px;
   word-break: break-all;
 }
 
-// Pricing Section
+// Pricing Section (80%比例)
 .pricingSection {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: 16px;
 }
 
 .priceForm {
-  padding: $spacing-md;
+  padding: 10px;
   background-color: var(--bg-secondary);
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
   border: 1px solid var(--border-color);
 }
 
 .formRow {
   display: flex;
-  gap: $spacing-md;
+  gap: 10px;
   align-items: flex-end;
   flex-wrap: wrap;
 
@@ -385,24 +400,24 @@
 .formField {
   display: flex;
   flex-direction: column;
-  gap: $spacing-xs;
+  gap: 3px;
   flex: 1;
-  min-width: 150px;
+  min-width: 120px;
 
   label {
-    font-size: 12px;
+    font-size: 10px;
     color: var(--text-secondary);
     font-weight: 500;
   }
 }
 
 .select {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid var(--border-color);
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 11px;
   cursor: pointer;
 
   &:focus {
@@ -414,11 +429,11 @@
 .pricesList {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: 10px;
 }
 
 .pricesTitle {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
@@ -427,18 +442,18 @@
 .pricesGrid {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  gap: 6px;
 }
 
 .priceItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: $spacing-md;
+  padding: 10px;
   background-color: var(--bg-secondary);
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
   border: 1px solid var(--border-color);
-  gap: $spacing-md;
+  gap: 10px;
 
   @include mobile {
     flex-direction: column;
@@ -449,7 +464,7 @@
 .priceInfo {
   display: flex;
   flex-direction: column;
-  gap: $spacing-xs;
+  gap: 3px;
   min-width: 0;
   flex: 1;
 }
@@ -457,40 +472,40 @@
 .priceModel {
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 11px;
   word-break: break-all;
 }
 
 .priceMeta {
   display: flex;
-  gap: $spacing-md;
-  font-size: 12px;
+  gap: 10px;
+  font-size: 10px;
   color: var(--text-secondary);
 
   @include mobile {
     flex-direction: column;
-    gap: $spacing-xs;
+    gap: 3px;
   }
 }
 
 .priceActions {
   display: flex;
-  gap: $spacing-xs;
+  gap: 3px;
   flex-shrink: 0;
 }
 
-// Chart Section (for future use)
+// Chart Section (80%比例)
 .chartSection {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: 10px;
 }
 
 .chartControls {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: $spacing-md;
+  gap: 10px;
 
   @include mobile {
     flex-direction: column;
@@ -499,25 +514,25 @@
 }
 
 .chartWrapper {
-  padding: $spacing-lg;
+  padding: 16px;
   background-color: var(--bg-primary);
-  border-radius: $radius-lg;
+  border-radius: $radius-md;
   border: 1px solid var(--border-color);
-  min-height: 300px;
-  height: 300px;
+  min-height: 240px;
+  height: 240px;
 }
 
 .periodButtons {
   display: flex;
-  gap: $spacing-xs;
+  gap: 3px;
 }
 
-// Chart Line Controls
+// Chart Line Controls (80%比例)
 .chartLineControls {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: $spacing-lg;
+  gap: 16px;
   flex-wrap: wrap;
 
   @include mobile {
@@ -528,14 +543,14 @@
 .chartLineList {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  gap: 6px;
   flex: 1;
 }
 
 .chartLineItem {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
+  gap: 6px;
   flex-wrap: wrap;
 
   @include mobile {
@@ -545,27 +560,27 @@
 }
 
 .chartLineLabel {
-  font-size: 14px;
+  font-size: 11px;
   color: var(--text-secondary);
-  min-width: 60px;
+  min-width: 48px;
 }
 
 .chartLineActions {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .chartLineCount {
-  font-size: 14px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-weight: 500;
 }
 
 .chartLineHint {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--text-tertiary);
-  margin: $spacing-sm 0 0 0;
+  margin: 6px 0 0 0;
   font-style: italic;
 }

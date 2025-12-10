@@ -37,6 +37,29 @@
     align-items: center;
     gap: $spacing-sm;
     min-width: 0;
+    flex: 0 1 auto;
+
+    .brand-logo {
+      height: 32px;
+      width: 32px;
+      object-fit: contain;
+      flex-shrink: 0;
+      border-radius: $radius-sm;
+    }
+  }
+
+  .right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    min-width: 0;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+
+    @media (max-width: $breakpoint-mobile) {
+      flex: 0 1 auto;
+      gap: $spacing-sm;
+    }
   }
 
   .sidebar-toggle-header {
@@ -165,6 +188,13 @@
     gap: $spacing-sm;
     color: var(--text-secondary);
     min-width: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+
+    .status-badge {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
 
     .base {
       font-weight: 600;
@@ -172,6 +202,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      min-width: 80px;
     }
 
     @media (max-width: $breakpoint-mobile) {

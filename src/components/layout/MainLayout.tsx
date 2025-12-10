@@ -2,6 +2,7 @@ import { ReactNode, SVGProps, useCallback, useEffect, useLayoutEffect, useMemo, 
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
+import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import { useAuthStore, useConfigStore, useLanguageStore, useNotificationStore, useThemeStore } from '@/stores';
 import { versionApi } from '@/services/api';
 import { isLocalhost } from '@/utils/connection';
@@ -281,6 +282,7 @@ export function MainLayout() {
           >
             {sidebarCollapsed ? '»' : '«'}
           </button>
+          <img src={INLINE_LOGO_JPEG} alt="CPAMC logo" className="brand-logo" />
           <div
             className={`brand-header ${brandExpanded ? 'expanded' : 'collapsed'}`}
             onClick={handleBrandClick}
@@ -292,18 +294,20 @@ export function MainLayout() {
           <Button className="mobile-menu-btn" variant="ghost" size="sm" onClick={() => setSidebarOpen((prev) => !prev)}>
             ☰
           </Button>
+        </div>
+
+        <div className="right">
           <div className="connection">
-              <span className={`status-badge ${statusClass}`}>
-                {t(
-                  connectionStatus === 'connected'
-                    ? 'common.connected_status'
-                    : connectionStatus === 'connecting'
-                      ? 'common.connecting_status'
-                      : 'common.disconnected_status'
-                )}
-              </span>
-              <span className="base">{apiBase || '-'}</span>
-            </div>
+            <span className={`status-badge ${statusClass}`}>
+              {t(
+                connectionStatus === 'connected'
+                  ? 'common.connected_status'
+                  : connectionStatus === 'connecting'
+                    ? 'common.connecting_status'
+                    : 'common.disconnected_status'
+              )}
+            </span>
+            <span className="base">{apiBase || '-'}</span>
           </div>
 
           <div className="header-actions">
@@ -320,7 +324,8 @@ export function MainLayout() {
               {theme === 'dark' ? '☀' : '☾'}
             </Button>
           </div>
-        </header>
+        </div>
+      </header>
 
       <div className="main-body">
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
