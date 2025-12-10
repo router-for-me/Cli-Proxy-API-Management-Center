@@ -61,18 +61,40 @@
   gap: $spacing-md;
   flex-wrap: wrap;
   align-items: flex-end;
+
+  // 修复 Input 组件在 filterItem 中的嵌套样式
+  :global(.form-group) {
+    margin: 0;
+  }
+
+  :global(.input) {
+    height: 38px;
+    box-sizing: border-box;
+  }
 }
 
 .filterItem {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 120px;
 
   label {
     font-size: 12px;
     color: var(--text-secondary);
     font-weight: 500;
+    white-space: nowrap;
+  }
+
+  // 搜索输入框需要更宽以显示完整的 placeholder
+  &:first-child {
+    min-width: 220px;
+    flex: 1;
+    max-width: 320px;
+  }
+
+  // 其他 filterItem 保持较小的宽度
+  &:not(:first-child) {
+    min-width: auto;
   }
 }
 
@@ -84,6 +106,8 @@
   color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
+  height: 38px;
+  box-sizing: border-box;
 
   &:focus {
     outline: none;
@@ -98,6 +122,10 @@
   font-size: 13px;
   color: var(--text-secondary);
   white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
 // 卡片网格
