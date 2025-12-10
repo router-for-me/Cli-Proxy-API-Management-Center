@@ -1,58 +1,349 @@
+@use '../styles/variables' as *;
+@use '../styles/mixins' as *;
+
 .container {
-  width: 100%;
-}
-
-.pageTitle {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 $spacing-md 0;
-}
-
-.description {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0 0 $spacing-xl 0;
-}
-
-.content {
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
 }
 
-.controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: $spacing-md;
-
-  @include mobile {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-
-.filters {
+.headerActions {
   display: flex;
   gap: $spacing-sm;
   flex-wrap: wrap;
 }
 
+.errorBox {
+  padding: $spacing-md;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--danger-color);
+  border-radius: $radius-md;
+  color: var(--danger-color);
+  font-size: 14px;
+  margin-bottom: $spacing-md;
+}
+
+// 筛选区域
+.filterSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.filterTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.filterTag {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: $shadow-sm;
+  }
+}
+
+.filterTagActive {
+  font-weight: 600;
+}
+
+.filterControls {
+  display: flex;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.filterItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+
+  label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+}
+
+.pageSizeSelect {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+}
+
+.statsInfo {
+  padding: 8px 12px;
+  background-color: var(--bg-secondary);
+  border-radius: $radius-md;
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+// 卡片网格
 .fileGrid {
   display: grid;
   gap: $spacing-md;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+
+  @include tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
   @include mobile {
     grid-template-columns: 1fr;
   }
 }
 
+// 单个认证文件卡片
+.fileCard {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+    border-color: rgba(37, 99, 235, 0.2);
+  }
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  min-height: 28px;
+}
+
+.typeBadge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.cardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: $spacing-xs 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cardStats {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-sm 0;
+}
+
+.statSuccess {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--success-color, #22c55e);
+  font-weight: 500;
+}
+
+.statFailure {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--danger-color, #ef4444);
+  font-weight: 500;
+}
+
+.statIcon {
+  font-style: normal;
+  font-size: 12px;
+}
+
+.cardActions {
+  display: flex;
+  gap: $spacing-xs;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: $spacing-sm;
+}
+
+.actionIcon {
+  font-style: normal;
+  font-size: 14px;
+}
+
+.virtualBadge {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+  padding: 4px 10px;
+  border-radius: $radius-sm;
+  font-style: italic;
+}
+
+// 分页
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: $spacing-md;
   margin-top: $spacing-lg;
+  padding-top: $spacing-md;
+  border-top: 1px solid var(--border-color);
+}
+
+.pageInfo {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: $spacing-xs $spacing-md;
+  background-color: var(--bg-secondary);
+  border-radius: $radius-md;
+}
+
+// OAuth 排除列表
+.excludedList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.excludedItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md;
+  background-color: var(--bg-secondary);
+  border-radius: $radius-md;
+  border: 1px solid var(--border-color);
+  gap: $spacing-md;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.excludedInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.excludedProvider {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.excludedModels {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.excludedActions {
+  display: flex;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+}
+
+// 详情弹窗
+.detailContent {
+  max-height: 400px;
+  overflow: auto;
+}
+
+.jsonContent {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  font-family: monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+// 表单
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  margin-top: $spacing-md;
+
+  label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+}
+
+.textarea {
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: monospace;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-style: italic;
+  text-align: center;
+  padding: $spacing-lg;
 }
