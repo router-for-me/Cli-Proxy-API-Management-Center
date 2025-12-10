@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useNotificationStore } from '@/stores';
 import { oauthApi, type OAuthProvider } from '@/services/api/oauth';
-import { isLocalhost } from '@/utils/connection';
 
 interface ProviderState {
   url?: string;
@@ -28,8 +27,6 @@ export function OAuthPage() {
   const { showNotification } = useNotificationStore();
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
   const timers = useRef<Record<string, number>>({});
-
-  const isLocal = useMemo(() => isLocalhost(window.location.hostname), []);
 
   useEffect(() => {
     return () => {
@@ -105,10 +102,6 @@ export function OAuthPage() {
       showNotification('Copy failed', 'error');
     }
   };
-
-  if (!isLocal) {
-    return <Card title="OAuth">OAuth is only available on localhost.</Card>;
-  }
 
   return (
     <div className="stack">
