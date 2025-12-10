@@ -1,11 +1,10 @@
-import { ReactNode, SVGProps, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, SVGProps, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import { useAuthStore, useConfigStore, useLanguageStore, useNotificationStore, useThemeStore } from '@/stores';
 import { versionApi } from '@/services/api';
-import { isLocalhost } from '@/utils/connection';
 
 const iconProps: SVGProps<SVGSVGElement> = {
   width: 18,
@@ -147,8 +146,6 @@ export function MainLayout() {
   const brandCollapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
 
-  const isLocal = useMemo(() => isLocalhost(window.location.hostname), []);
-
   const fullBrandName = 'CLI Proxy API Management Center';
   const abbrBrandName = t('title.abbr');
 
@@ -225,7 +222,7 @@ export function MainLayout() {
     { path: '/api-keys', label: t('nav.api_keys'), icon: sidebarIcons.apiKeys },
     { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
-    ...(isLocal ? [{ path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth }] : []),
+    { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
     { path: '/usage', label: t('nav.usage_stats'), icon: sidebarIcons.usage },
     { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
     ...(config?.loggingToFile ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }] : []),

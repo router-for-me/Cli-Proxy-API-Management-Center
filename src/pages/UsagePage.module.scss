@@ -53,11 +53,11 @@
   padding: 16px;
 }
 
-// Stats Grid - 五个卡片并排显示 (80%比例)
+// Stats Grid - 五个卡片并排显示 (88%比例，放大10%)
 .statsGrid {
   display: grid;
-  gap: 6px;
-  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 
   @include tablet {
     grid-template-columns: repeat(3, 1fr);
@@ -69,14 +69,14 @@
 }
 
 .statCard {
-  padding: 12px;
+  padding: 13px;
   background-color: var(--bg-primary);
   border-radius: $radius-md;
   border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-height: 130px;
+  gap: 5px;
+  min-height: 143px;
   box-shadow: $shadow-sm;
   transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
   overflow: hidden;
@@ -92,7 +92,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 4px;
+  gap: 5px;
 }
 
 .statLabelGroup {
@@ -102,13 +102,13 @@
 }
 
 .statIconBadge {
-  width: 26px;
-  height: 26px;
+  width: 29px;
+  height: 29px;
   border-radius: $radius-sm;
   display: grid;
   place-items: center;
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
 }
@@ -124,7 +124,7 @@
 }
 
 .statLabel {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -132,7 +132,7 @@
 }
 
 .statValue {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
@@ -182,20 +182,20 @@
 .statMetaRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
-  font-size: 9px;
+  gap: 4px;
+  font-size: 10px;
   color: var(--text-secondary);
 }
 
 .statMetaItem {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 .statMetaDot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background-color: var(--text-secondary);
 }
@@ -208,8 +208,8 @@
   margin-top: auto;
   background: var(--bg-secondary, #f6f8fb);
   border-radius: $radius-sm;
-  padding: 3px;
-  height: 40px;
+  padding: 4px;
+  height: 44px;
   border: 1px solid var(--border-color);
 }
 
@@ -409,20 +409,37 @@
     color: var(--text-secondary);
     font-weight: 500;
   }
+
+  // 确保 Input 组件的 form-group 包装器不影响布局
+  :global(.form-group) {
+    margin: 0;
+
+    > label {
+      display: none; // 隐藏 Input 自带的 label，使用外层的
+    }
+  }
+
+  :global(.input) {
+    height: 40px;
+    box-sizing: border-box;
+  }
 }
 
 .select {
-  padding: 6px 10px;
+  padding: 10px 12px;
   border: 1px solid var(--border-color);
-  border-radius: $radius-sm;
+  border-radius: $radius-md;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-size: 11px;
+  font-size: 14px;
   cursor: pointer;
+  height: 40px;
+  box-sizing: border-box;
 
   &:focus {
     outline: none;
     border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
   }
 }
 

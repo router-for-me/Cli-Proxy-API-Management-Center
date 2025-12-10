@@ -63,7 +63,7 @@
   }
 
   .sidebar-toggle-header {
-    padding: $spacing-xs $spacing-sm;
+    padding: 0;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: $radius-md;
@@ -78,6 +78,7 @@
     width: 32px;
     height: 32px;
     flex-shrink: 0;
+    line-height: 1;
 
     &:hover {
       background: var(--bg-tertiary, var(--border-color));
