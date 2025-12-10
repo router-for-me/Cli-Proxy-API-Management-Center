@@ -431,7 +431,8 @@
     "iflow_cookie_result_email": "Account",
     "iflow_cookie_result_expired": "Expires At",
     "iflow_cookie_result_path": "Saved Path",
-    "iflow_cookie_result_type": "Type"
+    "iflow_cookie_result_type": "Type",
+    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost."
   },
   "usage_stats": {
     "title": "Usage Statistics",

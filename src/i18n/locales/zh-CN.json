@@ -431,7 +431,8 @@
     "iflow_cookie_result_email": "账号",
     "iflow_cookie_result_expired": "过期时间",
     "iflow_cookie_result_path": "保存路径",
-    "iflow_cookie_result_type": "类型"
+    "iflow_cookie_result_type": "类型",
+    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问"
   },
   "usage_stats": {
     "title": "使用统计",
