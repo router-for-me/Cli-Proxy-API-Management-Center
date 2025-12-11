@@ -488,12 +488,10 @@ export function AuthFilesPage() {
 
         <div className={styles.cardStats}>
           <span className={styles.statSuccess}>
-            <i className={styles.statIcon}>✓</i>
-            {t('stats.success')}: {fileStats.success}
+            {t('stats.success')}：{fileStats.success}次
           </span>
           <span className={styles.statFailure}>
-            <i className={styles.statIcon}>✗</i>
-            {t('stats.failure')}: {fileStats.failure}
+            {t('stats.failure')}：{fileStats.failure}次
           </span>
         </div>
 

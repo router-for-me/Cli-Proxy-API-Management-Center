@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -7,7 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
-import { providersApi } from '@/services/api';
+import { providersApi, usageApi } from '@/services/api';
 import type {
   GeminiKeyConfig,
   ProviderKeyConfig,
@@ -15,8 +15,10 @@ import type {
   ApiKeyEntry,
   ModelAlias
 } from '@/types';
+import type { KeyStats, KeyStatBucket } from '@/utils/usage';
 import { headersToEntries, buildHeaderObject, type HeaderEntry } from '@/utils/headers';
 import { maskApiKey } from '@/utils/format';
+import styles from './AiProvidersPage.module.scss';
 
 type ProviderModal =
   | { type: 'gemini'; index: number | null }
@@ -64,6 +66,11 @@ const parseExcludedModels = (text: string): string[] =>
 
 const excludedModelsToText = (models?: string[]) => (Array.isArray(models) ? models.join('\n') : '');
 
+// 根据 auth_index 获取统计数据
+const getStatsByAuthIndex = (authIndex: string, keyStats: KeyStats): KeyStatBucket => {
+  return keyStats.byAuthIndex?.[authIndex] ?? { success: 0, failure: 0 };
+};
+
 const buildApiKeyEntry = (input?: Partial<ApiKeyEntry>): ApiKeyEntry => ({
   apiKey: input?.apiKey ?? '',
   proxyUrl: input?.proxyUrl ?? '',
@@ -87,6 +94,7 @@ export function AiProvidersPage() {
   const [codexConfigs, setCodexConfigs] = useState<ProviderKeyConfig[]>([]);
   const [claudeConfigs, setClaudeConfigs] = useState<ProviderKeyConfig[]>([]);
   const [openaiProviders, setOpenaiProviders] = useState<OpenAIProviderConfig[]>([]);
+  const [keyStats, setKeyStats] = useState<KeyStats>({ bySource: {}, byAuthIndex: {} });
 
   const [modal, setModal] = useState<ProviderModal | null>(null);
 
@@ -116,6 +124,16 @@ export function AiProvidersPage() {
 
   const disableControls = useMemo(() => connectionStatus !== 'connected', [connectionStatus]);
 
+  // 加载 key 统计
+  const loadKeyStats = useCallback(async () => {
+    try {
+      const stats = await usageApi.getKeyStats();
+      setKeyStats(stats);
+    } catch {
+      // 静默失败
+    }
+  }, []);
+
   const loadConfigs = async () => {
     setLoading(true);
     setError('');
@@ -134,7 +152,8 @@ export function AiProvidersPage() {
 
   useEffect(() => {
     loadConfigs();
-  }, []);
+    loadKeyStats();
+  }, [loadKeyStats]);
 
   useEffect(() => {
     if (config?.geminiApiKeys) setGeminiKeys(config.geminiApiKeys);

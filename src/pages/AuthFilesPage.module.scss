@@ -198,31 +198,40 @@
 
 .cardStats {
   display: flex;
-  gap: $spacing-md;
+  gap: $spacing-sm;
   padding: $spacing-sm 0;
 }
 
 .statSuccess {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--success-color, #22c55e);
-  font-weight: 500;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #22c55e;
+  padding: 4px 12px;
+  border-radius: 14px;
+  white-space: nowrap;
 }
 
 .statFailure {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--danger-color, #ef4444);
-  font-weight: 500;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #ef4444;
+  padding: 4px 12px;
+  border-radius: 14px;
+  white-space: nowrap;
 }
 
 .statIcon {
   font-style: normal;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1;
 }
 
 .cardActions {
