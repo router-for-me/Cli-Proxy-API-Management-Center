@@ -66,9 +66,37 @@ const parseExcludedModels = (text: string): string[] =>
 
 const excludedModelsToText = (models?: string[]) => (Array.isArray(models) ? models.join('\n') : '');
 
-// 根据 auth_index 获取统计数据
-const getStatsByAuthIndex = (authIndex: string, keyStats: KeyStats): KeyStatBucket => {
-  return keyStats.byAuthIndex?.[authIndex] ?? { success: 0, failure: 0 };
+// 根据 source (apiKey) 获取统计数据 - 与旧版逻辑一致
+const getStatsBySource = (
+  apiKey: string,
+  keyStats: KeyStats,
+  maskFn: (key: string) => string
+): KeyStatBucket => {
+  const bySource = keyStats.bySource ?? {};
+  const masked = maskFn(apiKey);
+  return bySource[apiKey] || bySource[masked] || { success: 0, failure: 0 };
+};
+
+// 对于 OpenAI 提供商，汇总所有 apiKeyEntries 的统计 - 与旧版逻辑一致
+const getOpenAIProviderStats = (
+  apiKeyEntries: ApiKeyEntry[] | undefined,
+  keyStats: KeyStats,
+  maskFn: (key: string) => string
+): KeyStatBucket => {
+  const bySource = keyStats.bySource ?? {};
+  let totalSuccess = 0;
+  let totalFailure = 0;
+
+  (apiKeyEntries || []).forEach((entry) => {
+    const key = entry?.apiKey || '';
+    if (!key) return;
+    const masked = maskFn(key);
+    const stats = bySource[key] || bySource[masked] || { success: 0, failure: 0 };
+    totalSuccess += stats.success;
+    totalFailure += stats.failure;
+  });
+
+  return { success: totalSuccess, failure: totalFailure };
 };
 
 const buildApiKeyEntry = (input?: Partial<ApiKeyEntry>): ApiKeyEntry => ({
@@ -505,20 +533,31 @@ export function AiProvidersPage() {
         {renderList<GeminiKeyConfig>(
           geminiKeys,
           (item) => item.apiKey,
-          (item, index) => (
-            <Fragment>
-              <div className="item-title">
-                {t('ai_providers.gemini_item_title')} #{index + 1}
-              </div>
-              <div className="item-subtitle">{maskApiKey(item.apiKey)}</div>
-              {item.baseUrl && <div className="pill">{item.baseUrl}</div>}
-              {item.excludedModels?.length ? (
-                <div className="item-subtitle">
-                  {t('ai_providers.excluded_models_count', { count: item.excludedModels.length })}
+          (item, index) => {
+            const stats = getStatsBySource(item.apiKey, keyStats, maskApiKey);
+            return (
+              <Fragment>
+                <div className="item-title">
+                  {t('ai_providers.gemini_item_title')} #{index + 1}
                 </div>
-              ) : null}
-            </Fragment>
-          ),
+                <div className="item-subtitle">{maskApiKey(item.apiKey)}</div>
+                {item.baseUrl && <div className="pill">{item.baseUrl}</div>}
+                {item.excludedModels?.length ? (
+                  <div className="item-subtitle">
+                    {t('ai_providers.excluded_models_count', { count: item.excludedModels.length })}
+                  </div>
+                ) : null}
+                <div className={styles.cardStats}>
+                  <span className={styles.statSuccess}>
+                    {t('stats.success')}：{stats.success}次
+                  </span>
+                  <span className={styles.statFailure}>
+                    {t('stats.failure')}：{stats.failure}次
+                  </span>
+                </div>
+              </Fragment>
+            );
+          },
           (index) => openGeminiModal(index),
           (item) => deleteGemini(item.apiKey),
           t('ai_providers.gemini_add_button')
@@ -536,13 +575,24 @@ export function AiProvidersPage() {
         {renderList<ProviderKeyConfig>(
           codexConfigs,
           (item) => item.apiKey,
-          (item) => (
-            <Fragment>
-              <div className="item-title">{item.baseUrl || t('ai_providers.codex_item_title')}</div>
-              <div className="item-subtitle">{maskApiKey(item.apiKey)}</div>
-              {item.proxyUrl && <div className="pill">{item.proxyUrl}</div>}
-            </Fragment>
-          ),
+          (item, _index) => {
+            const stats = getStatsBySource(item.apiKey, keyStats, maskApiKey);
+            return (
+              <Fragment>
+                <div className="item-title">{item.baseUrl || t('ai_providers.codex_item_title')}</div>
+                <div className="item-subtitle">{maskApiKey(item.apiKey)}</div>
+                {item.proxyUrl && <div className="pill">{item.proxyUrl}</div>}
+                <div className={styles.cardStats}>
+                  <span className={styles.statSuccess}>
+                    {t('stats.success')}：{stats.success}次
+                  </span>
+                  <span className={styles.statFailure}>
+                    {t('stats.failure')}：{stats.failure}次
+                  </span>
+                </div>
+              </Fragment>
+            );
+          },
           (index) => openProviderModal('codex', index),
           (item) => deleteProviderEntry('codex', item.apiKey),
           t('ai_providers.codex_add_button')
@@ -560,18 +610,29 @@ export function AiProvidersPage() {
         {renderList<ProviderKeyConfig>(
           claudeConfigs,
           (item) => item.apiKey,
-          (item) => (
-            <Fragment>
-              <div className="item-title">{item.baseUrl || t('ai_providers.claude_item_title')}</div>
-              <div className="item-subtitle">{maskApiKey(item.apiKey)}</div>
-              {item.proxyUrl && <div className="pill">{item.proxyUrl}</div>}
-              {item.models?.length ? (
-                <div className="item-subtitle">
-                  {t('ai_providers.claude_models_count')}: {item.models.length}
+          (item, _index) => {
+            const stats = getStatsBySource(item.apiKey, keyStats, maskApiKey);
+            return (
+              <Fragment>
+                <div className="item-title">{item.baseUrl || t('ai_providers.claude_item_title')}</div>
+                <div className="item-subtitle">{maskApiKey(item.apiKey)}</div>
+                {item.proxyUrl && <div className="pill">{item.proxyUrl}</div>}
+                {item.models?.length ? (
+                  <div className="item-subtitle">
+                    {t('ai_providers.claude_models_count')}: {item.models.length}
+                  </div>
+                ) : null}
+                <div className={styles.cardStats}>
+                  <span className={styles.statSuccess}>
+                    {t('stats.success')}：{stats.success}次
+                  </span>
+                  <span className={styles.statFailure}>
+                    {t('stats.failure')}：{stats.failure}次
+                  </span>
                 </div>
-              ) : null}
-            </Fragment>
-          ),
+              </Fragment>
+            );
+          },
           (index) => openProviderModal('claude', index),
           (item) => deleteProviderEntry('claude', item.apiKey),
           t('ai_providers.claude_add_button')
@@ -589,19 +650,30 @@ export function AiProvidersPage() {
         {renderList<OpenAIProviderConfig>(
           openaiProviders,
           (item) => item.name,
-          (item) => (
-            <Fragment>
-              <div className="item-title">{item.name}</div>
-              <div className="item-subtitle">{item.baseUrl}</div>
-              <div className="pill">
-                {t('ai_providers.openai_keys_count')}: {item.apiKeyEntries?.length || 0}
-              </div>
-              <div className="pill">
-                {t('ai_providers.openai_models_count')}: {item.models?.length || 0}
-              </div>
-              {item.testModel && <div className="pill">{item.testModel}</div>}
-            </Fragment>
-          ),
+          (item, _index) => {
+            const stats = getOpenAIProviderStats(item.apiKeyEntries, keyStats, maskApiKey);
+            return (
+              <Fragment>
+                <div className="item-title">{item.name}</div>
+                <div className="item-subtitle">{item.baseUrl}</div>
+                <div className="pill">
+                  {t('ai_providers.openai_keys_count')}: {item.apiKeyEntries?.length || 0}
+                </div>
+                <div className="pill">
+                  {t('ai_providers.openai_models_count')}: {item.models?.length || 0}
+                </div>
+                {item.testModel && <div className="pill">{item.testModel}</div>}
+                <div className={styles.cardStats}>
+                  <span className={styles.statSuccess}>
+                    {t('stats.success')}：{stats.success}次
+                  </span>
+                  <span className={styles.statFailure}>
+                    {t('stats.failure')}：{stats.failure}次
+                  </span>
+                </div>
+              </Fragment>
+            );
+          },
           (index) => openOpenaiModal(index),
           (item) => deleteOpenai(item.name),
           t('ai_providers.openai_add_button')

@@ -1,3 +1,6 @@
+@use '../styles/variables' as *;
+@use '../styles/mixins' as *;
+
 .container {
   width: 100%;
 }
@@ -43,4 +46,38 @@
   @include mobile {
     grid-template-columns: 1fr;
   }
+}
+
+// 成功失败次数统计样式
+.cardStats {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0 0;
+  margin-top: 8px;
+}
+
+.statSuccess {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #22c55e;
+  padding: 4px 12px;
+  border-radius: 14px;
+  white-space: nowrap;
+}
+
+.statFailure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #ef4444;
+  padding: 4px 12px;
+  border-radius: 14px;
+  white-space: nowrap;
 }
