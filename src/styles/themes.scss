@@ -36,18 +36,18 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
-// 深色主题
+// 深色主题（纯黑）
 [data-theme='dark'] {
-  --bg-primary: #1f2937;
-  --bg-secondary: #111827;
-  --bg-tertiary: #374151;
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #000000;
+  --bg-tertiary: #171717;
 
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-  --text-tertiary: #9ca3af;
+  --text-primary: #fafafa;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #737373;
 
-  --border-color: #374151;
-  --border-hover: #4b5563;
+  --border-color: #262626;
+  --border-hover: #404040;
 
   --primary-color: #3b82f6;
   --primary-hover: #60a5fa;

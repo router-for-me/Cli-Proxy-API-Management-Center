@@ -135,6 +135,12 @@ textarea {
   border-radius: $radius-full;
   font-size: 13px;
   border: 1px solid var(--border-color);
+  margin-bottom: $spacing-md;
+
+  // 确保后续内容换行显示
+  + * {
+    display: block;
+  }
 
   &.success {
     color: $success-color;

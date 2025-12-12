@@ -29,6 +29,7 @@ export interface ProviderKeyConfig {
   proxyUrl?: string;
   headers?: Record<string, string>;
   models?: ModelAlias[];
+  excludedModels?: string[];
 }
 
 export interface OpenAIProviderConfig {

@@ -132,13 +132,15 @@ export function AiProvidersPage() {
     excludedModels: [],
     excludedText: ''
   });
-  const [providerForm, setProviderForm] = useState<ProviderKeyConfig & { modelEntries: ModelEntry[] }>({
+  const [providerForm, setProviderForm] = useState<ProviderKeyConfig & { modelEntries: ModelEntry[]; excludedText: string }>({
     apiKey: '',
     baseUrl: '',
     proxyUrl: '',
     headers: {},
     models: [],
-    modelEntries: [{ name: '', alias: '' }]
+    excludedModels: [],
+    modelEntries: [{ name: '', alias: '' }],
+    excludedText: ''
   });
   const [openaiForm, setOpenaiForm] = useState<OpenAIFormState>({
     name: '',
@@ -231,7 +233,9 @@ export function AiProvidersPage() {
       proxyUrl: '',
       headers: {},
       models: [],
-      modelEntries: [{ name: '', alias: '' }]
+      excludedModels: [],
+      modelEntries: [{ name: '', alias: '' }],
+      excludedText: ''
     });
     setOpenaiForm({
       name: '',
@@ -269,7 +273,8 @@ export function AiProvidersPage() {
       const entry = source[index];
       setProviderForm({
         ...entry,
-        modelEntries: modelsToEntries(entry?.models)
+        modelEntries: modelsToEntries(entry?.models),
+        excludedText: excludedModelsToText(entry?.excludedModels)
       });
     }
     setModal({ type, index });
@@ -558,7 +563,8 @@ export function AiProvidersPage() {
         baseUrl,
         proxyUrl: providerForm.proxyUrl?.trim() || undefined,
         headers: buildHeaderObject(headersToEntries(providerForm.headers as any)),
-        models: entriesToModels(providerForm.modelEntries)
+        models: entriesToModels(providerForm.modelEntries),
+        excludedModels: parseExcludedModels(providerForm.excludedText)
       };
 
       const source = type === 'codex' ? codexConfigs : claudeConfigs;
@@ -888,6 +894,21 @@ export function AiProvidersPage() {
                     ))}
                   </div>
                 )}
+                {/* 排除模型徽章 */}
+                {item.excludedModels?.length ? (
+                  <div className={styles.excludedModelsSection}>
+                    <div className={styles.excludedModelsLabel}>
+                      {t('ai_providers.excluded_models_count', { count: item.excludedModels.length })}
+                    </div>
+                    <div className={styles.modelTagList}>
+                      {item.excludedModels.map((model) => (
+                        <span key={model} className={`${styles.modelTag} ${styles.excludedModelTag}`}>
+                          <span className={styles.modelName}>{model}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
                 {/* 成功/失败统计 */}
                 <div className={styles.cardStats}>
                   <span className={`${styles.statPill} ${styles.statSuccess}`}>
@@ -968,6 +989,21 @@ export function AiProvidersPage() {
                         )}
                       </span>
                     ))}
+                  </div>
+                ) : null}
+                {/* 排除模型徽章 */}
+                {item.excludedModels?.length ? (
+                  <div className={styles.excludedModelsSection}>
+                    <div className={styles.excludedModelsLabel}>
+                      {t('ai_providers.excluded_models_count', { count: item.excludedModels.length })}
+                    </div>
+                    <div className={styles.modelTagList}>
+                      {item.excludedModels.map((model) => (
+                        <span key={model} className={`${styles.modelTag} ${styles.excludedModelTag}`}>
+                          <span className={styles.modelName}>{model}</span>
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
                 {/* 成功/失败统计 */}
@@ -1212,6 +1248,17 @@ export function AiProvidersPage() {
             aliasPlaceholder={t('common.model_alias_placeholder')}
             disabled={saving}
           />
+        </div>
+        <div className="form-group">
+          <label>{t('ai_providers.excluded_models_label')}</label>
+          <textarea
+            className="input"
+            placeholder={t('ai_providers.excluded_models_placeholder')}
+            value={providerForm.excludedText}
+            onChange={(e) => setProviderForm((prev) => ({ ...prev, excludedText: e.target.value }))}
+            rows={4}
+          />
+          <div className="hint">{t('ai_providers.excluded_models_hint')}</div>
         </div>
       </Modal>
 
