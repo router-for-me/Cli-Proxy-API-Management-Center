@@ -6,6 +6,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
@@ -545,30 +546,33 @@ export function AuthFilesPage() {
                 size="sm"
                 onClick={() => showDetails(item)}
                 className={styles.iconButton}
+                title={t('common.info', { defaultValue: '关于' })}
                 disabled={disableControls}
               >
-                <i className={styles.actionIcon}>ℹ</i>
+                <IconInfo className={styles.actionIcon} size={16} />
               </Button>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => handleDownload(item.name)}
                 className={styles.iconButton}
+                title={t('auth_files.download_button')}
                 disabled={disableControls}
               >
-                <i className={styles.actionIcon}>↓</i>
+                <IconDownload className={styles.actionIcon} size={16} />
               </Button>
               <Button
                 variant="danger"
                 size="sm"
                 onClick={() => handleDelete(item.name)}
                 className={styles.iconButton}
+                title={t('auth_files.delete_button')}
                 disabled={disableControls || deleting === item.name}
               >
                 {deleting === item.name ? (
                   <LoadingSpinner size={14} />
                 ) : (
-                  <i className={styles.actionIcon}>🗑</i>
+                  <IconTrash2 className={styles.actionIcon} size={16} />
                 )}
               </Button>
             </>

@@ -229,14 +229,26 @@ textarea {
   }
 
   .close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
     background: transparent;
     border: none;
     color: var(--text-secondary);
+    border-radius: $radius-md;
     cursor: pointer;
-    transition: color 0.15s ease;
+    transition: color 0.15s ease, background-color 0.15s ease;
+
+    svg {
+      display: block;
+    }
 
     &:hover {
       color: var(--text-primary);
+      background: var(--bg-secondary);
     }
   }
 }
@@ -353,12 +365,27 @@ textarea {
   }
 
   .modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    font-size: 20px;
     cursor: pointer;
-    padding: 4px;
+    border-radius: $radius-md;
+    transition: color 0.15s ease, background-color 0.15s ease;
+
+    svg {
+      display: block;
+    }
+
+    &:hover {
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+    }
   }
 }
 
@@ -401,6 +428,10 @@ textarea {
     display: grid;
     place-items: center;
     color: var(--text-secondary);
+
+    svg {
+      display: block;
+    }
   }
 
   .empty-title {

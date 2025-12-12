@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { Button } from './Button';
+import { IconX } from './icons';
 import type { ModelAlias } from '@/types';
 
 interface ModelEntry {
@@ -88,8 +89,10 @@ export function ModelInputList({
               size="sm"
               onClick={() => removeEntry(index)}
               disabled={disabled || currentEntries.length <= 1}
+              title="Remove"
+              aria-label="Remove"
             >
-              ✕
+              <IconX size={14} />
             </Button>
           </div>
         </Fragment>

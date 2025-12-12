@@ -2,97 +2,31 @@ import { ReactNode, SVGProps, useCallback, useEffect, useLayoutEffect, useRef, u
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
+import {
+  IconBot,
+  IconChartLine,
+  IconFileText,
+  IconInfo,
+  IconKey,
+  IconScrollText,
+  IconSettings,
+  IconShield,
+  IconSlidersHorizontal
+} from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import { useAuthStore, useConfigStore, useLanguageStore, useNotificationStore, useThemeStore } from '@/stores';
 import { versionApi } from '@/services/api';
 
-const iconProps: SVGProps<SVGSVGElement> = {
-  width: 18,
-  height: 18,
-  viewBox: '0 0 20 20',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.5,
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-  'aria-hidden': 'true',
-  focusable: 'false'
-};
-
 const sidebarIcons: Record<string, ReactNode> = {
-  settings: (
-    <svg {...iconProps}>
-      <path d="M4 6.5h12" />
-      <circle cx="9" cy="6.5" r="2" />
-      <path d="M4 10h12" />
-      <circle cx="7" cy="10" r="2" />
-      <path d="M4 13.5h12" />
-      <circle cx="12" cy="13.5" r="2" />
-    </svg>
-  ),
-  apiKeys: (
-    <svg {...iconProps}>
-      <circle cx="7.2" cy="10" r="2.4" />
-      <path d="M9.6 10h6" />
-      <path d="M12.8 10v2.4" />
-      <path d="M14.8 10v1.4" />
-    </svg>
-  ),
-  aiProviders: (
-    <svg {...iconProps}>
-      <circle cx="10" cy="5.2" r="2.2" />
-      <circle cx="6" cy="13.2" r="2" />
-      <circle cx="14" cy="13.2" r="2" />
-      <path d="M8.6 6.8 6.8 10.8" />
-      <path d="M11.4 6.8 13.2 10.8" />
-      <path d="M7.8 13.2h4.4" />
-    </svg>
-  ),
-  authFiles: (
-    <svg {...iconProps}>
-      <path d="M7 3.5h4.8L15 6.8V16H7Z" />
-      <path d="M11.8 3.5V7h3.2" />
-      <path d="m8.9 11.8 1.7 1.6 3.4-3.5" />
-    </svg>
-  ),
-  oauth: (
-    <svg {...iconProps}>
-      <path d="M10 3.5 15.2 5.6v3.6c0 3-2 5.8-5.2 7-3.2-1.2-5.2-4-5.2-7V5.6Z" />
-      <path d="M8.2 9.6h3.6" />
-      <path d="m9.6 8.2-1.4 1.4 1.4 1.4" />
-      <path d="m11.8 8.2 1.4 1.4-1.4 1.4" />
-    </svg>
-  ),
-  usage: (
-    <svg {...iconProps}>
-      <path d="M4 14.5h12" />
-      <path d="m6.2 11.3 3-3 2.4 2 2.9-3.7" />
-    </svg>
-  ),
-  config: (
-    <svg {...iconProps}>
-      <path d="M5.2 8 10 5.8l4.8 2.2L10 10.2Z" />
-      <path d="M5.2 12 10 9.8l4.8 2.2L10 14.2Z" />
-      <path d="M10 10.2v3.6" />
-    </svg>
-  ),
-  logs: (
-    <svg {...iconProps}>
-      <path d="M6.4 6h9" />
-      <path d="M6.4 10h9" />
-      <path d="M6.4 14h9" />
-      <circle cx="4.2" cy="6" r="0.9" />
-      <circle cx="4.2" cy="10" r="0.9" />
-      <circle cx="4.2" cy="14" r="0.9" />
-    </svg>
-  ),
-  system: (
-    <svg {...iconProps}>
-      <circle cx="10" cy="10" r="6.2" />
-      <path d="M10 8.8v3.6" />
-      <circle cx="10" cy="6.2" r="0.8" fill="currentColor" stroke="none" />
-    </svg>
-  )
+  settings: <IconSlidersHorizontal size={18} />,
+  apiKeys: <IconKey size={18} />,
+  aiProviders: <IconBot size={18} />,
+  authFiles: <IconFileText size={18} />,
+  oauth: <IconShield size={18} />,
+  usage: <IconChartLine size={18} />,
+  config: <IconSettings size={18} />,
+  logs: <IconScrollText size={18} />,
+  system: <IconInfo size={18} />
 };
 
 // Header action icons - smaller size for header buttons

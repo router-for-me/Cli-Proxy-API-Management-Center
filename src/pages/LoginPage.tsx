@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { IconEye, IconEyeOff } from '@/components/ui/icons';
 import { useAuthStore, useNotificationStore } from '@/stores';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 
@@ -121,8 +122,18 @@ export function LoginPage() {
               type="button"
               className="btn btn-ghost btn-sm"
               onClick={() => setShowKey((prev) => !prev)}
+              aria-label={
+                showKey
+                  ? t('login.hide_key', { defaultValue: '隐藏密钥' })
+                  : t('login.show_key', { defaultValue: '显示密钥' })
+              }
+              title={
+                showKey
+                  ? t('login.hide_key', { defaultValue: '隐藏密钥' })
+                  : t('login.show_key', { defaultValue: '显示密钥' })
+              }
             >
-              {showKey ? '🙈' : '👁️'}
+              {showKey ? <IconEyeOff size={16} /> : <IconEye size={16} />}
             </button>
           }
         />

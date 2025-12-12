@@ -15,6 +15,7 @@ import { Line } from 'react-chartjs-2';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { IconDiamond, IconDollarSign, IconSatellite, IconTimer, IconTrendingUp } from '@/components/ui/icons';
 import { usageApi } from '@/services/api/usage';
 import {
   formatTokensInMillions,
@@ -319,7 +320,7 @@ export function UsagePage() {
     {
       key: 'requests',
       label: t('usage_stats.total_requests'),
-      icon: '🛰️',
+      icon: <IconSatellite size={16} />,
       accent: '#2563eb',
       value: loading ? '-' : (usage?.total_requests ?? 0).toLocaleString(),
       meta: (
@@ -339,7 +340,7 @@ export function UsagePage() {
     {
       key: 'tokens',
       label: t('usage_stats.total_tokens'),
-      icon: '💠',
+      icon: <IconDiamond size={16} />,
       accent: '#8b5cf6',
       value: loading ? '-' : formatTokensInMillions(usage?.total_tokens ?? 0),
       meta: (
@@ -357,7 +358,7 @@ export function UsagePage() {
     {
       key: 'rpm',
       label: t('usage_stats.rpm_30m'),
-      icon: '⏱️',
+      icon: <IconTimer size={16} />,
       accent: '#22c55e',
       value: loading ? '-' : formatPerMinuteValue(rateStats.rpm),
       meta: (
@@ -370,7 +371,7 @@ export function UsagePage() {
     {
       key: 'tpm',
       label: t('usage_stats.tpm_30m'),
-      icon: '📈',
+      icon: <IconTrendingUp size={16} />,
       accent: '#f97316',
       value: loading ? '-' : formatPerMinuteValue(rateStats.tpm),
       meta: (
@@ -383,7 +384,7 @@ export function UsagePage() {
     {
       key: 'cost',
       label: t('usage_stats.total_cost'),
-      icon: '💰',
+      icon: <IconDollarSign size={16} />,
       accent: '#f59e0b',
       value: loading ? '-' : hasPrices ? formatUsd(totalCost) : '--',
       meta: (

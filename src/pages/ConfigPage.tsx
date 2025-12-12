@@ -7,6 +7,7 @@ import { keymap } from '@codemirror/view';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { IconChevronDown, IconChevronUp, IconSearch } from '@/components/ui/icons';
 import { useNotificationStore, useAuthStore, useThemeStore } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
 import styles from './ConfigPage.module.scss';
@@ -256,20 +257,7 @@ export function ConfigPage() {
                         disabled={!searchQuery || disableControls || loading}
                         title={t('config_management.search_button', { defaultValue: '搜索' })}
                       >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                        >
-                          <circle cx="11" cy="11" r="8" />
-                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
+                        <IconSearch size={16} />
                       </button>
                     </div>
                   }
@@ -283,7 +271,7 @@ export function ConfigPage() {
                   disabled={!searchQuery || lastSearchedQuery !== searchQuery || searchResults.total === 0}
                   title={t('config_management.search_prev', { defaultValue: '上一个' })}
                 >
-                  ↑
+                  <IconChevronUp size={16} />
                 </Button>
                 <Button
                   variant="secondary"
@@ -292,7 +280,7 @@ export function ConfigPage() {
                   disabled={!searchQuery || lastSearchedQuery !== searchQuery || searchResults.total === 0}
                   title={t('config_management.search_next', { defaultValue: '下一个' })}
                 >
-                  ↓
+                  <IconChevronDown size={16} />
                 </Button>
               </div>
             </div>

@@ -274,6 +274,10 @@
   border-radius: 10px;
   font-size: 10px;
   font-weight: 600;
+
+  svg {
+    display: block;
+  }
 }
 
 .apiKeyEntryStatSuccess {

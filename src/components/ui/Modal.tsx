@@ -1,4 +1,5 @@
 import type { PropsWithChildren, ReactNode } from 'react';
+import { IconX } from './icons';
 
 interface ModalProps {
   open: boolean;
@@ -23,7 +24,7 @@ export function Modal({ open, title, onClose, footer, width = 520, children }: P
         <div className="modal-header">
           <div className="modal-title">{title}</div>
           <button className="modal-close" onClick={onClose} aria-label="Close">
-            ×
+            <IconX size={18} />
           </button>
         </div>
         <div className="modal-body">{children}</div>

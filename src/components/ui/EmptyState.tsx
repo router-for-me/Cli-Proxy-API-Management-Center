@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { IconInbox } from './icons';
 
 interface EmptyStateProps {
   title: string;
@@ -11,7 +12,7 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
     <div className="empty-state">
       <div className="empty-content">
         <div className="empty-icon" aria-hidden="true">
-          ◦
+          <IconInbox size={20} />
         </div>
         <div>
           <div className="empty-title">{title}</div>

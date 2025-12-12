@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { ModelInputList, modelsToEntries, entriesToModels } from '@/components/ui/ModelInputList';
+import { IconCheck, IconX } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { modelsApi, providersApi, usageApi } from '@/services/api';
 import type {
@@ -1038,10 +1039,10 @@ export function AiProvidersPage() {
                             )}
                             <div className={styles.apiKeyEntryStats}>
                               <span className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatSuccess}`}>
-                                ✓ {entryStats.success}
+                                <IconCheck size={12} /> {entryStats.success}
                               </span>
                               <span className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatFailure}`}>
-                                ✗ {entryStats.failure}
+                                <IconX size={12} /> {entryStats.failure}
                               </span>
                             </div>
                           </div>

@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { Button } from './Button';
+import { IconX } from './icons';
 import type { HeaderEntry } from '@/utils/headers';
 
 interface HeaderInputListProps {
@@ -60,8 +61,10 @@ export function HeaderInputList({
               size="sm"
               onClick={() => removeEntry(index)}
               disabled={disabled || currentEntries.length <= 1}
+              title="Remove"
+              aria-label="Remove"
             >
-              ✕
+              <IconX size={14} />
             </Button>
           </div>
         </Fragment>

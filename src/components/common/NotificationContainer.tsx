@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNotificationStore } from '@/stores';
+import { IconX } from '@/components/ui/icons';
 import type { Notification } from '@/types';
 
 interface AnimatedNotification extends Notification {
@@ -83,8 +84,8 @@ export function NotificationContainer() {
           className={`notification ${notification.type} ${notification.isExiting ? 'exiting' : 'entering'}`}
         >
           <div className="message">{notification.message}</div>
-          <button className="close-btn" onClick={() => handleClose(notification.id)}>
-            ×
+          <button className="close-btn" onClick={() => handleClose(notification.id)} aria-label="Close">
+            <IconX size={16} />
           </button>
         </div>
       ))}
