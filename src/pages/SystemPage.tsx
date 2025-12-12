@@ -2,10 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
-import { modelsApi } from '@/services/api/models';
+import { useAuthStore, useConfigStore, useNotificationStore, useModelsStore } from '@/stores';
 import { apiKeysApi } from '@/services/api/apiKeys';
-import { classifyModels, type ModelInfo } from '@/utils/models';
+import { classifyModels } from '@/utils/models';
 import styles from './SystemPage.module.scss';
 
 export function SystemPage() {
@@ -15,10 +14,12 @@ export function SystemPage() {
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
 
-  const [models, setModels] = useState<ModelInfo[]>([]);
-  const [loadingModels, setLoadingModels] = useState(false);
+  const models = useModelsStore((state) => state.models);
+  const modelsLoading = useModelsStore((state) => state.loading);
+  const modelsError = useModelsStore((state) => state.error);
+  const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
+
   const [modelStatus, setModelStatus] = useState<{ type: 'success' | 'warning' | 'error' | 'muted'; message: string }>();
-  const [error, setError] = useState('');
 
   const apiKeysCache = useRef<string[]>([]);
 
@@ -68,13 +69,12 @@ export function SystemPage() {
     }
   }, [config?.apiKeys]);
 
-  const fetchModels = async ({ forceRefreshKeys = false }: { forceRefreshKeys?: boolean } = {}) => {
+  const fetchModels = async ({ forceRefresh = false }: { forceRefresh?: boolean } = {}) => {
     if (auth.connectionStatus !== 'connected') {
       setModelStatus({
         type: 'warning',
         message: t('notification.connection_required')
       });
-      setModels([]);
       return;
     }
 
@@ -83,18 +83,15 @@ export function SystemPage() {
       return;
     }
 
-    if (forceRefreshKeys) {
+    if (forceRefresh) {
       apiKeysCache.current = [];
     }
 
-    setLoadingModels(true);
-    setError('');
     setModelStatus({ type: 'muted', message: t('system_info.models_loading') });
     try {
       const apiKeys = await resolveApiKeysForModels();
       const primaryKey = apiKeys[0];
-      const list = await modelsApi.fetchModels(auth.apiBase, primaryKey);
-      setModels(list);
+      const list = await fetchModelsFromStore(auth.apiBase, primaryKey, forceRefresh);
       const hasModels = list.length > 0;
       setModelStatus({
         type: hasModels ? 'success' : 'warning',
@@ -102,11 +99,7 @@ export function SystemPage() {
       });
     } catch (err: any) {
       const message = `${t('system_info.models_error')}: ${err?.message || ''}`;
-      setError(message);
-      setModels([]);
       setModelStatus({ type: 'error', message });
-    } finally {
-      setLoadingModels(false);
     }
   };
 
@@ -156,15 +149,15 @@ export function SystemPage() {
       <Card
         title={t('system_info.models_title')}
         extra={
-          <Button variant="secondary" size="sm" onClick={() => fetchModels({ forceRefreshKeys: true })} loading={loadingModels}>
+          <Button variant="secondary" size="sm" onClick={() => fetchModels({ forceRefresh: true })} loading={modelsLoading}>
             {t('common.refresh')}
           </Button>
         }
       >
         <p className={styles.sectionDescription}>{t('system_info.models_desc')}</p>
         {modelStatus && <div className={`status-badge ${modelStatus.type}`}>{modelStatus.message}</div>}
-        {error && <div className="error-box">{error}</div>}
-        {loadingModels ? (
+        {modelsError && <div className="error-box">{modelsError}</div>}
+        {modelsLoading ? (
           <div className="hint">{t('common.loading')}</div>
         ) : models.length === 0 ? (
           <div className="hint">{t('system_info.models_empty')}</div>

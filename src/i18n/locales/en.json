@@ -551,7 +551,7 @@
     "save_success": "Configuration saved successfully",
     "error_yaml_not_supported": "Server did not return YAML. Verify the /config.yaml endpoint is available.",
     "editor_placeholder": "key: value",
-    "search_placeholder": "Type then click the search button (or press Enter) to search",
+    "search_placeholder": "Search config...",
     "search_button": "Search",
     "search_no_results": "No results",
     "search_prev": "Previous",

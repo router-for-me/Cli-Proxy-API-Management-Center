@@ -237,7 +237,7 @@ export function ConfigPage() {
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   placeholder={t('config_management.search_placeholder', {
-                    defaultValue: '输入关键字后点击右侧搜索按钮（或 Enter）进行搜索'
+                    defaultValue: '搜索配置内容...'
                   })}
                   disabled={disableControls || loading}
                   className={styles.searchInput}
