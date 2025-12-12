@@ -550,7 +550,11 @@
     "status_save_failed": "保存失败",
     "save_success": "配置已保存",
     "error_yaml_not_supported": "服务器未返回 YAML 格式，请确认 /config.yaml 接口可用",
-    "editor_placeholder": "key: value"
+    "editor_placeholder": "key: value",
+    "search_placeholder": "搜索配置内容... (Enter 下一个, Shift+Enter 上一个)",
+    "search_no_results": "无结果",
+    "search_prev": "上一个",
+    "search_next": "下一个"
   },
   "system_info": {
     "title": "管理中心信息",

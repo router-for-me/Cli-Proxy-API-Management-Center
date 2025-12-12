@@ -550,7 +550,11 @@
     "status_save_failed": "Save failed",
     "save_success": "Configuration saved successfully",
     "error_yaml_not_supported": "Server did not return YAML. Verify the /config.yaml endpoint is available.",
-    "editor_placeholder": "key: value"
+    "editor_placeholder": "key: value",
+    "search_placeholder": "Search config... (Enter for next, Shift+Enter for previous)",
+    "search_no_results": "No results",
+    "search_prev": "Previous",
+    "search_next": "Next"
   },
   "system_info": {
     "title": "Management Center Info",

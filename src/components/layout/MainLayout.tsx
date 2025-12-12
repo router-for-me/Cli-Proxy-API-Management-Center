@@ -422,6 +422,9 @@ export function MainLayout() {
               {t('footer.api_version')}: {serverVersion || t('system_info.version_unknown')}
             </span>
             <span>
+              {t('footer.version')}: {__APP_VERSION__ || t('system_info.version_unknown')}
+            </span>
+            <span>
               {t('footer.build_date')}:{' '}
               {serverBuildDate ? new Date(serverBuildDate).toLocaleString(i18n.language) : t('system_info.version_unknown')}
             </span>

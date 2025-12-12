@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .container {
   width: 100%;
 }
@@ -19,6 +21,54 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.searchInputWrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+  padding-right: 80px !important;
+}
+
+.searchCount {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: $radius-sm;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.searchActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+
+  button {
+    min-width: 32px;
+    padding: 0 8px;
+  }
 }
 
 .controls {
@@ -56,10 +106,74 @@
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
   overflow: hidden;
+
+  // CodeMirror theme overrides
+  :global {
+    .cm-editor {
+      height: 100%;
+      font-size: 14px;
+      font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+    }
+
+    .cm-scroller {
+      overflow: auto;
+    }
+
+    .cm-gutters {
+      border-right: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+    }
+
+    .cm-lineNumbers .cm-gutterElement {
+      padding: 0 8px 0 12px;
+      min-width: 40px;
+      color: var(--text-muted);
+    }
+
+    .cm-activeLine {
+      background: var(--bg-hover);
+    }
+
+    .cm-activeLineGutter {
+      background: var(--bg-hover);
+    }
+
+    .cm-selectionMatch {
+      background: rgba(255, 193, 7, 0.3);
+    }
+
+    .cm-searchMatch {
+      background: rgba(255, 193, 7, 0.4);
+      outline: 1px solid rgba(255, 193, 7, 0.6);
+    }
+
+    .cm-searchMatch-selected {
+      background: rgba(255, 152, 0, 0.5);
+    }
+
+    // Dark theme adjustments
+    [data-theme='dark'] & {
+      .cm-gutters {
+        background: var(--bg-tertiary);
+      }
+
+      .cm-selectionMatch {
+        background: rgba(255, 193, 7, 0.2);
+      }
+    }
+  }
 }
 
 .actions {
   display: flex;
   gap: $spacing-sm;
   justify-content: flex-end;
+
+  @include mobile {
+    justify-content: stretch;
+
+    button {
+      flex: 1;
+    }
+  }
 }
