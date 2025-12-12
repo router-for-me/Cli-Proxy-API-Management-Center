@@ -551,7 +551,8 @@
     "save_success": "配置已保存",
     "error_yaml_not_supported": "服务器未返回 YAML 格式，请确认 /config.yaml 接口可用",
     "editor_placeholder": "key: value",
-    "search_placeholder": "搜索配置内容... (Enter 下一个, Shift+Enter 上一个)",
+    "search_placeholder": "输入关键字后点击右侧搜索按钮（或 Enter）进行搜索",
+    "search_button": "搜索",
     "search_no_results": "无结果",
     "search_prev": "上一个",
     "search_next": "下一个"

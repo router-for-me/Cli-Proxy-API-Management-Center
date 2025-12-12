@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { yaml } from '@codemirror/lang-yaml';
@@ -26,7 +26,10 @@ export function ConfigPage() {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
+  const [lastSearchedQuery, setLastSearchedQuery] = useState('');
   const editorRef = useRef<ReactCodeMirrorRef>(null);
+  const floatingControlsRef = useRef<HTMLDivElement>(null);
+  const editorWrapperRef = useRef<HTMLDivElement>(null);
 
   const disableControls = connectionStatus !== 'connected';
 
@@ -92,7 +95,8 @@ export function ConfigPage() {
     }
 
     // Find current match based on cursor position
-    const cursorPos = view.state.selection.main.head;
+    const selection = view.state.selection.main;
+    const cursorPos = direction === 'prev' ? selection.from : selection.to;
     let currentIndex = 0;
 
     if (direction === 'next') {
@@ -134,27 +138,60 @@ export function ConfigPage() {
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchQuery(value);
-    if (value) {
-      performSearch(value);
+    // Do not auto-search on each keystroke. Clear previous results when query changes.
+    if (!value) {
+      setSearchResults({ current: 0, total: 0 });
+      setLastSearchedQuery('');
     } else {
       setSearchResults({ current: 0, total: 0 });
     }
-  }, [performSearch]);
+  }, []);
+
+  const executeSearch = useCallback((direction: 'next' | 'prev' = 'next') => {
+    if (!searchQuery) return;
+    setLastSearchedQuery(searchQuery);
+    performSearch(searchQuery, direction);
+  }, [searchQuery, performSearch]);
 
   const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      performSearch(searchQuery, e.shiftKey ? 'prev' : 'next');
+      executeSearch(e.shiftKey ? 'prev' : 'next');
     }
-  }, [searchQuery, performSearch]);
+  }, [executeSearch]);
 
   const handlePrevMatch = useCallback(() => {
-    performSearch(searchQuery, 'prev');
-  }, [searchQuery, performSearch]);
+    if (!lastSearchedQuery) return;
+    performSearch(lastSearchedQuery, 'prev');
+  }, [lastSearchedQuery, performSearch]);
 
   const handleNextMatch = useCallback(() => {
-    performSearch(searchQuery, 'next');
-  }, [searchQuery, performSearch]);
+    if (!lastSearchedQuery) return;
+    performSearch(lastSearchedQuery, 'next');
+  }, [lastSearchedQuery, performSearch]);
+
+  // Keep floating controls from covering editor content by syncing its height to a CSS variable.
+  useLayoutEffect(() => {
+    const controlsEl = floatingControlsRef.current;
+    const wrapperEl = editorWrapperRef.current;
+    if (!controlsEl || !wrapperEl) return;
+
+    const updatePadding = () => {
+      const height = controlsEl.getBoundingClientRect().height;
+      wrapperEl.style.setProperty('--floating-controls-height', `${height}px`);
+    };
+
+    updatePadding();
+    window.addEventListener('resize', updatePadding);
+
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updatePadding);
+    ro?.observe(controlsEl);
+
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', updatePadding);
+    };
+  }, []);
 
   // CodeMirror extensions
   const extensions = useMemo(() => [
@@ -188,50 +225,77 @@ export function ConfigPage() {
 
       <Card>
         <div className={styles.content}>
-          {/* Search bar */}
-          <div className={styles.searchBar}>
-            <div className={styles.searchInputWrapper}>
-              <Input
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                placeholder={t('config_management.search_placeholder', { defaultValue: '搜索配置内容... (Enter 下一个, Shift+Enter 上一个)' })}
-                disabled={disableControls || loading}
-                className={styles.searchInput}
-              />
-              {searchQuery && (
-                <span className={styles.searchCount}>
-                  {searchResults.total > 0
-                    ? `${searchResults.current} / ${searchResults.total}`
-                    : t('config_management.search_no_results', { defaultValue: '无结果' })}
-                </span>
-              )}
-            </div>
-            <div className={styles.searchActions}>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handlePrevMatch}
-                disabled={!searchQuery || searchResults.total === 0}
-                title={t('config_management.search_prev', { defaultValue: '上一个' })}
-              >
-                ↑
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleNextMatch}
-                disabled={!searchQuery || searchResults.total === 0}
-                title={t('config_management.search_next', { defaultValue: '下一个' })}
-              >
-                ↓
-              </Button>
-            </div>
-          </div>
-
           {/* Editor */}
           {error && <div className="error-box">{error}</div>}
-          <div className={styles.editorWrapper}>
+          <div className={styles.editorWrapper} ref={editorWrapperRef}>
+            {/* Floating search controls */}
+            <div className={styles.floatingControls} ref={floatingControlsRef}>
+              <div className={styles.searchInputWrapper}>
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder={t('config_management.search_placeholder', {
+                    defaultValue: '输入关键字后点击右侧搜索按钮（或 Enter）进行搜索'
+                  })}
+                  disabled={disableControls || loading}
+                  className={styles.searchInput}
+                  rightElement={
+                    <div className={styles.searchRight}>
+                      {searchQuery && lastSearchedQuery === searchQuery && (
+                        <span className={styles.searchCount}>
+                          {searchResults.total > 0
+                            ? `${searchResults.current} / ${searchResults.total}`
+                            : t('config_management.search_no_results', { defaultValue: '无结果' })}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.searchButton}
+                        onClick={() => executeSearch('next')}
+                        disabled={!searchQuery || disableControls || loading}
+                        title={t('config_management.search_button', { defaultValue: '搜索' })}
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <circle cx="11" cy="11" r="8" />
+                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                      </button>
+                    </div>
+                  }
+                />
+              </div>
+              <div className={styles.searchActions}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handlePrevMatch}
+                  disabled={!searchQuery || lastSearchedQuery !== searchQuery || searchResults.total === 0}
+                  title={t('config_management.search_prev', { defaultValue: '上一个' })}
+                >
+                  ↑
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleNextMatch}
+                  disabled={!searchQuery || lastSearchedQuery !== searchQuery || searchResults.total === 0}
+                  title={t('config_management.search_next', { defaultValue: '下一个' })}
+                >
+                  ↓
+                </Button>
+              </div>
+            </div>
             <CodeMirror
               ref={editorRef}
               value={content}

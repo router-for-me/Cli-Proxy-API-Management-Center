@@ -170,6 +170,28 @@ textarea {
   max-width: 360px;
 }
 
+@keyframes notification-enter {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes notification-exit {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
 .notification {
   padding: $spacing-md;
   border-radius: $radius-md;
@@ -181,6 +203,15 @@ textarea {
   justify-content: space-between;
   align-items: center;
   gap: $spacing-sm;
+
+  // Animation states
+  &.entering {
+    animation: notification-enter 0.3s ease-out forwards;
+  }
+
+  &.exiting {
+    animation: notification-exit 0.3s ease-in forwards;
+  }
 
   &.success {
     border-color: rgba(16, 185, 129, 0.4);
@@ -202,6 +233,11 @@ textarea {
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--text-primary);
+    }
   }
 }
 

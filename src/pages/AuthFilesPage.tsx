@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useAuthStore, useNotificationStore } from '@/stores';
+import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
 import type { AuthFileItem } from '@/types';
@@ -13,19 +14,51 @@ import type { KeyStats, KeyStatBucket } from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
 import styles from './AuthFilesPage.module.scss';
 
-// 标签类型颜色配置
-const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
-  qwen: { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6' },
-  gemini: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
-  'gemini-cli': { bg: 'rgba(6, 182, 212, 0.15)', text: '#06b6d4' },
-  aistudio: { bg: 'rgba(139, 92, 246, 0.15)', text: '#8b5cf6' },
-  claude: { bg: 'rgba(249, 115, 22, 0.15)', text: '#f97316' },
-  codex: { bg: 'rgba(236, 72, 153, 0.15)', text: '#ec4899' },
-  antigravity: { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b' },
-  iflow: { bg: 'rgba(132, 204, 22, 0.15)', text: '#84cc16' },
-  vertex: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' },
-  empty: { bg: 'rgba(107, 114, 128, 0.15)', text: '#6b7280' },
-  unknown: { bg: 'rgba(156, 163, 175, 0.15)', text: '#9ca3af' }
+type ThemeColors = { bg: string; text: string; border?: string };
+type TypeColorSet = { light: ThemeColors; dark?: ThemeColors };
+
+// 标签类型颜色配置（对齐重构前 styles.css 的 file-type-badge 颜色）
+const TYPE_COLORS: Record<string, TypeColorSet> = {
+  qwen: {
+    light: { bg: '#e8f5e9', text: '#2e7d32' },
+    dark: { bg: '#1b5e20', text: '#81c784' }
+  },
+  gemini: {
+    light: { bg: '#e3f2fd', text: '#1565c0' },
+    dark: { bg: '#0d47a1', text: '#64b5f6' }
+  },
+  'gemini-cli': {
+    light: { bg: '#e7efff', text: '#1e4fa3' },
+    dark: { bg: '#1c3f73', text: '#a8c7ff' }
+  },
+  aistudio: {
+    light: { bg: '#f0f2f5', text: '#2f343c' },
+    dark: { bg: '#373c42', text: '#cfd3db' }
+  },
+  claude: {
+    light: { bg: '#fce4ec', text: '#c2185b' },
+    dark: { bg: '#880e4f', text: '#f48fb1' }
+  },
+  codex: {
+    light: { bg: '#fff3e0', text: '#ef6c00' },
+    dark: { bg: '#e65100', text: '#ffb74d' }
+  },
+  antigravity: {
+    light: { bg: '#e0f7fa', text: '#006064' },
+    dark: { bg: '#004d40', text: '#80deea' }
+  },
+  iflow: {
+    light: { bg: '#f3e5f5', text: '#7b1fa2' },
+    dark: { bg: '#4a148c', text: '#ce93d8' }
+  },
+  empty: {
+    light: { bg: '#f5f5f5', text: '#616161' },
+    dark: { bg: '#424242', text: '#bdbdbd' }
+  },
+  unknown: {
+    light: { bg: '#f0f0f0', text: '#666666', border: '1px dashed #999999' },
+    dark: { bg: '#3a3a3a', text: '#aaaaaa', border: '1px dashed #666666' }
+  }
 };
 
 interface ExcludedFormState {
@@ -88,6 +121,7 @@ export function AuthFilesPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const theme = useThemeStore((state) => state.theme);
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -381,8 +415,9 @@ export function AuthFilesPage() {
   };
 
   // 获取类型颜色
-  const getTypeColor = (type: string) => {
-    return TYPE_COLORS[type] || TYPE_COLORS.unknown;
+  const getTypeColor = (type: string): ThemeColors => {
+    const set = TYPE_COLORS[type] || TYPE_COLORS.unknown;
+    return theme === 'dark' && set.dark ? set.dark : set.light;
   };
 
   // OAuth 排除相关方法
@@ -441,13 +476,14 @@ export function AuthFilesPage() {
       {existingTypes.map((type) => {
         const isActive = filter === type;
         const color = type === 'all' ? { bg: 'var(--bg-tertiary)', text: 'var(--text-primary)' } : getTypeColor(type);
+        const activeTextColor = theme === 'dark' ? '#111827' : '#fff';
         return (
           <button
             key={type}
             className={`${styles.filterTag} ${isActive ? styles.filterTagActive : ''}`}
             style={{
               backgroundColor: isActive ? color.text : color.bg,
-              color: isActive ? '#fff' : color.text,
+              color: isActive ? activeTextColor : color.text,
               borderColor: color.text
             }}
             onClick={() => {
@@ -474,7 +510,11 @@ export function AuthFilesPage() {
         <div className={styles.cardHeader}>
           <span
             className={styles.typeBadge}
-            style={{ backgroundColor: typeColor.bg, color: typeColor.text }}
+            style={{
+              backgroundColor: typeColor.bg,
+              color: typeColor.text,
+              ...(typeColor.border ? { border: typeColor.border } : {})
+            }}
           >
             {getTypeLabel(item.type || 'unknown')}
           </span>
@@ -504,6 +544,7 @@ export function AuthFilesPage() {
                 variant="secondary"
                 size="sm"
                 onClick={() => showDetails(item)}
+                className={styles.iconButton}
                 disabled={disableControls}
               >
                 <i className={styles.actionIcon}>ℹ</i>
@@ -512,6 +553,7 @@ export function AuthFilesPage() {
                 variant="secondary"
                 size="sm"
                 onClick={() => handleDownload(item.name)}
+                className={styles.iconButton}
                 disabled={disableControls}
               >
                 <i className={styles.actionIcon}>↓</i>
@@ -520,10 +562,14 @@ export function AuthFilesPage() {
                 variant="danger"
                 size="sm"
                 onClick={() => handleDelete(item.name)}
-                loading={deleting === item.name}
-                disabled={disableControls}
+                className={styles.iconButton}
+                disabled={disableControls || deleting === item.name}
               >
-                <i className={styles.actionIcon}>🗑</i>
+                {deleting === item.name ? (
+                  <LoadingSpinner size={14} />
+                ) : (
+                  <i className={styles.actionIcon}>🗑</i>
+                )}
               </Button>
             </>
           )}

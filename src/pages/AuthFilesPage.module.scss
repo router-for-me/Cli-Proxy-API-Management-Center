@@ -132,10 +132,10 @@
 .fileGrid {
   display: grid;
   gap: $spacing-md;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   @include tablet {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   @include mobile {
@@ -238,6 +238,16 @@
   justify-content: flex-end;
   margin-top: auto;
   padding-top: $spacing-sm;
+}
+
+.iconButton:global(.btn.btn-sm) {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 6px;
+  gap: 0;
 }
 
 .actionIcon {

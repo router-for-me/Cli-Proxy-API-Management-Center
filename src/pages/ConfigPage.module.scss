@@ -23,41 +23,63 @@
   gap: $spacing-lg;
 }
 
-.searchBar {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-
-  @include mobile {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-
 .searchInputWrapper {
   flex: 1;
   position: relative;
   display: flex;
   align-items: center;
+
+  // The shared Input component adds a wrapper (.form-group) with margin-bottom.
+  // In the floating toolbar we want the input to be compact.
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
 }
 
 .searchInput {
   flex: 1;
-  padding-right: 80px !important;
+  border-radius: $radius-full !important;
+  padding-right: 132px !important;
 }
 
 .searchCount {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
   font-size: 12px;
   color: var(--text-secondary);
   background: var(--bg-secondary);
   padding: 2px 8px;
-  border-radius: $radius-sm;
+  border-radius: $radius-full;
   pointer-events: none;
   white-space: nowrap;
+}
+
+.searchRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.searchButton {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: $radius-full;
+  background: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  color: #fff;
+  transition: background-color $transition-fast, border-color $transition-fast, opacity $transition-fast;
+
+  &:hover:not(:disabled) {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .searchActions {
@@ -67,7 +89,10 @@
 
   button {
     min-width: 32px;
-    padding: 0 8px;
+    width: 32px;
+    height: 32px;
+    padding: 0 !important;
+    border-radius: $radius-full;
   }
 }
 
@@ -106,6 +131,22 @@
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
   overflow: hidden;
+  position: relative;
+  --floating-controls-height: 0px;
+
+  // Floating search toolbar on top of the editor (but not covering content).
+  .floatingControls {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+    pointer-events: auto;
+  }
 
   // CodeMirror theme overrides
   :global {
@@ -117,6 +158,7 @@
 
     .cm-scroller {
       overflow: auto;
+      padding-top: calc(var(--floating-controls-height, 0px) + #{$spacing-md});
     }
 
     .cm-gutters {
