@@ -198,40 +198,38 @@
 
 .cardStats {
   display: flex;
+  flex-wrap: wrap;
   gap: $spacing-sm;
-  padding: $spacing-sm 0;
+  padding-top: $spacing-xs;
+  margin-top: $spacing-xs;
+}
+
+.statPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.1;
+  border: 1px solid transparent;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .statSuccess {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
-  background-color: #22c55e;
-  padding: 4px 12px;
-  border-radius: 14px;
-  white-space: nowrap;
+  background-color: var(--success-badge-bg, #d1fae5);
+  color: var(--success-badge-text, #065f46);
+  border-color: var(--success-badge-border, #6ee7b7);
 }
 
 .statFailure {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
-  background-color: #ef4444;
-  padding: 4px 12px;
-  border-radius: 14px;
-  white-space: nowrap;
-}
-
-.statIcon {
-  font-style: normal;
-  font-size: 11px;
-  line-height: 1;
+  background-color: var(--failure-badge-bg, #fee2e2);
+  color: var(--failure-badge-text, #991b1b);
+  border-color: var(--failure-badge-border, #fca5a5);
 }
 
 .cardActions {

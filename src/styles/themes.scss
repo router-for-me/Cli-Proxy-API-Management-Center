@@ -24,6 +24,14 @@
   --error-color: #ef4444;
   --info-color: #3b82f6;
 
+  --success-badge-bg: #d1fae5;
+  --success-badge-text: #065f46;
+  --success-badge-border: #6ee7b7;
+
+  --failure-badge-bg: #fee2e2;
+  --failure-badge-text: #991b1b;
+  --failure-badge-border: #fca5a5;
+
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
@@ -49,6 +57,14 @@
   --warning-color: #f59e0b;
   --error-color: #ef4444;
   --info-color: #3b82f6;
+
+  --success-badge-bg: rgba(6, 78, 59, 0.3);
+  --success-badge-text: #6ee7b7;
+  --success-badge-border: #059669;
+
+  --failure-badge-bg: rgba(153, 27, 27, 0.3);
+  --failure-badge-text: #fca5a5;
+  --failure-badge-border: #dc2626;
 
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3);

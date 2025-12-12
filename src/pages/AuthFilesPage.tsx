@@ -487,11 +487,11 @@ export function AuthFilesPage() {
         </div>
 
         <div className={styles.cardStats}>
-          <span className={styles.statSuccess}>
-            {t('stats.success')}：{fileStats.success}次
+          <span className={`${styles.statPill} ${styles.statSuccess}`}>
+            {t('stats.success')}: {fileStats.success}
           </span>
-          <span className={styles.statFailure}>
-            {t('stats.failure')}：{fileStats.failure}次
+          <span className={`${styles.statPill} ${styles.statFailure}`}>
+            {t('stats.failure')}: {fileStats.failure}
           </span>
         </div>
 

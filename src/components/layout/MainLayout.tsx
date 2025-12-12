@@ -95,6 +95,77 @@ const sidebarIcons: Record<string, ReactNode> = {
   )
 };
 
+// Header action icons - smaller size for header buttons
+const headerIconProps: SVGProps<SVGSVGElement> = {
+  width: 16,
+  height: 16,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': 'true',
+  focusable: 'false'
+};
+
+const headerIcons = {
+  refresh: (
+    <svg {...headerIconProps}>
+      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+    </svg>
+  ),
+  update: (
+    <svg {...headerIconProps}>
+      <path d="M12 19V5" />
+      <path d="m5 12 7-7 7 7" />
+    </svg>
+  ),
+  menu: (
+    <svg {...headerIconProps}>
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </svg>
+  ),
+  chevronLeft: (
+    <svg {...headerIconProps}>
+      <path d="m14 18-6-6 6-6" />
+    </svg>
+  ),
+  chevronRight: (
+    <svg {...headerIconProps}>
+      <path d="m10 6 6 6-6 6" />
+    </svg>
+  ),
+  language: (
+    <svg {...headerIconProps}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  ),
+  sun: (
+    <svg {...headerIconProps}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
+    </svg>
+  ),
+  moon: (
+    <svg {...headerIconProps}>
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
+    </svg>
+  )
+};
+
 const parseVersionSegments = (version?: string | null) => {
   if (!version) return null;
   const cleaned = version.trim().replace(/^v/i, '');
@@ -136,7 +207,6 @@ export function MainLayout() {
 
   const theme = useThemeStore((state) => state.theme);
   const toggleTheme = useThemeStore((state) => state.toggleTheme);
-  const language = useLanguageStore((state) => state.language);
   const toggleLanguage = useLanguageStore((state) => state.toggleLanguage);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -277,7 +347,7 @@ export function MainLayout() {
             onClick={() => setSidebarCollapsed((prev) => !prev)}
             title={sidebarCollapsed ? t('sidebar.expand', { defaultValue: '展开' }) : t('sidebar.collapse', { defaultValue: '收起' })}
           >
-            {sidebarCollapsed ? '»' : '«'}
+            {sidebarCollapsed ? headerIcons.chevronRight : headerIcons.chevronLeft}
           </button>
           <img src={INLINE_LOGO_JPEG} alt="CPAMC logo" className="brand-logo" />
           <div
@@ -289,7 +359,7 @@ export function MainLayout() {
             <span className="brand-abbr">{abbrBrandName}</span>
           </div>
           <Button className="mobile-menu-btn" variant="ghost" size="sm" onClick={() => setSidebarOpen((prev) => !prev)}>
-            ☰
+            {headerIcons.menu}
           </Button>
         </div>
 
@@ -309,16 +379,16 @@ export function MainLayout() {
 
           <div className="header-actions">
             <Button variant="ghost" size="sm" onClick={handleRefreshAll} title={t('header.refresh_all')}>
-              ↻
+              {headerIcons.refresh}
             </Button>
             <Button variant="ghost" size="sm" onClick={handleVersionCheck} loading={checkingVersion} title={t('system_info.version_check_button')}>
-              ⬆
+              {headerIcons.update}
             </Button>
             <Button variant="ghost" size="sm" onClick={toggleLanguage} title={t('language.switch')}>
-              {language === 'zh-CN' ? '中' : 'En'}
+              {headerIcons.language}
             </Button>
             <Button variant="ghost" size="sm" onClick={toggleTheme} title={t('theme.switch')}>
-              {theme === 'dark' ? '☀' : '☾'}
+              {theme === 'dark' ? headerIcons.sun : headerIcons.moon}
             </Button>
           </div>
         </div>

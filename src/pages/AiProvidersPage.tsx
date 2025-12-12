@@ -6,14 +6,14 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
+import { ModelInputList, modelsToEntries, entriesToModels } from '@/components/ui/ModelInputList';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { providersApi, usageApi } from '@/services/api';
 import type {
   GeminiKeyConfig,
   ProviderKeyConfig,
   OpenAIProviderConfig,
-  ApiKeyEntry,
-  ModelAlias
+  ApiKeyEntry
 } from '@/types';
 import type { KeyStats, KeyStatBucket } from '@/utils/usage';
 import { headersToEntries, buildHeaderObject, type HeaderEntry } from '@/utils/headers';
@@ -26,37 +26,19 @@ type ProviderModal =
   | { type: 'claude'; index: number | null }
   | { type: 'openai'; index: number | null };
 
+interface ModelEntry {
+  name: string;
+  alias: string;
+}
+
 interface OpenAIFormState {
   name: string;
   baseUrl: string;
   headers: HeaderEntry[];
   testModel?: string;
-  modelsText: string;
+  modelEntries: ModelEntry[];
   apiKeyEntries: ApiKeyEntry[];
 }
-
-const parseModelsText = (value: string): ModelAlias[] => {
-  return value
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [namePart, aliasPart] = line.split(',').map((item) => item.trim());
-      if (!namePart) return null;
-      const entry: ModelAlias = { name: namePart };
-      if (aliasPart && aliasPart !== namePart) entry.alias = aliasPart;
-      return entry;
-    })
-    .filter(Boolean) as ModelAlias[];
-};
-
-const modelsToText = (models?: ModelAlias[]) =>
-  Array.isArray(models)
-    ? models
-        .map((m) => (m.alias && m.alias !== m.name ? `${m.name}, ${m.alias}` : m.name))
-        .filter(Boolean)
-        .join('\n')
-    : '';
 
 const parseExcludedModels = (text: string): string[] =>
   text
@@ -133,20 +115,20 @@ export function AiProvidersPage() {
     excludedModels: [],
     excludedText: ''
   });
-  const [providerForm, setProviderForm] = useState<ProviderKeyConfig & { modelsText: string }>({
+  const [providerForm, setProviderForm] = useState<ProviderKeyConfig & { modelEntries: ModelEntry[] }>({
     apiKey: '',
     baseUrl: '',
     proxyUrl: '',
     headers: {},
     models: [],
-    modelsText: ''
+    modelEntries: [{ name: '', alias: '' }]
   });
   const [openaiForm, setOpenaiForm] = useState<OpenAIFormState>({
     name: '',
     baseUrl: '',
     headers: [],
     apiKeyEntries: [buildApiKeyEntry()],
-    modelsText: ''
+    modelEntries: [{ name: '', alias: '' }]
   });
   const [saving, setSaving] = useState(false);
 
@@ -205,14 +187,14 @@ export function AiProvidersPage() {
       proxyUrl: '',
       headers: {},
       models: [],
-      modelsText: ''
+      modelEntries: [{ name: '', alias: '' }]
     });
     setOpenaiForm({
       name: '',
       baseUrl: '',
       headers: [],
       apiKeyEntries: [buildApiKeyEntry()],
-      modelsText: '',
+      modelEntries: [{ name: '', alias: '' }],
       testModel: undefined
     });
   };
@@ -234,7 +216,7 @@ export function AiProvidersPage() {
       const entry = source[index];
       setProviderForm({
         ...entry,
-        modelsText: modelsToText(entry?.models)
+        modelEntries: modelsToEntries(entry?.models)
       });
     }
     setModal({ type, index });
@@ -248,7 +230,7 @@ export function AiProvidersPage() {
         baseUrl: entry.baseUrl,
         headers: headersToEntries(entry.headers),
         testModel: entry.testModel,
-        modelsText: modelsToText(entry.models),
+        modelEntries: modelsToEntries(entry.models),
         apiKeyEntries: entry.apiKeyEntries?.length ? entry.apiKeyEntries : [buildApiKeyEntry()]
       });
     }
@@ -312,7 +294,7 @@ export function AiProvidersPage() {
         baseUrl,
         proxyUrl: providerForm.proxyUrl?.trim() || undefined,
         headers: buildHeaderObject(headersToEntries(providerForm.headers as any)),
-        models: parseModelsText(providerForm.modelsText)
+        models: entriesToModels(providerForm.modelEntries)
       };
 
       const source = type === 'codex' ? codexConfigs : claudeConfigs;
@@ -384,7 +366,7 @@ export function AiProvidersPage() {
         }))
       };
       if (openaiForm.testModel) payload.testModel = openaiForm.testModel.trim();
-      const models = parseModelsText(openaiForm.modelsText);
+      const models = entriesToModels(openaiForm.modelEntries);
       if (models.length) payload.models = models;
 
       const nextList =
@@ -535,24 +517,56 @@ export function AiProvidersPage() {
           (item) => item.apiKey,
           (item, index) => {
             const stats = getStatsBySource(item.apiKey, keyStats, maskApiKey);
+            const headerEntries = Object.entries(item.headers || {});
             return (
               <Fragment>
                 <div className="item-title">
                   {t('ai_providers.gemini_item_title')} #{index + 1}
                 </div>
-                <div className="item-subtitle">{maskApiKey(item.apiKey)}</div>
-                {item.baseUrl && <div className="pill">{item.baseUrl}</div>}
+                {/* API Key 行 */}
+                <div className={styles.fieldRow}>
+                  <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
+                  <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
+                </div>
+                {/* Base URL 行 */}
+                {item.baseUrl && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
+                    <span className={styles.fieldValue}>{item.baseUrl}</span>
+                  </div>
+                )}
+                {/* 自定义请求头徽章 */}
+                {headerEntries.length > 0 && (
+                  <div className={styles.headerBadgeList}>
+                    {headerEntries.map(([key, value]) => (
+                      <span key={key} className={styles.headerBadge}>
+                        <strong>{key}:</strong> {value}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* 排除模型徽章 */}
                 {item.excludedModels?.length ? (
-                  <div className="item-subtitle">
-                    {t('ai_providers.excluded_models_count', { count: item.excludedModels.length })}
+                  <div className={styles.excludedModelsSection}>
+                    <div className={styles.excludedModelsLabel}>
+                      {t('ai_providers.excluded_models_count', { count: item.excludedModels.length })}
+                    </div>
+                    <div className={styles.modelTagList}>
+                      {item.excludedModels.map((model) => (
+                        <span key={model} className={`${styles.modelTag} ${styles.excludedModelTag}`}>
+                          <span className={styles.modelName}>{model}</span>
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
+                {/* 成功/失败统计 */}
                 <div className={styles.cardStats}>
-                  <span className={styles.statSuccess}>
-                    {t('stats.success')}：{stats.success}次
+                  <span className={`${styles.statPill} ${styles.statSuccess}`}>
+                    {t('stats.success')}: {stats.success}
                   </span>
-                  <span className={styles.statFailure}>
-                    {t('stats.failure')}：{stats.failure}次
+                  <span className={`${styles.statPill} ${styles.statFailure}`}>
+                    {t('stats.failure')}: {stats.failure}
                   </span>
                 </div>
               </Fragment>
@@ -577,17 +591,46 @@ export function AiProvidersPage() {
           (item) => item.apiKey,
           (item, _index) => {
             const stats = getStatsBySource(item.apiKey, keyStats, maskApiKey);
+            const headerEntries = Object.entries(item.headers || {});
             return (
               <Fragment>
-                <div className="item-title">{item.baseUrl || t('ai_providers.codex_item_title')}</div>
-                <div className="item-subtitle">{maskApiKey(item.apiKey)}</div>
-                {item.proxyUrl && <div className="pill">{item.proxyUrl}</div>}
+                <div className="item-title">{t('ai_providers.codex_item_title')}</div>
+                {/* API Key 行 */}
+                <div className={styles.fieldRow}>
+                  <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
+                  <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
+                </div>
+                {/* Base URL 行 */}
+                {item.baseUrl && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
+                    <span className={styles.fieldValue}>{item.baseUrl}</span>
+                  </div>
+                )}
+                {/* Proxy URL 行 */}
+                {item.proxyUrl && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.proxy_url')}:</span>
+                    <span className={styles.fieldValue}>{item.proxyUrl}</span>
+                  </div>
+                )}
+                {/* 自定义请求头徽章 */}
+                {headerEntries.length > 0 && (
+                  <div className={styles.headerBadgeList}>
+                    {headerEntries.map(([key, value]) => (
+                      <span key={key} className={styles.headerBadge}>
+                        <strong>{key}:</strong> {value}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* 成功/失败统计 */}
                 <div className={styles.cardStats}>
-                  <span className={styles.statSuccess}>
-                    {t('stats.success')}：{stats.success}次
+                  <span className={`${styles.statPill} ${styles.statSuccess}`}>
+                    {t('stats.success')}: {stats.success}
                   </span>
-                  <span className={styles.statFailure}>
-                    {t('stats.failure')}：{stats.failure}次
+                  <span className={`${styles.statPill} ${styles.statFailure}`}>
+                    {t('stats.failure')}: {stats.failure}
                   </span>
                 </div>
               </Fragment>
@@ -612,22 +655,64 @@ export function AiProvidersPage() {
           (item) => item.apiKey,
           (item, _index) => {
             const stats = getStatsBySource(item.apiKey, keyStats, maskApiKey);
+            const headerEntries = Object.entries(item.headers || {});
             return (
               <Fragment>
-                <div className="item-title">{item.baseUrl || t('ai_providers.claude_item_title')}</div>
-                <div className="item-subtitle">{maskApiKey(item.apiKey)}</div>
-                {item.proxyUrl && <div className="pill">{item.proxyUrl}</div>}
+                <div className="item-title">{t('ai_providers.claude_item_title')}</div>
+                {/* API Key 行 */}
+                <div className={styles.fieldRow}>
+                  <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
+                  <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
+                </div>
+                {/* Base URL 行 */}
+                {item.baseUrl && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
+                    <span className={styles.fieldValue}>{item.baseUrl}</span>
+                  </div>
+                )}
+                {/* Proxy URL 行 */}
+                {item.proxyUrl && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.proxy_url')}:</span>
+                    <span className={styles.fieldValue}>{item.proxyUrl}</span>
+                  </div>
+                )}
+                {/* 自定义请求头徽章 */}
+                {headerEntries.length > 0 && (
+                  <div className={styles.headerBadgeList}>
+                    {headerEntries.map(([key, value]) => (
+                      <span key={key} className={styles.headerBadge}>
+                        <strong>{key}:</strong> {value}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* 模型列表 */}
                 {item.models?.length ? (
-                  <div className="item-subtitle">
-                    {t('ai_providers.claude_models_count')}: {item.models.length}
+                  <div className={styles.modelTagList}>
+                    <div className={styles.fieldRow}>
+                      <span className={styles.fieldLabel}>
+                        {t('ai_providers.claude_models_count')}: {item.models.length}
+                      </span>
+                    </div>
+                    {item.models.map((model) => (
+                      <span key={model.name} className={styles.modelTag}>
+                        <span className={styles.modelName}>{model.name}</span>
+                        {model.alias && model.alias !== model.name && (
+                          <span className={styles.modelAlias}>{model.alias}</span>
+                        )}
+                      </span>
+                    ))}
                   </div>
                 ) : null}
+                {/* 成功/失败统计 */}
                 <div className={styles.cardStats}>
-                  <span className={styles.statSuccess}>
-                    {t('stats.success')}：{stats.success}次
+                  <span className={`${styles.statPill} ${styles.statSuccess}`}>
+                    {t('stats.success')}: {stats.success}
                   </span>
-                  <span className={styles.statFailure}>
-                    {t('stats.failure')}：{stats.failure}次
+                  <span className={`${styles.statPill} ${styles.statFailure}`}>
+                    {t('stats.failure')}: {stats.failure}
                   </span>
                 </div>
               </Fragment>
@@ -652,23 +737,88 @@ export function AiProvidersPage() {
           (item) => item.name,
           (item, _index) => {
             const stats = getOpenAIProviderStats(item.apiKeyEntries, keyStats, maskApiKey);
+            const headerEntries = Object.entries(item.headers || {});
+            const apiKeyEntries = item.apiKeyEntries || [];
             return (
               <Fragment>
                 <div className="item-title">{item.name}</div>
-                <div className="item-subtitle">{item.baseUrl}</div>
-                <div className="pill">
-                  {t('ai_providers.openai_keys_count')}: {item.apiKeyEntries?.length || 0}
+                {/* Base URL 行 */}
+                <div className={styles.fieldRow}>
+                  <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
+                  <span className={styles.fieldValue}>{item.baseUrl}</span>
                 </div>
-                <div className="pill">
-                  {t('ai_providers.openai_models_count')}: {item.models?.length || 0}
+                {/* 自定义请求头徽章 */}
+                {headerEntries.length > 0 && (
+                  <div className={styles.headerBadgeList}>
+                    {headerEntries.map(([key, value]) => (
+                      <span key={key} className={styles.headerBadge}>
+                        <strong>{key}:</strong> {value}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* API密钥条目二级卡片 */}
+                {apiKeyEntries.length > 0 && (
+                  <div className={styles.apiKeyEntriesSection}>
+                    <div className={styles.apiKeyEntriesLabel}>
+                      {t('ai_providers.openai_keys_count')}: {apiKeyEntries.length}
+                    </div>
+                    <div className={styles.apiKeyEntryList}>
+                      {apiKeyEntries.map((entry, entryIndex) => {
+                        const entryStats = getStatsBySource(entry.apiKey, keyStats, maskApiKey);
+                        return (
+                          <div key={entryIndex} className={styles.apiKeyEntryCard}>
+                            <span className={styles.apiKeyEntryIndex}>{entryIndex + 1}</span>
+                            <span className={styles.apiKeyEntryKey}>{maskApiKey(entry.apiKey)}</span>
+                            {entry.proxyUrl && (
+                              <span className={styles.apiKeyEntryProxy}>{entry.proxyUrl}</span>
+                            )}
+                            <div className={styles.apiKeyEntryStats}>
+                              <span className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatSuccess}`}>
+                                ✓ {entryStats.success}
+                              </span>
+                              <span className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatFailure}`}>
+                                ✗ {entryStats.failure}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {/* 模型数量标签 */}
+                <div className={styles.fieldRow} style={{ marginTop: '8px' }}>
+                  <span className={styles.fieldLabel}>{t('ai_providers.openai_models_count')}:</span>
+                  <span className={styles.fieldValue}>{item.models?.length || 0}</span>
                 </div>
-                {item.testModel && <div className="pill">{item.testModel}</div>}
+                {/* 模型列表徽章 */}
+                {item.models?.length ? (
+                  <div className={styles.modelTagList}>
+                    {item.models.map((model) => (
+                      <span key={model.name} className={styles.modelTag}>
+                        <span className={styles.modelName}>{model.name}</span>
+                        {model.alias && model.alias !== model.name && (
+                          <span className={styles.modelAlias}>{model.alias}</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                {/* 测试模型 */}
+                {item.testModel && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>Test Model:</span>
+                    <span className={styles.fieldValue}>{item.testModel}</span>
+                  </div>
+                )}
+                {/* 成功/失败统计（汇总） */}
                 <div className={styles.cardStats}>
-                  <span className={styles.statSuccess}>
-                    {t('stats.success')}：{stats.success}次
+                  <span className={`${styles.statPill} ${styles.statSuccess}`}>
+                    {t('stats.success')}: {stats.success}
                   </span>
-                  <span className={styles.statFailure}>
-                    {t('stats.failure')}：{stats.failure}次
+                  <span className={`${styles.statPill} ${styles.statFailure}`}>
+                    {t('stats.failure')}: {stats.failure}
                   </span>
                 </div>
               </Fragment>
@@ -790,14 +940,14 @@ export function AiProvidersPage() {
         />
         <div className="form-group">
           <label>{t('ai_providers.claude_models_label')}</label>
-          <textarea
-            className="input"
-            placeholder={t('ai_providers.claude_models_hint')}
-            value={providerForm.modelsText}
-            onChange={(e) => setProviderForm((prev) => ({ ...prev, modelsText: e.target.value }))}
-            rows={4}
+          <ModelInputList
+            entries={providerForm.modelEntries}
+            onChange={(entries) => setProviderForm((prev) => ({ ...prev, modelEntries: entries }))}
+            addLabel={t('ai_providers.claude_models_add_btn')}
+            namePlaceholder={t('common.model_name_placeholder')}
+            aliasPlaceholder={t('common.model_alias_placeholder')}
+            disabled={saving}
           />
-          <div className="hint">{t('ai_providers.claude_models_hint')}</div>
         </div>
       </Modal>
 
@@ -845,14 +995,14 @@ export function AiProvidersPage() {
 
         <div className="form-group">
           <label>{t('ai_providers.openai_models_fetch_title')}</label>
-          <textarea
-            className="input"
-            placeholder={t('ai_providers.openai_models_hint')}
-            value={openaiForm.modelsText}
-            onChange={(e) => setOpenaiForm((prev) => ({ ...prev, modelsText: e.target.value }))}
-            rows={4}
+          <ModelInputList
+            entries={openaiForm.modelEntries}
+            onChange={(entries) => setOpenaiForm((prev) => ({ ...prev, modelEntries: entries }))}
+            addLabel={t('ai_providers.openai_models_add_btn')}
+            namePlaceholder={t('common.model_name_placeholder')}
+            aliasPlaceholder={t('common.model_alias_placeholder')}
+            disabled={saving}
           />
-          <div className="hint">{t('ai_providers.openai_models_hint')}</div>
         </div>
 
         <div className="form-group">
