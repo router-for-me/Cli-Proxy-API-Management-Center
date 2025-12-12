@@ -286,6 +286,78 @@
   color: var(--failure-badge-text, #991b1b);
 }
 
+// OpenAI 模型发现（二级界面）
+.modelDiscoveryList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 360px;
+  overflow-y: auto;
+  margin-top: 8px;
+  padding-right: 4px;
+}
+
+.modelDiscoveryRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  input[type='checkbox'] {
+    margin-top: 2px;
+    cursor: pointer;
+  }
+
+  &:hover {
+    border-color: var(--primary-color);
+    background: var(--bg-secondary);
+  }
+}
+
+.modelDiscoveryRowSelected {
+  border-color: var(--primary-color);
+  background: var(--bg-tertiary);
+}
+
+.modelDiscoveryMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modelDiscoveryName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modelDiscoveryAlias {
+  margin-left: 6px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.modelDiscoveryDesc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.openaiTestButtonSuccess {
+  background-color: var(--success-badge-bg, #d1fae5);
+  border-color: var(--success-badge-border, #6ee7b7);
+  color: var(--success-badge-text, #065f46);
+
+  &:hover {
+    background-color: var(--success-badge-bg, #d1fae5);
+    border-color: var(--success-badge-border, #6ee7b7);
+  }
+}
+
 // 暗色主题适配
 :global([data-theme='dark']) {
   .headerBadge {

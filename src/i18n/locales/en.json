@@ -235,7 +235,7 @@
     "openai_test_success": "Test succeeded. The model responded.",
     "openai_test_failed": "Test failed",
     "openai_test_select_placeholder": "Choose from current models",
-    "openai_test_select_empty": "No models configured, enter manually"
+    "openai_test_select_empty": "No models configured. Add models first"
   },
   "auth_files": {
     "title": "Auth Files Management",
@@ -616,7 +616,7 @@
     "openai_model_name_required": "Model name is required",
     "openai_test_url_required": "Please provide a valid Base URL before testing",
     "openai_test_key_required": "Please add at least one API key before testing",
-    "openai_test_model_required": "Please select or enter a model to test",
+    "openai_test_model_required": "Please select a model to test",
     "data_refreshed": "Data refreshed successfully",
     "connection_required": "Please establish connection first",
     "refresh_failed": "Refresh failed",

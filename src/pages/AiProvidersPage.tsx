@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { ModelInputList, modelsToEntries, entriesToModels } from '@/components/ui/ModelInputList';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
-import { providersApi, usageApi } from '@/services/api';
+import { modelsApi, providersApi, usageApi } from '@/services/api';
 import type {
   GeminiKeyConfig,
   ProviderKeyConfig,
@@ -16,6 +16,7 @@ import type {
   ApiKeyEntry
 } from '@/types';
 import type { KeyStats, KeyStatBucket } from '@/utils/usage';
+import type { ModelInfo } from '@/utils/models';
 import { headersToEntries, buildHeaderObject, type HeaderEntry } from '@/utils/headers';
 import { maskApiKey } from '@/utils/format';
 import styles from './AiProvidersPage.module.scss';
@@ -47,6 +48,21 @@ const parseExcludedModels = (text: string): string[] =>
     .filter(Boolean);
 
 const excludedModelsToText = (models?: string[]) => (Array.isArray(models) ? models.join('\n') : '');
+
+const buildOpenAIModelsEndpoint = (baseUrl: string): string => {
+  const trimmed = String(baseUrl || '').trim().replace(/\/+$/g, '');
+  if (!trimmed) return '';
+  return trimmed.endsWith('/v1') ? `${trimmed}/models` : `${trimmed}/v1/models`;
+};
+
+const buildOpenAIChatCompletionsEndpoint = (baseUrl: string): string => {
+  const trimmed = String(baseUrl || '').trim().replace(/\/+$/g, '');
+  if (!trimmed) return '';
+  if (trimmed.endsWith('/chat/completions')) {
+    return trimmed;
+  }
+  return trimmed.endsWith('/v1') ? `${trimmed}/chat/completions` : `${trimmed}/v1/chat/completions`;
+};
 
 // 根据 source (apiKey) 获取统计数据 - 与旧版逻辑一致
 const getStatsBySource = (
@@ -130,9 +146,36 @@ export function AiProvidersPage() {
     apiKeyEntries: [buildApiKeyEntry()],
     modelEntries: [{ name: '', alias: '' }]
   });
+  const [openaiDiscoveryOpen, setOpenaiDiscoveryOpen] = useState(false);
+  const [openaiDiscoveryEndpoint, setOpenaiDiscoveryEndpoint] = useState('');
+  const [openaiDiscoveryModels, setOpenaiDiscoveryModels] = useState<ModelInfo[]>([]);
+  const [openaiDiscoveryLoading, setOpenaiDiscoveryLoading] = useState(false);
+  const [openaiDiscoveryError, setOpenaiDiscoveryError] = useState('');
+  const [openaiDiscoverySearch, setOpenaiDiscoverySearch] = useState('');
+  const [openaiDiscoverySelected, setOpenaiDiscoverySelected] = useState<Set<string>>(new Set());
+  const [openaiTestModel, setOpenaiTestModel] = useState('');
+  const [openaiTestStatus, setOpenaiTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [openaiTestMessage, setOpenaiTestMessage] = useState('');
   const [saving, setSaving] = useState(false);
 
   const disableControls = useMemo(() => connectionStatus !== 'connected', [connectionStatus]);
+  const filteredOpenaiDiscoveryModels = useMemo(() => {
+    const filter = openaiDiscoverySearch.trim().toLowerCase();
+    if (!filter) return openaiDiscoveryModels;
+    return openaiDiscoveryModels.filter((model) => {
+      const name = (model.name || '').toLowerCase();
+      const alias = (model.alias || '').toLowerCase();
+      const desc = (model.description || '').toLowerCase();
+      return name.includes(filter) || alias.includes(filter) || desc.includes(filter);
+    });
+  }, [openaiDiscoveryModels, openaiDiscoverySearch]);
+  const openaiAvailableModels = useMemo(
+    () =>
+      openaiForm.modelEntries
+        .map((entry) => entry.name.trim())
+        .filter(Boolean),
+    [openaiForm.modelEntries]
+  );
 
   // 加载 key 统计
   const loadKeyStats = useCallback(async () => {
@@ -197,6 +240,15 @@ export function AiProvidersPage() {
       modelEntries: [{ name: '', alias: '' }],
       testModel: undefined
     });
+    setOpenaiDiscoveryOpen(false);
+    setOpenaiDiscoveryModels([]);
+    setOpenaiDiscoverySelected(new Set());
+    setOpenaiDiscoverySearch('');
+    setOpenaiDiscoveryError('');
+    setOpenaiDiscoveryEndpoint('');
+    setOpenaiTestModel('');
+    setOpenaiTestStatus('idle');
+    setOpenaiTestMessage('');
   };
 
   const openGeminiModal = (index: number | null) => {
@@ -225,16 +277,227 @@ export function AiProvidersPage() {
   const openOpenaiModal = (index: number | null) => {
     if (index !== null) {
       const entry = openaiProviders[index];
+      const modelEntries = modelsToEntries(entry.models);
       setOpenaiForm({
         name: entry.name,
         baseUrl: entry.baseUrl,
         headers: headersToEntries(entry.headers),
         testModel: entry.testModel,
-        modelEntries: modelsToEntries(entry.models),
+        modelEntries,
         apiKeyEntries: entry.apiKeyEntries?.length ? entry.apiKeyEntries : [buildApiKeyEntry()]
       });
+      const available = modelEntries.map((m) => m.name.trim()).filter(Boolean);
+      const initialModel =
+        entry.testModel && available.includes(entry.testModel) ? entry.testModel : available[0] || '';
+      setOpenaiTestModel(initialModel);
+    } else {
+      setOpenaiTestModel('');
     }
+    setOpenaiTestStatus('idle');
+    setOpenaiTestMessage('');
     setModal({ type: 'openai', index });
+  };
+
+  const closeOpenaiModelDiscovery = () => {
+    setOpenaiDiscoveryOpen(false);
+    setOpenaiDiscoveryModels([]);
+    setOpenaiDiscoverySelected(new Set());
+    setOpenaiDiscoverySearch('');
+    setOpenaiDiscoveryError('');
+  };
+
+  const fetchOpenaiModelDiscovery = async ({ allowFallback = true }: { allowFallback?: boolean } = {}) => {
+    const baseUrl = openaiForm.baseUrl.trim();
+    if (!baseUrl) return;
+
+    setOpenaiDiscoveryLoading(true);
+    setOpenaiDiscoveryError('');
+    try {
+      const headers = buildHeaderObject(openaiForm.headers);
+      const firstKey = openaiForm.apiKeyEntries.find((entry) => entry.apiKey?.trim())?.apiKey?.trim();
+      const hasAuthHeader = Boolean(headers.Authorization || headers['authorization']);
+      const list = await modelsApi.fetchModels(baseUrl, hasAuthHeader ? undefined : firstKey, headers);
+      setOpenaiDiscoveryModels(list);
+    } catch (err: any) {
+      if (allowFallback) {
+        try {
+          const list = await modelsApi.fetchModels(baseUrl);
+          setOpenaiDiscoveryModels(list);
+          return;
+        } catch (fallbackErr: any) {
+          const message = fallbackErr?.message || err?.message || '';
+          setOpenaiDiscoveryModels([]);
+          setOpenaiDiscoveryError(`${t('ai_providers.openai_models_fetch_error')}: ${message}`);
+        }
+      } else {
+        setOpenaiDiscoveryModels([]);
+        setOpenaiDiscoveryError(`${t('ai_providers.openai_models_fetch_error')}: ${err?.message || ''}`);
+      }
+    } finally {
+      setOpenaiDiscoveryLoading(false);
+    }
+  };
+
+  const openOpenaiModelDiscovery = () => {
+    const baseUrl = openaiForm.baseUrl.trim();
+    if (!baseUrl) {
+      showNotification(t('ai_providers.openai_models_fetch_invalid_url'), 'error');
+      return;
+    }
+
+    setOpenaiDiscoveryEndpoint(buildOpenAIModelsEndpoint(baseUrl));
+    setOpenaiDiscoveryModels([]);
+    setOpenaiDiscoverySearch('');
+    setOpenaiDiscoverySelected(new Set());
+    setOpenaiDiscoveryError('');
+    setOpenaiDiscoveryOpen(true);
+    void fetchOpenaiModelDiscovery();
+  };
+
+  const toggleOpenaiModelSelection = (name: string) => {
+    setOpenaiDiscoverySelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  };
+
+  const applyOpenaiModelDiscoverySelection = () => {
+    const selectedModels = openaiDiscoveryModels.filter((model) => openaiDiscoverySelected.has(model.name));
+    if (!selectedModels.length) {
+      closeOpenaiModelDiscovery();
+      return;
+    }
+
+    const mergedMap = new Map<string, ModelEntry>();
+    openaiForm.modelEntries.forEach((entry) => {
+      const name = entry.name.trim();
+      if (!name) return;
+      mergedMap.set(name, { name, alias: entry.alias?.trim() || '' });
+    });
+
+    let addedCount = 0;
+    selectedModels.forEach((model) => {
+      const name = model.name.trim();
+      if (!name || mergedMap.has(name)) return;
+      mergedMap.set(name, { name, alias: model.alias ?? '' });
+      addedCount += 1;
+    });
+
+    const mergedEntries = Array.from(mergedMap.values());
+    setOpenaiForm((prev) => ({
+      ...prev,
+      modelEntries: mergedEntries.length ? mergedEntries : [{ name: '', alias: '' }]
+    }));
+
+    closeOpenaiModelDiscovery();
+    if (addedCount > 0) {
+      showNotification(t('ai_providers.openai_models_fetch_added', { count: addedCount }), 'success');
+    }
+  };
+
+  useEffect(() => {
+    if (modal?.type !== 'openai') return;
+    if (openaiAvailableModels.length === 0) {
+      if (openaiTestModel) {
+        setOpenaiTestModel('');
+        setOpenaiTestStatus('idle');
+        setOpenaiTestMessage('');
+      }
+      return;
+    }
+
+    if (!openaiTestModel || !openaiAvailableModels.includes(openaiTestModel)) {
+      setOpenaiTestModel(openaiAvailableModels[0]);
+      setOpenaiTestStatus('idle');
+      setOpenaiTestMessage('');
+    }
+  }, [modal?.type, openaiAvailableModels, openaiTestModel]);
+
+  const testOpenaiProviderConnection = async () => {
+    const baseUrl = openaiForm.baseUrl.trim();
+    if (!baseUrl) {
+      const message = t('notification.openai_test_url_required');
+      setOpenaiTestStatus('error');
+      setOpenaiTestMessage(message);
+      showNotification(message, 'error');
+      return;
+    }
+
+    const endpoint = buildOpenAIChatCompletionsEndpoint(baseUrl);
+    if (!endpoint) {
+      const message = t('notification.openai_test_url_required');
+      setOpenaiTestStatus('error');
+      setOpenaiTestMessage(message);
+      showNotification(message, 'error');
+      return;
+    }
+
+    const firstKeyEntry = openaiForm.apiKeyEntries.find((entry) => entry.apiKey?.trim());
+    if (!firstKeyEntry) {
+      const message = t('notification.openai_test_key_required');
+      setOpenaiTestStatus('error');
+      setOpenaiTestMessage(message);
+      showNotification(message, 'error');
+      return;
+    }
+
+    const modelName = openaiTestModel.trim() || openaiAvailableModels[0] || '';
+    if (!modelName) {
+      const message = t('notification.openai_test_model_required');
+      setOpenaiTestStatus('error');
+      setOpenaiTestMessage(message);
+      showNotification(message, 'error');
+      return;
+    }
+
+    const customHeaders = buildHeaderObject(openaiForm.headers);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...customHeaders
+    };
+    if (!headers.Authorization && !headers['authorization']) {
+      headers.Authorization = `Bearer ${firstKeyEntry.apiKey.trim()}`;
+    }
+
+    setOpenaiTestStatus('loading');
+    setOpenaiTestMessage(t('ai_providers.openai_test_running'));
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: modelName,
+          messages: [{ role: 'user', content: 'Hi' }],
+          stream: false,
+          max_tokens: 5
+        })
+      });
+      const rawText = await response.text();
+
+      if (!response.ok) {
+        let errorMessage = `${response.status} ${response.statusText}`;
+        try {
+          const parsed = rawText ? JSON.parse(rawText) : null;
+          errorMessage = parsed?.error?.message || parsed?.message || errorMessage;
+        } catch {
+          if (rawText) {
+            errorMessage = rawText;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      setOpenaiTestStatus('success');
+      setOpenaiTestMessage(t('ai_providers.openai_test_success'));
+    } catch (err: any) {
+      setOpenaiTestStatus('error');
+      setOpenaiTestMessage(`${t('ai_providers.openai_test_failed')}: ${err?.message || ''}`);
+    }
   };
 
   const saveGemini = async () => {
@@ -979,11 +1242,6 @@ export function AiProvidersPage() {
           value={openaiForm.baseUrl}
           onChange={(e) => setOpenaiForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
         />
-        <Input
-          label={t('ai_providers.openai_test_model_placeholder')}
-          value={openaiForm.testModel ?? ''}
-          onChange={(e) => setOpenaiForm((prev) => ({ ...prev, testModel: e.target.value }))}
-        />
 
         <HeaderInputList
           entries={openaiForm.headers}
@@ -994,7 +1252,12 @@ export function AiProvidersPage() {
         />
 
         <div className="form-group">
-          <label>{t('ai_providers.openai_models_fetch_title')}</label>
+          <label>
+            {modal?.index !== null
+              ? t('ai_providers.openai_edit_modal_models_label')
+              : t('ai_providers.openai_add_modal_models_label')}
+          </label>
+          <div className="hint">{t('ai_providers.openai_models_hint')}</div>
           <ModelInputList
             entries={openaiForm.modelEntries}
             onChange={(entries) => setOpenaiForm((prev) => ({ ...prev, modelEntries: entries }))}
@@ -1003,12 +1266,144 @@ export function AiProvidersPage() {
             aliasPlaceholder={t('common.model_alias_placeholder')}
             disabled={saving}
           />
+          <Button variant="secondary" size="sm" onClick={openOpenaiModelDiscovery} disabled={saving}>
+            {t('ai_providers.openai_models_fetch_button')}
+          </Button>
+        </div>
+
+        <div className="form-group">
+          <label>{t('ai_providers.openai_test_title')}</label>
+          <div className="hint">{t('ai_providers.openai_test_hint')}</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <select
+              className="input"
+              value={openaiTestModel}
+              onChange={(e) => {
+                setOpenaiTestModel(e.target.value);
+                setOpenaiTestStatus('idle');
+                setOpenaiTestMessage('');
+              }}
+              disabled={saving || openaiAvailableModels.length === 0}
+            >
+              <option value="">
+                {openaiAvailableModels.length
+                  ? t('ai_providers.openai_test_select_placeholder')
+                  : t('ai_providers.openai_test_select_empty')}
+              </option>
+              {openaiForm.modelEntries
+                .filter((entry) => entry.name.trim())
+                .map((entry, idx) => {
+                  const name = entry.name.trim();
+                  const alias = entry.alias.trim();
+                  const label = alias && alias !== name ? `${name} (${alias})` : name;
+                  return (
+                    <option key={`${name}-${idx}`} value={name}>
+                      {label}
+                    </option>
+                  );
+                })}
+            </select>
+            <Button
+              size="sm"
+              variant={openaiTestStatus === 'error' ? 'danger' : 'secondary'}
+              className={openaiTestStatus === 'success' ? styles.openaiTestButtonSuccess : ''}
+              onClick={testOpenaiProviderConnection}
+              loading={openaiTestStatus === 'loading'}
+              disabled={saving || openaiAvailableModels.length === 0}
+            >
+              {t('ai_providers.openai_test_action')}
+            </Button>
+          </div>
+          {openaiTestMessage && (
+            <div
+              className={`status-badge ${
+                openaiTestStatus === 'error' ? 'error' : openaiTestStatus === 'success' ? 'success' : 'muted'
+              }`}
+            >
+              {openaiTestMessage}
+            </div>
+          )}
         </div>
 
         <div className="form-group">
           <label>{t('ai_providers.openai_add_modal_keys_label')}</label>
           {renderKeyEntries(openaiForm.apiKeyEntries)}
         </div>
+      </Modal>
+
+      {/* OpenAI Models Discovery Modal */}
+      <Modal
+        open={openaiDiscoveryOpen}
+        onClose={closeOpenaiModelDiscovery}
+        title={t('ai_providers.openai_models_fetch_title')}
+        width={720}
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeOpenaiModelDiscovery} disabled={openaiDiscoveryLoading}>
+              {t('ai_providers.openai_models_fetch_back')}
+            </Button>
+            <Button onClick={applyOpenaiModelDiscoverySelection} disabled={openaiDiscoveryLoading}>
+              {t('ai_providers.openai_models_fetch_apply')}
+            </Button>
+          </>
+        }
+      >
+        <div className="hint" style={{ marginBottom: 8 }}>
+          {t('ai_providers.openai_models_fetch_hint')}
+        </div>
+        <div className="form-group">
+          <label>{t('ai_providers.openai_models_fetch_url_label')}</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input className="input" readOnly value={openaiDiscoveryEndpoint} />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => fetchOpenaiModelDiscovery({ allowFallback: true })}
+              loading={openaiDiscoveryLoading}
+            >
+              {t('ai_providers.openai_models_fetch_refresh')}
+            </Button>
+          </div>
+        </div>
+        <Input
+          label={t('ai_providers.openai_models_search_label')}
+          placeholder={t('ai_providers.openai_models_search_placeholder')}
+          value={openaiDiscoverySearch}
+          onChange={(e) => setOpenaiDiscoverySearch(e.target.value)}
+        />
+        {openaiDiscoveryError && <div className="error-box">{openaiDiscoveryError}</div>}
+        {openaiDiscoveryLoading ? (
+          <div className="hint">{t('ai_providers.openai_models_fetch_loading')}</div>
+        ) : openaiDiscoveryModels.length === 0 ? (
+          <div className="hint">{t('ai_providers.openai_models_fetch_empty')}</div>
+        ) : filteredOpenaiDiscoveryModels.length === 0 ? (
+          <div className="hint">{t('ai_providers.openai_models_search_empty')}</div>
+        ) : (
+          <div className={styles.modelDiscoveryList}>
+            {filteredOpenaiDiscoveryModels.map((model) => {
+              const checked = openaiDiscoverySelected.has(model.name);
+              return (
+                <label
+                  key={model.name}
+                  className={`${styles.modelDiscoveryRow} ${checked ? styles.modelDiscoveryRowSelected : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleOpenaiModelSelection(model.name)}
+                  />
+                  <div className={styles.modelDiscoveryMeta}>
+                    <div className={styles.modelDiscoveryName}>
+                      {model.name}
+                      {model.alias && <span className={styles.modelDiscoveryAlias}>{model.alias}</span>}
+                    </div>
+                    {model.description && <div className={styles.modelDiscoveryDesc}>{model.description}</div>}
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        )}
       </Modal>
     </div>
   );

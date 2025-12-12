@@ -235,7 +235,7 @@
     "openai_test_success": "测试成功，模型可用。",
     "openai_test_failed": "测试失败",
     "openai_test_select_placeholder": "从当前模型列表选择",
-    "openai_test_select_empty": "当前未配置模型，可直接输入"
+    "openai_test_select_empty": "当前未配置模型，请先添加模型"
   },
   "auth_files": {
     "title": "认证文件管理",
@@ -616,7 +616,7 @@
     "openai_model_name_required": "请填写模型名称",
     "openai_test_url_required": "请先填写有效的 Base URL 以进行测试",
     "openai_test_key_required": "请至少填写一个 API 密钥以进行测试",
-    "openai_test_model_required": "请选择或输入要测试的模型",
+    "openai_test_model_required": "请选择要测试的模型",
     "data_refreshed": "数据刷新成功",
     "connection_required": "请先建立连接",
     "refresh_failed": "刷新失败",
