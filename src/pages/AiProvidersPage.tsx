@@ -7,14 +7,17 @@ import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { ModelInputList, modelsToEntries, entriesToModels } from '@/components/ui/ModelInputList';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconCheck, IconX } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
-import { modelsApi, providersApi, usageApi } from '@/services/api';
+import { ampcodeApi, modelsApi, providersApi, usageApi } from '@/services/api';
 import type {
   GeminiKeyConfig,
   ProviderKeyConfig,
   OpenAIProviderConfig,
-  ApiKeyEntry
+  ApiKeyEntry,
+  AmpcodeConfig,
+  AmpcodeModelMapping
 } from '@/types';
 import type { KeyStats, KeyStatBucket } from '@/utils/usage';
 import type { ModelInfo } from '@/utils/models';
@@ -26,6 +29,7 @@ type ProviderModal =
   | { type: 'gemini'; index: number | null }
   | { type: 'codex'; index: number | null }
   | { type: 'claude'; index: number | null }
+  | { type: 'ampcode'; index: null }
   | { type: 'openai'; index: number | null };
 
 interface ModelEntry {
@@ -40,6 +44,14 @@ interface OpenAIFormState {
   testModel?: string;
   modelEntries: ModelEntry[];
   apiKeyEntries: ApiKeyEntry[];
+}
+
+interface AmpcodeFormState {
+  upstreamUrl: string;
+  upstreamApiKey: string;
+  restrictManagementToLocalhost: boolean;
+  forceModelMappings: boolean;
+  mappingEntries: ModelEntry[];
 }
 
 const parseExcludedModels = (text: string): string[] =>
@@ -104,6 +116,41 @@ const buildApiKeyEntry = (input?: Partial<ApiKeyEntry>): ApiKeyEntry => ({
   headers: input?.headers ?? {}
 });
 
+const ampcodeMappingsToEntries = (mappings?: AmpcodeModelMapping[]): ModelEntry[] => {
+  if (!Array.isArray(mappings) || mappings.length === 0) {
+    return [{ name: '', alias: '' }];
+  }
+  return mappings.map((mapping) => ({
+    name: mapping.from ?? '',
+    alias: mapping.to ?? ''
+  }));
+};
+
+const entriesToAmpcodeMappings = (entries: ModelEntry[]): AmpcodeModelMapping[] => {
+  const seen = new Set<string>();
+  const mappings: AmpcodeModelMapping[] = [];
+
+  entries.forEach((entry) => {
+    const from = entry.name.trim();
+    const to = entry.alias.trim();
+    if (!from || !to) return;
+    const key = from.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    mappings.push({ from, to });
+  });
+
+  return mappings;
+};
+
+const buildAmpcodeFormState = (ampcode?: AmpcodeConfig | null): AmpcodeFormState => ({
+  upstreamUrl: ampcode?.upstreamUrl ?? '',
+  upstreamApiKey: '',
+  restrictManagementToLocalhost: ampcode?.restrictManagementToLocalhost ?? true,
+  forceModelMappings: ampcode?.forceModelMappings ?? false,
+  mappingEntries: ampcodeMappingsToEntries(ampcode?.modelMappings)
+});
+
 export function AiProvidersPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
@@ -149,6 +196,12 @@ export function AiProvidersPage() {
     apiKeyEntries: [buildApiKeyEntry()],
     modelEntries: [{ name: '', alias: '' }]
   });
+  const [ampcodeForm, setAmpcodeForm] = useState<AmpcodeFormState>(() => buildAmpcodeFormState(null));
+  const [ampcodeModalLoading, setAmpcodeModalLoading] = useState(false);
+  const [ampcodeLoaded, setAmpcodeLoaded] = useState(false);
+  const [ampcodeMappingsDirty, setAmpcodeMappingsDirty] = useState(false);
+  const [ampcodeModalError, setAmpcodeModalError] = useState('');
+  const [ampcodeSaving, setAmpcodeSaving] = useState(false);
   const [openaiDiscoveryOpen, setOpenaiDiscoveryOpen] = useState(false);
   const [openaiDiscoveryEndpoint, setOpenaiDiscoveryEndpoint] = useState('');
   const [openaiDiscoveryModels, setOpenaiDiscoveryModels] = useState<ModelInfo[]>([]);
@@ -199,6 +252,13 @@ export function AiProvidersPage() {
       setCodexConfigs(data?.codexApiKeys || []);
       setClaudeConfigs(data?.claudeApiKeys || []);
       setOpenaiProviders(data?.openaiCompatibility || []);
+      try {
+        const ampcode = await ampcodeApi.getAmpcode();
+        updateConfigValue('ampcode', ampcode);
+        clearCache('ampcode');
+      } catch {
+        // ignore
+      }
     } catch (err: any) {
       setError(err?.message || t('notification.refresh_failed'));
     } finally {
@@ -245,6 +305,12 @@ export function AiProvidersPage() {
       modelEntries: [{ name: '', alias: '' }],
       testModel: undefined
     });
+    setAmpcodeForm(buildAmpcodeFormState(null));
+    setAmpcodeModalLoading(false);
+    setAmpcodeLoaded(false);
+    setAmpcodeMappingsDirty(false);
+    setAmpcodeModalError('');
+    setAmpcodeSaving(false);
     setOpenaiDiscoveryOpen(false);
     setOpenaiDiscoveryModels([]);
     setOpenaiDiscoverySelected(new Set());
@@ -278,6 +344,29 @@ export function AiProvidersPage() {
       });
     }
     setModal({ type, index });
+  };
+
+  const openAmpcodeModal = () => {
+    setAmpcodeModalLoading(true);
+    setAmpcodeLoaded(false);
+    setAmpcodeMappingsDirty(false);
+    setAmpcodeModalError('');
+    setAmpcodeForm(buildAmpcodeFormState(config?.ampcode ?? null));
+    setModal({ type: 'ampcode', index: null });
+
+    void (async () => {
+      try {
+        const ampcode = await ampcodeApi.getAmpcode();
+        setAmpcodeLoaded(true);
+        updateConfigValue('ampcode', ampcode);
+        clearCache('ampcode');
+        setAmpcodeForm(buildAmpcodeFormState(ampcode));
+      } catch (err: any) {
+        setAmpcodeModalError(err?.message || t('notification.refresh_failed'));
+      } finally {
+        setAmpcodeModalLoading(false);
+      }
+    })();
   };
 
   const openOpenaiModal = (index: number | null) => {
@@ -503,6 +592,94 @@ export function AiProvidersPage() {
     } catch (err: any) {
       setOpenaiTestStatus('error');
       setOpenaiTestMessage(`${t('ai_providers.openai_test_failed')}: ${err?.message || ''}`);
+    }
+  };
+
+  const clearAmpcodeUpstreamApiKey = async () => {
+    if (!window.confirm(t('ai_providers.ampcode_clear_upstream_api_key_confirm'))) return;
+    setAmpcodeSaving(true);
+    setAmpcodeModalError('');
+    try {
+      await ampcodeApi.clearUpstreamApiKey();
+      const previous = config?.ampcode ?? {};
+      const next: AmpcodeConfig = { ...previous };
+      delete (next as any).upstreamApiKey;
+      updateConfigValue('ampcode', next);
+      clearCache('ampcode');
+      showNotification(t('notification.ampcode_upstream_api_key_cleared'), 'success');
+    } catch (err: any) {
+      const message = err?.message || '';
+      setAmpcodeModalError(message);
+      showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+    } finally {
+      setAmpcodeSaving(false);
+    }
+  };
+
+  const saveAmpcode = async () => {
+    if (!ampcodeLoaded && ampcodeMappingsDirty) {
+      const confirmed = window.confirm(t('ai_providers.ampcode_mappings_overwrite_confirm'));
+      if (!confirmed) return;
+    }
+
+    setAmpcodeSaving(true);
+    setAmpcodeModalError('');
+    try {
+      const upstreamUrl = ampcodeForm.upstreamUrl.trim();
+      const overrideKey = ampcodeForm.upstreamApiKey.trim();
+      const modelMappings = entriesToAmpcodeMappings(ampcodeForm.mappingEntries);
+
+      if (upstreamUrl) {
+        await ampcodeApi.updateUpstreamUrl(upstreamUrl);
+      } else {
+        await ampcodeApi.clearUpstreamUrl();
+      }
+
+      await ampcodeApi.updateRestrictManagementToLocalhost(ampcodeForm.restrictManagementToLocalhost);
+      await ampcodeApi.updateForceModelMappings(ampcodeForm.forceModelMappings);
+
+      if (ampcodeLoaded || ampcodeMappingsDirty) {
+        if (modelMappings.length) {
+          await ampcodeApi.saveModelMappings(modelMappings);
+        } else {
+          await ampcodeApi.clearModelMappings();
+        }
+      }
+
+      if (overrideKey) {
+        await ampcodeApi.updateUpstreamApiKey(overrideKey);
+      }
+
+      const previous = config?.ampcode ?? {};
+      const next: AmpcodeConfig = {
+        ...previous,
+        upstreamUrl: upstreamUrl || undefined,
+        restrictManagementToLocalhost: ampcodeForm.restrictManagementToLocalhost,
+        forceModelMappings: ampcodeForm.forceModelMappings
+      };
+
+      if (overrideKey) {
+        next.upstreamApiKey = overrideKey;
+      }
+
+      if (ampcodeLoaded || ampcodeMappingsDirty) {
+        if (modelMappings.length) {
+          next.modelMappings = modelMappings;
+        } else {
+          delete (next as any).modelMappings;
+        }
+      }
+
+      updateConfigValue('ampcode', next);
+      clearCache('ampcode');
+      showNotification(t('notification.ampcode_updated'), 'success');
+      closeModal();
+    } catch (err: any) {
+      const message = err?.message || '';
+      setAmpcodeModalError(message);
+      showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+    } finally {
+      setAmpcodeSaving(false);
     }
   };
 
@@ -1023,6 +1200,63 @@ export function AiProvidersPage() {
       </Card>
 
       <Card
+        title={t('ai_providers.ampcode_title')}
+        extra={
+          <Button size="sm" onClick={openAmpcodeModal} disabled={disableControls}>
+            {t('common.edit')}
+          </Button>
+        }
+      >
+        {loading ? (
+          <div className="hint">{t('common.loading')}</div>
+        ) : (
+          <>
+            <div className={styles.fieldRow}>
+              <span className={styles.fieldLabel}>{t('ai_providers.ampcode_upstream_url_label')}:</span>
+              <span className={styles.fieldValue}>{config?.ampcode?.upstreamUrl || t('common.not_set')}</span>
+            </div>
+            <div className={styles.fieldRow}>
+              <span className={styles.fieldLabel}>{t('ai_providers.ampcode_upstream_api_key_label')}:</span>
+              <span className={styles.fieldValue}>
+                {config?.ampcode?.upstreamApiKey ? maskApiKey(config.ampcode.upstreamApiKey) : t('common.not_set')}
+              </span>
+            </div>
+            <div className={styles.fieldRow}>
+              <span className={styles.fieldLabel}>{t('ai_providers.ampcode_restrict_management_label')}:</span>
+              <span className={styles.fieldValue}>
+                {(config?.ampcode?.restrictManagementToLocalhost ?? true) ? t('common.yes') : t('common.no')}
+              </span>
+            </div>
+            <div className={styles.fieldRow}>
+              <span className={styles.fieldLabel}>{t('ai_providers.ampcode_force_model_mappings_label')}:</span>
+              <span className={styles.fieldValue}>
+                {(config?.ampcode?.forceModelMappings ?? false) ? t('common.yes') : t('common.no')}
+              </span>
+            </div>
+            <div className={styles.fieldRow} style={{ marginTop: 8 }}>
+              <span className={styles.fieldLabel}>{t('ai_providers.ampcode_model_mappings_count')}:</span>
+              <span className={styles.fieldValue}>{config?.ampcode?.modelMappings?.length || 0}</span>
+            </div>
+            {config?.ampcode?.modelMappings?.length ? (
+              <div className={styles.modelTagList}>
+                {config.ampcode.modelMappings.slice(0, 5).map((mapping) => (
+                  <span key={`${mapping.from}→${mapping.to}`} className={styles.modelTag}>
+                    <span className={styles.modelName}>{mapping.from}</span>
+                    <span className={styles.modelAlias}>{mapping.to}</span>
+                  </span>
+                ))}
+                {config.ampcode.modelMappings.length > 5 && (
+                  <span className={styles.modelTag}>
+                    <span className={styles.modelName}>+{config.ampcode.modelMappings.length - 5}</span>
+                  </span>
+                )}
+              </div>
+            ) : null}
+          </>
+        )}
+      </Card>
+
+      <Card
         title={t('ai_providers.openai_title')}
         extra={
           <Button size="sm" onClick={() => openOpenaiModal(null)} disabled={disableControls}>
@@ -1127,6 +1361,93 @@ export function AiProvidersPage() {
           t('ai_providers.openai_add_button')
         )}
       </Card>
+
+      {/* Ampcode Modal */}
+      <Modal
+        open={modal?.type === 'ampcode'}
+        onClose={closeModal}
+        title={t('ai_providers.ampcode_modal_title')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeModal} disabled={ampcodeSaving}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={saveAmpcode} loading={ampcodeSaving} disabled={disableControls || ampcodeModalLoading}>
+              {t('common.save')}
+            </Button>
+          </>
+        }
+      >
+        {ampcodeModalError && <div className="error-box">{ampcodeModalError}</div>}
+        <Input
+          label={t('ai_providers.ampcode_upstream_url_label')}
+          placeholder={t('ai_providers.ampcode_upstream_url_placeholder')}
+          value={ampcodeForm.upstreamUrl}
+          onChange={(e) => setAmpcodeForm((prev) => ({ ...prev, upstreamUrl: e.target.value }))}
+          disabled={ampcodeModalLoading || ampcodeSaving}
+          hint={t('ai_providers.ampcode_upstream_url_hint')}
+        />
+        <Input
+          label={t('ai_providers.ampcode_upstream_api_key_label')}
+          placeholder={t('ai_providers.ampcode_upstream_api_key_placeholder')}
+          type="password"
+          value={ampcodeForm.upstreamApiKey}
+          onChange={(e) => setAmpcodeForm((prev) => ({ ...prev, upstreamApiKey: e.target.value }))}
+          disabled={ampcodeModalLoading || ampcodeSaving}
+          hint={t('ai_providers.ampcode_upstream_api_key_hint')}
+        />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: -8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <div className="hint" style={{ margin: 0 }}>
+            {t('ai_providers.ampcode_upstream_api_key_current', {
+              key: config?.ampcode?.upstreamApiKey ? maskApiKey(config.ampcode.upstreamApiKey) : t('common.not_set')
+            })}
+          </div>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={clearAmpcodeUpstreamApiKey}
+            disabled={ampcodeModalLoading || ampcodeSaving || !config?.ampcode?.upstreamApiKey}
+          >
+            {t('ai_providers.ampcode_clear_upstream_api_key')}
+          </Button>
+        </div>
+
+        <div className="form-group">
+          <ToggleSwitch
+            label={t('ai_providers.ampcode_restrict_management_label')}
+            checked={ampcodeForm.restrictManagementToLocalhost}
+            onChange={(value) => setAmpcodeForm((prev) => ({ ...prev, restrictManagementToLocalhost: value }))}
+            disabled={ampcodeModalLoading || ampcodeSaving}
+          />
+          <div className="hint">{t('ai_providers.ampcode_restrict_management_hint')}</div>
+        </div>
+
+        <div className="form-group">
+          <ToggleSwitch
+            label={t('ai_providers.ampcode_force_model_mappings_label')}
+            checked={ampcodeForm.forceModelMappings}
+            onChange={(value) => setAmpcodeForm((prev) => ({ ...prev, forceModelMappings: value }))}
+            disabled={ampcodeModalLoading || ampcodeSaving}
+          />
+          <div className="hint">{t('ai_providers.ampcode_force_model_mappings_hint')}</div>
+        </div>
+
+        <div className="form-group">
+          <label>{t('ai_providers.ampcode_model_mappings_label')}</label>
+          <ModelInputList
+            entries={ampcodeForm.mappingEntries}
+            onChange={(entries) => {
+              setAmpcodeMappingsDirty(true);
+              setAmpcodeForm((prev) => ({ ...prev, mappingEntries: entries }));
+            }}
+            addLabel={t('ai_providers.ampcode_model_mappings_add_btn')}
+            namePlaceholder={t('ai_providers.ampcode_model_mappings_from_placeholder')}
+            aliasPlaceholder={t('ai_providers.ampcode_model_mappings_to_placeholder')}
+            disabled={ampcodeModalLoading || ampcodeSaving}
+          />
+          <div className="hint">{t('ai_providers.ampcode_model_mappings_hint')}</div>
+        </div>
+      </Modal>
 
       {/* Gemini Modal */}
       <Modal
@@ -1322,7 +1643,7 @@ export function AiProvidersPage() {
           <div className="hint">{t('ai_providers.openai_test_hint')}</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <select
-              className="input"
+              className={`input ${styles.openaiTestSelect}`}
               value={openaiTestModel}
               onChange={(e) => {
                 setOpenaiTestModel(e.target.value);

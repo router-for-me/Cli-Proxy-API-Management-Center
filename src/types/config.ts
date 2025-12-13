@@ -4,6 +4,7 @@
  */
 
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from './provider';
+import type { AmpcodeConfig } from './ampcode';
 
 export interface QuotaExceededConfig {
   switchProject?: boolean;
@@ -20,6 +21,7 @@ export interface Config {
   loggingToFile?: boolean;
   wsAuth?: boolean;
   apiKeys?: string[];
+  ampcode?: AmpcodeConfig;
   geminiApiKeys?: GeminiKeyConfig[];
   codexApiKeys?: ProviderKeyConfig[];
   claudeApiKeys?: ProviderKeyConfig[];
@@ -38,6 +40,7 @@ export type RawConfigSection =
   | 'logging-to-file'
   | 'ws-auth'
   | 'api-keys'
+  | 'ampcode'
   | 'gemini-api-key'
   | 'codex-api-key'
   | 'claude-api-key'

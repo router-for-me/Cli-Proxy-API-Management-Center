@@ -9,13 +9,15 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  type ChartOptions
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { IconDiamond, IconDollarSign, IconSatellite, IconTimer, IconTrendingUp } from '@/components/ui/icons';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { usageApi } from '@/services/api/usage';
 import {
   formatTokensInMillions,
@@ -59,6 +61,7 @@ interface UsagePayload {
 
 export function UsagePage() {
   const { t } = useTranslation();
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const [usage, setUsage] = useState<UsagePayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -216,39 +219,97 @@ export function UsagePage() {
     [buildLastHourSeries, buildSparkline]
   );
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: 'index' as const,
-      intersect: false
-    },
-    plugins: {
-      legend: {
-        display: true,
-        position: 'top' as const,
-        align: 'start' as const,
-        labels: {
-          usePointStyle: true
+  const buildChartOptions = useCallback(
+    (period: 'hour' | 'day', labels: string[]): ChartOptions<'line'> => {
+      const pointRadius = isMobile && period === 'hour' ? 0 : isMobile ? 2 : 4;
+      const tickFontSize = isMobile ? 10 : 12;
+      const maxTickLabelCount = isMobile ? (period === 'hour' ? 8 : 6) : period === 'hour' ? 12 : 10;
+
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            ticks: {
+              font: { size: tickFontSize },
+              maxRotation: isMobile ? 0 : 45,
+              minRotation: isMobile ? 0 : 0,
+              autoSkip: true,
+              maxTicksLimit: maxTickLabelCount,
+              callback: (value) => {
+                const index = typeof value === 'number' ? value : Number(value);
+                const raw =
+                  Number.isFinite(index) && labels[index] ? labels[index] : typeof value === 'string' ? value : '';
+
+                if (period === 'hour') {
+                  const [md, time] = raw.split(' ');
+                  if (!time) return raw;
+                  if (time.startsWith('00:')) {
+                    return md ? [md, time] : time;
+                  }
+                  return time;
+                }
+
+                if (isMobile) {
+                  const parts = raw.split('-');
+                  if (parts.length === 3) {
+                    return `${parts[1]}-${parts[2]}`;
+                  }
+                }
+                return raw;
+              }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              font: { size: tickFontSize }
+            }
+          }
+        },
+        elements: {
+          line: {
+            tension: 0.35,
+            borderWidth: isMobile ? 1.5 : 2
+          },
+          point: {
+            borderWidth: 2,
+            radius: pointRadius,
+            hoverRadius: 4
+          }
         }
-      }
+      };
     },
-    scales: {
-      y: {
-        beginAtZero: true
-      }
+    [isMobile]
+  );
+
+  const requestsChartOptions = useMemo(
+    () => buildChartOptions(requestsPeriod, requestsChartData.labels),
+    [buildChartOptions, requestsPeriod, requestsChartData.labels]
+  );
+
+  const tokensChartOptions = useMemo(
+    () => buildChartOptions(tokensPeriod, tokensChartData.labels),
+    [buildChartOptions, tokensPeriod, tokensChartData.labels]
+  );
+
+  const getHourChartMinWidth = useCallback(
+    (labelCount: number) => {
+      if (!isMobile || labelCount <= 0) return undefined;
+      // 24 小时标签在移动端需要更宽的画布，避免 X 轴与点位过度挤压
+      const perPoint = 56;
+      const minWidth = Math.min(labelCount * perPoint, 3000);
+      return `${minWidth}px`;
     },
-    elements: {
-      line: {
-        tension: 0.35,
-        borderWidth: 2
-      },
-      point: {
-        borderWidth: 2,
-        radius: 4
-      }
-    }
-  };
+    [isMobile]
+  );
 
   // Chart line management
   const handleAddChartLine = () => {
@@ -521,7 +582,32 @@ export function UsagePage() {
           <div className={styles.hint}>{t('common.loading')}</div>
         ) : requestsChartData.labels.length > 0 ? (
           <div className={styles.chartWrapper}>
-            <Line data={requestsChartData} options={chartOptions} />
+            <div className={styles.chartLegend} aria-label="Chart legend">
+              {requestsChartData.datasets.map((dataset, index) => (
+                <div
+                  key={`${dataset.label}-${index}`}
+                  className={styles.legendItem}
+                  title={dataset.label}
+                >
+                  <span className={styles.legendDot} style={{ backgroundColor: dataset.borderColor }} />
+                  <span className={styles.legendLabel}>{dataset.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className={styles.chartArea}>
+              <div className={styles.chartScroller}>
+                <div
+                  className={styles.chartCanvas}
+                  style={
+                    requestsPeriod === 'hour'
+                      ? { minWidth: getHourChartMinWidth(requestsChartData.labels.length) }
+                      : undefined
+                  }
+                >
+                  <Line data={requestsChartData} options={requestsChartOptions} />
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className={styles.hint}>{t('usage_stats.no_data')}</div>
@@ -554,7 +640,32 @@ export function UsagePage() {
           <div className={styles.hint}>{t('common.loading')}</div>
         ) : tokensChartData.labels.length > 0 ? (
           <div className={styles.chartWrapper}>
-            <Line data={tokensChartData} options={chartOptions} />
+            <div className={styles.chartLegend} aria-label="Chart legend">
+              {tokensChartData.datasets.map((dataset, index) => (
+                <div
+                  key={`${dataset.label}-${index}`}
+                  className={styles.legendItem}
+                  title={dataset.label}
+                >
+                  <span className={styles.legendDot} style={{ backgroundColor: dataset.borderColor }} />
+                  <span className={styles.legendLabel}>{dataset.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className={styles.chartArea}>
+              <div className={styles.chartScroller}>
+                <div
+                  className={styles.chartCanvas}
+                  style={
+                    tokensPeriod === 'hour'
+                      ? { minWidth: getHourChartMinWidth(tokensChartData.labels.length) }
+                      : undefined
+                  }
+                >
+                  <Line data={tokensChartData} options={tokensChartOptions} />
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className={styles.hint}>{t('usage_stats.no_data')}</div>

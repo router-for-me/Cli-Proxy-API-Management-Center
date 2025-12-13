@@ -2,6 +2,7 @@ export * from './client';
 export * from './config';
 export * from './configFile';
 export * from './apiKeys';
+export * from './ampcode';
 export * from './providers';
 export * from './authFiles';
 export * from './oauth';

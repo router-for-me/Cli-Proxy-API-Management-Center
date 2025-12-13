@@ -374,7 +374,13 @@
 }
 
 // 连通性测试按钮高度对齐
+.openaiTestSelect {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .openaiTestButton {
+  flex: 1 1 0;
   padding: 8px 12px;
   font-size: 14px;
   line-height: 1.5;

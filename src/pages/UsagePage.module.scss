@@ -535,12 +535,83 @@
 }
 
 .chartWrapper {
-  padding: 16px;
+  padding: 12px;
   background-color: var(--bg-primary);
   border-radius: $radius-md;
   border: 1px solid var(--border-color);
-  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+  min-width: 0;
+
+  @include mobile {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 240px;
+  font-size: 11px;
+  color: var(--text-secondary);
+
+  @include mobile {
+    max-width: 180px;
+  }
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chartArea {
   height: 240px;
+
+  @include mobile {
+    height: 280px;
+  }
+}
+
+.chartScroller {
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+
+  // Chart.js 默认会设置 canvas 的 touch-action: none，导致移动端无法横向滚动
+  :global(canvas) {
+    touch-action: pan-x pan-y !important;
+  }
+}
+
+.chartCanvas {
+  position: relative;
+  height: 100%;
+  width: 100%;
 }
 
 .periodButtons {
