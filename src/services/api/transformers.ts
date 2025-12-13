@@ -87,6 +87,10 @@ const normalizeProviderKeyConfig = (item: any): ProviderKeyConfig | null => {
   if (headers) config.headers = headers;
   const models = normalizeModelAliases(item.models);
   if (models.length) config.models = models;
+  const excludedModels = normalizeExcludedModels(
+    item['excluded-models'] ?? item.excludedModels ?? item['excluded_models'] ?? item.excluded_models
+  );
+  if (excludedModels.length) config.excludedModels = excludedModels;
   return config;
 };
 

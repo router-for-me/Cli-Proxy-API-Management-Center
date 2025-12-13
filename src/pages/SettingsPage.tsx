@@ -259,16 +259,21 @@ export function SettingsPage() {
             {t('basic_settings.proxy_update')}
           </Button>
         </div>
+      </Card>
+
+      <Card title={t('basic_settings.retry_title')}>
         <Input
           label={t('basic_settings.retry_count_label')}
           type="number"
           value={retryValue}
           onChange={(e) => setRetryValue(Number(e.target.value))}
           disabled={disableControls || loading}
+          rightElement={
+            <Button onClick={handleRetryUpdate} loading={pending.retry} disabled={disableControls || loading}>
+              {t('basic_settings.retry_update')}
+            </Button>
+          }
         />
-        <Button onClick={handleRetryUpdate} loading={pending.retry} disabled={disableControls || loading} fullWidth>
-          {t('basic_settings.retry_update')}
-        </Button>
       </Card>
 
       <Card title={t('basic_settings.quota_title')}>
