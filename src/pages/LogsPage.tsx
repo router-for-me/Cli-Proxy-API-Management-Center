@@ -27,10 +27,27 @@ export function LogsPage() {
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
 
+  const logViewerRef = useRef<HTMLPreElement | null>(null);
+  const pendingScrollToBottomRef = useRef(false);
+
   // 保存最新时间戳用于增量获取
   const latestTimestampRef = useRef<number>(0);
 
   const disableControls = connectionStatus !== 'connected';
+
+  const isNearBottom = (node: HTMLPreElement | null) => {
+    if (!node) return true;
+    const threshold = 24;
+    return node.scrollHeight - node.scrollTop - node.clientHeight <= threshold;
+  };
+
+  const scrollToBottom = () => {
+    const node = logViewerRef.current;
+    if (!node) return;
+    node.scrollTop = node.scrollHeight;
+  };
+
+  const isWarningLine = (line: string) => /\bwarn(?:ing)?\b/i.test(line) || line.includes('警告');
 
   const loadLogs = async (incremental = false) => {
     if (connectionStatus !== 'connected') {
@@ -44,6 +61,8 @@ export function LogsPage() {
     setError('');
 
     try {
+      pendingScrollToBottomRef.current = !incremental || isNearBottom(logViewerRef.current);
+
       const params = incremental && latestTimestampRef.current > 0
         ? { after: latestTimestampRef.current }
         : {};
@@ -166,6 +185,15 @@ export function LogsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefresh, connectionStatus]);
 
+  useEffect(() => {
+    if (!pendingScrollToBottomRef.current) return;
+    if (loading) return;
+    if (!logViewerRef.current) return;
+
+    scrollToBottom();
+    pendingScrollToBottomRef.current = false;
+  }, [loading, logLines]);
+
   const logsText = logLines.join('\n');
 
   return (
@@ -193,7 +221,13 @@ export function LogsPage() {
         {loading ? (
           <div className="hint">{t('logs.loading')}</div>
         ) : logsText ? (
-          <pre className="log-viewer">{logsText}</pre>
+          <pre ref={logViewerRef} className="log-viewer log-viewer-lines">
+            {logLines.map((line, index) => (
+              <span key={index} className={`log-line${isWarningLine(line) ? ' log-line-warning' : ''}`}>
+                {line}
+              </span>
+            ))}
+          </pre>
         ) : (
           <EmptyState title={t('logs.empty_title')} description={t('logs.empty_desc')} />
         )}

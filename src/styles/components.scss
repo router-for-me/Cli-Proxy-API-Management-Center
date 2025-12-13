@@ -615,6 +615,20 @@ textarea {
   color: var(--text-primary);
 }
 
+.log-viewer-lines {
+  .log-line {
+    display: block;
+    padding: 1px 0;
+  }
+
+  .log-line-warning {
+    color: var(--warning-text, #92400e);
+    background: var(--warning-bg, rgba(251, 191, 36, 0.18));
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+}
+
 .hint {
   color: var(--text-secondary);
 }
