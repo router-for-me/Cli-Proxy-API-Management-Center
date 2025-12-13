@@ -976,11 +976,9 @@ export function AiProvidersPage() {
                 {/* 模型列表 */}
                 {item.models?.length ? (
                   <div className={styles.modelTagList}>
-                    <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>
-                        {t('ai_providers.claude_models_count')}: {item.models.length}
-                      </span>
-                    </div>
+                    <span className={styles.modelCountLabel}>
+                      {t('ai_providers.claude_models_count')}: {item.models.length}
+                    </span>
                     {item.models.map((model) => (
                       <span key={model.name} className={styles.modelTag}>
                         <span className={styles.modelName}>{model.name}</span>
@@ -1352,9 +1350,8 @@ export function AiProvidersPage() {
                 })}
             </select>
             <Button
-              size="sm"
               variant={openaiTestStatus === 'error' ? 'danger' : 'secondary'}
-              className={openaiTestStatus === 'success' ? styles.openaiTestButtonSuccess : ''}
+              className={`${styles.openaiTestButton} ${openaiTestStatus === 'success' ? styles.openaiTestButtonSuccess : ''}`}
               onClick={testOpenaiProviderConnection}
               loading={openaiTestStatus === 'loading'}
               disabled={saving || openaiAvailableModels.length === 0}

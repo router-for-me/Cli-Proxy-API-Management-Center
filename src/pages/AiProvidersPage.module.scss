@@ -70,7 +70,6 @@
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
   white-space: nowrap;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .statSuccess {
@@ -141,6 +140,18 @@
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
+  align-items: center;
+}
+
+.modelCountLabel {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 // 单个模型标签
@@ -360,6 +371,13 @@
     background-color: var(--success-badge-bg, #d1fae5);
     border-color: var(--success-badge-border, #6ee7b7);
   }
+}
+
+// 连通性测试按钮高度对齐
+.openaiTestButton {
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 // 暗色主题适配
