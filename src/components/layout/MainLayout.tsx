@@ -93,12 +93,19 @@ const headerIcons = {
       <path d="m19.07 4.93-1.41 1.41" />
     </svg>
   ),
-  moon: (
-    <svg {...headerIconProps}>
-      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
-    </svg>
-  )
-};
+	  moon: (
+	    <svg {...headerIconProps}>
+	      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
+	    </svg>
+	  ),
+	  logout: (
+	    <svg {...headerIconProps}>
+	      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+	      <path d="m16 17 5-5-5-5" />
+	      <path d="M21 12H9" />
+	    </svg>
+	  )
+	};
 
 const parseVersionSegments = (version?: string | null) => {
   if (!version) return null;
@@ -134,6 +141,7 @@ export function MainLayout() {
   const serverVersion = useAuthStore((state) => state.serverVersion);
   const serverBuildDate = useAuthStore((state) => state.serverBuildDate);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const logout = useAuthStore((state) => state.logout);
 
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
@@ -323,6 +331,9 @@ export function MainLayout() {
             </Button>
             <Button variant="ghost" size="sm" onClick={toggleTheme} title={t('theme.switch')}>
               {theme === 'dark' ? headerIcons.sun : headerIcons.moon}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={logout} title={t('header.logout')}>
+              {headerIcons.logout}
             </Button>
           </div>
         </div>
