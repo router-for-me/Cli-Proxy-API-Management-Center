@@ -260,6 +260,8 @@
   padding: 4px 10px;
   border-radius: $radius-sm;
   font-style: italic;
+  display: inline-flex;
+  align-items: center;
 }
 
 // 分页
@@ -444,5 +446,30 @@
   border-radius: 10px;
   flex-shrink: 0;
   margin-left: auto;
+}
+
+.modelItemExcluded {
+  opacity: 0.6;
+  background-color: var(--bg-tertiary);
+  border-style: dashed;
+
+  .modelId {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+  }
+
+  &:hover {
+    border-color: var(--danger-color);
+  }
+}
+
+.modelExcludedBadge {
+  font-size: 10px;
+  color: var(--danger-color);
+  background-color: rgba(239, 68, 68, 0.1);
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--danger-color);
+  flex-shrink: 0;
 }
 

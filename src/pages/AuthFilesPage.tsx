@@ -145,6 +145,8 @@ export function AuthFilesPage() {
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsList, setModelsList] = useState<{ id: string; display_name?: string; type?: string }[]>([]);
   const [modelsFileName, setModelsFileName] = useState('');
+  const [modelsFileType, setModelsFileType] = useState('');
+  const [modelsError, setModelsError] = useState<'unsupported' | null>(null);
 
   // OAuth 排除模型相关
   const [excluded, setExcluded] = useState<Record<string, string[]>>({});
@@ -415,18 +417,38 @@ export function AuthFilesPage() {
   // 显示模型列表
   const showModels = async (item: AuthFileItem) => {
     setModelsFileName(item.name);
+    setModelsFileType(item.type || '');
     setModelsList([]);
+    setModelsError(null);
     setModelsModalOpen(true);
     setModelsLoading(true);
     try {
       const models = await authFilesApi.getModelsForAuthFile(item.name);
       setModelsList(models);
     } catch (err) {
+      // 检测是否是 API 不支持的错误 (404 或特定错误消息)
       const errorMessage = err instanceof Error ? err.message : '';
-      showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
+      if (errorMessage.includes('404') || errorMessage.includes('not found') || errorMessage.includes('Not Found')) {
+        setModelsError('unsupported');
+      } else {
+        showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
+      }
     } finally {
       setModelsLoading(false);
     }
+  };
+
+  // 检查模型是否被 OAuth 排除
+  const isModelExcluded = (modelId: string, providerType: string): boolean => {
+    const excludedModels = excluded[providerType] || [];
+    return excludedModels.some(pattern => {
+      if (pattern.includes('*')) {
+        // 支持通配符匹配
+        const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$', 'i');
+        return regex.test(modelId);
+      }
+      return pattern.toLowerCase() === modelId.toLowerCase();
+    });
   };
 
   // 获取类型标签显示文本
@@ -561,7 +583,19 @@ export function AuthFilesPage() {
 
         <div className={styles.cardActions}>
           {isRuntimeOnly ? (
-            <span className={styles.virtualBadge}>{t('auth_files.type_virtual') || '虚拟认证文件'}</span>
+            <>
+              <div className={styles.virtualBadge}>{t('auth_files.type_virtual') || '虚拟认证文件'}</div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => showModels(item)}
+                className={styles.iconButton}
+                title={t('auth_files.models_button', { defaultValue: '模型' })}
+                disabled={disableControls}
+              >
+                <IconBot className={styles.actionIcon} size={16} />
+              </Button>
+            </>
           ) : (
             <>
               <Button
@@ -814,6 +848,11 @@ export function AuthFilesPage() {
       >
         {modelsLoading ? (
           <div className={styles.hint}>{t('auth_files.models_loading', { defaultValue: '正在加载模型列表...' })}</div>
+        ) : modelsError === 'unsupported' ? (
+          <EmptyState
+            title={t('auth_files.models_unsupported', { defaultValue: '当前版本不支持此功能' })}
+            description={t('auth_files.models_unsupported_desc', { defaultValue: '请更新 CLI Proxy API 到最新版本后重试' })}
+          />
         ) : modelsList.length === 0 ? (
           <EmptyState
             title={t('auth_files.models_empty', { defaultValue: '该凭证暂无可用模型' })}
@@ -821,25 +860,31 @@ export function AuthFilesPage() {
           />
         ) : (
           <div className={styles.modelsList}>
-            {modelsList.map((model) => (
-              <div
-                key={model.id}
-                className={styles.modelItem}
-                onClick={() => {
-                  navigator.clipboard.writeText(model.id);
-                  showNotification(t('notification.link_copied', { defaultValue: '已复制到剪贴板' }), 'success');
-                }}
-                title={t('common.copy', { defaultValue: '点击复制' })}
-              >
-                <span className={styles.modelId}>{model.id}</span>
-                {model.display_name && model.display_name !== model.id && (
-                  <span className={styles.modelDisplayName}>{model.display_name}</span>
-                )}
-                {model.type && (
-                  <span className={styles.modelType}>{model.type}</span>
-                )}
-              </div>
-            ))}
+            {modelsList.map((model) => {
+              const isExcluded = isModelExcluded(model.id, modelsFileType);
+              return (
+                <div
+                  key={model.id}
+                  className={`${styles.modelItem} ${isExcluded ? styles.modelItemExcluded : ''}`}
+                  onClick={() => {
+                    navigator.clipboard.writeText(model.id);
+                    showNotification(t('notification.link_copied', { defaultValue: '已复制到剪贴板' }), 'success');
+                  }}
+                  title={isExcluded ? t('auth_files.models_excluded_hint', { defaultValue: '此模型已被 OAuth 排除' }) : t('common.copy', { defaultValue: '点击复制' })}
+                >
+                  <span className={styles.modelId}>{model.id}</span>
+                  {model.display_name && model.display_name !== model.id && (
+                    <span className={styles.modelDisplayName}>{model.display_name}</span>
+                  )}
+                  {model.type && (
+                    <span className={styles.modelType}>{model.type}</span>
+                  )}
+                  {isExcluded && (
+                    <span className={styles.modelExcludedBadge}>{t('auth_files.models_excluded_badge', { defaultValue: '已排除' })}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </Modal>
