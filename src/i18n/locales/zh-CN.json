@@ -317,7 +317,17 @@
     "type_iflow": "iFlow",
     "type_vertex": "Vertex",
     "type_empty": "空文件",
-    "type_unknown": "其他"
+    "type_unknown": "其他",
+    "type_virtual": "虚拟认证文件",
+    "models_button": "模型",
+    "models_title": "支持的模型",
+    "models_loading": "正在加载模型列表...",
+    "models_empty": "该凭证暂无可用模型",
+    "models_empty_desc": "该认证凭证可能尚未被服务器加载或没有绑定任何模型",
+    "models_unsupported": "当前版本不支持此功能",
+    "models_unsupported_desc": "请更新 CLI Proxy API 到最新版本后重试",
+    "models_excluded_badge": "已排除",
+    "models_excluded_hint": "此模型已被 OAuth 排除"
   },
   "vertex_import": {
     "title": "Vertex AI 凭证导入",
@@ -670,7 +680,7 @@
     "gemini_api_key": "Gemini API密钥",
     "codex_api_key": "Codex API密钥",
     "claude_api_key": "Claude API密钥",
-    "link_copied": "链接已复制到剪贴板"
+    "link_copied": "已复制"
   },
   "language": {
     "switch": "语言",

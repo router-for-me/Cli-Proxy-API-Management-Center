@@ -260,6 +260,8 @@
   padding: 4px 10px;
   border-radius: $radius-sm;
   font-style: italic;
+  display: inline-flex;
+  align-items: center;
 }
 
 // 分页
@@ -390,3 +392,84 @@
   text-align: center;
   padding: $spacing-lg;
 }
+
+// 模型列表弹窗
+.modelsList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.modelItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background-color: var(--bg-secondary);
+  border-radius: $radius-md;
+  border: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--primary-color);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.modelId {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.modelDisplayName {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.modelType {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  background-color: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.modelItemExcluded {
+  opacity: 0.6;
+  background-color: var(--bg-tertiary);
+  border-style: dashed;
+
+  .modelId {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+  }
+
+  &:hover {
+    border-color: var(--danger-color);
+  }
+}
+
+.modelExcludedBadge {
+  font-size: 10px;
+  color: var(--danger-color);
+  background-color: rgba(239, 68, 68, 0.1);
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--danger-color);
+  flex-shrink: 0;
+}
+
