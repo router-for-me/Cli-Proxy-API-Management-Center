@@ -20,6 +20,7 @@ interface IFlowCookieState {
   loading: boolean;
   result?: IFlowCookieAuthResponse;
   error?: string;
+  errorType?: 'error' | 'warning';
 }
 
 const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string }[] = [
@@ -122,18 +123,35 @@ export function OAuthPage() {
       showNotification(t('auth_login.iflow_cookie_required'), 'warning');
       return;
     }
-    setIflowCookie((prev) => ({ ...prev, loading: true, error: undefined, result: undefined }));
+    setIflowCookie((prev) => ({
+      ...prev,
+      loading: true,
+      error: undefined,
+      errorType: undefined,
+      result: undefined
+    }));
     try {
       const res = await oauthApi.iflowCookieAuth(cookie);
       if (res.status === 'ok') {
         setIflowCookie((prev) => ({ ...prev, loading: false, result: res }));
         showNotification(t('auth_login.iflow_cookie_status_success'), 'success');
       } else {
-        setIflowCookie((prev) => ({ ...prev, loading: false, error: res.error }));
+        setIflowCookie((prev) => ({
+          ...prev,
+          loading: false,
+          error: res.error,
+          errorType: 'error'
+        }));
         showNotification(`${t('auth_login.iflow_cookie_status_error')} ${res.error || ''}`, 'error');
       }
     } catch (err: any) {
-      setIflowCookie((prev) => ({ ...prev, loading: false, error: err?.message }));
+      if (err?.status === 409) {
+        const message = t('auth_login.iflow_cookie_config_duplicate');
+        setIflowCookie((prev) => ({ ...prev, loading: false, error: message, errorType: 'warning' }));
+        showNotification(message, 'warning');
+        return;
+      }
+      setIflowCookie((prev) => ({ ...prev, loading: false, error: err?.message, errorType: 'error' }));
       showNotification(`${t('auth_login.iflow_cookie_start_error')} ${err?.message || ''}`, 'error');
     }
   };
@@ -168,35 +186,33 @@ export function OAuthPage() {
                 </div>
               )}
               {!isDisabled && state.url && (
-              <div className="connection-box">
-                <div className="label">{t(provider.urlLabelKey)}</div>
-                <div className="value">{state.url}</div>
-                <div className="item-actions" style={{ marginTop: 8 }}>
-                  <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
-                    {t('auth_login.codex_copy_link')}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}
-                  >
-                    {t('auth_login.codex_open_link')}
-                  </Button>
+                <div className="connection-box">
+                  <div className="label">{t(provider.urlLabelKey)}</div>
+                  <div className="value">{state.url}</div>
+                  <div className="item-actions" style={{ marginTop: 8 }}>
+                    <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
+                      {t('auth_login.codex_copy_link')}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}
+                    >
+                      {t('auth_login.codex_open_link')}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-            {!isDisabled && (
-              <div className="status-badge" style={{ marginTop: 8 }}>
-                {state.status === 'success'
-                  ? t('auth_login.codex_oauth_status_success')
-                  : state.status === 'error'
-                    ? `${t('auth_login.codex_oauth_status_error')} ${state.error || ''}`
-                    : state.status === 'waiting'
-                      ? t('auth_login.codex_oauth_status_waiting')
-                      : t('common.info')}
-              </div>
-            )}
-          </Card>
+              )}
+              {!isDisabled && state.status && state.status !== 'idle' && (
+                <div className="status-badge" style={{ marginTop: 8 }}>
+                  {state.status === 'success'
+                    ? t('auth_login.codex_oauth_status_success')
+                    : state.status === 'error'
+                      ? `${t('auth_login.codex_oauth_status_error')} ${state.error || ''}`
+                      : t('auth_login.codex_oauth_status_waiting')}
+                </div>
+              )}
+            </Card>
           </div>
         );
       })}
@@ -211,6 +227,9 @@ export function OAuthPage() {
         }
       >
         <div className="hint">{t('auth_login.iflow_cookie_hint')}</div>
+        <div className="hint" style={{ marginTop: 4 }}>
+          {t('auth_login.iflow_cookie_key_hint')}
+        </div>
         <div className="form-item" style={{ marginTop: 12 }}>
           <label className="label">{t('auth_login.iflow_cookie_label')}</label>
           <Input
@@ -220,8 +239,14 @@ export function OAuthPage() {
           />
         </div>
         {iflowCookie.error && (
-          <div className="status-badge error" style={{ marginTop: 8 }}>
-            {t('auth_login.iflow_cookie_status_error')} {iflowCookie.error}
+          <div
+            className={`status-badge ${iflowCookie.errorType === 'warning' ? 'warning' : 'error'}`}
+            style={{ marginTop: 8 }}
+          >
+            {iflowCookie.errorType === 'warning'
+              ? t('auth_login.iflow_cookie_status_duplicate')
+              : t('auth_login.iflow_cookie_status_error')}{' '}
+            {iflowCookie.error}
           </div>
         )}
         {iflowCookie.result && iflowCookie.result.status === 'ok' && (

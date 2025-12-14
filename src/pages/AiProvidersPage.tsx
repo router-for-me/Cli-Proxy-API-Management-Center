@@ -1046,7 +1046,6 @@ export function AiProvidersPage() {
             <div key={keyField(item)} className="item-row" style={rowDisabled ? { opacity: 0.6 } : undefined}>
               <div className="item-meta">{renderContent(item, index)}</div>
               <div className="item-actions">
-                {options?.renderExtraActions ? options.renderExtraActions(item, index) : null}
                 <Button
                   variant="secondary"
                   size="sm"
@@ -1063,6 +1062,7 @@ export function AiProvidersPage() {
                 >
                   {deleteLabel || t('common.delete')}
                 </Button>
+                {options?.renderExtraActions ? options.renderExtraActions(item, index) : null}
               </div>
             </div>
           );
