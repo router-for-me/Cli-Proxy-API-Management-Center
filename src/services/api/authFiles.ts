@@ -29,5 +29,11 @@ export const authFilesApi = {
     apiClient.patch('/oauth-excluded-models', { provider, models }),
 
   deleteOauthExcludedEntry: (provider: string) =>
-    apiClient.delete(`/oauth-excluded-models?provider=${encodeURIComponent(provider)}`)
+    apiClient.delete(`/oauth-excluded-models?provider=${encodeURIComponent(provider)}`),
+
+  // 获取认证凭证支持的模型
+  async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
+    const data = await apiClient.get(`/auth-files/models?name=${encodeURIComponent(name)}`);
+    return (data && Array.isArray(data['models'])) ? data['models'] : [];
+  }
 };

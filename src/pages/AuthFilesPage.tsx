@@ -6,7 +6,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
+import { IconBot, IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
@@ -139,6 +139,12 @@ export function AuthFilesPage() {
   // 详情弹窗相关
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<AuthFileItem | null>(null);
+
+  // 模型列表弹窗相关
+  const [modelsModalOpen, setModelsModalOpen] = useState(false);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsList, setModelsList] = useState<{ id: string; display_name?: string; type?: string }[]>([]);
+  const [modelsFileName, setModelsFileName] = useState('');
 
   // OAuth 排除模型相关
   const [excluded, setExcluded] = useState<Record<string, string[]>>({});
@@ -406,6 +412,23 @@ export function AuthFilesPage() {
     setDetailModalOpen(true);
   };
 
+  // 显示模型列表
+  const showModels = async (item: AuthFileItem) => {
+    setModelsFileName(item.name);
+    setModelsList([]);
+    setModelsModalOpen(true);
+    setModelsLoading(true);
+    try {
+      const models = await authFilesApi.getModelsForAuthFile(item.name);
+      setModelsList(models);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
+    } finally {
+      setModelsLoading(false);
+    }
+  };
+
   // 获取类型标签显示文本
   const getTypeLabel = (type: string): string => {
     const key = `auth_files.filter_${type}`;
@@ -541,6 +564,16 @@ export function AuthFilesPage() {
             <span className={styles.virtualBadge}>{t('auth_files.type_virtual') || '虚拟认证文件'}</span>
           ) : (
             <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => showModels(item)}
+                className={styles.iconButton}
+                title={t('auth_files.models_button', { defaultValue: '模型' })}
+                disabled={disableControls}
+              >
+                <IconBot className={styles.actionIcon} size={16} />
+              </Button>
               <Button
                 variant="secondary"
                 size="sm"
@@ -764,6 +797,49 @@ export function AuthFilesPage() {
         {selectedFile && (
           <div className={styles.detailContent}>
             <pre className={styles.jsonContent}>{JSON.stringify(selectedFile, null, 2)}</pre>
+          </div>
+        )}
+      </Modal>
+
+      {/* 模型列表弹窗 */}
+      <Modal
+        open={modelsModalOpen}
+        onClose={() => setModelsModalOpen(false)}
+        title={t('auth_files.models_title', { defaultValue: '支持的模型' }) + ` - ${modelsFileName}`}
+        footer={
+          <Button variant="secondary" onClick={() => setModelsModalOpen(false)}>
+            {t('common.close')}
+          </Button>
+        }
+      >
+        {modelsLoading ? (
+          <div className={styles.hint}>{t('auth_files.models_loading', { defaultValue: '正在加载模型列表...' })}</div>
+        ) : modelsList.length === 0 ? (
+          <EmptyState
+            title={t('auth_files.models_empty', { defaultValue: '该凭证暂无可用模型' })}
+            description={t('auth_files.models_empty_desc', { defaultValue: '该认证凭证可能尚未被服务器加载或没有绑定任何模型' })}
+          />
+        ) : (
+          <div className={styles.modelsList}>
+            {modelsList.map((model) => (
+              <div
+                key={model.id}
+                className={styles.modelItem}
+                onClick={() => {
+                  navigator.clipboard.writeText(model.id);
+                  showNotification(t('notification.link_copied', { defaultValue: '已复制到剪贴板' }), 'success');
+                }}
+                title={t('common.copy', { defaultValue: '点击复制' })}
+              >
+                <span className={styles.modelId}>{model.id}</span>
+                {model.display_name && model.display_name !== model.id && (
+                  <span className={styles.modelDisplayName}>{model.display_name}</span>
+                )}
+                {model.type && (
+                  <span className={styles.modelType}>{model.type}</span>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </Modal>
