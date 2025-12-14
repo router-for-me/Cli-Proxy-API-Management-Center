@@ -1676,12 +1676,12 @@ export function AiProvidersPage() {
           value={geminiForm.apiKey}
           onChange={(e) => setGeminiForm((prev) => ({ ...prev, apiKey: e.target.value }))}
         />
-        <Input
-          label={t('ai_providers.gemini_base_url_placeholder')}
-          placeholder={t('ai_providers.gemini_base_url_placeholder')}
-          value={geminiForm.baseUrl ?? ''}
-          onChange={(e) => setGeminiForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
-        />
+	        <Input
+	          label={t('ai_providers.gemini_base_url_label')}
+	          placeholder={t('ai_providers.gemini_base_url_placeholder')}
+	          value={geminiForm.baseUrl ?? ''}
+	          onChange={(e) => setGeminiForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
+	        />
         <HeaderInputList
           entries={headersToEntries(geminiForm.headers as any)}
           onChange={(entries) => setGeminiForm((prev) => ({ ...prev, headers: buildHeaderObject(entries) }))}
