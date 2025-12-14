@@ -31,6 +31,7 @@ export interface RateStats {
 export interface ModelPrice {
   prompt: number;
   completion: number;
+  cache: number;
 }
 
 export interface UsageDetail {
@@ -42,6 +43,7 @@ export interface UsageDetail {
     output_tokens: number;
     reasoning_tokens: number;
     cached_tokens: number;
+    cache_tokens?: number;
     total_tokens: number;
   };
   failed: boolean;
@@ -214,11 +216,15 @@ export function extractTotalTokens(detail: any): number {
   if (typeof tokens.total_tokens === 'number') {
     return tokens.total_tokens;
   }
-  const tokenKeys = ['input_tokens', 'output_tokens', 'reasoning_tokens', 'cached_tokens'];
-  return tokenKeys.reduce((sum, key) => {
-    const value = tokens[key];
-    return sum + (typeof value === 'number' ? value : 0);
-  }, 0);
+  const inputTokens = typeof tokens.input_tokens === 'number' ? tokens.input_tokens : 0;
+  const outputTokens = typeof tokens.output_tokens === 'number' ? tokens.output_tokens : 0;
+  const reasoningTokens = typeof tokens.reasoning_tokens === 'number' ? tokens.reasoning_tokens : 0;
+  const cachedTokens = Math.max(
+    typeof tokens.cached_tokens === 'number' ? Math.max(tokens.cached_tokens, 0) : 0,
+    typeof tokens.cache_tokens === 'number' ? Math.max(tokens.cache_tokens, 0) : 0
+  );
+
+  return inputTokens + outputTokens + reasoningTokens + cachedTokens;
 }
 
 /**
@@ -235,9 +241,10 @@ export function calculateTokenBreakdown(usageData: any): TokenBreakdown {
 
   details.forEach(detail => {
     const tokens = detail?.tokens || {};
-    if (typeof tokens.cached_tokens === 'number') {
-      cachedTokens += tokens.cached_tokens;
-    }
+    cachedTokens += Math.max(
+      typeof tokens.cached_tokens === 'number' ? Math.max(tokens.cached_tokens, 0) : 0,
+      typeof tokens.cache_tokens === 'number' ? Math.max(tokens.cache_tokens, 0) : 0
+    );
     if (typeof tokens.reasoning_tokens === 'number') {
       reasoningTokens += tokens.reasoning_tokens;
     }
@@ -311,11 +318,23 @@ export function calculateCost(detail: any, modelPrices: Record<string, ModelPric
     return 0;
   }
   const tokens = detail?.tokens || {};
-  const promptTokens = Number(tokens.input_tokens) || 0;
-  const completionTokens = Number(tokens.output_tokens) || 0;
+  const rawInputTokens = Number(tokens.input_tokens);
+  const rawCompletionTokens = Number(tokens.output_tokens);
+  const rawCachedTokensPrimary = Number(tokens.cached_tokens);
+  const rawCachedTokensAlternate = Number(tokens.cache_tokens);
+
+  const inputTokens = Number.isFinite(rawInputTokens) ? Math.max(rawInputTokens, 0) : 0;
+  const completionTokens = Number.isFinite(rawCompletionTokens) ? Math.max(rawCompletionTokens, 0) : 0;
+  const cachedTokens = Math.max(
+    Number.isFinite(rawCachedTokensPrimary) ? Math.max(rawCachedTokensPrimary, 0) : 0,
+    Number.isFinite(rawCachedTokensAlternate) ? Math.max(rawCachedTokensAlternate, 0) : 0
+  );
+  const promptTokens = Math.max(inputTokens - cachedTokens, 0);
+
   const promptCost = (promptTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.prompt) || 0);
+  const cachedCost = (cachedTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.cache) || 0);
   const completionCost = (completionTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.completion) || 0);
-  const total = promptCost + completionCost;
+  const total = promptCost + cachedCost + completionCost;
   return Number.isFinite(total) && total > 0 ? total : 0;
 }
 
@@ -349,14 +368,27 @@ export function loadModelPrices(): Record<string, ModelPrice> {
     const normalized: Record<string, ModelPrice> = {};
     Object.entries(parsed).forEach(([model, price]: [string, any]) => {
       if (!model) return;
-      const prompt = Number(price?.prompt);
-      const completion = Number(price?.completion);
-      if (!Number.isFinite(prompt) && !Number.isFinite(completion)) {
+      const promptRaw = Number(price?.prompt);
+      const completionRaw = Number(price?.completion);
+      const cacheRaw = Number(price?.cache);
+
+      if (!Number.isFinite(promptRaw) && !Number.isFinite(completionRaw) && !Number.isFinite(cacheRaw)) {
         return;
       }
+
+      const prompt = Number.isFinite(promptRaw) && promptRaw >= 0 ? promptRaw : 0;
+      const completion = Number.isFinite(completionRaw) && completionRaw >= 0 ? completionRaw : 0;
+      const cache =
+        Number.isFinite(cacheRaw) && cacheRaw >= 0
+          ? cacheRaw
+          : Number.isFinite(promptRaw) && promptRaw >= 0
+            ? promptRaw
+            : prompt;
+
       normalized[model] = {
-        prompt: Number.isFinite(prompt) && prompt >= 0 ? prompt : 0,
-        completion: Number.isFinite(completion) && completion >= 0 ? completion : 0
+        prompt,
+        completion,
+        cache
       };
     });
     return normalized;
@@ -404,14 +436,7 @@ export function getApiStats(usageData: any, modelPrices: Record<string, ModelPri
       if (price) {
         const details = Array.isArray(modelData.details) ? modelData.details : [];
         details.forEach((detail: any) => {
-          const tokens = detail?.tokens || {};
-          const promptTokens = Number(tokens.input_tokens) || 0;
-          const completionTokens = Number(tokens.output_tokens) || 0;
-          const cost = (promptTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.prompt) || 0) +
-                      (completionTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.completion) || 0);
-          if (Number.isFinite(cost) && cost > 0) {
-            totalCost += cost;
-          }
+          totalCost += calculateCost({ ...detail, __modelName: modelName }, modelPrices);
         });
       }
     });
@@ -454,14 +479,7 @@ export function getModelStats(usageData: any, modelPrices: Record<string, ModelP
       if (price) {
         const details = Array.isArray(modelData.details) ? modelData.details : [];
         details.forEach((detail: any) => {
-          const tokens = detail?.tokens || {};
-          const promptTokens = Number(tokens.input_tokens) || 0;
-          const completionTokens = Number(tokens.output_tokens) || 0;
-          const cost = (promptTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.prompt) || 0) +
-                      (completionTokens / TOKENS_PER_PRICE_UNIT) * (Number(price.completion) || 0);
-          if (Number.isFinite(cost) && cost > 0) {
-            existing.cost += cost;
-          }
+          existing.cost += calculateCost({ ...detail, __modelName: modelName }, modelPrices);
         });
       }
       modelMap.set(modelName, existing);
