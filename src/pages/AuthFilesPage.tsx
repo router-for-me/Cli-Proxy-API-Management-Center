@@ -79,6 +79,13 @@ function normalizeAuthIndexValue(value: unknown): string | null {
   return null;
 }
 
+function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
+  const raw = file['runtime_only'] ?? file.runtimeOnly;
+  if (typeof raw === 'boolean') return raw;
+  if (typeof raw === 'string') return raw.trim().toLowerCase() === 'true';
+  return false;
+}
+
 // 解析认证文件的统计数据
 function resolveAuthFileStats(
   file: AuthFileItem,
@@ -356,11 +363,11 @@ export function AuthFilesPage() {
         // 删除全部
         await authFilesApi.deleteAll();
         showNotification(t('auth_files.delete_all_success'), 'success');
-        setFiles([]);
+        setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
       } else {
         // 删除筛选类型的文件
         const filesToDelete = files.filter(
-          (f) => f.type === filter && !f['runtime_only']
+          (f) => f.type === filter && !isRuntimeOnlyAuthFile(f)
         );
 
         if (filesToDelete.length === 0) {
@@ -564,9 +571,8 @@ export function AuthFilesPage() {
 
   // 渲染单个认证文件卡片
   const renderFileCard = (item: AuthFileItem) => {
-    const fileStats = resolveAuthFileStats(item, keyStats);
-    const runtimeOnlyValue = item['runtime_only'];
-    const isRuntimeOnly = runtimeOnlyValue === true || runtimeOnlyValue === 'true';
+      const fileStats = resolveAuthFileStats(item, keyStats);
+    const isRuntimeOnly = isRuntimeOnlyAuthFile(item);
     const typeColor = getTypeColor(item.type || 'unknown');
 
     return (
@@ -601,19 +607,7 @@ export function AuthFilesPage() {
 
         <div className={styles.cardActions}>
           {isRuntimeOnly ? (
-            <>
-              <div className={styles.virtualBadge}>{t('auth_files.type_virtual') || '虚拟认证文件'}</div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => showModels(item)}
-                className={styles.iconButton}
-                title={t('auth_files.models_button', { defaultValue: '模型' })}
-                disabled={disableControls}
-              >
-                <IconBot className={styles.actionIcon} size={16} />
-              </Button>
-            </>
+            <div className={styles.virtualBadge}>{t('auth_files.type_virtual') || '虚拟认证文件'}</div>
           ) : (
             <>
               <Button

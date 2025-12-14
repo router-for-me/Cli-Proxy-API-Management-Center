@@ -178,6 +178,10 @@
     gap: $spacing-xs;
     flex-shrink: 0;
 
+    svg {
+      display: block;
+    }
+
     @media (max-width: $breakpoint-mobile) {
       gap: 2px;
     }
