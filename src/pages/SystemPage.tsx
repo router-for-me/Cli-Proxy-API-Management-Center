@@ -115,9 +115,11 @@ export function SystemPage() {
   }, [auth.connectionStatus, auth.apiBase]);
 
   return (
-    <div className="stack">
+    <div className={styles.container}>
+      <h1 className={styles.pageTitle}>{t('system_info.title')}</h1>
+      <div className={styles.content}>
       <Card
-        title={t('system_info.title')}
+        title={t('system_info.connection_status_title')}
         extra={
           <Button variant="secondary" size="sm" onClick={() => fetchConfig(undefined, true)}>
             {t('common.refresh')}
@@ -186,6 +188,7 @@ export function SystemPage() {
           </div>
         )}
       </Card>
+      </div>
     </div>
   );
 }

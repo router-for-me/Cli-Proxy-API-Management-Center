@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { useNotificationStore } from '@/stores';
 import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
 import { isLocalhost } from '@/utils/connection';
+import styles from './OAuthPage.module.scss';
 
 interface ProviderState {
   url?: string;
@@ -157,130 +158,134 @@ export function OAuthPage() {
   };
 
   return (
-    <div className="stack">
-      {PROVIDERS.map((provider) => {
-        const state = states[provider.id] || {};
-        // 非本地访问时禁用所有 OAuth 登录方式
-        const isDisabled = !isLocal;
-        return (
-          <div
-            key={provider.id}
-            style={isDisabled ? { opacity: 0.6, pointerEvents: 'none' } : undefined}
-          >
-            <Card
-              title={t(provider.titleKey)}
-              extra={
-                <Button
-                  onClick={() => startAuth(provider.id)}
-                  loading={state.polling}
-                  disabled={isDisabled}
-                >
-                  {t('common.login')}
-                </Button>
-              }
-            >
-              <div className="hint">{t(provider.hintKey)}</div>
-              {isDisabled && (
-                <div className="status-badge warning" style={{ marginTop: 8 }}>
-                  {t('auth_login.remote_access_disabled')}
-                </div>
-              )}
-              {!isDisabled && state.url && (
-                <div className="connection-box">
-                  <div className="label">{t(provider.urlLabelKey)}</div>
-                  <div className="value">{state.url}</div>
-                  <div className="item-actions" style={{ marginTop: 8 }}>
-                    <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
-                      {t('auth_login.codex_copy_link')}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}
-                    >
-                      {t('auth_login.codex_open_link')}
-                    </Button>
-                  </div>
-                </div>
-              )}
-              {!isDisabled && state.status && state.status !== 'idle' && (
-                <div className="status-badge" style={{ marginTop: 8 }}>
-                  {state.status === 'success'
-                    ? t('auth_login.codex_oauth_status_success')
-                    : state.status === 'error'
-                      ? `${t('auth_login.codex_oauth_status_error')} ${state.error || ''}`
-                      : t('auth_login.codex_oauth_status_waiting')}
-                </div>
-              )}
-            </Card>
-          </div>
-        );
-      })}
+    <div className={styles.container}>
+      <h1 className={styles.pageTitle}>{t('nav.oauth', { defaultValue: 'OAuth' })}</h1>
 
-      {/* iFlow Cookie 登录 */}
-      <Card
-        title={t('auth_login.iflow_cookie_title')}
-        extra={
-          <Button onClick={submitIflowCookie} loading={iflowCookie.loading}>
-            {t('auth_login.iflow_cookie_button')}
-          </Button>
-        }
-      >
-        <div className="hint">{t('auth_login.iflow_cookie_hint')}</div>
-        <div className="hint" style={{ marginTop: 4 }}>
-          {t('auth_login.iflow_cookie_key_hint')}
-        </div>
-        <div className="form-item" style={{ marginTop: 12 }}>
-          <label className="label">{t('auth_login.iflow_cookie_label')}</label>
-          <Input
-            value={iflowCookie.cookie}
-            onChange={(e) => setIflowCookie((prev) => ({ ...prev, cookie: e.target.value }))}
-            placeholder={t('auth_login.iflow_cookie_placeholder')}
-          />
-        </div>
-        {iflowCookie.error && (
-          <div
-            className={`status-badge ${iflowCookie.errorType === 'warning' ? 'warning' : 'error'}`}
-            style={{ marginTop: 8 }}
-          >
-            {iflowCookie.errorType === 'warning'
-              ? t('auth_login.iflow_cookie_status_duplicate')
-              : t('auth_login.iflow_cookie_status_error')}{' '}
-            {iflowCookie.error}
-          </div>
-        )}
-        {iflowCookie.result && iflowCookie.result.status === 'ok' && (
-          <div className="connection-box" style={{ marginTop: 12 }}>
-            <div className="label">{t('auth_login.iflow_cookie_result_title')}</div>
-            <div className="key-value-list">
-              {iflowCookie.result.email && (
-                <div className="key-value-item">
-                  <span className="key">{t('auth_login.iflow_cookie_result_email')}</span>
-                  <span className="value">{iflowCookie.result.email}</span>
-                </div>
-              )}
-              {iflowCookie.result.expired && (
-                <div className="key-value-item">
-                  <span className="key">{t('auth_login.iflow_cookie_result_expired')}</span>
-                  <span className="value">{iflowCookie.result.expired}</span>
-                </div>
-              )}
-              {iflowCookie.result.saved_path && (
-                <div className="key-value-item">
-                  <span className="key">{t('auth_login.iflow_cookie_result_path')}</span>
-                  <span className="value">{iflowCookie.result.saved_path}</span>
-                </div>
-              )}
-              {iflowCookie.result.type && (
-                <div className="key-value-item">
-                  <span className="key">{t('auth_login.iflow_cookie_result_type')}</span>
-                  <span className="value">{iflowCookie.result.type}</span>
-                </div>
-              )}
+      <div className={styles.content}>
+        {PROVIDERS.map((provider) => {
+          const state = states[provider.id] || {};
+          // 非本地访问时禁用所有 OAuth 登录方式
+          const isDisabled = !isLocal;
+          return (
+            <div
+              key={provider.id}
+              style={isDisabled ? { opacity: 0.6, pointerEvents: 'none' } : undefined}
+            >
+              <Card
+                title={t(provider.titleKey)}
+                extra={
+                  <Button
+                    onClick={() => startAuth(provider.id)}
+                    loading={state.polling}
+                    disabled={isDisabled}
+                  >
+                    {t('common.login')}
+                  </Button>
+                }
+              >
+                <div className="hint">{t(provider.hintKey)}</div>
+                {isDisabled && (
+                  <div className="status-badge warning" style={{ marginTop: 8 }}>
+                    {t('auth_login.remote_access_disabled')}
+                  </div>
+                )}
+                {!isDisabled && state.url && (
+                  <div className="connection-box">
+                    <div className="label">{t(provider.urlLabelKey)}</div>
+                    <div className="value">{state.url}</div>
+                    <div className="item-actions" style={{ marginTop: 8 }}>
+                      <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
+                        {t('auth_login.codex_copy_link')}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}
+                      >
+                        {t('auth_login.codex_open_link')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {!isDisabled && state.status && state.status !== 'idle' && (
+                  <div className="status-badge" style={{ marginTop: 8 }}>
+                    {state.status === 'success'
+                      ? t('auth_login.codex_oauth_status_success')
+                      : state.status === 'error'
+                        ? `${t('auth_login.codex_oauth_status_error')} ${state.error || ''}`
+                        : t('auth_login.codex_oauth_status_waiting')}
+                  </div>
+                )}
+              </Card>
             </div>
+          );
+        })}
+
+        {/* iFlow Cookie 登录 */}
+        <Card
+          title={t('auth_login.iflow_cookie_title')}
+          extra={
+            <Button onClick={submitIflowCookie} loading={iflowCookie.loading}>
+              {t('auth_login.iflow_cookie_button')}
+            </Button>
+          }
+        >
+          <div className="hint">{t('auth_login.iflow_cookie_hint')}</div>
+          <div className="hint" style={{ marginTop: 4 }}>
+            {t('auth_login.iflow_cookie_key_hint')}
           </div>
-        )}
-      </Card>
+          <div className="form-item" style={{ marginTop: 12 }}>
+            <label className="label">{t('auth_login.iflow_cookie_label')}</label>
+            <Input
+              value={iflowCookie.cookie}
+              onChange={(e) => setIflowCookie((prev) => ({ ...prev, cookie: e.target.value }))}
+              placeholder={t('auth_login.iflow_cookie_placeholder')}
+            />
+          </div>
+          {iflowCookie.error && (
+            <div
+              className={`status-badge ${iflowCookie.errorType === 'warning' ? 'warning' : 'error'}`}
+              style={{ marginTop: 8 }}
+            >
+              {iflowCookie.errorType === 'warning'
+                ? t('auth_login.iflow_cookie_status_duplicate')
+                : t('auth_login.iflow_cookie_status_error')}{' '}
+              {iflowCookie.error}
+            </div>
+          )}
+          {iflowCookie.result && iflowCookie.result.status === 'ok' && (
+            <div className="connection-box" style={{ marginTop: 12 }}>
+              <div className="label">{t('auth_login.iflow_cookie_result_title')}</div>
+              <div className="key-value-list">
+                {iflowCookie.result.email && (
+                  <div className="key-value-item">
+                    <span className="key">{t('auth_login.iflow_cookie_result_email')}</span>
+                    <span className="value">{iflowCookie.result.email}</span>
+                  </div>
+                )}
+                {iflowCookie.result.expired && (
+                  <div className="key-value-item">
+                    <span className="key">{t('auth_login.iflow_cookie_result_expired')}</span>
+                    <span className="value">{iflowCookie.result.expired}</span>
+                  </div>
+                )}
+                {iflowCookie.result.saved_path && (
+                  <div className="key-value-item">
+                    <span className="key">{t('auth_login.iflow_cookie_result_path')}</span>
+                    <span className="value">{iflowCookie.result.saved_path}</span>
+                  </div>
+                )}
+                {iflowCookie.result.type && (
+                  <div className="key-value-item">
+                    <span className="key">{t('auth_login.iflow_cookie_result_type')}</span>
+                    <span className="value">{iflowCookie.result.type}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

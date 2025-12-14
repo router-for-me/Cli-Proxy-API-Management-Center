@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useNotificationStore, useAuthStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
+import styles from './LogsPage.module.scss';
 
 interface ErrorLogItem {
   name: string;
@@ -197,9 +198,11 @@ export function LogsPage() {
   const logsText = logLines.join('\n');
 
   return (
-    <div className="stack">
+    <div className={styles.container}>
+      <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
+      <div className={styles.content}>
       <Card
-        title={t('logs.title')}
+        title={t('logs.log_content')}
         extra={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <Button variant="secondary" size="sm" onClick={() => loadLogs(false)} disabled={loading}>
@@ -264,6 +267,7 @@ export function LogsPage() {
           </div>
         )}
       </Card>
+      </div>
     </div>
   );
 }

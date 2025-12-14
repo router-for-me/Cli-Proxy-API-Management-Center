@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { apiKeysApi } from '@/services/api';
 import { maskApiKey } from '@/utils/format';
+import styles from './ApiKeysPage.module.scss';
 
 export function ApiKeysPage() {
   const { t } = useTranslation();
@@ -138,80 +139,84 @@ export function ApiKeysPage() {
   );
 
   return (
-    <Card title={t('api_keys.proxy_auth_title')} extra={actionButtons}>
-      {error && <div className="error-box">{error}</div>}
+    <div className={styles.container}>
+      <h1 className={styles.pageTitle}>{t('api_keys.title')}</h1>
 
-      {loading ? (
-        <div className="flex-center" style={{ padding: '24px 0' }}>
-          <LoadingSpinner size={28} />
-        </div>
-      ) : apiKeys.length === 0 ? (
-        <EmptyState
-          title={t('api_keys.empty_title')}
-          description={t('api_keys.empty_desc')}
-          action={
-            <Button onClick={openAddModal} disabled={disableControls}>
-              {t('api_keys.add_button')}
-            </Button>
-          }
-        />
-      ) : (
-        <div className="item-list">
-          {apiKeys.map((key, index) => (
-            <div key={index} className="item-row">
-              <div className="item-meta">
-                <div className="pill">#{index + 1}</div>
-                <div className="item-title">{t('api_keys.item_title')}</div>
-                <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
-              </div>
-              <div className="item-actions">
-                <Button variant="secondary" size="sm" onClick={() => openEditModal(index)} disabled={disableControls}>
-                  {t('common.edit')}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(index)}
-                  disabled={disableControls || deletingIndex === index}
-                  loading={deletingIndex === index}
-                >
-                  {t('common.delete')}
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <Card title={t('api_keys.proxy_auth_title')} extra={actionButtons}>
+        {error && <div className="error-box">{error}</div>}
 
-      <Modal
-        open={modalOpen}
-        onClose={closeModal}
-        title={editingIndex !== null ? t('api_keys.edit_modal_title') : t('api_keys.add_modal_title')}
-        footer={
-          <>
-            <Button variant="secondary" onClick={closeModal} disabled={saving}>
-              {t('common.cancel')}
-            </Button>
-            <Button onClick={handleSave} loading={saving}>
-              {editingIndex !== null ? t('common.update') : t('common.add')}
-            </Button>
-          </>
-        }
-      >
-        <Input
-          label={
-            editingIndex !== null ? t('api_keys.edit_modal_key_label') : t('api_keys.add_modal_key_label')
+        {loading ? (
+          <div className="flex-center" style={{ padding: '24px 0' }}>
+            <LoadingSpinner size={28} />
+          </div>
+        ) : apiKeys.length === 0 ? (
+          <EmptyState
+            title={t('api_keys.empty_title')}
+            description={t('api_keys.empty_desc')}
+            action={
+              <Button onClick={openAddModal} disabled={disableControls}>
+                {t('api_keys.add_button')}
+              </Button>
+            }
+          />
+        ) : (
+          <div className="item-list">
+            {apiKeys.map((key, index) => (
+              <div key={index} className="item-row">
+                <div className="item-meta">
+                  <div className="pill">#{index + 1}</div>
+                  <div className="item-title">{t('api_keys.item_title')}</div>
+                  <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
+                </div>
+                <div className="item-actions">
+                  <Button variant="secondary" size="sm" onClick={() => openEditModal(index)} disabled={disableControls}>
+                    {t('common.edit')}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDelete(index)}
+                    disabled={disableControls || deletingIndex === index}
+                    loading={deletingIndex === index}
+                  >
+                    {t('common.delete')}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Modal
+          open={modalOpen}
+          onClose={closeModal}
+          title={editingIndex !== null ? t('api_keys.edit_modal_title') : t('api_keys.add_modal_title')}
+          footer={
+            <>
+              <Button variant="secondary" onClick={closeModal} disabled={saving}>
+                {t('common.cancel')}
+              </Button>
+              <Button onClick={handleSave} loading={saving}>
+                {editingIndex !== null ? t('common.update') : t('common.add')}
+              </Button>
+            </>
           }
-          placeholder={
-            editingIndex !== null
-              ? t('api_keys.edit_modal_key_label')
-              : t('api_keys.add_modal_key_placeholder')
-          }
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          disabled={saving}
-        />
-      </Modal>
-    </Card>
+        >
+          <Input
+            label={
+              editingIndex !== null ? t('api_keys.edit_modal_key_label') : t('api_keys.add_modal_key_label')
+            }
+            placeholder={
+              editingIndex !== null
+                ? t('api_keys.edit_modal_key_label')
+                : t('api_keys.add_modal_key_placeholder')
+            }
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            disabled={saving}
+          />
+        </Modal>
+      </Card>
+    </div>
   );
 }

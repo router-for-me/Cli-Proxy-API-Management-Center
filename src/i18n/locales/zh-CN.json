@@ -380,7 +380,10 @@
     "load_failed": "加载排除列表失败",
     "provider_required": "请先填写提供商名称",
     "scope_all": "当前范围：全局（显示所有提供商）",
-    "scope_provider": "当前范围：{{provider}}"
+    "scope_provider": "当前范围：{{provider}}",
+    "upgrade_required": "当前 CPA 版本不支持模型排除列表，请升级 CPA 版本",
+    "upgrade_required_title": "需要升级 CPA 版本",
+    "upgrade_required_desc": "当前服务器版本不支持获取模型排除列表功能，请升级到最新版本的 CPA（CLI Proxy API）后重试。"
   },
   "auth_login": {
     "codex_oauth_title": "Codex OAuth",

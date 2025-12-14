@@ -1072,8 +1072,10 @@ export function AiProvidersPage() {
   };
 
   return (
-    <div className="stack">
-      {error && <div className="error-box">{error}</div>}
+    <div className={styles.container}>
+      <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
+      <div className={styles.content}>
+        {error && <div className="error-box">{error}</div>}
 
       <Card
         title={t('ai_providers.gemini_title')}
@@ -1972,6 +1974,7 @@ export function AiProvidersPage() {
           </div>
         )}
       </Modal>
+      </div>
     </div>
   );
 }

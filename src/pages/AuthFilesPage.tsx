@@ -150,11 +150,13 @@ export function AuthFilesPage() {
 
   // OAuth 排除模型相关
   const [excluded, setExcluded] = useState<Record<string, string[]>>({});
+  const [excludedError, setExcludedError] = useState<'unsupported' | null>(null);
   const [excludedModalOpen, setExcludedModalOpen] = useState(false);
   const [excludedForm, setExcludedForm] = useState<ExcludedFormState>({ provider: '', modelsText: '' });
   const [savingExcluded, setSavingExcluded] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const excludedUnsupportedRef = useRef(false);
 
   const disableControls = connectionStatus !== 'connected';
 
@@ -199,11 +201,27 @@ export function AuthFilesPage() {
   const loadExcluded = useCallback(async () => {
     try {
       const res = await authFilesApi.getOauthExcludedModels();
+      excludedUnsupportedRef.current = false;
       setExcluded(res || {});
-    } catch {
+      setExcludedError(null);
+    } catch (err: unknown) {
+      const status =
+        typeof err === 'object' && err !== null && 'status' in err
+          ? (err as { status?: unknown }).status
+          : undefined;
+
+      if (status === 404) {
+        setExcluded({});
+        setExcludedError('unsupported');
+        if (!excludedUnsupportedRef.current) {
+          excludedUnsupportedRef.current = true;
+          showNotification(t('oauth_excluded.upgrade_required'), 'warning');
+        }
+        return;
+      }
       // 静默失败
     }
-  }, []);
+  }, [showNotification, t]);
 
   useEffect(() => {
     loadFiles();
@@ -651,8 +669,13 @@ export function AuthFilesPage() {
 
   return (
     <div className={styles.container}>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>{t('auth_files.title')}</h1>
+        <p className={styles.description}>{t('auth_files.description')}</p>
+      </div>
+
       <Card
-        title={t('auth_files.title')}
+        title={t('auth_files.title_section')}
         extra={
           <div className={styles.headerActions}>
             <Button variant="secondary" size="sm" onClick={() => { loadFiles(); loadKeyStats(); }} disabled={loading}>
@@ -770,12 +793,21 @@ export function AuthFilesPage() {
       <Card
         title={t('oauth_excluded.title')}
         extra={
-          <Button size="sm" onClick={() => openExcludedModal()} disabled={disableControls}>
+          <Button
+            size="sm"
+            onClick={() => openExcludedModal()}
+            disabled={disableControls || excludedError === 'unsupported'}
+          >
             {t('oauth_excluded.add')}
           </Button>
         }
       >
-        {Object.keys(excluded).length === 0 ? (
+        {excludedError === 'unsupported' ? (
+          <EmptyState
+            title={t('oauth_excluded.upgrade_required_title')}
+            description={t('oauth_excluded.upgrade_required_desc')}
+          />
+        ) : Object.keys(excluded).length === 0 ? (
           <EmptyState title={t('oauth_excluded.list_empty_all')} />
         ) : (
           <div className={styles.excludedList}>

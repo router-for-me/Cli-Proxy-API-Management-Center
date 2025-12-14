@@ -72,6 +72,7 @@ export function UsagePage() {
   const [selectedModel, setSelectedModel] = useState('');
   const [promptPrice, setPromptPrice] = useState('');
   const [completionPrice, setCompletionPrice] = useState('');
+  const [cachePrice, setCachePrice] = useState('');
 
   // Expanded sections
   const [expandedApis, setExpandedApis] = useState<Set<string>>(new Set());
@@ -340,12 +341,14 @@ export function UsagePage() {
     if (!selectedModel) return;
     const prompt = parseFloat(promptPrice) || 0;
     const completion = parseFloat(completionPrice) || 0;
-    const newPrices = { ...modelPrices, [selectedModel]: { prompt, completion } };
+    const cache = cachePrice.trim() === '' ? prompt : parseFloat(cachePrice) || 0;
+    const newPrices = { ...modelPrices, [selectedModel]: { prompt, completion, cache } };
     setModelPrices(newPrices);
     saveModelPrices(newPrices);
     setSelectedModel('');
     setPromptPrice('');
     setCompletionPrice('');
+    setCachePrice('');
   };
 
   // Handle model price delete
@@ -362,6 +365,7 @@ export function UsagePage() {
     setSelectedModel(model);
     setPromptPrice(price?.prompt?.toString() || '');
     setCompletionPrice(price?.completion?.toString() || '');
+    setCachePrice(price?.cache?.toString() || '');
   };
 
   // Toggle API expansion
@@ -771,9 +775,11 @@ export function UsagePage() {
                     if (price) {
                       setPromptPrice(price.prompt.toString());
                       setCompletionPrice(price.completion.toString());
+                      setCachePrice(price.cache.toString());
                     } else {
                       setPromptPrice('');
                       setCompletionPrice('');
+                      setCachePrice('');
                     }
                   }}
                   className={styles.select}
@@ -804,6 +810,16 @@ export function UsagePage() {
                   step="0.0001"
                 />
               </div>
+              <div className={styles.formField}>
+                <label>{t('usage_stats.model_price_cache')} ($/1M)</label>
+                <Input
+                  type="number"
+                  value={cachePrice}
+                  onChange={(e) => setCachePrice(e.target.value)}
+                  placeholder="0.00"
+                  step="0.0001"
+                />
+              </div>
               <Button
                 variant="primary"
                 onClick={handleSavePrice}
@@ -826,6 +842,7 @@ export function UsagePage() {
                       <div className={styles.priceMeta}>
                         <span>{t('usage_stats.model_price_prompt')}: ${price.prompt.toFixed(4)}/1M</span>
                         <span>{t('usage_stats.model_price_completion')}: ${price.completion.toFixed(4)}/1M</span>
+                        <span>{t('usage_stats.model_price_cache')}: ${price.cache.toFixed(4)}/1M</span>
                       </div>
                     </div>
                     <div className={styles.priceActions}>

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { configApi } from '@/services/api';
 import type { Config } from '@/types';
+import styles from './Settings/Settings.module.scss';
 
 type PendingKey =
   | 'debug'
@@ -168,8 +169,11 @@ export function SettingsPage() {
   const quotaSwitchPreview = config?.quotaExceeded?.switchPreviewModel ?? false;
 
   return (
-    <div className="grid cols-2">
-      <Card title={t('basic_settings.title')}>
+    <div className={styles.container}>
+      <h1 className={styles.pageTitle}>{t('basic_settings.title')}</h1>
+
+      <div className={styles.grid}>
+        <Card>
         {error && <div className="error-box">{error}</div>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <ToggleSwitch
@@ -326,6 +330,7 @@ export function SettingsPage() {
           />
         </div>
       </Card>
+      </div>
     </div>
   );
 }
