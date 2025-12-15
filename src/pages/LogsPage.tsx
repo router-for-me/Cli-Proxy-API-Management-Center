@@ -33,11 +33,30 @@ type HttpMethod = (typeof HTTP_METHODS)[number];
 const HTTP_METHOD_REGEX = new RegExp(`\\b(${HTTP_METHODS.join('|')})\\b`);
 
 const LOG_TIMESTAMP_REGEX = /^\[?(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\]?/;
-const LOG_LEVEL_REGEX = /^\[?(trace|debug|info|warn|warning|error|fatal)\]?\b/i;
+const LOG_LEVEL_REGEX = /^\[?(trace|debug|info|warn|warning|error|fatal)\]?(?=\s|\[|$)\s*/i;
 const LOG_SOURCE_REGEX = /^\[([^\]]+)\]/;
 const LOG_LATENCY_REGEX = /\b(\d+(?:\.\d+)?)(?:\s*)(µs|us|ms|s)\b/i;
 const LOG_IPV4_REGEX = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
 const LOG_IPV6_REGEX = /\b(?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}\b/i;
+
+const HTTP_STATUS_PATTERNS: RegExp[] = [
+  /\|\s*([1-5]\d{2})\s*\|/,
+  /\b([1-5]\d{2})\s*-/,
+  new RegExp(`\\b(?:${HTTP_METHODS.join('|')})\\s+\\S+\\s+([1-5]\\d{2})\\b`),
+  /\b(?:status|code|http)[:\s]+([1-5]\d{2})\b/i,
+  /\b([1-5]\d{2})\s+(?:OK|Created|Accepted|No Content|Moved|Found|Bad Request|Unauthorized|Forbidden|Not Found|Method Not Allowed|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout)\b/i
+];
+
+const detectHttpStatusCode = (text: string): number | undefined => {
+  for (const pattern of HTTP_STATUS_PATTERNS) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    const code = Number.parseInt(match[1], 10);
+    if (!Number.isFinite(code)) continue;
+    if (code >= 100 && code <= 599) return code;
+  }
+  return undefined;
+};
 
 type ParsedLogLine = {
   raw: string;
@@ -173,11 +192,7 @@ const parseLogLine = (raw: string): ParsedLogLine => {
 
     message = segments.filter((_, index) => !consumed.has(index)).join(' | ');
   } else {
-    const statusMatch = remaining.match(/\b([1-5]\d{2})\b/);
-    if (statusMatch) {
-      const code = Number.parseInt(statusMatch[1], 10);
-      if (code >= 100 && code <= 599) statusCode = code;
-    }
+    statusCode = detectHttpStatusCode(remaining);
 
     const latencyMatch = remaining.match(LOG_LATENCY_REGEX);
     if (latencyMatch) latency = `${latencyMatch[1]}${latencyMatch[2]}`;
