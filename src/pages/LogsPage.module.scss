@@ -17,67 +17,239 @@
   gap: $spacing-lg;
 }
 
-.controls {
+.toolbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: $spacing-md;
-
-  @include mobile {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-
-.actions {
-  display: flex;
   gap: $spacing-sm;
+  flex-wrap: wrap;
 
   @include mobile {
-    flex-wrap: wrap;
+    align-items: flex-start;
   }
 }
 
-.logViewer {
-  background-color: #1e1e1e;
-  color: #d4d4d4;
-  padding: $spacing-lg;
-  border-radius: $radius-lg;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.6;
-  overflow-x: auto;
-  max-height: 600px;
-  overflow-y: auto;
+.actionButton {
+  white-space: nowrap;
+}
 
-  pre {
-    margin: 0;
-    white-space: pre-wrap;
-    word-wrap: break-word;
+.buttonContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  svg {
+    flex: 0 0 auto;
   }
 }
 
-.searchBox {
-  margin-bottom: $spacing-md;
+.switchLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  svg {
+    flex: 0 0 auto;
+  }
 }
 
-.emptyState {
-  text-align: center;
-  padding: $spacing-2xl;
+.logPanel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  max-height: 620px;
+  overflow: auto;
+  position: relative;
+}
+
+.loadMoreBanner {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
   color: var(--text-secondary);
+  font-size: 12px;
+}
 
-  i {
-    font-size: 48px;
-    margin-bottom: $spacing-md;
-    opacity: 0.5;
+.loadMoreCount {
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.logList {
+  display: flex;
+  flex-direction: column;
+}
+
+.logRow {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: $spacing-md;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+  border-left: 3px solid transparent;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-primary);
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.06);
   }
 
-  h3 {
-    margin: 0 0 $spacing-sm 0;
-    color: var(--text-primary);
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: $spacing-xs;
   }
+}
 
-  p {
-    margin: 0;
+.rowWarn {
+  border-left-color: var(--warning-color);
+}
+
+.rowError {
+  border-left-color: var(--error-color);
+}
+
+.timestamp {
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  padding-top: 2px;
+
+  @include mobile {
+    white-space: normal;
   }
+}
+
+.rowMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rowMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.source {
+  color: var(--text-secondary);
+  max-width: 240px;
+  @include text-ellipsis;
+
+  @include mobile {
+    max-width: 100%;
+  }
+}
+
+.statusBadge {
+  font-variant-numeric: tabular-nums;
+}
+
+.statusSuccess {
+  color: var(--success-badge-text);
+  background: var(--success-badge-bg);
+  border-color: var(--success-badge-border);
+}
+
+.statusInfo {
+  color: var(--info-color);
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.statusWarn {
+  color: var(--warning-color);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.statusError {
+  color: var(--failure-badge-text);
+  background: var(--failure-badge-bg);
+  border-color: var(--failure-badge-border);
+}
+
+.levelInfo {
+  color: var(--info-color);
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.levelWarn {
+  color: var(--warning-color);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.levelError {
+  color: var(--error-color);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.levelDebug,
+.levelTrace {
+  color: var(--text-secondary);
+  background: rgba(107, 114, 128, 0.12);
+  border-color: rgba(107, 114, 128, 0.25);
+}
+
+.methodBadge {
+  color: var(--text-primary);
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.22);
+}
+
+.path {
+  color: var(--text-primary);
+  font-weight: 700;
+  max-width: 520px;
+  @include text-ellipsis;
+
+  @include mobile {
+    max-width: 100%;
+  }
+}
+
+.message {
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
 }

@@ -27,6 +27,9 @@ interface ConfigState {
   isCacheValid: (section?: RawConfigSection) => boolean;
 }
 
+let configRequestToken = 0;
+let inFlightConfigRequest: { id: number; promise: Promise<Config> } | null = null;
+
 const SECTION_KEYS: RawConfigSection[] = [
   'debug',
   'proxy-url',
@@ -102,12 +105,34 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       }
     }
 
+    // section 缓存未命中但 full 缓存可用时，直接复用已获取到的配置，避免重复 /config 请求
+    if (!forceRefresh && section && isCacheValid()) {
+      const fullCached = cache.get('__full__');
+      if (fullCached?.data) {
+        return extractSectionValue(fullCached.data as Config, section);
+      }
+    }
+
+    // 同一时刻合并多个 /config 请求（如 StrictMode 或多个页面同时触发）
+    if (inFlightConfigRequest) {
+      const data = await inFlightConfigRequest.promise;
+      return section ? extractSectionValue(data, section) : data;
+    }
+
     // 获取新数据
     set({ loading: true, error: null });
 
+    const requestId = (configRequestToken += 1);
     try {
-      const data = await configApi.getConfig();
+      const requestPromise = configApi.getConfig();
+      inFlightConfigRequest = { id: requestId, promise: requestPromise };
+      const data = await requestPromise;
       const now = Date.now();
+
+      // 如果在请求过程中连接已被切换/登出，则忽略旧请求的结果，避免覆盖新会话的状态
+      if (requestId !== configRequestToken) {
+        return section ? extractSectionValue(data, section) : data;
+      }
 
       // 更新缓存
       const newCache = new Map(cache);
@@ -127,11 +152,17 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
       return section ? extractSectionValue(data, section) : data;
     } catch (error: any) {
-      set({
-        error: error.message || 'Failed to fetch config',
-        loading: false
-      });
+      if (requestId === configRequestToken) {
+        set({
+          error: error.message || 'Failed to fetch config',
+          loading: false
+        });
+      }
       throw error;
+    } finally {
+      if (inFlightConfigRequest?.id === requestId) {
+        inFlightConfigRequest = null;
+      }
     }
   },
 
@@ -206,11 +237,18 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       newCache.delete(section);
       // 同时清除完整配置缓存
       newCache.delete('__full__');
+
+      set({ cache: newCache });
+      return;
     } else {
       newCache.clear();
     }
 
-    set({ cache: newCache });
+    // 清除全部缓存一般代表“切换连接/登出/全量刷新”，需要让 in-flight 的旧请求失效
+    configRequestToken += 1;
+    inFlightConfigRequest = null;
+
+    set({ config: null, cache: newCache, loading: false, error: null });
   },
 
   isCacheValid: (section) => {

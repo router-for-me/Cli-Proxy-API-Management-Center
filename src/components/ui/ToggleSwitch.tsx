@@ -1,9 +1,9 @@
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
 
 interface ToggleSwitchProps {
   checked: boolean;
   onChange: (value: boolean) => void;
-  label?: string;
+  label?: ReactNode;
   disabled?: boolean;
 }
 

@@ -268,7 +268,7 @@ export function AiProvidersPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await fetchConfig(undefined, true);
+      const data = await fetchConfig();
       setGeminiKeys(data?.geminiApiKeys || []);
       setCodexConfigs(data?.codexApiKeys || []);
       setClaudeConfigs(data?.claudeApiKeys || []);

@@ -42,7 +42,7 @@ export function SettingsPage() {
       setLoading(true);
       setError('');
       try {
-        const data = (await fetchConfig(undefined, true)) as Config;
+        const data = (await fetchConfig()) as Config;
         setProxyValue(data?.proxyUrl ?? '');
         setRetryValue(typeof data?.requestRetry === 'number' ? data.requestRetry : 0);
       } catch (err: any) {

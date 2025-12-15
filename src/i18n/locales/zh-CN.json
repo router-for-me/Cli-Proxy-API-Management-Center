@@ -568,6 +568,8 @@
     "auto_refresh": "自动刷新",
     "auto_refresh_enabled": "自动刷新已开启",
     "auto_refresh_disabled": "自动刷新已关闭",
+    "load_more_hint": "向上滚动加载更多",
+    "hidden_lines": "已隐藏 {{count}} 行",
     "search_placeholder": "搜索日志内容或关键字",
     "search_empty_title": "未找到匹配的日志",
     "search_empty_desc": "尝试更换关键字或清空搜索条件。",

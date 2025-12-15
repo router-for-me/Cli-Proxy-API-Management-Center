@@ -1,8 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { IconDownload, IconRefreshCw, IconTimer, IconTrash2 } from '@/components/ui/icons';
 import { useNotificationStore, useAuthStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
 import styles from './LogsPage.module.scss';
@@ -13,30 +15,219 @@ interface ErrorLogItem {
   modified?: number;
 }
 
-// 限制显示的最大日志行数，防止渲染过多导致卡死
-const MAX_DISPLAY_LINES = 500;
+type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+
+type LogState = {
+  buffer: string[];
+  visibleFrom: number;
+};
+
+// 初始只渲染最近 100 行，滚动到顶部再逐步加载更多（避免一次性渲染过多导致卡顿）
+const INITIAL_DISPLAY_LINES = 100;
+const LOAD_MORE_LINES = 200;
+const MAX_BUFFER_LINES = 10000;
+const LOAD_MORE_THRESHOLD_PX = 72;
+
+const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'] as const;
+type HttpMethod = (typeof HTTP_METHODS)[number];
+const HTTP_METHOD_REGEX = new RegExp(`\\b(${HTTP_METHODS.join('|')})\\b`);
+
+const LOG_TIMESTAMP_REGEX = /^\[?(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\]?/;
+const LOG_LEVEL_REGEX = /^\[?(trace|debug|info|warn|warning|error|fatal)\]?\b/i;
+const LOG_SOURCE_REGEX = /^\[([^\]]+)\]/;
+const LOG_LATENCY_REGEX = /\b(\d+(?:\.\d+)?)(?:\s*)(µs|us|ms|s)\b/i;
+const LOG_IPV4_REGEX = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
+const LOG_IPV6_REGEX = /\b(?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}\b/i;
+
+type ParsedLogLine = {
+  raw: string;
+  timestamp?: string;
+  level?: LogLevel;
+  source?: string;
+  statusCode?: number;
+  latency?: string;
+  ip?: string;
+  method?: HttpMethod;
+  path?: string;
+  message: string;
+};
+
+const extractLogLevel = (value: string): LogLevel | undefined => {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'warning') return 'warn';
+  if (normalized === 'warn') return 'warn';
+  if (normalized === 'info') return 'info';
+  if (normalized === 'error') return 'error';
+  if (normalized === 'fatal') return 'fatal';
+  if (normalized === 'debug') return 'debug';
+  if (normalized === 'trace') return 'trace';
+  return undefined;
+};
+
+const inferLogLevel = (line: string): LogLevel | undefined => {
+  const lowered = line.toLowerCase();
+  if (/\bfatal\b/.test(lowered)) return 'fatal';
+  if (/\berror\b/.test(lowered)) return 'error';
+  if (/\bwarn(?:ing)?\b/.test(lowered) || line.includes('警告')) return 'warn';
+  if (/\binfo\b/.test(lowered)) return 'info';
+  if (/\bdebug\b/.test(lowered)) return 'debug';
+  if (/\btrace\b/.test(lowered)) return 'trace';
+  return undefined;
+};
+
+const extractHttpMethodAndPath = (text: string): { method?: HttpMethod; path?: string } => {
+  const match = text.match(HTTP_METHOD_REGEX);
+  if (!match) return {};
+
+  const method = match[1] as HttpMethod;
+  const index = match.index ?? 0;
+  const after = text.slice(index + match[0].length).trim();
+  const path = after ? after.split(/\s+/)[0] : undefined;
+  return { method, path };
+};
+
+const parseLogLine = (raw: string): ParsedLogLine => {
+  let remaining = raw.trim();
+
+  let timestamp: string | undefined;
+  const tsMatch = remaining.match(LOG_TIMESTAMP_REGEX);
+  if (tsMatch) {
+    timestamp = tsMatch[1];
+    remaining = remaining.slice(tsMatch[0].length).trim();
+  }
+
+  let level: LogLevel | undefined;
+  const lvlMatch = remaining.match(LOG_LEVEL_REGEX);
+  if (lvlMatch) {
+    level = extractLogLevel(lvlMatch[1]);
+    remaining = remaining.slice(lvlMatch[0].length).trim();
+  }
+
+  let source: string | undefined;
+  const sourceMatch = remaining.match(LOG_SOURCE_REGEX);
+  if (sourceMatch) {
+    source = sourceMatch[1];
+    remaining = remaining.slice(sourceMatch[0].length).trim();
+  }
+
+  let statusCode: number | undefined;
+  let latency: string | undefined;
+  let ip: string | undefined;
+  let method: HttpMethod | undefined;
+  let path: string | undefined;
+  let message = remaining;
+
+  if (remaining.includes('|')) {
+    const segments = remaining
+      .split('|')
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+    const consumed = new Set<number>();
+
+    // status code
+    const statusIndex = segments.findIndex((segment) => /^\d{3}\b/.test(segment));
+    if (statusIndex >= 0) {
+      const match = segments[statusIndex].match(/^(\d{3})\b/);
+      if (match) {
+        const code = Number.parseInt(match[1], 10);
+        if (code >= 100 && code <= 599) {
+          statusCode = code;
+          consumed.add(statusIndex);
+        }
+      }
+    }
+
+    // latency
+    const latencyIndex = segments.findIndex((segment) => LOG_LATENCY_REGEX.test(segment));
+    if (latencyIndex >= 0) {
+      const match = segments[latencyIndex].match(LOG_LATENCY_REGEX);
+      if (match) {
+        latency = `${match[1]}${match[2]}`;
+        consumed.add(latencyIndex);
+      }
+    }
+
+    // ip
+    const ipIndex = segments.findIndex(
+      (segment) => LOG_IPV4_REGEX.test(segment) || LOG_IPV6_REGEX.test(segment)
+    );
+    if (ipIndex >= 0) {
+      const match = segments[ipIndex].match(LOG_IPV4_REGEX) ?? segments[ipIndex].match(LOG_IPV6_REGEX);
+      if (match) {
+        ip = match[0];
+        consumed.add(ipIndex);
+      }
+    }
+
+    // method + path
+    const methodIndex = segments.findIndex((segment) => {
+      const { method: parsedMethod } = extractHttpMethodAndPath(segment);
+      return Boolean(parsedMethod);
+    });
+    if (methodIndex >= 0) {
+      const parsed = extractHttpMethodAndPath(segments[methodIndex]);
+      method = parsed.method;
+      path = parsed.path;
+      consumed.add(methodIndex);
+    }
+
+    message = segments.filter((_, index) => !consumed.has(index)).join(' | ');
+  } else {
+    const statusMatch = remaining.match(/\b([1-5]\d{2})\b/);
+    if (statusMatch) {
+      const code = Number.parseInt(statusMatch[1], 10);
+      if (code >= 100 && code <= 599) statusCode = code;
+    }
+
+    const latencyMatch = remaining.match(LOG_LATENCY_REGEX);
+    if (latencyMatch) latency = `${latencyMatch[1]}${latencyMatch[2]}`;
+
+    const ipMatch = remaining.match(LOG_IPV4_REGEX) ?? remaining.match(LOG_IPV6_REGEX);
+    if (ipMatch) ip = ipMatch[0];
+
+    const parsed = extractHttpMethodAndPath(remaining);
+    method = parsed.method;
+    path = parsed.path;
+  }
+
+  if (!level) level = inferLogLevel(raw);
+
+  return {
+    raw,
+    timestamp,
+    level,
+    source,
+    statusCode,
+    latency,
+    ip,
+    method,
+    path,
+    message
+  };
+};
 
 export function LogsPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
 
-  const [logLines, setLogLines] = useState<string[]>([]);
+  const [logState, setLogState] = useState<LogState>({ buffer: [], visibleFrom: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
 
-  const logViewerRef = useRef<HTMLPreElement | null>(null);
+  const logViewerRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollToBottomRef = useRef(false);
+  const pendingPrependScrollRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
 
   // 保存最新时间戳用于增量获取
   const latestTimestampRef = useRef<number>(0);
 
   const disableControls = connectionStatus !== 'connected';
 
-  const isNearBottom = (node: HTMLPreElement | null) => {
+  const isNearBottom = (node: HTMLDivElement | null) => {
     if (!node) return true;
     const threshold = 24;
     return node.scrollHeight - node.scrollTop - node.clientHeight <= threshold;
@@ -47,8 +238,6 @@ export function LogsPage() {
     if (!node) return;
     node.scrollTop = node.scrollHeight;
   };
-
-  const isWarningLine = (line: string) => /\bwarn(?:ing)?\b/i.test(line) || line.includes('警告');
 
   const loadLogs = async (incremental = false) => {
     if (connectionStatus !== 'connected') {
@@ -77,14 +266,26 @@ export function LogsPage() {
       const newLines = Array.isArray(data.lines) ? data.lines : [];
 
       if (incremental && newLines.length > 0) {
-        // 增量更新：追加新日志并限制总行数
-        setLogLines(prev => {
-          const combined = [...prev, ...newLines];
-          return combined.slice(-MAX_DISPLAY_LINES);
+        // 增量更新：追加新日志并限制缓冲区大小（避免内存与渲染膨胀）
+        setLogState((prev) => {
+          const prevRenderedCount = prev.buffer.length - prev.visibleFrom;
+          const combined = [...prev.buffer, ...newLines];
+          const dropCount = Math.max(combined.length - MAX_BUFFER_LINES, 0);
+          const buffer = dropCount > 0 ? combined.slice(dropCount) : combined;
+          let visibleFrom = Math.max(prev.visibleFrom - dropCount, 0);
+
+          // 若用户停留在底部（跟随最新日志），则保持“渲染窗口”大小不变，避免无限增长
+          if (pendingScrollToBottomRef.current) {
+            visibleFrom = Math.max(buffer.length - prevRenderedCount, 0);
+          }
+
+          return { buffer, visibleFrom };
         });
       } else if (!incremental) {
-        // 全量加载：只取最后 MAX_DISPLAY_LINES 行
-        setLogLines(newLines.slice(-MAX_DISPLAY_LINES));
+        // 全量加载：默认只渲染最后 100 行，向上滚动再展开更多
+        const buffer = newLines.slice(-MAX_BUFFER_LINES);
+        const visibleFrom = Math.max(buffer.length - INITIAL_DISPLAY_LINES, 0);
+        setLogState({ buffer, visibleFrom });
       }
     } catch (err: any) {
       console.error('Failed to load logs:', err);
@@ -102,7 +303,7 @@ export function LogsPage() {
     if (!window.confirm(t('logs.clear_confirm'))) return;
     try {
       await logsApi.clearLogs();
-      setLogLines([]);
+      setLogState({ buffer: [], visibleFrom: 0 });
       latestTimestampRef.current = 0;
       showNotification(t('logs.clear_success'), 'success');
     } catch (err: any) {
@@ -111,7 +312,7 @@ export function LogsPage() {
   };
 
   const downloadLogs = () => {
-    const text = logLines.join('\n');
+    const text = logState.buffer.join('\n');
     const blob = new Blob([text], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -193,9 +394,41 @@ export function LogsPage() {
 
     scrollToBottom();
     pendingScrollToBottomRef.current = false;
-  }, [loading, logLines]);
+  }, [loading, logState.buffer, logState.visibleFrom]);
 
-  const logsText = logLines.join('\n');
+  const visibleLines = useMemo(
+    () => logState.buffer.slice(logState.visibleFrom),
+    [logState.buffer, logState.visibleFrom]
+  );
+  const parsedVisibleLines = useMemo(
+    () => visibleLines.map((line) => parseLogLine(line)),
+    [visibleLines]
+  );
+  const canLoadMore = logState.visibleFrom > 0;
+
+  const handleLogScroll = () => {
+    const node = logViewerRef.current;
+    if (!node) return;
+    if (!canLoadMore) return;
+    if (pendingPrependScrollRef.current) return;
+    if (node.scrollTop > LOAD_MORE_THRESHOLD_PX) return;
+
+    pendingPrependScrollRef.current = { scrollHeight: node.scrollHeight, scrollTop: node.scrollTop };
+    setLogState((prev) => ({
+      ...prev,
+      visibleFrom: Math.max(prev.visibleFrom - LOAD_MORE_LINES, 0)
+    }));
+  };
+
+  useLayoutEffect(() => {
+    const node = logViewerRef.current;
+    const pending = pendingPrependScrollRef.current;
+    if (!node || !pending) return;
+
+    const delta = node.scrollHeight - pending.scrollHeight;
+    node.scrollTop = pending.scrollTop + delta;
+    pendingPrependScrollRef.current = null;
+  }, [logState.visibleFrom]);
 
   return (
     <div className={styles.container}>
@@ -204,18 +437,53 @@ export function LogsPage() {
       <Card
         title={t('logs.log_content')}
         extra={
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Button variant="secondary" size="sm" onClick={() => loadLogs(false)} disabled={loading}>
-              {t('logs.refresh_button')}
+          <div className={styles.toolbar}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => loadLogs(false)}
+              disabled={disableControls || loading}
+              className={styles.actionButton}
+            >
+              <span className={styles.buttonContent}>
+                <IconRefreshCw size={16} />
+                {t('logs.refresh_button')}
+              </span>
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => setAutoRefresh((v) => !v)}>
-              {t('logs.auto_refresh')}: {autoRefresh ? t('common.yes') : t('common.no')}
+            <ToggleSwitch
+              checked={autoRefresh}
+              onChange={(value) => setAutoRefresh(value)}
+              disabled={disableControls}
+              label={
+                <span className={styles.switchLabel}>
+                  <IconTimer size={16} />
+                  {t('logs.auto_refresh')}
+                </span>
+              }
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={downloadLogs}
+              disabled={logState.buffer.length === 0}
+              className={styles.actionButton}
+            >
+              <span className={styles.buttonContent}>
+                <IconDownload size={16} />
+                {t('logs.download_button')}
+              </span>
             </Button>
-            <Button variant="secondary" size="sm" onClick={downloadLogs} disabled={logLines.length === 0}>
-              {t('logs.download_button')}
-            </Button>
-            <Button variant="danger" size="sm" onClick={clearLogs} disabled={disableControls}>
-              {t('logs.clear_button')}
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={clearLogs}
+              disabled={disableControls}
+              className={styles.actionButton}
+            >
+              <span className={styles.buttonContent}>
+                <IconTrash2 size={16} />
+                {t('logs.clear_button')}
+              </span>
             </Button>
           </div>
         }
@@ -223,14 +491,88 @@ export function LogsPage() {
         {error && <div className="error-box">{error}</div>}
         {loading ? (
           <div className="hint">{t('logs.loading')}</div>
-        ) : logsText ? (
-          <pre ref={logViewerRef} className="log-viewer log-viewer-lines">
-            {logLines.map((line, index) => (
-              <span key={index} className={`log-line${isWarningLine(line) ? ' log-line-warning' : ''}`}>
-                {line}
-              </span>
-            ))}
-          </pre>
+        ) : logState.buffer.length > 0 ? (
+          <div ref={logViewerRef} className={styles.logPanel} onScroll={handleLogScroll}>
+            {canLoadMore && (
+              <div className={styles.loadMoreBanner}>
+                <span>{t('logs.load_more_hint')}</span>
+                <span className={styles.loadMoreCount}>
+                  {t('logs.hidden_lines', { count: logState.visibleFrom })}
+                </span>
+              </div>
+            )}
+            <div className={styles.logList}>
+              {parsedVisibleLines.map((line, index) => {
+                const rowClassNames = [styles.logRow];
+                if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
+                if (line.level === 'error' || line.level === 'fatal') rowClassNames.push(styles.rowError);
+                return (
+                  <div key={`${logState.visibleFrom + index}-${line.raw}`} className={rowClassNames.join(' ')}>
+                    <div className={styles.timestamp}>{line.timestamp || ''}</div>
+                    <div className={styles.rowMain}>
+                      <div className={styles.rowMeta}>
+                        {line.level && (
+                          <span
+                            className={[
+                              styles.badge,
+                              line.level === 'info' ? styles.levelInfo : '',
+                              line.level === 'warn' ? styles.levelWarn : '',
+                              line.level === 'error' || line.level === 'fatal' ? styles.levelError : '',
+                              line.level === 'debug' ? styles.levelDebug : '',
+                              line.level === 'trace' ? styles.levelTrace : ''
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            {line.level.toUpperCase()}
+                          </span>
+                        )}
+
+                        {line.source && (
+                          <span className={styles.source} title={line.source}>
+                            {line.source}
+                          </span>
+                        )}
+
+                        {typeof line.statusCode === 'number' && (
+                          <span
+                            className={[
+                              styles.badge,
+                              styles.statusBadge,
+                              line.statusCode >= 200 && line.statusCode < 300
+                                ? styles.statusSuccess
+                                : line.statusCode >= 300 && line.statusCode < 400
+                                  ? styles.statusInfo
+                                  : line.statusCode >= 400 && line.statusCode < 500
+                                    ? styles.statusWarn
+                                    : styles.statusError
+                            ].join(' ')}
+                          >
+                            {line.statusCode}
+                          </span>
+                        )}
+
+                        {line.latency && <span className={styles.pill}>{line.latency}</span>}
+                        {line.ip && <span className={styles.pill}>{line.ip}</span>}
+
+                        {line.method && (
+                          <span className={[styles.badge, styles.methodBadge].join(' ')}>
+                            {line.method}
+                          </span>
+                        )}
+                        {line.path && (
+                          <span className={styles.path} title={line.path}>
+                            {line.path}
+                          </span>
+                        )}
+                      </div>
+                      {line.message && <div className={styles.message}>{line.message}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         ) : (
           <EmptyState title={t('logs.empty_title')} description={t('logs.empty_desc')} />
         )}

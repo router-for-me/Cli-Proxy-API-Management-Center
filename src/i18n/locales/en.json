@@ -568,6 +568,8 @@
     "auto_refresh": "Auto Refresh",
     "auto_refresh_enabled": "Auto refresh enabled",
     "auto_refresh_disabled": "Auto refresh disabled",
+    "load_more_hint": "Scroll up to load more",
+    "hidden_lines": "Hidden: {{count}} lines",
     "search_placeholder": "Search logs by content or keyword",
     "search_empty_title": "No matching logs found",
     "search_empty_desc": "Try a different keyword or clear the search filter.",

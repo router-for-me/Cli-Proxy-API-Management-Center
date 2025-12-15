@@ -50,7 +50,7 @@ export function ApiKeysPage() {
   );
 
   useEffect(() => {
-    loadApiKeys(true);
+    loadApiKeys();
   }, [loadApiKeys]);
 
   useEffect(() => {
