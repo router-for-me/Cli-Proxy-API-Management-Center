@@ -266,18 +266,27 @@ export function SettingsPage() {
       </Card>
 
       <Card title={t('basic_settings.retry_title')}>
-        <Input
-          label={t('basic_settings.retry_count_label')}
-          type="number"
-          value={retryValue}
-          onChange={(e) => setRetryValue(Number(e.target.value))}
-          disabled={disableControls || loading}
-          rightElement={
-            <Button onClick={handleRetryUpdate} loading={pending.retry} disabled={disableControls || loading}>
-              {t('basic_settings.retry_update')}
-            </Button>
-          }
-        />
+        <div className={styles.retryRow}>
+          <Input
+            label={t('basic_settings.retry_count_label')}
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={1}
+            value={retryValue}
+            onChange={(e) => setRetryValue(Number(e.target.value))}
+            disabled={disableControls || loading}
+            className={styles.retryInput}
+          />
+          <Button
+            className={styles.retryButton}
+            onClick={handleRetryUpdate}
+            loading={pending.retry}
+            disabled={disableControls || loading}
+          >
+            {t('basic_settings.retry_update')}
+          </Button>
+        </div>
       </Card>
 
       <Card title={t('basic_settings.quota_title')}>

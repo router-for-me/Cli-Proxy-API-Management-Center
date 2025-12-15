@@ -139,8 +139,10 @@
 
     // 移动端：禁用动画，只显示缩写
     @media (max-width: $breakpoint-mobile) {
-      margin-right: $spacing-sm;
       cursor: default;
+      flex-shrink: 1;
+      min-width: 0;
+      margin-right: 0;
 
       .brand-full,
       .brand-abbr {
@@ -168,7 +170,7 @@
     flex-shrink: 0;
 
     @media (max-width: $breakpoint-mobile) {
-      display: flex;
+      display: inline-flex;
     }
   }
 

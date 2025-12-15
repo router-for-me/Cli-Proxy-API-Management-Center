@@ -300,9 +300,6 @@ export function MainLayout() {
             <span className="brand-full">{fullBrandName}</span>
             <span className="brand-abbr">{abbrBrandName}</span>
           </div>
-          <Button className="mobile-menu-btn" variant="ghost" size="sm" onClick={() => setSidebarOpen((prev) => !prev)}>
-            {headerIcons.menu}
-          </Button>
         </div>
 
         <div className="right">
@@ -320,6 +317,9 @@ export function MainLayout() {
           </div>
 
           <div className="header-actions">
+            <Button className="mobile-menu-btn" variant="ghost" size="sm" onClick={() => setSidebarOpen((prev) => !prev)}>
+              {headerIcons.menu}
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleRefreshAll} title={t('header.refresh_all')}>
               {headerIcons.refresh}
             </Button>

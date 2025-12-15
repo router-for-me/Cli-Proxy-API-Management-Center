@@ -105,3 +105,33 @@
   display: flex;
   gap: $spacing-sm;
 }
+
+.retryRow {
+  display: flex;
+  align-items: flex-end;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.retryInput {
+  width: 140px;
+
+  @include mobile {
+    width: 100%;
+  }
+}
+
+.retryButton {
+  @include mobile {
+    width: 100%;
+  }
+}
