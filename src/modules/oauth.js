@@ -956,5 +956,284 @@ export const oauthModule = {
         pathEl.textContent = result.saved_path || result.savedPath || result.path || '-';
         typeEl.textContent = result.type || '-';
         container.style.display = 'block';
+    },
+
+    // ===== Kiro OAuth 相关方法 (Plus) =====
+
+    // 开始 Kiro OAuth 流程
+    async startKiroOAuth() {
+        try {
+            const methodSelect = document.getElementById('kiro-method-select');
+            const method = methodSelect ? methodSelect.value : 'aws';
+
+            const response = await this.makeRequest(`/kiro-auth-url?is_webui=1&method=${method}`);
+            const state = response.state;
+
+            const content = document.getElementById('kiro-oauth-content');
+            const status = document.getElementById('kiro-oauth-status');
+
+            if (content) {
+                content.style.display = 'block';
+            }
+
+            if (response.method === 'device_code') {
+                // AWS Builder ID device code flow
+                this.showKiroDeviceCode(response);
+            } else {
+                // Social auth flow (Google/GitHub)
+                this.showKiroSocialAuth(response);
+            }
+
+            if (status) {
+                status.textContent = i18n.t('auth_login.kiro_oauth_status_waiting');
+                status.style.color = 'var(--warning-text)';
+            }
+
+            // 开始轮询认证状态
+            this.startKiroOAuthPolling(state);
+
+        } catch (error) {
+            this.showNotification(`${i18n.t('auth_login.kiro_oauth_start_error')} ${error.message}`, 'error');
+        }
+    },
+
+    // 显示 Kiro 设备码
+    showKiroDeviceCode(response) {
+        const deviceCodeContent = document.getElementById('kiro-device-code-content');
+        const socialAuthContent = document.getElementById('kiro-social-auth-content');
+        const verificationUrl = document.getElementById('kiro-verification-url');
+        const userCode = document.getElementById('kiro-user-code');
+
+        if (socialAuthContent) {
+            socialAuthContent.style.display = 'none';
+        }
+        if (deviceCodeContent) {
+            deviceCodeContent.style.display = 'block';
+        }
+        if (verificationUrl) {
+            verificationUrl.value = response.verification_url || '';
+        }
+        if (userCode) {
+            userCode.value = response.user_code || '';
+        }
+    },
+
+    // 显示 Kiro 社交认证
+    showKiroSocialAuth(response) {
+        const deviceCodeContent = document.getElementById('kiro-device-code-content');
+        const socialAuthContent = document.getElementById('kiro-social-auth-content');
+        const oauthUrl = document.getElementById('kiro-oauth-url');
+
+        if (deviceCodeContent) {
+            deviceCodeContent.style.display = 'none';
+        }
+        if (socialAuthContent) {
+            socialAuthContent.style.display = 'block';
+        }
+        if (oauthUrl) {
+            oauthUrl.value = response.url || '';
+        }
+    },
+
+    // 处理 Kiro 登录方式变更
+    handleKiroMethodChange() {
+        const content = document.getElementById('kiro-oauth-content');
+        if (content) {
+            content.style.display = 'none';
+        }
+    },
+
+    // 打开 Kiro 验证链接
+    openKiroVerification() {
+        const urlInput = document.getElementById('kiro-verification-url');
+        if (urlInput && urlInput.value) {
+            window.open(urlInput.value, '_blank');
+        }
+    },
+
+    // 复制 Kiro 用户代码
+    copyKiroCode() {
+        const codeInput = document.getElementById('kiro-user-code');
+        if (codeInput && codeInput.value) {
+            navigator.clipboard.writeText(codeInput.value).then(() => {
+                this.showNotification(i18n.t('auth_login.kiro_copy_code_success'), 'success');
+            });
+        }
+    },
+
+    // 打开 Kiro OAuth 链接
+    openKiroLink() {
+        const urlInput = document.getElementById('kiro-oauth-url');
+        if (urlInput && urlInput.value) {
+            window.open(urlInput.value, '_blank');
+        }
+    },
+
+    // 复制 Kiro OAuth 链接
+    copyKiroLink() {
+        const urlInput = document.getElementById('kiro-oauth-url');
+        if (urlInput && urlInput.value) {
+            navigator.clipboard.writeText(urlInput.value).then(() => {
+                this.showNotification(i18n.t('auth_login.kiro_copy_link_success'), 'success');
+            });
+        }
+    },
+
+    // 轮询 Kiro OAuth 状态
+    async startKiroOAuthPolling(state) {
+        const maxAttempts = 120;
+        let attempts = 0;
+
+        const poll = async () => {
+            if (attempts >= maxAttempts) {
+                const status = document.getElementById('kiro-oauth-status');
+                if (status) {
+                    status.textContent = i18n.t('auth_login.kiro_oauth_status_timeout');
+                    status.style.color = 'var(--error-text)';
+                }
+                return;
+            }
+
+            attempts++;
+
+            try {
+                const response = await this.makeRequest(`/auth-status?state=${state}`);
+
+                if (response.status === 'ok') {
+                    const status = document.getElementById('kiro-oauth-status');
+                    if (status) {
+                        status.textContent = i18n.t('auth_login.kiro_oauth_status_success');
+                        status.style.color = 'var(--success-text)';
+                    }
+                    this.showNotification(i18n.t('auth_login.kiro_oauth_success'), 'success');
+                    setTimeout(() => this.loadAuthFiles(), 1000);
+                    return;
+                } else if (response.status === 'error') {
+                    const status = document.getElementById('kiro-oauth-status');
+                    if (status) {
+                        status.textContent = `${i18n.t('auth_login.kiro_oauth_status_error')} ${response.error || ''}`;
+                        status.style.color = 'var(--error-text)';
+                    }
+                    return;
+                } else if (response.status === 'device_code') {
+                    this.showKiroDeviceCode({
+                        verification_url: response.verification_url,
+                        user_code: response.user_code
+                    });
+                } else if (response.status === 'auth_url') {
+                    this.showKiroSocialAuth({
+                        url: response.url
+                    });
+                }
+
+                setTimeout(poll, 3000);
+            } catch (error) {
+                console.error('Kiro OAuth polling error:', error);
+                setTimeout(poll, 3000);
+            }
+        };
+
+        poll();
+    },
+
+    // ===== GitHub Copilot OAuth 相关方法 (Plus) =====
+
+    // 开始 GitHub Copilot OAuth 流程
+    async startGitHubCopilotOAuth() {
+        try {
+            const response = await this.makeRequest('/github-copilot-auth-url?is_webui=1');
+            const state = response.state;
+
+            const content = document.getElementById('github-copilot-oauth-content');
+            const verificationUrl = document.getElementById('github-copilot-verification-url');
+            const userCode = document.getElementById('github-copilot-user-code');
+            const status = document.getElementById('github-copilot-oauth-status');
+
+            if (verificationUrl) {
+                verificationUrl.value = response.verification_url || response.url || '';
+            }
+            if (userCode) {
+                userCode.value = response.user_code || '';
+            }
+            if (content) {
+                content.style.display = 'block';
+            }
+            if (status) {
+                status.textContent = i18n.t('auth_login.github_copilot_oauth_status_waiting');
+                status.style.color = 'var(--warning-text)';
+            }
+
+            // 开始轮询认证状态
+            this.startGitHubCopilotOAuthPolling(state);
+
+        } catch (error) {
+            this.showNotification(`${i18n.t('auth_login.github_copilot_oauth_start_error')} ${error.message}`, 'error');
+        }
+    },
+
+    // 打开 GitHub Copilot 验证链接
+    openGitHubCopilotVerification() {
+        const urlInput = document.getElementById('github-copilot-verification-url');
+        if (urlInput && urlInput.value) {
+            window.open(urlInput.value, '_blank');
+        }
+    },
+
+    // 复制 GitHub Copilot 用户代码
+    copyGitHubCopilotCode() {
+        const codeInput = document.getElementById('github-copilot-user-code');
+        if (codeInput && codeInput.value) {
+            navigator.clipboard.writeText(codeInput.value).then(() => {
+                this.showNotification(i18n.t('auth_login.github_copilot_copy_code_success'), 'success');
+            });
+        }
+    },
+
+    // 轮询 GitHub Copilot OAuth 状态
+    async startGitHubCopilotOAuthPolling(state) {
+        const maxAttempts = 120;
+        let attempts = 0;
+
+        const poll = async () => {
+            if (attempts >= maxAttempts) {
+                const status = document.getElementById('github-copilot-oauth-status');
+                if (status) {
+                    status.textContent = i18n.t('auth_login.github_copilot_oauth_status_timeout');
+                    status.style.color = 'var(--error-text)';
+                }
+                return;
+            }
+
+            attempts++;
+
+            try {
+                const response = await this.makeRequest(`/auth-status?state=${state}`);
+
+                if (response.status === 'ok') {
+                    const status = document.getElementById('github-copilot-oauth-status');
+                    if (status) {
+                        status.textContent = i18n.t('auth_login.github_copilot_oauth_status_success');
+                        status.style.color = 'var(--success-text)';
+                    }
+                    this.showNotification(i18n.t('auth_login.github_copilot_oauth_success'), 'success');
+                    setTimeout(() => this.loadAuthFiles(), 1000);
+                    return;
+                } else if (response.status === 'error') {
+                    const status = document.getElementById('github-copilot-oauth-status');
+                    if (status) {
+                        status.textContent = `${i18n.t('auth_login.github_copilot_oauth_status_error')} ${response.error || ''}`;
+                        status.style.color = 'var(--error-text)';
+                    }
+                    return;
+                }
+
+                setTimeout(poll, 3000);
+            } catch (error) {
+                console.error('GitHub Copilot OAuth polling error:', error);
+                setTimeout(poll, 3000);
+            }
+        };
+
+        poll();
     }
 };

@@ -594,6 +594,48 @@ class CLIProxyManager {
             iflowCookieSubmit.addEventListener('click', () => this.submitIflowCookieLogin());
         }
 
+        // Kiro OAuth (Plus)
+        const kiroOauthBtn = document.getElementById('kiro-oauth-btn');
+        const kiroMethodSelect = document.getElementById('kiro-method-select');
+        const kiroOpenVerification = document.getElementById('kiro-open-verification');
+        const kiroCopyCode = document.getElementById('kiro-copy-code');
+        const kiroOpenLink = document.getElementById('kiro-open-link');
+        const kiroCopyLink = document.getElementById('kiro-copy-link');
+
+        if (kiroOauthBtn) {
+            kiroOauthBtn.addEventListener('click', () => this.startKiroOAuth());
+        }
+        if (kiroMethodSelect) {
+            kiroMethodSelect.addEventListener('change', () => this.handleKiroMethodChange());
+        }
+        if (kiroOpenVerification) {
+            kiroOpenVerification.addEventListener('click', () => this.openKiroVerification());
+        }
+        if (kiroCopyCode) {
+            kiroCopyCode.addEventListener('click', () => this.copyKiroCode());
+        }
+        if (kiroOpenLink) {
+            kiroOpenLink.addEventListener('click', () => this.openKiroLink());
+        }
+        if (kiroCopyLink) {
+            kiroCopyLink.addEventListener('click', () => this.copyKiroLink());
+        }
+
+        // GitHub Copilot OAuth (Plus)
+        const githubCopilotOauthBtn = document.getElementById('github-copilot-oauth-btn');
+        const githubCopilotOpenVerification = document.getElementById('github-copilot-open-verification');
+        const githubCopilotCopyCode = document.getElementById('github-copilot-copy-code');
+
+        if (githubCopilotOauthBtn) {
+            githubCopilotOauthBtn.addEventListener('click', () => this.startGitHubCopilotOAuth());
+        }
+        if (githubCopilotOpenVerification) {
+            githubCopilotOpenVerification.addEventListener('click', () => this.openGitHubCopilotVerification());
+        }
+        if (githubCopilotCopyCode) {
+            githubCopilotCopyCode.addEventListener('click', () => this.copyGitHubCopilotCode());
+        }
+
         // 使用统计
         const refreshUsageStats = document.getElementById('refresh-usage-stats');
         const requestsHourBtn = document.getElementById('requests-hour-btn');

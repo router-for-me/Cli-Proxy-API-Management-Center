@@ -838,6 +838,120 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Kiro OAuth -->
+                            <div class="card" id="kiro-oauth-card">
+                                <div class="card-header">
+                                    <h3>
+                                        <i class="fas fa-robot"></i>
+                                        <span data-i18n="auth_login.kiro_oauth_title">Kiro (AWS CodeWhisperer) OAuth</span>
+                                        <span class="badge-plus" title="Available in CLIProxyAPI Plus">Plus</span>
+                                    </h3>
+                                    <button id="kiro-oauth-btn" class="btn btn-primary">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        <span data-i18n="auth_login.kiro_oauth_button">开始 Kiro 登录</span>
+                                    </button>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" style="margin-bottom: 20px;" data-i18n="auth_login.kiro_oauth_hint">
+                                        通过 OAuth 流程登录 Kiro (AWS CodeWhisperer) 服务，自动获取并保存认证文件。
+                                    </p>
+                                    <div class="form-group">
+                                        <label data-i18n="auth_login.kiro_method_label">登录方式:</label>
+                                        <select id="kiro-method-select" class="form-control">
+                                            <option value="aws" data-i18n="auth_login.kiro_method_aws">AWS Builder ID (设备码)</option>
+                                            <option value="google" data-i18n="auth_login.kiro_method_google">Google</option>
+                                            <option value="github" data-i18n="auth_login.kiro_method_github">GitHub</option>
+                                        </select>
+                                    </div>
+                                    <div id="kiro-oauth-content" style="display: none;">
+                                        <!-- Device Code Flow (AWS Builder ID) -->
+                                        <div id="kiro-device-code-content" style="display: none;">
+                                            <div class="form-group">
+                                                <label data-i18n="auth_login.kiro_verification_url_label">验证链接:</label>
+                                                <div class="input-group">
+                                                    <input type="text" id="kiro-verification-url" readonly>
+                                                    <button id="kiro-open-verification" class="btn btn-primary">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                        <span data-i18n="auth_login.kiro_open_link">打开链接</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label data-i18n="auth_login.kiro_user_code_label">用户代码:</label>
+                                                <div class="input-group">
+                                                    <input type="text" id="kiro-user-code" readonly>
+                                                    <button id="kiro-copy-code" class="btn btn-secondary">
+                                                        <i class="fas fa-copy"></i>
+                                                        <span data-i18n="auth_login.kiro_copy_code">复制代码</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Social Auth Flow (Google/GitHub) -->
+                                        <div id="kiro-social-auth-content" style="display: none;">
+                                            <div class="form-group">
+                                                <label data-i18n="auth_login.kiro_oauth_url_label">授权链接:</label>
+                                                <div class="input-group">
+                                                    <input type="text" id="kiro-oauth-url" readonly>
+                                                    <button id="kiro-open-link" class="btn btn-primary">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                        <span data-i18n="auth_login.kiro_open_link">打开链接</span>
+                                                    </button>
+                                                    <button id="kiro-copy-link" class="btn btn-secondary">
+                                                        <i class="fas fa-copy"></i>
+                                                        <span data-i18n="auth_login.kiro_copy_link">复制链接</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="kiro-oauth-status" class="form-hint" style="margin-top: 10px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- GitHub Copilot OAuth -->
+                            <div class="card" id="github-copilot-oauth-card">
+                                <div class="card-header">
+                                    <h3>
+                                        <i class="fab fa-github"></i>
+                                        <span data-i18n="auth_login.github_copilot_oauth_title">GitHub Copilot OAuth</span>
+                                        <span class="badge-plus" title="Available in CLIProxyAPI Plus">Plus</span>
+                                    </h3>
+                                    <button id="github-copilot-oauth-btn" class="btn btn-primary">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        <span data-i18n="auth_login.github_copilot_oauth_button">开始 GitHub Copilot 登录</span>
+                                    </button>
+                                </div>
+                                <div class="card-content">
+                                    <p class="form-hint" style="margin-bottom: 20px;" data-i18n="auth_login.github_copilot_oauth_hint">
+                                        通过设备码流程登录 GitHub Copilot 服务，自动获取并保存认证文件。
+                                    </p>
+                                    <div id="github-copilot-oauth-content" style="display: none;">
+                                        <div class="form-group">
+                                            <label data-i18n="auth_login.github_copilot_verification_url_label">验证链接:</label>
+                                            <div class="input-group">
+                                                <input type="text" id="github-copilot-verification-url" readonly>
+                                                <button id="github-copilot-open-verification" class="btn btn-primary">
+                                                    <i class="fas fa-external-link-alt"></i>
+                                                    <span data-i18n="auth_login.github_copilot_open_link">打开链接</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label data-i18n="auth_login.github_copilot_user_code_label">用户代码:</label>
+                                            <div class="input-group">
+                                                <input type="text" id="github-copilot-user-code" readonly>
+                                                <button id="github-copilot-copy-code" class="btn btn-secondary">
+                                                    <i class="fas fa-copy"></i>
+                                                    <span data-i18n="auth_login.github_copilot_copy_code">复制代码</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="github-copilot-oauth-status" class="form-hint" style="margin-top: 10px;"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </section>
 
                         <!-- 日志查看 -->
