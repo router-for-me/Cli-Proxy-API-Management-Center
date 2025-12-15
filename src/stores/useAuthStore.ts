@@ -9,7 +9,6 @@ import type { AuthState, LoginCredentials, ConnectionStatus } from '@/types';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { secureStorage } from '@/services/storage/secureStorage';
 import { apiClient } from '@/services/api/client';
-import { configApi } from '@/services/api/config';
 import { useConfigStore } from './useConfigStore';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 
@@ -26,6 +25,8 @@ interface AuthStoreState extends AuthState {
   updateConnectionStatus: (status: ConnectionStatus, error?: string | null) => void;
 }
 
+let restoreSessionPromise: Promise<boolean> | null = null;
+
 export const useAuthStore = create<AuthStoreState>()(
   persist(
     (set, get) => ({
@@ -39,33 +40,39 @@ export const useAuthStore = create<AuthStoreState>()(
       connectionError: null,
 
       // 恢复会话并自动登录
-      restoreSession: async () => {
-        secureStorage.migratePlaintextKeys(['apiBase', 'apiUrl', 'managementKey']);
+      restoreSession: () => {
+        if (restoreSessionPromise) return restoreSessionPromise;
 
-        const wasLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-        const legacyBase =
-          secureStorage.getItem<string>('apiBase') ||
-          secureStorage.getItem<string>('apiUrl', { encrypt: true });
-        const legacyKey = secureStorage.getItem<string>('managementKey');
+        restoreSessionPromise = (async () => {
+          secureStorage.migratePlaintextKeys(['apiBase', 'apiUrl', 'managementKey']);
 
-        const { apiBase, managementKey } = get();
-        const resolvedBase = normalizeApiBase(apiBase || legacyBase || detectApiBaseFromLocation());
-        const resolvedKey = managementKey || legacyKey || '';
+          const wasLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+          const legacyBase =
+            secureStorage.getItem<string>('apiBase') ||
+            secureStorage.getItem<string>('apiUrl', { encrypt: true });
+          const legacyKey = secureStorage.getItem<string>('managementKey');
 
-        set({ apiBase: resolvedBase, managementKey: resolvedKey });
-        apiClient.setConfig({ apiBase: resolvedBase, managementKey: resolvedKey });
+          const { apiBase, managementKey } = get();
+          const resolvedBase = normalizeApiBase(apiBase || legacyBase || detectApiBaseFromLocation());
+          const resolvedKey = managementKey || legacyKey || '';
 
-        if (wasLoggedIn && resolvedBase && resolvedKey) {
-          try {
-            await get().login({ apiBase: resolvedBase, managementKey: resolvedKey });
-            return true;
-          } catch (error) {
-            console.warn('Auto login failed:', error);
-            return false;
+          set({ apiBase: resolvedBase, managementKey: resolvedKey });
+          apiClient.setConfig({ apiBase: resolvedBase, managementKey: resolvedKey });
+
+          if (wasLoggedIn && resolvedBase && resolvedKey) {
+            try {
+              await get().login({ apiBase: resolvedBase, managementKey: resolvedKey });
+              return true;
+            } catch (error) {
+              console.warn('Auto login failed:', error);
+              return false;
+            }
           }
-        }
 
-        return false;
+          return false;
+        })();
+
+        return restoreSessionPromise;
       },
 
       // 登录
@@ -83,7 +90,7 @@ export const useAuthStore = create<AuthStoreState>()(
           });
 
           // 测试连接 - 获取配置
-          await configApi.getConfig();
+          await useConfigStore.getState().fetchConfig(undefined, true);
 
           // 登录成功
           set({
@@ -105,6 +112,7 @@ export const useAuthStore = create<AuthStoreState>()(
 
       // 登出
       logout: () => {
+        restoreSessionPromise = null;
         useConfigStore.getState().clearCache();
         set({
           isAuthenticated: false,
@@ -131,7 +139,7 @@ export const useAuthStore = create<AuthStoreState>()(
           apiClient.setConfig({ apiBase, managementKey });
 
           // 验证连接
-          await configApi.getConfig();
+          await useConfigStore.getState().fetchConfig();
 
           set({
             isAuthenticated: true,
