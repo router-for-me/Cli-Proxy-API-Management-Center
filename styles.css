@@ -5067,6 +5067,11 @@ input:checked+.slider:before {
     padding: 12px;
 }
 
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
 /* Plus Badge Styles */
 .badge-plus {
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);

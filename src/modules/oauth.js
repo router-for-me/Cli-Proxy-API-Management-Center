@@ -1,4 +1,96 @@
 export const oauthModule = {
+    // ===== Generic Helper Functions =====
+
+    // Generic function to open a link from an input element
+    _openLinkFromInput(elementId) {
+        const urlInput = document.getElementById(elementId);
+        if (urlInput && urlInput.value) {
+            window.open(urlInput.value, '_blank');
+        }
+    },
+
+    // Generic function to copy text from an input element with fallback
+    async _copyTextFromInput(elementId, successMessageKey) {
+        const input = document.getElementById(elementId);
+        if (input && input.value) {
+            try {
+                await navigator.clipboard.writeText(input.value);
+                this.showNotification(i18n.t(successMessageKey), 'success');
+            } catch (error) {
+                // Fallback for older browsers or non-HTTPS environments
+                input.select();
+                document.execCommand('copy');
+                this.showNotification(i18n.t(successMessageKey), 'success');
+            }
+        }
+    },
+
+    // Generic OAuth polling function
+    async _startOAuthPolling(config) {
+        const {
+            state,
+            statusElementId,
+            contentElementId,
+            maxAttempts = 120,
+            pollInterval = 3000,
+            onSuccess,
+            onError,
+            onDeviceCode,
+            onAuthUrl,
+            i18nKeys
+        } = config;
+
+        let attempts = 0;
+
+        const poll = async () => {
+            if (attempts >= maxAttempts) {
+                const status = document.getElementById(statusElementId);
+                if (status) {
+                    status.textContent = i18n.t(i18nKeys.timeout);
+                    status.style.color = 'var(--error-text)';
+                }
+                return;
+            }
+
+            attempts++;
+
+            try {
+                const response = await this.makeRequest(`/auth-status?state=${state}`);
+
+                if (response.status === 'ok') {
+                    const status = document.getElementById(statusElementId);
+                    if (status) {
+                        status.textContent = i18n.t(i18nKeys.success);
+                        status.style.color = 'var(--success-text)';
+                    }
+                    this.showNotification(i18n.t(i18nKeys.notification), 'success');
+                    setTimeout(() => this.loadAuthFiles(), 1000);
+                    if (onSuccess) onSuccess(response);
+                    return;
+                } else if (response.status === 'error') {
+                    const status = document.getElementById(statusElementId);
+                    if (status) {
+                        status.textContent = `${i18n.t(i18nKeys.error)} ${response.error || ''}`;
+                        status.style.color = 'var(--error-text)';
+                    }
+                    if (onError) onError(response);
+                    return;
+                } else if (response.status === 'device_code' && onDeviceCode) {
+                    onDeviceCode(response);
+                } else if (response.status === 'auth_url' && onAuthUrl) {
+                    onAuthUrl(response);
+                }
+
+                setTimeout(poll, pollInterval);
+            } catch (error) {
+                console.error('OAuth polling error:', error);
+                setTimeout(poll, pollInterval);
+            }
+        };
+
+        poll();
+    },
+
     // ===== Codex OAuth 相关方法 =====
 
     // 开始 Codex OAuth 流程
@@ -973,7 +1065,7 @@ export const oauthModule = {
             const status = document.getElementById('kiro-oauth-status');
 
             if (content) {
-                content.style.display = 'block';
+                content.classList.remove('hidden');
             }
 
             if (response.method === 'device_code') {
@@ -1005,10 +1097,10 @@ export const oauthModule = {
         const userCode = document.getElementById('kiro-user-code');
 
         if (socialAuthContent) {
-            socialAuthContent.style.display = 'none';
+            socialAuthContent.classList.add('hidden');
         }
         if (deviceCodeContent) {
-            deviceCodeContent.style.display = 'block';
+            deviceCodeContent.classList.remove('hidden');
         }
         if (verificationUrl) {
             verificationUrl.value = response.verification_url || '';
@@ -1025,10 +1117,10 @@ export const oauthModule = {
         const oauthUrl = document.getElementById('kiro-oauth-url');
 
         if (deviceCodeContent) {
-            deviceCodeContent.style.display = 'none';
+            deviceCodeContent.classList.add('hidden');
         }
         if (socialAuthContent) {
-            socialAuthContent.style.display = 'block';
+            socialAuthContent.classList.remove('hidden');
         }
         if (oauthUrl) {
             oauthUrl.value = response.url || '';
@@ -1039,101 +1131,53 @@ export const oauthModule = {
     handleKiroMethodChange() {
         const content = document.getElementById('kiro-oauth-content');
         if (content) {
-            content.style.display = 'none';
+            content.classList.add('hidden');
         }
     },
 
     // 打开 Kiro 验证链接
     openKiroVerification() {
-        const urlInput = document.getElementById('kiro-verification-url');
-        if (urlInput && urlInput.value) {
-            window.open(urlInput.value, '_blank');
-        }
+        this._openLinkFromInput('kiro-verification-url');
     },
 
     // 复制 Kiro 用户代码
-    copyKiroCode() {
-        const codeInput = document.getElementById('kiro-user-code');
-        if (codeInput && codeInput.value) {
-            navigator.clipboard.writeText(codeInput.value).then(() => {
-                this.showNotification(i18n.t('auth_login.kiro_copy_code_success'), 'success');
-            });
-        }
+    async copyKiroCode() {
+        await this._copyTextFromInput('kiro-user-code', 'auth_login.kiro_copy_code_success');
     },
 
     // 打开 Kiro OAuth 链接
     openKiroLink() {
-        const urlInput = document.getElementById('kiro-oauth-url');
-        if (urlInput && urlInput.value) {
-            window.open(urlInput.value, '_blank');
-        }
+        this._openLinkFromInput('kiro-oauth-url');
     },
 
     // 复制 Kiro OAuth 链接
-    copyKiroLink() {
-        const urlInput = document.getElementById('kiro-oauth-url');
-        if (urlInput && urlInput.value) {
-            navigator.clipboard.writeText(urlInput.value).then(() => {
-                this.showNotification(i18n.t('auth_login.kiro_copy_link_success'), 'success');
-            });
-        }
+    async copyKiroLink() {
+        await this._copyTextFromInput('kiro-oauth-url', 'auth_login.kiro_copy_link_success');
     },
 
     // 轮询 Kiro OAuth 状态
     async startKiroOAuthPolling(state) {
-        const maxAttempts = 120;
-        let attempts = 0;
-
-        const poll = async () => {
-            if (attempts >= maxAttempts) {
-                const status = document.getElementById('kiro-oauth-status');
-                if (status) {
-                    status.textContent = i18n.t('auth_login.kiro_oauth_status_timeout');
-                    status.style.color = 'var(--error-text)';
-                }
-                return;
+        await this._startOAuthPolling({
+            state,
+            statusElementId: 'kiro-oauth-status',
+            i18nKeys: {
+                timeout: 'auth_login.kiro_oauth_status_timeout',
+                success: 'auth_login.kiro_oauth_status_success',
+                error: 'auth_login.kiro_oauth_status_error',
+                notification: 'auth_login.kiro_oauth_success'
+            },
+            onDeviceCode: (response) => {
+                this.showKiroDeviceCode({
+                    verification_url: response.verification_url,
+                    user_code: response.user_code
+                });
+            },
+            onAuthUrl: (response) => {
+                this.showKiroSocialAuth({
+                    url: response.url
+                });
             }
-
-            attempts++;
-
-            try {
-                const response = await this.makeRequest(`/auth-status?state=${state}`);
-
-                if (response.status === 'ok') {
-                    const status = document.getElementById('kiro-oauth-status');
-                    if (status) {
-                        status.textContent = i18n.t('auth_login.kiro_oauth_status_success');
-                        status.style.color = 'var(--success-text)';
-                    }
-                    this.showNotification(i18n.t('auth_login.kiro_oauth_success'), 'success');
-                    setTimeout(() => this.loadAuthFiles(), 1000);
-                    return;
-                } else if (response.status === 'error') {
-                    const status = document.getElementById('kiro-oauth-status');
-                    if (status) {
-                        status.textContent = `${i18n.t('auth_login.kiro_oauth_status_error')} ${response.error || ''}`;
-                        status.style.color = 'var(--error-text)';
-                    }
-                    return;
-                } else if (response.status === 'device_code') {
-                    this.showKiroDeviceCode({
-                        verification_url: response.verification_url,
-                        user_code: response.user_code
-                    });
-                } else if (response.status === 'auth_url') {
-                    this.showKiroSocialAuth({
-                        url: response.url
-                    });
-                }
-
-                setTimeout(poll, 3000);
-            } catch (error) {
-                console.error('Kiro OAuth polling error:', error);
-                setTimeout(poll, 3000);
-            }
-        };
-
-        poll();
+        });
     },
 
     // ===== GitHub Copilot OAuth 相关方法 (Plus) =====
@@ -1156,7 +1200,7 @@ export const oauthModule = {
                 userCode.value = response.user_code || '';
             }
             if (content) {
-                content.style.display = 'block';
+                content.classList.remove('hidden');
             }
             if (status) {
                 status.textContent = i18n.t('auth_login.github_copilot_oauth_status_waiting');
@@ -1173,67 +1217,25 @@ export const oauthModule = {
 
     // 打开 GitHub Copilot 验证链接
     openGitHubCopilotVerification() {
-        const urlInput = document.getElementById('github-copilot-verification-url');
-        if (urlInput && urlInput.value) {
-            window.open(urlInput.value, '_blank');
-        }
+        this._openLinkFromInput('github-copilot-verification-url');
     },
 
     // 复制 GitHub Copilot 用户代码
-    copyGitHubCopilotCode() {
-        const codeInput = document.getElementById('github-copilot-user-code');
-        if (codeInput && codeInput.value) {
-            navigator.clipboard.writeText(codeInput.value).then(() => {
-                this.showNotification(i18n.t('auth_login.github_copilot_copy_code_success'), 'success');
-            });
-        }
+    async copyGitHubCopilotCode() {
+        await this._copyTextFromInput('github-copilot-user-code', 'auth_login.github_copilot_copy_code_success');
     },
 
     // 轮询 GitHub Copilot OAuth 状态
     async startGitHubCopilotOAuthPolling(state) {
-        const maxAttempts = 120;
-        let attempts = 0;
-
-        const poll = async () => {
-            if (attempts >= maxAttempts) {
-                const status = document.getElementById('github-copilot-oauth-status');
-                if (status) {
-                    status.textContent = i18n.t('auth_login.github_copilot_oauth_status_timeout');
-                    status.style.color = 'var(--error-text)';
-                }
-                return;
+        await this._startOAuthPolling({
+            state,
+            statusElementId: 'github-copilot-oauth-status',
+            i18nKeys: {
+                timeout: 'auth_login.github_copilot_oauth_status_timeout',
+                success: 'auth_login.github_copilot_oauth_status_success',
+                error: 'auth_login.github_copilot_oauth_status_error',
+                notification: 'auth_login.github_copilot_oauth_success'
             }
-
-            attempts++;
-
-            try {
-                const response = await this.makeRequest(`/auth-status?state=${state}`);
-
-                if (response.status === 'ok') {
-                    const status = document.getElementById('github-copilot-oauth-status');
-                    if (status) {
-                        status.textContent = i18n.t('auth_login.github_copilot_oauth_status_success');
-                        status.style.color = 'var(--success-text)';
-                    }
-                    this.showNotification(i18n.t('auth_login.github_copilot_oauth_success'), 'success');
-                    setTimeout(() => this.loadAuthFiles(), 1000);
-                    return;
-                } else if (response.status === 'error') {
-                    const status = document.getElementById('github-copilot-oauth-status');
-                    if (status) {
-                        status.textContent = `${i18n.t('auth_login.github_copilot_oauth_status_error')} ${response.error || ''}`;
-                        status.style.color = 'var(--error-text)';
-                    }
-                    return;
-                }
-
-                setTimeout(poll, 3000);
-            } catch (error) {
-                console.error('GitHub Copilot OAuth polling error:', error);
-                setTimeout(poll, 3000);
-            }
-        };
-
-        poll();
+        });
     }
 };
