@@ -30,7 +30,9 @@ const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabe
   { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label' },
   { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label' },
   { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label' },
-  { id: 'iflow', titleKey: 'auth_login.iflow_oauth_title', hintKey: 'auth_login.iflow_oauth_hint', urlLabelKey: 'auth_login.iflow_oauth_url_label' }
+  { id: 'iflow', titleKey: 'auth_login.iflow_oauth_title', hintKey: 'auth_login.iflow_oauth_hint', urlLabelKey: 'auth_login.iflow_oauth_url_label' },
+  { id: 'github-copilot', titleKey: 'auth_login.github_copilot_oauth_title', hintKey: 'auth_login.github_copilot_oauth_hint', urlLabelKey: 'auth_login.github_copilot_oauth_url_label' },
+  { id: 'kiro', titleKey: 'auth_login.kiro_oauth_title', hintKey: 'auth_login.kiro_oauth_hint', urlLabelKey: 'auth_login.kiro_oauth_url_label' }
 ];
 
 export function OAuthPage() {
@@ -61,7 +63,7 @@ export function OAuthPage() {
             ...prev,
             [provider]: { ...prev[provider], status: 'success', polling: false }
           }));
-          showNotification(t('auth_login.codex_oauth_status_success'), 'success');
+          showNotification(t(`auth_login.${provider.replace(/-/g, '_')}_oauth_status_success`), 'success');
           window.clearInterval(timer);
           delete timers.current[provider];
         } else if (res.status === 'error') {
@@ -69,7 +71,7 @@ export function OAuthPage() {
             ...prev,
             [provider]: { ...prev[provider], status: 'error', error: res.error, polling: false }
           }));
-          showNotification(`${t('auth_login.codex_oauth_status_error')} ${res.error || ''}`, 'error');
+          showNotification(`${t(`auth_login.${provider.replace(/-/g, '_')}_oauth_status_error`)} ${res.error || ''}`, 'error');
           window.clearInterval(timer);
           delete timers.current[provider];
         }
@@ -104,7 +106,7 @@ export function OAuthPage() {
         ...prev,
         [provider]: { ...prev[provider], status: 'error', error: err?.message, polling: false }
       }));
-      showNotification(`${t('auth_login.codex_oauth_start_error')} ${err?.message || ''}`, 'error');
+      showNotification(`${t(`auth_login.${provider.replace(/-/g, '_')}_oauth_start_error`)} ${err?.message || ''}`, 'error');
     }
   };
 
@@ -195,14 +197,14 @@ export function OAuthPage() {
                     <div className="value">{state.url}</div>
                     <div className="item-actions" style={{ marginTop: 8 }}>
                       <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
-                        {t('auth_login.codex_copy_link')}
+                        {t(`auth_login.${provider.id.replace(/-/g, '_')}_copy_link`)}
                       </Button>
                       <Button
                         variant="secondary"
                         size="sm"
                         onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}
                       >
-                        {t('auth_login.codex_open_link')}
+                        {t(`auth_login.${provider.id.replace(/-/g, '_')}_open_link`)}
                       </Button>
                     </div>
                   </div>
@@ -210,10 +212,10 @@ export function OAuthPage() {
                 {!isDisabled && state.status && state.status !== 'idle' && (
                   <div className="status-badge" style={{ marginTop: 8 }}>
                     {state.status === 'success'
-                      ? t('auth_login.codex_oauth_status_success')
+                      ? t(`auth_login.${provider.id.replace(/-/g, '_')}_oauth_status_success`)
                       : state.status === 'error'
-                        ? `${t('auth_login.codex_oauth_status_error')} ${state.error || ''}`
-                        : t('auth_login.codex_oauth_status_waiting')}
+                        ? `${t(`auth_login.${provider.id.replace(/-/g, '_')}_oauth_status_error`)} ${state.error || ''}`
+                        : t(`auth_login.${provider.id.replace(/-/g, '_')}_oauth_status_waiting`)}
                   </div>
                 )}
               </Card>

@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+CLAUDE.md
+.claude/settings.local.json
