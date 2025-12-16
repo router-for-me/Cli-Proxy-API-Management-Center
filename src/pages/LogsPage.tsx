@@ -38,6 +38,7 @@ const LOG_SOURCE_REGEX = /^\[([^\]]+)\]/;
 const LOG_LATENCY_REGEX = /\b(\d+(?:\.\d+)?)(?:\s*)(µs|us|ms|s)\b/i;
 const LOG_IPV4_REGEX = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
 const LOG_IPV6_REGEX = /\b(?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}\b/i;
+const LOG_TIME_OF_DAY_REGEX = /^\d{1,2}:\d{2}:\d{2}(?:\.\d{1,3})?$/;
 
 const HTTP_STATUS_PATTERNS: RegExp[] = [
   /\|\s*([1-5]\d{2})\s*\|/,
@@ -56,6 +57,24 @@ const detectHttpStatusCode = (text: string): number | undefined => {
     if (code >= 100 && code <= 599) return code;
   }
   return undefined;
+};
+
+const extractIp = (text: string): string | undefined => {
+  const ipv4Match = text.match(LOG_IPV4_REGEX);
+  if (ipv4Match) return ipv4Match[0];
+
+  const ipv6Match = text.match(LOG_IPV6_REGEX);
+  if (!ipv6Match) return undefined;
+
+  const candidate = ipv6Match[0];
+
+  // Avoid treating time strings like "12:34:56" as IPv6 addresses.
+  if (LOG_TIME_OF_DAY_REGEX.test(candidate)) return undefined;
+
+  // If no compression marker is present, a valid IPv6 address must contain 8 hextets.
+  if (!candidate.includes('::') && candidate.split(':').length !== 8) return undefined;
+
+  return candidate;
 };
 
 type ParsedLogLine = {
@@ -168,12 +187,12 @@ const parseLogLine = (raw: string): ParsedLogLine => {
 
     // ip
     const ipIndex = segments.findIndex(
-      (segment) => LOG_IPV4_REGEX.test(segment) || LOG_IPV6_REGEX.test(segment)
+      (segment) => Boolean(extractIp(segment))
     );
     if (ipIndex >= 0) {
-      const match = segments[ipIndex].match(LOG_IPV4_REGEX) ?? segments[ipIndex].match(LOG_IPV6_REGEX);
-      if (match) {
-        ip = match[0];
+      const extracted = extractIp(segments[ipIndex]);
+      if (extracted) {
+        ip = extracted;
         consumed.add(ipIndex);
       }
     }
@@ -197,8 +216,7 @@ const parseLogLine = (raw: string): ParsedLogLine => {
     const latencyMatch = remaining.match(LOG_LATENCY_REGEX);
     if (latencyMatch) latency = `${latencyMatch[1]}${latencyMatch[2]}`;
 
-    const ipMatch = remaining.match(LOG_IPV4_REGEX) ?? remaining.match(LOG_IPV6_REGEX);
-    if (ipMatch) ip = ipMatch[0];
+    ip = extractIp(remaining);
 
     const parsed = extractHttpMethodAndPath(remaining);
     method = parsed.method;
