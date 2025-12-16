@@ -36,11 +36,11 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
-// 深色主题（纯黑）
+// 深色主题（#191919）
 [data-theme='dark'] {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #000000;
-  --bg-tertiary: #171717;
+  --bg-primary: #202020;
+  --bg-secondary: #191919;
+  --bg-tertiary: #262626;
 
   --text-primary: #fafafa;
   --text-secondary: #a3a3a3;
