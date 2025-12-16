@@ -3,6 +3,7 @@
  * 迁移自基线 modules/usage.js 的纯逻辑部分
  */
 
+import type { ScriptableContext } from 'chart.js';
 import { maskApiKey } from './format';
 
 export interface KeyStatBucket {
@@ -636,7 +637,7 @@ export interface ChartDataset {
   label: string;
   data: number[];
   borderColor: string;
-  backgroundColor: string;
+  backgroundColor: string | CanvasGradient | ((context: ScriptableContext<'line'>) => string | CanvasGradient);
   fill: boolean;
   tension: number;
 }
@@ -657,6 +658,47 @@ const CHART_COLORS = [
   { borderColor: '#84cc16', backgroundColor: 'rgba(132, 204, 22, 0.15)' },
   { borderColor: '#f97316', backgroundColor: 'rgba(249, 115, 22, 0.15)' },
 ];
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+  const normalized = hex.trim().replace('#', '');
+  if (normalized.length !== 6) {
+    return null;
+  }
+  const r = Number.parseInt(normalized.slice(0, 2), 16);
+  const g = Number.parseInt(normalized.slice(2, 4), 16);
+  const b = Number.parseInt(normalized.slice(4, 6), 16);
+  if (![r, g, b].every((channel) => Number.isFinite(channel))) {
+    return null;
+  }
+  return { r, g, b };
+};
+
+const withAlpha = (hex: string, alpha: number) => {
+  const rgb = hexToRgb(hex);
+  if (!rgb) {
+    return hex;
+  }
+  const clamped = clamp(alpha, 0, 1);
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${clamped})`;
+};
+
+const buildAreaGradient = (context: ScriptableContext<'line'>, baseHex: string, fallback: string) => {
+  const chart = context.chart;
+  const ctx = chart.ctx;
+  const area = chart.chartArea;
+
+  if (!area) {
+    return fallback;
+  }
+
+  const gradient = ctx.createLinearGradient(0, area.top, 0, area.bottom);
+  gradient.addColorStop(0, withAlpha(baseHex, 0.28));
+  gradient.addColorStop(0.6, withAlpha(baseHex, 0.12));
+  gradient.addColorStop(1, withAlpha(baseHex, 0.02));
+  return gradient;
+};
 
 /**
  * 构建图表数据
@@ -692,13 +734,16 @@ export function buildChartData(
     const data = isAll ? getAllSeries() : (dataByModel.get(model) || new Array(labels.length).fill(0));
     const colorIndex = index % CHART_COLORS.length;
     const style = CHART_COLORS[colorIndex];
+    const shouldFill = modelsToShow.length === 1 || (isAll && modelsToShow.length > 1);
 
     return {
       label: isAll ? 'All Models' : model,
       data,
       borderColor: style.borderColor,
-      backgroundColor: style.backgroundColor,
-      fill: false,
+      backgroundColor: shouldFill
+        ? (ctx) => buildAreaGradient(ctx, style.borderColor, style.backgroundColor)
+        : style.backgroundColor,
+      fill: shouldFill,
       tension: 0.35
     };
   });
