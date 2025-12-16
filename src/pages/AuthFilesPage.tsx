@@ -6,9 +6,10 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconBot, IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
+import { IconBot, IconDownload, IconInfo, IconTrash2, IconPieChart, IconClock } from '@/components/ui/icons';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
+import type { AntigravityQuotaInfo } from '@/services/api/authFiles';
 import { apiClient } from '@/services/api/client';
 import type { AuthFileItem } from '@/types';
 import type { KeyStats, KeyStatBucket } from '@/utils/usage';
@@ -154,6 +155,14 @@ export function AuthFilesPage() {
   const [modelsFileName, setModelsFileName] = useState('');
   const [modelsFileType, setModelsFileType] = useState('');
   const [modelsError, setModelsError] = useState<'unsupported' | null>(null);
+
+  // Antigravity 额度弹窗相关
+  const [quotaModalOpen, setQuotaModalOpen] = useState(false);
+  const [quotaLoading, setQuotaLoading] = useState(false);
+  const [quotaList, setQuotaList] = useState<AntigravityQuotaInfo[]>([]);
+  const [quotaEmail, setQuotaEmail] = useState('');
+  const [quotaFileName, setQuotaFileName] = useState('');
+  const [quotaError, setQuotaError] = useState<string | null>(null);
 
   // OAuth 排除模型相关
   const [excluded, setExcluded] = useState<Record<string, string[]>>({});
@@ -463,6 +472,47 @@ export function AuthFilesPage() {
     }
   };
 
+  // 显示 Antigravity 额度
+  const showQuotas = async (item: AuthFileItem) => {
+    setQuotaFileName(item.name);
+    setQuotaList([]);
+    setQuotaEmail('');
+    setQuotaError(null);
+    setQuotaModalOpen(true);
+    setQuotaLoading(true);
+    try {
+      const response = await authFilesApi.getAntigravityQuotas(item.name);
+      if (!response.success) {
+        throw new Error(response.error || '获取额度失败');
+      }
+      setQuotaList(response.quotas || []);
+      setQuotaEmail(response.email || '');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '获取额度失败';
+      setQuotaError(errorMessage);
+    } finally {
+      setQuotaLoading(false);
+    }
+  };
+
+  // 获取额度颜色类名
+  const getQuotaColorClass = (percent: number): string => {
+    if (percent > 50) return styles.quotaHigh;
+    if (percent > 20) return styles.quotaMedium;
+    return styles.quotaLow;
+  };
+
+  // 按分类分组额度
+  const groupedQuotas = useMemo(() => {
+    const grouped: Record<string, AntigravityQuotaInfo[]> = {};
+    quotaList.forEach(q => {
+      const cat = q.category || 'Other';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(q);
+    });
+    return grouped;
+  }, [quotaList]);
+
   // 检查模型是否被 OAuth 排除
   const isModelExcluded = (modelId: string, providerType: string): boolean => {
     const excludedModels = excluded[providerType] || [];
@@ -620,6 +670,18 @@ export function AuthFilesPage() {
               >
                 <IconBot className={styles.actionIcon} size={16} />
               </Button>
+              {item.type === 'antigravity' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => showQuotas(item)}
+                  className={styles.iconButton}
+                  title={t('auth_files.quota_button', { defaultValue: '额度' })}
+                  disabled={disableControls}
+                >
+                  <IconPieChart className={styles.actionIcon} size={16} />
+                </Button>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
@@ -948,6 +1010,65 @@ export function AuthFilesPage() {
           />
           <div className={styles.hint}>{t('oauth_excluded.models_hint')}</div>
         </div>
+      </Modal>
+
+      {/* Antigravity 额度弹窗 */}
+      <Modal
+        open={quotaModalOpen}
+        onClose={() => setQuotaModalOpen(false)}
+        title={`${t('auth_files.quota_title', { defaultValue: '模型额度' })} - ${quotaFileName}`}
+        footer={
+          <Button variant="secondary" onClick={() => setQuotaModalOpen(false)}>
+            {t('common.close')}
+          </Button>
+        }
+      >
+        {quotaLoading ? (
+          <div className={styles.hint}>{t('auth_files.quota_loading', { defaultValue: '正在加载额度信息...' })}</div>
+        ) : quotaError ? (
+          <EmptyState
+            title={t('auth_files.quota_error', { defaultValue: '获取额度失败' })}
+            description={quotaError}
+          />
+        ) : quotaList.length === 0 ? (
+          <EmptyState
+            title={t('auth_files.quota_empty', { defaultValue: '暂无额度信息' })}
+            description={t('auth_files.quota_empty_desc', { defaultValue: '该账号可能尚未使用过任何模型' })}
+          />
+        ) : (
+          <div className={styles.quotaContainer}>
+            {quotaEmail && (
+              <div className={styles.quotaEmail}>
+                {t('auth_files.quota_email', { defaultValue: '账号' })}: {quotaEmail}
+              </div>
+            )}
+            {Object.entries(groupedQuotas).map(([category, quotas]) => (
+              <div key={category} className={styles.quotaCategory}>
+                <div className={styles.quotaCategoryTitle}>{category}</div>
+                <div className={styles.quotaList}>
+                  {quotas.map((q) => (
+                    <div key={q.model} className={styles.quotaItem}>
+                      <div className={styles.quotaModel}>{q.model}</div>
+                      <div className={styles.quotaProgress}>
+                        <div
+                          className={`${styles.quotaBar} ${getQuotaColorClass(q.remainingPercent)}`}
+                          style={{ width: `${q.remainingPercent}%` }}
+                        />
+                      </div>
+                      <div className={`${styles.quotaPercent} ${getQuotaColorClass(q.remainingPercent)}`}>
+                        {q.remainingPercent.toFixed(1)}%
+                      </div>
+                      <div className={styles.quotaReset} title={`${t('auth_files.quota_reset', { defaultValue: '重置' })}: ${q.resetTime}`}>
+                        <IconClock size={12} />
+                        {q.resetTimeLocal}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Modal>
     </div>
   );

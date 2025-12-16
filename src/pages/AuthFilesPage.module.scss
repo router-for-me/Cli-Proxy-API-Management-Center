@@ -491,3 +491,115 @@
   border: 1px solid var(--danger-color);
   flex-shrink: 0;
 }
+
+// Antigravity 额度弹窗样式
+.quotaContainer {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.quotaEmail {
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: $spacing-sm $spacing-md;
+  background-color: var(--bg-tertiary);
+  border-radius: $radius-md;
+}
+
+.quotaCategory {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.quotaCategoryTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-bottom: $spacing-xs;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.quotaList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.quotaItem {
+  display: grid;
+  grid-template-columns: 1fr 120px 60px auto;
+  gap: $spacing-sm;
+  align-items: center;
+  padding: $spacing-sm $spacing-md;
+  background-color: var(--bg-secondary);
+  border-radius: $radius-sm;
+  font-size: 13px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: $spacing-xs;
+  }
+}
+
+.quotaModel {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.quotaProgress {
+  height: 8px;
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.quotaBar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.quotaPercent {
+  font-weight: 600;
+  text-align: right;
+  font-size: 12px;
+}
+
+.quotaReset {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+// 额度进度条颜色
+.quotaBar.quotaHigh {
+  background-color: #22c55e;
+}
+
+.quotaBar.quotaMedium {
+  background-color: #f59e0b;
+}
+
+.quotaBar.quotaLow {
+  background-color: #ef4444;
+}
+
+// 额度百分比文字颜色
+.quotaPercent.quotaHigh {
+  color: #22c55e;
+}
+
+.quotaPercent.quotaMedium {
+  color: #f59e0b;
+}
+
+.quotaPercent.quotaLow {
+  color: #ef4444;
+}
