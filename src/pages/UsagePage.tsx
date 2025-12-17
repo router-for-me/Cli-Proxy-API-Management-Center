@@ -16,6 +16,7 @@ import { Line } from 'react-chartjs-2';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { IconDiamond, IconDollarSign, IconSatellite, IconTimer, IconTrendingUp } from '@/components/ui/icons';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useThemeStore } from '@/stores';
@@ -516,6 +517,14 @@ export function UsagePage() {
 
   return (
     <div className={styles.container}>
+      {loading && !usage && (
+        <div className={styles.loadingOverlay} aria-busy="true">
+          <div className={styles.loadingOverlayContent}>
+            <LoadingSpinner size={28} />
+            <span className={styles.loadingOverlayText}>{t('common.loading')}</span>
+          </div>
+        </div>
+      )}
       <div className={styles.header}>
         <h1 className={styles.pageTitle}>{t('usage_stats.title')}</h1>
         <Button
