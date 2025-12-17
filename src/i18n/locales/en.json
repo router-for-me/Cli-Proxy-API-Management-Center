@@ -630,7 +630,15 @@
     "version_is_latest": "You are on the latest version",
     "version_check_error": "Update check failed",
     "version_current_missing": "Server version is unavailable; cannot compare",
-    "version_unknown": "Unknown"
+    "version_unknown": "Unknown",
+    "quick_links_title": "Quick Links",
+    "quick_links_desc": "Access project repositories and documentation for help and updates.",
+    "link_main_repo": "Main Repository",
+    "link_main_repo_desc": "CLI Proxy API core program source code",
+    "link_webui_repo": "WebUI Repository",
+    "link_webui_repo_desc": "Management Center frontend source code",
+    "link_docs": "Documentation",
+    "link_docs_desc": "Usage tutorials and configuration guides"
   },
   "notification": {
     "debug_updated": "Debug settings updated",

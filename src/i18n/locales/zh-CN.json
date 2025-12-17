@@ -630,7 +630,15 @@
     "version_is_latest": "当前已是最新版本",
     "version_check_error": "检查更新失败",
     "version_current_missing": "未获取到服务器版本号，暂无法比对",
-    "version_unknown": "未知"
+    "version_unknown": "未知",
+    "quick_links_title": "快捷链接",
+    "quick_links_desc": "访问项目仓库和文档，获取帮助和更新。",
+    "link_main_repo": "主程序仓库",
+    "link_main_repo_desc": "CLI Proxy API 核心程序源代码",
+    "link_webui_repo": "WebUI 仓库",
+    "link_webui_repo_desc": "管理中心前端界面源代码",
+    "link_docs": "使用教程",
+    "link_docs_desc": "配置指南和使用说明"
   },
   "notification": {
     "debug_updated": "调试设置已更新",
