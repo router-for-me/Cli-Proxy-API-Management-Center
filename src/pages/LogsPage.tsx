@@ -7,6 +7,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconDownload, IconRefreshCw, IconTimer, IconTrash2 } from '@/components/ui/icons';
 import { useNotificationStore, useAuthStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
+import { formatUnixTimestamp } from '@/utils/format';
 import styles from './LogsPage.module.scss';
 
 interface ErrorLogItem {
@@ -629,7 +630,7 @@ export function LogsPage() {
                   <div className="item-title">{item.name}</div>
                   <div className="item-subtitle">
                     {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
-                    {item.modified ? new Date(item.modified).toLocaleString() : ''}
+                    {item.modified ? formatUnixTimestamp(item.modified) : ''}
                   </div>
                 </div>
                 <div className="item-actions">

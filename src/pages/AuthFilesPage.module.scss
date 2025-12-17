@@ -417,8 +417,6 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-  max-height: 400px;
-  overflow-y: auto;
 }
 
 .modelItem {
