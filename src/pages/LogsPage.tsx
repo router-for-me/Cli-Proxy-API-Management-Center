@@ -50,6 +50,8 @@ const LOG_LATENCY_REGEX = /\b(\d+(?:\.\d+)?)(?:\s*)(µs|us|ms|s)\b/i;
 const LOG_IPV4_REGEX = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
 const LOG_IPV6_REGEX = /\b(?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}\b/i;
 const LOG_TIME_OF_DAY_REGEX = /^\d{1,2}:\d{2}:\d{2}(?:\.\d{1,3})?$/;
+const GIN_TIMESTAMP_SEGMENT_REGEX =
+  /^\[GIN\]\s+(\d{4})\/(\d{2})\/(\d{2})\s*-\s*(\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\s*$/;
 
 const HTTP_STATUS_PATTERNS: RegExp[] = [
   /\|\s*([1-5]\d{2})\s*\|/,
@@ -86,6 +88,13 @@ const extractIp = (text: string): string | undefined => {
   if (!candidate.includes('::') && candidate.split(':').length !== 8) return undefined;
 
   return candidate;
+};
+
+const normalizeTimestampToSeconds = (value: string): string => {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})/);
+  if (!match) return trimmed;
+  return `${match[1]} ${match[2]}`;
 };
 
 type ParsedLogLine = {
@@ -173,6 +182,23 @@ const parseLogLine = (raw: string): ParsedLogLine => {
       .filter(Boolean);
     const consumed = new Set<number>();
 
+    const ginIndex = segments.findIndex((segment) => GIN_TIMESTAMP_SEGMENT_REGEX.test(segment));
+    if (ginIndex >= 0) {
+      const match = segments[ginIndex].match(GIN_TIMESTAMP_SEGMENT_REGEX);
+      if (match) {
+        const ginTimestamp = `${match[1]}-${match[2]}-${match[3]} ${match[4]}`;
+        const normalizedGin = normalizeTimestampToSeconds(ginTimestamp);
+        const normalizedParsed = timestamp ? normalizeTimestampToSeconds(timestamp) : undefined;
+
+        if (!timestamp) {
+          timestamp = ginTimestamp;
+          consumed.add(ginIndex);
+        } else if (normalizedParsed === normalizedGin) {
+          consumed.add(ginIndex);
+        }
+      }
+    }
+
     // status code
     const statusIndex = segments.findIndex((segment) => /^\d{3}\b/.test(segment));
     if (statusIndex >= 0) {
@@ -233,6 +259,17 @@ const parseLogLine = (raw: string): ParsedLogLine => {
   }
 
   if (!level) level = inferLogLevel(raw);
+
+  if (message) {
+    const match = message.match(GIN_TIMESTAMP_SEGMENT_REGEX);
+    if (match) {
+      const ginTimestamp = `${match[1]}-${match[2]}-${match[3]} ${match[4]}`;
+      if (!timestamp) timestamp = ginTimestamp;
+      if (normalizeTimestampToSeconds(timestamp) === normalizeTimestampToSeconds(ginTimestamp)) {
+        message = '';
+      }
+    }
+  }
 
   return {
     raw,
