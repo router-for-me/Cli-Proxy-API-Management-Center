@@ -10,6 +10,7 @@ import { IconBot, IconDownload, IconInfo, IconTrash2 } from '@/components/ui/ico
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
+import { copyToClipboard } from '@/utils/clipboard';
 import type { AuthFileItem } from '@/types';
 import type { KeyStats, KeyStatBucket } from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
@@ -843,8 +844,8 @@ export function AuthFilesPage() {
               onClick={() => {
                 if (selectedFile) {
                   const text = JSON.stringify(selectedFile, null, 2);
-                  navigator.clipboard.writeText(text).then(() => {
-                    showNotification(t('notification.link_copied'), 'success');
+                  copyToClipboard(text).then((success) => {
+                    if (success) showNotification(t('notification.link_copied'), 'success');
                   });
                 }
               }}
@@ -893,7 +894,7 @@ export function AuthFilesPage() {
                   key={model.id}
                   className={`${styles.modelItem} ${isExcluded ? styles.modelItemExcluded : ''}`}
                   onClick={() => {
-                    navigator.clipboard.writeText(model.id);
+                    copyToClipboard(model.id);
                     showNotification(t('notification.link_copied', { defaultValue: '已复制到剪贴板' }), 'success');
                   }}
                   title={isExcluded ? t('auth_files.models_excluded_hint', { defaultValue: '此模型已被 OAuth 排除' }) : t('common.copy', { defaultValue: '点击复制' })}

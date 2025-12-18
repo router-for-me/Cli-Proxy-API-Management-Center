@@ -92,7 +92,33 @@
   border-radius: $radius-full;
   border: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color $transition-fast, border-color $transition-fast, transform $transition-fast;
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--primary-color);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  &.copied {
+    background-color: var(--success-badge-bg);
+    border-color: var(--success-color);
+
+    .modelName, .modelAlias {
+      color: var(--success-badge-text);
+    }
+  }
 }
 
 .modelName {

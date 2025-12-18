@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { IconGithub, IconBookOpen, IconExternalLink, IconCode } from '@/components/ui/icons';
+import { copyToClipboard } from "@/utils/clipboard";
 import { useAuthStore, useConfigStore, useNotificationStore, useModelsStore } from '@/stores';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
@@ -21,6 +22,7 @@ export function SystemPage() {
   const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
 
   const [modelStatus, setModelStatus] = useState<{ type: 'success' | 'warning' | 'error' | 'muted'; message: string }>();
+  const [copiedModel, setCopiedModel] = useState<string | null>(null);
 
   const apiKeysCache = useRef<string[]>([]);
 
@@ -29,6 +31,23 @@ export function SystemPage() {
     [i18n.language]
   );
   const groupedModels = useMemo(() => classifyModels(models, { otherLabel }), [models, otherLabel]);
+
+  const handleModelClick = async (model: { name: string; alias?: string }) => {
+    const copyValue = model.name;
+    const success = await copyToClipboard(copyValue);
+    if (success) {
+      const modelId = `${model.name}-${model.alias ?? 'default'}`;
+      setCopiedModel(modelId);
+      setTimeout(() => setCopiedModel(null), 1500);
+
+      const displayText = model.alias && model.alias !== model.name
+        ? t('system_info.model_copied_with_alias', { model: copyValue, alias: model.alias })
+        : t('system_info.model_copied', { model: copyValue });
+      showNotification(displayText, 'success');
+    } else {
+      showNotification(t('system_info.model_copy_failed'), 'error');
+    }
+  };
 
   const normalizeApiKeyList = (input: any): string[] => {
     if (!Array.isArray(input)) return [];
@@ -232,16 +251,29 @@ export function SystemPage() {
                   <div className="item-subtitle">{t('system_info.models_count', { count: group.items.length })}</div>
                 </div>
                 <div className={styles.modelTags}>
-                  {group.items.map((model) => (
-                    <span
-                      key={`${model.name}-${model.alias ?? 'default'}`}
-                      className={styles.modelTag}
-                      title={model.description || ''}
-                    >
-                      <span className={styles.modelName}>{model.name}</span>
-                      {model.alias && <span className={styles.modelAlias}>{model.alias}</span>}
-                    </span>
-                  ))}
+                  {group.items.map((model) => {
+                    const modelId = `${model.name}-${model.alias ?? 'default'}`;
+                    const isCopied = copiedModel === modelId;
+                    return (
+                      <span
+                        key={modelId}
+                        className={`${styles.modelTag} ${isCopied ? styles.copied : ''}`}
+                        title={[model.description, t('system_info.model_click_to_copy')].filter(Boolean).join(' · ')}
+                        onClick={() => handleModelClick(model)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleModelClick(model);
+                          }
+                        }}
+                      >
+                        <span className={styles.modelName}>{model.name}</span>
+                        {model.alias && <span className={styles.modelAlias}>{model.alias}</span>}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             ))}

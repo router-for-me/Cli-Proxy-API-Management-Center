@@ -14,6 +14,7 @@ import {
   IconTrash2,
   IconX,
 } from '@/components/ui/icons';
+import { copyToClipboard } from '@/utils/clipboard';
 import { useNotificationStore, useAuthStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
@@ -295,29 +296,6 @@ const getErrorMessage = (err: unknown): string => {
   return typeof message === 'string' ? message : '';
 };
 
-const copyToClipboard = async (text: string) => {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    try {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      textarea.style.left = '-9999px';
-      textarea.style.top = '0';
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(textarea);
-      return ok;
-    } catch {
-      return false;
-    }
-  }
-};
 
 export function LogsPage() {
   const { t } = useTranslation();

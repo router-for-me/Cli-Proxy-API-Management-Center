@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useNotificationStore } from '@/stores';
+import { copyToClipboard } from '@/utils/clipboard';
 import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
 import { isLocalhost } from '@/utils/connection';
 import styles from './OAuthPage.module.scss';
@@ -110,11 +111,11 @@ export function OAuthPage() {
 
   const copyLink = async (url?: string) => {
     if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
-      showNotification(t('notification.link_copied'), 'success');
-    } catch {
-      showNotification('Copy failed', 'error');
+    const ok = await copyToClipboard(url);
+    if (ok) {
+      showNotification(t("notification.link_copied"), "success");
+    } else {
+      showNotification("Copy failed", "error");
     }
   };
 

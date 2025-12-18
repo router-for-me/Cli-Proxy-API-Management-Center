@@ -642,7 +642,11 @@
     "link_webui_repo": "WebUI Repository",
     "link_webui_repo_desc": "Management Center frontend source code",
     "link_docs": "Documentation",
-    "link_docs_desc": "Usage tutorials and configuration guides"
+    "link_docs_desc": "Usage tutorials and configuration guides",
+    "model_copied": "Model \"{{model}}\" copied to clipboard",
+    "model_copied_with_alias": "Copied \"{{model}}\" (alias: {{alias}})",
+    "model_copy_failed": "Failed to copy model name",
+    "model_click_to_copy": "Click to copy"
   },
   "notification": {
     "debug_updated": "Debug settings updated",

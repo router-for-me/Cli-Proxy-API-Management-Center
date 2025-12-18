@@ -642,7 +642,11 @@
     "link_webui_repo": "WebUI 仓库",
     "link_webui_repo_desc": "管理中心前端界面源代码",
     "link_docs": "使用教程",
-    "link_docs_desc": "配置指南和使用说明"
+    "link_docs_desc": "配置指南和使用说明",
+    "model_copied": "已复制模型 \"{{model}}\"",
+    "model_copied_with_alias": "已复制 \"{{model}}\" (别名: {{alias}})",
+    "model_copy_failed": "复制模型名称失败",
+    "model_click_to_copy": "点击复制"
   },
   "notification": {
     "debug_updated": "调试设置已更新",
