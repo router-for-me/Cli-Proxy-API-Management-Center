@@ -1,5 +1,10 @@
 /**
- * 复制文本到剪贴板
+ * Copies text to the clipboard.
+ * Uses the modern Clipboard API (`navigator.clipboard`) with a fallback to the
+ * deprecated `document.execCommand('copy')` for broader compatibility.
+ *
+ * @param text The text to copy.
+ * @returns A promise that resolves to `true` if successful, `false` otherwise.
  */
 export async function copyToClipboard(text: string): Promise<boolean> {
   if (navigator.clipboard && window.isSecureContext) {

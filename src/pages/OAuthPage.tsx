@@ -115,7 +115,7 @@ export function OAuthPage() {
     if (ok) {
       showNotification(t("notification.link_copied"), "success");
     } else {
-      showNotification("Copy failed", "error");
+      showNotification(t('logs.copy_failed', { defaultValue: 'Copy failed' }), "error");
     }
   };
 

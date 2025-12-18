@@ -845,7 +845,11 @@ export function AuthFilesPage() {
                 if (selectedFile) {
                   const text = JSON.stringify(selectedFile, null, 2);
                   copyToClipboard(text).then((success) => {
-                    if (success) showNotification(t('notification.link_copied'), 'success');
+                    if (success) {
+                      showNotification(t('notification.link_copied'), 'success');
+                    } else {
+                      showNotification(t('logs.copy_failed', { defaultValue: 'Copy failed' }), 'error');
+                    }
                   });
                 }
               }}
@@ -894,8 +898,13 @@ export function AuthFilesPage() {
                   key={model.id}
                   className={`${styles.modelItem} ${isExcluded ? styles.modelItemExcluded : ''}`}
                   onClick={() => {
-                    copyToClipboard(model.id);
-                    showNotification(t('notification.link_copied', { defaultValue: '已复制到剪贴板' }), 'success');
+                    copyToClipboard(model.id).then((success) => {
+                      if (success) {
+                        showNotification(t('notification.link_copied', { defaultValue: '已复制到剪贴板' }), 'success');
+                      } else {
+                        showNotification(t('logs.copy_failed', { defaultValue: 'Copy failed' }), 'error');
+                      }
+                    });
                   }}
                   title={isExcluded ? t('auth_files.models_excluded_hint', { defaultValue: '此模型已被 OAuth 排除' }) : t('common.copy', { defaultValue: '点击复制' })}
                 >

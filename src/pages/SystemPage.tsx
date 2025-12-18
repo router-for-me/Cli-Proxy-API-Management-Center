@@ -25,6 +25,15 @@ export function SystemPage() {
   const [copiedModel, setCopiedModel] = useState<string | null>(null);
 
   const apiKeysCache = useRef<string[]>([]);
+  const copyTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const otherLabel = useMemo(
     () => (i18n.language?.toLowerCase().startsWith('zh') ? '其他' : 'Other'),
@@ -38,7 +47,13 @@ export function SystemPage() {
     if (success) {
       const modelId = `${model.name}-${model.alias ?? 'default'}`;
       setCopiedModel(modelId);
-      setTimeout(() => setCopiedModel(null), 1500);
+
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+      copyTimeoutRef.current = window.setTimeout(() => {
+        setCopiedModel(null);
+      }, 1500);
 
       const displayText = model.alias && model.alias !== model.name
         ? t('system_info.model_copied_with_alias', { model: copyValue, alias: model.alias })
