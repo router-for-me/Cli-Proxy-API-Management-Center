@@ -1,12 +1,22 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Input } from '@/components/ui/Input';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconDownload, IconRefreshCw, IconTimer, IconTrash2 } from '@/components/ui/icons';
+import {
+  IconDownload,
+  IconEyeOff,
+  IconRefreshCw,
+  IconSearch,
+  IconTimer,
+  IconTrash2,
+  IconX,
+} from '@/components/ui/icons';
 import { useNotificationStore, useAuthStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
+import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
 import styles from './LogsPage.module.scss';
 
@@ -46,7 +56,7 @@ const HTTP_STATUS_PATTERNS: RegExp[] = [
   /\b([1-5]\d{2})\s*-/,
   new RegExp(`\\b(?:${HTTP_METHODS.join('|')})\\s+\\S+\\s+([1-5]\\d{2})\\b`),
   /\b(?:status|code|http)[:\s]+([1-5]\d{2})\b/i,
-  /\b([1-5]\d{2})\s+(?:OK|Created|Accepted|No Content|Moved|Found|Bad Request|Unauthorized|Forbidden|Not Found|Method Not Allowed|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout)\b/i
+  /\b([1-5]\d{2})\s+(?:OK|Created|Accepted|No Content|Moved|Found|Bad Request|Unauthorized|Forbidden|Not Found|Method Not Allowed|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout)\b/i,
 ];
 
 const detectHttpStatusCode = (text: string): number | undefined => {
@@ -187,9 +197,7 @@ const parseLogLine = (raw: string): ParsedLogLine => {
     }
 
     // ip
-    const ipIndex = segments.findIndex(
-      (segment) => Boolean(extractIp(segment))
-    );
+    const ipIndex = segments.findIndex((segment) => Boolean(extractIp(segment)));
     if (ipIndex >= 0) {
       const extracted = extractIp(segments[ipIndex]);
       if (extracted) {
@@ -236,8 +244,42 @@ const parseLogLine = (raw: string): ParsedLogLine => {
     ip,
     method,
     path,
-    message
+    message,
   };
+};
+
+const getErrorMessage = (err: unknown): string => {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  if (typeof err !== 'object' || err === null) return '';
+  if (!('message' in err)) return '';
+
+  const message = (err as { message?: unknown }).message;
+  return typeof message === 'string' ? message : '';
+};
+
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
 };
 
 export function LogsPage() {
@@ -249,6 +291,9 @@ export function LogsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const [hideManagementLogs, setHideManagementLogs] = useState(false);
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
 
@@ -287,9 +332,8 @@ export function LogsPage() {
     try {
       pendingScrollToBottomRef.current = !incremental || isNearBottom(logViewerRef.current);
 
-      const params = incremental && latestTimestampRef.current > 0
-        ? { after: latestTimestampRef.current }
-        : {};
+      const params =
+        incremental && latestTimestampRef.current > 0 ? { after: latestTimestampRef.current } : {};
       const data = await logsApi.fetchLogs(params);
 
       // 更新时间戳
@@ -321,10 +365,10 @@ export function LogsPage() {
         const visibleFrom = Math.max(buffer.length - INITIAL_DISPLAY_LINES, 0);
         setLogState({ buffer, visibleFrom });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load logs:', err);
       if (!incremental) {
-        setError(err?.message || t('logs.load_error'));
+        setError(getErrorMessage(err) || t('logs.load_error'));
       }
     } finally {
       if (!incremental) {
@@ -340,8 +384,12 @@ export function LogsPage() {
       setLogState({ buffer: [], visibleFrom: 0 });
       latestTimestampRef.current = 0;
       showNotification(t('logs.clear_success'), 'success');
-    } catch (err: any) {
-      showNotification(`${t('notification.delete_failed')}: ${err?.message || ''}`, 'error');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      showNotification(
+        `${t('notification.delete_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
     }
   };
 
@@ -367,16 +415,8 @@ export function LogsPage() {
     try {
       const res = await logsApi.fetchErrorLogs();
       // API 返回 { files: [...] }
-      const files = (res as any)?.files;
-      const list: ErrorLogItem[] = Array.isArray(files)
-        ? files.map((f: any) => ({
-            name: f.name,
-            size: f.size,
-            modified: f.modified
-          }))
-        : [];
-      setErrorLogs(list);
-    } catch (err: any) {
+      setErrorLogs(Array.isArray(res.files) ? res.files : []);
+    } catch (err: unknown) {
       console.error('Failed to load error logs:', err);
       // 静默失败,不影响主日志显示
       setErrorLogs([]);
@@ -396,8 +436,12 @@ export function LogsPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       showNotification(t('logs.error_log_download_success'), 'success');
-    } catch (err: any) {
-      showNotification(`${t('notification.download_failed')}: ${err?.message || ''}`, 'error');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      showNotification(
+        `${t('notification.download_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
     }
   };
 
@@ -434,23 +478,65 @@ export function LogsPage() {
     () => logState.buffer.slice(logState.visibleFrom),
     [logState.buffer, logState.visibleFrom]
   );
+
+  const trimmedSearchQuery = deferredSearchQuery.trim();
+  const isSearching = trimmedSearchQuery.length > 0;
+  const baseLines = isSearching ? logState.buffer : visibleLines;
+
+  const { filteredLines, removedCount } = useMemo(() => {
+    let working = baseLines;
+    let removed = 0;
+
+    if (hideManagementLogs) {
+      const next: string[] = [];
+      for (const line of working) {
+        if (line.includes(MANAGEMENT_API_PREFIX)) {
+          removed += 1;
+        } else {
+          next.push(line);
+        }
+      }
+      working = next;
+    }
+
+    if (trimmedSearchQuery) {
+      const queryLowered = trimmedSearchQuery.toLowerCase();
+      const next: string[] = [];
+      for (const line of working) {
+        if (line.toLowerCase().includes(queryLowered)) {
+          next.push(line);
+        } else {
+          removed += 1;
+        }
+      }
+      working = next;
+    }
+
+    return { filteredLines: working, removedCount: removed };
+  }, [baseLines, hideManagementLogs, trimmedSearchQuery]);
+
   const parsedVisibleLines = useMemo(
-    () => visibleLines.map((line) => parseLogLine(line)),
-    [visibleLines]
+    () => filteredLines.map((line) => parseLogLine(line)),
+    [filteredLines]
   );
-  const canLoadMore = logState.visibleFrom > 0;
+
+  const canLoadMore = !isSearching && logState.visibleFrom > 0;
 
   const handleLogScroll = () => {
     const node = logViewerRef.current;
     if (!node) return;
+    if (isSearching) return;
     if (!canLoadMore) return;
     if (pendingPrependScrollRef.current) return;
     if (node.scrollTop > LOAD_MORE_THRESHOLD_PX) return;
 
-    pendingPrependScrollRef.current = { scrollHeight: node.scrollHeight, scrollTop: node.scrollTop };
+    pendingPrependScrollRef.current = {
+      scrollHeight: node.scrollHeight,
+      scrollTop: node.scrollTop,
+    };
     setLogState((prev) => ({
       ...prev,
-      visibleFrom: Math.max(prev.visibleFrom - LOAD_MORE_LINES, 0)
+      visibleFrom: Math.max(prev.visibleFrom - LOAD_MORE_LINES, 0),
     }));
   };
 
@@ -464,185 +550,264 @@ export function LogsPage() {
     pendingPrependScrollRef.current = null;
   }, [logState.visibleFrom]);
 
+  const copyLogLine = async (raw: string) => {
+    const ok = await copyToClipboard(raw);
+    if (ok) {
+      showNotification(t('logs.copy_success', { defaultValue: 'Copied to clipboard' }), 'success');
+    } else {
+      showNotification(t('logs.copy_failed', { defaultValue: 'Copy failed' }), 'error');
+    }
+  };
+
   return (
     <div className={styles.container}>
       <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
       <div className={styles.content}>
-      <Card
-        title={t('logs.log_content')}
-        extra={
-          <div className={styles.toolbar}>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => loadLogs(false)}
-              disabled={disableControls || loading}
-              className={styles.actionButton}
-            >
-              <span className={styles.buttonContent}>
-                <IconRefreshCw size={16} />
-                {t('logs.refresh_button')}
-              </span>
-            </Button>
+        <Card
+          title={t('logs.log_content')}
+          extra={
+            <div className={styles.toolbar}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => loadLogs(false)}
+                disabled={disableControls || loading}
+                className={styles.actionButton}
+              >
+                <span className={styles.buttonContent}>
+                  <IconRefreshCw size={16} />
+                  {t('logs.refresh_button')}
+                </span>
+              </Button>
+              <ToggleSwitch
+                checked={autoRefresh}
+                onChange={(value) => setAutoRefresh(value)}
+                disabled={disableControls}
+                label={
+                  <span className={styles.switchLabel}>
+                    <IconTimer size={16} />
+                    {t('logs.auto_refresh')}
+                  </span>
+                }
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={downloadLogs}
+                disabled={logState.buffer.length === 0}
+                className={styles.actionButton}
+              >
+                <span className={styles.buttonContent}>
+                  <IconDownload size={16} />
+                  {t('logs.download_button')}
+                </span>
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={clearLogs}
+                disabled={disableControls}
+                className={styles.actionButton}
+              >
+                <span className={styles.buttonContent}>
+                  <IconTrash2 size={16} />
+                  {t('logs.clear_button')}
+                </span>
+              </Button>
+            </div>
+          }
+        >
+          {error && <div className="error-box">{error}</div>}
+
+          <div className={styles.filters}>
+            <div className={styles.searchWrapper}>
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('logs.search_placeholder')}
+                className={styles.searchInput}
+                rightElement={
+                  searchQuery ? (
+                    <button
+                      type="button"
+                      className={styles.searchClear}
+                      onClick={() => setSearchQuery('')}
+                      title="Clear"
+                      aria-label="Clear"
+                    >
+                      <IconX size={16} />
+                    </button>
+                  ) : (
+                    <IconSearch size={16} className={styles.searchIcon} />
+                  )
+                }
+              />
+            </div>
+
             <ToggleSwitch
-              checked={autoRefresh}
-              onChange={(value) => setAutoRefresh(value)}
-              disabled={disableControls}
+              checked={hideManagementLogs}
+              onChange={setHideManagementLogs}
               label={
                 <span className={styles.switchLabel}>
-                  <IconTimer size={16} />
-                  {t('logs.auto_refresh')}
+                  <IconEyeOff size={16} />
+                  {t('logs.hide_management_logs', { prefix: MANAGEMENT_API_PREFIX })}
                 </span>
               }
             />
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={downloadLogs}
-              disabled={logState.buffer.length === 0}
-              className={styles.actionButton}
-            >
-              <span className={styles.buttonContent}>
-                <IconDownload size={16} />
-                {t('logs.download_button')}
+
+            <div className={styles.filterStats}>
+              <span>
+                {parsedVisibleLines.length} {t('logs.lines')}
               </span>
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={clearLogs}
-              disabled={disableControls}
-              className={styles.actionButton}
-            >
-              <span className={styles.buttonContent}>
-                <IconTrash2 size={16} />
-                {t('logs.clear_button')}
-              </span>
-            </Button>
-          </div>
-        }
-      >
-        {error && <div className="error-box">{error}</div>}
-        {loading ? (
-          <div className="hint">{t('logs.loading')}</div>
-        ) : logState.buffer.length > 0 ? (
-          <div ref={logViewerRef} className={styles.logPanel} onScroll={handleLogScroll}>
-            {canLoadMore && (
-              <div className={styles.loadMoreBanner}>
-                <span>{t('logs.load_more_hint')}</span>
-                <span className={styles.loadMoreCount}>
-                  {t('logs.hidden_lines', { count: logState.visibleFrom })}
+              {removedCount > 0 && (
+                <span className={styles.removedCount}>
+                  {t('logs.removed')} {removedCount}
                 </span>
-              </div>
-            )}
-            <div className={styles.logList}>
-              {parsedVisibleLines.map((line, index) => {
-                const rowClassNames = [styles.logRow];
-                if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
-                if (line.level === 'error' || line.level === 'fatal') rowClassNames.push(styles.rowError);
-                return (
-                  <div key={`${logState.visibleFrom + index}-${line.raw}`} className={rowClassNames.join(' ')}>
-                    <div className={styles.timestamp}>{line.timestamp || ''}</div>
-                    <div className={styles.rowMain}>
-                      <div className={styles.rowMeta}>
-                        {line.level && (
-                          <span
-                            className={[
-                              styles.badge,
-                              line.level === 'info' ? styles.levelInfo : '',
-                              line.level === 'warn' ? styles.levelWarn : '',
-                              line.level === 'error' || line.level === 'fatal' ? styles.levelError : '',
-                              line.level === 'debug' ? styles.levelDebug : '',
-                              line.level === 'trace' ? styles.levelTrace : ''
-                            ]
-                              .filter(Boolean)
-                              .join(' ')}
-                          >
-                            {line.level.toUpperCase()}
-                          </span>
-                        )}
-
-                        {line.source && (
-                          <span className={styles.source} title={line.source}>
-                            {line.source}
-                          </span>
-                        )}
-
-                        {typeof line.statusCode === 'number' && (
-                          <span
-                            className={[
-                              styles.badge,
-                              styles.statusBadge,
-                              line.statusCode >= 200 && line.statusCode < 300
-                                ? styles.statusSuccess
-                                : line.statusCode >= 300 && line.statusCode < 400
-                                  ? styles.statusInfo
-                                  : line.statusCode >= 400 && line.statusCode < 500
-                                    ? styles.statusWarn
-                                    : styles.statusError
-                            ].join(' ')}
-                          >
-                            {line.statusCode}
-                          </span>
-                        )}
-
-                        {line.latency && <span className={styles.pill}>{line.latency}</span>}
-                        {line.ip && <span className={styles.pill}>{line.ip}</span>}
-
-                        {line.method && (
-                          <span className={[styles.badge, styles.methodBadge].join(' ')}>
-                            {line.method}
-                          </span>
-                        )}
-                        {line.path && (
-                          <span className={styles.path} title={line.path}>
-                            {line.path}
-                          </span>
-                        )}
-                      </div>
-                      {line.message && <div className={styles.message}>{line.message}</div>}
-                    </div>
-                  </div>
-                );
-              })}
+              )}
             </div>
           </div>
-        ) : (
-          <EmptyState title={t('logs.empty_title')} description={t('logs.empty_desc')} />
-        )}
-      </Card>
 
-      <Card
-        title={t('logs.error_logs_modal_title')}
-        extra={
-          <Button variant="secondary" size="sm" onClick={loadErrorLogs} loading={loadingErrors}>
-            {t('common.refresh')}
-          </Button>
-        }
-      >
-        {errorLogs.length === 0 ? (
-          <div className="hint">{t('logs.error_logs_empty')}</div>
-        ) : (
-          <div className="item-list">
-            {errorLogs.map((item) => (
-              <div key={item.name} className="item-row">
-                <div className="item-meta">
-                  <div className="item-title">{item.name}</div>
-                  <div className="item-subtitle">
-                    {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
-                    {item.modified ? formatUnixTimestamp(item.modified) : ''}
+          {loading ? (
+            <div className="hint">{t('logs.loading')}</div>
+          ) : logState.buffer.length > 0 && parsedVisibleLines.length > 0 ? (
+            <div ref={logViewerRef} className={styles.logPanel} onScroll={handleLogScroll}>
+              {canLoadMore && (
+                <div className={styles.loadMoreBanner}>
+                  <span>{t('logs.load_more_hint')}</span>
+                  <span className={styles.loadMoreCount}>
+                    {t('logs.hidden_lines', { count: logState.visibleFrom })}
+                  </span>
+                </div>
+              )}
+              <div className={styles.logList}>
+                {parsedVisibleLines.map((line, index) => {
+                  const rowClassNames = [styles.logRow];
+                  if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
+                  if (line.level === 'error' || line.level === 'fatal')
+                    rowClassNames.push(styles.rowError);
+                  return (
+                    <div
+                      key={`${logState.visibleFrom + index}-${line.raw}`}
+                      className={rowClassNames.join(' ')}
+                      onDoubleClick={() => {
+                        void copyLogLine(line.raw);
+                      }}
+                      title={t('logs.double_click_copy_hint', {
+                        defaultValue: 'Double-click to copy',
+                      })}
+                    >
+                      <div className={styles.timestamp}>{line.timestamp || ''}</div>
+                      <div className={styles.rowMain}>
+                        <div className={styles.rowMeta}>
+                          {line.level && (
+                            <span
+                              className={[
+                                styles.badge,
+                                line.level === 'info' ? styles.levelInfo : '',
+                                line.level === 'warn' ? styles.levelWarn : '',
+                                line.level === 'error' || line.level === 'fatal'
+                                  ? styles.levelError
+                                  : '',
+                                line.level === 'debug' ? styles.levelDebug : '',
+                                line.level === 'trace' ? styles.levelTrace : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                            >
+                              {line.level.toUpperCase()}
+                            </span>
+                          )}
+
+                          {line.source && (
+                            <span className={styles.source} title={line.source}>
+                              {line.source}
+                            </span>
+                          )}
+
+                          {typeof line.statusCode === 'number' && (
+                            <span
+                              className={[
+                                styles.badge,
+                                styles.statusBadge,
+                                line.statusCode >= 200 && line.statusCode < 300
+                                  ? styles.statusSuccess
+                                  : line.statusCode >= 300 && line.statusCode < 400
+                                    ? styles.statusInfo
+                                    : line.statusCode >= 400 && line.statusCode < 500
+                                      ? styles.statusWarn
+                                      : styles.statusError,
+                              ].join(' ')}
+                            >
+                              {line.statusCode}
+                            </span>
+                          )}
+
+                          {line.latency && <span className={styles.pill}>{line.latency}</span>}
+                          {line.ip && <span className={styles.pill}>{line.ip}</span>}
+
+                          {line.method && (
+                            <span className={[styles.badge, styles.methodBadge].join(' ')}>
+                              {line.method}
+                            </span>
+                          )}
+                          {line.path && (
+                            <span className={styles.path} title={line.path}>
+                              {line.path}
+                            </span>
+                          )}
+                        </div>
+                        {line.message && <div className={styles.message}>{line.message}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : logState.buffer.length > 0 ? (
+            <EmptyState
+              title={t('logs.search_empty_title')}
+              description={t('logs.search_empty_desc')}
+            />
+          ) : (
+            <EmptyState title={t('logs.empty_title')} description={t('logs.empty_desc')} />
+          )}
+        </Card>
+
+        <Card
+          title={t('logs.error_logs_modal_title')}
+          extra={
+            <Button variant="secondary" size="sm" onClick={loadErrorLogs} loading={loadingErrors}>
+              {t('common.refresh')}
+            </Button>
+          }
+        >
+          {errorLogs.length === 0 ? (
+            <div className="hint">{t('logs.error_logs_empty')}</div>
+          ) : (
+            <div className="item-list">
+              {errorLogs.map((item) => (
+                <div key={item.name} className="item-row">
+                  <div className="item-meta">
+                    <div className="item-title">{item.name}</div>
+                    <div className="item-subtitle">
+                      {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
+                      {item.modified ? formatUnixTimestamp(item.modified) : ''}
+                    </div>
+                  </div>
+                  <div className="item-actions">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => downloadErrorLog(item.name)}
+                    >
+                      {t('logs.error_logs_download')}
+                    </Button>
                   </div>
                 </div>
-                <div className="item-actions">
-                  <Button variant="secondary" size="sm" onClick={() => downloadErrorLog(item.name)}>
-                    {t('logs.error_logs_download')}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );
