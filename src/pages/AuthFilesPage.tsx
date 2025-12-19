@@ -502,14 +502,38 @@ export function AuthFilesPage() {
     return styles.quotaLow;
   };
 
-  // 按分类分组额度
+  // 按分类分组额度 - 合并相同额度类型
+  // Claude 和 GPT 共用一个额度，Gemini 系列共用一个额度
   const groupedQuotas = useMemo(() => {
-    const grouped: Record<string, AntigravityQuotaInfo[]> = {};
-    quotaList.forEach(q => {
-      const cat = q.category || 'Other';
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(q);
+    // 合并策略：每个分类只取一个代表性的额度
+    const categoryMap: Record<string, AntigravityQuotaInfo> = {};
+    
+    quotaList.forEach((q) => {
+      let cat = q.category || 'Other';
+      
+      // Claude 和 GPT 合并为 "Claude / GPT" 分类
+      if (cat === 'Claude' || cat === 'GPT') {
+        cat = 'Claude / GPT';
+      }
+      
+      // 如果该分类还没有记录，或者当前额度比已记录的更低（取最小值更保守）
+      if (!categoryMap[cat] || q.remainingPercent < categoryMap[cat].remainingPercent) {
+        categoryMap[cat] = {
+          ...q,
+          category: cat,
+          // 使用分类名作为显示名称
+          model: cat === 'Claude / GPT' ? 'Claude & GPT 共享额度' : 
+                 cat === 'Gemini' ? 'Gemini 系列共享额度' : q.model,
+        };
+      }
     });
+    
+    // 转换为分组格式（每个分类只有一个条目）
+    const grouped: Record<string, AntigravityQuotaInfo[]> = {};
+    Object.entries(categoryMap).forEach(([cat, quota]) => {
+      grouped[cat] = [quota];
+    });
+    
     return grouped;
   }, [quotaList]);
 
