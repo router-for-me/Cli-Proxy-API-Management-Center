@@ -59,3 +59,47 @@
     color: #3b82f6;
   }
 }
+
+.callbackSection {
+  margin-top: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.callbackActions {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.authUrlBox {
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.authUrlLabel {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.authUrlValue {
+  font-weight: 700;
+  color: var(--text-primary);
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  max-width: 100%;
+}
+
+.authUrlActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+}
