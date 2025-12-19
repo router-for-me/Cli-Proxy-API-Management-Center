@@ -5,6 +5,22 @@
 import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
 
+export interface AntigravityQuotaInfo {
+  model: string;
+  category: string;
+  remainingFraction: number;
+  remainingPercent: number;
+  resetTime: string;
+  resetTimeLocal: string;
+}
+
+export interface AntigravityQuotaResponse {
+  success: boolean;
+  email?: string;
+  error?: string;
+  quotas?: AntigravityQuotaInfo[];
+}
+
 export const authFilesApi = {
   list: () => apiClient.get<AuthFilesResponse>('/auth-files'),
 
@@ -35,5 +51,11 @@ export const authFilesApi = {
   async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
     const data = await apiClient.get(`/auth-files/models?name=${encodeURIComponent(name)}`);
     return (data && Array.isArray(data['models'])) ? data['models'] : [];
+  },
+
+  // 获取 Antigravity 账号的模型额度
+  async getAntigravityQuotas(id: string): Promise<AntigravityQuotaResponse> {
+    const data = await apiClient.get<AntigravityQuotaResponse>(`/antigravity-quotas?id=${encodeURIComponent(id)}`);
+    return data;
   }
 };
