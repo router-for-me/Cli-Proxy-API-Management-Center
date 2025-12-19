@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { IconGithub, IconBookOpen, IconExternalLink, IconCode } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useNotificationStore, useModelsStore } from '@/stores';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
@@ -145,6 +146,65 @@ export function SystemPage() {
             <div className="stat-label">{t('connection.status')}</div>
             <div className="stat-value">{t(`common.${auth.connectionStatus}_status` as any)}</div>
           </div>
+        </div>
+      </Card>
+
+      <Card title={t('system_info.quick_links_title')}>
+        <p className={styles.sectionDescription}>{t('system_info.quick_links_desc')}</p>
+        <div className={styles.quickLinks}>
+          <a
+            href="https://github.com/router-for-me/CLIProxyAPI"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.linkCard}
+          >
+            <div className={`${styles.linkIcon} ${styles.github}`}>
+              <IconGithub size={22} />
+            </div>
+            <div className={styles.linkContent}>
+              <div className={styles.linkTitle}>
+                {t('system_info.link_main_repo')}
+                <IconExternalLink size={14} />
+              </div>
+              <div className={styles.linkDesc}>{t('system_info.link_main_repo_desc')}</div>
+            </div>
+          </a>
+
+          <a
+            href="https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.linkCard}
+          >
+            <div className={`${styles.linkIcon} ${styles.github}`}>
+              <IconCode size={22} />
+            </div>
+            <div className={styles.linkContent}>
+              <div className={styles.linkTitle}>
+                {t('system_info.link_webui_repo')}
+                <IconExternalLink size={14} />
+              </div>
+              <div className={styles.linkDesc}>{t('system_info.link_webui_repo_desc')}</div>
+            </div>
+          </a>
+
+          <a
+            href="https://help.router-for.me/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.linkCard}
+          >
+            <div className={`${styles.linkIcon} ${styles.docs}`}>
+              <IconBookOpen size={22} />
+            </div>
+            <div className={styles.linkContent}>
+              <div className={styles.linkTitle}>
+                {t('system_info.link_docs')}
+                <IconExternalLink size={14} />
+              </div>
+              <div className={styles.linkDesc}>{t('system_info.link_docs_desc')}</div>
+            </div>
+          </a>
         </div>
       </Card>
 

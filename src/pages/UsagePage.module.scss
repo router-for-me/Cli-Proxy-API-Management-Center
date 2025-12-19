@@ -3,23 +3,11 @@
 
 .container {
   width: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-
-  // 覆盖Card组件样式 (80%比例)
-  :global(.card) {
-    padding: 12px;
-    border-radius: $radius-md;
-  }
-
-  :global(.card-header) {
-    margin-bottom: 10px;
-
-    .title {
-      font-size: 14px;
-    }
-  }
+  gap: 20px;
+  position: relative;
 }
 
 .header {
@@ -40,9 +28,9 @@
 .errorBox {
   padding: 10px;
   background-color: rgba(239, 68, 68, 0.1);
-  border: 1px solid var(--danger-color);
+  border: 1px solid var(--error-color);
   border-radius: $radius-sm;
-  color: var(--danger-color);
+  color: var(--error-color);
   font-size: 12px;
 }
 
@@ -53,15 +41,49 @@
   padding: 16px;
 }
 
-// Stats Grid - 五个卡片并排显示 (88%比例，放大10%)
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(243, 244, 246, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:global([data-theme='dark']) .loadingOverlay {
+  background: rgba(25, 25, 25, 0.72);
+}
+
+.loadingOverlayContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: $radius-lg;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-lg);
+
+  :global(.loading-spinner) {
+    border-color: rgba(59, 130, 246, 0.25);
+    border-top-color: var(--primary-color);
+  }
+}
+
+.loadingOverlayText {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+// Stats Grid
 .statsGrid {
   display: grid;
-  gap: 8px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-
-  @include tablet {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  gap: 14px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
 
   @include mobile {
     grid-template-columns: 1fr;
@@ -69,22 +91,69 @@
 }
 
 .statCard {
-  padding: 13px;
-  background-color: var(--bg-primary);
-  border-radius: $radius-md;
+  --accent: #3b82f6;
+  --accent-soft: rgba(59, 130, 246, 0.18);
+  --accent-border: rgba(59, 130, 246, 0.35);
+
+  grid-column: span 4;
+  position: relative;
+  padding: 18px;
+  background:
+    radial-gradient(120% 140% at 12% 0%, var(--accent-soft) 0%, rgba(0, 0, 0, 0) 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0)),
+    var(--bg-primary);
+  border-radius: $radius-lg;
   border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  min-height: 143px;
-  box-shadow: $shadow-sm;
+  gap: 10px;
+  min-height: 176px;
+  box-shadow: var(--shadow-lg);
   transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
   overflow: hidden;
 
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background: linear-gradient(90deg, var(--accent), rgba(0, 0, 0, 0));
+    opacity: 0.95;
+  }
+
   &:hover {
     transform: translateY(-2px);
-    box-shadow: $shadow-md;
-    border-color: rgba(37, 99, 235, 0.2);
+    border-color: var(--accent-border);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  }
+
+  @include tablet {
+    grid-column: span 6;
+  }
+
+  @include mobile {
+    grid-column: auto;
+    min-height: 168px;
+  }
+}
+
+.statCard:nth-child(-n + 2) {
+  grid-column: span 6;
+
+  .statValue {
+    font-size: 32px;
+  }
+}
+
+@include mobile {
+  .statCard:nth-child(-n + 2) {
+    grid-column: auto;
+
+    .statValue {
+      font-size: 28px;
+    }
   }
 }
 
@@ -92,7 +161,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 5px;
+  gap: 12px;
 }
 
 .statLabelGroup {
@@ -102,14 +171,16 @@
 }
 
 .statIconBadge {
-  width: 29px;
-  height: 29px;
-  border-radius: $radius-sm;
+  width: 34px;
+  height: 34px;
+  border-radius: $radius-md;
   display: grid;
   place-items: center;
   color: #fff;
   font-size: 13px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  background: var(--accent);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
   flex-shrink: 0;
 
   svg {
@@ -128,18 +199,18 @@
 }
 
 .statLabel {
-  font-size: 11px;
-  color: var(--text-secondary);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .statValue {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   color: var(--text-primary);
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 .statValueRow {
@@ -186,8 +257,8 @@
 .statMetaRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  font-size: 10px;
+  gap: 8px 10px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 
@@ -198,8 +269,8 @@
 }
 
 .statMetaDot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background-color: var(--text-secondary);
 }
@@ -210,18 +281,18 @@
 
 .statTrend {
   margin-top: auto;
-  background: var(--bg-secondary, #f6f8fb);
-  border-radius: $radius-sm;
-  padding: 4px;
-  height: 44px;
+  background: var(--bg-tertiary);
+  border-radius: $radius-md;
+  padding: 8px;
+  height: 58px;
   border: 1px solid var(--border-color);
 }
 
 .statTrendPlaceholder {
   width: 100%;
   height: 100%;
-  background: var(--bg-tertiary, #eef1f6);
-  border-radius: $radius-sm;
+  background: var(--bg-secondary);
+  border-radius: $radius-md;
 }
 
 .sparkline {
@@ -257,7 +328,7 @@
   transition: background-color 0.15s ease;
 
   &:hover {
-    background-color: var(--bg-hover);
+    background-color: var(--bg-tertiary);
   }
 }
 
@@ -272,7 +343,7 @@
 .apiEndpoint {
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 13px;
   word-break: break-all;
 }
 
@@ -283,16 +354,17 @@
 }
 
 .apiBadge {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
-  background-color: var(--bg-tertiary);
-  padding: 1px 6px;
-  border-radius: $radius-sm;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  padding: 2px 8px;
+  border-radius: $radius-full;
 }
 
 .expandIcon {
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   margin-left: 6px;
 }
 
@@ -311,10 +383,11 @@
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: 10px;
-  padding: 3px 6px;
+  padding: 8px 10px;
   background-color: var(--bg-primary);
-  border-radius: $radius-sm;
-  font-size: 11px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  font-size: 12px;
 
   @include mobile {
     grid-template-columns: 1fr;
@@ -345,17 +418,17 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 12px;
 
   th, td {
-    padding: 6px 10px;
+    padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
   }
 
   th {
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
     background-color: var(--bg-secondary);
     white-space: nowrap;
   }
@@ -365,7 +438,7 @@
   }
 
   tbody tr:hover {
-    background-color: var(--bg-hover);
+    background-color: var(--bg-tertiary);
   }
 }
 
@@ -535,13 +608,13 @@
 }
 
 .chartWrapper {
-  padding: 12px;
-  background-color: var(--bg-primary);
-  border-radius: $radius-md;
+  padding: 14px;
+  background-color: var(--bg-secondary);
+  border-radius: $radius-lg;
   border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .chartLegend {
@@ -566,7 +639,11 @@
   gap: 6px;
   min-width: 0;
   max-width: 240px;
-  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  font-size: 12px;
   color: var(--text-secondary);
 
   @include mobile {
@@ -588,10 +665,10 @@
 }
 
 .chartArea {
-  height: 240px;
+  height: 280px;
 
   @include mobile {
-    height: 280px;
+    height: 320px;
   }
 }
 
@@ -616,63 +693,85 @@
 
 .periodButtons {
   display: flex;
-  gap: 3px;
+  gap: 6px;
 }
 
-// Chart Line Controls (80%比例)
-.chartLineControls {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  flex-wrap: wrap;
+.chartsGrid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr);
 
-  @include mobile {
-    flex-direction: column;
+  > * {
+    min-width: 0;
+  }
+
+  @include desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
+.detailsGrid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr);
+
+  > * {
+    min-width: 0;
+  }
+
+  @include desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.chartLineHeader {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .chartLineList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chartLineItem {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
 
   @include mobile {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 8px;
   }
 }
 
 .chartLineLabel {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
-  min-width: 48px;
-}
-
-.chartLineActions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  font-weight: 600;
+  min-width: 64px;
 }
 
 .chartLineCount {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
   font-weight: 500;
 }
 
 .chartLineHint {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-tertiary);
-  margin: 6px 0 0 0;
-  font-style: italic;
+  margin: 10px 0 0 0;
 }

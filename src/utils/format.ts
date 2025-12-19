@@ -53,6 +53,37 @@ export function formatDateTime(date: string | Date): string {
 }
 
 /**
+ * 将 Unix 时间戳（秒/毫秒/微秒/纳秒）格式化为本地时间字符串
+ */
+export function formatUnixTimestamp(value: unknown, locale?: string): string {
+  if (value === null || value === undefined || value === '') return '';
+
+  const asNumber = typeof value === 'number' ? value : Number(value);
+  const date = (() => {
+    if (!Number.isFinite(asNumber) || Number.isNaN(asNumber)) {
+      return new Date(String(value));
+    }
+
+    const abs = Math.abs(asNumber);
+
+    // 秒：常见 10 位（~1e9）
+    if (abs < 1e11) return new Date(asNumber * 1000);
+
+    // 毫秒：常见 13 位（~1e12）
+    if (abs < 1e14) return new Date(asNumber);
+
+    // 微秒：常见 16 位（~1e15）
+    if (abs < 1e17) return new Date(Math.round(asNumber / 1000));
+
+    // 纳秒：常见 19 位（~1e18）
+    return new Date(Math.round(asNumber / 1e6));
+  })();
+
+  if (Number.isNaN(date.getTime())) return '';
+  return locale ? date.toLocaleString(locale) : date.toLocaleString();
+}
+
+/**
  * 格式化数字（添加千位分隔符）
  */
 export function formatNumber(num: number): string {
