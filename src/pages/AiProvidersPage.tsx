@@ -1897,19 +1897,21 @@ export function AiProvidersPage() {
             keyPlaceholder={t('common.custom_headers_key_placeholder')}
             valuePlaceholder={t('common.custom_headers_value_placeholder')}
           />
-          <div className="form-group">
-            <label>{t('ai_providers.claude_models_label')}</label>
-            <ModelInputList
-              entries={providerForm.modelEntries}
-              onChange={(entries) =>
-                setProviderForm((prev) => ({ ...prev, modelEntries: entries }))
-              }
-              addLabel={t('ai_providers.claude_models_add_btn')}
-              namePlaceholder={t('common.model_name_placeholder')}
-              aliasPlaceholder={t('common.model_alias_placeholder')}
-              disabled={saving}
-            />
-          </div>
+          {modal?.type === 'claude' && (
+            <div className="form-group">
+              <label>{t('ai_providers.claude_models_label')}</label>
+              <ModelInputList
+                entries={providerForm.modelEntries}
+                onChange={(entries) =>
+                  setProviderForm((prev) => ({ ...prev, modelEntries: entries }))
+                }
+                addLabel={t('ai_providers.claude_models_add_btn')}
+                namePlaceholder={t('common.model_name_placeholder')}
+                aliasPlaceholder={t('common.model_alias_placeholder')}
+                disabled={saving}
+              />
+            </div>
+          )}
           <div className="form-group">
             <label>{t('ai_providers.excluded_models_label')}</label>
             <textarea
