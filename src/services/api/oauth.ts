@@ -10,7 +10,9 @@ export type OAuthProvider =
   | 'antigravity'
   | 'gemini-cli'
   | 'qwen'
-  | 'iflow';
+  | 'iflow'
+  | 'github-copilot'
+  | 'kiro';
 
 export interface OAuthStartResponse {
   url: string;
@@ -30,7 +32,16 @@ export interface IFlowCookieAuthResponse {
   type?: string;
 }
 
-const WEBUI_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'iflow'];
+const WEBUI_SUPPORTED: OAuthProvider[] = [
+  'codex',
+  'anthropic',
+  'antigravity',
+  'gemini-cli',
+  'iflow',
+  'github-copilot',
+  'kiro'
+];
+
 const CALLBACK_PROVIDER_MAP: Partial<Record<OAuthProvider, string>> = {
   'gemini-cli': 'gemini'
 };

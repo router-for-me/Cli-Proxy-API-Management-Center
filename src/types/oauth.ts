@@ -3,14 +3,8 @@
  * 基于原项目 src/modules/oauth.js
  */
 
-// OAuth 提供商类型
-export type OAuthProvider =
-  | 'codex'
-  | 'anthropic'
-  | 'antigravity'
-  | 'gemini-cli'
-  | 'qwen'
-  | 'iflow';
+// OAuth 提供商类型 - 从 API 模块导入以避免重复定义
+export type { OAuthProvider } from '@/services/api/oauth';
 
 // OAuth 流程状态
 export interface OAuthFlow {
