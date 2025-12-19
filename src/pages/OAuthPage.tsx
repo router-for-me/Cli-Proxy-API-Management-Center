@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useNotificationStore } from '@/stores';
 import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
-import { isLocalhost } from '@/utils/connection';
 import styles from './OAuthPage.module.scss';
 
 interface ProviderState {
@@ -14,6 +13,12 @@ interface ProviderState {
   status?: 'idle' | 'waiting' | 'success' | 'error';
   error?: string;
   polling?: boolean;
+  projectId?: string;
+  projectIdError?: string;
+  callbackUrl?: string;
+  callbackSubmitting?: boolean;
+  callbackStatus?: 'success' | 'error';
+  callbackError?: string;
 }
 
 interface IFlowCookieState {
@@ -33,6 +38,8 @@ const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabe
   { id: 'iflow', titleKey: 'auth_login.iflow_oauth_title', hintKey: 'auth_login.iflow_oauth_hint', urlLabelKey: 'auth_login.iflow_oauth_url_label' }
 ];
 
+const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'iflow'];
+
 export function OAuthPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
@@ -40,14 +47,18 @@ export function OAuthPage() {
   const [iflowCookie, setIflowCookie] = useState<IFlowCookieState>({ cookie: '', loading: false });
   const timers = useRef<Record<string, number>>({});
 
-  // 检测是否为本地访问
-  const isLocal = useMemo(() => isLocalhost(window.location.hostname), []);
-
   useEffect(() => {
     return () => {
       Object.values(timers.current).forEach((timer) => window.clearInterval(timer));
     };
   }, []);
+
+  const updateProviderState = (provider: OAuthProvider, next: Partial<ProviderState>) => {
+    setStates((prev) => ({
+      ...prev,
+      [provider]: { ...(prev[provider] ?? {}), ...next }
+    }));
+  };
 
   const startPolling = (provider: OAuthProvider, state: string) => {
     if (timers.current[provider]) {
@@ -57,27 +68,18 @@ export function OAuthPage() {
       try {
         const res = await oauthApi.getAuthStatus(state);
         if (res.status === 'ok') {
-          setStates((prev) => ({
-            ...prev,
-            [provider]: { ...prev[provider], status: 'success', polling: false }
-          }));
+          updateProviderState(provider, { status: 'success', polling: false });
           showNotification(t('auth_login.codex_oauth_status_success'), 'success');
           window.clearInterval(timer);
           delete timers.current[provider];
         } else if (res.status === 'error') {
-          setStates((prev) => ({
-            ...prev,
-            [provider]: { ...prev[provider], status: 'error', error: res.error, polling: false }
-          }));
+          updateProviderState(provider, { status: 'error', error: res.error, polling: false });
           showNotification(`${t('auth_login.codex_oauth_status_error')} ${res.error || ''}`, 'error');
           window.clearInterval(timer);
           delete timers.current[provider];
         }
       } catch (err: any) {
-        setStates((prev) => ({
-          ...prev,
-          [provider]: { ...prev[provider], status: 'error', error: err?.message, polling: false }
-        }));
+        updateProviderState(provider, { status: 'error', error: err?.message, polling: false });
         window.clearInterval(timer);
         delete timers.current[provider];
       }
@@ -86,24 +88,35 @@ export function OAuthPage() {
   };
 
   const startAuth = async (provider: OAuthProvider) => {
-    setStates((prev) => ({
-      ...prev,
-      [provider]: { ...prev[provider], status: 'waiting', polling: true, error: undefined }
-    }));
+    const projectId = provider === 'gemini-cli' ? (states[provider]?.projectId || '').trim() : undefined;
+    if (provider === 'gemini-cli' && !projectId) {
+      const message = t('auth_login.gemini_cli_project_id_required');
+      updateProviderState(provider, { projectIdError: message });
+      showNotification(message, 'warning');
+      return;
+    }
+    if (provider === 'gemini-cli') {
+      updateProviderState(provider, { projectIdError: undefined });
+    }
+    updateProviderState(provider, {
+      status: 'waiting',
+      polling: true,
+      error: undefined,
+      callbackStatus: undefined,
+      callbackError: undefined,
+      callbackUrl: ''
+    });
     try {
-      const res = await oauthApi.startAuth(provider);
-      setStates((prev) => ({
-        ...prev,
-        [provider]: { ...prev[provider], url: res.url, state: res.state, status: 'waiting', polling: true }
-      }));
+      const res = await oauthApi.startAuth(
+        provider,
+        provider === 'gemini-cli' ? { projectId: projectId! } : undefined
+      );
+      updateProviderState(provider, { url: res.url, state: res.state, status: 'waiting', polling: true });
       if (res.state) {
         startPolling(provider, res.state);
       }
     } catch (err: any) {
-      setStates((prev) => ({
-        ...prev,
-        [provider]: { ...prev[provider], status: 'error', error: err?.message, polling: false }
-      }));
+      updateProviderState(provider, { status: 'error', error: err?.message, polling: false });
       showNotification(`${t('auth_login.codex_oauth_start_error')} ${err?.message || ''}`, 'error');
     }
   };
@@ -115,6 +128,40 @@ export function OAuthPage() {
       showNotification(t('notification.link_copied'), 'success');
     } catch {
       showNotification('Copy failed', 'error');
+    }
+  };
+
+  const submitCallback = async (provider: OAuthProvider) => {
+    const redirectUrl = (states[provider]?.callbackUrl || '').trim();
+    if (!redirectUrl) {
+      showNotification(t('auth_login.oauth_callback_required'), 'warning');
+      return;
+    }
+    updateProviderState(provider, {
+      callbackSubmitting: true,
+      callbackStatus: undefined,
+      callbackError: undefined
+    });
+    try {
+      await oauthApi.submitCallback(provider, redirectUrl);
+      updateProviderState(provider, { callbackSubmitting: false, callbackStatus: 'success' });
+      showNotification(t('auth_login.oauth_callback_success'), 'success');
+    } catch (err: any) {
+      const errorMessage =
+        err?.status === 404
+          ? t('auth_login.oauth_callback_upgrade_hint', {
+              defaultValue: 'Please update CLI Proxy API or check the connection.'
+            })
+          : err?.message;
+      updateProviderState(provider, {
+        callbackSubmitting: false,
+        callbackStatus: 'error',
+        callbackError: errorMessage
+      });
+      const notificationMessage = errorMessage
+        ? `${t('auth_login.oauth_callback_error')} ${errorMessage}`
+        : t('auth_login.oauth_callback_error');
+      showNotification(notificationMessage, 'error');
     }
   };
 
@@ -164,36 +211,38 @@ export function OAuthPage() {
       <div className={styles.content}>
         {PROVIDERS.map((provider) => {
           const state = states[provider.id] || {};
-          // 非本地访问时禁用所有 OAuth 登录方式
-          const isDisabled = !isLocal;
+          const canSubmitCallback = CALLBACK_SUPPORTED.includes(provider.id) && Boolean(state.url);
           return (
-            <div
-              key={provider.id}
-              style={isDisabled ? { opacity: 0.6, pointerEvents: 'none' } : undefined}
-            >
+            <div key={provider.id}>
               <Card
                 title={t(provider.titleKey)}
                 extra={
-                  <Button
-                    onClick={() => startAuth(provider.id)}
-                    loading={state.polling}
-                    disabled={isDisabled}
-                  >
+                  <Button onClick={() => startAuth(provider.id)} loading={state.polling}>
                     {t('common.login')}
                   </Button>
                 }
               >
                 <div className="hint">{t(provider.hintKey)}</div>
-                {isDisabled && (
-                  <div className="status-badge warning" style={{ marginTop: 8 }}>
-                    {t('auth_login.remote_access_disabled')}
-                  </div>
+                {provider.id === 'gemini-cli' && (
+                  <Input
+                    label={t('auth_login.gemini_cli_project_id_label')}
+                    hint={t('auth_login.gemini_cli_project_id_hint')}
+                    value={state.projectId || ''}
+                    error={state.projectIdError}
+                    onChange={(e) =>
+                      updateProviderState(provider.id, {
+                        projectId: e.target.value,
+                        projectIdError: undefined
+                      })
+                    }
+                    placeholder={t('auth_login.gemini_cli_project_id_placeholder')}
+                  />
                 )}
-                {!isDisabled && state.url && (
-                  <div className="connection-box">
-                    <div className="label">{t(provider.urlLabelKey)}</div>
-                    <div className="value">{state.url}</div>
-                    <div className="item-actions" style={{ marginTop: 8 }}>
+                {state.url && (
+                  <div className={`connection-box ${styles.authUrlBox}`}>
+                    <div className={styles.authUrlLabel}>{t(provider.urlLabelKey)}</div>
+                    <div className={styles.authUrlValue}>{state.url}</div>
+                    <div className={styles.authUrlActions}>
                       <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
                         {t('auth_login.codex_copy_link')}
                       </Button>
@@ -207,7 +256,44 @@ export function OAuthPage() {
                     </div>
                   </div>
                 )}
-                {!isDisabled && state.status && state.status !== 'idle' && (
+                {canSubmitCallback && (
+                  <div className={styles.callbackSection}>
+                    <Input
+                      label={t('auth_login.oauth_callback_label')}
+                      hint={t('auth_login.oauth_callback_hint')}
+                      value={state.callbackUrl || ''}
+                      onChange={(e) =>
+                        updateProviderState(provider.id, {
+                          callbackUrl: e.target.value,
+                          callbackStatus: undefined,
+                          callbackError: undefined
+                        })
+                      }
+                      placeholder={t('auth_login.oauth_callback_placeholder')}
+                    />
+                    <div className={styles.callbackActions}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => submitCallback(provider.id)}
+                        loading={state.callbackSubmitting}
+                      >
+                        {t('auth_login.oauth_callback_button')}
+                      </Button>
+                    </div>
+                    {state.callbackStatus === 'success' && (
+                      <div className="status-badge success" style={{ marginTop: 8 }}>
+                        {t('auth_login.oauth_callback_status_success')}
+                      </div>
+                    )}
+                    {state.callbackStatus === 'error' && (
+                      <div className="status-badge error" style={{ marginTop: 8 }}>
+                        {t('auth_login.oauth_callback_status_error')} {state.callbackError || ''}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {state.status && state.status !== 'idle' && (
                   <div className="status-badge" style={{ marginTop: 8 }}>
                     {state.status === 'success'
                       ? t('auth_login.codex_oauth_status_success')
