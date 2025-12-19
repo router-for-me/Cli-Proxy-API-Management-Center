@@ -161,7 +161,7 @@ export function AuthFilesPage() {
   const [quotaLoading, setQuotaLoading] = useState(false);
   const [quotaList, setQuotaList] = useState<AntigravityQuotaInfo[]>([]);
   const [quotaEmail, setQuotaEmail] = useState('');
-  const [quotaFileName, setQuotaFileName] = useState('');
+  // quotaFileName removed - not needed
   const [quotaError, setQuotaError] = useState<string | null>(null);
 
   // OAuth 排除模型相关
@@ -474,7 +474,7 @@ export function AuthFilesPage() {
 
   // 显示 Antigravity 额度
   const showQuotas = async (item: AuthFileItem) => {
-    setQuotaFileName(item.name);
+    // setQuotaFileName removed
     setQuotaList([]);
     setQuotaEmail('');
     setQuotaError(null);
@@ -1040,7 +1040,7 @@ export function AuthFilesPage() {
       <Modal
         open={quotaModalOpen}
         onClose={() => setQuotaModalOpen(false)}
-        title={`${t('auth_files.quota_title', { defaultValue: '模型额度' })} - ${quotaFileName}`}
+        title={t('auth_files.quota_title', { defaultValue: '模型额度' })}
         footer={
           <Button variant="secondary" onClick={() => setQuotaModalOpen(false)}>
             {t('common.close')}
