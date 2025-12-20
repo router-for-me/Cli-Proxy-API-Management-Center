@@ -203,25 +203,28 @@ export function UsagePage() {
     [loading]
   );
 
+  const requestsSeries = useMemo(() => buildLastHourSeries('requests'), [buildLastHourSeries]);
+  const tokensSeries = useMemo(() => buildLastHourSeries('tokens'), [buildLastHourSeries]);
+
   const requestsSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('requests'), '#3b82f6', 'rgba(59, 130, 246, 0.18)'),
-    [buildLastHourSeries, buildSparkline]
+    () => buildSparkline(requestsSeries, '#3b82f6', 'rgba(59, 130, 246, 0.18)'),
+    [requestsSeries, buildSparkline]
   );
   const tokensSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('tokens'), '#8b5cf6', 'rgba(139, 92, 246, 0.18)'),
-    [buildLastHourSeries, buildSparkline]
+    () => buildSparkline(tokensSeries, '#8b5cf6', 'rgba(139, 92, 246, 0.18)'),
+    [tokensSeries, buildSparkline]
   );
   const rpmSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('requests'), '#22c55e', 'rgba(34, 197, 94, 0.18)'),
-    [buildLastHourSeries, buildSparkline]
+    () => buildSparkline(requestsSeries, '#22c55e', 'rgba(34, 197, 94, 0.18)'),
+    [requestsSeries, buildSparkline]
   );
   const tpmSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('tokens'), '#f97316', 'rgba(249, 115, 22, 0.18)'),
-    [buildLastHourSeries, buildSparkline]
+    () => buildSparkline(tokensSeries, '#f97316', 'rgba(249, 115, 22, 0.18)'),
+    [tokensSeries, buildSparkline]
   );
   const costSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('tokens'), '#f59e0b', 'rgba(245, 158, 11, 0.18)'),
-    [buildLastHourSeries, buildSparkline]
+    () => buildSparkline(tokensSeries, '#f59e0b', 'rgba(245, 158, 11, 0.18)'),
+    [tokensSeries, buildSparkline]
   );
 
   const buildChartOptions = useCallback(
@@ -423,8 +426,6 @@ export function UsagePage() {
       label: t('usage_stats.total_requests'),
       icon: <IconSatellite size={16} />,
       accent: '#3b82f6',
-      accentSoft: 'rgba(59, 130, 246, 0.18)',
-      accentBorder: 'rgba(59, 130, 246, 0.35)',
       value: loading ? '-' : (usage?.total_requests ?? 0).toLocaleString(),
       meta: (
         <>
@@ -445,8 +446,6 @@ export function UsagePage() {
       label: t('usage_stats.total_tokens'),
       icon: <IconDiamond size={16} />,
       accent: '#8b5cf6',
-      accentSoft: 'rgba(139, 92, 246, 0.18)',
-      accentBorder: 'rgba(139, 92, 246, 0.35)',
       value: loading ? '-' : formatTokensInMillions(usage?.total_tokens ?? 0),
       meta: (
         <>
@@ -465,8 +464,6 @@ export function UsagePage() {
       label: t('usage_stats.rpm_30m'),
       icon: <IconTimer size={16} />,
       accent: '#22c55e',
-      accentSoft: 'rgba(34, 197, 94, 0.18)',
-      accentBorder: 'rgba(34, 197, 94, 0.32)',
       value: loading ? '-' : formatPerMinuteValue(rateStats.rpm),
       meta: (
         <span className="block">
@@ -480,8 +477,6 @@ export function UsagePage() {
       label: t('usage_stats.tpm_30m'),
       icon: <IconTrendingUp size={16} />,
       accent: '#f97316',
-      accentSoft: 'rgba(249, 115, 22, 0.18)',
-      accentBorder: 'rgba(249, 115, 22, 0.32)',
       value: loading ? '-' : formatPerMinuteValue(rateStats.tpm),
       meta: (
         <span className="block">
@@ -495,8 +490,6 @@ export function UsagePage() {
       label: t('usage_stats.total_cost'),
       icon: <IconDollarSign size={16} />,
       accent: '#f59e0b',
-      accentSoft: 'rgba(245, 158, 11, 0.18)',
-      accentBorder: 'rgba(245, 158, 11, 0.32)',
       value: loading ? '-' : hasPrices ? formatUsd(totalCost) : '--',
       meta: (
         <>
@@ -544,13 +537,7 @@ export function UsagePage() {
           <div
             key={card.key}
             className="bg-card border border-border p-4 rounded-lg relative overflow-hidden"
-            style={
-              {
-                '--accent': card.accent,
-                '--accent-soft': card.accentSoft,
-                '--accent-border': card.accentBorder
-              } as CSSProperties
-            }
+            style={{ '--accent': card.accent } as CSSProperties}
           >
             <div className="mb-2 pr-6">
               <span className="text-xs text-muted-foreground">{card.label}</span>
@@ -592,7 +579,7 @@ export function UsagePage() {
       >
         <div className="space-y-2">
           {chartLines.map((line, index) => (
-            <div key={index} className="flex items-center gap-2">
+            <div key={`${index}-${line}`} className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground w-16">
                 {t(`usage_stats.chart_line_label_${index + 1}`)}
               </span>
@@ -755,10 +742,10 @@ export function UsagePage() {
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium truncate block">{api.endpoint}</span>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
-                        <span className="">
+                        <span>
                           {t('usage_stats.requests_count')}: {api.totalRequests}
                         </span>
-                        <span className="">
+                        <span>
                           Tokens: {formatTokensInMillions(api.totalTokens)}
                         </span>
                         {hasPrices && api.totalCost > 0 && (
