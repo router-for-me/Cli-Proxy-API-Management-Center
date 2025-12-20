@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { IconRefreshCw, IconPlus } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { apiKeysApi } from '@/services/api';
 import { maskApiKey } from '@/utils/format';
-import styles from './ApiKeysPage.module.scss';
 
 export function ApiKeysPage() {
   const { t } = useTranslation();
@@ -32,63 +32,31 @@ export function ApiKeysPage() {
 
   const disableControls = useMemo(() => connectionStatus !== 'connected', [connectionStatus]);
 
-  const loadApiKeys = useCallback(
-    async (force = false) => {
-      setLoading(true);
-      setError('');
-      try {
-        const result = (await fetchConfig('api-keys', force)) as string[] | undefined;
-        const list = Array.isArray(result) ? result : [];
-        setApiKeys(list);
-      } catch (err: any) {
-        setError(err?.message || t('notification.refresh_failed'));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [fetchConfig, t]
-  );
-
-  useEffect(() => {
-    loadApiKeys();
-  }, [loadApiKeys]);
-
-  useEffect(() => {
-    if (Array.isArray(config?.apiKeys)) {
-      setApiKeys(config.apiKeys);
+  const loadApiKeys = useCallback(async (force = false) => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = (await fetchConfig('api-keys', force)) as string[] | undefined;
+      setApiKeys(Array.isArray(result) ? result : []);
+    } catch (err: any) {
+      setError(err?.message || t('notification.refresh_failed'));
+    } finally {
+      setLoading(false);
     }
-  }, [config?.apiKeys]);
+  }, [fetchConfig, t]);
 
-  const openAddModal = () => {
-    setEditingIndex(null);
-    setInputValue('');
-    setModalOpen(true);
-  };
+  useEffect(() => { loadApiKeys(); }, [loadApiKeys]);
+  useEffect(() => { if (Array.isArray(config?.apiKeys)) setApiKeys(config.apiKeys); }, [config?.apiKeys]);
 
-  const openEditModal = (index: number) => {
-    setEditingIndex(index);
-    setInputValue(apiKeys[index] ?? '');
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setInputValue('');
-    setEditingIndex(null);
-  };
+  const openAddModal = () => { setEditingIndex(null); setInputValue(''); setModalOpen(true); };
+  const openEditModal = (index: number) => { setEditingIndex(index); setInputValue(apiKeys[index] ?? ''); setModalOpen(true); };
+  const closeModal = () => { setModalOpen(false); setInputValue(''); setEditingIndex(null); };
 
   const handleSave = async () => {
     const trimmed = inputValue.trim();
-    if (!trimmed) {
-      showNotification(`${t('notification.please_enter')} ${t('notification.api_key')}`, 'error');
-      return;
-    }
-
+    if (!trimmed) { showNotification(`${t('notification.please_enter')} ${t('notification.api_key')}`, 'error'); return; }
     const isEdit = editingIndex !== null;
-    const nextKeys = isEdit
-      ? apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key))
-      : [...apiKeys, trimmed];
-
+    const nextKeys = isEdit ? apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key)) : [...apiKeys, trimmed];
     setSaving(true);
     try {
       if (isEdit && editingIndex !== null) {
@@ -98,7 +66,6 @@ export function ApiKeysPage() {
         await apiKeysApi.replace(nextKeys);
         showNotification(t('notification.api_key_added'), 'success');
       }
-
       setApiKeys(nextKeys);
       updateConfigValue('api-keys', nextKeys);
       clearCache('api-keys');
@@ -127,96 +94,64 @@ export function ApiKeysPage() {
     }
   };
 
-  const actionButtons = (
-    <div style={{ display: 'flex', gap: 8 }}>
-      <Button variant="secondary" size="sm" onClick={() => loadApiKeys(true)} disabled={loading}>
-        {t('common.refresh')}
-      </Button>
-      <Button size="sm" onClick={openAddModal} disabled={disableControls}>
-        {t('api_keys.add_button')}
-      </Button>
-    </div>
-  );
-
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('api_keys.title')}</h1>
+    <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <div className="flex gap-1">
+          <Button variant="secondary" size="sm" onClick={() => loadApiKeys(true)} disabled={loading} title={t('common.refresh')}><IconRefreshCw size={16} /></Button>
+          <Button size="sm" onClick={openAddModal} disabled={disableControls} title={t('api_keys.add_button')}><IconPlus size={16} /></Button>
+        </div>
+      </div>
 
-      <Card title={t('api_keys.proxy_auth_title')} extra={actionButtons}>
-        {error && <div className="error-box">{error}</div>}
+      {error && <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-sm">{error}</div>}
 
-        {loading ? (
-          <div className="flex-center" style={{ padding: '24px 0' }}>
-            <LoadingSpinner size={28} />
-          </div>
-        ) : apiKeys.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center py-12"><LoadingSpinner size={28} /></div>
+      ) : apiKeys.length === 0 ? (
+        <Card>
           <EmptyState
             title={t('api_keys.empty_title')}
             description={t('api_keys.empty_desc')}
-            action={
-              <Button onClick={openAddModal} disabled={disableControls}>
-                {t('api_keys.add_button')}
-              </Button>
-            }
           />
-        ) : (
-          <div className="item-list">
-            {apiKeys.map((key, index) => (
-              <div key={index} className="item-row">
-                <div className="item-meta">
-                  <div className="pill">#{index + 1}</div>
-                  <div className="item-title">{t('api_keys.item_title')}</div>
-                  <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {apiKeys.map((key, index) => (
+            <Card key={index} className="!p-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="bg-primary text-primary-foreground text-xs w-6 h-6 flex items-center justify-center rounded font-medium">{index + 1}</span>
+                  <code className="text-sm text-muted-foreground font-mono truncate">{maskApiKey(String(key || ''))}</code>
                 </div>
-                <div className="item-actions">
-                  <Button variant="secondary" size="sm" onClick={() => openEditModal(index)} disabled={disableControls}>
-                    {t('common.edit')}
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(index)}
-                    disabled={disableControls || deletingIndex === index}
-                    loading={deletingIndex === index}
-                  >
-                    {t('common.delete')}
-                  </Button>
+                <div className="flex gap-2 shrink-0">
+                  <Button variant="secondary" size="sm" onClick={() => openEditModal(index)} disabled={disableControls}>{t('common.edit')}</Button>
+                  <Button variant="danger" size="sm" onClick={() => handleDelete(index)} disabled={disableControls || deletingIndex === index} loading={deletingIndex === index}>{t('common.delete')}</Button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </Card>
+          ))}
+        </div>
+      )}
 
-        <Modal
-          open={modalOpen}
-          onClose={closeModal}
-          title={editingIndex !== null ? t('api_keys.edit_modal_title') : t('api_keys.add_modal_title')}
-          footer={
-            <>
-              <Button variant="secondary" onClick={closeModal} disabled={saving}>
-                {t('common.cancel')}
-              </Button>
-              <Button onClick={handleSave} loading={saving}>
-                {editingIndex !== null ? t('common.update') : t('common.add')}
-              </Button>
-            </>
-          }
-        >
-          <Input
-            label={
-              editingIndex !== null ? t('api_keys.edit_modal_key_label') : t('api_keys.add_modal_key_label')
-            }
-            placeholder={
-              editingIndex !== null
-                ? t('api_keys.edit_modal_key_label')
-                : t('api_keys.add_modal_key_placeholder')
-            }
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            disabled={saving}
-          />
-        </Modal>
-      </Card>
+      <Modal
+        open={modalOpen}
+        onClose={closeModal}
+        title={editingIndex !== null ? t('api_keys.edit_modal_title') : t('api_keys.add_modal_title')}
+        footer={
+          <div className="flex gap-2 justify-end">
+            <Button variant="secondary" onClick={closeModal} disabled={saving}>{t('common.cancel')}</Button>
+            <Button onClick={handleSave} loading={saving}>{editingIndex !== null ? t('common.update') : t('common.add')}</Button>
+          </div>
+        }
+      >
+        <Input
+          label={editingIndex !== null ? t('api_keys.edit_modal_key_label') : t('api_keys.add_modal_key_label')}
+          placeholder={editingIndex !== null ? t('api_keys.edit_modal_key_label') : t('api_keys.add_modal_key_placeholder')}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          disabled={saving}
+        />
+      </Modal>
     </div>
   );
 }

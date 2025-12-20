@@ -1,24 +1,23 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card } from '@/components/ui/Card';
+
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconBot, IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
+import { IconBot, IconDownload, IconInfo, IconPlus, IconRefreshCw, IconTrash2 } from '@/components/ui/icons';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
 import type { AuthFileItem } from '@/types';
 import type { KeyStats, KeyStatBucket } from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
-import styles from './AuthFilesPage.module.scss';
 
 type ThemeColors = { bg: string; text: string; border?: string };
 type TypeColorSet = { light: ThemeColors; dark?: ThemeColors };
 
-// 标签类型颜色配置（对齐重构前 styles.css 的 file-type-badge 颜色）
+// 标签类型颜色配置（对齐重构前 "" 的 file-type-badge 颜色）
 const TYPE_COLORS: Record<string, TypeColorSet> = {
   qwen: {
     light: { bg: '#e8f5e9', text: '#2e7d32' },
@@ -543,19 +542,19 @@ export function AuthFilesPage() {
 
   // 渲染标签筛选器
   const renderFilterTags = () => (
-    <div className={styles.filterTags}>
+    <div className="flex flex-wrap gap-1.5">
       {existingTypes.map((type) => {
         const isActive = filter === type;
-        const color = type === 'all' ? { bg: 'var(--bg-tertiary)', text: 'var(--text-primary)' } : getTypeColor(type);
-        const activeTextColor = theme === 'dark' ? '#111827' : '#fff';
+        const color = type === 'all' 
+          ? { bg: theme === 'dark' ? '#374151' : '#e5e7eb', text: theme === 'dark' ? '#f3f4f6' : '#1f2937' } 
+          : getTypeColor(type);
         return (
           <button
             key={type}
-            className={`${styles.filterTag} ${isActive ? styles.filterTagActive : ''}`}
+            className={`px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${isActive ? 'font-medium' : ''}`}
             style={{
               backgroundColor: isActive ? color.text : color.bg,
-              color: isActive ? activeTextColor : color.text,
-              borderColor: color.text
+              color: isActive ? (theme === 'dark' ? '#111' : '#fff') : color.text,
             }}
             onClick={() => {
               setFilter(type);
@@ -571,15 +570,16 @@ export function AuthFilesPage() {
 
   // 渲染单个认证文件卡片
   const renderFileCard = (item: AuthFileItem) => {
-      const fileStats = resolveAuthFileStats(item, keyStats);
+    const fileStats = resolveAuthFileStats(item, keyStats);
     const isRuntimeOnly = isRuntimeOnlyAuthFile(item);
     const typeColor = getTypeColor(item.type || 'unknown');
 
     return (
-      <div key={item.name} className={styles.fileCard}>
-        <div className={styles.cardHeader}>
+      <div key={item.name} className="group bg-card border border-border rounded-lg p-3 flex flex-col gap-2 hover:border-foreground/20 transition-colors">
+        {/* 头部：类型标签 + 文件名 */}
+        <div className="flex items-start gap-2">
           <span
-            className={styles.typeBadge}
+            className="px-1.5 py-0.5 text-[10px] font-medium rounded shrink-0"
             style={{
               backgroundColor: typeColor.bg,
               color: typeColor.text,
@@ -588,73 +588,37 @@ export function AuthFilesPage() {
           >
             {getTypeLabel(item.type || 'unknown')}
           </span>
-          <span className={styles.fileName}>{item.name}</span>
+          <span className="text-sm font-medium truncate flex-1" title={item.name}>{item.name}</span>
         </div>
 
-        <div className={styles.cardMeta}>
-          <span>{t('auth_files.file_size')}: {item.size ? formatFileSize(item.size) : '-'}</span>
-          <span>{t('auth_files.file_modified')}: {formatModified(item)}</span>
+        {/* 元信息 */}
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <span>{item.size ? formatFileSize(item.size) : '-'}</span>
+          <span className="truncate">{formatModified(item)}</span>
         </div>
 
-        <div className={styles.cardStats}>
-          <span className={`${styles.statPill} ${styles.statSuccess}`}>
-            {t('stats.success')}: {fileStats.success}
-          </span>
-          <span className={`${styles.statPill} ${styles.statFailure}`}>
-            {t('stats.failure')}: {fileStats.failure}
-          </span>
-        </div>
-
-        <div className={styles.cardActions}>
+        {/* 统计 + 操作 */}
+        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-border">
+          <span className="text-[11px] text-green-600">{fileStats.success} ✓</span>
+          <span className="text-[11px] text-red-500">{fileStats.failure} ✗</span>
+          <div className="flex-1" />
           {isRuntimeOnly ? (
-            <div className={styles.virtualBadge}>{t('auth_files.type_virtual') || '虚拟认证文件'}</div>
+            <span className="text-[10px] text-muted-foreground italic">{t('auth_files.type_virtual') || 'Virtual'}</span>
           ) : (
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => showModels(item)}
-                className={styles.iconButton}
-                title={t('auth_files.models_button', { defaultValue: '模型' })}
-                disabled={disableControls}
-              >
-                <IconBot className={styles.actionIcon} size={16} />
+            <div className="flex gap-0.5">
+              <Button variant="ghost" size="sm" onClick={() => showModels(item)} title={t('auth_files.models_button', { defaultValue: '模型' })} disabled={disableControls}>
+                <IconBot size={14} />
               </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => showDetails(item)}
-                className={styles.iconButton}
-                title={t('common.info', { defaultValue: '关于' })}
-                disabled={disableControls}
-              >
-                <IconInfo className={styles.actionIcon} size={16} />
+              <Button variant="ghost" size="sm" onClick={() => showDetails(item)} title={t('common.info', { defaultValue: '详情' })} disabled={disableControls}>
+                <IconInfo size={14} />
               </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleDownload(item.name)}
-                className={styles.iconButton}
-                title={t('auth_files.download_button')}
-                disabled={disableControls}
-              >
-                <IconDownload className={styles.actionIcon} size={16} />
+              <Button variant="ghost" size="sm" onClick={() => handleDownload(item.name)} title={t('auth_files.download_button')} disabled={disableControls}>
+                <IconDownload size={14} />
               </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => handleDelete(item.name)}
-                className={styles.iconButton}
-                title={t('auth_files.delete_button')}
-                disabled={disableControls || deleting === item.name}
-              >
-                {deleting === item.name ? (
-                  <LoadingSpinner size={14} />
-                ) : (
-                  <IconTrash2 className={styles.actionIcon} size={16} />
-                )}
+              <Button variant="ghost" size="sm" onClick={() => handleDelete(item.name)} title={t('auth_files.delete_button')} disabled={disableControls || deleting === item.name}>
+                {deleting === item.name ? <LoadingSpinner size={12} /> : <IconTrash2 size={14} />}
               </Button>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -662,172 +626,149 @@ export function AuthFilesPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('auth_files.title')}</h1>
-        <p className={styles.description}>{t('auth_files.description')}</p>
+    <div className="space-y-4">
+      {/* 顶部操作栏 */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-2">
+          {renderFilterTags()}
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => { loadFiles(); loadKeyStats(); }} disabled={loading} title={t('common.refresh')}>
+            <IconRefreshCw size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDeleteAll}
+            disabled={disableControls || loading || deletingAll}
+            loading={deletingAll}
+            title={filter === 'all' ? t('auth_files.delete_all_button') : `${t('common.delete')} ${getTypeLabel(filter)}`}
+          >
+            <IconTrash2 size={14} />
+          </Button>
+          <Button size="sm" onClick={handleUploadClick} disabled={disableControls || uploading} loading={uploading}>
+            <IconPlus size={14} />
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            multiple
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+        </div>
       </div>
 
-      <Card
-        title={t('auth_files.title_section')}
-        extra={
-          <div className={styles.headerActions}>
-            <Button variant="secondary" size="sm" onClick={() => { loadFiles(); loadKeyStats(); }} disabled={loading}>
-              {t('common.refresh')}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleDeleteAll}
-              disabled={disableControls || loading || deletingAll}
-              loading={deletingAll}
-            >
-              {filter === 'all' ? t('auth_files.delete_all_button') : `${t('common.delete')} ${getTypeLabel(filter)}`}
-            </Button>
-            <Button size="sm" onClick={handleUploadClick} disabled={disableControls || uploading} loading={uploading}>
-              {t('auth_files.upload_button')}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json,application/json"
-              multiple
-              style={{ display: 'none' }}
-              onChange={handleFileChange}
-            />
-          </div>
-        }
-      >
-        {error && <div className={styles.errorBox}>{error}</div>}
+      {error && <div className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded">{error}</div>}
 
-        {/* 筛选区域 */}
-        <div className={styles.filterSection}>
-          {renderFilterTags()}
-
-          <div className={styles.filterControls}>
-            <div className={styles.filterItem}>
-              <label>{t('auth_files.search_label')}</label>
-              <Input
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-                placeholder={t('auth_files.search_placeholder')}
-              />
-            </div>
-            <div className={styles.filterItem}>
-              <label>{t('auth_files.page_size_label')}</label>
-              <select
-                className={styles.pageSizeSelect}
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value) || 9);
-                  setPage(1);
-                }}
-              >
-                <option value={6}>6</option>
-                <option value={9}>9</option>
-                <option value={12}>12</option>
-                <option value={18}>18</option>
-                <option value={24}>24</option>
-              </select>
-            </div>
-            <div className={styles.filterItem}>
-              <label>{t('common.info')}</label>
-              <div className={styles.statsInfo}>
-                {files.length} {t('auth_files.files_count')} · {formatFileSize(totalSize)}
-              </div>
-            </div>
-          </div>
+      {/* 搜索和统计 */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <Input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder={t('auth_files.search_placeholder')}
+          />
         </div>
+        <div className="text-xs text-muted-foreground whitespace-nowrap">
+          {files.length} {t('auth_files.files_count')} · {formatFileSize(totalSize)}
+        </div>
+        <select
+          className="h-8 bg-transparent border border-border rounded px-2 text-xs"
+          value={pageSize}
+          onChange={(e) => {
+            setPageSize(Number(e.target.value) || 9);
+            setPage(1);
+          }}
+        >
+          <option value={6}>6</option>
+          <option value={9}>9</option>
+          <option value={12}>12</option>
+          <option value={18}>18</option>
+        </select>
+      </div>
 
-        {/* 卡片网格 */}
-        {loading ? (
-          <div className={styles.hint}>{t('common.loading')}</div>
-        ) : pageItems.length === 0 ? (
-          <EmptyState title={t('auth_files.search_empty_title')} description={t('auth_files.search_empty_desc')} />
-        ) : (
-          <div className={styles.fileGrid}>
-            {pageItems.map(renderFileCard)}
-          </div>
-        )}
+      {/* 卡片网格 */}
+      {loading ? (
+        <div className="text-sm text-muted-foreground py-16 text-center">{t('common.loading')}</div>
+      ) : pageItems.length === 0 ? (
+        <EmptyState title={t('auth_files.search_empty_title')} description={t('auth_files.search_empty_desc')} />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {pageItems.map(renderFileCard)}
+        </div>
+      )}
 
-        {/* 分页 */}
-        {!loading && filtered.length > pageSize && (
-          <div className={styles.pagination}>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage <= 1}
-            >
-              {t('auth_files.pagination_prev')}
-            </Button>
-            <div className={styles.pageInfo}>
-              {t('auth_files.pagination_info', {
-                current: currentPage,
-                total: totalPages,
-                count: filtered.length
-              })}
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage >= totalPages}
-            >
-              {t('auth_files.pagination_next')}
-            </Button>
-          </div>
-        )}
-      </Card>
+      {/* 分页 */}
+      {!loading && filtered.length > pageSize && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage <= 1}
+          >
+            {t('auth_files.pagination_prev')}
+          </Button>
+          <span className="text-xs text-muted-foreground px-2">
+            {currentPage} / {totalPages}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage >= totalPages}
+          >
+            {t('auth_files.pagination_next')}
+          </Button>
+        </div>
+      )}
 
-      {/* OAuth 排除列表卡片 */}
-      <Card
-        title={t('oauth_excluded.title')}
-        extra={
+      {/* OAuth 排除列表 */}
+      <div className="border border-border rounded-lg">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <span className="text-sm font-medium">{t('oauth_excluded.title')}</span>
           <Button
             size="sm"
             onClick={() => openExcludedModal()}
             disabled={disableControls || excludedError === 'unsupported'}
           >
-            {t('oauth_excluded.add')}
+            <IconPlus size={14} />
+            <span className="ml-1">{t('oauth_excluded.add')}</span>
           </Button>
-        }
-      >
-        {excludedError === 'unsupported' ? (
-          <EmptyState
-            title={t('oauth_excluded.upgrade_required_title')}
-            description={t('oauth_excluded.upgrade_required_desc')}
-          />
-        ) : Object.keys(excluded).length === 0 ? (
-          <EmptyState title={t('oauth_excluded.list_empty_all')} />
-        ) : (
-          <div className={styles.excludedList}>
-            {Object.entries(excluded).map(([provider, models]) => (
-              <div key={provider} className={styles.excludedItem}>
-                <div className={styles.excludedInfo}>
-                  <div className={styles.excludedProvider}>{provider}</div>
-                  <div className={styles.excludedModels}>
-                    {models?.length
-                      ? t('oauth_excluded.model_count', { count: models.length })
-                      : t('oauth_excluded.no_models')}
-                  </div>
+        </div>
+        <div className="p-3">
+          {excludedError === 'unsupported' ? (
+            <div className="text-xs text-muted-foreground text-center py-4">{t('oauth_excluded.upgrade_required_title')}</div>
+          ) : Object.keys(excluded).length === 0 ? (
+            <div className="text-xs text-muted-foreground text-center py-4">{t('oauth_excluded.list_empty_all')}</div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(excluded).map(([provider, models]) => (
+                <div
+                  key={provider}
+                  className="group inline-flex items-center gap-2 px-2.5 py-1.5 bg-muted rounded text-xs cursor-pointer hover:bg-muted/80 transition-colors"
+                  onClick={() => openExcludedModal(provider)}
+                  title={models?.join(', ')}
+                >
+                  <span className="font-medium">{provider}</span>
+                  <span className="text-muted-foreground">({models?.length || 0})</span>
+                  <button
+                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                    onClick={(e) => { e.stopPropagation(); deleteExcluded(provider); }}
+                  >
+                    <IconTrash2 size={12} />
+                  </button>
                 </div>
-                <div className={styles.excludedActions}>
-                  <Button variant="secondary" size="sm" onClick={() => openExcludedModal(provider)}>
-                    {t('common.edit')}
-                  </Button>
-                  <Button variant="danger" size="sm" onClick={() => deleteExcluded(provider)}>
-                    {t('oauth_excluded.delete')}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* 详情弹窗 */}
       <Modal
@@ -855,8 +796,8 @@ export function AuthFilesPage() {
         }
       >
         {selectedFile && (
-          <div className={styles.detailContent}>
-            <pre className={styles.jsonContent}>{JSON.stringify(selectedFile, null, 2)}</pre>
+          <div className="max-h-96 overflow-auto">
+            <pre className="text-xs bg-muted p-3 rounded whitespace-pre-wrap break-all">{JSON.stringify(selectedFile, null, 2)}</pre>
           </div>
         )}
       </Modal>
@@ -873,7 +814,7 @@ export function AuthFilesPage() {
         }
       >
         {modelsLoading ? (
-          <div className={styles.hint}>{t('auth_files.models_loading', { defaultValue: '正在加载模型列表...' })}</div>
+          <div className="text-sm text-muted-foreground py-8 text-center">{t('auth_files.models_loading', { defaultValue: '正在加载模型列表...' })}</div>
         ) : modelsError === 'unsupported' ? (
           <EmptyState
             title={t('auth_files.models_unsupported', { defaultValue: '当前版本不支持此功能' })}
@@ -885,28 +826,28 @@ export function AuthFilesPage() {
             description={t('auth_files.models_empty_desc', { defaultValue: '该认证凭证可能尚未被服务器加载或没有绑定任何模型' })}
           />
         ) : (
-          <div className={styles.modelsList}>
+          <div className="space-y-1 max-h-96 overflow-y-auto">
             {modelsList.map((model) => {
               const isExcluded = isModelExcluded(model.id, modelsFileType);
               return (
                 <div
                   key={model.id}
-                  className={`${styles.modelItem} ${isExcluded ? styles.modelItemExcluded : ''}`}
+                  className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-muted transition-colors ${isExcluded ? 'opacity-50' : ''}`}
                   onClick={() => {
                     navigator.clipboard.writeText(model.id);
                     showNotification(t('notification.link_copied', { defaultValue: '已复制到剪贴板' }), 'success');
                   }}
                   title={isExcluded ? t('auth_files.models_excluded_hint', { defaultValue: '此模型已被 OAuth 排除' }) : t('common.copy', { defaultValue: '点击复制' })}
                 >
-                  <span className={styles.modelId}>{model.id}</span>
+                  <span className="text-sm font-medium flex-1 truncate">{model.id}</span>
                   {model.display_name && model.display_name !== model.id && (
-                    <span className={styles.modelDisplayName}>{model.display_name}</span>
+                    <span className="text-xs text-muted-foreground">{model.display_name}</span>
                   )}
                   {model.type && (
-                    <span className={styles.modelType}>{model.type}</span>
+                    <span className="text-xs px-1.5 py-0.5 bg-muted rounded">{model.type}</span>
                   )}
                   {isExcluded && (
-                    <span className={styles.modelExcludedBadge}>{t('auth_files.models_excluded_badge', { defaultValue: '已排除' })}</span>
+                    <span className="text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-600 rounded">{t('auth_files.models_excluded_badge', { defaultValue: '已排除' })}</span>
                   )}
                 </div>
               );
@@ -937,16 +878,16 @@ export function AuthFilesPage() {
           value={excludedForm.provider}
           onChange={(e) => setExcludedForm((prev) => ({ ...prev, provider: e.target.value }))}
         />
-        <div className={styles.formGroup}>
-          <label>{t('oauth_excluded.models_label')}</label>
+        <div className="space-y-1 mt-3">
+          <label className="text-xs text-muted-foreground">{t('oauth_excluded.models_label')}</label>
           <textarea
-            className={styles.textarea}
+            className="w-full bg-input border border-border rounded px-2 py-1.5 text-sm resize-none"
             rows={4}
             placeholder={t('oauth_excluded.models_placeholder')}
             value={excludedForm.modelsText}
             onChange={(e) => setExcludedForm((prev) => ({ ...prev, modelsText: e.target.value }))}
           />
-          <div className={styles.hint}>{t('oauth_excluded.models_hint')}</div>
+          <div className="text-xs text-muted-foreground">{t('oauth_excluded.models_hint')}</div>
         </div>
       </Modal>
     </div>

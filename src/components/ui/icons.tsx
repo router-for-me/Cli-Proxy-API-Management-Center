@@ -276,6 +276,15 @@ export function IconGithub({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconCopy({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </svg>
+  );
+}
+
 export function IconExternalLink({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>
@@ -300,6 +309,71 @@ export function IconCode({ size = 20, ...props }: IconProps) {
     <svg {...baseSvgProps} width={size} height={size} {...props}>
       <polyline points="16 18 22 12 16 6" />
       <polyline points="8 6 2 12 8 18" />
+    </svg>
+  );
+}
+
+export function IconPlus({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="M5 12h14" />
+      <path d="M12 5v14" />
+    </svg>
+  );
+}
+
+export function IconSave({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+      <polyline points="17 21 17 13 7 13 7 21" />
+      <polyline points="7 3 7 8 15 8" />
+    </svg>
+  );
+}
+
+export function IconLogIn({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <polyline points="10 17 15 12 10 7" />
+      <line x1="15" x2="3" y1="12" y2="12" />
+    </svg>
+  );
+}
+
+export function IconSend({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="m22 2-7 20-4-9-9-4Z" />
+      <path d="M22 2 11 13" />
+    </svg>
+  );
+}
+
+export function IconPlay({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <polygon points="6 3 20 12 6 21 6 3" />
+    </svg>
+  );
+}
+
+export function IconUpload({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" x2="12" y1="3" y2="15" />
+    </svg>
+  );
+}
+
+export function IconHome({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+      <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
     </svg>
   );
 }

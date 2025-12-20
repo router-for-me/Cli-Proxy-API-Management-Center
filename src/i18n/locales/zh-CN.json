@@ -82,6 +82,7 @@
   },
   "nav": {
     "basic_settings": "基础设置",
+    "settings": "设置",
     "api_keys": "API 密钥",
     "ai_providers": "AI 提供商",
     "auth_files": "认证文件",
@@ -133,7 +134,7 @@
     "gemini_title": "Gemini API 密钥",
     "gemini_add_button": "添加密钥",
     "gemini_empty_title": "暂无Gemini密钥",
-    "gemini_empty_desc": "点击上方按钮添加第一个密钥",
+    "gemini_empty_desc": "暂无密钥",
     "gemini_item_title": "Gemini密钥",
     "gemini_add_modal_title": "添加Gemini API密钥",
     "gemini_add_modal_key_label": "API密钥",
@@ -484,7 +485,21 @@
     "iflow_cookie_result_expired": "过期时间",
     "iflow_cookie_result_path": "保存路径",
     "iflow_cookie_result_type": "类型",
-    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问"
+    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问",
+    "oauth_url_label": "授权链接",
+    "copy_link": "复制链接",
+    "open_link": "打开链接",
+    "callback_url_label": "回调 URL",
+    "callback_url_hint": "远程浏览器模式：当授权跳转到 http://localhost:... 后，复制完整 URL 并提交到这里。",
+    "callback_url_summary": "手动回调",
+    "callback_url_placeholder": "粘贴回调地址 callback?code=...&state=...",
+    "callback_url_required": "请先填写回调 URL",
+    "submit_callback": "提交回调 URL",
+    "submit_callback_short": "提交",
+    "callback_submit_error": "提交回调 URL 失败:",
+    "status_success": "认证成功",
+    "status_error": "认证失败",
+    "status_waiting": "等待认证中..."
   },
   "usage_stats": {
     "title": "使用统计",
@@ -724,9 +739,24 @@
     "switch_to_dark": "切换到暗色模式",
     "auto": "跟随系统"
   },
+  "sound": {
+    "mute": "静音",
+    "unmute": "取消静音"
+  },
   "sidebar": {
     "toggle_expand": "展开侧边栏",
     "toggle_collapse": "收起侧边栏"
+  },
+  "welcome": {
+    "help": "快捷链接",
+    "about": "关于",
+    "description": "CLI Proxy API 管理中心是一个用于管理 CLI Proxy 实例的 Web 界面。",
+    "main_repo_title": "主程序仓库",
+    "main_repo_desc": "CLI Proxy API 核心程序源代码",
+    "webui_repo_title": "WebUI 仓库",
+    "webui_repo_desc": "管理中心前端界面源代码",
+    "docs_title": "使用文档",
+    "docs_desc": "配置指南和使用说明"
   },
   "footer": {
     "api_version": "CLI Proxy API 版本",

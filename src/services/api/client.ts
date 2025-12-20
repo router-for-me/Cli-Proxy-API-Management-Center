@@ -62,13 +62,14 @@ class ApiClient {
     return `${normalized}${MANAGEMENT_API_PREFIX}`;
   }
 
-  private readHeader(headers: Record<string, any>, keys: string[]): string | null {
-    const normalized = Object.fromEntries(
-      Object.entries(headers || {}).map(([key, value]) => [key.toLowerCase(), value as string | undefined])
-    );
+  private readHeader(headers: any, keys: string[]): string | null {
+    if (!headers) return null;
     for (const key of keys) {
-      const match = normalized[key.toLowerCase()];
-      if (match) return match;
+      // Support both AxiosHeaders.get() and plain object access
+      const value = typeof headers.get === 'function' 
+        ? headers.get(key) 
+        : headers[key] || headers[key.toLowerCase()];
+      if (value) return String(value);
     }
     return null;
   }
@@ -96,11 +97,9 @@ class ApiClient {
     // 响应拦截器
     this.instance.interceptors.response.use(
       (response) => {
-        const headers = response.headers as Record<string, string | undefined>;
-        const version = this.readHeader(headers, VERSION_HEADER_KEYS);
-        const buildDate = this.readHeader(headers, BUILD_DATE_HEADER_KEYS);
+        const version = this.readHeader(response.headers, VERSION_HEADER_KEYS);
+        const buildDate = this.readHeader(response.headers, BUILD_DATE_HEADER_KEYS);
 
-        // 触发版本更新事件（后续通过 store 处理）
         if (version || buildDate) {
           window.dispatchEvent(
             new CustomEvent('server-version-update', {

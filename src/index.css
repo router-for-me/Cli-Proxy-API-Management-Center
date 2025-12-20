@@ -1,68 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=Kranky&family=Rubik+Glitch&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/jetbrains-mono";
+
+@custom-variant dark (&:is(.dark *));
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    --background: #F5F5F5;
+    --foreground: oklch(0.145 0 0);
+    --card: #F2F2F2;
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: #7D67A1;
+    --primary-foreground: oklch(0.98 0 0);
+    --secondary: oklch(0.967 0.001 286.375);
+    --secondary-foreground: oklch(0.21 0.006 285.885);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.58 0.22 27);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: #7D67A1;
+    --chart-1: #A897C1;
+    --chart-2: #9787B1;
+    --chart-3: #8777A9;
+    --chart-4: #7D67A1;
+    --chart-5: #6D5791;
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: #7D67A1;
+    --sidebar-primary-foreground: oklch(0.98 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: #7D67A1;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.dark {
+    /* VS Code Dark theme */
+    --background: #1e1e1e;
+    --foreground: #d4d4d4;
+    --card: #252526;
+    --card-foreground: #d4d4d4;
+    --popover: #252526;
+    --popover-foreground: #cccccc;
+    --primary: #7D67A1;
+    --primary-foreground: #ffffff;
+    --secondary: #3a3d41;
+    --secondary-foreground: #d4d4d4;
+    --muted: #2d2d30;
+    --muted-foreground: #a6a6a6;
+    --accent: #3a3d41;
+    --accent-foreground: #7D67A1;
+    --destructive: #f44747;
+    --destructive-foreground: #ffffff;
+    --border: #454545;
+    --input: #3c3c3c;
+    --ring: #7D67A1;
+    --chart-1: #7D67A1;
+    --chart-2: #9787B1;
+    --chart-3: #A897C1;
+    --chart-4: #6D5791;
+    --chart-5: #5D4781;
+    --sidebar: #252526;
+    --sidebar-foreground: #bbbbbb;
+    --sidebar-primary: #7D67A1;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #3a3d41;
+    --sidebar-accent-foreground: #7D67A1;
+    --sidebar-border: #454545;
+    --sidebar-ring: #7D67A1;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@theme inline {
+    --font-sans: 'JetBrains Mono Variable', monospace;
+    --font-brand: 'Orbitron', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-3xl: calc(var(--radius) + 12px);
+    --radius-4xl: calc(var(--radius) + 16px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply font-sans bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+  button,
+  [role="button"],
+  [type="button"],
+  [type="submit"],
+  [type="reset"],
+  a[href],
+  label[for],
+  select,
+  summary,
+  [tabindex]:not([tabindex="-1"]) {
+    cursor: pointer;
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
 }
+
+@keyframes shrink-width {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.animate-shrink-width {
+  animation: shrink-width 4s linear forwards;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+

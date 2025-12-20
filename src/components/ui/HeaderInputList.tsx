@@ -1,6 +1,6 @@
-import { Fragment } from 'react';
 import { Button } from './Button';
-import { IconX } from './icons';
+import { Input } from './primitives/input';
+import { IconPlus, IconX } from './icons';
 import type { HeaderEntry } from '@/utils/headers';
 
 interface HeaderInputListProps {
@@ -37,41 +37,45 @@ export function HeaderInputList({
   };
 
   return (
-    <div className="header-input-list">
+    <div className="flex flex-col gap-2">
       {currentEntries.map((entry, index) => (
-        <Fragment key={index}>
-          <div className="header-input-row">
-            <input
-              className="input"
-              placeholder={keyPlaceholder}
-              value={entry.key}
-              onChange={(e) => updateEntry(index, 'key', e.target.value)}
-              disabled={disabled}
-            />
-            <span className="header-separator">:</span>
-            <input
-              className="input"
-              placeholder={valuePlaceholder}
-              value={entry.value}
-              onChange={(e) => updateEntry(index, 'value', e.target.value)}
-              disabled={disabled}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => removeEntry(index)}
-              disabled={disabled || currentEntries.length <= 1}
-              title="Remove"
-              aria-label="Remove"
-            >
-              <IconX size={14} />
-            </Button>
-          </div>
-        </Fragment>
+        <div key={index} className="flex items-center gap-1.5">
+          <Input
+            placeholder={keyPlaceholder}
+            value={entry.key}
+            onChange={(e) => updateEntry(index, 'key', e.target.value)}
+            disabled={disabled}
+            className="flex-1"
+          />
+          <Input
+            placeholder={valuePlaceholder}
+            value={entry.value}
+            onChange={(e) => updateEntry(index, 'value', e.target.value)}
+            disabled={disabled}
+            className="flex-1"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => removeEntry(index)}
+            disabled={disabled || currentEntries.length <= 1}
+            title="Remove"
+            aria-label="Remove"
+            className="shrink-0 size-8 p-0"
+          >
+            <IconX size={14} />
+          </Button>
+        </div>
       ))}
-      <Button variant="secondary" size="sm" onClick={addEntry} disabled={disabled} className="align-start">
-        {addLabel}
-      </Button>
+      <button 
+        type="button"
+        onClick={addEntry} 
+        disabled={disabled} 
+        className="self-start flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:pointer-events-none"
+      >
+        <IconPlus size={12} />
+        <span className="underline underline-offset-2">{addLabel}</span>
+      </button>
     </div>
   );
 }

@@ -1,7 +1,8 @@
-import { ReactNode, SVGProps, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { ReactNode, SVGProps, useCallback, useEffect, useState } from 'react';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 import {
   IconBot,
   IconChartLine,
@@ -10,26 +11,24 @@ import {
   IconKey,
   IconScrollText,
   IconSettings,
-  IconShield,
-  IconSlidersHorizontal
+  IconShield
 } from '@/components/ui/icons';
-import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
-import { useAuthStore, useConfigStore, useLanguageStore, useNotificationStore, useThemeStore } from '@/stores';
-import { versionApi } from '@/services/api';
+import { INLINE_LOGO_PNG } from '@/assets/logoInline';
+import { useAuthStore, useConfigStore, useLanguageStore, useThemeStore, useNotificationStore } from '@/stores';
+
+import { useSound } from '@/hooks/useSound';
 
 const sidebarIcons: Record<string, ReactNode> = {
-  settings: <IconSlidersHorizontal size={18} />,
-  apiKeys: <IconKey size={18} />,
-  aiProviders: <IconBot size={18} />,
-  authFiles: <IconFileText size={18} />,
-  oauth: <IconShield size={18} />,
-  usage: <IconChartLine size={18} />,
-  config: <IconSettings size={18} />,
-  logs: <IconScrollText size={18} />,
-  system: <IconInfo size={18} />
+  apiKeys: <IconKey size={22} />,
+  aiProviders: <IconBot size={22} />,
+  authFiles: <IconFileText size={22} />,
+  oauth: <IconShield size={22} />,
+  usage: <IconChartLine size={22} />,
+  config: <IconSettings size={22} />,
+  logs: <IconScrollText size={22} />,
+  system: <IconInfo size={22} />
 };
 
-// Header action icons - smaller size for header buttons
 const headerIconProps: SVGProps<SVGSVGElement> = {
   width: 16,
   height: 16,
@@ -38,9 +37,7 @@ const headerIconProps: SVGProps<SVGSVGElement> = {
   stroke: 'currentColor',
   strokeWidth: 2,
   strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-  'aria-hidden': 'true',
-  focusable: 'false'
+  strokeLinejoin: 'round'
 };
 
 const headerIcons = {
@@ -93,289 +90,389 @@ const headerIcons = {
       <path d="m19.07 4.93-1.41 1.41" />
     </svg>
   ),
-	  moon: (
-	    <svg {...headerIconProps}>
-	      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
-	    </svg>
-	  ),
-	  logout: (
-	    <svg {...headerIconProps}>
-	      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-	      <path d="m16 17 5-5-5-5" />
-	      <path d="M21 12H9" />
-	    </svg>
-	  )
-	};
-
-const parseVersionSegments = (version?: string | null) => {
-  if (!version) return null;
-  const cleaned = version.trim().replace(/^v/i, '');
-  if (!cleaned) return null;
-  const parts = cleaned
-    .split(/[^0-9]+/)
-    .filter(Boolean)
-    .map((segment) => Number.parseInt(segment, 10))
-    .filter(Number.isFinite);
-  return parts.length ? parts : null;
-};
-
-const compareVersions = (latest?: string | null, current?: string | null) => {
-  const latestParts = parseVersionSegments(latest);
-  const currentParts = parseVersionSegments(current);
-  if (!latestParts || !currentParts) return null;
-  const length = Math.max(latestParts.length, currentParts.length);
-  for (let i = 0; i < length; i++) {
-    const l = latestParts[i] || 0;
-    const c = currentParts[i] || 0;
-    if (l > c) return 1;
-    if (l < c) return -1;
-  }
-  return 0;
+  moon: (
+    <svg {...headerIconProps}>
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
+    </svg>
+  ),
+  logout: (
+    <svg {...headerIconProps}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="m16 17 5-5-5-5" />
+      <path d="M21 12H9" />
+    </svg>
+  )
 };
 
 export function MainLayout() {
-  const { t, i18n } = useTranslation();
-  const { showNotification } = useNotificationStore();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const apiBase = useAuthStore((state) => state.apiBase);
   const serverVersion = useAuthStore((state) => state.serverVersion);
-  const serverBuildDate = useAuthStore((state) => state.serverBuildDate);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const logout = useAuthStore((state) => state.logout);
 
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
-  const clearCache = useConfigStore((state) => state.clearCache);
 
   const theme = useThemeStore((state) => state.theme);
   const toggleTheme = useThemeStore((state) => state.toggleTheme);
   const toggleLanguage = useLanguageStore((state) => state.toggleLanguage);
+  
+  const showNotification = useNotificationStore((state) => state.showNotification);
+  
+  const sound = useSound();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [checkingVersion, setCheckingVersion] = useState(false);
-  const [brandExpanded, setBrandExpanded] = useState(true);
-  const brandCollapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const headerRef = useRef<HTMLElement | null>(null);
-
-  const fullBrandName = 'CLI Proxy API Management Center';
-  const abbrBrandName = t('title.abbr');
-
-  // 将顶栏高度写入 CSS 变量，确保侧栏/内容区计算一致，防止滚动时抖动
-  useLayoutEffect(() => {
-    const updateHeaderHeight = () => {
-      const height = headerRef.current?.offsetHeight;
-      if (height) {
-        document.documentElement.style.setProperty('--header-height', `${height}px`);
-      }
-    };
-
-    updateHeaderHeight();
-
-    const resizeObserver =
-      typeof ResizeObserver !== 'undefined' && headerRef.current ? new ResizeObserver(updateHeaderHeight) : null;
-    if (resizeObserver && headerRef.current) {
-      resizeObserver.observe(headerRef.current);
+  const [titleExpanded, setTitleExpanded] = useState(false);
+  const [displayedTitle, setDisplayedTitle] = useState('CPAMC');
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [navStyle, setNavStyle] = useState<'sidebar' | 'top'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('cli-proxy-nav-style') as 'sidebar' | 'top') || 'sidebar';
     }
-
-    window.addEventListener('resize', updateHeaderHeight);
-
-    return () => {
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-      window.removeEventListener('resize', updateHeaderHeight);
-    };
-  }, []);
-
-  // 5秒后自动收起品牌名称
-  useEffect(() => {
-    brandCollapseTimer.current = setTimeout(() => {
-      setBrandExpanded(false);
-    }, 5000);
-
-    return () => {
-      if (brandCollapseTimer.current) {
-        clearTimeout(brandCollapseTimer.current);
-      }
-    };
-  }, []);
-
-  const handleBrandClick = useCallback(() => {
-    if (!brandExpanded) {
-      setBrandExpanded(true);
-      // 点击展开后，5秒后再次收起
-      if (brandCollapseTimer.current) {
-        clearTimeout(brandCollapseTimer.current);
-      }
-      brandCollapseTimer.current = setTimeout(() => {
-        setBrandExpanded(false);
-      }, 5000);
-    }
-  }, [brandExpanded]);
+    return 'sidebar';
+  });
 
   useEffect(() => {
-    fetchConfig().catch(() => {
-      // ignore initial failure; login flow会提示
-    });
-  }, [fetchConfig]);
+    localStorage.setItem('cli-proxy-nav-style', navStyle);
+  }, [navStyle]);
 
-  const statusClass =
-    connectionStatus === 'connected'
-      ? 'success'
-      : connectionStatus === 'connecting'
-        ? 'warning'
-        : connectionStatus === 'error'
-          ? 'error'
-          : 'muted';
+  // Title typewriter animation
+  const fullTitle = t('title.main');
+  const abbrTitle = t('title.abbr');
+  
+  useEffect(() => {
+    if (!hasInteracted) return;
+    
+    const targetTitle = titleExpanded ? fullTitle : abbrTitle;
+    
+    let cancelled = false;
+    const animate = async () => {
+      setIsAnimating(true);
+      
+      if (titleExpanded) {
+        // Expanding: type out full title
+        for (let i = abbrTitle.length; i <= targetTitle.length; i++) {
+          if (cancelled) break;
+          setDisplayedTitle(targetTitle.slice(0, i));
+          await new Promise(r => setTimeout(r, 25));
+        }
+      } else {
+        // Collapsing: delete back to abbr
+        for (let i = fullTitle.length; i >= abbrTitle.length; i--) {
+          if (cancelled) break;
+          const text = i <= abbrTitle.length ? abbrTitle : fullTitle.slice(0, i);
+          setDisplayedTitle(text);
+          await new Promise(r => setTimeout(r, 15));
+        }
+      }
+      
+      if (!cancelled) {
+        setDisplayedTitle(targetTitle);
+        setIsAnimating(false);
+      }
+    };
+    
+    animate();
+    
+    return () => { cancelled = true; };
+  }, [titleExpanded, hasInteracted, fullTitle, abbrTitle]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchConfig().catch(() => {});
+    }
+  }, [fetchConfig, isAuthenticated]);
 
   const navItems = [
-    { path: '/settings', label: t('nav.basic_settings'), icon: sidebarIcons.settings },
     { path: '/api-keys', label: t('nav.api_keys'), icon: sidebarIcons.apiKeys },
     { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
     { path: '/usage', label: t('nav.usage_stats'), icon: sidebarIcons.usage },
-    { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
-    ...(config?.loggingToFile ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }] : []),
-    { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system }
+    ...(config?.loggingToFile ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }] : [])
   ];
+  
+  const configNavItem = { path: '/config', label: t('nav.settings'), icon: sidebarIcons.config };
+  const topNavItems = [...navItems, configNavItem];
 
-  const handleRefreshAll = async () => {
-    clearCache();
-    try {
-      await fetchConfig(undefined, true);
-      showNotification(t('notification.data_refreshed'), 'success');
-    } catch (error: any) {
-      showNotification(`${t('notification.refresh_failed')}: ${error?.message || ''}`, 'error');
+  // Tab key navigation
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!isAuthenticated) return;
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      sound.click();
+      const currentIndex = topNavItems.findIndex(item => item.path === location.pathname);
+      const nextIndex = e.shiftKey
+        ? (currentIndex - 1 + topNavItems.length) % topNavItems.length
+        : (currentIndex + 1) % topNavItems.length;
+      navigate(topNavItems[nextIndex].path);
     }
-  };
+  }, [isAuthenticated, location.pathname, topNavItems, navigate, sound]);
 
-  const handleVersionCheck = async () => {
-    setCheckingVersion(true);
-    try {
-      const data = await versionApi.checkLatest();
-      const latest = data?.['latest-version'] ?? data?.latest_version ?? data?.latest ?? '';
-      const comparison = compareVersions(latest, serverVersion);
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
-      if (!latest) {
-        showNotification(t('system_info.version_check_error'), 'error');
-        return;
-      }
+  const headerActions = (
+    <div className="flex items-center gap-3 text-xs">
+      <div className="flex h-7 items-center border border-border bg-card divide-x divide-border">
+      <button
+        type="button"
+        onClick={() => { sound.toggleSound(); toggleLanguage(); }}
+        className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        title={t('language.switch')}
+      >
+        {headerIcons.language}
+      </button>
+      <button
+        type="button"
+        onClick={() => { sound.toggleSound(); toggleTheme(); }}
+        className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        title={theme === 'light' ? t('theme.switch_to_dark') : t('theme.switch_to_light')}
+      >
+        {theme === 'light' ? headerIcons.sun : headerIcons.moon}
+      </button>
+      <button
+        type="button"
+        onClick={() => { if (sound.muted) { sound.toggle(); sound.toggleSound(); } else { sound.toggleSound(); sound.toggle(); } }}
+        className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        title={sound.muted ? t('sound.unmute') : t('sound.mute')}
+      >
+        {sound.muted ? (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+            <line x1="23" y1="9" x2="17" y2="15" />
+            <line x1="17" y1="9" x2="23" y2="15" />
+          </svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+          </svg>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={() => { sound.click(); logout(); }}
+        className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        title={t('header.logout')}
+      >
+        {headerIcons.logout}
+      </button>
+      </div>
+    </div>
+  );
 
-      if (comparison === null) {
-        showNotification(t('system_info.version_current_missing'), 'warning');
-        return;
-      }
+  const footerContent = (
+    <footer className="bg-primary dark:bg-primary/80 text-primary-foreground px-3 py-1 flex justify-between items-center text-[10px] shrink-0">
+      <span className="inline-flex items-center gap-3">
+        <span className="inline-flex items-center gap-1.5" title={apiBase || ''}>
+          <svg width="6" height="6" viewBox="0 0 6 6" className="shrink-0">
+            <circle cx="3" cy="3" r="3" className={cn(connectionStatus === 'connected' ? "fill-emerald-400" : "fill-amber-400 animate-pulse")} />
+          </svg>
+          <span>{connectionStatus === 'connected' ? 'Connected' : 'Connecting'}</span>
+        </span>
+        <button
+          onClick={() => setNavStyle(navStyle === 'sidebar' ? 'top' : 'sidebar')}
+          className="hover:opacity-80 cursor-pointer"
+        >
+          Nav: {navStyle === 'sidebar' ? 'Side' : 'Top'}
+        </button>
+      </span>
+      <span className="inline-flex items-center gap-3">
+        <span>UI: {__APP_VERSION__ || '?'}</span>
+        <span>API: {serverVersion || '?'}</span>
+        <NavLink to="/system" className="hover:opacity-80 cursor-pointer" title={t('nav.system_info')}>
+          <IconInfo size={14} />
+        </NavLink>
+      </span>
+    </footer>
+  );
 
-      if (comparison > 0) {
-        showNotification(t('system_info.version_update_available', { version: latest }), 'warning');
-      } else {
-        showNotification(t('system_info.version_is_latest'), 'success');
-      }
-    } catch (error: any) {
-      showNotification(`${t('system_info.version_check_error')}: ${error?.message || ''}`, 'error');
-    } finally {
-      setCheckingVersion(false);
-    }
-  };
-
-  return (
-    <div className="app-shell">
-      <header className="main-header" ref={headerRef}>
-        <div className="left">
-          <button
-            className="sidebar-toggle-header"
-            onClick={() => setSidebarCollapsed((prev) => !prev)}
-            title={sidebarCollapsed ? t('sidebar.expand', { defaultValue: '展开' }) : t('sidebar.collapse', { defaultValue: '收起' })}
-          >
-            {sidebarCollapsed ? headerIcons.chevronRight : headerIcons.chevronLeft}
-          </button>
-          <img src={INLINE_LOGO_JPEG} alt="CPAMC logo" className="brand-logo" />
-          <div
-            className={`brand-header ${brandExpanded ? 'expanded' : 'collapsed'}`}
-            onClick={handleBrandClick}
-            title={brandExpanded ? undefined : fullBrandName}
-          >
-            <span className="brand-full">{fullBrandName}</span>
-            <span className="brand-abbr">{abbrBrandName}</span>
-          </div>
-        </div>
-
-        <div className="right">
-          <div className="connection">
-            <span className={`status-badge ${statusClass}`}>
-              {t(
-                connectionStatus === 'connected'
-                  ? 'common.connected_status'
-                  : connectionStatus === 'connecting'
-                    ? 'common.connecting_status'
-                    : 'common.disconnected_status'
-              )}
-            </span>
-            <span className="base">{apiBase || '-'}</span>
-          </div>
-
-          <div className="header-actions">
-            <Button className="mobile-menu-btn" variant="ghost" size="sm" onClick={() => setSidebarOpen((prev) => !prev)}>
-              {headerIcons.menu}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleRefreshAll} title={t('header.refresh_all')}>
-              {headerIcons.refresh}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleVersionCheck} loading={checkingVersion} title={t('system_info.version_check_button')}>
-              {headerIcons.update}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={toggleLanguage} title={t('language.switch')}>
-              {headerIcons.language}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={toggleTheme} title={t('theme.switch')}>
-              {theme === 'dark' ? headerIcons.sun : headerIcons.moon}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={logout} title={t('header.logout')}>
-              {headerIcons.logout}
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="main-body">
-        <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
-          <div className="nav-section">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => setSidebarOpen(false)}
-                title={sidebarCollapsed ? item.label : undefined}
+  // Top navigation layout
+  if (navStyle === 'top') {
+    return (
+      <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
+        <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col p-4 md:p-8 pb-0 min-h-0">
+          <header className="border-b border-border pb-4 shrink-0">
+            <div className="flex items-center justify-between">
+              <h1 
+                className={cn(
+                  "text-xl font-bold tracking-tight text-primary flex items-center gap-2 select-none",
+                  isAnimating ? "cursor-default" : "cursor-pointer"
+                )}
+                onClick={() => { if (!isAnimating) { sound.click(); setHasInteracted(true); setTitleExpanded(!titleExpanded); } }}
+                title={titleExpanded ? t('title.abbr') : t('title.main')}
               >
-                <span className="nav-icon">{item.icon}</span>
-                {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
-              </NavLink>
-            ))}
-          </div>
-        </aside>
+                <img src={INLINE_LOGO_PNG} alt="Logo" className="h-6 w-6 dark:opacity-50 dark:brightness-150" />
+                <span 
+                  className="text-2xl tracking-tight mt-0.5 whitespace-nowrap"
+                  style={{ fontFamily: "'Kranky', cursive" }}
+                >
+                  {displayedTitle}
+                </span>
+              </h1>
+              {headerActions}
+            </div>
+          </header>
 
-        <div className="content">
-          <main className="main-content">
+          <div className="flex items-center justify-between mt-8">
+            <nav className="flex items-center gap-0.5 text-sm border border-border bg-card p-1 shrink-0 overflow-x-auto">
+              {[...navItems, configNavItem].map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={isAuthenticated ? item.path : '#'}
+                  onClick={(e) => {
+                    if (!isAuthenticated) {
+                      e.preventDefault();
+                      showNotification(t('notification.connection_required'), 'warning');
+                    }
+                  }}
+                  className={({ isActive }) => cn(
+                    "relative px-3 py-1.5 transition-all duration-150 outline-none flex items-center gap-2 text-xs tracking-wide cursor-pointer whitespace-nowrap",
+                    isActive && isAuthenticated
+                      ? "text-primary-foreground bg-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                >
+                  <span className="shrink-0 [&>svg]:w-3.5 [&>svg]:h-3.5">{item.icon}</span>
+                  <span className="leading-none hidden sm:inline">{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+            <div className="hidden md:flex items-center gap-2 text-muted-foreground/50">
+              <span className="tracking-wider text-[10px]">NAVIGATE</span>
+              <kbd className="text-[10px] min-w-5 h-5 flex items-center justify-center px-1.5 bg-muted border border-border font-medium">Tab</kbd>
+            </div>
+          </div>
+          <main className="border border-border bg-card p-6 flex-1 relative overflow-auto mt-8">
             <Outlet />
           </main>
+        </div>
+        {footerContent}
+      </div>
+    );
+  }
 
-          <footer className="footer">
-            <span>
-              {t('footer.api_version')}: {serverVersion || t('system_info.version_unknown')}
-            </span>
-            <span>
-              {t('footer.version')}: {__APP_VERSION__ || t('system_info.version_unknown')}
-            </span>
-            <span>
-              {t('footer.build_date')}:{' '}
-              {serverBuildDate ? new Date(serverBuildDate).toLocaleString(i18n.language) : t('system_info.version_unknown')}
-            </span>
-          </footer>
+  // Sidebar navigation layout (default) - VSCode style icons only
+  return (
+    <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
+
+        <nav className={cn(
+          "w-12 shrink-0 border-r border-border bg-card flex flex-col items-center pt-2 pb-2",
+          "fixed md:relative inset-y-0 left-0 z-50 md:z-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}>
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={isAuthenticated ? item.path : '#'}
+              onClick={(e) => { 
+                if (!isAuthenticated) {
+                  e.preventDefault();
+                  showNotification(t('notification.connection_required'), 'warning');
+                  return;
+                }
+                sound.click(); 
+                setSidebarOpen(false); 
+              }}
+              title={item.label}
+              className={({ isActive }) => cn(
+                "relative w-12 h-12 flex items-center justify-center transition-colors cursor-pointer outline-none",
+                isActive && isAuthenticated
+                  ? "text-primary"
+                  : "text-primary/40 hover:text-primary/70 dark:text-[#858585] dark:hover:text-primary/70"
+              )}
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && isAuthenticated && (
+                    <span className="absolute inset-1.5 bg-[#DDDDE2] dark:bg-primary/20" style={{ borderRadius: '6px' }} />
+                  )}
+                  <span className="relative z-10 [&>svg]:w-6 [&>svg]:h-6">{item.icon}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+          <div className="flex-1" />
+          <NavLink
+            to={isAuthenticated ? configNavItem.path : '#'}
+            onClick={(e) => { 
+              if (!isAuthenticated) {
+                e.preventDefault();
+                showNotification(t('notification.connection_required'), 'warning');
+                return;
+              }
+              sound.click(); 
+              setSidebarOpen(false); 
+            }}
+            title={configNavItem.label}
+            className={({ isActive }) => cn(
+              "relative w-12 h-12 flex items-center justify-center transition-colors cursor-pointer outline-none",
+              isActive && isAuthenticated
+                ? "text-primary"
+                : "text-primary/40 hover:text-primary/70 dark:text-[#858585] dark:hover:text-primary/70"
+            )}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && isAuthenticated && (
+                  <span className="absolute inset-1.5 bg-[#DDDDE2] dark:bg-primary/20" style={{ borderRadius: '6px' }} />
+                )}
+                <span className="relative z-10 [&>svg]:w-6 [&>svg]:h-6">{configNavItem.icon}</span>
+              </>
+            )}
+          </NavLink>
+        </nav>
+
+        <div className="flex-1 flex flex-col min-h-0">
+          <header className="border-b border-border px-4 md:px-6 py-3 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" onClick={() => setSidebarOpen((prev) => !prev)} className="md:hidden">
+                  {headerIcons.menu}
+                </Button>
+                <h1 
+                  className={cn(
+                    "text-xl font-bold tracking-tight text-primary flex items-center gap-2 select-none",
+                    isAnimating ? "cursor-default" : "cursor-pointer"
+                  )}
+                  onClick={() => { if (!isAnimating) { sound.click(); setHasInteracted(true); setTitleExpanded(!titleExpanded); } }}
+                  title={titleExpanded ? t('title.abbr') : t('title.main')}
+                >
+                  <img src={INLINE_LOGO_PNG} alt="Logo" className="h-6 w-6 dark:opacity-50 dark:brightness-150" />
+                  <span 
+                    className="text-2xl tracking-tight mt-0.5 whitespace-nowrap"
+                    style={{ fontFamily: "'Kranky', cursive" }}
+                  >
+                    {displayedTitle}
+                  </span>
+                </h1>
+              </div>
+              {headerActions}
+            </div>
+          </header>
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+            <h2 className="text-sm font-bold text-primary mb-4">
+              {[...navItems, configNavItem].find(item => item.path === location.pathname)?.label || ''}
+            </h2>
+            <Outlet />
+          </main>
         </div>
       </div>
+      {footerContent}
     </div>
   );
 }

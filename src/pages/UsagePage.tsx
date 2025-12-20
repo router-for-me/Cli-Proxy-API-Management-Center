@@ -17,7 +17,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { IconDiamond, IconDollarSign, IconSatellite, IconTimer, IconTrendingUp } from '@/components/ui/icons';
+import { IconDiamond, IconDollarSign, IconRefreshCw, IconSatellite, IconTimer, IconTrendingUp } from '@/components/ui/icons';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useThemeStore } from '@/stores';
 import { usageApi } from '@/services/api/usage';
@@ -38,7 +38,6 @@ import {
   extractTotalTokens,
   type ModelPrice
 } from '@/utils/usage';
-import styles from './UsagePage.module.scss';
 
 // Register Chart.js components
 ChartJS.register(
@@ -429,12 +428,12 @@ export function UsagePage() {
       value: loading ? '-' : (usage?.total_requests ?? 0).toLocaleString(),
       meta: (
         <>
-          <span className={styles.statMetaItem}>
-            <span className={styles.statMetaDot} style={{ backgroundColor: '#10b981' }} />
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }} />
             {t('usage_stats.success_requests')}: {loading ? '-' : (usage?.success_count ?? 0)}
           </span>
-          <span className={styles.statMetaItem}>
-            <span className={styles.statMetaDot} style={{ backgroundColor: '#ef4444' }} />
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#ef4444' }} />
             {t('usage_stats.failed_requests')}: {loading ? '-' : (usage?.failure_count ?? 0)}
           </span>
         </>
@@ -451,10 +450,10 @@ export function UsagePage() {
       value: loading ? '-' : formatTokensInMillions(usage?.total_tokens ?? 0),
       meta: (
         <>
-          <span className={styles.statMetaItem}>
+          <span className="block">
             {t('usage_stats.cached_tokens')}: {loading ? '-' : formatTokensInMillions(tokenBreakdown.cachedTokens)}
           </span>
-          <span className={styles.statMetaItem}>
+          <span className="block">
             {t('usage_stats.reasoning_tokens')}: {loading ? '-' : formatTokensInMillions(tokenBreakdown.reasoningTokens)}
           </span>
         </>
@@ -470,7 +469,7 @@ export function UsagePage() {
       accentBorder: 'rgba(34, 197, 94, 0.32)',
       value: loading ? '-' : formatPerMinuteValue(rateStats.rpm),
       meta: (
-        <span className={styles.statMetaItem}>
+        <span className="block">
           {t('usage_stats.total_requests')}: {loading ? '-' : rateStats.requestCount.toLocaleString()}
         </span>
       ),
@@ -485,7 +484,7 @@ export function UsagePage() {
       accentBorder: 'rgba(249, 115, 22, 0.32)',
       value: loading ? '-' : formatPerMinuteValue(rateStats.tpm),
       meta: (
-        <span className={styles.statMetaItem}>
+        <span className="block">
           {t('usage_stats.total_tokens')}: {loading ? '-' : formatTokensInMillions(rateStats.tokenCount)}
         </span>
       ),
@@ -501,11 +500,11 @@ export function UsagePage() {
       value: loading ? '-' : hasPrices ? formatUsd(totalCost) : '--',
       meta: (
         <>
-          <span className={styles.statMetaItem}>
+          <span className="block">
             {t('usage_stats.total_tokens')}: {loading ? '-' : formatTokensInMillions(usage?.total_tokens ?? 0)}
           </span>
           {!hasPrices && (
-            <span className={`${styles.statMetaItem} ${styles.statSubtle}`}>
+            <span className="block text-amber-500">
               {t('usage_stats.cost_need_price')}
             </span>
           )}
@@ -516,35 +515,35 @@ export function UsagePage() {
   ];
 
   return (
-    <div className={styles.container}>
+    <div className="space-y-4">
       {loading && !usage && (
-        <div className={styles.loadingOverlay} aria-busy="true">
-          <div className={styles.loadingOverlayContent}>
-            <LoadingSpinner size={28} className={styles.loadingOverlaySpinner} />
-            <span className={styles.loadingOverlayText}>{t('common.loading')}</span>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center" aria-busy="true">
+          <div className="flex flex-col items-center gap-3">
+            <LoadingSpinner size={28} />
+            <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
           </div>
         </div>
       )}
-      <div className={styles.header}>
-        <h1 className={styles.pageTitle}>{t('usage_stats.title')}</h1>
+      <div className="flex items-center justify-end">
         <Button
           variant="secondary"
           size="sm"
           onClick={loadUsage}
           disabled={loading}
+          title={t('usage_stats.refresh')}
         >
-          {loading ? t('common.loading') : t('usage_stats.refresh')}
+          <IconRefreshCw size={16} />
         </Button>
       </div>
 
-      {error && <div className={styles.errorBox}>{error}</div>}
+      {error && <div className="text-destructive text-sm bg-destructive/10 px-3 py-2 rounded">{error}</div>}
 
       {/* Stats Overview Cards */}
-      <div className={styles.statsGrid}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
         {statsCards.map(card => (
           <div
             key={card.key}
-            className={styles.statCard}
+            className="bg-card border border-border p-4 rounded-lg relative overflow-hidden"
             style={
               {
                 '--accent': card.accent,
@@ -553,21 +552,21 @@ export function UsagePage() {
               } as CSSProperties
             }
           >
-            <div className={styles.statCardHeader}>
-              <div className={styles.statLabelGroup}>
-                <span className={styles.statLabel}>{card.label}</span>
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <span className="text-xs text-muted-foreground">{card.label}</span>
               </div>
-              <span className={styles.statIconBadge}>
+              <span className="text-muted-foreground" style={{ color: 'var(--accent)' }}>
                 {card.icon}
               </span>
             </div>
-            <div className={styles.statValue}>{card.value}</div>
-            {card.meta && <div className={styles.statMetaRow}>{card.meta}</div>}
-            <div className={styles.statTrend}>
+            <div className="text-2xl font-bold mb-2" style={{ color: 'var(--accent)' }}>{card.value}</div>
+            {card.meta && <div className="text-xs text-muted-foreground space-y-1">{card.meta}</div>}
+            <div className="h-10 mt-3">
               {card.trend ? (
-                <Line className={styles.sparkline} data={card.trend.data} options={sparklineOptions} />
+                <Line className="w-full h-full" data={card.trend.data} options={sparklineOptions} />
               ) : (
-                <div className={styles.statTrendPlaceholder}></div>
+                <div className="w-full h-full bg-muted/30 rounded"></div>
               )}
             </div>
           </div>
@@ -578,8 +577,8 @@ export function UsagePage() {
       <Card
         title={t('usage_stats.chart_line_actions_label')}
         extra={
-          <div className={styles.chartLineHeader}>
-            <span className={styles.chartLineCount}>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
               {chartLines.length}/{MAX_CHART_LINES}
             </span>
             <Button
@@ -593,16 +592,16 @@ export function UsagePage() {
           </div>
         }
       >
-        <div className={styles.chartLineList}>
+        <div className="space-y-2">
           {chartLines.map((line, index) => (
-            <div key={index} className={styles.chartLineItem}>
-              <span className={styles.chartLineLabel}>
+            <div key={index} className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground w-16">
                 {t(`usage_stats.chart_line_label_${index + 1}`)}
               </span>
               <select
                 value={line}
                 onChange={(e) => handleChartLineChange(index, e.target.value)}
-                className={styles.select}
+                className="flex-1 bg-input border border-border rounded px-2 py-1 text-sm"
               >
                 <option value="all">{t('usage_stats.chart_line_all')}</option>
                 {modelNames.map((name) => (
@@ -621,15 +620,15 @@ export function UsagePage() {
             </div>
           ))}
         </div>
-        <p className={styles.chartLineHint}>{t('usage_stats.chart_line_hint')}</p>
+        <p className="text-xs text-muted-foreground mt-3">{t('usage_stats.chart_line_hint')}</p>
       </Card>
 
-      <div className={styles.chartsGrid}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Requests Chart */}
         <Card
           title={t('usage_stats.requests_trend')}
           extra={
-            <div className={styles.periodButtons}>
+            <div className="flex gap-1">
               <Button
                 variant={requestsPeriod === 'hour' ? 'primary' : 'secondary'}
                 size="sm"
@@ -648,25 +647,25 @@ export function UsagePage() {
           }
         >
           {loading ? (
-            <div className={styles.hint}>{t('common.loading')}</div>
+            <div className="text-sm text-muted-foreground py-8 text-center">{t('common.loading')}</div>
           ) : requestsChartData.labels.length > 0 ? (
-            <div className={styles.chartWrapper}>
-              <div className={styles.chartLegend} aria-label="Chart legend">
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2" aria-label="Chart legend">
                 {requestsChartData.datasets.map((dataset, index) => (
                   <div
                     key={`${dataset.label}-${index}`}
-                    className={styles.legendItem}
+                    className="flex items-center gap-1.5 text-xs"
                     title={dataset.label}
                   >
-                    <span className={styles.legendDot} style={{ backgroundColor: dataset.borderColor }} />
-                    <span className={styles.legendLabel}>{dataset.label}</span>
+                    <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: dataset.borderColor }} />
+                    <span className="text-muted-foreground truncate max-w-[100px]">{dataset.label}</span>
                   </div>
                 ))}
               </div>
-              <div className={styles.chartArea}>
-                <div className={styles.chartScroller}>
+              <div className="overflow-x-auto">
+                <div className="min-h-[200px]">
                   <div
-                    className={styles.chartCanvas}
+                    className="h-[200px]"
                     style={
                       requestsPeriod === 'hour'
                         ? { minWidth: getHourChartMinWidth(requestsChartData.labels.length) }
@@ -679,7 +678,7 @@ export function UsagePage() {
               </div>
             </div>
           ) : (
-            <div className={styles.hint}>{t('usage_stats.no_data')}</div>
+            <div className="text-sm text-muted-foreground py-8 text-center">{t('usage_stats.no_data')}</div>
           )}
         </Card>
 
@@ -687,7 +686,7 @@ export function UsagePage() {
         <Card
           title={t('usage_stats.tokens_trend')}
           extra={
-            <div className={styles.periodButtons}>
+            <div className="flex gap-1">
               <Button
                 variant={tokensPeriod === 'hour' ? 'primary' : 'secondary'}
                 size="sm"
@@ -706,25 +705,25 @@ export function UsagePage() {
           }
         >
           {loading ? (
-            <div className={styles.hint}>{t('common.loading')}</div>
+            <div className="text-sm text-muted-foreground py-8 text-center">{t('common.loading')}</div>
           ) : tokensChartData.labels.length > 0 ? (
-            <div className={styles.chartWrapper}>
-              <div className={styles.chartLegend} aria-label="Chart legend">
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2" aria-label="Chart legend">
                 {tokensChartData.datasets.map((dataset, index) => (
                   <div
                     key={`${dataset.label}-${index}`}
-                    className={styles.legendItem}
+                    className="flex items-center gap-1.5 text-xs"
                     title={dataset.label}
                   >
-                    <span className={styles.legendDot} style={{ backgroundColor: dataset.borderColor }} />
-                    <span className={styles.legendLabel}>{dataset.label}</span>
+                    <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: dataset.borderColor }} />
+                    <span className="text-muted-foreground truncate max-w-[100px]">{dataset.label}</span>
                   </div>
                 ))}
               </div>
-              <div className={styles.chartArea}>
-                <div className={styles.chartScroller}>
+              <div className="overflow-x-auto">
+                <div className="min-h-[200px]">
                   <div
-                    className={styles.chartCanvas}
+                    className="h-[200px]"
                     style={
                       tokensPeriod === 'hour'
                         ? { minWidth: getHourChartMinWidth(tokensChartData.labels.length) }
@@ -737,51 +736,51 @@ export function UsagePage() {
               </div>
             </div>
           ) : (
-            <div className={styles.hint}>{t('usage_stats.no_data')}</div>
+            <div className="text-sm text-muted-foreground py-8 text-center">{t('usage_stats.no_data')}</div>
           )}
         </Card>
       </div>
 
-      <div className={styles.detailsGrid}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* API Key Statistics */}
         <Card title={t('usage_stats.api_details')}>
           {loading ? (
-            <div className={styles.hint}>{t('common.loading')}</div>
+            <div className="text-sm text-muted-foreground py-8 text-center">{t('common.loading')}</div>
           ) : apiStats.length > 0 ? (
-            <div className={styles.apiList}>
+            <div className="space-y-2">
               {apiStats.map((api) => (
-                <div key={api.endpoint} className={styles.apiItem}>
+                <div key={api.endpoint} className="border border-border rounded">
                   <div
-                    className={styles.apiHeader}
+                    className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => toggleApiExpand(api.endpoint)}
                   >
-                    <div className={styles.apiInfo}>
-                      <span className={styles.apiEndpoint}>{api.endpoint}</span>
-                      <div className={styles.apiStats}>
-                        <span className={styles.apiBadge}>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium truncate block">{api.endpoint}</span>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
+                        <span className="">
                           {t('usage_stats.requests_count')}: {api.totalRequests}
                         </span>
-                        <span className={styles.apiBadge}>
+                        <span className="">
                           Tokens: {formatTokensInMillions(api.totalTokens)}
                         </span>
                         {hasPrices && api.totalCost > 0 && (
-                          <span className={styles.apiBadge}>
+                          <span className="text-amber-500">
                             {t('usage_stats.total_cost')}: {formatUsd(api.totalCost)}
                           </span>
                         )}
                       </div>
                     </div>
-                    <span className={styles.expandIcon}>
+                    <span className="text-muted-foreground ml-2">
                       {expandedApis.has(api.endpoint) ? '▼' : '▶'}
                     </span>
                   </div>
                   {expandedApis.has(api.endpoint) && (
-                    <div className={styles.apiModels}>
+                    <div className="border-t border-border p-3 bg-muted/30 space-y-1">
                       {Object.entries(api.models).map(([model, stats]) => (
-                        <div key={model} className={styles.modelRow}>
-                          <span className={styles.modelName}>{model}</span>
-                          <span className={styles.modelStat}>{stats.requests} {t('usage_stats.requests_count')}</span>
-                          <span className={styles.modelStat}>{formatTokensInMillions(stats.tokens)}</span>
+                        <div key={model} className="flex items-center justify-between text-xs">
+                          <span className="text-foreground truncate flex-1">{model}</span>
+                          <span className="text-muted-foreground ml-2">{stats.requests} {t('usage_stats.requests_count')}</span>
+                          <span className="text-muted-foreground ml-2">{formatTokensInMillions(stats.tokens)}</span>
                         </div>
                       ))}
                     </div>
@@ -790,51 +789,51 @@ export function UsagePage() {
               ))}
             </div>
           ) : (
-            <div className={styles.hint}>{t('usage_stats.no_data')}</div>
+            <div className="text-sm text-muted-foreground py-8 text-center">{t('usage_stats.no_data')}</div>
           )}
         </Card>
 
         {/* Model Statistics */}
         <Card title={t('usage_stats.models')}>
           {loading ? (
-            <div className={styles.hint}>{t('common.loading')}</div>
+            <div className="text-sm text-muted-foreground py-8 text-center">{t('common.loading')}</div>
           ) : modelStats.length > 0 ? (
-            <div className={styles.tableWrapper}>
-              <table className={styles.table}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr>
-                    <th>{t('usage_stats.model_name')}</th>
-                    <th>{t('usage_stats.requests_count')}</th>
-                    <th>{t('usage_stats.tokens_count')}</th>
-                    {hasPrices && <th>{t('usage_stats.total_cost')}</th>}
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="py-2 pr-4">{t('usage_stats.model_name')}</th>
+                    <th className="py-2 pr-4">{t('usage_stats.requests_count')}</th>
+                    <th className="py-2 pr-4">{t('usage_stats.tokens_count')}</th>
+                    {hasPrices && <th className="py-2">{t('usage_stats.total_cost')}</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {modelStats.map((stat) => (
-                    <tr key={stat.model}>
-                      <td className={styles.modelCell}>{stat.model}</td>
-                      <td>{stat.requests.toLocaleString()}</td>
-                      <td>{formatTokensInMillions(stat.tokens)}</td>
-                      {hasPrices && <td>{stat.cost > 0 ? formatUsd(stat.cost) : '--'}</td>}
+                    <tr key={stat.model} className="border-b border-border/50">
+                      <td className="py-2 pr-4 font-medium">{stat.model}</td>
+                      <td className="py-2 pr-4">{stat.requests.toLocaleString()}</td>
+                      <td className="py-2 pr-4">{formatTokensInMillions(stat.tokens)}</td>
+                      {hasPrices && <td className="py-2">{stat.cost > 0 ? formatUsd(stat.cost) : '--'}</td>}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <div className={styles.hint}>{t('usage_stats.no_data')}</div>
+            <div className="text-sm text-muted-foreground py-8 text-center">{t('usage_stats.no_data')}</div>
           )}
         </Card>
       </div>
 
       {/* Model Pricing Configuration */}
       <Card title={t('usage_stats.model_price_settings')}>
-        <div className={styles.pricingSection}>
+        <div className="space-y-6">
           {/* Price Form */}
-          <div className={styles.priceForm}>
-            <div className={styles.formRow}>
-              <div className={styles.formField}>
-                <label>{t('usage_stats.model_name')}</label>
+          <div className="bg-muted/30 p-4 rounded">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">{t('usage_stats.model_name')}</label>
                 <select
                   value={selectedModel}
                   onChange={(e) => {
@@ -850,7 +849,7 @@ export function UsagePage() {
                       setCachePrice('');
                     }
                   }}
-                  className={styles.select}
+                  className="w-full bg-input border border-border rounded px-2 py-1.5 text-sm"
                 >
                   <option value="">{t('usage_stats.model_price_select_placeholder')}</option>
                   {modelNames.map((name) => (
@@ -858,8 +857,8 @@ export function UsagePage() {
                   ))}
                 </select>
               </div>
-              <div className={styles.formField}>
-                <label>{t('usage_stats.model_price_prompt')} ($/1M)</label>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">{t('usage_stats.model_price_prompt')} ($/1M)</label>
                 <Input
                   type="number"
                   value={promptPrice}
@@ -868,8 +867,8 @@ export function UsagePage() {
                   step="0.0001"
                 />
               </div>
-              <div className={styles.formField}>
-                <label>{t('usage_stats.model_price_completion')} ($/1M)</label>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">{t('usage_stats.model_price_completion')} ($/1M)</label>
                 <Input
                   type="number"
                   value={completionPrice}
@@ -878,8 +877,8 @@ export function UsagePage() {
                   step="0.0001"
                 />
               </div>
-              <div className={styles.formField}>
-                <label>{t('usage_stats.model_price_cache')} ($/1M)</label>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">{t('usage_stats.model_price_cache')} ($/1M)</label>
                 <Input
                   type="number"
                   value={cachePrice}
@@ -899,21 +898,21 @@ export function UsagePage() {
           </div>
 
           {/* Saved Prices List */}
-          <div className={styles.pricesList}>
-            <h4 className={styles.pricesTitle}>{t('usage_stats.saved_prices')}</h4>
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">{t('usage_stats.saved_prices')}</h4>
             {Object.keys(modelPrices).length > 0 ? (
-              <div className={styles.pricesGrid}>
+              <div className="space-y-2">
                 {Object.entries(modelPrices).map(([model, price]) => (
-                  <div key={model} className={styles.priceItem}>
-                    <div className={styles.priceInfo}>
-                      <span className={styles.priceModel}>{model}</span>
-                      <div className={styles.priceMeta}>
+                  <div key={model} className="flex items-center justify-between p-3 border border-border rounded">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium block truncate">{model}</span>
+                      <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground mt-1">
                         <span>{t('usage_stats.model_price_prompt')}: ${price.prompt.toFixed(4)}/1M</span>
                         <span>{t('usage_stats.model_price_completion')}: ${price.completion.toFixed(4)}/1M</span>
                         <span>{t('usage_stats.model_price_cache')}: ${price.cache.toFixed(4)}/1M</span>
                       </div>
                     </div>
-                    <div className={styles.priceActions}>
+                    <div className="flex gap-1 ml-2">
                       <Button
                         variant="secondary"
                         size="sm"
@@ -933,7 +932,7 @@ export function UsagePage() {
                 ))}
               </div>
             ) : (
-              <div className={styles.hint}>{t('usage_stats.model_price_empty')}</div>
+              <div className="text-sm text-muted-foreground py-4 text-center">{t('usage_stats.model_price_empty')}</div>
             )}
           </div>
         </div>

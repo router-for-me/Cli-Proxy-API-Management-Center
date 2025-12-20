@@ -18,7 +18,6 @@ import { useNotificationStore, useAuthStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
-import styles from './LogsPage.module.scss';
 
 interface ErrorLogItem {
   name: string;
@@ -597,21 +596,20 @@ export function LogsPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
-      <div className={styles.content}>
+    <div className="space-y-4">
+      <div className="space-y-3">
         <Card
           title={t('logs.log_content')}
           extra={
-            <div className={styles.toolbar}>
+            <div className="">
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => loadLogs(false)}
                 disabled={disableControls || loading}
-                className={styles.actionButton}
+                className=""
               >
-                <span className={styles.buttonContent}>
+                <span className="">
                   <IconRefreshCw size={16} />
                   {t('logs.refresh_button')}
                 </span>
@@ -621,7 +619,7 @@ export function LogsPage() {
                 onChange={(value) => setAutoRefresh(value)}
                 disabled={disableControls}
                 label={
-                  <span className={styles.switchLabel}>
+                  <span className="">
                     <IconTimer size={16} />
                     {t('logs.auto_refresh')}
                   </span>
@@ -632,9 +630,9 @@ export function LogsPage() {
                 size="sm"
                 onClick={downloadLogs}
                 disabled={logState.buffer.length === 0}
-                className={styles.actionButton}
+                className=""
               >
-                <span className={styles.buttonContent}>
+                <span className="">
                   <IconDownload size={16} />
                   {t('logs.download_button')}
                 </span>
@@ -644,9 +642,9 @@ export function LogsPage() {
                 size="sm"
                 onClick={clearLogs}
                 disabled={disableControls}
-                className={styles.actionButton}
+                className=""
               >
-                <span className={styles.buttonContent}>
+                <span className="">
                   <IconTrash2 size={16} />
                   {t('logs.clear_button')}
                 </span>
@@ -656,18 +654,18 @@ export function LogsPage() {
         >
           {error && <div className="error-box">{error}</div>}
 
-          <div className={styles.filters}>
-            <div className={styles.searchWrapper}>
+          <div className="">
+            <div className="">
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('logs.search_placeholder')}
-                className={styles.searchInput}
+                className=""
                 rightElement={
                   searchQuery ? (
                     <button
                       type="button"
-                      className={styles.searchClear}
+                      className=""
                       onClick={() => setSearchQuery('')}
                       title="Clear"
                       aria-label="Clear"
@@ -675,7 +673,7 @@ export function LogsPage() {
                       <IconX size={16} />
                     </button>
                   ) : (
-                    <IconSearch size={16} className={styles.searchIcon} />
+                    <IconSearch size={16} className="" />
                   )
                 }
               />
@@ -685,19 +683,19 @@ export function LogsPage() {
               checked={hideManagementLogs}
               onChange={setHideManagementLogs}
               label={
-                <span className={styles.switchLabel}>
+                <span className="">
                   <IconEyeOff size={16} />
                   {t('logs.hide_management_logs', { prefix: MANAGEMENT_API_PREFIX })}
                 </span>
               }
             />
 
-            <div className={styles.filterStats}>
+            <div className="">
               <span>
                 {parsedVisibleLines.length} {t('logs.lines')}
               </span>
               {removedCount > 0 && (
-                <span className={styles.removedCount}>
+                <span className="">
                   {t('logs.removed')} {removedCount}
                 </span>
               )}
@@ -707,21 +705,21 @@ export function LogsPage() {
           {loading ? (
             <div className="hint">{t('logs.loading')}</div>
           ) : logState.buffer.length > 0 && parsedVisibleLines.length > 0 ? (
-            <div ref={logViewerRef} className={styles.logPanel} onScroll={handleLogScroll}>
+            <div ref={logViewerRef} className="" onScroll={handleLogScroll}>
               {canLoadMore && (
-                <div className={styles.loadMoreBanner}>
+                <div className="">
                   <span>{t('logs.load_more_hint')}</span>
-                  <span className={styles.loadMoreCount}>
+                  <span className="">
                     {t('logs.hidden_lines', { count: logState.visibleFrom })}
                   </span>
                 </div>
               )}
-              <div className={styles.logList}>
+              <div className="">
                 {parsedVisibleLines.map((line, index) => {
-                  const rowClassNames = [styles.logRow];
-                  if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
+                  const rowClassNames = [""];
+                  if (line.level === 'warn') rowClassNames.push("");
                   if (line.level === 'error' || line.level === 'fatal')
-                    rowClassNames.push(styles.rowError);
+                    rowClassNames.push("");
                   return (
                     <div
                       key={`${logState.visibleFrom + index}-${line.raw}`}
@@ -733,20 +731,20 @@ export function LogsPage() {
                         defaultValue: 'Double-click to copy',
                       })}
                     >
-                      <div className={styles.timestamp}>{line.timestamp || ''}</div>
-                      <div className={styles.rowMain}>
-                        <div className={styles.rowMeta}>
+                      <div className="">{line.timestamp || ''}</div>
+                      <div className="">
+                        <div className="">
                           {line.level && (
                             <span
                               className={[
-                                styles.badge,
-                                line.level === 'info' ? styles.levelInfo : '',
-                                line.level === 'warn' ? styles.levelWarn : '',
+                                "",
+                                line.level === 'info' ? "" : '',
+                                line.level === 'warn' ? "" : '',
                                 line.level === 'error' || line.level === 'fatal'
-                                  ? styles.levelError
+                                  ? ""
                                   : '',
-                                line.level === 'debug' ? styles.levelDebug : '',
-                                line.level === 'trace' ? styles.levelTrace : '',
+                                line.level === 'debug' ? "" : '',
+                                line.level === 'trace' ? "" : '',
                               ]
                                 .filter(Boolean)
                                 .join(' ')}
@@ -756,7 +754,7 @@ export function LogsPage() {
                           )}
 
                           {line.source && (
-                            <span className={styles.source} title={line.source}>
+                            <span className="" title={line.source}>
                               {line.source}
                             </span>
                           )}
@@ -764,36 +762,36 @@ export function LogsPage() {
                           {typeof line.statusCode === 'number' && (
                             <span
                               className={[
-                                styles.badge,
-                                styles.statusBadge,
+                                "",
+                                "",
                                 line.statusCode >= 200 && line.statusCode < 300
-                                  ? styles.statusSuccess
+                                  ? ""
                                   : line.statusCode >= 300 && line.statusCode < 400
-                                    ? styles.statusInfo
+                                    ? ""
                                     : line.statusCode >= 400 && line.statusCode < 500
-                                      ? styles.statusWarn
-                                      : styles.statusError,
+                                      ? ""
+                                      : "",
                               ].join(' ')}
                             >
                               {line.statusCode}
                             </span>
                           )}
 
-                          {line.latency && <span className={styles.pill}>{line.latency}</span>}
-                          {line.ip && <span className={styles.pill}>{line.ip}</span>}
+                          {line.latency && <span className="">{line.latency}</span>}
+                          {line.ip && <span className="">{line.ip}</span>}
 
                           {line.method && (
-                            <span className={[styles.badge, styles.methodBadge].join(' ')}>
+                            <span className={["", ""].join(' ')}>
                               {line.method}
                             </span>
                           )}
                           {line.path && (
-                            <span className={styles.path} title={line.path}>
+                            <span className="" title={line.path}>
                               {line.path}
                             </span>
                           )}
                         </div>
-                        {line.message && <div className={styles.message}>{line.message}</div>}
+                        {line.message && <div className="">{line.message}</div>}
                       </div>
                     </div>
                   );
@@ -813,8 +811,8 @@ export function LogsPage() {
         <Card
           title={t('logs.error_logs_modal_title')}
           extra={
-            <Button variant="secondary" size="sm" onClick={loadErrorLogs} loading={loadingErrors}>
-              {t('common.refresh')}
+            <Button variant="secondary" size="sm" onClick={loadErrorLogs} loading={loadingErrors} title={t('common.refresh')}>
+              <IconRefreshCw size={16} />
             </Button>
           }
         >

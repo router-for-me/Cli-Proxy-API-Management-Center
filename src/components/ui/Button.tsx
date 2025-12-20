@@ -1,14 +1,28 @@
-import type { ButtonHTMLAttributes, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
+import { Button as ButtonPrimitive } from './primitives/button';
+import { cn } from '@/lib/utils';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'md' | 'sm';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
   loading?: boolean;
 }
+
+const variantMap: Record<ButtonVariant, 'default' | 'secondary' | 'ghost' | 'destructive'> = {
+  primary: 'default',
+  secondary: 'secondary',
+  ghost: 'ghost',
+  danger: 'destructive',
+};
+
+const sizeMap: Record<ButtonSize, 'default' | 'sm'> = {
+  md: 'default',
+  sm: 'sm',
+};
 
 export function Button({
   children,
@@ -20,20 +34,18 @@ export function Button({
   disabled,
   ...rest
 }: PropsWithChildren<ButtonProps>) {
-  const classes = [
-    'btn',
-    `btn-${variant}`,
-    size === 'sm' ? 'btn-sm' : '',
-    fullWidth ? 'btn-full' : '',
-    className
-  ]
-    .filter(Boolean)
-    .join(' ');
-
   return (
-    <button className={classes} disabled={disabled || loading} {...rest}>
-      {loading && <span className="loading-spinner" aria-hidden="true" />}
-      <span>{children}</span>
-    </button>
+    <ButtonPrimitive
+      variant={variantMap[variant]}
+      size={sizeMap[size]}
+      disabled={disabled || loading}
+      className={cn(fullWidth && 'w-full', className)}
+      {...rest}
+    >
+      {loading && (
+        <span className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      )}
+      {children}
+    </ButtonPrimitive>
   );
 }

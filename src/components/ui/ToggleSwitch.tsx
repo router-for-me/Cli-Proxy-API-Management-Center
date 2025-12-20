@@ -1,4 +1,6 @@
-import type { ChangeEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { Switch } from './switch';
+import { Label } from './label';
 
 interface ToggleSwitchProps {
   checked: boolean;
@@ -8,17 +10,14 @@ interface ToggleSwitchProps {
 }
 
 export function ToggleSwitch({ checked, onChange, label, disabled = false }: ToggleSwitchProps) {
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onChange(event.target.checked);
-  };
-
   return (
-    <label className="switch">
-      <input type="checkbox" checked={checked} onChange={handleChange} disabled={disabled} />
-      <span className="track">
-        <span className="thumb" />
-      </span>
-      {label && <span className="label">{label}</span>}
-    </label>
+    <div className="flex items-center gap-2">
+      <Switch
+        checked={checked}
+        onCheckedChange={onChange}
+        disabled={disabled}
+      />
+      {label && <Label className="text-xs cursor-pointer">{label}</Label>}
+    </div>
   );
 }

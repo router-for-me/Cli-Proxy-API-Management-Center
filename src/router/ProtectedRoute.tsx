@@ -34,7 +34,7 @@ export function ProtectedRoute({ children }: { children: ReactElement }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/welcome" replace state={{ from: location }} />;
   }
 
   return children;

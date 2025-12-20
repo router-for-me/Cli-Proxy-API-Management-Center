@@ -17,8 +17,8 @@ export interface OAuthStartResponse {
   state?: string;
 }
 
-export interface OAuthCallbackResponse {
-  status: 'ok';
+export interface OAuthStartOptions {
+  projectId?: string;
 }
 
 export interface IFlowCookieAuthResponse {
@@ -31,12 +31,9 @@ export interface IFlowCookieAuthResponse {
 }
 
 const WEBUI_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'iflow'];
-const CALLBACK_PROVIDER_MAP: Partial<Record<OAuthProvider, string>> = {
-  'gemini-cli': 'gemini'
-};
 
 export const oauthApi = {
-  startAuth: (provider: OAuthProvider, options?: { projectId?: string }) => {
+  startAuth: (provider: OAuthProvider, options?: OAuthStartOptions) => {
     const params: Record<string, string | boolean> = {};
     if (WEBUI_SUPPORTED.includes(provider)) {
       params.is_webui = true;
@@ -45,7 +42,7 @@ export const oauthApi = {
       params.project_id = options.projectId;
     }
     return apiClient.get<OAuthStartResponse>(`/${provider}-auth-url`, {
-      params: Object.keys(params).length ? params : undefined
+      params: Object.keys(params).length > 0 ? params : undefined
     });
   },
 
@@ -54,13 +51,12 @@ export const oauthApi = {
       params: { state }
     }),
 
-  submitCallback: (provider: OAuthProvider, redirectUrl: string) => {
-    const callbackProvider = CALLBACK_PROVIDER_MAP[provider] ?? provider;
-    return apiClient.post<OAuthCallbackResponse>('/oauth-callback', {
-      provider: callbackProvider,
-      redirect_url: redirectUrl
-    });
-  },
+  /** 手动提交回调 URL（远程浏览器模式） */
+  submitCallback: (state: string, callbackUrl: string) =>
+    apiClient.post<{ status: 'ok' | 'error'; error?: string }>('/submit-oauth-callback', {
+      state,
+      callback_url: callbackUrl
+    }),
 
   /** iFlow cookie 认证 */
   iflowCookieAuth: (cookie: string) =>

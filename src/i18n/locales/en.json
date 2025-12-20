@@ -81,15 +81,16 @@
     "status": "Connection Status:"
   },
   "nav": {
-    "basic_settings": "Basic Settings",
-    "api_keys": "API Keys",
-    "ai_providers": "AI Providers",
-    "auth_files": "Auth Files",
-    "oauth": "OAuth Login",
-    "usage_stats": "Usage Statistics",
-    "config_management": "Config Management",
-    "logs": "Logs Viewer",
-    "system_info": "Management Center Info"
+    "basic_settings": "Settings",
+    "settings": "Settings",
+    "api_keys": "Keys",
+    "ai_providers": "Providers",
+    "auth_files": "Auth",
+    "oauth": "OAuth",
+    "usage_stats": "Usage",
+    "config_management": "Config",
+    "logs": "Logs",
+    "system_info": "System"
   },
   "basic_settings": {
     "title": "Basic Settings",
@@ -133,7 +134,7 @@
     "gemini_title": "Gemini API Keys",
     "gemini_add_button": "Add Key",
     "gemini_empty_title": "No Gemini Keys",
-    "gemini_empty_desc": "Click the button above to add the first key",
+    "gemini_empty_desc": "No keys configured",
     "gemini_item_title": "Gemini Key",
     "gemini_add_modal_title": "Add Gemini API Key",
     "gemini_add_modal_key_label": "API Keys:",
@@ -484,7 +485,21 @@
     "iflow_cookie_result_expired": "Expires At",
     "iflow_cookie_result_path": "Saved Path",
     "iflow_cookie_result_type": "Type",
-    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost."
+    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost.",
+    "oauth_url_label": "Authorization URL",
+    "copy_link": "Copy Link",
+    "open_link": "Open Link",
+    "callback_url_label": "Callback URL",
+    "callback_url_hint": "Remote browser mode: After authorization redirects to http://localhost:..., copy the full URL and submit it here.",
+    "callback_url_summary": "Manual Callback",
+    "callback_url_placeholder": "Paste callback URL here...",
+    "callback_url_required": "Please provide the callback URL first.",
+    "submit_callback": "Submit Callback URL",
+    "submit_callback_short": "Submit",
+    "callback_submit_error": "Failed to submit callback URL:",
+    "status_success": "Authentication successful",
+    "status_error": "Authentication failed",
+    "status_waiting": "Waiting for authentication..."
   },
   "usage_stats": {
     "title": "Usage Statistics",
@@ -724,9 +739,24 @@
     "switch_to_dark": "Switch to dark mode",
     "auto": "Follow system"
   },
+  "sound": {
+    "mute": "Mute",
+    "unmute": "Unmute"
+  },
   "sidebar": {
     "toggle_expand": "Expand sidebar",
     "toggle_collapse": "Collapse sidebar"
+  },
+  "welcome": {
+    "help": "Quick Links",
+    "about": "About",
+    "description": "CLI Proxy API Management Center is a web interface for managing your CLI Proxy instance.",
+    "main_repo_title": "Main Repository",
+    "main_repo_desc": "CLI Proxy API core program source code",
+    "webui_repo_title": "WebUI Repository",
+    "webui_repo_desc": "Management Center frontend source code",
+    "docs_title": "Documentation",
+    "docs_desc": "Usage tutorials and configuration guides"
   },
   "footer": {
     "api_version": "CLI Proxy API Version",

@@ -19,7 +19,9 @@ export interface ApiKeyEntry {
 export interface GeminiKeyConfig {
   apiKey: string;
   baseUrl?: string;
+  proxyUrl?: string;
   headers?: Record<string, string>;
+  models?: ModelAlias[];
   excludedModels?: string[];
 }
 

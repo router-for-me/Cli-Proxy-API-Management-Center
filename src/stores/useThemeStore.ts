@@ -23,9 +23,9 @@ export const useThemeStore = create<ThemeState>()(
       setTheme: (theme) => {
         // 应用主题到 DOM
         if (theme === 'dark') {
-          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.classList.add('dark');
         } else {
-          document.documentElement.removeAttribute('data-theme');
+          document.documentElement.classList.remove('dark');
         }
 
         set({ theme });

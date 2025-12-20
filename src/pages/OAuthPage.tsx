@@ -1,11 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { IconChevronDown, IconCopy, IconExternalLink, IconPlay, IconSend, IconX } from '@/components/ui/icons';
 import { useNotificationStore } from '@/stores';
 import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
-import styles from './OAuthPage.module.scss';
+import { isLocalhost } from '@/utils/connection';
+import { cn } from '@/lib/utils';
+import iconOpenai from '@/assets/icons/openai.png';
+import iconClaude from '@/assets/icons/claude-color.png';
+import iconGoogle from '@/assets/icons/google-color.png';
+import iconGemini from '@/assets/icons/gemini-color.png';
+import iconQwen from '@/assets/icons/qwen-color.png';
+import iconCloudflare from '@/assets/icons/cloudflare-color.png';
 
 interface ProviderState {
   url?: string;
@@ -13,12 +19,9 @@ interface ProviderState {
   status?: 'idle' | 'waiting' | 'success' | 'error';
   error?: string;
   polling?: boolean;
-  projectId?: string;
-  projectIdError?: string;
   callbackUrl?: string;
-  callbackSubmitting?: boolean;
-  callbackStatus?: 'success' | 'error';
-  callbackError?: string;
+  submittingCallback?: boolean;
+  showCallback?: boolean;
 }
 
 interface IFlowCookieState {
@@ -29,57 +32,44 @@ interface IFlowCookieState {
   errorType?: 'error' | 'warning';
 }
 
-const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string }[] = [
-  { id: 'codex', titleKey: 'auth_login.codex_oauth_title', hintKey: 'auth_login.codex_oauth_hint', urlLabelKey: 'auth_login.codex_oauth_url_label' },
-  { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label' },
-  { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label' },
-  { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label' },
-  { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label' },
-  { id: 'iflow', titleKey: 'auth_login.iflow_oauth_title', hintKey: 'auth_login.iflow_oauth_hint', urlLabelKey: 'auth_login.iflow_oauth_url_label' }
+const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string; icon: string; hasProjectId?: boolean }[] = [
+  { id: 'codex', titleKey: 'auth_login.codex_oauth_title', hintKey: 'auth_login.codex_oauth_hint', urlLabelKey: 'auth_login.codex_oauth_url_label', icon: iconOpenai },
+  { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
+  { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconGoogle },
+  { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini, hasProjectId: true },
+  { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label', icon: iconQwen },
+  { id: 'iflow', titleKey: 'auth_login.iflow_oauth_title', hintKey: 'auth_login.iflow_oauth_hint', urlLabelKey: 'auth_login.iflow_oauth_url_label', icon: iconCloudflare }
 ];
-
-const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'iflow'];
 
 export function OAuthPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
   const [iflowCookie, setIflowCookie] = useState<IFlowCookieState>({ cookie: '', loading: false });
+  const [geminiProjectId, setGeminiProjectId] = useState('');
   const timers = useRef<Record<string, number>>({});
+  const isLocal = useMemo(() => isLocalhost(window.location.hostname), []);
 
-  useEffect(() => {
-    return () => {
-      Object.values(timers.current).forEach((timer) => window.clearInterval(timer));
-    };
-  }, []);
-
-  const updateProviderState = (provider: OAuthProvider, next: Partial<ProviderState>) => {
-    setStates((prev) => ({
-      ...prev,
-      [provider]: { ...(prev[provider] ?? {}), ...next }
-    }));
-  };
+  useEffect(() => { return () => { Object.values(timers.current).forEach((timer) => window.clearInterval(timer)); }; }, []);
 
   const startPolling = (provider: OAuthProvider, state: string) => {
-    if (timers.current[provider]) {
-      clearInterval(timers.current[provider]);
-    }
+    if (timers.current[provider]) clearInterval(timers.current[provider]);
     const timer = window.setInterval(async () => {
       try {
         const res = await oauthApi.getAuthStatus(state);
         if (res.status === 'ok') {
-          updateProviderState(provider, { status: 'success', polling: false });
+          setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], status: 'success', polling: false } }));
           showNotification(t('auth_login.codex_oauth_status_success'), 'success');
           window.clearInterval(timer);
           delete timers.current[provider];
         } else if (res.status === 'error') {
-          updateProviderState(provider, { status: 'error', error: res.error, polling: false });
+          setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], status: 'error', error: res.error, polling: false } }));
           showNotification(`${t('auth_login.codex_oauth_status_error')} ${res.error || ''}`, 'error');
           window.clearInterval(timer);
           delete timers.current[provider];
         }
       } catch (err: any) {
-        updateProviderState(provider, { status: 'error', error: err?.message, polling: false });
+        setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], status: 'error', error: err?.message, polling: false } }));
         window.clearInterval(timer);
         delete timers.current[provider];
       }
@@ -88,108 +78,65 @@ export function OAuthPage() {
   };
 
   const startAuth = async (provider: OAuthProvider) => {
-    const projectId = provider === 'gemini-cli' ? (states[provider]?.projectId || '').trim() : undefined;
-    if (provider === 'gemini-cli' && !projectId) {
-      const message = t('auth_login.gemini_cli_project_id_required');
-      updateProviderState(provider, { projectIdError: message });
-      showNotification(message, 'warning');
-      return;
-    }
-    if (provider === 'gemini-cli') {
-      updateProviderState(provider, { projectIdError: undefined });
-    }
-    updateProviderState(provider, {
-      status: 'waiting',
-      polling: true,
-      error: undefined,
-      callbackStatus: undefined,
-      callbackError: undefined,
-      callbackUrl: ''
-    });
+    setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], status: 'waiting', polling: true, error: undefined } }));
     try {
-      const res = await oauthApi.startAuth(
-        provider,
-        provider === 'gemini-cli' ? { projectId: projectId! } : undefined
-      );
-      updateProviderState(provider, { url: res.url, state: res.state, status: 'waiting', polling: true });
-      if (res.state) {
-        startPolling(provider, res.state);
-      }
+      const options = provider === 'gemini-cli' && geminiProjectId.trim() ? { projectId: geminiProjectId.trim() } : undefined;
+      const res = await oauthApi.startAuth(provider, options);
+      setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], url: res.url, state: res.state, status: 'waiting', polling: true } }));
+      if (res.state) startPolling(provider, res.state);
     } catch (err: any) {
-      updateProviderState(provider, { status: 'error', error: err?.message, polling: false });
+      setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], status: 'error', error: err?.message, polling: false } }));
       showNotification(`${t('auth_login.codex_oauth_start_error')} ${err?.message || ''}`, 'error');
     }
   };
 
-  const copyLink = async (url?: string) => {
-    if (!url) return;
+  const submitCallbackUrl = async (provider: OAuthProvider) => {
+    const state = states[provider];
+    const callbackUrl = state?.callbackUrl?.trim();
+    if (!callbackUrl || !state?.state) {
+      showNotification(t('auth_login.callback_url_required'), 'warning');
+      return;
+    }
+    setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], submittingCallback: true } }));
     try {
-      await navigator.clipboard.writeText(url);
-      showNotification(t('notification.link_copied'), 'success');
-    } catch {
-      showNotification('Copy failed', 'error');
+      const res = await oauthApi.submitCallback(state.state, callbackUrl);
+      if (res.status === 'ok') {
+        setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], status: 'success', polling: false, submittingCallback: false } }));
+        showNotification(t('auth_login.codex_oauth_status_success'), 'success');
+        if (timers.current[provider]) {
+          clearInterval(timers.current[provider]);
+          delete timers.current[provider];
+        }
+      } else {
+        setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], status: 'error', error: res.error, submittingCallback: false } }));
+        showNotification(`${t('auth_login.codex_oauth_status_error')} ${res.error || ''}`, 'error');
+      }
+    } catch (err: any) {
+      setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], status: 'error', error: err?.message, submittingCallback: false } }));
+      showNotification(`${t('auth_login.callback_submit_error')} ${err?.message || ''}`, 'error');
     }
   };
 
-  const submitCallback = async (provider: OAuthProvider) => {
-    const redirectUrl = (states[provider]?.callbackUrl || '').trim();
-    if (!redirectUrl) {
-      showNotification(t('auth_login.oauth_callback_required'), 'warning');
-      return;
-    }
-    updateProviderState(provider, {
-      callbackSubmitting: true,
-      callbackStatus: undefined,
-      callbackError: undefined
-    });
-    try {
-      await oauthApi.submitCallback(provider, redirectUrl);
-      updateProviderState(provider, { callbackSubmitting: false, callbackStatus: 'success' });
-      showNotification(t('auth_login.oauth_callback_success'), 'success');
-    } catch (err: any) {
-      const errorMessage =
-        err?.status === 404
-          ? t('auth_login.oauth_callback_upgrade_hint', {
-              defaultValue: 'Please update CLI Proxy API or check the connection.'
-            })
-          : err?.message;
-      updateProviderState(provider, {
-        callbackSubmitting: false,
-        callbackStatus: 'error',
-        callbackError: errorMessage
-      });
-      const notificationMessage = errorMessage
-        ? `${t('auth_login.oauth_callback_error')} ${errorMessage}`
-        : t('auth_login.oauth_callback_error');
-      showNotification(notificationMessage, 'error');
-    }
+  const updateCallbackUrl = (provider: OAuthProvider, url: string) => {
+    setStates((prev) => ({ ...prev, [provider]: { ...prev[provider], callbackUrl: url } }));
+  };
+
+  const copyLink = async (url?: string) => {
+    if (!url) return;
+    try { await navigator.clipboard.writeText(url); showNotification(t('notification.link_copied'), 'success'); } catch { showNotification('Copy failed', 'error'); }
   };
 
   const submitIflowCookie = async () => {
     const cookie = iflowCookie.cookie.trim();
-    if (!cookie) {
-      showNotification(t('auth_login.iflow_cookie_required'), 'warning');
-      return;
-    }
-    setIflowCookie((prev) => ({
-      ...prev,
-      loading: true,
-      error: undefined,
-      errorType: undefined,
-      result: undefined
-    }));
+    if (!cookie) { showNotification(t('auth_login.iflow_cookie_required'), 'warning'); return; }
+    setIflowCookie((prev) => ({ ...prev, loading: true, error: undefined, errorType: undefined, result: undefined }));
     try {
       const res = await oauthApi.iflowCookieAuth(cookie);
       if (res.status === 'ok') {
         setIflowCookie((prev) => ({ ...prev, loading: false, result: res }));
         showNotification(t('auth_login.iflow_cookie_status_success'), 'success');
       } else {
-        setIflowCookie((prev) => ({
-          ...prev,
-          loading: false,
-          error: res.error,
-          errorType: 'error'
-        }));
+        setIflowCookie((prev) => ({ ...prev, loading: false, error: res.error, errorType: 'error' }));
         showNotification(`${t('auth_login.iflow_cookie_status_error')} ${res.error || ''}`, 'error');
       }
     } catch (err: any) {
@@ -205,172 +152,143 @@ export function OAuthPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('nav.oauth', { defaultValue: 'OAuth' })}</h1>
-
-      <div className={styles.content}>
+    <div className="space-y-4">
+      <div className="space-y-2">
         {PROVIDERS.map((provider) => {
           const state = states[provider.id] || {};
-          const canSubmitCallback = CALLBACK_SUPPORTED.includes(provider.id) && Boolean(state.url);
+          const isDisabled = !isLocal;
+          const isGeminiCli = provider.id === 'gemini-cli';
+          const hasUrl = !!state.url;
+          const isActive = hasUrl || state.polling;
           return (
-            <div key={provider.id}>
-              <Card
-                title={t(provider.titleKey)}
-                extra={
-                  <Button onClick={() => startAuth(provider.id)} loading={state.polling}>
-                    {t('common.login')}
-                  </Button>
-                }
-              >
-                <div className="hint">{t(provider.hintKey)}</div>
-                {provider.id === 'gemini-cli' && (
-                  <Input
-                    label={t('auth_login.gemini_cli_project_id_label')}
-                    hint={t('auth_login.gemini_cli_project_id_hint')}
-                    value={state.projectId || ''}
-                    error={state.projectIdError}
-                    onChange={(e) =>
-                      updateProviderState(provider.id, {
-                        projectId: e.target.value,
-                        projectIdError: undefined
-                      })
-                    }
-                    placeholder={t('auth_login.gemini_cli_project_id_placeholder')}
-                  />
-                )}
-                {state.url && (
-                  <div className={`connection-box ${styles.authUrlBox}`}>
-                    <div className={styles.authUrlLabel}>{t(provider.urlLabelKey)}</div>
-                    <div className={styles.authUrlValue}>{state.url}</div>
-                    <div className={styles.authUrlActions}>
-                      <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
-                        {t('auth_login.codex_copy_link')}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}
-                      >
-                        {t('auth_login.codex_open_link')}
-                      </Button>
-                    </div>
+            <div key={provider.id} className={cn("border border-border rounded-md bg-card overflow-hidden", isDisabled && "opacity-60 pointer-events-none")}>
+              {/* 默认折叠状态 */}
+              {!isActive && (
+                <div className="flex items-center gap-3 p-4">
+                  <img src={provider.icon} alt="" className="w-8 h-8 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm">{t(provider.titleKey)}</h3>
+                    <p className="text-xs text-muted-foreground">{isDisabled ? t('auth_login.remote_access_disabled') : t(provider.hintKey)}</p>
                   </div>
-                )}
-                {canSubmitCallback && (
-                  <div className={styles.callbackSection}>
+                  {isGeminiCli && !isDisabled && (
                     <Input
-                      label={t('auth_login.oauth_callback_label')}
-                      hint={t('auth_login.oauth_callback_hint')}
-                      value={state.callbackUrl || ''}
-                      onChange={(e) =>
-                        updateProviderState(provider.id, {
-                          callbackUrl: e.target.value,
-                          callbackStatus: undefined,
-                          callbackError: undefined
-                        })
-                      }
-                      placeholder={t('auth_login.oauth_callback_placeholder')}
+                      value={geminiProjectId}
+                      onChange={(e) => setGeminiProjectId(e.target.value)}
+                      placeholder={t('auth_login.gemini_cli_project_id_placeholder')}
+                      className="h-8 text-xs w-48"
                     />
-                    <div className={styles.callbackActions}>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => submitCallback(provider.id)}
-                        loading={state.callbackSubmitting}
-                      >
-                        {t('auth_login.oauth_callback_button')}
-                      </Button>
+                  )}
+                  <button type="button" onClick={() => startAuth(provider.id)} disabled={isDisabled || state.polling} title={t('common.login')} className="p-2 rounded-md bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50 flex-shrink-0">
+                    <IconPlay size={14} />
+                  </button>
+                </div>
+              )}
+              
+              {/* 展开状态 - 有 URL 时显示 */}
+              {isActive && (
+                <div className="p-4 space-y-4">
+                  {/* 头部 */}
+                  <div className="flex items-center gap-3">
+                    <img src={provider.icon} alt="" className="w-8 h-8 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm">{t(provider.titleKey)}</h3>
+                      <p className="text-xs text-muted-foreground">{t(provider.hintKey)}</p>
                     </div>
-                    {state.callbackStatus === 'success' && (
-                      <div className="status-badge success" style={{ marginTop: 8 }}>
-                        {t('auth_login.oauth_callback_status_success')}
-                      </div>
+                    {state.status && (
+                      <span className={cn("w-2 h-2 rounded-full flex-shrink-0", state.status === 'success' ? "bg-green-500" : state.status === 'error' ? "bg-red-500" : "bg-blue-500 animate-pulse")} />
                     )}
-                    {state.callbackStatus === 'error' && (
-                      <div className="status-badge error" style={{ marginTop: 8 }}>
-                        {t('auth_login.oauth_callback_status_error')} {state.callbackError || ''}
+                    <button type="button" onClick={() => startAuth(provider.id)} disabled={state.polling} title={t('common.login')} className="p-2 rounded-md bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50 flex-shrink-0">
+                      <IconPlay size={14} />
+                    </button>
+                  </div>
+                  
+                  {/* 授权链接 */}
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+                    <code className="min-w-0 text-xs text-muted-foreground px-3 py-2.5 rounded-lg bg-muted/30 border border-border/60 truncate">{state.url}</code>
+                    <button type="button" onClick={() => copyLink(state.url!)} title={t('auth_login.copy_link')} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+                      <IconCopy size={16} />
+                    </button>
+                    <button type="button" onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')} title={t('auth_login.open_link')} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+                      <IconExternalLink size={16} />
+                    </button>
+                  </div>
+                  
+                  {/* 回调 URL - 可折叠 */}
+                  <div className="pt-2 mt-1 border-t border-dashed border-border/40">
+                    <button
+                      type="button"
+                      onClick={() => setStates((prev) => ({ ...prev, [provider.id]: { ...prev[provider.id], showCallback: !prev[provider.id]?.showCallback } }))}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+                    >
+                      <IconChevronDown size={12} className={cn("transition-transform", state.showCallback && "rotate-180")} />
+                      <span>{t('auth_login.callback_url_summary')}</span>
+                    </button>
+                    {state.showCallback && (
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <input
+                          type="text"
+                          value={state.callbackUrl || ''}
+                          onChange={(e) => updateCallbackUrl(provider.id, e.target.value)}
+                          placeholder={t('auth_login.callback_url_placeholder')}
+                          className="flex-1 min-w-0 h-8 px-3 text-xs rounded-md border border-border bg-background text-foreground outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => submitCallbackUrl(provider.id)}
+                          disabled={state.submittingCallback || !state.callbackUrl?.trim()}
+                          className="h-8 px-2.5 rounded-md bg-muted/50 hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-colors disabled:opacity-30"
+                        >
+                          <IconSend size={14} />
+                        </button>
                       </div>
                     )}
                   </div>
-                )}
-                {state.status && state.status !== 'idle' && (
-                  <div className="status-badge" style={{ marginTop: 8 }}>
-                    {state.status === 'success'
-                      ? t('auth_login.codex_oauth_status_success')
-                      : state.status === 'error'
-                        ? `${t('auth_login.codex_oauth_status_error')} ${state.error || ''}`
-                        : t('auth_login.codex_oauth_status_waiting')}
-                  </div>
-                )}
-              </Card>
+                  
+                  {/* 错误信息 */}
+                  {state.status === 'error' && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-red-500/10 text-red-600 dark:text-red-400">
+                      <IconX size={14} className="flex-shrink-0" />
+                      <span className="text-xs">{state.error}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
-
-        {/* iFlow Cookie 登录 */}
-        <Card
-          title={t('auth_login.iflow_cookie_title')}
-          extra={
-            <Button onClick={submitIflowCookie} loading={iflowCookie.loading}>
-              {t('auth_login.iflow_cookie_button')}
-            </Button>
-          }
-        >
-          <div className="hint">{t('auth_login.iflow_cookie_hint')}</div>
-          <div className="hint" style={{ marginTop: 4 }}>
-            {t('auth_login.iflow_cookie_key_hint')}
-          </div>
-          <div className="form-item" style={{ marginTop: 12 }}>
-            <label className="label">{t('auth_login.iflow_cookie_label')}</label>
-            <Input
-              value={iflowCookie.cookie}
-              onChange={(e) => setIflowCookie((prev) => ({ ...prev, cookie: e.target.value }))}
-              placeholder={t('auth_login.iflow_cookie_placeholder')}
+        
+        {/* iFlow Cookie */}
+        <div className="border border-border rounded-md bg-card overflow-hidden">
+          <div className="flex items-center gap-3 p-4">
+            <img src={iconCloudflare} alt="" className="w-8 h-8 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-sm">{t('auth_login.iflow_cookie_title')}</h3>
+              <p className="text-xs text-muted-foreground">{t('auth_login.iflow_cookie_hint')}</p>
+            </div>
+            {iflowCookie.result?.status === 'ok' && <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />}
+            <Input 
+              value={iflowCookie.cookie} 
+              onChange={(e) => setIflowCookie((prev) => ({ ...prev, cookie: e.target.value }))} 
+              placeholder={t('auth_login.iflow_cookie_placeholder')} 
+              className="h-8 text-xs w-64" 
             />
+            <button type="button" onClick={submitIflowCookie} disabled={iflowCookie.loading} title="Submit" className="p-2 rounded-md bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50 flex-shrink-0">
+              <IconPlay size={14} />
+            </button>
           </div>
-          {iflowCookie.error && (
-            <div
-              className={`status-badge ${iflowCookie.errorType === 'warning' ? 'warning' : 'error'}`}
-              style={{ marginTop: 8 }}
-            >
-              {iflowCookie.errorType === 'warning'
-                ? t('auth_login.iflow_cookie_status_duplicate')
-                : t('auth_login.iflow_cookie_status_error')}{' '}
-              {iflowCookie.error}
+          {(iflowCookie.error || iflowCookie.result?.status === 'ok') && (
+            <div className="border-t border-border px-4 py-2">
+              {iflowCookie.error && <p className={cn("text-xs", iflowCookie.errorType === 'warning' ? "text-yellow-600" : "text-red-500")}>{iflowCookie.error}</p>}
+              {iflowCookie.result?.status === 'ok' && (
+                <p className="text-xs text-green-600">
+                  {iflowCookie.result.email && <span>Email: {iflowCookie.result.email}</span>}
+                  {iflowCookie.result.email && iflowCookie.result.expired && <span className="mx-2">|</span>}
+                  {iflowCookie.result.expired && <span>Expires: {iflowCookie.result.expired}</span>}
+                </p>
+              )}
             </div>
           )}
-          {iflowCookie.result && iflowCookie.result.status === 'ok' && (
-            <div className="connection-box" style={{ marginTop: 12 }}>
-              <div className="label">{t('auth_login.iflow_cookie_result_title')}</div>
-              <div className="key-value-list">
-                {iflowCookie.result.email && (
-                  <div className="key-value-item">
-                    <span className="key">{t('auth_login.iflow_cookie_result_email')}</span>
-                    <span className="value">{iflowCookie.result.email}</span>
-                  </div>
-                )}
-                {iflowCookie.result.expired && (
-                  <div className="key-value-item">
-                    <span className="key">{t('auth_login.iflow_cookie_result_expired')}</span>
-                    <span className="value">{iflowCookie.result.expired}</span>
-                  </div>
-                )}
-                {iflowCookie.result.saved_path && (
-                  <div className="key-value-item">
-                    <span className="key">{t('auth_login.iflow_cookie_result_path')}</span>
-                    <span className="value">{iflowCookie.result.saved_path}</span>
-                  </div>
-                )}
-                {iflowCookie.result.type && (
-                  <div className="key-value-item">
-                    <span className="key">{t('auth_login.iflow_cookie_result_type')}</span>
-                    <span className="value">{iflowCookie.result.type}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </Card>
+        </div>
       </div>
     </div>
   );

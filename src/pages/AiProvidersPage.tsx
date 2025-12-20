@@ -4,11 +4,11 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { ProviderFormModal } from '@/components/ui/ProviderFormModal';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { ModelInputList, modelsToEntries, entriesToModels } from '@/components/ui/ModelInputList';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconCheck, IconX } from '@/components/ui/icons';
+import { IconCheck, IconPlus, IconSettings, IconX } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { ampcodeApi, modelsApi, providersApi, usageApi } from '@/services/api';
 import type {
@@ -23,7 +23,6 @@ import type { KeyStats, KeyStatBucket } from '@/utils/usage';
 import type { ModelInfo } from '@/utils/models';
 import { headersToEntries, buildHeaderObject, type HeaderEntry } from '@/utils/headers';
 import { maskApiKey } from '@/utils/format';
-import styles from './AiProvidersPage.module.scss';
 
 type ProviderModal =
   | { type: 'gemini'; index: number | null }
@@ -49,11 +48,13 @@ interface OpenAIFormState {
 interface AmpcodeFormState {
   upstreamUrl: string;
   upstreamApiKey: string;
+  restrictManagementToLocalhost: boolean;
   forceModelMappings: boolean;
   mappingEntries: ModelEntry[];
 }
 
 const DISABLE_ALL_MODELS_RULE = '*';
+const ICON_BASE = 'https://unpkg.com/@lobehub/icons-static-png@latest/light';
 
 const hasDisableAllModelsRule = (models?: string[]) =>
   Array.isArray(models) &&
@@ -73,15 +74,6 @@ const withoutDisableAllModelsRule = (models?: string[]) => {
   const base = stripDisableAllModelsRule(models);
   return base;
 };
-
-const parseExcludedModels = (text: string): string[] =>
-  text
-    .split(/[\n,]+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const excludedModelsToText = (models?: string[]) =>
-  Array.isArray(models) ? models.join('\n') : '';
 
 const buildOpenAIModelsEndpoint = (baseUrl: string): string => {
   const trimmed = String(baseUrl || '')
@@ -173,6 +165,7 @@ const entriesToAmpcodeMappings = (entries: ModelEntry[]): AmpcodeModelMapping[] 
 const buildAmpcodeFormState = (ampcode?: AmpcodeConfig | null): AmpcodeFormState => ({
   upstreamUrl: ampcode?.upstreamUrl ?? '',
   upstreamApiKey: '',
+  restrictManagementToLocalhost: ampcode?.restrictManagementToLocalhost ?? true,
   forceModelMappings: ampcode?.forceModelMappings ?? false,
   mappingEntries: ampcodeMappingsToEntries(ampcode?.modelMappings),
 });
@@ -198,25 +191,6 @@ export function AiProvidersPage() {
 
   const [modal, setModal] = useState<ProviderModal | null>(null);
 
-  const [geminiForm, setGeminiForm] = useState<GeminiKeyConfig & { excludedText: string }>({
-    apiKey: '',
-    baseUrl: '',
-    headers: {},
-    excludedModels: [],
-    excludedText: '',
-  });
-  const [providerForm, setProviderForm] = useState<
-    ProviderKeyConfig & { modelEntries: ModelEntry[]; excludedText: string }
-  >({
-    apiKey: '',
-    baseUrl: '',
-    proxyUrl: '',
-    headers: {},
-    models: [],
-    excludedModels: [],
-    modelEntries: [{ name: '', alias: '' }],
-    excludedText: '',
-  });
   const [openaiForm, setOpenaiForm] = useState<OpenAIFormState>({
     name: '',
     baseUrl: '',
@@ -315,23 +289,6 @@ export function AiProvidersPage() {
 
   const closeModal = () => {
     setModal(null);
-    setGeminiForm({
-      apiKey: '',
-      baseUrl: '',
-      headers: {},
-      excludedModels: [],
-      excludedText: '',
-    });
-    setProviderForm({
-      apiKey: '',
-      baseUrl: '',
-      proxyUrl: '',
-      headers: {},
-      models: [],
-      excludedModels: [],
-      modelEntries: [{ name: '', alias: '' }],
-      excludedText: '',
-    });
     setOpenaiForm({
       name: '',
       baseUrl: '',
@@ -358,26 +315,10 @@ export function AiProvidersPage() {
   };
 
   const openGeminiModal = (index: number | null) => {
-    if (index !== null) {
-      const entry = geminiKeys[index];
-      setGeminiForm({
-        ...entry,
-        excludedText: excludedModelsToText(entry?.excludedModels),
-      });
-    }
     setModal({ type: 'gemini', index });
   };
 
   const openProviderModal = (type: 'codex' | 'claude', index: number | null) => {
-    const source = type === 'codex' ? codexConfigs : claudeConfigs;
-    if (index !== null) {
-      const entry = source[index];
-      setProviderForm({
-        ...entry,
-        modelEntries: modelsToEntries(entry?.models),
-        excludedText: excludedModelsToText(entry?.excludedModels),
-      });
-    }
     setModal({ type, index });
   };
 
@@ -699,6 +640,9 @@ export function AiProvidersPage() {
         await ampcodeApi.clearUpstreamUrl();
       }
 
+      await ampcodeApi.updateRestrictManagementToLocalhost(
+        ampcodeForm.restrictManagementToLocalhost
+      );
       await ampcodeApi.updateForceModelMappings(ampcodeForm.forceModelMappings);
 
       if (ampcodeLoaded || ampcodeMappingsDirty) {
@@ -715,17 +659,11 @@ export function AiProvidersPage() {
 
       const previous = config?.ampcode ?? {};
       const next: AmpcodeConfig = {
+        ...previous,
         upstreamUrl: upstreamUrl || undefined,
+        restrictManagementToLocalhost: ampcodeForm.restrictManagementToLocalhost,
         forceModelMappings: ampcodeForm.forceModelMappings,
       };
-
-      if (previous.upstreamApiKey) {
-        next.upstreamApiKey = previous.upstreamApiKey;
-      }
-
-      if (Array.isArray(previous.modelMappings)) {
-        next.modelMappings = previous.modelMappings;
-      }
 
       if (overrideKey) {
         next.upstreamApiKey = overrideKey;
@@ -752,15 +690,9 @@ export function AiProvidersPage() {
     }
   };
 
-  const saveGemini = async () => {
+  const saveGeminiWithData = async (payload: GeminiKeyConfig) => {
     setSaving(true);
     try {
-      const payload: GeminiKeyConfig = {
-        apiKey: geminiForm.apiKey.trim(),
-        baseUrl: geminiForm.baseUrl?.trim() || undefined,
-        headers: buildHeaderObject(headersToEntries(geminiForm.headers as any)),
-        excludedModels: parseExcludedModels(geminiForm.excludedText),
-      };
       const nextList =
         modal?.type === 'gemini' && modal.index !== null
           ? geminiKeys.map((item, idx) => (idx === modal.index ? payload : item))
@@ -775,6 +707,45 @@ export function AiProvidersPage() {
           ? t('notification.gemini_key_updated')
           : t('notification.gemini_key_added');
       showNotification(message, 'success');
+      closeModal();
+    } catch (err: any) {
+      showNotification(`${t('notification.update_failed')}: ${err?.message || ''}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveProviderWithData = async (type: 'codex' | 'claude', payload: ProviderKeyConfig) => {
+    setSaving(true);
+    try {
+      const source = type === 'codex' ? codexConfigs : claudeConfigs;
+      const nextList =
+        modal?.type === type && modal.index !== null
+          ? source.map((item, idx) => (idx === modal.index ? payload : item))
+          : [...source, payload];
+
+      if (type === 'codex') {
+        await providersApi.saveCodexConfigs(nextList);
+        setCodexConfigs(nextList);
+        updateConfigValue('codex-api-key', nextList);
+        clearCache('codex-api-key');
+        const message =
+          modal?.index !== null
+            ? t('notification.codex_config_updated')
+            : t('notification.codex_config_added');
+        showNotification(message, 'success');
+      } else {
+        await providersApi.saveClaudeConfigs(nextList);
+        setClaudeConfigs(nextList);
+        updateConfigValue('claude-api-key', nextList);
+        clearCache('claude-api-key');
+        const message =
+          modal?.index !== null
+            ? t('notification.claude_config_updated')
+            : t('notification.claude_config_added');
+        showNotification(message, 'success');
+      }
+
       closeModal();
     } catch (err: any) {
       showNotification(`${t('notification.update_failed')}: ${err?.message || ''}`, 'error');
@@ -884,61 +855,6 @@ export function AiProvidersPage() {
       showNotification(`${t('notification.update_failed')}: ${err?.message || ''}`, 'error');
     } finally {
       setConfigSwitchingKey(null);
-    }
-  };
-
-  const saveProvider = async (type: 'codex' | 'claude') => {
-    const baseUrl = (providerForm.baseUrl ?? '').trim();
-    if (!baseUrl) {
-      showNotification(t('codex_base_url_required'), 'error');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const source = type === 'codex' ? codexConfigs : claudeConfigs;
-
-      const payload: ProviderKeyConfig = {
-        apiKey: providerForm.apiKey.trim(),
-        baseUrl,
-        proxyUrl: providerForm.proxyUrl?.trim() || undefined,
-        headers: buildHeaderObject(headersToEntries(providerForm.headers as any)),
-        models: entriesToModels(providerForm.modelEntries),
-        excludedModels: parseExcludedModels(providerForm.excludedText),
-      };
-
-      const nextList =
-        modal?.type === type && modal.index !== null
-          ? source.map((item, idx) => (idx === modal.index ? payload : item))
-          : [...source, payload];
-
-      if (type === 'codex') {
-        await providersApi.saveCodexConfigs(nextList);
-        setCodexConfigs(nextList);
-        updateConfigValue('codex-api-key', nextList);
-        clearCache('codex-api-key');
-        const message =
-          modal?.index !== null
-            ? t('notification.codex_config_updated')
-            : t('notification.codex_config_added');
-        showNotification(message, 'success');
-      } else {
-        await providersApi.saveClaudeConfigs(nextList);
-        setClaudeConfigs(nextList);
-        updateConfigValue('claude-api-key', nextList);
-        clearCache('claude-api-key');
-        const message =
-          modal?.index !== null
-            ? t('notification.claude_config_updated')
-            : t('notification.claude_config_added');
-        showNotification(message, 'success');
-      }
-
-      closeModal();
-    } catch (err: any) {
-      showNotification(`${t('notification.update_failed')}: ${err?.message || ''}`, 'error');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -1078,28 +994,26 @@ export function AiProvidersPage() {
     renderContent: (item: T, index: number) => ReactNode,
     onEdit: (index: number) => void,
     onDelete: (item: T) => void,
-    addLabel: string,
+    _addLabel: string,
     deleteLabel?: string,
     options?: {
       getRowDisabled?: (item: T, index: number) => boolean;
       renderExtraActions?: (item: T, index: number) => ReactNode;
+      emptyIcon?: string;
     }
   ) => {
     if (loading) {
-      return <div className="hint">{t('common.loading')}</div>;
+      return <div className="text-muted-foreground">{t('common.loading')}</div>;
     }
 
     if (!items.length) {
       return (
-        <EmptyState
-          title={t('common.info')}
-          description={t('ai_providers.gemini_empty_desc')}
-          action={
-            <Button onClick={() => onEdit(-1)} disabled={disableControls}>
-              {addLabel}
-            </Button>
-          }
-        />
+        <div className="flex-1 flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
+          {options?.emptyIcon && (
+            <img src={options.emptyIcon} alt="" className="size-12 opacity-20 mb-2 grayscale" />
+          )}
+          {t('ai_providers.gemini_empty_desc')}
+        </div>
       );
     }
 
@@ -1141,10 +1055,9 @@ export function AiProvidersPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
-      <div className={styles.content}>
-        {error && <div className="error-box">{error}</div>}
+    <div className="space-y-4">
+      {error && <div className="error-box">{error}</div>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 auto-rows-fr">
 
         <Card
           title={t('ai_providers.gemini_title')}
@@ -1153,8 +1066,9 @@ export function AiProvidersPage() {
               size="sm"
               onClick={() => openGeminiModal(null)}
               disabled={disableControls || saving || Boolean(configSwitchingKey)}
+              title={t('ai_providers.gemini_add_button')}
             >
-              {t('ai_providers.gemini_add_button')}
+              <IconPlus size={16} />
             </Button>
           }
         >
@@ -1172,22 +1086,22 @@ export function AiProvidersPage() {
                     {t('ai_providers.gemini_item_title')} #{index + 1}
                   </div>
                   {/* API Key 行 */}
-                  <div className={styles.fieldRow}>
-                    <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
-                    <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
+                  <div className="">
+                    <span className="">{t('common.api_key')}:</span>
+                    <span className="">{maskApiKey(item.apiKey)}</span>
                   </div>
                   {/* Base URL 行 */}
                   {item.baseUrl && (
-                    <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
-                      <span className={styles.fieldValue}>{item.baseUrl}</span>
+                    <div className="">
+                      <span className="">{t('common.base_url')}:</span>
+                      <span className="">{item.baseUrl}</span>
                     </div>
                   )}
                   {/* 自定义请求头徽章 */}
                   {headerEntries.length > 0 && (
-                    <div className={styles.headerBadgeList}>
+                    <div className="">
                       {headerEntries.map(([key, value]) => (
-                        <span key={key} className={styles.headerBadge}>
+                        <span key={key} className="">
                           <strong>{key}:</strong> {value}
                         </span>
                       ))}
@@ -1200,28 +1114,28 @@ export function AiProvidersPage() {
                   )}
                   {/* 排除模型徽章 */}
                   {excludedModels.length ? (
-                    <div className={styles.excludedModelsSection}>
-                      <div className={styles.excludedModelsLabel}>
+                    <div className="">
+                      <div className="">
                         {t('ai_providers.excluded_models_count', { count: excludedModels.length })}
                       </div>
-                      <div className={styles.modelTagList}>
+                      <div className="">
                         {excludedModels.map((model) => (
                           <span
                             key={model}
-                            className={`${styles.modelTag} ${styles.excludedModelTag}`}
+                            className={`$"" $""`}
                           >
-                            <span className={styles.modelName}>{model}</span>
+                            <span className="">{model}</span>
                           </span>
                         ))}
                       </div>
                     </div>
                   ) : null}
                   {/* 成功/失败统计 */}
-                  <div className={styles.cardStats}>
-                    <span className={`${styles.statPill} ${styles.statSuccess}`}>
+                  <div className="">
+                    <span className={`$"" $""`}>
                       {t('stats.success')}: {stats.success}
                     </span>
-                    <span className={`${styles.statPill} ${styles.statFailure}`}>
+                    <span className={`$"" $""`}>
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
@@ -1233,6 +1147,7 @@ export function AiProvidersPage() {
             t('ai_providers.gemini_add_button'),
             undefined,
             {
+              emptyIcon: `${ICON_BASE}/gemini-color.png`,
               getRowDisabled: (item) => hasDisableAllModelsRule(item.excludedModels),
               renderExtraActions: (item, index) => (
                 <ToggleSwitch
@@ -1253,8 +1168,9 @@ export function AiProvidersPage() {
               size="sm"
               onClick={() => openProviderModal('codex', null)}
               disabled={disableControls || saving || Boolean(configSwitchingKey)}
+              title={t('ai_providers.codex_add_button')}
             >
-              {t('ai_providers.codex_add_button')}
+              <IconPlus size={16} />
             </Button>
           }
         >
@@ -1270,29 +1186,29 @@ export function AiProvidersPage() {
                 <Fragment>
                   <div className="item-title">{t('ai_providers.codex_item_title')}</div>
                   {/* API Key 行 */}
-                  <div className={styles.fieldRow}>
-                    <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
-                    <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
+                  <div className="">
+                    <span className="">{t('common.api_key')}:</span>
+                    <span className="">{maskApiKey(item.apiKey)}</span>
                   </div>
                   {/* Base URL 行 */}
                   {item.baseUrl && (
-                    <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
-                      <span className={styles.fieldValue}>{item.baseUrl}</span>
+                    <div className="">
+                      <span className="">{t('common.base_url')}:</span>
+                      <span className="">{item.baseUrl}</span>
                     </div>
                   )}
                   {/* Proxy URL 行 */}
                   {item.proxyUrl && (
-                    <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>{t('common.proxy_url')}:</span>
-                      <span className={styles.fieldValue}>{item.proxyUrl}</span>
+                    <div className="">
+                      <span className="">{t('common.proxy_url')}:</span>
+                      <span className="">{item.proxyUrl}</span>
                     </div>
                   )}
                   {/* 自定义请求头徽章 */}
                   {headerEntries.length > 0 && (
-                    <div className={styles.headerBadgeList}>
+                    <div className="">
                       {headerEntries.map(([key, value]) => (
-                        <span key={key} className={styles.headerBadge}>
+                        <span key={key} className="">
                           <strong>{key}:</strong> {value}
                         </span>
                       ))}
@@ -1305,28 +1221,28 @@ export function AiProvidersPage() {
                   )}
                   {/* 排除模型徽章 */}
                   {excludedModels.length ? (
-                    <div className={styles.excludedModelsSection}>
-                      <div className={styles.excludedModelsLabel}>
+                    <div className="">
+                      <div className="">
                         {t('ai_providers.excluded_models_count', { count: excludedModels.length })}
                       </div>
-                      <div className={styles.modelTagList}>
+                      <div className="">
                         {excludedModels.map((model) => (
                           <span
                             key={model}
-                            className={`${styles.modelTag} ${styles.excludedModelTag}`}
+                            className={`$"" $""`}
                           >
-                            <span className={styles.modelName}>{model}</span>
+                            <span className="">{model}</span>
                           </span>
                         ))}
                       </div>
                     </div>
                   ) : null}
                   {/* 成功/失败统计 */}
-                  <div className={styles.cardStats}>
-                    <span className={`${styles.statPill} ${styles.statSuccess}`}>
+                  <div className="">
+                    <span className={`$"" $""`}>
                       {t('stats.success')}: {stats.success}
                     </span>
-                    <span className={`${styles.statPill} ${styles.statFailure}`}>
+                    <span className={`$"" $""`}>
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
@@ -1338,6 +1254,7 @@ export function AiProvidersPage() {
             t('ai_providers.codex_add_button'),
             undefined,
             {
+              emptyIcon: `${ICON_BASE}/openai.png`,
               getRowDisabled: (item) => hasDisableAllModelsRule(item.excludedModels),
               renderExtraActions: (item, index) => (
                 <ToggleSwitch
@@ -1358,8 +1275,9 @@ export function AiProvidersPage() {
               size="sm"
               onClick={() => openProviderModal('claude', null)}
               disabled={disableControls || saving || Boolean(configSwitchingKey)}
+              title={t('ai_providers.claude_add_button')}
             >
-              {t('ai_providers.claude_add_button')}
+              <IconPlus size={16} />
             </Button>
           }
         >
@@ -1375,29 +1293,29 @@ export function AiProvidersPage() {
                 <Fragment>
                   <div className="item-title">{t('ai_providers.claude_item_title')}</div>
                   {/* API Key 行 */}
-                  <div className={styles.fieldRow}>
-                    <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
-                    <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
+                  <div className="">
+                    <span className="">{t('common.api_key')}:</span>
+                    <span className="">{maskApiKey(item.apiKey)}</span>
                   </div>
                   {/* Base URL 行 */}
                   {item.baseUrl && (
-                    <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
-                      <span className={styles.fieldValue}>{item.baseUrl}</span>
+                    <div className="">
+                      <span className="">{t('common.base_url')}:</span>
+                      <span className="">{item.baseUrl}</span>
                     </div>
                   )}
                   {/* Proxy URL 行 */}
                   {item.proxyUrl && (
-                    <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>{t('common.proxy_url')}:</span>
-                      <span className={styles.fieldValue}>{item.proxyUrl}</span>
+                    <div className="">
+                      <span className="">{t('common.proxy_url')}:</span>
+                      <span className="">{item.proxyUrl}</span>
                     </div>
                   )}
                   {/* 自定义请求头徽章 */}
                   {headerEntries.length > 0 && (
-                    <div className={styles.headerBadgeList}>
+                    <div className="">
                       {headerEntries.map(([key, value]) => (
-                        <span key={key} className={styles.headerBadge}>
+                        <span key={key} className="">
                           <strong>{key}:</strong> {value}
                         </span>
                       ))}
@@ -1410,15 +1328,15 @@ export function AiProvidersPage() {
                   )}
                   {/* 模型列表 */}
                   {item.models?.length ? (
-                    <div className={styles.modelTagList}>
-                      <span className={styles.modelCountLabel}>
+                    <div className="">
+                      <span className="">
                         {t('ai_providers.claude_models_count')}: {item.models.length}
                       </span>
                       {item.models.map((model) => (
-                        <span key={model.name} className={styles.modelTag}>
-                          <span className={styles.modelName}>{model.name}</span>
+                        <span key={model.name} className="">
+                          <span className="">{model.name}</span>
                           {model.alias && model.alias !== model.name && (
-                            <span className={styles.modelAlias}>{model.alias}</span>
+                            <span className="">{model.alias}</span>
                           )}
                         </span>
                       ))}
@@ -1426,28 +1344,28 @@ export function AiProvidersPage() {
                   ) : null}
                   {/* 排除模型徽章 */}
                   {excludedModels.length ? (
-                    <div className={styles.excludedModelsSection}>
-                      <div className={styles.excludedModelsLabel}>
+                    <div className="">
+                      <div className="">
                         {t('ai_providers.excluded_models_count', { count: excludedModels.length })}
                       </div>
-                      <div className={styles.modelTagList}>
+                      <div className="">
                         {excludedModels.map((model) => (
                           <span
                             key={model}
-                            className={`${styles.modelTag} ${styles.excludedModelTag}`}
+                            className={`$"" $""`}
                           >
-                            <span className={styles.modelName}>{model}</span>
+                            <span className="">{model}</span>
                           </span>
                         ))}
                       </div>
                     </div>
                   ) : null}
                   {/* 成功/失败统计 */}
-                  <div className={styles.cardStats}>
-                    <span className={`${styles.statPill} ${styles.statSuccess}`}>
+                  <div className="">
+                    <span className={`$"" $""`}>
                       {t('stats.success')}: {stats.success}
                     </span>
-                    <span className={`${styles.statPill} ${styles.statFailure}`}>
+                    <span className={`$"" $""`}>
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
@@ -1459,6 +1377,7 @@ export function AiProvidersPage() {
             t('ai_providers.claude_add_button'),
             undefined,
             {
+              emptyIcon: `${ICON_BASE}/claude-color.png`,
               getRowDisabled: (item) => hasDisableAllModelsRule(item.excludedModels),
               renderExtraActions: (item, index) => (
                 <ToggleSwitch
@@ -1473,87 +1392,15 @@ export function AiProvidersPage() {
         </Card>
 
         <Card
-          title={t('ai_providers.ampcode_title')}
-          extra={
-            <Button
-              size="sm"
-              onClick={openAmpcodeModal}
-              disabled={disableControls || saving || ampcodeSaving || Boolean(configSwitchingKey)}
-            >
-              {t('common.edit')}
-            </Button>
-          }
-        >
-          {loading ? (
-            <div className="hint">{t('common.loading')}</div>
-          ) : (
-            <>
-              <div className={styles.fieldRow}>
-                <span className={styles.fieldLabel}>
-                  {t('ai_providers.ampcode_upstream_url_label')}:
-                </span>
-                <span className={styles.fieldValue}>
-                  {config?.ampcode?.upstreamUrl || t('common.not_set')}
-                </span>
-              </div>
-              <div className={styles.fieldRow}>
-                <span className={styles.fieldLabel}>
-                  {t('ai_providers.ampcode_upstream_api_key_label')}:
-                </span>
-                <span className={styles.fieldValue}>
-                  {config?.ampcode?.upstreamApiKey
-                    ? maskApiKey(config.ampcode.upstreamApiKey)
-                    : t('common.not_set')}
-                </span>
-              </div>
-              <div className={styles.fieldRow}>
-                <span className={styles.fieldLabel}>
-                  {t('ai_providers.ampcode_force_model_mappings_label')}:
-                </span>
-                <span className={styles.fieldValue}>
-                  {(config?.ampcode?.forceModelMappings ?? false)
-                    ? t('common.yes')
-                    : t('common.no')}
-                </span>
-              </div>
-              <div className={styles.fieldRow} style={{ marginTop: 8 }}>
-                <span className={styles.fieldLabel}>
-                  {t('ai_providers.ampcode_model_mappings_count')}:
-                </span>
-                <span className={styles.fieldValue}>
-                  {config?.ampcode?.modelMappings?.length || 0}
-                </span>
-              </div>
-              {config?.ampcode?.modelMappings?.length ? (
-                <div className={styles.modelTagList}>
-                  {config.ampcode.modelMappings.slice(0, 5).map((mapping) => (
-                    <span key={`${mapping.from}→${mapping.to}`} className={styles.modelTag}>
-                      <span className={styles.modelName}>{mapping.from}</span>
-                      <span className={styles.modelAlias}>{mapping.to}</span>
-                    </span>
-                  ))}
-                  {config.ampcode.modelMappings.length > 5 && (
-                    <span className={styles.modelTag}>
-                      <span className={styles.modelName}>
-                        +{config.ampcode.modelMappings.length - 5}
-                      </span>
-                    </span>
-                  )}
-                </div>
-              ) : null}
-            </>
-          )}
-        </Card>
-
-        <Card
           title={t('ai_providers.openai_title')}
           extra={
             <Button
               size="sm"
               onClick={() => openOpenaiModal(null)}
               disabled={disableControls || saving || Boolean(configSwitchingKey)}
+              title={t('ai_providers.openai_add_button')}
             >
-              {t('ai_providers.openai_add_button')}
+              <IconPlus size={16} />
             </Button>
           }
         >
@@ -1568,15 +1415,15 @@ export function AiProvidersPage() {
                 <Fragment>
                   <div className="item-title">{item.name}</div>
                   {/* Base URL 行 */}
-                  <div className={styles.fieldRow}>
-                    <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
-                    <span className={styles.fieldValue}>{item.baseUrl}</span>
+                  <div className="">
+                    <span className="">{t('common.base_url')}:</span>
+                    <span className="">{item.baseUrl}</span>
                   </div>
                   {/* 自定义请求头徽章 */}
                   {headerEntries.length > 0 && (
-                    <div className={styles.headerBadgeList}>
+                    <div className="">
                       {headerEntries.map(([key, value]) => (
-                        <span key={key} className={styles.headerBadge}>
+                        <span key={key} className="">
                           <strong>{key}:</strong> {value}
                         </span>
                       ))}
@@ -1584,30 +1431,30 @@ export function AiProvidersPage() {
                   )}
                   {/* API密钥条目二级卡片 */}
                   {apiKeyEntries.length > 0 && (
-                    <div className={styles.apiKeyEntriesSection}>
-                      <div className={styles.apiKeyEntriesLabel}>
+                    <div className="">
+                      <div className="">
                         {t('ai_providers.openai_keys_count')}: {apiKeyEntries.length}
                       </div>
-                      <div className={styles.apiKeyEntryList}>
+                      <div className="">
                         {apiKeyEntries.map((entry, entryIndex) => {
                           const entryStats = getStatsBySource(entry.apiKey, keyStats, maskApiKey);
                           return (
-                            <div key={entryIndex} className={styles.apiKeyEntryCard}>
-                              <span className={styles.apiKeyEntryIndex}>{entryIndex + 1}</span>
-                              <span className={styles.apiKeyEntryKey}>
+                            <div key={entryIndex} className="">
+                              <span className="">{entryIndex + 1}</span>
+                              <span className="">
                                 {maskApiKey(entry.apiKey)}
                               </span>
                               {entry.proxyUrl && (
-                                <span className={styles.apiKeyEntryProxy}>{entry.proxyUrl}</span>
+                                <span className="">{entry.proxyUrl}</span>
                               )}
-                              <div className={styles.apiKeyEntryStats}>
+                              <div className="">
                                 <span
-                                  className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatSuccess}`}
+                                  className={`$"" $""`}
                                 >
                                   <IconCheck size={12} /> {entryStats.success}
                                 </span>
                                 <span
-                                  className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatFailure}`}
+                                  className={`$"" $""`}
                                 >
                                   <IconX size={12} /> {entryStats.failure}
                                 </span>
@@ -1619,20 +1466,20 @@ export function AiProvidersPage() {
                     </div>
                   )}
                   {/* 模型数量标签 */}
-                  <div className={styles.fieldRow} style={{ marginTop: '8px' }}>
-                    <span className={styles.fieldLabel}>
+                  <div className="" style={{ marginTop: '8px' }}>
+                    <span className="">
                       {t('ai_providers.openai_models_count')}:
                     </span>
-                    <span className={styles.fieldValue}>{item.models?.length || 0}</span>
+                    <span className="">{item.models?.length || 0}</span>
                   </div>
                   {/* 模型列表徽章 */}
                   {item.models?.length ? (
-                    <div className={styles.modelTagList}>
+                    <div className="">
                       {item.models.map((model) => (
-                        <span key={model.name} className={styles.modelTag}>
-                          <span className={styles.modelName}>{model.name}</span>
+                        <span key={model.name} className="">
+                          <span className="">{model.name}</span>
                           {model.alias && model.alias !== model.name && (
-                            <span className={styles.modelAlias}>{model.alias}</span>
+                            <span className="">{model.alias}</span>
                           )}
                         </span>
                       ))}
@@ -1640,17 +1487,17 @@ export function AiProvidersPage() {
                   ) : null}
                   {/* 测试模型 */}
                   {item.testModel && (
-                    <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>Test Model:</span>
-                      <span className={styles.fieldValue}>{item.testModel}</span>
+                    <div className="">
+                      <span className="">Test Model:</span>
+                      <span className="">{item.testModel}</span>
                     </div>
                   )}
                   {/* 成功/失败统计（汇总） */}
-                  <div className={styles.cardStats}>
-                    <span className={`${styles.statPill} ${styles.statSuccess}`}>
+                  <div className="">
+                    <span className={`$"" $""`}>
                       {t('stats.success')}: {stats.success}
                     </span>
-                    <span className={`${styles.statPill} ${styles.statFailure}`}>
+                    <span className={`$"" $""`}>
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
@@ -1659,7 +1506,69 @@ export function AiProvidersPage() {
             },
             (index) => openOpenaiModal(index),
             (item) => deleteOpenai(item.name),
-            t('ai_providers.openai_add_button')
+            t('ai_providers.openai_add_button'),
+            undefined,
+            { emptyIcon: `${ICON_BASE}/openai.png` }
+          )}
+        </Card>
+
+        <Card
+          title={t('ai_providers.ampcode_title')}
+          extra={
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={openAmpcodeModal}
+              disabled={disableControls || saving || ampcodeSaving || Boolean(configSwitchingKey)}
+              title={t('common.edit')}
+            >
+              <IconSettings size={16} />
+            </Button>
+          }
+        >
+          {loading ? (
+            <div className="text-muted-foreground">{t('common.loading')}</div>
+          ) : (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t('ai_providers.ampcode_upstream_url_label')}</span>
+                <span className="font-mono text-xs">{config?.ampcode?.upstreamUrl || t('common.not_set')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t('ai_providers.ampcode_upstream_api_key_label')}</span>
+                <span className="font-mono text-xs">
+                  {config?.ampcode?.upstreamApiKey ? maskApiKey(config.ampcode.upstreamApiKey) : t('common.not_set')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t('ai_providers.ampcode_restrict_management_label')}</span>
+                <span>{(config?.ampcode?.restrictManagementToLocalhost ?? true) ? t('common.yes') : t('common.no')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t('ai_providers.ampcode_force_model_mappings_label')}</span>
+                <span>{(config?.ampcode?.forceModelMappings ?? false) ? t('common.yes') : t('common.no')}</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-border">
+                <span className="text-muted-foreground">{t('ai_providers.ampcode_model_mappings_count')}</span>
+                <span>{config?.ampcode?.modelMappings?.length || 0}</span>
+              </div>
+              {config?.ampcode?.modelMappings?.length ? (
+                <div className="flex flex-wrap gap-1">
+                  {config.ampcode.modelMappings.slice(0, 5).map((mapping) => (
+                    <span key={`${mapping.from}→${mapping.to}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-muted text-xs rounded">
+                      <span>{mapping.from}</span>
+                      <span className="text-muted-foreground">→</span>
+                      <span>{mapping.to}</span>
+                    </span>
+                  ))}
+                  {config.ampcode.modelMappings.length > 5 && (
+                    <span className="px-1.5 py-0.5 bg-muted text-xs rounded text-muted-foreground">
+                      +{config.ampcode.modelMappings.length - 5}
+                    </span>
+                  )}
+                </div>
+              ) : null}
+            </div>
           )}
         </Card>
 
@@ -1683,67 +1592,71 @@ export function AiProvidersPage() {
             </>
           }
         >
-          {ampcodeModalError && <div className="error-box">{ampcodeModalError}</div>}
-          <Input
-            label={t('ai_providers.ampcode_upstream_url_label')}
-            placeholder={t('ai_providers.ampcode_upstream_url_placeholder')}
-            value={ampcodeForm.upstreamUrl}
-            onChange={(e) => setAmpcodeForm((prev) => ({ ...prev, upstreamUrl: e.target.value }))}
-            disabled={ampcodeModalLoading || ampcodeSaving}
-            hint={t('ai_providers.ampcode_upstream_url_hint')}
-          />
-          <Input
-            label={t('ai_providers.ampcode_upstream_api_key_label')}
-            placeholder={t('ai_providers.ampcode_upstream_api_key_placeholder')}
-            type="password"
-            value={ampcodeForm.upstreamApiKey}
-            onChange={(e) =>
-              setAmpcodeForm((prev) => ({ ...prev, upstreamApiKey: e.target.value }))
-            }
-            disabled={ampcodeModalLoading || ampcodeSaving}
-            hint={t('ai_providers.ampcode_upstream_api_key_hint')}
-          />
-          <div
-            style={{
-              display: 'flex',
-              gap: 8,
-              alignItems: 'center',
-              marginTop: -8,
-              marginBottom: 12,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div className="hint" style={{ margin: 0 }}>
-              {t('ai_providers.ampcode_upstream_api_key_current', {
-                key: config?.ampcode?.upstreamApiKey
-                  ? maskApiKey(config.ampcode.upstreamApiKey)
-                  : t('common.not_set'),
-              })}
-            </div>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={clearAmpcodeUpstreamApiKey}
-              disabled={ampcodeModalLoading || ampcodeSaving || !config?.ampcode?.upstreamApiKey}
-            >
-              {t('ai_providers.ampcode_clear_upstream_api_key')}
-            </Button>
-          </div>
-
-          <div className="form-group">
-            <ToggleSwitch
-              label={t('ai_providers.ampcode_force_model_mappings_label')}
-              checked={ampcodeForm.forceModelMappings}
-              onChange={(value) =>
-                setAmpcodeForm((prev) => ({ ...prev, forceModelMappings: value }))
-              }
+          {ampcodeModalError && <div className="p-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded">{ampcodeModalError}</div>}
+          
+          {/* Upstream 配置 */}
+          <div className="space-y-3 pb-4 border-b border-border">
+            <Input
+              label={t('ai_providers.ampcode_upstream_url_label')}
+              placeholder={t('ai_providers.ampcode_upstream_url_placeholder')}
+              value={ampcodeForm.upstreamUrl}
+              onChange={(e) => setAmpcodeForm((prev) => ({ ...prev, upstreamUrl: e.target.value }))}
               disabled={ampcodeModalLoading || ampcodeSaving}
+              hint={t('ai_providers.ampcode_upstream_url_hint')}
             />
-            <div className="hint">{t('ai_providers.ampcode_force_model_mappings_hint')}</div>
+            <Input
+              label={t('ai_providers.ampcode_upstream_api_key_label')}
+              placeholder={t('ai_providers.ampcode_upstream_api_key_placeholder')}
+              type="password"
+              value={ampcodeForm.upstreamApiKey}
+              onChange={(e) => setAmpcodeForm((prev) => ({ ...prev, upstreamApiKey: e.target.value }))}
+              disabled={ampcodeModalLoading || ampcodeSaving}
+              hint={t('ai_providers.ampcode_upstream_api_key_hint')}
+            />
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-muted-foreground">
+                {t('ai_providers.ampcode_upstream_api_key_current', {
+                  key: config?.ampcode?.upstreamApiKey ? maskApiKey(config.ampcode.upstreamApiKey) : t('common.not_set'),
+                })}
+              </span>
+              {config?.ampcode?.upstreamApiKey && (
+                <button
+                  type="button"
+                  onClick={clearAmpcodeUpstreamApiKey}
+                  disabled={ampcodeModalLoading || ampcodeSaving}
+                  className="text-destructive hover:underline disabled:opacity-50"
+                >
+                  {t('ai_providers.ampcode_clear_upstream_api_key')}
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="form-group">
-            <label>{t('ai_providers.ampcode_model_mappings_label')}</label>
+          {/* 开关选项 */}
+          <div className="space-y-3 pb-4 border-b border-border">
+            <div className="space-y-1">
+              <ToggleSwitch
+                label={t('ai_providers.ampcode_restrict_management_label')}
+                checked={ampcodeForm.restrictManagementToLocalhost}
+                onChange={(value) => setAmpcodeForm((prev) => ({ ...prev, restrictManagementToLocalhost: value }))}
+                disabled={ampcodeModalLoading || ampcodeSaving}
+              />
+              <p className="text-xs text-muted-foreground pl-11">{t('ai_providers.ampcode_restrict_management_hint')}</p>
+            </div>
+            <div className="space-y-1">
+              <ToggleSwitch
+                label={t('ai_providers.ampcode_force_model_mappings_label')}
+                checked={ampcodeForm.forceModelMappings}
+                onChange={(value) => setAmpcodeForm((prev) => ({ ...prev, forceModelMappings: value }))}
+                disabled={ampcodeModalLoading || ampcodeSaving}
+              />
+              <p className="text-xs text-muted-foreground pl-11">{t('ai_providers.ampcode_force_model_mappings_hint')}</p>
+            </div>
+          </div>
+
+          {/* 模型映射 */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium">{t('ai_providers.ampcode_model_mappings_label')}</label>
             <ModelInputList
               entries={ampcodeForm.mappingEntries}
               onChange={(entries) => {
@@ -1755,156 +1668,34 @@ export function AiProvidersPage() {
               aliasPlaceholder={t('ai_providers.ampcode_model_mappings_to_placeholder')}
               disabled={ampcodeModalLoading || ampcodeSaving}
             />
-            <div className="hint">{t('ai_providers.ampcode_model_mappings_hint')}</div>
+            <p className="text-xs text-muted-foreground">{t('ai_providers.ampcode_model_mappings_hint')}</p>
           </div>
         </Modal>
 
-        {/* Gemini Modal */}
-        <Modal
-          open={modal?.type === 'gemini'}
+        {/* Gemini / Codex / Claude Modal */}
+        <ProviderFormModal
+          open={modal?.type === 'gemini' || modal?.type === 'codex' || modal?.type === 'claude'}
           onClose={closeModal}
-          title={
-            modal?.index !== null
-              ? t('ai_providers.gemini_edit_modal_title')
-              : t('ai_providers.gemini_add_modal_title')
+          type={(modal?.type as 'gemini' | 'codex' | 'claude') || 'gemini'}
+          isEdit={modal?.index !== null}
+          initialData={
+            modal?.type === 'gemini' && modal.index !== null
+              ? geminiKeys[modal.index]
+              : modal?.type === 'codex' && modal.index !== null
+                ? codexConfigs[modal.index]
+                : modal?.type === 'claude' && modal.index !== null
+                  ? claudeConfigs[modal.index]
+                  : undefined
           }
-          footer={
-            <>
-              <Button variant="secondary" onClick={closeModal} disabled={saving}>
-                {t('common.cancel')}
-              </Button>
-              <Button onClick={saveGemini} loading={saving}>
-                {t('common.save')}
-              </Button>
-            </>
-          }
-        >
-          <Input
-            label={t('ai_providers.gemini_add_modal_key_label')}
-            placeholder={t('ai_providers.gemini_add_modal_key_placeholder')}
-            value={geminiForm.apiKey}
-            onChange={(e) => setGeminiForm((prev) => ({ ...prev, apiKey: e.target.value }))}
-          />
-          <Input
-            label={t('ai_providers.gemini_base_url_label')}
-            placeholder={t('ai_providers.gemini_base_url_placeholder')}
-            value={geminiForm.baseUrl ?? ''}
-            onChange={(e) => setGeminiForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
-          />
-          <HeaderInputList
-            entries={headersToEntries(geminiForm.headers as any)}
-            onChange={(entries) =>
-              setGeminiForm((prev) => ({ ...prev, headers: buildHeaderObject(entries) }))
+          onSave={async (data) => {
+            if (modal?.type === 'gemini') {
+              await saveGeminiWithData(data as GeminiKeyConfig);
+            } else if (modal?.type === 'codex' || modal?.type === 'claude') {
+              await saveProviderWithData(modal.type, data as ProviderKeyConfig);
             }
-            addLabel={t('common.custom_headers_add')}
-            keyPlaceholder={t('common.custom_headers_key_placeholder')}
-            valuePlaceholder={t('common.custom_headers_value_placeholder')}
-          />
-          <div className="form-group">
-            <label>{t('ai_providers.excluded_models_label')}</label>
-            <textarea
-              className="input"
-              placeholder={t('ai_providers.excluded_models_placeholder')}
-              value={geminiForm.excludedText}
-              onChange={(e) => setGeminiForm((prev) => ({ ...prev, excludedText: e.target.value }))}
-              rows={4}
-            />
-            <div className="hint">{t('ai_providers.excluded_models_hint')}</div>
-          </div>
-        </Modal>
-
-        {/* Codex / Claude Modal */}
-        <Modal
-          open={modal?.type === 'codex' || modal?.type === 'claude'}
-          onClose={closeModal}
-          title={
-            modal?.type === 'codex'
-              ? modal.index !== null
-                ? t('ai_providers.codex_edit_modal_title')
-                : t('ai_providers.codex_add_modal_title')
-              : modal?.type === 'claude' && modal.index !== null
-                ? t('ai_providers.claude_edit_modal_title')
-                : t('ai_providers.claude_add_modal_title')
-          }
-          footer={
-            <>
-              <Button variant="secondary" onClick={closeModal} disabled={saving}>
-                {t('common.cancel')}
-              </Button>
-              <Button
-                onClick={() => saveProvider(modal?.type as 'codex' | 'claude')}
-                loading={saving}
-              >
-                {t('common.save')}
-              </Button>
-            </>
-          }
-        >
-          <Input
-            label={
-              modal?.type === 'codex'
-                ? t('ai_providers.codex_add_modal_key_label')
-                : t('ai_providers.claude_add_modal_key_label')
-            }
-            value={providerForm.apiKey}
-            onChange={(e) => setProviderForm((prev) => ({ ...prev, apiKey: e.target.value }))}
-          />
-          <Input
-            label={
-              modal?.type === 'codex'
-                ? t('ai_providers.codex_add_modal_url_label')
-                : t('ai_providers.claude_add_modal_url_label')
-            }
-            value={providerForm.baseUrl ?? ''}
-            onChange={(e) => setProviderForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
-          />
-          <Input
-            label={
-              modal?.type === 'codex'
-                ? t('ai_providers.codex_add_modal_proxy_label')
-                : t('ai_providers.claude_add_modal_proxy_label')
-            }
-            value={providerForm.proxyUrl ?? ''}
-            onChange={(e) => setProviderForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
-          />
-          <HeaderInputList
-            entries={headersToEntries(providerForm.headers as any)}
-            onChange={(entries) =>
-              setProviderForm((prev) => ({ ...prev, headers: buildHeaderObject(entries) }))
-            }
-            addLabel={t('common.custom_headers_add')}
-            keyPlaceholder={t('common.custom_headers_key_placeholder')}
-            valuePlaceholder={t('common.custom_headers_value_placeholder')}
-          />
-          {modal?.type === 'claude' && (
-            <div className="form-group">
-              <label>{t('ai_providers.claude_models_label')}</label>
-              <ModelInputList
-                entries={providerForm.modelEntries}
-                onChange={(entries) =>
-                  setProviderForm((prev) => ({ ...prev, modelEntries: entries }))
-                }
-                addLabel={t('ai_providers.claude_models_add_btn')}
-                namePlaceholder={t('common.model_name_placeholder')}
-                aliasPlaceholder={t('common.model_alias_placeholder')}
-                disabled={saving}
-              />
-            </div>
-          )}
-          <div className="form-group">
-            <label>{t('ai_providers.excluded_models_label')}</label>
-            <textarea
-              className="input"
-              placeholder={t('ai_providers.excluded_models_placeholder')}
-              value={providerForm.excludedText}
-              onChange={(e) =>
-                setProviderForm((prev) => ({ ...prev, excludedText: e.target.value }))
-              }
-              rows={4}
-            />
-            <div className="hint">{t('ai_providers.excluded_models_hint')}</div>
-          </div>
-        </Modal>
+          }}
+          saving={saving}
+        />
 
         {/* OpenAI Modal */}
         <Modal
@@ -1926,32 +1717,43 @@ export function AiProvidersPage() {
             </>
           }
         >
-          <Input
-            label={t('ai_providers.openai_add_modal_name_label')}
-            value={openaiForm.name}
-            onChange={(e) => setOpenaiForm((prev) => ({ ...prev, name: e.target.value }))}
-          />
-          <Input
-            label={t('ai_providers.openai_add_modal_url_label')}
-            value={openaiForm.baseUrl}
-            onChange={(e) => setOpenaiForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
-          />
+          {/* 基本信息 */}
+          <div className="space-y-3 pb-4 border-b border-border">
+            <Input
+              label={t('ai_providers.openai_add_modal_name_label')}
+              value={openaiForm.name}
+              onChange={(e) => setOpenaiForm((prev) => ({ ...prev, name: e.target.value }))}
+            />
+            <Input
+              label={t('ai_providers.openai_add_modal_url_label')}
+              value={openaiForm.baseUrl}
+              onChange={(e) => setOpenaiForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
+            />
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">{t('common.custom_headers_label')}</label>
+              <HeaderInputList
+                entries={openaiForm.headers}
+                onChange={(entries) => setOpenaiForm((prev) => ({ ...prev, headers: entries }))}
+                addLabel={t('common.custom_headers_add')}
+                keyPlaceholder={t('common.custom_headers_key_placeholder')}
+                valuePlaceholder={t('common.custom_headers_value_placeholder')}
+              />
+            </div>
+          </div>
 
-          <HeaderInputList
-            entries={openaiForm.headers}
-            onChange={(entries) => setOpenaiForm((prev) => ({ ...prev, headers: entries }))}
-            addLabel={t('common.custom_headers_add')}
-            keyPlaceholder={t('common.custom_headers_key_placeholder')}
-            valuePlaceholder={t('common.custom_headers_value_placeholder')}
-          />
-
-          <div className="form-group">
-            <label>
-              {modal?.index !== null
-                ? t('ai_providers.openai_edit_modal_models_label')
-                : t('ai_providers.openai_add_modal_models_label')}
-            </label>
-            <div className="hint">{t('ai_providers.openai_models_hint')}</div>
+          {/* 模型列表 */}
+          <div className="space-y-2 pb-4 border-b border-border">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium">{t('ai_providers.claude_models_label')}</label>
+              <button
+                type="button"
+                onClick={openOpenaiModelDiscovery}
+                disabled={saving}
+                className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 underline underline-offset-2"
+              >
+                {t('ai_providers.openai_models_fetch_button')}
+              </button>
+            </div>
             <ModelInputList
               entries={openaiForm.modelEntries}
               onChange={(entries) => setOpenaiForm((prev) => ({ ...prev, modelEntries: entries }))}
@@ -1960,22 +1762,14 @@ export function AiProvidersPage() {
               aliasPlaceholder={t('common.model_alias_placeholder')}
               disabled={saving}
             />
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={openOpenaiModelDiscovery}
-              disabled={saving}
-            >
-              {t('ai_providers.openai_models_fetch_button')}
-            </Button>
           </div>
 
-          <div className="form-group">
-            <label>{t('ai_providers.openai_test_title')}</label>
-            <div className="hint">{t('ai_providers.openai_test_hint')}</div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* 连通性测试 */}
+          <div className="space-y-2 pb-4 border-b border-border">
+            <label className="text-xs font-medium">{t('ai_providers.openai_test_title')}</label>
+            <div className="flex gap-2 items-center">
               <select
-                className={`input ${styles.openaiTestSelect}`}
+                className="dark:bg-input/30 border-input focus-visible:border-ring focus-visible:ring-ring/50 h-8 flex-1 rounded-none border bg-transparent px-2.5 py-1 text-xs outline-none focus-visible:ring-1"
                 value={openaiTestModel}
                 onChange={(e) => {
                   setOpenaiTestModel(e.target.value);
@@ -2004,7 +1798,7 @@ export function AiProvidersPage() {
               </select>
               <Button
                 variant={openaiTestStatus === 'error' ? 'danger' : 'secondary'}
-                className={`${styles.openaiTestButton} ${openaiTestStatus === 'success' ? styles.openaiTestButtonSuccess : ''}`}
+                size="sm"
                 onClick={testOpenaiProviderConnection}
                 loading={openaiTestStatus === 'loading'}
                 disabled={saving || openaiAvailableModels.length === 0}
@@ -2013,22 +1807,14 @@ export function AiProvidersPage() {
               </Button>
             </div>
             {openaiTestMessage && (
-              <div
-                className={`status-badge ${
-                  openaiTestStatus === 'error'
-                    ? 'error'
-                    : openaiTestStatus === 'success'
-                      ? 'success'
-                      : 'muted'
-                }`}
-              >
+              <p className={`text-xs ${openaiTestStatus === 'error' ? 'text-destructive' : openaiTestStatus === 'success' ? 'text-green-600' : 'text-muted-foreground'}`}>
                 {openaiTestMessage}
-              </div>
+              </p>
             )}
           </div>
 
-          <div className="form-group">
-            <label>{t('ai_providers.openai_add_modal_keys_label')}</label>
+          <div className="space-y-2">
+            <label className="text-xs font-medium">{t('ai_providers.openai_add_modal_keys_label')}</label>
             {renderKeyEntries(openaiForm.apiKeyEntries)}
           </div>
         </Modal>
@@ -2057,13 +1843,15 @@ export function AiProvidersPage() {
             </>
           }
         >
-          <div className="hint" style={{ marginBottom: 8 }}>
-            {t('ai_providers.openai_models_fetch_hint')}
-          </div>
-          <div className="form-group">
-            <label>{t('ai_providers.openai_models_fetch_url_label')}</label>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input className="input" readOnly value={openaiDiscoveryEndpoint} />
+          <p className="text-xs text-muted-foreground">{t('ai_providers.openai_models_fetch_hint')}</p>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium">{t('ai_providers.openai_models_fetch_url_label')}</label>
+            <div className="flex gap-2 items-center">
+              <input 
+                className="dark:bg-input/30 border-input h-8 flex-1 rounded-none border bg-transparent px-2.5 py-1 text-xs outline-none"
+                readOnly 
+                value={openaiDiscoveryEndpoint} 
+              />
               <Button
                 variant="secondary"
                 size="sm"
@@ -2080,36 +1868,37 @@ export function AiProvidersPage() {
             value={openaiDiscoverySearch}
             onChange={(e) => setOpenaiDiscoverySearch(e.target.value)}
           />
-          {openaiDiscoveryError && <div className="error-box">{openaiDiscoveryError}</div>}
+          {openaiDiscoveryError && <div className="p-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded">{openaiDiscoveryError}</div>}
           {openaiDiscoveryLoading ? (
-            <div className="hint">{t('ai_providers.openai_models_fetch_loading')}</div>
+            <div className="text-sm text-muted-foreground">{t('ai_providers.openai_models_fetch_loading')}</div>
           ) : openaiDiscoveryModels.length === 0 ? (
-            <div className="hint">{t('ai_providers.openai_models_fetch_empty')}</div>
+            <div className="text-sm text-muted-foreground">{t('ai_providers.openai_models_fetch_empty')}</div>
           ) : filteredOpenaiDiscoveryModels.length === 0 ? (
-            <div className="hint">{t('ai_providers.openai_models_search_empty')}</div>
+            <div className="text-sm text-muted-foreground">{t('ai_providers.openai_models_search_empty')}</div>
           ) : (
-            <div className={styles.modelDiscoveryList}>
+            <div className="space-y-1 max-h-60 overflow-y-auto">
               {filteredOpenaiDiscoveryModels.map((model) => {
                 const checked = openaiDiscoverySelected.has(model.name);
                 return (
                   <label
                     key={model.name}
-                    className={`${styles.modelDiscoveryRow} ${checked ? styles.modelDiscoveryRowSelected : ''}`}
+                    className={`flex items-start gap-2 p-2 cursor-pointer hover:bg-muted/50 ${checked ? 'bg-muted/30' : ''}`}
                   >
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleOpenaiModelSelection(model.name)}
+                      className="mt-0.5"
                     />
-                    <div className={styles.modelDiscoveryMeta}>
-                      <div className={styles.modelDiscoveryName}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">
                         {model.name}
                         {model.alias && (
-                          <span className={styles.modelDiscoveryAlias}>{model.alias}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">({model.alias})</span>
                         )}
                       </div>
                       {model.description && (
-                        <div className={styles.modelDiscoveryDesc}>{model.description}</div>
+                        <div className="text-xs text-muted-foreground truncate">{model.description}</div>
                       )}
                     </div>
                   </label>

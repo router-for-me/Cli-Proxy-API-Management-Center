@@ -1,5 +1,11 @@
 import type { PropsWithChildren, ReactNode } from 'react';
-import { IconX } from './icons';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from './dialog';
 
 interface ModalProps {
   open: boolean;
@@ -9,27 +15,33 @@ interface ModalProps {
   width?: number | string;
 }
 
-export function Modal({ open, title, onClose, footer, width = 520, children }: PropsWithChildren<ModalProps>) {
-  if (!open) return null;
-
-  const handleMaskClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      onClose();
-    }
-  };
-
+export function Modal({ 
+  open, 
+  title, 
+  onClose, 
+  footer, 
+  width = 520, 
+  children 
+}: PropsWithChildren<ModalProps>) {
   return (
-    <div className="modal-overlay" onClick={handleMaskClick}>
-      <div className="modal" style={{ width }} role="dialog" aria-modal="true">
-        <div className="modal-header">
-          <div className="modal-title">{title}</div>
-          <button className="modal-close" onClick={onClose} aria-label="Close">
-            <IconX size={18} />
-          </button>
-        </div>
-        <div className="modal-body">{children}</div>
-        {footer && <div className="modal-footer">{footer}</div>}
-      </div>
-    </div>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent 
+        className="gap-0 p-0" 
+        style={{ maxWidth: typeof width === 'number' ? `${width}px` : width }}
+        showCloseButton={true}
+      >
+        {title && (
+          <DialogHeader className="px-4 py-3 border-b border-border">
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
+        )}
+        <div className="p-4 text-xs space-y-4">{children}</div>
+        {footer && (
+          <DialogFooter className="px-4 py-3 border-t border-border">
+            {footer}
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
