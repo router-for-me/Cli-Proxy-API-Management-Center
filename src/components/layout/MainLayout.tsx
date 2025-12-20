@@ -233,32 +233,19 @@ export function MainLayout() {
   const headerActions = (
     <div className="flex items-center gap-3 text-xs">
       <div className="flex h-7 items-center border border-border bg-card divide-x divide-border">
-      <Tooltip content={t('language.switch')}>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => { sound.toggleSound(); toggleLanguage(); }}
-          className="w-9 h-full rounded-none text-muted-foreground hover:text-foreground"
-        >
-          {headerIcons.language}
-        </Button>
-      </Tooltip>
-      <Tooltip content={theme === 'light' ? t('theme.switch_to_dark') : t('theme.switch_to_light')}>
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
           onClick={() => { sound.toggleSound(); toggleTheme(); }}
-          className="w-9 h-full rounded-none text-muted-foreground hover:text-foreground"
+          className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          title={theme === 'light' ? t('theme.switch_to_dark') : t('theme.switch_to_light')}
         >
           {theme === 'light' ? headerIcons.sun : headerIcons.moon}
-        </Button>
-      </Tooltip>
-      <Tooltip content={sound.muted ? t('sound.unmute') : t('sound.mute')}>
-        <Button
-          variant="ghost"
-          size="sm"
+        </button>
+        <button
+          type="button"
           onClick={() => { if (sound.muted) { sound.toggle(); sound.toggleSound(); } else { sound.toggleSound(); sound.toggle(); } }}
-          className="w-9 h-full rounded-none text-muted-foreground hover:text-foreground"
+          className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          title={sound.muted ? t('sound.unmute') : t('sound.mute')}
         >
           {sound.muted ? (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -272,18 +259,27 @@ export function MainLayout() {
               <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
             </svg>
           )}
-        </Button>
-      </Tooltip>
-      <Tooltip content={t('header.logout')}>
-        <Button
-          variant="ghost"
-          size="sm"
+        </button>
+        <button
+          type="button"
+          onClick={() => { sound.toggleSound(); toggleLanguage(); }}
+          className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          title={t('language.switch')}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+        </button>
+        <button
+          type="button"
           onClick={() => { sound.click(); logout(); }}
-          className="w-9 h-full rounded-none text-muted-foreground hover:text-foreground"
+          className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          title={t('header.logout')}
         >
           {headerIcons.logout}
-        </Button>
-      </Tooltip>
+        </button>
       </div>
     </div>
   );
