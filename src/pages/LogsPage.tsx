@@ -601,15 +601,14 @@ export function LogsPage() {
         <Card
           title={t('logs.log_content')}
           extra={
-            <div className="">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => loadLogs(false)}
                 disabled={disableControls || loading}
-                className=""
               >
-                <span className="">
+                <span className="flex items-center gap-1">
                   <IconRefreshCw size={16} />
                   {t('logs.refresh_button')}
                 </span>
@@ -619,7 +618,7 @@ export function LogsPage() {
                 onChange={(value) => setAutoRefresh(value)}
                 disabled={disableControls}
                 label={
-                  <span className="">
+                  <span className="flex items-center gap-1">
                     <IconTimer size={16} />
                     {t('logs.auto_refresh')}
                   </span>
@@ -630,9 +629,8 @@ export function LogsPage() {
                 size="sm"
                 onClick={downloadLogs}
                 disabled={logState.buffer.length === 0}
-                className=""
               >
-                <span className="">
+                <span className="flex items-center gap-1">
                   <IconDownload size={16} />
                   {t('logs.download_button')}
                 </span>
@@ -642,9 +640,8 @@ export function LogsPage() {
                 size="sm"
                 onClick={clearLogs}
                 disabled={disableControls}
-                className=""
               >
-                <span className="">
+                <span className="flex items-center gap-1">
                   <IconTrash2 size={16} />
                   {t('logs.clear_button')}
                 </span>
@@ -654,13 +651,12 @@ export function LogsPage() {
         >
           {error && <div className="error-box">{error}</div>}
 
-          <div className="">
-            <div className="">
+          <div className="flex flex-wrap items-center gap-3 mb-3">
+            <div className="flex-1 min-w-48">
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('logs.search_placeholder')}
-                className=""
                 rightElement={
                   searchQuery ? (
                     <Button
@@ -674,7 +670,7 @@ export function LogsPage() {
                       <IconX size={16} />
                     </Button>
                   ) : (
-                    <IconSearch size={16} className="" />
+                    <IconSearch size={16} className="text-muted-foreground" />
                   )
                 }
               />
@@ -684,19 +680,19 @@ export function LogsPage() {
               checked={hideManagementLogs}
               onChange={setHideManagementLogs}
               label={
-                <span className="">
+                <span className="flex items-center gap-1">
                   <IconEyeOff size={16} />
                   {t('logs.hide_management_logs', { prefix: MANAGEMENT_API_PREFIX })}
                 </span>
               }
             />
 
-            <div className="">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>
                 {parsedVisibleLines.length} {t('logs.lines')}
               </span>
               {removedCount > 0 && (
-                <span className="">
+                <span className="text-amber-500">
                   {t('logs.removed')} {removedCount}
                 </span>
               )}
@@ -706,21 +702,21 @@ export function LogsPage() {
           {loading ? (
             <div className="hint">{t('logs.loading')}</div>
           ) : logState.buffer.length > 0 && parsedVisibleLines.length > 0 ? (
-            <div ref={logViewerRef} className="" onScroll={handleLogScroll}>
+            <div ref={logViewerRef} className="max-h-[60vh] overflow-auto font-mono text-xs bg-muted/30 rounded p-2" onScroll={handleLogScroll}>
               {canLoadMore && (
-                <div className="">
+                <div className="text-center text-muted-foreground text-xs py-2 border-b border-border mb-2">
                   <span>{t('logs.load_more_hint')}</span>
-                  <span className="">
+                  <span className="ml-2 text-amber-500">
                     {t('logs.hidden_lines', { count: logState.visibleFrom })}
                   </span>
                 </div>
               )}
-              <div className="">
+              <div className="space-y-0.5">
                 {parsedVisibleLines.map((line, index) => {
-                  const rowClassNames = [""];
-                  if (line.level === 'warn') rowClassNames.push("");
+                  const rowClassNames = ["flex gap-2 px-1 py-0.5 hover:bg-muted/50 rounded cursor-pointer"];
+                  if (line.level === 'warn') rowClassNames.push("bg-amber-500/10");
                   if (line.level === 'error' || line.level === 'fatal')
-                    rowClassNames.push("");
+                    rowClassNames.push("bg-red-500/10");
                   return (
                     <div
                       key={`${logState.visibleFrom + index}-${line.raw}`}
@@ -732,20 +728,20 @@ export function LogsPage() {
                         defaultValue: 'Double-click to copy',
                       })}
                     >
-                      <div className="">{line.timestamp || ''}</div>
-                      <div className="">
-                        <div className="">
+                      <div className="text-muted-foreground shrink-0 w-20">{line.timestamp || ''}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
                           {line.level && (
                             <span
                               className={[
-                                "",
-                                line.level === 'info' ? "" : '',
-                                line.level === 'warn' ? "" : '',
+                                "px-1.5 py-0.5 rounded text-xs font-medium",
+                                line.level === 'info' ? "bg-blue-500/20 text-blue-600" : '',
+                                line.level === 'warn' ? "bg-amber-500/20 text-amber-600" : '',
                                 line.level === 'error' || line.level === 'fatal'
-                                  ? ""
+                                  ? "bg-red-500/20 text-red-600"
                                   : '',
-                                line.level === 'debug' ? "" : '',
-                                line.level === 'trace' ? "" : '',
+                                line.level === 'debug' ? "bg-gray-500/20 text-gray-600" : '',
+                                line.level === 'trace' ? "bg-purple-500/20 text-purple-600" : '',
                               ]
                                 .filter(Boolean)
                                 .join(' ')}
@@ -755,7 +751,7 @@ export function LogsPage() {
                           )}
 
                           {line.source && (
-                            <span className="" title={line.source}>
+                            <span className="text-muted-foreground truncate max-w-32" title={line.source}>
                               {line.source}
                             </span>
                           )}
@@ -778,21 +774,21 @@ export function LogsPage() {
                             </span>
                           )}
 
-                          {line.latency && <span className="">{line.latency}</span>}
-                          {line.ip && <span className="">{line.ip}</span>}
+                          {line.latency && <span className="text-muted-foreground">{line.latency}</span>}
+                          {line.ip && <span className="text-muted-foreground">{line.ip}</span>}
 
                           {line.method && (
-                            <span className={["", ""].join(' ')}>
+                            <span className="font-medium text-blue-500">
                               {line.method}
                             </span>
                           )}
                           {line.path && (
-                            <span className="" title={line.path}>
+                            <span className="text-foreground truncate" title={line.path}>
                               {line.path}
                             </span>
                           )}
                         </div>
-                        {line.message && <div className="">{line.message}</div>}
+                        {line.message && <div className="text-foreground/80 break-all">{line.message}</div>}
                       </div>
                     </div>
                   );
