@@ -46,35 +46,12 @@ jobs:
           previous_tag="$(git tag --list 'v*' --sort=-v:refname | grep -v "^${current_tag}$" | head -n 1 || true)"
           if [ -n "${previous_tag}" ]; then
             range="${previous_tag}..${current_tag}"
-            title="Changes since ${previous_tag}"
           else
             range="${current_tag}"
-            title="Changes"
           fi
 
-          {
-            echo "## CLI Proxy API Management Center - ${current_tag}"
-            echo
-            echo "### Download and Usage"
-            echo "1. Download the \`management.html\` file"
-            echo "2. Open it directly in your browser"
-            echo "3. All assets (CSS, JavaScript, images) are bundled into this single file"
-            echo
-            echo "### Features"
-            echo "- Single file, no external dependencies required"
-            echo "- Complete management interface for CLI Proxy API"
-            echo "- Support for local and remote connections"
-            echo "- Multi-language support (Chinese/English)"
-            echo "- Dark/Light theme support"
-            echo
-            echo "### ${title}"
-            echo
-            git log --pretty=format:"- %h %s" "${range}"
-            echo
-            echo
-            echo "---"
-            echo "🤖 Generated with GitHub Actions"
-          } > release-notes.md
+          : > release-notes.md
+          git log --pretty=format:"- %h %s" "${range}" >> release-notes.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
