@@ -205,15 +205,6 @@ const normalizeAmpcodeConfig = (payload: any): AmpcodeConfig | undefined => {
   const upstreamApiKey = source['upstream-api-key'] ?? source.upstreamApiKey ?? source['upstream_api_key'];
   if (upstreamApiKey) config.upstreamApiKey = String(upstreamApiKey);
 
-  const restrictManagementToLocalhost = normalizeBoolean(
-    source['restrict-management-to-localhost'] ??
-      source.restrictManagementToLocalhost ??
-      source['restrict_management_to_localhost']
-  );
-  if (restrictManagementToLocalhost !== undefined) {
-    config.restrictManagementToLocalhost = restrictManagementToLocalhost;
-  }
-
   const forceModelMappings = normalizeBoolean(
     source['force-model-mappings'] ?? source.forceModelMappings ?? source['force_model_mappings']
   );

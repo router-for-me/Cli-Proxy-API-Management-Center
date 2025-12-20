@@ -10,7 +10,6 @@ export interface AmpcodeModelMapping {
 export interface AmpcodeConfig {
   upstreamUrl?: string;
   upstreamApiKey?: string;
-  restrictManagementToLocalhost?: boolean;
   modelMappings?: AmpcodeModelMapping[];
   forceModelMappings?: boolean;
 }

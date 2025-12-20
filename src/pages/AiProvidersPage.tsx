@@ -49,7 +49,6 @@ interface OpenAIFormState {
 interface AmpcodeFormState {
   upstreamUrl: string;
   upstreamApiKey: string;
-  restrictManagementToLocalhost: boolean;
   forceModelMappings: boolean;
   mappingEntries: ModelEntry[];
 }
@@ -174,7 +173,6 @@ const entriesToAmpcodeMappings = (entries: ModelEntry[]): AmpcodeModelMapping[] 
 const buildAmpcodeFormState = (ampcode?: AmpcodeConfig | null): AmpcodeFormState => ({
   upstreamUrl: ampcode?.upstreamUrl ?? '',
   upstreamApiKey: '',
-  restrictManagementToLocalhost: ampcode?.restrictManagementToLocalhost ?? true,
   forceModelMappings: ampcode?.forceModelMappings ?? false,
   mappingEntries: ampcodeMappingsToEntries(ampcode?.modelMappings),
 });
@@ -701,9 +699,6 @@ export function AiProvidersPage() {
         await ampcodeApi.clearUpstreamUrl();
       }
 
-      await ampcodeApi.updateRestrictManagementToLocalhost(
-        ampcodeForm.restrictManagementToLocalhost
-      );
       await ampcodeApi.updateForceModelMappings(ampcodeForm.forceModelMappings);
 
       if (ampcodeLoaded || ampcodeMappingsDirty) {
@@ -720,11 +715,17 @@ export function AiProvidersPage() {
 
       const previous = config?.ampcode ?? {};
       const next: AmpcodeConfig = {
-        ...previous,
         upstreamUrl: upstreamUrl || undefined,
-        restrictManagementToLocalhost: ampcodeForm.restrictManagementToLocalhost,
         forceModelMappings: ampcodeForm.forceModelMappings,
       };
+
+      if (previous.upstreamApiKey) {
+        next.upstreamApiKey = previous.upstreamApiKey;
+      }
+
+      if (Array.isArray(previous.modelMappings)) {
+        next.modelMappings = previous.modelMappings;
+      }
 
       if (overrideKey) {
         next.upstreamApiKey = overrideKey;
@@ -1507,16 +1508,6 @@ export function AiProvidersPage() {
               </div>
               <div className={styles.fieldRow}>
                 <span className={styles.fieldLabel}>
-                  {t('ai_providers.ampcode_restrict_management_label')}:
-                </span>
-                <span className={styles.fieldValue}>
-                  {(config?.ampcode?.restrictManagementToLocalhost ?? true)
-                    ? t('common.yes')
-                    : t('common.no')}
-                </span>
-              </div>
-              <div className={styles.fieldRow}>
-                <span className={styles.fieldLabel}>
                   {t('ai_providers.ampcode_force_model_mappings_label')}:
                 </span>
                 <span className={styles.fieldValue}>
@@ -1737,18 +1728,6 @@ export function AiProvidersPage() {
             >
               {t('ai_providers.ampcode_clear_upstream_api_key')}
             </Button>
-          </div>
-
-          <div className="form-group">
-            <ToggleSwitch
-              label={t('ai_providers.ampcode_restrict_management_label')}
-              checked={ampcodeForm.restrictManagementToLocalhost}
-              onChange={(value) =>
-                setAmpcodeForm((prev) => ({ ...prev, restrictManagementToLocalhost: value }))
-              }
-              disabled={ampcodeModalLoading || ampcodeSaving}
-            />
-            <div className="hint">{t('ai_providers.ampcode_restrict_management_hint')}</div>
           </div>
 
           <div className="form-group">

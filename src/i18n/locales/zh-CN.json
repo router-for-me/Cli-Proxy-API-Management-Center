@@ -200,8 +200,6 @@
     "ampcode_upstream_api_key_current": "当前Amp官方密钥: {{key}}",
     "ampcode_clear_upstream_api_key": "清除官方密钥",
     "ampcode_clear_upstream_api_key_confirm": "确定要清除 Ampcode 的 upstream API key（Amp官方）吗？",
-    "ampcode_restrict_management_label": "仅允许本机访问 Amp 管理路由",
-    "ampcode_restrict_management_hint": "开启后，/api/auth、/api/user、/api/threads 等 Amp 管理路由仅允许 127.0.0.1/::1 访问（推荐）。",
     "ampcode_force_model_mappings_label": "强制应用模型映射",
     "ampcode_force_model_mappings_hint": "开启后，模型映射将覆盖本地 API Key 可用性判断。",
     "ampcode_model_mappings_label": "模型映射 (from → to)",

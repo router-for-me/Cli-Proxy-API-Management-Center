@@ -18,9 +18,6 @@ export const ampcodeApi = {
   updateUpstreamApiKey: (apiKey: string) => apiClient.put('/ampcode/upstream-api-key', { value: apiKey }),
   clearUpstreamApiKey: () => apiClient.delete('/ampcode/upstream-api-key'),
 
-  updateRestrictManagementToLocalhost: (enabled: boolean) =>
-    apiClient.put('/ampcode/restrict-management-to-localhost', { value: enabled }),
-
   async getModelMappings(): Promise<AmpcodeModelMapping[]> {
     const data = await apiClient.get('/ampcode/model-mappings');
     const list = data?.['model-mappings'] ?? data?.modelMappings ?? data?.items ?? data;
