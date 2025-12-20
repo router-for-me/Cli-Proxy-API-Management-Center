@@ -536,7 +536,7 @@ export function UsagePage() {
         {statsCards.map(card => (
           <div
             key={card.key}
-            className="bg-card border border-border p-4 rounded-lg relative overflow-hidden"
+            className="bg-card border border-border p-4 rounded-lg relative overflow-hidden flex flex-col"
             style={{ '--accent': card.accent } as CSSProperties}
           >
             <div className="mb-2 pr-6">
@@ -546,7 +546,7 @@ export function UsagePage() {
               {card.icon}
             </span>
             <div className="text-2xl font-bold mb-2" style={{ color: 'var(--accent)' }}>{card.value}</div>
-            {card.meta && <div className="text-xs text-muted-foreground space-y-1 min-h-[2.5rem]">{card.meta}</div>}
+            {card.meta && <div className="text-xs text-muted-foreground space-y-1 flex-1">{card.meta}</div>}
             <div className="h-10 mt-3">
               {card.trend ? (
                 <Line className="w-full h-full" data={card.trend.data} options={sparklineOptions} />
