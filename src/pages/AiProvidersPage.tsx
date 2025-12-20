@@ -49,7 +49,6 @@ interface OpenAIFormState {
 interface AmpcodeFormState {
   upstreamUrl: string;
   upstreamApiKey: string;
-  restrictManagementToLocalhost: boolean;
   forceModelMappings: boolean;
   mappingEntries: ModelEntry[];
 }
@@ -166,7 +165,6 @@ const entriesToAmpcodeMappings = (entries: ModelEntry[]): AmpcodeModelMapping[] 
 const buildAmpcodeFormState = (ampcode?: AmpcodeConfig | null): AmpcodeFormState => ({
   upstreamUrl: ampcode?.upstreamUrl ?? '',
   upstreamApiKey: '',
-  restrictManagementToLocalhost: ampcode?.restrictManagementToLocalhost ?? true,
   forceModelMappings: ampcode?.forceModelMappings ?? false,
   mappingEntries: ampcodeMappingsToEntries(ampcode?.modelMappings),
 });
@@ -641,9 +639,6 @@ export function AiProvidersPage() {
         await ampcodeApi.clearUpstreamUrl();
       }
 
-      await ampcodeApi.updateRestrictManagementToLocalhost(
-        ampcodeForm.restrictManagementToLocalhost
-      );
       await ampcodeApi.updateForceModelMappings(ampcodeForm.forceModelMappings);
 
       if (ampcodeLoaded || ampcodeMappingsDirty) {
@@ -662,7 +657,6 @@ export function AiProvidersPage() {
       const next: AmpcodeConfig = {
         ...previous,
         upstreamUrl: upstreamUrl || undefined,
-        restrictManagementToLocalhost: ampcodeForm.restrictManagementToLocalhost,
         forceModelMappings: ampcodeForm.forceModelMappings,
       };
 
@@ -1087,22 +1081,22 @@ export function AiProvidersPage() {
                     {t('ai_providers.gemini_item_title')} #{index + 1}
                   </div>
                   {/* API Key 行 */}
-                  <div className="">
-                    <span className="">{t('common.api_key')}:</span>
-                    <span className="">{maskApiKey(item.apiKey)}</span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">{t('common.api_key')}:</span>
+                    <span className="font-mono text-xs">{maskApiKey(item.apiKey)}</span>
                   </div>
                   {/* Base URL 行 */}
                   {item.baseUrl && (
-                    <div className="">
-                      <span className="">{t('common.base_url')}:</span>
-                      <span className="">{item.baseUrl}</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">{t('common.base_url')}:</span>
+                      <span className="font-mono text-xs">{item.baseUrl}</span>
                     </div>
                   )}
                   {/* 自定义请求头徽章 */}
                   {headerEntries.length > 0 && (
-                    <div className="">
+                    <div className="flex flex-wrap gap-1">
                       {headerEntries.map(([key, value]) => (
-                        <span key={key} className="">
+                        <span key={key} className="bg-muted px-2 py-0.5 rounded text-xs">
                           <strong>{key}:</strong> {value}
                         </span>
                       ))}
@@ -1115,28 +1109,28 @@ export function AiProvidersPage() {
                   )}
                   {/* 排除模型徽章 */}
                   {excludedModels.length ? (
-                    <div className="">
-                      <div className="">
+                    <div className="space-y-1">
+                      <div className="text-sm text-muted-foreground">
                         {t('ai_providers.excluded_models_count', { count: excludedModels.length })}
                       </div>
-                      <div className="">
+                      <div className="flex flex-wrap gap-1">
                         {excludedModels.map((model) => (
                           <span
                             key={model}
-                            className={`$"" $""`}
+                            className="bg-muted px-2 py-0.5 rounded text-xs"
                           >
-                            <span className="">{model}</span>
+                            <span>{model}</span>
                           </span>
                         ))}
                       </div>
                     </div>
                   ) : null}
                   {/* 成功/失败统计 */}
-                  <div className="">
-                    <span className={`$"" $""`}>
+                  <div className="flex gap-3 text-sm">
+                    <span className="text-green-600">
                       {t('stats.success')}: {stats.success}
                     </span>
-                    <span className={`$"" $""`}>
+                    <span className="text-red-600">
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
@@ -1187,29 +1181,29 @@ export function AiProvidersPage() {
                 <Fragment>
                   <div className="item-title">{t('ai_providers.codex_item_title')}</div>
                   {/* API Key 行 */}
-                  <div className="">
-                    <span className="">{t('common.api_key')}:</span>
-                    <span className="">{maskApiKey(item.apiKey)}</span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">{t('common.api_key')}:</span>
+                    <span className="font-mono text-xs">{maskApiKey(item.apiKey)}</span>
                   </div>
                   {/* Base URL 行 */}
                   {item.baseUrl && (
-                    <div className="">
-                      <span className="">{t('common.base_url')}:</span>
-                      <span className="">{item.baseUrl}</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">{t('common.base_url')}:</span>
+                      <span className="font-mono text-xs">{item.baseUrl}</span>
                     </div>
                   )}
                   {/* Proxy URL 行 */}
                   {item.proxyUrl && (
-                    <div className="">
-                      <span className="">{t('common.proxy_url')}:</span>
-                      <span className="">{item.proxyUrl}</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">{t('common.proxy_url')}:</span>
+                      <span className="font-mono text-xs">{item.proxyUrl}</span>
                     </div>
                   )}
                   {/* 自定义请求头徽章 */}
                   {headerEntries.length > 0 && (
-                    <div className="">
+                    <div className="flex flex-wrap gap-1">
                       {headerEntries.map(([key, value]) => (
-                        <span key={key} className="">
+                        <span key={key} className="bg-muted px-2 py-0.5 rounded text-xs">
                           <strong>{key}:</strong> {value}
                         </span>
                       ))}
@@ -1222,28 +1216,28 @@ export function AiProvidersPage() {
                   )}
                   {/* 排除模型徽章 */}
                   {excludedModels.length ? (
-                    <div className="">
-                      <div className="">
+                    <div className="space-y-1">
+                      <div className="text-sm text-muted-foreground">
                         {t('ai_providers.excluded_models_count', { count: excludedModels.length })}
                       </div>
-                      <div className="">
+                      <div className="flex flex-wrap gap-1">
                         {excludedModels.map((model) => (
                           <span
                             key={model}
-                            className={`$"" $""`}
+                            className="bg-muted px-2 py-0.5 rounded text-xs"
                           >
-                            <span className="">{model}</span>
+                            <span>{model}</span>
                           </span>
                         ))}
                       </div>
                     </div>
                   ) : null}
                   {/* 成功/失败统计 */}
-                  <div className="">
-                    <span className={`$"" $""`}>
+                  <div className="flex gap-3 text-sm">
+                    <span className="text-green-600">
                       {t('stats.success')}: {stats.success}
                     </span>
-                    <span className={`$"" $""`}>
+                    <span className="text-red-600">
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
@@ -1294,29 +1288,29 @@ export function AiProvidersPage() {
                 <Fragment>
                   <div className="item-title">{t('ai_providers.claude_item_title')}</div>
                   {/* API Key 行 */}
-                  <div className="">
-                    <span className="">{t('common.api_key')}:</span>
-                    <span className="">{maskApiKey(item.apiKey)}</span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">{t('common.api_key')}:</span>
+                    <span className="font-mono text-xs">{maskApiKey(item.apiKey)}</span>
                   </div>
                   {/* Base URL 行 */}
                   {item.baseUrl && (
-                    <div className="">
-                      <span className="">{t('common.base_url')}:</span>
-                      <span className="">{item.baseUrl}</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">{t('common.base_url')}:</span>
+                      <span className="font-mono text-xs">{item.baseUrl}</span>
                     </div>
                   )}
                   {/* Proxy URL 行 */}
                   {item.proxyUrl && (
-                    <div className="">
-                      <span className="">{t('common.proxy_url')}:</span>
-                      <span className="">{item.proxyUrl}</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">{t('common.proxy_url')}:</span>
+                      <span className="font-mono text-xs">{item.proxyUrl}</span>
                     </div>
                   )}
                   {/* 自定义请求头徽章 */}
                   {headerEntries.length > 0 && (
-                    <div className="">
+                    <div className="flex flex-wrap gap-1">
                       {headerEntries.map(([key, value]) => (
-                        <span key={key} className="">
+                        <span key={key} className="bg-muted px-2 py-0.5 rounded text-xs">
                           <strong>{key}:</strong> {value}
                         </span>
                       ))}
@@ -1329,15 +1323,15 @@ export function AiProvidersPage() {
                   )}
                   {/* 模型列表 */}
                   {item.models?.length ? (
-                    <div className="">
-                      <span className="">
+                    <div className="space-y-1">
+                      <span className="text-sm text-muted-foreground">
                         {t('ai_providers.claude_models_count')}: {item.models.length}
                       </span>
                       {item.models.map((model) => (
-                        <span key={model.name} className="">
-                          <span className="">{model.name}</span>
+                        <span key={model.name} className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded text-xs mr-1">
+                          <span>{model.name}</span>
                           {model.alias && model.alias !== model.name && (
-                            <span className="">{model.alias}</span>
+                            <span className="text-muted-foreground">→ {model.alias}</span>
                           )}
                         </span>
                       ))}
@@ -1345,28 +1339,28 @@ export function AiProvidersPage() {
                   ) : null}
                   {/* 排除模型徽章 */}
                   {excludedModels.length ? (
-                    <div className="">
-                      <div className="">
+                    <div className="space-y-1">
+                      <div className="text-sm text-muted-foreground">
                         {t('ai_providers.excluded_models_count', { count: excludedModels.length })}
                       </div>
-                      <div className="">
+                      <div className="flex flex-wrap gap-1">
                         {excludedModels.map((model) => (
                           <span
                             key={model}
-                            className={`$"" $""`}
+                            className="bg-muted px-2 py-0.5 rounded text-xs"
                           >
-                            <span className="">{model}</span>
+                            <span>{model}</span>
                           </span>
                         ))}
                       </div>
                     </div>
                   ) : null}
                   {/* 成功/失败统计 */}
-                  <div className="">
-                    <span className={`$"" $""`}>
+                  <div className="flex gap-3 text-sm">
+                    <span className="text-green-600">
                       {t('stats.success')}: {stats.success}
                     </span>
-                    <span className={`$"" $""`}>
+                    <span className="text-red-600">
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
@@ -1416,15 +1410,15 @@ export function AiProvidersPage() {
                 <Fragment>
                   <div className="item-title">{item.name}</div>
                   {/* Base URL 行 */}
-                  <div className="">
-                    <span className="">{t('common.base_url')}:</span>
-                    <span className="">{item.baseUrl}</span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">{t('common.base_url')}:</span>
+                    <span className="font-mono text-xs">{item.baseUrl}</span>
                   </div>
                   {/* 自定义请求头徽章 */}
                   {headerEntries.length > 0 && (
-                    <div className="">
+                    <div className="flex flex-wrap gap-1">
                       {headerEntries.map(([key, value]) => (
-                        <span key={key} className="">
+                        <span key={key} className="bg-muted px-2 py-0.5 rounded text-xs">
                           <strong>{key}:</strong> {value}
                         </span>
                       ))}
@@ -1432,31 +1426,27 @@ export function AiProvidersPage() {
                   )}
                   {/* API密钥条目二级卡片 */}
                   {apiKeyEntries.length > 0 && (
-                    <div className="">
-                      <div className="">
+                    <div className="space-y-2">
+                      <div className="text-sm text-muted-foreground">
                         {t('ai_providers.openai_keys_count')}: {apiKeyEntries.length}
                       </div>
-                      <div className="">
+                      <div className="space-y-1">
                         {apiKeyEntries.map((entry, entryIndex) => {
                           const entryStats = getStatsBySource(entry.apiKey, keyStats, maskApiKey);
                           return (
-                            <div key={entryIndex} className="">
-                              <span className="">{entryIndex + 1}</span>
-                              <span className="">
+                            <div key={entryIndex} className="flex items-center gap-2 text-xs bg-muted/50 px-2 py-1 rounded">
+                              <span className="text-muted-foreground">{entryIndex + 1}</span>
+                              <span className="font-mono">
                                 {maskApiKey(entry.apiKey)}
                               </span>
                               {entry.proxyUrl && (
-                                <span className="">{entry.proxyUrl}</span>
+                                <span className="text-muted-foreground">{entry.proxyUrl}</span>
                               )}
-                              <div className="">
-                                <span
-                                  className={`$"" $""`}
-                                >
+                              <div className="flex gap-2 ml-auto">
+                                <span className="text-green-600 flex items-center gap-0.5">
                                   <IconCheck size={12} /> {entryStats.success}
                                 </span>
-                                <span
-                                  className={`$"" $""`}
-                                >
+                                <span className="text-red-600 flex items-center gap-0.5">
                                   <IconX size={12} /> {entryStats.failure}
                                 </span>
                               </div>
@@ -1467,20 +1457,20 @@ export function AiProvidersPage() {
                     </div>
                   )}
                   {/* 模型数量标签 */}
-                  <div className="" style={{ marginTop: '8px' }}>
-                    <span className="">
+                  <div className="flex items-center gap-2 text-sm mt-2">
+                    <span className="text-muted-foreground">
                       {t('ai_providers.openai_models_count')}:
                     </span>
-                    <span className="">{item.models?.length || 0}</span>
+                    <span>{item.models?.length || 0}</span>
                   </div>
                   {/* 模型列表徽章 */}
                   {item.models?.length ? (
-                    <div className="">
+                    <div className="flex flex-wrap gap-1">
                       {item.models.map((model) => (
-                        <span key={model.name} className="">
-                          <span className="">{model.name}</span>
+                        <span key={model.name} className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded text-xs">
+                          <span>{model.name}</span>
                           {model.alias && model.alias !== model.name && (
-                            <span className="">{model.alias}</span>
+                            <span className="text-muted-foreground">→ {model.alias}</span>
                           )}
                         </span>
                       ))}
@@ -1488,17 +1478,17 @@ export function AiProvidersPage() {
                   ) : null}
                   {/* 测试模型 */}
                   {item.testModel && (
-                    <div className="">
-                      <span className="">Test Model:</span>
-                      <span className="">{item.testModel}</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">Test Model:</span>
+                      <span className="font-mono text-xs">{item.testModel}</span>
                     </div>
                   )}
                   {/* 成功/失败统计（汇总） */}
-                  <div className="">
-                    <span className={`$"" $""`}>
+                  <div className="flex gap-3 text-sm">
+                    <span className="text-green-600">
                       {t('stats.success')}: {stats.success}
                     </span>
-                    <span className={`$"" $""`}>
+                    <span className="text-red-600">
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
@@ -1540,10 +1530,6 @@ export function AiProvidersPage() {
                 <span className="font-mono text-xs">
                   {config?.ampcode?.upstreamApiKey ? maskApiKey(config.ampcode.upstreamApiKey) : t('common.not_set')}
                 </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('ai_providers.ampcode_restrict_management_label')}</span>
-                <span>{(config?.ampcode?.restrictManagementToLocalhost ?? true) ? t('common.yes') : t('common.no')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('ai_providers.ampcode_force_model_mappings_label')}</span>
@@ -1636,13 +1622,6 @@ export function AiProvidersPage() {
 
           {/* 开关选项 */}
           <div className="space-y-3 pb-4 border-b border-border">
-            <ToggleSwitch
-              label={t('ai_providers.ampcode_restrict_management_label')}
-              tooltip={t('ai_providers.ampcode_restrict_management_hint')}
-              checked={ampcodeForm.restrictManagementToLocalhost}
-              onChange={(value) => setAmpcodeForm((prev) => ({ ...prev, restrictManagementToLocalhost: value }))}
-              disabled={ampcodeModalLoading || ampcodeSaving}
-            />
             <ToggleSwitch
               label={t('ai_providers.ampcode_force_model_mappings_label')}
               tooltip={t('ai_providers.ampcode_force_model_mappings_hint')}
