@@ -520,7 +520,7 @@ export function UsagePage() {
       {loading && !usage && (
         <div className={styles.loadingOverlay} aria-busy="true">
           <div className={styles.loadingOverlayContent}>
-            <LoadingSpinner size={28} />
+            <LoadingSpinner size={28} className={styles.loadingOverlaySpinner} />
             <span className={styles.loadingOverlayText}>{t('common.loading')}</span>
           </div>
         </div>

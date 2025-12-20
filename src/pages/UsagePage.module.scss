@@ -66,11 +66,12 @@
   border: 1px solid var(--border-color);
   background: var(--bg-primary);
   box-shadow: var(--shadow-lg);
+}
 
-  :global(.loading-spinner) {
-    border-color: rgba(59, 130, 246, 0.25);
-    border-top-color: var(--primary-color);
-  }
+.loadingOverlaySpinner {
+  border-color: rgba(59, 130, 246, 0.25);
+  border-top-color: var(--primary-color);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
 }
 
 .loadingOverlayText {

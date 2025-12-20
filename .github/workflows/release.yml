@@ -15,6 +15,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -36,27 +39,48 @@ jobs:
           mv index.html management.html
           ls -lh management.html
 
+      - name: Generate release notes
+        run: |
+          set -euo pipefail
+          current_tag="${GITHUB_REF_NAME}"
+          previous_tag="$(git tag --list 'v*' --sort=-v:refname | grep -v "^${current_tag}$" | head -n 1 || true)"
+          if [ -n "${previous_tag}" ]; then
+            range="${previous_tag}..${current_tag}"
+            title="Changes since ${previous_tag}"
+          else
+            range="${current_tag}"
+            title="Changes"
+          fi
+
+          {
+            echo "## CLI Proxy API Management Center - ${current_tag}"
+            echo
+            echo "### Download and Usage"
+            echo "1. Download the \`management.html\` file"
+            echo "2. Open it directly in your browser"
+            echo "3. All assets (CSS, JavaScript, images) are bundled into this single file"
+            echo
+            echo "### Features"
+            echo "- Single file, no external dependencies required"
+            echo "- Complete management interface for CLI Proxy API"
+            echo "- Support for local and remote connections"
+            echo "- Multi-language support (Chinese/English)"
+            echo "- Dark/Light theme support"
+            echo
+            echo "### ${title}"
+            echo
+            git log --pretty=format:"- %h %s" "${range}"
+            echo
+            echo
+            echo "---"
+            echo "🤖 Generated with GitHub Actions"
+          } > release-notes.md
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: dist/management.html
-          body: |
-            ## CLI Proxy API Management Center - ${{ github.ref_name }}
-
-            ### Download and Usage
-            1. Download the `management.html` file
-            2. Open it directly in your browser
-            3. All assets (CSS, JavaScript, images) are bundled into this single file
-
-            ### Features
-            - Single file, no external dependencies required
-            - Complete management interface for CLI Proxy API
-            - Support for local and remote connections
-            - Multi-language support (Chinese/English)
-            - Dark/Light theme support
-
-            ---
-            🤖 Generated with GitHub Actions
+          body_path: release-notes.md
           draft: false
           prerelease: false
         env:

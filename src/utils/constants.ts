@@ -18,6 +18,7 @@ export const LOG_REFRESH_DELAY_MS = 500;
 // 日志相关
 export const MAX_LOG_LINES = 2000;
 export const LOG_FETCH_LIMIT = 2500;
+export const LOGS_TIMEOUT_MS = 60 * 1000;
 
 // 认证文件分页
 export const DEFAULT_AUTH_FILES_PAGE_SIZE = 20;

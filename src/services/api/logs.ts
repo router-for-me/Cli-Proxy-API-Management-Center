@@ -3,6 +3,7 @@
  */
 
 import { apiClient } from './client';
+import { LOGS_TIMEOUT_MS } from '@/utils/constants';
 
 export interface LogsQuery {
   after?: number;
@@ -25,14 +26,17 @@ export interface ErrorLogsResponse {
 }
 
 export const logsApi = {
-  fetchLogs: (params: LogsQuery = {}): Promise<LogsResponse> => apiClient.get('/logs', { params }),
+  fetchLogs: (params: LogsQuery = {}): Promise<LogsResponse> =>
+    apiClient.get('/logs', { params, timeout: LOGS_TIMEOUT_MS }),
 
   clearLogs: () => apiClient.delete('/logs'),
 
-  fetchErrorLogs: (): Promise<ErrorLogsResponse> => apiClient.get('/request-error-logs'),
+  fetchErrorLogs: (): Promise<ErrorLogsResponse> =>
+    apiClient.get('/request-error-logs', { timeout: LOGS_TIMEOUT_MS }),
 
   downloadErrorLog: (filename: string) =>
     apiClient.getRaw(`/request-error-logs/${encodeURIComponent(filename)}`, {
       responseType: 'blob',
+      timeout: LOGS_TIMEOUT_MS
     }),
 };
