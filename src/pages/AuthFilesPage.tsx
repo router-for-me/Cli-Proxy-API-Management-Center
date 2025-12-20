@@ -40,8 +40,8 @@ const TYPE_COLORS: Record<string, TypeColorSet> = {
     dark: { bg: '#880e4f', text: '#f48fb1' }
   },
   codex: {
-    light: { bg: '#fff3e0', text: '#ef6c00' },
-    dark: { bg: '#e65100', text: '#ffb74d' }
+    light: { bg: '#e8eaf6', text: '#3949ab' },
+    dark: { bg: '#283593', text: '#9fa8da' }
   },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
@@ -736,9 +736,9 @@ export function AuthFilesPage() {
             size="sm"
             onClick={() => openExcludedModal()}
             disabled={disableControls || excludedError === 'unsupported'}
+            title={t('oauth_excluded.add')}
           >
             <IconPlus size={14} />
-            <span className="ml-1">{t('oauth_excluded.add')}</span>
           </Button>
         </div>
         <div className="p-3">
@@ -757,12 +757,14 @@ export function AuthFilesPage() {
                 >
                   <span className="font-medium">{provider}</span>
                   <span className="text-muted-foreground">({models?.length || 0})</span>
-                  <button
-                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="size-5 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
                     onClick={(e) => { e.stopPropagation(); deleteExcluded(provider); }}
                   >
                     <IconTrash2 size={12} />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>

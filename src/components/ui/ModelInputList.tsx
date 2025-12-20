@@ -95,15 +95,16 @@ export function ModelInputList({
           </Button>
         </div>
       ))}
-      <button 
-        type="button"
+      <Button 
+        variant="ghost"
+        size="sm"
         onClick={addEntry} 
         disabled={disabled} 
-        className="self-start flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:pointer-events-none"
+        className="self-start h-auto p-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
       >
         <IconPlus size={12} />
         <span className="underline underline-offset-2">{addLabel}</span>
-      </button>
+      </Button>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { IconGithub, IconBookOpen, IconExternalLink, IconCode, IconRefreshCw } from '@/components/ui/icons';
+import { IconGithub, IconBookOpen, IconExternalLink, IconCode, IconRefreshCw, IconCircleArrowUp } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useNotificationStore, useModelsStore } from '@/stores';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { versionApi } from '@/services/api';
@@ -171,9 +171,6 @@ export function SystemPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-end gap-1">
-        <Button variant="secondary" size="sm" onClick={handleVersionCheck} loading={checkingVersion} title={t('system_info.version_check_button')}>
-          <IconExternalLink size={16} />
-        </Button>
         <Button variant="secondary" size="sm" onClick={() => fetchConfig(undefined, true)} title={t('common.refresh')}>
           <IconRefreshCw size={16} />
         </Button>
@@ -187,7 +184,12 @@ export function SystemPage() {
           </div>
           <div className="bg-muted/30 p-3 rounded">
             <div className="text-xs text-muted-foreground mb-1">{t('footer.api_version')}</div>
-            <div className="text-sm font-medium">{auth.serverVersion || t('system_info.version_unknown')}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{auth.serverVersion || t('system_info.version_unknown')}</span>
+              <Button variant="secondary" size="sm" onClick={handleVersionCheck} loading={checkingVersion} title={t('system_info.version_check_button')}>
+                <IconCircleArrowUp size={14} />
+              </Button>
+            </div>
           </div>
           <div className="bg-muted/30 p-3 rounded">
             <div className="text-xs text-muted-foreground mb-1">{t('footer.build_date')}</div>

@@ -15,6 +15,7 @@ import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection'
 interface AuthStoreState extends AuthState {
   connectionStatus: ConnectionStatus;
   connectionError: string | null;
+  isRestoring: boolean;
 
   // 操作
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -38,38 +39,43 @@ export const useAuthStore = create<AuthStoreState>()(
       serverBuildDate: null,
       connectionStatus: 'disconnected',
       connectionError: null,
+      isRestoring: true,
 
       // 恢复会话并自动登录
       restoreSession: () => {
         if (restoreSessionPromise) return restoreSessionPromise;
 
         restoreSessionPromise = (async () => {
-          secureStorage.migratePlaintextKeys(['apiBase', 'apiUrl', 'managementKey']);
+          try {
+            secureStorage.migratePlaintextKeys(['apiBase', 'apiUrl', 'managementKey']);
 
-          const wasLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-          const legacyBase =
-            secureStorage.getItem<string>('apiBase') ||
-            secureStorage.getItem<string>('apiUrl', { encrypt: true });
-          const legacyKey = secureStorage.getItem<string>('managementKey');
+            const wasLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const legacyBase =
+              secureStorage.getItem<string>('apiBase') ||
+              secureStorage.getItem<string>('apiUrl', { encrypt: true });
+            const legacyKey = secureStorage.getItem<string>('managementKey');
 
-          const { apiBase, managementKey } = get();
-          const resolvedBase = normalizeApiBase(apiBase || legacyBase || detectApiBaseFromLocation());
-          const resolvedKey = managementKey || legacyKey || '';
+            const { apiBase, managementKey } = get();
+            const resolvedBase = normalizeApiBase(apiBase || legacyBase || detectApiBaseFromLocation());
+            const resolvedKey = managementKey || legacyKey || '';
 
-          set({ apiBase: resolvedBase, managementKey: resolvedKey });
-          apiClient.setConfig({ apiBase: resolvedBase, managementKey: resolvedKey });
+            set({ apiBase: resolvedBase, managementKey: resolvedKey });
+            apiClient.setConfig({ apiBase: resolvedBase, managementKey: resolvedKey });
 
-          if (wasLoggedIn && resolvedBase && resolvedKey) {
-            try {
-              await get().login({ apiBase: resolvedBase, managementKey: resolvedKey });
-              return true;
-            } catch (error) {
-              console.warn('Auto login failed:', error);
-              return false;
+            if (wasLoggedIn && resolvedBase && resolvedKey) {
+              try {
+                await get().login({ apiBase: resolvedBase, managementKey: resolvedKey });
+                return true;
+              } catch (error) {
+                console.warn('Auto login failed:', error);
+                return false;
+              }
             }
-          }
 
-          return false;
+            return false;
+          } finally {
+            set({ isRestoring: false });
+          }
         })();
 
         return restoreSessionPromise;

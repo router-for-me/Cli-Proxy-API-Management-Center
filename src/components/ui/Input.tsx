@@ -1,21 +1,35 @@
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import { Input as InputPrimitive } from './primitives/input';
 import { Label } from './label';
+import { Tooltip } from './Tooltip';
+import { IconInfo } from './icons';
 import { cn } from '@/lib/utils';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  labelTooltip?: string;
   hint?: string;
   error?: string;
   rightElement?: ReactNode;
 }
 
-export function Input({ label, hint, error, rightElement, className = '', id, ...rest }: InputProps) {
+export function Input({ label, labelTooltip, hint, error, rightElement, className = '', id, ...rest }: InputProps) {
   const inputId = id || (label ? `input-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined);
 
   return (
     <div className="flex flex-col gap-1.5">
-      {label && <Label htmlFor={inputId} className="text-xs font-medium">{label}</Label>}
+      {label && (
+        <div className="flex items-center gap-1">
+          <Label htmlFor={inputId} className="text-xs font-medium">{label}</Label>
+          {labelTooltip && (
+            <Tooltip content={labelTooltip}>
+              <span className="text-muted-foreground hover:text-foreground cursor-help">
+                <IconInfo size={12} />
+              </span>
+            </Tooltip>
+          )}
+        </div>
+      )}
       <div className="relative">
         <InputPrimitive
           id={inputId}

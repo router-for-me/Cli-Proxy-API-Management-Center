@@ -663,15 +663,16 @@ export function LogsPage() {
                 className=""
                 rightElement={
                   searchQuery ? (
-                    <button
-                      type="button"
-                      className=""
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="size-6 p-0"
                       onClick={() => setSearchQuery('')}
                       title="Clear"
                       aria-label="Clear"
                     >
                       <IconX size={16} />
-                    </button>
+                    </Button>
                   ) : (
                     <IconSearch size={16} className="" />
                   )

@@ -504,15 +504,16 @@ export function ConfigPage() {
                           : '0'}
                       </span>
                     )}
-                    <button
-                      type="button"
-                      className="p-0.5 hover:bg-muted rounded transition-colors disabled:opacity-50"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="size-6 p-0"
                       onClick={() => executeSearch('next')}
                       disabled={!searchQuery || disableControls || loading}
                       title={t('config_management.search_button', { defaultValue: '搜索' })}
                     >
                       <IconSearch size={14} />
-                    </button>
+                    </Button>
                   </div>
                 }
               />

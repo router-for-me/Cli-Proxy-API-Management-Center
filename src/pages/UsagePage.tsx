@@ -552,16 +552,14 @@ export function UsagePage() {
               } as CSSProperties
             }
           >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
-                <span className="text-xs text-muted-foreground">{card.label}</span>
-              </div>
-              <span className="text-muted-foreground" style={{ color: 'var(--accent)' }}>
-                {card.icon}
-              </span>
+            <div className="mb-2 pr-6">
+              <span className="text-xs text-muted-foreground">{card.label}</span>
             </div>
+            <span className="absolute top-4 right-4 w-4 h-4 flex items-center justify-center [&>svg]:block" style={{ color: 'var(--accent)' }}>
+              {card.icon}
+            </span>
             <div className="text-2xl font-bold mb-2" style={{ color: 'var(--accent)' }}>{card.value}</div>
-            {card.meta && <div className="text-xs text-muted-foreground space-y-1">{card.meta}</div>}
+            {card.meta && <div className="text-xs text-muted-foreground space-y-1 min-h-[2.5rem]">{card.meta}</div>}
             <div className="h-10 mt-3">
               {card.trend ? (
                 <Line className="w-full h-full" data={card.trend.data} options={sparklineOptions} />

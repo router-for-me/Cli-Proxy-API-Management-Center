@@ -2,10 +2,12 @@ import { ReactNode, SVGProps, useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
 import {
   IconBot,
   IconChartLine,
+  IconCrocodile,
   IconFileText,
   IconInfo,
   IconKey,
@@ -13,14 +15,14 @@ import {
   IconSettings,
   IconShield
 } from '@/components/ui/icons';
-import { INLINE_LOGO_PNG } from '@/assets/logoInline';
+
 import { useAuthStore, useConfigStore, useLanguageStore, useThemeStore, useNotificationStore } from '@/stores';
 
 import { useSound } from '@/hooks/useSound';
 
 const sidebarIcons: Record<string, ReactNode> = {
   apiKeys: <IconKey size={22} />,
-  aiProviders: <IconBot size={22} />,
+  aiProviders: <IconBot size={24} />,
   authFiles: <IconFileText size={22} />,
   oauth: <IconShield size={22} />,
   usage: <IconChartLine size={22} />,
@@ -201,6 +203,13 @@ export function MainLayout() {
   const configNavItem = { path: '/config', label: t('nav.settings'), icon: sidebarIcons.config };
   const topNavItems = [...navItems, configNavItem];
 
+  // Persist current path to localStorage for restore on refresh
+  useEffect(() => {
+    if (isAuthenticated && location.pathname !== '/welcome' && location.pathname !== '/') {
+      localStorage.setItem('cli-proxy-last-path', location.pathname);
+    }
+  }, [isAuthenticated, location.pathname]);
+
   // Tab key navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!isAuthenticated) return;
@@ -224,49 +233,57 @@ export function MainLayout() {
   const headerActions = (
     <div className="flex items-center gap-3 text-xs">
       <div className="flex h-7 items-center border border-border bg-card divide-x divide-border">
-      <button
-        type="button"
-        onClick={() => { sound.toggleSound(); toggleLanguage(); }}
-        className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        title={t('language.switch')}
-      >
-        {headerIcons.language}
-      </button>
-      <button
-        type="button"
-        onClick={() => { sound.toggleSound(); toggleTheme(); }}
-        className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        title={theme === 'light' ? t('theme.switch_to_dark') : t('theme.switch_to_light')}
-      >
-        {theme === 'light' ? headerIcons.sun : headerIcons.moon}
-      </button>
-      <button
-        type="button"
-        onClick={() => { if (sound.muted) { sound.toggle(); sound.toggleSound(); } else { sound.toggleSound(); sound.toggle(); } }}
-        className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        title={sound.muted ? t('sound.unmute') : t('sound.mute')}
-      >
-        {sound.muted ? (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-            <line x1="23" y1="9" x2="17" y2="15" />
-            <line x1="17" y1="9" x2="23" y2="15" />
-          </svg>
-        ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-          </svg>
-        )}
-      </button>
-      <button
-        type="button"
-        onClick={() => { sound.click(); logout(); }}
-        className="flex items-center justify-center w-9 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        title={t('header.logout')}
-      >
-        {headerIcons.logout}
-      </button>
+      <Tooltip content={t('language.switch')}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { sound.toggleSound(); toggleLanguage(); }}
+          className="w-9 h-full rounded-none text-muted-foreground hover:text-foreground"
+        >
+          {headerIcons.language}
+        </Button>
+      </Tooltip>
+      <Tooltip content={theme === 'light' ? t('theme.switch_to_dark') : t('theme.switch_to_light')}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { sound.toggleSound(); toggleTheme(); }}
+          className="w-9 h-full rounded-none text-muted-foreground hover:text-foreground"
+        >
+          {theme === 'light' ? headerIcons.sun : headerIcons.moon}
+        </Button>
+      </Tooltip>
+      <Tooltip content={sound.muted ? t('sound.unmute') : t('sound.mute')}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { if (sound.muted) { sound.toggle(); sound.toggleSound(); } else { sound.toggleSound(); sound.toggle(); } }}
+          className="w-9 h-full rounded-none text-muted-foreground hover:text-foreground"
+        >
+          {sound.muted ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <line x1="23" y1="9" x2="17" y2="15" />
+              <line x1="17" y1="9" x2="23" y2="15" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+            </svg>
+          )}
+        </Button>
+      </Tooltip>
+      <Tooltip content={t('header.logout')}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { sound.click(); logout(); }}
+          className="w-9 h-full rounded-none text-muted-foreground hover:text-foreground"
+        >
+          {headerIcons.logout}
+        </Button>
+      </Tooltip>
       </div>
     </div>
   );
@@ -274,25 +291,29 @@ export function MainLayout() {
   const footerContent = (
     <footer className="bg-primary dark:bg-primary/80 text-primary-foreground px-3 py-1 flex justify-between items-center text-[10px] shrink-0">
       <span className="inline-flex items-center gap-3">
-        <span className="inline-flex items-center gap-1.5" title={apiBase || ''}>
-          <svg width="6" height="6" viewBox="0 0 6 6" className="shrink-0">
-            <circle cx="3" cy="3" r="3" className={cn(connectionStatus === 'connected' ? "fill-emerald-400" : "fill-amber-400 animate-pulse")} />
-          </svg>
-          <span>{connectionStatus === 'connected' ? 'Connected' : 'Connecting'}</span>
-        </span>
-        <button
+        <Tooltip content={apiBase || ''}>
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="6" height="6" viewBox="0 0 6 6" className="shrink-0">
+              <circle cx="3" cy="3" r="3" className={cn(connectionStatus === 'connected' ? "fill-emerald-400" : "fill-amber-400 animate-pulse")} />
+            </svg>
+            <span>{connectionStatus === 'connected' ? 'Connected' : 'Connecting'}</span>
+          </span>
+        </Tooltip>
+        <span
           onClick={() => setNavStyle(navStyle === 'sidebar' ? 'top' : 'sidebar')}
           className="hover:opacity-80 cursor-pointer"
         >
           Nav: {navStyle === 'sidebar' ? 'Side' : 'Top'}
-        </button>
+        </span>
       </span>
       <span className="inline-flex items-center gap-3">
         <span>UI: {__APP_VERSION__ || '?'}</span>
         <span>API: {serverVersion || '?'}</span>
-        <NavLink to="/system" className="hover:opacity-80 cursor-pointer" title={t('nav.system_info')}>
-          <IconInfo size={14} />
-        </NavLink>
+        <Tooltip content={t('nav.system_info')}>
+          <NavLink to="/system" className="hover:opacity-80 cursor-pointer">
+            <IconInfo size={14} />
+          </NavLink>
+        </Tooltip>
       </span>
     </footer>
   );
@@ -304,22 +325,23 @@ export function MainLayout() {
         <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col p-4 md:p-8 pb-0 min-h-0">
           <header className="border-b border-border pb-4 shrink-0">
             <div className="flex items-center justify-between">
-              <h1 
-                className={cn(
-                  "text-xl font-bold tracking-tight text-primary flex items-center gap-2 select-none",
-                  isAnimating ? "cursor-default" : "cursor-pointer"
-                )}
-                onClick={() => { if (!isAnimating) { sound.click(); setHasInteracted(true); setTitleExpanded(!titleExpanded); } }}
-                title={titleExpanded ? t('title.abbr') : t('title.main')}
-              >
-                <img src={INLINE_LOGO_PNG} alt="Logo" className="h-6 w-6 dark:opacity-50 dark:brightness-150" />
-                <span 
-                  className="text-2xl tracking-tight mt-0.5 whitespace-nowrap"
-                  style={{ fontFamily: "'Kranky', cursive" }}
+              <Tooltip content={titleExpanded ? t('title.abbr') : t('title.main')}>
+                <h1 
+                  className={cn(
+                    "text-xl font-bold tracking-tight text-primary flex items-center gap-2 select-none",
+                    isAnimating ? "cursor-default" : "cursor-pointer"
+                  )}
+                  onClick={() => { if (!isAnimating) { sound.click(); setHasInteracted(true); setTitleExpanded(!titleExpanded); } }}
                 >
-                  {displayedTitle}
-                </span>
-              </h1>
+                  <IconCrocodile size={36} />
+                  <span 
+                    className="text-2xl tracking-tight mt-0.5 whitespace-nowrap"
+                    style={{ fontFamily: "'Kranky', cursive" }}
+                  >
+                    {displayedTitle}
+                  </span>
+                </h1>
+              </Tooltip>
               {headerActions}
             </div>
           </header>
@@ -376,9 +398,40 @@ export function MainLayout() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}>
           {navItems.map((item) => (
+            <Tooltip key={item.path} content={item.label} side="right">
+              <NavLink
+                to={isAuthenticated ? item.path : '#'}
+                onClick={(e) => { 
+                  if (!isAuthenticated) {
+                    e.preventDefault();
+                    showNotification(t('notification.connection_required'), 'warning');
+                    return;
+                  }
+                  sound.click(); 
+                  setSidebarOpen(false); 
+                }}
+                className={({ isActive }) => cn(
+                  "relative w-12 h-12 flex items-center justify-center transition-colors cursor-pointer outline-none",
+                  isActive && isAuthenticated
+                    ? "text-primary"
+                    : "text-primary/40 hover:text-primary/70 dark:text-[#858585] dark:hover:text-primary/70"
+                )}
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && isAuthenticated && (
+                      <span className="absolute inset-1.5 bg-[#DDDDE2] dark:bg-primary/20" style={{ borderRadius: '6px' }} />
+                    )}
+                    <span className="relative z-10 [&>svg]:w-6 [&>svg]:h-6">{item.icon}</span>
+                  </>
+                )}
+              </NavLink>
+            </Tooltip>
+          ))}
+          <div className="flex-1" />
+          <Tooltip content={configNavItem.label} side="right">
             <NavLink
-              key={item.path}
-              to={isAuthenticated ? item.path : '#'}
+              to={isAuthenticated ? configNavItem.path : '#'}
               onClick={(e) => { 
                 if (!isAuthenticated) {
                   e.preventDefault();
@@ -388,7 +441,6 @@ export function MainLayout() {
                 sound.click(); 
                 setSidebarOpen(false); 
               }}
-              title={item.label}
               className={({ isActive }) => cn(
                 "relative w-12 h-12 flex items-center justify-center transition-colors cursor-pointer outline-none",
                 isActive && isAuthenticated
@@ -401,40 +453,11 @@ export function MainLayout() {
                   {isActive && isAuthenticated && (
                     <span className="absolute inset-1.5 bg-[#DDDDE2] dark:bg-primary/20" style={{ borderRadius: '6px' }} />
                   )}
-                  <span className="relative z-10 [&>svg]:w-6 [&>svg]:h-6">{item.icon}</span>
+                  <span className="relative z-10 [&>svg]:w-6 [&>svg]:h-6">{configNavItem.icon}</span>
                 </>
               )}
             </NavLink>
-          ))}
-          <div className="flex-1" />
-          <NavLink
-            to={isAuthenticated ? configNavItem.path : '#'}
-            onClick={(e) => { 
-              if (!isAuthenticated) {
-                e.preventDefault();
-                showNotification(t('notification.connection_required'), 'warning');
-                return;
-              }
-              sound.click(); 
-              setSidebarOpen(false); 
-            }}
-            title={configNavItem.label}
-            className={({ isActive }) => cn(
-              "relative w-12 h-12 flex items-center justify-center transition-colors cursor-pointer outline-none",
-              isActive && isAuthenticated
-                ? "text-primary"
-                : "text-primary/40 hover:text-primary/70 dark:text-[#858585] dark:hover:text-primary/70"
-            )}
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && isAuthenticated && (
-                  <span className="absolute inset-1.5 bg-[#DDDDE2] dark:bg-primary/20" style={{ borderRadius: '6px' }} />
-                )}
-                <span className="relative z-10 [&>svg]:w-6 [&>svg]:h-6">{configNavItem.icon}</span>
-              </>
-            )}
-          </NavLink>
+          </Tooltip>
         </nav>
 
         <div className="flex-1 flex flex-col min-h-0">
@@ -444,22 +467,23 @@ export function MainLayout() {
                 <Button variant="ghost" size="sm" onClick={() => setSidebarOpen((prev) => !prev)} className="md:hidden">
                   {headerIcons.menu}
                 </Button>
-                <h1 
-                  className={cn(
-                    "text-xl font-bold tracking-tight text-primary flex items-center gap-2 select-none",
-                    isAnimating ? "cursor-default" : "cursor-pointer"
-                  )}
-                  onClick={() => { if (!isAnimating) { sound.click(); setHasInteracted(true); setTitleExpanded(!titleExpanded); } }}
-                  title={titleExpanded ? t('title.abbr') : t('title.main')}
-                >
-                  <img src={INLINE_LOGO_PNG} alt="Logo" className="h-6 w-6 dark:opacity-50 dark:brightness-150" />
-                  <span 
-                    className="text-2xl tracking-tight mt-0.5 whitespace-nowrap"
-                    style={{ fontFamily: "'Kranky', cursive" }}
+                <Tooltip content={titleExpanded ? t('title.abbr') : t('title.main')}>
+                  <h1 
+                    className={cn(
+                      "text-xl font-bold tracking-tight text-primary flex items-center gap-2 select-none",
+                      isAnimating ? "cursor-default" : "cursor-pointer"
+                    )}
+                    onClick={() => { if (!isAnimating) { sound.click(); setHasInteracted(true); setTitleExpanded(!titleExpanded); } }}
                   >
-                    {displayedTitle}
-                  </span>
-                </h1>
+                    <IconCrocodile size={36} />
+                    <span 
+                      className="text-2xl tracking-tight mt-0.5 whitespace-nowrap"
+                      style={{ fontFamily: "'Kranky', cursive" }}
+                    >
+                      {displayedTitle}
+                    </span>
+                  </h1>
+                </Tooltip>
               </div>
               {headerActions}
             </div>

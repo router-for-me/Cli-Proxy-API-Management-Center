@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { IconChevronDown, IconCopy, IconExternalLink, IconPlay, IconSend, IconX } from '@/components/ui/icons';
 import { useNotificationStore } from '@/stores';
@@ -176,11 +177,12 @@ export function OAuthPage() {
                       onChange={(e) => setGeminiProjectId(e.target.value)}
                       placeholder={t('auth_login.gemini_cli_project_id_placeholder')}
                       className="h-8 text-xs w-48"
+                      required
                     />
                   )}
-                  <button type="button" onClick={() => startAuth(provider.id)} disabled={isDisabled || state.polling} title={t('common.login')} className="p-2 rounded-md bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50 flex-shrink-0">
+                  <Button variant="secondary" size="sm" onClick={() => startAuth(provider.id)} disabled={isDisabled || state.polling || (isGeminiCli && !geminiProjectId.trim())} title={t('common.login')} className="size-8 p-0 flex-shrink-0">
                     <IconPlay size={14} />
-                  </button>
+                  </Button>
                 </div>
               )}
               
@@ -197,32 +199,33 @@ export function OAuthPage() {
                     {state.status && (
                       <span className={cn("w-2 h-2 rounded-full flex-shrink-0", state.status === 'success' ? "bg-green-500" : state.status === 'error' ? "bg-red-500" : "bg-blue-500 animate-pulse")} />
                     )}
-                    <button type="button" onClick={() => startAuth(provider.id)} disabled={state.polling} title={t('common.login')} className="p-2 rounded-md bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50 flex-shrink-0">
+                    <Button variant="secondary" size="sm" onClick={() => startAuth(provider.id)} disabled={state.polling || (isGeminiCli && !geminiProjectId.trim())} title={t('common.login')} className="size-8 p-0 flex-shrink-0">
                       <IconPlay size={14} />
-                    </button>
+                    </Button>
                   </div>
                   
                   {/* 授权链接 */}
                   <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
                     <code className="min-w-0 text-xs text-muted-foreground px-3 py-2.5 rounded-lg bg-muted/30 border border-border/60 truncate">{state.url}</code>
-                    <button type="button" onClick={() => copyLink(state.url!)} title={t('auth_login.copy_link')} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+                    <Button variant="ghost" size="sm" onClick={() => copyLink(state.url!)} title={t('auth_login.copy_link')} className="size-8 p-0 flex-shrink-0">
                       <IconCopy size={16} />
-                    </button>
-                    <button type="button" onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')} title={t('auth_login.open_link')} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')} title={t('auth_login.open_link')} className="size-8 p-0 flex-shrink-0">
                       <IconExternalLink size={16} />
-                    </button>
+                    </Button>
                   </div>
                   
                   {/* 回调 URL - 可折叠 */}
                   <div className="pt-2 mt-1 border-t border-dashed border-border/40">
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setStates((prev) => ({ ...prev, [provider.id]: { ...prev[provider.id], showCallback: !prev[provider.id]?.showCallback } }))}
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+                      className="h-auto p-0 flex items-center gap-1.5 text-xs text-muted-foreground/70 hover:text-muted-foreground"
                     >
                       <IconChevronDown size={12} className={cn("transition-transform", state.showCallback && "rotate-180")} />
                       <span>{t('auth_login.callback_url_summary')}</span>
-                    </button>
+                    </Button>
                     {state.showCallback && (
                       <div className="flex items-center gap-1.5 mt-2">
                         <input
@@ -232,14 +235,15 @@ export function OAuthPage() {
                           placeholder={t('auth_login.callback_url_placeholder')}
                           className="flex-1 min-w-0 h-8 px-3 text-xs rounded-md border border-border bg-background text-foreground outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
                         />
-                        <button
-                          type="button"
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => submitCallbackUrl(provider.id)}
                           disabled={state.submittingCallback || !state.callbackUrl?.trim()}
-                          className="h-8 px-2.5 rounded-md bg-muted/50 hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-colors disabled:opacity-30"
+                          className="size-8 p-0"
                         >
                           <IconSend size={14} />
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -272,9 +276,9 @@ export function OAuthPage() {
               placeholder={t('auth_login.iflow_cookie_placeholder')} 
               className="h-8 text-xs w-64" 
             />
-            <button type="button" onClick={submitIflowCookie} disabled={iflowCookie.loading} title="Submit" className="p-2 rounded-md bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50 flex-shrink-0">
+            <Button variant="secondary" size="sm" onClick={submitIflowCookie} disabled={iflowCookie.loading} title="Submit" className="size-8 p-0 flex-shrink-0">
               <IconPlay size={14} />
-            </button>
+            </Button>
           </div>
           {(iflowCookie.error || iflowCookie.result?.status === 'ok') && (
             <div className="border-t border-border px-4 py-2">

@@ -19,6 +19,7 @@ function App() {
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const restoreSession = useAuthStore((state) => state.restoreSession);
+  const isRestoring = useAuthStore((state) => state.isRestoring);
 
   useEffect(() => {
     initializeTheme();
@@ -32,13 +33,17 @@ function App() {
 
   const theme = useThemeStore((state) => state.theme);
 
+  if (isRestoring) {
+    return <div className="h-screen bg-background" />;
+  }
+
   return (
     <HashRouter>
       <Toaster 
         position="bottom-center" 
         theme={theme}
         toastOptions={{
-          duration: 4000,
+          duration: 1000,
           unstyled: true,
         }}
       />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -12,7 +12,15 @@ import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection'
 export function WelcomePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showNotification } = useNotificationStore();
+
+  // Get the path to redirect to after login (from router state or localStorage)
+  const getRedirectPath = () => {
+    const fromState = (location.state as { from?: { pathname: string } })?.from?.pathname;
+    const savedPath = localStorage.getItem('cli-proxy-last-path');
+    return fromState || savedPath || '/api-keys';
+  };
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const login = useAuthStore((state) => state.login);
   const restoreSession = useAuthStore((state) => state.restoreSession);
@@ -46,7 +54,7 @@ export function WelcomePage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/api-keys', { replace: true });
+      navigate(getRedirectPath(), { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
@@ -61,7 +69,7 @@ export function WelcomePage() {
     try {
       await login({ apiBase: baseToUse, managementKey: managementKey.trim() });
       showNotification(t('common.connected_status'), 'success');
-      navigate('/api-keys', { replace: true });
+      navigate(getRedirectPath(), { replace: true });
     } catch (err: any) {
       const message = err?.message || t('login.error_invalid');
       setError(message);
@@ -115,13 +123,14 @@ export function WelcomePage() {
                 value={managementKey}
                 onChange={(e) => setManagementKey(e.target.value)}
                 rightElement={
-                  <button
-                    type="button"
-                    className="p-1 hover:bg-muted rounded-sm transition-colors"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="size-7 p-0"
                     onClick={() => setShowKey((prev) => !prev)}
                   >
                     {showKey ? <IconEyeOff size={16} /> : <IconEye size={16} />}
-                  </button>
+                  </Button>
                 }
               />
 

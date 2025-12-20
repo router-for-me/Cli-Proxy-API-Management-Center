@@ -8,7 +8,8 @@ import { ProviderFormModal } from '@/components/ui/ProviderFormModal';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { ModelInputList, modelsToEntries, entriesToModels } from '@/components/ui/ModelInputList';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconCheck, IconPlus, IconSettings, IconX } from '@/components/ui/icons';
+import { IconCheck, IconInfo, IconPlus, IconSettings, IconX } from '@/components/ui/icons';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { ampcodeApi, modelsApi, providersApi, usageApi } from '@/services/api';
 import type {
@@ -1597,21 +1598,21 @@ export function AiProvidersPage() {
           {/* Upstream 配置 */}
           <div className="space-y-3 pb-4 border-b border-border">
             <Input
-              label={t('ai_providers.ampcode_upstream_url_label')}
+              label={`${t('ai_providers.ampcode_upstream_url_label')} (${t('common.optional')})`}
+              labelTooltip={t('ai_providers.ampcode_upstream_url_tooltip')}
               placeholder={t('ai_providers.ampcode_upstream_url_placeholder')}
               value={ampcodeForm.upstreamUrl}
               onChange={(e) => setAmpcodeForm((prev) => ({ ...prev, upstreamUrl: e.target.value }))}
               disabled={ampcodeModalLoading || ampcodeSaving}
-              hint={t('ai_providers.ampcode_upstream_url_hint')}
             />
             <Input
-              label={t('ai_providers.ampcode_upstream_api_key_label')}
+              label={`${t('ai_providers.ampcode_upstream_api_key_label')} (${t('common.optional')})`}
+              labelTooltip={t('ai_providers.ampcode_upstream_api_key_tooltip')}
               placeholder={t('ai_providers.ampcode_upstream_api_key_placeholder')}
               type="password"
               value={ampcodeForm.upstreamApiKey}
               onChange={(e) => setAmpcodeForm((prev) => ({ ...prev, upstreamApiKey: e.target.value }))}
               disabled={ampcodeModalLoading || ampcodeSaving}
-              hint={t('ai_providers.ampcode_upstream_api_key_hint')}
             />
             <div className="flex items-center justify-between gap-2 text-xs">
               <span className="text-muted-foreground">
@@ -1620,43 +1621,47 @@ export function AiProvidersPage() {
                 })}
               </span>
               {config?.ampcode?.upstreamApiKey && (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={clearAmpcodeUpstreamApiKey}
                   disabled={ampcodeModalLoading || ampcodeSaving}
-                  className="text-destructive hover:underline disabled:opacity-50"
+                  className="h-auto p-0 text-destructive hover:text-destructive hover:underline"
                 >
                   {t('ai_providers.ampcode_clear_upstream_api_key')}
-                </button>
+                </Button>
               )}
             </div>
           </div>
 
           {/* 开关选项 */}
           <div className="space-y-3 pb-4 border-b border-border">
-            <div className="space-y-1">
-              <ToggleSwitch
-                label={t('ai_providers.ampcode_restrict_management_label')}
-                checked={ampcodeForm.restrictManagementToLocalhost}
-                onChange={(value) => setAmpcodeForm((prev) => ({ ...prev, restrictManagementToLocalhost: value }))}
-                disabled={ampcodeModalLoading || ampcodeSaving}
-              />
-              <p className="text-xs text-muted-foreground pl-11">{t('ai_providers.ampcode_restrict_management_hint')}</p>
-            </div>
-            <div className="space-y-1">
-              <ToggleSwitch
-                label={t('ai_providers.ampcode_force_model_mappings_label')}
-                checked={ampcodeForm.forceModelMappings}
-                onChange={(value) => setAmpcodeForm((prev) => ({ ...prev, forceModelMappings: value }))}
-                disabled={ampcodeModalLoading || ampcodeSaving}
-              />
-              <p className="text-xs text-muted-foreground pl-11">{t('ai_providers.ampcode_force_model_mappings_hint')}</p>
-            </div>
+            <ToggleSwitch
+              label={t('ai_providers.ampcode_restrict_management_label')}
+              tooltip={t('ai_providers.ampcode_restrict_management_hint')}
+              checked={ampcodeForm.restrictManagementToLocalhost}
+              onChange={(value) => setAmpcodeForm((prev) => ({ ...prev, restrictManagementToLocalhost: value }))}
+              disabled={ampcodeModalLoading || ampcodeSaving}
+            />
+            <ToggleSwitch
+              label={t('ai_providers.ampcode_force_model_mappings_label')}
+              tooltip={t('ai_providers.ampcode_force_model_mappings_hint')}
+              checked={ampcodeForm.forceModelMappings}
+              onChange={(value) => setAmpcodeForm((prev) => ({ ...prev, forceModelMappings: value }))}
+              disabled={ampcodeModalLoading || ampcodeSaving}
+            />
           </div>
 
           {/* 模型映射 */}
           <div className="space-y-2">
-            <label className="text-xs font-medium">{t('ai_providers.ampcode_model_mappings_label')}</label>
+            <div className="flex items-center gap-1">
+              <label className="text-xs font-medium">{t('ai_providers.ampcode_model_mappings_label')}</label>
+              <Tooltip content={t('ai_providers.ampcode_model_mappings_hint')}>
+                <span className="text-muted-foreground hover:text-foreground cursor-help">
+                  <IconInfo size={12} />
+                </span>
+              </Tooltip>
+            </div>
             <ModelInputList
               entries={ampcodeForm.mappingEntries}
               onChange={(entries) => {
@@ -1668,7 +1673,6 @@ export function AiProvidersPage() {
               aliasPlaceholder={t('ai_providers.ampcode_model_mappings_to_placeholder')}
               disabled={ampcodeModalLoading || ampcodeSaving}
             />
-            <p className="text-xs text-muted-foreground">{t('ai_providers.ampcode_model_mappings_hint')}</p>
           </div>
         </Modal>
 
@@ -1745,14 +1749,15 @@ export function AiProvidersPage() {
           <div className="space-y-2 pb-4 border-b border-border">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium">{t('ai_providers.claude_models_label')}</label>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={openOpenaiModelDiscovery}
                 disabled={saving}
-                className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 underline underline-offset-2"
+                className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
               >
                 {t('ai_providers.openai_models_fetch_button')}
-              </button>
+              </Button>
             </div>
             <ModelInputList
               entries={openaiForm.modelEntries}

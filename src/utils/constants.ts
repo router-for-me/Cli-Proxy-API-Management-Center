@@ -34,7 +34,7 @@ export const STORAGE_KEY_SIDEBAR = 'cli-proxy-sidebar-collapsed';
 export const STORAGE_KEY_AUTH_FILES_PAGE_SIZE = 'cli-proxy-auth-files-page-size';
 
 // 通知持续时间
-export const NOTIFICATION_DURATION_MS = 3000;
+export const NOTIFICATION_DURATION_MS = 1000;
 
 // OAuth 卡片 ID 列表
 export const OAUTH_CARD_IDS = [

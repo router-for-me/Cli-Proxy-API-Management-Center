@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/Button';
 import type { NotificationType } from '@/types';
 
 const typeConfig = {
@@ -29,14 +30,16 @@ function CustomToast({ t, message, type }: CustomToastProps) {
         <div className="flex-1 min-w-0 pt-1">
           <div className="flex items-center justify-between gap-2 mb-1">
             <p className="text-xs font-bold text-foreground tracking-wide">{config.label}</p>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => toast.dismiss(t)}
-              className="text-muted-foreground/70 hover:text-foreground transition-colors -mt-1 -mr-1 p-1 cursor-pointer"
+              className="size-6 p-0 -mt-1 -mr-1 text-muted-foreground/70 hover:text-foreground"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
-            </button>
+            </Button>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">{message}</p>
         </div>
@@ -49,5 +52,5 @@ function CustomToast({ t, message, type }: CustomToastProps) {
 }
 
 export function showCustomToast(message: string, type: NotificationType = 'info') {
-  toast.custom((t) => <CustomToast t={t} message={message} type={type} />, { duration: 4000 });
+  toast.custom((t) => <CustomToast t={t} message={message} type={type} />, { duration: 1000 });
 }
