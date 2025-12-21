@@ -38,8 +38,8 @@
 }
 
 .splash-logo {
-  width: 80px;
   height: 80px;
+  width: auto;
   border-radius: $radius-lg;
   box-shadow: $shadow-lg;
   animation: splash-logo-pulse 1.5s ease-in-out infinite;
