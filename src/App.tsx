@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
+import { DashboardPage } from '@/pages/DashboardPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { ApiKeysPage } from '@/pages/ApiKeysPage';
 import { AiProvidersPage } from '@/pages/AiProvidersPage';
@@ -11,6 +12,7 @@ import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
 import { NotificationContainer } from '@/components/common/NotificationContainer';
+import { SplashScreen } from '@/components/common/SplashScreen';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { useAuthStore, useLanguageStore, useThemeStore } from '@/stores';
@@ -20,6 +22,9 @@ function App() {
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const restoreSession = useAuthStore((state) => state.restoreSession);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     initializeTheme();
@@ -30,6 +35,15 @@ function App() {
     setLanguage(language);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 仅用于首屏同步 i18n 语言
+
+  const handleSplashFinish = useCallback(() => {
+    setShowSplash(false);
+  }, []);
+
+  // 仅在已认证时显示闪屏
+  if (showSplash && isAuthenticated) {
+    return <SplashScreen onFinish={handleSplashFinish} duration={1500} />;
+  }
 
   return (
     <HashRouter>
@@ -44,7 +58,8 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/settings" replace />} />
+          <Route index element={<DashboardPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="api-keys" element={<ApiKeysPage />} />
           <Route path="ai-providers" element={<AiProvidersPage />} />
@@ -54,7 +69,7 @@ function App() {
           <Route path="config" element={<ConfigPage />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="system" element={<SystemPage />} />
-          <Route path="*" element={<Navigate to="/settings" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
     </HashRouter>

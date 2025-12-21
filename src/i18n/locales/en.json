@@ -81,6 +81,7 @@
     "status": "Connection Status:"
   },
   "nav": {
+    "dashboard": "Dashboard",
     "basic_settings": "Basic Settings",
     "api_keys": "API Keys",
     "ai_providers": "AI Providers",
@@ -90,6 +91,13 @@
     "config_management": "Config Management",
     "logs": "Logs Viewer",
     "system_info": "Management Center Info"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Welcome to CLI Proxy API Management Center",
+    "openai_providers": "OpenAI Providers",
+    "quick_actions": "Quick Actions",
+    "current_config": "Current Configuration"
   },
   "basic_settings": {
     "title": "Basic Settings",

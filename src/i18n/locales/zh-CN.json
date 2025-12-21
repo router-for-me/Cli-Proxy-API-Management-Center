@@ -81,6 +81,7 @@
     "status": "连接状态:"
   },
   "nav": {
+    "dashboard": "仪表盘",
     "basic_settings": "基础设置",
     "api_keys": "API 密钥",
     "ai_providers": "AI 提供商",
@@ -90,6 +91,13 @@
     "config_management": "配置管理",
     "logs": "日志查看",
     "system_info": "中心信息"
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "subtitle": "欢迎使用 CLI Proxy API 管理中心",
+    "openai_providers": "OpenAI 提供商",
+    "quick_actions": "快捷操作",
+    "current_config": "当前配置"
   },
   "basic_settings": {
     "title": "基础设置",

@@ -8,6 +8,7 @@ import {
   IconFileText,
   IconInfo,
   IconKey,
+  IconLayoutDashboard,
   IconScrollText,
   IconSettings,
   IconShield,
@@ -18,6 +19,7 @@ import { useAuthStore, useConfigStore, useLanguageStore, useNotificationStore, u
 import { versionApi } from '@/services/api';
 
 const sidebarIcons: Record<string, ReactNode> = {
+  dashboard: <IconLayoutDashboard size={18} />,
   settings: <IconSlidersHorizontal size={18} />,
   apiKeys: <IconKey size={18} />,
   aiProviders: <IconBot size={18} />,
@@ -230,6 +232,7 @@ export function MainLayout() {
           : 'muted';
 
   const navItems = [
+    { path: '/', label: t('nav.dashboard'), icon: sidebarIcons.dashboard },
     { path: '/settings', label: t('nav.basic_settings'), icon: sidebarIcons.settings },
     { path: '/api-keys', label: t('nav.api_keys'), icon: sidebarIcons.apiKeys },
     { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
