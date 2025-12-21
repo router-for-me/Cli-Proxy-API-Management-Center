@@ -97,7 +97,19 @@
     "subtitle": "欢迎使用 CLI Proxy API 管理中心",
     "openai_providers": "OpenAI 提供商",
     "quick_actions": "快捷操作",
-    "current_config": "当前配置"
+    "current_config": "当前配置",
+    "management_keys": "管理密钥",
+    "provider_keys_detail": "G:{{gemini}} C:{{codex}} Cl:{{claude}} O:{{openai}}",
+    "oauth_credentials": "OAuth 凭证",
+    "usage_overview": "使用概览",
+    "total_requests": "总请求数",
+    "total_tokens": "总 Token 数",
+    "rpm_30min": "RPM (30分钟)",
+    "tpm_30min": "TPM (30分钟)",
+    "models_used": "使用模型数",
+    "no_usage_data": "暂无使用数据",
+    "view_detailed_usage": "查看详细统计",
+    "edit_settings": "编辑设置"
   },
   "basic_settings": {
     "title": "基础设置",

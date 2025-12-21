@@ -18,6 +18,7 @@
   font-weight: 800;
   color: var(--text-primary);
   margin: 0;
+  line-height: 1.4;
 }
 
 .subtitle {
@@ -105,6 +106,11 @@
   border-radius: $radius-full;
 }
 
+.buildDate {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -157,6 +163,13 @@
   color: var(--text-secondary);
 }
 
+.statSublabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -184,6 +197,17 @@
   display: inline-flex;
   align-items: center;
   gap: $spacing-sm;
+
+  // Button 内部的 span 需要 flex 对齐图标和文字
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
 }
 
 .configGrid {
@@ -219,5 +243,70 @@
 
   &.disabled {
     color: var(--text-secondary);
+  }
+}
+
+.configValueMono {
+  font-size: 12px;
+  font-family: $font-mono;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.configItemFull {
+  grid-column: 1 / -1;
+}
+
+// Usage stats section
+.usageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: $spacing-sm;
+}
+
+.usageCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  text-align: center;
+}
+
+.usageValue {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.usageLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.usageLoading,
+.usageEmpty {
+  padding: $spacing-lg;
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+}
+
+.viewMoreLink {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--primary-color);
+  text-decoration: none;
+  margin-top: $spacing-xs;
+
+  &:hover {
+    text-decoration: underline;
   }
 }

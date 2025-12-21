@@ -97,7 +97,19 @@
     "subtitle": "Welcome to CLI Proxy API Management Center",
     "openai_providers": "OpenAI Providers",
     "quick_actions": "Quick Actions",
-    "current_config": "Current Configuration"
+    "current_config": "Current Configuration",
+    "management_keys": "Management Keys",
+    "provider_keys_detail": "G:{{gemini}} C:{{codex}} Cl:{{claude}} O:{{openai}}",
+    "oauth_credentials": "OAuth Credentials",
+    "usage_overview": "Usage Overview",
+    "total_requests": "Total Requests",
+    "total_tokens": "Total Tokens",
+    "rpm_30min": "RPM (30min)",
+    "tpm_30min": "TPM (30min)",
+    "models_used": "Models Used",
+    "no_usage_data": "No usage data available",
+    "view_detailed_usage": "View Detailed Stats",
+    "edit_settings": "Edit Settings"
   },
   "basic_settings": {
     "title": "Basic Settings",
