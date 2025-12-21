@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -44,12 +44,10 @@ export function LoginPage() {
     init();
   }, [detectedBase, restoreSession, storedBase, storedKey]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      const redirect = (location.state as any)?.from?.pathname || '/';
-      navigate(redirect, { replace: true });
-    }
-  }, [isAuthenticated, navigate, location.state]);
+  if (isAuthenticated) {
+    const redirect = (location.state as any)?.from?.pathname || '/';
+    return <Navigate to={redirect} replace />;
+  }
 
   const handleUseCurrent = () => {
     setApiBase(detectedBase);

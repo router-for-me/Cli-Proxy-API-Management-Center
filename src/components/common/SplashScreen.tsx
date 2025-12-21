@@ -1,29 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import './SplashScreen.scss';
 
 interface SplashScreenProps {
   onFinish: () => void;
-  duration?: number;
+  fadeOut?: boolean;
 }
 
-export function SplashScreen({ onFinish, duration = 1500 }: SplashScreenProps) {
-  const [fadeOut, setFadeOut] = useState(false);
+const FADE_OUT_DURATION = 400;
 
+export function SplashScreen({ onFinish, fadeOut = false }: SplashScreenProps) {
   useEffect(() => {
-    const fadeTimer = setTimeout(() => {
-      setFadeOut(true);
-    }, duration - 400);
-
+    if (!fadeOut) return;
     const finishTimer = setTimeout(() => {
       onFinish();
-    }, duration);
+    }, FADE_OUT_DURATION);
 
     return () => {
-      clearTimeout(fadeTimer);
       clearTimeout(finishTimer);
     };
-  }, [duration, onFinish]);
+  }, [fadeOut, onFinish]);
 
   return (
     <div className={`splash-screen ${fadeOut ? 'fade-out' : ''}`}>

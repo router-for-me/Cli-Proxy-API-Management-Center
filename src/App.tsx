@@ -17,18 +17,24 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { useAuthStore, useLanguageStore, useThemeStore } from '@/stores';
 
+const SPLASH_DURATION = 1500;
+const SPLASH_FADE_DURATION = 400;
+
 function App() {
   const initializeTheme = useThemeStore((state) => state.initializeTheme);
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const restoreSession = useAuthStore((state) => state.restoreSession);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
+  const [splashReadyToFade, setSplashReadyToFade] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     initializeTheme();
-    restoreSession();
+    void restoreSession().finally(() => {
+      setAuthReady(true);
+    });
   }, [initializeTheme, restoreSession]);
 
   useEffect(() => {
@@ -36,13 +42,25 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 仅用于首屏同步 i18n 语言
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSplashReadyToFade(true);
+    }, SPLASH_DURATION - SPLASH_FADE_DURATION);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleSplashFinish = useCallback(() => {
     setShowSplash(false);
   }, []);
 
-  // 仅在已认证时显示闪屏
-  if (showSplash && isAuthenticated) {
-    return <SplashScreen onFinish={handleSplashFinish} duration={1500} />;
+  if (showSplash) {
+    return (
+      <SplashScreen
+        fadeOut={splashReadyToFade && authReady}
+        onFinish={handleSplashFinish}
+      />
+    );
   }
 
   return (
