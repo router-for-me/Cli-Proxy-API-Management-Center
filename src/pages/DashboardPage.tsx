@@ -1,20 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/Button';
 import {
   IconKey,
   IconBot,
   IconFileText,
-  IconChartLine,
-  IconSettings,
-  IconShield,
-  IconScrollText,
-  IconInfo
+  IconSatellite
 } from '@/components/ui/icons';
-import { useAuthStore, useConfigStore } from '@/stores';
-import { apiKeysApi, providersApi, authFilesApi, usageApi } from '@/services/api';
-import { collectUsageDetails, extractTotalTokens, calculateRecentPerMinuteRates, formatCompactNumber } from '@/utils/usage';
+import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
+import { apiKeysApi, providersApi, authFilesApi } from '@/services/api';
 import styles from './DashboardPage.module.scss';
 
 interface QuickStat {
@@ -33,14 +27,6 @@ interface ProviderStats {
   openai: number | null;
 }
 
-interface UsageStats {
-  totalRequests: number;
-  totalTokens: number;
-  rpm: number;
-  tpm: number;
-  modelsUsed: number;
-}
-
 export function DashboardPage() {
   const { t } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
@@ -48,6 +34,10 @@ export function DashboardPage() {
   const serverBuildDate = useAuthStore((state) => state.serverBuildDate);
   const apiBase = useAuthStore((state) => state.apiBase);
   const config = useConfigStore((state) => state.config);
+
+  const models = useModelsStore((state) => state.models);
+  const modelsLoading = useModelsStore((state) => state.loading);
+  const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
 
   const [stats, setStats] = useState<{
     apiKeys: number | null;
@@ -64,9 +54,62 @@ export function DashboardPage() {
     openai: null
   });
 
-  const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [usageLoading, setUsageLoading] = useState(true);
+
+  const apiKeysCache = useRef<string[]>([]);
+
+  const normalizeApiKeyList = (input: any): string[] => {
+    if (!Array.isArray(input)) return [];
+    const seen = new Set<string>();
+    const keys: string[] = [];
+
+    input.forEach((item) => {
+      const value = typeof item === 'string' ? item : item?.['api-key'] ?? item?.apiKey ?? '';
+      const trimmed = String(value || '').trim();
+      if (!trimmed || seen.has(trimmed)) return;
+      seen.add(trimmed);
+      keys.push(trimmed);
+    });
+
+    return keys;
+  };
+
+  const resolveApiKeysForModels = useCallback(async () => {
+    if (apiKeysCache.current.length) {
+      return apiKeysCache.current;
+    }
+
+    const configKeys = normalizeApiKeyList(config?.apiKeys);
+    if (configKeys.length) {
+      apiKeysCache.current = configKeys;
+      return configKeys;
+    }
+
+    try {
+      const list = await apiKeysApi.list();
+      const normalized = normalizeApiKeyList(list);
+      if (normalized.length) {
+        apiKeysCache.current = normalized;
+      }
+      return normalized;
+    } catch {
+      return [];
+    }
+  }, [config?.apiKeys]);
+
+  const fetchModels = useCallback(async () => {
+    if (connectionStatus !== 'connected' || !apiBase) {
+      return;
+    }
+
+    try {
+      const apiKeys = await resolveApiKeysForModels();
+      const primaryKey = apiKeys[0];
+      await fetchModelsFromStore(apiBase, primaryKey);
+    } catch {
+      // Ignore model fetch errors on dashboard
+    }
+  }, [connectionStatus, apiBase, resolveApiKeysForModels, fetchModelsFromStore]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -97,48 +140,11 @@ export function DashboardPage() {
       }
     };
 
-    const fetchUsage = async () => {
-      if (!config?.usageStatisticsEnabled) {
-        setUsageLoading(false);
-        return;
-      }
-      setUsageLoading(true);
-      try {
-        const response = await usageApi.getUsage();
-        const usageData = response?.usage ?? response;
-
-        if (usageData) {
-          const details = collectUsageDetails(usageData);
-          const totalRequests = details.length;
-          const totalTokens = details.reduce((sum, d) => sum + extractTotalTokens(d), 0);
-          const rateStats = calculateRecentPerMinuteRates(30, usageData);
-
-          // Count unique models
-          const modelSet = new Set<string>();
-          details.forEach(d => {
-            if (d.__modelName) modelSet.add(d.__modelName);
-          });
-
-          setUsageStats({
-            totalRequests,
-            totalTokens,
-            rpm: rateStats.rpm,
-            tpm: rateStats.tpm,
-            modelsUsed: modelSet.size
-          });
-        }
-      } catch {
-        // Ignore usage fetch errors
-      } finally {
-        setUsageLoading(false);
-      }
-    };
-
     if (connectionStatus === 'connected') {
       fetchStats();
-      fetchUsage();
+      fetchModels();
     }
-  }, [connectionStatus, config?.usageStatisticsEnabled]);
+  }, [connectionStatus, fetchModels]);
 
   // Calculate total provider keys
   const totalProviderKeys =
@@ -176,16 +182,15 @@ export function DashboardPage() {
       path: '/auth-files',
       loading: loading && stats.authFiles === null,
       sublabel: t('dashboard.oauth_credentials')
+    },
+    {
+      label: t('dashboard.available_models'),
+      value: modelsLoading ? '-' : models.length,
+      icon: <IconSatellite size={24} />,
+      path: '/system',
+      loading: modelsLoading,
+      sublabel: t('dashboard.available_models_desc')
     }
-  ];
-
-  const quickActions = [
-    { label: t('nav.basic_settings'), icon: <IconSettings size={18} />, path: '/settings' },
-    { label: t('nav.ai_providers'), icon: <IconBot size={18} />, path: '/ai-providers' },
-    { label: t('nav.oauth'), icon: <IconShield size={18} />, path: '/oauth' },
-    { label: t('nav.usage_stats'), icon: <IconChartLine size={18} />, path: '/usage' },
-    ...(config?.loggingToFile ? [{ label: t('nav.logs'), icon: <IconScrollText size={18} />, path: '/logs' }] : []),
-    { label: t('nav.system_info'), icon: <IconInfo size={18} />, path: '/system' }
   ];
 
   return (
@@ -240,57 +245,6 @@ export function DashboardPage() {
             </div>
           </Link>
         ))}
-      </div>
-
-      {config?.usageStatisticsEnabled && (
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t('dashboard.usage_overview')}</h2>
-          {usageLoading ? (
-            <div className={styles.usageLoading}>{t('common.loading')}</div>
-          ) : usageStats ? (
-            <div className={styles.usageGrid}>
-              <div className={styles.usageCard}>
-                <span className={styles.usageValue}>{formatCompactNumber(usageStats.totalRequests)}</span>
-                <span className={styles.usageLabel}>{t('dashboard.total_requests')}</span>
-              </div>
-              <div className={styles.usageCard}>
-                <span className={styles.usageValue}>{formatCompactNumber(usageStats.totalTokens)}</span>
-                <span className={styles.usageLabel}>{t('dashboard.total_tokens')}</span>
-              </div>
-              <div className={styles.usageCard}>
-                <span className={styles.usageValue}>{usageStats.rpm.toFixed(1)}</span>
-                <span className={styles.usageLabel}>{t('dashboard.rpm_30min')}</span>
-              </div>
-              <div className={styles.usageCard}>
-                <span className={styles.usageValue}>{formatCompactNumber(usageStats.tpm)}</span>
-                <span className={styles.usageLabel}>{t('dashboard.tpm_30min')}</span>
-              </div>
-              <div className={styles.usageCard}>
-                <span className={styles.usageValue}>{usageStats.modelsUsed}</span>
-                <span className={styles.usageLabel}>{t('dashboard.models_used')}</span>
-              </div>
-            </div>
-          ) : (
-            <div className={styles.usageEmpty}>{t('dashboard.no_usage_data')}</div>
-          )}
-          <Link to="/usage" className={styles.viewMoreLink}>
-            {t('dashboard.view_detailed_usage')} →
-          </Link>
-        </div>
-      )}
-
-      <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>{t('dashboard.quick_actions')}</h2>
-        <div className={styles.actionsGrid}>
-          {quickActions.map((action) => (
-            <Link key={action.path} to={action.path}>
-              <Button variant="secondary" className={styles.actionButton}>
-                {action.icon}
-                {action.label}
-              </Button>
-            </Link>
-          ))}
-        </div>
       </div>
 
       {config && (

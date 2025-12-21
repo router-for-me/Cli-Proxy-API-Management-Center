@@ -109,7 +109,9 @@
     "models_used": "使用模型数",
     "no_usage_data": "暂无使用数据",
     "view_detailed_usage": "查看详细统计",
-    "edit_settings": "编辑设置"
+    "edit_settings": "编辑设置",
+    "available_models": "可用模型",
+    "available_models_desc": "所有提供商的模型总数"
   },
   "basic_settings": {
     "title": "基础设置",
