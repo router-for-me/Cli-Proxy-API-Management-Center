@@ -48,6 +48,7 @@ const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
 
 const serializeProviderKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, any> = { 'api-key': config.apiKey };
+  if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
   const headers = serializeHeaders(config.headers);
@@ -62,6 +63,7 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
 
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
   const payload: Record<string, any> = { 'api-key': config.apiKey };
+  if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   const headers = serializeHeaders(config.headers);
   if (headers) payload.headers = headers;
@@ -79,6 +81,7 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
       ? provider.apiKeyEntries.map((entry) => serializeApiKeyEntry(entry))
       : []
   };
+  if (provider.prefix?.trim()) payload.prefix = provider.prefix.trim();
   const headers = serializeHeaders(provider.headers);
   if (headers) payload.headers = headers;
   const models = serializeModelAliases(provider.models);

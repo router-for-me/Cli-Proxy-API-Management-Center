@@ -18,6 +18,7 @@ export interface ApiKeyEntry {
 
 export interface GeminiKeyConfig {
   apiKey: string;
+  prefix?: string;
   baseUrl?: string;
   headers?: Record<string, string>;
   excludedModels?: string[];
@@ -25,6 +26,7 @@ export interface GeminiKeyConfig {
 
 export interface ProviderKeyConfig {
   apiKey: string;
+  prefix?: string;
   baseUrl?: string;
   proxyUrl?: string;
   headers?: Record<string, string>;
@@ -34,6 +36,7 @@ export interface ProviderKeyConfig {
 
 export interface OpenAIProviderConfig {
   name: string;
+  prefix?: string;
   baseUrl: string;
   apiKeyEntries: ApiKeyEntry[];
   headers?: Record<string, string>;

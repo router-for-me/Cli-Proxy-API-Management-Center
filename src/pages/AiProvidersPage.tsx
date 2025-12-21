@@ -39,6 +39,7 @@ interface ModelEntry {
 
 interface OpenAIFormState {
   name: string;
+  prefix: string;
   baseUrl: string;
   headers: HeaderEntry[];
   testModel?: string;
@@ -200,6 +201,7 @@ export function AiProvidersPage() {
 
   const [geminiForm, setGeminiForm] = useState<GeminiKeyConfig & { excludedText: string }>({
     apiKey: '',
+    prefix: '',
     baseUrl: '',
     headers: {},
     excludedModels: [],
@@ -209,6 +211,7 @@ export function AiProvidersPage() {
     ProviderKeyConfig & { modelEntries: ModelEntry[]; excludedText: string }
   >({
     apiKey: '',
+    prefix: '',
     baseUrl: '',
     proxyUrl: '',
     headers: {},
@@ -219,6 +222,7 @@ export function AiProvidersPage() {
   });
   const [openaiForm, setOpenaiForm] = useState<OpenAIFormState>({
     name: '',
+    prefix: '',
     baseUrl: '',
     headers: [],
     apiKeyEntries: [buildApiKeyEntry()],
@@ -317,6 +321,7 @@ export function AiProvidersPage() {
     setModal(null);
     setGeminiForm({
       apiKey: '',
+      prefix: '',
       baseUrl: '',
       headers: {},
       excludedModels: [],
@@ -324,6 +329,7 @@ export function AiProvidersPage() {
     });
     setProviderForm({
       apiKey: '',
+      prefix: '',
       baseUrl: '',
       proxyUrl: '',
       headers: {},
@@ -334,6 +340,7 @@ export function AiProvidersPage() {
     });
     setOpenaiForm({
       name: '',
+      prefix: '',
       baseUrl: '',
       headers: [],
       apiKeyEntries: [buildApiKeyEntry()],
@@ -410,6 +417,7 @@ export function AiProvidersPage() {
       const modelEntries = modelsToEntries(entry.models);
       setOpenaiForm({
         name: entry.name,
+        prefix: entry.prefix ?? '',
         baseUrl: entry.baseUrl,
         headers: headersToEntries(entry.headers),
         testModel: entry.testModel,
@@ -757,6 +765,7 @@ export function AiProvidersPage() {
     try {
       const payload: GeminiKeyConfig = {
         apiKey: geminiForm.apiKey.trim(),
+        prefix: geminiForm.prefix?.trim() || undefined,
         baseUrl: geminiForm.baseUrl?.trim() || undefined,
         headers: buildHeaderObject(headersToEntries(geminiForm.headers as any)),
         excludedModels: parseExcludedModels(geminiForm.excludedText),
@@ -900,6 +909,7 @@ export function AiProvidersPage() {
 
       const payload: ProviderKeyConfig = {
         apiKey: providerForm.apiKey.trim(),
+        prefix: providerForm.prefix?.trim() || undefined,
         baseUrl,
         proxyUrl: providerForm.proxyUrl?.trim() || undefined,
         headers: buildHeaderObject(headersToEntries(providerForm.headers as any)),
@@ -970,6 +980,7 @@ export function AiProvidersPage() {
     try {
       const payload: OpenAIProviderConfig = {
         name: openaiForm.name.trim(),
+        prefix: openaiForm.prefix?.trim() || undefined,
         baseUrl: openaiForm.baseUrl.trim(),
         headers: buildHeaderObject(openaiForm.headers),
         apiKeyEntries: openaiForm.apiKeyEntries.map((entry) => ({
@@ -1176,6 +1187,12 @@ export function AiProvidersPage() {
                     <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
                     <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
                   </div>
+                  {item.prefix && (
+                    <div className={styles.fieldRow}>
+                      <span className={styles.fieldLabel}>{t('common.prefix')}:</span>
+                      <span className={styles.fieldValue}>{item.prefix}</span>
+                    </div>
+                  )}
                   {/* Base URL 行 */}
                   {item.baseUrl && (
                     <div className={styles.fieldRow}>
@@ -1274,6 +1291,12 @@ export function AiProvidersPage() {
                     <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
                     <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
                   </div>
+                  {item.prefix && (
+                    <div className={styles.fieldRow}>
+                      <span className={styles.fieldLabel}>{t('common.prefix')}:</span>
+                      <span className={styles.fieldValue}>{item.prefix}</span>
+                    </div>
+                  )}
                   {/* Base URL 行 */}
                   {item.baseUrl && (
                     <div className={styles.fieldRow}>
@@ -1379,6 +1402,12 @@ export function AiProvidersPage() {
                     <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
                     <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
                   </div>
+                  {item.prefix && (
+                    <div className={styles.fieldRow}>
+                      <span className={styles.fieldLabel}>{t('common.prefix')}:</span>
+                      <span className={styles.fieldValue}>{item.prefix}</span>
+                    </div>
+                  )}
                   {/* Base URL 行 */}
                   {item.baseUrl && (
                     <div className={styles.fieldRow}>
@@ -1567,6 +1596,12 @@ export function AiProvidersPage() {
               return (
                 <Fragment>
                   <div className="item-title">{item.name}</div>
+                  {item.prefix && (
+                    <div className={styles.fieldRow}>
+                      <span className={styles.fieldLabel}>{t('common.prefix')}:</span>
+                      <span className={styles.fieldValue}>{item.prefix}</span>
+                    </div>
+                  )}
                   {/* Base URL 行 */}
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
@@ -1786,6 +1821,13 @@ export function AiProvidersPage() {
             onChange={(e) => setGeminiForm((prev) => ({ ...prev, apiKey: e.target.value }))}
           />
           <Input
+            label={t('ai_providers.prefix_label')}
+            placeholder={t('ai_providers.prefix_placeholder')}
+            value={geminiForm.prefix ?? ''}
+            onChange={(e) => setGeminiForm((prev) => ({ ...prev, prefix: e.target.value }))}
+            hint={t('ai_providers.prefix_hint')}
+          />
+          <Input
             label={t('ai_providers.gemini_base_url_label')}
             placeholder={t('ai_providers.gemini_base_url_placeholder')}
             value={geminiForm.baseUrl ?? ''}
@@ -1848,6 +1890,13 @@ export function AiProvidersPage() {
             }
             value={providerForm.apiKey}
             onChange={(e) => setProviderForm((prev) => ({ ...prev, apiKey: e.target.value }))}
+          />
+          <Input
+            label={t('ai_providers.prefix_label')}
+            placeholder={t('ai_providers.prefix_placeholder')}
+            value={providerForm.prefix ?? ''}
+            onChange={(e) => setProviderForm((prev) => ({ ...prev, prefix: e.target.value }))}
+            hint={t('ai_providers.prefix_hint')}
           />
           <Input
             label={
@@ -1930,6 +1979,13 @@ export function AiProvidersPage() {
             label={t('ai_providers.openai_add_modal_name_label')}
             value={openaiForm.name}
             onChange={(e) => setOpenaiForm((prev) => ({ ...prev, name: e.target.value }))}
+          />
+          <Input
+            label={t('ai_providers.prefix_label')}
+            placeholder={t('ai_providers.prefix_placeholder')}
+            value={openaiForm.prefix ?? ''}
+            onChange={(e) => setOpenaiForm((prev) => ({ ...prev, prefix: e.target.value }))}
+            hint={t('ai_providers.prefix_hint')}
           />
           <Input
             label={t('ai_providers.openai_add_modal_url_label')}

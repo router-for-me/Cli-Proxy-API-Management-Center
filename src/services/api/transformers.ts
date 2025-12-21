@@ -70,6 +70,12 @@ const normalizeExcludedModels = (input: any): string[] => {
   return normalized;
 };
 
+const normalizePrefix = (value: any): string | undefined => {
+  if (value === undefined || value === null) return undefined;
+  const trimmed = String(value).trim();
+  return trimmed ? trimmed : undefined;
+};
+
 const normalizeApiKeyEntry = (entry: any): ApiKeyEntry | null => {
   if (!entry) return null;
   const apiKey = entry['api-key'] ?? entry.apiKey ?? entry.key ?? (typeof entry === 'string' ? entry : '');
@@ -93,6 +99,8 @@ const normalizeProviderKeyConfig = (item: any): ProviderKeyConfig | null => {
   if (!trimmed) return null;
 
   const config: ProviderKeyConfig = { apiKey: trimmed };
+  const prefix = normalizePrefix(item.prefix ?? item['prefix']);
+  if (prefix) config.prefix = prefix;
   const baseUrl = item['base-url'] ?? item.baseUrl;
   const proxyUrl = item['proxy-url'] ?? item.proxyUrl;
   if (baseUrl) config.baseUrl = String(baseUrl);
@@ -118,6 +126,8 @@ const normalizeGeminiKeyConfig = (item: any): GeminiKeyConfig | null => {
   if (!trimmed) return null;
 
   const config: GeminiKeyConfig = { apiKey: trimmed };
+  const prefix = normalizePrefix(item.prefix ?? item['prefix']);
+  if (prefix) config.prefix = prefix;
   const baseUrl = item['base-url'] ?? item.baseUrl ?? item['base_url'];
   if (baseUrl) config.baseUrl = String(baseUrl);
   const headers = normalizeHeaders(item.headers);
@@ -155,6 +165,8 @@ const normalizeOpenAIProvider = (provider: any): OpenAIProviderConfig | null => 
     apiKeyEntries
   };
 
+  const prefix = normalizePrefix(provider.prefix ?? provider['prefix']);
+  if (prefix) result.prefix = prefix;
   if (headers) result.headers = headers;
   if (models.length) result.models = models;
   if (priority !== undefined) result.priority = Number(priority);
