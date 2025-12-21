@@ -28,7 +28,7 @@ interface ProviderStats {
 }
 
 export function DashboardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const serverVersion = useAuthStore((state) => state.serverVersion);
   const serverBuildDate = useAuthStore((state) => state.serverBuildDate);
@@ -57,6 +57,10 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const apiKeysCache = useRef<string[]>([]);
+
+  useEffect(() => {
+    apiKeysCache.current = [];
+  }, [apiBase, config?.apiKeys]);
 
   const normalizeApiKeyList = (input: any): string[] => {
     if (!Array.isArray(input)) return [];
@@ -143,15 +147,28 @@ export function DashboardPage() {
     if (connectionStatus === 'connected') {
       fetchStats();
       fetchModels();
+    } else {
+      setLoading(false);
     }
   }, [connectionStatus, fetchModels]);
 
-  // Calculate total provider keys
-  const totalProviderKeys =
-    (providerStats.gemini ?? 0) +
-    (providerStats.codex ?? 0) +
-    (providerStats.claude ?? 0) +
-    (providerStats.openai ?? 0);
+  // Calculate total provider keys only when all provider stats are available.
+  const providerStatsReady =
+    providerStats.gemini !== null &&
+    providerStats.codex !== null &&
+    providerStats.claude !== null &&
+    providerStats.openai !== null;
+  const hasProviderStats =
+    providerStats.gemini !== null ||
+    providerStats.codex !== null ||
+    providerStats.claude !== null ||
+    providerStats.openai !== null;
+  const totalProviderKeys = providerStatsReady
+    ? (providerStats.gemini ?? 0) +
+      (providerStats.codex ?? 0) +
+      (providerStats.claude ?? 0) +
+      (providerStats.openai ?? 0)
+    : 0;
 
   const quickStats: QuickStat[] = [
     {
@@ -164,16 +181,18 @@ export function DashboardPage() {
     },
     {
       label: t('nav.ai_providers'),
-      value: loading ? '-' : totalProviderKeys,
+      value: loading ? '-' : providerStatsReady ? totalProviderKeys : '-',
       icon: <IconBot size={24} />,
       path: '/ai-providers',
       loading: loading,
-      sublabel: t('dashboard.provider_keys_detail', {
-        gemini: providerStats.gemini ?? 0,
-        codex: providerStats.codex ?? 0,
-        claude: providerStats.claude ?? 0,
-        openai: providerStats.openai ?? 0
-      })
+      sublabel: hasProviderStats
+        ? t('dashboard.provider_keys_detail', {
+            gemini: providerStats.gemini ?? '-',
+            codex: providerStats.codex ?? '-',
+            claude: providerStats.claude ?? '-',
+            openai: providerStats.openai ?? '-'
+          })
+        : undefined
     },
     {
       label: t('nav.auth_files'),
@@ -226,7 +245,7 @@ export function DashboardPage() {
           {serverVersion && <span className={styles.serverVersion}>v{serverVersion}</span>}
           {serverBuildDate && (
             <span className={styles.buildDate}>
-              {new Date(serverBuildDate).toLocaleDateString()}
+              {new Date(serverBuildDate).toLocaleDateString(i18n.language)}
             </span>
           )}
         </div>
