@@ -281,7 +281,7 @@ export function OAuthPage() {
                         {t('auth_login.oauth_callback_button')}
                       </Button>
                     </div>
-                    {state.callbackStatus === 'success' && (
+                    {state.callbackStatus === 'success' && state.status === 'waiting' && (
                       <div className="status-badge success" style={{ marginTop: 8 }}>
                         {t('auth_login.oauth_callback_status_success')}
                       </div>

@@ -82,6 +82,10 @@ class ApiClient {
       (config) => {
         // 设置 baseURL
         config.baseURL = this.apiBase;
+        if (config.url) {
+          // Normalize deprecated Gemini endpoint to the current path.
+          config.url = config.url.replace(/\/generative-language-api-key\b/g, '/gemini-api-key');
+        }
 
         // 添加认证头
         if (this.managementKey) {
