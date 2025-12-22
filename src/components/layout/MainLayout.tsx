@@ -2,6 +2,8 @@ import { ReactNode, SVGProps, useCallback, useEffect, useLayoutEffect, useRef, u
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
   IconBot,
   IconChartLine,
@@ -16,7 +18,7 @@ import {
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import { useAuthStore, useConfigStore, useLanguageStore, useNotificationStore, useThemeStore } from '@/stores';
-import { versionApi } from '@/services/api';
+import { configApi, versionApi } from '@/services/api';
 
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconLayoutDashboard size={18} />,
@@ -148,6 +150,7 @@ export function MainLayout() {
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const clearCache = useConfigStore((state) => state.clearCache);
+  const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
 
   const theme = useThemeStore((state) => state.theme);
   const toggleTheme = useThemeStore((state) => state.toggleTheme);
@@ -157,11 +160,20 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
   const [brandExpanded, setBrandExpanded] = useState(true);
+  const [requestLogModalOpen, setRequestLogModalOpen] = useState(false);
+  const [requestLogDraft, setRequestLogDraft] = useState(false);
+  const [requestLogTouched, setRequestLogTouched] = useState(false);
+  const [requestLogSaving, setRequestLogSaving] = useState(false);
   const brandCollapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
+  const versionTapCount = useRef(0);
+  const versionTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fullBrandName = 'CLI Proxy API Management Center';
   const abbrBrandName = t('title.abbr');
+  const requestLogEnabled = config?.requestLog ?? false;
+  const requestLogDirty = requestLogDraft !== requestLogEnabled;
+  const canEditRequestLog = connectionStatus === 'connected' && Boolean(config);
 
   // 将顶栏高度写入 CSS 变量，确保侧栏/内容区计算一致，防止滚动时抖动
   useLayoutEffect(() => {
@@ -203,6 +215,20 @@ export function MainLayout() {
     };
   }, []);
 
+  useEffect(() => {
+    if (requestLogModalOpen && !requestLogTouched) {
+      setRequestLogDraft(requestLogEnabled);
+    }
+  }, [requestLogModalOpen, requestLogTouched, requestLogEnabled]);
+
+  useEffect(() => {
+    return () => {
+      if (versionTapTimer.current) {
+        clearTimeout(versionTapTimer.current);
+      }
+    };
+  }, []);
+
   const handleBrandClick = useCallback(() => {
     if (!brandExpanded) {
       setBrandExpanded(true);
@@ -215,6 +241,60 @@ export function MainLayout() {
       }, 5000);
     }
   }, [brandExpanded]);
+
+  const openRequestLogModal = useCallback(() => {
+    setRequestLogTouched(false);
+    setRequestLogDraft(requestLogEnabled);
+    setRequestLogModalOpen(true);
+  }, [requestLogEnabled]);
+
+  const handleRequestLogClose = useCallback(() => {
+    setRequestLogModalOpen(false);
+    setRequestLogTouched(false);
+  }, []);
+
+  const handleVersionTap = useCallback(() => {
+    versionTapCount.current += 1;
+    if (versionTapTimer.current) {
+      clearTimeout(versionTapTimer.current);
+    }
+    versionTapTimer.current = setTimeout(() => {
+      versionTapCount.current = 0;
+    }, 1500);
+
+    if (versionTapCount.current >= 7) {
+      versionTapCount.current = 0;
+      if (versionTapTimer.current) {
+        clearTimeout(versionTapTimer.current);
+        versionTapTimer.current = null;
+      }
+      openRequestLogModal();
+    }
+  }, [openRequestLogModal]);
+
+  const handleRequestLogSave = async () => {
+    if (!canEditRequestLog) return;
+    if (!requestLogDirty) {
+      setRequestLogModalOpen(false);
+      return;
+    }
+
+    const previous = requestLogEnabled;
+    setRequestLogSaving(true);
+    updateConfigValue('request-log', requestLogDraft);
+
+    try {
+      await configApi.updateRequestLog(requestLogDraft);
+      clearCache('request-log');
+      showNotification(t('notification.request_log_updated'), 'success');
+      setRequestLogModalOpen(false);
+    } catch (error: any) {
+      updateConfigValue('request-log', previous);
+      showNotification(`${t('notification.update_failed')}: ${error?.message || ''}`, 'error');
+    } finally {
+      setRequestLogSaving(false);
+    }
+  };
 
   useEffect(() => {
     fetchConfig().catch(() => {
@@ -369,7 +449,7 @@ export function MainLayout() {
             <span>
               {t('footer.api_version')}: {serverVersion || t('system_info.version_unknown')}
             </span>
-            <span>
+            <span onClick={handleVersionTap}>
               {t('footer.version')}: {__APP_VERSION__ || t('system_info.version_unknown')}
             </span>
             <span>
@@ -379,6 +459,40 @@ export function MainLayout() {
           </footer>
         </div>
       </div>
+
+      <Modal
+        open={requestLogModalOpen}
+        onClose={handleRequestLogClose}
+        title={t('basic_settings.request_log_title')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={handleRequestLogClose} disabled={requestLogSaving}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleRequestLogSave}
+              loading={requestLogSaving}
+              disabled={!canEditRequestLog || !requestLogDirty}
+            >
+              {t('common.save')}
+            </Button>
+          </>
+        }
+      >
+        <div className="request-log-modal">
+          <div className="status-badge warning">{t('basic_settings.request_log_warning')}</div>
+          <ToggleSwitch
+            label={t('basic_settings.request_log_enable')}
+            labelPosition="left"
+            checked={requestLogDraft}
+            disabled={!canEditRequestLog || requestLogSaving}
+            onChange={(value) => {
+              setRequestLogDraft(value);
+              setRequestLogTouched(true);
+            }}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

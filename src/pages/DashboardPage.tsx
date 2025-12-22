@@ -289,12 +289,6 @@ export function DashboardPage() {
               </span>
             </div>
             <div className={styles.configItem}>
-              <span className={styles.configLabel}>{t('basic_settings.request_log_enable')}</span>
-              <span className={`${styles.configValue} ${config.requestLog ? styles.enabled : styles.disabled}`}>
-                {config.requestLog ? t('common.yes') : t('common.no')}
-              </span>
-            </div>
-            <div className={styles.configItem}>
               <span className={styles.configLabel}>{t('basic_settings.retry_count_label')}</span>
               <span className={styles.configValue}>{config.requestRetry ?? 0}</span>
             </div>

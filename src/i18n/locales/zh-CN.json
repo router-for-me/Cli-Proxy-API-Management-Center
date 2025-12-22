@@ -133,7 +133,9 @@
     "usage_statistics_enable": "启用使用统计",
     "logging_title": "日志记录",
     "logging_to_file_enable": "启用日志记录到文件",
+    "request_log_title": "请求日志",
     "request_log_enable": "启用请求日志",
+    "request_log_warning": "仅在需要排查问题时开启，日常请保持关闭。",
     "ws_auth_title": "WebSocket 鉴权",
     "ws_auth_enable": "启用 /ws/* 鉴权"
   },

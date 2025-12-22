@@ -16,7 +16,6 @@ type PendingKey =
   | 'switchProject'
   | 'switchPreview'
   | 'usage'
-  | 'requestLog'
   | 'loggingToFile'
   | 'wsAuth';
 
@@ -70,7 +69,7 @@ export function SettingsPage() {
 
   const toggleSetting = async (
     section: PendingKey,
-    rawKey: 'debug' | 'usage-statistics-enabled' | 'request-log' | 'logging-to-file' | 'ws-auth',
+    rawKey: 'debug' | 'usage-statistics-enabled' | 'logging-to-file' | 'ws-auth',
     value: boolean,
     updater: (val: boolean) => Promise<any>,
     successMessage: string
@@ -81,8 +80,6 @@ export function SettingsPage() {
           return config?.debug ?? false;
         case 'usage-statistics-enabled':
           return config?.usageStatisticsEnabled ?? false;
-        case 'request-log':
-          return config?.requestLog ?? false;
         case 'logging-to-file':
           return config?.loggingToFile ?? false;
         case 'ws-auth':
@@ -196,21 +193,6 @@ export function SettingsPage() {
                 value,
                 configApi.updateUsageStatistics,
                 t('notification.usage_statistics_updated')
-              )
-            }
-          />
-
-          <ToggleSwitch
-            label={t('basic_settings.request_log_enable')}
-            checked={config?.requestLog ?? false}
-            disabled={disableControls || pending.requestLog || loading}
-            onChange={(value) =>
-              toggleSetting(
-                'requestLog',
-                'request-log',
-                value,
-                configApi.updateRequestLog,
-                t('notification.request_log_updated')
               )
             }
           />

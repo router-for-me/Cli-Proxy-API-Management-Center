@@ -308,6 +308,12 @@ textarea {
   }
 }
 
+.switch-label-left {
+  .label {
+    order: -1;
+  }
+}
+
 .pill {
   padding: 4px 10px;
   border-radius: $radius-full;
@@ -408,6 +414,17 @@ textarea {
   justify-content: flex-end;
   gap: $spacing-sm;
   background: var(--bg-primary);
+}
+
+.request-log-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-md;
+
+  .status-badge {
+    margin-bottom: 0;
+  }
 }
 
 .empty-state {

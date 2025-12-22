@@ -133,7 +133,9 @@
     "usage_statistics_enable": "Enable usage statistics",
     "logging_title": "Logging",
     "logging_to_file_enable": "Enable logging to file",
+    "request_log_title": "Request Logging",
     "request_log_enable": "Enable request logging",
+    "request_log_warning": "Keep this off unless you need detailed troubleshooting.",
     "ws_auth_title": "WebSocket Authentication",
     "ws_auth_enable": "Require auth for /ws/*"
   },

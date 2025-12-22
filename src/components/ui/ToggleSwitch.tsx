@@ -5,15 +5,26 @@ interface ToggleSwitchProps {
   onChange: (value: boolean) => void;
   label?: ReactNode;
   disabled?: boolean;
+  labelPosition?: 'left' | 'right';
 }
 
-export function ToggleSwitch({ checked, onChange, label, disabled = false }: ToggleSwitchProps) {
+export function ToggleSwitch({
+  checked,
+  onChange,
+  label,
+  disabled = false,
+  labelPosition = 'right'
+}: ToggleSwitchProps) {
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.checked);
   };
 
+  const className = ['switch', labelPosition === 'left' ? 'switch-label-left' : '']
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <label className="switch">
+    <label className={className}>
       <input type="checkbox" checked={checked} onChange={handleChange} disabled={disabled} />
       <span className="track">
         <span className="thumb" />
