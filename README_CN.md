@@ -1,190 +1,130 @@
 # CLI Proxy API 管理中心
 
-用于管理 CLI Proxy API 的现代化 React Web 界面，采用全新技术栈重构，提供更好的可维护性、类型安全性和用户体验。
+用于管理与排障 **CLI Proxy API** 的单文件 WebUI（React + TypeScript），通过 **Management API** 完成配置、凭据、日志与统计等运维工作。
 
 [English](README.md)
 
-**主项目**: https://github.com/router-for-me/CLIProxyAPI
-**示例地址**: https://remote.router-for.me/
+**主项目**: https://github.com/router-for-me/CLIProxyAPI  
+**示例地址**: https://remote.router-for.me/  
 **最低版本要求**: ≥ 6.3.0（推荐 ≥ 6.5.0）
 
-自 6.0.19 版本起，WebUI 已集成到主程序中，启动服务后可通过 `/management.html` 访问。
+Since version 6.0.19, the WebUI ships with the main program; access it via `/management.html` on the API port once the service is running.
 
-## 功能特点
+## 这是什么（以及不是什么）
 
-### 核心功能
-
-- **登录与认证**: 自动检测当前地址（支持手动修改），加密自动登录，会话持久化
-- **基础设置**: 调试模式、代理 URL、请求重试配置、配额溢出自动切换项目/预览模型、使用统计开关、请求日志与文件日志、WebSocket `/ws/*` 鉴权
-- **API 密钥管理**: 管理代理认证密钥，支持添加/编辑/删除操作
-- **AI 提供商**: 配置 Gemini/Codex/Claude，OpenAI 兼容提供商（自定义 Base URL/Headers/代理/模型别名），Vertex AI 服务账号 JSON 导入
-- **认证文件与 OAuth**: 上传/下载/搜索/分页 JSON 凭据；类型筛选（Qwen/Gemini/GeminiCLI/AIStudio/Claude/Codex/Antigravity/iFlow/Vertex/Empty）；批量删除；多提供商 OAuth/设备码流程
-- **日志查看**: 实时日志查看，支持自动刷新、下载和清空（启用"写入日志文件"后显示）
-- **使用统计**: 概览卡片、小时/天切换、多模型交互式图表、按 API 统计表格
-- **配置管理**: 内置 YAML 编辑器，支持 `/config.yaml` 语法高亮、重载/保存
-- **系统信息**: 连接状态、配置缓存、服务器版本/构建时间、底栏显示 UI 版本
-
-### 用户体验
-
-- **响应式设计**: 完整移动端支持，可折叠侧边栏
-- **主题系统**: 明/暗模式切换，偏好持久化
-- **国际化**: 简体中文和英文，无缝切换
-- **实时反馈**: 所有操作的消息通知
-- **安全性**: 密钥遮蔽、加密本地存储
-
-## 技术栈
-
-- **前端框架**: React 19 + TypeScript
-- **构建工具**: Vite 7，单文件输出（[vite-plugin-singlefile](https://github.com/nicknisi/vite-plugin-singlefile)）
-- **状态管理**: [Zustand](https://github.com/pmndrs/zustand)
-- **路由**: React Router 7 (HashRouter)
-- **HTTP 客户端**: Axios，带认证和错误处理拦截器
-- **国际化**: i18next + react-i18next
-- **样式**: SCSS + CSS Modules，CSS 变量主题
-- **图表**: Chart.js + react-chartjs-2
-- **代码编辑器**: @uiw/react-codemirror（YAML 支持）
+- 本仓库只包含 Web 管理界面本身，通过 CLI Proxy API 的 **Management API**（`/v0/management`）读取/修改配置、上传凭据、查看日志与使用统计。
+- 它 **不是** 代理本体，不参与流量转发。
 
 ## 快速开始
 
-### 环境要求
+### 方式 A：使用 CLIProxyAPI 自带的 WebUI（推荐）
 
-- Node.js 18+（推荐 LTS 版本）
-- npm 9+
+1. 启动 CLI Proxy API 服务。
+2. 打开：`http://<host>:<api_port>/management.html`
+3. 输入 **管理密钥** 并连接。
 
-### 安装
+页面会根据当前地址自动推断 API 地址，也支持手动修改。
+
+### 方式 B：开发调试
 
 ```bash
-# 克隆仓库
-git clone https://github.com/router-for-me/Cli-Proxy-API-Management-Center.git
-cd Cli-Proxy-API-Management-Center
-
-# 安装依赖
 npm install
+npm run dev
 ```
 
-### 开发
+打开 `http://localhost:5173`，然后连接到你的 CLI Proxy API 实例。
+
+### 方式 C：构建单文件 HTML
 
 ```bash
-npm run dev          # 启动 Vite 开发服务器（默认: http://localhost:5173）
+npm install
+npm run build
 ```
 
-### 构建
+- 构建产物：`dist/index.html`（资源已全部内联）。
+- 在 CLIProxyAPI 的发布流程里会重命名为 `management.html`。
+- 本地预览：`npm run preview`
+
+提示：直接用 `file://` 打开 `dist/index.html` 可能遇到浏览器 CORS 限制；更稳妥的方式是用预览/静态服务器打开。
+
+## 连接说明
+
+### API 地址怎么填
+
+以下格式均可，WebUI 会自动归一化：
+
+- `localhost:8317`
+- `http://192.168.1.10:8317`
+- `https://example.com:8317`
+- `http://example.com:8317/v0/management`（也可填写，后缀会被自动去除）
+
+### 管理密钥（注意：不是 API Keys）
+
+管理密钥会以如下方式随请求发送：
+
+- `Authorization: Bearer <MANAGEMENT_KEY>`（默认）
+
+这与 WebUI 中“API Keys”页面管理的 `api-keys` 不同：后者是代理对外接口（如 OpenAI 兼容接口）给客户端使用的鉴权 key。
+
+### 远程管理
+
+当你从非 localhost 的浏览器访问时，服务端通常需要开启远程管理（例如 `allow-remote-management: true`）。  
+完整鉴权规则、限制与边界情况请查看 `api.md`。
+
+## 功能一览（按页面对应）
+
+- **仪表盘**：连接状态、服务版本/构建时间、关键数量概览、可用模型概览。
+- **基础设置**：调试开关、代理 URL、请求重试、配额回退（切项目/切预览模型）、使用统计、请求日志、文件日志、WebSocket 鉴权。
+- **API Keys**：管理代理 `api-keys`（增/改/删）。
+- **AI 提供商**：
+  - Gemini/Codex/Claude 配置（Base URL、Headers、代理、模型别名、排除模型、Prefix）。
+  - OpenAI 兼容提供商（多 Key、Header、自助从 `/v1/models` 拉取并导入模型别名、可选浏览器侧 `chat/completions` 测试）。
+  - Ampcode 集成（上游地址/密钥、强制映射、模型映射表）。
+- **认证文件**：上传/下载/删除 JSON 凭据，筛选/搜索/分页，标记 runtime-only；查看单个凭据可用模型（依赖后端支持）；管理 OAuth 排除模型（支持 `*` 通配符）。
+- **OAuth**：对支持的提供商发起 OAuth/设备码流程，轮询状态；可选提交回调 `redirect_url`；包含 iFlow Cookie 导入。
+- **使用统计**：按小时/天图表、按 API 与按模型统计、缓存/推理 Token 拆分、RPM/TPM 时间窗、可选本地保存的模型价格用于费用估算。
+- **配置文件**：浏览器内编辑 `/config.yaml`（YAML 高亮 + 搜索），保存/重载。
+- **日志**：增量拉取日志、自动刷新、搜索、隐藏管理端流量、清空日志；下载请求错误日志文件。
+- **系统信息**：快捷链接 + 拉取 `/v1/models` 并分组展示（需要至少一个代理 API Key 才能查询模型）。
+
+## 构建与发布说明
+
+- 使用 Vite 输出 **单文件 HTML**（`dist/index.html`），资源全部内联（`vite-plugin-singlefile`）。
+- 打 `vX.Y.Z` 标签会触发 `.github/workflows/release.yml`，发布 `dist/management.html`。
+- 页脚显示的 UI 版本在构建期注入（优先使用环境变量 `VERSION`，否则使用 git tag / `package.json`）。
+
+## 安全提示
+
+- 管理密钥会存入浏览器 `localStorage`，并使用轻量混淆格式（`enc::v1::...`）避免明文；仍应视为敏感信息。
+- 建议使用独立浏览器配置/设备进行管理；开启远程管理时请谨慎评估暴露面。
+
+## 常见问题
+
+- **无法连接 / 401**：确认 API 地址与管理密钥；远程访问可能需要服务端开启远程管理。
+- **反复输错密钥**：服务端可能对远程 IP 进行临时封禁。
+- **日志页面不显示**：需要在“基础设置”里开启“写入日志文件”，导航项才会出现。
+- **功能提示不支持**：多为后端版本较旧或接口未启用/不存在（如：认证文件模型列表、排除模型、日志相关接口）。
+- **OpenAI 提供商测试失败**：测试在浏览器侧执行，会受网络与 CORS 影响；这里失败不一定代表服务端不可用。
+
+## 开发命令
 
 ```bash
-npm run build        # TypeScript 检查 + Vite 生产构建
+npm run dev        # 启动开发服务器
+npm run build      # tsc + Vite 构建
+npm run preview    # 本地预览 dist
+npm run lint       # ESLint（warnings 视为失败）
+npm run format     # Prettier
+npm run type-check # tsc --noEmit
 ```
-
-构建输出单个 `dist/index.html` 文件，所有资源已内联。
-
-### 其他命令
-
-```bash
-npm run preview      # 本地预览生产构建
-npm run lint         # ESLint 严格模式（--max-warnings 0）
-npm run format       # Prettier 格式化 src/**/*.{ts,tsx,css,scss}
-npm run type-check   # 仅 TypeScript 类型检查（tsc --noEmit）
-```
-
-## 使用方法
-
-### 访问方式
-
-1. **与 CLI Proxy API 集成使用（推荐）**
-   启动 CLI Proxy API 服务后，访问 `http://您的服务器:8317/management.html`
-
-2. **独立使用（构建后文件）**
-   直接在浏览器打开构建的 `dist/index.html`，或部署到任意静态文件服务器
-
-3. **开发服务器**
-   运行 `npm run dev` 后打开 `http://localhost:5173`
-
-### 初始配置
-
-1. 登录页会自动检测当前地址，可根据需要修改
-2. 输入管理密钥
-3. 点击连接进行认证
-4. 凭据会加密保存到本地，下次自动登录
-
-> **提示**: 只有在"基础设置"中启用"写入日志文件"后，才会显示"日志查看"导航项。
-
-## 项目结构
-
-```
-├── src/
-│   ├── components/
-│   │   ├── common/           # 公共组件（NotificationContainer）
-│   │   ├── layout/           # 应用外壳（MainLayout 侧边栏布局）
-│   │   └── ui/               # 可复用 UI 组件（Button、Input、Modal 等）
-│   ├── hooks/                # 自定义 Hooks（useApi、useDebounce、usePagination 等）
-│   ├── i18n/
-│   │   ├── locales/          # 翻译文件（zh-CN.json、en.json）
-│   │   └── index.ts          # i18next 配置
-│   ├── pages/                # 路由页面组件，配套 .module.scss 样式
-│   ├── router/               # ProtectedRoute 路由守卫
-│   ├── services/
-│   │   ├── api/              # API 层（client.ts 单例，功能模块）
-│   │   └── storage/          # 安全存储工具
-│   ├── stores/               # Zustand 状态管理（auth、config、theme、language、notification）
-│   ├── styles/               # 全局 SCSS（variables、mixins、themes、components）
-│   ├── types/                # TypeScript 类型定义
-│   ├── utils/                # 工具函数（constants、format、validation 等）
-│   ├── App.tsx               # 根组件与路由
-│   └── main.tsx              # 入口文件
-├── dist/                     # 构建输出（单文件打包）
-├── vite.config.ts            # Vite 配置
-├── tsconfig.json             # TypeScript 配置
-└── package.json
-```
-
-### 核心架构模式
-
-- **路径别名**: 使用 `@/` 导入 `src/` 目录（在 vite.config.ts 和 tsconfig.json 中配置）
-- **API 客户端**: `src/services/api/client.ts` 单例，带认证拦截器
-- **状态管理**: Zustand stores，auth/theme/language 持久化到 localStorage
-- **样式**: SCSS 变量自动注入；CSS Modules 实现组件作用域样式
-- **构建输出**: 单文件打包，便于分发（所有资源内联）
-
-## 故障排除
-
-### 连接问题
-
-1. 确认 CLI Proxy API 服务正在运行
-2. 检查 API 地址是否正确
-3. 验证管理密钥是否有效
-4. 确认防火墙设置允许连接
-
-### 数据不更新
-
-1. 点击顶栏的"刷新全部"按钮
-2. 检查网络连接
-3. 打开浏览器开发者工具控制台查看错误信息
-
-### 日志与配置编辑
-
-- **日志**: 需要服务端启用写文件日志；返回 404 说明服务器版本过旧或未启用日志
-- **配置编辑**: 依赖 `/config.yaml` 接口；保存前请确保 YAML 语法正确
-
-### 使用统计
-
-- 若图表为空，请在设置中启用"使用统计"；数据在服务重启后会清空
 
 ## 贡献
 
-欢迎提交 Issue 和 Pull Request！请遵循以下指南：
+欢迎提 Issue 与 PR。建议附上：
 
-1. Fork 本仓库
-2. 创建功能分支（`git checkout -b feature/amazing-feature`）
-3. 提交更改，使用清晰的提交信息
-4. 推送到分支
-5. 开启 Pull Request
-
-### 开发规范
-
-- 提交前运行 `npm run lint` 和 `npm run type-check`
-- 遵循现有代码模式和命名规范
-- 使用 TypeScript 严格模式
-- 编写有意义的提交信息
+- 复现步骤（服务端版本 + UI 版本）
+- UI 改动截图
+- 验证记录（`npm run lint`、`npm run type-check`）
 
 ## 许可证
 
-本项目采用 MIT 许可证。
+MIT

@@ -1,190 +1,130 @@
 # CLI Proxy API Management Center
 
-A modern React-based WebUI for managing the CLI Proxy API, completely refactored with a modern tech stack for enhanced maintainability, type safety, and user experience.
+A single-file WebUI (React + TypeScript) for operating and troubleshooting the **CLI Proxy API** via its **Management API** (config, credentials, logs, and usage).
 
 [中文文档](README_CN.md)
 
-**Main Project**: https://github.com/router-for-me/CLIProxyAPI
-**Example URL**: https://remote.router-for.me/
+**Main Project**: https://github.com/router-for-me/CLIProxyAPI  
+**Example URL**: https://remote.router-for.me/  
 **Minimum Required Version**: ≥ 6.3.0 (recommended ≥ 6.5.0)
 
 Since version 6.0.19, the WebUI ships with the main program; access it via `/management.html` on the API port once the service is running.
 
-## Features
+## What this is (and isn’t)
 
-### Core Capabilities
+- This repository is the WebUI only. It talks to the CLI Proxy API **Management API** (`/v0/management`) to read/update config, upload credentials, view logs, and inspect usage.
+- It is **not** a proxy and does not forward traffic.
 
-- **Login & Authentication**: Auto-detects current address (manual override supported), encrypted auto-login with secure localStorage, session persistence
-- **Basic Settings**: Debug mode, proxy URL, request retries with custom config, quota fallback (auto-switch project/preview models), usage statistics toggle, request logging & file logging, WebSocket `/ws/*` authentication
-- **API Keys Management**: Manage proxy auth keys with add/edit/delete operations
-- **AI Providers**: Configure Gemini/Codex/Claude settings, OpenAI-compatible providers with custom base URLs/headers/proxy/model aliases, Vertex AI credential import from service-account JSON
-- **Auth Files & OAuth**: Upload/download/search/paginate JSON credentials; type filters (Qwen/Gemini/GeminiCLI/AIStudio/Claude/Codex/Antigravity/iFlow/Vertex/Empty); bulk delete; OAuth/Device flows for multiple providers
-- **Logs Viewer**: Real-time log viewer with auto-refresh, download and clear capabilities (appears when logging-to-file is enabled)
-- **Usage Analytics**: Overview cards, hourly/daily toggles, interactive charts with multiple model lines, per-API statistics table
-- **Config Management**: In-browser YAML editor for `/config.yaml` with syntax highlighting, reload/save functionality
-- **System Information**: Connection status, config cache, server version/build date, UI version in footer
+## Quick start
 
-### User Experience
+### Option A: Use the WebUI bundled in CLIProxyAPI (recommended)
 
-- **Responsive Design**: Full mobile support with collapsible sidebar
-- **Theme System**: Light/dark mode with persistent preference
-- **Internationalization**: English and Simplified Chinese (zh-CN) with seamless switching
-- **Real-time Feedback**: Toast notifications for all operations
-- **Security**: Masked secrets, encrypted local storage
+1. Start your CLI Proxy API service.
+2. Open: `http://<host>:<api_port>/management.html`
+3. Enter your **management key** and connect.
 
-## Tech Stack
+The address is auto-detected from the current page URL; manual override is supported.
 
-- **Frontend Framework**: React 19 with TypeScript
-- **Build Tool**: Vite 7 with single-file output ([vite-plugin-singlefile](https://github.com/nicknisi/vite-plugin-singlefile))
-- **State Management**: [Zustand](https://github.com/pmndrs/zustand) for global stores
-- **Routing**: React Router 7 with HashRouter
-- **HTTP Client**: Axios with interceptors for auth & error handling
-- **Internationalization**: i18next + react-i18next
-- **Styling**: SCSS with CSS Modules, CSS Variables for theming
-- **Charts**: Chart.js + react-chartjs-2
-- **Code Editor**: @uiw/react-codemirror with YAML support
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ (LTS recommended)
-- npm 9+
-
-### Installation
+### Option B: Run the dev server
 
 ```bash
-# Clone the repository
-git clone https://github.com/router-for-me/Cli-Proxy-API-Management-Center.git
-cd Cli-Proxy-API-Management-Center
-
-# Install dependencies
 npm install
+npm run dev
 ```
 
-### Development
+Open `http://localhost:5173`, then connect to your CLI Proxy API instance.
+
+### Option C: Build a single HTML file
 
 ```bash
-npm run dev          # Start Vite dev server (default: http://localhost:5173)
+npm install
+npm run build
 ```
 
-### Build
+- Output: `dist/index.html` (all assets are inlined).
+- For CLIProxyAPI bundling, the release workflow renames it to `management.html`.
+- To preview locally: `npm run preview`
 
-```bash
-npm run build        # TypeScript check + Vite production build
-```
+Tip: opening `dist/index.html` via `file://` may be blocked by browser CORS; serving it (preview/static server) is more reliable.
 
-The build outputs a single `dist/index.html` file with all assets inlined.
+## Connecting to the server
 
-### Other Commands
+### API address
 
-```bash
-npm run preview      # Preview production build locally
-npm run lint         # ESLint with strict mode (--max-warnings 0)
-npm run format       # Prettier formatting for src/**/*.{ts,tsx,css,scss}
-npm run type-check   # TypeScript type checking only (tsc --noEmit)
-```
+You can enter any of the following; the UI will normalize it:
 
-## Usage
+- `localhost:8317`
+- `http://192.168.1.10:8317`
+- `https://example.com:8317`
+- `http://example.com:8317/v0/management` (also accepted; the suffix is removed internally)
 
-### Access Methods
+### Management key (not the same as API keys)
 
-1. **Integrated with CLI Proxy API (Recommended)**
-   After starting the CLI Proxy API service, visit `http://your-server:8317/management.html`
+The management key is sent with every request as:
 
-2. **Standalone (Built file)**
-   Open the built `dist/index.html` directly in a browser, or host it on any static file server
+- `Authorization: Bearer <MANAGEMENT_KEY>` (default)
 
-3. **Development Server**
-   Run `npm run dev` and open `http://localhost:5173`
+This is different from the proxy `api-keys` you manage inside the UI (those are for client requests to the proxy endpoints).
 
-### Initial Configuration
+### Remote management
 
-1. The login page auto-detects the current address; you can modify it if needed
-2. Enter your management key
-3. Click Connect to authenticate
-4. Credentials are encrypted and saved locally for auto-login
+If you connect from a non-localhost browser, the server must allow remote management (e.g. `allow-remote-management: true`).  
+See `api.md` for the full authentication rules, server-side limits, and edge cases.
 
-> **Tip**: The Logs navigation item appears only after enabling "Logging to file" in Basic Settings.
+## What you can manage (mapped to the UI pages)
 
-## Project Structure
+- **Dashboard**: connection status, server version/build date, quick counts, model availability snapshot.
+- **Basic Settings**: debug, proxy URL, request retry, quota fallback (switch project/preview models), usage statistics, request logging, file logging, WebSocket auth.
+- **API Keys**: manage proxy `api-keys` (add/edit/delete).
+- **AI Providers**:
+  - Gemini/Codex/Claude key entries (base URL, headers, proxy, model aliases, excluded models, prefix).
+  - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side “chat/completions” test).
+  - Ampcode integration (upstream URL/key, force mappings, model mapping table).
+- **Auth Files**: upload/download/delete JSON credentials, filter/search/pagination, runtime-only indicators, view supported models per credential (when the server supports it), manage OAuth excluded models (supports `*` wildcards).
+- **OAuth**: start OAuth/device flows for supported providers, poll status, optionally submit callback `redirect_url`; includes iFlow cookie import.
+- **Usage**: requests/tokens charts (hour/day), per-API & per-model breakdown, cached/reasoning token breakdown, RPM/TPM window, optional cost estimation with locally-saved model pricing.
+- **Config**: edit `/config.yaml` in-browser with YAML highlighting + search, then save/reload.
+- **Logs**: tail logs with incremental polling, auto-refresh, search, hide management traffic, clear logs; download request error log files.
+- **System**: quick links + fetch `/v1/models` (grouped view). Requires at least one proxy API key to query models.
 
-```
-├── src/
-│   ├── components/
-│   │   ├── common/           # Shared components (NotificationContainer)
-│   │   ├── layout/           # App shell (MainLayout with sidebar)
-│   │   └── ui/               # Reusable UI primitives (Button, Input, Modal, etc.)
-│   ├── hooks/                # Custom hooks (useApi, useDebounce, usePagination, etc.)
-│   ├── i18n/
-│   │   ├── locales/          # Translation files (zh-CN.json, en.json)
-│   │   └── index.ts          # i18next configuration
-│   ├── pages/                # Route page components with co-located .module.scss
-│   ├── router/               # ProtectedRoute wrapper
-│   ├── services/
-│   │   ├── api/              # API layer (client.ts singleton, feature modules)
-│   │   └── storage/          # Secure storage utilities
-│   ├── stores/               # Zustand stores (auth, config, theme, language, notification)
-│   ├── styles/               # Global SCSS (variables, mixins, themes, components)
-│   ├── types/                # TypeScript type definitions
-│   ├── utils/                # Utility functions (constants, format, validation, etc.)
-│   ├── App.tsx               # Root component with routing
-│   └── main.tsx              # Entry point
-├── dist/                     # Build output (single-file bundle)
-├── vite.config.ts            # Vite configuration
-├── tsconfig.json             # TypeScript configuration
-└── package.json
-```
+## Build & release notes
 
-### Key Architecture Patterns
+- Vite produces a **single HTML** output (`dist/index.html`) with all assets inlined (via `vite-plugin-singlefile`).
+- Tagging `vX.Y.Z` triggers `.github/workflows/release.yml` to publish `dist/management.html`.
+- The UI version shown in the footer is injected at build time (env `VERSION`, git tag, or `package.json` fallback).
 
-- **Path Alias**: Use `@/` to import from `src/` (configured in vite.config.ts and tsconfig.json)
-- **API Client**: Singleton `apiClient` in `src/services/api/client.ts` with auth interceptors
-- **State Management**: Zustand stores with localStorage persistence for auth/theme/language
-- **Styling**: SCSS variables auto-injected; CSS Modules for component-scoped styles
-- **Build Output**: Single-file bundle for easy distribution (all assets inlined)
+## Security notes
+
+- The management key is stored in browser `localStorage` using a lightweight obfuscation format (`enc::v1::...`) to avoid plaintext storage; treat it as sensitive.
+- Use a dedicated browser profile/device for management. Be cautious when enabling remote management and evaluate its exposure surface.
 
 ## Troubleshooting
 
-### Connection Issues
+- **Can’t connect / 401**: confirm the API address and management key; remote access may require enabling remote management in the server config.
+- **Repeated auth failures**: the server may temporarily block remote IPs.
+- **Logs page missing**: enable “Logging to file” in Basic Settings; the navigation item is shown only when file logging is enabled.
+- **Some features show “unsupported”**: the backend may be too old or the endpoint is disabled/absent (common for model lists per auth file, excluded models, logs).
+- **OpenAI provider test fails**: the test runs in the browser and depends on network/CORS of the provider endpoint; a failure here does not always mean the server cannot reach it.
 
-1. Confirm the CLI Proxy API service is running
-2. Check if the API address is correct
-3. Verify that the management key is valid
-4. Ensure your firewall allows the connection
+## Development
 
-### Data Not Updating
-
-1. Click the "Refresh All" button in the header
-2. Check your network connection
-3. Open browser DevTools console for error details
-
-### Logs & Config Editor
-
-- **Logs**: Requires server-side logging-to-file enabled; 404 indicates old server version or logging disabled
-- **Config Editor**: Requires `/config.yaml` endpoint; ensure valid YAML syntax before saving
-
-### Usage Statistics
-
-- If charts are empty, enable "Usage statistics" in settings; data resets on server restart
+```bash
+npm run dev        # Vite dev server
+npm run build      # tsc + Vite build
+npm run preview    # serve dist locally
+npm run lint       # ESLint (fails on warnings)
+npm run format     # Prettier
+npm run type-check # tsc --noEmit
+```
 
 ## Contributing
 
-We welcome Issues and Pull Requests! Please follow these guidelines:
+Issues and PRs are welcome. Please include:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes with clear messages
-4. Push to your branch
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Run `npm run lint` and `npm run type-check` before committing
-- Follow existing code patterns and naming conventions
-- Use TypeScript strict mode
-- Write meaningful commit messages
+- Reproduction steps (server version + UI version)
+- Screenshots for UI changes
+- Verification notes (`npm run lint`, `npm run type-check`)
 
 ## License
 
-This project is licensed under the MIT License.
+MIT
