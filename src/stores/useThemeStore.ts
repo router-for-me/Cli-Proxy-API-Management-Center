@@ -15,7 +15,7 @@ interface ThemeState {
   resolvedTheme: ResolvedTheme;
   setTheme: (theme: Theme) => void;
   cycleTheme: () => void;
-  initializeTheme: () => void;
+  initializeTheme: () => () => void;
 }
 
 const getSystemTheme = (): ResolvedTheme => {
@@ -60,16 +60,23 @@ export const useThemeStore = create<ThemeState>()(
         setTheme(theme);
 
         // 监听系统主题变化（仅在 auto 模式下生效）
-        if (window.matchMedia) {
-          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            const { theme: currentTheme } = get();
-            if (currentTheme === 'auto') {
-              const resolved = getSystemTheme();
-              applyTheme(resolved);
-              set({ resolvedTheme: resolved });
-            }
-          });
+        if (!window.matchMedia) {
+          return () => {};
         }
+
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const listener = () => {
+          const { theme: currentTheme } = get();
+          if (currentTheme === 'auto') {
+            const resolved = getSystemTheme();
+            applyTheme(resolved);
+            set({ resolvedTheme: resolved });
+          }
+        };
+
+        mediaQuery.addEventListener('change', listener);
+
+        return () => mediaQuery.removeEventListener('change', listener);
       },
     }),
     {

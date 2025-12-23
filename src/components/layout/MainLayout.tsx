@@ -119,12 +119,12 @@ const headerIcons = {
   autoTheme: (
     <svg {...headerIconProps}>
       <defs>
-        <clipPath id="sunLeftHalf">
+        <clipPath id="mainLayoutAutoThemeSunLeftHalf">
           <rect x="0" y="0" width="12" height="24" />
         </clipPath>
       </defs>
       <circle cx="12" cy="12" r="4" />
-      <circle cx="12" cy="12" r="4" clipPath="url(#sunLeftHalf)" fill="currentColor" />
+      <circle cx="12" cy="12" r="4" clipPath="url(#mainLayoutAutoThemeSunLeftHalf)" fill="currentColor" />
       <path d="M12 2v2" />
       <path d="M12 20v2" />
       <path d="M4.93 4.93l1.41 1.41" />
@@ -469,7 +469,7 @@ export function MainLayout() {
             <Button variant="ghost" size="sm" onClick={toggleLanguage} title={t('language.switch')}>
               {headerIcons.language}
             </Button>
-            <Button variant="ghost" size="sm" onClick={cycleTheme} title={t(`theme.${theme}`)}>
+            <Button variant="ghost" size="sm" onClick={cycleTheme} title={t('theme.switch')}>
               {theme === 'auto'
                 ? headerIcons.autoTheme
                 : theme === 'dark'
