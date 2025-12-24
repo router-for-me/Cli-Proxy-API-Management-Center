@@ -166,6 +166,9 @@
     .cm-scroller {
       overflow: auto;
       padding-top: calc(var(--floating-controls-height, 0px) + #{$spacing-md});
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y;
+      overscroll-behavior: contain;
     }
 
     .cm-gutters {

@@ -164,6 +164,9 @@
   min-height: 200px;
   overflow: auto;
   position: relative;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
 }
 
 .loadMoreBanner {
