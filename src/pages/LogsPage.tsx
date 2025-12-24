@@ -49,7 +49,7 @@ const LOG_SOURCE_REGEX = /^\[([^\]]+)\]/;
 const LOG_LATENCY_REGEX = /\b(\d+(?:\.\d+)?)(?:\s*)(µs|us|ms|s)\b/i;
 const LOG_IPV4_REGEX = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
 const LOG_IPV6_REGEX = /\b(?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}\b/i;
-const LOG_REQUEST_ID_REGEX = /^([a-f0-9]{8}|--------|---------)$/i;
+const LOG_REQUEST_ID_REGEX = /^([a-f0-9]{8}|--------)$/i;
 const LOG_TIME_OF_DAY_REGEX = /^\d{1,2}:\d{2}:\d{2}(?:\.\d{1,3})?$/;
 const GIN_TIMESTAMP_SEGMENT_REGEX =
   /^\[GIN\]\s+(\d{4})\/(\d{2})\/(\d{2})\s*-\s*(\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\s*$/;
@@ -156,6 +156,16 @@ const parseLogLine = (raw: string): ParsedLogLine => {
     remaining = remaining.slice(tsMatch[0].length).trim();
   }
 
+  let requestId: string | undefined;
+  const requestIdMatch = remaining.match(/^\[([a-f0-9]{8}|--------)\]\s*/i);
+  if (requestIdMatch) {
+    const id = requestIdMatch[1];
+    if (!/^-+$/.test(id)) {
+      requestId = id;
+    }
+    remaining = remaining.slice(requestIdMatch[0].length).trim();
+  }
+
   let level: LogLevel | undefined;
   const lvlMatch = remaining.match(LOG_LEVEL_REGEX);
   if (lvlMatch) {
@@ -175,7 +185,6 @@ const parseLogLine = (raw: string): ParsedLogLine => {
   let ip: string | undefined;
   let method: HttpMethod | undefined;
   let path: string | undefined;
-  let requestId: string | undefined;
   let message = remaining;
 
   if (remaining.includes('|')) {
@@ -216,9 +225,9 @@ const parseLogLine = (raw: string): ParsedLogLine => {
     }
 
     // status code
-    const statusIndex = segments.findIndex((segment) => /^\d{3}\b/.test(segment));
+    const statusIndex = segments.findIndex((segment) => /^\d{3}$/.test(segment));
     if (statusIndex >= 0) {
-      const match = segments[statusIndex].match(/^(\d{3})\b/);
+      const match = segments[statusIndex].match(/^(\d{3})$/);
       if (match) {
         const code = Number.parseInt(match[1], 10);
         if (code >= 100 && code <= 599) {
