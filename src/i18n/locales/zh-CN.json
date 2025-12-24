@@ -608,6 +608,7 @@
     "auto_refresh_disabled": "自动刷新已关闭",
     "load_more_hint": "向上滚动加载更多",
     "hidden_lines": "已隐藏 {{count}} 行",
+    "loaded_lines": "已载入 {{count}} 行",
     "hide_management_logs": "屏蔽 {{prefix}} 日志",
     "search_placeholder": "搜索日志内容或关键字",
     "search_empty_title": "未找到匹配的日志",

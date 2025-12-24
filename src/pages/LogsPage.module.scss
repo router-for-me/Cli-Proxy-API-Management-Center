@@ -8,7 +8,38 @@
   font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 $spacing-xl 0;
+  margin: 0 0 $spacing-lg 0;
+}
+
+.tabBar {
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-lg;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tabItem {
+  @include button-reset;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}
+
+.tabActive {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
 }
 
 .content {
@@ -22,9 +53,12 @@
   align-items: center;
   gap: $spacing-sm;
   flex-wrap: wrap;
+  margin-left: auto;
 
   @include mobile {
     align-items: flex-start;
+    margin-left: 0;
+    width: 100%;
   }
 }
 
@@ -135,6 +169,12 @@
 .loadMoreCount {
   color: var(--text-tertiary);
   white-space: nowrap;
+}
+
+.loadMoreStats {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
 }
 
 .logList {

@@ -346,11 +346,14 @@ const copyToClipboard = async (text: string) => {
   }
 };
 
+type TabType = 'logs' | 'errors';
+
 export function LogsPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
 
+  const [activeTab, setActiveTab] = useState<TabType>('logs');
   const [logState, setLogState] = useState<LogState>({ buffer: [], visibleFrom: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -547,7 +550,7 @@ export function LogsPage() {
   const isSearching = trimmedSearchQuery.length > 0;
   const baseLines = isSearching ? logState.buffer : visibleLines;
 
-  const { filteredLines, removedCount } = useMemo(() => {
+  const { filteredLines } = useMemo(() => {
     let working = baseLines;
     let removed = 0;
 
@@ -626,261 +629,273 @@ export function LogsPage() {
   return (
     <div className={styles.container}>
       <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
+
+      <div className={styles.tabBar}>
+        <button
+          type="button"
+          className={`${styles.tabItem} ${activeTab === 'logs' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('logs')}
+        >
+          {t('logs.log_content')}
+        </button>
+        <button
+          type="button"
+          className={`${styles.tabItem} ${activeTab === 'errors' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('errors')}
+        >
+          {t('logs.error_logs_modal_title')}
+        </button>
+      </div>
+
       <div className={styles.content}>
-        <Card
-          title={t('logs.log_content')}
-          extra={
-            <div className={styles.toolbar}>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => loadLogs(false)}
-                disabled={disableControls || loading}
-                className={styles.actionButton}
-              >
-                <span className={styles.buttonContent}>
-                  <IconRefreshCw size={16} />
-                  {t('logs.refresh_button')}
-                </span>
-              </Button>
+        {activeTab === 'logs' && (
+          <Card>
+            {error && <div className="error-box">{error}</div>}
+
+            <div className={styles.filters}>
+              <div className={styles.searchWrapper}>
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('logs.search_placeholder')}
+                  className={styles.searchInput}
+                  rightElement={
+                    searchQuery ? (
+                      <button
+                        type="button"
+                        className={styles.searchClear}
+                        onClick={() => setSearchQuery('')}
+                        title="Clear"
+                        aria-label="Clear"
+                      >
+                        <IconX size={16} />
+                      </button>
+                    ) : (
+                      <IconSearch size={16} className={styles.searchIcon} />
+                    )
+                  }
+                />
+              </div>
+
               <ToggleSwitch
-                checked={autoRefresh}
-                onChange={(value) => setAutoRefresh(value)}
-                disabled={disableControls}
+                checked={hideManagementLogs}
+                onChange={setHideManagementLogs}
                 label={
                   <span className={styles.switchLabel}>
-                    <IconTimer size={16} />
-                    {t('logs.auto_refresh')}
+                    <IconEyeOff size={16} />
+                    {t('logs.hide_management_logs', { prefix: MANAGEMENT_API_PREFIX })}
                   </span>
                 }
               />
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={downloadLogs}
-                disabled={logState.buffer.length === 0}
-                className={styles.actionButton}
-              >
-                <span className={styles.buttonContent}>
-                  <IconDownload size={16} />
-                  {t('logs.download_button')}
-                </span>
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={clearLogs}
-                disabled={disableControls}
-                className={styles.actionButton}
-              >
-                <span className={styles.buttonContent}>
-                  <IconTrash2 size={16} />
-                  {t('logs.clear_button')}
-                </span>
-              </Button>
-            </div>
-          }
-        >
-          {error && <div className="error-box">{error}</div>}
 
-          <div className={styles.filters}>
-            <div className={styles.searchWrapper}>
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('logs.search_placeholder')}
-                className={styles.searchInput}
-                rightElement={
-                  searchQuery ? (
-                    <button
-                      type="button"
-                      className={styles.searchClear}
-                      onClick={() => setSearchQuery('')}
-                      title="Clear"
-                      aria-label="Clear"
-                    >
-                      <IconX size={16} />
-                    </button>
-                  ) : (
-                    <IconSearch size={16} className={styles.searchIcon} />
-                  )
-                }
-              />
-            </div>
-
-            <ToggleSwitch
-              checked={hideManagementLogs}
-              onChange={setHideManagementLogs}
-              label={
-                <span className={styles.switchLabel}>
-                  <IconEyeOff size={16} />
-                  {t('logs.hide_management_logs', { prefix: MANAGEMENT_API_PREFIX })}
-                </span>
-              }
-            />
-
-            <div className={styles.filterStats}>
-              <span>
-                {parsedVisibleLines.length} {t('logs.lines')}
-              </span>
-              {removedCount > 0 && (
-                <span className={styles.removedCount}>
-                  {t('logs.removed')} {removedCount}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="hint">{t('logs.loading')}</div>
-          ) : logState.buffer.length > 0 && parsedVisibleLines.length > 0 ? (
-            <div ref={logViewerRef} className={styles.logPanel} onScroll={handleLogScroll}>
-              {canLoadMore && (
-                <div className={styles.loadMoreBanner}>
-                  <span>{t('logs.load_more_hint')}</span>
-                  <span className={styles.loadMoreCount}>
-                    {t('logs.hidden_lines', { count: logState.visibleFrom })}
+              <div className={styles.toolbar}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => loadLogs(false)}
+                  disabled={disableControls || loading}
+                  className={styles.actionButton}
+                >
+                  <span className={styles.buttonContent}>
+                    <IconRefreshCw size={16} />
+                    {t('logs.refresh_button')}
                   </span>
-                </div>
-              )}
-              <div className={styles.logList}>
-                {parsedVisibleLines.map((line, index) => {
-                  const rowClassNames = [styles.logRow];
-                  if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
-                  if (line.level === 'error' || line.level === 'fatal')
-                    rowClassNames.push(styles.rowError);
-                  return (
-                    <div
-                      key={`${logState.visibleFrom + index}-${line.raw}`}
-                      className={rowClassNames.join(' ')}
-                      onDoubleClick={() => {
-                        void copyLogLine(line.raw);
-                      }}
-                      title={t('logs.double_click_copy_hint', {
-                        defaultValue: 'Double-click to copy',
-                      })}
-                    >
-                      <div className={styles.timestamp}>{line.timestamp || ''}</div>
-                      <div className={styles.rowMain}>
-                        {line.level && (
-                          <span
-                            className={[
-                              styles.badge,
-                              line.level === 'info' ? styles.levelInfo : '',
-                              line.level === 'warn' ? styles.levelWarn : '',
-                              line.level === 'error' || line.level === 'fatal'
-                                ? styles.levelError
-                                : '',
-                              line.level === 'debug' ? styles.levelDebug : '',
-                              line.level === 'trace' ? styles.levelTrace : '',
-                            ]
-                              .filter(Boolean)
-                              .join(' ')}
-                          >
-                            {line.level.toUpperCase()}
-                          </span>
-                        )}
-
-                        {line.source && (
-                          <span className={styles.source} title={line.source}>
-                            {line.source}
-                          </span>
-                        )}
-
-                        {typeof line.statusCode === 'number' && (
-                          <span
-                            className={[
-                              styles.badge,
-                              styles.statusBadge,
-                              line.statusCode >= 200 && line.statusCode < 300
-                                ? styles.statusSuccess
-                                : line.statusCode >= 300 && line.statusCode < 400
-                                  ? styles.statusInfo
-                                  : line.statusCode >= 400 && line.statusCode < 500
-                                    ? styles.statusWarn
-                                    : styles.statusError,
-                            ].join(' ')}
-                          >
-                            {line.statusCode}
-                          </span>
-                        )}
-
-                        {line.latency && <span className={styles.pill}>{line.latency}</span>}
-                        {line.ip && <span className={styles.pill}>{line.ip}</span>}
-
-                        {line.method && (
-                          <span className={[styles.badge, styles.methodBadge].join(' ')}>
-                            {line.method}
-                          </span>
-                        )}
-
-                        {line.requestId && (
-                          <span
-                            className={[styles.badge, styles.requestIdBadge].join(' ')}
-                            title={line.requestId}
-                          >
-                            {line.requestId}
-                          </span>
-                        )}
-
-                        {line.path && (
-                          <span className={styles.path} title={line.path}>
-                            {line.path}
-                          </span>
-                        )}
-
-                        {line.message && <span className={styles.message}>{line.message}</span>}
-                      </div>
-                    </div>
-                  );
-                })}
+                </Button>
+                <ToggleSwitch
+                  checked={autoRefresh}
+                  onChange={(value) => setAutoRefresh(value)}
+                  disabled={disableControls}
+                  label={
+                    <span className={styles.switchLabel}>
+                      <IconTimer size={16} />
+                      {t('logs.auto_refresh')}
+                    </span>
+                  }
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={downloadLogs}
+                  disabled={logState.buffer.length === 0}
+                  className={styles.actionButton}
+                >
+                  <span className={styles.buttonContent}>
+                    <IconDownload size={16} />
+                    {t('logs.download_button')}
+                  </span>
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={clearLogs}
+                  disabled={disableControls}
+                  className={styles.actionButton}
+                >
+                  <span className={styles.buttonContent}>
+                    <IconTrash2 size={16} />
+                    {t('logs.clear_button')}
+                  </span>
+                </Button>
               </div>
             </div>
-          ) : logState.buffer.length > 0 ? (
-            <EmptyState
-              title={t('logs.search_empty_title')}
-              description={t('logs.search_empty_desc')}
-            />
-          ) : (
-            <EmptyState title={t('logs.empty_title')} description={t('logs.empty_desc')} />
-          )}
-        </Card>
 
-        <Card
-          title={t('logs.error_logs_modal_title')}
-          extra={
-            <Button variant="secondary" size="sm" onClick={loadErrorLogs} loading={loadingErrors}>
-              {t('common.refresh')}
-            </Button>
-          }
-        >
-          {errorLogs.length === 0 ? (
-            <div className="hint">{t('logs.error_logs_empty')}</div>
-          ) : (
-            <div className="item-list">
-              {errorLogs.map((item) => (
-                <div key={item.name} className="item-row">
-                  <div className="item-meta">
-                    <div className="item-title">{item.name}</div>
-                    <div className="item-subtitle">
-                      {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
-                      {item.modified ? formatUnixTimestamp(item.modified) : ''}
+            {loading ? (
+              <div className="hint">{t('logs.loading')}</div>
+            ) : logState.buffer.length > 0 && parsedVisibleLines.length > 0 ? (
+              <div ref={logViewerRef} className={styles.logPanel} onScroll={handleLogScroll}>
+                {canLoadMore && (
+                  <div className={styles.loadMoreBanner}>
+                    <span>{t('logs.load_more_hint')}</span>
+                    <div className={styles.loadMoreStats}>
+                      <span>
+                        {t('logs.loaded_lines', { count: parsedVisibleLines.length })}
+                      </span>
+                      <span className={styles.loadMoreCount}>
+                        {t('logs.hidden_lines', { count: logState.visibleFrom })}
+                      </span>
                     </div>
                   </div>
-                  <div className="item-actions">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => downloadErrorLog(item.name)}
-                    >
-                      {t('logs.error_logs_download')}
-                    </Button>
-                  </div>
+                )}
+                <div className={styles.logList}>
+                  {parsedVisibleLines.map((line, index) => {
+                    const rowClassNames = [styles.logRow];
+                    if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
+                    if (line.level === 'error' || line.level === 'fatal')
+                      rowClassNames.push(styles.rowError);
+                    return (
+                      <div
+                        key={`${logState.visibleFrom + index}-${line.raw}`}
+                        className={rowClassNames.join(' ')}
+                        onDoubleClick={() => {
+                          void copyLogLine(line.raw);
+                        }}
+                        title={t('logs.double_click_copy_hint', {
+                          defaultValue: 'Double-click to copy',
+                        })}
+                      >
+                        <div className={styles.timestamp}>{line.timestamp || ''}</div>
+                        <div className={styles.rowMain}>
+                          {line.level && (
+                            <span
+                              className={[
+                                styles.badge,
+                                line.level === 'info' ? styles.levelInfo : '',
+                                line.level === 'warn' ? styles.levelWarn : '',
+                                line.level === 'error' || line.level === 'fatal'
+                                  ? styles.levelError
+                                  : '',
+                                line.level === 'debug' ? styles.levelDebug : '',
+                                line.level === 'trace' ? styles.levelTrace : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                            >
+                              {line.level.toUpperCase()}
+                            </span>
+                          )}
+
+                          {line.source && (
+                            <span className={styles.source} title={line.source}>
+                              {line.source}
+                            </span>
+                          )}
+
+                          {typeof line.statusCode === 'number' && (
+                            <span
+                              className={[
+                                styles.badge,
+                                styles.statusBadge,
+                                line.statusCode >= 200 && line.statusCode < 300
+                                  ? styles.statusSuccess
+                                  : line.statusCode >= 300 && line.statusCode < 400
+                                    ? styles.statusInfo
+                                    : line.statusCode >= 400 && line.statusCode < 500
+                                      ? styles.statusWarn
+                                      : styles.statusError,
+                              ].join(' ')}
+                            >
+                              {line.statusCode}
+                            </span>
+                          )}
+
+                          {line.latency && <span className={styles.pill}>{line.latency}</span>}
+                          {line.ip && <span className={styles.pill}>{line.ip}</span>}
+
+                          {line.method && (
+                            <span className={[styles.badge, styles.methodBadge].join(' ')}>
+                              {line.method}
+                            </span>
+                          )}
+
+                          {line.requestId && (
+                            <span
+                              className={[styles.badge, styles.requestIdBadge].join(' ')}
+                              title={line.requestId}
+                            >
+                              {line.requestId}
+                            </span>
+                          )}
+
+                          {line.path && (
+                            <span className={styles.path} title={line.path}>
+                              {line.path}
+                            </span>
+                          )}
+
+                          {line.message && <span className={styles.message}>{line.message}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          )}
-        </Card>
+              </div>
+            ) : logState.buffer.length > 0 ? (
+              <EmptyState
+                title={t('logs.search_empty_title')}
+                description={t('logs.search_empty_desc')}
+              />
+            ) : (
+              <EmptyState title={t('logs.empty_title')} description={t('logs.empty_desc')} />
+            )}
+          </Card>
+        )}
+
+        {activeTab === 'errors' && (
+          <Card
+            extra={
+              <Button variant="secondary" size="sm" onClick={loadErrorLogs} loading={loadingErrors}>
+                {t('common.refresh')}
+              </Button>
+            }
+          >
+            {errorLogs.length === 0 ? (
+              <div className="hint">{t('logs.error_logs_empty')}</div>
+            ) : (
+              <div className="item-list">
+                {errorLogs.map((item) => (
+                  <div key={item.name} className="item-row">
+                    <div className="item-meta">
+                      <div className="item-title">{item.name}</div>
+                      <div className="item-subtitle">
+                        {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
+                        {item.modified ? formatUnixTimestamp(item.modified) : ''}
+                      </div>
+                    </div>
+                    <div className="item-actions">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => downloadErrorLog(item.name)}
+                      >
+                        {t('logs.error_logs_download')}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
       </div>
     </div>
   );
