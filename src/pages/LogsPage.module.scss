@@ -2,6 +2,10 @@
 
 .container {
   width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .pageTitle {
@@ -46,6 +50,16 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+  flex: 1;
+  min-height: 0;
+}
+
+.logCard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .toolbar {
@@ -146,7 +160,8 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
-  max-height: 620px;
+  flex: 1;
+  min-height: 200px;
   overflow: auto;
   position: relative;
 }

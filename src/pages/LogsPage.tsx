@@ -550,7 +550,7 @@ export function LogsPage() {
   const isSearching = trimmedSearchQuery.length > 0;
   const baseLines = isSearching ? logState.buffer : visibleLines;
 
-  const { filteredLines } = useMemo(() => {
+  const { filteredLines, removedCount } = useMemo(() => {
     let working = baseLines;
     let removed = 0;
 
@@ -649,7 +649,7 @@ export function LogsPage() {
 
       <div className={styles.content}>
         {activeTab === 'logs' && (
-          <Card>
+          <Card className={styles.logCard}>
             {error && <div className="error-box">{error}</div>}
 
             <div className={styles.filters}>
@@ -750,6 +750,11 @@ export function LogsPage() {
                       <span>
                         {t('logs.loaded_lines', { count: parsedVisibleLines.length })}
                       </span>
+                      {removedCount > 0 && (
+                        <span className={styles.loadMoreCount}>
+                          {t('logs.filtered_lines', { count: removedCount })}
+                        </span>
+                      )}
                       <span className={styles.loadMoreCount}>
                         {t('logs.hidden_lines', { count: logState.visibleFrom })}
                       </span>
@@ -800,6 +805,15 @@ export function LogsPage() {
                             </span>
                           )}
 
+                          {line.requestId && (
+                            <span
+                              className={[styles.badge, styles.requestIdBadge].join(' ')}
+                              title={line.requestId}
+                            >
+                              {line.requestId}
+                            </span>
+                          )}
+
                           {typeof line.statusCode === 'number' && (
                             <span
                               className={[
@@ -824,15 +838,6 @@ export function LogsPage() {
                           {line.method && (
                             <span className={[styles.badge, styles.methodBadge].join(' ')}>
                               {line.method}
-                            </span>
-                          )}
-
-                          {line.requestId && (
-                            <span
-                              className={[styles.badge, styles.requestIdBadge].join(' ')}
-                              title={line.requestId}
-                            >
-                              {line.requestId}
                             </span>
                           )}
 
