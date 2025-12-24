@@ -337,7 +337,8 @@
   flex-direction: column;
   gap: $spacing-lg;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 
   @media (max-width: $breakpoint-mobile) {
     padding: $spacing-md;
