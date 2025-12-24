@@ -224,7 +224,7 @@ export function ConfigPage() {
       <h1 className={styles.pageTitle}>{t('config_management.title')}</h1>
       <p className={styles.description}>{t('config_management.description')}</p>
 
-      <Card>
+      <Card className={styles.configCard}>
         <div className={styles.content}>
           {/* Editor */}
           {error && <div className="error-box">{error}</div>}

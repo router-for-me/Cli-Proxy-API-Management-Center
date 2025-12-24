@@ -2,6 +2,10 @@
 
 .container {
   width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .pageTitle {
@@ -21,6 +25,8 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+  flex: 1;
+  min-height: 0;
 }
 
 .searchInputWrapper {
@@ -127,7 +133,8 @@
 
 .editorWrapper {
   width: 100%;
-  height: 500px;
+  flex: 1;
+  min-height: 200px;
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
   overflow: hidden;
@@ -204,6 +211,14 @@
       }
     }
   }
+}
+
+.configCard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .actions {
