@@ -187,15 +187,8 @@
 
 .rowMain {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.rowMeta {
-  display: flex;
-  align-items: center;
   flex-wrap: wrap;
+  align-items: baseline;
   gap: 6px;
   min-width: 0;
 }
@@ -234,6 +227,15 @@
   @include mobile {
     max-width: 100%;
   }
+}
+
+.requestIdBadge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  font-size: 11px;
+  color: #0891b2;
+  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(8, 145, 178, 0.25);
 }
 
 .statusBadge {
@@ -308,6 +310,5 @@
 
 .message {
   color: var(--text-secondary);
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: nowrap;
 }

@@ -44,11 +44,12 @@ type HttpMethod = (typeof HTTP_METHODS)[number];
 const HTTP_METHOD_REGEX = new RegExp(`\\b(${HTTP_METHODS.join('|')})\\b`);
 
 const LOG_TIMESTAMP_REGEX = /^\[?(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\]?/;
-const LOG_LEVEL_REGEX = /^\[?(trace|debug|info|warn|warning|error|fatal)\]?(?=\s|\[|$)\s*/i;
+const LOG_LEVEL_REGEX = /^\[?(trace|debug|info|warn|warning|error|fatal)\s*\]?(?=\s|\[|$)\s*/i;
 const LOG_SOURCE_REGEX = /^\[([^\]]+)\]/;
 const LOG_LATENCY_REGEX = /\b(\d+(?:\.\d+)?)(?:\s*)(µs|us|ms|s)\b/i;
 const LOG_IPV4_REGEX = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
 const LOG_IPV6_REGEX = /\b(?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}\b/i;
+const LOG_REQUEST_ID_REGEX = /^([a-f0-9]{8}|--------|---------)$/i;
 const LOG_TIME_OF_DAY_REGEX = /^\d{1,2}:\d{2}:\d{2}(?:\.\d{1,3})?$/;
 const GIN_TIMESTAMP_SEGMENT_REGEX =
   /^\[GIN\]\s+(\d{4})\/(\d{2})\/(\d{2})\s*-\s*(\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\s*$/;
@@ -102,6 +103,7 @@ type ParsedLogLine = {
   timestamp?: string;
   level?: LogLevel;
   source?: string;
+  requestId?: string;
   statusCode?: number;
   latency?: string;
   ip?: string;
@@ -173,6 +175,7 @@ const parseLogLine = (raw: string): ParsedLogLine => {
   let ip: string | undefined;
   let method: HttpMethod | undefined;
   let path: string | undefined;
+  let requestId: string | undefined;
   let message = remaining;
 
   if (remaining.includes('|')) {
@@ -196,6 +199,19 @@ const parseLogLine = (raw: string): ParsedLogLine => {
         } else if (normalizedParsed === normalizedGin) {
           consumed.add(ginIndex);
         }
+      }
+    }
+
+    // request id (8-char hex or dashes)
+    const requestIdIndex = segments.findIndex((segment) => LOG_REQUEST_ID_REGEX.test(segment));
+    if (requestIdIndex >= 0) {
+      const match = segments[requestIdIndex].match(LOG_REQUEST_ID_REGEX);
+      if (match) {
+        const id = match[1];
+        if (!/^-+$/.test(id)) {
+          requestId = id;
+        }
+        consumed.add(requestIdIndex);
       }
     }
 
@@ -244,6 +260,16 @@ const parseLogLine = (raw: string): ParsedLogLine => {
       consumed.add(methodIndex);
     }
 
+    // source (e.g. [gin_logger.go:94])
+    const sourceIndex = segments.findIndex((segment) => LOG_SOURCE_REGEX.test(segment));
+    if (sourceIndex >= 0) {
+      const match = segments[sourceIndex].match(LOG_SOURCE_REGEX);
+      if (match) {
+        source = match[1];
+        consumed.add(sourceIndex);
+      }
+    }
+
     message = segments.filter((_, index) => !consumed.has(index)).join(' | ');
   } else {
     statusCode = detectHttpStatusCode(remaining);
@@ -276,6 +302,7 @@ const parseLogLine = (raw: string): ParsedLogLine => {
     timestamp,
     level,
     source,
+    requestId,
     statusCode,
     latency,
     ip,
@@ -735,65 +762,74 @@ export function LogsPage() {
                     >
                       <div className={styles.timestamp}>{line.timestamp || ''}</div>
                       <div className={styles.rowMain}>
-                        <div className={styles.rowMeta}>
-                          {line.level && (
-                            <span
-                              className={[
-                                styles.badge,
-                                line.level === 'info' ? styles.levelInfo : '',
-                                line.level === 'warn' ? styles.levelWarn : '',
-                                line.level === 'error' || line.level === 'fatal'
-                                  ? styles.levelError
-                                  : '',
-                                line.level === 'debug' ? styles.levelDebug : '',
-                                line.level === 'trace' ? styles.levelTrace : '',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                            >
-                              {line.level.toUpperCase()}
-                            </span>
-                          )}
+                        {line.level && (
+                          <span
+                            className={[
+                              styles.badge,
+                              line.level === 'info' ? styles.levelInfo : '',
+                              line.level === 'warn' ? styles.levelWarn : '',
+                              line.level === 'error' || line.level === 'fatal'
+                                ? styles.levelError
+                                : '',
+                              line.level === 'debug' ? styles.levelDebug : '',
+                              line.level === 'trace' ? styles.levelTrace : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            {line.level.toUpperCase()}
+                          </span>
+                        )}
 
-                          {line.source && (
-                            <span className={styles.source} title={line.source}>
-                              {line.source}
-                            </span>
-                          )}
+                        {line.source && (
+                          <span className={styles.source} title={line.source}>
+                            {line.source}
+                          </span>
+                        )}
 
-                          {typeof line.statusCode === 'number' && (
-                            <span
-                              className={[
-                                styles.badge,
-                                styles.statusBadge,
-                                line.statusCode >= 200 && line.statusCode < 300
-                                  ? styles.statusSuccess
-                                  : line.statusCode >= 300 && line.statusCode < 400
-                                    ? styles.statusInfo
-                                    : line.statusCode >= 400 && line.statusCode < 500
-                                      ? styles.statusWarn
-                                      : styles.statusError,
-                              ].join(' ')}
-                            >
-                              {line.statusCode}
-                            </span>
-                          )}
+                        {typeof line.statusCode === 'number' && (
+                          <span
+                            className={[
+                              styles.badge,
+                              styles.statusBadge,
+                              line.statusCode >= 200 && line.statusCode < 300
+                                ? styles.statusSuccess
+                                : line.statusCode >= 300 && line.statusCode < 400
+                                  ? styles.statusInfo
+                                  : line.statusCode >= 400 && line.statusCode < 500
+                                    ? styles.statusWarn
+                                    : styles.statusError,
+                            ].join(' ')}
+                          >
+                            {line.statusCode}
+                          </span>
+                        )}
 
-                          {line.latency && <span className={styles.pill}>{line.latency}</span>}
-                          {line.ip && <span className={styles.pill}>{line.ip}</span>}
+                        {line.latency && <span className={styles.pill}>{line.latency}</span>}
+                        {line.ip && <span className={styles.pill}>{line.ip}</span>}
 
-                          {line.method && (
-                            <span className={[styles.badge, styles.methodBadge].join(' ')}>
-                              {line.method}
-                            </span>
-                          )}
-                          {line.path && (
-                            <span className={styles.path} title={line.path}>
-                              {line.path}
-                            </span>
-                          )}
-                        </div>
-                        {line.message && <div className={styles.message}>{line.message}</div>}
+                        {line.method && (
+                          <span className={[styles.badge, styles.methodBadge].join(' ')}>
+                            {line.method}
+                          </span>
+                        )}
+
+                        {line.requestId && (
+                          <span
+                            className={[styles.badge, styles.requestIdBadge].join(' ')}
+                            title={line.requestId}
+                          >
+                            {line.requestId}
+                          </span>
+                        )}
+
+                        {line.path && (
+                          <span className={styles.path} title={line.path}>
+                            {line.path}
+                          </span>
+                        )}
+
+                        {line.message && <span className={styles.message}>{line.message}</span>}
                       </div>
                     </div>
                   );
