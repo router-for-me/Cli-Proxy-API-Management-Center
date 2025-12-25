@@ -9,8 +9,13 @@ import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { ModelInputList, modelsToEntries, entriesToModels } from '@/components/ui/ModelInputList';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconCheck, IconX } from '@/components/ui/icons';
-import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
+import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
 import { ampcodeApi, modelsApi, providersApi, usageApi } from '@/services/api';
+import iconGemini from '@/assets/icons/gemini.svg';
+import iconOpenaiLight from '@/assets/icons/openai-light.svg';
+import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
+import iconClaude from '@/assets/icons/claude.svg';
+import iconAmp from '@/assets/icons/amp.svg';
 import type {
   GeminiKeyConfig,
   ProviderKeyConfig,
@@ -181,6 +186,7 @@ const buildAmpcodeFormState = (ampcode?: AmpcodeConfig | null): AmpcodeFormState
 export function AiProvidersPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
+  const { theme } = useThemeStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
 
   const config = useConfigStore((state) => state.config);
@@ -1158,7 +1164,12 @@ export function AiProvidersPage() {
         {error && <div className="error-box">{error}</div>}
 
         <Card
-          title={t('ai_providers.gemini_title')}
+          title={
+            <span className={styles.cardTitle}>
+              <img src={iconGemini} alt="" className={styles.cardTitleIcon} />
+              {t('ai_providers.gemini_title')}
+            </span>
+          }
           extra={
             <Button
               size="sm"
@@ -1264,7 +1275,12 @@ export function AiProvidersPage() {
         </Card>
 
         <Card
-          title={t('ai_providers.codex_title')}
+          title={
+            <span className={styles.cardTitle}>
+              <img src={theme === 'dark' ? iconOpenaiDark : iconOpenaiLight} alt="" className={styles.cardTitleIcon} />
+              {t('ai_providers.codex_title')}
+            </span>
+          }
           extra={
             <Button
               size="sm"
@@ -1375,7 +1391,12 @@ export function AiProvidersPage() {
         </Card>
 
         <Card
-          title={t('ai_providers.claude_title')}
+          title={
+            <span className={styles.cardTitle}>
+              <img src={iconClaude} alt="" className={styles.cardTitleIcon} />
+              {t('ai_providers.claude_title')}
+            </span>
+          }
           extra={
             <Button
               size="sm"
@@ -1502,7 +1523,12 @@ export function AiProvidersPage() {
         </Card>
 
         <Card
-          title={t('ai_providers.ampcode_title')}
+          title={
+            <span className={styles.cardTitle}>
+              <img src={iconAmp} alt="" className={styles.cardTitleIcon} />
+              {t('ai_providers.ampcode_title')}
+            </span>
+          }
           extra={
             <Button
               size="sm"
@@ -1575,7 +1601,12 @@ export function AiProvidersPage() {
         </Card>
 
         <Card
-          title={t('ai_providers.openai_title')}
+          title={
+            <span className={styles.cardTitle}>
+              <img src={theme === 'dark' ? iconOpenaiDark : iconOpenaiLight} alt="" className={styles.cardTitleIcon} />
+              {t('ai_providers.openai_title')}
+            </span>
+          }
           extra={
             <Button
               size="sm"

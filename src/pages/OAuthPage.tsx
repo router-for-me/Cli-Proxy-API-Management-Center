@@ -3,9 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useNotificationStore } from '@/stores';
+import { useNotificationStore, useThemeStore } from '@/stores';
 import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
 import styles from './OAuthPage.module.scss';
+import iconOpenaiLight from '@/assets/icons/openai-light.svg';
+import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
+import iconClaude from '@/assets/icons/claude.svg';
+import iconAntigravity from '@/assets/icons/antigravity.svg';
+import iconGemini from '@/assets/icons/gemini.svg';
+import iconQwen from '@/assets/icons/qwen.svg';
+import iconIflow from '@/assets/icons/iflow.svg';
 
 interface ProviderState {
   url?: string;
@@ -29,20 +36,25 @@ interface IFlowCookieState {
   errorType?: 'error' | 'warning';
 }
 
-const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string }[] = [
-  { id: 'codex', titleKey: 'auth_login.codex_oauth_title', hintKey: 'auth_login.codex_oauth_hint', urlLabelKey: 'auth_login.codex_oauth_url_label' },
-  { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label' },
-  { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label' },
-  { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label' },
-  { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label' },
-  { id: 'iflow', titleKey: 'auth_login.iflow_oauth_title', hintKey: 'auth_login.iflow_oauth_hint', urlLabelKey: 'auth_login.iflow_oauth_url_label' }
+const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string; icon: string | { light: string; dark: string } }[] = [
+  { id: 'codex', titleKey: 'auth_login.codex_oauth_title', hintKey: 'auth_login.codex_oauth_hint', urlLabelKey: 'auth_login.codex_oauth_url_label', icon: { light: iconOpenaiLight, dark: iconOpenaiDark } },
+  { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
+  { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconAntigravity },
+  { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini },
+  { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label', icon: iconQwen },
+  { id: 'iflow', titleKey: 'auth_login.iflow_oauth_title', hintKey: 'auth_login.iflow_oauth_hint', urlLabelKey: 'auth_login.iflow_oauth_url_label', icon: iconIflow }
 ];
 
 const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'iflow'];
 
+const getIcon = (icon: string | { light: string; dark: string }, theme: 'light' | 'dark') => {
+  return typeof icon === 'string' ? icon : icon[theme];
+};
+
 export function OAuthPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
+  const { theme } = useThemeStore();
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
   const [iflowCookie, setIflowCookie] = useState<IFlowCookieState>({ cookie: '', loading: false });
   const timers = useRef<Record<string, number>>({});
@@ -215,7 +227,12 @@ export function OAuthPage() {
           return (
             <div key={provider.id}>
               <Card
-                title={t(provider.titleKey)}
+                title={
+                  <span className={styles.cardTitle}>
+                    <img src={getIcon(provider.icon, theme)} alt="" className={styles.cardTitleIcon} />
+                    {t(provider.titleKey)}
+                  </span>
+                }
                 extra={
                   <Button onClick={() => startAuth(provider.id)} loading={state.polling}>
                     {t('common.login')}
@@ -309,7 +326,12 @@ export function OAuthPage() {
 
         {/* iFlow Cookie 登录 */}
         <Card
-          title={t('auth_login.iflow_cookie_title')}
+          title={
+            <span className={styles.cardTitle}>
+              <img src={iconIflow} alt="" className={styles.cardTitleIcon} />
+              {t('auth_login.iflow_cookie_title')}
+            </span>
+          }
           extra={
             <Button onClick={submitIflowCookie} loading={iflowCookie.loading}>
               {t('auth_login.iflow_cookie_button')}

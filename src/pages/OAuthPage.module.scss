@@ -4,6 +4,17 @@
   width: 100%;
 }
 
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.cardTitleIcon {
+  width: 24px;
+  height: 24px;
+}
+
 .pageTitle {
   font-size: 28px;
   font-weight: 700;
