@@ -903,9 +903,10 @@ export function AiProvidersPage() {
   };
 
   const saveProvider = async (type: 'codex' | 'claude') => {
-    const baseUrl = (providerForm.baseUrl ?? '').trim();
-    if (!baseUrl) {
-      showNotification(t('codex_base_url_required'), 'error');
+    const trimmedBaseUrl = (providerForm.baseUrl ?? '').trim();
+    const baseUrl = trimmedBaseUrl || undefined;
+    if (type === 'codex' && !baseUrl) {
+      showNotification(t('notification.codex_base_url_required'), 'error');
       return;
     }
 
