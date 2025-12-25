@@ -6,12 +6,12 @@ import { Input } from '@/components/ui/Input';
 import { useNotificationStore, useThemeStore } from '@/stores';
 import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
 import styles from './OAuthPage.module.scss';
-import iconOpenaiLight from '@/assets/icons/openai-light.png';
-import iconOpenaiDark from '@/assets/icons/openai-dark.png';
-import iconClaude from '@/assets/icons/claude.png';
-import iconAntigravity from '@/assets/icons/antigravity.png';
-import iconGemini from '@/assets/icons/gemini.png';
-import iconQwen from '@/assets/icons/qwen.png';
+import iconOpenaiLight from '@/assets/icons/openai-light.svg';
+import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
+import iconClaude from '@/assets/icons/claude.svg';
+import iconAntigravity from '@/assets/icons/antigravity.svg';
+import iconGemini from '@/assets/icons/gemini.svg';
+import iconQwen from '@/assets/icons/qwen.svg';
 import iconIflow from '@/assets/icons/iflow.svg';
 
 interface ProviderState {
