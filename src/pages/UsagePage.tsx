@@ -64,8 +64,8 @@ interface UsagePayload {
 export function UsagePage() {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const theme = useThemeStore((state) => state.theme);
-  const isDark = theme === 'dark';
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const isDark = resolvedTheme === 'dark';
 
   const [usage, setUsage] = useState<UsagePayload | null>(null);
   const [loading, setLoading] = useState(true);
