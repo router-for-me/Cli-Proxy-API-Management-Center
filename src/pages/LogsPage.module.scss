@@ -170,6 +170,13 @@
   overscroll-behavior: contain;
 }
 
+.errorPanel {
+  height: 480px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
 .loadMoreBanner {
   position: sticky;
   top: 0;
@@ -395,6 +402,10 @@
   }
 
   .logPanel {
+    height: 360px;
+  }
+
+  .errorPanel {
     height: 360px;
   }
 }

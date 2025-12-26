@@ -882,32 +882,34 @@ export function LogsPage() {
               </Button>
             }
           >
-            {errorLogs.length === 0 ? (
-              <div className="hint">{t('logs.error_logs_empty')}</div>
-            ) : (
-              <div className="item-list">
-                {errorLogs.map((item) => (
-                  <div key={item.name} className="item-row">
-                    <div className="item-meta">
-                      <div className="item-title">{item.name}</div>
-                      <div className="item-subtitle">
-                        {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
-                        {item.modified ? formatUnixTimestamp(item.modified) : ''}
+            <div className={styles.errorPanel}>
+              {errorLogs.length === 0 ? (
+                <div className="hint">{t('logs.error_logs_empty')}</div>
+              ) : (
+                <div className="item-list">
+                  {errorLogs.map((item) => (
+                    <div key={item.name} className="item-row">
+                      <div className="item-meta">
+                        <div className="item-title">{item.name}</div>
+                        <div className="item-subtitle">
+                          {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
+                          {item.modified ? formatUnixTimestamp(item.modified) : ''}
+                        </div>
+                      </div>
+                      <div className="item-actions">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => downloadErrorLog(item.name)}
+                        >
+                          {t('logs.error_logs_download')}
+                        </Button>
                       </div>
                     </div>
-                    <div className="item-actions">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => downloadErrorLog(item.name)}
-                      >
-                        {t('logs.error_logs_download')}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </Card>
         )}
       </div>
