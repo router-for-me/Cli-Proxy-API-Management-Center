@@ -16,7 +16,7 @@ export function ConfigPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
-  const theme = useThemeStore((state) => state.theme);
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
 
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -289,7 +289,7 @@ export function ConfigPage() {
               value={content}
               onChange={handleChange}
               extensions={extensions}
-              theme={theme === 'dark' ? 'dark' : 'light'}
+              theme={resolvedTheme}
               editable={!disableControls && !loading}
               placeholder={t('config_management.editor_placeholder')}
               height="100%"

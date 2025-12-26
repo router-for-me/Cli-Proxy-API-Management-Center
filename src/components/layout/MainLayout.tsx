@@ -1,4 +1,12 @@
-import { ReactNode, SVGProps, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  ReactNode,
+  SVGProps,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
@@ -14,10 +22,16 @@ import {
   IconScrollText,
   IconSettings,
   IconShield,
-  IconSlidersHorizontal
+  IconSlidersHorizontal,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
-import { useAuthStore, useConfigStore, useLanguageStore, useNotificationStore, useThemeStore } from '@/stores';
+import {
+  useAuthStore,
+  useConfigStore,
+  useLanguageStore,
+  useNotificationStore,
+  useThemeStore,
+} from '@/stores';
 import { configApi, versionApi } from '@/services/api';
 
 const sidebarIcons: Record<string, ReactNode> = {
@@ -30,7 +44,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   usage: <IconChartLine size={18} />,
   config: <IconSettings size={18} />,
   logs: <IconScrollText size={18} />,
-  system: <IconInfo size={18} />
+  system: <IconInfo size={18} />,
 };
 
 // Header action icons - smaller size for header buttons
@@ -44,7 +58,7 @@ const headerIconProps: SVGProps<SVGSVGElement> = {
   strokeLinecap: 'round',
   strokeLinejoin: 'round',
   'aria-hidden': 'true',
-  focusable: 'false'
+  focusable: 'false',
 };
 
 const headerIcons = {
@@ -97,19 +111,38 @@ const headerIcons = {
       <path d="m19.07 4.93-1.41 1.41" />
     </svg>
   ),
-	  moon: (
-	    <svg {...headerIconProps}>
-	      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
-	    </svg>
-	  ),
-	  logout: (
-	    <svg {...headerIconProps}>
-	      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-	      <path d="m16 17 5-5-5-5" />
-	      <path d="M21 12H9" />
-	    </svg>
-	  )
-	};
+  moon: (
+    <svg {...headerIconProps}>
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
+    </svg>
+  ),
+  autoTheme: (
+    <svg {...headerIconProps}>
+      <defs>
+        <clipPath id="mainLayoutAutoThemeSunLeftHalf">
+          <rect x="0" y="0" width="12" height="24" />
+        </clipPath>
+      </defs>
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="12" cy="12" r="4" clipPath="url(#mainLayoutAutoThemeSunLeftHalf)" fill="currentColor" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="M4.93 4.93l1.41 1.41" />
+      <path d="M17.66 17.66l1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="M6.34 17.66l-1.41 1.41" />
+      <path d="M19.07 4.93l-1.41 1.41" />
+    </svg>
+  ),
+  logout: (
+    <svg {...headerIconProps}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="m16 17 5-5-5-5" />
+      <path d="M21 12H9" />
+    </svg>
+  ),
+};
 
 const parseVersionSegments = (version?: string | null) => {
   if (!version) return null;
@@ -153,7 +186,7 @@ export function MainLayout() {
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
 
   const theme = useThemeStore((state) => state.theme);
-  const toggleTheme = useThemeStore((state) => state.toggleTheme);
+  const cycleTheme = useThemeStore((state) => state.cycleTheme);
   const toggleLanguage = useLanguageStore((state) => state.toggleLanguage);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -187,7 +220,9 @@ export function MainLayout() {
     updateHeaderHeight();
 
     const resizeObserver =
-      typeof ResizeObserver !== 'undefined' && headerRef.current ? new ResizeObserver(updateHeaderHeight) : null;
+      typeof ResizeObserver !== 'undefined' && headerRef.current
+        ? new ResizeObserver(updateHeaderHeight)
+        : null;
     if (resizeObserver && headerRef.current) {
       resizeObserver.observe(headerRef.current);
     }
@@ -320,8 +355,10 @@ export function MainLayout() {
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
     { path: '/usage', label: t('nav.usage_stats'), icon: sidebarIcons.usage },
     { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
-    ...(config?.loggingToFile ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }] : []),
-    { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system }
+    ...(config?.loggingToFile
+      ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
+      : []),
+    { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system },
   ];
 
   const handleRefreshAll = async () => {
@@ -370,7 +407,11 @@ export function MainLayout() {
           <button
             className="sidebar-toggle-header"
             onClick={() => setSidebarCollapsed((prev) => !prev)}
-            title={sidebarCollapsed ? t('sidebar.expand', { defaultValue: '展开' }) : t('sidebar.collapse', { defaultValue: '收起' })}
+            title={
+              sidebarCollapsed
+                ? t('sidebar.expand', { defaultValue: '展开' })
+                : t('sidebar.collapse', { defaultValue: '收起' })
+            }
           >
             {sidebarCollapsed ? headerIcons.chevronRight : headerIcons.chevronLeft}
           </button>
@@ -400,20 +441,40 @@ export function MainLayout() {
           </div>
 
           <div className="header-actions">
-            <Button className="mobile-menu-btn" variant="ghost" size="sm" onClick={() => setSidebarOpen((prev) => !prev)}>
+            <Button
+              className="mobile-menu-btn"
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen((prev) => !prev)}
+            >
               {headerIcons.menu}
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleRefreshAll} title={t('header.refresh_all')}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefreshAll}
+              title={t('header.refresh_all')}
+            >
               {headerIcons.refresh}
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleVersionCheck} loading={checkingVersion} title={t('system_info.version_check_button')}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleVersionCheck}
+              loading={checkingVersion}
+              title={t('system_info.version_check_button')}
+            >
               {headerIcons.update}
             </Button>
             <Button variant="ghost" size="sm" onClick={toggleLanguage} title={t('language.switch')}>
               {headerIcons.language}
             </Button>
-            <Button variant="ghost" size="sm" onClick={toggleTheme} title={t('theme.switch')}>
-              {theme === 'dark' ? headerIcons.sun : headerIcons.moon}
+            <Button variant="ghost" size="sm" onClick={cycleTheme} title={t('theme.switch')}>
+              {theme === 'auto'
+                ? headerIcons.autoTheme
+                : theme === 'dark'
+                  ? headerIcons.moon
+                  : headerIcons.sun}
             </Button>
             <Button variant="ghost" size="sm" onClick={logout} title={t('header.logout')}>
               {headerIcons.logout}
@@ -423,7 +484,9 @@ export function MainLayout() {
       </header>
 
       <div className="main-body">
-        <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <aside
+          className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
+        >
           <div className="nav-section">
             {navItems.map((item) => (
               <NavLink
@@ -454,7 +517,9 @@ export function MainLayout() {
             </span>
             <span>
               {t('footer.build_date')}:{' '}
-              {serverBuildDate ? new Date(serverBuildDate).toLocaleString(i18n.language) : t('system_info.version_unknown')}
+              {serverBuildDate
+                ? new Date(serverBuildDate).toLocaleString(i18n.language)
+                : t('system_info.version_unknown')}
             </span>
           </footer>
         </div>

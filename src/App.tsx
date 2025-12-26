@@ -31,10 +31,11 @@ function App() {
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    initializeTheme();
+    const cleanupTheme = initializeTheme();
     void restoreSession().finally(() => {
       setAuthReady(true);
     });
+    return cleanupTheme;
   }, [initializeTheme, restoreSession]);
 
   useEffect(() => {
