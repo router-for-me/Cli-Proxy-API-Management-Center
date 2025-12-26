@@ -18,6 +18,13 @@
   gap: 10px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .pageTitle {
   font-size: 28px;
   font-weight: 700;

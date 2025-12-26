@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, type CSSProperties } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { IconDiamond, IconDollarSign, IconSatellite, IconTimer, IconTrendingUp } from '@/components/ui/icons';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useThemeStore } from '@/stores';
+import { useNotificationStore, useThemeStore } from '@/stores';
 import { usageApi } from '@/services/api/usage';
 import {
   formatTokensInMillions,
@@ -63,6 +63,7 @@ interface UsagePayload {
 
 export function UsagePage() {
   const { t } = useTranslation();
+  const { showNotification } = useNotificationStore();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isDark = resolvedTheme === 'dark';
@@ -71,6 +72,9 @@ export function UsagePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modelPrices, setModelPrices] = useState<Record<string, ModelPrice>>({});
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   // Model price form state
   const [selectedModel, setSelectedModel] = useState('');
@@ -106,6 +110,77 @@ export function UsagePage() {
     loadUsage();
     setModelPrices(loadModelPrices());
   }, [loadUsage]);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const data = await usageApi.exportUsage();
+      const exportedAt =
+        typeof data?.exported_at === 'string' ? new Date(data.exported_at) : new Date();
+      const safeTimestamp = Number.isNaN(exportedAt.getTime())
+        ? new Date().toISOString()
+        : exportedAt.toISOString();
+      const filename = `usage-export-${safeTimestamp.replace(/[:.]/g, '-')}.json`;
+      const blob = new Blob([JSON.stringify(data ?? {}, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      showNotification(t('usage_stats.export_success'), 'success');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '';
+      showNotification(
+        `${t('notification.download_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    importInputRef.current?.click();
+  };
+
+  const handleImportChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const text = await file.text();
+      let payload: unknown;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        showNotification(t('usage_stats.import_invalid'), 'error');
+        return;
+      }
+
+      const result = await usageApi.importUsage(payload);
+      showNotification(
+        t('usage_stats.import_success', {
+          added: result?.added ?? 0,
+          skipped: result?.skipped ?? 0,
+          total: result?.total_requests ?? 0,
+          failed: result?.failed_requests ?? 0
+        }),
+        'success'
+      );
+      await loadUsage();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '';
+      showNotification(
+        `${t('notification.upload_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+    } finally {
+      setImporting(false);
+    }
+  };
 
   // Calculate derived data
   const tokenBreakdown = usage ? calculateTokenBreakdown(usage) : { cachedTokens: 0, reasoningTokens: 0 };
@@ -527,14 +602,41 @@ export function UsagePage() {
       )}
       <div className={styles.header}>
         <h1 className={styles.pageTitle}>{t('usage_stats.title')}</h1>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={loadUsage}
-          disabled={loading}
-        >
-          {loading ? t('common.loading') : t('usage_stats.refresh')}
-        </Button>
+        <div className={styles.headerActions}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleExport}
+            loading={exporting}
+            disabled={loading || importing}
+          >
+            {t('usage_stats.export')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleImportClick}
+            loading={importing}
+            disabled={loading || exporting}
+          >
+            {t('usage_stats.import')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={loadUsage}
+            disabled={loading || exporting || importing}
+          >
+            {loading ? t('common.loading') : t('usage_stats.refresh')}
+          </Button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: 'none' }}
+            onChange={handleImportChange}
+          />
+        </div>
       </div>
 
       {error && <div className={styles.errorBox}>{error}</div>}
