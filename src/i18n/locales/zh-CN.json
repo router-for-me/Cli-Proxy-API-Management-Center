@@ -589,6 +589,7 @@
     "error_log_button": "选择错误日志",
     "error_logs_modal_title": "错误请求日志",
     "error_logs_description": "请选择要下载的错误请求日志文件（仅在关闭请求日志时生成）。",
+    "error_logs_request_log_enabled": "当前已开启请求日志，按接口约定错误请求日志列表会始终为空。关闭请求日志后再刷新即可查看。",
     "error_logs_empty": "暂无错误请求日志文件",
     "error_logs_load_error": "加载错误日志列表失败",
     "error_logs_size": "大小",

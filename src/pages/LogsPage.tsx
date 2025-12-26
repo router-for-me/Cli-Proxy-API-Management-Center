@@ -14,7 +14,7 @@ import {
   IconTrash2,
   IconX,
 } from '@/components/ui/icons';
-import { useNotificationStore, useAuthStore } from '@/stores';
+import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
@@ -361,6 +361,7 @@ export function LogsPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const requestLogEnabled = useConfigStore((state) => state.config?.requestLog ?? false);
 
   const [activeTab, setActiveTab] = useState<TabType>('logs');
   const [logState, setLogState] = useState<LogState>({ buffer: [], visibleFrom: 0 });
@@ -372,6 +373,7 @@ export function LogsPage() {
   const [hideManagementLogs, setHideManagementLogs] = useState(false);
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
+  const [errorLogsError, setErrorLogsError] = useState('');
 
   const logViewerRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollToBottomRef = useRef(false);
@@ -488,14 +490,18 @@ export function LogsPage() {
     }
 
     setLoadingErrors(true);
+    setErrorLogsError('');
     try {
       const res = await logsApi.fetchErrorLogs();
       // API 返回 { files: [...] }
       setErrorLogs(Array.isArray(res.files) ? res.files : []);
     } catch (err: unknown) {
       console.error('Failed to load error logs:', err);
-      // 静默失败,不影响主日志显示
       setErrorLogs([]);
+      const message = getErrorMessage(err);
+      setErrorLogsError(
+        message ? `${t('logs.error_logs_load_error')}: ${message}` : t('logs.error_logs_load_error')
+      );
     } finally {
       setLoadingErrors(false);
     }
@@ -525,10 +531,16 @@ export function LogsPage() {
     if (connectionStatus === 'connected') {
       latestTimestampRef.current = 0;
       loadLogs(false);
-      loadErrorLogs();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionStatus]);
+
+  useEffect(() => {
+    if (activeTab !== 'errors') return;
+    if (connectionStatus !== 'connected') return;
+    void loadErrorLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, connectionStatus, requestLogEnabled]);
 
   useEffect(() => {
     if (!autoRefresh || connectionStatus !== 'connected') {
@@ -877,38 +889,59 @@ export function LogsPage() {
         {activeTab === 'errors' && (
           <Card
             extra={
-              <Button variant="secondary" size="sm" onClick={loadErrorLogs} loading={loadingErrors}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={loadErrorLogs}
+                loading={loadingErrors}
+                disabled={disableControls}
+              >
                 {t('common.refresh')}
               </Button>
             }
           >
-            <div className={styles.errorPanel}>
-              {errorLogs.length === 0 ? (
-                <div className="hint">{t('logs.error_logs_empty')}</div>
-              ) : (
-                <div className="item-list">
-                  {errorLogs.map((item) => (
-                    <div key={item.name} className="item-row">
-                      <div className="item-meta">
-                        <div className="item-title">{item.name}</div>
-                        <div className="item-subtitle">
-                          {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
-                          {item.modified ? formatUnixTimestamp(item.modified) : ''}
-                        </div>
-                      </div>
-                      <div className="item-actions">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => downloadErrorLog(item.name)}
-                        >
-                          {t('logs.error_logs_download')}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+            <div className="stack">
+              <div className="hint">{t('logs.error_logs_description')}</div>
+
+              {requestLogEnabled && (
+                <div>
+                  <div className="status-badge warning">{t('logs.error_logs_request_log_enabled')}</div>
                 </div>
               )}
+
+              {errorLogsError && <div className="error-box">{errorLogsError}</div>}
+
+              <div className={styles.errorPanel}>
+                {loadingErrors ? (
+                  <div className="hint">{t('common.loading')}</div>
+                ) : errorLogs.length === 0 ? (
+                  <div className="hint">{t('logs.error_logs_empty')}</div>
+                ) : (
+                  <div className="item-list">
+                    {errorLogs.map((item) => (
+                      <div key={item.name} className="item-row">
+                        <div className="item-meta">
+                          <div className="item-title">{item.name}</div>
+                          <div className="item-subtitle">
+                            {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
+                            {item.modified ? formatUnixTimestamp(item.modified) : ''}
+                          </div>
+                        </div>
+                        <div className="item-actions">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => downloadErrorLog(item.name)}
+                            disabled={disableControls}
+                          >
+                            {t('logs.error_logs_download')}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
         )}

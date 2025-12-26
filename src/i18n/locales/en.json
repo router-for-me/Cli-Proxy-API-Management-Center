@@ -589,6 +589,7 @@
     "error_log_button": "Select Error Log",
     "error_logs_modal_title": "Error Request Logs",
     "error_logs_description": "Pick an error request log file to download (only generated when request logging is off).",
+    "error_logs_request_log_enabled": "Request logging is enabled, so this list will always be empty. Disable request logging and refresh to view error logs.",
     "error_logs_empty": "No error request log files found",
     "error_logs_load_error": "Failed to load error log list",
     "error_logs_size": "Size",
