@@ -161,8 +161,8 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
-  flex: 1;
-  min-height: 200px;
+  flex: 0 0 auto;
+  height: 480px;
   overflow: auto;
   position: relative;
   -webkit-overflow-scrolling: touch;
@@ -370,4 +370,31 @@
 .message {
   color: var(--text-secondary);
   word-break: break-word;
+}
+
+@media (max-height: 820px) {
+  .pageTitle {
+    font-size: 24px;
+    margin-bottom: $spacing-md;
+  }
+
+  .tabBar {
+    margin-bottom: $spacing-md;
+  }
+
+  .tabItem {
+    padding: 10px 16px;
+  }
+
+  .content {
+    gap: $spacing-md;
+  }
+
+  .logCard {
+    padding: $spacing-md;
+  }
+
+  .logPanel {
+    height: 360px;
+  }
 }

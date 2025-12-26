@@ -134,8 +134,8 @@
 
 .editorWrapper {
   width: 100%;
-  flex: 1;
-  min-height: 200px;
+  flex: 0 0 auto;
+  height: 480px;
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
   overflow: hidden;
@@ -236,5 +236,28 @@
     button {
       flex: 1;
     }
+  }
+}
+
+@media (max-height: 820px) {
+  .pageTitle {
+    font-size: 24px;
+    margin-bottom: $spacing-sm;
+  }
+
+  .description {
+    margin-bottom: $spacing-lg;
+  }
+
+  .content {
+    gap: $spacing-md;
+  }
+
+  .configCard {
+    padding: $spacing-md;
+  }
+
+  .editorWrapper {
+    height: 360px;
   }
 }

@@ -331,13 +331,11 @@
 }
 
 .main-content {
-  flex: 1;
+  flex: 0 0 auto;
   padding: $spacing-lg;
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
-  min-height: 0;
-  overflow-y: auto;
   overflow-x: hidden;
 
   @media (max-width: $breakpoint-mobile) {
