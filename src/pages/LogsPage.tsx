@@ -1,9 +1,11 @@
 import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
   IconDownload,
@@ -38,6 +40,8 @@ const INITIAL_DISPLAY_LINES = 100;
 const LOAD_MORE_LINES = 200;
 const MAX_BUFFER_LINES = 10000;
 const LOAD_MORE_THRESHOLD_PX = 72;
+const LONG_PRESS_MS = 650;
+const LONG_PRESS_MOVE_THRESHOLD = 10;
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'] as const;
 type HttpMethod = (typeof HTTP_METHODS)[number];
@@ -370,14 +374,22 @@ export function LogsPage() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const [hideManagementLogs, setHideManagementLogs] = useState(false);
+  const [hideManagementLogs, setHideManagementLogs] = useState(true);
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
   const [errorLogsError, setErrorLogsError] = useState('');
+  const [requestLogId, setRequestLogId] = useState<string | null>(null);
+  const [requestLogDownloading, setRequestLogDownloading] = useState(false);
 
   const logViewerRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollToBottomRef = useRef(false);
   const pendingPrependScrollRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
+  const longPressRef = useRef<{
+    timer: number | null;
+    startX: number;
+    startY: number;
+    fired: boolean;
+  } | null>(null);
 
   // 保存最新时间戳用于增量获取
   const latestTimestampRef = useRef<number>(0);
@@ -647,6 +659,85 @@ export function LogsPage() {
     }
   };
 
+  const clearLongPressTimer = () => {
+    if (longPressRef.current?.timer) {
+      window.clearTimeout(longPressRef.current.timer);
+      longPressRef.current.timer = null;
+    }
+  };
+
+  const startLongPress = (event: ReactPointerEvent<HTMLDivElement>, id?: string) => {
+    if (!requestLogEnabled) return;
+    if (!id) return;
+    if (requestLogId) return;
+    clearLongPressTimer();
+    longPressRef.current = {
+      timer: window.setTimeout(() => {
+        setRequestLogId(id);
+        if (longPressRef.current) {
+          longPressRef.current.fired = true;
+          longPressRef.current.timer = null;
+        }
+      }, LONG_PRESS_MS),
+      startX: event.clientX,
+      startY: event.clientY,
+      fired: false,
+    };
+  };
+
+  const cancelLongPress = () => {
+    clearLongPressTimer();
+    longPressRef.current = null;
+  };
+
+  const handleLongPressMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const current = longPressRef.current;
+    if (!current || current.timer === null || current.fired) return;
+    const deltaX = Math.abs(event.clientX - current.startX);
+    const deltaY = Math.abs(event.clientY - current.startY);
+    if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
+      cancelLongPress();
+    }
+  };
+
+  const closeRequestLogModal = () => {
+    if (requestLogDownloading) return;
+    setRequestLogId(null);
+  };
+
+  const downloadRequestLog = async (id: string) => {
+    setRequestLogDownloading(true);
+    try {
+      const response = await logsApi.downloadRequestLogById(id);
+      const blob = new Blob([response.data], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `request-${id}.log`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      showNotification(t('logs.request_log_download_success'), 'success');
+      setRequestLogId(null);
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      showNotification(
+        `${t('notification.download_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+    } finally {
+      setRequestLogDownloading(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (longPressRef.current?.timer) {
+        window.clearTimeout(longPressRef.current.timer);
+        longPressRef.current.timer = null;
+      }
+    };
+  }, []);
+
   return (
     <div className={styles.container}>
       <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
@@ -760,6 +851,10 @@ export function LogsPage() {
               </div>
             </div>
 
+            <div className="hint">
+              {requestLogEnabled ? t('logs.action_hint') : t('logs.action_hint_disabled')}
+            </div>
+
             {loading ? (
               <div className="hint">{t('logs.loading')}</div>
             ) : logState.buffer.length > 0 && parsedVisibleLines.length > 0 ? (
@@ -795,6 +890,11 @@ export function LogsPage() {
                         onDoubleClick={() => {
                           void copyLogLine(line.raw);
                         }}
+                        onPointerDown={(event) => startLongPress(event, line.requestId)}
+                        onPointerUp={cancelLongPress}
+                        onPointerLeave={cancelLongPress}
+                        onPointerCancel={cancelLongPress}
+                        onPointerMove={handleLongPressMove}
                         title={t('logs.double_click_copy_hint', {
                           defaultValue: 'Double-click to copy',
                         })}
@@ -946,6 +1046,32 @@ export function LogsPage() {
           </Card>
         )}
       </div>
+
+      <Modal
+        open={Boolean(requestLogId)}
+        onClose={closeRequestLogModal}
+        title={t('logs.request_log_download_title')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeRequestLogModal} disabled={requestLogDownloading}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={() => {
+                if (requestLogId) {
+                  void downloadRequestLog(requestLogId);
+                }
+              }}
+              loading={requestLogDownloading}
+              disabled={!requestLogId}
+            >
+              {t('common.confirm')}
+            </Button>
+          </>
+        }
+      >
+        {requestLogId ? t('logs.request_log_download_confirm', { id: requestLogId }) : null}
+      </Modal>
     </div>
   );
 }

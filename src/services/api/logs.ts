@@ -39,4 +39,10 @@ export const logsApi = {
       responseType: 'blob',
       timeout: LOGS_TIMEOUT_MS
     }),
+
+  downloadRequestLogById: (id: string) =>
+    apiClient.getRaw(`/request-log-by-id/${encodeURIComponent(id)}`, {
+      responseType: 'blob',
+      timeout: LOGS_TIMEOUT_MS
+    }),
 };
