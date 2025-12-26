@@ -17,6 +17,7 @@ import styles from './AuthFilesPage.module.scss';
 
 type ThemeColors = { bg: string; text: string; border?: string };
 type TypeColorSet = { light: ThemeColors; dark?: ThemeColors };
+type ResolvedTheme = 'light' | 'dark';
 
 // 标签类型颜色配置（对齐重构前 styles.css 的 file-type-badge 颜色）
 const TYPE_COLORS: Record<string, TypeColorSet> = {
@@ -129,7 +130,7 @@ export function AuthFilesPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
-  const theme = useThemeStore((state) => state.theme);
+  const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -488,7 +489,7 @@ export function AuthFilesPage() {
   // 获取类型颜色
   const getTypeColor = (type: string): ThemeColors => {
     const set = TYPE_COLORS[type] || TYPE_COLORS.unknown;
-    return theme === 'dark' && set.dark ? set.dark : set.light;
+    return resolvedTheme === 'dark' && set.dark ? set.dark : set.light;
   };
 
   // OAuth 排除相关方法
@@ -547,7 +548,7 @@ export function AuthFilesPage() {
       {existingTypes.map((type) => {
         const isActive = filter === type;
         const color = type === 'all' ? { bg: 'var(--bg-tertiary)', text: 'var(--text-primary)' } : getTypeColor(type);
-        const activeTextColor = theme === 'dark' ? '#111827' : '#fff';
+        const activeTextColor = resolvedTheme === 'dark' ? '#111827' : '#fff';
         return (
           <button
             key={type}
