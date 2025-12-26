@@ -54,7 +54,7 @@ const getIcon = (icon: string | { light: string; dark: string }, theme: 'light' 
 export function OAuthPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
-  const { theme } = useThemeStore();
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
   const [iflowCookie, setIflowCookie] = useState<IFlowCookieState>({ cookie: '', loading: false });
   const timers = useRef<Record<string, number>>({});
@@ -229,7 +229,11 @@ export function OAuthPage() {
               <Card
                 title={
                   <span className={styles.cardTitle}>
-                    <img src={getIcon(provider.icon, theme)} alt="" className={styles.cardTitleIcon} />
+                    <img
+                      src={getIcon(provider.icon, resolvedTheme)}
+                      alt=""
+                      className={styles.cardTitleIcon}
+                    />
                     {t(provider.titleKey)}
                   </span>
                 }
