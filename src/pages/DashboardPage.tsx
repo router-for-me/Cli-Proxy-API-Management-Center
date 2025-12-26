@@ -242,7 +242,11 @@ export function DashboardPage() {
         </div>
         <div className={styles.connectionInfo}>
           <span className={styles.serverUrl}>{apiBase || '-'}</span>
-          {serverVersion && <span className={styles.serverVersion}>v{serverVersion}</span>}
+          {serverVersion && (
+            <span className={styles.serverVersion}>
+              v{serverVersion.trim().replace(/^[vV]+/, '')}
+            </span>
+          )}
           {serverBuildDate && (
             <span className={styles.buildDate}>
               {new Date(serverBuildDate).toLocaleDateString(i18n.language)}
