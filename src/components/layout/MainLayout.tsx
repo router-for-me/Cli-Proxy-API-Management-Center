@@ -505,7 +505,7 @@ export function MainLayout() {
           </div>
         </aside>
 
-        <div className="content">
+        <div className={`content${isLogsPage ? ' content-logs' : ''}`}>
           <main className={`main-content${isLogsPage ? ' main-content-logs' : ''}`}>
             <Outlet />
           </main>

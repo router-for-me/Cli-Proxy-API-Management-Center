@@ -12,6 +12,13 @@
   overflow: hidden;
   background: var(--bg-secondary);
   color: var(--text-primary);
+
+  @media (max-width: $breakpoint-mobile) {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    overflow-y: auto;
+  }
 }
 
 .main-header {
@@ -230,6 +237,16 @@
   @supports (height: 100dvh) {
     height: calc(100dvh - var(--header-height));
   }
+
+  @media (max-width: $breakpoint-mobile) {
+    height: auto;
+    min-height: calc(100vh - var(--header-height));
+    overflow: visible;
+
+    @supports (min-height: 100dvh) {
+      min-height: calc(100dvh - var(--header-height));
+    }
+  }
 }
 
 .sidebar {
@@ -328,6 +345,16 @@
   min-width: 0;
   overflow-y: auto;
   height: 100%;
+
+  &.content-logs {
+    overflow: hidden;
+
+    @media (max-width: $breakpoint-mobile) {
+      overflow: visible;
+      overflow-y: auto;
+      height: auto;
+    }
+  }
 }
 
 .main-content {
@@ -341,6 +368,13 @@
   &.main-content-logs {
     flex: 1 1 auto;
     min-height: 0;
+    overflow: hidden;
+
+    @media (max-width: $breakpoint-mobile) {
+      flex: 0 0 auto;
+      min-height: auto;
+      overflow: visible;
+    }
   }
 
   @media (max-width: $breakpoint-mobile) {
