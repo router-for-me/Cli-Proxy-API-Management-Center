@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import { useState, useEffect, useCallback, type PropsWithChildren, type ReactNode } from 'react';
 import { IconX } from './icons';
 
 interface ModalProps {
@@ -9,23 +9,41 @@ interface ModalProps {
   width?: number | string;
 }
 
-export function Modal({ open, title, onClose, footer, width = 520, children }: PropsWithChildren<ModalProps>) {
-  if (!open) return null;
+const CLOSE_ANIMATION_DURATION = 350;
 
-  const handleMaskClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      onClose();
+export function Modal({ open, title, onClose, footer, width = 520, children }: PropsWithChildren<ModalProps>) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setIsVisible(true);
+      setIsClosing(false);
     }
-  };
+  }, [open]);
+
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsVisible(false);
+      setIsClosing(false);
+      onClose();
+    }, CLOSE_ANIMATION_DURATION);
+  }, [onClose]);
+
+  if (!open && !isVisible) return null;
+
+  const overlayClass = `modal-overlay ${isClosing ? 'modal-overlay-closing' : 'modal-overlay-entering'}`;
+  const modalClass = `modal ${isClosing ? 'modal-closing' : 'modal-entering'}`;
 
   return (
-    <div className="modal-overlay" onClick={handleMaskClick}>
-      <div className="modal" style={{ width }} role="dialog" aria-modal="true">
+    <div className={overlayClass}>
+      <div className={modalClass} style={{ width }} role="dialog" aria-modal="true">
+        <button className="modal-close-floating" onClick={handleClose} aria-label="Close">
+          <IconX size={20} />
+        </button>
         <div className="modal-header">
           <div className="modal-title">{title}</div>
-          <button className="modal-close" onClick={onClose} aria-label="Close">
-            <IconX size={18} />
-          </button>
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}

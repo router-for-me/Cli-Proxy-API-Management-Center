@@ -350,6 +350,32 @@ textarea {
   justify-content: center;
   z-index: $z-modal;
   padding: $spacing-lg;
+
+  &.modal-overlay-entering {
+    animation: modal-overlay-fade-in 0.25s ease-out forwards;
+  }
+
+  &.modal-overlay-closing {
+    animation: modal-overlay-fade-out 0.35s ease-in forwards;
+  }
+}
+
+@keyframes modal-overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .modal {
@@ -361,12 +387,77 @@ textarea {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
+  // 关闭按钮中心位置: right 12px + 16px = 28px, top 12px + 16px = 28px
+  transform-origin: calc(100% - 28px) 28px;
+
+  &.modal-entering {
+    animation: modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  &.modal-closing {
+    animation: modal-collapse-to-close 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
+
+@keyframes modal-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-collapse-to-close {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+.modal-close-floating {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: $radius-full;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  z-index: 10;
+
+  svg {
+    display: block;
+  }
+
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 .modal-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: $spacing-md $spacing-lg;
   border-bottom: 1px solid var(--border-color);
 
@@ -374,30 +465,6 @@ textarea {
     font-weight: 700;
     font-size: 18px;
     color: var(--text-primary);
-  }
-
-  .modal-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    border-radius: $radius-md;
-    transition: color 0.15s ease, background-color 0.15s ease;
-
-    svg {
-      display: block;
-    }
-
-    &:hover {
-      color: var(--text-primary);
-      background: var(--bg-secondary);
-    }
   }
 }
 
