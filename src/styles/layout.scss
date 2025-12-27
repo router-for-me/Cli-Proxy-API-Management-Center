@@ -397,6 +397,13 @@
   font-size: 14px;
   flex-wrap: wrap;
   gap: $spacing-sm;
+
+  .footer-version {
+    user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    -webkit-touch-callout: none;
+  }
 }
 
 .login-page {

@@ -514,7 +514,7 @@ export function MainLayout() {
             <span>
               {t('footer.api_version')}: {serverVersion || t('system_info.version_unknown')}
             </span>
-            <span onClick={handleVersionTap}>
+            <span className="footer-version" onClick={handleVersionTap}>
               {t('footer.version')}: {__APP_VERSION__ || t('system_info.version_unknown')}
             </span>
             <span>
