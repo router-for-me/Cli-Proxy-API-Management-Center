@@ -422,6 +422,60 @@
   flex-shrink: 0;
 }
 
+// OAuth 排除列表表单：提供商快捷标签
+.providerField {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+.providerTagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.providerTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: var(--primary-color);
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.providerTagActive {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+
+  &:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+  }
+}
+
 // 详情弹窗
 .detailContent {
   max-height: 400px;

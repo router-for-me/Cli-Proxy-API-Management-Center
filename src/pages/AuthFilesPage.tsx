@@ -65,6 +65,20 @@ const TYPE_COLORS: Record<string, TypeColorSet> = {
   }
 };
 
+const OAUTH_PROVIDER_PRESETS = [
+  'gemini',
+  'gemini-cli',
+  'vertex',
+  'aistudio',
+  'antigravity',
+  'claude',
+  'codex',
+  'qwen',
+  'iflow'
+];
+
+const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
+
 interface ExcludedFormState {
   provider: string;
   modelsText: string;
@@ -264,6 +278,44 @@ export function AuthFilesPage() {
     });
     return Array.from(types);
   }, [files]);
+
+  const excludedProviderLookup = useMemo(() => {
+    const lookup = new Map<string, string>();
+    Object.keys(excluded).forEach((provider) => {
+      const key = provider.trim().toLowerCase();
+      if (key && !lookup.has(key)) {
+        lookup.set(key, provider);
+      }
+    });
+    return lookup;
+  }, [excluded]);
+
+  const providerOptions = useMemo(() => {
+    const extraProviders = new Set<string>();
+
+    Object.keys(excluded).forEach((provider) => {
+      extraProviders.add(provider);
+    });
+    files.forEach((file) => {
+      if (typeof file.type === 'string') {
+        extraProviders.add(file.type);
+      }
+      if (typeof file.provider === 'string') {
+        extraProviders.add(file.provider);
+      }
+    });
+
+    const normalizedExtras = Array.from(extraProviders)
+      .map((value) => value.trim())
+      .filter((value) => value && !OAUTH_PROVIDER_EXCLUDES.has(value.toLowerCase()));
+
+    const baseSet = new Set(OAUTH_PROVIDER_PRESETS.map((value) => value.toLowerCase()));
+    const extraList = normalizedExtras
+      .filter((value) => !baseSet.has(value.toLowerCase()))
+      .sort((a, b) => a.localeCompare(b));
+
+    return [...OAUTH_PROVIDER_PRESETS, ...extraList];
+  }, [excluded, files]);
 
   // 过滤和搜索
   const filtered = useMemo(() => {
@@ -511,9 +563,14 @@ export function AuthFilesPage() {
 
   // OAuth 排除相关方法
   const openExcludedModal = (provider?: string) => {
-    const models = provider ? excluded[provider] : [];
+    const normalizedProvider = (provider || '').trim();
+    const fallbackProvider = normalizedProvider || (filter !== 'all' ? String(filter) : '');
+    const lookupKey = fallbackProvider
+      ? excludedProviderLookup.get(fallbackProvider.toLowerCase())
+      : undefined;
+    const models = lookupKey ? excluded[lookupKey] : [];
     setExcludedForm({
-      provider: provider || '',
+      provider: lookupKey || fallbackProvider,
       modelsText: Array.isArray(models) ? models.join('\n') : ''
     });
     setExcludedModalOpen(true);
@@ -1011,12 +1068,41 @@ export function AuthFilesPage() {
           </>
         }
       >
-        <Input
-          label={t('oauth_excluded.provider_label')}
-          placeholder={t('oauth_excluded.provider_placeholder')}
-          value={excludedForm.provider}
-          onChange={(e) => setExcludedForm((prev) => ({ ...prev, provider: e.target.value }))}
-        />
+        <div className={styles.providerField}>
+          <Input
+            id="oauth-excluded-provider"
+            list="oauth-excluded-provider-options"
+            label={t('oauth_excluded.provider_label')}
+            hint={t('oauth_excluded.provider_hint')}
+            placeholder={t('oauth_excluded.provider_placeholder')}
+            value={excludedForm.provider}
+            onChange={(e) => setExcludedForm((prev) => ({ ...prev, provider: e.target.value }))}
+          />
+          <datalist id="oauth-excluded-provider-options">
+            {providerOptions.map((provider) => (
+              <option key={provider} value={provider} />
+            ))}
+          </datalist>
+          {providerOptions.length > 0 && (
+            <div className={styles.providerTagList}>
+              {providerOptions.map((provider) => {
+                const isActive =
+                  excludedForm.provider.trim().toLowerCase() === provider.toLowerCase();
+                return (
+                  <button
+                    key={provider}
+                    type="button"
+                    className={`${styles.providerTag} ${isActive ? styles.providerTagActive : ''}`}
+                    onClick={() => setExcludedForm((prev) => ({ ...prev, provider }))}
+                    disabled={savingExcluded}
+                  >
+                    {getTypeLabel(provider)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         <div className={styles.formGroup}>
           <label>{t('oauth_excluded.models_label')}</label>
           <textarea
