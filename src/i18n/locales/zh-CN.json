@@ -358,7 +358,7 @@
     "models_excluded_hint": "此模型已被 OAuth 排除"
   },
   "vertex_import": {
-    "title": "Vertex AI 凭证导入",
+    "title": "Vertex JSON 登录",
     "description": "上传 Google 服务账号 JSON，使用 CLI vertex-import 同步规则写入 auth-dir/vertex-<project>.json。",
     "location_label": "目标区域 (可选)",
     "location_placeholder": "us-central1",

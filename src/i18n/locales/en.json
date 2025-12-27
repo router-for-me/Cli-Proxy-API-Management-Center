@@ -358,7 +358,7 @@
     "models_excluded_hint": "This model is excluded by OAuth"
   },
   "vertex_import": {
-    "title": "Vertex AI Credential Import",
+    "title": "Vertex JSON Login",
     "description": "Upload a Google service account JSON to store it as auth-dir/vertex-<project>.json using the same rules as the CLI vertex-import helper.",
     "location_label": "Region (optional)",
     "location_placeholder": "us-central1",
