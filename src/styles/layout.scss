@@ -338,6 +338,11 @@
   gap: $spacing-lg;
   overflow-x: hidden;
 
+  &.main-content-logs {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
   @media (max-width: $breakpoint-mobile) {
     padding: $spacing-md;
   }

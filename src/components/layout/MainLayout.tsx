@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -173,6 +173,7 @@ const compareVersions = (latest?: string | null, current?: string | null) => {
 export function MainLayout() {
   const { t, i18n } = useTranslation();
   const { showNotification } = useNotificationStore();
+  const location = useLocation();
 
   const apiBase = useAuthStore((state) => state.apiBase);
   const serverVersion = useAuthStore((state) => state.serverVersion);
@@ -207,6 +208,7 @@ export function MainLayout() {
   const requestLogEnabled = config?.requestLog ?? false;
   const requestLogDirty = requestLogDraft !== requestLogEnabled;
   const canEditRequestLog = connectionStatus === 'connected' && Boolean(config);
+  const isLogsPage = location.pathname.startsWith('/logs');
 
   // 将顶栏高度写入 CSS 变量，确保侧栏/内容区计算一致，防止滚动时抖动
   useLayoutEffect(() => {
@@ -504,7 +506,7 @@ export function MainLayout() {
         </aside>
 
         <div className="content">
-          <main className="main-content">
+          <main className={`main-content${isLogsPage ? ' main-content-logs' : ''}`}>
             <Outlet />
           </main>
 

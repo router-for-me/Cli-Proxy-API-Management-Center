@@ -161,8 +161,8 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
-  flex: 0 0 auto;
-  height: 480px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   position: relative;
   -webkit-overflow-scrolling: touch;
@@ -399,10 +399,6 @@
 
   .logCard {
     padding: $spacing-md;
-  }
-
-  .logPanel {
-    height: 360px;
   }
 
   .errorPanel {
