@@ -11,7 +11,8 @@ import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
 import type { AuthFileItem } from '@/types';
-import type { KeyStats, KeyStatBucket } from '@/utils/usage';
+import type { KeyStats, KeyStatBucket, UsageDetail } from '@/utils/usage';
+import { collectUsageDetails, calculateStatusBarData } from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
 import styles from './AuthFilesPage.module.scss';
 
@@ -143,6 +144,7 @@ export function AuthFilesPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [keyStats, setKeyStats] = useState<KeyStats>({ bySource: {}, byAuthIndex: {} });
+  const [usageDetails, setUsageDetails] = useState<UsageDetail[]>([]);
 
   // 详情弹窗相关
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -195,11 +197,16 @@ export function AuthFilesPage() {
     }
   }, [t]);
 
-  // 加载 key 统计
+  // 加载 key 统计和 usage 明细
   const loadKeyStats = useCallback(async () => {
     try {
-      const stats = await usageApi.getKeyStats();
+      const usageResponse = await usageApi.getUsage();
+      const usageData = usageResponse?.usage ?? usageResponse;
+      const stats = await usageApi.getKeyStats(usageData);
       setKeyStats(stats);
+      // 收集 usage 明细用于状态栏
+      const details = collectUsageDetails(usageData);
+      setUsageDetails(details);
     } catch {
       // 静默失败
     }
@@ -570,6 +577,50 @@ export function AuthFilesPage() {
     </div>
   );
 
+  // 渲染状态监测栏
+  const renderStatusBar = (item: AuthFileItem) => {
+    // 认证文件使用 authIndex 来匹配 usage 数据
+    const rawAuthIndex = item['auth_index'] ?? item.authIndex;
+    const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
+
+    // 过滤出属于该认证文件的 usage 明细
+    const filteredDetails = usageDetails.filter((detail) => {
+      const detailAuthIndex = normalizeAuthIndexValue(detail.auth_index);
+      return detailAuthIndex !== null && detailAuthIndex === authIndexKey;
+    });
+
+    const statusData = calculateStatusBarData(filteredDetails);
+    const hasData = statusData.totalSuccess + statusData.totalFailure > 0;
+    const rateClass = !hasData
+      ? ''
+      : statusData.successRate >= 90
+        ? styles.statusRateHigh
+        : statusData.successRate >= 50
+          ? styles.statusRateMedium
+          : styles.statusRateLow;
+
+    return (
+      <div className={styles.statusBar}>
+        <div className={styles.statusBlocks}>
+          {statusData.blocks.map((state, idx) => {
+            const blockClass =
+              state === 'success'
+                ? styles.statusBlockSuccess
+                : state === 'failure'
+                  ? styles.statusBlockFailure
+                  : state === 'mixed'
+                    ? styles.statusBlockMixed
+                    : styles.statusBlockIdle;
+            return <div key={idx} className={`${styles.statusBlock} ${blockClass}`} />;
+          })}
+        </div>
+        <span className={`${styles.statusRate} ${rateClass}`}>
+          {hasData ? `${statusData.successRate.toFixed(1)}%` : '--'}
+        </span>
+      </div>
+    );
+  };
+
   // 渲染单个认证文件卡片
   const renderFileCard = (item: AuthFileItem) => {
       const fileStats = resolveAuthFileStats(item, keyStats);
@@ -605,6 +656,9 @@ export function AuthFilesPage() {
             {t('stats.failure')}: {fileStats.failure}
           </span>
         </div>
+
+        {/* 状态监测栏 */}
+        {renderStatusBar(item)}
 
         <div className={styles.cardActions}>
           {isRuntimeOnly ? (

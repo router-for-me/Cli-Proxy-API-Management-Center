@@ -250,6 +250,78 @@
   border-color: var(--failure-badge-border, #fca5a5);
 }
 
+// 状态监测栏
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  max-width: 280px;
+}
+
+.statusBlocks {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.statusBlock {
+  flex: 1;
+  height: 8px;
+  border-radius: 2px;
+  min-width: 6px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+
+  &:hover {
+    transform: scaleY(1.5);
+    opacity: 0.85;
+  }
+}
+
+.statusBlockSuccess {
+  background-color: var(--success-color, #22c55e);
+}
+
+.statusBlockFailure {
+  background-color: var(--danger-color, #ef4444);
+}
+
+.statusBlockMixed {
+  background-color: var(--warning-color, #f59e0b);
+}
+
+.statusBlockIdle {
+  background-color: var(--border-secondary, #e5e7eb);
+}
+
+.statusRate {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+}
+
+.statusRateHigh {
+  color: var(--success-badge-text, #065f46);
+  background: var(--success-badge-bg, #d1fae5);
+}
+
+.statusRateMedium {
+  color: var(--warning-text, #92400e);
+  background: var(--warning-bg, #fef3c7);
+}
+
+.statusRateLow {
+  color: var(--failure-badge-text, #991b1b);
+  background: var(--failure-badge-bg, #fee2e2);
+}
+
 .cardActions {
   display: flex;
   gap: $spacing-xs;
