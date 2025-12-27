@@ -35,6 +35,9 @@
   width: 100%;
 
   @media (max-width: $breakpoint-mobile) {
+    position: fixed;
+    left: 0;
+    right: 0;
     padding: $spacing-sm $spacing-md;
     gap: $spacing-sm;
   }
@@ -242,6 +245,7 @@
     height: auto;
     min-height: calc(100vh - var(--header-height));
     overflow: visible;
+    padding-top: var(--header-height);
 
     @supports (min-height: 100dvh) {
       min-height: calc(100dvh - var(--header-height));
