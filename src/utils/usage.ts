@@ -754,6 +754,103 @@ export function buildChartData(
 /**
  * 依据 usage 数据计算密钥使用统计
  */
+/**
+ * 状态栏单个格子的状态
+ */
+export type StatusBlockState = 'success' | 'failure' | 'mixed' | 'idle';
+
+/**
+ * 状态栏数据
+ */
+export interface StatusBarData {
+  blocks: StatusBlockState[];
+  successRate: number;
+  totalSuccess: number;
+  totalFailure: number;
+}
+
+/**
+ * 计算状态栏数据（最近1小时，分为20个5分钟的时间块）
+ * 注意：20个块 × 5分钟 = 100分钟，但我们只使用最近60分钟的数据
+ * 所以实际只有最后12个块可能有数据，前8个块将始终为 idle
+ */
+export function calculateStatusBarData(
+  usageDetails: UsageDetail[],
+  sourceFilter?: string,
+  authIndexFilter?: number
+): StatusBarData {
+  const BLOCK_COUNT = 20;
+  const BLOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+  const HOUR_MS = 60 * 60 * 1000;
+
+  const now = Date.now();
+  const hourAgo = now - HOUR_MS;
+
+  // Initialize blocks
+  const blockStats: Array<{ success: number; failure: number }> = Array.from(
+    { length: BLOCK_COUNT },
+    () => ({ success: 0, failure: 0 })
+  );
+
+  let totalSuccess = 0;
+  let totalFailure = 0;
+
+  // Filter and bucket the usage details
+  usageDetails.forEach((detail) => {
+    const timestamp = Date.parse(detail.timestamp);
+    if (Number.isNaN(timestamp) || timestamp < hourAgo || timestamp > now) {
+      return;
+    }
+
+    // Apply filters if provided
+    if (sourceFilter !== undefined && detail.source !== sourceFilter) {
+      return;
+    }
+    if (authIndexFilter !== undefined && detail.auth_index !== authIndexFilter) {
+      return;
+    }
+
+    // Calculate which block this falls into (0 = oldest, 19 = newest)
+    const ageMs = now - timestamp;
+    const blockIndex = BLOCK_COUNT - 1 - Math.floor(ageMs / BLOCK_DURATION_MS);
+
+    if (blockIndex >= 0 && blockIndex < BLOCK_COUNT) {
+      if (detail.failed) {
+        blockStats[blockIndex].failure += 1;
+        totalFailure += 1;
+      } else {
+        blockStats[blockIndex].success += 1;
+        totalSuccess += 1;
+      }
+    }
+  });
+
+  // Convert stats to block states
+  const blocks: StatusBlockState[] = blockStats.map((stat) => {
+    if (stat.success === 0 && stat.failure === 0) {
+      return 'idle';
+    }
+    if (stat.failure === 0) {
+      return 'success';
+    }
+    if (stat.success === 0) {
+      return 'failure';
+    }
+    return 'mixed';
+  });
+
+  // Calculate success rate
+  const total = totalSuccess + totalFailure;
+  const successRate = total > 0 ? (totalSuccess / total) * 100 : 100;
+
+  return {
+    blocks,
+    successRate,
+    totalSuccess,
+    totalFailure
+  };
+}
+
 export function computeKeyStats(usageData: any, masker: (val: string) => string = maskApiKey): KeyStats {
   if (!usageData) {
     return { bySource: {}, byAuthIndex: {} };

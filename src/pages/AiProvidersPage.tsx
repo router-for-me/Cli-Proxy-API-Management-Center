@@ -24,7 +24,8 @@ import type {
   AmpcodeConfig,
   AmpcodeModelMapping,
 } from '@/types';
-import type { KeyStats, KeyStatBucket } from '@/utils/usage';
+import type { KeyStats, KeyStatBucket, UsageDetail } from '@/utils/usage';
+import { collectUsageDetails, calculateStatusBarData } from '@/utils/usage';
 import type { ModelInfo } from '@/utils/models';
 import { headersToEntries, buildHeaderObject, type HeaderEntry } from '@/utils/headers';
 import { maskApiKey } from '@/utils/format';
@@ -202,6 +203,7 @@ export function AiProvidersPage() {
   const [claudeConfigs, setClaudeConfigs] = useState<ProviderKeyConfig[]>([]);
   const [openaiProviders, setOpenaiProviders] = useState<OpenAIProviderConfig[]>([]);
   const [keyStats, setKeyStats] = useState<KeyStats>({ bySource: {}, byAuthIndex: {} });
+  const [usageDetails, setUsageDetails] = useState<UsageDetail[]>([]);
 
   const [modal, setModal] = useState<ProviderModal | null>(null);
 
@@ -273,11 +275,16 @@ export function AiProvidersPage() {
     [openaiForm.modelEntries]
   );
 
-  // 加载 key 统计
+  // 加载 key 统计和 usage 明细
   const loadKeyStats = useCallback(async () => {
     try {
-      const stats = await usageApi.getKeyStats();
+      const usageResponse = await usageApi.getUsage();
+      const usageData = usageResponse?.usage ?? usageResponse;
+      const stats = await usageApi.getKeyStats(usageData);
       setKeyStats(stats);
+      // 收集 usage 明细用于状态栏
+      const details = collectUsageDetails(usageData);
+      setUsageDetails(details);
     } catch {
       // 静默失败
     }
@@ -1090,6 +1097,77 @@ export function AiProvidersPage() {
     );
   };
 
+  // 渲染状态监测栏
+  const renderStatusBar = (apiKey: string) => {
+    const statusData = calculateStatusBarData(usageDetails, apiKey);
+    const hasData = statusData.totalSuccess + statusData.totalFailure > 0;
+    const rateClass = !hasData
+      ? ''
+      : statusData.successRate >= 90
+        ? styles.statusRateHigh
+        : statusData.successRate >= 50
+          ? styles.statusRateMedium
+          : styles.statusRateLow;
+
+    return (
+      <div className={styles.statusBar}>
+        <div className={styles.statusBlocks}>
+          {statusData.blocks.map((state, idx) => {
+            const blockClass =
+              state === 'success'
+                ? styles.statusBlockSuccess
+                : state === 'failure'
+                  ? styles.statusBlockFailure
+                  : state === 'mixed'
+                    ? styles.statusBlockMixed
+                    : styles.statusBlockIdle;
+            return <div key={idx} className={`${styles.statusBlock} ${blockClass}`} />;
+          })}
+        </div>
+        <span className={`${styles.statusRate} ${rateClass}`}>
+          {hasData ? `${statusData.successRate.toFixed(1)}%` : '--'}
+        </span>
+      </div>
+    );
+  };
+
+  // 渲染 OpenAI 提供商的状态栏（汇总多个 apiKey）
+  const renderOpenAIStatusBar = (apiKeyEntries: ApiKeyEntry[] | undefined) => {
+    // 合并所有 apiKey 的 usage details
+    const allKeys = (apiKeyEntries || []).map((e) => e.apiKey).filter(Boolean);
+    const filteredDetails = usageDetails.filter((detail) => allKeys.includes(detail.source));
+    const statusData = calculateStatusBarData(filteredDetails);
+    const hasData = statusData.totalSuccess + statusData.totalFailure > 0;
+    const rateClass = !hasData
+      ? ''
+      : statusData.successRate >= 90
+        ? styles.statusRateHigh
+        : statusData.successRate >= 50
+          ? styles.statusRateMedium
+          : styles.statusRateLow;
+
+    return (
+      <div className={styles.statusBar}>
+        <div className={styles.statusBlocks}>
+          {statusData.blocks.map((state, idx) => {
+            const blockClass =
+              state === 'success'
+                ? styles.statusBlockSuccess
+                : state === 'failure'
+                  ? styles.statusBlockFailure
+                  : state === 'mixed'
+                    ? styles.statusBlockMixed
+                    : styles.statusBlockIdle;
+            return <div key={idx} className={`${styles.statusBlock} ${blockClass}`} />;
+          })}
+        </div>
+        <span className={`${styles.statusRate} ${rateClass}`}>
+          {hasData ? `${statusData.successRate.toFixed(1)}%` : '--'}
+        </span>
+      </div>
+    );
+  };
+
   const renderList = <T,>(
     items: T[],
     keyField: (item: T) => string,
@@ -1254,6 +1332,8 @@ export function AiProvidersPage() {
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
+                  {/* 状态监测栏 */}
+                  {renderStatusBar(item.apiKey)}
                 </Fragment>
               );
             },
@@ -1370,6 +1450,8 @@ export function AiProvidersPage() {
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
+                  {/* 状态监测栏 */}
+                  {renderStatusBar(item.apiKey)}
                 </Fragment>
               );
             },
@@ -1502,6 +1584,8 @@ export function AiProvidersPage() {
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
+                  {/* 状态监测栏 */}
+                  {renderStatusBar(item.apiKey)}
                 </Fragment>
               );
             },
@@ -1721,6 +1805,8 @@ export function AiProvidersPage() {
                       {t('stats.failure')}: {stats.failure}
                     </span>
                   </div>
+                  {/* 状态监测栏（汇总） */}
+                  {renderOpenAIStatusBar(item.apiKeyEntries)}
                 </Fragment>
               );
             },
