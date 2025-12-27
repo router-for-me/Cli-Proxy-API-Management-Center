@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useInterval } from '@/hooks/useInterval';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -166,6 +167,7 @@ export function AuthFilesPage() {
   const [savingExcluded, setSavingExcluded] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const loadingKeyStatsRef = useRef(false);
   const excludedUnsupportedRef = useRef(false);
 
   const disableControls = connectionStatus !== 'connected';
@@ -197,8 +199,11 @@ export function AuthFilesPage() {
     }
   }, [t]);
 
-  // 加载 key 统计和 usage 明细
+  // 加载 key 统计和 usage 明细（API 层已有60秒超时）
   const loadKeyStats = useCallback(async () => {
+    // 防止重复请求
+    if (loadingKeyStatsRef.current) return;
+    loadingKeyStatsRef.current = true;
     try {
       const usageResponse = await usageApi.getUsage();
       const usageData = usageResponse?.usage ?? usageResponse;
@@ -209,6 +214,8 @@ export function AuthFilesPage() {
       setUsageDetails(details);
     } catch {
       // 静默失败
+    } finally {
+      loadingKeyStatsRef.current = false;
     }
   }, []);
 
@@ -243,6 +250,9 @@ export function AuthFilesPage() {
     loadKeyStats();
     loadExcluded();
   }, [loadFiles, loadKeyStats, loadExcluded]);
+
+  // 定时刷新状态数据（每240秒）
+  useInterval(loadKeyStats, 240_000);
 
   // 提取所有存在的类型
   const existingTypes = useMemo(() => {
@@ -577,19 +587,34 @@ export function AuthFilesPage() {
     </div>
   );
 
+  // 预计算所有认证文件的状态栏数据（避免每次渲染重复计算）
+  const statusBarCache = useMemo(() => {
+    const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
+
+    files.forEach((file) => {
+      const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+      const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
+
+      if (authIndexKey) {
+        // 过滤出属于该认证文件的 usage 明细
+        const filteredDetails = usageDetails.filter((detail) => {
+          const detailAuthIndex = normalizeAuthIndexValue(detail.auth_index);
+          return detailAuthIndex !== null && detailAuthIndex === authIndexKey;
+        });
+        cache.set(authIndexKey, calculateStatusBarData(filteredDetails));
+      }
+    });
+
+    return cache;
+  }, [usageDetails, files]);
+
   // 渲染状态监测栏
   const renderStatusBar = (item: AuthFileItem) => {
     // 认证文件使用 authIndex 来匹配 usage 数据
     const rawAuthIndex = item['auth_index'] ?? item.authIndex;
     const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
 
-    // 过滤出属于该认证文件的 usage 明细
-    const filteredDetails = usageDetails.filter((detail) => {
-      const detailAuthIndex = normalizeAuthIndexValue(detail.auth_index);
-      return detailAuthIndex !== null && detailAuthIndex === authIndexKey;
-    });
-
-    const statusData = calculateStatusBarData(filteredDetails);
+    const statusData = (authIndexKey && statusBarCache.get(authIndexKey)) || calculateStatusBarData([]);
     const hasData = statusData.totalSuccess + statusData.totalFailure > 0;
     const rateClass = !hasData
       ? ''

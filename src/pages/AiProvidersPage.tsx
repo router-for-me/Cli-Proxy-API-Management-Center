@@ -1,5 +1,6 @@
-import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useInterval } from '@/hooks/useInterval';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -204,6 +205,7 @@ export function AiProvidersPage() {
   const [openaiProviders, setOpenaiProviders] = useState<OpenAIProviderConfig[]>([]);
   const [keyStats, setKeyStats] = useState<KeyStats>({ bySource: {}, byAuthIndex: {} });
   const [usageDetails, setUsageDetails] = useState<UsageDetail[]>([]);
+  const loadingKeyStatsRef = useRef(false);
 
   const [modal, setModal] = useState<ProviderModal | null>(null);
 
@@ -275,8 +277,11 @@ export function AiProvidersPage() {
     [openaiForm.modelEntries]
   );
 
-  // 加载 key 统计和 usage 明细
+  // 加载 key 统计和 usage 明细（API 层已有60秒超时）
   const loadKeyStats = useCallback(async () => {
+    // 防止重复请求
+    if (loadingKeyStatsRef.current) return;
+    loadingKeyStatsRef.current = true;
     try {
       const usageResponse = await usageApi.getUsage();
       const usageData = usageResponse?.usage ?? usageResponse;
@@ -287,6 +292,8 @@ export function AiProvidersPage() {
       setUsageDetails(details);
     } catch {
       // 静默失败
+    } finally {
+      loadingKeyStatsRef.current = false;
     }
   }, []);
 
@@ -317,6 +324,9 @@ export function AiProvidersPage() {
     loadConfigs();
     loadKeyStats();
   }, [loadKeyStats]);
+
+  // 定时刷新状态数据（每240秒）
+  useInterval(loadKeyStats, 240_000);
 
   useEffect(() => {
     if (config?.geminiApiKeys) setGeminiKeys(config.geminiApiKeys);
@@ -1097,9 +1107,43 @@ export function AiProvidersPage() {
     );
   };
 
+  // 预计算所有 apiKey 的状态栏数据（避免每次渲染重复计算）
+  const statusBarCache = useMemo(() => {
+    const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
+
+    // 收集所有需要计算的 apiKey
+    const allApiKeys = new Set<string>();
+    geminiKeys.forEach((k) => k.apiKey && allApiKeys.add(k.apiKey));
+    codexConfigs.forEach((k) => k.apiKey && allApiKeys.add(k.apiKey));
+    claudeConfigs.forEach((k) => k.apiKey && allApiKeys.add(k.apiKey));
+    openaiProviders.forEach((p) => {
+      (p.apiKeyEntries || []).forEach((e) => e.apiKey && allApiKeys.add(e.apiKey));
+    });
+
+    // 预计算每个 apiKey 的状态数据
+    allApiKeys.forEach((apiKey) => {
+      cache.set(apiKey, calculateStatusBarData(usageDetails, apiKey));
+    });
+
+    return cache;
+  }, [usageDetails, geminiKeys, codexConfigs, claudeConfigs, openaiProviders]);
+
+  // 预计算 OpenAI 提供商的汇总状态栏数据
+  const openaiStatusBarCache = useMemo(() => {
+    const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
+
+    openaiProviders.forEach((provider) => {
+      const allKeys = (provider.apiKeyEntries || []).map((e) => e.apiKey).filter(Boolean);
+      const filteredDetails = usageDetails.filter((detail) => allKeys.includes(detail.source));
+      cache.set(provider.name, calculateStatusBarData(filteredDetails));
+    });
+
+    return cache;
+  }, [usageDetails, openaiProviders]);
+
   // 渲染状态监测栏
   const renderStatusBar = (apiKey: string) => {
-    const statusData = calculateStatusBarData(usageDetails, apiKey);
+    const statusData = statusBarCache.get(apiKey) || calculateStatusBarData([], apiKey);
     const hasData = statusData.totalSuccess + statusData.totalFailure > 0;
     const rateClass = !hasData
       ? ''
@@ -1132,11 +1176,8 @@ export function AiProvidersPage() {
   };
 
   // 渲染 OpenAI 提供商的状态栏（汇总多个 apiKey）
-  const renderOpenAIStatusBar = (apiKeyEntries: ApiKeyEntry[] | undefined) => {
-    // 合并所有 apiKey 的 usage details
-    const allKeys = (apiKeyEntries || []).map((e) => e.apiKey).filter(Boolean);
-    const filteredDetails = usageDetails.filter((detail) => allKeys.includes(detail.source));
-    const statusData = calculateStatusBarData(filteredDetails);
+  const renderOpenAIStatusBar = (providerName: string) => {
+    const statusData = openaiStatusBarCache.get(providerName) || calculateStatusBarData([]);
     const hasData = statusData.totalSuccess + statusData.totalFailure > 0;
     const rateClass = !hasData
       ? ''
@@ -1806,7 +1847,7 @@ export function AiProvidersPage() {
                     </span>
                   </div>
                   {/* 状态监测栏（汇总） */}
-                  {renderOpenAIStatusBar(item.apiKeyEntries)}
+                  {renderOpenAIStatusBar(item.name)}
                 </Fragment>
               );
             },
