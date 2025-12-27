@@ -851,10 +851,6 @@ export function LogsPage() {
               </div>
             </div>
 
-            <div className="hint">
-              {requestLogEnabled ? t('logs.action_hint') : t('logs.action_hint_disabled')}
-            </div>
-
             {loading ? (
               <div className="hint">{t('logs.loading')}</div>
             ) : logState.buffer.length > 0 && parsedVisibleLines.length > 0 ? (

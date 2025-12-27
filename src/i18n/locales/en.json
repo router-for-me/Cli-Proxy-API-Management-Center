@@ -604,8 +604,6 @@
     "request_log_download_title": "Download Request Log",
     "request_log_download_confirm": "Download request log for ID {{id}}?",
     "request_log_download_success": "Request log downloaded successfully",
-    "action_hint": "Double-click a log line to copy the raw text. Long-press a line with a request ID to download the request log.",
-    "action_hint_disabled": "Double-click a log line to copy the raw text. Enable request logging to long-press a line with a request ID and download the request log.",
     "empty_title": "No Logs Available",
     "empty_desc": "When \"Enable logging to file\" is enabled, logs will be displayed here",
     "log_content": "Log Content",
