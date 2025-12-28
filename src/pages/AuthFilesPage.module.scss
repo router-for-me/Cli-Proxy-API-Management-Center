@@ -162,6 +162,134 @@
   }
 }
 
+.antigravityGrid {
+  display: grid;
+  gap: $spacing-md;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @include tablet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.antigravityCard {
+  background-image: linear-gradient(
+    180deg,
+    rgba(224, 247, 250, 0.12),
+    rgba(224, 247, 250, 0)
+  );
+}
+
+.quotaSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding-top: $spacing-sm;
+  margin-top: $spacing-xs;
+  border-top: 1px dashed var(--border-color);
+}
+
+.quotaRow {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.quotaRowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  min-width: 0;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.quotaModel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+
+  @include mobile {
+    white-space: normal;
+  }
+}
+
+.quotaBar {
+  height: 8px;
+  background-color: var(--bg-tertiary);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.quotaBarFill {
+  height: 100%;
+  background-color: var(--success-color, #22c55e);
+  transition: width 0.2s ease;
+}
+
+.quotaBarFillHigh {
+  background-color: var(--success-color, #22c55e);
+}
+
+.quotaBarFillMedium {
+  background-color: var(--warning-color, #f59e0b);
+}
+
+.quotaBarFillLow {
+  background-color: var(--danger-color, #ef4444);
+}
+
+.quotaMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+
+  @include mobile {
+    justify-content: flex-start;
+  }
+}
+
+.quotaPercent {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.quotaReset {
+  color: var(--text-tertiary);
+}
+
+.quotaMessage {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: $spacing-sm 0;
+}
+
+.quotaError {
+  font-size: 12px;
+  color: var(--danger-color);
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1px solid var(--danger-color);
+  border-radius: $radius-sm;
+  padding: $spacing-xs $spacing-sm;
+}
+
 // 单个认证文件卡片
 .fileCard {
   background-color: var(--bg-primary);

@@ -357,6 +357,15 @@
     "models_excluded_badge": "已排除",
     "models_excluded_hint": "此模型已被 OAuth 排除"
   },
+  "antigravity_quota": {
+    "title": "Antigravity 额度",
+    "empty_title": "暂无 Antigravity 认证",
+    "empty_desc": "上传 Antigravity 认证文件后即可查看额度。",
+    "loading": "正在加载额度...",
+    "load_failed": "额度获取失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "empty_models": "暂无额度数据"
+  },
   "vertex_import": {
     "title": "Vertex JSON 登录",
     "description": "上传 Google 服务账号 JSON，使用 CLI vertex-import 同步规则写入 auth-dir/vertex-<project>.json。",

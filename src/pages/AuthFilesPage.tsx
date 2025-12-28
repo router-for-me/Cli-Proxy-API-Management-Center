@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { IconBot, IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
-import { authFilesApi, usageApi } from '@/services/api';
+import { apiCallApi, authFilesApi, getApiCallErrorMessage, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
 import type { AuthFileItem } from '@/types';
 import type { KeyStats, KeyStatBucket, UsageDetail } from '@/utils/usage';
@@ -84,6 +84,94 @@ interface ExcludedFormState {
   modelsText: string;
 }
 
+interface AntigravityQuotaGroup {
+  id: string;
+  label: string;
+  models: string[];
+  remainingFraction: number;
+  resetTime?: string;
+}
+
+interface AntigravityQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  groups: AntigravityQuotaGroup[];
+  error?: string;
+}
+
+interface AntigravityQuotaInfo {
+  displayName?: string;
+  quotaInfo?: {
+    remainingFraction?: number | string;
+    remaining_fraction?: number | string;
+    remaining?: number | string;
+    resetTime?: string;
+    reset_time?: string;
+  };
+  quota_info?: {
+    remainingFraction?: number | string;
+    remaining_fraction?: number | string;
+    remaining?: number | string;
+    resetTime?: string;
+    reset_time?: string;
+  };
+}
+
+type AntigravityModelsPayload = Record<string, AntigravityQuotaInfo>;
+
+interface AntigravityQuotaGroupDefinition {
+  id: string;
+  label: string;
+  identifiers: string[];
+  labelFromModel?: boolean;
+}
+
+const ANTIGRAVITY_QUOTA_URLS = [
+  'https://cloudcode-pa-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels',
+  'https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels',
+  'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels'
+];
+
+const ANTIGRAVITY_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  'Content-Type': 'application/json',
+  'User-Agent': 'antigravity/1.11.5 windows/amd64'
+};
+
+const ANTIGRAVITY_QUOTA_GROUPS: AntigravityQuotaGroupDefinition[] = [
+  {
+    id: 'claude-gpt',
+    label: 'Claude/GPT',
+    identifiers: [
+      'claude-sonnet-4-5-thinking',
+      'claude-opus-4-5-thinking',
+      'claude-sonnet-4-5',
+      'gpt-oss-120b-medium'
+    ]
+  },
+  {
+    id: 'gemini',
+    label: 'Gemini',
+    identifiers: [
+      'gemini-3-pro-high',
+      'gemini-3-pro-low',
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+      'rev19-uic3-1p'
+    ]
+  },
+  {
+    id: 'gemini-3-flash',
+    label: 'Gemini 3 Flash',
+    identifiers: ['gemini-3-flash']
+  },
+  {
+    id: 'gemini-image',
+    label: 'gemini-3-pro-image',
+    identifiers: ['gemini-3-pro-image'],
+    labelFromModel: true
+  }
+];
+
 // 标准化 auth_index 值（与 usage.ts 中的 normalizeAuthIndex 保持一致）
 function normalizeAuthIndexValue(value: unknown): string | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -94,6 +182,155 @@ function normalizeAuthIndexValue(value: unknown): string | null {
     return trimmed ? trimmed : null;
   }
   return null;
+}
+
+function parseAntigravityPayload(payload: unknown): Record<string, unknown> | null {
+  if (payload === undefined || payload === null) return null;
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim();
+    if (!trimmed) return null;
+    try {
+      return JSON.parse(trimmed) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof payload === 'object') {
+    return payload as Record<string, unknown>;
+  }
+  return null;
+}
+
+function getAntigravityQuotaInfo(entry?: AntigravityQuotaInfo): {
+  remainingFraction: number | null;
+  resetTime?: string;
+  displayName?: string;
+} {
+  if (!entry) {
+    return { remainingFraction: null };
+  }
+  const quotaInfo = entry.quotaInfo ?? entry.quota_info ?? {};
+  const remainingValue =
+    quotaInfo.remainingFraction ?? quotaInfo.remaining_fraction ?? quotaInfo.remaining;
+  const remainingFraction = Number(remainingValue);
+  const resetValue = quotaInfo.resetTime ?? quotaInfo.reset_time;
+  const resetTime = typeof resetValue === 'string' ? resetValue : undefined;
+  const displayName = typeof entry.displayName === 'string' ? entry.displayName : undefined;
+
+  return {
+    remainingFraction: Number.isFinite(remainingFraction) ? remainingFraction : null,
+    resetTime,
+    displayName
+  };
+}
+
+function findAntigravityModel(
+  models: AntigravityModelsPayload,
+  identifier: string
+): { id: string; entry: AntigravityQuotaInfo } | null {
+  const direct = models[identifier];
+  if (direct) {
+    return { id: identifier, entry: direct };
+  }
+
+  const match = Object.entries(models).find(([, entry]) => {
+    const name = typeof entry?.displayName === 'string' ? entry.displayName : '';
+    return name.toLowerCase() === identifier.toLowerCase();
+  });
+  if (match) {
+    return { id: match[0], entry: match[1] };
+  }
+
+  return null;
+}
+
+function buildAntigravityQuotaGroups(models: AntigravityModelsPayload): AntigravityQuotaGroup[] {
+  const groups: AntigravityQuotaGroup[] = [];
+  let geminiResetTime: string | undefined;
+  const [claudeDef, geminiDef, flashDef, imageDef] = ANTIGRAVITY_QUOTA_GROUPS;
+
+  const buildGroup = (
+    def: AntigravityQuotaGroupDefinition,
+    overrideResetTime?: string
+  ): AntigravityQuotaGroup | null => {
+    const matches = def.identifiers
+      .map((identifier) => findAntigravityModel(models, identifier))
+      .filter((entry): entry is { id: string; entry: AntigravityQuotaInfo } => Boolean(entry));
+
+    const quotaEntries = matches
+      .map(({ id, entry }) => {
+        const info = getAntigravityQuotaInfo(entry);
+        if (info.remainingFraction === null) return null;
+        return {
+          id,
+          remainingFraction: info.remainingFraction,
+          resetTime: info.resetTime,
+          displayName: info.displayName
+        };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+
+    if (quotaEntries.length === 0) return null;
+
+    const remainingFraction = Math.min(...quotaEntries.map((entry) => entry.remainingFraction));
+    const resetTime =
+      overrideResetTime ?? quotaEntries.map((entry) => entry.resetTime).find(Boolean);
+    const displayName = quotaEntries.map((entry) => entry.displayName).find(Boolean);
+    const label = def.labelFromModel && displayName ? displayName : def.label;
+
+    return {
+      id: def.id,
+      label,
+      models: quotaEntries.map((entry) => entry.id),
+      remainingFraction,
+      resetTime
+    };
+  };
+
+  const claudeGroup = buildGroup(claudeDef);
+  if (claudeGroup) {
+    groups.push(claudeGroup);
+  }
+
+  const geminiGroup = buildGroup(geminiDef);
+  if (geminiGroup) {
+    geminiResetTime = geminiGroup.resetTime;
+    groups.push(geminiGroup);
+  }
+
+  const flashGroup = buildGroup(flashDef);
+  if (flashGroup) {
+    groups.push(flashGroup);
+  }
+
+  const imageGroup = buildGroup(imageDef, geminiResetTime);
+  if (imageGroup) {
+    groups.push(imageGroup);
+  }
+
+  return groups;
+}
+
+function formatQuotaResetTime(value?: string): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString(undefined, {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+}
+
+function resolveAuthProvider(file: AuthFileItem): string {
+  const raw = file.provider ?? file.type ?? '';
+  return String(raw).trim().toLowerCase();
+}
+
+function isAntigravityFile(file: AuthFileItem): boolean {
+  return resolveAuthProvider(file) === 'antigravity';
 }
 
 function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
@@ -155,11 +392,16 @@ export function AuthFilesPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
+  const [antigravityPage, setAntigravityPage] = useState(1);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [keyStats, setKeyStats] = useState<KeyStats>({ bySource: {}, byAuthIndex: {} });
   const [usageDetails, setUsageDetails] = useState<UsageDetail[]>([]);
+  const [antigravityQuota, setAntigravityQuota] = useState<Record<string, AntigravityQuotaState>>(
+    {}
+  );
+  const [antigravityLoading, setAntigravityLoading] = useState(false);
 
   // 详情弹窗相关
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -182,6 +424,8 @@ export function AuthFilesPage() {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const loadingKeyStatsRef = useRef(false);
+  const antigravityLoadingRef = useRef(false);
+  const antigravityRequestIdRef = useRef(0);
   const excludedUnsupportedRef = useRef(false);
 
   const disableControls = connectionStatus !== 'connected';
@@ -259,14 +503,158 @@ export function AuthFilesPage() {
     }
   }, [showNotification, t]);
 
+  const antigravityFiles = useMemo(
+    () => files.filter((file) => isAntigravityFile(file)),
+    [files]
+  );
+
+  const antigravityPageSize = 6;
+  const antigravityTotalPages = Math.max(
+    1,
+    Math.ceil(antigravityFiles.length / antigravityPageSize)
+  );
+  const antigravityCurrentPage = Math.min(antigravityPage, antigravityTotalPages);
+  const antigravityStart = (antigravityCurrentPage - 1) * antigravityPageSize;
+  const antigravityPageItems = antigravityFiles.slice(
+    antigravityStart,
+    antigravityStart + antigravityPageSize
+  );
+
+  const fetchAntigravityQuota = useCallback(
+    async (authIndex: string): Promise<AntigravityQuotaGroup[]> => {
+      let lastError = '';
+      let hadSuccess = false;
+
+      for (const url of ANTIGRAVITY_QUOTA_URLS) {
+        try {
+          const result = await apiCallApi.request({
+            authIndex,
+            method: 'POST',
+            url,
+            header: { ...ANTIGRAVITY_REQUEST_HEADERS },
+            data: '{}'
+          });
+
+          if (result.statusCode < 200 || result.statusCode >= 300) {
+            lastError = getApiCallErrorMessage(result);
+            continue;
+          }
+
+          hadSuccess = true;
+          const payload = parseAntigravityPayload(result.body ?? result.bodyText);
+          const models = payload?.models;
+          if (!models || typeof models !== 'object' || Array.isArray(models)) {
+            lastError = t('antigravity_quota.empty_models');
+            continue;
+          }
+
+          const groups = buildAntigravityQuotaGroups(models as AntigravityModelsPayload);
+          if (groups.length === 0) {
+            lastError = t('antigravity_quota.empty_models');
+            continue;
+          }
+
+          return groups;
+        } catch (err: unknown) {
+          lastError = err instanceof Error ? err.message : t('common.unknown_error');
+        }
+      }
+
+      if (hadSuccess) {
+        return [];
+      }
+
+      throw new Error(lastError || t('common.unknown_error'));
+    },
+    [t]
+  );
+
+  const loadAntigravityQuota = useCallback(async () => {
+    if (antigravityLoadingRef.current) return;
+    antigravityLoadingRef.current = true;
+    const requestId = ++antigravityRequestIdRef.current;
+    setAntigravityLoading(true);
+
+    try {
+      if (antigravityFiles.length === 0) {
+        setAntigravityQuota({});
+        return;
+      }
+
+      const loadingState: Record<string, AntigravityQuotaState> = {};
+      antigravityFiles.forEach((file) => {
+        loadingState[file.name] = { status: 'loading', groups: [] };
+      });
+      setAntigravityQuota(loadingState);
+
+      const results = await Promise.all(
+        antigravityFiles.map(async (file) => {
+          const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+          const authIndex = normalizeAuthIndexValue(rawAuthIndex);
+          if (!authIndex) {
+            return {
+              name: file.name,
+              status: 'error' as const,
+              error: t('antigravity_quota.missing_auth_index')
+            };
+          }
+
+          try {
+            const groups = await fetchAntigravityQuota(authIndex);
+            return { name: file.name, status: 'success' as const, groups };
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : t('common.unknown_error');
+            return { name: file.name, status: 'error' as const, error: message };
+          }
+        })
+      );
+
+      if (requestId !== antigravityRequestIdRef.current) return;
+
+      const nextState: Record<string, AntigravityQuotaState> = {};
+      results.forEach((result) => {
+        if (result.status === 'success') {
+          nextState[result.name] = {
+            status: 'success',
+            groups: result.groups
+          };
+        } else {
+          nextState[result.name] = {
+            status: 'error',
+            groups: [],
+            error: result.error
+          };
+        }
+      });
+      setAntigravityQuota(nextState);
+    } finally {
+      if (requestId === antigravityRequestIdRef.current) {
+        setAntigravityLoading(false);
+        antigravityLoadingRef.current = false;
+      }
+    }
+  }, [antigravityFiles, fetchAntigravityQuota, t]);
+
   useEffect(() => {
     loadFiles();
     loadKeyStats();
     loadExcluded();
   }, [loadFiles, loadKeyStats, loadExcluded]);
 
+  useEffect(() => {
+    if (antigravityFiles.length === 0) {
+      setAntigravityQuota({});
+      return;
+    }
+    loadAntigravityQuota();
+  }, [antigravityFiles, loadAntigravityQuota]);
+
   // 定时刷新状态数据（每240秒）
   useInterval(loadKeyStats, 240_000);
+  useInterval(() => {
+    if (antigravityFiles.length === 0) return;
+    loadAntigravityQuota();
+  }, 240_000);
 
   // 提取所有存在的类型
   const existingTypes = useMemo(() => {
@@ -278,6 +666,7 @@ export function AuthFilesPage() {
     });
     return Array.from(types);
   }, [files]);
+
 
   const excludedProviderLookup = useMemo(() => {
     const lookup = new Map<string, string>();
@@ -705,7 +1094,7 @@ export function AuthFilesPage() {
 
   // 渲染单个认证文件卡片
   const renderFileCard = (item: AuthFileItem) => {
-      const fileStats = resolveAuthFileStats(item, keyStats);
+    const fileStats = resolveAuthFileStats(item, keyStats);
     const isRuntimeOnly = isRuntimeOnlyAuthFile(item);
     const typeColor = getTypeColor(item.type || 'unknown');
 
@@ -792,6 +1181,77 @@ export function AuthFilesPage() {
                 )}
               </Button>
             </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderAntigravityCard = (item: AuthFileItem) => {
+    const displayType = item.type || item.provider || 'antigravity';
+    const typeColor = getTypeColor(displayType);
+    const quotaState = antigravityQuota[item.name];
+    const quotaStatus = quotaState?.status ?? 'idle';
+    const quotaGroups = quotaState?.groups ?? [];
+
+    return (
+      <div key={item.name} className={`${styles.fileCard} ${styles.antigravityCard}`}>
+        <div className={styles.cardHeader}>
+          <span
+            className={styles.typeBadge}
+            style={{
+              backgroundColor: typeColor.bg,
+              color: typeColor.text,
+              ...(typeColor.border ? { border: typeColor.border } : {})
+            }}
+          >
+            {getTypeLabel(displayType)}
+          </span>
+          <span className={styles.fileName}>{item.name}</span>
+        </div>
+
+        <div className={styles.quotaSection}>
+          {quotaStatus === 'loading' || quotaStatus === 'idle' ? (
+            <div className={styles.quotaMessage}>{t('antigravity_quota.loading')}</div>
+          ) : quotaStatus === 'error' ? (
+            <div className={styles.quotaError}>
+              {t('antigravity_quota.load_failed', {
+                message: quotaState?.error || t('common.unknown_error')
+              })}
+            </div>
+          ) : quotaGroups.length === 0 ? (
+            <div className={styles.quotaMessage}>{t('antigravity_quota.empty_models')}</div>
+          ) : (
+            quotaGroups.map((group) => {
+              const clamped = Math.max(0, Math.min(1, group.remainingFraction));
+              const percent = Math.round(clamped * 100);
+              const resetLabel = formatQuotaResetTime(group.resetTime);
+              const quotaBarClass =
+                percent >= 60
+                  ? styles.quotaBarFillHigh
+                  : percent >= 20
+                    ? styles.quotaBarFillMedium
+                    : styles.quotaBarFillLow;
+              return (
+                <div key={group.id} className={styles.quotaRow}>
+                  <div className={styles.quotaRowHeader}>
+                    <span className={styles.quotaModel} title={group.models.join(', ')}>
+                      {group.label}
+                    </span>
+                    <div className={styles.quotaMeta}>
+                      <span className={styles.quotaPercent}>{percent}%</span>
+                      <span className={styles.quotaReset}>{resetLabel}</span>
+                    </div>
+                  </div>
+                  <div className={styles.quotaBar}>
+                    <div
+                      className={`${styles.quotaBarFill} ${quotaBarClass}`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
@@ -917,6 +1377,63 @@ export function AuthFilesPage() {
               {t('auth_files.pagination_next')}
             </Button>
           </div>
+        )}
+      </Card>
+
+      <Card
+        title={t('antigravity_quota.title')}
+        extra={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={loadAntigravityQuota}
+            disabled={disableControls || antigravityLoading || antigravityFiles.length === 0}
+            loading={antigravityLoading}
+          >
+            {t('common.refresh')}
+          </Button>
+        }
+      >
+        {antigravityFiles.length === 0 ? (
+          <EmptyState
+            title={t('antigravity_quota.empty_title')}
+            description={t('antigravity_quota.empty_desc')}
+          />
+        ) : (
+          <>
+            <div className={styles.antigravityGrid}>
+              {antigravityPageItems.map(renderAntigravityCard)}
+            </div>
+            {antigravityFiles.length > antigravityPageSize && (
+              <div className={styles.pagination}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setAntigravityPage(Math.max(1, antigravityCurrentPage - 1))}
+                  disabled={antigravityCurrentPage <= 1}
+                >
+                  {t('auth_files.pagination_prev')}
+                </Button>
+                <div className={styles.pageInfo}>
+                  {t('auth_files.pagination_info', {
+                    current: antigravityCurrentPage,
+                    total: antigravityTotalPages,
+                    count: antigravityFiles.length
+                  })}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    setAntigravityPage(Math.min(antigravityTotalPages, antigravityCurrentPage + 1))
+                  }
+                  disabled={antigravityCurrentPage >= antigravityTotalPages}
+                >
+                  {t('auth_files.pagination_next')}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </Card>
 

@@ -357,6 +357,15 @@
     "models_excluded_badge": "Excluded",
     "models_excluded_hint": "This model is excluded by OAuth"
   },
+  "antigravity_quota": {
+    "title": "Antigravity Quota",
+    "empty_title": "No Antigravity Auth Files",
+    "empty_desc": "Upload an Antigravity credential to view remaining quota.",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_models": "No quota data available"
+  },
   "vertex_import": {
     "title": "Vertex JSON Login",
     "description": "Upload a Google service account JSON to store it as auth-dir/vertex-<project>.json using the same rules as the CLI vertex-import helper.",
