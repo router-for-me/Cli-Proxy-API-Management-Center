@@ -427,6 +427,11 @@
     gap: $spacing-lg;
   }
 
+  .login-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
   .login-header {
     display: flex;
     flex-direction: column;

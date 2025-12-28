@@ -4,15 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { IconEye, IconEyeOff } from '@/components/ui/icons';
-import { useAuthStore, useNotificationStore } from '@/stores';
+import { useAuthStore, useLanguageStore, useNotificationStore } from '@/stores';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 
 export function LoginPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { showNotification } = useNotificationStore();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const toggleLanguage = useLanguageStore((state) => state.toggleLanguage);
   const login = useAuthStore((state) => state.login);
   const restoreSession = useAuthStore((state) => state.restoreSession);
   const storedBase = useAuthStore((state) => state.apiBase);
@@ -76,8 +77,13 @@ export function LoginPage() {
   };
 
   return (
-    <div className="login-page">
+      <div className="login-page">
       <div className="login-card">
+        <div className="login-actions">
+          <Button variant="ghost" size="sm" onClick={toggleLanguage} title={t('language.switch')}>
+            {i18n.language === 'zh-CN' ? t('language.english') : t('language.chinese')}
+          </Button>
+        </div>
         <div className="login-header">
           <div className="title">{t('title.login')}</div>
           <div className="subtitle">{t('login.subtitle')}</div>

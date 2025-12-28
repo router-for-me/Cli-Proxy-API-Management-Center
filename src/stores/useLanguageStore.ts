@@ -4,10 +4,9 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Language } from '@/types';
 import { STORAGE_KEY_LANGUAGE } from '@/utils/constants';
-import i18n from '@/i18n';
+import i18n, { initialLanguage } from '@/i18n';
 
 interface LanguageState {
   language: Language;
@@ -15,25 +14,27 @@ interface LanguageState {
   toggleLanguage: () => void;
 }
 
-export const useLanguageStore = create<LanguageState>()(
-  persist(
-    (set, get) => ({
-      language: 'zh-CN',
+function normalizeLanguage(value: unknown): Language {
+  return value === 'zh-CN' || value === 'en' ? value : 'en';
+}
 
-      setLanguage: (language) => {
-        // 切换 i18next 语言
-        i18n.changeLanguage(language);
-        set({ language });
-      },
+export const useLanguageStore = create<LanguageState>()((set, get) => ({
+  language: normalizeLanguage(initialLanguage ?? i18n.language),
 
-      toggleLanguage: () => {
-        const { language, setLanguage } = get();
-        const newLanguage: Language = language === 'zh-CN' ? 'en' : 'zh-CN';
-        setLanguage(newLanguage);
-      }
-    }),
-    {
-      name: STORAGE_KEY_LANGUAGE
+  setLanguage: (language) => {
+    try {
+      localStorage.setItem(STORAGE_KEY_LANGUAGE, language);
+    } catch {
+      // ignore
     }
-  )
-);
+
+    i18n.changeLanguage(language);
+    set({ language });
+  },
+
+  toggleLanguage: () => {
+    const { language, setLanguage } = get();
+    const newLanguage: Language = language === 'zh-CN' ? 'en' : 'zh-CN';
+    setLanguage(newLanguage);
+  }
+}));
