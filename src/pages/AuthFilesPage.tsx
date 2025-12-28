@@ -393,6 +393,7 @@ export function AuthFilesPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
   const [antigravityPage, setAntigravityPage] = useState(1);
+  const [antigravityPageSize, setAntigravityPageSize] = useState(6);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
@@ -508,7 +509,6 @@ export function AuthFilesPage() {
     [files]
   );
 
-  const antigravityPageSize = 6;
   const antigravityTotalPages = Math.max(
     1,
     Math.ceil(antigravityFiles.length / antigravityPageSize)
@@ -1401,6 +1401,31 @@ export function AuthFilesPage() {
           />
         ) : (
           <>
+            <div className={styles.antigravityControls}>
+              <div className={styles.antigravityControl}>
+                <label>{t('auth_files.page_size_label')}</label>
+                <select
+                  className={styles.pageSizeSelect}
+                  value={antigravityPageSize}
+                  onChange={(e) => {
+                    setAntigravityPageSize(Number(e.target.value) || 6);
+                    setAntigravityPage(1);
+                  }}
+                >
+                  <option value={6}>6</option>
+                  <option value={9}>9</option>
+                  <option value={12}>12</option>
+                  <option value={18}>18</option>
+                  <option value={24}>24</option>
+                </select>
+              </div>
+              <div className={styles.antigravityControl}>
+                <label>{t('common.info')}</label>
+                <div className={styles.statsInfo}>
+                  {antigravityFiles.length} {t('auth_files.files_count')}
+                </div>
+              </div>
+            </div>
             <div className={styles.antigravityGrid}>
               {antigravityPageItems.map(renderAntigravityCard)}
             </div>
