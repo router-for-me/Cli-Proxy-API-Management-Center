@@ -4,6 +4,7 @@
 
 import axios from 'axios';
 import { normalizeModelList } from '@/utils/models';
+import { apiCallApi, getApiCallErrorMessage } from './apiCall';
 
 const normalizeBaseUrl = (baseUrl: string): string => {
   let normalized = String(baseUrl || '').trim();
@@ -38,6 +39,36 @@ export const modelsApi = {
       headers: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
     });
     const payload = response.data?.data ?? response.data?.models ?? response.data;
+    return normalizeModelList(payload, { dedupe: true });
+  },
+
+  async fetchModelsViaApiCall(
+    baseUrl: string,
+    apiKey?: string,
+    headers: Record<string, string> = {}
+  ) {
+    const endpoint = buildModelsEndpoint(baseUrl);
+    if (!endpoint) {
+      throw new Error('Invalid base url');
+    }
+
+    const resolvedHeaders = { ...headers };
+    const hasAuthHeader = Boolean(resolvedHeaders.Authorization || resolvedHeaders.authorization);
+    if (apiKey && !hasAuthHeader) {
+      resolvedHeaders.Authorization = `Bearer ${apiKey}`;
+    }
+
+    const result = await apiCallApi.request({
+      method: 'GET',
+      url: endpoint,
+      header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+    });
+
+    if (result.statusCode < 200 || result.statusCode >= 300) {
+      throw new Error(getApiCallErrorMessage(result));
+    }
+
+    const payload = result.body ?? result.bodyText;
     return normalizeModelList(payload, { dedupe: true });
   }
 };

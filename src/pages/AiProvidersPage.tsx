@@ -11,7 +11,14 @@ import { ModelInputList, modelsToEntries, entriesToModels } from '@/components/u
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconCheck, IconX } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
-import { ampcodeApi, modelsApi, providersApi, usageApi } from '@/services/api';
+import {
+  ampcodeApi,
+  apiCallApi,
+  getApiCallErrorMessage,
+  modelsApi,
+  providersApi,
+  usageApi
+} from '@/services/api';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
@@ -91,18 +98,25 @@ const parseExcludedModels = (text: string): string[] =>
 const excludedModelsToText = (models?: string[]) =>
   Array.isArray(models) ? models.join('\n') : '';
 
+const normalizeOpenAIBaseUrl = (baseUrl: string): string => {
+  let trimmed = String(baseUrl || '').trim();
+  if (!trimmed) return '';
+  trimmed = trimmed.replace(/\/?v0\/management\/?$/i, '');
+  trimmed = trimmed.replace(/\/+$/g, '');
+  if (!/^https?:\/\//i.test(trimmed)) {
+    trimmed = `http://${trimmed}`;
+  }
+  return trimmed;
+};
+
 const buildOpenAIModelsEndpoint = (baseUrl: string): string => {
-  const trimmed = String(baseUrl || '')
-    .trim()
-    .replace(/\/+$/g, '');
+  const trimmed = normalizeOpenAIBaseUrl(baseUrl);
   if (!trimmed) return '';
   return trimmed.endsWith('/v1') ? `${trimmed}/models` : `${trimmed}/v1/models`;
 };
 
 const buildOpenAIChatCompletionsEndpoint = (baseUrl: string): string => {
-  const trimmed = String(baseUrl || '')
-    .trim()
-    .replace(/\/+$/g, '');
+  const trimmed = normalizeOpenAIBaseUrl(baseUrl);
   if (!trimmed) return '';
   if (trimmed.endsWith('/chat/completions')) {
     return trimmed;
@@ -483,7 +497,7 @@ export function AiProvidersPage() {
         .find((entry) => entry.apiKey?.trim())
         ?.apiKey?.trim();
       const hasAuthHeader = Boolean(headers.Authorization || headers['authorization']);
-      const list = await modelsApi.fetchModels(
+      const list = await modelsApi.fetchModelsViaApiCall(
         baseUrl,
         hasAuthHeader ? undefined : firstKey,
         headers
@@ -492,7 +506,7 @@ export function AiProvidersPage() {
     } catch (err: any) {
       if (allowFallback) {
         try {
-          const list = await modelsApi.fetchModels(baseUrl);
+          const list = await modelsApi.fetchModelsViaApiCall(baseUrl);
           setOpenaiDiscoveryModels(list);
           return;
         } catch (fallbackErr: any) {
@@ -645,48 +659,40 @@ export function AiProvidersPage() {
     setOpenaiTestStatus('loading');
     setOpenaiTestMessage(t('ai_providers.openai_test_running'));
 
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), OPENAI_TEST_TIMEOUT_MS);
     try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: modelName,
-          messages: [{ role: 'user', content: 'Hi' }],
-          stream: false,
-          max_tokens: 5,
-        }),
-      });
-      const rawText = await response.text();
+      const result = await apiCallApi.request(
+        {
+          method: 'POST',
+          url: endpoint,
+          header: Object.keys(headers).length ? headers : undefined,
+          data: JSON.stringify({
+            model: modelName,
+            messages: [{ role: 'user', content: 'Hi' }],
+            stream: false,
+            max_tokens: 5,
+          }),
+        },
+        { timeout: OPENAI_TEST_TIMEOUT_MS }
+      );
 
-      if (!response.ok) {
-        let errorMessage = `${response.status} ${response.statusText}`;
-        try {
-          const parsed = rawText ? JSON.parse(rawText) : null;
-          errorMessage = parsed?.error?.message || parsed?.message || errorMessage;
-        } catch {
-          if (rawText) {
-            errorMessage = rawText;
-          }
-        }
-        throw new Error(errorMessage);
+      if (result.statusCode < 200 || result.statusCode >= 300) {
+        throw new Error(getApiCallErrorMessage(result));
       }
 
       setOpenaiTestStatus('success');
       setOpenaiTestMessage(t('ai_providers.openai_test_success'));
     } catch (err: any) {
       setOpenaiTestStatus('error');
-      if (err?.name === 'AbortError') {
+      const isTimeout =
+        err?.code === 'ECONNABORTED' ||
+        String(err?.message || '').toLowerCase().includes('timeout');
+      if (isTimeout) {
         setOpenaiTestMessage(
           t('ai_providers.openai_test_timeout', { seconds: OPENAI_TEST_TIMEOUT_MS / 1000 })
         );
       } else {
         setOpenaiTestMessage(`${t('ai_providers.openai_test_failed')}: ${err?.message || ''}`);
       }
-    } finally {
-      window.clearTimeout(timeoutId);
     }
   };
 
