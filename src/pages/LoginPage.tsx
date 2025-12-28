@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { IconEye, IconEyeOff } from '@/components/ui/icons';
-import { useAuthStore, useNotificationStore } from '@/stores';
+import { useAuthStore, useLanguageStore, useNotificationStore } from '@/stores';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 
 export function LoginPage() {
@@ -12,6 +12,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showNotification } = useNotificationStore();
+  const language = useLanguageStore((state) => state.language);
+  const toggleLanguage = useLanguageStore((state) => state.toggleLanguage);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const login = useAuthStore((state) => state.login);
   const restoreSession = useAuthStore((state) => state.restoreSession);
@@ -27,6 +29,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
 
   const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
+  const nextLanguageLabel = language === 'zh-CN' ? t('language.english') : t('language.chinese');
 
   useEffect(() => {
     const init = async () => {
@@ -48,10 +51,6 @@ export function LoginPage() {
     const redirect = (location.state as any)?.from?.pathname || '/';
     return <Navigate to={redirect} replace />;
   }
-
-  const handleUseCurrent = () => {
-    setApiBase(detectedBase);
-  };
 
   const handleSubmit = async () => {
     if (!managementKey.trim()) {
@@ -79,7 +78,20 @@ export function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <div className="title">{t('title.login')}</div>
+          <div className="login-title-row">
+            <div className="title">{t('title.login')}</div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="login-language-btn"
+              onClick={toggleLanguage}
+              title={t('language.switch')}
+              aria-label={t('language.switch')}
+            >
+              {nextLanguageLabel}
+            </Button>
+          </div>
           <div className="subtitle">{t('login.subtitle')}</div>
         </div>
 
@@ -136,14 +148,9 @@ export function LoginPage() {
           }
         />
 
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <Button variant="secondary" onClick={handleUseCurrent}>
-            {t('login.use_current_address')}
-          </Button>
-          <Button fullWidth onClick={handleSubmit} loading={loading}>
-            {loading ? t('login.submitting') : t('login.submit_button')}
-          </Button>
-        </div>
+        <Button fullWidth onClick={handleSubmit} loading={loading}>
+          {loading ? t('login.submitting') : t('login.submit_button')}
+        </Button>
 
         {error && <div className="error-box">{error}</div>}
 
