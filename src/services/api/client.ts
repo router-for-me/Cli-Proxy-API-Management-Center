@@ -62,12 +62,37 @@ class ApiClient {
     return `${normalized}${MANAGEMENT_API_PREFIX}`;
   }
 
-  private readHeader(headers: Record<string, any>, keys: string[]): string | null {
+  private readHeader(headers: Record<string, any> | undefined, keys: string[]): string | null {
+    if (!headers) return null;
+
+    const normalizeValue = (value: unknown): string | null => {
+      if (value === undefined || value === null) return null;
+      if (Array.isArray(value)) {
+        const first = value.find((entry) => entry !== undefined && entry !== null && String(entry).trim());
+        return first !== undefined ? String(first) : null;
+      }
+      const text = String(value);
+      return text ? text : null;
+    };
+
+    const headerGetter = (headers as { get?: (name: string) => any }).get;
+    if (typeof headerGetter === 'function') {
+      for (const key of keys) {
+        const match = normalizeValue(headerGetter.call(headers, key));
+        if (match) return match;
+      }
+    }
+
+    const entries =
+      typeof (headers as { entries?: () => Iterable<[string, any]> }).entries === 'function'
+        ? Array.from((headers as { entries: () => Iterable<[string, any]> }).entries())
+        : Object.entries(headers);
+
     const normalized = Object.fromEntries(
-      Object.entries(headers || {}).map(([key, value]) => [key.toLowerCase(), value as string | undefined])
+      entries.map(([key, value]) => [String(key).toLowerCase(), value])
     );
     for (const key of keys) {
-      const match = normalized[key.toLowerCase()];
+      const match = normalizeValue(normalized[key.toLowerCase()]);
       if (match) return match;
     }
     return null;
