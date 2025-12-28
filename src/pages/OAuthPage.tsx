@@ -64,6 +64,9 @@ const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabe
 ];
 
 const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'iflow'];
+const getProviderI18nPrefix = (provider: OAuthProvider) => provider.replace('-', '_');
+const getAuthKey = (provider: OAuthProvider, suffix: string) =>
+  `auth_login.${getProviderI18nPrefix(provider)}_${suffix}`;
 
 const getIcon = (icon: string | { light: string; dark: string }, theme: 'light' | 'dark') => {
   return typeof icon === 'string' ? icon : icon[theme];
@@ -105,12 +108,15 @@ export function OAuthPage() {
         const res = await oauthApi.getAuthStatus(state);
         if (res.status === 'ok') {
           updateProviderState(provider, { status: 'success', polling: false });
-          showNotification(t('auth_login.codex_oauth_status_success'), 'success');
+          showNotification(t(getAuthKey(provider, 'oauth_status_success')), 'success');
           window.clearInterval(timer);
           delete timers.current[provider];
         } else if (res.status === 'error') {
           updateProviderState(provider, { status: 'error', error: res.error, polling: false });
-          showNotification(`${t('auth_login.codex_oauth_status_error')} ${res.error || ''}`, 'error');
+          showNotification(
+            `${t(getAuthKey(provider, 'oauth_status_error'))} ${res.error || ''}`,
+            'error'
+          );
           window.clearInterval(timer);
           delete timers.current[provider];
         }
@@ -153,7 +159,7 @@ export function OAuthPage() {
       }
     } catch (err: any) {
       updateProviderState(provider, { status: 'error', error: err?.message, polling: false });
-      showNotification(`${t('auth_login.codex_oauth_start_error')} ${err?.message || ''}`, 'error');
+      showNotification(`${t(getAuthKey(provider, 'oauth_start_error'))} ${err?.message || ''}`, 'error');
     }
   };
 
@@ -347,14 +353,14 @@ export function OAuthPage() {
                     <div className={styles.authUrlValue}>{state.url}</div>
                     <div className={styles.authUrlActions}>
                       <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
-                        {t('auth_login.codex_copy_link')}
+                        {t(getAuthKey(provider.id, 'copy_link'))}
                       </Button>
                       <Button
                         variant="secondary"
                         size="sm"
                         onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}
                       >
-                        {t('auth_login.codex_open_link')}
+                        {t(getAuthKey(provider.id, 'open_link'))}
                       </Button>
                     </div>
                   </div>
@@ -399,10 +405,10 @@ export function OAuthPage() {
                 {state.status && state.status !== 'idle' && (
                   <div className="status-badge" style={{ marginTop: 8 }}>
                     {state.status === 'success'
-                      ? t('auth_login.codex_oauth_status_success')
+                      ? t(getAuthKey(provider.id, 'oauth_status_success'))
                       : state.status === 'error'
-                        ? `${t('auth_login.codex_oauth_status_error')} ${state.error || ''}`
-                        : t('auth_login.codex_oauth_status_waiting')}
+                        ? `${t(getAuthKey(provider.id, 'oauth_status_error'))} ${state.error || ''}`
+                        : t(getAuthKey(provider.id, 'oauth_status_waiting'))}
                   </div>
                 )}
               </Card>
