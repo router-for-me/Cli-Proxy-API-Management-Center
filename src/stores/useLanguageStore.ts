@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import type { Language } from '@/types';
 import { STORAGE_KEY_LANGUAGE } from '@/utils/constants';
-import i18n, { initialLanguage } from '@/i18n';
+import i18n, { initialLanguage, validateLanguage } from '@/i18n';
 
 interface LanguageState {
   language: Language;
@@ -15,7 +15,7 @@ interface LanguageState {
 }
 
 function normalizeLanguage(value: unknown): Language {
-  return value === 'zh-CN' || value === 'en' ? value : 'en';
+  return validateLanguage(value) ?? 'en';
 }
 
 export const useLanguageStore = create<LanguageState>()((set, get) => ({
