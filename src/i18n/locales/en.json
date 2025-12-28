@@ -361,6 +361,7 @@
     "title": "Antigravity Quota",
     "empty_title": "No Antigravity Auth Files",
     "empty_desc": "Upload an Antigravity credential to view remaining quota.",
+    "idle": "Not loaded. Click Refresh.",
     "loading": "Loading quota...",
     "load_failed": "Failed to load quota: {{message}}",
     "missing_auth_index": "Auth file missing auth_index",

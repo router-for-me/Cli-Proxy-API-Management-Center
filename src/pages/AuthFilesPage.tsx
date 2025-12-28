@@ -172,6 +172,9 @@ const ANTIGRAVITY_QUOTA_GROUPS: AntigravityQuotaGroupDefinition[] = [
   }
 ];
 
+let antigravityQuotaCache: Record<string, AntigravityQuotaState> = {};
+let antigravityQuotaCacheLoaded = false;
+
 // 标准化 auth_index 值（与 usage.ts 中的 normalizeAuthIndex 保持一致）
 function normalizeAuthIndexValue(value: unknown): string | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -627,6 +630,8 @@ export function AuthFilesPage() {
         }
       });
       setAntigravityQuota(nextState);
+      antigravityQuotaCache = nextState;
+      antigravityQuotaCacheLoaded = true;
     } finally {
       if (requestId === antigravityRequestIdRef.current) {
         setAntigravityLoading(false);
@@ -646,15 +651,20 @@ export function AuthFilesPage() {
       setAntigravityQuota({});
       return;
     }
+    if (antigravityQuotaCacheLoaded) {
+      setAntigravityQuota(antigravityQuotaCache);
+      return;
+    }
     loadAntigravityQuota();
-  }, [antigravityFiles, loadAntigravityQuota]);
+  }, [
+    antigravityFiles,
+    loadAntigravityQuota,
+    antigravityQuotaCacheLoaded,
+    antigravityQuotaCache
+  ]);
 
   // 定时刷新状态数据（每240秒）
   useInterval(loadKeyStats, 240_000);
-  useInterval(() => {
-    if (antigravityFiles.length === 0) return;
-    loadAntigravityQuota();
-  }, 240_000);
 
   // 提取所有存在的类型
   const existingTypes = useMemo(() => {
@@ -1191,7 +1201,9 @@ export function AuthFilesPage() {
     const displayType = item.type || item.provider || 'antigravity';
     const typeColor = getTypeColor(displayType);
     const quotaState = antigravityQuota[item.name];
-    const quotaStatus = quotaState?.status ?? 'idle';
+    const quotaStatus =
+      quotaState?.status ??
+      (antigravityLoading || !antigravityQuotaCacheLoaded ? 'loading' : 'idle');
     const quotaGroups = quotaState?.groups ?? [];
 
     return (
@@ -1211,8 +1223,10 @@ export function AuthFilesPage() {
         </div>
 
         <div className={styles.quotaSection}>
-          {quotaStatus === 'loading' || quotaStatus === 'idle' ? (
+          {quotaStatus === 'loading' ? (
             <div className={styles.quotaMessage}>{t('antigravity_quota.loading')}</div>
+          ) : quotaStatus === 'idle' ? (
+            <div className={styles.quotaMessage}>{t('antigravity_quota.idle')}</div>
           ) : quotaStatus === 'error' ? (
             <div className={styles.quotaError}>
               {t('antigravity_quota.load_failed', {
