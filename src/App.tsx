@@ -44,6 +44,10 @@ function App() {
   }, []); // 仅用于首屏同步 i18n 语言
 
   useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       setSplashReadyToFade(true);
     }, SPLASH_DURATION - SPLASH_FADE_DURATION);
