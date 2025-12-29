@@ -126,7 +126,7 @@ interface AntigravityQuotaGroupDefinition {
 }
 
 const ANTIGRAVITY_QUOTA_URLS = [
-  'https://cloudcode-pa-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels',
+  'https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels',
   'https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels',
   'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels'
 ];
