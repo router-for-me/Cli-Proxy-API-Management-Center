@@ -369,6 +369,27 @@
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All"
   },
+  "codex_quota": {
+    "title": "Codex Quota",
+    "empty_title": "No Codex Auth Files",
+    "empty_desc": "Upload a Codex credential to view quota.",
+    "idle": "Not loaded. Click Refresh Button.",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "missing_account_id": "Codex credential missing ChatGPT account ID",
+    "empty_windows": "No quota data available",
+    "no_access": "This credential has no Codex access (plan: free).",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "primary_window": "5-hour limit",
+    "secondary_window": "Weekly limit",
+    "code_review_window": "Code review limit",
+    "plan_label": "Plan",
+    "plan_plus": "Plus",
+    "plan_team": "Team",
+    "plan_free": "Free"
+  },
   "vertex_import": {
     "title": "Vertex JSON Login",
     "description": "Upload a Google service account JSON to store it as auth-dir/vertex-<project>.json using the same rules as the CLI vertex-import helper.",

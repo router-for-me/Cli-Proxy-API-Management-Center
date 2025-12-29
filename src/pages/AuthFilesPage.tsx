@@ -172,6 +172,57 @@ const ANTIGRAVITY_QUOTA_GROUPS: AntigravityQuotaGroupDefinition[] = [
   }
 ];
 
+interface CodexUsageWindow {
+  used_percent?: number | string;
+  usedPercent?: number | string;
+  limit_window_seconds?: number | string;
+  limitWindowSeconds?: number | string;
+  reset_after_seconds?: number | string;
+  resetAfterSeconds?: number | string;
+  reset_at?: number | string;
+  resetAt?: number | string;
+}
+
+interface CodexRateLimitInfo {
+  allowed?: boolean;
+  limit_reached?: boolean;
+  primary_window?: CodexUsageWindow | null;
+  primaryWindow?: CodexUsageWindow | null;
+  secondary_window?: CodexUsageWindow | null;
+  secondaryWindow?: CodexUsageWindow | null;
+}
+
+interface CodexUsagePayload {
+  plan_type?: string;
+  planType?: string;
+  rate_limit?: CodexRateLimitInfo | null;
+  rateLimit?: CodexRateLimitInfo | null;
+  code_review_rate_limit?: CodexRateLimitInfo | null;
+  codeReviewRateLimit?: CodexRateLimitInfo | null;
+}
+
+interface CodexQuotaWindow {
+  id: string;
+  label: string;
+  usedPercent: number | null;
+  resetLabel: string;
+}
+
+interface CodexQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  windows: CodexQuotaWindow[];
+  planType?: string | null;
+  error?: string;
+}
+
+const CODEX_USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';
+
+const CODEX_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  'Content-Type': 'application/json',
+  'User-Agent': 'codex_cli_rs/0.76.0 (Debian 13.0.0; x86_64) WindowsTerminal'
+};
+
 
 
 // 标准化 auth_index 值（与 usage.ts 中的 normalizeAuthIndex 保持一致）
@@ -183,6 +234,146 @@ function normalizeAuthIndexValue(value: unknown): string | null {
     const trimmed = value.trim();
     return trimmed ? trimmed : null;
   }
+  return null;
+}
+
+function normalizeStringValue(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toString();
+  }
+  return null;
+}
+
+function normalizeNumberValue(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function normalizePlanType(value: unknown): string | null {
+  const normalized = normalizeStringValue(value);
+  return normalized ? normalized.toLowerCase() : null;
+}
+
+function decodeBase64UrlPayload(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  try {
+    const normalized = trimmed.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    if (typeof window !== 'undefined' && typeof window.atob === 'function') {
+      return window.atob(padded);
+    }
+    if (typeof atob === 'function') {
+      return atob(padded);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function parseIdTokenPayload(value: unknown): Record<string, unknown> | null {
+  if (!value) return null;
+  if (typeof value === 'object') {
+    return Array.isArray(value) ? null : (value as Record<string, unknown>);
+  }
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch {
+  }
+  const segments = trimmed.split('.');
+  if (segments.length < 2) return null;
+  const decoded = decodeBase64UrlPayload(segments[1]);
+  if (!decoded) return null;
+  try {
+    const parsed = JSON.parse(decoded) as Record<string, unknown>;
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function extractCodexChatgptAccountId(value: unknown): string | null {
+  const payload = parseIdTokenPayload(value);
+  if (!payload) return null;
+  return normalizeStringValue(payload.chatgpt_account_id ?? payload.chatgptAccountId);
+}
+
+function resolveCodexChatgptAccountId(file: AuthFileItem): string | null {
+  const metadata =
+    file && typeof file.metadata === 'object' && file.metadata !== null
+      ? (file.metadata as Record<string, unknown>)
+      : null;
+  const attributes =
+    file && typeof file.attributes === 'object' && file.attributes !== null
+      ? (file.attributes as Record<string, unknown>)
+      : null;
+
+  const candidates = [file.id_token, metadata?.id_token, attributes?.id_token];
+
+  for (const candidate of candidates) {
+    const id = extractCodexChatgptAccountId(candidate);
+    if (id) return id;
+  }
+
+  return null;
+}
+
+function resolveCodexPlanType(file: AuthFileItem): string | null {
+  const metadata =
+    file && typeof file.metadata === 'object' && file.metadata !== null
+      ? (file.metadata as Record<string, unknown>)
+      : null;
+  const attributes =
+    file && typeof file.attributes === 'object' && file.attributes !== null
+      ? (file.attributes as Record<string, unknown>)
+      : null;
+  const idToken =
+    file && typeof file.id_token === 'object' && file.id_token !== null
+      ? (file.id_token as Record<string, unknown>)
+      : null;
+  const metadataIdToken =
+    metadata && typeof metadata.id_token === 'object' && metadata.id_token !== null
+      ? (metadata.id_token as Record<string, unknown>)
+      : null;
+  const candidates = [
+    file.plan_type,
+    file.planType,
+    file['plan_type'],
+    file['planType'],
+    file.id_token,
+    idToken?.plan_type,
+    idToken?.planType,
+    metadata?.plan_type,
+    metadata?.planType,
+    metadata?.id_token,
+    metadataIdToken?.plan_type,
+    metadataIdToken?.planType,
+    attributes?.plan_type,
+    attributes?.planType,
+    attributes?.id_token
+  ];
+
+  for (const candidate of candidates) {
+    const planType = normalizePlanType(candidate);
+    if (planType) return planType;
+  }
+
   return null;
 }
 
@@ -199,6 +390,23 @@ function parseAntigravityPayload(payload: unknown): Record<string, unknown> | nu
   }
   if (typeof payload === 'object') {
     return payload as Record<string, unknown>;
+  }
+  return null;
+}
+
+function parseCodexUsagePayload(payload: unknown): CodexUsagePayload | null {
+  if (payload === undefined || payload === null) return null;
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim();
+    if (!trimmed) return null;
+    try {
+      return JSON.parse(trimmed) as CodexUsagePayload;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof payload === 'object') {
+    return payload as CodexUsagePayload;
   }
   return null;
 }
@@ -326,6 +534,33 @@ function formatQuotaResetTime(value?: string): string {
   });
 }
 
+function formatUnixSeconds(value: number | null): string {
+  if (!value) return '-';
+  const date = new Date(value * 1000);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString(undefined, {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+}
+
+function formatCodexResetLabel(window?: CodexUsageWindow | null): string {
+  if (!window) return '-';
+  const resetAt = normalizeNumberValue(window.reset_at ?? window.resetAt);
+  if (resetAt !== null && resetAt > 0) {
+    return formatUnixSeconds(resetAt);
+  }
+  const resetAfter = normalizeNumberValue(window.reset_after_seconds ?? window.resetAfterSeconds);
+  if (resetAfter !== null && resetAfter > 0) {
+    const targetSeconds = Math.floor(Date.now() / 1000 + resetAfter);
+    return formatUnixSeconds(targetSeconds);
+  }
+  return '-';
+}
+
 function resolveAuthProvider(file: AuthFileItem): string {
   const raw = file.provider ?? file.type ?? '';
   return String(raw).trim().toLowerCase();
@@ -333,6 +568,10 @@ function resolveAuthProvider(file: AuthFileItem): string {
 
 function isAntigravityFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'antigravity';
+}
+
+function isCodexFile(file: AuthFileItem): boolean {
+  return resolveAuthProvider(file) === 'codex';
 }
 
 function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
@@ -396,6 +635,8 @@ export function AuthFilesPage() {
   const [pageSize, setPageSize] = useState(9);
   const [antigravityPage, setAntigravityPage] = useState(1);
   const [antigravityPageSize, setAntigravityPageSize] = useState(6);
+  const [codexPage, setCodexPage] = useState(1);
+  const [codexPageSize, setCodexPageSize] = useState(6);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
@@ -408,6 +649,9 @@ export function AuthFilesPage() {
   const [antigravityLoadingScope, setAntigravityLoadingScope] = useState<
     'page' | 'all' | null
   >(null);
+  const [codexQuota, setCodexQuota] = useState<Record<string, CodexQuotaState>>({});
+  const [codexLoading, setCodexLoading] = useState(false);
+  const [codexLoadingScope, setCodexLoadingScope] = useState<'page' | 'all' | null>(null);
 
   // 详情弹窗相关
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -432,6 +676,8 @@ export function AuthFilesPage() {
   const loadingKeyStatsRef = useRef(false);
   const antigravityLoadingRef = useRef(false);
   const antigravityRequestIdRef = useRef(0);
+  const codexLoadingRef = useRef(false);
+  const codexRequestIdRef = useRef(0);
   const excludedUnsupportedRef = useRef(false);
 
   const disableControls = connectionStatus !== 'connected';
@@ -524,6 +770,12 @@ export function AuthFilesPage() {
     antigravityStart,
     antigravityStart + antigravityPageSize
   );
+
+  const codexFiles = useMemo(() => files.filter((file) => isCodexFile(file)), [files]);
+  const codexTotalPages = Math.max(1, Math.ceil(codexFiles.length / codexPageSize));
+  const codexCurrentPage = Math.min(codexPage, codexTotalPages);
+  const codexStart = (codexCurrentPage - 1) * codexPageSize;
+  const codexPageItems = codexFiles.slice(codexStart, codexStart + codexPageSize);
 
   const fetchAntigravityQuota = useCallback(
     async (authIndex: string): Promise<AntigravityQuotaGroup[]> => {
@@ -646,6 +898,146 @@ export function AuthFilesPage() {
     [fetchAntigravityQuota, t]
   );
 
+  const buildCodexQuotaWindows = useCallback(
+    (payload: CodexUsagePayload): CodexQuotaWindow[] => {
+      const rateLimit = payload.rate_limit ?? payload.rateLimit ?? undefined;
+      const codeReviewLimit = payload.code_review_rate_limit ?? payload.codeReviewRateLimit ?? undefined;
+      const windows: CodexQuotaWindow[] = [];
+      const addWindow = (id: string, label: string, window?: CodexUsageWindow | null) => {
+        if (!window) return;
+        const usedPercent = normalizeNumberValue(window.used_percent ?? window.usedPercent);
+        windows.push({
+          id,
+          label,
+          usedPercent,
+          resetLabel: formatCodexResetLabel(window)
+        });
+      };
+
+      addWindow('primary', t('codex_quota.primary_window'), rateLimit?.primary_window ?? rateLimit?.primaryWindow);
+      addWindow(
+        'secondary',
+        t('codex_quota.secondary_window'),
+        rateLimit?.secondary_window ?? rateLimit?.secondaryWindow
+      );
+      addWindow(
+        'code-review',
+        t('codex_quota.code_review_window'),
+        codeReviewLimit?.primary_window ?? codeReviewLimit?.primaryWindow
+      );
+
+      return windows;
+    },
+    [t]
+  );
+
+  const fetchCodexQuota = useCallback(
+    async (file: AuthFileItem): Promise<{ planType: string | null; windows: CodexQuotaWindow[] }> => {
+      const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+      const authIndex = normalizeAuthIndexValue(rawAuthIndex);
+      if (!authIndex) {
+        throw new Error(t('codex_quota.missing_auth_index'));
+      }
+
+      const planTypeFromFile = resolveCodexPlanType(file);
+      const accountId = resolveCodexChatgptAccountId(file);
+      if (!accountId) {
+        throw new Error(t('codex_quota.missing_account_id'));
+      }
+
+      const requestUsage = async (requestHeader: Record<string, string>) => {
+        const result = await apiCallApi.request({
+          authIndex,
+          method: 'GET',
+          url: CODEX_USAGE_URL,
+          header: requestHeader
+        });
+        if (result.statusCode < 200 || result.statusCode >= 300) {
+          throw new Error(getApiCallErrorMessage(result));
+        }
+        const payload = parseCodexUsagePayload(result.body ?? result.bodyText);
+        if (!payload) {
+          throw new Error(t('codex_quota.empty_windows'));
+        }
+        return payload;
+      };
+
+      const baseHeader: Record<string, string> = {
+        ...CODEX_REQUEST_HEADERS,
+        'Chatgpt-Account-Id': accountId
+      };
+
+      const payload = await requestUsage(baseHeader);
+      const planTypeFromUsage = normalizePlanType(payload.plan_type ?? payload.planType);
+      const windows = buildCodexQuotaWindows(payload);
+      return { planType: planTypeFromUsage ?? planTypeFromFile, windows };
+    },
+    [buildCodexQuotaWindows, t]
+  );
+
+  const loadCodexQuota = useCallback(
+    async (targets: AuthFileItem[], scope: 'page' | 'all') => {
+      if (codexLoadingRef.current) return;
+      codexLoadingRef.current = true;
+      const requestId = ++codexRequestIdRef.current;
+      setCodexLoading(true);
+      setCodexLoadingScope(scope);
+
+      try {
+        if (targets.length === 0) return;
+
+        setCodexQuota((prev) => {
+          const nextState = { ...prev };
+          targets.forEach((file) => {
+            nextState[file.name] = { status: 'loading', windows: [] };
+          });
+          return nextState;
+        });
+
+        const results = await Promise.all(
+          targets.map(async (file) => {
+            try {
+              const { planType, windows } = await fetchCodexQuota(file);
+              return { name: file.name, status: 'success' as const, planType, windows };
+            } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : t('common.unknown_error');
+              return { name: file.name, status: 'error' as const, error: message };
+            }
+          })
+        );
+
+        if (requestId !== codexRequestIdRef.current) return;
+
+        setCodexQuota((prev) => {
+          const nextState = { ...prev };
+          results.forEach((result) => {
+            if (result.status === 'success') {
+              nextState[result.name] = {
+                status: 'success',
+                windows: result.windows,
+                planType: result.planType
+              };
+            } else {
+              nextState[result.name] = {
+                status: 'error',
+                windows: [],
+                error: result.error
+              };
+            }
+          });
+          return nextState;
+        });
+      } finally {
+        if (requestId === codexRequestIdRef.current) {
+          setCodexLoading(false);
+          setCodexLoadingScope(null);
+          codexLoadingRef.current = false;
+        }
+      }
+    },
+    [fetchCodexQuota, t]
+  );
+
   useEffect(() => {
     loadFiles();
     loadKeyStats();
@@ -668,6 +1060,23 @@ export function AuthFilesPage() {
       return nextState;
     });
   }, [antigravityFiles]);
+
+  useEffect(() => {
+    if (codexFiles.length === 0) {
+      setCodexQuota({});
+      return;
+    }
+    setCodexQuota((prev) => {
+      const nextState: Record<string, CodexQuotaState> = {};
+      codexFiles.forEach((file) => {
+        const cached = prev[file.name];
+        if (cached) {
+          nextState[file.name] = cached;
+        }
+      });
+      return nextState;
+    });
+  }, [codexFiles]);
 
   // 定时刷新状态数据（每240秒）
   useInterval(loadKeyStats, 240_000);
@@ -964,6 +1373,15 @@ export function AuthFilesPage() {
   const getTypeColor = (type: string): ThemeColors => {
     const set = TYPE_COLORS[type] || TYPE_COLORS.unknown;
     return resolvedTheme === 'dark' && set.dark ? set.dark : set.light;
+  };
+
+  const getCodexPlanLabel = (planType?: string | null): string | null => {
+    const normalized = normalizePlanType(planType);
+    if (!normalized) return null;
+    if (normalized === 'plus') return t('codex_quota.plan_plus');
+    if (normalized === 'team') return t('codex_quota.plan_team');
+    if (normalized === 'free') return t('codex_quota.plan_free');
+    return planType || normalized;
   };
 
   // OAuth 排除相关方法
@@ -1276,6 +1694,97 @@ export function AuthFilesPage() {
     );
   };
 
+  const renderCodexCard = (item: AuthFileItem) => {
+    const displayType = item.type || item.provider || 'codex';
+    const typeColor = getTypeColor(displayType);
+    const quotaState = codexQuota[item.name];
+    const quotaStatus = quotaState?.status ?? 'idle';
+    const windows = quotaState?.windows ?? [];
+    const planType = quotaState?.planType ?? null;
+    const planLabel = getCodexPlanLabel(planType);
+    const isFreePlan = normalizePlanType(planType) === 'free';
+
+    return (
+      <div key={item.name} className={`${styles.fileCard} ${styles.codexCard}`}>
+        <div className={styles.cardHeader}>
+          <span
+            className={styles.typeBadge}
+            style={{
+              backgroundColor: typeColor.bg,
+              color: typeColor.text,
+              ...(typeColor.border ? { border: typeColor.border } : {})
+            }}
+          >
+            {getTypeLabel(displayType)}
+          </span>
+          <span className={styles.fileName}>{item.name}</span>
+        </div>
+
+        <div className={styles.quotaSection}>
+          {quotaStatus === 'loading' ? (
+            <div className={styles.quotaMessage}>{t('codex_quota.loading')}</div>
+          ) : quotaStatus === 'idle' ? (
+            <div className={styles.quotaMessage}>{t('codex_quota.idle')}</div>
+          ) : quotaStatus === 'error' ? (
+            <div className={styles.quotaError}>
+              {t('codex_quota.load_failed', {
+                message: quotaState?.error || t('common.unknown_error')
+              })}
+            </div>
+          ) : (
+            <>
+              {planLabel && (
+                <div className={styles.codexPlan}>
+                  <span className={styles.codexPlanLabel}>{t('codex_quota.plan_label')}</span>
+                  <span className={styles.codexPlanValue}>{planLabel}</span>
+                </div>
+              )}
+              {isFreePlan ? (
+                <div className={styles.quotaWarning}>{t('codex_quota.no_access')}</div>
+              ) : windows.length === 0 ? (
+                <div className={styles.quotaMessage}>{t('codex_quota.empty_windows')}</div>
+              ) : (
+                windows.map((window) => {
+                  const used = window.usedPercent;
+                  const clampedUsed = used === null ? null : Math.max(0, Math.min(100, used));
+                  const remaining =
+                    clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
+                  const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
+                  const quotaBarClass =
+                    remaining === null
+                      ? styles.quotaBarFillMedium
+                      : remaining >= 80
+                        ? styles.quotaBarFillHigh
+                        : remaining >= 50
+                          ? styles.quotaBarFillMedium
+                          : styles.quotaBarFillLow;
+
+                  return (
+                    <div key={window.id} className={styles.quotaRow}>
+                      <div className={styles.quotaRowHeader}>
+                        <span className={styles.quotaModel}>{window.label}</span>
+                        <div className={styles.quotaMeta}>
+                          <span className={styles.quotaPercent}>{percentLabel}</span>
+                          <span className={styles.quotaReset}>{window.resetLabel}</span>
+                        </div>
+                      </div>
+                      <div className={styles.quotaBar}>
+                        <div
+                          className={`${styles.quotaBarFill} ${quotaBarClass}`}
+                          style={{ width: `${Math.round(remaining ?? 0)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
@@ -1482,6 +1991,92 @@ export function AuthFilesPage() {
                     setAntigravityPage(Math.min(antigravityTotalPages, antigravityCurrentPage + 1))
                   }
                   disabled={antigravityCurrentPage >= antigravityTotalPages}
+                >
+                  {t('auth_files.pagination_next')}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+
+      <Card
+        title={t('codex_quota.title')}
+        extra={
+          <div className={styles.headerActions}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => loadCodexQuota(codexPageItems, 'page')}
+              disabled={disableControls || codexLoading || codexPageItems.length === 0}
+              loading={codexLoading && codexLoadingScope === 'page'}
+            >
+              {t('codex_quota.refresh_button')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => loadCodexQuota(codexFiles, 'all')}
+              disabled={disableControls || codexLoading || codexFiles.length === 0}
+              loading={codexLoading && codexLoadingScope === 'all'}
+            >
+              {t('codex_quota.fetch_all')}
+            </Button>
+          </div>
+        }
+      >
+        {codexFiles.length === 0 ? (
+          <EmptyState title={t('codex_quota.empty_title')} description={t('codex_quota.empty_desc')} />
+        ) : (
+          <>
+            <div className={styles.codexControls}>
+              <div className={styles.codexControl}>
+                <label>{t('auth_files.page_size_label')}</label>
+                <select
+                  className={styles.pageSizeSelect}
+                  value={codexPageSize}
+                  onChange={(e) => {
+                    setCodexPageSize(Number(e.target.value) || 6);
+                    setCodexPage(1);
+                  }}
+                >
+                  <option value={6}>6</option>
+                  <option value={9}>9</option>
+                  <option value={12}>12</option>
+                  <option value={18}>18</option>
+                  <option value={24}>24</option>
+                </select>
+              </div>
+              <div className={styles.codexControl}>
+                <label>{t('common.info')}</label>
+                <div className={styles.statsInfo}>
+                  {codexFiles.length} {t('auth_files.files_count')}
+                </div>
+              </div>
+            </div>
+            <div className={styles.codexGrid}>{codexPageItems.map(renderCodexCard)}</div>
+            {codexFiles.length > codexPageSize && (
+              <div className={styles.pagination}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setCodexPage(Math.max(1, codexCurrentPage - 1))}
+                  disabled={codexCurrentPage <= 1}
+                >
+                  {t('auth_files.pagination_prev')}
+                </Button>
+                <div className={styles.pageInfo}>
+                  {t('auth_files.pagination_info', {
+                    current: codexCurrentPage,
+                    total: codexTotalPages,
+                    count: codexFiles.length
+                  })}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setCodexPage(Math.min(codexTotalPages, codexCurrentPage + 1))}
+                  disabled={codexCurrentPage >= codexTotalPages}
                 >
                   {t('auth_files.pagination_next')}
                 </Button>
