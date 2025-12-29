@@ -361,11 +361,13 @@
     "title": "Antigravity Quota",
     "empty_title": "No Antigravity Auth Files",
     "empty_desc": "Upload an Antigravity credential to view remaining quota.",
-    "idle": "Not loaded. Click Refresh.",
+    "idle": "Not loaded. Click Refresh Button.",
     "loading": "Loading quota...",
     "load_failed": "Failed to load quota: {{message}}",
     "missing_auth_index": "Auth file missing auth_index",
-    "empty_models": "No quota data available"
+    "empty_models": "No quota data available",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All"
   },
   "vertex_import": {
     "title": "Vertex JSON Login",

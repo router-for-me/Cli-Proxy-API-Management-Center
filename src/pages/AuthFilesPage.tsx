@@ -172,8 +172,7 @@ const ANTIGRAVITY_QUOTA_GROUPS: AntigravityQuotaGroupDefinition[] = [
   }
 ];
 
-let antigravityQuotaCache: Record<string, AntigravityQuotaState> = {};
-let antigravityQuotaCacheLoaded = false;
+
 
 // 标准化 auth_index 值（与 usage.ts 中的 normalizeAuthIndex 保持一致）
 function normalizeAuthIndexValue(value: unknown): string | null {
@@ -406,6 +405,9 @@ export function AuthFilesPage() {
     {}
   );
   const [antigravityLoading, setAntigravityLoading] = useState(false);
+  const [antigravityLoadingScope, setAntigravityLoadingScope] = useState<
+    'page' | 'all' | null
+  >(null);
 
   // 详情弹窗相关
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -572,73 +574,77 @@ export function AuthFilesPage() {
     [t]
   );
 
-  const loadAntigravityQuota = useCallback(async () => {
-    if (antigravityLoadingRef.current) return;
-    antigravityLoadingRef.current = true;
-    const requestId = ++antigravityRequestIdRef.current;
-    setAntigravityLoading(true);
+  const loadAntigravityQuota = useCallback(
+    async (targets: AuthFileItem[], scope: 'page' | 'all') => {
+      if (antigravityLoadingRef.current) return;
+      antigravityLoadingRef.current = true;
+      const requestId = ++antigravityRequestIdRef.current;
+      setAntigravityLoading(true);
+      setAntigravityLoadingScope(scope);
 
-    try {
-      if (antigravityFiles.length === 0) {
-        setAntigravityQuota({});
-        return;
-      }
+      try {
+        if (targets.length === 0) return;
 
-      const loadingState: Record<string, AntigravityQuotaState> = {};
-      antigravityFiles.forEach((file) => {
-        loadingState[file.name] = { status: 'loading', groups: [] };
-      });
-      setAntigravityQuota(loadingState);
+        setAntigravityQuota((prev) => {
+          const nextState = { ...prev };
+          targets.forEach((file) => {
+            nextState[file.name] = { status: 'loading', groups: [] };
+          });
+          return nextState;
+        });
 
-      const results = await Promise.all(
-        antigravityFiles.map(async (file) => {
-          const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-          const authIndex = normalizeAuthIndexValue(rawAuthIndex);
-          if (!authIndex) {
-            return {
-              name: file.name,
-              status: 'error' as const,
-              error: t('antigravity_quota.missing_auth_index')
-            };
-          }
+        const results = await Promise.all(
+          targets.map(async (file) => {
+            const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+            const authIndex = normalizeAuthIndexValue(rawAuthIndex);
+            if (!authIndex) {
+              return {
+                name: file.name,
+                status: 'error' as const,
+                error: t('antigravity_quota.missing_auth_index')
+              };
+            }
 
-          try {
-            const groups = await fetchAntigravityQuota(authIndex);
-            return { name: file.name, status: 'success' as const, groups };
-          } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : t('common.unknown_error');
-            return { name: file.name, status: 'error' as const, error: message };
-          }
-        })
-      );
+            try {
+              const groups = await fetchAntigravityQuota(authIndex);
+              return { name: file.name, status: 'success' as const, groups };
+            } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : t('common.unknown_error');
+              return { name: file.name, status: 'error' as const, error: message };
+            }
+          })
+        );
 
-      if (requestId !== antigravityRequestIdRef.current) return;
+        if (requestId !== antigravityRequestIdRef.current) return;
 
-      const nextState: Record<string, AntigravityQuotaState> = {};
-      results.forEach((result) => {
-        if (result.status === 'success') {
-          nextState[result.name] = {
-            status: 'success',
-            groups: result.groups
-          };
-        } else {
-          nextState[result.name] = {
-            status: 'error',
-            groups: [],
-            error: result.error
-          };
+        setAntigravityQuota((prev) => {
+          const nextState = { ...prev };
+          results.forEach((result) => {
+            if (result.status === 'success') {
+              nextState[result.name] = {
+                status: 'success',
+                groups: result.groups
+              };
+            } else {
+              nextState[result.name] = {
+                status: 'error',
+                groups: [],
+                error: result.error
+              };
+            }
+          });
+          return nextState;
+        });
+      } finally {
+        if (requestId === antigravityRequestIdRef.current) {
+          setAntigravityLoading(false);
+          setAntigravityLoadingScope(null);
+          antigravityLoadingRef.current = false;
         }
-      });
-      setAntigravityQuota(nextState);
-      antigravityQuotaCache = nextState;
-      antigravityQuotaCacheLoaded = true;
-    } finally {
-      if (requestId === antigravityRequestIdRef.current) {
-        setAntigravityLoading(false);
-        antigravityLoadingRef.current = false;
       }
-    }
-  }, [antigravityFiles, fetchAntigravityQuota, t]);
+    },
+    [fetchAntigravityQuota, t]
+  );
 
   useEffect(() => {
     loadFiles();
@@ -651,17 +657,17 @@ export function AuthFilesPage() {
       setAntigravityQuota({});
       return;
     }
-    if (antigravityQuotaCacheLoaded) {
-      setAntigravityQuota(antigravityQuotaCache);
-      return;
-    }
-    loadAntigravityQuota();
-  }, [
-    antigravityFiles,
-    loadAntigravityQuota,
-    antigravityQuotaCacheLoaded,
-    antigravityQuotaCache
-  ]);
+    setAntigravityQuota((prev) => {
+      const nextState: Record<string, AntigravityQuotaState> = {};
+      antigravityFiles.forEach((file) => {
+        const cached = prev[file.name];
+        if (cached) {
+          nextState[file.name] = cached;
+        }
+      });
+      return nextState;
+    });
+  }, [antigravityFiles]);
 
   // 定时刷新状态数据（每240秒）
   useInterval(loadKeyStats, 240_000);
@@ -1201,9 +1207,7 @@ export function AuthFilesPage() {
     const displayType = item.type || item.provider || 'antigravity';
     const typeColor = getTypeColor(displayType);
     const quotaState = antigravityQuota[item.name];
-    const quotaStatus =
-      quotaState?.status ??
-      (antigravityLoading || !antigravityQuotaCacheLoaded ? 'loading' : 'idle');
+    const quotaStatus = quotaState?.status ?? 'idle';
     const quotaGroups = quotaState?.groups ?? [];
 
     return (
@@ -1397,15 +1401,26 @@ export function AuthFilesPage() {
       <Card
         title={t('antigravity_quota.title')}
         extra={
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={loadAntigravityQuota}
-            disabled={disableControls || antigravityLoading || antigravityFiles.length === 0}
-            loading={antigravityLoading}
-          >
-            {t('common.refresh')}
-          </Button>
+          <div className={styles.headerActions}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => loadAntigravityQuota(antigravityPageItems, 'page')}
+              disabled={disableControls || antigravityLoading || antigravityPageItems.length === 0}
+              loading={antigravityLoading && antigravityLoadingScope === 'page'}
+            >
+              {t('antigravity_quota.refresh_button')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => loadAntigravityQuota(antigravityFiles, 'all')}
+              disabled={disableControls || antigravityLoading || antigravityFiles.length === 0}
+              loading={antigravityLoading && antigravityLoadingScope === 'all'}
+            >
+              {t('antigravity_quota.fetch_all')}
+            </Button>
+          </div>
         }
       >
         {antigravityFiles.length === 0 ? (

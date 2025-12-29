@@ -361,11 +361,13 @@
     "title": "Antigravity 额度",
     "empty_title": "暂无 Antigravity 认证",
     "empty_desc": "上传 Antigravity 认证文件后即可查看额度。",
-    "idle": "尚未加载额度，请点击刷新。",
+    "idle": "尚未加载额度，请点击刷新按钮。",
     "loading": "正在加载额度...",
     "load_failed": "额度获取失败：{{message}}",
     "missing_auth_index": "认证文件缺少 auth_index",
-    "empty_models": "暂无额度数据"
+    "empty_models": "暂无额度数据",
+    "refresh_button": "刷新额度",
+    "fetch_all": "获取全部"
   },
   "vertex_import": {
     "title": "Vertex JSON 登录",
