@@ -34,6 +34,8 @@
     "alias": "Alias",
     "failure": "Failure",
     "unknown_error": "Unknown error",
+    "quota_update_required": "Please update the CPA version or check for updates",
+    "quota_check_credential": "Please check the credential status",
     "copy": "Copy",
     "custom_headers_label": "Custom Headers",
     "custom_headers_hint": "Optional HTTP headers to send with the request. Leave blank to remove.",

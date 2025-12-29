@@ -96,6 +96,7 @@ interface AntigravityQuotaState {
   status: 'idle' | 'loading' | 'success' | 'error';
   groups: AntigravityQuotaGroup[];
   error?: string;
+  errorStatus?: number;
 }
 
 interface AntigravityQuotaInfo {
@@ -213,6 +214,7 @@ interface CodexQuotaState {
   windows: CodexQuotaWindow[];
   planType?: string | null;
   error?: string;
+  errorStatus?: number;
 }
 
 const CODEX_USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';
@@ -221,6 +223,28 @@ const CODEX_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
   'Content-Type': 'application/json',
   'User-Agent': 'codex_cli_rs/0.76.0 (Debian 13.0.0; x86_64) WindowsTerminal'
+};
+
+const createStatusError = (message: string, status?: number) => {
+  const error = new Error(message) as Error & { status?: number };
+  if (status !== undefined) {
+    error.status = status;
+  }
+  return error;
+};
+
+const getStatusFromError = (err: unknown): number | undefined => {
+  if (typeof err === 'object' && err !== null && 'status' in err) {
+    const rawStatus = (err as { status?: unknown }).status;
+    if (typeof rawStatus === 'number' && Number.isFinite(rawStatus)) {
+      return rawStatus;
+    }
+    const asNumber = Number(rawStatus);
+    if (Number.isFinite(asNumber) && asNumber > 0) {
+      return asNumber;
+    }
+  }
+  return undefined;
 };
 
 
@@ -780,6 +804,8 @@ export function AuthFilesPage() {
   const fetchAntigravityQuota = useCallback(
     async (authIndex: string): Promise<AntigravityQuotaGroup[]> => {
       let lastError = '';
+      let lastStatus: number | undefined;
+      let priorityStatus: number | undefined;
       let hadSuccess = false;
 
       for (const url of ANTIGRAVITY_QUOTA_URLS) {
@@ -794,6 +820,10 @@ export function AuthFilesPage() {
 
           if (result.statusCode < 200 || result.statusCode >= 300) {
             lastError = getApiCallErrorMessage(result);
+            lastStatus = result.statusCode;
+            if (result.statusCode === 403 || result.statusCode === 404) {
+              priorityStatus ??= result.statusCode;
+            }
             continue;
           }
 
@@ -814,6 +844,13 @@ export function AuthFilesPage() {
           return groups;
         } catch (err: unknown) {
           lastError = err instanceof Error ? err.message : t('common.unknown_error');
+          const status = getStatusFromError(err);
+          if (status) {
+            lastStatus = status;
+            if (status === 403 || status === 404) {
+              priorityStatus ??= status;
+            }
+          }
         }
       }
 
@@ -821,7 +858,7 @@ export function AuthFilesPage() {
         return [];
       }
 
-      throw new Error(lastError || t('common.unknown_error'));
+      throw createStatusError(lastError || t('common.unknown_error'), priorityStatus ?? lastStatus);
     },
     [t]
   );
@@ -862,7 +899,8 @@ export function AuthFilesPage() {
               return { name: file.name, status: 'success' as const, groups };
             } catch (err: unknown) {
               const message = err instanceof Error ? err.message : t('common.unknown_error');
-              return { name: file.name, status: 'error' as const, error: message };
+              const errorStatus = getStatusFromError(err);
+              return { name: file.name, status: 'error' as const, error: message, errorStatus };
             }
           })
         );
@@ -881,7 +919,8 @@ export function AuthFilesPage() {
               nextState[result.name] = {
                 status: 'error',
                 groups: [],
-                error: result.error
+                error: result.error,
+                errorStatus: result.errorStatus
               };
             }
           });
@@ -953,7 +992,7 @@ export function AuthFilesPage() {
           header: requestHeader
         });
         if (result.statusCode < 200 || result.statusCode >= 300) {
-          throw new Error(getApiCallErrorMessage(result));
+          throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
         }
         const payload = parseCodexUsagePayload(result.body ?? result.bodyText);
         if (!payload) {
@@ -1001,7 +1040,8 @@ export function AuthFilesPage() {
               return { name: file.name, status: 'success' as const, planType, windows };
             } catch (err: unknown) {
               const message = err instanceof Error ? err.message : t('common.unknown_error');
-              return { name: file.name, status: 'error' as const, error: message };
+              const errorStatus = getStatusFromError(err);
+              return { name: file.name, status: 'error' as const, error: message, errorStatus };
             }
           })
         );
@@ -1021,7 +1061,8 @@ export function AuthFilesPage() {
               nextState[result.name] = {
                 status: 'error',
                 windows: [],
-                error: result.error
+                error: result.error,
+                errorStatus: result.errorStatus
               };
             }
           });
@@ -1384,6 +1425,15 @@ export function AuthFilesPage() {
     return planType || normalized;
   };
 
+  const getQuotaErrorMessage = useCallback(
+    (status: number | undefined, fallback: string) => {
+      if (status === 404) return t('common.quota_update_required');
+      if (status === 403) return t('common.quota_check_credential');
+      return fallback;
+    },
+    [t]
+  );
+
   // OAuth 排除相关方法
   const openExcludedModal = (provider?: string) => {
     const normalizedProvider = (provider || '').trim();
@@ -1627,6 +1677,10 @@ export function AuthFilesPage() {
     const quotaState = antigravityQuota[item.name];
     const quotaStatus = quotaState?.status ?? 'idle';
     const quotaGroups = quotaState?.groups ?? [];
+    const quotaErrorMessage = getQuotaErrorMessage(
+      quotaState?.errorStatus,
+      quotaState?.error || t('common.unknown_error')
+    );
 
     return (
       <div key={item.name} className={`${styles.fileCard} ${styles.antigravityCard}`}>
@@ -1652,7 +1706,7 @@ export function AuthFilesPage() {
           ) : quotaStatus === 'error' ? (
             <div className={styles.quotaError}>
               {t('antigravity_quota.load_failed', {
-                message: quotaState?.error || t('common.unknown_error')
+                message: quotaErrorMessage
               })}
             </div>
           ) : quotaGroups.length === 0 ? (
@@ -1703,6 +1757,10 @@ export function AuthFilesPage() {
     const planType = quotaState?.planType ?? null;
     const planLabel = getCodexPlanLabel(planType);
     const isFreePlan = normalizePlanType(planType) === 'free';
+    const quotaErrorMessage = getQuotaErrorMessage(
+      quotaState?.errorStatus,
+      quotaState?.error || t('common.unknown_error')
+    );
 
     return (
       <div key={item.name} className={`${styles.fileCard} ${styles.codexCard}`}>
@@ -1728,7 +1786,7 @@ export function AuthFilesPage() {
           ) : quotaStatus === 'error' ? (
             <div className={styles.quotaError}>
               {t('codex_quota.load_failed', {
-                message: quotaState?.error || t('common.unknown_error')
+                message: quotaErrorMessage
               })}
             </div>
           ) : (
