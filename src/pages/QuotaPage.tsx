@@ -132,15 +132,24 @@ const ANTIGRAVITY_QUOTA_GROUPS: AntigravityQuotaGroupDefinition[] = [
     ]
   },
   {
-    id: 'gemini',
-    label: 'Gemini',
-    identifiers: [
-      'gemini-3-pro-high',
-      'gemini-3-pro-low',
-      'gemini-2.5-flash',
-      'gemini-2.5-flash-lite',
-      'rev19-uic3-1p'
-    ]
+    id: 'gemini-3-pro',
+    label: 'Gemini 3 Pro',
+    identifiers: ['gemini-3-pro-high', 'gemini-3-pro-low']
+  },
+  {
+    id: 'gemini-2-5-flash',
+    label: 'Gemini 2.5 Flash',
+    identifiers: ['gemini-2.5-flash', 'gemini-2.5-flash-thinking']
+  },
+  {
+    id: 'gemini-2-5-flash-lite',
+    label: 'Gemini 2.5 Flash Lite',
+    identifiers: ['gemini-2.5-flash-lite']
+  },
+  {
+    id: 'gemini-2-5-cu',
+    label: 'Gemini 2.5 CU',
+    identifiers: ['rev19-uic3-1p']
   },
   {
     id: 'gemini-3-flash',
@@ -161,6 +170,51 @@ const GEMINI_CLI_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
   'Content-Type': 'application/json'
 };
+
+interface GeminiCliQuotaGroupDefinition {
+  id: string;
+  label: string;
+  modelIds: string[];
+}
+
+interface GeminiCliParsedBucket {
+  modelId: string;
+  tokenType: string | null;
+  remainingFraction: number | null;
+  remainingAmount: number | null;
+  resetTime: string | undefined;
+}
+
+const GEMINI_CLI_QUOTA_GROUPS: GeminiCliQuotaGroupDefinition[] = [
+  {
+    id: 'gemini-2-5-flash-series',
+    label: 'Gemini 2.5 Flash Series',
+    modelIds: ['gemini-2.5-flash', 'gemini-2.5-flash-lite']
+  },
+  {
+    id: 'gemini-2-5-pro',
+    label: 'Gemini 2.5 Pro',
+    modelIds: ['gemini-2.5-pro']
+  },
+  {
+    id: 'gemini-3-pro-preview',
+    label: 'Gemini 3 Pro Preview',
+    modelIds: ['gemini-3-pro-preview']
+  },
+  {
+    id: 'gemini-3-flash-preview',
+    label: 'Gemini 3 Flash Preview',
+    modelIds: ['gemini-3-flash-preview']
+  }
+];
+
+const GEMINI_CLI_GROUP_LOOKUP = new Map(
+  GEMINI_CLI_QUOTA_GROUPS.flatMap((group) =>
+    group.modelIds.map((modelId) => [modelId, group] as const)
+  )
+);
+
+const GEMINI_CLI_IGNORED_MODEL_PREFIXES = ['gemini-2.0-flash'];
 
 interface CodexUsageWindow {
   used_percent?: number | string;
@@ -472,6 +526,80 @@ function parseGeminiCliQuotaPayload(payload: unknown): GeminiCliQuotaPayload | n
   return null;
 }
 
+function isIgnoredGeminiCliModel(modelId: string): boolean {
+  return GEMINI_CLI_IGNORED_MODEL_PREFIXES.some(
+    (prefix) => modelId === prefix || modelId.startsWith(`${prefix}-`)
+  );
+}
+
+function pickEarlierResetTime(current?: string, next?: string): string | undefined {
+  if (!current) return next;
+  if (!next) return current;
+  const currentTime = new Date(current).getTime();
+  const nextTime = new Date(next).getTime();
+  if (Number.isNaN(currentTime)) return next;
+  if (Number.isNaN(nextTime)) return current;
+  return currentTime <= nextTime ? current : next;
+}
+
+function minNullableNumber(current: number | null, next: number | null): number | null {
+  if (current === null) return next;
+  if (next === null) return current;
+  return Math.min(current, next);
+}
+
+function buildGeminiCliQuotaBuckets(
+  buckets: GeminiCliParsedBucket[]
+): GeminiCliQuotaBucketState[] {
+  if (buckets.length === 0) return [];
+
+  const grouped = new Map<string, GeminiCliQuotaBucketState & { modelIds: string[] }>();
+
+  buckets.forEach((bucket) => {
+    if (isIgnoredGeminiCliModel(bucket.modelId)) return;
+    const group = GEMINI_CLI_GROUP_LOOKUP.get(bucket.modelId);
+    const groupId = group?.id ?? bucket.modelId;
+    const label = group?.label ?? bucket.modelId;
+    const tokenKey = bucket.tokenType ?? '';
+    const mapKey = `${groupId}::${tokenKey}`;
+    const existing = grouped.get(mapKey);
+
+    if (!existing) {
+      grouped.set(mapKey, {
+        id: `${groupId}${tokenKey ? `-${tokenKey}` : ''}`,
+        label,
+        remainingFraction: bucket.remainingFraction,
+        remainingAmount: bucket.remainingAmount,
+        resetTime: bucket.resetTime,
+        tokenType: bucket.tokenType,
+        modelIds: [bucket.modelId]
+      });
+      return;
+    }
+
+    existing.remainingFraction = minNullableNumber(
+      existing.remainingFraction,
+      bucket.remainingFraction
+    );
+    existing.remainingAmount = minNullableNumber(existing.remainingAmount, bucket.remainingAmount);
+    existing.resetTime = pickEarlierResetTime(existing.resetTime, bucket.resetTime);
+    existing.modelIds.push(bucket.modelId);
+  });
+
+  return Array.from(grouped.values()).map((bucket) => {
+    const uniqueModelIds = Array.from(new Set(bucket.modelIds));
+    return {
+      id: bucket.id,
+      label: bucket.label,
+      remainingFraction: bucket.remainingFraction,
+      remainingAmount: bucket.remainingAmount,
+      resetTime: bucket.resetTime,
+      tokenType: bucket.tokenType,
+      modelIds: uniqueModelIds
+    };
+  });
+}
+
 function getAntigravityQuotaInfo(entry?: AntigravityQuotaInfo): {
   remainingFraction: number | null;
   resetTime?: string;
@@ -517,8 +645,16 @@ function findAntigravityModel(
 
 function buildAntigravityQuotaGroups(models: AntigravityModelsPayload): AntigravityQuotaGroup[] {
   const groups: AntigravityQuotaGroup[] = [];
-  let geminiResetTime: string | undefined;
-  const [claudeDef, geminiDef, flashDef, imageDef] = ANTIGRAVITY_QUOTA_GROUPS;
+  let geminiProResetTime: string | undefined;
+  const [
+    claudeDef,
+    geminiProDef,
+    flashDef,
+    flashLiteDef,
+    cuDef,
+    geminiFlashDef,
+    imageDef
+  ] = ANTIGRAVITY_QUOTA_GROUPS;
 
   const buildGroup = (
     def: AntigravityQuotaGroupDefinition,
@@ -565,10 +701,10 @@ function buildAntigravityQuotaGroups(models: AntigravityModelsPayload): Antigrav
     groups.push(claudeGroup);
   }
 
-  const geminiGroup = buildGroup(geminiDef);
-  if (geminiGroup) {
-    geminiResetTime = geminiGroup.resetTime;
-    groups.push(geminiGroup);
+  const geminiProGroup = buildGroup(geminiProDef);
+  if (geminiProGroup) {
+    geminiProResetTime = geminiProGroup.resetTime;
+    groups.push(geminiProGroup);
   }
 
   const flashGroup = buildGroup(flashDef);
@@ -576,7 +712,22 @@ function buildAntigravityQuotaGroups(models: AntigravityModelsPayload): Antigrav
     groups.push(flashGroup);
   }
 
-  const imageGroup = buildGroup(imageDef, geminiResetTime);
+  const flashLiteGroup = buildGroup(flashLiteDef);
+  if (flashLiteGroup) {
+    groups.push(flashLiteGroup);
+  }
+
+  const cuGroup = buildGroup(cuDef);
+  if (cuGroup) {
+    groups.push(cuGroup);
+  }
+
+  const geminiFlashGroup = buildGroup(geminiFlashDef);
+  if (geminiFlashGroup) {
+    groups.push(geminiFlashGroup);
+  }
+
+  const imageGroup = buildGroup(imageDef, geminiProResetTime);
   if (imageGroup) {
     groups.push(imageGroup);
   }
@@ -1066,8 +1217,8 @@ export function QuotaPage() {
       const buckets = Array.isArray(payload?.buckets) ? payload?.buckets : [];
       if (buckets.length === 0) return [];
 
-      return buckets
-        .map((bucket, index) => {
+      const parsedBuckets = buckets
+        .map((bucket) => {
           const modelId = normalizeStringValue(bucket.modelId ?? bucket.model_id);
           if (!modelId) return null;
           const tokenType = normalizeStringValue(bucket.tokenType ?? bucket.token_type);
@@ -1086,15 +1237,16 @@ export function QuotaPage() {
           }
           const remainingFraction = remainingFractionRaw ?? fallbackFraction;
           return {
-            id: `${modelId}-${tokenType ?? index}`,
-            label: modelId,
+            modelId,
+            tokenType,
             remainingFraction,
             remainingAmount,
-            resetTime,
-            tokenType
+            resetTime
           };
         })
-        .filter((bucket): bucket is GeminiCliQuotaBucketState => bucket !== null);
+        .filter((bucket): bucket is GeminiCliParsedBucket => bucket !== null);
+
+      return buildGeminiCliQuotaBuckets(parsedBuckets);
     },
     [t]
   );
@@ -1479,6 +1631,10 @@ export function QuotaPage() {
                   : t('gemini_cli_quota.remaining_amount', {
                       count: bucket.remainingAmount
                     });
+              const titleBase =
+                bucket.modelIds && bucket.modelIds.length > 0
+                  ? bucket.modelIds.join(', ')
+                  : bucket.label;
               const quotaBarClass =
                 percent === null
                   ? styles.quotaBarFillMedium
@@ -1494,7 +1650,7 @@ export function QuotaPage() {
                     <span
                       className={styles.quotaModel}
                       title={
-                        bucket.tokenType ? `${bucket.label} (${bucket.tokenType})` : bucket.label
+                        bucket.tokenType ? `${titleBase} (${bucket.tokenType})` : titleBase
                       }
                     >
                       {bucket.label}

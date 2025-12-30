@@ -24,6 +24,7 @@ export interface GeminiCliQuotaBucketState {
   remainingAmount: number | null;
   resetTime: string | undefined;
   tokenType: string | null;
+  modelIds?: string[];
 }
 
 export interface GeminiCliQuotaState {
