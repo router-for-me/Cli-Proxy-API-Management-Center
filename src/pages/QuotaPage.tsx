@@ -3,9 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useAuthStore, useThemeStore } from '@/stores';
+import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
 import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
-import type { AuthFileItem } from '@/types';
+import type {
+  AntigravityQuotaGroup,
+  AntigravityQuotaState,
+  AuthFileItem,
+  CodexQuotaState,
+  CodexQuotaWindow,
+  GeminiCliQuotaBucketState,
+  GeminiCliQuotaState
+} from '@/types';
 import styles from './QuotaPage.module.scss';
 
 type ThemeColors = { bg: string; text: string; border?: string };
@@ -56,21 +64,6 @@ const TYPE_COLORS: Record<string, TypeColorSet> = {
   }
 };
 
-interface AntigravityQuotaGroup {
-  id: string;
-  label: string;
-  models: string[];
-  remainingFraction: number;
-  resetTime?: string;
-}
-
-interface AntigravityQuotaState {
-  status: 'idle' | 'loading' | 'success' | 'error';
-  groups: AntigravityQuotaGroup[];
-  error?: string;
-  errorStatus?: number;
-}
-
 interface GeminiCliQuotaBucket {
   modelId?: string;
   model_id?: string;
@@ -86,22 +79,6 @@ interface GeminiCliQuotaBucket {
 
 interface GeminiCliQuotaPayload {
   buckets?: GeminiCliQuotaBucket[];
-}
-
-interface GeminiCliQuotaBucketState {
-  id: string;
-  label: string;
-  remainingFraction: number | null;
-  remainingAmount: number | null;
-  resetTime: string | undefined;
-  tokenType: string | null;
-}
-
-interface GeminiCliQuotaState {
-  status: 'idle' | 'loading' | 'success' | 'error';
-  buckets: GeminiCliQuotaBucketState[];
-  error?: string;
-  errorStatus?: number;
 }
 
 interface AntigravityQuotaInfo {
@@ -199,6 +176,7 @@ interface CodexUsageWindow {
 interface CodexRateLimitInfo {
   allowed?: boolean;
   limit_reached?: boolean;
+  limitReached?: boolean;
   primary_window?: CodexUsageWindow | null;
   primaryWindow?: CodexUsageWindow | null;
   secondary_window?: CodexUsageWindow | null;
@@ -212,21 +190,6 @@ interface CodexUsagePayload {
   rateLimit?: CodexRateLimitInfo | null;
   code_review_rate_limit?: CodexRateLimitInfo | null;
   codeReviewRateLimit?: CodexRateLimitInfo | null;
-}
-
-interface CodexQuotaWindow {
-  id: string;
-  label: string;
-  usedPercent: number | null;
-  resetLabel: string;
-}
-
-interface CodexQuotaState {
-  status: 'idle' | 'loading' | 'success' | 'error';
-  windows: CodexQuotaWindow[];
-  planType?: string | null;
-  error?: string;
-  errorStatus?: number;
 }
 
 const CODEX_USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';
@@ -289,6 +252,20 @@ function normalizeNumberValue(value: unknown): number | null {
     if (!trimmed) return null;
     const parsed = Number(trimmed);
     return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function normalizeQuotaFraction(value: unknown): number | null {
+  const normalized = normalizeNumberValue(value);
+  if (normalized !== null) return normalized;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (trimmed.endsWith('%')) {
+      const parsed = Number(trimmed.slice(0, -1));
+      return Number.isFinite(parsed) ? parsed / 100 : null;
+    }
   }
   return null;
 }
@@ -506,13 +483,13 @@ function getAntigravityQuotaInfo(entry?: AntigravityQuotaInfo): {
   const quotaInfo = entry.quotaInfo ?? entry.quota_info ?? {};
   const remainingValue =
     quotaInfo.remainingFraction ?? quotaInfo.remaining_fraction ?? quotaInfo.remaining;
-  const remainingFraction = Number(remainingValue);
+  const remainingFraction = normalizeQuotaFraction(remainingValue);
   const resetValue = quotaInfo.resetTime ?? quotaInfo.reset_time;
   const resetTime = typeof resetValue === 'string' ? resetValue : undefined;
   const displayName = typeof entry.displayName === 'string' ? entry.displayName : undefined;
 
   return {
-    remainingFraction: Number.isFinite(remainingFraction) ? remainingFraction : null,
+    remainingFraction,
     resetTime,
     displayName
   };
@@ -554,10 +531,12 @@ function buildAntigravityQuotaGroups(models: AntigravityModelsPayload): Antigrav
     const quotaEntries = matches
       .map(({ id, entry }) => {
         const info = getAntigravityQuotaInfo(entry);
-        if (info.remainingFraction === null) return null;
+        const remainingFraction =
+          info.remainingFraction ?? (info.resetTime ? 0 : null);
+        if (remainingFraction === null) return null;
         return {
           id,
-          remainingFraction: info.remainingFraction,
+          remainingFraction,
           resetTime: info.resetTime,
           displayName: info.displayName
         };
@@ -683,21 +662,23 @@ export function QuotaPage() {
   const [codexPageSize, setCodexPageSize] = useState(6);
   const [geminiCliPage, setGeminiCliPage] = useState(1);
   const [geminiCliPageSize, setGeminiCliPageSize] = useState(6);
-  const [antigravityQuota, setAntigravityQuota] = useState<Record<string, AntigravityQuotaState>>(
-    {}
-  );
   const [antigravityLoading, setAntigravityLoading] = useState(false);
   const [antigravityLoadingScope, setAntigravityLoadingScope] = useState<
     'page' | 'all' | null
   >(null);
-  const [codexQuota, setCodexQuota] = useState<Record<string, CodexQuotaState>>({});
   const [codexLoading, setCodexLoading] = useState(false);
   const [codexLoadingScope, setCodexLoadingScope] = useState<'page' | 'all' | null>(null);
-  const [geminiCliQuota, setGeminiCliQuota] = useState<Record<string, GeminiCliQuotaState>>({});
   const [geminiCliLoading, setGeminiCliLoading] = useState(false);
   const [geminiCliLoadingScope, setGeminiCliLoadingScope] = useState<
     'page' | 'all' | null
   >(null);
+
+  const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
+  const setAntigravityQuota = useQuotaStore((state) => state.setAntigravityQuota);
+  const codexQuota = useQuotaStore((state) => state.codexQuota);
+  const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
+  const geminiCliQuota = useQuotaStore((state) => state.geminiCliQuota);
+  const setGeminiCliQuota = useQuotaStore((state) => state.setGeminiCliQuota);
 
   const antigravityLoadingRef = useRef(false);
   const antigravityRequestIdRef = useRef(0);
@@ -888,35 +869,56 @@ export function QuotaPage() {
         }
       }
     },
-    [fetchAntigravityQuota, t]
+    [fetchAntigravityQuota, setAntigravityQuota, t]
   );
 
   const buildCodexQuotaWindows = useCallback(
     (payload: CodexUsagePayload): CodexQuotaWindow[] => {
       const rateLimit = payload.rate_limit ?? payload.rateLimit ?? undefined;
-      const codeReviewLimit = payload.code_review_rate_limit ?? payload.codeReviewRateLimit ?? undefined;
+      const codeReviewLimit =
+        payload.code_review_rate_limit ?? payload.codeReviewRateLimit ?? undefined;
       const windows: CodexQuotaWindow[] = [];
-      const addWindow = (id: string, label: string, window?: CodexUsageWindow | null) => {
+      const addWindow = (
+        id: string,
+        label: string,
+        window?: CodexUsageWindow | null,
+        limitReached?: boolean,
+        allowed?: boolean
+      ) => {
         if (!window) return;
-        const usedPercent = normalizeNumberValue(window.used_percent ?? window.usedPercent);
+        const resetLabel = formatCodexResetLabel(window);
+        const usedPercentRaw = normalizeNumberValue(window.used_percent ?? window.usedPercent);
+        const isLimitReached = Boolean(limitReached) || allowed === false;
+        const usedPercent =
+          usedPercentRaw ?? (isLimitReached && resetLabel !== '-' ? 100 : null);
         windows.push({
           id,
           label,
           usedPercent,
-          resetLabel: formatCodexResetLabel(window)
+          resetLabel
         });
       };
 
-      addWindow('primary', t('codex_quota.primary_window'), rateLimit?.primary_window ?? rateLimit?.primaryWindow);
+      addWindow(
+        'primary',
+        t('codex_quota.primary_window'),
+        rateLimit?.primary_window ?? rateLimit?.primaryWindow,
+        rateLimit?.limit_reached ?? rateLimit?.limitReached,
+        rateLimit?.allowed
+      );
       addWindow(
         'secondary',
         t('codex_quota.secondary_window'),
-        rateLimit?.secondary_window ?? rateLimit?.secondaryWindow
+        rateLimit?.secondary_window ?? rateLimit?.secondaryWindow,
+        rateLimit?.limit_reached ?? rateLimit?.limitReached,
+        rateLimit?.allowed
       );
       addWindow(
         'code-review',
         t('codex_quota.code_review_window'),
-        codeReviewLimit?.primary_window ?? codeReviewLimit?.primaryWindow
+        codeReviewLimit?.primary_window ?? codeReviewLimit?.primaryWindow,
+        codeReviewLimit?.limit_reached ?? codeReviewLimit?.limitReached,
+        codeReviewLimit?.allowed
       );
 
       return windows;
@@ -925,7 +927,9 @@ export function QuotaPage() {
   );
 
   const fetchCodexQuota = useCallback(
-    async (file: AuthFileItem): Promise<{ planType: string | null; windows: CodexQuotaWindow[] }> => {
+    async (
+      file: AuthFileItem
+    ): Promise<{ planType: string | null; windows: CodexQuotaWindow[] }> => {
       const rawAuthIndex = file['auth_index'] ?? file.authIndex;
       const authIndex = normalizeAuthIndexValue(rawAuthIndex);
       if (!authIndex) {
@@ -1030,7 +1034,7 @@ export function QuotaPage() {
         }
       }
     },
-    [fetchCodexQuota, t]
+    [fetchCodexQuota, setCodexQuota, t]
   );
 
   const fetchGeminiCliQuota = useCallback(
@@ -1067,13 +1071,20 @@ export function QuotaPage() {
           const modelId = normalizeStringValue(bucket.modelId ?? bucket.model_id);
           if (!modelId) return null;
           const tokenType = normalizeStringValue(bucket.tokenType ?? bucket.token_type);
-          const remainingFraction = normalizeNumberValue(
+          const remainingFractionRaw = normalizeQuotaFraction(
             bucket.remainingFraction ?? bucket.remaining_fraction
           );
           const remainingAmount = normalizeNumberValue(
             bucket.remainingAmount ?? bucket.remaining_amount
           );
           const resetTime = normalizeStringValue(bucket.resetTime ?? bucket.reset_time) ?? undefined;
+          let fallbackFraction: number | null = null;
+          if (remainingAmount !== null) {
+            fallbackFraction = remainingAmount <= 0 ? 0 : null;
+          } else if (resetTime) {
+            fallbackFraction = 0;
+          }
+          const remainingFraction = remainingFractionRaw ?? fallbackFraction;
           return {
             id: `${modelId}-${tokenType ?? index}`,
             label: modelId,
@@ -1149,7 +1160,7 @@ export function QuotaPage() {
         }
       }
     },
-    [fetchGeminiCliQuota, t]
+    [fetchGeminiCliQuota, setGeminiCliQuota, t]
   );
 
   useEffect(() => {
@@ -1157,6 +1168,7 @@ export function QuotaPage() {
   }, [loadFiles]);
 
   useEffect(() => {
+    if (loading) return;
     if (antigravityFiles.length === 0) {
       setAntigravityQuota({});
       return;
@@ -1171,9 +1183,10 @@ export function QuotaPage() {
       });
       return nextState;
     });
-  }, [antigravityFiles]);
+  }, [antigravityFiles, loading, setAntigravityQuota]);
 
   useEffect(() => {
+    if (loading) return;
     if (codexFiles.length === 0) {
       setCodexQuota({});
       return;
@@ -1188,9 +1201,10 @@ export function QuotaPage() {
       });
       return nextState;
     });
-  }, [codexFiles]);
+  }, [codexFiles, loading, setCodexQuota]);
 
   useEffect(() => {
+    if (loading) return;
     if (geminiCliFiles.length === 0) {
       setGeminiCliQuota({});
       return;
@@ -1205,7 +1219,7 @@ export function QuotaPage() {
       });
       return nextState;
     });
-  }, [geminiCliFiles]);
+  }, [geminiCliFiles, loading, setGeminiCliQuota]);
 
   // Resolve type label text for badges.
   const getTypeLabel = (type: string): string => {
