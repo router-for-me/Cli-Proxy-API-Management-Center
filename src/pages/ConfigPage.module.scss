@@ -134,7 +134,7 @@
 .editorWrapper {
   width: 100%;
   flex: 1;
-  min-height: 400px;
+  min-height: 800px;
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
   overflow: hidden;
@@ -219,7 +219,7 @@
 .configCard {
   display: flex;
   flex-direction: column;
-  height: 560px;
+  height: 1120px;
   flex-shrink: 0;
   overflow: visible;
 }
@@ -253,11 +253,11 @@
   }
 
   .configCard {
-    height: 440px;
+    height: 880px;
     padding: $spacing-md;
   }
 
   .editorWrapper {
-    min-height: 300px;
+    min-height: 600px;
   }
 }
