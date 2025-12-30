@@ -48,3 +48,29 @@ export interface CodexQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+export interface ClaudeCodeQuotaInfo {
+  unified_status: string;
+  five_hour_status: string;
+  five_hour_reset: number;
+  five_hour_utilization: number;
+  seven_day_status: string;
+  seven_day_reset: number;
+  seven_day_utilization: number;
+  overage_status: string;
+  overage_reset: number;
+  overage_utilization: number;
+  representative_claim: string;
+  fallback_percentage: number;
+  unified_reset: number;
+  last_updated: string;
+}
+
+export interface ClaudeCodeQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  quota: ClaudeCodeQuotaInfo | null;
+  email?: string;
+  label?: string;
+  error?: string;
+  errorStatus?: number;
+}

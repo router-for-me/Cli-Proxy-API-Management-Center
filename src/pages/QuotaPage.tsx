@@ -9,6 +9,7 @@ import type {
   AntigravityQuotaGroup,
   AntigravityQuotaState,
   AuthFileItem,
+  ClaudeCodeQuotaState,
   CodexQuotaState,
   CodexQuotaWindow,
   GeminiCliQuotaBucketState,
@@ -45,6 +46,10 @@ const TYPE_COLORS: Record<string, TypeColorSet> = {
   codex: {
     light: { bg: '#fff3e0', text: '#ef6c00' },
     dark: { bg: '#e65100', text: '#ffb74d' }
+  },
+  'claude-code': {
+    light: { bg: '#fce4ec', text: '#c2185b' },
+    dark: { bg: '#880e4f', text: '#f48fb1' }
   },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
@@ -792,6 +797,10 @@ function isGeminiCliFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'gemini-cli';
 }
 
+function isClaudeCodeFile(file: AuthFileItem): boolean {
+  return resolveAuthProvider(file) === 'claude';
+}
+
 function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   const raw = file['runtime_only'] ?? file.runtimeOnly;
   if (typeof raw === 'boolean') return raw;
@@ -813,6 +822,8 @@ export function QuotaPage() {
   const [codexPageSize, setCodexPageSize] = useState(6);
   const [geminiCliPage, setGeminiCliPage] = useState(1);
   const [geminiCliPageSize, setGeminiCliPageSize] = useState(6);
+  const [claudeCodePage, setClaudeCodePage] = useState(1);
+  const [claudeCodePageSize, setClaudeCodePageSize] = useState(6);
   const [antigravityLoading, setAntigravityLoading] = useState(false);
   const [antigravityLoadingScope, setAntigravityLoadingScope] = useState<
     'page' | 'all' | null
@@ -823,6 +834,10 @@ export function QuotaPage() {
   const [geminiCliLoadingScope, setGeminiCliLoadingScope] = useState<
     'page' | 'all' | null
   >(null);
+  const [claudeCodeLoading, setClaudeCodeLoading] = useState(false);
+  const [claudeCodeLoadingScope, setClaudeCodeLoadingScope] = useState<
+    'page' | 'all' | null
+  >(null);
 
   const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
   const setAntigravityQuota = useQuotaStore((state) => state.setAntigravityQuota);
@@ -830,6 +845,8 @@ export function QuotaPage() {
   const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
   const geminiCliQuota = useQuotaStore((state) => state.geminiCliQuota);
   const setGeminiCliQuota = useQuotaStore((state) => state.setGeminiCliQuota);
+  const claudeCodeQuota = useQuotaStore((state) => state.claudeCodeQuota);
+  const setClaudeCodeQuota = useQuotaStore((state) => state.setClaudeCodeQuota);
 
   const antigravityLoadingRef = useRef(false);
   const antigravityRequestIdRef = useRef(0);
@@ -837,6 +854,8 @@ export function QuotaPage() {
   const codexRequestIdRef = useRef(0);
   const geminiCliLoadingRef = useRef(false);
   const geminiCliRequestIdRef = useRef(0);
+  const claudeCodeLoadingRef = useRef(false);
+  const claudeCodeRequestIdRef = useRef(0);
 
   const disableControls = connectionStatus !== 'connected';
 
@@ -885,6 +904,15 @@ export function QuotaPage() {
   const geminiCliPageItems = geminiCliFiles.slice(
     geminiCliStart,
     geminiCliStart + geminiCliPageSize
+  );
+
+  const claudeCodeFiles = useMemo(() => files.filter((file) => isClaudeCodeFile(file)), [files]);
+  const claudeCodeTotalPages = Math.max(1, Math.ceil(claudeCodeFiles.length / claudeCodePageSize));
+  const claudeCodeCurrentPage = Math.min(claudeCodePage, claudeCodeTotalPages);
+  const claudeCodeStart = (claudeCodeCurrentPage - 1) * claudeCodePageSize;
+  const claudeCodePageItems = claudeCodeFiles.slice(
+    claudeCodeStart,
+    claudeCodeStart + claudeCodePageSize
   );
 
   const fetchAntigravityQuota = useCallback(
@@ -1315,6 +1343,121 @@ export function QuotaPage() {
     [fetchGeminiCliQuota, setGeminiCliQuota, t]
   );
 
+  const fetchClaudeCodeQuota = useCallback(
+    async (authIndex: string): Promise<{ email?: string; label?: string; quota: any }> => {
+      const result = await apiCallApi.request({
+        authIndex,
+        method: 'GET',
+        url: `/v0/management/claude-api-key/quota/${authIndex}`,
+        header: {}
+      });
+
+      if (result.statusCode < 200 || result.statusCode >= 300) {
+        throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
+      }
+
+      const payload =
+        typeof result.body === 'object' && result.body !== null
+          ? result.body
+          : typeof result.bodyText === 'string'
+            ? JSON.parse(result.bodyText)
+            : null;
+
+      if (!payload || !payload.quota) {
+        throw new Error(t('claude_code_quota.empty_quota'));
+      }
+
+      return {
+        email: payload.email,
+        label: payload.label,
+        quota: payload.quota
+      };
+    },
+    [t]
+  );
+
+  const loadClaudeCodeQuota = useCallback(
+    async (targets: AuthFileItem[], scope: 'page' | 'all') => {
+      if (claudeCodeLoadingRef.current) return;
+      claudeCodeLoadingRef.current = true;
+      const requestId = ++claudeCodeRequestIdRef.current;
+      setClaudeCodeLoading(true);
+      setClaudeCodeLoadingScope(scope);
+
+      try {
+        if (targets.length === 0) return;
+
+        setClaudeCodeQuota((prev) => {
+          const nextState = { ...prev };
+          targets.forEach((file) => {
+            nextState[file.name] = { status: 'loading', quota: null };
+          });
+          return nextState;
+        });
+
+        const results = await Promise.all(
+          targets.map(async (file) => {
+            const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+            const authIndex = normalizeAuthIndexValue(rawAuthIndex);
+            if (!authIndex) {
+              return {
+                name: file.name,
+                status: 'error' as const,
+                error: t('claude_code_quota.missing_auth_index')
+              };
+            }
+
+            try {
+              const data = await fetchClaudeCodeQuota(authIndex);
+              return {
+                name: file.name,
+                status: 'success' as const,
+                quota: data.quota,
+                email: data.email,
+                label: data.label
+              };
+            } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : t('common.unknown_error');
+              const errorStatus = getStatusFromError(err);
+              return { name: file.name, status: 'error' as const, error: message, errorStatus };
+            }
+          })
+        );
+
+        if (requestId !== claudeCodeRequestIdRef.current) return;
+
+        setClaudeCodeQuota((prev) => {
+          const nextState = { ...prev };
+          results.forEach((result) => {
+            if (result.status === 'success') {
+              nextState[result.name] = {
+                status: 'success',
+                quota: result.quota,
+                email: result.email,
+                label: result.label
+              };
+            } else {
+              nextState[result.name] = {
+                status: 'error',
+                quota: null,
+                error: result.error,
+                errorStatus: result.errorStatus
+              };
+            }
+          });
+          return nextState;
+        });
+      } finally {
+        if (requestId === claudeCodeRequestIdRef.current) {
+          setClaudeCodeLoading(false);
+          setClaudeCodeLoadingScope(null);
+          claudeCodeLoadingRef.current = false;
+        }
+      }
+    },
+    [fetchClaudeCodeQuota, setClaudeCodeQuota, t]
+  );
+
   useEffect(() => {
     loadFiles();
   }, [loadFiles]);
@@ -1372,6 +1515,24 @@ export function QuotaPage() {
       return nextState;
     });
   }, [geminiCliFiles, loading, setGeminiCliQuota]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (claudeCodeFiles.length === 0) {
+      setClaudeCodeQuota({});
+      return;
+    }
+    setClaudeCodeQuota((prev) => {
+      const nextState: Record<string, ClaudeCodeQuotaState> = {};
+      claudeCodeFiles.forEach((file) => {
+        const cached = prev[file.name];
+        if (cached) {
+          nextState[file.name] = cached;
+        }
+      });
+      return nextState;
+    });
+  }, [claudeCodeFiles, loading, setClaudeCodeQuota]);
 
   // Resolve type label text for badges.
   const getTypeLabel = (type: string): string => {
@@ -1678,6 +1839,117 @@ export function QuotaPage() {
     );
   };
 
+  const renderClaudeCodeCard = (item: AuthFileItem) => {
+    const displayType = item.type || item.provider || 'claude-code';
+    const typeColor = getTypeColor(displayType);
+    const quotaState = claudeCodeQuota[item.name];
+    const quotaStatus = quotaState?.status ?? 'idle';
+    const quota = quotaState?.quota;
+    const quotaErrorMessage = getQuotaErrorMessage(
+      quotaState?.errorStatus,
+      quotaState?.error || t('common.unknown_error')
+    );
+
+    const renderQuotaWindow = (
+      id: string,
+      label: string,
+      utilization: number | undefined,
+      resetTime: number | undefined,
+      status: string | undefined
+    ) => {
+      if (utilization === undefined) return null;
+      
+      const remaining = Math.max(0, Math.min(1, 1 - utilization));
+      const percent = Math.round(remaining * 100);
+      const resetLabel = formatUnixSeconds(resetTime ?? null);
+      const isLimited = status !== 'allowed';
+      const quotaBarClass =
+        isLimited
+          ? styles.quotaBarFillLow
+          : percent >= 60
+            ? styles.quotaBarFillHigh
+            : percent >= 20
+              ? styles.quotaBarFillMedium
+              : styles.quotaBarFillLow;
+
+      return (
+        <div key={id} className={styles.quotaRow}>
+          <div className={styles.quotaRowHeader}>
+            <span className={styles.quotaModel}>{label}</span>
+            <div className={styles.quotaMeta}>
+              <span className={styles.quotaPercent}>{percent}%</span>
+              <span className={styles.quotaReset}>{resetLabel}</span>
+            </div>
+          </div>
+          <div className={styles.quotaBar}>
+            <div
+              className={`${styles.quotaBarFill} ${quotaBarClass}`}
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div key={item.name} className={`${styles.fileCard} ${styles.claudeCodeCard}`}>
+        <div className={styles.cardHeader}>
+          <span
+            className={styles.typeBadge}
+            style={{
+              backgroundColor: typeColor.bg,
+              color: typeColor.text,
+              ...(typeColor.border ? { border: typeColor.border } : {})
+            }}
+          >
+            {getTypeLabel(displayType)}
+          </span>
+          <span className={styles.fileName}>{quotaState?.label || item.name}</span>
+        </div>
+
+        <div className={styles.quotaSection}>
+          {quotaStatus === 'loading' ? (
+            <div className={styles.quotaMessage}>{t('claude_code_quota.loading')}</div>
+          ) : quotaStatus === 'idle' ? (
+            <div className={styles.quotaMessage}>{t('claude_code_quota.idle')}</div>
+          ) : quotaStatus === 'error' ? (
+            <div className={styles.quotaError}>
+              {t('claude_code_quota.load_failed', {
+                message: quotaErrorMessage
+              })}
+            </div>
+          ) : !quota ? (
+            <div className={styles.quotaMessage}>{t('claude_code_quota.empty_quota')}</div>
+          ) : (
+            <>
+              {renderQuotaWindow(
+                'five-hour',
+                t('claude_code_quota.five_hour_window'),
+                quota.five_hour_utilization,
+                quota.five_hour_reset,
+                quota.five_hour_status
+              )}
+              {renderQuotaWindow(
+                'seven-day',
+                t('claude_code_quota.seven_day_window'),
+                quota.seven_day_utilization,
+                quota.seven_day_reset,
+                quota.seven_day_status
+              )}
+              {renderQuotaWindow(
+                'overage',
+                t('claude_code_quota.overage_window'),
+                quota.overage_utilization,
+                quota.overage_reset,
+                quota.overage_status
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
@@ -1953,6 +2225,97 @@ export function QuotaPage() {
                     setGeminiCliPage(Math.min(geminiCliTotalPages, geminiCliCurrentPage + 1))
                   }
                   disabled={geminiCliCurrentPage >= geminiCliTotalPages}
+                >
+                  {t('auth_files.pagination_next')}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+
+      <Card
+        title={t('claude_code_quota.title')}
+        extra={
+          <div className={styles.headerActions}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => loadClaudeCodeQuota(claudeCodePageItems, 'page')}
+              disabled={disableControls || claudeCodeLoading || claudeCodePageItems.length === 0}
+              loading={claudeCodeLoading && claudeCodeLoadingScope === 'page'}
+            >
+              {t('claude_code_quota.refresh_button')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => loadClaudeCodeQuota(claudeCodeFiles, 'all')}
+              disabled={disableControls || claudeCodeLoading || claudeCodeFiles.length === 0}
+              loading={claudeCodeLoading && claudeCodeLoadingScope === 'all'}
+            >
+              {t('claude_code_quota.fetch_all')}
+            </Button>
+          </div>
+        }
+      >
+        {claudeCodeFiles.length === 0 ? (
+          <EmptyState
+            title={t('claude_code_quota.empty_title')}
+            description={t('claude_code_quota.empty_desc')}
+          />
+        ) : (
+          <>
+            <div className={styles.claudeCodeControls}>
+              <div className={styles.claudeCodeControl}>
+                <label>{t('auth_files.page_size_label')}</label>
+                <select
+                  className={styles.pageSizeSelect}
+                  value={claudeCodePageSize}
+                  onChange={(e) => {
+                    setClaudeCodePageSize(Number(e.target.value) || 6);
+                    setClaudeCodePage(1);
+                  }}
+                >
+                  <option value={6}>6</option>
+                  <option value={9}>9</option>
+                  <option value={12}>12</option>
+                  <option value={18}>18</option>
+                  <option value={24}>24</option>
+                </select>
+              </div>
+              <div className={styles.claudeCodeControl}>
+                <label>{t('common.info')}</label>
+                <div className={styles.statsInfo}>
+                  {claudeCodeFiles.length} {t('auth_files.files_count')}
+                </div>
+              </div>
+            </div>
+            <div className={styles.claudeCodeGrid}>{claudeCodePageItems.map(renderClaudeCodeCard)}</div>
+            {claudeCodeFiles.length > claudeCodePageSize && (
+              <div className={styles.pagination}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setClaudeCodePage(Math.max(1, claudeCodeCurrentPage - 1))}
+                  disabled={claudeCodeCurrentPage <= 1}
+                >
+                  {t('auth_files.pagination_prev')}
+                </Button>
+                <div className={styles.pageInfo}>
+                  {t('auth_files.pagination_info', {
+                    current: claudeCodeCurrentPage,
+                    total: claudeCodeTotalPages,
+                    count: claudeCodeFiles.length
+                  })}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    setClaudeCodePage(Math.min(claudeCodeTotalPages, claudeCodeCurrentPage + 1))
+                  }
+                  disabled={claudeCodeCurrentPage >= claudeCodeTotalPages}
                 >
                   {t('auth_files.pagination_next')}
                 </Button>
