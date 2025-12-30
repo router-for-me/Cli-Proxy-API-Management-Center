@@ -190,6 +190,20 @@
   }
 }
 
+.geminiCliGrid {
+  display: grid;
+  gap: $spacing-md;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @include tablet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
 .antigravityControls {
   display: flex;
   gap: $spacing-md;
@@ -232,6 +246,27 @@
   }
 }
 
+.geminiCliControls {
+  display: flex;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: $spacing-md;
+}
+
+.geminiCliControl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}
+
 .antigravityCard {
   background-image: linear-gradient(
     180deg,
@@ -245,6 +280,14 @@
     180deg,
     rgba(255, 243, 224, 0.18),
     rgba(255, 243, 224, 0)
+  );
+}
+
+.geminiCliCard {
+  background-image: linear-gradient(
+    180deg,
+    rgba(231, 239, 255, 0.2),
+    rgba(231, 239, 255, 0)
   );
 }
 
@@ -336,6 +379,10 @@
 
 .quotaReset {
   color: var(--text-tertiary);
+}
+
+.quotaAmount {
+  color: var(--text-secondary);
 }
 
 .quotaMessage {

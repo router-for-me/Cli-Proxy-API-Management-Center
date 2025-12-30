@@ -99,6 +99,39 @@ interface AntigravityQuotaState {
   errorStatus?: number;
 }
 
+interface GeminiCliQuotaBucket {
+  modelId?: string;
+  model_id?: string;
+  tokenType?: string;
+  token_type?: string;
+  remainingFraction?: number | string;
+  remaining_fraction?: number | string;
+  remainingAmount?: number | string;
+  remaining_amount?: number | string;
+  resetTime?: string;
+  reset_time?: string;
+}
+
+interface GeminiCliQuotaPayload {
+  buckets?: GeminiCliQuotaBucket[];
+}
+
+interface GeminiCliQuotaBucketState {
+  id: string;
+  label: string;
+  remainingFraction: number | null;
+  remainingAmount: number | null;
+  resetTime: string | undefined;
+  tokenType: string | null;
+}
+
+interface GeminiCliQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  buckets: GeminiCliQuotaBucketState[];
+  error?: string;
+  errorStatus?: number;
+}
+
 interface AntigravityQuotaInfo {
   displayName?: string;
   quotaInfo?: {
@@ -172,6 +205,13 @@ const ANTIGRAVITY_QUOTA_GROUPS: AntigravityQuotaGroupDefinition[] = [
     labelFromModel: true
   }
 ];
+
+const GEMINI_CLI_QUOTA_URL = 'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota';
+
+const GEMINI_CLI_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  'Content-Type': 'application/json'
+};
 
 interface CodexUsageWindow {
   used_percent?: number | string;
@@ -401,6 +441,39 @@ function resolveCodexPlanType(file: AuthFileItem): string | null {
   return null;
 }
 
+function extractGeminiCliProjectId(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const matches = Array.from(value.matchAll(/\(([^()]+)\)/g));
+  if (matches.length === 0) return null;
+  const candidate = matches[matches.length - 1]?.[1]?.trim();
+  return candidate ? candidate : null;
+}
+
+function resolveGeminiCliProjectId(file: AuthFileItem): string | null {
+  const metadata =
+    file && typeof file.metadata === 'object' && file.metadata !== null
+      ? (file.metadata as Record<string, unknown>)
+      : null;
+  const attributes =
+    file && typeof file.attributes === 'object' && file.attributes !== null
+      ? (file.attributes as Record<string, unknown>)
+      : null;
+
+  const candidates = [
+    file.account,
+    file['account'],
+    metadata?.account,
+    attributes?.account
+  ];
+
+  for (const candidate of candidates) {
+    const projectId = extractGeminiCliProjectId(candidate);
+    if (projectId) return projectId;
+  }
+
+  return null;
+}
+
 function parseAntigravityPayload(payload: unknown): Record<string, unknown> | null {
   if (payload === undefined || payload === null) return null;
   if (typeof payload === 'string') {
@@ -431,6 +504,23 @@ function parseCodexUsagePayload(payload: unknown): CodexUsagePayload | null {
   }
   if (typeof payload === 'object') {
     return payload as CodexUsagePayload;
+  }
+  return null;
+}
+
+function parseGeminiCliQuotaPayload(payload: unknown): GeminiCliQuotaPayload | null {
+  if (payload === undefined || payload === null) return null;
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim();
+    if (!trimmed) return null;
+    try {
+      return JSON.parse(trimmed) as GeminiCliQuotaPayload;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof payload === 'object') {
+    return payload as GeminiCliQuotaPayload;
   }
   return null;
 }
@@ -598,6 +688,10 @@ function isCodexFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'codex';
 }
 
+function isGeminiCliFile(file: AuthFileItem): boolean {
+  return resolveAuthProvider(file) === 'gemini-cli';
+}
+
 function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   const raw = file['runtime_only'] ?? file.runtimeOnly;
   if (typeof raw === 'boolean') return raw;
@@ -661,6 +755,8 @@ export function AuthFilesPage() {
   const [antigravityPageSize, setAntigravityPageSize] = useState(6);
   const [codexPage, setCodexPage] = useState(1);
   const [codexPageSize, setCodexPageSize] = useState(6);
+  const [geminiCliPage, setGeminiCliPage] = useState(1);
+  const [geminiCliPageSize, setGeminiCliPageSize] = useState(6);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
@@ -676,6 +772,11 @@ export function AuthFilesPage() {
   const [codexQuota, setCodexQuota] = useState<Record<string, CodexQuotaState>>({});
   const [codexLoading, setCodexLoading] = useState(false);
   const [codexLoadingScope, setCodexLoadingScope] = useState<'page' | 'all' | null>(null);
+  const [geminiCliQuota, setGeminiCliQuota] = useState<Record<string, GeminiCliQuotaState>>({});
+  const [geminiCliLoading, setGeminiCliLoading] = useState(false);
+  const [geminiCliLoadingScope, setGeminiCliLoadingScope] = useState<
+    'page' | 'all' | null
+  >(null);
 
   // 详情弹窗相关
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -702,6 +803,8 @@ export function AuthFilesPage() {
   const antigravityRequestIdRef = useRef(0);
   const codexLoadingRef = useRef(false);
   const codexRequestIdRef = useRef(0);
+  const geminiCliLoadingRef = useRef(false);
+  const geminiCliRequestIdRef = useRef(0);
   const excludedUnsupportedRef = useRef(false);
 
   const disableControls = connectionStatus !== 'connected';
@@ -800,6 +903,18 @@ export function AuthFilesPage() {
   const codexCurrentPage = Math.min(codexPage, codexTotalPages);
   const codexStart = (codexCurrentPage - 1) * codexPageSize;
   const codexPageItems = codexFiles.slice(codexStart, codexStart + codexPageSize);
+
+  const geminiCliFiles = useMemo(
+    () => files.filter((file) => isGeminiCliFile(file) && !isRuntimeOnlyAuthFile(file)),
+    [files]
+  );
+  const geminiCliTotalPages = Math.max(1, Math.ceil(geminiCliFiles.length / geminiCliPageSize));
+  const geminiCliCurrentPage = Math.min(geminiCliPage, geminiCliTotalPages);
+  const geminiCliStart = (geminiCliCurrentPage - 1) * geminiCliPageSize;
+  const geminiCliPageItems = geminiCliFiles.slice(
+    geminiCliStart,
+    geminiCliStart + geminiCliPageSize
+  );
 
   const fetchAntigravityQuota = useCallback(
     async (authIndex: string): Promise<AntigravityQuotaGroup[]> => {
@@ -1079,6 +1194,125 @@ export function AuthFilesPage() {
     [fetchCodexQuota, t]
   );
 
+  const fetchGeminiCliQuota = useCallback(
+    async (file: AuthFileItem): Promise<GeminiCliQuotaBucketState[]> => {
+      const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+      const authIndex = normalizeAuthIndexValue(rawAuthIndex);
+      if (!authIndex) {
+        throw new Error(t('gemini_cli_quota.missing_auth_index'));
+      }
+
+      const projectId = resolveGeminiCliProjectId(file);
+      if (!projectId) {
+        throw new Error(t('gemini_cli_quota.missing_project_id'));
+      }
+
+      const result = await apiCallApi.request({
+        authIndex,
+        method: 'POST',
+        url: GEMINI_CLI_QUOTA_URL,
+        header: { ...GEMINI_CLI_REQUEST_HEADERS },
+        data: JSON.stringify({ project: projectId })
+      });
+
+      if (result.statusCode < 200 || result.statusCode >= 300) {
+        throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
+      }
+
+      const payload = parseGeminiCliQuotaPayload(result.body ?? result.bodyText);
+      const buckets = Array.isArray(payload?.buckets) ? payload?.buckets : [];
+      if (buckets.length === 0) return [];
+
+      return buckets
+        .map((bucket, index) => {
+          const modelId = normalizeStringValue(bucket.modelId ?? bucket.model_id);
+          if (!modelId) return null;
+          const tokenType = normalizeStringValue(bucket.tokenType ?? bucket.token_type);
+          const remainingFraction = normalizeNumberValue(
+            bucket.remainingFraction ?? bucket.remaining_fraction
+          );
+          const remainingAmount = normalizeNumberValue(
+            bucket.remainingAmount ?? bucket.remaining_amount
+          );
+          const resetTime = normalizeStringValue(bucket.resetTime ?? bucket.reset_time) ?? undefined;
+          return {
+            id: `${modelId}-${tokenType ?? index}`,
+            label: modelId,
+            remainingFraction,
+            remainingAmount,
+            resetTime,
+            tokenType
+          };
+        })
+        .filter((bucket): bucket is GeminiCliQuotaBucketState => bucket !== null);
+    },
+    [t]
+  );
+
+  const loadGeminiCliQuota = useCallback(
+    async (targets: AuthFileItem[], scope: 'page' | 'all') => {
+      if (geminiCliLoadingRef.current) return;
+      geminiCliLoadingRef.current = true;
+      const requestId = ++geminiCliRequestIdRef.current;
+      setGeminiCliLoading(true);
+      setGeminiCliLoadingScope(scope);
+
+      try {
+        if (targets.length === 0) return;
+
+        setGeminiCliQuota((prev) => {
+          const nextState = { ...prev };
+          targets.forEach((file) => {
+            nextState[file.name] = { status: 'loading', buckets: [] };
+          });
+          return nextState;
+        });
+
+        const results = await Promise.all(
+          targets.map(async (file) => {
+            try {
+              const buckets = await fetchGeminiCliQuota(file);
+              return { name: file.name, status: 'success' as const, buckets };
+            } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : t('common.unknown_error');
+              const errorStatus = getStatusFromError(err);
+              return { name: file.name, status: 'error' as const, error: message, errorStatus };
+            }
+          })
+        );
+
+        if (requestId !== geminiCliRequestIdRef.current) return;
+
+        setGeminiCliQuota((prev) => {
+          const nextState = { ...prev };
+          results.forEach((result) => {
+            if (result.status === 'success') {
+              nextState[result.name] = {
+                status: 'success',
+                buckets: result.buckets
+              };
+            } else {
+              nextState[result.name] = {
+                status: 'error',
+                buckets: [],
+                error: result.error,
+                errorStatus: result.errorStatus
+              };
+            }
+          });
+          return nextState;
+        });
+      } finally {
+        if (requestId === geminiCliRequestIdRef.current) {
+          setGeminiCliLoading(false);
+          setGeminiCliLoadingScope(null);
+          geminiCliLoadingRef.current = false;
+        }
+      }
+    },
+    [fetchGeminiCliQuota, t]
+  );
+
   useEffect(() => {
     loadFiles();
     loadKeyStats();
@@ -1118,6 +1352,23 @@ export function AuthFilesPage() {
       return nextState;
     });
   }, [codexFiles]);
+
+  useEffect(() => {
+    if (geminiCliFiles.length === 0) {
+      setGeminiCliQuota({});
+      return;
+    }
+    setGeminiCliQuota((prev) => {
+      const nextState: Record<string, GeminiCliQuotaState> = {};
+      geminiCliFiles.forEach((file) => {
+        const cached = prev[file.name];
+        if (cached) {
+          nextState[file.name] = cached;
+        }
+      });
+      return nextState;
+    });
+  }, [geminiCliFiles]);
 
   // 定时刷新状态数据（每240秒）
   useInterval(loadKeyStats, 240_000);
@@ -1843,6 +2094,102 @@ export function AuthFilesPage() {
     );
   };
 
+  const renderGeminiCliCard = (item: AuthFileItem) => {
+    const displayType = item.type || item.provider || 'gemini-cli';
+    const typeColor = getTypeColor(displayType);
+    const quotaState = geminiCliQuota[item.name];
+    const quotaStatus = quotaState?.status ?? 'idle';
+    const buckets = quotaState?.buckets ?? [];
+    const quotaErrorMessage = getQuotaErrorMessage(
+      quotaState?.errorStatus,
+      quotaState?.error || t('common.unknown_error')
+    );
+
+    return (
+      <div key={item.name} className={`${styles.fileCard} ${styles.geminiCliCard}`}>
+        <div className={styles.cardHeader}>
+          <span
+            className={styles.typeBadge}
+            style={{
+              backgroundColor: typeColor.bg,
+              color: typeColor.text,
+              ...(typeColor.border ? { border: typeColor.border } : {})
+            }}
+          >
+            {getTypeLabel(displayType)}
+          </span>
+          <span className={styles.fileName}>{item.name}</span>
+        </div>
+
+        <div className={styles.quotaSection}>
+          {quotaStatus === 'loading' ? (
+            <div className={styles.quotaMessage}>{t('gemini_cli_quota.loading')}</div>
+          ) : quotaStatus === 'idle' ? (
+            <div className={styles.quotaMessage}>{t('gemini_cli_quota.idle')}</div>
+          ) : quotaStatus === 'error' ? (
+            <div className={styles.quotaError}>
+              {t('gemini_cli_quota.load_failed', {
+                message: quotaErrorMessage
+              })}
+            </div>
+          ) : buckets.length === 0 ? (
+            <div className={styles.quotaMessage}>{t('gemini_cli_quota.empty_buckets')}</div>
+          ) : (
+            buckets.map((bucket) => {
+              const fraction = bucket.remainingFraction;
+              const clamped = fraction === null ? null : Math.max(0, Math.min(1, fraction));
+              const percent = clamped === null ? null : Math.round(clamped * 100);
+              const percentLabel = percent === null ? '--' : `${percent}%`;
+              const resetLabel = formatQuotaResetTime(bucket.resetTime);
+              const remainingAmountLabel =
+                bucket.remainingAmount === null || bucket.remainingAmount === undefined
+                  ? null
+                  : t('gemini_cli_quota.remaining_amount', {
+                      count: bucket.remainingAmount
+                    });
+              const quotaBarClass =
+                percent === null
+                  ? styles.quotaBarFillMedium
+                  : percent >= 60
+                    ? styles.quotaBarFillHigh
+                    : percent >= 20
+                      ? styles.quotaBarFillMedium
+                      : styles.quotaBarFillLow;
+
+              return (
+                <div key={bucket.id} className={styles.quotaRow}>
+                  <div className={styles.quotaRowHeader}>
+                    <span
+                      className={styles.quotaModel}
+                      title={
+                        bucket.tokenType ? `${bucket.label} (${bucket.tokenType})` : bucket.label
+                      }
+                    >
+                      {bucket.label}
+                    </span>
+                    <div className={styles.quotaMeta}>
+                      <span className={styles.quotaPercent}>{percentLabel}</span>
+                      {remainingAmountLabel && (
+                        <span className={styles.quotaAmount}>{remainingAmountLabel}</span>
+                      )}
+                      <span className={styles.quotaReset}>{resetLabel}</span>
+                    </div>
+                  </div>
+                  <div className={styles.quotaBar}>
+                    <div
+                      className={`${styles.quotaBarFill} ${quotaBarClass}`}
+                      style={{ width: `${percent ?? 0}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
@@ -2135,6 +2482,97 @@ export function AuthFilesPage() {
                   size="sm"
                   onClick={() => setCodexPage(Math.min(codexTotalPages, codexCurrentPage + 1))}
                   disabled={codexCurrentPage >= codexTotalPages}
+                >
+                  {t('auth_files.pagination_next')}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+
+      <Card
+        title={t('gemini_cli_quota.title')}
+        extra={
+          <div className={styles.headerActions}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => loadGeminiCliQuota(geminiCliPageItems, 'page')}
+              disabled={disableControls || geminiCliLoading || geminiCliPageItems.length === 0}
+              loading={geminiCliLoading && geminiCliLoadingScope === 'page'}
+            >
+              {t('gemini_cli_quota.refresh_button')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => loadGeminiCliQuota(geminiCliFiles, 'all')}
+              disabled={disableControls || geminiCliLoading || geminiCliFiles.length === 0}
+              loading={geminiCliLoading && geminiCliLoadingScope === 'all'}
+            >
+              {t('gemini_cli_quota.fetch_all')}
+            </Button>
+          </div>
+        }
+      >
+        {geminiCliFiles.length === 0 ? (
+          <EmptyState
+            title={t('gemini_cli_quota.empty_title')}
+            description={t('gemini_cli_quota.empty_desc')}
+          />
+        ) : (
+          <>
+            <div className={styles.geminiCliControls}>
+              <div className={styles.geminiCliControl}>
+                <label>{t('auth_files.page_size_label')}</label>
+                <select
+                  className={styles.pageSizeSelect}
+                  value={geminiCliPageSize}
+                  onChange={(e) => {
+                    setGeminiCliPageSize(Number(e.target.value) || 6);
+                    setGeminiCliPage(1);
+                  }}
+                >
+                  <option value={6}>6</option>
+                  <option value={9}>9</option>
+                  <option value={12}>12</option>
+                  <option value={18}>18</option>
+                  <option value={24}>24</option>
+                </select>
+              </div>
+              <div className={styles.geminiCliControl}>
+                <label>{t('common.info')}</label>
+                <div className={styles.statsInfo}>
+                  {geminiCliFiles.length} {t('auth_files.files_count')}
+                </div>
+              </div>
+            </div>
+            <div className={styles.geminiCliGrid}>{geminiCliPageItems.map(renderGeminiCliCard)}</div>
+            {geminiCliFiles.length > geminiCliPageSize && (
+              <div className={styles.pagination}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setGeminiCliPage(Math.max(1, geminiCliCurrentPage - 1))}
+                  disabled={geminiCliCurrentPage <= 1}
+                >
+                  {t('auth_files.pagination_prev')}
+                </Button>
+                <div className={styles.pageInfo}>
+                  {t('auth_files.pagination_info', {
+                    current: geminiCliCurrentPage,
+                    total: geminiCliTotalPages,
+                    count: geminiCliFiles.length
+                  })}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    setGeminiCliPage(Math.min(geminiCliTotalPages, geminiCliCurrentPage + 1))
+                  }
+                  disabled={geminiCliCurrentPage >= geminiCliTotalPages}
                 >
                   {t('auth_files.pagination_next')}
                 </Button>

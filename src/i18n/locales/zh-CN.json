@@ -392,6 +392,20 @@
     "plan_team": "Team",
     "plan_free": "Free"
   },
+  "gemini_cli_quota": {
+    "title": "Gemini CLI 额度",
+    "empty_title": "暂无 Gemini CLI 认证",
+    "empty_desc": "上传 Gemini CLI 认证文件后即可查看额度。",
+    "idle": "尚未加载额度，请点击刷新按钮。",
+    "loading": "正在加载额度...",
+    "load_failed": "额度获取失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "missing_project_id": "Gemini CLI 凭证缺少 Project ID",
+    "empty_buckets": "暂无额度数据",
+    "refresh_button": "刷新额度",
+    "fetch_all": "获取全部",
+    "remaining_amount": "剩余 {{count}}"
+  },
   "vertex_import": {
     "title": "Vertex JSON 登录",
     "description": "上传 Google 服务账号 JSON，使用 CLI vertex-import 同步规则写入 auth-dir/vertex-<project>.json。",

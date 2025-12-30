@@ -392,6 +392,20 @@
     "plan_team": "Team",
     "plan_free": "Free"
   },
+  "gemini_cli_quota": {
+    "title": "Gemini CLI Quota",
+    "empty_title": "No Gemini CLI Auth Files",
+    "empty_desc": "Upload a Gemini CLI credential to view remaining quota.",
+    "idle": "Not loaded. Click Refresh Button.",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "missing_project_id": "Gemini CLI credential missing project ID",
+    "empty_buckets": "No quota data available",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "remaining_amount": "Remaining {{count}}"
+  },
   "vertex_import": {
     "title": "Vertex JSON Login",
     "description": "Upload a Google service account JSON to store it as auth-dir/vertex-<project>.json using the same rules as the CLI vertex-import helper.",
