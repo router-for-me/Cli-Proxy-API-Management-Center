@@ -90,6 +90,7 @@
     "ai_providers": "AI Providers",
     "auth_files": "Auth Files",
     "oauth": "OAuth Login",
+    "quota_management": "Quota Management",
     "usage_stats": "Usage Statistics",
     "config_management": "Config Management",
     "logs": "Logs Viewer",
@@ -703,6 +704,11 @@
     "search_no_results": "No results",
     "search_prev": "Previous",
     "search_next": "Next"
+  },
+  "quota_management": {
+    "title": "Quota Management",
+    "description": "Monitor OAuth quota status for Antigravity, Codex, and Gemini CLI credentials.",
+    "refresh_files": "Refresh auth files"
   },
   "system_info": {
     "title": "Management Center Info",

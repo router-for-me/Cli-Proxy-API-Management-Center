@@ -90,6 +90,7 @@
     "ai_providers": "AI 提供商",
     "auth_files": "认证文件",
     "oauth": "OAuth 登录",
+    "quota_management": "配额管理",
     "usage_stats": "使用统计",
     "config_management": "配置管理",
     "logs": "日志查看",
@@ -703,6 +704,11 @@
     "search_no_results": "无结果",
     "search_prev": "上一个",
     "search_next": "下一个"
+  },
+  "quota_management": {
+    "title": "配额管理",
+    "description": "集中查看 OAuth 额度与剩余情况",
+    "refresh_files": "刷新认证文件"
   },
   "system_info": {
     "title": "管理中心信息",
