@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
-import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
+import { apiCallApi, authFilesApi, claudeCodeApi, getApiCallErrorMessage } from '@/services/api';
 import type {
   AntigravityQuotaGroup,
   AntigravityQuotaState,
@@ -1344,40 +1344,27 @@ export function QuotaPage() {
   );
 
   const fetchClaudeCodeQuota = useCallback(
-    async (authIndex: string): Promise<{ email?: string; label?: string; quota: any }> => {
-      const result = await apiCallApi.request({
-        authIndex,
-        method: 'GET',
-        url: `/v0/management/claude-api-key/quota/${authIndex}`,
-        header: {}
-      });
+    async (file: AuthFileItem, refresh: boolean = false): Promise<{ email?: string; label?: string; quota: any }> => {
+      // Use the file name (e.g., "claude-matt@cowger.us.json") as the auth_id
+      const data = refresh
+        ? await claudeCodeApi.refreshQuota(file.name)
+        : await claudeCodeApi.getQuota(file.name);
 
-      if (result.statusCode < 200 || result.statusCode >= 300) {
-        throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
-      }
-
-      const payload =
-        typeof result.body === 'object' && result.body !== null
-          ? result.body
-          : typeof result.bodyText === 'string'
-            ? JSON.parse(result.bodyText)
-            : null;
-
-      if (!payload || !payload.quota) {
+      if (!data || !data.quota) {
         throw new Error(t('claude_code_quota.empty_quota'));
       }
 
       return {
-        email: payload.email,
-        label: payload.label,
-        quota: payload.quota
+        email: data.email,
+        label: data.label,
+        quota: data.quota
       };
     },
     [t]
   );
 
   const loadClaudeCodeQuota = useCallback(
-    async (targets: AuthFileItem[], scope: 'page' | 'all') => {
+    async (targets: AuthFileItem[], scope: 'page' | 'all', refresh: boolean = false) => {
       if (claudeCodeLoadingRef.current) return;
       claudeCodeLoadingRef.current = true;
       const requestId = ++claudeCodeRequestIdRef.current;
@@ -1397,18 +1384,8 @@ export function QuotaPage() {
 
         const results = await Promise.all(
           targets.map(async (file) => {
-            const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-            const authIndex = normalizeAuthIndexValue(rawAuthIndex);
-            if (!authIndex) {
-              return {
-                name: file.name,
-                status: 'error' as const,
-                error: t('claude_code_quota.missing_auth_index')
-              };
-            }
-
             try {
-              const data = await fetchClaudeCodeQuota(authIndex);
+              const data = await fetchClaudeCodeQuota(file, refresh);
               return {
                 name: file.name,
                 status: 'success' as const,
@@ -1533,6 +1510,17 @@ export function QuotaPage() {
       return nextState;
     });
   }, [claudeCodeFiles, loading, setClaudeCodeQuota]);
+
+  // Auto-load Claude Code quota when files are available (it's a free request)
+  useEffect(() => {
+    if (loading || claudeCodeFiles.length === 0) return;
+    
+    // Only load if we don't have cached data for these files
+    const needsLoading = claudeCodeFiles.some((file) => !claudeCodeQuota[file.name]);
+    if (needsLoading) {
+      loadClaudeCodeQuota(claudeCodeFiles, 'all', false);
+    }
+  }, [claudeCodeFiles, loading, claudeCodeQuota, loadClaudeCodeQuota]);
 
   // Resolve type label text for badges.
   const getTypeLabel = (type: string): string => {
@@ -2241,7 +2229,7 @@ export function QuotaPage() {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => loadClaudeCodeQuota(claudeCodePageItems, 'page')}
+              onClick={() => loadClaudeCodeQuota(claudeCodePageItems, 'page', true)}
               disabled={disableControls || claudeCodeLoading || claudeCodePageItems.length === 0}
               loading={claudeCodeLoading && claudeCodeLoadingScope === 'page'}
             >
@@ -2250,7 +2238,7 @@ export function QuotaPage() {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => loadClaudeCodeQuota(claudeCodeFiles, 'all')}
+              onClick={() => loadClaudeCodeQuota(claudeCodeFiles, 'all', true)}
               disabled={disableControls || claudeCodeLoading || claudeCodeFiles.length === 0}
               loading={claudeCodeLoading && claudeCodeLoadingScope === 'all'}
             >
@@ -2266,8 +2254,8 @@ export function QuotaPage() {
           />
         ) : (
           <>
-            <div className={styles.claudeCodeControls}>
-              <div className={styles.claudeCodeControl}>
+            <div className={styles.antigravityControls}>
+              <div className={styles.antigravityControl}>
                 <label>{t('auth_files.page_size_label')}</label>
                 <select
                   className={styles.pageSizeSelect}
@@ -2284,14 +2272,14 @@ export function QuotaPage() {
                   <option value={24}>24</option>
                 </select>
               </div>
-              <div className={styles.claudeCodeControl}>
+              <div className={styles.antigravityControl}>
                 <label>{t('common.info')}</label>
                 <div className={styles.statsInfo}>
                   {claudeCodeFiles.length} {t('auth_files.files_count')}
                 </div>
               </div>
             </div>
-            <div className={styles.claudeCodeGrid}>{claudeCodePageItems.map(renderClaudeCodeCard)}</div>
+            <div className={styles.antigravityGrid}>{claudeCodePageItems.map(renderClaudeCodeCard)}</div>
             {claudeCodeFiles.length > claudeCodePageSize && (
               <div className={styles.pagination}>
                 <Button

@@ -407,6 +407,25 @@
     "fetch_all": "获取全部",
     "remaining_amount": "剩余 {{count}}"
   },
+  "claude_code_quota": {
+    "title": "Claude Code 额度",
+    "empty_title": "暂无 Claude Code 认证",
+    "empty_desc": "上传 Claude Code 认证文件后即可查看额度。",
+    "idle": "尚未加载额度，请点击刷新按钮。",
+    "loading": "正在加载额度...",
+    "load_failed": "额度获取失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "empty_quota": "暂无额度数据",
+    "refresh_button": "刷新额度",
+    "fetch_all": "获取全部",
+    "five_hour_window": "5 小时限额",
+    "seven_day_window": "7 天限额",
+    "overage_window": "超额限额",
+    "unified_status": "总体状态",
+    "status_allowed": "允许",
+    "status_limited": "受限",
+    "last_updated": "最后更新"
+  },
   "vertex_import": {
     "title": "Vertex JSON 登录",
     "description": "上传 Google 服务账号 JSON，使用 CLI vertex-import 同步规则写入 auth-dir/vertex-<project>.json。",
