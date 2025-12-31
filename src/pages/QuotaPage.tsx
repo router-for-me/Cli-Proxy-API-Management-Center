@@ -9,6 +9,7 @@ import type {
   AntigravityQuotaGroup,
   AntigravityQuotaState,
   AuthFileItem,
+  ClaudeCodeQuotaInfo,
   ClaudeCodeQuotaState,
   CodexQuotaState,
   CodexQuotaWindow,
@@ -46,10 +47,6 @@ const TYPE_COLORS: Record<string, TypeColorSet> = {
   codex: {
     light: { bg: '#fff3e0', text: '#ef6c00' },
     dark: { bg: '#e65100', text: '#ffb74d' }
-  },
-  'claude-code': {
-    light: { bg: '#fce4ec', text: '#c2185b' },
-    dark: { bg: '#880e4f', text: '#f48fb1' }
   },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
@@ -1344,7 +1341,7 @@ export function QuotaPage() {
   );
 
   const fetchClaudeCodeQuota = useCallback(
-    async (file: AuthFileItem, refresh: boolean = false): Promise<{ email?: string; label?: string; quota: any }> => {
+    async (file: AuthFileItem, refresh: boolean = false): Promise<{ email?: string; label?: string; quota: ClaudeCodeQuotaInfo }> => {
       // Use the file name (e.g., "claude-matt@cowger.us.json") as the auth_id
       const data = refresh
         ? await claudeCodeApi.refreshQuota(file.name)

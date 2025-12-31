@@ -414,7 +414,6 @@
     "idle": "尚未加载额度，请点击刷新按钮。",
     "loading": "正在加载额度...",
     "load_failed": "额度获取失败：{{message}}",
-    "missing_auth_index": "认证文件缺少 auth_index",
     "empty_quota": "暂无额度数据",
     "refresh_button": "刷新额度",
     "fetch_all": "获取全部",

@@ -414,7 +414,6 @@
     "idle": "Not loaded. Click Refresh Button.",
     "loading": "Loading quota...",
     "load_failed": "Failed to load quota: {{message}}",
-    "missing_auth_index": "Auth file missing auth_index",
     "empty_quota": "No quota data available",
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All",
