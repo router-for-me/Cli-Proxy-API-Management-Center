@@ -34,6 +34,7 @@ export const useAuthStore = create<AuthStoreState>()(
       isAuthenticated: false,
       apiBase: '',
       managementKey: '',
+      rememberPassword: false,
       serverVersion: null,
       serverBuildDate: null,
       connectionStatus: 'disconnected',
@@ -52,16 +53,25 @@ export const useAuthStore = create<AuthStoreState>()(
             secureStorage.getItem<string>('apiUrl', { encrypt: true });
           const legacyKey = secureStorage.getItem<string>('managementKey');
 
-          const { apiBase, managementKey } = get();
+          const { apiBase, managementKey, rememberPassword } = get();
           const resolvedBase = normalizeApiBase(apiBase || legacyBase || detectApiBaseFromLocation());
           const resolvedKey = managementKey || legacyKey || '';
+          const resolvedRememberPassword = rememberPassword || Boolean(managementKey) || Boolean(legacyKey);
 
-          set({ apiBase: resolvedBase, managementKey: resolvedKey });
+          set({
+            apiBase: resolvedBase,
+            managementKey: resolvedKey,
+            rememberPassword: resolvedRememberPassword
+          });
           apiClient.setConfig({ apiBase: resolvedBase, managementKey: resolvedKey });
 
           if (wasLoggedIn && resolvedBase && resolvedKey) {
             try {
-              await get().login({ apiBase: resolvedBase, managementKey: resolvedKey });
+              await get().login({
+                apiBase: resolvedBase,
+                managementKey: resolvedKey,
+                rememberPassword: resolvedRememberPassword
+              });
               return true;
             } catch (error) {
               console.warn('Auto login failed:', error);
@@ -79,6 +89,7 @@ export const useAuthStore = create<AuthStoreState>()(
       login: async (credentials) => {
         const apiBase = normalizeApiBase(credentials.apiBase);
         const managementKey = credentials.managementKey.trim();
+        const rememberPassword = credentials.rememberPassword ?? get().rememberPassword ?? false;
 
         try {
           set({ connectionStatus: 'connecting' });
@@ -97,10 +108,15 @@ export const useAuthStore = create<AuthStoreState>()(
             isAuthenticated: true,
             apiBase,
             managementKey,
+            rememberPassword,
             connectionStatus: 'connected',
             connectionError: null
           });
-          localStorage.setItem('isLoggedIn', 'true');
+          if (rememberPassword) {
+            localStorage.setItem('isLoggedIn', 'true');
+          } else {
+            localStorage.removeItem('isLoggedIn');
+          }
         } catch (error: any) {
           set({
             connectionStatus: 'error',
@@ -185,7 +201,8 @@ export const useAuthStore = create<AuthStoreState>()(
       })),
       partialize: (state) => ({
         apiBase: state.apiBase,
-        managementKey: state.managementKey,
+        ...(state.rememberPassword ? { managementKey: state.managementKey } : {}),
+        rememberPassword: state.rememberPassword,
         serverVersion: state.serverVersion,
         serverBuildDate: state.serverBuildDate
       })

@@ -63,6 +63,7 @@
     "custom_connection_placeholder": "Eg: https://example.com:8317",
     "custom_connection_hint": "By default the current URL is used. Override it here if needed.",
     "use_current_address": "Use Current URL",
+    "remember_password_label": "Remember password",
     "management_key_label": "Management Key:",
     "management_key_placeholder": "Enter the management key",
     "connect_button": "Connect",
@@ -745,7 +746,11 @@
     "link_webui_repo": "WebUI Repository",
     "link_webui_repo_desc": "Management Center frontend source code",
     "link_docs": "Documentation",
-    "link_docs_desc": "Usage tutorials and configuration guides"
+    "link_docs_desc": "Usage tutorials and configuration guides",
+    "clear_login_title": "Local Login Data",
+    "clear_login_desc": "Clear locally saved login data and sign out. Usage stats pricing settings will remain untouched.",
+    "clear_login_button": "Clear login data",
+    "clear_login_confirm": "Clear local login data and sign out now?"
   },
   "notification": {
     "debug_updated": "Debug settings updated",
@@ -758,6 +763,7 @@
     "logging_to_file_updated": "Logging settings updated",
     "request_log_updated": "Request logging setting updated",
     "ws_auth_updated": "WebSocket authentication setting updated",
+    "login_storage_cleared": "Local login data cleared",
     "api_key_added": "API key added successfully",
     "api_key_updated": "API key updated successfully",
     "api_key_deleted": "API key deleted successfully",

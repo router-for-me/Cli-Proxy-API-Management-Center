@@ -19,11 +19,13 @@ export function LoginPage() {
   const restoreSession = useAuthStore((state) => state.restoreSession);
   const storedBase = useAuthStore((state) => state.apiBase);
   const storedKey = useAuthStore((state) => state.managementKey);
+  const storedRememberPassword = useAuthStore((state) => state.rememberPassword);
 
   const [apiBase, setApiBase] = useState('');
   const [managementKey, setManagementKey] = useState('');
   const [showCustomBase, setShowCustomBase] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [rememberPassword, setRememberPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [autoLoading, setAutoLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,6 +40,7 @@ export function LoginPage() {
         if (!autoLoggedIn) {
           setApiBase(storedBase || detectedBase);
           setManagementKey(storedKey || '');
+          setRememberPassword(storedRememberPassword || Boolean(storedKey));
         }
       } finally {
         setAutoLoading(false);
@@ -45,7 +48,7 @@ export function LoginPage() {
     };
 
     init();
-  }, [detectedBase, restoreSession, storedBase, storedKey]);
+  }, [detectedBase, restoreSession, storedBase, storedKey, storedRememberPassword]);
 
   if (isAuthenticated) {
     const redirect = (location.state as any)?.from?.pathname || '/';
@@ -62,7 +65,11 @@ export function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await login({ apiBase: baseToUse, managementKey: managementKey.trim() });
+      await login({
+        apiBase: baseToUse,
+        managementKey: managementKey.trim(),
+        rememberPassword
+      });
       showNotification(t('common.connected_status'), 'success');
       navigate('/', { replace: true });
     } catch (err: any) {
@@ -147,6 +154,16 @@ export function LoginPage() {
             </button>
           }
         />
+
+        <div className="toggle-advanced">
+          <input
+            id="remember-password-toggle"
+            type="checkbox"
+            checked={rememberPassword}
+            onChange={(e) => setRememberPassword(e.target.checked)}
+          />
+          <label htmlFor="remember-password-toggle">{t('login.remember_password_label')}</label>
+        </div>
 
         <Button fullWidth onClick={handleSubmit} loading={loading}>
           {loading ? t('login.submitting') : t('login.submit_button')}
