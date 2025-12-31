@@ -6,6 +6,7 @@ import { IconGithub, IconBookOpen, IconExternalLink, IconCode } from '@/componen
 import { useAuthStore, useConfigStore, useNotificationStore, useModelsStore } from '@/stores';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
+import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import styles from './SystemPage.module.scss';
 
 export function SystemPage() {
@@ -102,6 +103,15 @@ export function SystemPage() {
       const message = `${t('system_info.models_error')}: ${err?.message || ''}`;
       setModelStatus({ type: 'error', message });
     }
+  };
+
+  const handleClearLoginStorage = () => {
+    if (!window.confirm(t('system_info.clear_login_confirm'))) return;
+    auth.logout();
+    if (typeof localStorage === 'undefined') return;
+    const keysToRemove = [STORAGE_KEY_AUTH, 'isLoggedIn', 'apiBase', 'apiUrl', 'managementKey'];
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+    showNotification(t('notification.login_storage_cleared'), 'success');
   };
 
   useEffect(() => {
@@ -247,6 +257,15 @@ export function SystemPage() {
             ))}
           </div>
         )}
+      </Card>
+
+      <Card title={t('system_info.clear_login_title')}>
+        <p className={styles.sectionDescription}>{t('system_info.clear_login_desc')}</p>
+        <div className={styles.clearLoginActions}>
+          <Button variant="danger" onClick={handleClearLoginStorage}>
+            {t('system_info.clear_login_button')}
+          </Button>
+        </div>
       </Card>
       </div>
     </div>

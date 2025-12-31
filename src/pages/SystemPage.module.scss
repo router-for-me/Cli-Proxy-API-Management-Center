@@ -34,6 +34,12 @@
   margin: 0 0 $spacing-md 0;
 }
 
+.clearLoginActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
 .infoGrid {
   display: grid;
   gap: $spacing-sm;

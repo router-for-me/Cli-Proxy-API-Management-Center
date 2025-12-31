@@ -63,6 +63,7 @@
     "custom_connection_placeholder": "例如: https://example.com:8317",
     "custom_connection_hint": "默认使用当前访问地址，若需要可手动输入其他地址。",
     "use_current_address": "使用当前地址",
+    "remember_password_label": "记住密码",
     "management_key_label": "管理密钥:",
     "management_key_placeholder": "请输入管理密钥",
     "connect_button": "连接",
@@ -745,7 +746,11 @@
     "link_webui_repo": "WebUI 仓库",
     "link_webui_repo_desc": "管理中心前端界面源代码",
     "link_docs": "使用教程",
-    "link_docs_desc": "配置指南和使用说明"
+    "link_docs_desc": "配置指南和使用说明",
+    "clear_login_title": "本地登录信息",
+    "clear_login_desc": "清理本地保存的登录信息并退出登录，不会影响使用统计中的价格设置。",
+    "clear_login_button": "清理登录信息",
+    "clear_login_confirm": "确认清理本地登录信息并退出登录？"
   },
   "notification": {
     "debug_updated": "调试设置已更新",
@@ -758,6 +763,7 @@
     "logging_to_file_updated": "日志记录设置已更新",
     "request_log_updated": "请求日志设置已更新",
     "ws_auth_updated": "WebSocket 鉴权设置已更新",
+    "login_storage_cleared": "本地登录信息已清理",
     "api_key_added": "API密钥添加成功",
     "api_key_updated": "API密钥更新成功",
     "api_key_deleted": "API密钥删除成功",
