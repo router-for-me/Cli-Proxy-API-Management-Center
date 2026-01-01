@@ -37,6 +37,7 @@ export interface GeminiCliQuotaState {
 export interface CodexQuotaWindow {
   id: string;
   label: string;
+  labelKey?: string;
   usedPercent: number | null;
   resetLabel: string;
 }

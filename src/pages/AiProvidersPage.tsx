@@ -202,7 +202,7 @@ const buildAmpcodeFormState = (ampcode?: AmpcodeConfig | null): AmpcodeFormState
 export function AiProvidersPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
-  const { theme } = useThemeStore();
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
 
   const config = useConfigStore((state) => state.config);
@@ -1221,7 +1221,6 @@ export function AiProvidersPage() {
     renderContent: (item: T, index: number) => ReactNode,
     onEdit: (index: number) => void,
     onDelete: (item: T) => void,
-    addLabel: string,
     emptyTitle: string,
     emptyDescription: string,
     deleteLabel?: string,
@@ -1239,11 +1238,6 @@ export function AiProvidersPage() {
         <EmptyState
           title={emptyTitle}
           description={emptyDescription}
-          action={
-            <Button onClick={() => onEdit(-1)} disabled={disableControls}>
-              {addLabel}
-            </Button>
-          }
         />
       );
     }
@@ -1388,7 +1382,6 @@ export function AiProvidersPage() {
             },
             (index) => openGeminiModal(index),
             (item) => deleteGemini(item.apiKey),
-            t('ai_providers.gemini_add_button'),
             t('ai_providers.gemini_empty_title'),
             t('ai_providers.gemini_empty_desc'),
             undefined,
@@ -1409,7 +1402,11 @@ export function AiProvidersPage() {
         <Card
           title={
             <span className={styles.cardTitle}>
-              <img src={theme === 'dark' ? iconOpenaiDark : iconOpenaiLight} alt="" className={styles.cardTitleIcon} />
+              <img
+                src={resolvedTheme === 'dark' ? iconOpenaiDark : iconOpenaiLight}
+                alt=""
+                className={styles.cardTitleIcon}
+              />
               {t('ai_providers.codex_title')}
             </span>
           }
@@ -1508,7 +1505,6 @@ export function AiProvidersPage() {
             },
             (index) => openProviderModal('codex', index),
             (item) => deleteProviderEntry('codex', item.apiKey),
-            t('ai_providers.codex_add_button'),
             t('ai_providers.codex_empty_title'),
             t('ai_providers.codex_empty_desc'),
             undefined,
@@ -1644,7 +1640,6 @@ export function AiProvidersPage() {
             },
             (index) => openProviderModal('claude', index),
             (item) => deleteProviderEntry('claude', item.apiKey),
-            t('ai_providers.claude_add_button'),
             t('ai_providers.claude_empty_title'),
             t('ai_providers.claude_empty_desc'),
             undefined,
@@ -1743,7 +1738,11 @@ export function AiProvidersPage() {
         <Card
           title={
             <span className={styles.cardTitle}>
-              <img src={theme === 'dark' ? iconOpenaiDark : iconOpenaiLight} alt="" className={styles.cardTitleIcon} />
+              <img
+                src={resolvedTheme === 'dark' ? iconOpenaiDark : iconOpenaiLight}
+                alt=""
+                className={styles.cardTitleIcon}
+              />
               {t('ai_providers.openai_title')}
             </span>
           }
@@ -1867,7 +1866,6 @@ export function AiProvidersPage() {
             },
             (index) => openOpenaiModal(index),
             (item) => deleteOpenai(item.name),
-            t('ai_providers.openai_add_button'),
             t('ai_providers.openai_empty_title'),
             t('ai_providers.openai_empty_desc')
           )}

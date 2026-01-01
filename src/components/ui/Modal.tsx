@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, type PropsWithChildren, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { IconX } from './icons';
 
 interface ModalProps {
@@ -10,6 +11,26 @@ interface ModalProps {
 }
 
 const CLOSE_ANIMATION_DURATION = 350;
+const MODAL_LOCK_CLASS = 'modal-open';
+let activeModalCount = 0;
+
+const lockScroll = () => {
+  if (typeof document === 'undefined') return;
+  if (activeModalCount === 0) {
+    document.body?.classList.add(MODAL_LOCK_CLASS);
+    document.documentElement?.classList.add(MODAL_LOCK_CLASS);
+  }
+  activeModalCount += 1;
+};
+
+const unlockScroll = () => {
+  if (typeof document === 'undefined') return;
+  activeModalCount = Math.max(0, activeModalCount - 1);
+  if (activeModalCount === 0) {
+    document.body?.classList.remove(MODAL_LOCK_CLASS);
+    document.documentElement?.classList.remove(MODAL_LOCK_CLASS);
+  }
+};
 
 export function Modal({ open, title, onClose, footer, width = 520, children }: PropsWithChildren<ModalProps>) {
   const [isVisible, setIsVisible] = useState(false);
@@ -60,12 +81,20 @@ export function Modal({ open, title, onClose, footer, width = 520, children }: P
     };
   }, []);
 
+  const shouldLockScroll = open || isVisible;
+
+  useEffect(() => {
+    if (!shouldLockScroll) return;
+    lockScroll();
+    return () => unlockScroll();
+  }, [shouldLockScroll]);
+
   if (!open && !isVisible) return null;
 
   const overlayClass = `modal-overlay ${isClosing ? 'modal-overlay-closing' : 'modal-overlay-entering'}`;
   const modalClass = `modal ${isClosing ? 'modal-closing' : 'modal-entering'}`;
 
-  return (
+  const modalContent = (
     <div className={overlayClass}>
       <div className={modalClass} style={{ width }} role="dialog" aria-modal="true">
         <button className="modal-close-floating" onClick={handleClose} aria-label="Close">
@@ -79,4 +108,10 @@ export function Modal({ open, title, onClose, footer, width = 520, children }: P
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') {
+    return modalContent;
+  }
+
+  return createPortal(modalContent, document.body);
 }

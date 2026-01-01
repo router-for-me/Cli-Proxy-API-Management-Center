@@ -1031,7 +1031,7 @@ export function QuotaPage() {
       const windows: CodexQuotaWindow[] = [];
       const addWindow = (
         id: string,
-        label: string,
+        labelKey: string,
         window?: CodexUsageWindow | null,
         limitReached?: boolean,
         allowed?: boolean
@@ -1044,7 +1044,8 @@ export function QuotaPage() {
           usedPercentRaw ?? (isLimitReached && resetLabel !== '-' ? 100 : null);
         windows.push({
           id,
-          label,
+          label: t(labelKey),
+          labelKey,
           usedPercent,
           resetLabel
         });
@@ -1052,21 +1053,21 @@ export function QuotaPage() {
 
       addWindow(
         'primary',
-        t('codex_quota.primary_window'),
+        'codex_quota.primary_window',
         rateLimit?.primary_window ?? rateLimit?.primaryWindow,
         rateLimit?.limit_reached ?? rateLimit?.limitReached,
         rateLimit?.allowed
       );
       addWindow(
         'secondary',
-        t('codex_quota.secondary_window'),
+        'codex_quota.secondary_window',
         rateLimit?.secondary_window ?? rateLimit?.secondaryWindow,
         rateLimit?.limit_reached ?? rateLimit?.limitReached,
         rateLimit?.allowed
       );
       addWindow(
         'code-review',
-        t('codex_quota.code_review_window'),
+        'codex_quota.code_review_window',
         codeReviewLimit?.primary_window ?? codeReviewLimit?.primaryWindow,
         codeReviewLimit?.limit_reached ?? codeReviewLimit?.limitReached,
         codeReviewLimit?.allowed
@@ -1552,10 +1553,12 @@ export function QuotaPage() {
                           ? styles.quotaBarFillMedium
                           : styles.quotaBarFillLow;
 
+                  const windowLabel = window.labelKey ? t(window.labelKey) : window.label;
+
                   return (
                     <div key={window.id} className={styles.quotaRow}>
                       <div className={styles.quotaRowHeader}>
-                        <span className={styles.quotaModel}>{window.label}</span>
+                        <span className={styles.quotaModel}>{windowLabel}</span>
                         <div className={styles.quotaMeta}>
                           <span className={styles.quotaPercent}>{percentLabel}</span>
                           <span className={styles.quotaReset}>{window.resetLabel}</span>

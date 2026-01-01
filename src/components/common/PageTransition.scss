@@ -1,0 +1,34 @@
+@use '@/styles/variables.scss' as *;
+
+.page-transition {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+
+  &__layer {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+    min-height: 0;
+    flex: 1;
+    will-change: transform, opacity;
+
+    // During animation, exit layer uses absolute positioning
+    &--exit {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+  }
+
+  // When both layers exist, current layer also needs positioning
+  &--animating &__layer:not(&__layer--exit) {
+    position: relative;
+    z-index: 0;
+  }
+}
