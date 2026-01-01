@@ -30,6 +30,22 @@ export interface IFlowCookieAuthResponse {
   type?: string;
 }
 
+export interface AntigravityRefreshTokenResult {
+  refresh_token: string;
+  success: boolean;
+  email?: string;
+  project_id?: string;
+  file_name?: string;
+  error?: string;
+}
+
+export interface AntigravityRefreshTokenResponse {
+  results: AntigravityRefreshTokenResult[];
+  total: number;
+  success_count: number;
+  failed_count: number;
+}
+
 const WEBUI_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'iflow'];
 const CALLBACK_PROVIDER_MAP: Partial<Record<OAuthProvider, string>> = {
   'gemini-cli': 'gemini'
@@ -64,5 +80,12 @@ export const oauthApi = {
 
   /** iFlow cookie 认证 */
   iflowCookieAuth: (cookie: string) =>
-    apiClient.post<IFlowCookieAuthResponse>('/iflow-auth-url', { cookie })
+    apiClient.post<IFlowCookieAuthResponse>('/iflow-auth-url', { cookie }),
+
+  /** Antigravity 刷新令牌批量认证 */
+  antigravityRefreshTokenAuth: (refreshTokens: string[], projectId?: string) =>
+    apiClient.post<AntigravityRefreshTokenResponse>('/antigravity-refresh-token', {
+      refresh_tokens: refreshTokens,
+      project_id: projectId
+    })
 };
