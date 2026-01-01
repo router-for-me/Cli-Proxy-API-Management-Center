@@ -15,6 +15,15 @@ body {
   transition: background-color $transition-normal, color $transition-normal;
 }
 
+html.modal-open,
+body.modal-open {
+  overflow: hidden;
+}
+
+body.modal-open .content {
+  overflow: hidden;
+}
+
 // 滚动条样式
 ::-webkit-scrollbar {
   width: 8px;
