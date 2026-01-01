@@ -42,16 +42,14 @@ export const OAUTH_CARD_IDS = [
   'anthropic-oauth-card',
   'antigravity-oauth-card',
   'gemini-cli-oauth-card',
-  'qwen-oauth-card',
-  'iflow-oauth-card'
+  'qwen-oauth-card'
 ];
 export const OAUTH_PROVIDERS = {
   CODEX: 'codex',
   ANTHROPIC: 'anthropic',
   ANTIGRAVITY: 'antigravity',
   GEMINI_CLI: 'gemini-cli',
-  QWEN: 'qwen',
-  IFLOW: 'iflow'
+  QWEN: 'qwen'
 } as const;
 
 // API 端点
