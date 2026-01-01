@@ -136,3 +136,41 @@
 .fileNamePlaceholder {
   color: var(--text-secondary);
 }
+
+// Antigravity Refresh Token Section
+.refreshTokenSection {
+  border-top: 1px solid var(--border-color);
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+
+  .hint {
+    margin-bottom: $spacing-sm;
+  }
+
+  textarea {
+    width: 100%;
+    resize: vertical;
+  }
+}
+
+.refreshTokenActions {
+  margin-top: $spacing-sm;
+}
+
+.successCount {
+  margin-left: $spacing-sm;
+  color: var(--color-success);
+}
+
+.failedCount {
+  margin-left: $spacing-sm;
+  color: var(--color-error);
+}
+
+.resultSuccess {
+  color: var(--color-success);
+}
+
+.resultError {
+  color: var(--color-error);
+}

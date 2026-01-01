@@ -563,7 +563,20 @@
     "iflow_cookie_result_expired": "Expires At",
     "iflow_cookie_result_path": "Saved Path",
     "iflow_cookie_result_type": "Type",
-    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost."
+    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost.",
+    "antigravity_refresh_title": "Refresh Token Batch Import",
+    "antigravity_refresh_hint": "Batch import accounts using Refresh Token (one per line)",
+    "antigravity_refresh_label": "Refresh Token",
+    "antigravity_refresh_placeholder": "Paste Refresh Token here, one per line",
+    "antigravity_refresh_button": "Batch Import",
+    "antigravity_refresh_result_title": "Import Results",
+    "antigravity_refresh_success_count": "{{count}} succeeded",
+    "antigravity_refresh_failed_count": "{{count}} failed",
+    "antigravity_refresh_saved": "Saved",
+    "antigravity_token_required": "Please enter Refresh Token",
+    "antigravity_import_success": "Successfully added {{count}} accounts",
+    "antigravity_import_failed": "{{count}} accounts failed to import",
+    "antigravity_import_error_fallback": "Import failed"
   },
   "usage_stats": {
     "title": "Usage Statistics",

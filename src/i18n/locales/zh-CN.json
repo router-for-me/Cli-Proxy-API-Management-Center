@@ -563,7 +563,20 @@
     "iflow_cookie_result_expired": "过期时间",
     "iflow_cookie_result_path": "保存路径",
     "iflow_cookie_result_type": "类型",
-    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问"
+    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问",
+    "antigravity_refresh_title": "Refresh Token 批量导入",
+    "antigravity_refresh_hint": "使用 Refresh Token 批量导入账号（每行一个）",
+    "antigravity_refresh_label": "Refresh Token",
+    "antigravity_refresh_placeholder": "在此粘贴 Refresh Token，每行一个",
+    "antigravity_refresh_button": "批量导入",
+    "antigravity_refresh_result_title": "导入结果",
+    "antigravity_refresh_success_count": "{{count}} 个成功",
+    "antigravity_refresh_failed_count": "{{count}} 个失败",
+    "antigravity_refresh_saved": "已保存",
+    "antigravity_token_required": "请输入 Refresh Token",
+    "antigravity_import_success": "成功添加 {{count}} 个账号",
+    "antigravity_import_failed": "{{count}} 个账号导入失败",
+    "antigravity_import_error_fallback": "导入失败"
   },
   "usage_stats": {
     "title": "使用统计",
