@@ -470,74 +470,69 @@ export function OAuthPage() {
                         : t(getAuthKey(provider.id, 'oauth_status_waiting'))}
                   </div>
                 )}
-              </Card>
-              {/* 在 Antigravity OAuth 卡片后面插入 Refresh Token 卡片 */}
-              {provider.id === 'antigravity' && (
-                <Card
-                  title={
-                    <span className={styles.cardTitle}>
-                      <img src={iconAntigravity} alt="" className={styles.cardTitleIcon} />
-                      Antigravity Refresh Token 导入
-                    </span>
-                  }
-                  extra={
-                    <Button onClick={handleAntigravityRefreshToken} loading={antigravityRefreshState.loading}>
-                      导入
-                    </Button>
-                  }
-                >
-                  <div className="hint">
-                    使用 Refresh Token 批量导入 Antigravity 账号（每行一个）
-                  </div>
-                  <div className="form-item" style={{ marginTop: 12 }}>
-                    <label className="label">Refresh Token</label>
-                    <textarea
-                      className="textarea"
-                      value={antigravityRefreshState.refreshTokens}
-                      onChange={(e) =>
-                        setAntigravityRefreshState((prev) => ({ ...prev, refreshTokens: e.target.value }))
-                      }
-                      placeholder="在此粘贴 Refresh Token，每行一个"
-                      rows={4}
-                      style={{ width: '100%', resize: 'vertical' }}
-                    />
-                  </div>
-                  {antigravityRefreshState.error && (
-                    <div className="status-badge error" style={{ marginTop: 8 }}>
-                      {antigravityRefreshState.error}
-                    </div>
-                  )}
-                  {antigravityRefreshState.results && antigravityRefreshState.results.length > 0 && (
-                    <div className="connection-box" style={{ marginTop: 12 }}>
-                      <div className="label">
-                        导入结果
-                        {antigravityRefreshState.successCount !== undefined && (
-                          <span style={{ marginLeft: 8, color: 'var(--color-success)' }}>
-                            {antigravityRefreshState.successCount} 个成功
-                          </span>
-                        )}
-                        {antigravityRefreshState.failedCount !== undefined && antigravityRefreshState.failedCount > 0 && (
-                          <span style={{ marginLeft: 8, color: 'var(--color-error)' }}>
-                            {antigravityRefreshState.failedCount} 个失败
-                          </span>
-                        )}
+                {/* Antigravity Refresh Token 导入区域（合并到 OAuth 卡片中） */}
+                {provider.id === 'antigravity' && (
+                  <>
+                    <div style={{ borderTop: '1px solid var(--color-border)', margin: '16px 0', paddingTop: 16 }}>
+                      <div className="hint" style={{ marginBottom: 8 }}>
+                        <strong>Refresh Token 批量导入</strong> - 使用 Refresh Token 批量导入账号（每行一个）
                       </div>
-                      <div className="key-value-list">
-                        {antigravityRefreshState.results.map((result, index) => (
-                          <div key={index} className="key-value-item">
-                            <span className="key" style={{ color: result.success ? 'var(--color-success)' : 'var(--color-error)' }}>
-                              {result.success ? '✓' : '✗'} {result.email || result.refresh_token}
-                            </span>
-                            <span className="value">
-                              {result.success ? result.project_id || '已保存' : result.error}
-                            </span>
+                      <div className="form-item">
+                        <label className="label">Refresh Token</label>
+                        <textarea
+                          className="textarea"
+                          value={antigravityRefreshState.refreshTokens}
+                          onChange={(e) =>
+                            setAntigravityRefreshState((prev) => ({ ...prev, refreshTokens: e.target.value }))
+                          }
+                          placeholder="在此粘贴 Refresh Token，每行一个"
+                          rows={3}
+                          style={{ width: '100%', resize: 'vertical' }}
+                        />
+                      </div>
+                      <div style={{ marginTop: 8 }}>
+                        <Button onClick={handleAntigravityRefreshToken} loading={antigravityRefreshState.loading} size="sm">
+                          批量导入
+                        </Button>
+                      </div>
+                      {antigravityRefreshState.error && (
+                        <div className="status-badge error" style={{ marginTop: 8 }}>
+                          {antigravityRefreshState.error}
+                        </div>
+                      )}
+                      {antigravityRefreshState.results && antigravityRefreshState.results.length > 0 && (
+                        <div className="connection-box" style={{ marginTop: 12 }}>
+                          <div className="label">
+                            导入结果
+                            {antigravityRefreshState.successCount !== undefined && (
+                              <span style={{ marginLeft: 8, color: 'var(--color-success)' }}>
+                                {antigravityRefreshState.successCount} 个成功
+                              </span>
+                            )}
+                            {antigravityRefreshState.failedCount !== undefined && antigravityRefreshState.failedCount > 0 && (
+                              <span style={{ marginLeft: 8, color: 'var(--color-error)' }}>
+                                {antigravityRefreshState.failedCount} 个失败
+                              </span>
+                            )}
                           </div>
-                        ))}
-                      </div>
+                          <div className="key-value-list">
+                            {antigravityRefreshState.results.map((result, index) => (
+                              <div key={index} className="key-value-item">
+                                <span className="key" style={{ color: result.success ? 'var(--color-success)' : 'var(--color-error)' }}>
+                                  {result.success ? '✓' : '✗'} {result.email || result.refresh_token}
+                                </span>
+                                <span className="value">
+                                  {result.success ? result.project_id || '已保存' : result.error}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </Card>
-              )}
+                  </>
+                )}
+              </Card>
             </div>
           );
         })}
