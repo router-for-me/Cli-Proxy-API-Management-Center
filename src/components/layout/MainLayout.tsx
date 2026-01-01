@@ -202,6 +202,7 @@ export function MainLayout() {
   const [requestLogDraft, setRequestLogDraft] = useState(false);
   const [requestLogTouched, setRequestLogTouched] = useState(false);
   const [requestLogSaving, setRequestLogSaving] = useState(false);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const brandCollapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
   const versionTapCount = useRef(0);
@@ -342,6 +343,7 @@ export function MainLayout() {
       // ignore initial failure; login flow会提示
     });
   }, [fetchConfig]);
+
 
   const statusClass =
     connectionStatus === 'connected'
@@ -522,11 +524,12 @@ export function MainLayout() {
           </div>
         </aside>
 
-        <div className={`content${isLogsPage ? ' content-logs' : ''}`}>
+        <div className={`content${isLogsPage ? ' content-logs' : ''}`} ref={contentRef}>
           <main className={`main-content${isLogsPage ? ' main-content-logs' : ''}`}>
             <PageTransition
               render={(location) => <MainRoutes location={location} />}
               getRouteOrder={getRouteOrder}
+              scrollContainerRef={contentRef}
             />
           </main>
 
