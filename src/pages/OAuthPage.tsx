@@ -56,7 +56,6 @@ interface VertexImportState {
 
 interface AntigravityRefreshTokenState {
   refreshTokens: string;
-  projectId: string;
   loading: boolean;
   error?: string;
   results?: AntigravityRefreshTokenResult[];
@@ -95,7 +94,6 @@ export function OAuthPage() {
   });
   const [antigravityRefreshState, setAntigravityRefreshState] = useState<AntigravityRefreshTokenState>({
     refreshTokens: '',
-    projectId: '',
     loading: false
   });
   const timers = useRef<Record<string, number>>({});
@@ -325,7 +323,7 @@ export function OAuthPage() {
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
     if (tokens.length === 0) {
-      const message = t('auth_login.antigravity_refresh_token_required');
+      const message = '请输入 Refresh Token';
       setAntigravityRefreshState((prev) => ({ ...prev, error: message }));
       showNotification(message, 'warning');
       return;
@@ -339,7 +337,7 @@ export function OAuthPage() {
     try {
       const res: AntigravityRefreshTokenResponse = await oauthApi.antigravityRefreshTokenAuth(
         tokens,
-        antigravityRefreshState.projectId.trim() || undefined
+        undefined
       );
       setAntigravityRefreshState((prev) => ({
         ...prev,
@@ -349,36 +347,19 @@ export function OAuthPage() {
         failedCount: res.failed_count
       }));
       if (res.success_count > 0) {
-        showNotification(
-          t('auth_login.antigravity_refresh_token_success', {
-            count: res.success_count,
-            defaultValue: `Successfully added ${res.success_count} accounts`
-          }),
-          'success'
-        );
+        showNotification(`成功添加 ${res.success_count} 个账号`, 'success');
       }
       if (res.failed_count > 0) {
-        showNotification(
-          t('auth_login.antigravity_refresh_token_partial_error', {
-            count: res.failed_count,
-            defaultValue: `${res.failed_count} accounts failed`
-          }),
-          'warning'
-        );
+        showNotification(`${res.failed_count} 个账号导入失败`, 'warning');
       }
     } catch (err: any) {
-      const message = err?.message || '';
+      const message = err?.message || '导入失败';
       setAntigravityRefreshState((prev) => ({
         ...prev,
         loading: false,
-        error: message || t('auth_login.antigravity_refresh_token_error')
+        error: message
       }));
-      showNotification(
-        message
-          ? `${t('auth_login.antigravity_refresh_token_error')}: ${message}`
-          : t('auth_login.antigravity_refresh_token_error'),
-        'error'
-      );
+      showNotification(message, 'error');
     }
   };
 
@@ -490,6 +471,73 @@ export function OAuthPage() {
                   </div>
                 )}
               </Card>
+              {/* 在 Antigravity OAuth 卡片后面插入 Refresh Token 卡片 */}
+              {provider.id === 'antigravity' && (
+                <Card
+                  title={
+                    <span className={styles.cardTitle}>
+                      <img src={iconAntigravity} alt="" className={styles.cardTitleIcon} />
+                      Antigravity Refresh Token 导入
+                    </span>
+                  }
+                  extra={
+                    <Button onClick={handleAntigravityRefreshToken} loading={antigravityRefreshState.loading}>
+                      导入
+                    </Button>
+                  }
+                >
+                  <div className="hint">
+                    使用 Refresh Token 批量导入 Antigravity 账号（每行一个）
+                  </div>
+                  <div className="form-item" style={{ marginTop: 12 }}>
+                    <label className="label">Refresh Token</label>
+                    <textarea
+                      className="textarea"
+                      value={antigravityRefreshState.refreshTokens}
+                      onChange={(e) =>
+                        setAntigravityRefreshState((prev) => ({ ...prev, refreshTokens: e.target.value }))
+                      }
+                      placeholder="在此粘贴 Refresh Token，每行一个"
+                      rows={4}
+                      style={{ width: '100%', resize: 'vertical' }}
+                    />
+                  </div>
+                  {antigravityRefreshState.error && (
+                    <div className="status-badge error" style={{ marginTop: 8 }}>
+                      {antigravityRefreshState.error}
+                    </div>
+                  )}
+                  {antigravityRefreshState.results && antigravityRefreshState.results.length > 0 && (
+                    <div className="connection-box" style={{ marginTop: 12 }}>
+                      <div className="label">
+                        导入结果
+                        {antigravityRefreshState.successCount !== undefined && (
+                          <span style={{ marginLeft: 8, color: 'var(--color-success)' }}>
+                            {antigravityRefreshState.successCount} 个成功
+                          </span>
+                        )}
+                        {antigravityRefreshState.failedCount !== undefined && antigravityRefreshState.failedCount > 0 && (
+                          <span style={{ marginLeft: 8, color: 'var(--color-error)' }}>
+                            {antigravityRefreshState.failedCount} 个失败
+                          </span>
+                        )}
+                      </div>
+                      <div className="key-value-list">
+                        {antigravityRefreshState.results.map((result, index) => (
+                          <div key={index} className="key-value-item">
+                            <span className="key" style={{ color: result.success ? 'var(--color-success)' : 'var(--color-error)' }}>
+                              {result.success ? '✓' : '✗'} {result.email || result.refresh_token}
+                            </span>
+                            <span className="value">
+                              {result.success ? result.project_id || '已保存' : result.error}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              )}
             </div>
           );
         })}
@@ -647,98 +695,6 @@ export function OAuthPage() {
                     <span className="value">{iflowCookie.result.type}</span>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-        </Card>
-
-        {/* Antigravity Refresh Token 登录 */}
-        <Card
-          title={
-            <span className={styles.cardTitle}>
-              <img src={iconAntigravity} alt="" className={styles.cardTitleIcon} />
-              {t('auth_login.antigravity_refresh_token_title', { defaultValue: 'Antigravity Refresh Token' })}
-            </span>
-          }
-          extra={
-            <Button onClick={handleAntigravityRefreshToken} loading={antigravityRefreshState.loading}>
-              {t('auth_login.antigravity_refresh_token_button', { defaultValue: 'Import' })}
-            </Button>
-          }
-        >
-          <div className="hint">
-            {t('auth_login.antigravity_refresh_token_hint', {
-              defaultValue: 'Import Antigravity accounts using refresh tokens (one per line for batch import)'
-            })}
-          </div>
-          <Input
-            label={t('auth_login.antigravity_refresh_token_project_id_label', { defaultValue: 'Project ID (Optional)' })}
-            hint={t('auth_login.antigravity_refresh_token_project_id_hint', { defaultValue: 'Leave empty to auto-detect' })}
-            value={antigravityRefreshState.projectId}
-            onChange={(e) =>
-              setAntigravityRefreshState((prev) => ({
-                ...prev,
-                projectId: e.target.value
-              }))
-            }
-            placeholder={t('auth_login.antigravity_refresh_token_project_id_placeholder', { defaultValue: 'e.g., my-gcp-project' })}
-          />
-          <div className="form-item" style={{ marginTop: 12 }}>
-            <label className="label">
-              {t('auth_login.antigravity_refresh_token_label', { defaultValue: 'Refresh Tokens' })}
-            </label>
-            <textarea
-              className="textarea"
-              value={antigravityRefreshState.refreshTokens}
-              onChange={(e) =>
-                setAntigravityRefreshState((prev) => ({ ...prev, refreshTokens: e.target.value }))
-              }
-              placeholder={t('auth_login.antigravity_refresh_token_placeholder', {
-                defaultValue: 'Paste refresh tokens here, one per line'
-              })}
-              rows={4}
-              style={{ width: '100%', resize: 'vertical' }}
-            />
-          </div>
-          {antigravityRefreshState.error && (
-            <div className="status-badge error" style={{ marginTop: 8 }}>
-              {antigravityRefreshState.error}
-            </div>
-          )}
-          {antigravityRefreshState.results && antigravityRefreshState.results.length > 0 && (
-            <div className="connection-box" style={{ marginTop: 12 }}>
-              <div className="label">
-                {t('auth_login.antigravity_refresh_token_result_title', { defaultValue: 'Import Results' })}
-                {antigravityRefreshState.successCount !== undefined && (
-                  <span style={{ marginLeft: 8, color: 'var(--color-success)' }}>
-                    {t('auth_login.antigravity_refresh_token_result_success', {
-                      count: antigravityRefreshState.successCount,
-                      defaultValue: `${antigravityRefreshState.successCount} succeeded`
-                    })}
-                  </span>
-                )}
-                {antigravityRefreshState.failedCount !== undefined && antigravityRefreshState.failedCount > 0 && (
-                  <span style={{ marginLeft: 8, color: 'var(--color-error)' }}>
-                    {t('auth_login.antigravity_refresh_token_result_failed', {
-                      count: antigravityRefreshState.failedCount,
-                      defaultValue: `${antigravityRefreshState.failedCount} failed`
-                    })}
-                  </span>
-                )}
-              </div>
-              <div className="key-value-list">
-                {antigravityRefreshState.results.map((result, index) => (
-                  <div key={index} className="key-value-item">
-                    <span className="key" style={{ color: result.success ? 'var(--color-success)' : 'var(--color-error)' }}>
-                      {result.success ? '✓' : '✗'} {result.email || result.refresh_token}
-                    </span>
-                    <span className="value">
-                      {result.success
-                        ? result.project_id || t('auth_login.antigravity_refresh_token_result_saved', { defaultValue: 'Saved' })
-                        : result.error}
-                    </span>
-                  </div>
-                ))}
               </div>
             </div>
           )}
