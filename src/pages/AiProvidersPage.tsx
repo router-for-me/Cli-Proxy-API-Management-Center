@@ -202,7 +202,7 @@ const buildAmpcodeFormState = (ampcode?: AmpcodeConfig | null): AmpcodeFormState
 export function AiProvidersPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
-  const { theme } = useThemeStore();
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
 
   const config = useConfigStore((state) => state.config);
@@ -1402,7 +1402,11 @@ export function AiProvidersPage() {
         <Card
           title={
             <span className={styles.cardTitle}>
-              <img src={theme === 'dark' ? iconOpenaiDark : iconOpenaiLight} alt="" className={styles.cardTitleIcon} />
+              <img
+                src={resolvedTheme === 'dark' ? iconOpenaiDark : iconOpenaiLight}
+                alt=""
+                className={styles.cardTitleIcon}
+              />
               {t('ai_providers.codex_title')}
             </span>
           }
@@ -1734,7 +1738,11 @@ export function AiProvidersPage() {
         <Card
           title={
             <span className={styles.cardTitle}>
-              <img src={theme === 'dark' ? iconOpenaiDark : iconOpenaiLight} alt="" className={styles.cardTitleIcon} />
+              <img
+                src={resolvedTheme === 'dark' ? iconOpenaiDark : iconOpenaiLight}
+                alt=""
+                className={styles.cardTitleIcon}
+              />
               {t('ai_providers.openai_title')}
             </span>
           }
