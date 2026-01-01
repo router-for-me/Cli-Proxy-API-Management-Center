@@ -7,11 +7,13 @@ import {
   useRef,
   useState,
 } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { PageTransition } from '@/components/common/PageTransition';
+import { MainRoutes } from '@/router/MainRoutes';
 import {
   IconBot,
   IconChartLine,
@@ -365,6 +367,18 @@ export function MainLayout() {
       : []),
     { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system },
   ];
+  const navOrder = navItems.map((item) => item.path);
+  const getRouteOrder = (pathname: string) => {
+    const trimmedPath =
+      pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+    const normalizedPath = trimmedPath === '/dashboard' ? '/' : trimmedPath;
+    const exactIndex = navOrder.indexOf(normalizedPath);
+    if (exactIndex !== -1) return exactIndex;
+    const nestedIndex = navOrder.findIndex(
+      (path) => path !== '/' && normalizedPath.startsWith(`${path}/`)
+    );
+    return nestedIndex === -1 ? null : nestedIndex;
+  };
 
   const handleRefreshAll = async () => {
     clearCache();
@@ -510,7 +524,10 @@ export function MainLayout() {
 
         <div className={`content${isLogsPage ? ' content-logs' : ''}`}>
           <main className={`main-content${isLogsPage ? ' main-content-logs' : ''}`}>
-            <Outlet />
+            <PageTransition
+              render={(location) => <MainRoutes location={location} />}
+              getRouteOrder={getRouteOrder}
+            />
           </main>
 
           <footer className="footer">
