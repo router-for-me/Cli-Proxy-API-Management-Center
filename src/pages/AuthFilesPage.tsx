@@ -78,6 +78,11 @@ const OAUTH_PROVIDER_PRESETS = [
 ];
 
 const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
+const MIN_CARD_PAGE_SIZE = 3;
+const MAX_CARD_PAGE_SIZE = 30;
+
+const clampCardPageSize = (value: number) =>
+  Math.min(MAX_CARD_PAGE_SIZE, Math.max(MIN_CARD_PAGE_SIZE, Math.round(value)));
 
 interface ExcludedFormState {
   provider: string;
@@ -184,6 +189,13 @@ export function AuthFilesPage() {
   const excludedUnsupportedRef = useRef(false);
 
   const disableControls = connectionStatus !== 'connected';
+
+  const handlePageSizeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.currentTarget.valueAsNumber;
+    if (!Number.isFinite(value)) return;
+    setPageSize(clampCardPageSize(value));
+    setPage(1);
+  };
 
   // 格式化修改时间
   const formatModified = (item: AuthFileItem): string => {
@@ -855,20 +867,15 @@ export function AuthFilesPage() {
             </div>
             <div className={styles.filterItem}>
               <label>{t('auth_files.page_size_label')}</label>
-              <select
+              <input
                 className={styles.pageSizeSelect}
+                type="number"
+                min={MIN_CARD_PAGE_SIZE}
+                max={MAX_CARD_PAGE_SIZE}
+                step={1}
                 value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value) || 9);
-                  setPage(1);
-                }}
-              >
-                <option value={6}>6</option>
-                <option value={9}>9</option>
-                <option value={12}>12</option>
-                <option value={18}>18</option>
-                <option value={24}>24</option>
-              </select>
+                onChange={handlePageSizeChange}
+              />
             </div>
             <div className={styles.filterItem}>
               <label>{t('common.info')}</label>

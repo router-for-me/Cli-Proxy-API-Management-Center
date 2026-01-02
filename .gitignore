@@ -12,6 +12,7 @@ CLAUDE.md
 AGENTS.md
 antigravity_usage.json
 codex_usage.json
+style.md
 
 node_modules
 dist

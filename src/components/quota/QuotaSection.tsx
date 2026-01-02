@@ -19,6 +19,12 @@ type QuotaUpdater<T> = T | ((prev: T) => T);
 
 type QuotaSetter<T> = (updater: QuotaUpdater<T>) => void;
 
+const MIN_CARD_PAGE_SIZE = 3;
+const MAX_CARD_PAGE_SIZE = 30;
+
+const clampCardPageSize = (value: number) =>
+  Math.min(MAX_CARD_PAGE_SIZE, Math.max(MIN_CARD_PAGE_SIZE, Math.round(value)));
+
 interface QuotaPaginationState<T> {
   pageSize: number;
   totalPages: number;
@@ -34,7 +40,7 @@ interface QuotaPaginationState<T> {
 
 const useQuotaPagination = <T,>(items: T[], defaultPageSize = 6): QuotaPaginationState<T> => {
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSizeState] = useState(defaultPageSize);
+  const [pageSize, setPageSizeState] = useState(() => clampCardPageSize(defaultPageSize));
   const [loading, setLoadingState] = useState(false);
   const [loadingScope, setLoadingScope] = useState<'page' | 'all' | null>(null);
 
@@ -51,7 +57,7 @@ const useQuotaPagination = <T,>(items: T[], defaultPageSize = 6): QuotaPaginatio
   }, [items, currentPage, pageSize]);
 
   const setPageSize = useCallback((size: number) => {
-    setPageSizeState(size);
+    setPageSizeState(clampCardPageSize(size));
     setPage(1);
   }, []);
 
@@ -183,17 +189,19 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
           <div className={config.controlsClassName}>
             <div className={config.controlClassName}>
               <label>{t('auth_files.page_size_label')}</label>
-              <select
+              <input
                 className={styles.pageSizeSelect}
+                type="number"
+                min={MIN_CARD_PAGE_SIZE}
+                max={MAX_CARD_PAGE_SIZE}
+                step={1}
                 value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value) || 6)}
-              >
-                <option value={6}>6</option>
-                <option value={9}>9</option>
-                <option value={12}>12</option>
-                <option value={18}>18</option>
-                <option value={24}>24</option>
-              </select>
+                onChange={(e) => {
+                  const value = e.currentTarget.valueAsNumber;
+                  if (!Number.isFinite(value)) return;
+                  setPageSize(value);
+                }}
+              />
             </div>
             <div className={config.controlClassName}>
               <label>{t('common.info')}</label>
