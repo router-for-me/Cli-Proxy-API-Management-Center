@@ -131,6 +131,7 @@ export function PageTransition({
         opacity: 1,
         duration: TRANSITION_DURATION,
         ease: 'power2.in', // slow start, fast end
+        clearProps: 'transform,opacity',
       },
       0
     );
