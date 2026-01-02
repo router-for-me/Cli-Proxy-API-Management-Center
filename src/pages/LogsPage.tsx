@@ -50,7 +50,8 @@ const HTTP_METHOD_REGEX = new RegExp(`\\b(${HTTP_METHODS.join('|')})\\b`);
 const LOG_TIMESTAMP_REGEX = /^\[?(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\]?/;
 const LOG_LEVEL_REGEX = /^\[?(trace|debug|info|warn|warning|error|fatal)\s*\]?(?=\s|\[|$)\s*/i;
 const LOG_SOURCE_REGEX = /^\[([^\]]+)\]/;
-const LOG_LATENCY_REGEX = /\b(\d+(?:\.\d+)?)(?:\s*)(µs|us|ms|s)\b/i;
+const LOG_LATENCY_REGEX =
+  /\b(?:\d+(?:\.\d+)?\s*(?:µs|us|ms|s|m))(?:\s*\d+(?:\.\d+)?\s*(?:µs|us|ms|s|m))*\b/i;
 const LOG_IPV4_REGEX = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
 const LOG_IPV6_REGEX = /\b(?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}\b/i;
 const LOG_REQUEST_ID_REGEX = /^([a-f0-9]{8}|--------)$/i;
@@ -100,6 +101,12 @@ const normalizeTimestampToSeconds = (value: string): string => {
   const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})/);
   if (!match) return trimmed;
   return `${match[1]} ${match[2]}`;
+};
+
+const extractLatency = (text: string): string | undefined => {
+  const match = text.match(LOG_LATENCY_REGEX);
+  if (!match) return undefined;
+  return match[0].replace(/\s+/g, '');
 };
 
 type ParsedLogLine = {
@@ -244,9 +251,9 @@ const parseLogLine = (raw: string): ParsedLogLine => {
     // latency
     const latencyIndex = segments.findIndex((segment) => LOG_LATENCY_REGEX.test(segment));
     if (latencyIndex >= 0) {
-      const match = segments[latencyIndex].match(LOG_LATENCY_REGEX);
-      if (match) {
-        latency = `${match[1]}${match[2]}`;
+      const extracted = extractLatency(segments[latencyIndex]);
+      if (extracted) {
+        latency = extracted;
         consumed.add(latencyIndex);
       }
     }
@@ -287,8 +294,8 @@ const parseLogLine = (raw: string): ParsedLogLine => {
   } else {
     statusCode = detectHttpStatusCode(remaining);
 
-    const latencyMatch = remaining.match(LOG_LATENCY_REGEX);
-    if (latencyMatch) latency = `${latencyMatch[1]}${latencyMatch[2]}`;
+    const extracted = extractLatency(remaining);
+    if (extracted) latency = extracted;
 
     ip = extractIp(remaining);
 
