@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
 import {
-  AntigravitySection,
-  CodexSection,
-  GeminiCliSection
+  QuotaSection,
+  ANTIGRAVITY_CONFIG,
+  CODEX_CONFIG,
+  GEMINI_CLI_CONFIG
 } from '@/components/quota';
 import type { AuthFileItem } from '@/types';
 import styles from './QuotaPage.module.scss';
@@ -57,9 +58,24 @@ export function QuotaPage() {
 
       {error && <div className={styles.errorBox}>{error}</div>}
 
-      <AntigravitySection files={files} loading={loading} disabled={disableControls} />
-      <CodexSection files={files} loading={loading} disabled={disableControls} />
-      <GeminiCliSection files={files} loading={loading} disabled={disableControls} />
+      <QuotaSection
+        config={ANTIGRAVITY_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
+      <QuotaSection
+        config={CODEX_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
+      <QuotaSection
+        config={GEMINI_CLI_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
     </div>
   );
 }
