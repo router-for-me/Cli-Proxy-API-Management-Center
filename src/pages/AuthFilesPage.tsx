@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInterval } from '@/hooks/useInterval';
+import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -269,6 +270,12 @@ export function AuthFilesPage() {
       // 静默失败
     }
   }, [showNotification, t]);
+
+  const handleHeaderRefresh = useCallback(async () => {
+    await Promise.all([loadFiles(), loadKeyStats(), loadExcluded()]);
+  }, [loadFiles, loadKeyStats, loadExcluded]);
+
+  useHeaderRefresh(handleHeaderRefresh);
 
   useEffect(() => {
     loadFiles();
@@ -826,7 +833,12 @@ export function AuthFilesPage() {
         title={t('auth_files.title_section')}
         extra={
           <div className={styles.headerActions}>
-            <Button variant="secondary" size="sm" onClick={() => { loadFiles(); loadKeyStats(); }} disabled={loading}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleHeaderRefresh}
+              disabled={loading}
+            >
               {t('common.refresh')}
             </Button>
             <Button

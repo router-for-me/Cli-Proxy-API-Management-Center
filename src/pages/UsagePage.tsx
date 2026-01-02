@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useThemeStore } from '@/stores';
 import {
   StatCards,
@@ -62,6 +63,8 @@ export function UsagePage() {
     exporting,
     importing
   } = useUsageData();
+
+  useHeaderRefresh(loadUsage);
 
   // Chart lines state
   const [chartLines, setChartLines] = useState<string[]>(['all']);

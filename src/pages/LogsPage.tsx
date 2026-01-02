@@ -16,6 +16,7 @@ import {
   IconTrash2,
   IconX,
 } from '@/components/ui/icons';
+import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
@@ -473,6 +474,8 @@ export function LogsPage() {
       }
     }
   };
+
+  useHeaderRefresh(() => loadLogs(false));
 
   const clearLogs = async () => {
     if (!window.confirm(t('logs.clear_confirm'))) return;
