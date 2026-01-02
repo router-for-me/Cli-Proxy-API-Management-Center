@@ -9,7 +9,9 @@ interface PageTransitionProps {
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
-const TRANSITION_DURATION = 0.65;
+const TRANSITION_DURATION = 0.5;
+const EXIT_DURATION = 0.45;
+const ENTER_DELAY = 0.08;
 
 type LayerStatus = 'current' | 'exiting';
 
@@ -99,6 +101,13 @@ export function PageTransition({
       scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
 
+    const containerHeight = scrollContainer?.clientHeight ?? 0;
+    const viewportHeight = typeof window === 'undefined' ? 0 : window.innerHeight;
+    const travelDistance = Math.max(containerHeight, viewportHeight, 1);
+    const enterFromY = transitionDirection === 'forward' ? travelDistance : -travelDistance;
+    const exitToY = transitionDirection === 'forward' ? -travelDistance : travelDistance;
+    const exitBaseY = scrollOffset ? -scrollOffset : 0;
+
     const tl = gsap.timeline({
       onComplete: () => {
         setLayers((prev) => prev.filter((layer) => layer.status !== 'exiting'));
@@ -108,15 +117,16 @@ export function PageTransition({
 
     // Exit animation: fly out to top (slow-to-fast)
     if (exitingLayerRef.current) {
-      gsap.set(exitingLayerRef.current, { y: scrollOffset ? -scrollOffset : 0 });
+      gsap.set(exitingLayerRef.current, { y: exitBaseY });
       tl.fromTo(
         exitingLayerRef.current,
-        { yPercent: 0, opacity: 1 },
+        { y: exitBaseY, opacity: 1 },
         {
-          yPercent: transitionDirection === 'forward' ? -100 : 100,
+          y: exitBaseY + exitToY,
           opacity: 0,
-          duration: TRANSITION_DURATION,
-          ease: 'power3.in', // slow start, fast end
+          duration: EXIT_DURATION,
+          ease: 'power2.in', // fast finish to clear screen
+          force3D: true,
         },
         0
       );
@@ -125,15 +135,16 @@ export function PageTransition({
     // Enter animation: slide in from bottom (slow-to-fast)
     tl.fromTo(
       currentLayerRef.current,
-      { yPercent: transitionDirection === 'forward' ? 100 : -100, opacity: 0 },
+      { y: enterFromY, opacity: 0 },
       {
-        yPercent: 0,
+        y: 0,
         opacity: 1,
         duration: TRANSITION_DURATION,
-        ease: 'power2.in', // slow start, fast end
+        ease: 'power2.out', // smooth settle
         clearProps: 'transform,opacity',
+        force3D: true,
       },
-      0
+      ENTER_DELAY
     );
 
     return () => {
