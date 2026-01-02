@@ -719,6 +719,8 @@ export function AuthFilesPage() {
   const renderFileCard = (item: AuthFileItem) => {
     const fileStats = resolveAuthFileStats(item, keyStats);
     const isRuntimeOnly = isRuntimeOnlyAuthFile(item);
+    const isAistudio = (item.type || '').toLowerCase() === 'aistudio';
+    const showModelsButton = !isRuntimeOnly || isAistudio;
     const typeColor = getTypeColor(item.type || 'unknown');
 
     return (
@@ -755,20 +757,20 @@ export function AuthFilesPage() {
         {renderStatusBar(item)}
 
         <div className={styles.cardActions}>
-          {isRuntimeOnly ? (
-            <div className={styles.virtualBadge}>{t('auth_files.type_virtual') || '虚拟认证文件'}</div>
-          ) : (
+          {showModelsButton && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => showModels(item)}
+              className={styles.iconButton}
+              title={t('auth_files.models_button', { defaultValue: '模型' })}
+              disabled={disableControls}
+            >
+              <IconBot className={styles.actionIcon} size={16} />
+            </Button>
+          )}
+          {!isRuntimeOnly && (
             <>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => showModels(item)}
-                className={styles.iconButton}
-                title={t('auth_files.models_button', { defaultValue: '模型' })}
-                disabled={disableControls}
-              >
-                <IconBot className={styles.actionIcon} size={16} />
-              </Button>
               <Button
                 variant="secondary"
                 size="sm"
@@ -804,6 +806,9 @@ export function AuthFilesPage() {
                 )}
               </Button>
             </>
+          )}
+          {isRuntimeOnly && (
+            <div className={styles.virtualBadge}>{t('auth_files.type_virtual') || '虚拟认证文件'}</div>
           )}
         </div>
       </div>
