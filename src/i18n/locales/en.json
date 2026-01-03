@@ -767,6 +767,7 @@
     "api_key_added": "API key added successfully",
     "api_key_updated": "API key updated successfully",
     "api_key_deleted": "API key deleted successfully",
+    "api_key_invalid_chars": "API key can only contain letters, numbers, and symbols",
     "gemini_key_added": "Gemini key added successfully",
     "gemini_key_updated": "Gemini key updated successfully",
     "gemini_key_deleted": "Gemini key deleted successfully",

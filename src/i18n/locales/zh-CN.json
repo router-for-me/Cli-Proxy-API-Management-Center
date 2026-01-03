@@ -767,6 +767,7 @@
     "api_key_added": "API密钥添加成功",
     "api_key_updated": "API密钥更新成功",
     "api_key_deleted": "API密钥删除成功",
+    "api_key_invalid_chars": "API密钥仅支持英文字母、数字和符号",
     "gemini_key_added": "Gemini密钥添加成功",
     "gemini_key_updated": "Gemini密钥更新成功",
     "gemini_key_deleted": "Gemini密钥删除成功",

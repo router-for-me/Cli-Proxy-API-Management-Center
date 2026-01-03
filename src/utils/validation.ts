@@ -36,6 +36,14 @@ export function isValidApiKey(key: string): boolean {
 }
 
 /**
+ * 验证 API Key 字符集（仅允许 ASCII 可见字符）
+ */
+export function isValidApiKeyCharset(key: string): boolean {
+  if (!key) return false;
+  return /^[\x21-\x7E]+$/.test(key);
+}
+
+/**
  * 验证 JSON 格式
  */
 export function isValidJson(str: string): boolean {

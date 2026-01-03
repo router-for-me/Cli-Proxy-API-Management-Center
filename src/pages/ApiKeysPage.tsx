@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { apiKeysApi } from '@/services/api';
 import { maskApiKey } from '@/utils/format';
+import { isValidApiKeyCharset } from '@/utils/validation';
 import styles from './ApiKeysPage.module.scss';
 
 export function ApiKeysPage() {
@@ -81,6 +82,10 @@ export function ApiKeysPage() {
     const trimmed = inputValue.trim();
     if (!trimmed) {
       showNotification(`${t('notification.please_enter')} ${t('notification.api_key')}`, 'error');
+      return;
+    }
+    if (!isValidApiKeyCharset(trimmed)) {
+      showNotification(t('notification.api_key_invalid_chars'), 'error');
       return;
     }
 
