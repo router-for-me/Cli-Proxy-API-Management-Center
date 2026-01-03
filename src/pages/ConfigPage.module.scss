@@ -133,13 +133,17 @@
 
 .editorWrapper {
   width: 100%;
-  flex: 1;
-  min-height: 800px;
+  flex: 0 0 auto;
+  height: clamp(360px, 60vh, 920px);
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
   overflow: hidden;
   position: relative;
   --floating-controls-height: 0px;
+
+  @supports (height: 100dvh) {
+    height: clamp(360px, 60dvh, 920px);
+  }
 
   // Floating search toolbar on top of the editor (but not covering content).
   .floatingControls {
@@ -219,8 +223,8 @@
 .configCard {
   display: flex;
   flex-direction: column;
-  height: 1120px;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
   overflow: visible;
 }
 
@@ -253,11 +257,6 @@
   }
 
   .configCard {
-    height: 880px;
     padding: $spacing-md;
-  }
-
-  .editorWrapper {
-    min-height: 600px;
   }
 }
