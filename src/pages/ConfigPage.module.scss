@@ -133,8 +133,8 @@
 
 .editorWrapper {
   width: 100%;
-  flex: 0 0 auto;
-  height: clamp(360px, 60vh, 920px);
+  flex: 1 1 auto;
+  min-height: clamp(360px, 60vh, 920px);
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
   overflow: hidden;
@@ -142,7 +142,7 @@
   --floating-controls-height: 0px;
 
   @supports (height: 100dvh) {
-    height: clamp(360px, 60dvh, 920px);
+    min-height: clamp(360px, 60dvh, 920px);
   }
 
   // Floating search toolbar on top of the editor (but not covering content).
