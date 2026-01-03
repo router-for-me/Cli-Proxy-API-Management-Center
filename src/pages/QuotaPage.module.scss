@@ -31,6 +31,14 @@
   gap: $spacing-sm;
   flex-wrap: wrap;
   align-items: center;
+
+  :global(.btn-sm) {
+    line-height: 16px;
+  }
+
+  :global(svg) {
+    display: block;
+  }
 }
 
 .titleWrapper {
@@ -134,13 +142,6 @@
   display: flex;
   gap: $spacing-xs;
   align-items: center;
-}
-
-.refreshButtonContent {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
-  white-space: nowrap;
 }
 
 .antigravityCard {

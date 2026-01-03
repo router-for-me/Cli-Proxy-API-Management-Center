@@ -211,6 +211,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     </div>
   );
 
+  const isRefreshing = sectionLoading || loading;
+
   return (
     <Card
       title={titleNode}
@@ -242,14 +244,12 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             variant="secondary"
             size="sm"
             onClick={handleRefresh}
-            disabled={disabled || sectionLoading || loading || filteredFiles.length === 0}
-            loading={sectionLoading || loading}
+            disabled={disabled || isRefreshing || filteredFiles.length === 0}
+            loading={isRefreshing}
             title={t('quota_management.refresh_files_and_quota')}
+            aria-label={t('quota_management.refresh_files_and_quota')}
           >
-            <span className={styles.refreshButtonContent}>
-              {!sectionLoading && !loading && <IconRefreshCw size={18} />}
-              {t('quota_management.refresh_files_and_quota')}
-            </span>
+            {!isRefreshing && <IconRefreshCw size={16} />}
           </Button>
         </div>
       }
