@@ -327,19 +327,21 @@ export function OAuthPage() {
               >
                 <div className="hint">{t(provider.hintKey)}</div>
                 {provider.id === 'gemini-cli' && (
-                  <Input
-                    label={t('auth_login.gemini_cli_project_id_label')}
-                    hint={t('auth_login.gemini_cli_project_id_hint')}
-                    value={state.projectId || ''}
-                    error={state.projectIdError}
-                    onChange={(e) =>
-                      updateProviderState(provider.id, {
-                        projectId: e.target.value,
-                        projectIdError: undefined
-                      })
-                    }
-                    placeholder={t('auth_login.gemini_cli_project_id_placeholder')}
-                  />
+                  <div className={styles.geminiProjectField}>
+                    <Input
+                      label={t('auth_login.gemini_cli_project_id_label')}
+                      hint={t('auth_login.gemini_cli_project_id_hint')}
+                      value={state.projectId || ''}
+                      error={state.projectIdError}
+                      onChange={(e) =>
+                        updateProviderState(provider.id, {
+                          projectId: e.target.value,
+                          projectIdError: undefined
+                        })
+                      }
+                      placeholder={t('auth_login.gemini_cli_project_id_placeholder')}
+                    />
+                  </div>
                 )}
                 {state.url && (
                   <div className={`connection-box ${styles.authUrlBox}`}>

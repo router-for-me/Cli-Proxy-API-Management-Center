@@ -27,6 +27,8 @@
 
   &--animating &__layer {
     will-change: transform, opacity;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
   }
 
   // When both layers exist, current layer also needs positioning

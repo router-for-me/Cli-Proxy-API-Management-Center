@@ -36,6 +36,7 @@ import {
   useThemeStore,
 } from '@/stores';
 import { configApi, versionApi } from '@/services/api';
+import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconLayoutDashboard size={18} />,
@@ -384,12 +385,22 @@ export function MainLayout() {
 
   const handleRefreshAll = async () => {
     clearCache();
-    try {
-      await fetchConfig(undefined, true);
-      showNotification(t('notification.data_refreshed'), 'success');
-    } catch (error: any) {
-      showNotification(`${t('notification.refresh_failed')}: ${error?.message || ''}`, 'error');
+    const results = await Promise.allSettled([
+      fetchConfig(undefined, true),
+      triggerHeaderRefresh()
+    ]);
+    const rejected = results.find((result) => result.status === 'rejected');
+    if (rejected && rejected.status === 'rejected') {
+      const reason = rejected.reason;
+      const message =
+        typeof reason === 'string' ? reason : reason instanceof Error ? reason.message : '';
+      showNotification(
+        `${t('notification.refresh_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+      return;
     }
+    showNotification(t('notification.data_refreshed'), 'success');
   };
 
   const handleVersionCheck = async () => {

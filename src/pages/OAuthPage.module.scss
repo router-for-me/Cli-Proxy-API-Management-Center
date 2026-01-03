@@ -115,6 +115,13 @@
   margin-top: $spacing-sm;
 }
 
+.geminiProjectField {
+  :global(.form-group) {
+    margin-top: $spacing-sm;
+    gap: $spacing-sm;
+  }
+}
+
 .filePicker {
   display: flex;
   align-items: center;

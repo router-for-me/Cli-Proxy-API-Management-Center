@@ -4,9 +4,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/Button';
+import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useAuthStore } from '@/stores';
-import { authFilesApi } from '@/services/api';
+import { authFilesApi, configFileApi } from '@/services/api';
 import {
   QuotaSection,
   ANTIGRAVITY_CONFIG,
@@ -26,6 +26,15 @@ export function QuotaPage() {
 
   const disableControls = connectionStatus !== 'connected';
 
+  const loadConfig = useCallback(async () => {
+    try {
+      await configFileApi.fetchConfigYaml();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');
+      setError((prev) => prev || errorMessage);
+    }
+  }, [t]);
+
   const loadFiles = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -40,20 +49,22 @@ export function QuotaPage() {
     }
   }, [t]);
 
+  const handleHeaderRefresh = useCallback(async () => {
+    await Promise.all([loadConfig(), loadFiles()]);
+  }, [loadConfig, loadFiles]);
+
+  useHeaderRefresh(handleHeaderRefresh);
+
   useEffect(() => {
     loadFiles();
-  }, [loadFiles]);
+    loadConfig();
+  }, [loadFiles, loadConfig]);
 
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>{t('quota_management.title')}</h1>
         <p className={styles.description}>{t('quota_management.description')}</p>
-        <div className={styles.headerActions}>
-          <Button variant="secondary" size="sm" onClick={loadFiles} disabled={loading}>
-            {t('quota_management.refresh_files')}
-          </Button>
-        </div>
       </div>
 
       {error && <div className={styles.errorBox}>{error}</div>}
