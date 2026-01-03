@@ -2,11 +2,12 @@
  * Generic quota section component.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { QuotaCard } from './QuotaCard';
@@ -116,6 +117,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     files,
     config
   ]);
+  const showAllAllowed = filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
+  const effectiveViewMode: ViewMode = viewMode === 'all' && !showAllAllowed ? 'paged' : viewMode;
 
   const {
     pageSize,
@@ -129,25 +132,55 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     setLoading
   } = useQuotaPagination(filteredFiles);
 
+  useEffect(() => {
+    if (showAllAllowed) return;
+    if (viewMode !== 'all') return;
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setViewMode('paged');
+      setShowTooManyWarning(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showAllAllowed, viewMode]);
+
   // Update page size based on view mode and columns
   useEffect(() => {
-    if (viewMode === 'all') {
+    if (effectiveViewMode === 'all') {
       setPageSize(Math.max(1, filteredFiles.length));
     } else {
       // Paged mode: 3 rows * columns
       setPageSize(columns * 3);
     }
-  }, [viewMode, columns, filteredFiles.length, setPageSize]);
+  }, [effectiveViewMode, columns, filteredFiles.length, setPageSize]);
 
   const { quota, loadQuota } = useQuotaLoader(config);
 
+  const pendingQuotaRefreshRef = useRef(false);
+  const prevFilesLoadingRef = useRef(loading);
+
   const handleRefresh = useCallback(() => {
-    if (viewMode === 'all') {
-      loadQuota(filteredFiles, 'all', setLoading);
-    } else {
-      loadQuota(pageItems, 'page', setLoading);
-    }
-  }, [loadQuota, filteredFiles, pageItems, viewMode, setLoading]);
+    pendingQuotaRefreshRef.current = true;
+    void triggerHeaderRefresh();
+  }, []);
+
+  useEffect(() => {
+    const wasLoading = prevFilesLoadingRef.current;
+    prevFilesLoadingRef.current = loading;
+
+    if (!pendingQuotaRefreshRef.current) return;
+    if (loading) return;
+    if (!wasLoading) return;
+
+    pendingQuotaRefreshRef.current = false;
+    const scope = effectiveViewMode === 'all' ? 'all' : 'page';
+    const targets = effectiveViewMode === 'all' ? filteredFiles : pageItems;
+    loadQuota(targets, scope, setLoading);
+  }, [loading, effectiveViewMode, filteredFiles, pageItems, loadQuota, setLoading]);
 
   useEffect(() => {
     if (loading) return;
@@ -185,14 +218,14 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         <div className={styles.headerActions}>
           <div className={styles.viewModeToggle}>
             <Button
-              variant={viewMode === 'paged' ? 'primary' : 'secondary'}
+              variant={effectiveViewMode === 'paged' ? 'primary' : 'secondary'}
               size="sm"
               onClick={() => setViewMode('paged')}
             >
               {t('auth_files.view_mode_paged')}
             </Button>
             <Button
-              variant={viewMode === 'all' ? 'primary' : 'secondary'}
+              variant={effectiveViewMode === 'all' ? 'primary' : 'secondary'}
               size="sm"
               onClick={() => {
                 if (filteredFiles.length > MAX_SHOW_ALL_THRESHOLD) {
@@ -206,14 +239,17 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             </Button>
           </div>
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             onClick={handleRefresh}
-            disabled={disabled || sectionLoading || filteredFiles.length === 0}
-            loading={sectionLoading}
-            title={t(`${config.i18nPrefix}.refresh_button`)}
+            disabled={disabled || sectionLoading || loading || filteredFiles.length === 0}
+            loading={sectionLoading || loading}
+            title={t('quota_management.refresh_files_and_quota')}
           >
-            {!sectionLoading && <IconRefreshCw size={18} />}
+            <span className={styles.refreshButtonContent}>
+              {!sectionLoading && !loading && <IconRefreshCw size={18} />}
+              {t('quota_management.refresh_files_and_quota')}
+            </span>
           </Button>
         </div>
       }
@@ -239,7 +275,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
               />
             ))}
           </div>
-          {filteredFiles.length > pageSize && viewMode === 'paged' && (
+          {filteredFiles.length > pageSize && effectiveViewMode === 'paged' && (
             <div className={styles.pagination}>
               <Button
                 variant="secondary"

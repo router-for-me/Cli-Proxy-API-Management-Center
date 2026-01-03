@@ -132,10 +132,15 @@
 
 .viewModeToggle {
   display: flex;
-  gap: 8px;
-  background-color: var(--bg-secondary);
-  padding: 4px;
-  border-radius: $radius-md;
+  gap: $spacing-xs;
+  align-items: center;
+}
+
+.refreshButtonContent {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  white-space: nowrap;
 }
 
 .antigravityCard {
