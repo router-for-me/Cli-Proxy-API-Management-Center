@@ -4,16 +4,17 @@
  */
 
 /**
- * 隐藏 API Key 中间部分
+ * 隐藏 API Key 中间部分，仅保留前后两位
  */
-export function maskApiKey(key: string, visibleChars: number = 4): string {
-  if (!key || key.length <= visibleChars * 2) {
-    return key;
+export function maskApiKey(key: string): string {
+  if (!key) {
+    return '';
   }
 
+  const visibleChars = 2;
   const start = key.slice(0, visibleChars);
   const end = key.slice(-visibleChars);
-  const maskedLength = Math.min(key.length - visibleChars * 2, 20);
+  const maskedLength = Math.max(key.length - visibleChars * 2, 1);
   const masked = '*'.repeat(maskedLength);
 
   return `${start}${masked}${end}`;
