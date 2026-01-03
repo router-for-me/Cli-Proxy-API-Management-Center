@@ -54,19 +54,28 @@ export function Modal({ open, title, onClose, footer, width = 520, children }: P
   );
 
   useEffect(() => {
+    let cancelled = false;
+
     if (open) {
       if (closeTimerRef.current !== null) {
         window.clearTimeout(closeTimerRef.current);
         closeTimerRef.current = null;
       }
-      setIsVisible(true);
-      setIsClosing(false);
-      return;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setIsVisible(true);
+        setIsClosing(false);
+      });
+    } else if (isVisible) {
+      queueMicrotask(() => {
+        if (cancelled) return;
+        startClose(false);
+      });
     }
 
-    if (isVisible) {
-      startClose(false);
-    }
+    return () => {
+      cancelled = true;
+    };
   }, [open, isVisible, startClose]);
 
   const handleClose = useCallback(() => {

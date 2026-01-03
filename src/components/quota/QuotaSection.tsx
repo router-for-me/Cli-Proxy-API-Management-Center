@@ -114,7 +114,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
   const filteredFiles = useMemo(() => files.filter((file) => config.filterFn(file)), [
     files,
-    config.filterFn
+    config
   ]);
 
   const {
@@ -126,7 +126,6 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     goToPrev,
     goToNext,
     loading: sectionLoading,
-    loadingScope,
     setLoading
   } = useQuotaPagination(filteredFiles);
 
