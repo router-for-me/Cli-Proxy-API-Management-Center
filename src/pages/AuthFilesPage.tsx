@@ -357,9 +357,6 @@ export function AuthFilesPage() {
   const start = (currentPage - 1) * pageSize;
   const pageItems = filtered.slice(start, start + pageSize);
 
-  // 统计信息
-  const totalSize = useMemo(() => files.reduce((sum, item) => sum + (item.size || 0), 0), [files]);
-
   // 点击上传
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -834,6 +831,13 @@ export function AuthFilesPage() {
     );
   };
 
+  const titleNode = (
+    <div className={styles.titleWrapper}>
+      <span>{t('auth_files.title_section')}</span>
+      {files.length > 0 && <span className={styles.countBadge}>{files.length}</span>}
+    </div>
+  );
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
@@ -842,7 +846,7 @@ export function AuthFilesPage() {
       </div>
 
       <Card
-        title={t('auth_files.title_section')}
+        title={titleNode}
         extra={
           <div className={styles.headerActions}>
             <Button
@@ -905,12 +909,6 @@ export function AuthFilesPage() {
                 value={pageSize}
                 onChange={handlePageSizeChange}
               />
-            </div>
-            <div className={styles.filterItem}>
-              <label>{t('common.info')}</label>
-              <div className={styles.statsInfo}>
-                {files.length} {t('auth_files.files_count')} · {formatFileSize(totalSize)}
-              </div>
             </div>
           </div>
         </div>

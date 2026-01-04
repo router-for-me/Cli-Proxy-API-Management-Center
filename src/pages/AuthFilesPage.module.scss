@@ -32,6 +32,28 @@
   flex-wrap: wrap;
 }
 
+.titleWrapper {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  line-height: 24px;
+}
+
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-width: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--count-badge-text);
+  background-color: var(--count-badge-bg);
+  box-sizing: border-box;
+}
+
 .errorBox {
   padding: $spacing-md;
   background-color: rgba(239, 68, 68, 0.1);
@@ -132,19 +154,6 @@
     outline: none;
     border-color: var(--primary-color);
   }
-}
-
-.statsInfo {
-  padding: 8px 12px;
-  background-color: var(--bg-secondary);
-  border-radius: $radius-md;
-  font-size: 13px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  height: 38px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
 }
 
 // 卡片网格
