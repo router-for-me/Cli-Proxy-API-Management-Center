@@ -54,6 +54,7 @@ export function PageTransition({
   useEffect(() => {
     if (isAnimating) return;
     if (location.key === currentLayerKey) return;
+    if (currentLayerPathname === location.pathname) return;
     const scrollContainer = resolveScrollContainer();
     exitScrollOffsetRef.current = scrollContainer?.scrollTop ?? 0;
     const resolveOrderIndex = (pathname?: string) => {
