@@ -312,6 +312,7 @@
     "delete_all_confirm": "确定要删除所有认证文件吗？此操作不可恢复！",
     "delete_filtered_confirm": "确定要删除筛选出的 {{type}} 认证文件吗？此操作不可恢复！",
     "upload_error_json": "只能上传JSON文件",
+    "upload_error_size": "文件大小不能超过 {{maxSize}}",
     "upload_success": "文件上传成功",
     "download_success": "文件下载成功",
     "delete_success": "文件删除成功",

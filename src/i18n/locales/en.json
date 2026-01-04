@@ -312,6 +312,7 @@
     "delete_all_confirm": "Are you sure you want to delete all auth files? This operation cannot be undone!",
     "delete_filtered_confirm": "Are you sure you want to delete all {{type}} auth files? This operation cannot be undone!",
     "upload_error_json": "Only JSON files are allowed",
+    "upload_error_size": "File size cannot exceed {{maxSize}}",
     "upload_success": "File uploaded successfully",
     "download_success": "File downloaded successfully",
     "delete_success": "File deleted successfully",

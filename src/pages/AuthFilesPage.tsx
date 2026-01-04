@@ -81,6 +81,7 @@ const OAUTH_PROVIDER_PRESETS = [
 const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
 const MIN_CARD_PAGE_SIZE = 3;
 const MAX_CARD_PAGE_SIZE = 30;
+const MAX_AUTH_FILE_SIZE = 50 * 1024;
 
 const clampCardPageSize = (value: number) =>
   Math.min(MAX_CARD_PAGE_SIZE, Math.max(MIN_CARD_PAGE_SIZE, Math.round(value)));
@@ -372,17 +373,28 @@ export function AuthFilesPage() {
     const filesToUpload = Array.from(fileList);
     const validFiles: File[] = [];
     const invalidFiles: string[] = [];
+    const oversizedFiles: string[] = [];
 
     filesToUpload.forEach((file) => {
-      if (file.name.endsWith('.json')) {
-        validFiles.push(file);
-      } else {
+      if (!file.name.endsWith('.json')) {
         invalidFiles.push(file.name);
+        return;
       }
+      if (file.size > MAX_AUTH_FILE_SIZE) {
+        oversizedFiles.push(file.name);
+        return;
+      }
+      validFiles.push(file);
     });
 
     if (invalidFiles.length > 0) {
       showNotification(t('auth_files.upload_error_json'), 'error');
+    }
+    if (oversizedFiles.length > 0) {
+      showNotification(
+        t('auth_files.upload_error_size', { maxSize: formatFileSize(MAX_AUTH_FILE_SIZE) }),
+        'error'
+      );
     }
 
     if (validFiles.length === 0) {
