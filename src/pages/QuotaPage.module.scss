@@ -57,8 +57,8 @@
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
-  color: #0284c7; // sky-600
-  background-color: #e0f2fe; // sky-100
+  color: var(--count-badge-text);
+  background-color: var(--count-badge-bg);
   box-sizing: border-box;
 }
 

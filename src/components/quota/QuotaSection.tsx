@@ -179,6 +179,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     pendingQuotaRefreshRef.current = false;
     const scope = effectiveViewMode === 'all' ? 'all' : 'page';
     const targets = effectiveViewMode === 'all' ? filteredFiles : pageItems;
+    if (targets.length === 0) return;
     loadQuota(targets, scope, setLoading);
   }, [loading, effectiveViewMode, filteredFiles, pageItems, loadQuota, setLoading]);
 
@@ -244,7 +245,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             variant="secondary"
             size="sm"
             onClick={handleRefresh}
-            disabled={disabled || isRefreshing || filteredFiles.length === 0}
+            disabled={disabled || isRefreshing}
             loading={isRefreshing}
             title={t('quota_management.refresh_files_and_quota')}
             aria-label={t('quota_management.refresh_files_and_quota')}
