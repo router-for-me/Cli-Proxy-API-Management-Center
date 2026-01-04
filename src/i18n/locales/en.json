@@ -704,7 +704,122 @@
     "search_button": "Search",
     "search_no_results": "No results",
     "search_prev": "Previous",
-    "search_next": "Next"
+    "search_next": "Next",
+    "tab_visual": "Visual Editor",
+    "tab_source": "YAML Source",
+    "beta_badge": "beta",
+    "visual_description": "Visually edit common entries. Saving only updates the corresponding YAML entries (no full-file rewrite).",
+    "visual_group": {
+      "server": "Server",
+      "tls": "TLS (HTTPS)",
+      "management": "Management API",
+      "auth": "Authentication",
+      "amp": "Amp Integration",
+      "oauth_model_mappings": "Global OAuth model mappings"
+    },
+    "action": {
+      "remove": "Remove",
+      "add_mapping": "Add mapping",
+      "add_channel": "Add channel",
+      "remove_channel": "Remove channel"
+    },
+    "field": {
+      "host": {
+        "label": "Host",
+        "help": "Server host/interface to bind to. Leave empty (\"\") to bind all interfaces (IPv4 + IPv6). Use \"127.0.0.1\" or \"localhost\" to restrict access to the local machine only.",
+        "placeholder": "e.g. 127.0.0.1"
+      },
+      "port": {
+        "label": "Port",
+        "help": "Server port.",
+        "placeholder": "e.g. 8317"
+      },
+      "tls_enable": {
+        "label": "Enable TLS (HTTPS)",
+        "help": "TLS settings for HTTPS. When enabled, the server listens with the provided certificate and key."
+      },
+      "tls_cert": {
+        "label": "TLS certificate path",
+        "help": "Certificate file path (PEM). Required when TLS is enabled.",
+        "placeholder": "e.g. /etc/ssl/cert.pem"
+      },
+      "tls_key": {
+        "label": "TLS key path",
+        "help": "Private key file path (PEM). Required when TLS is enabled.",
+        "placeholder": "e.g. /etc/ssl/key.pem"
+      },
+      "rm_allow_remote": {
+        "label": "Allow remote management",
+        "help": "Whether to allow remote (non-localhost) management access. When false, only localhost can access management endpoints (a key is still required)."
+      },
+      "rm_secret_key": {
+        "label": "Management key",
+        "help": "If a plaintext value is provided here, it will be hashed on startup. All management requests (even from localhost) require this key. Leave empty to disable the Management API entirely (404 for all /v0/management routes).",
+        "placeholder": "Leave empty to disable Management API"
+      },
+      "rm_disable_panel": {
+        "label": "Disable control panel",
+        "help": "Disable the bundled management control panel asset download and HTTP route when true."
+      },
+      "rm_panel_repo": {
+        "label": "Panel GitHub repository",
+        "help": "GitHub repository for the management control panel. Accepts a repository URL or releases API URL.",
+        "placeholder": "e.g. https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
+      },
+      "auth_dir": {
+        "label": "Auth directory",
+        "help": "Authentication directory (supports ~ for home directory).",
+        "placeholder": "e.g. ~/.cli-proxy-api"
+      },
+      "api_keys": {
+        "label": "API keys",
+        "help": "API keys for authentication, one per line.",
+        "placeholder": "your-api-key-1\nyour-api-key-2"
+      },
+      "amp_upstream_url": {
+        "label": "Upstream URL",
+        "help": "Upstream control plane URL for Amp Integration (optional). Leave empty to use the default behavior.",
+        "placeholder": "e.g. https://ampcode.com"
+      },
+      "amp_upstream_api_key": {
+        "label": "Upstream API key (Amp official)",
+        "help": "Optional. Used when routing Amp traffic to the upstream service.",
+        "placeholder": "sk-amp..."
+      },
+      "amp_restrict_mgmt_to_localhost": {
+        "label": "Restrict management to localhost",
+        "help": "When true, restrict management endpoints for this integration to localhost only."
+      },
+      "amp_force_model_mappings": {
+        "label": "Force model mappings",
+        "help": "When enabled, mappings override local API-key availability checks."
+      },
+      "amp_model_mappings": {
+        "label": "Model mappings (from → to)",
+        "help": "Rewrite model names in Amp requests."
+      },
+      "amp_model_mappings_from": {
+        "placeholder": "from model"
+      },
+      "amp_model_mappings_to": {
+        "placeholder": "to model"
+      },
+      "oauth_channel": {
+        "placeholder": "e.g. gemini-cli"
+      },
+      "oauth_mapping_name": {
+        "placeholder": "model name"
+      },
+      "oauth_mapping_alias": {
+        "placeholder": "alias (optional)"
+      },
+      "oauth_mapping_fork": {
+        "label": "fork"
+      },
+      "oauth_mappings_help": {
+        "help": "For each channel (e.g. gemini-cli, codex), add a list of model aliases. \"fork\" means the alias is added as an additional model."
+      }
+    }
   },
   "quota_management": {
     "title": "Quota Management",

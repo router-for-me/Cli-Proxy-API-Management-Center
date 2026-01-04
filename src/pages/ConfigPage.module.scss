@@ -15,6 +15,64 @@
   margin: 0 0 $spacing-md 0;
 }
 
+.tabBar {
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-lg;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tabItem {
+  @include button-reset;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+}
+
+.tabBeta {
+  color: var(--text-primary);
+}
+
+.tabLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.betaBadge {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.tabActive {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
 .description {
   font-size: 14px;
   color: var(--text-secondary);
@@ -75,7 +133,10 @@
   background: var(--primary-color);
   border: 1px solid var(--primary-color);
   color: #fff;
-  transition: background-color $transition-fast, border-color $transition-fast, opacity $transition-fast;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    opacity $transition-fast;
 
   &:hover:not(:disabled) {
     background: var(--primary-hover);
@@ -228,6 +289,181 @@
   overflow: visible;
 }
 
+.visualGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-lg;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.visualSection {
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  background: var(--bg-secondary);
+  min-width: 0;
+}
+
+.visualSectionWide {
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  background: var(--bg-secondary);
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: $spacing-md;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-primary);
+
+  input {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.inlineGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-lg;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mappingList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.mappingRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  gap: $spacing-sm;
+  align-items: center;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: $spacing-xs;
+  }
+}
+
+.oauthMappingRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto auto;
+  gap: $spacing-sm;
+  align-items: center;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: $spacing-xs;
+  }
+}
+
+.mappingArrow {
+  color: var(--text-secondary);
+  font-size: 14px;
+  user-select: none;
+
+  @include mobile {
+    display: none;
+  }
+}
+
+.mappingActions {
+  margin-top: $spacing-sm;
+  display: flex;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.oauthChannels {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.oauthChannelCard {
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  background: var(--bg-primary);
+}
+
+.oauthChannelHeader {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+  margin-bottom: $spacing-sm;
+  flex-wrap: wrap;
+
+  :global(.input) {
+    flex: 1;
+    min-width: 220px;
+  }
+}
+
+.forkToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  white-space: nowrap;
+
+  input {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+}
+
+.textareaLarge {
+  min-height: 240px;
+  resize: vertical;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+}
+
+.select {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  padding: 10px 12px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+}
+
 .actions {
   display: flex;
   gap: $spacing-sm;
@@ -246,6 +482,14 @@
   .pageTitle {
     font-size: 24px;
     margin-bottom: $spacing-sm;
+  }
+
+  .tabBar {
+    margin-bottom: $spacing-md;
+  }
+
+  .tabItem {
+    padding: 10px 16px;
   }
 
   .description {

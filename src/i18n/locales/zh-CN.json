@@ -704,7 +704,122 @@
     "search_button": "搜索",
     "search_no_results": "无结果",
     "search_prev": "上一个",
-    "search_next": "下一个"
+    "search_next": "下一个",
+    "tab_visual": "可视化编辑",
+    "tab_source": "原文件 (YAML)",
+    "beta_badge": "Beta",
+    "visual_description": "可视化编辑常用配置项。保存时只会更新对应的 YAML 条目（不会重写整份文件）。",
+    "visual_group": {
+      "server": "服务器",
+      "tls": "TLS (HTTPS)",
+      "management": "管理 API",
+      "auth": "认证",
+      "amp": "Amp 集成",
+      "oauth_model_mappings": "全局 OAuth 模型映射"
+    },
+    "action": {
+      "remove": "删除",
+      "add_mapping": "添加映射",
+      "add_channel": "添加渠道",
+      "remove_channel": "删除渠道"
+    },
+    "field": {
+      "host": {
+        "label": "监听地址",
+        "help": "服务器监听的主机/网卡地址。留空 (\"\") 表示监听所有网卡 (IPv4 + IPv6)。使用 \"127.0.0.1\" 或 \"localhost\" 可限制仅本机访问。",
+        "placeholder": "例如: 127.0.0.1"
+      },
+      "port": {
+        "label": "端口",
+        "help": "服务器端口。",
+        "placeholder": "例如: 8317"
+      },
+      "tls_enable": {
+        "label": "启用 TLS (HTTPS)",
+        "help": "HTTPS 的 TLS 配置。启用后服务器将使用证书与私钥监听 HTTPS。"
+      },
+      "tls_cert": {
+        "label": "TLS 证书路径",
+        "help": "证书文件路径 (PEM)。启用 TLS 时需要。",
+        "placeholder": "例如: /etc/ssl/cert.pem"
+      },
+      "tls_key": {
+        "label": "TLS 私钥路径",
+        "help": "私钥文件路径 (PEM)。启用 TLS 时需要。",
+        "placeholder": "例如: /etc/ssl/key.pem"
+      },
+      "rm_allow_remote": {
+        "label": "允许远程管理",
+        "help": "是否允许远程 (非 localhost) 访问管理接口。为 false 时仅 localhost 可访问（仍需要密钥）。"
+      },
+      "rm_secret_key": {
+        "label": "管理密钥",
+        "help": "如果这里提供明文，将在启动时自动哈希。所有管理请求（包括 localhost）都需要该密钥。留空会完全禁用管理 API（所有 /v0/management 路由返回 404）。",
+        "placeholder": "留空以禁用管理 API"
+      },
+      "rm_disable_panel": {
+        "label": "禁用管理面板",
+        "help": "为 true 时禁用内置管理面板资源下载与 HTTP 路由。"
+      },
+      "rm_panel_repo": {
+        "label": "面板 GitHub 仓库",
+        "help": "管理面板的 GitHub 仓库地址，可填写仓库 URL 或 releases API URL。",
+        "placeholder": "例如: https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
+      },
+      "auth_dir": {
+        "label": "认证目录",
+        "help": "认证目录路径（支持 ~ 代表用户主目录）。",
+        "placeholder": "例如: ~/.cli-proxy-api"
+      },
+      "api_keys": {
+        "label": "API 密钥",
+        "help": "用于鉴权的 API 密钥列表，每行一个。",
+        "placeholder": "your-api-key-1\nyour-api-key-2"
+      },
+      "amp_upstream_url": {
+        "label": "Upstream URL",
+        "help": "Amp 集成的上游控制平面地址（可选）。留空表示使用默认行为。",
+        "placeholder": "例如: https://ampcode.com"
+      },
+      "amp_upstream_api_key": {
+        "label": "Upstream API Key（Amp 官方）",
+        "help": "可选；用于将 Amp 流量路由到上游服务。",
+        "placeholder": "sk-amp..."
+      },
+      "amp_restrict_mgmt_to_localhost": {
+        "label": "限制管理仅本机访问",
+        "help": "为 true 时，该集成相关的管理接口仅允许 localhost 访问。"
+      },
+      "amp_force_model_mappings": {
+        "label": "强制应用模型映射",
+        "help": "开启后，映射会覆盖本地 API Key 可用性判断。"
+      },
+      "amp_model_mappings": {
+        "label": "模型映射（from → to）",
+        "help": "用于重写 Amp 请求中的模型名称。"
+      },
+      "amp_model_mappings_from": {
+        "placeholder": "from 模型（原始）"
+      },
+      "amp_model_mappings_to": {
+        "placeholder": "to 模型（目标）"
+      },
+      "oauth_channel": {
+        "placeholder": "例如: gemini-cli"
+      },
+      "oauth_mapping_name": {
+        "placeholder": "模型名"
+      },
+      "oauth_mapping_alias": {
+        "placeholder": "别名（可选）"
+      },
+      "oauth_mapping_fork": {
+        "label": "fork"
+      },
+      "oauth_mappings_help": {
+        "help": "为每个渠道（如 gemini-cli、codex）添加模型别名列表；fork 表示将别名添加为额外模型。"
+      }
+    }
   },
   "quota_management": {
     "title": "配额管理",

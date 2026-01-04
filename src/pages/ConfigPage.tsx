@@ -10,7 +10,16 @@ import { Input } from '@/components/ui/Input';
 import { IconChevronDown, IconChevronUp, IconSearch } from '@/components/ui/icons';
 import { useNotificationStore, useAuthStore, useThemeStore } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
+import { AmpIntegrationSection } from './ConfigPage/visual/components/AmpIntegrationSection';
+import { OauthModelMappingsSection } from './ConfigPage/visual/components/OauthModelMappingsSection';
+import { ServerSection } from './ConfigPage/visual/components/ServerSection';
+import { TlsSection } from './ConfigPage/visual/components/TlsSection';
+import { ManagementSection } from './ConfigPage/visual/components/ManagementSection';
+import { AuthSection } from './ConfigPage/visual/components/AuthSection';
+import { useVisualConfig } from './ConfigPage/visual/useVisualConfig';
 import styles from './ConfigPage.module.scss';
+
+type ConfigEditorTab = 'visual' | 'source';
 
 export function ConfigPage() {
   const { t } = useTranslation();
@@ -18,21 +27,33 @@ export function ConfigPage() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
 
+  const [activeTab, setActiveTab] = useState<ConfigEditorTab>('source');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [dirty, setDirty] = useState(false);
+  const { visualValues, setVisualValues, loadVisualValuesFromYaml, applyVisualChangesToYaml, visualDirty } =
+    useVisualConfig();
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
+  const [searchResults, setSearchResults] = useState<{ current: number; total: number }>({
+    current: 0,
+    total: 0,
+  });
   const [lastSearchedQuery, setLastSearchedQuery] = useState('');
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const floatingControlsRef = useRef<HTMLDivElement>(null);
   const editorWrapperRef = useRef<HTMLDivElement>(null);
 
   const disableControls = connectionStatus !== 'connected';
+  const visualSectionProps = {
+    t,
+    values: visualValues,
+    setValues: setVisualValues,
+    disabled: disableControls || loading,
+  };
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
@@ -41,13 +62,14 @@ export function ConfigPage() {
       const data = await configFileApi.fetchConfigYaml();
       setContent(data);
       setDirty(false);
+      loadVisualValuesFromYaml(data);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [loadVisualValuesFromYaml, t]);
 
   useEffect(() => {
     loadConfig();
@@ -56,7 +78,12 @@ export function ConfigPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await configFileApi.saveConfigYaml(content);
+      const nextContent = activeTab === 'visual' ? applyVisualChangesToYaml(content) : content;
+      await configFileApi.saveConfigYaml(nextContent);
+      if (activeTab === 'visual') {
+        setContent(nextContent);
+        loadVisualValuesFromYaml(nextContent);
+      }
       setDirty(false);
       showNotification(t('config_management.save_success'), 'success');
     } catch (err: unknown) {
@@ -71,6 +98,24 @@ export function ConfigPage() {
     setContent(value);
     setDirty(true);
   }, []);
+
+  const handleTabChange = useCallback(
+    (tab: ConfigEditorTab) => {
+      if (tab === activeTab) return;
+      if (tab === 'source') {
+        const nextContent = applyVisualChangesToYaml(content);
+        if (nextContent !== content) {
+          setContent(nextContent);
+          setDirty(true);
+          loadVisualValuesFromYaml(nextContent);
+        }
+      } else {
+        loadVisualValuesFromYaml(content);
+      }
+      setActiveTab(tab);
+    },
+    [activeTab, applyVisualChangesToYaml, content, loadVisualValuesFromYaml]
+  );
 
   // Search functionality
   const performSearch = useCallback((query: string, direction: 'next' | 'prev' = 'next') => {
@@ -132,7 +177,7 @@ export function ConfigPage() {
     // Scroll to and select the match
     view.dispatch({
       selection: { anchor: matchPos, head: matchPos + query.length },
-      scrollIntoView: true
+      scrollIntoView: true,
     });
     view.focus();
   }, []);
@@ -148,18 +193,24 @@ export function ConfigPage() {
     }
   }, []);
 
-  const executeSearch = useCallback((direction: 'next' | 'prev' = 'next') => {
-    if (!searchQuery) return;
-    setLastSearchedQuery(searchQuery);
-    performSearch(searchQuery, direction);
-  }, [searchQuery, performSearch]);
+  const executeSearch = useCallback(
+    (direction: 'next' | 'prev' = 'next') => {
+      if (!searchQuery) return;
+      setLastSearchedQuery(searchQuery);
+      performSearch(searchQuery, direction);
+    },
+    [searchQuery, performSearch]
+  );
 
-  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      executeSearch(e.shiftKey ? 'prev' : 'next');
-    }
-  }, [executeSearch]);
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        executeSearch(e.shiftKey ? 'prev' : 'next');
+      }
+    },
+    [executeSearch]
+  );
 
   const handlePrevMatch = useCallback(() => {
     if (!lastSearchedQuery) return;
@@ -195,12 +246,10 @@ export function ConfigPage() {
   }, []);
 
   // CodeMirror extensions
-  const extensions = useMemo(() => [
-    yaml(),
-    search(),
-    highlightSelectionMatches(),
-    keymap.of(searchKeymap)
-  ], []);
+  const extensions = useMemo(
+    () => [yaml(), search(), highlightSelectionMatches(), keymap.of(searchKeymap)],
+    []
+  );
 
   // Status text
   const getStatusText = () => {
@@ -208,13 +257,14 @@ export function ConfigPage() {
     if (loading) return t('config_management.status_loading');
     if (error) return t('config_management.status_load_failed');
     if (saving) return t('config_management.status_saving');
-    if (dirty) return t('config_management.status_dirty');
+    if (dirty || (activeTab === 'visual' && visualDirty))
+      return t('config_management.status_dirty');
     return t('config_management.status_loaded');
   };
 
   const getStatusClass = () => {
     if (error) return styles.error;
-    if (dirty) return styles.modified;
+    if (dirty || (activeTab === 'visual' && visualDirty)) return styles.modified;
     if (!loading && !saving) return styles.saved;
     return '';
   };
@@ -224,109 +274,173 @@ export function ConfigPage() {
       <h1 className={styles.pageTitle}>{t('config_management.title')}</h1>
       <p className={styles.description}>{t('config_management.description')}</p>
 
+      <div className={styles.tabBar}>
+        <button
+          type="button"
+          className={`${styles.tabItem} ${activeTab === 'source' ? styles.tabActive : ''}`}
+          onClick={() => handleTabChange('source')}
+        >
+          {t('config_management.tab_source', { defaultValue: 'YAML Source' })}
+        </button>
+        <button
+          type="button"
+          className={`${styles.tabItem} ${styles.tabBeta} ${activeTab === 'visual' ? styles.tabActive : ''}`}
+          onClick={() => handleTabChange('visual')}
+        >
+          <span className={styles.tabLabel}>
+            {t('config_management.tab_visual', { defaultValue: 'Visual Editor' })}
+            <span className={styles.betaBadge}>
+              {t('config_management.beta_badge', { defaultValue: 'beta' })}
+            </span>
+          </span>
+        </button>
+      </div>
+
       <Card className={styles.configCard}>
         <div className={styles.content}>
-          {/* Editor */}
-          {error && <div className="error-box">{error}</div>}
-          <div className={styles.editorWrapper} ref={editorWrapperRef}>
-            {/* Floating search controls */}
-            <div className={styles.floatingControls} ref={floatingControlsRef}>
-              <div className={styles.searchInputWrapper}>
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  placeholder={t('config_management.search_placeholder', {
-                    defaultValue: '搜索配置内容...'
-                  })}
-                  disabled={disableControls || loading}
-                  className={styles.searchInput}
-                  rightElement={
-                    <div className={styles.searchRight}>
-                      {searchQuery && lastSearchedQuery === searchQuery && (
-                        <span className={styles.searchCount}>
-                          {searchResults.total > 0
-                            ? `${searchResults.current} / ${searchResults.total}`
-                            : t('config_management.search_no_results', { defaultValue: '无结果' })}
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        className={styles.searchButton}
-                        onClick={() => executeSearch('next')}
-                        disabled={!searchQuery || disableControls || loading}
-                        title={t('config_management.search_button', { defaultValue: '搜索' })}
-                      >
-                        <IconSearch size={16} />
-                      </button>
-                    </div>
-                  }
+          {activeTab === 'visual' && (
+            <div className="stack">
+              {error && <div className="error-box">{error}</div>}
+              <div className="hint">
+                {t('config_management.visual_description', {
+                  defaultValue:
+                    'Visually edit common entries. Saving only updates the corresponding YAML entries (no full-file rewrite).',
+                })}
+              </div>
+
+              <div className={styles.visualGrid}>
+                <ServerSection {...visualSectionProps} />
+                <TlsSection {...visualSectionProps} />
+                <ManagementSection {...visualSectionProps} />
+                <AuthSection {...visualSectionProps} />
+              </div>
+
+              <AmpIntegrationSection {...visualSectionProps} />
+              <OauthModelMappingsSection {...visualSectionProps} />
+
+            </div>
+          )}
+
+          {activeTab === 'source' && (
+            <>
+              {/* Editor */}
+              {error && <div className="error-box">{error}</div>}
+              <div className={styles.editorWrapper} ref={editorWrapperRef}>
+                {/* Floating search controls */}
+                <div className={styles.floatingControls} ref={floatingControlsRef}>
+                  <div className={styles.searchInputWrapper}>
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder={t('config_management.search_placeholder', {
+                        defaultValue: '搜索配置内容...',
+                      })}
+                      disabled={disableControls || loading}
+                      className={styles.searchInput}
+                      rightElement={
+                        <div className={styles.searchRight}>
+                          {searchQuery && lastSearchedQuery === searchQuery && (
+                            <span className={styles.searchCount}>
+                              {searchResults.total > 0
+                                ? `${searchResults.current} / ${searchResults.total}`
+                                : t('config_management.search_no_results', {
+                                    defaultValue: '无结果',
+                                  })}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className={styles.searchButton}
+                            onClick={() => executeSearch('next')}
+                            disabled={!searchQuery || disableControls || loading}
+                            title={t('config_management.search_button', { defaultValue: '搜索' })}
+                          >
+                            <IconSearch size={16} />
+                          </button>
+                        </div>
+                      }
+                    />
+                  </div>
+                  <div className={styles.searchActions}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handlePrevMatch}
+                      disabled={
+                        !searchQuery ||
+                        lastSearchedQuery !== searchQuery ||
+                        searchResults.total === 0
+                      }
+                      title={t('config_management.search_prev', { defaultValue: '上一个' })}
+                    >
+                      <IconChevronUp size={16} />
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleNextMatch}
+                      disabled={
+                        !searchQuery ||
+                        lastSearchedQuery !== searchQuery ||
+                        searchResults.total === 0
+                      }
+                      title={t('config_management.search_next', { defaultValue: '下一个' })}
+                    >
+                      <IconChevronDown size={16} />
+                    </Button>
+                  </div>
+                </div>
+                <CodeMirror
+                  ref={editorRef}
+                  value={content}
+                  onChange={handleChange}
+                  extensions={extensions}
+                  theme={resolvedTheme}
+                  editable={!disableControls && !loading}
+                  placeholder={t('config_management.editor_placeholder')}
+                  height="100%"
+                  style={{ height: '100%' }}
+                  basicSetup={{
+                    lineNumbers: true,
+                    highlightActiveLineGutter: true,
+                    highlightActiveLine: true,
+                    foldGutter: true,
+                    dropCursor: true,
+                    allowMultipleSelections: true,
+                    indentOnInput: true,
+                    bracketMatching: true,
+                    closeBrackets: true,
+                    autocompletion: false,
+                    rectangularSelection: true,
+                    crosshairCursor: false,
+                    highlightSelectionMatches: true,
+                    closeBracketsKeymap: true,
+                    searchKeymap: true,
+                    foldKeymap: true,
+                    completionKeymap: false,
+                    lintKeymap: true,
+                  }}
                 />
               </div>
-              <div className={styles.searchActions}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handlePrevMatch}
-                  disabled={!searchQuery || lastSearchedQuery !== searchQuery || searchResults.total === 0}
-                  title={t('config_management.search_prev', { defaultValue: '上一个' })}
-                >
-                  <IconChevronUp size={16} />
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleNextMatch}
-                  disabled={!searchQuery || lastSearchedQuery !== searchQuery || searchResults.total === 0}
-                  title={t('config_management.search_next', { defaultValue: '下一个' })}
-                >
-                  <IconChevronDown size={16} />
-                </Button>
-              </div>
-            </div>
-            <CodeMirror
-              ref={editorRef}
-              value={content}
-              onChange={handleChange}
-              extensions={extensions}
-              theme={resolvedTheme}
-              editable={!disableControls && !loading}
-              placeholder={t('config_management.editor_placeholder')}
-              height="100%"
-              style={{ height: '100%' }}
-              basicSetup={{
-                lineNumbers: true,
-                highlightActiveLineGutter: true,
-                highlightActiveLine: true,
-                foldGutter: true,
-                dropCursor: true,
-                allowMultipleSelections: true,
-                indentOnInput: true,
-                bracketMatching: true,
-                closeBrackets: true,
-                autocompletion: false,
-                rectangularSelection: true,
-                crosshairCursor: false,
-                highlightSelectionMatches: true,
-                closeBracketsKeymap: true,
-                searchKeymap: true,
-                foldKeymap: true,
-                completionKeymap: false,
-                lintKeymap: true
-              }}
-            />
-          </div>
+            </>
+          )}
 
           {/* Controls */}
           <div className={styles.controls}>
-            <span className={`${styles.status} ${getStatusClass()}`}>
-              {getStatusText()}
-            </span>
+            <span className={`${styles.status} ${getStatusClass()}`}>{getStatusText()}</span>
             <div className={styles.actions}>
               <Button variant="secondary" size="sm" onClick={loadConfig} disabled={loading}>
                 {t('config_management.reload')}
               </Button>
-              <Button size="sm" onClick={handleSave} loading={saving} disabled={disableControls || loading || !dirty}>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                loading={saving}
+                disabled={
+                  disableControls || loading || (!dirty && !(activeTab === 'visual' && visualDirty))
+                }
+              >
                 {t('config_management.save')}
               </Button>
             </div>
