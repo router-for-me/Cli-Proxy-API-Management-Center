@@ -29,6 +29,8 @@ type YamlTemplatePatch = {
 
 const DEFAULT_INDENT_STEP = 2;
 
+import { isMap, isSeq, parseDocument, Scalar } from 'yaml';
+
 const isBlank = (line: string | undefined) => !line || !line.trim();
 const isComment = (line: string | undefined) => {
   const trimmed = (line || '').trim();
@@ -575,155 +577,62 @@ export function applyYamlTemplatePatches(
   return hadTrailingNewline && !joined.endsWith(newline) ? joined + newline : joined;
 }
 
-const parseYamlScalarValue = (raw: string) => {
-  const trimmed = raw.trim();
-  if (!trimmed) return '';
-  if (trimmed === 'true') return true;
-  if (trimmed === 'false') return false;
-
-  const num = Number(trimmed);
-  if (Number.isFinite(num) && /^-?\d+(\.\d+)?$/.test(trimmed)) {
-    return num;
-  }
-
-  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-    try {
-      return JSON.parse(trimmed);
-    } catch {
-      return trimmed.slice(1, -1);
-    }
-  }
-
-  if (trimmed.startsWith("'") && trimmed.endsWith("'")) {
-    return trimmed.slice(1, -1).replace(/''/g, "'");
-  }
-
-  return trimmed;
-};
-
 export function getYamlScalarAtPath(yamlText: string, path: string[]): unknown {
   if (!path.length) return undefined;
-  const lines = (yamlText || '').split(/\r?\n/);
-  let parentStartIndex = -1;
-  let parentIndent = -DEFAULT_INDENT_STEP;
-
-  for (let depth = 0; depth < path.length; depth++) {
-    const key = path[depth];
-    const indent = parentStartIndex === -1 ? 0 : parentIndent + DEFAULT_INDENT_STEP;
-    const { start, end } = findBlockRangeForParent(lines, parentStartIndex);
-    const found = findKeyLineInRange(lines, key, start, end, indent);
-    if (found === -1) return undefined;
-
-    const isLeaf = depth === path.length - 1;
-    if (isLeaf) {
-      const { content } = splitInlineComment(lines[found] || '');
-      const after = content.slice(indent).slice(key.length);
-      const match = after.match(/^\s*:\s*(.*)$/);
-      const raw = match ? match[1] : '';
-      return parseYamlScalarValue(raw);
-    }
-
-    parentStartIndex = found;
-    parentIndent = indent;
+  try {
+    const doc = parseDocument(String(yamlText || ''));
+    if (doc.errors?.length) return undefined;
+    const value = doc.getIn(path);
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+      return value;
+    if (value instanceof Scalar) return value.value;
+    return undefined;
+  } catch {
+    return undefined;
   }
-
-  return undefined;
 }
 
 export function getYamlStringArrayAtPath(yamlText: string, path: string[]): string[] | undefined {
   if (!path.length) return undefined;
-  const lines = (yamlText || '').split(/\r?\n/);
-  let parentStartIndex = -1;
-  let parentIndent = -DEFAULT_INDENT_STEP;
-
-  for (let depth = 0; depth < path.length; depth++) {
-    const key = path[depth];
-    const indent = parentStartIndex === -1 ? 0 : parentIndent + DEFAULT_INDENT_STEP;
-    const { start, end } = findBlockRangeForParent(lines, parentStartIndex);
-    const found = findKeyLineInRange(lines, key, start, end, indent);
-    if (found === -1) return undefined;
-
-    const isLeaf = depth === path.length - 1;
-    if (isLeaf) {
-      const { content } = splitInlineComment(lines[found] || '');
-      const after = content.slice(indent).slice(key.length);
-      const match = after.match(/^\s*:\s*(.*)$/);
-      const raw = (match ? match[1] : '').trim();
-      if (raw === '[]') return [];
-
-      const childStart = findNextSignificant(lines, found + 1);
-      if (childStart === -1) return [];
-      const childIndent = indent + DEFAULT_INDENT_STEP;
-      if (countIndent(lines[childStart]) <= indent) return [];
-
-      const items: string[] = [];
-      for (let i = childStart; i < lines.length; i++) {
-        if (!isSignificant(lines[i])) continue;
-        if (countIndent(lines[i]) <= indent) break;
-        if (countIndent(lines[i]) !== childIndent) continue;
-        const trimmed = lines[i].slice(childIndent).trim();
-        if (!trimmed.startsWith('-')) continue;
-        const itemRaw = trimmed.replace(/^-+\s*/, '');
-        const itemValue = parseYamlScalarValue(itemRaw);
-        if (typeof itemValue === 'string') items.push(itemValue);
-        else if (itemValue === undefined || itemValue === null) items.push('');
-        else items.push(String(itemValue));
-      }
-      return items;
-    }
-
-    parentStartIndex = found;
-    parentIndent = indent;
+  try {
+    const doc = parseDocument(String(yamlText || ''));
+    if (doc.errors?.length) return undefined;
+    const node = doc.getIn(path);
+    if (node === undefined) return undefined;
+    if (Array.isArray(node)) return node.map((v) => String(v ?? ''));
+    if (isSeq(node)) return node.toJSON().map((v: unknown) => String(v ?? ''));
+    return undefined;
+  } catch {
+    return undefined;
   }
-
-  return undefined;
 }
 
 export function listYamlMapKeysAtPath(yamlText: string, path: string[]): string[] {
   if (!path.length) return [];
-  const lines = (yamlText || '').split(/\r?\n/);
-  let parentStartIndex = -1;
-  let parentIndent = -DEFAULT_INDENT_STEP;
+  try {
+    const doc = parseDocument(String(yamlText || ''));
+    if (doc.errors?.length) return [];
+    const node = doc.getIn(path);
+    if (!isMap(node)) return [];
 
-  for (let depth = 0; depth < path.length; depth++) {
-    const key = path[depth];
-    const indent = parentStartIndex === -1 ? 0 : parentIndent + DEFAULT_INDENT_STEP;
-    const { start, end } = findBlockRangeForParent(lines, parentStartIndex);
-    const found = findKeyLineInRange(lines, key, start, end, indent);
-    if (found === -1) return [];
-
-    const isLeaf = depth === path.length - 1;
-    if (isLeaf) {
-      const endIndex = getKeyBlockEnd(lines, found);
-      const childIndent = indent + DEFAULT_INDENT_STEP;
-      const keys: string[] = [];
-      const seen = new Set<string>();
-
-      for (let i = found + 1; i <= endIndex && i < lines.length; i++) {
-        const line = lines[i];
-        if (!isSignificant(line)) continue;
-        if (countIndent(line) <= indent) break;
-        if (countIndent(line) !== childIndent) continue;
-        const trimmed = line.slice(childIndent);
-        if (trimmed.trimStart().startsWith('-')) continue;
-        const match = trimmed.match(/^([^\s:]+)\s*:\s*(.*)$/);
-        if (!match) continue;
-        const k = String(match[1] || '').trim();
-        if (!k) continue;
-        const lowered = k.toLowerCase();
-        if (seen.has(lowered)) continue;
-        seen.add(lowered);
-        keys.push(k);
-      }
-
-      return keys;
-    }
-
-    parentStartIndex = found;
-    parentIndent = indent;
+    const seen = new Set<string>();
+    const keys: string[] = [];
+    node.items.forEach((pair) => {
+      const rawKey =
+        pair.key instanceof Scalar ? String(pair.key.value ?? '') : String((pair.key as unknown) ?? '');
+      const key = rawKey.trim();
+      if (!key) return;
+      const lowered = key.toLowerCase();
+      if (seen.has(lowered)) return;
+      seen.add(lowered);
+      keys.push(key);
+    });
+    return keys;
+  } catch {
+    return [];
   }
-
-  return [];
 }
 
 export function getYamlObjectArrayAtPath(
@@ -731,109 +640,23 @@ export function getYamlObjectArrayAtPath(
   path: string[]
 ): Array<Record<string, unknown>> | undefined {
   if (!path.length) return undefined;
-  const lines = (yamlText || '').split(/\r?\n/);
-  let parentStartIndex = -1;
-  let parentIndent = -DEFAULT_INDENT_STEP;
-
-  for (let depth = 0; depth < path.length; depth++) {
-    const key = path[depth];
-    const indent = parentStartIndex === -1 ? 0 : parentIndent + DEFAULT_INDENT_STEP;
-    const { start, end } = findBlockRangeForParent(lines, parentStartIndex);
-    const found = findKeyLineInRange(lines, key, start, end, indent);
-    if (found === -1) return undefined;
-
-    const isLeaf = depth === path.length - 1;
-    if (isLeaf) {
-      const { content } = splitInlineComment(lines[found] || '');
-      const after = content.slice(indent).slice(key.length);
-      const match = after.match(/^\s*:\s*(.*)$/);
-      const raw = (match ? match[1] : '').trim();
-      if (raw === '[]') return [];
-
-      const blockEnd = getKeyBlockEnd(lines, found);
-      const childStart = findNextSignificant(lines, found + 1);
-      if (childStart === -1) return [];
-      if (countIndent(lines[childStart]) <= indent) return [];
-
-      let listIndent = indent + DEFAULT_INDENT_STEP;
-      if (
-        countIndent(lines[childStart]) > listIndent &&
-        lines[childStart].trimStart().startsWith('-')
-      ) {
-        listIndent = countIndent(lines[childStart]);
-      }
-
-      const items: Array<Record<string, unknown>> = [];
-
-      let i = childStart;
-      while (i <= blockEnd && i < lines.length) {
-        const line = lines[i];
-        if (!isSignificant(line)) {
-          i++;
-          continue;
-        }
-        if (countIndent(line) <= indent) break;
-
-        if (
-          countIndent(line) === listIndent &&
-          line.slice(listIndent).trimStart().startsWith('-')
-        ) {
-          const item: Record<string, unknown> = {};
-          const first = splitInlineComment(
-            line
-              .slice(listIndent)
-              .trimStart()
-              .replace(/^-+\s*/, '')
-          ).content.trim();
-          if (first) {
-            const kv = first.match(/^([^\s:]+)\s*:\s*(.*)$/);
-            if (kv) {
-              item[String(kv[1]).trim()] = parseYamlScalarValue(String(kv[2] ?? ''));
-            }
-          }
-
-          let j = i + 1;
-          while (j <= blockEnd && j < lines.length) {
-            const next = lines[j];
-            if (!isSignificant(next)) {
-              j++;
-              continue;
-            }
-            if (countIndent(next) <= indent) break;
-            if (
-              countIndent(next) === listIndent &&
-              next.slice(listIndent).trimStart().startsWith('-')
-            )
-              break;
-            if (countIndent(next) !== listIndent + DEFAULT_INDENT_STEP) {
-              j++;
-              continue;
-            }
-
-            const { content: kvLine } = splitInlineComment(
-              next.slice(listIndent + DEFAULT_INDENT_STEP)
-            );
-            const kv = kvLine.trim().match(/^([^\s:]+)\s*:\s*(.*)$/);
-            if (kv) {
-              item[String(kv[1]).trim()] = parseYamlScalarValue(String(kv[2] ?? ''));
-            }
-            j++;
-          }
-
-          if (Object.keys(item).length) items.push(item);
-          i = j;
-          continue;
-        }
-
-        i++;
-      }
-
-      return items;
+  try {
+    const doc = parseDocument(String(yamlText || ''));
+    if (doc.errors?.length) return undefined;
+    const node = doc.getIn(path);
+    if (node === undefined) return undefined;
+    if (Array.isArray(node)) {
+      return node.filter((v) => v && typeof v === 'object' && !Array.isArray(v)) as Array<
+        Record<string, unknown>
+      >;
     }
-
-    parentStartIndex = found;
-    parentIndent = indent;
+    if (!isSeq(node)) return undefined;
+    const raw = node.toJSON();
+    if (!Array.isArray(raw)) return undefined;
+    return raw.filter((v) => v && typeof v === 'object' && !Array.isArray(v)) as Array<
+      Record<string, unknown>
+    >;
+  } catch {
+    return undefined;
   }
-
-  return undefined;
 }

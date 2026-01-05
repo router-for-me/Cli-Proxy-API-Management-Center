@@ -103,7 +103,7 @@ export function OauthModelMappingsSection({ t, values, setValues, disabled }: Vi
                       }));
                     }}
                   />
-                  <label className={styles.checkboxInline}>
+                  <label className={styles.forkToggle}>
                     <input
                       type="checkbox"
                       checked={entry.fork}

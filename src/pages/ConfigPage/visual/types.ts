@@ -76,6 +76,6 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   ampUpstreamApiKey: '',
   ampRestrictManagementToLocalhost: false,
   ampForceModelMappings: false,
-  ampModelMappings: [{ id: makeClientId(), from: '', to: '' }],
+  ampModelMappings: [],
   oauthModelMappings: [],
 };
