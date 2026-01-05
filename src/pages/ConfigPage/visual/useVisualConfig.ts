@@ -1,58 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   applyYamlPatches,
-  applyYamlTemplatePatches,
   extractYamlCommentSection,
-  extractYamlTopLevelBlock,
   getYamlObjectArrayAtPath,
   getYamlScalarAtPath,
   getYamlStringArrayAtPath,
+  hasYamlTopLevelKey,
   listYamlMapKeysAtPath,
   normalizeYamlSnippetToRoot,
+  removeYamlCommentSectionByMarkers,
 } from '@/utils/yamlPatch';
 import type { OauthChannelMappings, OauthModelMappingEntry, VisualConfigValues } from './types';
 import { DEFAULT_VISUAL_VALUES, makeClientId } from './types';
-
-const CONFIG_YAML_KEY_ORDER: Record<string, string[]> = {
-  '': [
-    'host',
-    'port',
-    'tls',
-    'remote-management',
-    'auth-dir',
-    'api-keys',
-    'debug',
-    'commercial-mode',
-    'logging-to-file',
-    'logs-max-total-size-mb',
-    'usage-statistics-enabled',
-    'proxy-url',
-    'force-model-prefix',
-    'request-retry',
-    'max-retry-interval',
-    'quota-exceeded',
-    'routing',
-    'ws-auth',
-    'ampcode',
-    'oauth-model-mappings',
-  ],
-  tls: ['enable', 'cert', 'key'],
-  'remote-management': [
-    'allow-remote',
-    'secret-key',
-    'disable-control-panel',
-    'panel-github-repository',
-  ],
-  'quota-exceeded': ['switch-project', 'switch-preview-model'],
-  routing: ['strategy'],
-  ampcode: [
-    'upstream-url',
-    'upstream-api-key',
-    'restrict-management-to-localhost',
-    'force-model-mappings',
-    'model-mappings',
-  ],
-};
 
 export function useVisualConfig() {
   const [visualValues, setVisualValues] = useState<VisualConfigValues>(DEFAULT_VISUAL_VALUES);
@@ -135,16 +94,16 @@ export function useVisualConfig() {
     const wsAuth = getYamlScalarAtPath(yamlText, ['ws-auth']);
     if (typeof wsAuth === 'boolean') next.wsAuth = wsAuth;
 
-    const ampTopLevel = extractYamlTopLevelBlock(yamlText, 'ampcode');
     const ampComment = extractYamlCommentSection(
       yamlText,
       '# Amp Integration',
       '# Global OAuth model name mappings (per channel)',
       { includeMarkers: false }
     );
-    const ampSnippet = ampTopLevel || ampComment || '';
-    if (ampSnippet.trim()) {
-      const ampDoc = normalizeYamlSnippetToRoot(ampSnippet, 'ampcode');
+    const ampDoc = hasYamlTopLevelKey(yamlText, 'ampcode')
+      ? yamlText
+      : normalizeYamlSnippetToRoot(ampComment, 'ampcode');
+    if (ampDoc.trim()) {
       const upstreamUrl = getYamlScalarAtPath(ampDoc, ['ampcode', 'upstream-url']);
       if (typeof upstreamUrl === 'string') next.ampUpstreamUrl = upstreamUrl;
       const upstreamApiKey = getYamlScalarAtPath(ampDoc, ['ampcode', 'upstream-api-key']);
@@ -170,16 +129,16 @@ export function useVisualConfig() {
       }
     }
 
-    const oauthTopLevel = extractYamlTopLevelBlock(yamlText, 'oauth-model-mappings');
     const oauthComment = extractYamlCommentSection(
       yamlText,
       '# Global OAuth model name mappings (per channel)',
       '# OAuth provider excluded models',
       { includeMarkers: false }
     );
-    const oauthSnippet = oauthTopLevel || oauthComment || '';
-    if (oauthSnippet.trim()) {
-      const oauthDoc = normalizeYamlSnippetToRoot(oauthSnippet, 'oauth-model-mappings');
+    const oauthDoc = hasYamlTopLevelKey(yamlText, 'oauth-model-mappings')
+      ? yamlText
+      : normalizeYamlSnippetToRoot(oauthComment, 'oauth-model-mappings');
+    if (oauthDoc.trim()) {
       const channels = listYamlMapKeysAtPath(oauthDoc, ['oauth-model-mappings']);
       next.oauthModelMappings = channels.map((channel) => {
         const items = getYamlObjectArrayAtPath(oauthDoc, ['oauth-model-mappings', channel]) || [];
@@ -207,7 +166,6 @@ export function useVisualConfig() {
   const buildVisualPatches = useCallback(
     (yamlText: string) => {
       const patches: Parameters<typeof applyYamlPatches>[1] = [];
-      const templatePatches: Parameters<typeof applyYamlTemplatePatches>[1] = [];
 
       const pushString = (path: string[], current: string, initial: string, { force = false } = {}) => {
         if (!force && current === initial) return;
@@ -323,11 +281,6 @@ export function useVisualConfig() {
       pushEnum(['routing', 'strategy'], visualValues.routingStrategy, visualInitial.routingStrategy);
       pushBoolean(['ws-auth'], visualValues.wsAuth, visualInitial.wsAuth);
 
-      const hasLine = (text: string, marker: string) =>
-        String(text || '')
-          .split(/\r?\n/)
-          .some((line) => line.trim() === marker.trim());
-
       const ampMappingsNow = (visualValues.ampModelMappings || [])
         .map((m) => ({ from: m.from.trim(), to: m.to.trim() }))
         .filter((m) => m.from && m.to);
@@ -345,66 +298,30 @@ export function useVisualConfig() {
         ampMappingsNow.length > 0;
 
       if (ampHasContent) {
-        const ampHasRoot = !!extractYamlTopLevelBlock(yamlText, 'ampcode').trim();
-        const ampHasMarker = hasLine(yamlText, '# Amp Integration');
+        pushString(['ampcode', 'upstream-url'], visualValues.ampUpstreamUrl, visualInitial.ampUpstreamUrl);
+        pushString(
+          ['ampcode', 'upstream-api-key'],
+          visualValues.ampUpstreamApiKey,
+          visualInitial.ampUpstreamApiKey
+        );
+        pushBoolean(
+          ['ampcode', 'restrict-management-to-localhost'],
+          visualValues.ampRestrictManagementToLocalhost,
+          visualInitial.ampRestrictManagementToLocalhost
+        );
+        pushBoolean(
+          ['ampcode', 'force-model-mappings'],
+          visualValues.ampForceModelMappings,
+          visualInitial.ampForceModelMappings
+        );
 
-        const buildAmpSnippet = () => {
-          const quote = (v: string) => JSON.stringify(String(v ?? ''));
-          const lines: string[] = [];
-          if (ampUpstreamUrl) lines.push(`upstream-url: ${quote(ampUpstreamUrl)}`);
-          if (ampUpstreamApiKey) lines.push(`upstream-api-key: ${quote(ampUpstreamApiKey)}`);
-          if (visualValues.ampRestrictManagementToLocalhost) {
-            lines.push('restrict-management-to-localhost: true');
-          }
-          if (visualValues.ampForceModelMappings) {
-            lines.push('force-model-mappings: true');
-          }
-          if (ampMappingsNow.length) {
-            lines.push('model-mappings:');
-            ampMappingsNow.forEach((m) => {
-              lines.push(`  - from: ${quote(m.from)}`);
-              lines.push(`    to: ${quote(m.to)}`);
-            });
-          }
-          return lines.join('\n');
-        };
-
-        if (!ampHasRoot && ampHasMarker) {
-          const snippet = buildAmpSnippet();
-          if (snippet.trim()) {
-            templatePatches.push({
-              rootKey: 'ampcode',
-              snippet,
-              startMarker: '# Amp Integration',
-              endMarker: '# Global OAuth model name mappings (per channel)',
-            });
-          }
-        } else {
-          pushString(['ampcode', 'upstream-url'], visualValues.ampUpstreamUrl, visualInitial.ampUpstreamUrl);
-          pushString(
-            ['ampcode', 'upstream-api-key'],
-            visualValues.ampUpstreamApiKey,
-            visualInitial.ampUpstreamApiKey
-          );
-          pushBoolean(
-            ['ampcode', 'restrict-management-to-localhost'],
-            visualValues.ampRestrictManagementToLocalhost,
-            visualInitial.ampRestrictManagementToLocalhost
-          );
-          pushBoolean(
-            ['ampcode', 'force-model-mappings'],
-            visualValues.ampForceModelMappings,
-            visualInitial.ampForceModelMappings
-          );
-
-          if (ampMappingsChanged) {
-            patches.push({
-              path: ['ampcode', 'model-mappings'],
-              type: 'objectArray',
-              value: ampMappingsNow.map((m) => ({ from: m.from, to: m.to })),
-              itemKeyOrder: ['from', 'to'],
-            });
-          }
+        if (ampMappingsChanged) {
+          patches.push({
+            path: ['ampcode', 'model-mappings'],
+            type: 'objectArray',
+            value: ampMappingsNow.map((m) => ({ from: m.from, to: m.to })),
+            itemKeyOrder: ['from', 'to'],
+          });
         }
       }
 
@@ -413,8 +330,7 @@ export function useVisualConfig() {
           .map((e) => ({ name: e.name.trim(), alias: e.alias.trim(), fork: !!e.fork }))
           .filter((e) => e.name);
 
-      const oauthHasRoot = !!extractYamlTopLevelBlock(yamlText, 'oauth-model-mappings').trim();
-      const oauthHasMarker = hasLine(yamlText, '# Global OAuth model name mappings (per channel)');
+      const oauthHasRoot = hasYamlTopLevelKey(yamlText, 'oauth-model-mappings');
 
       const rows = (visualValues.oauthModelMappings || []).map((row) => {
         const currentChannel = row.channel.trim();
@@ -437,8 +353,9 @@ export function useVisualConfig() {
         };
       });
 
-      const initialHasAny = initialRows.some((r) => r.originalKey && r.entries.length > 0);
       const nowHasAny = rows.some((r) => r.currentKey && r.entries.length > 0);
+      const nowHasAnyChannel = rows.some((r) => r.currentKey);
+      const initialHasAnyChannel = initialRows.some((r) => r.originalKey);
 
       const toObjectArray = (entries: Array<{ name: string; alias: string; fork: boolean }>) =>
         entries.map((e) => {
@@ -448,39 +365,7 @@ export function useVisualConfig() {
           return obj;
         });
 
-      const buildOauthSnippet = () => {
-        const quote = (v: string) => JSON.stringify(String(v ?? ''));
-        const lines: string[] = [];
-        rows
-          .filter((r) => r.currentChannel && r.entries.length > 0)
-          .forEach((r) => {
-            lines.push(`${r.currentChannel}:`);
-            r.entries.forEach((entry) => {
-              lines.push(`  - name: ${quote(entry.name)}`);
-              if (entry.alias && entry.alias !== entry.name) {
-                lines.push(`    alias: ${quote(entry.alias)}`);
-              }
-              if (entry.fork) {
-                lines.push('    fork: true');
-              }
-            });
-          });
-        return lines.join('\n');
-      };
-
-      if (!oauthHasRoot && oauthHasMarker) {
-        if (nowHasAny) {
-          const snippet = buildOauthSnippet();
-          if (snippet.trim()) {
-            templatePatches.push({
-              rootKey: 'oauth-model-mappings',
-              snippet,
-              startMarker: '# Global OAuth model name mappings (per channel)',
-              endMarker: '# OAuth provider excluded models',
-            });
-          }
-        }
-      } else if (oauthHasRoot || initialHasAny) {
+      if (oauthHasRoot || nowHasAny || initialHasAnyChannel) {
         const initialEntriesByKey = new Map(
           initialRows.map((r) => [r.originalKey, r.entries] as const).filter(([k]) => !!k)
         );
@@ -545,27 +430,43 @@ export function useVisualConfig() {
           });
         });
 
-        if (!nowHasAny && initialHasAny && oauthHasRoot) {
+        if (!nowHasAnyChannel && initialHasAnyChannel && oauthHasRoot) {
           patches.push({ path: ['oauth-model-mappings'], type: 'delete' });
         }
       }
 
-      return { patches, templatePatches };
+      const wroteAmpcode = patches.some((p) => p.path[0] === 'ampcode');
+      const wroteOauth = patches.some((p) => p.path[0] === 'oauth-model-mappings');
+      const shouldStripAmpComment = wroteAmpcode;
+      const shouldStripOauthComment = wroteOauth && nowHasAny;
+
+      return { patches, shouldStripAmpComment, shouldStripOauthComment };
     },
     [visualInitial, visualValues]
   );
 
   const applyVisualChangesToYaml = useCallback(
     (yamlText: string) => {
-      const { patches, templatePatches } = buildVisualPatches(yamlText);
-      if (!patches.length && !templatePatches.length) return yamlText;
+      const { patches, shouldStripAmpComment, shouldStripOauthComment } = buildVisualPatches(yamlText);
+      if (!patches.length && !shouldStripAmpComment && !shouldStripOauthComment) return yamlText;
 
       let updated = yamlText;
       if (patches.length) {
-        updated = applyYamlPatches(updated, patches, { keyOrderMap: CONFIG_YAML_KEY_ORDER });
+        updated = applyYamlPatches(updated, patches);
       }
-      if (templatePatches.length) {
-        updated = applyYamlTemplatePatches(updated, templatePatches);
+      if (shouldStripAmpComment) {
+        updated = removeYamlCommentSectionByMarkers(
+          updated,
+          '# Amp Integration',
+          '# Global OAuth model name mappings (per channel)'
+        );
+      }
+      if (shouldStripOauthComment) {
+        updated = removeYamlCommentSectionByMarkers(
+          updated,
+          '# Global OAuth model name mappings (per channel)',
+          '# OAuth provider excluded models'
+        );
       }
       return updated;
     },

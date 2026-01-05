@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import styles from '../../../ConfigPage.module.scss';
 import { makeClientId } from '../types';
 import type { VisualSectionProps } from './sectionTypes';
@@ -39,24 +40,20 @@ export function AmpIntegrationSection({ t, values, setValues, disabled }: Visual
       />
       <div className={styles.inlineGrid}>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={values.ampRestrictManagementToLocalhost}
-              disabled={disabled}
-              onChange={(e) =>
-                setValues((prev) => ({
-                  ...prev,
-                  ampRestrictManagementToLocalhost: e.target.checked,
-                }))
-              }
-            />
-            <span>
-              {t('config_management.field.amp_restrict_mgmt_to_localhost.label', {
-                defaultValue: 'Restrict management to localhost',
-              })}
-            </span>
-          </label>
+          <ToggleSwitch
+            size="sm"
+            label={t('config_management.field.amp_restrict_mgmt_to_localhost.label', {
+              defaultValue: 'Restrict management to localhost',
+            })}
+            checked={values.ampRestrictManagementToLocalhost}
+            disabled={disabled}
+            onChange={(value) =>
+              setValues((prev) => ({
+                ...prev,
+                ampRestrictManagementToLocalhost: value,
+              }))
+            }
+          />
           <div className="hint">
             {t('config_management.field.amp_restrict_mgmt_to_localhost.help', {
               defaultValue: '',
@@ -64,24 +61,20 @@ export function AmpIntegrationSection({ t, values, setValues, disabled }: Visual
           </div>
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={values.ampForceModelMappings}
-              disabled={disabled}
-              onChange={(e) =>
-                setValues((prev) => ({
-                  ...prev,
-                  ampForceModelMappings: e.target.checked,
-                }))
-              }
-            />
-            <span>
-              {t('config_management.field.amp_force_model_mappings.label', {
-                defaultValue: 'Force model mappings',
-              })}
-            </span>
-          </label>
+          <ToggleSwitch
+            size="sm"
+            label={t('config_management.field.amp_force_model_mappings.label', {
+              defaultValue: 'Force model mappings',
+            })}
+            checked={values.ampForceModelMappings}
+            disabled={disabled}
+            onChange={(value) =>
+              setValues((prev) => ({
+                ...prev,
+                ampForceModelMappings: value,
+              }))
+            }
+          />
           <div className="hint">
             {t('config_management.field.amp_force_model_mappings.help', {
               defaultValue: '',

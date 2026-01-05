@@ -1,4 +1,5 @@
 import { Input } from '@/components/ui/Input';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import styles from '../../../ConfigPage.module.scss';
 import type { VisualSectionProps } from './sectionTypes';
 
@@ -8,19 +9,15 @@ export function TlsSection({ t, values, setValues, disabled }: VisualSectionProp
       <div className={styles.sectionTitle}>
         {t('config_management.visual_group.tls', { defaultValue: 'TLS (HTTPS)' })}
       </div>
-      <label className={styles.checkboxRow}>
-        <input
-          type="checkbox"
-          checked={values.tlsEnable}
-          disabled={disabled}
-          onChange={(e) => setValues((prev) => ({ ...prev, tlsEnable: e.target.checked }))}
-        />
-        <span>
-          {t('config_management.field.tls_enable.label', {
-            defaultValue: 'Enable TLS (HTTPS)',
-          })}
-        </span>
-      </label>
+      <ToggleSwitch
+        size="sm"
+        label={t('config_management.field.tls_enable.label', {
+          defaultValue: 'Enable TLS (HTTPS)',
+        })}
+        checked={values.tlsEnable}
+        disabled={disabled}
+        onChange={(value) => setValues((prev) => ({ ...prev, tlsEnable: value }))}
+      />
       <div className="hint">{t('config_management.field.tls_enable.help', { defaultValue: '' })}</div>
       <Input
         label={t('config_management.field.tls_cert.label', {

@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import styles from '../../../ConfigPage.module.scss';
 import { makeClientId } from '../types';
 import type { VisualSectionProps } from './sectionTypes';
@@ -103,32 +104,27 @@ export function OauthModelMappingsSection({ t, values, setValues, disabled }: Vi
                       }));
                     }}
                   />
-                  <label className={styles.forkToggle}>
-                    <input
-                      type="checkbox"
-                      checked={entry.fork}
-                      disabled={disabled}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setValues((prev) => ({
-                          ...prev,
-                          oauthModelMappings: (prev.oauthModelMappings || []).map((ch, i) => {
-                            if (i !== channelIndex) return ch;
-                            const entries = ch.entries || [];
-                            return {
-                              ...ch,
-                              entries: entries.map((en, j) => (j === entryIndex ? { ...en, fork: checked } : en)),
-                            };
-                          }),
-                        }));
-                      }}
-                    />
-                    <span>
-                      {t('config_management.field.oauth_mapping_fork.label', {
-                        defaultValue: 'fork',
-                      })}
-                    </span>
-                  </label>
+                  <ToggleSwitch
+                    size="sm"
+                    label={t('config_management.field.oauth_mapping_fork.label', {
+                      defaultValue: 'fork',
+                    })}
+                    checked={entry.fork}
+                    disabled={disabled}
+                    onChange={(value) => {
+                      setValues((prev) => ({
+                        ...prev,
+                        oauthModelMappings: (prev.oauthModelMappings || []).map((ch, i) => {
+                          if (i !== channelIndex) return ch;
+                          const entries = ch.entries || [];
+                          return {
+                            ...ch,
+                            entries: entries.map((en, j) => (j === entryIndex ? { ...en, fork: value } : en)),
+                          };
+                        }),
+                      }));
+                    }}
+                  />
                   <Button
                     variant="ghost"
                     size="sm"

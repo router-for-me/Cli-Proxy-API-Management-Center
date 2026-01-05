@@ -1,4 +1,5 @@
 import { Input } from '@/components/ui/Input';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import styles from '../../../ConfigPage.module.scss';
 import type { VisualSectionProps } from './sectionTypes';
 
@@ -10,19 +11,15 @@ export function ManagementSection({ t, values, setValues, disabled }: VisualSect
           defaultValue: 'Management API',
         })}
       </div>
-      <label className={styles.checkboxRow}>
-        <input
-          type="checkbox"
-          checked={values.rmAllowRemote}
-          disabled={disabled}
-          onChange={(e) => setValues((prev) => ({ ...prev, rmAllowRemote: e.target.checked }))}
-        />
-        <span>
-          {t('config_management.field.rm_allow_remote.label', {
-            defaultValue: 'Allow remote management',
-          })}
-        </span>
-      </label>
+      <ToggleSwitch
+        size="sm"
+        label={t('config_management.field.rm_allow_remote.label', {
+          defaultValue: 'Allow remote management',
+        })}
+        checked={values.rmAllowRemote}
+        disabled={disabled}
+        onChange={(value) => setValues((prev) => ({ ...prev, rmAllowRemote: value }))}
+      />
       <div className="hint">
         {t('config_management.field.rm_allow_remote.help', { defaultValue: '' })}
       </div>
@@ -36,24 +33,15 @@ export function ManagementSection({ t, values, setValues, disabled }: VisualSect
         disabled={disabled}
         onChange={(e) => setValues((prev) => ({ ...prev, rmSecretKey: e.target.value }))}
       />
-      <label className={styles.checkboxRow}>
-        <input
-          type="checkbox"
-          checked={values.rmDisableControlPanel}
-          disabled={disabled}
-          onChange={(e) =>
-            setValues((prev) => ({
-              ...prev,
-              rmDisableControlPanel: e.target.checked,
-            }))
-          }
-        />
-        <span>
-          {t('config_management.field.rm_disable_panel.label', {
-            defaultValue: 'Disable control panel',
-          })}
-        </span>
-      </label>
+      <ToggleSwitch
+        size="sm"
+        label={t('config_management.field.rm_disable_panel.label', {
+          defaultValue: 'Disable control panel',
+        })}
+        checked={values.rmDisableControlPanel}
+        disabled={disabled}
+        onChange={(value) => setValues((prev) => ({ ...prev, rmDisableControlPanel: value }))}
+      />
       <div className="hint">
         {t('config_management.field.rm_disable_panel.help', { defaultValue: '' })}
       </div>
