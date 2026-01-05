@@ -122,6 +122,33 @@
   }
 }
 
+.retryRowAligned {
+  align-items: flex-start;
+
+  .retryButton {
+    margin-top: calc(1.5em + #{$spacing-xs});
+  }
+
+  @include mobile {
+    align-items: stretch;
+
+    .retryButton {
+      margin-top: 0;
+    }
+  }
+}
+
+.retryRowInputGrow {
+  :global(.form-group) {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .retryInput {
+    width: 100%;
+  }
+}
+
 .retryInput {
   width: 140px;
 

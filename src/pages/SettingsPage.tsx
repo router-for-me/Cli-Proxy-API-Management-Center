@@ -371,7 +371,7 @@ export function SettingsPage() {
       </Card>
 
       <Card title={t('basic_settings.logs_max_total_size_title')}>
-        <div className={styles.retryRow}>
+        <div className={`${styles.retryRow} ${styles.retryRowAligned} ${styles.retryRowInputGrow}`}>
           <Input
             label={t('basic_settings.logs_max_total_size_label')}
             hint={t('basic_settings.logs_max_total_size_hint')}
@@ -396,7 +396,7 @@ export function SettingsPage() {
       </Card>
 
       <Card title={t('basic_settings.routing_title')}>
-        <div className={styles.retryRow}>
+        <div className={`${styles.retryRow} ${styles.retryRowAligned} ${styles.retryRowInputGrow}`}>
           <div className="form-group">
             <label>{t('basic_settings.routing_strategy_label')}</label>
             <select
