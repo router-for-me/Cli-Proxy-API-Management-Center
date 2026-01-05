@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { IconChevronDown, IconChevronUp, IconSearch } from '@/components/ui/icons';
+import { ContentTransition } from '@/components/common/ContentTransition';
 import { useNotificationStore, useAuthStore, useThemeStore } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
 import { AmpIntegrationSection } from './ConfigPage/visual/components/AmpIntegrationSection';
@@ -224,6 +225,7 @@ export function ConfigPage() {
 
   // Keep floating controls from covering editor content by syncing its height to a CSS variable.
   useLayoutEffect(() => {
+    if (activeTab !== 'source') return;
     const controlsEl = floatingControlsRef.current;
     const wrapperEl = editorWrapperRef.current;
     if (!controlsEl || !wrapperEl) return;
@@ -243,7 +245,7 @@ export function ConfigPage() {
       ro?.disconnect();
       window.removeEventListener('resize', updatePadding);
     };
-  }, []);
+  }, [activeTab]);
 
   // CodeMirror extensions
   const extensions = useMemo(
@@ -296,135 +298,134 @@ export function ConfigPage() {
         </button>
       </div>
 
-      <Card className={styles.configCard}>
-        <div className={styles.content}>
-          {activeTab === 'visual' && (
-            <div className="stack">
-              {error && <div className="error-box">{error}</div>}
-              <div className="hint">
-                {t('config_management.visual_description', {
-                  defaultValue:
-                    'Visually edit common entries. Saving only updates the corresponding YAML entries (no full-file rewrite).',
-                })}
-              </div>
-
-              <div className={styles.visualGrid}>
-                <ServerSection {...visualSectionProps} />
-                <TlsSection {...visualSectionProps} />
-                <ManagementSection {...visualSectionProps} />
-                <AuthSection {...visualSectionProps} />
-              </div>
-
-              <AmpIntegrationSection {...visualSectionProps} />
-              <OauthModelMappingsSection {...visualSectionProps} />
-
-            </div>
-          )}
-
-          {activeTab === 'source' && (
-            <>
-              {/* Editor */}
-              {error && <div className="error-box">{error}</div>}
-              <div className={styles.editorWrapper} ref={editorWrapperRef}>
-                {/* Floating search controls */}
-                <div className={styles.floatingControls} ref={floatingControlsRef}>
-                  <div className={styles.searchInputWrapper}>
-                    <Input
-                      value={searchQuery}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      onKeyDown={handleSearchKeyDown}
-                      placeholder={t('config_management.search_placeholder', {
-                        defaultValue: '搜索配置内容...',
-                      })}
-                      disabled={disableControls || loading}
-                      className={styles.searchInput}
-                      rightElement={
-                        <div className={styles.searchRight}>
-                          {searchQuery && lastSearchedQuery === searchQuery && (
-                            <span className={styles.searchCount}>
-                              {searchResults.total > 0
-                                ? `${searchResults.current} / ${searchResults.total}`
-                                : t('config_management.search_no_results', {
-                                    defaultValue: '无结果',
-                                  })}
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            className={styles.searchButton}
-                            onClick={() => executeSearch('next')}
-                            disabled={!searchQuery || disableControls || loading}
-                            title={t('config_management.search_button', { defaultValue: '搜索' })}
-                          >
-                            <IconSearch size={16} />
-                          </button>
-                        </div>
-                      }
-                    />
-                  </div>
-                  <div className={styles.searchActions}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={handlePrevMatch}
-                      disabled={
-                        !searchQuery ||
-                        lastSearchedQuery !== searchQuery ||
-                        searchResults.total === 0
-                      }
-                      title={t('config_management.search_prev', { defaultValue: '上一个' })}
-                    >
-                      <IconChevronUp size={16} />
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleNextMatch}
-                      disabled={
-                        !searchQuery ||
-                        lastSearchedQuery !== searchQuery ||
-                        searchResults.total === 0
-                      }
-                      title={t('config_management.search_next', { defaultValue: '下一个' })}
-                    >
-                      <IconChevronDown size={16} />
-                    </Button>
-                  </div>
-                </div>
-                <CodeMirror
-                  ref={editorRef}
-                  value={content}
-                  onChange={handleChange}
-                  extensions={extensions}
-                  theme={resolvedTheme}
-                  editable={!disableControls && !loading}
-                  placeholder={t('config_management.editor_placeholder')}
-                  height="100%"
-                  style={{ height: '100%' }}
-                  basicSetup={{
-                    lineNumbers: true,
-                    highlightActiveLineGutter: true,
-                    highlightActiveLine: true,
-                    foldGutter: true,
-                    dropCursor: true,
-                    allowMultipleSelections: true,
-                    indentOnInput: true,
-                    bracketMatching: true,
-                    closeBrackets: true,
-                    autocompletion: false,
-                    rectangularSelection: true,
-                    crosshairCursor: false,
-                    highlightSelectionMatches: true,
-                    closeBracketsKeymap: true,
-                    searchKeymap: true,
-                    foldKeymap: true,
-                    completionKeymap: false,
-                    lintKeymap: true,
-                  }}
-                />
-              </div>
-            </>
-          )}
+	      <Card className={styles.configCard}>
+	        <div className={styles.content}>
+	          <ContentTransition transitionKey={activeTab} getOrder={(key) => (key === 'source' ? 0 : 1)}>
+	            {activeTab === 'visual' ? (
+	              <div className="stack">
+	                {error && <div className="error-box">{error}</div>}
+	                <div className="hint">
+	                  {t('config_management.visual_description', {
+	                    defaultValue:
+	                      'Visually edit common entries. Saving only updates the corresponding YAML entries (no full-file rewrite).',
+	                  })}
+	                </div>
+	
+	                <div className={styles.visualGrid}>
+	                  <ServerSection {...visualSectionProps} />
+	                  <TlsSection {...visualSectionProps} />
+	                  <ManagementSection {...visualSectionProps} />
+	                  <AuthSection {...visualSectionProps} />
+	                </div>
+	
+	                <AmpIntegrationSection {...visualSectionProps} />
+	                <OauthModelMappingsSection {...visualSectionProps} />
+	              </div>
+	            ) : (
+	              <>
+	                {/* Editor */}
+	                {error && <div className="error-box">{error}</div>}
+	                <div className={styles.editorWrapper} ref={editorWrapperRef}>
+	                  {/* Floating search controls */}
+	                  <div className={styles.floatingControls} ref={floatingControlsRef}>
+	                    <div className={styles.searchInputWrapper}>
+	                      <Input
+	                        value={searchQuery}
+	                        onChange={(e) => handleSearchChange(e.target.value)}
+	                        onKeyDown={handleSearchKeyDown}
+	                        placeholder={t('config_management.search_placeholder', {
+	                          defaultValue: '搜索配置内容...',
+	                        })}
+	                        disabled={disableControls || loading}
+	                        className={styles.searchInput}
+	                        rightElement={
+	                          <div className={styles.searchRight}>
+	                            {searchQuery && lastSearchedQuery === searchQuery && (
+	                              <span className={styles.searchCount}>
+	                                {searchResults.total > 0
+	                                  ? `${searchResults.current} / ${searchResults.total}`
+	                                  : t('config_management.search_no_results', {
+	                                      defaultValue: '无结果',
+	                                    })}
+	                              </span>
+	                            )}
+	                            <button
+	                              type="button"
+	                              className={styles.searchButton}
+	                              onClick={() => executeSearch('next')}
+	                              disabled={!searchQuery || disableControls || loading}
+	                              title={t('config_management.search_button', { defaultValue: '搜索' })}
+	                            >
+	                              <IconSearch size={16} />
+	                            </button>
+	                          </div>
+	                        }
+	                      />
+	                    </div>
+	                    <div className={styles.searchActions}>
+	                      <Button
+	                        variant="secondary"
+	                        size="sm"
+	                        onClick={handlePrevMatch}
+	                        disabled={
+	                          !searchQuery ||
+	                          lastSearchedQuery !== searchQuery ||
+	                          searchResults.total === 0
+	                        }
+	                        title={t('config_management.search_prev', { defaultValue: '上一个' })}
+	                      >
+	                        <IconChevronUp size={16} />
+	                      </Button>
+	                      <Button
+	                        variant="secondary"
+	                        size="sm"
+	                        onClick={handleNextMatch}
+	                        disabled={
+	                          !searchQuery ||
+	                          lastSearchedQuery !== searchQuery ||
+	                          searchResults.total === 0
+	                        }
+	                        title={t('config_management.search_next', { defaultValue: '下一个' })}
+	                      >
+	                        <IconChevronDown size={16} />
+	                      </Button>
+	                    </div>
+	                  </div>
+	                  <CodeMirror
+	                    ref={editorRef}
+	                    value={content}
+	                    onChange={handleChange}
+	                    extensions={extensions}
+	                    theme={resolvedTheme}
+	                    editable={!disableControls && !loading}
+	                    placeholder={t('config_management.editor_placeholder')}
+	                    height="100%"
+	                    style={{ height: '100%' }}
+	                    basicSetup={{
+	                      lineNumbers: true,
+	                      highlightActiveLineGutter: true,
+	                      highlightActiveLine: true,
+	                      foldGutter: true,
+	                      dropCursor: true,
+	                      allowMultipleSelections: true,
+	                      indentOnInput: true,
+	                      bracketMatching: true,
+	                      closeBrackets: true,
+	                      autocompletion: false,
+	                      rectangularSelection: true,
+	                      crosshairCursor: false,
+	                      highlightSelectionMatches: true,
+	                      closeBracketsKeymap: true,
+	                      searchKeymap: true,
+	                      foldKeymap: true,
+	                      completionKeymap: false,
+	                      lintKeymap: true,
+	                    }}
+	                  />
+	                </div>
+	              </>
+	            )}
+	          </ContentTransition>
 
           {/* Controls */}
           <div className={styles.controls}>

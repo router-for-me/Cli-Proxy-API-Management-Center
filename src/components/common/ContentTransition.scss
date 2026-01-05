@@ -1,0 +1,30 @@
+@use '@/styles/variables.scss' as *;
+
+.content-transition {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+
+  &__layer {
+    min-width: 0;
+
+    &--exit {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+  }
+
+  &--animating &__layer {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+  }
+
+  &--animating &__layer:not(&__layer--exit) {
+    position: relative;
+    z-index: 0;
+  }
+}
+
