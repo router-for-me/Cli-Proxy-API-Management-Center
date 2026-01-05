@@ -638,6 +638,8 @@ export interface ChartDataset {
   data: number[];
   borderColor: string;
   backgroundColor: string | CanvasGradient | ((context: ScriptableContext<'line'>) => string | CanvasGradient);
+  pointBackgroundColor?: string;
+  pointBorderColor?: string;
   fill: boolean;
   tension: number;
 }
@@ -743,6 +745,8 @@ export function buildChartData(
       backgroundColor: shouldFill
         ? (ctx) => buildAreaGradient(ctx, style.borderColor, style.backgroundColor)
         : style.backgroundColor,
+      pointBackgroundColor: style.borderColor,
+      pointBorderColor: style.borderColor,
       fill: shouldFill,
       tension: 0.35
     };
