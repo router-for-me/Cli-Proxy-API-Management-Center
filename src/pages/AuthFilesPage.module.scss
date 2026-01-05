@@ -751,6 +751,32 @@
   }
 }
 
+// OAuth 模型映射表单
+.mappingRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto auto;
+  align-items: center;
+  gap: $spacing-sm;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mappingSeparator {
+  color: var(--text-secondary);
+  text-align: center;
+
+  @include mobile {
+    display: none;
+  }
+}
+
+.mappingFork {
+  display: flex;
+  align-items: center;
+}
+
 // 详情弹窗
 .detailContent {
   max-height: 400px;

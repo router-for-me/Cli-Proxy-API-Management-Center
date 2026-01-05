@@ -7,11 +7,13 @@ import {
   CodexSection,
   GeminiSection,
   OpenAISection,
+  VertexSection,
   useProviderStats,
   type GeminiFormState,
   type OpenAIFormState,
   type ProviderFormState,
   type ProviderModal,
+  type VertexFormState,
 } from '@/components/providers';
 import {
   parseExcludedModels,
@@ -41,6 +43,7 @@ export function AiProvidersPage() {
   const [geminiKeys, setGeminiKeys] = useState<GeminiKeyConfig[]>([]);
   const [codexConfigs, setCodexConfigs] = useState<ProviderKeyConfig[]>([]);
   const [claudeConfigs, setClaudeConfigs] = useState<ProviderKeyConfig[]>([]);
+  const [vertexConfigs, setVertexConfigs] = useState<ProviderKeyConfig[]>([]);
   const [openaiProviders, setOpenaiProviders] = useState<OpenAIProviderConfig[]>([]);
 
   const [saving, setSaving] = useState(false);
@@ -63,17 +66,32 @@ export function AiProvidersPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await fetchConfig();
+      const [configResult, vertexResult, ampcodeResult] = await Promise.allSettled([
+        fetchConfig(),
+        providersApi.getVertexConfigs(),
+        ampcodeApi.getAmpcode(),
+      ]);
+
+      if (configResult.status !== 'fulfilled') {
+        throw configResult.reason;
+      }
+
+      const data = configResult.value;
       setGeminiKeys(data?.geminiApiKeys || []);
       setCodexConfigs(data?.codexApiKeys || []);
       setClaudeConfigs(data?.claudeApiKeys || []);
+      setVertexConfigs(data?.vertexApiKeys || []);
       setOpenaiProviders(data?.openaiCompatibility || []);
-      try {
-        const ampcode = await ampcodeApi.getAmpcode();
-        updateConfigValue('ampcode', ampcode);
+
+      if (vertexResult.status === 'fulfilled') {
+        setVertexConfigs(vertexResult.value || []);
+        updateConfigValue('vertex-api-key', vertexResult.value || []);
+        clearCache('vertex-api-key');
+      }
+
+      if (ampcodeResult.status === 'fulfilled') {
+        updateConfigValue('ampcode', ampcodeResult.value);
         clearCache('ampcode');
-      } catch {
-        // ignore
       }
     } catch (err: unknown) {
       const message = getErrorMessage(err) || t('notification.refresh_failed');
@@ -92,11 +110,13 @@ export function AiProvidersPage() {
     if (config?.geminiApiKeys) setGeminiKeys(config.geminiApiKeys);
     if (config?.codexApiKeys) setCodexConfigs(config.codexApiKeys);
     if (config?.claudeApiKeys) setClaudeConfigs(config.claudeApiKeys);
+    if (config?.vertexApiKeys) setVertexConfigs(config.vertexApiKeys);
     if (config?.openaiCompatibility) setOpenaiProviders(config.openaiCompatibility);
   }, [
     config?.geminiApiKeys,
     config?.codexApiKeys,
     config?.claudeApiKeys,
+    config?.vertexApiKeys,
     config?.openaiCompatibility,
   ]);
 
@@ -110,6 +130,10 @@ export function AiProvidersPage() {
 
   const openProviderModal = (type: 'codex' | 'claude', index: number | null) => {
     setModal({ type, index });
+  };
+
+  const openVertexModal = (index: number | null) => {
+    setModal({ type: 'vertex', index });
   };
 
   const openAmpcodeModal = () => {
@@ -351,6 +375,72 @@ export function AiProvidersPage() {
     }
   };
 
+  const saveVertex = async (form: VertexFormState, editIndex: number | null) => {
+    const trimmedBaseUrl = (form.baseUrl ?? '').trim();
+    const baseUrl = trimmedBaseUrl || undefined;
+    if (!baseUrl) {
+      showNotification(t('notification.vertex_base_url_required'), 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload: ProviderKeyConfig = {
+        apiKey: form.apiKey.trim(),
+        prefix: form.prefix?.trim() || undefined,
+        baseUrl,
+        proxyUrl: form.proxyUrl?.trim() || undefined,
+        headers: buildHeaderObject(headersToEntries(form.headers)),
+        models: form.modelEntries
+          .map((entry) => {
+            const name = entry.name.trim();
+            const alias = entry.alias.trim();
+            if (!name || !alias) return null;
+            return { name, alias };
+          })
+          .filter(Boolean) as ProviderKeyConfig['models'],
+      };
+
+      const nextList =
+        editIndex !== null
+          ? vertexConfigs.map((item, idx) => (idx === editIndex ? payload : item))
+          : [...vertexConfigs, payload];
+
+      await providersApi.saveVertexConfigs(nextList);
+      setVertexConfigs(nextList);
+      updateConfigValue('vertex-api-key', nextList);
+      clearCache('vertex-api-key');
+      const message =
+        editIndex !== null
+          ? t('notification.vertex_config_updated')
+          : t('notification.vertex_config_added');
+      showNotification(message, 'success');
+      closeModal();
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteVertex = async (index: number) => {
+    const entry = vertexConfigs[index];
+    if (!entry) return;
+    if (!window.confirm(t('ai_providers.vertex_delete_confirm'))) return;
+    try {
+      await providersApi.deleteVertexConfig(entry.apiKey);
+      const next = vertexConfigs.filter((_, idx) => idx !== index);
+      setVertexConfigs(next);
+      updateConfigValue('vertex-api-key', next);
+      clearCache('vertex-api-key');
+      showNotification(t('notification.vertex_config_deleted'), 'success');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
+    }
+  };
+
   const saveOpenai = async (form: OpenAIFormState, editIndex: number | null) => {
     setSaving(true);
     try {
@@ -412,6 +502,7 @@ export function AiProvidersPage() {
   const geminiModalIndex = modal?.type === 'gemini' ? modal.index : null;
   const codexModalIndex = modal?.type === 'codex' ? modal.index : null;
   const claudeModalIndex = modal?.type === 'claude' ? modal.index : null;
+  const vertexModalIndex = modal?.type === 'vertex' ? modal.index : null;
   const openaiModalIndex = modal?.type === 'openai' ? modal.index : null;
 
   return (
@@ -473,6 +564,23 @@ export function AiProvidersPage() {
           onToggle={(index, enabled) => void setConfigEnabled('claude', index, enabled)}
           onCloseModal={closeModal}
           onSave={(form, editIndex) => saveProvider('claude', form, editIndex)}
+        />
+
+        <VertexSection
+          configs={vertexConfigs}
+          keyStats={keyStats}
+          usageDetails={usageDetails}
+          loading={loading}
+          disableControls={disableControls}
+          isSaving={saving}
+          isSwitching={isSwitching}
+          isModalOpen={modal?.type === 'vertex'}
+          modalIndex={vertexModalIndex}
+          onAdd={() => openVertexModal(null)}
+          onEdit={(index) => openVertexModal(index)}
+          onDelete={deleteVertex}
+          onCloseModal={closeModal}
+          onSave={saveVertex}
         />
 
         <AmpcodeSection

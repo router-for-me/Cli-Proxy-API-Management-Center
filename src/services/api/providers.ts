@@ -61,6 +61,30 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
   return payload;
 };
 
+const serializeVertexModelAliases = (models?: ModelAlias[]) =>
+  Array.isArray(models)
+    ? models
+        .map((model) => {
+          const name = typeof model?.name === 'string' ? model.name.trim() : '';
+          const alias = typeof model?.alias === 'string' ? model.alias.trim() : '';
+          if (!name || !alias) return null;
+          return { name, alias };
+        })
+        .filter(Boolean)
+    : undefined;
+
+const serializeVertexKey = (config: ProviderKeyConfig) => {
+  const payload: Record<string, any> = { 'api-key': config.apiKey };
+  if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
+  if (config.baseUrl) payload['base-url'] = config.baseUrl;
+  if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
+  const headers = serializeHeaders(config.headers);
+  if (headers) payload.headers = headers;
+  const models = serializeVertexModelAliases(config.models);
+  if (models && models.length) payload.models = models;
+  return payload;
+};
+
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
   const payload: Record<string, any> = { 'api-key': config.apiKey };
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
@@ -139,6 +163,22 @@ export const providersApi = {
 
   deleteClaudeConfig: (apiKey: string) =>
     apiClient.delete(`/claude-api-key?api-key=${encodeURIComponent(apiKey)}`),
+
+  async getVertexConfigs(): Promise<ProviderKeyConfig[]> {
+    const data = await apiClient.get('/vertex-api-key');
+    const list = (data && (data['vertex-api-key'] ?? data.items ?? data)) as any;
+    if (!Array.isArray(list)) return [];
+    return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
+  },
+
+  saveVertexConfigs: (configs: ProviderKeyConfig[]) =>
+    apiClient.put('/vertex-api-key', configs.map((item) => serializeVertexKey(item))),
+
+  updateVertexConfig: (index: number, value: ProviderKeyConfig) =>
+    apiClient.patch('/vertex-api-key', { index, value: serializeVertexKey(value) }),
+
+  deleteVertexConfig: (apiKey: string) =>
+    apiClient.delete(`/vertex-api-key?api-key=${encodeURIComponent(apiKey)}`),
 
   async getOpenAIProviders(): Promise<OpenAIProviderConfig[]> {
     const data = await apiClient.get('/openai-compatibility');

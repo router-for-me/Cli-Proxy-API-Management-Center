@@ -4,6 +4,7 @@
 
 import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
+import type { OAuthModelMappingEntry } from '@/types';
 
 export const authFilesApi = {
   list: () => apiClient.get<AuthFilesResponse>('/auth-files'),
@@ -30,6 +31,37 @@ export const authFilesApi = {
 
   deleteOauthExcludedEntry: (provider: string) =>
     apiClient.delete(`/oauth-excluded-models?provider=${encodeURIComponent(provider)}`),
+
+  // OAuth 模型映射
+  async getOauthModelMappings(): Promise<Record<string, OAuthModelMappingEntry[]>> {
+    const data = await apiClient.get('/oauth-model-mappings');
+    const payload = (data && (data['oauth-model-mappings'] ?? data.items ?? data)) as any;
+    if (!payload || typeof payload !== 'object') return {};
+    const result: Record<string, OAuthModelMappingEntry[]> = {};
+    Object.entries(payload).forEach(([channel, mappings]) => {
+      if (!Array.isArray(mappings)) return;
+      const normalized = mappings
+        .map((item) => {
+          if (!item || typeof item !== 'object') return null;
+          const name = String(item.name ?? item.id ?? item.model ?? '').trim();
+          const alias = String(item.alias ?? '').trim();
+          if (!name || !alias) return null;
+          const fork = item.fork === true;
+          return fork ? { name, alias, fork } : { name, alias };
+        })
+        .filter(Boolean) as OAuthModelMappingEntry[];
+      if (normalized.length) {
+        result[channel] = normalized;
+      }
+    });
+    return result;
+  },
+
+  saveOauthModelMappings: (channel: string, mappings: OAuthModelMappingEntry[]) =>
+    apiClient.patch('/oauth-model-mappings', { channel, mappings }),
+
+  deleteOauthModelMappings: (channel: string) =>
+    apiClient.delete(`/oauth-model-mappings?channel=${encodeURIComponent(channel)}`),
 
   // 获取认证凭证支持的模型
   async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
