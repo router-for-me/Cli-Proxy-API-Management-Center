@@ -32,6 +32,23 @@
   flex-wrap: wrap;
 }
 
+.migrationContent {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+
+  :global(.form-group) {
+    margin: 0;
+  }
+}
+
+.migrationSubtitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  letter-spacing: 0.08em;
+}
+
 .titleWrapper {
   display: flex;
   align-items: center;

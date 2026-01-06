@@ -83,6 +83,7 @@ const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
 const MIN_CARD_PAGE_SIZE = 3;
 const MAX_CARD_PAGE_SIZE = 30;
 const MAX_AUTH_FILE_SIZE = 50 * 1024;
+const MIGRATION_EXPIRES_IN = 3599;
 
 const clampCardPageSize = (value: number) =>
   Math.min(MAX_CARD_PAGE_SIZE, Math.max(MIN_CARD_PAGE_SIZE, Math.round(value)));
@@ -179,6 +180,10 @@ export function AuthFilesPage() {
   const [keyStats, setKeyStats] = useState<KeyStats>({ bySource: {}, byAuthIndex: {} });
   const [usageDetails, setUsageDetails] = useState<UsageDetail[]>([]);
 
+  const [migrationModalOpen, setMigrationModalOpen] = useState(false);
+  const [migrationEmail, setMigrationEmail] = useState('');
+  const [migrationUploading, setMigrationUploading] = useState(false);
+
   // 详情弹窗相关
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<AuthFileItem | null>(null);
@@ -209,6 +214,7 @@ export function AuthFilesPage() {
   const [savingMappings, setSavingMappings] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const migrationFileInputRef = useRef<HTMLInputElement | null>(null);
   const loadingKeyStatsRef = useRef(false);
   const excludedUnsupportedRef = useRef(false);
   const mappingsUnsupportedRef = useRef(false);
@@ -426,6 +432,10 @@ export function AuthFilesPage() {
     fileInputRef.current?.click();
   };
 
+  const handleMigrationFilePick = () => {
+    migrationFileInputRef.current?.click();
+  };
+
   // 处理文件上传（支持多选）
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files;
@@ -491,6 +501,100 @@ export function AuthFilesPage() {
 
     setUploading(false);
     event.target.value = '';
+  };
+
+  const handleMigrationFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const trimmedEmail = migrationEmail.trim();
+    if (!trimmedEmail) {
+      showNotification(t('auth_files.migrate_email_required'), 'warning');
+      event.target.value = '';
+      return;
+    }
+
+    if (!file.name.endsWith('.json')) {
+      showNotification(t('auth_files.upload_error_json'), 'error');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_AUTH_FILE_SIZE) {
+      showNotification(
+        t('auth_files.upload_error_size', { maxSize: formatFileSize(MAX_AUTH_FILE_SIZE) }),
+        'error'
+      );
+      event.target.value = '';
+      return;
+    }
+
+    setMigrationUploading(true);
+    try {
+      const raw = await file.text();
+      let payloadSource: Record<string, unknown> | null = null;
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          payloadSource = parsed as Record<string, unknown>;
+        }
+      } catch {
+        payloadSource = null;
+      }
+
+      if (!payloadSource) {
+        showNotification(t('auth_files.migrate_parse_error'), 'error');
+        return;
+      }
+
+      const token = typeof payloadSource.token === 'string' ? payloadSource.token : '';
+      const refreshToken =
+        typeof payloadSource.refresh_token === 'string' ? payloadSource.refresh_token : '';
+      const projectId = typeof payloadSource.project_id === 'string' ? payloadSource.project_id : '';
+      const expiry = typeof payloadSource.expiry === 'string' ? payloadSource.expiry : '';
+
+      const missingFields: string[] = [];
+      if (!token) missingFields.push('token');
+      if (!expiry) missingFields.push('expiry');
+      if (!refreshToken) missingFields.push('refresh_token');
+      if (!projectId) missingFields.push('project_id');
+
+      if (missingFields.length > 0) {
+        showNotification(
+          t('auth_files.migrate_missing_fields', { fields: missingFields.join(', ') }),
+          'error'
+        );
+        return;
+      }
+
+      const migratedPayload = {
+        access_token: token,
+        email: trimmedEmail,
+        expired: expiry,
+        expires_in: MIGRATION_EXPIRES_IN,
+        project_id: projectId,
+        refresh_token: refreshToken,
+        timestamp: Date.now(),
+        type: 'antigravity'
+      };
+
+      const fileName = `antigravity-${trimmedEmail.replace(/@/g, '_')}.json`;
+      const migratedFile = new File([JSON.stringify(migratedPayload)], fileName, {
+        type: 'application/json'
+      });
+
+      await authFilesApi.upload(migratedFile);
+      showNotification(t('auth_files.migrate_success'), 'success');
+      await loadFiles();
+      await loadKeyStats();
+      setMigrationModalOpen(false);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      showNotification(`${t('notification.upload_failed')}: ${errorMessage}`, 'error');
+    } finally {
+      setMigrationUploading(false);
+      event.target.value = '';
+    }
   };
 
   // 删除单个文件
@@ -1018,6 +1122,14 @@ export function AuthFilesPage() {
             <Button
               variant="secondary"
               size="sm"
+              onClick={() => setMigrationModalOpen(true)}
+              disabled={disableControls}
+            >
+              {t('auth_files.migrate_button')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={handleHeaderRefresh}
               disabled={loading}
             >
@@ -1119,6 +1231,45 @@ export function AuthFilesPage() {
           </div>
         )}
       </Card>
+
+      <Modal
+        open={migrationModalOpen}
+        onClose={() => setMigrationModalOpen(false)}
+        title={t('auth_files.migrate_title')}
+        footer={
+          <Button variant="secondary" onClick={() => setMigrationModalOpen(false)} disabled={migrationUploading}>
+            {t('common.close')}
+          </Button>
+        }
+      >
+        <div className={styles.migrationContent}>
+          <div className={styles.migrationSubtitle}>{t('auth_files.migrate_subtitle')}</div>
+          <Input
+            label={t('auth_files.migrate_email_label')}
+            hint={t('auth_files.migrate_email_hint')}
+            placeholder={t('auth_files.migrate_email_placeholder')}
+            value={migrationEmail}
+            onChange={(e) => setMigrationEmail(e.target.value)}
+            disabled={migrationUploading}
+          />
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={handleMigrationFilePick}
+            disabled={disableControls || migrationUploading}
+            loading={migrationUploading}
+          >
+            {t('auth_files.migrate_upload_button')}
+          </Button>
+          <input
+            ref={migrationFileInputRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: 'none' }}
+            onChange={handleMigrationFileChange}
+          />
+        </div>
+      </Modal>
 
       {/* OAuth 排除列表卡片 */}
       <Card
