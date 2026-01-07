@@ -15,6 +15,12 @@
   background-color: var(--bg-secondary);
   color: var(--text-primary);
 
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
   &.btn-primary {
     background-color: var(--primary-color);
     color: #fff;

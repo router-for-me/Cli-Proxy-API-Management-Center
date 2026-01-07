@@ -18,6 +18,7 @@ import {
   IconBot,
   IconChartLine,
   IconFileText,
+  IconInbox,
   IconInfo,
   IconKey,
   IconLayoutDashboard,
@@ -48,6 +49,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   quota: <IconTimer size={18} />,
   usage: <IconChartLine size={18} />,
   config: <IconSettings size={18} />,
+  backup: <IconInbox size={18} />,
   logs: <IconScrollText size={18} />,
   system: <IconInfo size={18} />,
 };
@@ -365,6 +367,7 @@ export function MainLayout() {
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
     { path: '/usage', label: t('nav.usage_stats'), icon: sidebarIcons.usage },
     { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
+    { path: '/backup', label: t('nav.backup_management'), icon: sidebarIcons.backup },
     ...(config?.loggingToFile
       ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
       : []),

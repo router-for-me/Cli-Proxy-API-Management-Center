@@ -10,6 +10,7 @@ import { UsagePage } from '@/pages/UsagePage';
 import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
+import { BackupPage } from '@/pages/BackupPage';
 
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -22,6 +23,7 @@ const mainRoutes = [
   { path: '/quota', element: <QuotaPage /> },
   { path: '/usage', element: <UsagePage /> },
   { path: '/config', element: <ConfigPage /> },
+  { path: '/backup', element: <BackupPage /> },
   { path: '/logs', element: <LogsPage /> },
   { path: '/system', element: <SystemPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
