@@ -148,6 +148,14 @@
   justify-content: flex-end;
 }
 
+.actionsHeader {
+  text-align: right;
+}
+
+.uploadIcon {
+  transform: rotate(180deg);
+}
+
 .iconButton:global(.btn.btn-sm) {
   width: 34px;
   height: 34px;

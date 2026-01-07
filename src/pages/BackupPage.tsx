@@ -18,6 +18,13 @@ import type {
 import { formatFileSize } from '@/utils/format';
 import styles from './BackupPage.module.scss';
 
+/** Backup content options for type-safe iteration */
+const BACKUP_CONTENT_OPTIONS = [
+  { key: 'env', label: '.env (Environment Variables)' },
+  { key: 'config', label: 'config.yaml (System Config)' },
+  { key: 'auths', label: 'auths/ (Authentication Files)' },
+] as const satisfies ReadonlyArray<{ key: keyof BackupContent; label: string }>;
+
 export function BackupPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
@@ -208,7 +215,7 @@ export function BackupPage() {
               onClick={handleUploadClick}
               disabled={disableControls || processing}
             >
-              <IconDownload size={16} style={{ transform: 'rotate(180deg)' }} />
+              <IconDownload size={16} className={styles.uploadIcon} />
               {t('backup_management.upload_backup')}
             </Button>
             <input
@@ -255,7 +262,7 @@ export function BackupPage() {
                   <th>{t('backup_management.col_date')}</th>
                   <th>{t('backup_management.col_content')}</th>
                   <th>{t('backup_management.col_size')}</th>
-                  <th style={{ textAlign: 'right' }}>{t('common.actions')}</th>
+                  <th className={styles.actionsHeader}>{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -356,30 +363,16 @@ export function BackupPage() {
         <div className={styles.formGroup}>
           <label>{t('backup_management.content_to_backup')}</label>
           <div className={styles.checkboxGroup}>
-            <label className={styles.checkboxItem}>
-              <input
-                type="checkbox"
-                checked={createContent.env}
-                onChange={(e) => setCreateContent(prev => ({ ...prev, env: e.target.checked }))}
-              />
-              <span>.env (Environment Variables)</span>
-            </label>
-            <label className={styles.checkboxItem}>
-              <input
-                type="checkbox"
-                checked={createContent.config}
-                onChange={(e) => setCreateContent(prev => ({ ...prev, config: e.target.checked }))}
-              />
-              <span>config.yaml (System Config)</span>
-            </label>
-            <label className={styles.checkboxItem}>
-              <input
-                type="checkbox"
-                checked={createContent.auths}
-                onChange={(e) => setCreateContent(prev => ({ ...prev, auths: e.target.checked }))}
-              />
-              <span>auths/ (Authentication Files)</span>
-            </label>
+            {BACKUP_CONTENT_OPTIONS.map(({ key, label }) => (
+              <label key={key} className={styles.checkboxItem}>
+                <input
+                  type="checkbox"
+                  checked={createContent[key]}
+                  onChange={(e) => setCreateContent(prev => ({ ...prev, [key]: e.target.checked }))}
+                />
+                <span>{label}</span>
+              </label>
+            ))}
           </div>
         </div>
       </Modal>
