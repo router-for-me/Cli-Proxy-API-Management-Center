@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
   IconDownload,
@@ -386,8 +387,9 @@ export function LogsPage() {
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
   const [errorLogsError, setErrorLogsError] = useState('');
-  const [requestLogId, setRequestLogId] = useState<string | null>(null);
+const [requestLogId, setRequestLogId] = useState<string | null>(null);
   const [requestLogDownloading, setRequestLogDownloading] = useState(false);
+  const [clearLogsConfirmOpen, setClearLogsConfirmOpen] = useState(false);
 
   const logViewerRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollToBottomRef = useRef(false);
@@ -477,8 +479,12 @@ export function LogsPage() {
 
   useHeaderRefresh(() => loadLogs(false));
 
-  const clearLogs = async () => {
-    if (!window.confirm(t('logs.clear_confirm'))) return;
+const openClearLogsConfirm = () => {
+    setClearLogsConfirmOpen(true);
+  };
+
+  const handleClearLogsConfirm = async () => {
+    setClearLogsConfirmOpen(false);
     try {
       await logsApi.clearLogs();
       setLogState({ buffer: [], visibleFrom: 0 });
@@ -491,6 +497,10 @@ export function LogsPage() {
         'error'
       );
     }
+  };
+
+  const handleClearLogsCancel = () => {
+    setClearLogsConfirmOpen(false);
   };
 
   const downloadLogs = () => {
@@ -849,7 +859,7 @@ export function LogsPage() {
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={clearLogs}
+                  onClick={openClearLogsConfirm}
                   disabled={disableControls}
                   className={styles.actionButton}
                 >
@@ -1076,8 +1086,20 @@ export function LogsPage() {
           </>
         }
       >
-        {requestLogId ? t('logs.request_log_download_confirm', { id: requestLogId }) : null}
+{requestLogId ? t('logs.request_log_download_confirm', { id: requestLogId }) : null}
       </Modal>
+
+      {/* Clear Logs Confirmation Modal */}
+      <ConfirmModal
+        open={clearLogsConfirmOpen}
+        title={t('logs.clear_title')}
+        message={t('logs.clear_confirm')}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
+        confirmVariant="danger"
+        onConfirm={handleClearLogsConfirm}
+        onCancel={handleClearLogsCancel}
+      />
     </div>
   );
 }

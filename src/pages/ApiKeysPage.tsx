@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
@@ -30,6 +31,8 @@ export function ApiKeysPage() {
   const [inputValue, setInputValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [indexToDelete, setIndexToDelete] = useState<number | null>(null);
 
   const disableControls = useMemo(() => connectionStatus !== 'connected', [connectionStatus]);
 
@@ -115,12 +118,18 @@ export function ApiKeysPage() {
     }
   };
 
-  const handleDelete = async (index: number) => {
-    if (!window.confirm(t('api_keys.delete_confirm'))) return;
-    setDeletingIndex(index);
+const openDeleteConfirm = (index: number) => {
+    setIndexToDelete(index);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (indexToDelete === null) return;
+    setDeletingIndex(indexToDelete);
+    setDeleteConfirmOpen(false);
     try {
-      await apiKeysApi.delete(index);
-      const nextKeys = apiKeys.filter((_, idx) => idx !== index);
+      await apiKeysApi.delete(indexToDelete);
+      const nextKeys = apiKeys.filter((_, idx) => idx !== indexToDelete);
       setApiKeys(nextKeys);
       updateConfigValue('api-keys', nextKeys);
       clearCache('api-keys');
@@ -129,7 +138,13 @@ export function ApiKeysPage() {
       showNotification(`${t('notification.delete_failed')}: ${err?.message || ''}`, 'error');
     } finally {
       setDeletingIndex(null);
+      setIndexToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setIndexToDelete(null);
   };
 
   const actionButtons = (
@@ -180,7 +195,7 @@ export function ApiKeysPage() {
                   <Button
                     variant="danger"
                     size="sm"
-                    onClick={() => handleDelete(index)}
+                    onClick={() => openDeleteConfirm(index)}
                     disabled={disableControls || deletingIndex === index}
                     loading={deletingIndex === index}
                   >
@@ -220,7 +235,20 @@ export function ApiKeysPage() {
             onChange={(e) => setInputValue(e.target.value)}
             disabled={saving}
           />
-        </Modal>
+</Modal>
+
+        {/* Delete API Key Confirmation Modal */}
+        <ConfirmModal
+          open={deleteConfirmOpen}
+          title={t('api_keys.delete_title')}
+          message={t('api_keys.delete_confirm')}
+          confirmText={t('common.delete')}
+          cancelText={t('common.cancel')}
+          confirmVariant="danger"
+          loading={deletingIndex !== null}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
       </Card>
     </div>
   );

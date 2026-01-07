@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { IconDownload, IconTrash2, IconRefreshCw, IconInbox, IconFileText } from '@/components/ui/icons';
 import { useAuthStore, useNotificationStore } from '@/stores';
@@ -45,11 +46,15 @@ export function BackupPage() {
     auths: true
   });
 
-  // Restore Modal State
+// Restore Modal State
   const [restoreModalOpen, setRestoreModalOpen] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
   const [authsMode, setAuthsMode] = useState<'overwrite' | 'incremental'>('overwrite');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  // Delete Confirm Modal State
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [backupToDelete, setBackupToDelete] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const disableControls = connectionStatus !== 'connected';
@@ -98,20 +103,32 @@ export function BackupPage() {
     }
   };
 
-  const handleDelete = async (name: string) => {
-    if (!window.confirm(t('backup_management.delete_confirm', { name }))) return;
+const openDeleteConfirm = (name: string) => {
+    setBackupToDelete(name);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!backupToDelete) return;
 
     setProcessing(true);
     try {
-      await backupApi.delete(name);
+      await backupApi.delete(backupToDelete);
       showNotification(t('backup_management.delete_success'), 'success');
-      setBackups(prev => prev.filter(b => b.name !== name));
+      setBackups(prev => prev.filter(b => b.name !== backupToDelete));
+      setDeleteConfirmOpen(false);
+      setBackupToDelete(null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       showNotification(`${t('backup_management.delete_failed')}: ${msg}`, 'error');
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setBackupToDelete(null);
   };
 
   const handleDownload = async (name: string) => {
@@ -310,7 +327,7 @@ export function BackupPage() {
                           variant="danger"
                           size="sm"
                           className={styles.iconButton}
-                          onClick={() => handleDelete(backup.name)}
+                          onClick={() => openDeleteConfirm(backup.name)}
                           title={t('common.delete')}
                           disabled={disableControls}
                         >
@@ -439,9 +456,22 @@ export function BackupPage() {
                 <div className={styles.hint}>{t('backup_management.mode_incremental_desc')}</div>
               </span>
             </label>
-          </div>
+</div>
         </div>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        open={deleteConfirmOpen}
+        title={t('backup_management.delete_title')}
+        message={t('backup_management.delete_confirm', { name: backupToDelete })}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
+        confirmVariant="danger"
+        loading={processing}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </div>
   );
 }

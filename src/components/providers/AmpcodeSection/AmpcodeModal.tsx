@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ModelInputList } from '@/components/ui/ModelInputList';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useConfigStore, useNotificationStore } from '@/stores';
@@ -31,7 +32,9 @@ export function AmpcodeModal({ isOpen, disableControls, onClose, onBusyChange }:
   const [loaded, setLoaded] = useState(false);
   const [mappingsDirty, setMappingsDirty] = useState(false);
   const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
+const [saving, setSaving] = useState(false);
+  const [clearUpstreamConfirmOpen, setClearUpstreamConfirmOpen] = useState(false);
+  const [overwriteMappingsConfirmOpen, setOverwriteMappingsConfirmOpen] = useState(false);
   const initializedRef = useRef(false);
 
   const getErrorMessage = (err: unknown) => {
@@ -80,8 +83,12 @@ export function AmpcodeModal({ isOpen, disableControls, onClose, onBusyChange }:
     })();
   }, [clearCache, config?.ampcode, isOpen, onBusyChange, t, updateConfigValue]);
 
-  const clearAmpcodeUpstreamApiKey = async () => {
-    if (!window.confirm(t('ai_providers.ampcode_clear_upstream_api_key_confirm'))) return;
+const openClearUpstreamConfirm = () => {
+    setClearUpstreamConfirmOpen(true);
+  };
+
+  const handleClearUpstreamConfirm = async () => {
+    setClearUpstreamConfirmOpen(false);
     setSaving(true);
     setError('');
     try {
@@ -101,12 +108,28 @@ export function AmpcodeModal({ isOpen, disableControls, onClose, onBusyChange }:
     }
   };
 
-  const saveAmpcode = async () => {
-    if (!loaded && mappingsDirty) {
-      const confirmed = window.confirm(t('ai_providers.ampcode_mappings_overwrite_confirm'));
-      if (!confirmed) return;
-    }
+  const handleClearUpstreamCancel = () => {
+    setClearUpstreamConfirmOpen(false);
+  };
 
+const trySaveAmpcode = () => {
+    if (!loaded && mappingsDirty) {
+      setOverwriteMappingsConfirmOpen(true);
+      return;
+    }
+    void doSaveAmpcode();
+  };
+
+  const handleOverwriteMappingsConfirm = () => {
+    setOverwriteMappingsConfirmOpen(false);
+    void doSaveAmpcode();
+  };
+
+  const handleOverwriteMappingsCancel = () => {
+    setOverwriteMappingsConfirmOpen(false);
+  };
+
+  const doSaveAmpcode = async () => {
     setSaving(true);
     setError('');
     try {
@@ -183,7 +206,7 @@ export function AmpcodeModal({ isOpen, disableControls, onClose, onBusyChange }:
           <Button variant="secondary" onClick={onClose} disabled={saving}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={saveAmpcode} loading={saving} disabled={disableControls || loading}>
+          <Button onClick={trySaveAmpcode} loading={saving} disabled={disableControls || loading}>
             {t('common.save')}
           </Button>
         </>
@@ -227,7 +250,7 @@ export function AmpcodeModal({ isOpen, disableControls, onClose, onBusyChange }:
         <Button
           variant="danger"
           size="sm"
-          onClick={clearAmpcodeUpstreamApiKey}
+          onClick={openClearUpstreamConfirm}
           disabled={loading || saving || !config?.ampcode?.upstreamApiKey}
         >
           {t('ai_providers.ampcode_clear_upstream_api_key')}
@@ -257,8 +280,33 @@ export function AmpcodeModal({ isOpen, disableControls, onClose, onBusyChange }:
           aliasPlaceholder={t('ai_providers.ampcode_model_mappings_to_placeholder')}
           disabled={loading || saving}
         />
-        <div className="hint">{t('ai_providers.ampcode_model_mappings_hint')}</div>
+<div className="hint">{t('ai_providers.ampcode_model_mappings_hint')}</div>
       </div>
+
+      {/* Clear Upstream API Key Confirmation Modal */}
+      <ConfirmModal
+        open={clearUpstreamConfirmOpen}
+        title={t('ai_providers.ampcode_clear_upstream_api_key_title')}
+        message={t('ai_providers.ampcode_clear_upstream_api_key_confirm')}
+        confirmText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+        confirmVariant="danger"
+        loading={saving}
+        onConfirm={handleClearUpstreamConfirm}
+        onCancel={handleClearUpstreamCancel}
+      />
+
+      {/* Overwrite Mappings Confirmation Modal */}
+      <ConfirmModal
+        open={overwriteMappingsConfirmOpen}
+        title={t('ai_providers.ampcode_mappings_overwrite_title')}
+        message={t('ai_providers.ampcode_mappings_overwrite_confirm')}
+        confirmText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+        confirmVariant="primary"
+        onConfirm={handleOverwriteMappingsConfirm}
+        onCancel={handleOverwriteMappingsCancel}
+      />
     </Modal>
   );
 }

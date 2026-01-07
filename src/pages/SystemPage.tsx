@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { IconGithub, IconBookOpen, IconExternalLink, IconCode } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useNotificationStore, useModelsStore } from '@/stores';
 import { apiKeysApi } from '@/services/api/apiKeys';
@@ -22,6 +23,7 @@ export function SystemPage() {
   const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
 
   const [modelStatus, setModelStatus] = useState<{ type: 'success' | 'warning' | 'error' | 'muted'; message: string }>();
+  const [clearLoginConfirmOpen, setClearLoginConfirmOpen] = useState(false);
 
   const apiKeysCache = useRef<string[]>([]);
 
@@ -105,13 +107,21 @@ export function SystemPage() {
     }
   };
 
-  const handleClearLoginStorage = () => {
-    if (!window.confirm(t('system_info.clear_login_confirm'))) return;
+const openClearLoginConfirm = () => {
+    setClearLoginConfirmOpen(true);
+  };
+
+  const handleClearLoginConfirm = () => {
     auth.logout();
     if (typeof localStorage === 'undefined') return;
     const keysToRemove = [STORAGE_KEY_AUTH, 'isLoggedIn', 'apiBase', 'apiUrl', 'managementKey'];
     keysToRemove.forEach((key) => localStorage.removeItem(key));
     showNotification(t('notification.login_storage_cleared'), 'success');
+    setClearLoginConfirmOpen(false);
+  };
+
+  const handleClearLoginCancel = () => {
+    setClearLoginConfirmOpen(false);
   };
 
   useEffect(() => {
@@ -262,11 +272,23 @@ export function SystemPage() {
       <Card title={t('system_info.clear_login_title')}>
         <p className={styles.sectionDescription}>{t('system_info.clear_login_desc')}</p>
         <div className={styles.clearLoginActions}>
-          <Button variant="danger" onClick={handleClearLoginStorage}>
+          <Button variant="danger" onClick={openClearLoginConfirm}>
             {t('system_info.clear_login_button')}
           </Button>
-        </div>
+</div>
       </Card>
+
+      {/* Clear Login Storage Confirmation Modal */}
+      <ConfirmModal
+        open={clearLoginConfirmOpen}
+        title={t('system_info.clear_login_title')}
+        message={t('system_info.clear_login_confirm')}
+        confirmText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+        confirmVariant="danger"
+        onConfirm={handleClearLoginConfirm}
+        onCancel={handleClearLoginCancel}
+      />
       </div>
     </div>
   );

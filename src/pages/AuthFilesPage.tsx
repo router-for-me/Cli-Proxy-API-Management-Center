@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconBot, IconDownload, IconInfo, IconTrash2, IconX } from '@/components/ui/icons';
@@ -207,6 +208,22 @@ export function AuthFilesPage() {
     mappings: [buildEmptyMappingEntry()]
   });
   const [savingMappings, setSavingMappings] = useState(false);
+
+  // Delete Mapping Confirm Modal State
+  const [deleteMappingConfirmOpen, setDeleteMappingConfirmOpen] = useState(false);
+  const [mappingProviderToDelete, setMappingProviderToDelete] = useState<string | null>(null);
+
+  // Delete File Confirm Modal State
+  const [deleteFileConfirmOpen, setDeleteFileConfirmOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<string | null>(null);
+
+  // Delete All Confirm Modal State
+  const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false);
+  const [deleteAllConfirmMessage, setDeleteAllConfirmMessage] = useState('');
+
+  // Delete Excluded Confirm Modal State
+  const [deleteExcludedConfirmOpen, setDeleteExcludedConfirmOpen] = useState(false);
+  const [excludedProviderToDelete, setExcludedProviderToDelete] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const loadingKeyStatsRef = useRef(false);
@@ -493,14 +510,21 @@ export function AuthFilesPage() {
     event.target.value = '';
   };
 
-  // 删除单个文件
-  const handleDelete = async (name: string) => {
-    if (!window.confirm(`${t('auth_files.delete_confirm')} "${name}" ?`)) return;
-    setDeleting(name);
+// 删除单个文件
+  const openDeleteFileConfirm = (name: string) => {
+    setFileToDelete(name);
+    setDeleteFileConfirmOpen(true);
+  };
+
+  const handleDeleteFileConfirm = async () => {
+    if (!fileToDelete) return;
+    setDeleting(fileToDelete);
     try {
-      await authFilesApi.deleteFile(name);
+      await authFilesApi.deleteFile(fileToDelete);
       showNotification(t('auth_files.delete_success'), 'success');
-      setFiles((prev) => prev.filter((item) => item.name !== name));
+      setFiles((prev) => prev.filter((item) => item.name !== fileToDelete));
+      setDeleteFileConfirmOpen(false);
+      setFileToDelete(null);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '';
       showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
@@ -509,15 +533,25 @@ export function AuthFilesPage() {
     }
   };
 
-  // 删除全部（根据筛选类型）
-  const handleDeleteAll = async () => {
+  const handleDeleteFileCancel = () => {
+    setDeleteFileConfirmOpen(false);
+    setFileToDelete(null);
+  };
+
+// 删除全部（根据筛选类型）
+  const openDeleteAllConfirm = () => {
     const isFiltered = filter !== 'all';
     const typeLabel = isFiltered ? getTypeLabel(filter) : t('auth_files.filter_all');
     const confirmMessage = isFiltered
       ? t('auth_files.delete_filtered_confirm', { type: typeLabel })
       : t('auth_files.delete_all_confirm');
+    setDeleteAllConfirmMessage(confirmMessage);
+    setDeleteAllConfirmOpen(true);
+  };
 
-    if (!window.confirm(confirmMessage)) return;
+  const handleDeleteAllConfirm = async () => {
+    const isFiltered = filter !== 'all';
+    const typeLabel = isFiltered ? getTypeLabel(filter) : t('auth_files.filter_all');
 
     setDeletingAll(true);
     try {
@@ -535,6 +569,7 @@ export function AuthFilesPage() {
         if (filesToDelete.length === 0) {
           showNotification(t('auth_files.delete_filtered_none', { type: typeLabel }), 'info');
           setDeletingAll(false);
+          setDeleteAllConfirmOpen(false);
           return;
         }
 
@@ -567,12 +602,17 @@ export function AuthFilesPage() {
         }
         setFilter('all');
       }
+      setDeleteAllConfirmOpen(false);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '';
       showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
     } finally {
       setDeletingAll(false);
     }
+  };
+
+  const handleDeleteAllCancel = () => {
+    setDeleteAllConfirmOpen(false);
   };
 
   // 下载文件
@@ -696,16 +736,28 @@ export function AuthFilesPage() {
     }
   };
 
-  const deleteExcluded = async (provider: string) => {
-    if (!window.confirm(t('oauth_excluded.delete_confirm', { provider }))) return;
+const openDeleteExcludedConfirm = (provider: string) => {
+    setExcludedProviderToDelete(provider);
+    setDeleteExcludedConfirmOpen(true);
+  };
+
+  const handleDeleteExcludedConfirm = async () => {
+    if (!excludedProviderToDelete) return;
     try {
-      await authFilesApi.deleteOauthExcludedEntry(provider);
+      await authFilesApi.deleteOauthExcludedEntry(excludedProviderToDelete);
       await loadExcluded();
       showNotification(t('oauth_excluded.delete_success'), 'success');
+      setDeleteExcludedConfirmOpen(false);
+      setExcludedProviderToDelete(null);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '';
       showNotification(`${t('oauth_excluded.delete_failed')}: ${errorMessage}`, 'error');
     }
+  };
+
+  const handleDeleteExcludedCancel = () => {
+    setDeleteExcludedConfirmOpen(false);
+    setExcludedProviderToDelete(null);
   };
 
   // OAuth 模型映射相关方法
@@ -798,16 +850,28 @@ export function AuthFilesPage() {
     }
   };
 
-  const deleteModelMappings = async (provider: string) => {
-    if (!window.confirm(t('oauth_model_mappings.delete_confirm', { provider }))) return;
+  const openDeleteMappingConfirm = (provider: string) => {
+    setMappingProviderToDelete(provider);
+    setDeleteMappingConfirmOpen(true);
+  };
+
+  const handleDeleteMappingConfirm = async () => {
+    if (!mappingProviderToDelete) return;
     try {
-      await authFilesApi.deleteOauthModelMappings(provider);
+      await authFilesApi.deleteOauthModelMappings(mappingProviderToDelete);
       await loadModelMappings();
       showNotification(t('oauth_model_mappings.delete_success'), 'success');
+      setDeleteMappingConfirmOpen(false);
+      setMappingProviderToDelete(null);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '';
       showNotification(`${t('oauth_model_mappings.delete_failed')}: ${errorMessage}`, 'error');
     }
+  };
+
+  const handleDeleteMappingCancel = () => {
+    setDeleteMappingConfirmOpen(false);
+    setMappingProviderToDelete(null);
   };
 
   // 渲染标签筛选器
@@ -976,7 +1040,7 @@ export function AuthFilesPage() {
               <Button
                 variant="danger"
                 size="sm"
-                onClick={() => handleDelete(item.name)}
+                onClick={() => openDeleteFileConfirm(item.name)}
                 className={styles.iconButton}
                 title={t('auth_files.delete_button')}
                 disabled={disableControls || deleting === item.name}
@@ -1026,7 +1090,7 @@ export function AuthFilesPage() {
             <Button
               variant="secondary"
               size="sm"
-              onClick={handleDeleteAll}
+              onClick={openDeleteAllConfirm}
               disabled={disableControls || loading || deletingAll}
               loading={deletingAll}
             >
@@ -1156,7 +1220,7 @@ export function AuthFilesPage() {
                   <Button variant="secondary" size="sm" onClick={() => openExcludedModal(provider)}>
                     {t('common.edit')}
                   </Button>
-                  <Button variant="danger" size="sm" onClick={() => deleteExcluded(provider)}>
+                  <Button variant="danger" size="sm" onClick={() => openDeleteExcludedConfirm(provider)}>
                     {t('oauth_excluded.delete')}
                   </Button>
                 </div>
@@ -1202,7 +1266,7 @@ export function AuthFilesPage() {
                   <Button variant="secondary" size="sm" onClick={() => openMappingsModal(provider)}>
                     {t('common.edit')}
                   </Button>
-                  <Button variant="danger" size="sm" onClick={() => deleteModelMappings(provider)}>
+                  <Button variant="danger" size="sm" onClick={() => openDeleteMappingConfirm(provider)}>
                     {t('oauth_model_mappings.delete')}
                   </Button>
                 </div>
@@ -1469,6 +1533,56 @@ export function AuthFilesPage() {
           <div className={styles.hint}>{t('oauth_model_mappings.mappings_hint')}</div>
         </div>
       </Modal>
+
+      {/* Delete Model Mapping Confirmation Modal */}
+      <ConfirmModal
+        open={deleteMappingConfirmOpen}
+        title={t('oauth_model_mappings.delete_title')}
+        message={t('oauth_model_mappings.delete_confirm', { provider: mappingProviderToDelete })}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
+        confirmVariant="danger"
+        onConfirm={handleDeleteMappingConfirm}
+        onCancel={handleDeleteMappingCancel}
+      />
+
+      {/* Delete File Confirmation Modal */}
+      <ConfirmModal
+        open={deleteFileConfirmOpen}
+        title={t('auth_files.delete_title')}
+        message={`${t('auth_files.delete_confirm')} "${fileToDelete}" ?`}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
+        confirmVariant="danger"
+        loading={deleting !== null}
+        onConfirm={handleDeleteFileConfirm}
+        onCancel={handleDeleteFileCancel}
+      />
+
+      {/* Delete All Confirmation Modal */}
+      <ConfirmModal
+        open={deleteAllConfirmOpen}
+        title={t('auth_files.delete_all_title')}
+        message={deleteAllConfirmMessage}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
+        confirmVariant="danger"
+        loading={deletingAll}
+        onConfirm={handleDeleteAllConfirm}
+        onCancel={handleDeleteAllCancel}
+      />
+
+      {/* Delete Excluded Confirmation Modal */}
+      <ConfirmModal
+        open={deleteExcludedConfirmOpen}
+        title={t('oauth_excluded.delete_title')}
+        message={t('oauth_excluded.delete_confirm', { provider: excludedProviderToDelete })}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
+        confirmVariant="danger"
+        onConfirm={handleDeleteExcludedConfirm}
+        onCancel={handleDeleteExcludedCancel}
+      />
     </div>
   );
 }
