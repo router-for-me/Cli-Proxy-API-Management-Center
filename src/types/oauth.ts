@@ -33,3 +33,12 @@ export interface OAuthConfig {
 export interface OAuthExcludedModels {
   models: string[];
 }
+
+// OAuth 模型映射
+export interface OAuthModelMappingEntry {
+  name: string;
+  alias: string;
+  fork?: boolean;
+}
+
+export type OAuthModelMappings = Record<string, OAuthModelMappingEntry[]>;

@@ -13,6 +13,9 @@ type PendingKey =
   | 'debug'
   | 'proxy'
   | 'retry'
+  | 'logsMaxSize'
+  | 'forceModelPrefix'
+  | 'routingStrategy'
   | 'switchProject'
   | 'switchPreview'
   | 'usage'
@@ -31,6 +34,8 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [proxyValue, setProxyValue] = useState('');
   const [retryValue, setRetryValue] = useState(0);
+  const [logsMaxTotalSizeMb, setLogsMaxTotalSizeMb] = useState(0);
+  const [routingStrategy, setRoutingStrategy] = useState('round-robin');
   const [pending, setPending] = useState<Record<PendingKey, boolean>>({} as Record<PendingKey, boolean>);
   const [error, setError] = useState('');
 
@@ -41,9 +46,34 @@ export function SettingsPage() {
       setLoading(true);
       setError('');
       try {
-        const data = (await fetchConfig()) as Config;
+        const [configResult, logsResult, prefixResult, routingResult] = await Promise.allSettled([
+          fetchConfig(),
+          configApi.getLogsMaxTotalSizeMb(),
+          configApi.getForceModelPrefix(),
+          configApi.getRoutingStrategy(),
+        ]);
+
+        if (configResult.status !== 'fulfilled') {
+          throw configResult.reason;
+        }
+
+        const data = configResult.value as Config;
         setProxyValue(data?.proxyUrl ?? '');
         setRetryValue(typeof data?.requestRetry === 'number' ? data.requestRetry : 0);
+
+        if (logsResult.status === 'fulfilled' && Number.isFinite(logsResult.value)) {
+          setLogsMaxTotalSizeMb(Math.max(0, Number(logsResult.value)));
+          updateConfigValue('logs-max-total-size-mb', Math.max(0, Number(logsResult.value)));
+        }
+
+        if (prefixResult.status === 'fulfilled') {
+          updateConfigValue('force-model-prefix', Boolean(prefixResult.value));
+        }
+
+        if (routingResult.status === 'fulfilled' && routingResult.value) {
+          setRoutingStrategy(String(routingResult.value));
+          updateConfigValue('routing/strategy', String(routingResult.value));
+        }
       } catch (err: any) {
         setError(err?.message || t('notification.refresh_failed'));
       } finally {
@@ -52,7 +82,7 @@ export function SettingsPage() {
     };
 
     load();
-  }, [fetchConfig, t]);
+  }, [fetchConfig, t, updateConfigValue]);
 
   useEffect(() => {
     if (config) {
@@ -60,8 +90,14 @@ export function SettingsPage() {
       if (typeof config.requestRetry === 'number') {
         setRetryValue(config.requestRetry);
       }
+      if (typeof config.logsMaxTotalSizeMb === 'number') {
+        setLogsMaxTotalSizeMb(config.logsMaxTotalSizeMb);
+      }
+      if (config.routingStrategy) {
+        setRoutingStrategy(config.routingStrategy);
+      }
     }
-  }, [config?.proxyUrl, config?.requestRetry]);
+  }, [config?.proxyUrl, config?.requestRetry, config?.logsMaxTotalSizeMb, config?.routingStrategy]);
 
   const setPendingFlag = (key: PendingKey, value: boolean) => {
     setPending((prev) => ({ ...prev, [key]: value }));
@@ -69,7 +105,7 @@ export function SettingsPage() {
 
   const toggleSetting = async (
     section: PendingKey,
-    rawKey: 'debug' | 'usage-statistics-enabled' | 'logging-to-file' | 'ws-auth',
+    rawKey: 'debug' | 'usage-statistics-enabled' | 'logging-to-file' | 'ws-auth' | 'force-model-prefix',
     value: boolean,
     updater: (val: boolean) => Promise<any>,
     successMessage: string
@@ -84,6 +120,8 @@ export function SettingsPage() {
           return config?.loggingToFile ?? false;
         case 'ws-auth':
           return config?.wsAuth ?? false;
+        case 'force-model-prefix':
+          return config?.forceModelPrefix ?? false;
         default:
           return false;
       }
@@ -162,6 +200,52 @@ export function SettingsPage() {
     }
   };
 
+  const handleLogsMaxTotalSizeUpdate = async () => {
+    const previous = config?.logsMaxTotalSizeMb ?? 0;
+    const parsed = Number(logsMaxTotalSizeMb);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      showNotification(t('login.error_invalid'), 'error');
+      setLogsMaxTotalSizeMb(previous);
+      return;
+    }
+    const normalized = Math.max(0, parsed);
+    setPendingFlag('logsMaxSize', true);
+    updateConfigValue('logs-max-total-size-mb', normalized);
+    try {
+      await configApi.updateLogsMaxTotalSizeMb(normalized);
+      clearCache('logs-max-total-size-mb');
+      showNotification(t('notification.logs_max_total_size_updated'), 'success');
+    } catch (err: any) {
+      setLogsMaxTotalSizeMb(previous);
+      updateConfigValue('logs-max-total-size-mb', previous);
+      showNotification(`${t('notification.update_failed')}: ${err?.message || ''}`, 'error');
+    } finally {
+      setPendingFlag('logsMaxSize', false);
+    }
+  };
+
+  const handleRoutingStrategyUpdate = async () => {
+    const strategy = routingStrategy.trim();
+    if (!strategy) {
+      showNotification(t('login.error_invalid'), 'error');
+      return;
+    }
+    const previous = config?.routingStrategy ?? 'round-robin';
+    setPendingFlag('routingStrategy', true);
+    updateConfigValue('routing/strategy', strategy);
+    try {
+      await configApi.updateRoutingStrategy(strategy);
+      clearCache('routing/strategy');
+      showNotification(t('notification.routing_strategy_updated'), 'success');
+    } catch (err: any) {
+      setRoutingStrategy(previous);
+      updateConfigValue('routing/strategy', previous);
+      showNotification(`${t('notification.update_failed')}: ${err?.message || ''}`, 'error');
+    } finally {
+      setPendingFlag('routingStrategy', false);
+    }
+  };
+
   const quotaSwitchProject = config?.quotaExceeded?.switchProject ?? false;
   const quotaSwitchPreview = config?.quotaExceeded?.switchPreviewModel ?? false;
 
@@ -171,63 +255,78 @@ export function SettingsPage() {
 
       <div className={styles.grid}>
         <Card>
-        {error && <div className="error-box">{error}</div>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <ToggleSwitch
-            label={t('basic_settings.debug_enable')}
-            checked={config?.debug ?? false}
-            disabled={disableControls || pending.debug || loading}
-            onChange={(value) =>
-              toggleSetting('debug', 'debug', value, configApi.updateDebug, t('notification.debug_updated'))
-            }
-          />
+          {error && <div className="error-box">{error}</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <ToggleSwitch
+              label={t('basic_settings.debug_enable')}
+              checked={config?.debug ?? false}
+              disabled={disableControls || pending.debug || loading}
+              onChange={(value) =>
+                toggleSetting('debug', 'debug', value, configApi.updateDebug, t('notification.debug_updated'))
+              }
+            />
 
-          <ToggleSwitch
-            label={t('basic_settings.usage_statistics_enable')}
-            checked={config?.usageStatisticsEnabled ?? false}
-            disabled={disableControls || pending.usage || loading}
-            onChange={(value) =>
-              toggleSetting(
-                'usage',
-                'usage-statistics-enabled',
-                value,
-                configApi.updateUsageStatistics,
-                t('notification.usage_statistics_updated')
-              )
-            }
-          />
+            <ToggleSwitch
+              label={t('basic_settings.usage_statistics_enable')}
+              checked={config?.usageStatisticsEnabled ?? false}
+              disabled={disableControls || pending.usage || loading}
+              onChange={(value) =>
+                toggleSetting(
+                  'usage',
+                  'usage-statistics-enabled',
+                  value,
+                  configApi.updateUsageStatistics,
+                  t('notification.usage_statistics_updated')
+                )
+              }
+            />
 
-          <ToggleSwitch
-            label={t('basic_settings.logging_to_file_enable')}
-            checked={config?.loggingToFile ?? false}
-            disabled={disableControls || pending.loggingToFile || loading}
-            onChange={(value) =>
-              toggleSetting(
-                'loggingToFile',
-                'logging-to-file',
-                value,
-                configApi.updateLoggingToFile,
-                t('notification.logging_to_file_updated')
-              )
-            }
-          />
+            <ToggleSwitch
+              label={t('basic_settings.logging_to_file_enable')}
+              checked={config?.loggingToFile ?? false}
+              disabled={disableControls || pending.loggingToFile || loading}
+              onChange={(value) =>
+                toggleSetting(
+                  'loggingToFile',
+                  'logging-to-file',
+                  value,
+                  configApi.updateLoggingToFile,
+                  t('notification.logging_to_file_updated')
+                )
+              }
+            />
 
-          <ToggleSwitch
-            label={t('basic_settings.ws_auth_enable')}
-            checked={config?.wsAuth ?? false}
-            disabled={disableControls || pending.wsAuth || loading}
-            onChange={(value) =>
-              toggleSetting(
-                'wsAuth',
-                'ws-auth',
-                value,
-                configApi.updateWsAuth,
-                t('notification.ws_auth_updated')
-              )
-            }
-          />
-        </div>
-      </Card>
+            <ToggleSwitch
+              label={t('basic_settings.ws_auth_enable')}
+              checked={config?.wsAuth ?? false}
+              disabled={disableControls || pending.wsAuth || loading}
+              onChange={(value) =>
+                toggleSetting(
+                  'wsAuth',
+                  'ws-auth',
+                  value,
+                  configApi.updateWsAuth,
+                  t('notification.ws_auth_updated')
+                )
+              }
+            />
+
+            <ToggleSwitch
+              label={t('basic_settings.force_model_prefix_enable')}
+              checked={config?.forceModelPrefix ?? false}
+              disabled={disableControls || pending.forceModelPrefix || loading}
+              onChange={(value) =>
+                toggleSetting(
+                  'forceModelPrefix',
+                  'force-model-prefix',
+                  value,
+                  configApi.updateForceModelPrefix,
+                  t('notification.force_model_prefix_updated')
+                )
+              }
+            />
+          </div>
+        </Card>
 
       <Card title={t('basic_settings.proxy_title')}>
         <Input
@@ -267,6 +366,57 @@ export function SettingsPage() {
             disabled={disableControls || loading}
           >
             {t('basic_settings.retry_update')}
+          </Button>
+        </div>
+      </Card>
+
+      <Card title={t('basic_settings.logs_max_total_size_title')}>
+        <div className={`${styles.retryRow} ${styles.retryRowAligned} ${styles.retryRowInputGrow}`}>
+          <Input
+            label={t('basic_settings.logs_max_total_size_label')}
+            hint={t('basic_settings.logs_max_total_size_hint')}
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={1}
+            value={logsMaxTotalSizeMb}
+            onChange={(e) => setLogsMaxTotalSizeMb(Number(e.target.value))}
+            disabled={disableControls || loading}
+            className={styles.retryInput}
+          />
+          <Button
+            className={styles.retryButton}
+            onClick={handleLogsMaxTotalSizeUpdate}
+            loading={pending.logsMaxSize}
+            disabled={disableControls || loading}
+          >
+            {t('basic_settings.logs_max_total_size_update')}
+          </Button>
+        </div>
+      </Card>
+
+      <Card title={t('basic_settings.routing_title')}>
+        <div className={`${styles.retryRow} ${styles.retryRowAligned} ${styles.retryRowInputGrow}`}>
+          <div className="form-group">
+            <label>{t('basic_settings.routing_strategy_label')}</label>
+            <select
+              className="input"
+              value={routingStrategy}
+              onChange={(e) => setRoutingStrategy(e.target.value)}
+              disabled={disableControls || loading}
+            >
+              <option value="round-robin">{t('basic_settings.routing_strategy_round_robin')}</option>
+              <option value="fill-first">{t('basic_settings.routing_strategy_fill_first')}</option>
+            </select>
+            <div className="hint">{t('basic_settings.routing_strategy_hint')}</div>
+          </div>
+          <Button
+            className={styles.retryButton}
+            onClick={handleRoutingStrategyUpdate}
+            loading={pending.routingStrategy}
+            disabled={disableControls || loading}
+          >
+            {t('basic_settings.routing_strategy_update')}
           </Button>
         </div>
       </Card>

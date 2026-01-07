@@ -8,11 +8,12 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconBot, IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { IconBot, IconDownload, IconInfo, IconTrash2, IconX } from '@/components/ui/icons';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
-import type { AuthFileItem } from '@/types';
+import type { AuthFileItem, OAuthModelMappingEntry } from '@/types';
 import type { KeyStats, KeyStatBucket, UsageDetail } from '@/utils/usage';
 import { collectUsageDetails, calculateStatusBarData } from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
@@ -81,6 +82,7 @@ const OAUTH_PROVIDER_PRESETS = [
 const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
 const MIN_CARD_PAGE_SIZE = 3;
 const MAX_CARD_PAGE_SIZE = 30;
+const MAX_AUTH_FILE_SIZE = 50 * 1024;
 
 const clampCardPageSize = (value: number) =>
   Math.min(MAX_CARD_PAGE_SIZE, Math.max(MIN_CARD_PAGE_SIZE, Math.round(value)));
@@ -89,6 +91,17 @@ interface ExcludedFormState {
   provider: string;
   modelsText: string;
 }
+
+interface ModelMappingsFormState {
+  provider: string;
+  mappings: OAuthModelMappingEntry[];
+}
+
+const buildEmptyMappingEntry = (): OAuthModelMappingEntry => ({
+  name: '',
+  alias: '',
+  fork: false
+});
 // 标准化 auth_index 值（与 usage.ts 中的 normalizeAuthIndex 保持一致）
 function normalizeAuthIndexValue(value: unknown): string | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -185,9 +198,20 @@ export function AuthFilesPage() {
   const [excludedForm, setExcludedForm] = useState<ExcludedFormState>({ provider: '', modelsText: '' });
   const [savingExcluded, setSavingExcluded] = useState(false);
 
+  // OAuth 模型映射相关
+  const [modelMappings, setModelMappings] = useState<Record<string, OAuthModelMappingEntry[]>>({});
+  const [modelMappingsError, setModelMappingsError] = useState<'unsupported' | null>(null);
+  const [mappingModalOpen, setMappingModalOpen] = useState(false);
+  const [mappingForm, setMappingForm] = useState<ModelMappingsFormState>({
+    provider: '',
+    mappings: [buildEmptyMappingEntry()]
+  });
+  const [savingMappings, setSavingMappings] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const loadingKeyStatsRef = useRef(false);
   const excludedUnsupportedRef = useRef(false);
+  const mappingsUnsupportedRef = useRef(false);
 
   const disableControls = connectionStatus !== 'connected';
 
@@ -271,9 +295,35 @@ export function AuthFilesPage() {
     }
   }, [showNotification, t]);
 
+  // 加载 OAuth 模型映射
+  const loadModelMappings = useCallback(async () => {
+    try {
+      const res = await authFilesApi.getOauthModelMappings();
+      mappingsUnsupportedRef.current = false;
+      setModelMappings(res || {});
+      setModelMappingsError(null);
+    } catch (err: unknown) {
+      const status =
+        typeof err === 'object' && err !== null && 'status' in err
+          ? (err as { status?: unknown }).status
+          : undefined;
+
+      if (status === 404) {
+        setModelMappings({});
+        setModelMappingsError('unsupported');
+        if (!mappingsUnsupportedRef.current) {
+          mappingsUnsupportedRef.current = true;
+          showNotification(t('oauth_model_mappings.upgrade_required'), 'warning');
+        }
+        return;
+      }
+      // 静默失败
+    }
+  }, [showNotification, t]);
+
   const handleHeaderRefresh = useCallback(async () => {
-    await Promise.all([loadFiles(), loadKeyStats(), loadExcluded()]);
-  }, [loadFiles, loadKeyStats, loadExcluded]);
+    await Promise.all([loadFiles(), loadKeyStats(), loadExcluded(), loadModelMappings()]);
+  }, [loadFiles, loadKeyStats, loadExcluded, loadModelMappings]);
 
   useHeaderRefresh(handleHeaderRefresh);
 
@@ -281,7 +331,8 @@ export function AuthFilesPage() {
     loadFiles();
     loadKeyStats();
     loadExcluded();
-  }, [loadFiles, loadKeyStats, loadExcluded]);
+    loadModelMappings();
+  }, [loadFiles, loadKeyStats, loadExcluded, loadModelMappings]);
 
   // 定时刷新状态数据（每240秒）
   useInterval(loadKeyStats, 240_000);
@@ -309,10 +360,24 @@ export function AuthFilesPage() {
     return lookup;
   }, [excluded]);
 
+  const mappingProviderLookup = useMemo(() => {
+    const lookup = new Map<string, string>();
+    Object.keys(modelMappings).forEach((provider) => {
+      const key = provider.trim().toLowerCase();
+      if (key && !lookup.has(key)) {
+        lookup.set(key, provider);
+      }
+    });
+    return lookup;
+  }, [modelMappings]);
+
   const providerOptions = useMemo(() => {
     const extraProviders = new Set<string>();
 
     Object.keys(excluded).forEach((provider) => {
+      extraProviders.add(provider);
+    });
+    Object.keys(modelMappings).forEach((provider) => {
       extraProviders.add(provider);
     });
     files.forEach((file) => {
@@ -334,7 +399,7 @@ export function AuthFilesPage() {
       .sort((a, b) => a.localeCompare(b));
 
     return [...OAUTH_PROVIDER_PRESETS, ...extraList];
-  }, [excluded, files]);
+  }, [excluded, files, modelMappings]);
 
   // 过滤和搜索
   const filtered = useMemo(() => {
@@ -356,9 +421,6 @@ export function AuthFilesPage() {
   const start = (currentPage - 1) * pageSize;
   const pageItems = filtered.slice(start, start + pageSize);
 
-  // 统计信息
-  const totalSize = useMemo(() => files.reduce((sum, item) => sum + (item.size || 0), 0), [files]);
-
   // 点击上传
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -372,17 +434,28 @@ export function AuthFilesPage() {
     const filesToUpload = Array.from(fileList);
     const validFiles: File[] = [];
     const invalidFiles: string[] = [];
+    const oversizedFiles: string[] = [];
 
     filesToUpload.forEach((file) => {
-      if (file.name.endsWith('.json')) {
-        validFiles.push(file);
-      } else {
+      if (!file.name.endsWith('.json')) {
         invalidFiles.push(file.name);
+        return;
       }
+      if (file.size > MAX_AUTH_FILE_SIZE) {
+        oversizedFiles.push(file.name);
+        return;
+      }
+      validFiles.push(file);
     });
 
     if (invalidFiles.length > 0) {
       showNotification(t('auth_files.upload_error_json'), 'error');
+    }
+    if (oversizedFiles.length > 0) {
+      showNotification(
+        t('auth_files.upload_error_size', { maxSize: formatFileSize(MAX_AUTH_FILE_SIZE) }),
+        'error'
+      );
     }
 
     if (validFiles.length === 0) {
@@ -635,6 +708,108 @@ export function AuthFilesPage() {
     }
   };
 
+  // OAuth 模型映射相关方法
+  const normalizeMappingEntries = (entries?: OAuthModelMappingEntry[]) => {
+    if (!Array.isArray(entries) || entries.length === 0) {
+      return [buildEmptyMappingEntry()];
+    }
+    return entries.map((entry) => ({
+      name: entry.name ?? '',
+      alias: entry.alias ?? '',
+      fork: Boolean(entry.fork),
+    }));
+  };
+
+  const openMappingsModal = (provider?: string) => {
+    const normalizedProvider = (provider || '').trim();
+    const fallbackProvider = normalizedProvider || (filter !== 'all' ? String(filter) : '');
+    const lookupKey = fallbackProvider
+      ? mappingProviderLookup.get(fallbackProvider.toLowerCase())
+      : undefined;
+    const mappings = lookupKey ? modelMappings[lookupKey] : [];
+    setMappingForm({
+      provider: lookupKey || fallbackProvider,
+      mappings: normalizeMappingEntries(mappings),
+    });
+    setMappingModalOpen(true);
+  };
+
+  const updateMappingEntry = (index: number, field: keyof OAuthModelMappingEntry, value: string | boolean) => {
+    setMappingForm((prev) => ({
+      ...prev,
+      mappings: prev.mappings.map((entry, idx) =>
+        idx === index ? { ...entry, [field]: value } : entry
+      ),
+    }));
+  };
+
+  const addMappingEntry = () => {
+    setMappingForm((prev) => ({
+      ...prev,
+      mappings: [...prev.mappings, buildEmptyMappingEntry()],
+    }));
+  };
+
+  const removeMappingEntry = (index: number) => {
+    setMappingForm((prev) => {
+      const next = prev.mappings.filter((_, idx) => idx !== index);
+      return {
+        ...prev,
+        mappings: next.length ? next : [buildEmptyMappingEntry()],
+      };
+    });
+  };
+
+  const saveModelMappings = async () => {
+    const provider = mappingForm.provider.trim();
+    if (!provider) {
+      showNotification(t('oauth_model_mappings.provider_required'), 'error');
+      return;
+    }
+
+    const seen = new Set<string>();
+    const mappings = mappingForm.mappings
+      .map((entry) => {
+        const name = String(entry.name ?? '').trim();
+        const alias = String(entry.alias ?? '').trim();
+        if (!name || !alias) return null;
+        const key = `${name.toLowerCase()}::${alias.toLowerCase()}::${entry.fork ? '1' : '0'}`;
+        if (seen.has(key)) return null;
+        seen.add(key);
+        return entry.fork ? { name, alias, fork: true } : { name, alias };
+      })
+      .filter(Boolean) as OAuthModelMappingEntry[];
+
+    setSavingMappings(true);
+    try {
+      if (mappings.length) {
+        await authFilesApi.saveOauthModelMappings(provider, mappings);
+      } else {
+        await authFilesApi.deleteOauthModelMappings(provider);
+      }
+      await loadModelMappings();
+      showNotification(t('oauth_model_mappings.save_success'), 'success');
+      setMappingModalOpen(false);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      showNotification(`${t('oauth_model_mappings.save_failed')}: ${errorMessage}`, 'error');
+    } finally {
+      setSavingMappings(false);
+    }
+  };
+
+  const deleteModelMappings = async (provider: string) => {
+    if (!window.confirm(t('oauth_model_mappings.delete_confirm', { provider }))) return;
+    try {
+      await authFilesApi.deleteOauthModelMappings(provider);
+      await loadModelMappings();
+      showNotification(t('oauth_model_mappings.delete_success'), 'success');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      showNotification(`${t('oauth_model_mappings.delete_failed')}: ${errorMessage}`, 'error');
+    }
+  };
+
   // 渲染标签筛选器
   const renderFilterTags = () => (
     <div className={styles.filterTags}>
@@ -822,6 +997,13 @@ export function AuthFilesPage() {
     );
   };
 
+  const titleNode = (
+    <div className={styles.titleWrapper}>
+      <span>{t('auth_files.title_section')}</span>
+      {files.length > 0 && <span className={styles.countBadge}>{files.length}</span>}
+    </div>
+  );
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
@@ -830,7 +1012,7 @@ export function AuthFilesPage() {
       </div>
 
       <Card
-        title={t('auth_files.title_section')}
+        title={titleNode}
         extra={
           <div className={styles.headerActions}>
             <Button
@@ -893,12 +1075,6 @@ export function AuthFilesPage() {
                 value={pageSize}
                 onChange={handlePageSizeChange}
               />
-            </div>
-            <div className={styles.filterItem}>
-              <label>{t('common.info')}</label>
-              <div className={styles.statsInfo}>
-                {files.length} {t('auth_files.files_count')} · {formatFileSize(totalSize)}
-              </div>
             </div>
           </div>
         </div>
@@ -982,6 +1158,52 @@ export function AuthFilesPage() {
                   </Button>
                   <Button variant="danger" size="sm" onClick={() => deleteExcluded(provider)}>
                     {t('oauth_excluded.delete')}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* OAuth 模型映射卡片 */}
+      <Card
+        title={t('oauth_model_mappings.title')}
+        extra={
+          <Button
+            size="sm"
+            onClick={() => openMappingsModal()}
+            disabled={disableControls || modelMappingsError === 'unsupported'}
+          >
+            {t('oauth_model_mappings.add')}
+          </Button>
+        }
+      >
+        {modelMappingsError === 'unsupported' ? (
+          <EmptyState
+            title={t('oauth_model_mappings.upgrade_required_title')}
+            description={t('oauth_model_mappings.upgrade_required_desc')}
+          />
+        ) : Object.keys(modelMappings).length === 0 ? (
+          <EmptyState title={t('oauth_model_mappings.list_empty_all')} />
+        ) : (
+          <div className={styles.excludedList}>
+            {Object.entries(modelMappings).map(([provider, mappings]) => (
+              <div key={provider} className={styles.excludedItem}>
+                <div className={styles.excludedInfo}>
+                  <div className={styles.excludedProvider}>{provider}</div>
+                  <div className={styles.excludedModels}>
+                    {mappings?.length
+                      ? t('oauth_model_mappings.model_count', { count: mappings.length })
+                      : t('oauth_model_mappings.no_models')}
+                  </div>
+                </div>
+                <div className={styles.excludedActions}>
+                  <Button variant="secondary" size="sm" onClick={() => openMappingsModal(provider)}>
+                    {t('common.edit')}
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={() => deleteModelMappings(provider)}>
+                    {t('oauth_model_mappings.delete')}
                   </Button>
                 </div>
               </div>
@@ -1137,6 +1359,114 @@ export function AuthFilesPage() {
             onChange={(e) => setExcludedForm((prev) => ({ ...prev, modelsText: e.target.value }))}
           />
           <div className={styles.hint}>{t('oauth_excluded.models_hint')}</div>
+        </div>
+      </Modal>
+
+      {/* OAuth 模型映射弹窗 */}
+      <Modal
+        open={mappingModalOpen}
+        onClose={() => setMappingModalOpen(false)}
+        title={t('oauth_model_mappings.add_title')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setMappingModalOpen(false)} disabled={savingMappings}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={saveModelMappings} loading={savingMappings}>
+              {t('oauth_model_mappings.save')}
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.providerField}>
+          <Input
+            id="oauth-model-mappings-provider"
+            list="oauth-model-mappings-provider-options"
+            label={t('oauth_model_mappings.provider_label')}
+            hint={t('oauth_model_mappings.provider_hint')}
+            placeholder={t('oauth_model_mappings.provider_placeholder')}
+            value={mappingForm.provider}
+            onChange={(e) => setMappingForm((prev) => ({ ...prev, provider: e.target.value }))}
+          />
+          <datalist id="oauth-model-mappings-provider-options">
+            {providerOptions.map((provider) => (
+              <option key={provider} value={provider} />
+            ))}
+          </datalist>
+          {providerOptions.length > 0 && (
+            <div className={styles.providerTagList}>
+              {providerOptions.map((provider) => {
+                const isActive =
+                  mappingForm.provider.trim().toLowerCase() === provider.toLowerCase();
+                return (
+                  <button
+                    key={provider}
+                    type="button"
+                    className={`${styles.providerTag} ${isActive ? styles.providerTagActive : ''}`}
+                    onClick={() => setMappingForm((prev) => ({ ...prev, provider }))}
+                    disabled={savingMappings}
+                  >
+                    {getTypeLabel(provider)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div className={styles.formGroup}>
+          <label>{t('oauth_model_mappings.mappings_label')}</label>
+          <div className="header-input-list">
+            {(mappingForm.mappings.length ? mappingForm.mappings : [buildEmptyMappingEntry()]).map(
+              (entry, index) => (
+                <div key={`${entry.name}-${entry.alias}-${index}`} className={styles.mappingRow}>
+                  <input
+                    className="input"
+                    placeholder={t('oauth_model_mappings.mapping_name_placeholder')}
+                    value={entry.name}
+                    onChange={(e) => updateMappingEntry(index, 'name', e.target.value)}
+                    disabled={savingMappings}
+                  />
+                  <span className={styles.mappingSeparator}>→</span>
+                  <input
+                    className="input"
+                    placeholder={t('oauth_model_mappings.mapping_alias_placeholder')}
+                    value={entry.alias}
+                    onChange={(e) => updateMappingEntry(index, 'alias', e.target.value)}
+                    disabled={savingMappings}
+                  />
+                  <div className={styles.mappingFork}>
+                    <ToggleSwitch
+                      label={t('oauth_model_mappings.mapping_fork_label')}
+                      labelPosition="left"
+                      checked={Boolean(entry.fork)}
+                      onChange={(value) => updateMappingEntry(index, 'fork', value)}
+                      disabled={savingMappings}
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeMappingEntry(index)}
+                    disabled={savingMappings || mappingForm.mappings.length <= 1}
+                    title={t('common.delete')}
+                    aria-label={t('common.delete')}
+                  >
+                    <IconX size={14} />
+                  </Button>
+                </div>
+              )
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={addMappingEntry}
+              disabled={savingMappings}
+              className="align-start"
+            >
+              {t('oauth_model_mappings.add_mapping')}
+            </Button>
+          </div>
+          <div className={styles.hint}>{t('oauth_model_mappings.mappings_hint')}</div>
         </div>
       </Modal>
     </div>

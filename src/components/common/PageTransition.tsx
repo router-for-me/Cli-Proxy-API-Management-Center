@@ -54,6 +54,7 @@ export function PageTransition({
   useEffect(() => {
     if (isAnimating) return;
     if (location.key === currentLayerKey) return;
+    if (currentLayerPathname === location.pathname) return;
     const scrollContainer = resolveScrollContainer();
     exitScrollOffsetRef.current = scrollContainer?.scrollTop ?? 0;
     const resolveOrderIndex = (pathname?: string) => {
@@ -69,17 +70,27 @@ export function PageTransition({
         : toIndex > fromIndex
           ? 'forward'
           : 'backward';
-    setTransitionDirection(nextDirection);
-    setLayers((prev) => {
-      const prevCurrent = prev[prev.length - 1];
-      return [
-        prevCurrent
-          ? { ...prevCurrent, status: 'exiting' }
-          : { key: location.key, location, status: 'exiting' },
-        { key: location.key, location, status: 'current' },
-      ];
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setTransitionDirection(nextDirection);
+      setLayers((prev) => {
+        const prevCurrent = prev[prev.length - 1];
+        return [
+          prevCurrent
+            ? { ...prevCurrent, status: 'exiting' }
+            : { key: location.key, location, status: 'exiting' },
+          { key: location.key, location, status: 'current' },
+        ];
+      });
+      setIsAnimating(true);
     });
-    setIsAnimating(true);
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     isAnimating,
     location,

@@ -30,6 +30,37 @@
   display: flex;
   gap: $spacing-sm;
   flex-wrap: wrap;
+  align-items: center;
+
+  :global(.btn-sm) {
+    line-height: 16px;
+  }
+
+  :global(svg) {
+    display: block;
+  }
+}
+
+.titleWrapper {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  line-height: 24px;
+}
+
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-width: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--count-badge-text);
+  background-color: var(--count-badge-bg);
+  box-sizing: border-box;
 }
 
 .errorBox {
@@ -76,11 +107,7 @@
 .geminiCliGrid {
   display: grid;
   gap: $spacing-md;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-
-  @include tablet {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
 
   @include mobile {
     grid-template-columns: 1fr;
@@ -112,28 +139,28 @@
   }
 }
 
+.viewModeToggle {
+  display: flex;
+  gap: $spacing-xs;
+  align-items: center;
+}
+
 .antigravityCard {
-  background-image: linear-gradient(
-    180deg,
-    rgba(224, 247, 250, 0.12),
-    rgba(224, 247, 250, 0)
-  );
+  background-image: linear-gradient(180deg,
+      rgba(224, 247, 250, 0.12),
+      rgba(224, 247, 250, 0));
 }
 
 .codexCard {
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 243, 224, 0.18),
-    rgba(255, 243, 224, 0)
-  );
+  background-image: linear-gradient(180deg,
+      rgba(255, 243, 224, 0.18),
+      rgba(255, 243, 224, 0));
 }
 
 .geminiCliCard {
-  background-image: linear-gradient(
-    180deg,
-    rgba(231, 239, 255, 0.2),
-    rgba(231, 239, 255, 0)
-  );
+  background-image: linear-gradient(180deg,
+      rgba(231, 239, 255, 0.2),
+      rgba(231, 239, 255, 0));
 }
 
 .quotaSection {
@@ -330,4 +357,33 @@
   padding: $spacing-xs $spacing-md;
   background-color: var(--bg-secondary);
   border-radius: $radius-md;
+}
+
+.warningOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.warningModal {
+  background-color: var(--bg-primary);
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: $shadow-lg;
+
+  p {
+    margin: 0 0 $spacing-md 0;
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.6;
+  }
 }

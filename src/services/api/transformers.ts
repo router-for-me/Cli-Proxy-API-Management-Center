@@ -258,7 +258,15 @@ export const normalizeConfigResponse = (raw: any): Config => {
   config.usageStatisticsEnabled = raw['usage-statistics-enabled'] ?? raw.usageStatisticsEnabled;
   config.requestLog = raw['request-log'] ?? raw.requestLog;
   config.loggingToFile = raw['logging-to-file'] ?? raw.loggingToFile;
+  config.logsMaxTotalSizeMb = raw['logs-max-total-size-mb'] ?? raw.logsMaxTotalSizeMb;
   config.wsAuth = raw['ws-auth'] ?? raw.wsAuth;
+  config.forceModelPrefix = raw['force-model-prefix'] ?? raw.forceModelPrefix;
+  const routing = raw.routing;
+  if (routing && typeof routing === 'object') {
+    config.routingStrategy = routing.strategy ?? routing['strategy'];
+  } else {
+    config.routingStrategy = raw['routing-strategy'] ?? raw.routingStrategy;
+  }
   config.apiKeys = Array.isArray(raw['api-keys']) ? raw['api-keys'].slice() : raw.apiKeys;
 
   const geminiList = raw['gemini-api-key'] ?? raw.geminiApiKey ?? raw.geminiApiKeys;
@@ -278,6 +286,13 @@ export const normalizeConfigResponse = (raw: any): Config => {
   const claudeList = raw['claude-api-key'] ?? raw.claudeApiKey ?? raw.claudeApiKeys;
   if (Array.isArray(claudeList)) {
     config.claudeApiKeys = claudeList
+      .map((item: any) => normalizeProviderKeyConfig(item))
+      .filter(Boolean) as ProviderKeyConfig[];
+  }
+
+  const vertexList = raw['vertex-api-key'] ?? raw.vertexApiKey ?? raw.vertexApiKeys;
+  if (Array.isArray(vertexList)) {
+    config.vertexApiKeys = vertexList
       .map((item: any) => normalizeProviderKeyConfig(item))
       .filter(Boolean) as ProviderKeyConfig[];
   }

@@ -6,6 +6,7 @@ export type ProviderModal =
   | { type: 'gemini'; index: number | null }
   | { type: 'codex'; index: number | null }
   | { type: 'claude'; index: number | null }
+  | { type: 'vertex'; index: number | null }
   | { type: 'ampcode'; index: null }
   | { type: 'openai'; index: number | null };
 
@@ -36,6 +37,10 @@ export type GeminiFormState = GeminiKeyConfig & { excludedText: string };
 export type ProviderFormState = ProviderKeyConfig & {
   modelEntries: ModelEntry[];
   excludedText: string;
+};
+
+export type VertexFormState = Omit<ProviderKeyConfig, 'excludedModels'> & {
+  modelEntries: ModelEntry[];
 };
 
 export interface ProviderSectionProps<TConfig> {
