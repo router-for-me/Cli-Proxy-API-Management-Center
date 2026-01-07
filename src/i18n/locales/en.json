@@ -612,7 +612,7 @@
     "iflow_oauth_polling_error": "Failed to check authentication status:",
     "iflow_cookie_title": "iFlow Cookie Login",
     "iflow_cookie_label": "Cookie Value:",
-    "iflow_cookie_placeholder": "Paste browser cookie, e.g. sessionid=...;",
+    "iflow_cookie_placeholder": "Enter the BXAuth value, starting with BXAuth=",
     "iflow_cookie_hint": "Submit an existing cookie to finish login without opening the authorization link; the credential file will be saved automatically.",
     "iflow_cookie_key_hint": "Note: Create a key on the platform first.",
     "iflow_cookie_button": "Submit Cookie Login",

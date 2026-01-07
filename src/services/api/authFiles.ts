@@ -6,6 +6,43 @@ import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
 import type { OAuthModelMappingEntry } from '@/types';
 
+const normalizeOauthExcludedModels = (payload: unknown): Record<string, string[]> => {
+  if (!payload || typeof payload !== 'object') return {};
+
+  const source = (payload as any)['oauth-excluded-models'] ?? (payload as any).items ?? payload;
+  if (!source || typeof source !== 'object') return {};
+
+  const result: Record<string, string[]> = {};
+
+  Object.entries(source as Record<string, unknown>).forEach(([provider, models]) => {
+    const key = String(provider ?? '')
+      .trim()
+      .toLowerCase();
+    if (!key) return;
+
+    const rawList = Array.isArray(models)
+      ? models
+      : typeof models === 'string'
+        ? models.split(/[\n,]+/)
+        : [];
+
+    const seen = new Set<string>();
+    const normalized: string[] = [];
+    rawList.forEach((item) => {
+      const trimmed = String(item ?? '').trim();
+      if (!trimmed) return;
+      const modelKey = trimmed.toLowerCase();
+      if (seen.has(modelKey)) return;
+      seen.add(modelKey);
+      normalized.push(trimmed);
+    });
+
+    result[key] = normalized;
+  });
+
+  return result;
+};
+
 export const authFilesApi = {
   list: () => apiClient.get<AuthFilesResponse>('/auth-files'),
 
@@ -22,8 +59,7 @@ export const authFilesApi = {
   // OAuth 排除模型
   async getOauthExcludedModels(): Promise<Record<string, string[]>> {
     const data = await apiClient.get('/oauth-excluded-models');
-    const payload = (data && (data['oauth-excluded-models'] ?? data.items ?? data)) as any;
-    return payload && typeof payload === 'object' ? payload : {};
+    return normalizeOauthExcludedModels(data);
   },
 
   saveOauthExcludedModels: (provider: string, models: string[]) =>
@@ -31,6 +67,9 @@ export const authFilesApi = {
 
   deleteOauthExcludedEntry: (provider: string) =>
     apiClient.delete(`/oauth-excluded-models?provider=${encodeURIComponent(provider)}`),
+
+  replaceOauthExcludedModels: (map: Record<string, string[]>) =>
+    apiClient.put('/oauth-excluded-models', normalizeOauthExcludedModels(map)),
 
   // OAuth 模型映射
   async getOauthModelMappings(): Promise<Record<string, OAuthModelMappingEntry[]>> {

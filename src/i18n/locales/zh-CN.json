@@ -612,7 +612,7 @@
     "iflow_oauth_polling_error": "检查认证状态失败:",
     "iflow_cookie_title": "iFlow Cookie 登录",
     "iflow_cookie_label": "Cookie 内容:",
-    "iflow_cookie_placeholder": "粘贴浏览器中的 Cookie，例如 sessionid=...;",
+    "iflow_cookie_placeholder": "填入BXAuth值 以BXAuth=开头",
     "iflow_cookie_hint": "直接提交 Cookie 以完成登录（无需打开授权链接），服务端将自动保存凭据。",
     "iflow_cookie_key_hint": "提示：需在平台上先创建 Key。",
     "iflow_cookie_button": "提交 Cookie 登录",
