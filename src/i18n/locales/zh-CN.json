@@ -44,7 +44,8 @@
     "custom_headers_key_placeholder": "Header 名称，例如 X-Custom-Header",
     "custom_headers_value_placeholder": "Header 值",
     "model_name_placeholder": "模型名称，例如 claude-3-5-sonnet-20241022",
-    "model_alias_placeholder": "模型别名 (可选)"
+"model_alias_placeholder": "模型别名 (可选)",
+    "delete_confirm_title": "确认删除"
   },
   "title": {
     "main": "CLI Proxy API Management Center",
@@ -168,7 +169,8 @@
     "add_modal_key_placeholder": "请输入API密钥",
     "edit_modal_title": "编辑API密钥",
     "edit_modal_key_label": "API密钥:",
-    "delete_confirm": "确定要删除这个API密钥吗？"
+    "delete_confirm": "确定要删除这个API密钥吗？",
+    "delete_title": "删除 API 密钥"
   },
   "ai_providers": {
     "title": "AI 提供商配置",
@@ -275,6 +277,8 @@
     "ampcode_model_mappings_to_placeholder": "to 模型（目标）",
     "ampcode_model_mappings_count": "映射数量",
     "ampcode_mappings_overwrite_confirm": "当前未成功加载服务器已有映射，继续保存可能覆盖或清空已有映射，是否继续？",
+    "ampcode_clear_upstream_api_key_title": "清除官方密钥",
+    "ampcode_mappings_overwrite_title": "覆盖映射确认",
     "openai_title": "OpenAI 兼容提供商",
     "openai_add_button": "添加提供商",
     "openai_empty_title": "暂无OpenAI兼容提供商",
@@ -397,7 +401,9 @@
     "models_unsupported": "当前版本不支持此功能",
     "models_unsupported_desc": "请更新 CLI Proxy API 到最新版本后重试",
     "models_excluded_badge": "已排除",
-    "models_excluded_hint": "此模型已被 OAuth 排除"
+    "models_excluded_hint": "此模型已被 OAuth 排除",
+    "delete_title": "删除认证文件",
+    "delete_all_title": "删除全部认证文件"
   },
   "antigravity_quota": {
     "title": "Antigravity 额度",
@@ -500,7 +506,8 @@
     "scope_provider": "当前范围：{{provider}}",
     "upgrade_required": "当前 CPA 版本不支持模型排除列表，请升级 CPA 版本",
     "upgrade_required_title": "需要升级 CPA 版本",
-    "upgrade_required_desc": "当前服务器版本不支持获取模型排除列表功能，请升级到最新版本的 CPA（CLI Proxy API）后重试。"
+    "upgrade_required_desc": "当前服务器版本不支持获取模型排除列表功能，请升级到最新版本的 CPA（CLI Proxy API）后重试。",
+    "delete_title": "删除排除列表"
   },
   "oauth_model_mappings": {
     "title": "OAuth 模型映射",
@@ -528,7 +535,8 @@
     "provider_required": "请先填写提供商名称",
     "upgrade_required": "当前 CPA 版本不支持模型映射功能，请升级 CPA 版本",
     "upgrade_required_title": "需要升级 CPA 版本",
-    "upgrade_required_desc": "当前服务器版本不支持 OAuth 模型映射功能，请升级到最新版本的 CPA（CLI Proxy API）后重试。"
+    "upgrade_required_desc": "当前服务器版本不支持 OAuth 模型映射功能，请升级到最新版本的 CPA（CLI Proxy API）后重试。",
+    "delete_title": "删除模型映射"
   },
   "auth_login": {
     "codex_oauth_title": "Codex OAuth",
@@ -746,7 +754,8 @@
     "lines": "行",
     "removed": "已过滤",
     "upgrade_required_title": "需要升级 CLI Proxy API",
-    "upgrade_required_desc": "当前服务器版本不支持日志查看功能，请升级到最新版本的 CLI Proxy API 以使用此功能。"
+    "upgrade_required_desc": "当前服务器版本不支持日志查看功能，请升级到最新版本的 CLI Proxy API 以使用此功能。",
+    "clear_title": "清空日志"
   },
   "config_management": {
     "title": "配置管理",
@@ -945,6 +954,7 @@
     "delete_failed": "备份删除失败",
     "download_failed": "备份下载失败",
     "restore_success": "备份恢复成功",
-    "restore_failed": "备份恢复失败"
+    "restore_failed": "备份恢复失败",
+    "delete_title": "删除备份"
   }
 }

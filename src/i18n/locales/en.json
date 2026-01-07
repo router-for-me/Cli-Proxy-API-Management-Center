@@ -44,7 +44,8 @@
     "custom_headers_key_placeholder": "Header name, e.g. X-Custom-Header",
     "custom_headers_value_placeholder": "Header value",
     "model_name_placeholder": "Model name, e.g. claude-3-5-sonnet-20241022",
-    "model_alias_placeholder": "Model alias (optional)"
+    "model_alias_placeholder": "Model alias (optional)",
+    "delete_confirm_title": "Confirm Delete"
   },
   "title": {
     "main": "CLI Proxy API Management Center",
@@ -168,7 +169,8 @@
     "add_modal_key_placeholder": "Please enter API key",
     "edit_modal_title": "Edit API Key",
     "edit_modal_key_label": "API Key:",
-    "delete_confirm": "Are you sure you want to delete this API key?"
+    "delete_confirm": "Are you sure you want to delete this API key?",
+    "delete_title": "Delete API Key"
   },
   "ai_providers": {
     "title": "AI Providers Configuration",
@@ -275,6 +277,8 @@
     "ampcode_model_mappings_to_placeholder": "to model (target)",
     "ampcode_model_mappings_count": "Mappings Count",
     "ampcode_mappings_overwrite_confirm": "Existing mappings could not be loaded. Continuing may overwrite or clear them. Continue?",
+    "ampcode_clear_upstream_api_key_title": "Clear Official Key",
+    "ampcode_mappings_overwrite_title": "Overwrite Mappings",
     "openai_title": "OpenAI Compatible Providers",
     "openai_add_button": "Add Provider",
     "openai_empty_title": "No OpenAI Compatible Providers",
@@ -397,7 +401,9 @@
     "models_unsupported": "This feature is not supported in the current version",
     "models_unsupported_desc": "Please update CLI Proxy API to the latest version and try again",
     "models_excluded_badge": "Excluded",
-    "models_excluded_hint": "This model is excluded by OAuth"
+    "models_excluded_hint": "This model is excluded by OAuth",
+    "delete_title": "Delete Auth File",
+    "delete_all_title": "Delete All Auth Files"
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",
@@ -500,7 +506,8 @@
     "scope_provider": "Scope: {{provider}}",
     "upgrade_required": "This feature requires a newer CLI Proxy API (CPA) version. Please upgrade.",
     "upgrade_required_title": "Please upgrade CLI Proxy API",
-    "upgrade_required_desc": "The current server does not support the OAuth excluded models API. Please upgrade to the latest CLI Proxy API (CPA) version."
+    "upgrade_required_desc": "The current server does not support the OAuth excluded models API. Please upgrade to the latest CLI Proxy API (CPA) version.",
+    "delete_title": "Delete Exclusion List"
   },
   "oauth_model_mappings": {
     "title": "OAuth Model Mappings",
@@ -528,7 +535,8 @@
     "provider_required": "Please enter a provider first",
     "upgrade_required": "This feature requires a newer CLI Proxy API (CPA) version. Please upgrade.",
     "upgrade_required_title": "Please upgrade CLI Proxy API",
-    "upgrade_required_desc": "The current server does not support the OAuth model mappings API. Please upgrade to the latest CLI Proxy API (CPA) version."
+    "upgrade_required_desc": "The current server does not support the OAuth model mappings API. Please upgrade to the latest CLI Proxy API (CPA) version.",
+    "delete_title": "Delete Model Mapping"
   },
   "auth_login": {
     "codex_oauth_title": "Codex OAuth",
@@ -746,7 +754,8 @@
     "lines": "lines",
     "removed": "Filtered",
     "upgrade_required_title": "Please Upgrade CLI Proxy API",
-    "upgrade_required_desc": "The current server version does not support the logs viewing feature. Please upgrade to the latest version of CLI Proxy API to use this feature."
+    "upgrade_required_desc": "The current server version does not support the logs viewing feature. Please upgrade to the latest version of CLI Proxy API to use this feature.",
+    "clear_title": "Clear Logs"
   },
   "config_management": {
     "title": "Config Management",
@@ -945,6 +954,7 @@
     "delete_failed": "Failed to delete backup",
     "download_failed": "Failed to download backup",
     "restore_success": "Backup restored successfully",
-    "restore_failed": "Failed to restore backup"
+    "restore_failed": "Failed to restore backup",
+    "delete_title": "Delete Backup"
   }
 }
