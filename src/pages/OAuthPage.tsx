@@ -13,6 +13,7 @@ import iconClaude from '@/assets/icons/claude.svg';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
+import iconCopilot from '@/assets/icons/copilot.svg';
 import iconIflow from '@/assets/icons/iflow.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 
@@ -28,6 +29,11 @@ interface ProviderState {
   callbackSubmitting?: boolean;
   callbackStatus?: 'success' | 'error';
   callbackError?: string;
+  // Copilot device flow fields
+  deviceCode?: string;
+  userCode?: string;
+  verificationUri?: string;
+  githubToken?: string;
 }
 
 interface IFlowCookieState {
@@ -59,10 +65,11 @@ const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabe
   { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
   { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconAntigravity },
   { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini },
-  { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label', icon: iconQwen }
+  { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label', icon: iconQwen },
+  { id: 'copilot', titleKey: 'auth_login.copilot_oauth_title', hintKey: 'auth_login.copilot_oauth_hint', urlLabelKey: 'auth_login.copilot_oauth_url_label', icon: iconCopilot }
 ];
 
-const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli'];
+const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'copilot'];
 const getProviderI18nPrefix = (provider: OAuthProvider) => provider.replace('-', '_');
 const getAuthKey = (provider: OAuthProvider, suffix: string) =>
   `auth_login.${getProviderI18nPrefix(provider)}_${suffix}`;
@@ -128,6 +135,37 @@ export function OAuthPage() {
     timers.current[provider] = timer;
   };
 
+  const startCopilotPolling = (provider: OAuthProvider, deviceCode: string) => {
+    if (timers.current[provider]) {
+      clearInterval(timers.current[provider]);
+    }
+    const timer = window.setInterval(async () => {
+      try {
+        const res = await oauthApi.getCopilotAuthStatus(deviceCode);
+        if (res.status === 'ok') {
+          updateProviderState(provider, { status: 'success', polling: false });
+          showNotification(t(getAuthKey(provider, 'oauth_status_success')), 'success');
+          window.clearInterval(timer);
+          delete timers.current[provider];
+        } else if (res.status === 'error') {
+          updateProviderState(provider, { status: 'error', error: res.error, polling: false });
+          showNotification(
+            `${t(getAuthKey(provider, 'oauth_status_error'))} ${res.error || ''}`,
+            'error'
+          );
+          window.clearInterval(timer);
+          delete timers.current[provider];
+        }
+        // If status === 'wait', continue polling
+      } catch (err: any) {
+        updateProviderState(provider, { status: 'error', error: err?.message, polling: false });
+        window.clearInterval(timer);
+        delete timers.current[provider];
+      }
+    }, 5000); // Poll every 5 seconds
+    timers.current[provider] = timer;
+  };
+
   const startAuth = async (provider: OAuthProvider) => {
     const projectId = provider === 'gemini-cli' ? (states[provider]?.projectId || '').trim() : undefined;
     // 项目 ID 现在是可选的，如果不输入将自动选择第一个可用项目
@@ -147,9 +185,27 @@ export function OAuthPage() {
         provider,
         provider === 'gemini-cli' ? { projectId: projectId || undefined } : undefined
       );
-      updateProviderState(provider, { url: res.url, state: res.state, status: 'waiting', polling: true });
-      if (res.state) {
-        startPolling(provider, res.state);
+
+      // Handle Copilot device flow
+      if (provider === 'copilot' && res.device_code) {
+        updateProviderState(provider, {
+          deviceCode: res.device_code,
+          userCode: res.user_code,
+          verificationUri: res.verification_uri,
+          status: 'waiting',
+          polling: true
+        });
+        // Open GitHub device authorization page
+        if (res.verification_uri) {
+          window.open(res.verification_uri, '_blank');
+        }
+        // Start polling for Copilot authorization
+        startCopilotPolling(provider, res.device_code);
+      } else {
+        updateProviderState(provider, { url: res.url, state: res.state, status: 'waiting', polling: true });
+        if (res.state) {
+          startPolling(provider, res.state);
+        }
       }
     } catch (err: any) {
       updateProviderState(provider, { status: 'error', error: err?.message, polling: false });
@@ -341,6 +397,30 @@ export function OAuthPage() {
                       }
                       placeholder={t('auth_login.gemini_cli_project_id_placeholder')}
                     />
+                  </div>
+                )}
+                {provider.id === 'copilot' && state.userCode && (
+                  <div className={`connection-box ${styles.authUrlBox}`}>
+                    <div className={styles.authUrlLabel}>{t('auth_login.copilot_device_code_label', { defaultValue: 'Device Code' })}</div>
+                    <div className={styles.authUrlValue} style={{ fontSize: '28px', fontWeight: 'bold', letterSpacing: '4px', color: '#0969da' }}>
+                      {state.userCode}
+                    </div>
+                    <div className={styles.authUrlLabel} style={{ marginTop: '12px' }}>
+                      {t('auth_login.copilot_verification_url_label', { defaultValue: 'Authorization URL' })}
+                    </div>
+                    <div className={styles.authUrlValue}>{state.verificationUri}</div>
+                    <div className={styles.authUrlActions}>
+                      <Button variant="secondary" size="sm" onClick={() => copyLink(state.userCode!)}>
+                        {t('auth_login.copilot_copy_code', { defaultValue: 'Copy Code' })}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => window.open(state.verificationUri, '_blank', 'noopener,noreferrer')}
+                      >
+                        {t('auth_login.copilot_open_github', { defaultValue: 'Open GitHub' })}
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {state.url && (

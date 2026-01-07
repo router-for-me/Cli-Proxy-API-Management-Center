@@ -9,7 +9,8 @@ export type OAuthProvider =
   | 'anthropic'
   | 'antigravity'
   | 'gemini-cli'
-  | 'qwen';
+  | 'qwen'
+  | 'copilot';
 
 // OAuth 流程状态
 export interface OAuthFlow {

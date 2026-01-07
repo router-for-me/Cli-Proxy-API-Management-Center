@@ -9,11 +9,19 @@ export type OAuthProvider =
   | 'anthropic'
   | 'antigravity'
   | 'gemini-cli'
-  | 'qwen';
+  | 'qwen'
+  | 'copilot';
 
 export interface OAuthStartResponse {
   url: string;
   state?: string;
+  // Copilot device flow fields
+  device_code?: string;
+  user_code?: string;
+  verification_uri?: string;
+  expires_in?: number;
+  interval?: number;
+  message?: string;
 }
 
 export interface OAuthCallbackResponse {
@@ -29,7 +37,7 @@ export interface IFlowCookieAuthResponse {
   type?: string;
 }
 
-const WEBUI_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli'];
+const WEBUI_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'copilot'];
 const CALLBACK_PROVIDER_MAP: Partial<Record<OAuthProvider, string>> = {
   'gemini-cli': 'gemini'
 };
@@ -63,5 +71,19 @@ export const oauthApi = {
 
   /** iFlow cookie 认证 */
   iflowCookieAuth: (cookie: string) =>
-    apiClient.post<IFlowCookieAuthResponse>('/iflow-auth-url', { cookie })
+    apiClient.post<IFlowCookieAuthResponse>('/iflow-auth-url', { cookie }),
+
+  /** Copilot GitHub token submission */
+  submitCopilotToken: (githubToken: string, email?: string) =>
+    apiClient.post<{ status: 'ok' | 'error'; error?: string; saved_path?: string }>('/copilot-token', {
+      github_token: githubToken,
+      email: email || undefined
+    }),
+
+  /** Copilot device flow polling */
+  getCopilotAuthStatus: (deviceCode: string) =>
+    apiClient.get<{ status: 'ok' | 'wait' | 'error'; error?: string; saved_path?: string; email?: string }>(
+      '/copilot-token-status',
+      { params: { device_code: deviceCode } }
+    )
 };
