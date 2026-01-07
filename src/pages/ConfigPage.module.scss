@@ -430,6 +430,99 @@
   }
 }
 
+// --- Payload Section Styles ---
+.payloadRuleList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.payloadRuleListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.payloadRuleListTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.payloadEmptyHint {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: $spacing-sm 0;
+}
+
+.payloadRuleCard {
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.payloadRuleCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.payloadSubSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.payloadSubSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.payloadModelRow {
+  display: grid;
+  grid-template-columns: 1fr 140px auto;
+  gap: $spacing-sm;
+  align-items: center;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: $spacing-xs;
+  }
+}
+
+.payloadParamRow {
+  display: grid;
+  grid-template-columns: 1fr 100px 1fr auto;
+  gap: $spacing-sm;
+  align-items: center;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: $spacing-xs;
+  }
+}
+
 .textarea {
   min-height: 120px;
   resize: vertical;

@@ -779,13 +779,30 @@
       "management": "Management API",
       "auth": "Authentication",
       "amp": "Amp Integration",
-      "oauth_model_mappings": "Global OAuth model mappings"
+      "oauth_model_mappings": "Global OAuth model mappings",
+      "payload": "Payload Configuration"
     },
     "action": {
       "remove": "Remove",
       "add_mapping": "Add mapping",
       "add_channel": "Add channel",
-      "remove_channel": "Remove channel"
+      "remove_channel": "Remove channel",
+      "add_rule": "Add rule",
+      "add_model": "Add model",
+      "add_param": "Add param"
+    },
+    "payload": {
+      "description": "Configure default and override payload parameters for specific models. Default rules only set parameters when missing; override rules always apply.",
+      "default_rules_title": "Default Rules",
+      "override_rules_title": "Override Rules",
+      "no_rules": "No rules configured",
+      "rule_label": "Rule",
+      "models_label": "Models",
+      "params_label": "Parameters",
+      "model_name_placeholder": "model name (supports wildcards)",
+      "param_path_placeholder": "JSON path (e.g. generationConfig.maxTokens)",
+      "param_value_placeholder": "value",
+      "param_value_json_placeholder": "JSON value"
     },
     "field": {
       "host": {

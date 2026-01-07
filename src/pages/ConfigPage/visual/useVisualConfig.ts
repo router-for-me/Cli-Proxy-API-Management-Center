@@ -10,8 +10,115 @@ import {
   normalizeYamlSnippetToRoot,
   removeYamlCommentSectionByMarkers,
 } from '@/utils/yamlPatch';
-import type { OauthChannelMappings, OauthModelMappingEntry, VisualConfigValues } from './types';
+import type {
+  OauthChannelMappings,
+  OauthModelMappingEntry,
+  PayloadParamValueType,
+  PayloadRule,
+  VisualConfigValues,
+} from './types';
 import { DEFAULT_VISUAL_VALUES, makeClientId } from './types';
+
+// Helper to parse payload rules from YAML object arrays
+function parsePayloadRules(rawRules: Array<Record<string, unknown>>): PayloadRule[] {
+  return rawRules.map((rule) => {
+    const modelsRaw = Array.isArray(rule?.models) ? rule.models : [];
+    const paramsRaw = typeof rule?.params === 'object' && rule.params !== null ? rule.params : {};
+
+    const models = modelsRaw.map((m: unknown) => {
+      if (typeof m === 'object' && m !== null) {
+        const obj = m as Record<string, unknown>;
+        return {
+          id: makeClientId(),
+          name: typeof obj.name === 'string' ? obj.name : '',
+          protocol: ['openai', 'gemini', 'claude', 'codex'].includes(String(obj.protocol || ''))
+            ? (obj.protocol as 'openai' | 'gemini' | 'claude' | 'codex')
+            : undefined,
+        };
+      }
+      return { id: makeClientId(), name: '', protocol: undefined };
+    });
+
+    const params = Object.entries(paramsRaw as Record<string, unknown>).map(([path, value]) => {
+      let valueType: PayloadParamValueType = 'string';
+      let valueStr = '';
+
+      if (typeof value === 'boolean') {
+        valueType = 'boolean';
+        valueStr = String(value);
+      } else if (typeof value === 'number') {
+        valueType = 'number';
+        valueStr = String(value);
+      } else if (typeof value === 'string') {
+        valueType = 'string';
+        valueStr = value;
+      } else if (value !== null && typeof value === 'object') {
+        valueType = 'json';
+        valueStr = JSON.stringify(value);
+      }
+
+      return {
+        id: makeClientId(),
+        path,
+        valueType,
+        value: valueStr,
+      };
+    });
+
+    return {
+      id: makeClientId(),
+      models: models.length ? models : [{ id: makeClientId(), name: '', protocol: undefined }],
+      params: params.length
+        ? params
+        : [
+            {
+              id: makeClientId(),
+              path: '',
+              valueType: 'string' as PayloadParamValueType,
+              value: '',
+            },
+          ],
+    };
+  });
+}
+
+// Helper to serialize payload rules to YAML-compatible object arrays
+function serializePayloadRules(rules: PayloadRule[]): Array<Record<string, unknown>> {
+  const result: Array<Record<string, unknown>> = [];
+  for (const rule of rules) {
+    const models = (rule.models || [])
+      .filter((m) => m.name.trim())
+      .map((m) => {
+        const obj: Record<string, unknown> = { name: m.name.trim() };
+        if (m.protocol) obj.protocol = m.protocol;
+        return obj;
+      });
+
+    const params: Record<string, unknown> = {};
+    (rule.params || []).forEach((p) => {
+      if (!p.path.trim()) return;
+      let value: unknown = p.value;
+      if (p.valueType === 'number') {
+        const num = Number(p.value);
+        value = Number.isFinite(num) ? num : p.value;
+      } else if (p.valueType === 'boolean') {
+        value = p.value === 'true';
+      } else if (p.valueType === 'json') {
+        try {
+          value = JSON.parse(p.value);
+        } catch {
+          value = p.value;
+        }
+      }
+      params[p.path.trim()] = value;
+    });
+
+    if (models.length > 0) {
+      result.push({ models, params });
+    }
+  }
+  return result;
+}
 
 export function useVisualConfig() {
   const [visualValues, setVisualValues] = useState<VisualConfigValues>(DEFAULT_VISUAL_VALUES);
@@ -42,7 +149,8 @@ export function useVisualConfig() {
       'remote-management',
       'disable-control-panel',
     ]);
-    if (typeof rmDisableControlPanel === 'boolean') next.rmDisableControlPanel = rmDisableControlPanel;
+    if (typeof rmDisableControlPanel === 'boolean')
+      next.rmDisableControlPanel = rmDisableControlPanel;
     const rmPanelRepo = getYamlScalarAtPath(yamlText, [
       'remote-management',
       'panel-github-repository',
@@ -62,7 +170,8 @@ export function useVisualConfig() {
     if (typeof loggingToFile === 'boolean') next.loggingToFile = loggingToFile;
     const logsMax = getYamlScalarAtPath(yamlText, ['logs-max-total-size-mb']);
     if (typeof logsMax === 'number') next.logsMaxTotalSizeMb = String(logsMax);
-    else if (typeof logsMax === 'string' && logsMax.trim()) next.logsMaxTotalSizeMb = logsMax.trim();
+    else if (typeof logsMax === 'string' && logsMax.trim())
+      next.logsMaxTotalSizeMb = logsMax.trim();
     const usageEnabled = getYamlScalarAtPath(yamlText, ['usage-statistics-enabled']);
     if (typeof usageEnabled === 'boolean') next.usageStatisticsEnabled = usageEnabled;
 
@@ -72,7 +181,8 @@ export function useVisualConfig() {
     if (typeof forceModelPrefix === 'boolean') next.forceModelPrefix = forceModelPrefix;
     const requestRetry = getYamlScalarAtPath(yamlText, ['request-retry']);
     if (typeof requestRetry === 'number') next.requestRetry = String(requestRetry);
-    else if (typeof requestRetry === 'string' && requestRetry.trim()) next.requestRetry = requestRetry.trim();
+    else if (typeof requestRetry === 'string' && requestRetry.trim())
+      next.requestRetry = requestRetry.trim();
     const maxRetryInterval = getYamlScalarAtPath(yamlText, ['max-retry-interval']);
     if (typeof maxRetryInterval === 'number') next.maxRetryInterval = String(maxRetryInterval);
     else if (typeof maxRetryInterval === 'string' && maxRetryInterval.trim())
@@ -112,7 +222,8 @@ export function useVisualConfig() {
         'ampcode',
         'restrict-management-to-localhost',
       ]);
-      if (typeof restrictLocalhost === 'boolean') next.ampRestrictManagementToLocalhost = restrictLocalhost;
+      if (typeof restrictLocalhost === 'boolean')
+        next.ampRestrictManagementToLocalhost = restrictLocalhost;
       const forceMappings = getYamlScalarAtPath(ampDoc, ['ampcode', 'force-model-mappings']);
       if (typeof forceMappings === 'boolean') next.ampForceModelMappings = forceMappings;
 
@@ -154,9 +265,21 @@ export function useVisualConfig() {
           id: makeClientId(),
           channel,
           originalChannel: channel,
-          entries: entries.length ? entries : [{ id: makeClientId(), name: '', alias: '', fork: false }],
+          entries: entries.length
+            ? entries
+            : [{ id: makeClientId(), name: '', alias: '', fork: false }],
         };
       });
+    }
+
+    // Payload parsing
+    const payloadDefaultRaw = getYamlObjectArrayAtPath(yamlText, ['payload', 'default']) || [];
+    if (payloadDefaultRaw.length) {
+      next.payloadDefaultRules = parsePayloadRules(payloadDefaultRaw);
+    }
+    const payloadOverrideRaw = getYamlObjectArrayAtPath(yamlText, ['payload', 'override']) || [];
+    if (payloadOverrideRaw.length) {
+      next.payloadOverrideRules = parsePayloadRules(payloadOverrideRaw);
     }
 
     setVisualValues(next);
@@ -167,12 +290,22 @@ export function useVisualConfig() {
     (yamlText: string) => {
       const patches: Parameters<typeof applyYamlPatches>[1] = [];
 
-      const pushString = (path: string[], current: string, initial: string, { force = false } = {}) => {
+      const pushString = (
+        path: string[],
+        current: string,
+        initial: string,
+        { force = false } = {}
+      ) => {
         if (!force && current === initial) return;
         patches.push({ path, type: 'string', value: current });
       };
 
-      const pushNumber = (path: string[], current: string, initial: string, { force = false } = {}) => {
+      const pushNumber = (
+        path: string[],
+        current: string,
+        initial: string,
+        { force = false } = {}
+      ) => {
         if (!force && current === initial) return;
         const trimmed = current.trim();
         if (!trimmed) return;
@@ -181,7 +314,12 @@ export function useVisualConfig() {
         patches.push({ path, type: 'number', value: num });
       };
 
-      const pushBoolean = (path: string[], current: boolean, initial: boolean, { force = false } = {}) => {
+      const pushBoolean = (
+        path: string[],
+        current: boolean,
+        initial: boolean,
+        { force = false } = {}
+      ) => {
         if (!force && current === initial) return;
         patches.push({ path, type: 'boolean', value: current });
       };
@@ -278,7 +416,11 @@ export function useVisualConfig() {
         visualInitial.quotaSwitchPreviewModel
       );
 
-      pushEnum(['routing', 'strategy'], visualValues.routingStrategy, visualInitial.routingStrategy);
+      pushEnum(
+        ['routing', 'strategy'],
+        visualValues.routingStrategy,
+        visualInitial.routingStrategy
+      );
       pushBoolean(['ws-auth'], visualValues.wsAuth, visualInitial.wsAuth);
 
       const ampMappingsNow = (visualValues.ampModelMappings || [])
@@ -287,7 +429,8 @@ export function useVisualConfig() {
       const ampMappingsInitial = (visualInitial.ampModelMappings || [])
         .map((m) => ({ from: m.from.trim(), to: m.to.trim() }))
         .filter((m) => m.from && m.to);
-      const ampMappingsChanged = JSON.stringify(ampMappingsNow) !== JSON.stringify(ampMappingsInitial);
+      const ampMappingsChanged =
+        JSON.stringify(ampMappingsNow) !== JSON.stringify(ampMappingsInitial);
       const ampUpstreamUrl = visualValues.ampUpstreamUrl.trim();
       const ampUpstreamApiKey = visualValues.ampUpstreamApiKey.trim();
       const ampHasContent =
@@ -298,7 +441,11 @@ export function useVisualConfig() {
         ampMappingsNow.length > 0;
 
       if (ampHasContent) {
-        pushString(['ampcode', 'upstream-url'], visualValues.ampUpstreamUrl, visualInitial.ampUpstreamUrl);
+        pushString(
+          ['ampcode', 'upstream-url'],
+          visualValues.ampUpstreamUrl,
+          visualInitial.ampUpstreamUrl
+        );
         pushString(
           ['ampcode', 'upstream-api-key'],
           visualValues.ampUpstreamApiKey,
@@ -440,15 +587,67 @@ export function useVisualConfig() {
       const shouldStripAmpComment = wroteAmpcode;
       const shouldStripOauthComment = wroteOauth && nowHasAny;
 
-      return { patches, shouldStripAmpComment, shouldStripOauthComment };
+      // Payload write logic
+      const payloadDefaultNow = serializePayloadRules(visualValues.payloadDefaultRules || []);
+      const payloadOverrideNow = serializePayloadRules(visualValues.payloadOverrideRules || []);
+      const payloadDefaultInit = serializePayloadRules(visualInitial.payloadDefaultRules || []);
+      const payloadOverrideInit = serializePayloadRules(visualInitial.payloadOverrideRules || []);
+
+      const payloadHasContent = payloadDefaultNow.length > 0 || payloadOverrideNow.length > 0;
+      const payloadHadContent = payloadDefaultInit.length > 0 || payloadOverrideInit.length > 0;
+      const payloadDefaultChanged =
+        JSON.stringify(payloadDefaultNow) !== JSON.stringify(payloadDefaultInit);
+      const payloadOverrideChanged =
+        JSON.stringify(payloadOverrideNow) !== JSON.stringify(payloadOverrideInit);
+
+      const shouldStripPayloadComment = payloadHasContent;
+
+      if (payloadHasContent) {
+        if (payloadDefaultChanged) {
+          if (payloadDefaultNow.length > 0) {
+            patches.push({
+              path: ['payload', 'default'],
+              type: 'objectArray',
+              value: payloadDefaultNow,
+              itemKeyOrder: ['models', 'params'],
+            });
+          } else {
+            patches.push({ path: ['payload', 'default'], type: 'delete' });
+          }
+        }
+        if (payloadOverrideChanged) {
+          if (payloadOverrideNow.length > 0) {
+            patches.push({
+              path: ['payload', 'override'],
+              type: 'objectArray',
+              value: payloadOverrideNow,
+              itemKeyOrder: ['models', 'params'],
+            });
+          } else {
+            patches.push({ path: ['payload', 'override'], type: 'delete' });
+          }
+        }
+      } else if (payloadHadContent) {
+        // Was content before, now empty -> delete payload entirely
+        patches.push({ path: ['payload'], type: 'delete' });
+      }
+
+      return { patches, shouldStripAmpComment, shouldStripOauthComment, shouldStripPayloadComment };
     },
     [visualInitial, visualValues]
   );
 
   const applyVisualChangesToYaml = useCallback(
     (yamlText: string) => {
-      const { patches, shouldStripAmpComment, shouldStripOauthComment } = buildVisualPatches(yamlText);
-      if (!patches.length && !shouldStripAmpComment && !shouldStripOauthComment) return yamlText;
+      const { patches, shouldStripAmpComment, shouldStripOauthComment, shouldStripPayloadComment } =
+        buildVisualPatches(yamlText);
+      if (
+        !patches.length &&
+        !shouldStripAmpComment &&
+        !shouldStripOauthComment &&
+        !shouldStripPayloadComment
+      )
+        return yamlText;
 
       let updated = yamlText;
       if (patches.length) {
@@ -466,6 +665,13 @@ export function useVisualConfig() {
           updated,
           '# Global OAuth model name mappings (per channel)',
           '# OAuth provider excluded models'
+        );
+      }
+      if (shouldStripPayloadComment) {
+        updated = removeYamlCommentSectionByMarkers(
+          updated,
+          '# Optional payload configuration',
+          undefined
         );
       }
       return updated;
@@ -563,6 +769,14 @@ export function useVisualConfig() {
       if (JSON.stringify(oauthNow) !== JSON.stringify(oauthInit)) return true;
     }
 
+    // Payload dirty check
+    const payloadDefaultNow = serializePayloadRules(a.payloadDefaultRules || []);
+    const payloadOverrideNow = serializePayloadRules(a.payloadOverrideRules || []);
+    const payloadDefaultInit = serializePayloadRules(b.payloadDefaultRules || []);
+    const payloadOverrideInit = serializePayloadRules(b.payloadOverrideRules || []);
+    if (JSON.stringify(payloadDefaultNow) !== JSON.stringify(payloadDefaultInit)) return true;
+    if (JSON.stringify(payloadOverrideNow) !== JSON.stringify(payloadOverrideInit)) return true;
+
     return false;
   }, [visualInitial, visualValues]);
 
@@ -575,4 +789,3 @@ export function useVisualConfig() {
     visualDirty,
   };
 }
-

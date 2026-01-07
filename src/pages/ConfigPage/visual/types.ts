@@ -9,6 +9,28 @@ export type OauthChannelMappings = {
   entries: OauthModelMappingEntry[];
 };
 
+// Payload configuration types
+export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
+
+export type PayloadParamEntry = {
+  id: string;
+  path: string;
+  valueType: PayloadParamValueType;
+  value: string;
+};
+
+export type PayloadModelEntry = {
+  id: string;
+  name: string;
+  protocol?: 'openai' | 'gemini' | 'claude' | 'codex';
+};
+
+export type PayloadRule = {
+  id: string;
+  models: PayloadModelEntry[];
+  params: PayloadParamEntry[];
+};
+
 export type VisualConfigValues = {
   host: string;
   port: string;
@@ -40,6 +62,8 @@ export type VisualConfigValues = {
   ampForceModelMappings: boolean;
   ampModelMappings: AmpModelMappingEntry[];
   oauthModelMappings: OauthChannelMappings[];
+  payloadDefaultRules: PayloadRule[];
+  payloadOverrideRules: PayloadRule[];
 };
 
 export const makeClientId = () => {
@@ -78,4 +102,6 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   ampForceModelMappings: false,
   ampModelMappings: [],
   oauthModelMappings: [],
+  payloadDefaultRules: [],
+  payloadOverrideRules: [],
 };

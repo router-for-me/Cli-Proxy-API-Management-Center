@@ -779,13 +779,30 @@
       "management": "管理 API",
       "auth": "认证",
       "amp": "Amp 集成",
-      "oauth_model_mappings": "全局 OAuth 模型映射"
+      "oauth_model_mappings": "全局 OAuth 模型映射",
+      "payload": "Payload 配置"
     },
     "action": {
       "remove": "删除",
       "add_mapping": "添加映射",
       "add_channel": "添加渠道",
-      "remove_channel": "删除渠道"
+      "remove_channel": "删除渠道",
+      "add_rule": "添加规则",
+      "add_model": "添加模型",
+      "add_param": "添加参数"
+    },
+    "payload": {
+      "description": "为特定模型配置默认和覆盖的 payload 参数。默认规则仅在参数缺失时设置；覆盖规则始终生效。",
+      "default_rules_title": "默认规则",
+      "override_rules_title": "覆盖规则",
+      "no_rules": "暂无规则",
+      "rule_label": "规则",
+      "models_label": "模型",
+      "params_label": "参数",
+      "model_name_placeholder": "模型名称（支持通配符）",
+      "param_path_placeholder": "JSON 路径（例如 generationConfig.maxTokens）",
+      "param_value_placeholder": "值",
+      "param_value_json_placeholder": "JSON 值"
     },
     "field": {
       "host": {
