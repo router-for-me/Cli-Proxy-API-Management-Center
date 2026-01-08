@@ -81,12 +81,12 @@ export function LoginPage() {
     }
   };
 
-  const handleSubmitKeyDown = (event: React.KeyboardEvent) => {
+  const handleSubmitKeyDown = useCallback((event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !loading) {
-    event.preventDefault();
-    handleSubmit();
-  }
-  }
+      event.preventDefault();
+      handleSubmit();
+    }
+  }, [loading, handleSubmit]);
 
   return (
     <div className="login-page">
