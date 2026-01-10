@@ -50,11 +50,6 @@ export function LoginPage() {
     init();
   }, [detectedBase, restoreSession, storedBase, storedKey, storedRememberPassword]);
 
-  if (isAuthenticated) {
-    const redirect = (location.state as any)?.from?.pathname || '/';
-    return <Navigate to={redirect} replace />;
-  }
-
   const handleSubmit = async () => {
     if (!managementKey.trim()) {
       setError(t('login.error_required'));
@@ -81,12 +76,20 @@ export function LoginPage() {
     }
   };
 
-  const handleSubmitKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !loading) {
-      event.preventDefault();
-      handleSubmit();
-    }
-  }, [loading, handleSubmit]);
+  const handleSubmitKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Enter' && !loading) {
+        event.preventDefault();
+        handleSubmit();
+      }
+    },
+    [loading, handleSubmit]
+  );
+
+  if (isAuthenticated) {
+    const redirect = (location.state as any)?.from?.pathname || '/';
+    return <Navigate to={redirect} replace />;
+  }
 
   return (
     <div className="login-page">
