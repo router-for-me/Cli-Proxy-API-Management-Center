@@ -5,7 +5,7 @@ import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import type { ProviderKeyConfig } from '@/types';
-import { buildHeaderObject, headersToEntries } from '@/utils/headers';
+import { headersToEntries } from '@/utils/headers';
 import { modelsToEntries } from '@/components/ui/ModelInputList';
 import { excludedModelsToText } from '../utils';
 import type { ProviderFormState, ProviderModalProps } from '../types';
@@ -19,7 +19,7 @@ const buildEmptyForm = (): ProviderFormState => ({
   prefix: '',
   baseUrl: '',
   proxyUrl: '',
-  headers: {},
+  headers: [],
   models: [],
   excludedModels: [],
   modelEntries: [{ name: '', alias: '' }],
@@ -43,7 +43,7 @@ export function CodexModal({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         ...initialData,
-        headers: initialData.headers ?? {},
+        headers: headersToEntries(initialData.headers),
         modelEntries: modelsToEntries(initialData.models),
         excludedText: excludedModelsToText(initialData.excludedModels),
       });
@@ -95,8 +95,8 @@ export function CodexModal({
         onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
       />
       <HeaderInputList
-        entries={headersToEntries(form.headers)}
-        onChange={(entries) => setForm((prev) => ({ ...prev, headers: buildHeaderObject(entries) }))}
+        entries={form.headers}
+        onChange={(entries) => setForm((prev) => ({ ...prev, headers: entries }))}
         addLabel={t('common.custom_headers_add')}
         keyPlaceholder={t('common.custom_headers_key_placeholder')}
         valuePlaceholder={t('common.custom_headers_value_placeholder')}

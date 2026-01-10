@@ -23,7 +23,7 @@ import {
 import { ampcodeApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
-import { buildHeaderObject, headersToEntries } from '@/utils/headers';
+import { buildHeaderObject } from '@/utils/headers';
 import styles from './AiProvidersPage.module.scss';
 
 export function AiProvidersPage() {
@@ -151,7 +151,7 @@ export function AiProvidersPage() {
         apiKey: form.apiKey.trim(),
         prefix: form.prefix?.trim() || undefined,
         baseUrl: form.baseUrl?.trim() || undefined,
-        headers: buildHeaderObject(headersToEntries(form.headers)),
+        headers: buildHeaderObject(form.headers),
         excludedModels: parseExcludedModels(form.excludedText),
       };
       const nextList =
@@ -307,7 +307,7 @@ export function AiProvidersPage() {
         prefix: form.prefix?.trim() || undefined,
         baseUrl,
         proxyUrl: form.proxyUrl?.trim() || undefined,
-        headers: buildHeaderObject(headersToEntries(form.headers)),
+        headers: buildHeaderObject(form.headers),
         models: entriesToModels(form.modelEntries),
         excludedModels: parseExcludedModels(form.excludedText),
       };
@@ -390,7 +390,7 @@ export function AiProvidersPage() {
         prefix: form.prefix?.trim() || undefined,
         baseUrl,
         proxyUrl: form.proxyUrl?.trim() || undefined,
-        headers: buildHeaderObject(headersToEntries(form.headers)),
+        headers: buildHeaderObject(form.headers),
         models: form.modelEntries
           .map((entry) => {
             const name = entry.name.trim();

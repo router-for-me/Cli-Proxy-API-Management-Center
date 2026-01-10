@@ -32,14 +32,19 @@ export interface AmpcodeFormState {
   mappingEntries: ModelEntry[];
 }
 
-export type GeminiFormState = GeminiKeyConfig & { excludedText: string };
+export type GeminiFormState = Omit<GeminiKeyConfig, 'headers'> & {
+  headers: HeaderEntry[];
+  excludedText: string;
+};
 
-export type ProviderFormState = ProviderKeyConfig & {
+export type ProviderFormState = Omit<ProviderKeyConfig, 'headers'> & {
+  headers: HeaderEntry[];
   modelEntries: ModelEntry[];
   excludedText: string;
 };
 
-export type VertexFormState = Omit<ProviderKeyConfig, 'excludedModels'> & {
+export type VertexFormState = Omit<ProviderKeyConfig, 'headers' | 'excludedModels'> & {
+  headers: HeaderEntry[];
   modelEntries: ModelEntry[];
 };
 

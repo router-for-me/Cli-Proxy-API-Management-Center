@@ -5,7 +5,7 @@ import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import type { GeminiKeyConfig } from '@/types';
-import { buildHeaderObject, headersToEntries } from '@/utils/headers';
+import { headersToEntries } from '@/utils/headers';
 import { excludedModelsToText } from '../utils';
 import type { GeminiFormState, ProviderModalProps } from '../types';
 
@@ -17,7 +17,7 @@ const buildEmptyForm = (): GeminiFormState => ({
   apiKey: '',
   prefix: '',
   baseUrl: '',
-  headers: {},
+  headers: [],
   excludedModels: [],
   excludedText: '',
 });
@@ -39,7 +39,7 @@ export function GeminiModal({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         ...initialData,
-        headers: initialData.headers ?? {},
+        headers: headersToEntries(initialData.headers),
         excludedText: excludedModelsToText(initialData.excludedModels),
       });
       return;
@@ -91,8 +91,8 @@ export function GeminiModal({
         onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
       />
       <HeaderInputList
-        entries={headersToEntries(form.headers)}
-        onChange={(entries) => setForm((prev) => ({ ...prev, headers: buildHeaderObject(entries) }))}
+        entries={form.headers}
+        onChange={(entries) => setForm((prev) => ({ ...prev, headers: entries }))}
         addLabel={t('common.custom_headers_add')}
         keyPlaceholder={t('common.custom_headers_key_placeholder')}
         valuePlaceholder={t('common.custom_headers_value_placeholder')}
