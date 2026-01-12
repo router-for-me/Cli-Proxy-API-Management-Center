@@ -22,6 +22,7 @@ import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import {
   ANTIGRAVITY_QUOTA_URLS,
   ANTIGRAVITY_REQUEST_HEADERS,
+  ANTIGRAVITY_LOAD_CODE_ASSIST_URL,
   CODEX_USAGE_URL,
   CODEX_REQUEST_HEADERS,
   GEMINI_CLI_QUOTA_URL,
@@ -37,6 +38,7 @@ import {
   resolveCodexChatgptAccountId,
   resolveCodexPlanType,
   resolveGeminiCliProjectId,
+  resolveAntigravityProjectId,
   formatCodexResetLabel,
   formatQuotaResetTime,
   buildAntigravityQuotaGroups,
@@ -48,6 +50,10 @@ import {
   isGeminiCliFile,
   isRuntimeOnlyAuthFile
 } from '@/utils/quota';
+import {
+  getProjectId,
+  setProjectId
+} from '@/utils/quota/projectIdCache';
 import type { QuotaRenderHelpers } from './QuotaCard';
 import styles from '@/pages/QuotaPage.module.scss';
 
@@ -92,6 +98,52 @@ const fetchAntigravityQuota = async (
     throw new Error(t('antigravity_quota.missing_auth_index'));
   }
 
+  // === 步骤 1: 获取或从缓存读取 project_id ===
+  let projectId = resolveAntigravityProjectId(file);
+
+  // 如果文件中没有,尝试从内存缓存获取
+  if (!projectId) {
+    projectId = getProjectId(authIndex);
+  }
+
+  // 如果缓存也没有,调用 loadCodeAssist API 获取
+  if (!projectId) {
+    try {
+      const loadCodeAssistResult = await apiCallApi.request({
+        authIndex,
+        method: 'POST',
+        url: ANTIGRAVITY_LOAD_CODE_ASSIST_URL,
+        header: { ...ANTIGRAVITY_REQUEST_HEADERS },
+        data: JSON.stringify({
+          metadata: {
+            ideType: 'ANTIGRAVITY'
+          }
+        })
+      });
+
+      if (loadCodeAssistResult.statusCode >= 200 && loadCodeAssistResult.statusCode < 300) {
+        const payload = parseAntigravityPayload(loadCodeAssistResult.body ?? loadCodeAssistResult.bodyText);
+
+        if (payload && typeof payload === 'object') {
+          const extractedProjectId = normalizeStringValue(
+            payload.cloudaicompanionProject ?? payload.cloudaicompanionproject
+          );
+
+          if (extractedProjectId) {
+            projectId = extractedProjectId;
+            setProjectId(authIndex, projectId);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      console.warn('[Antigravity Quota] Failed to fetch project_id:', err);
+    }
+  }
+
+  // 如果最终没有获取到 project_id,使用默认值
+  const finalProjectId = projectId || 'bamboo-precept-lgxtn';
+
+  // === 步骤 2: 使用 project_id 查询额度 ===
   let lastError = '';
   let lastStatus: number | undefined;
   let priorityStatus: number | undefined;
@@ -104,7 +156,8 @@ const fetchAntigravityQuota = async (
         method: 'POST',
         url,
         header: { ...ANTIGRAVITY_REQUEST_HEADERS },
-        data: '{}'
+        // 关键修改:使用 project_id 构建请求体
+        data: JSON.stringify({ project: finalProjectId })
       });
 
       if (result.statusCode < 200 || result.statusCode >= 300) {

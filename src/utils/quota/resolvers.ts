@@ -110,3 +110,46 @@ export function resolveGeminiCliProjectId(file: AuthFileItem): string | null {
 
   return null;
 }
+
+/**
+ * 从 Antigravity 认证文件中提取 project_id
+ * 支持从 metadata/attributes/project_id 等多个位置读取
+ */
+export function extractAntigravityProjectId(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim();
+  }
+  return null;
+}
+
+/**
+ * 解析 Antigravity 认证文件的 project_id
+ */
+export function resolveAntigravityProjectId(file: AuthFileItem): string | null {
+  const metadata =
+    file && typeof file.metadata === 'object' && file.metadata !== null
+      ? (file.metadata as Record<string, unknown>)
+      : null;
+  const attributes =
+    file && typeof file.attributes === 'object' && file.attributes !== null
+      ? (file.attributes as Record<string, unknown>)
+      : null;
+
+  const candidates = [
+    file.project_id,
+    file.projectId,
+    file['project_id'],
+    file['projectId'],
+    metadata?.project_id,
+    metadata?.projectId,
+    attributes?.project_id,
+    attributes?.projectId
+  ];
+
+  for (const candidate of candidates) {
+    const projectId = extractAntigravityProjectId(candidate);
+    if (projectId) return projectId;
+  }
+
+  return null;
+}

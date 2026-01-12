@@ -43,6 +43,23 @@ export interface AntigravityQuotaInfo {
   };
 }
 
+// loadCodeAssist API 响应类型
+export interface AntigravityLoadCodeAssistPayload {
+  cloudaicompanionProject?: string;
+  currentTier?: {
+    id?: string;
+    quotaTier?: string;
+    name?: string;
+    slug?: string;
+  };
+  paidTier?: {
+    id?: string;
+    quotaTier?: string;
+    name?: string;
+    slug?: string;
+  };
+}
+
 export type AntigravityModelsPayload = Record<string, AntigravityQuotaInfo>;
 
 export interface AntigravityQuotaGroupDefinition {

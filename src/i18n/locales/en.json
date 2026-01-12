@@ -407,7 +407,8 @@
     "missing_auth_index": "Auth file missing auth_index",
     "empty_models": "No quota data available",
     "refresh_button": "Refresh Quota",
-    "fetch_all": "Fetch All"
+    "fetch_all": "Fetch All",
+    "project_id_fetch_failed": "Failed to fetch Project ID, using default"
   },
   "codex_quota": {
     "title": "Codex Quota",

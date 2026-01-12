@@ -407,7 +407,8 @@
     "missing_auth_index": "认证文件缺少 auth_index",
     "empty_models": "暂无额度数据",
     "refresh_button": "刷新额度",
-    "fetch_all": "获取全部"
+    "fetch_all": "获取全部",
+    "project_id_fetch_failed": "获取 Project ID 失败，使用默认值"
   },
   "codex_quota": {
     "title": "Codex 额度",
