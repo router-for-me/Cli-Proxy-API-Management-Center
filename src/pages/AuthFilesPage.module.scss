@@ -455,11 +455,27 @@
   }
 }
 
+.fileCardDisabled {
+  opacity: 0.6;
+  background-color: var(--bg-tertiary);
+
+  &:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
 .cardHeader {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
   min-height: 28px;
+  flex-wrap: wrap;
+}
+
+.cardToggle {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .typeBadge {

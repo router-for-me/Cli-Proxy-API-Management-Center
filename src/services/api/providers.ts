@@ -194,5 +194,20 @@ export const providersApi = {
     apiClient.patch('/openai-compatibility', { index, value: serializeOpenAIProvider(value) }),
 
   deleteOpenAIProvider: (name: string) =>
-    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`)
+    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`),
+
+  setGeminiKeyDisabled: (params: { index?: number; match?: string; disabled: boolean }) =>
+    apiClient.post('/gemini-api-key/disabled', params),
+
+  setClaudeKeyDisabled: (params: { index?: number; match?: string; disabled: boolean }) =>
+    apiClient.post('/claude-api-key/disabled', params),
+
+  setCodexKeyDisabled: (params: { index?: number; match?: string; disabled: boolean }) =>
+    apiClient.post('/codex-api-key/disabled', params),
+
+  setVertexKeyDisabled: (params: { index?: number; match?: string; disabled: boolean }) =>
+    apiClient.post('/vertex-api-key/disabled', params),
+
+  setOpenAIProviderDisabled: (params: { index?: number; match?: string; disabled: boolean }) =>
+    apiClient.post('/openai-compatibility/disabled', params)
 };

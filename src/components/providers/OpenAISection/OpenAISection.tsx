@@ -2,6 +2,7 @@ import { Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconCheck, IconX } from '@/components/ui/icons';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
@@ -29,6 +30,7 @@ interface OpenAISectionProps {
   onAdd: () => void;
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
+  onToggle?: (index: number, enabled: boolean) => void;
   onCloseModal: () => void;
   onSave: (data: OpenAIFormState, index: number | null) => Promise<void>;
 }
@@ -47,11 +49,13 @@ export function OpenAISection({
   onAdd,
   onEdit,
   onDelete,
+  onToggle,
   onCloseModal,
   onSave,
 }: OpenAISectionProps) {
   const { t } = useTranslation();
   const actionsDisabled = disableControls || isSaving || isSwitching;
+  const toggleDisabled = disableControls || loading || isSaving || isSwitching;
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
@@ -95,11 +99,23 @@ export function OpenAISection({
           onEdit={onEdit}
           onDelete={onDelete}
           actionsDisabled={actionsDisabled}
+          getRowDisabled={(item) => item.disabled === true}
+          renderExtraActions={(item, index) =>
+            onToggle ? (
+              <ToggleSwitch
+                label={t('ai_providers.config_toggle_label')}
+                checked={!item.disabled}
+                disabled={toggleDisabled}
+                onChange={(value) => void onToggle(index, value)}
+              />
+            ) : null
+          }
           renderContent={(item) => {
             const stats = getOpenAIProviderStats(item.apiKeyEntries, keyStats, maskApiKey);
             const headerEntries = Object.entries(item.headers || {});
             const apiKeyEntries = item.apiKeyEntries || [];
             const statusData = statusBarCache.get(item.name) || calculateStatusBarData([]);
+            const configDisabled = item.disabled === true;
 
             return (
               <Fragment>
@@ -121,6 +137,11 @@ export function OpenAISection({
                         <strong>{key}:</strong> {value}
                       </span>
                     ))}
+                  </div>
+                )}
+                {configDisabled && (
+                  <div className="status-badge warning" style={{ marginTop: 8, marginBottom: 0 }}>
+                    {t('ai_providers.config_disabled_badge')}
                   </div>
                 )}
                 {apiKeyEntries.length > 0 && (

@@ -2,6 +2,7 @@ import { Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import iconVertex from '@/assets/icons/vertex.svg';
 import type { ProviderKeyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
@@ -26,6 +27,7 @@ interface VertexSectionProps {
   onAdd: () => void;
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
+  onToggle?: (index: number, enabled: boolean) => void;
   onCloseModal: () => void;
   onSave: (data: VertexFormState, index: number | null) => Promise<void>;
 }
@@ -43,11 +45,13 @@ export function VertexSection({
   onAdd,
   onEdit,
   onDelete,
+  onToggle,
   onCloseModal,
   onSave,
 }: VertexSectionProps) {
   const { t } = useTranslation();
   const actionsDisabled = disableControls || isSaving || isSwitching;
+  const toggleDisabled = disableControls || loading || isSaving || isSwitching;
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
@@ -85,11 +89,23 @@ export function VertexSection({
           onEdit={onEdit}
           onDelete={onDelete}
           actionsDisabled={actionsDisabled}
+          getRowDisabled={(item) => item.disabled === true}
+          renderExtraActions={(item, index) =>
+            onToggle ? (
+              <ToggleSwitch
+                label={t('ai_providers.config_toggle_label')}
+                checked={!item.disabled}
+                disabled={toggleDisabled}
+                onChange={(value) => void onToggle(index, value)}
+              />
+            ) : null
+          }
           renderContent={(item, index) => {
             const stats = getStatsBySource(item.apiKey, keyStats, maskApiKey);
             const headerEntries = Object.entries(item.headers || {});
             const statusData =
               statusBarCache.get(item.apiKey) || calculateStatusBarData([], item.apiKey);
+            const configDisabled = item.disabled === true;
 
             return (
               <Fragment>
@@ -125,6 +141,11 @@ export function VertexSection({
                         <strong>{key}:</strong> {value}
                       </span>
                     ))}
+                  </div>
+                )}
+                {configDisabled && (
+                  <div className="status-badge warning" style={{ marginTop: 8, marginBottom: 0 }}>
+                    {t('ai_providers.config_disabled_badge')}
                   </div>
                 )}
                 {item.models?.length ? (

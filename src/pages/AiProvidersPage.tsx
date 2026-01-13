@@ -17,8 +17,6 @@ import {
 } from '@/components/providers';
 import {
   parseExcludedModels,
-  withDisableAllModelsRule,
-  withoutDisableAllModelsRule,
 } from '@/components/providers/utils';
 import { ampcodeApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
@@ -195,10 +193,12 @@ export function AiProvidersPage() {
   };
 
   const setConfigEnabled = async (
-    provider: 'gemini' | 'codex' | 'claude',
+    provider: 'gemini' | 'codex' | 'claude' | 'vertex' | 'openai',
     index: number,
     enabled: boolean
   ) => {
+    const disabled = !enabled;
+
     if (provider === 'gemini') {
       const current = geminiKeys[index];
       if (!current) return;
@@ -207,10 +207,7 @@ export function AiProvidersPage() {
       setConfigSwitchingKey(switchingKey);
 
       const previousList = geminiKeys;
-      const nextExcluded = enabled
-        ? withoutDisableAllModelsRule(current.excludedModels)
-        : withDisableAllModelsRule(current.excludedModels);
-      const nextItem: GeminiKeyConfig = { ...current, excludedModels: nextExcluded };
+      const nextItem: GeminiKeyConfig = { ...current, disabled };
       const nextList = previousList.map((item, idx) => (idx === index ? nextItem : item));
 
       setGeminiKeys(nextList);
@@ -218,7 +215,7 @@ export function AiProvidersPage() {
       clearCache('gemini-api-key');
 
       try {
-        await providersApi.saveGeminiKeys(nextList);
+        await providersApi.setGeminiKeyDisabled({ index, disabled });
         showNotification(
           enabled ? t('notification.config_enabled') : t('notification.config_disabled'),
           'success'
@@ -235,6 +232,72 @@ export function AiProvidersPage() {
       return;
     }
 
+    if (provider === 'vertex') {
+      const current = vertexConfigs[index];
+      if (!current) return;
+
+      const switchingKey = `${provider}:${current.apiKey}`;
+      setConfigSwitchingKey(switchingKey);
+
+      const previousList = vertexConfigs;
+      const nextItem: ProviderKeyConfig = { ...current, disabled };
+      const nextList = previousList.map((item, idx) => (idx === index ? nextItem : item));
+
+      setVertexConfigs(nextList);
+      updateConfigValue('vertex-api-key', nextList);
+      clearCache('vertex-api-key');
+
+      try {
+        await providersApi.setVertexKeyDisabled({ index, disabled });
+        showNotification(
+          enabled ? t('notification.config_enabled') : t('notification.config_disabled'),
+          'success'
+        );
+      } catch (err: unknown) {
+        const message = getErrorMessage(err);
+        setVertexConfigs(previousList);
+        updateConfigValue('vertex-api-key', previousList);
+        clearCache('vertex-api-key');
+        showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+      } finally {
+        setConfigSwitchingKey(null);
+      }
+      return;
+    }
+
+    if (provider === 'openai') {
+      const current = openaiProviders[index];
+      if (!current) return;
+
+      const switchingKey = `${provider}:${current.name}`;
+      setConfigSwitchingKey(switchingKey);
+
+      const previousList = openaiProviders;
+      const nextItem: OpenAIProviderConfig = { ...current, disabled };
+      const nextList = previousList.map((item, idx) => (idx === index ? nextItem : item));
+
+      setOpenaiProviders(nextList);
+      updateConfigValue('openai-compatibility', nextList);
+      clearCache('openai-compatibility');
+
+      try {
+        await providersApi.setOpenAIProviderDisabled({ index, disabled });
+        showNotification(
+          enabled ? t('notification.config_enabled') : t('notification.config_disabled'),
+          'success'
+        );
+      } catch (err: unknown) {
+        const message = getErrorMessage(err);
+        setOpenaiProviders(previousList);
+        updateConfigValue('openai-compatibility', previousList);
+        clearCache('openai-compatibility');
+        showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+      } finally {
+        setConfigSwitchingKey(null);
+      }
+      return;
+    }
+
     const source = provider === 'codex' ? codexConfigs : claudeConfigs;
     const current = source[index];
     if (!current) return;
@@ -243,10 +306,7 @@ export function AiProvidersPage() {
     setConfigSwitchingKey(switchingKey);
 
     const previousList = source;
-    const nextExcluded = enabled
-      ? withoutDisableAllModelsRule(current.excludedModels)
-      : withDisableAllModelsRule(current.excludedModels);
-    const nextItem: ProviderKeyConfig = { ...current, excludedModels: nextExcluded };
+    const nextItem: ProviderKeyConfig = { ...current, disabled };
     const nextList = previousList.map((item, idx) => (idx === index ? nextItem : item));
 
     if (provider === 'codex') {
@@ -261,9 +321,9 @@ export function AiProvidersPage() {
 
     try {
       if (provider === 'codex') {
-        await providersApi.saveCodexConfigs(nextList);
+        await providersApi.setCodexKeyDisabled({ index, disabled });
       } else {
-        await providersApi.saveClaudeConfigs(nextList);
+        await providersApi.setClaudeKeyDisabled({ index, disabled });
       }
       showNotification(
         enabled ? t('notification.config_enabled') : t('notification.config_disabled'),
@@ -579,6 +639,7 @@ export function AiProvidersPage() {
           onAdd={() => openVertexModal(null)}
           onEdit={(index) => openVertexModal(index)}
           onDelete={deleteVertex}
+          onToggle={(index, enabled) => void setConfigEnabled('vertex', index, enabled)}
           onCloseModal={closeModal}
           onSave={saveVertex}
         />
@@ -610,6 +671,7 @@ export function AiProvidersPage() {
           onAdd={() => openOpenaiModal(null)}
           onEdit={(index) => openOpenaiModal(index)}
           onDelete={deleteOpenai}
+          onToggle={(index, enabled) => void setConfigEnabled('openai', index, enabled)}
           onCloseModal={closeModal}
           onSave={saveOpenai}
         />

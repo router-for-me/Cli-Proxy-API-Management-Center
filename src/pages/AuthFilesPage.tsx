@@ -175,6 +175,7 @@ export function AuthFilesPage() {
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [toggling, setToggling] = useState<string | null>(null);
   const [keyStats, setKeyStats] = useState<KeyStats>({ bySource: {}, byAuthIndex: {} });
   const [usageDetails, setUsageDetails] = useState<UsageDetail[]>([]);
 
@@ -507,6 +508,31 @@ export function AuthFilesPage() {
       showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handleToggle = async (item: AuthFileItem, enabled: boolean) => {
+    const name = item.name;
+    setToggling(name);
+    const previousFiles = files;
+    const disabled = !enabled;
+
+    setFiles((prev) =>
+      prev.map((f) => (f.name === name ? { ...f, disabled } : f))
+    );
+
+    try {
+      await authFilesApi.setAuthFileDisabled({ name, disabled });
+      showNotification(
+        enabled ? t('notification.config_enabled') : t('notification.config_disabled'),
+        'success'
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      setFiles(previousFiles);
+      showNotification(`${t('notification.update_failed')}: ${errorMessage}`, 'error');
+    } finally {
+      setToggling(null);
     }
   };
 
@@ -923,9 +949,12 @@ export function AuthFilesPage() {
     const isAistudio = (item.type || '').toLowerCase() === 'aistudio';
     const showModelsButton = !isRuntimeOnly || isAistudio;
     const typeColor = getTypeColor(item.type || 'unknown');
+    const isDisabled = item.disabled === true;
+    const isToggling = toggling === item.name;
+    const toggleDisabled = disableControls || loading || isToggling;
 
     return (
-      <div key={item.name} className={styles.fileCard}>
+      <div key={item.name} className={`${styles.fileCard} ${isDisabled ? styles.fileCardDisabled : ''}`}>
         <div className={styles.cardHeader}>
           <span
             className={styles.typeBadge}
@@ -938,12 +967,28 @@ export function AuthFilesPage() {
             {getTypeLabel(item.type || 'unknown')}
           </span>
           <span className={styles.fileName}>{item.name}</span>
+          {!isRuntimeOnly && (
+            <div className={styles.cardToggle}>
+              <ToggleSwitch
+                label={t('ai_providers.config_toggle_label')}
+                checked={!isDisabled}
+                disabled={toggleDisabled}
+                onChange={(value) => void handleToggle(item, value)}
+              />
+            </div>
+          )}
         </div>
 
         <div className={styles.cardMeta}>
           <span>{t('auth_files.file_size')}: {item.size ? formatFileSize(item.size) : '-'}</span>
           <span>{t('auth_files.file_modified')}: {formatModified(item)}</span>
         </div>
+
+        {isDisabled && (
+          <div className="status-badge warning" style={{ marginTop: 8, marginBottom: 0 }}>
+            {t('ai_providers.config_disabled_badge')}
+          </div>
+        )}
 
         <div className={styles.cardStats}>
           <span className={`${styles.statPill} ${styles.statSuccess}`}>

@@ -113,6 +113,8 @@ const normalizeProviderKeyConfig = (item: any): ProviderKeyConfig | null => {
     item['excluded-models'] ?? item.excludedModels ?? item['excluded_models'] ?? item.excluded_models
   );
   if (excludedModels.length) config.excludedModels = excludedModels;
+  const disabled = normalizeBoolean(item.disabled);
+  if (disabled !== undefined) config.disabled = disabled;
   return config;
 };
 
@@ -134,6 +136,8 @@ const normalizeGeminiKeyConfig = (item: any): GeminiKeyConfig | null => {
   if (headers) config.headers = headers;
   const excludedModels = normalizeExcludedModels(item['excluded-models'] ?? item.excludedModels);
   if (excludedModels.length) config.excludedModels = excludedModels;
+  const disabled = normalizeBoolean(item.disabled);
+  if (disabled !== undefined) config.disabled = disabled;
   return config;
 };
 
@@ -171,6 +175,8 @@ const normalizeOpenAIProvider = (provider: any): OpenAIProviderConfig | null => 
   if (models.length) result.models = models;
   if (priority !== undefined) result.priority = Number(priority);
   if (testModel) result.testModel = String(testModel);
+  const disabled = normalizeBoolean(provider.disabled);
+  if (disabled !== undefined) result.disabled = disabled;
   return result;
 };
 

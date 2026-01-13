@@ -22,6 +22,7 @@ export interface GeminiKeyConfig {
   baseUrl?: string;
   headers?: Record<string, string>;
   excludedModels?: string[];
+  disabled?: boolean;
 }
 
 export interface ProviderKeyConfig {
@@ -32,6 +33,7 @@ export interface ProviderKeyConfig {
   headers?: Record<string, string>;
   models?: ModelAlias[];
   excludedModels?: string[];
+  disabled?: boolean;
 }
 
 export interface OpenAIProviderConfig {
@@ -43,5 +45,6 @@ export interface OpenAIProviderConfig {
   models?: ModelAlias[];
   priority?: number;
   testModel?: string;
+  disabled?: boolean;
   [key: string]: any;
 }

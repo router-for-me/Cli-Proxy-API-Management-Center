@@ -10,7 +10,7 @@ import { calculateStatusBarData, type KeyStats, type UsageDetail } from '@/utils
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
 import { ProviderStatusBar } from '../ProviderStatusBar';
-import { getStatsBySource, hasDisableAllModelsRule } from '../utils';
+import { getStatsBySource } from '../utils';
 import type { ProviderFormState } from '../types';
 import { ClaudeModal } from './ClaudeModal';
 
@@ -89,11 +89,11 @@ export function ClaudeSection({
           onEdit={onEdit}
           onDelete={onDelete}
           actionsDisabled={actionsDisabled}
-          getRowDisabled={(item) => hasDisableAllModelsRule(item.excludedModels)}
+          getRowDisabled={(item) => item.disabled === true}
           renderExtraActions={(item, index) => (
             <ToggleSwitch
               label={t('ai_providers.config_toggle_label')}
-              checked={!hasDisableAllModelsRule(item.excludedModels)}
+              checked={!item.disabled}
               disabled={toggleDisabled}
               onChange={(value) => void onToggle(index, value)}
             />
@@ -101,7 +101,7 @@ export function ClaudeSection({
           renderContent={(item) => {
             const stats = getStatsBySource(item.apiKey, keyStats, maskApiKey);
             const headerEntries = Object.entries(item.headers || {});
-            const configDisabled = hasDisableAllModelsRule(item.excludedModels);
+            const configDisabled = item.disabled === true;
             const excludedModels = item.excludedModels ?? [];
             const statusData =
               statusBarCache.get(item.apiKey) || calculateStatusBarData([], item.apiKey);

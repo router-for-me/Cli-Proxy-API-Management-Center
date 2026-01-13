@@ -106,5 +106,8 @@ export const authFilesApi = {
   async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
     const data = await apiClient.get(`/auth-files/models?name=${encodeURIComponent(name)}`);
     return (data && Array.isArray(data['models'])) ? data['models'] : [];
-  }
+  },
+
+  setAuthFileDisabled: (params: { id?: string; name?: string; disabled: boolean }) =>
+    apiClient.post('/auth-files/disabled', params)
 };
