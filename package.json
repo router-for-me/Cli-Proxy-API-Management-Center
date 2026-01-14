@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@codemirror/lang-yaml": "^6.1.2",
+    "@tanstack/react-virtual": "^3.13.18",
     "@uiw/react-codemirror": "^4.25.3",
     "axios": "^1.13.2",
     "chart.js": "^4.5.1",

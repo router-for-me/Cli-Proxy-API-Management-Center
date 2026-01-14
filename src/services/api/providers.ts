@@ -194,5 +194,14 @@ export const providersApi = {
     apiClient.patch('/openai-compatibility', { index, value: serializeOpenAIProvider(value) }),
 
   deleteOpenAIProvider: (name: string) =>
-    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`)
+    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`),
+
+  // 通过 name 更新 OpenAI 兼容提供商（用于禁用模型）
+  patchOpenAIProviderByName: (name: string, value: Partial<OpenAIProviderConfig>) => {
+    const payload: Record<string, any> = {};
+    if (value.models !== undefined) {
+      payload.models = serializeModelAliases(value.models);
+    }
+    return apiClient.patch('/openai-compatibility', { name, value: payload });
+  }
 };

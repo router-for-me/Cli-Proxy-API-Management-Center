@@ -30,3 +30,6 @@ settings.local.json
 *.njsproj
 *.sln
 *.sw?
+自定义 Web UI
+tmpclaude*
+.claude
