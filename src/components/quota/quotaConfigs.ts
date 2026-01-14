@@ -18,7 +18,7 @@ import type {
   GeminiCliQuotaBucketState,
   GeminiCliQuotaState
 } from '@/types';
-import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
+import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
 import {
   ANTIGRAVITY_QUOTA_URLS,
   ANTIGRAVITY_REQUEST_HEADERS,
@@ -55,6 +55,8 @@ type QuotaUpdater<T> = T | ((prev: T) => T);
 
 type QuotaType = 'antigravity' | 'codex' | 'gemini-cli';
 
+const DEFAULT_ANTIGRAVITY_PROJECT_ID = 'bamboo-precept-lgxtn';
+
 export interface QuotaStore {
   antigravityQuota: Record<string, AntigravityQuotaState>;
   codexQuota: Record<string, CodexQuotaState>;
@@ -82,6 +84,38 @@ export interface QuotaConfig<TState, TData> {
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
 }
 
+const resolveAntigravityProjectId = async (file: AuthFileItem): Promise<string> => {
+  try {
+    const text = await authFilesApi.downloadText(file.name);
+    const trimmed = text.trim();
+    if (!trimmed) return DEFAULT_ANTIGRAVITY_PROJECT_ID;
+
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    const topLevel = normalizeStringValue(parsed.project_id ?? parsed.projectId);
+    if (topLevel) return topLevel;
+
+    const installed =
+      parsed.installed && typeof parsed.installed === 'object' && parsed.installed !== null
+        ? (parsed.installed as Record<string, unknown>)
+        : null;
+    const installedProjectId = installed
+      ? normalizeStringValue(installed.project_id ?? installed.projectId)
+      : null;
+    if (installedProjectId) return installedProjectId;
+
+    const web =
+      parsed.web && typeof parsed.web === 'object' && parsed.web !== null
+        ? (parsed.web as Record<string, unknown>)
+        : null;
+    const webProjectId = web ? normalizeStringValue(web.project_id ?? web.projectId) : null;
+    if (webProjectId) return webProjectId;
+  } catch {
+    return DEFAULT_ANTIGRAVITY_PROJECT_ID;
+  }
+
+  return DEFAULT_ANTIGRAVITY_PROJECT_ID;
+};
+
 const fetchAntigravityQuota = async (
   file: AuthFileItem,
   t: TFunction
@@ -91,6 +125,9 @@ const fetchAntigravityQuota = async (
   if (!authIndex) {
     throw new Error(t('antigravity_quota.missing_auth_index'));
   }
+
+  const projectId = await resolveAntigravityProjectId(file);
+  const requestBody = JSON.stringify({ project_id: projectId });
 
   let lastError = '';
   let lastStatus: number | undefined;
@@ -104,7 +141,7 @@ const fetchAntigravityQuota = async (
         method: 'POST',
         url,
         header: { ...ANTIGRAVITY_REQUEST_HEADERS },
-        data: '{}'
+        data: requestBody
       });
 
       if (result.statusCode < 200 || result.statusCode >= 300) {
