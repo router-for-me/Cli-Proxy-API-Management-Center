@@ -37,6 +37,10 @@ const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#e7efff', text: '#1e4fa3' },
     dark: { bg: '#1c3f73', text: '#a8c7ff' }
   },
+  'github-copilot': {
+    light: { bg: '#f6f8fa', text: '#24292f' },
+    dark: { bg: '#161b22', text: '#f0f6fc' }
+  },
   aistudio: {
     light: { bg: '#f0f2f5', text: '#2f343c' },
     dark: { bg: '#373c42', text: '#cfd3db' }
@@ -69,6 +73,7 @@ const TYPE_COLORS: Record<string, TypeColorSet> = {
 
 const OAUTH_PROVIDER_PRESETS = [
   'gemini-cli',
+  'github-copilot',
   'vertex',
   'aistudio',
   'antigravity',
