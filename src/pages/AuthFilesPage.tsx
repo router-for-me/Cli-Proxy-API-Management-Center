@@ -1399,15 +1399,15 @@ export function AuthFilesPage() {
       >
         <div className={styles.providerField}>
           <Input
-            id="oauth-model-mappings-provider"
-            list="oauth-model-mappings-provider-options"
+            id="oauth-model-alias-provider"
+            list="oauth-model-alias-provider-options"
             label={t('oauth_model_mappings.provider_label')}
             hint={t('oauth_model_mappings.provider_hint')}
             placeholder={t('oauth_model_mappings.provider_placeholder')}
             value={mappingForm.provider}
             onChange={(e) => setMappingForm((prev) => ({ ...prev, provider: e.target.value }))}
           />
-          <datalist id="oauth-model-mappings-provider-options">
+          <datalist id="oauth-model-alias-provider-options">
             {providerOptions.map((provider) => (
               <option key={provider} value={provider} />
             ))}

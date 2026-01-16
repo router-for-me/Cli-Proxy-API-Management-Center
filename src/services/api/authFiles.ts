@@ -81,8 +81,8 @@ export const authFilesApi = {
 
   // OAuth 模型映射
   async getOauthModelMappings(): Promise<Record<string, OAuthModelMappingEntry[]>> {
-    const data = await apiClient.get('/oauth-model-mappings');
-    const payload = (data && (data['oauth-model-mappings'] ?? data.items ?? data)) as any;
+    const data = await apiClient.get('/oauth-model-alias');
+    const payload = (data && (data['oauth-model-alias'] ?? data.items ?? data)) as any;
     if (!payload || typeof payload !== 'object') return {};
     const result: Record<string, OAuthModelMappingEntry[]> = {};
     Object.entries(payload).forEach(([channel, mappings]) => {
@@ -105,10 +105,10 @@ export const authFilesApi = {
   },
 
   saveOauthModelMappings: (channel: string, mappings: OAuthModelMappingEntry[]) =>
-    apiClient.patch('/oauth-model-mappings', { channel, mappings }),
+    apiClient.patch('/oauth-model-alias', { channel, mappings }),
 
   deleteOauthModelMappings: (channel: string) =>
-    apiClient.delete(`/oauth-model-mappings?channel=${encodeURIComponent(channel)}`),
+    apiClient.delete(`/oauth-model-alias?channel=${encodeURIComponent(channel)}`),
 
   // 获取认证凭证支持的模型
   async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
