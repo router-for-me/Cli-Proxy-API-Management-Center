@@ -17,6 +17,7 @@ import type { AuthFileItem, OAuthModelMappingEntry } from '@/types';
 import type { KeyStats, KeyStatBucket, UsageDetail } from '@/utils/usage';
 import { collectUsageDetails, calculateStatusBarData } from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
+import { generateId } from '@/utils/helpers';
 import styles from './AuthFilesPage.module.scss';
 
 type ThemeColors = { bg: string; text: string; border?: string };
@@ -91,12 +92,15 @@ interface ExcludedFormState {
   modelsText: string;
 }
 
+type OAuthModelMappingFormEntry = OAuthModelMappingEntry & { id: string };
+
 interface ModelMappingsFormState {
   provider: string;
-  mappings: OAuthModelMappingEntry[];
+  mappings: OAuthModelMappingFormEntry[];
 }
 
-const buildEmptyMappingEntry = (): OAuthModelMappingEntry => ({
+const buildEmptyMappingEntry = (): OAuthModelMappingFormEntry => ({
+  id: generateId(),
   name: '',
   alias: '',
   fork: false
@@ -728,11 +732,12 @@ export function AuthFilesPage() {
   };
 
   // OAuth 模型映射相关方法
-  const normalizeMappingEntries = (entries?: OAuthModelMappingEntry[]) => {
+  const normalizeMappingEntries = (entries?: OAuthModelMappingEntry[]): OAuthModelMappingFormEntry[] => {
     if (!Array.isArray(entries) || entries.length === 0) {
       return [buildEmptyMappingEntry()];
     }
     return entries.map((entry) => ({
+      id: generateId(),
       name: entry.name ?? '',
       alias: entry.alias ?? '',
       fork: Boolean(entry.fork),
@@ -1437,7 +1442,7 @@ export function AuthFilesPage() {
           <div className="header-input-list">
             {(mappingForm.mappings.length ? mappingForm.mappings : [buildEmptyMappingEntry()]).map(
               (entry, index) => (
-                <div key={`${entry.name}-${entry.alias}-${index}`} className={styles.mappingRow}>
+                <div key={entry.id} className={styles.mappingRow}>
                   <input
                     className="input"
                     placeholder={t('oauth_model_mappings.mapping_name_placeholder')}
