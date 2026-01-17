@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotificationContainer } from '@/components/common/NotificationContainer';
+import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { SplashScreen } from '@/components/common/SplashScreen';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
@@ -61,6 +62,7 @@ function App() {
   return (
     <HashRouter>
       <NotificationContainer />
+      <ConfirmationModal />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route
