@@ -8,6 +8,7 @@ interface ModalProps {
   onClose: () => void;
   footer?: ReactNode;
   width?: number | string;
+  closeDisabled?: boolean;
 }
 
 const CLOSE_ANIMATION_DURATION = 350;
@@ -32,7 +33,15 @@ const unlockScroll = () => {
   }
 };
 
-export function Modal({ open, title, onClose, footer, width = 520, children }: PropsWithChildren<ModalProps>) {
+export function Modal({
+  open,
+  title,
+  onClose,
+  footer,
+  width = 520,
+  closeDisabled = false,
+  children
+}: PropsWithChildren<ModalProps>) {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,7 +115,13 @@ export function Modal({ open, title, onClose, footer, width = 520, children }: P
   const modalContent = (
     <div className={overlayClass}>
       <div className={modalClass} style={{ width }} role="dialog" aria-modal="true">
-        <button className="modal-close-floating" onClick={handleClose} aria-label="Close">
+        <button
+          type="button"
+          className="modal-close-floating"
+          onClick={closeDisabled ? undefined : handleClose}
+          aria-label="Close"
+          disabled={closeDisabled}
+        >
           <IconX size={20} />
         </button>
         <div className="modal-header">

@@ -115,14 +115,32 @@ export function ApiKeysPage() {
   };
 
   const handleDelete = (index: number) => {
+    const apiKeyToDelete = apiKeys[index];
+    if (!apiKeyToDelete) {
+      showNotification(t('notification.delete_failed'), 'error');
+      return;
+    }
+
     showConfirmation({
       title: t('common.delete'),
       message: t('api_keys.delete_confirm'),
       variant: 'danger',
       onConfirm: async () => {
+        const latestKeys = useConfigStore.getState().config?.apiKeys;
+        const currentKeys = Array.isArray(latestKeys) ? latestKeys : [];
+        const deleteIndex =
+          currentKeys[index] === apiKeyToDelete
+            ? index
+            : currentKeys.findIndex((key) => key === apiKeyToDelete);
+
+        if (deleteIndex < 0) {
+          showNotification(t('notification.delete_failed'), 'error');
+          return;
+        }
+
         try {
-          await apiKeysApi.delete(index);
-          const nextKeys = apiKeys.filter((_, idx) => idx !== index);
+          await apiKeysApi.delete(deleteIndex);
+          const nextKeys = currentKeys.filter((_, idx) => idx !== deleteIndex);
           setApiKeys(nextKeys);
           updateConfigValue('api-keys', nextKeys);
           clearCache('api-keys');

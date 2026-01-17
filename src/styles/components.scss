@@ -453,6 +453,18 @@ textarea {
   &:active {
     transform: scale(0.95);
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+  }
+
+  &:disabled:hover {
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    transform: none;
+  }
 }
 
 .modal-header {
