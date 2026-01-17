@@ -105,7 +105,7 @@ export const authFilesApi = {
   },
 
   saveOauthModelMappings: (channel: string, mappings: OAuthModelMappingEntry[]) =>
-    apiClient.patch('/oauth-model-alias', { channel, mappings }),
+    apiClient.patch('/oauth-model-alias', { channel, aliases: mappings }),
 
   deleteOauthModelMappings: (channel: string) =>
     apiClient.delete(`/oauth-model-alias?channel=${encodeURIComponent(channel)}`),
