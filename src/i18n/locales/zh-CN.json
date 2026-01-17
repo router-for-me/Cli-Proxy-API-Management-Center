@@ -367,6 +367,8 @@
     "filter_qwen": "Qwen",
     "filter_gemini": "Gemini",
     "filter_gemini-cli": "GeminiCLI",
+    "filter_github": "GitHub Copilot",
+    "filter_github-copilot": "GitHub Copilot",
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
@@ -443,6 +445,18 @@
     "refresh_button": "刷新额度",
     "fetch_all": "获取全部",
     "remaining_amount": "剩余 {{count}}"
+  },
+  "github_copilot_quota": {
+    "title": "GitHub Copilot 状态",
+    "empty_title": "暂无 GitHub Copilot 认证",
+    "empty_desc": "登录 GitHub Copilot 后即可查看状态。",
+    "idle": "尚未加载，请点击刷新按钮。",
+    "loading": "正在检查状态...",
+    "load_failed": "状态检查失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "access_granted": "已授权访问",
+    "plan_label": "套餐: {{sku}}",
+    "expires_at": "过期时间：{{time}}"
   },
   "vertex_import": {
     "title": "Vertex JSON 登录",

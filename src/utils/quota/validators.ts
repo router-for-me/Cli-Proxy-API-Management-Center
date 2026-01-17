@@ -22,6 +22,11 @@ export function isGeminiCliFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'gemini-cli';
 }
 
+export function isGithubCopilotFile(file: AuthFileItem): boolean {
+  const provider = resolveAuthProvider(file);
+  return provider === 'github-copilot' || provider === 'github';
+}
+
 export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   const raw = file['runtime_only'] ?? file.runtimeOnly;
   if (typeof raw === 'boolean') return raw;

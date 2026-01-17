@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useNotificationStore, useThemeStore } from '@/stores';
+import { useNotificationStore, useThemeStore, useAuthStore, useConfigStore } from '@/stores';
 import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
 import { vertexApi, type VertexImportResponse } from '@/services/api/vertex';
 import styles from './OAuthPage.module.scss';
@@ -78,6 +78,15 @@ export function OAuthPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const serverVersion = useAuthStore((state) => state.serverVersion);
+  const isPlus = serverVersion?.includes('-plus') ?? false;
+  
+  useEffect(() => {
+    if (!serverVersion) {
+      useConfigStore.getState().fetchConfig(undefined, true).catch(() => {});
+    }
+  }, [serverVersion]);
+
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
   const [iflowCookie, setIflowCookie] = useState<IFlowCookieState>({ cookie: '', loading: false });
   const [vertexState, setVertexState] = useState<VertexImportState>({
@@ -307,6 +316,7 @@ export function OAuthPage() {
 
       <div className={styles.content}>
         {PROVIDERS.map((provider) => {
+          if (provider.id === 'github' && !isPlus) return null;
           const state = states[provider.id] || {};
           const canSubmitCallback = CALLBACK_SUPPORTED.includes(provider.id) && Boolean(state.url);
           return (

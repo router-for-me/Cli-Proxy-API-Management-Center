@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -416,7 +416,7 @@ export function LogsPage() {
     node.scrollTop = node.scrollHeight;
   };
 
-  const loadLogs = async (incremental = false) => {
+  const loadLogs = useCallback(async (incremental = false) => {
     if (connectionStatus !== 'connected') {
       setLoading(false);
       return;
@@ -473,9 +473,9 @@ export function LogsPage() {
         setLoading(false);
       }
     }
-  };
+  }, [connectionStatus, t]);
 
-  useHeaderRefresh(() => loadLogs(false));
+  useHeaderRefresh(loadLogs);
 
   const clearLogs = async () => {
     if (!window.confirm(t('logs.clear_confirm'))) return;
@@ -505,7 +505,7 @@ export function LogsPage() {
     showNotification(t('logs.download_success'), 'success');
   };
 
-  const loadErrorLogs = async () => {
+  const loadErrorLogs = useCallback(async () => {
     if (connectionStatus !== 'connected') {
       setLoadingErrors(false);
       return;
@@ -527,7 +527,7 @@ export function LogsPage() {
     } finally {
       setLoadingErrors(false);
     }
-  };
+  }, [connectionStatus, t]);
 
   const downloadErrorLog = async (name: string) => {
     try {
@@ -554,15 +554,13 @@ export function LogsPage() {
       latestTimestampRef.current = 0;
       loadLogs(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connectionStatus]);
+  }, [connectionStatus, loadLogs]);
 
   useEffect(() => {
     if (activeTab !== 'errors') return;
     if (connectionStatus !== 'connected') return;
     void loadErrorLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, connectionStatus, requestLogEnabled]);
+  }, [activeTab, connectionStatus, loadErrorLogs]);
 
   useEffect(() => {
     if (!autoRefresh || connectionStatus !== 'connected') {
@@ -572,8 +570,7 @@ export function LogsPage() {
       loadLogs(true);
     }, 8000);
     return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh, connectionStatus]);
+  }, [autoRefresh, connectionStatus, loadLogs]);
 
   useEffect(() => {
     if (!pendingScrollToBottomRef.current) return;
