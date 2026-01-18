@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useNotificationStore, useThemeStore } from '@/stores';
+import { useNotificationStore, useThemeStore, useAuthStore, useConfigStore } from '@/stores';
 import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
 import { vertexApi, type VertexImportResponse } from '@/services/api/vertex';
 import styles from './OAuthPage.module.scss';
@@ -15,10 +15,12 @@ import iconGemini from '@/assets/icons/gemini.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
 import iconIflow from '@/assets/icons/iflow.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
+import iconGithub from '@/assets/icons/github.svg';
 
 interface ProviderState {
   url?: string;
   state?: string;
+  user_code?: string;
   status?: 'idle' | 'waiting' | 'success' | 'error';
   error?: string;
   polling?: boolean;
@@ -59,7 +61,8 @@ const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabe
   { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
   { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconAntigravity },
   { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini },
-  { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label', icon: iconQwen }
+  { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label', icon: iconQwen },
+  { id: 'github', titleKey: 'auth_login.github_oauth_title', hintKey: 'auth_login.github_oauth_hint', urlLabelKey: 'auth_login.github_oauth_url_label', icon: iconGithub }
 ];
 
 const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli'];
@@ -75,6 +78,15 @@ export function OAuthPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const serverVersion = useAuthStore((state) => state.serverVersion);
+  const isPlus = serverVersion?.includes('-plus') ?? false;
+  
+  useEffect(() => {
+    if (!serverVersion) {
+      useConfigStore.getState().fetchConfig(undefined, true).catch(() => {});
+    }
+  }, [serverVersion]);
+
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
   const [iflowCookie, setIflowCookie] = useState<IFlowCookieState>({ cookie: '', loading: false });
   const [vertexState, setVertexState] = useState<VertexImportState>({
@@ -147,7 +159,7 @@ export function OAuthPage() {
         provider,
         provider === 'gemini-cli' ? { projectId: projectId || undefined } : undefined
       );
-      updateProviderState(provider, { url: res.url, state: res.state, status: 'waiting', polling: true });
+      updateProviderState(provider, { url: res.url, state: res.state, user_code: res.user_code, status: 'waiting', polling: true });
       if (res.state) {
         startPolling(provider, res.state);
       }
@@ -304,6 +316,7 @@ export function OAuthPage() {
 
       <div className={styles.content}>
         {PROVIDERS.map((provider) => {
+          if (provider.id === 'github' && !isPlus) return null;
           const state = states[provider.id] || {};
           const canSubmitCallback = CALLBACK_SUPPORTED.includes(provider.id) && Boolean(state.url);
           return (
@@ -345,6 +358,30 @@ export function OAuthPage() {
                 )}
                 {state.url && (
                   <div className={`connection-box ${styles.authUrlBox}`}>
+                    {state.user_code && (
+                      <div className={styles.userCodeBox} style={{ marginBottom: 12, textAlign: 'center' }}>
+                        <div className={styles.authUrlLabel} style={{ marginBottom: 4 }}>
+                          {t(getAuthKey(provider.id, 'user_code_label'))}
+                        </div>
+                        <div
+                          className={styles.userCodeValue}
+                          style={{
+                            fontSize: '1.5em',
+                            fontWeight: 'bold',
+                            letterSpacing: '2px',
+                            padding: '8px',
+                            background: 'var(--bg-secondary)',
+                            borderRadius: 'var(--radius-sm)',
+                            display: 'inline-block',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => copyLink(state.user_code)}
+                          title={t('common.copy')}
+                        >
+                          {state.user_code}
+                        </div>
+                      </div>
+                    )}
                     <div className={styles.authUrlLabel}>{t(provider.urlLabelKey)}</div>
                     <div className={styles.authUrlValue}>{state.url}</div>
                     <div className={styles.authUrlActions}>

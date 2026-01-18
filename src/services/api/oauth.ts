@@ -9,11 +9,13 @@ export type OAuthProvider =
   | 'anthropic'
   | 'antigravity'
   | 'gemini-cli'
-  | 'qwen';
+  | 'qwen'
+  | 'github';
 
 export interface OAuthStartResponse {
   url: string;
   state?: string;
+  user_code?: string;
 }
 
 export interface OAuthCallbackResponse {

@@ -144,3 +144,27 @@ export interface CodexQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+export interface CopilotQuotaDetail {
+  remaining: number;
+  entitlement: number;
+  percent_remaining: number;
+  unlimited: boolean;
+  overage_permitted?: boolean;
+}
+
+export interface CopilotQuotaSnapshots {
+  chat?: CopilotQuotaDetail;
+  completions?: CopilotQuotaDetail;
+  premium_interactions?: CopilotQuotaDetail;
+}
+
+export interface GithubCopilotQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  user?: string;
+  expiresAt?: string;
+  sku?: string;
+  snapshots?: CopilotQuotaSnapshots;
+  error?: string;
+  errorStatus?: number;
+}
