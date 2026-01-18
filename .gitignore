@@ -30,3 +30,6 @@ settings.local.json
 *.njsproj
 *.sln
 *.sw?
+tmpclaude*
+.claude
+CLIProxyAPI

@@ -116,14 +116,42 @@ textarea {
 
 .card-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: $spacing-md;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .card-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+  }
 
   .title {
     font-size: 18px;
     font-weight: 700;
     color: var(--text-primary);
+
+    @media (max-width: 768px) {
+      font-size: 16px;
+    }
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+
+    @media (max-width: 768px) {
+      font-size: 12px;
+    }
   }
 }
 

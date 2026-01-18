@@ -20,7 +20,53 @@
   font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 $spacing-xl 0;
+  margin: 0;
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  margin-bottom: $spacing-xl;
+}
+
+.searchBox {
+  flex: 0 1 320px;
+  min-width: 200px;
+
+  @include mobile {
+    flex: 1 1 100%;
+  }
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+.searchEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl * 2;
+  text-align: center;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-primary);
+  border-radius: 12px;
+}
+
+.searchEmptyTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: $spacing-sm;
+}
+
+.searchEmptyDesc {
+  font-size: 14px;
+  color: var(--text-tertiary);
 }
 
 .content {

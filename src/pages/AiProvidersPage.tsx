@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { entriesToModels } from '@/components/ui/ModelInputList';
 import {
@@ -20,6 +20,7 @@ import {
   withDisableAllModelsRule,
   withoutDisableAllModelsRule,
 } from '@/components/providers/utils';
+import { Input } from '@/components/ui/Input';
 import { ampcodeApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
@@ -50,9 +51,131 @@ export function AiProvidersPage() {
   const [configSwitchingKey, setConfigSwitchingKey] = useState<string | null>(null);
   const [modal, setModal] = useState<ProviderModal | null>(null);
   const [ampcodeBusy, setAmpcodeBusy] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const disableControls = connectionStatus !== 'connected';
   const isSwitching = Boolean(configSwitchingKey);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const filteredGeminiKeys = useMemo(() => {
+    if (!normalizedQuery) return geminiKeys.map((item, index) => ({ item, originalIndex: index }));
+    return geminiKeys
+      .map((item, index) => ({ item, originalIndex: index }))
+      .filter(({ item }) => {
+        const searchFields = [
+          item.apiKey,
+          item.prefix,
+          item.baseUrl,
+          ...(item.excludedModels || []),
+          ...Object.keys(item.headers || {}),
+          ...Object.values(item.headers || {}),
+        ];
+        return searchFields.some((field) => field?.toLowerCase().includes(normalizedQuery));
+      });
+  }, [geminiKeys, normalizedQuery]);
+
+  const filteredCodexConfigs = useMemo(() => {
+    if (!normalizedQuery) return codexConfigs.map((item, index) => ({ item, originalIndex: index }));
+    return codexConfigs
+      .map((item, index) => ({ item, originalIndex: index }))
+      .filter(({ item }) => {
+        const searchFields = [
+          item.apiKey,
+          item.prefix,
+          item.baseUrl,
+          item.proxyUrl,
+          ...(item.excludedModels || []),
+          ...(item.models?.map((m) => m.name) || []),
+          ...(item.models?.map((m) => m.alias) || []),
+          ...Object.keys(item.headers || {}),
+          ...Object.values(item.headers || {}),
+        ];
+        return searchFields.some((field) => field?.toLowerCase().includes(normalizedQuery));
+      });
+  }, [codexConfigs, normalizedQuery]);
+
+  const filteredClaudeConfigs = useMemo(() => {
+    if (!normalizedQuery) return claudeConfigs.map((item, index) => ({ item, originalIndex: index }));
+    return claudeConfigs
+      .map((item, index) => ({ item, originalIndex: index }))
+      .filter(({ item }) => {
+        const searchFields = [
+          item.apiKey,
+          item.prefix,
+          item.baseUrl,
+          item.proxyUrl,
+          ...(item.excludedModels || []),
+          ...(item.models?.map((m) => m.name) || []),
+          ...(item.models?.map((m) => m.alias) || []),
+          ...Object.keys(item.headers || {}),
+          ...Object.values(item.headers || {}),
+        ];
+        return searchFields.some((field) => field?.toLowerCase().includes(normalizedQuery));
+      });
+  }, [claudeConfigs, normalizedQuery]);
+
+  const filteredVertexConfigs = useMemo(() => {
+    if (!normalizedQuery) return vertexConfigs.map((item, index) => ({ item, originalIndex: index }));
+    return vertexConfigs
+      .map((item, index) => ({ item, originalIndex: index }))
+      .filter(({ item }) => {
+        const searchFields = [
+          item.apiKey,
+          item.prefix,
+          item.baseUrl,
+          item.proxyUrl,
+          ...(item.models?.map((m) => m.name) || []),
+          ...(item.models?.map((m) => m.alias) || []),
+          ...Object.keys(item.headers || {}),
+          ...Object.values(item.headers || {}),
+        ];
+        return searchFields.some((field) => field?.toLowerCase().includes(normalizedQuery));
+      });
+  }, [vertexConfigs, normalizedQuery]);
+
+  const filteredOpenaiProviders = useMemo(() => {
+    if (!normalizedQuery)
+      return openaiProviders.map((item, index) => ({ item, originalIndex: index }));
+    return openaiProviders
+      .map((item, index) => ({ item, originalIndex: index }))
+      .filter(({ item }) => {
+        const searchFields = [
+          item.name,
+          item.prefix,
+          item.baseUrl,
+          item.testModel,
+          ...(item.apiKeyEntries?.map((e) => e.apiKey) || []),
+          ...(item.apiKeyEntries?.map((e) => e.proxyUrl) || []),
+          ...(item.models?.map((m) => m.name) || []),
+          ...(item.models?.map((m) => m.alias) || []),
+          ...Object.keys(item.headers || {}),
+          ...Object.values(item.headers || {}),
+        ];
+        return searchFields.some((field) => field?.toLowerCase().includes(normalizedQuery));
+      });
+  }, [openaiProviders, normalizedQuery]);
+
+  const showAmpcode = useMemo(() => {
+    if (!normalizedQuery) return true;
+    const ampcode = config?.ampcode;
+    if (!ampcode) return false;
+    const searchFields = [
+      ampcode.upstreamUrl,
+      ampcode.upstreamApiKey,
+      ...(ampcode.modelMappings?.map((m) => m.from) || []),
+      ...(ampcode.modelMappings?.map((m) => m.to) || []),
+    ];
+    return searchFields.some((field) => field?.toLowerCase().includes(normalizedQuery));
+  }, [config?.ampcode, normalizedQuery]);
+
+  const hasSearchResults =
+    filteredGeminiKeys.length > 0 ||
+    filteredCodexConfigs.length > 0 ||
+    filteredClaudeConfigs.length > 0 ||
+    filteredVertexConfigs.length > 0 ||
+    filteredOpenaiProviders.length > 0 ||
+    showAmpcode;
 
   const { keyStats, usageDetails, loadKeyStats } = useProviderStats();
 
@@ -507,112 +630,171 @@ export function AiProvidersPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
+        <div className={styles.searchBox}>
+          <Input
+            type="text"
+            placeholder={t('ai_providers.search_placeholder')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
       <div className={styles.content}>
         {error && <div className="error-box">{error}</div>}
 
-        <GeminiSection
-          configs={geminiKeys}
-          keyStats={keyStats}
-          usageDetails={usageDetails}
-          loading={loading}
-          disableControls={disableControls}
-          isSaving={saving}
-          isSwitching={isSwitching}
-          isModalOpen={modal?.type === 'gemini'}
-          modalIndex={geminiModalIndex}
-          onAdd={() => openGeminiModal(null)}
-          onEdit={(index) => openGeminiModal(index)}
-          onDelete={deleteGemini}
-          onToggle={(index, enabled) => void setConfigEnabled('gemini', index, enabled)}
-          onCloseModal={closeModal}
-          onSave={saveGemini}
-        />
+        {normalizedQuery && !hasSearchResults && (
+          <div className={styles.searchEmpty}>
+            <div className={styles.searchEmptyTitle}>{t('ai_providers.search_empty_title')}</div>
+            <div className={styles.searchEmptyDesc}>{t('ai_providers.search_empty_desc')}</div>
+          </div>
+        )}
 
-        <CodexSection
-          configs={codexConfigs}
-          keyStats={keyStats}
-          usageDetails={usageDetails}
-          loading={loading}
-          disableControls={disableControls}
-          isSaving={saving}
-          isSwitching={isSwitching}
-          resolvedTheme={resolvedTheme}
-          isModalOpen={modal?.type === 'codex'}
-          modalIndex={codexModalIndex}
-          onAdd={() => openProviderModal('codex', null)}
-          onEdit={(index) => openProviderModal('codex', index)}
-          onDelete={(index) => void deleteProviderEntry('codex', index)}
-          onToggle={(index, enabled) => void setConfigEnabled('codex', index, enabled)}
-          onCloseModal={closeModal}
-          onSave={(form, editIndex) => saveProvider('codex', form, editIndex)}
-        />
+        {filteredGeminiKeys.length > 0 && (
+          <GeminiSection
+            configs={filteredGeminiKeys.map(({ item }) => item)}
+            keyStats={keyStats}
+            usageDetails={usageDetails}
+            loading={loading}
+            disableControls={disableControls}
+            isSaving={saving}
+            isSwitching={isSwitching}
+            isModalOpen={modal?.type === 'gemini'}
+            modalIndex={
+              geminiModalIndex !== null
+                ? filteredGeminiKeys.findIndex(({ originalIndex }) => originalIndex === geminiModalIndex)
+                : null
+            }
+            onAdd={() => openGeminiModal(null)}
+            onEdit={(index) => openGeminiModal(filteredGeminiKeys[index]?.originalIndex ?? index)}
+            onDelete={(index) => deleteGemini(filteredGeminiKeys[index]?.originalIndex ?? index)}
+            onToggle={(index, enabled) =>
+              void setConfigEnabled('gemini', filteredGeminiKeys[index]?.originalIndex ?? index, enabled)
+            }
+            onCloseModal={closeModal}
+            onSave={saveGemini}
+          />
+        )}
 
-        <ClaudeSection
-          configs={claudeConfigs}
-          keyStats={keyStats}
-          usageDetails={usageDetails}
-          loading={loading}
-          disableControls={disableControls}
-          isSaving={saving}
-          isSwitching={isSwitching}
-          isModalOpen={modal?.type === 'claude'}
-          modalIndex={claudeModalIndex}
-          onAdd={() => openProviderModal('claude', null)}
-          onEdit={(index) => openProviderModal('claude', index)}
-          onDelete={(index) => void deleteProviderEntry('claude', index)}
-          onToggle={(index, enabled) => void setConfigEnabled('claude', index, enabled)}
-          onCloseModal={closeModal}
-          onSave={(form, editIndex) => saveProvider('claude', form, editIndex)}
-        />
+        {filteredCodexConfigs.length > 0 && (
+          <CodexSection
+            configs={filteredCodexConfigs.map(({ item }) => item)}
+            keyStats={keyStats}
+            usageDetails={usageDetails}
+            loading={loading}
+            disableControls={disableControls}
+            isSaving={saving}
+            isSwitching={isSwitching}
+            resolvedTheme={resolvedTheme}
+            isModalOpen={modal?.type === 'codex'}
+            modalIndex={
+              codexModalIndex !== null
+                ? filteredCodexConfigs.findIndex(({ originalIndex }) => originalIndex === codexModalIndex)
+                : null
+            }
+            onAdd={() => openProviderModal('codex', null)}
+            onEdit={(index) => openProviderModal('codex', filteredCodexConfigs[index]?.originalIndex ?? index)}
+            onDelete={(index) =>
+              void deleteProviderEntry('codex', filteredCodexConfigs[index]?.originalIndex ?? index)
+            }
+            onToggle={(index, enabled) =>
+              void setConfigEnabled('codex', filteredCodexConfigs[index]?.originalIndex ?? index, enabled)
+            }
+            onCloseModal={closeModal}
+            onSave={(form, editIndex) => saveProvider('codex', form, editIndex)}
+          />
+        )}
 
-        <VertexSection
-          configs={vertexConfigs}
-          keyStats={keyStats}
-          usageDetails={usageDetails}
-          loading={loading}
-          disableControls={disableControls}
-          isSaving={saving}
-          isSwitching={isSwitching}
-          isModalOpen={modal?.type === 'vertex'}
-          modalIndex={vertexModalIndex}
-          onAdd={() => openVertexModal(null)}
-          onEdit={(index) => openVertexModal(index)}
-          onDelete={deleteVertex}
-          onCloseModal={closeModal}
-          onSave={saveVertex}
-        />
+        {filteredClaudeConfigs.length > 0 && (
+          <ClaudeSection
+            configs={filteredClaudeConfigs.map(({ item }) => item)}
+            keyStats={keyStats}
+            usageDetails={usageDetails}
+            loading={loading}
+            disableControls={disableControls}
+            isSaving={saving}
+            isSwitching={isSwitching}
+            isModalOpen={modal?.type === 'claude'}
+            modalIndex={
+              claudeModalIndex !== null
+                ? filteredClaudeConfigs.findIndex(({ originalIndex }) => originalIndex === claudeModalIndex)
+                : null
+            }
+            onAdd={() => openProviderModal('claude', null)}
+            onEdit={(index) => openProviderModal('claude', filteredClaudeConfigs[index]?.originalIndex ?? index)}
+            onDelete={(index) =>
+              void deleteProviderEntry('claude', filteredClaudeConfigs[index]?.originalIndex ?? index)
+            }
+            onToggle={(index, enabled) =>
+              void setConfigEnabled('claude', filteredClaudeConfigs[index]?.originalIndex ?? index, enabled)
+            }
+            onCloseModal={closeModal}
+            onSave={(form, editIndex) => saveProvider('claude', form, editIndex)}
+          />
+        )}
 
-        <AmpcodeSection
-          config={config?.ampcode}
-          loading={loading}
-          disableControls={disableControls}
-          isSaving={saving}
-          isSwitching={isSwitching}
-          isBusy={ampcodeBusy}
-          isModalOpen={modal?.type === 'ampcode'}
-          onOpen={openAmpcodeModal}
-          onCloseModal={closeModal}
-          onBusyChange={setAmpcodeBusy}
-        />
+        {filteredVertexConfigs.length > 0 && (
+          <VertexSection
+            configs={filteredVertexConfigs.map(({ item }) => item)}
+            keyStats={keyStats}
+            usageDetails={usageDetails}
+            loading={loading}
+            disableControls={disableControls}
+            isSaving={saving}
+            isSwitching={isSwitching}
+            isModalOpen={modal?.type === 'vertex'}
+            modalIndex={
+              vertexModalIndex !== null
+                ? filteredVertexConfigs.findIndex(({ originalIndex }) => originalIndex === vertexModalIndex)
+                : null
+            }
+            onAdd={() => openVertexModal(null)}
+            onEdit={(index) => openVertexModal(filteredVertexConfigs[index]?.originalIndex ?? index)}
+            onDelete={(index) => deleteVertex(filteredVertexConfigs[index]?.originalIndex ?? index)}
+            onCloseModal={closeModal}
+            onSave={saveVertex}
+          />
+        )}
 
-        <OpenAISection
-          configs={openaiProviders}
-          keyStats={keyStats}
-          usageDetails={usageDetails}
-          loading={loading}
-          disableControls={disableControls}
-          isSaving={saving}
-          isSwitching={isSwitching}
-          resolvedTheme={resolvedTheme}
-          isModalOpen={modal?.type === 'openai'}
-          modalIndex={openaiModalIndex}
-          onAdd={() => openOpenaiModal(null)}
-          onEdit={(index) => openOpenaiModal(index)}
-          onDelete={deleteOpenai}
-          onCloseModal={closeModal}
-          onSave={saveOpenai}
-        />
+        {showAmpcode && (
+          <AmpcodeSection
+            config={config?.ampcode}
+            loading={loading}
+            disableControls={disableControls}
+            isSaving={saving}
+            isSwitching={isSwitching}
+            isBusy={ampcodeBusy}
+            isModalOpen={modal?.type === 'ampcode'}
+            onOpen={openAmpcodeModal}
+            onCloseModal={closeModal}
+            onBusyChange={setAmpcodeBusy}
+          />
+        )}
+
+        {filteredOpenaiProviders.length > 0 && (
+          <OpenAISection
+            configs={filteredOpenaiProviders.map(({ item }) => item)}
+            keyStats={keyStats}
+            usageDetails={usageDetails}
+            loading={loading}
+            disableControls={disableControls}
+            isSaving={saving}
+            isSwitching={isSwitching}
+            resolvedTheme={resolvedTheme}
+            isModalOpen={modal?.type === 'openai'}
+            modalIndex={
+              openaiModalIndex !== null
+                ? filteredOpenaiProviders.findIndex(({ originalIndex }) => originalIndex === openaiModalIndex)
+                : null
+            }
+            onAdd={() => openOpenaiModal(null)}
+            onEdit={(index) => openOpenaiModal(filteredOpenaiProviders[index]?.originalIndex ?? index)}
+            onDelete={(index) => deleteOpenai(filteredOpenaiProviders[index]?.originalIndex ?? index)}
+            onCloseModal={closeModal}
+            onSave={saveOpenai}
+          />
+        )}
       </div>
     </div>
   );

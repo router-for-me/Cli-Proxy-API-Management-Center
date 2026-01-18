@@ -10,6 +10,7 @@ import { UsagePage } from '@/pages/UsagePage';
 import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
+import { MonitorPage } from '@/pages/MonitorPage';
 
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -24,6 +25,7 @@ const mainRoutes = [
   { path: '/config', element: <ConfigPage /> },
   { path: '/logs', element: <LogsPage /> },
   { path: '/system', element: <SystemPage /> },
+  { path: '/monitor', element: <MonitorPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 
