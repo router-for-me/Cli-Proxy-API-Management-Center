@@ -7,7 +7,12 @@ import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
 import type { OpenAIProviderConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
-import { calculateStatusBarData, type KeyStats, type UsageDetail } from '@/utils/usage';
+import {
+  buildCandidateUsageSourceIds,
+  calculateStatusBarData,
+  type KeyStats,
+  type UsageDetail,
+} from '@/utils/usage';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
 import { ProviderStatusBar } from '../ProviderStatusBar';
@@ -57,8 +62,15 @@ export function OpenAISection({
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
 
     configs.forEach((provider) => {
-      const allKeys = (provider.apiKeyEntries || []).map((entry) => entry.apiKey).filter(Boolean);
-      const filteredDetails = usageDetails.filter((detail) => allKeys.includes(detail.source));
+      const sourceIds = new Set<string>();
+      buildCandidateUsageSourceIds({ prefix: provider.prefix }).forEach((id) => sourceIds.add(id));
+      (provider.apiKeyEntries || []).forEach((entry) => {
+        buildCandidateUsageSourceIds({ apiKey: entry.apiKey }).forEach((id) => sourceIds.add(id));
+      });
+
+      const filteredDetails = sourceIds.size
+        ? usageDetails.filter((detail) => sourceIds.has(detail.source))
+        : [];
       cache.set(provider.name, calculateStatusBarData(filteredDetails));
     });
 
@@ -96,7 +108,7 @@ export function OpenAISection({
           onDelete={onDelete}
           actionsDisabled={actionsDisabled}
           renderContent={(item) => {
-            const stats = getOpenAIProviderStats(item.apiKeyEntries, keyStats, maskApiKey);
+            const stats = getOpenAIProviderStats(item.apiKeyEntries, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});
             const apiKeyEntries = item.apiKeyEntries || [];
             const statusData = statusBarCache.get(item.name) || calculateStatusBarData([]);
@@ -130,7 +142,7 @@ export function OpenAISection({
                     </div>
                     <div className={styles.apiKeyEntryList}>
                       {apiKeyEntries.map((entry, entryIndex) => {
-                        const entryStats = getStatsBySource(entry.apiKey, keyStats, maskApiKey);
+                        const entryStats = getStatsBySource(entry.apiKey, keyStats);
                         return (
                           <div key={entryIndex} className={styles.apiKeyEntryCard}>
                             <span className={styles.apiKeyEntryIndex}>{entryIndex + 1}</span>

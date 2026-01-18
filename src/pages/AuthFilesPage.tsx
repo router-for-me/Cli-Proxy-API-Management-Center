@@ -14,8 +14,14 @@ import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
 import type { AuthFileItem, OAuthModelMappingEntry } from '@/types';
-import type { KeyStats, KeyStatBucket, UsageDetail } from '@/utils/usage';
-import { collectUsageDetails, calculateStatusBarData } from '@/utils/usage';
+import {
+  calculateStatusBarData,
+  collectUsageDetails,
+  normalizeUsageSourceId,
+  type KeyStatBucket,
+  type KeyStats,
+  type UsageDetail,
+} from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
 import { generateId } from '@/utils/helpers';
 import styles from './AuthFilesPage.module.scss';
@@ -142,8 +148,9 @@ function resolveAuthFileStats(
   }
 
   // 尝试根据 source (文件名) 匹配
-  if (rawFileName && stats.bySource?.[rawFileName]) {
-    const fromName = stats.bySource[rawFileName];
+  const fileNameId = rawFileName ? normalizeUsageSourceId(rawFileName) : '';
+  if (fileNameId && stats.bySource?.[fileNameId]) {
+    const fromName = stats.bySource[fileNameId];
     if (fromName.success > 0 || fromName.failure > 0) {
       return fromName;
     }
@@ -153,7 +160,8 @@ function resolveAuthFileStats(
   if (rawFileName) {
     const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, '');
     if (nameWithoutExt && nameWithoutExt !== rawFileName) {
-      const fromNameWithoutExt = stats.bySource?.[nameWithoutExt];
+      const nameWithoutExtId = normalizeUsageSourceId(nameWithoutExt);
+      const fromNameWithoutExt = nameWithoutExtId ? stats.bySource?.[nameWithoutExtId] : undefined;
       if (fromNameWithoutExt && (fromNameWithoutExt.success > 0 || fromNameWithoutExt.failure > 0)) {
         return fromNameWithoutExt;
       }

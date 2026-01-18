@@ -6,7 +6,12 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import iconGemini from '@/assets/icons/gemini.svg';
 import type { GeminiKeyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
-import { calculateStatusBarData, type KeyStats, type UsageDetail } from '@/utils/usage';
+import {
+  buildCandidateUsageSourceIds,
+  calculateStatusBarData,
+  type KeyStats,
+  type UsageDetail,
+} from '@/utils/usage';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import type { GeminiFormState } from '../types';
 import { ProviderList } from '../ProviderList';
@@ -55,11 +60,19 @@ export function GeminiSection({
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
-    const allApiKeys = new Set<string>();
-    configs.forEach((config) => config.apiKey && allApiKeys.add(config.apiKey));
-    allApiKeys.forEach((apiKey) => {
-      cache.set(apiKey, calculateStatusBarData(usageDetails, apiKey));
+
+    configs.forEach((config) => {
+      if (!config.apiKey) return;
+      const candidates = buildCandidateUsageSourceIds({
+        apiKey: config.apiKey,
+        prefix: config.prefix,
+      });
+      if (!candidates.length) return;
+      const candidateSet = new Set(candidates);
+      const filteredDetails = usageDetails.filter((detail) => candidateSet.has(detail.source));
+      cache.set(config.apiKey, calculateStatusBarData(filteredDetails));
     });
+
     return cache;
   }, [configs, usageDetails]);
 
@@ -99,12 +112,11 @@ export function GeminiSection({
             />
           )}
           renderContent={(item, index) => {
-            const stats = getStatsBySource(item.apiKey, keyStats, maskApiKey);
+            const stats = getStatsBySource(item.apiKey, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});
             const configDisabled = hasDisableAllModelsRule(item.excludedModels);
             const excludedModels = item.excludedModels ?? [];
-            const statusData =
-              statusBarCache.get(item.apiKey) || calculateStatusBarData([], item.apiKey);
+            const statusData = statusBarCache.get(item.apiKey) || calculateStatusBarData([]);
 
             return (
               <Fragment>

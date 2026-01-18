@@ -7,14 +7,16 @@
  * 隐藏 API Key 中间部分，仅保留前后两位
  */
 export function maskApiKey(key: string): string {
-  if (!key) {
+  const trimmed = String(key || '').trim();
+  if (!trimmed) {
     return '';
   }
 
-  const visibleChars = 2;
-  const start = key.slice(0, visibleChars);
-  const end = key.slice(-visibleChars);
-  const maskedLength = Math.max(key.length - visibleChars * 2, 1);
+  const MASKED_LENGTH = 10;
+  const visibleChars = trimmed.length < 4 ? 1 : 2;
+  const start = trimmed.slice(0, visibleChars);
+  const end = trimmed.slice(-visibleChars);
+  const maskedLength = Math.max(MASKED_LENGTH - visibleChars * 2, 1);
   const masked = '*'.repeat(maskedLength);
 
   return `${start}${masked}${end}`;
