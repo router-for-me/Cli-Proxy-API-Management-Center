@@ -6,6 +6,14 @@ import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
 import type { OAuthModelMappingEntry } from '@/types';
 
+type StatusError = { status?: number };
+
+const getStatusCode = (err: unknown): number | undefined => {
+  if (!err || typeof err !== 'object') return undefined;
+  if ('status' in err) return (err as StatusError).status;
+  return undefined;
+};
+
 const normalizeOauthExcludedModels = (payload: unknown): Record<string, string[]> => {
   if (!payload || typeof payload !== 'object') return {};
 
@@ -42,6 +50,55 @@ const normalizeOauthExcludedModels = (payload: unknown): Record<string, string[]
 
   return result;
 };
+
+const normalizeOauthModelMappings = (payload: unknown): Record<string, OAuthModelMappingEntry[]> => {
+  if (!payload || typeof payload !== 'object') return {};
+
+  const source =
+    (payload as any)['oauth-model-mappings'] ??
+    (payload as any)['oauth-model-alias'] ??
+    (payload as any).items ??
+    payload;
+  if (!source || typeof source !== 'object') return {};
+
+  const result: Record<string, OAuthModelMappingEntry[]> = {};
+
+  Object.entries(source as Record<string, unknown>).forEach(([channel, mappings]) => {
+    const key = String(channel ?? '')
+      .trim()
+      .toLowerCase();
+    if (!key) return;
+    if (!Array.isArray(mappings)) return;
+
+    const seen = new Set<string>();
+    const normalized = mappings
+      .map((item) => {
+        if (!item || typeof item !== 'object') return null;
+        const name = String((item as any).name ?? (item as any).id ?? (item as any).model ?? '').trim();
+        const alias = String((item as any).alias ?? '').trim();
+        if (!name || !alias) return null;
+        const fork = (item as any).fork === true;
+        return fork ? { name, alias, fork } : { name, alias };
+      })
+      .filter(Boolean)
+      .filter((entry) => {
+        const mapping = entry as OAuthModelMappingEntry;
+        const dedupeKey = `${mapping.name.toLowerCase()}::${mapping.alias.toLowerCase()}::${mapping.fork ? '1' : '0'}`;
+        if (seen.has(dedupeKey)) return false;
+        seen.add(dedupeKey);
+        return true;
+      }) as OAuthModelMappingEntry[];
+
+    if (normalized.length) {
+      result[key] = normalized;
+    }
+  });
+
+  return result;
+};
+
+const OAUTH_MODEL_MAPPINGS_ENDPOINT = '/oauth-model-mappings';
+const OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT = '/oauth-model-alias';
 
 export const authFilesApi = {
   list: () => apiClient.get<AuthFilesResponse>('/auth-files'),
@@ -81,34 +138,63 @@ export const authFilesApi = {
 
   // OAuth 模型映射
   async getOauthModelMappings(): Promise<Record<string, OAuthModelMappingEntry[]>> {
-    const data = await apiClient.get('/oauth-model-alias');
-    const payload = (data && (data['oauth-model-alias'] ?? data.items ?? data)) as any;
-    if (!payload || typeof payload !== 'object') return {};
-    const result: Record<string, OAuthModelMappingEntry[]> = {};
-    Object.entries(payload).forEach(([channel, mappings]) => {
-      if (!Array.isArray(mappings)) return;
-      const normalized = mappings
-        .map((item) => {
-          if (!item || typeof item !== 'object') return null;
-          const name = String(item.name ?? item.id ?? item.model ?? '').trim();
-          const alias = String(item.alias ?? '').trim();
-          if (!name || !alias) return null;
-          const fork = item.fork === true;
-          return fork ? { name, alias, fork } : { name, alias };
-        })
-        .filter(Boolean) as OAuthModelMappingEntry[];
-      if (normalized.length) {
-        result[channel] = normalized;
-      }
-    });
-    return result;
+    try {
+      const data = await apiClient.get(OAUTH_MODEL_MAPPINGS_ENDPOINT);
+      return normalizeOauthModelMappings(data);
+    } catch (err: unknown) {
+      if (getStatusCode(err) !== 404) throw err;
+      const data = await apiClient.get(OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT);
+      return normalizeOauthModelMappings(data);
+    }
   },
 
-  saveOauthModelMappings: (channel: string, mappings: OAuthModelMappingEntry[]) =>
-    apiClient.patch('/oauth-model-alias', { channel, aliases: mappings }),
+  saveOauthModelMappings: async (channel: string, mappings: OAuthModelMappingEntry[]) => {
+    const normalizedChannel = String(channel ?? '')
+      .trim()
+      .toLowerCase();
+    const normalizedMappings = normalizeOauthModelMappings({ [normalizedChannel]: mappings })[normalizedChannel] ?? [];
 
-  deleteOauthModelMappings: (channel: string) =>
-    apiClient.delete(`/oauth-model-alias?channel=${encodeURIComponent(channel)}`),
+    try {
+      await apiClient.patch(OAUTH_MODEL_MAPPINGS_ENDPOINT, { channel: normalizedChannel, mappings: normalizedMappings });
+      return;
+    } catch (err: unknown) {
+      if (getStatusCode(err) !== 404) throw err;
+      await apiClient.patch(OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT, { channel: normalizedChannel, aliases: normalizedMappings });
+    }
+  },
+
+  deleteOauthModelMappings: async (channel: string) => {
+    const normalizedChannel = String(channel ?? '')
+      .trim()
+      .toLowerCase();
+
+    const deleteViaPatch = async () => {
+      try {
+        await apiClient.patch(OAUTH_MODEL_MAPPINGS_ENDPOINT, { channel: normalizedChannel, mappings: [] });
+        return true;
+      } catch (err: unknown) {
+        if (getStatusCode(err) !== 404) throw err;
+        await apiClient.patch(OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT, { channel: normalizedChannel, aliases: [] });
+        return true;
+      }
+    };
+
+    try {
+      await deleteViaPatch();
+      return;
+    } catch (err: unknown) {
+      const status = getStatusCode(err);
+      if (status !== 405) throw err;
+    }
+
+    try {
+      await apiClient.delete(`${OAUTH_MODEL_MAPPINGS_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
+      return;
+    } catch (err: unknown) {
+      if (getStatusCode(err) !== 404) throw err;
+      await apiClient.delete(`${OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
+    }
+  },
 
   // 获取认证凭证支持的模型
   async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
