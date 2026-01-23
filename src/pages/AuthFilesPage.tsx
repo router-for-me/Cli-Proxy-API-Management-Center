@@ -187,6 +187,7 @@ export function AuthFilesPage() {
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [keyStats, setKeyStats] = useState<KeyStats>({ bySource: {}, byAuthIndex: {} });
   const [usageDetails, setUsageDetails] = useState<UsageDetail[]>([]);
 
@@ -608,6 +609,42 @@ export function AuthFilesPage() {
     }
   };
 
+  const handleStatusToggle = async (item: AuthFileItem, enabled: boolean) => {
+    const name = item.name;
+    const nextDisabled = !enabled;
+    const previousDisabled = item.disabled === true;
+
+    setStatusUpdating((prev) => ({ ...prev, [name]: true }));
+    // Optimistic update for snappy UI.
+    setFiles((prev) => prev.map((f) => (f.name === name ? { ...f, disabled: nextDisabled } : f)));
+
+    try {
+      const res = await authFilesApi.setStatus(name, nextDisabled);
+      setFiles((prev) =>
+        prev.map((f) => (f.name === name ? { ...f, disabled: res.disabled } : f))
+      );
+      showNotification(
+        enabled
+          ? t('auth_files.status_enabled_success', { name })
+          : t('auth_files.status_disabled_success', { name }),
+        'success'
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      setFiles((prev) =>
+        prev.map((f) => (f.name === name ? { ...f, disabled: previousDisabled } : f))
+      );
+      showNotification(`${t('notification.update_failed')}: ${errorMessage}`, 'error');
+    } finally {
+      setStatusUpdating((prev) => {
+        if (!prev[name]) return prev;
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
+  };
+
   // 显示详情弹窗
   const showDetails = (file: AuthFileItem) => {
     setSelectedFile(file);
@@ -1020,6 +1057,16 @@ export function AuthFilesPage() {
                 )}
               </Button>
             </>
+          )}
+          {!isRuntimeOnly && (
+            <div className={styles.statusToggle}>
+              <ToggleSwitch
+                ariaLabel={t('auth_files.status_toggle_label')}
+                checked={!item.disabled}
+                disabled={disableControls || statusUpdating[item.name] === true}
+                onChange={(value) => void handleStatusToggle(item, value)}
+              />
+            </div>
           )}
           {isRuntimeOnly && (
             <div className={styles.virtualBadge}>{t('auth_files.type_virtual') || '虚拟认证文件'}</div>

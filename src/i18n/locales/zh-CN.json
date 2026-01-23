@@ -395,7 +395,10 @@
     "models_unsupported": "当前版本不支持此功能",
     "models_unsupported_desc": "请更新 CLI Proxy API 到最新版本后重试",
     "models_excluded_badge": "已排除",
-    "models_excluded_hint": "此模型已被 OAuth 排除"
+    "models_excluded_hint": "此模型已被 OAuth 排除",
+    "status_toggle_label": "启用",
+    "status_enabled_success": "已启用 \"{{name}}\"",
+    "status_disabled_success": "已停用 \"{{name}}\""
   },
   "antigravity_quota": {
     "title": "Antigravity 额度",

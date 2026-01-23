@@ -601,8 +601,16 @@
   display: flex;
   gap: $spacing-xs;
   justify-content: flex-end;
+  align-items: center;
   margin-top: auto;
   padding-top: $spacing-sm;
+}
+
+.statusToggle {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: $spacing-sm;
 }
 
 .iconButton:global(.btn.btn-sm) {

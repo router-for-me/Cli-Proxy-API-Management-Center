@@ -4,6 +4,7 @@ interface ToggleSwitchProps {
   checked: boolean;
   onChange: (value: boolean) => void;
   label?: ReactNode;
+  ariaLabel?: string;
   disabled?: boolean;
   labelPosition?: 'left' | 'right';
 }
@@ -12,6 +13,7 @@ export function ToggleSwitch({
   checked,
   onChange,
   label,
+  ariaLabel,
   disabled = false,
   labelPosition = 'right'
 }: ToggleSwitchProps) {
@@ -25,7 +27,13 @@ export function ToggleSwitch({
 
   return (
     <label className={className}>
-      <input type="checkbox" checked={checked} onChange={handleChange} disabled={disabled} />
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={handleChange}
+        disabled={disabled}
+        aria-label={ariaLabel}
+      />
       <span className="track">
         <span className="thumb" />
       </span>

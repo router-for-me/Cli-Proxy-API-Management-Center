@@ -395,7 +395,10 @@
     "models_unsupported": "This feature is not supported in the current version",
     "models_unsupported_desc": "Please update CLI Proxy API to the latest version and try again",
     "models_excluded_badge": "Excluded",
-    "models_excluded_hint": "This model is excluded by OAuth"
+    "models_excluded_hint": "This model is excluded by OAuth",
+    "status_toggle_label": "Enabled",
+    "status_enabled_success": "\"{{name}}\" enabled",
+    "status_disabled_success": "\"{{name}}\" disabled"
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",
