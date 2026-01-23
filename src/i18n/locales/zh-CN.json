@@ -398,7 +398,16 @@
     "models_excluded_hint": "此模型已被 OAuth 排除",
     "status_toggle_label": "启用",
     "status_enabled_success": "已启用 \"{{name}}\"",
-    "status_disabled_success": "已停用 \"{{name}}\""
+    "status_disabled_success": "已停用 \"{{name}}\"",
+    "prefix_proxy_button": "配置 prefix/proxy_url",
+    "prefix_proxy_loading": "正在加载凭证文件...",
+    "prefix_proxy_source_label": "凭证 JSON",
+    "prefix_label": "prefix",
+    "proxy_url_label": "proxy_url",
+    "prefix_placeholder": "",
+    "proxy_url_placeholder": "socks5://username:password@proxy_ip:port/",
+    "prefix_proxy_invalid_json": "该凭证文件不是 JSON 对象，无法编辑。",
+    "prefix_proxy_saved_success": "已更新 \"{{name}}\""
   },
   "antigravity_quota": {
     "title": "Antigravity 额度",
