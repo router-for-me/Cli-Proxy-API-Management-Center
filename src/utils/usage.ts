@@ -903,11 +903,11 @@ export function calculateStatusBarData(
   authIndexFilter?: number
 ): StatusBarData {
   const BLOCK_COUNT = 20;
-  const BLOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-  const HOUR_MS = 60 * 60 * 1000;
+  const BLOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+  const WINDOW_MS = 200 * 60 * 1000; // 200 minutes
 
   const now = Date.now();
-  const hourAgo = now - HOUR_MS;
+  const windowStart = now - WINDOW_MS;
 
   // Initialize blocks
   const blockStats: Array<{ success: number; failure: number }> = Array.from(
@@ -921,7 +921,7 @@ export function calculateStatusBarData(
   // Filter and bucket the usage details
   usageDetails.forEach((detail) => {
     const timestamp = Date.parse(detail.timestamp);
-    if (Number.isNaN(timestamp) || timestamp < hourAgo || timestamp > now) {
+    if (Number.isNaN(timestamp) || timestamp < windowStart || timestamp > now) {
       return;
     }
 
