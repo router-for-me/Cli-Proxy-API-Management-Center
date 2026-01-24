@@ -14,6 +14,8 @@
     gap: $spacing-lg;
     min-height: 0;
     flex: 1;
+    backface-visibility: hidden;
+    transform: translateZ(0);
 
     // During animation, exit layer uses absolute positioning
     &--exit {
@@ -22,17 +24,15 @@
       z-index: 1;
       overflow: hidden;
       pointer-events: none;
+      will-change: transform, opacity;
     }
   }
 
   &--animating &__layer {
     will-change: transform, opacity;
-    backface-visibility: hidden;
-    transform-style: preserve-3d;
   }
 
-  // When both layers exist, current layer also needs positioning
-  &--animating &__layer:not(&__layer--exit) {
+  &--animating &__layer:not(.page-transition__layer--exit) {
     position: relative;
     z-index: 0;
   }

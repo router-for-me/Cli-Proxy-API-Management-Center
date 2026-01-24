@@ -71,26 +71,17 @@ export function PageTransition({
           ? 'forward'
           : 'backward';
 
-    let cancelled = false;
-
-    queueMicrotask(() => {
-      if (cancelled) return;
-      setTransitionDirection(nextDirection);
-      setLayers((prev) => {
-        const prevCurrent = prev[prev.length - 1];
-        return [
-          prevCurrent
-            ? { ...prevCurrent, status: 'exiting' }
-            : { key: location.key, location, status: 'exiting' },
-          { key: location.key, location, status: 'current' },
-        ];
-      });
-      setIsAnimating(true);
+    setTransitionDirection(nextDirection);
+    setLayers((prev) => {
+      const prevCurrent = prev[prev.length - 1];
+      return [
+        prevCurrent
+          ? { ...prevCurrent, status: 'exiting' }
+          : { key: location.key, location, status: 'exiting' },
+        { key: location.key, location, status: 'current' },
+      ];
     });
-
-    return () => {
-      cancelled = true;
-    };
+    setIsAnimating(true);
   }, [
     isAnimating,
     location,
@@ -152,8 +143,12 @@ export function PageTransition({
         opacity: 1,
         duration: TRANSITION_DURATION,
         ease: 'power2.out', // smooth settle
-        clearProps: 'transform,opacity',
         force3D: true,
+        onComplete: () => {
+          if (currentLayerRef.current) {
+            gsap.set(currentLayerRef.current, { clearProps: 'transform,opacity' });
+          }
+        },
       },
       ENTER_DELAY
     );
