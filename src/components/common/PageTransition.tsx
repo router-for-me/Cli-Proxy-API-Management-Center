@@ -9,9 +9,8 @@ interface PageTransitionProps {
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
-const TRANSITION_DURATION = 0.5;
-const EXIT_DURATION = 0.45;
-const ENTER_DELAY = 0.08;
+const TRANSITION_DURATION = 0.35;
+const TRAVEL_DISTANCE = 60;
 
 type LayerStatus = 'current' | 'exiting';
 
@@ -103,11 +102,8 @@ export function PageTransition({
       scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
 
-    const containerHeight = scrollContainer?.clientHeight ?? 0;
-    const viewportHeight = typeof window === 'undefined' ? 0 : window.innerHeight;
-    const travelDistance = Math.max(containerHeight, viewportHeight, 1);
-    const enterFromY = transitionDirection === 'forward' ? travelDistance : -travelDistance;
-    const exitToY = transitionDirection === 'forward' ? -travelDistance : travelDistance;
+    const enterFromY = transitionDirection === 'forward' ? TRAVEL_DISTANCE : -TRAVEL_DISTANCE;
+    const exitToY = transitionDirection === 'forward' ? -TRAVEL_DISTANCE : TRAVEL_DISTANCE;
     const exitBaseY = scrollOffset ? -scrollOffset : 0;
 
     const tl = gsap.timeline({
@@ -117,24 +113,23 @@ export function PageTransition({
       },
     });
 
-    // Exit animation: fly out to top (slow-to-fast)
+    // Exit animation: fade out with slight movement (runs simultaneously)
     if (exitingLayerRef.current) {
       gsap.set(exitingLayerRef.current, { y: exitBaseY });
-      tl.fromTo(
+      tl.to(
         exitingLayerRef.current,
-        { y: exitBaseY, opacity: 1 },
         {
           y: exitBaseY + exitToY,
           opacity: 0,
-          duration: EXIT_DURATION,
-          ease: 'power2.in', // fast finish to clear screen
+          duration: TRANSITION_DURATION,
+          ease: 'circ.out',
           force3D: true,
         },
         0
       );
     }
 
-    // Enter animation: slide in from bottom (slow-to-fast)
+    // Enter animation: fade in with slight movement (runs simultaneously)
     tl.fromTo(
       currentLayerRef.current,
       { y: enterFromY, opacity: 0 },
@@ -142,7 +137,7 @@ export function PageTransition({
         y: 0,
         opacity: 1,
         duration: TRANSITION_DURATION,
-        ease: 'power2.out', // smooth settle
+        ease: 'circ.out',
         force3D: true,
         onComplete: () => {
           if (currentLayerRef.current) {
@@ -150,7 +145,7 @@ export function PageTransition({
           }
         },
       },
-      ENTER_DELAY
+      0
     );
 
     return () => {
