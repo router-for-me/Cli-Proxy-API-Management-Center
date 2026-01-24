@@ -21,7 +21,7 @@ interface AmpcodeModalProps {
 
 export function AmpcodeModal({ isOpen, disableControls, onClose, onBusyChange }: AmpcodeModalProps) {
   const { t } = useTranslation();
-  const { showNotification } = useNotificationStore();
+  const { showNotification, showConfirmation } = useNotificationStore();
   const config = useConfigStore((state) => state.config);
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
   const clearCache = useConfigStore((state) => state.clearCache);
@@ -81,32 +81,34 @@ export function AmpcodeModal({ isOpen, disableControls, onClose, onBusyChange }:
   }, [clearCache, config?.ampcode, isOpen, onBusyChange, t, updateConfigValue]);
 
   const clearAmpcodeUpstreamApiKey = async () => {
-    if (!window.confirm(t('ai_providers.ampcode_clear_upstream_api_key_confirm'))) return;
-    setSaving(true);
-    setError('');
-    try {
-      await ampcodeApi.clearUpstreamApiKey();
-      const previous = config?.ampcode ?? {};
-      const next: AmpcodeConfig = { ...previous };
-      delete next.upstreamApiKey;
-      updateConfigValue('ampcode', next);
-      clearCache('ampcode');
-      showNotification(t('notification.ampcode_upstream_api_key_cleared'), 'success');
-    } catch (err: unknown) {
-      const message = getErrorMessage(err);
-      setError(message);
-      showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
-    } finally {
-      setSaving(false);
-    }
+    showConfirmation({
+      title: t('ai_providers.ampcode_clear_upstream_api_key_title', { defaultValue: 'Clear Upstream API Key' }),
+      message: t('ai_providers.ampcode_clear_upstream_api_key_confirm'),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        setSaving(true);
+        setError('');
+        try {
+          await ampcodeApi.clearUpstreamApiKey();
+          const previous = config?.ampcode ?? {};
+          const next: AmpcodeConfig = { ...previous };
+          delete next.upstreamApiKey;
+          updateConfigValue('ampcode', next);
+          clearCache('ampcode');
+          showNotification(t('notification.ampcode_upstream_api_key_cleared'), 'success');
+        } catch (err: unknown) {
+          const message = getErrorMessage(err);
+          setError(message);
+          showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
   };
 
-  const saveAmpcode = async () => {
-    if (!loaded && mappingsDirty) {
-      const confirmed = window.confirm(t('ai_providers.ampcode_mappings_overwrite_confirm'));
-      if (!confirmed) return;
-    }
-
+  const performSaveAmpcode = async () => {
     setSaving(true);
     setError('');
     try {
@@ -171,6 +173,21 @@ export function AmpcodeModal({ isOpen, disableControls, onClose, onBusyChange }:
     } finally {
       setSaving(false);
     }
+  };
+
+  const saveAmpcode = async () => {
+    if (!loaded && mappingsDirty) {
+      showConfirmation({
+        title: t('ai_providers.ampcode_mappings_overwrite_title', { defaultValue: 'Overwrite Mappings' }),
+        message: t('ai_providers.ampcode_mappings_overwrite_confirm'),
+        variant: 'secondary', // Not dangerous, just a warning
+        confirmText: t('common.confirm'),
+        onConfirm: performSaveAmpcode,
+      });
+      return;
+    }
+
+    await performSaveAmpcode();
   };
 
   return (

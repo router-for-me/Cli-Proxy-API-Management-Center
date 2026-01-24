@@ -28,7 +28,7 @@ import styles from './AiProvidersPage.module.scss';
 
 export function AiProvidersPage() {
   const { t } = useTranslation();
-  const { showNotification } = useNotificationStore();
+  const { showNotification, showConfirmation } = useNotificationStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
 
@@ -180,18 +180,25 @@ export function AiProvidersPage() {
   const deleteGemini = async (index: number) => {
     const entry = geminiKeys[index];
     if (!entry) return;
-    if (!window.confirm(t('ai_providers.gemini_delete_confirm'))) return;
-    try {
-      await providersApi.deleteGeminiKey(entry.apiKey);
-      const next = geminiKeys.filter((_, idx) => idx !== index);
-      setGeminiKeys(next);
-      updateConfigValue('gemini-api-key', next);
-      clearCache('gemini-api-key');
-      showNotification(t('notification.gemini_key_deleted'), 'success');
-    } catch (err: unknown) {
-      const message = getErrorMessage(err);
-      showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
-    }
+    showConfirmation({
+      title: t('ai_providers.gemini_delete_title', { defaultValue: 'Delete Gemini Key' }),
+      message: t('ai_providers.gemini_delete_confirm'),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        try {
+          await providersApi.deleteGeminiKey(entry.apiKey);
+          const next = geminiKeys.filter((_, idx) => idx !== index);
+          setGeminiKeys(next);
+          updateConfigValue('gemini-api-key', next);
+          clearCache('gemini-api-key');
+          showNotification(t('notification.gemini_key_deleted'), 'success');
+        } catch (err: unknown) {
+          const message = getErrorMessage(err);
+          showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
+        }
+      },
+    });
   };
 
   const setConfigEnabled = async (
@@ -352,27 +359,34 @@ export function AiProvidersPage() {
     const source = type === 'codex' ? codexConfigs : claudeConfigs;
     const entry = source[index];
     if (!entry) return;
-    if (!window.confirm(t(`ai_providers.${type}_delete_confirm`))) return;
-    try {
-      if (type === 'codex') {
-        await providersApi.deleteCodexConfig(entry.apiKey);
-        const next = codexConfigs.filter((_, idx) => idx !== index);
-        setCodexConfigs(next);
-        updateConfigValue('codex-api-key', next);
-        clearCache('codex-api-key');
-        showNotification(t('notification.codex_config_deleted'), 'success');
-      } else {
-        await providersApi.deleteClaudeConfig(entry.apiKey);
-        const next = claudeConfigs.filter((_, idx) => idx !== index);
-        setClaudeConfigs(next);
-        updateConfigValue('claude-api-key', next);
-        clearCache('claude-api-key');
-        showNotification(t('notification.claude_config_deleted'), 'success');
-      }
-    } catch (err: unknown) {
-      const message = getErrorMessage(err);
-      showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
-    }
+    showConfirmation({
+      title: t(`ai_providers.${type}_delete_title`, { defaultValue: `Delete ${type === 'codex' ? 'Codex' : 'Claude'} Config` }),
+      message: t(`ai_providers.${type}_delete_confirm`),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        try {
+          if (type === 'codex') {
+            await providersApi.deleteCodexConfig(entry.apiKey);
+            const next = codexConfigs.filter((_, idx) => idx !== index);
+            setCodexConfigs(next);
+            updateConfigValue('codex-api-key', next);
+            clearCache('codex-api-key');
+            showNotification(t('notification.codex_config_deleted'), 'success');
+          } else {
+            await providersApi.deleteClaudeConfig(entry.apiKey);
+            const next = claudeConfigs.filter((_, idx) => idx !== index);
+            setClaudeConfigs(next);
+            updateConfigValue('claude-api-key', next);
+            clearCache('claude-api-key');
+            showNotification(t('notification.claude_config_deleted'), 'success');
+          }
+        } catch (err: unknown) {
+          const message = getErrorMessage(err);
+          showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
+        }
+      },
+    });
   };
 
   const saveVertex = async (form: VertexFormState, editIndex: number | null) => {
@@ -427,18 +441,25 @@ export function AiProvidersPage() {
   const deleteVertex = async (index: number) => {
     const entry = vertexConfigs[index];
     if (!entry) return;
-    if (!window.confirm(t('ai_providers.vertex_delete_confirm'))) return;
-    try {
-      await providersApi.deleteVertexConfig(entry.apiKey);
-      const next = vertexConfigs.filter((_, idx) => idx !== index);
-      setVertexConfigs(next);
-      updateConfigValue('vertex-api-key', next);
-      clearCache('vertex-api-key');
-      showNotification(t('notification.vertex_config_deleted'), 'success');
-    } catch (err: unknown) {
-      const message = getErrorMessage(err);
-      showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
-    }
+    showConfirmation({
+      title: t('ai_providers.vertex_delete_title', { defaultValue: 'Delete Vertex Config' }),
+      message: t('ai_providers.vertex_delete_confirm'),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        try {
+          await providersApi.deleteVertexConfig(entry.apiKey);
+          const next = vertexConfigs.filter((_, idx) => idx !== index);
+          setVertexConfigs(next);
+          updateConfigValue('vertex-api-key', next);
+          clearCache('vertex-api-key');
+          showNotification(t('notification.vertex_config_deleted'), 'success');
+        } catch (err: unknown) {
+          const message = getErrorMessage(err);
+          showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
+        }
+      },
+    });
   };
 
   const saveOpenai = async (form: OpenAIFormState, editIndex: number | null) => {
@@ -485,18 +506,25 @@ export function AiProvidersPage() {
   const deleteOpenai = async (index: number) => {
     const entry = openaiProviders[index];
     if (!entry) return;
-    if (!window.confirm(t('ai_providers.openai_delete_confirm'))) return;
-    try {
-      await providersApi.deleteOpenAIProvider(entry.name);
-      const next = openaiProviders.filter((_, idx) => idx !== index);
-      setOpenaiProviders(next);
-      updateConfigValue('openai-compatibility', next);
-      clearCache('openai-compatibility');
-      showNotification(t('notification.openai_provider_deleted'), 'success');
-    } catch (err: unknown) {
-      const message = getErrorMessage(err);
-      showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
-    }
+    showConfirmation({
+      title: t('ai_providers.openai_delete_title', { defaultValue: 'Delete OpenAI Provider' }),
+      message: t('ai_providers.openai_delete_confirm'),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        try {
+          await providersApi.deleteOpenAIProvider(entry.name);
+          const next = openaiProviders.filter((_, idx) => idx !== index);
+          setOpenaiProviders(next);
+          updateConfigValue('openai-compatibility', next);
+          clearCache('openai-compatibility');
+          showNotification(t('notification.openai_provider_deleted'), 'success');
+        } catch (err: unknown) {
+          const message = getErrorMessage(err);
+          showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
+        }
+      },
+    });
   };
 
   const geminiModalIndex = modal?.type === 'gemini' ? modal.index : null;
