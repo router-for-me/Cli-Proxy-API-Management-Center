@@ -22,11 +22,7 @@ type Layer = {
 
 type TransitionDirection = 'forward' | 'backward';
 
-export function PageTransition({
-  render,
-  getRouteOrder,
-  scrollContainerRef,
-}: PageTransitionProps) {
+export function PageTransition({ render, getRouteOrder, scrollContainerRef }: PageTransitionProps) {
   const location = useLocation();
   const currentLayerRef = useRef<HTMLDivElement>(null);
   const exitingLayerRef = useRef<HTMLDivElement>(null);
@@ -71,16 +67,25 @@ export function PageTransition({
           : 'backward';
 
     transitionDirectionRef.current = nextDirection;
-    setLayers((prev) => {
-      const prevCurrent = prev[prev.length - 1];
-      return [
-        prevCurrent
-          ? { ...prevCurrent, status: 'exiting' }
-          : { key: location.key, location, status: 'exiting' },
-        { key: location.key, location, status: 'current' },
-      ];
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLayers((prev) => {
+        const prevCurrent = prev[prev.length - 1];
+        return [
+          prevCurrent
+            ? { ...prevCurrent, status: 'exiting' }
+            : { key: location.key, location, status: 'exiting' },
+          { key: location.key, location, status: 'current' },
+        ];
+      });
+      setIsAnimating(true);
     });
-    setIsAnimating(true);
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     isAnimating,
     location,
