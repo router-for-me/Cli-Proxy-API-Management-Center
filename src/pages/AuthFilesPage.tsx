@@ -226,6 +226,14 @@ export function AuthFilesPage() {
   const [modelsError, setModelsError] = useState<'unsupported' | null>(null);
   const modelsCacheRef = useRef<Map<string, AuthFileModelItem[]>>(new Map());
 
+  // 健康检查相关
+  const [healthChecking, setHealthChecking] = useState(false);
+  const [healthResults, setHealthResults] = useState<Record<string, {
+    status: 'healthy' | 'unhealthy';
+    message?: string;
+    latency_ms?: number;
+  }>>({});
+
   // OAuth 排除模型相关
   const [excluded, setExcluded] = useState<Record<string, string[]>>({});
   const [excludedError, setExcludedError] = useState<'unsupported' | null>(null);
@@ -1008,6 +1016,79 @@ export function AuthFilesPage() {
     }
   };
 
+  // 健康检查
+  const handleHealthCheck = async () => {
+    if (!modelsFileName || modelsList.length === 0) {
+      return;
+    }
+
+    setHealthChecking(true);
+    setHealthResults({});
+
+    try {
+      const result = await authFilesApi.checkModelsHealth(modelsFileName, {
+        concurrent: true,
+        timeout: 20,
+      });
+
+      // 将结果转换为以 model_id 为 key 的 map
+      const resultsMap: Record<string, {
+        status: 'healthy' | 'unhealthy';
+        message?: string;
+        latency_ms?: number;
+      }> = {};
+
+      result.models.forEach((model) => {
+        resultsMap[model.model_id] = {
+          status: model.status,
+          message: model.message,
+          latency_ms: model.latency_ms,
+        };
+      });
+
+      setHealthResults(resultsMap);
+
+      // 显示汇总信息
+      const { healthy_count, unhealthy_count } = result;
+      if (unhealthy_count === 0) {
+        showNotification(
+          t('auth_files.health_check_all_healthy', {
+            defaultValue: '所有模型健康检查通过',
+            count: healthy_count,
+          }),
+          'success'
+        );
+      } else if (healthy_count === 0) {
+        showNotification(
+          t('auth_files.health_check_all_unhealthy', {
+            defaultValue: '所有模型健康检查失败',
+            count: unhealthy_count,
+          }),
+          'error'
+        );
+      } else {
+        showNotification(
+          t('auth_files.health_check_partial', {
+            defaultValue: '健康检查完成：{healthy} 个健康，{unhealthy} 个异常',
+            healthy: healthy_count,
+            unhealthy: unhealthy_count,
+          }),
+          'info'
+        );
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      showNotification(
+        t('auth_files.health_check_failed', {
+          defaultValue: '健康检查失败',
+        }) + `: ${errorMessage}`,
+        'error'
+      );
+    } finally {
+      setHealthChecking(false);
+    }
+  };
+
   // 检查模型是否被 OAuth 排除
   const isModelExcluded = (modelId: string, providerType: string): boolean => {
     const providerKey = normalizeProviderKey(providerType);
@@ -1733,14 +1814,30 @@ export function AuthFilesPage() {
       {/* 模型列表弹窗 */}
       <Modal
         open={modelsModalOpen}
-        onClose={() => setModelsModalOpen(false)}
+        onClose={() => {
+          setModelsModalOpen(false);
+          setHealthResults({});
+        }}
         title={
           t('auth_files.models_title', { defaultValue: '支持的模型' }) + ` - ${modelsFileName}`
         }
         footer={
-          <Button variant="secondary" onClick={() => setModelsModalOpen(false)}>
-            {t('common.close')}
-          </Button>
+          <>
+            <Button
+              variant="secondary"
+              onClick={handleHealthCheck}
+              loading={healthChecking}
+              disabled={modelsLoading || modelsList.length === 0 || healthChecking}
+            >
+              {t('auth_files.health_check_button', { defaultValue: '健康检查' })}
+            </Button>
+            <Button variant="secondary" onClick={() => {
+              setModelsModalOpen(false);
+              setHealthResults({});
+            }}>
+              {t('common.close')}
+            </Button>
+          </>
         }
       >
         {modelsLoading ? (
@@ -1765,10 +1862,18 @@ export function AuthFilesPage() {
           <div className={styles.modelsList}>
             {modelsList.map((model) => {
               const isExcluded = isModelExcluded(model.id, modelsFileType);
+              const healthResult = healthResults[model.id];
+              const hasHealthResult = healthResult !== undefined;
               return (
                 <div
                   key={model.id}
-                  className={`${styles.modelItem} ${isExcluded ? styles.modelItemExcluded : ''}`}
+                  className={`${styles.modelItem} ${isExcluded ? styles.modelItemExcluded : ''} ${
+                    hasHealthResult
+                      ? healthResult.status === 'healthy'
+                        ? styles.modelItemHealthy
+                        : styles.modelItemUnhealthy
+                      : ''
+                  }`}
                   onClick={() => {
                     navigator.clipboard.writeText(model.id);
                     showNotification(
@@ -1781,7 +1886,11 @@ export function AuthFilesPage() {
                       ? t('auth_files.models_excluded_hint', {
                           defaultValue: '此模型已被 OAuth 排除',
                         })
-                      : t('common.copy', { defaultValue: '点击复制' })
+                      : hasHealthResult
+                        ? healthResult.status === 'healthy'
+                          ? `${t('auth_files.health_status_healthy', { defaultValue: '健康' })}${healthResult.latency_ms ? ` (${healthResult.latency_ms}ms)` : ''}`
+                          : `${t('auth_files.health_status_unhealthy', { defaultValue: '异常' })}: ${healthResult.message || ''}`
+                        : t('common.copy', { defaultValue: '点击复制' })
                   }
                 >
                   <span className={styles.modelId}>{model.id}</span>
@@ -1792,6 +1901,24 @@ export function AuthFilesPage() {
                   {isExcluded && (
                     <span className={styles.modelExcludedBadge}>
                       {t('auth_files.models_excluded_badge', { defaultValue: '已排除' })}
+                    </span>
+                  )}
+                  {hasHealthResult && (
+                    <span
+                      className={
+                        healthResult.status === 'healthy'
+                          ? styles.modelHealthBadge
+                          : styles.modelHealthBadgeUnhealthy
+                      }
+                    >
+                      {healthResult.status === 'healthy' ? (
+                        <>
+                          {t('auth_files.health_status_healthy', { defaultValue: '健康' })}
+                          {healthResult.latency_ms && ` (${healthResult.latency_ms}ms)`}
+                        </>
+                      ) : (
+                        t('auth_files.health_status_unhealthy', { defaultValue: '异常' })
+                      )}
                     </span>
                   )}
                 </div>

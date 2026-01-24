@@ -207,5 +207,34 @@ export const authFilesApi = {
   async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
     const data = await apiClient.get(`/auth-files/models?name=${encodeURIComponent(name)}`);
     return (data && Array.isArray(data['models'])) ? data['models'] : [];
+  },
+
+  // 健康检查 - 检查认证文件支持的所有模型
+  async checkModelsHealth(
+    name: string,
+    options?: { concurrent?: boolean; timeout?: number }
+  ): Promise<{
+    auth_id: string;
+    status: 'healthy' | 'unhealthy' | 'partial';
+    healthy_count: number;
+    unhealthy_count: number;
+    total_count: number;
+    models: Array<{
+      model_id: string;
+      display_name?: string;
+      status: 'healthy' | 'unhealthy';
+      message?: string;
+      latency_ms?: number;
+    }>;
+  }> {
+    const params = new URLSearchParams();
+    params.append('name', name);
+    if (options?.concurrent) {
+      params.append('concurrent', 'true');
+    }
+    if (options?.timeout) {
+      params.append('timeout', String(options.timeout));
+    }
+    return apiClient.get(`/auth-files/health?${params.toString()}`);
   }
 };
