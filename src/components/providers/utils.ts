@@ -46,7 +46,7 @@ export const normalizeOpenAIBaseUrl = (baseUrl: string): string => {
 export const buildOpenAIModelsEndpoint = (baseUrl: string): string => {
   const trimmed = normalizeOpenAIBaseUrl(baseUrl);
   if (!trimmed) return '';
-  return trimmed.endsWith('/v1') ? `${trimmed}/models` : `${trimmed}/v1/models`;
+  return `${trimmed}/models`;
 };
 
 export const buildOpenAIChatCompletionsEndpoint = (baseUrl: string): string => {

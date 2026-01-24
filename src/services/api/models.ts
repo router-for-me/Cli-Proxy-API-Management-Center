@@ -20,7 +20,7 @@ const normalizeBaseUrl = (baseUrl: string): string => {
 const buildModelsEndpoint = (baseUrl: string): string => {
   const normalized = normalizeBaseUrl(baseUrl);
   if (!normalized) return '';
-  return normalized.endsWith('/v1') ? `${normalized}/models` : `${normalized}/v1/models`;
+  return `${normalized}/models`;
 };
 
 export const modelsApi = {

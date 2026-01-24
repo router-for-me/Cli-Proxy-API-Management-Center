@@ -30,10 +30,10 @@ export function PageTransition({
   const location = useLocation();
   const currentLayerRef = useRef<HTMLDivElement>(null);
   const exitingLayerRef = useRef<HTMLDivElement>(null);
+  const transitionDirectionRef = useRef<TransitionDirection>('forward');
   const exitScrollOffsetRef = useRef(0);
 
   const [isAnimating, setIsAnimating] = useState(false);
-  const [transitionDirection, setTransitionDirection] = useState<TransitionDirection>('forward');
   const [layers, setLayers] = useState<Layer[]>(() => [
     {
       key: location.key,
@@ -70,7 +70,7 @@ export function PageTransition({
           ? 'forward'
           : 'backward';
 
-    setTransitionDirection(nextDirection);
+    transitionDirectionRef.current = nextDirection;
     setLayers((prev) => {
       const prevCurrent = prev[prev.length - 1];
       return [
@@ -96,12 +96,16 @@ export function PageTransition({
 
     if (!currentLayerRef.current) return;
 
+    const currentLayerEl = currentLayerRef.current;
+    const exitingLayerEl = exitingLayerRef.current;
+
     const scrollContainer = resolveScrollContainer();
     const scrollOffset = exitScrollOffsetRef.current;
     if (scrollContainer && scrollOffset > 0) {
       scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
 
+    const transitionDirection = transitionDirectionRef.current;
     const enterFromY = transitionDirection === 'forward' ? TRAVEL_DISTANCE : -TRAVEL_DISTANCE;
     const exitToY = transitionDirection === 'forward' ? -TRAVEL_DISTANCE : TRAVEL_DISTANCE;
     const exitBaseY = scrollOffset ? -scrollOffset : 0;
@@ -114,10 +118,10 @@ export function PageTransition({
     });
 
     // Exit animation: fade out with slight movement (runs simultaneously)
-    if (exitingLayerRef.current) {
-      gsap.set(exitingLayerRef.current, { y: exitBaseY });
+    if (exitingLayerEl) {
+      gsap.set(exitingLayerEl, { y: exitBaseY });
       tl.to(
-        exitingLayerRef.current,
+        exitingLayerEl,
         {
           y: exitBaseY + exitToY,
           opacity: 0,
@@ -131,7 +135,7 @@ export function PageTransition({
 
     // Enter animation: fade in with slight movement (runs simultaneously)
     tl.fromTo(
-      currentLayerRef.current,
+      currentLayerEl,
       { y: enterFromY, opacity: 0 },
       {
         y: 0,
@@ -140,8 +144,8 @@ export function PageTransition({
         ease: 'circ.out',
         force3D: true,
         onComplete: () => {
-          if (currentLayerRef.current) {
-            gsap.set(currentLayerRef.current, { clearProps: 'transform,opacity' });
+          if (currentLayerEl) {
+            gsap.set(currentLayerEl, { clearProps: 'transform,opacity' });
           }
         },
       },
@@ -150,9 +154,9 @@ export function PageTransition({
 
     return () => {
       tl.kill();
-      gsap.killTweensOf([currentLayerRef.current, exitingLayerRef.current]);
+      gsap.killTweensOf([currentLayerEl, exitingLayerEl]);
     };
-  }, [isAnimating, transitionDirection, resolveScrollContainer]);
+  }, [isAnimating, resolveScrollContainer]);
 
   return (
     <div className={`page-transition${isAnimating ? ' page-transition--animating' : ''}`}>

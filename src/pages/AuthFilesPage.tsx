@@ -36,6 +36,7 @@ import styles from './AuthFilesPage.module.scss';
 type ThemeColors = { bg: string; text: string; border?: string };
 type TypeColorSet = { light: ThemeColors; dark?: ThemeColors };
 type ResolvedTheme = 'light' | 'dark';
+type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
 
 // 标签类型颜色配置（对齐重构前 styles.css 的 file-type-badge 颜色）
 const TYPE_COLORS: Record<string, TypeColorSet> = {
@@ -203,6 +204,7 @@ export function AuthFilesPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
+  const [pageSizeInput, setPageSizeInput] = useState('9');
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
@@ -217,12 +219,11 @@ export function AuthFilesPage() {
   // 模型列表弹窗相关
   const [modelsModalOpen, setModelsModalOpen] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(false);
-  const [modelsList, setModelsList] = useState<
-    { id: string; display_name?: string; type?: string }[]
-  >([]);
+  const [modelsList, setModelsList] = useState<AuthFileModelItem[]>([]);
   const [modelsFileName, setModelsFileName] = useState('');
   const [modelsFileType, setModelsFileType] = useState('');
   const [modelsError, setModelsError] = useState<'unsupported' | null>(null);
+  const modelsCacheRef = useRef<Map<string, AuthFileModelItem[]>>(new Map());
 
   // OAuth 排除模型相关
   const [excluded, setExcluded] = useState<Record<string, string[]>>({});
@@ -242,6 +243,10 @@ export function AuthFilesPage() {
     provider: '',
     mappings: [buildEmptyMappingEntry()],
   });
+  const [mappingModelsFileName, setMappingModelsFileName] = useState('');
+  const [mappingModelsList, setMappingModelsList] = useState<AuthFileModelItem[]>([]);
+  const [mappingModelsLoading, setMappingModelsLoading] = useState(false);
+  const [mappingModelsError, setMappingModelsError] = useState<'unsupported' | null>(null);
   const [savingMappings, setSavingMappings] = useState(false);
 
   const [prefixProxyEditor, setPrefixProxyEditor] = useState<PrefixProxyEditorState | null>(null);
@@ -251,7 +256,104 @@ export function AuthFilesPage() {
   const excludedUnsupportedRef = useRef(false);
   const mappingsUnsupportedRef = useRef(false);
 
+  const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
+
   const disableControls = connectionStatus !== 'connected';
+
+  useEffect(() => {
+    setPageSizeInput(String(pageSize));
+  }, [pageSize]);
+
+  const modelSourceFileOptions = useMemo(() => {
+    const normalizedProvider = normalizeProviderKey(mappingForm.provider);
+    const matching: string[] = [];
+    const others: string[] = [];
+    const seen = new Set<string>();
+
+    files.forEach((file) => {
+      const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
+      const isAistudio = (file.type || '').toLowerCase() === 'aistudio';
+      const canShowModels = !isRuntimeOnly || isAistudio;
+      if (!canShowModels) return;
+
+      const fileName = String(file.name || '').trim();
+      if (!fileName) return;
+      if (seen.has(fileName)) return;
+      seen.add(fileName);
+
+      if (!normalizedProvider) {
+        matching.push(fileName);
+        return;
+      }
+
+      const typeKey = normalizeProviderKey(String(file.type || ''));
+      const providerKey = normalizeProviderKey(String(file.provider || ''));
+      const isMatch = typeKey === normalizedProvider || providerKey === normalizedProvider;
+      if (isMatch) {
+        matching.push(fileName);
+      } else {
+        others.push(fileName);
+      }
+    });
+
+    matching.sort((a, b) => a.localeCompare(b));
+    others.sort((a, b) => a.localeCompare(b));
+    return [...matching, ...others];
+  }, [files, mappingForm.provider]);
+
+  useEffect(() => {
+    if (!mappingModalOpen) return;
+
+    const fileName = mappingModelsFileName.trim();
+    if (!fileName) {
+      setMappingModelsList([]);
+      setMappingModelsError(null);
+      setMappingModelsLoading(false);
+      return;
+    }
+
+    const cached = modelsCacheRef.current.get(fileName);
+    if (cached) {
+      setMappingModelsList(cached);
+      setMappingModelsError(null);
+      setMappingModelsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setMappingModelsLoading(true);
+    setMappingModelsError(null);
+
+    authFilesApi
+      .getModelsForAuthFile(fileName)
+      .then((models) => {
+        if (cancelled) return;
+        modelsCacheRef.current.set(fileName, models);
+        setMappingModelsList(models);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const errorMessage = err instanceof Error ? err.message : '';
+        if (
+          errorMessage.includes('404') ||
+          errorMessage.includes('not found') ||
+          errorMessage.includes('Not Found')
+        ) {
+          setMappingModelsList([]);
+          setMappingModelsError('unsupported');
+          return;
+        }
+        showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setMappingModelsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mappingModalOpen, mappingModelsFileName, showNotification, t]);
 
   const prefixProxyUpdatedText = useMemo(() => {
     if (!prefixProxyEditor?.json) return prefixProxyEditor?.rawText ?? '';
@@ -276,12 +378,39 @@ export function AuthFilesPage() {
     return prefixProxyUpdatedText !== prefixProxyEditor.originalText;
   }, [prefixProxyEditor?.json, prefixProxyEditor?.originalText, prefixProxyUpdatedText]);
 
-  const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
+  const commitPageSizeInput = (rawValue: string) => {
+    const trimmed = rawValue.trim();
+    if (!trimmed) {
+      setPageSizeInput(String(pageSize));
+      return;
+    }
+
+    const value = Number(trimmed);
+    if (!Number.isFinite(value)) {
+      setPageSizeInput(String(pageSize));
+      return;
+    }
+
+    const next = clampCardPageSize(value);
+    setPageSize(next);
+    setPageSizeInput(String(next));
+    setPage(1);
+  };
 
   const handlePageSizeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.currentTarget.valueAsNumber;
-    if (!Number.isFinite(value)) return;
-    setPageSize(clampCardPageSize(value));
+    const rawValue = event.currentTarget.value;
+    setPageSizeInput(rawValue);
+
+    const trimmed = rawValue.trim();
+    if (!trimmed) return;
+
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed)) return;
+
+    const rounded = Math.round(parsed);
+    if (rounded < MIN_CARD_PAGE_SIZE || rounded > MAX_CARD_PAGE_SIZE) return;
+
+    setPageSize(rounded);
     setPage(1);
   };
 
@@ -835,9 +964,18 @@ export function AuthFilesPage() {
     setModelsList([]);
     setModelsError(null);
     setModelsModalOpen(true);
+
+    const cached = modelsCacheRef.current.get(item.name);
+    if (cached) {
+      setModelsList(cached);
+      setModelsLoading(false);
+      return;
+    }
+
     setModelsLoading(true);
     try {
       const models = await authFilesApi.getModelsForAuthFile(item.name);
+      modelsCacheRef.current.set(item.name, models);
       setModelsList(models);
     } catch (err) {
       // 检测是否是 API 不支持的错误 (404 或特定错误消息)
@@ -984,10 +1122,30 @@ export function AuthFilesPage() {
       ? mappingProviderLookup.get(fallbackProvider.toLowerCase())
       : undefined;
     const mappings = lookupKey ? modelMappings[lookupKey] : [];
+    const providerValue = lookupKey || fallbackProvider;
+
+    const normalizedProviderKey = normalizeProviderKey(providerValue);
+    const defaultModelsFileName = files
+      .filter((file) => {
+        const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
+        const isAistudio = (file.type || '').toLowerCase() === 'aistudio';
+        const canShowModels = !isRuntimeOnly || isAistudio;
+        if (!canShowModels) return false;
+        if (!normalizedProviderKey) return false;
+        const typeKey = normalizeProviderKey(String(file.type || ''));
+        const providerKey = normalizeProviderKey(String(file.provider || ''));
+        return typeKey === normalizedProviderKey || providerKey === normalizedProviderKey;
+      })
+      .map((file) => file.name)
+      .sort((a, b) => a.localeCompare(b))[0];
+
     setMappingForm({
-      provider: lookupKey || fallbackProvider,
+      provider: providerValue,
       mappings: normalizeMappingEntries(mappings),
     });
+    setMappingModelsFileName(defaultModelsFileName || '');
+    setMappingModelsList([]);
+    setMappingModelsError(null);
     setMappingModalOpen(true);
   };
 
@@ -1310,7 +1468,15 @@ export function AuthFilesPage() {
               {t('common.refresh')}
             </Button>
             <Button
-              variant="secondary"
+              size="sm"
+              onClick={handleUploadClick}
+              disabled={disableControls || uploading}
+              loading={uploading}
+            >
+              {t('auth_files.upload_button')}
+            </Button>
+            <Button
+              variant="danger"
               size="sm"
               onClick={handleDeleteAll}
               disabled={disableControls || loading || deletingAll}
@@ -1319,14 +1485,6 @@ export function AuthFilesPage() {
               {filter === 'all'
                 ? t('auth_files.delete_all_button')
                 : `${t('common.delete')} ${getTypeLabel(filter)}`}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleUploadClick}
-              disabled={disableControls || uploading}
-              loading={uploading}
-            >
-              {t('auth_files.upload_button')}
             </Button>
             <input
               ref={fileInputRef}
@@ -1365,8 +1523,14 @@ export function AuthFilesPage() {
                 min={MIN_CARD_PAGE_SIZE}
                 max={MAX_CARD_PAGE_SIZE}
                 step={1}
-                value={pageSize}
+                value={pageSizeInput}
                 onChange={handlePageSizeChange}
+                onBlur={(e) => commitPageSizeInput(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur();
+                  }
+                }}
               />
             </div>
           </div>
@@ -1815,6 +1979,33 @@ export function AuthFilesPage() {
             </div>
           )}
         </div>
+        <div className={styles.providerField}>
+          <Input
+            id="oauth-model-mapping-model-source"
+            list="oauth-model-mapping-model-source-options"
+            label={t('oauth_model_mappings.model_source_label')}
+            hint={
+              mappingModelsLoading
+                ? t('oauth_model_mappings.model_source_loading')
+                : mappingModelsError === 'unsupported'
+                  ? t('oauth_model_mappings.model_source_unsupported')
+                  : !mappingModelsFileName.trim()
+                    ? t('oauth_model_mappings.model_source_hint')
+                    : t('oauth_model_mappings.model_source_loaded', {
+                        count: mappingModelsList.length,
+                      })
+            }
+            placeholder={t('oauth_model_mappings.model_source_placeholder')}
+            value={mappingModelsFileName}
+            onChange={(e) => setMappingModelsFileName(e.target.value)}
+            disabled={savingMappings}
+          />
+          <datalist id="oauth-model-mapping-model-source-options">
+            {modelSourceFileOptions.map((fileName) => (
+              <option key={fileName} value={fileName} />
+            ))}
+          </datalist>
+        </div>
         <div className={styles.formGroup}>
           <label>{t('oauth_model_mappings.mappings_label')}</label>
           <div className="header-input-list">
@@ -1824,6 +2015,7 @@ export function AuthFilesPage() {
                   <input
                     className="input"
                     placeholder={t('oauth_model_mappings.mapping_name_placeholder')}
+                    list={mappingModelsList.length ? 'oauth-model-mapping-model-options' : undefined}
                     value={entry.name}
                     onChange={(e) => updateMappingEntry(index, 'name', e.target.value)}
                     disabled={savingMappings}
@@ -1868,6 +2060,13 @@ export function AuthFilesPage() {
               {t('oauth_model_mappings.add_mapping')}
             </Button>
           </div>
+          <datalist id="oauth-model-mapping-model-options">
+            {mappingModelsList.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.display_name && model.display_name !== model.id ? model.display_name : null}
+              </option>
+            ))}
+          </datalist>
           <div className={styles.hint}>{t('oauth_model_mappings.mappings_hint')}</div>
         </div>
       </Modal>
