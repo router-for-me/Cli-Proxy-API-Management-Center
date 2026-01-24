@@ -446,6 +446,16 @@
   }
 }
 
+.fileCardDisabled {
+  opacity: 0.6;
+
+  &:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--border-color);
+  }
+}
+
 .cardHeader {
   display: flex;
   align-items: center;

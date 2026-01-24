@@ -1349,19 +1349,22 @@ export function AuthFilesPage() {
   };
 
   // 渲染单个认证文件卡片
-  const renderFileCard = (item: AuthFileItem) => {
-    const fileStats = resolveAuthFileStats(item, keyStats);
-    const isRuntimeOnly = isRuntimeOnlyAuthFile(item);
-    const isAistudio = (item.type || '').toLowerCase() === 'aistudio';
-    const showModelsButton = !isRuntimeOnly || isAistudio;
-    const typeColor = getTypeColor(item.type || 'unknown');
+	  const renderFileCard = (item: AuthFileItem) => {
+	    const fileStats = resolveAuthFileStats(item, keyStats);
+	    const isRuntimeOnly = isRuntimeOnlyAuthFile(item);
+	    const isAistudio = (item.type || '').toLowerCase() === 'aistudio';
+	    const showModelsButton = !isRuntimeOnly || isAistudio;
+	    const typeColor = getTypeColor(item.type || 'unknown');
 
-    return (
-      <div key={item.name} className={styles.fileCard}>
-        <div className={styles.cardHeader}>
-          <span
-            className={styles.typeBadge}
-            style={{
+	    return (
+	      <div
+	        key={item.name}
+	        className={`${styles.fileCard} ${item.disabled ? styles.fileCardDisabled : ''}`}
+	      >
+	        <div className={styles.cardHeader}>
+	          <span
+	            className={styles.typeBadge}
+	            style={{
               backgroundColor: typeColor.bg,
               color: typeColor.text,
               ...(typeColor.border ? { border: typeColor.border } : {}),
