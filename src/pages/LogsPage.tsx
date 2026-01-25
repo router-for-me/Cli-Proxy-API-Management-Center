@@ -371,7 +371,7 @@ type TabType = 'logs' | 'errors';
 
 export function LogsPage() {
   const { t } = useTranslation();
-  const { showNotification } = useNotificationStore();
+  const { showNotification, showConfirmation } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const requestLogEnabled = useConfigStore((state) => state.config?.requestLog ?? false);
 
@@ -478,19 +478,26 @@ export function LogsPage() {
   useHeaderRefresh(() => loadLogs(false));
 
   const clearLogs = async () => {
-    if (!window.confirm(t('logs.clear_confirm'))) return;
-    try {
-      await logsApi.clearLogs();
-      setLogState({ buffer: [], visibleFrom: 0 });
-      latestTimestampRef.current = 0;
-      showNotification(t('logs.clear_success'), 'success');
-    } catch (err: unknown) {
-      const message = getErrorMessage(err);
-      showNotification(
-        `${t('notification.delete_failed')}${message ? `: ${message}` : ''}`,
-        'error'
-      );
-    }
+    showConfirmation({
+      title: t('logs.clear_confirm_title', { defaultValue: 'Clear Logs' }),
+      message: t('logs.clear_confirm'),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        try {
+          await logsApi.clearLogs();
+          setLogState({ buffer: [], visibleFrom: 0 });
+          latestTimestampRef.current = 0;
+          showNotification(t('logs.clear_success'), 'success');
+        } catch (err: unknown) {
+          const message = getErrorMessage(err);
+          showNotification(
+            `${t('notification.delete_failed')}${message ? `: ${message}` : ''}`,
+            'error'
+          );
+        }
+      },
+    });
   };
 
   const downloadLogs = () => {

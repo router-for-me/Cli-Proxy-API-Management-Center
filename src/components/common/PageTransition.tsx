@@ -9,9 +9,8 @@ interface PageTransitionProps {
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
-const TRANSITION_DURATION = 0.5;
-const EXIT_DURATION = 0.45;
-const ENTER_DELAY = 0.08;
+const TRANSITION_DURATION = 0.35;
+const TRAVEL_DISTANCE = 60;
 
 type LayerStatus = 'current' | 'exiting';
 
@@ -23,18 +22,14 @@ type Layer = {
 
 type TransitionDirection = 'forward' | 'backward';
 
-export function PageTransition({
-  render,
-  getRouteOrder,
-  scrollContainerRef,
-}: PageTransitionProps) {
+export function PageTransition({ render, getRouteOrder, scrollContainerRef }: PageTransitionProps) {
   const location = useLocation();
   const currentLayerRef = useRef<HTMLDivElement>(null);
   const exitingLayerRef = useRef<HTMLDivElement>(null);
+  const transitionDirectionRef = useRef<TransitionDirection>('forward');
   const exitScrollOffsetRef = useRef(0);
 
   const [isAnimating, setIsAnimating] = useState(false);
-  const [transitionDirection, setTransitionDirection] = useState<TransitionDirection>('forward');
   const [layers, setLayers] = useState<Layer[]>(() => [
     {
       key: location.key,
@@ -71,11 +66,11 @@ export function PageTransition({
           ? 'forward'
           : 'backward';
 
-    let cancelled = false;
+    transitionDirectionRef.current = nextDirection;
 
+    let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
-      setTransitionDirection(nextDirection);
       setLayers((prev) => {
         const prevCurrent = prev[prev.length - 1];
         return [
@@ -106,17 +101,18 @@ export function PageTransition({
 
     if (!currentLayerRef.current) return;
 
+    const currentLayerEl = currentLayerRef.current;
+    const exitingLayerEl = exitingLayerRef.current;
+
     const scrollContainer = resolveScrollContainer();
     const scrollOffset = exitScrollOffsetRef.current;
     if (scrollContainer && scrollOffset > 0) {
       scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
 
-    const containerHeight = scrollContainer?.clientHeight ?? 0;
-    const viewportHeight = typeof window === 'undefined' ? 0 : window.innerHeight;
-    const travelDistance = Math.max(containerHeight, viewportHeight, 1);
-    const enterFromY = transitionDirection === 'forward' ? travelDistance : -travelDistance;
-    const exitToY = transitionDirection === 'forward' ? -travelDistance : travelDistance;
+    const transitionDirection = transitionDirectionRef.current;
+    const enterFromY = transitionDirection === 'forward' ? TRAVEL_DISTANCE : -TRAVEL_DISTANCE;
+    const exitToY = transitionDirection === 'forward' ? -TRAVEL_DISTANCE : TRAVEL_DISTANCE;
     const exitBaseY = scrollOffset ? -scrollOffset : 0;
 
     const tl = gsap.timeline({
@@ -126,43 +122,46 @@ export function PageTransition({
       },
     });
 
-    // Exit animation: fly out to top (slow-to-fast)
-    if (exitingLayerRef.current) {
-      gsap.set(exitingLayerRef.current, { y: exitBaseY });
-      tl.fromTo(
-        exitingLayerRef.current,
-        { y: exitBaseY, opacity: 1 },
+    // Exit animation: fade out with slight movement (runs simultaneously)
+    if (exitingLayerEl) {
+      gsap.set(exitingLayerEl, { y: exitBaseY });
+      tl.to(
+        exitingLayerEl,
         {
           y: exitBaseY + exitToY,
           opacity: 0,
-          duration: EXIT_DURATION,
-          ease: 'power2.in', // fast finish to clear screen
+          duration: TRANSITION_DURATION,
+          ease: 'circ.out',
           force3D: true,
         },
         0
       );
     }
 
-    // Enter animation: slide in from bottom (slow-to-fast)
+    // Enter animation: fade in with slight movement (runs simultaneously)
     tl.fromTo(
-      currentLayerRef.current,
+      currentLayerEl,
       { y: enterFromY, opacity: 0 },
       {
         y: 0,
         opacity: 1,
         duration: TRANSITION_DURATION,
-        ease: 'power2.out', // smooth settle
-        clearProps: 'transform,opacity',
+        ease: 'circ.out',
         force3D: true,
+        onComplete: () => {
+          if (currentLayerEl) {
+            gsap.set(currentLayerEl, { clearProps: 'transform,opacity' });
+          }
+        },
       },
-      ENTER_DELAY
+      0
     );
 
     return () => {
       tl.kill();
-      gsap.killTweensOf([currentLayerRef.current, exitingLayerRef.current]);
+      gsap.killTweensOf([currentLayerEl, exitingLayerEl]);
     };
-  }, [isAnimating, transitionDirection, resolveScrollContainer]);
+  }, [isAnimating, resolveScrollContainer]);
 
   return (
     <div className={`page-transition${isAnimating ? ' page-transition--animating' : ''}`}>

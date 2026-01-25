@@ -7,6 +7,7 @@ import type { AuthFilesResponse } from '@/types/authFile';
 import type { OAuthModelMappingEntry } from '@/types';
 
 type StatusError = { status?: number };
+type AuthFileStatusResponse = { status: string; disabled: boolean };
 
 const getStatusCode = (err: unknown): number | undefined => {
   if (!err || typeof err !== 'object') return undefined;
@@ -17,7 +18,8 @@ const getStatusCode = (err: unknown): number | undefined => {
 const normalizeOauthExcludedModels = (payload: unknown): Record<string, string[]> => {
   if (!payload || typeof payload !== 'object') return {};
 
-  const source = (payload as any)['oauth-excluded-models'] ?? (payload as any).items ?? payload;
+  const record = payload as Record<string, unknown>;
+  const source = record['oauth-excluded-models'] ?? record.items ?? payload;
   if (!source || typeof source !== 'object') return {};
 
   const result: Record<string, string[]> = {};
@@ -54,10 +56,11 @@ const normalizeOauthExcludedModels = (payload: unknown): Record<string, string[]
 const normalizeOauthModelMappings = (payload: unknown): Record<string, OAuthModelMappingEntry[]> => {
   if (!payload || typeof payload !== 'object') return {};
 
+  const record = payload as Record<string, unknown>;
   const source =
-    (payload as any)['oauth-model-mappings'] ??
-    (payload as any)['oauth-model-alias'] ??
-    (payload as any).items ??
+    record['oauth-model-mappings'] ??
+    record['oauth-model-alias'] ??
+    record.items ??
     payload;
   if (!source || typeof source !== 'object') return {};
 
@@ -70,16 +73,17 @@ const normalizeOauthModelMappings = (payload: unknown): Record<string, OAuthMode
     if (!key) return;
     if (!Array.isArray(mappings)) return;
 
-    const seen = new Set<string>();
-    const normalized = mappings
-      .map((item) => {
-        if (!item || typeof item !== 'object') return null;
-        const name = String((item as any).name ?? (item as any).id ?? (item as any).model ?? '').trim();
-        const alias = String((item as any).alias ?? '').trim();
-        if (!name || !alias) return null;
-        const fork = (item as any).fork === true;
-        return fork ? { name, alias, fork } : { name, alias };
-      })
+	    const seen = new Set<string>();
+	    const normalized = mappings
+	      .map((item) => {
+	        if (!item || typeof item !== 'object') return null;
+	        const entry = item as Record<string, unknown>;
+	        const name = String(entry.name ?? entry.id ?? entry.model ?? '').trim();
+	        const alias = String(entry.alias ?? '').trim();
+	        if (!name || !alias) return null;
+	        const fork = entry.fork === true;
+	        return fork ? { name, alias, fork } : { name, alias };
+	      })
       .filter(Boolean)
       .filter((entry) => {
         const mapping = entry as OAuthModelMappingEntry;
@@ -102,6 +106,9 @@ const OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT = '/oauth-model-alias';
 
 export const authFilesApi = {
   list: () => apiClient.get<AuthFilesResponse>('/auth-files'),
+
+  setStatus: (name: string, disabled: boolean) =>
+    apiClient.patch<AuthFileStatusResponse>('/auth-files/status', { name, disabled }),
 
   upload: (file: File) => {
     const formData = new FormData();

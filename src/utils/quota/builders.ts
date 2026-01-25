@@ -8,7 +8,7 @@ import type {
   AntigravityQuotaInfo,
   AntigravityModelsPayload,
   GeminiCliParsedBucket,
-  GeminiCliQuotaBucketState
+  GeminiCliQuotaBucketState,
 } from '@/types';
 import { ANTIGRAVITY_QUOTA_GROUPS, GEMINI_CLI_GROUP_LOOKUP } from './constants';
 import { normalizeQuotaFraction } from './parsers';
@@ -35,7 +35,19 @@ export function buildGeminiCliQuotaBuckets(
 ): GeminiCliQuotaBucketState[] {
   if (buckets.length === 0) return [];
 
-  const grouped = new Map<string, GeminiCliQuotaBucketState & { modelIds: string[] }>();
+  type GeminiCliQuotaBucketGroup = {
+    id: string;
+    label: string;
+    tokenType: string | null;
+    modelIds: string[];
+    preferredModelId?: string;
+    preferredBucket?: GeminiCliParsedBucket;
+    fallbackRemainingFraction: number | null;
+    fallbackRemainingAmount: number | null;
+    fallbackResetTime: string | undefined;
+  };
+
+  const grouped = new Map<string, GeminiCliQuotaBucketGroup>();
 
   buckets.forEach((bucket) => {
     if (isIgnoredGeminiCliModel(bucket.modelId)) return;
@@ -47,37 +59,55 @@ export function buildGeminiCliQuotaBuckets(
     const existing = grouped.get(mapKey);
 
     if (!existing) {
+      const preferredModelId = group?.preferredModelId;
+      const preferredBucket =
+        preferredModelId && bucket.modelId === preferredModelId ? bucket : undefined;
       grouped.set(mapKey, {
         id: `${groupId}${tokenKey ? `-${tokenKey}` : ''}`,
         label,
-        remainingFraction: bucket.remainingFraction,
-        remainingAmount: bucket.remainingAmount,
-        resetTime: bucket.resetTime,
         tokenType: bucket.tokenType,
-        modelIds: [bucket.modelId]
+        modelIds: [bucket.modelId],
+        preferredModelId,
+        preferredBucket,
+        fallbackRemainingFraction: bucket.remainingFraction,
+        fallbackRemainingAmount: bucket.remainingAmount,
+        fallbackResetTime: bucket.resetTime,
       });
       return;
     }
 
-    existing.remainingFraction = minNullableNumber(
-      existing.remainingFraction,
+    existing.fallbackRemainingFraction = minNullableNumber(
+      existing.fallbackRemainingFraction,
       bucket.remainingFraction
     );
-    existing.remainingAmount = minNullableNumber(existing.remainingAmount, bucket.remainingAmount);
-    existing.resetTime = pickEarlierResetTime(existing.resetTime, bucket.resetTime);
+    existing.fallbackRemainingAmount = minNullableNumber(
+      existing.fallbackRemainingAmount,
+      bucket.remainingAmount
+    );
+    existing.fallbackResetTime = pickEarlierResetTime(existing.fallbackResetTime, bucket.resetTime);
     existing.modelIds.push(bucket.modelId);
+
+    if (existing.preferredModelId && bucket.modelId === existing.preferredModelId) {
+      existing.preferredBucket = bucket;
+    }
   });
 
   return Array.from(grouped.values()).map((bucket) => {
     const uniqueModelIds = Array.from(new Set(bucket.modelIds));
+    const preferred = bucket.preferredBucket;
+    const remainingFraction = preferred
+      ? preferred.remainingFraction
+      : bucket.fallbackRemainingFraction;
+    const remainingAmount = preferred ? preferred.remainingAmount : bucket.fallbackRemainingAmount;
+    const resetTime = preferred ? preferred.resetTime : bucket.fallbackResetTime;
     return {
       id: bucket.id,
       label: bucket.label,
-      remainingFraction: bucket.remainingFraction,
-      remainingAmount: bucket.remainingAmount,
-      resetTime: bucket.resetTime,
+      remainingFraction,
+      remainingAmount,
+      resetTime,
       tokenType: bucket.tokenType,
-      modelIds: uniqueModelIds
+      modelIds: uniqueModelIds,
     };
   });
 }
@@ -101,7 +131,7 @@ export function getAntigravityQuotaInfo(entry?: AntigravityQuotaInfo): {
   return {
     remainingFraction,
     resetTime,
-    displayName
+    displayName,
   };
 }
 
@@ -150,7 +180,7 @@ export function buildAntigravityQuotaGroups(
           id,
           remainingFraction,
           resetTime: info.resetTime,
-          displayName: info.displayName
+          displayName: info.displayName,
         };
       })
       .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
@@ -168,7 +198,7 @@ export function buildAntigravityQuotaGroups(
       label,
       models: quotaEntries.map((entry) => entry.id),
       remainingFraction,
-      resetTime
+      resetTime,
     };
   };
 

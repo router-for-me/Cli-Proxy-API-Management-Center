@@ -11,7 +11,7 @@ import styles from './SystemPage.module.scss';
 
 export function SystemPage() {
   const { t, i18n } = useTranslation();
-  const { showNotification } = useNotificationStore();
+  const { showNotification, showConfirmation } = useNotificationStore();
   const auth = useAuthStore();
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
@@ -106,12 +106,19 @@ export function SystemPage() {
   };
 
   const handleClearLoginStorage = () => {
-    if (!window.confirm(t('system_info.clear_login_confirm'))) return;
-    auth.logout();
-    if (typeof localStorage === 'undefined') return;
-    const keysToRemove = [STORAGE_KEY_AUTH, 'isLoggedIn', 'apiBase', 'apiUrl', 'managementKey'];
-    keysToRemove.forEach((key) => localStorage.removeItem(key));
-    showNotification(t('notification.login_storage_cleared'), 'success');
+    showConfirmation({
+      title: t('system_info.clear_login_title', { defaultValue: 'Clear Login Storage' }),
+      message: t('system_info.clear_login_confirm'),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: () => {
+        auth.logout();
+        if (typeof localStorage === 'undefined') return;
+        const keysToRemove = [STORAGE_KEY_AUTH, 'isLoggedIn', 'apiBase', 'apiUrl', 'managementKey'];
+        keysToRemove.forEach((key) => localStorage.removeItem(key));
+        showNotification(t('notification.login_storage_cleared'), 'success');
+      },
+    });
   };
 
   useEffect(() => {

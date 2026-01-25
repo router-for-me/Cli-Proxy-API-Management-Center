@@ -20,12 +20,21 @@ const normalizeBaseUrl = (baseUrl: string): string => {
 const buildModelsEndpoint = (baseUrl: string): string => {
   const normalized = normalizeBaseUrl(baseUrl);
   if (!normalized) return '';
-  return normalized.endsWith('/v1') ? `${normalized}/models` : `${normalized}/v1/models`;
+  return `${normalized}/models`;
+};
+
+const buildV1ModelsEndpoint = (baseUrl: string): string => {
+  const normalized = normalizeBaseUrl(baseUrl);
+  if (!normalized) return '';
+  return `${normalized}/v1/models`;
 };
 
 export const modelsApi = {
+  /**
+   * Fetch available models from /v1/models endpoint (for system info page)
+   */
   async fetchModels(baseUrl: string, apiKey?: string, headers: Record<string, string> = {}) {
-    const endpoint = buildModelsEndpoint(baseUrl);
+    const endpoint = buildV1ModelsEndpoint(baseUrl);
     if (!endpoint) {
       throw new Error('Invalid base url');
     }
@@ -42,6 +51,9 @@ export const modelsApi = {
     return normalizeModelList(payload, { dedupe: true });
   },
 
+  /**
+   * Fetch models from /models endpoint via api-call (for OpenAI provider discovery)
+   */
   async fetchModelsViaApiCall(
     baseUrl: string,
     apiKey?: string,
