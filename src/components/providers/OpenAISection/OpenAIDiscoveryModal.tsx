@@ -61,12 +61,24 @@ export function OpenAIDiscoveryModal({
       setError('');
       try {
         const headerObject = buildHeaderObject(headers);
+        // Priority: api-key-entries first, then headers authorization
+        // This allows users to have multiple keys for load balancing while using the first for model discovery
         const firstKey = apiKeyEntries.find((entry) => entry.apiKey?.trim())?.apiKey?.trim();
-        const hasAuthHeader = Boolean(headerObject.Authorization || headerObject['authorization']);
+        
+        // If we have an api-key, use it and remove any existing authorization from headers
+        // to avoid conflicts. The api-key will be set as Bearer token by the API call.
+        let headersForRequest = headerObject;
+        if (firstKey) {
+          // Clone headers without authorization to avoid conflict
+          headersForRequest = { ...headerObject };
+          delete headersForRequest['Authorization'];
+          delete headersForRequest['authorization'];
+        }
+        
         const list = await modelsApi.fetchModelsViaApiCall(
           trimmedBaseUrl,
-          hasAuthHeader ? undefined : firstKey,
-          headerObject
+          firstKey,  // Always pass firstKey if available
+          headersForRequest
         );
         setModels(list);
       } catch (err: unknown) {

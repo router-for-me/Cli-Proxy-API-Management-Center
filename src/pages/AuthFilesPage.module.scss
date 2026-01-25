@@ -935,12 +935,12 @@
 .modelItem {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: $spacing-sm;
   padding: $spacing-sm $spacing-md;
   background-color: var(--bg-secondary);
   border-radius: $radius-md;
   border: 1px solid var(--border-color);
-  flex-wrap: wrap;
   cursor: pointer;
   transition: all $transition-fast;
 
@@ -1043,4 +1043,49 @@
   border: 1px solid var(--danger-color);
   flex-shrink: 0;
   font-weight: 600;
+}
+
+.modelInfo {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.modelCheckButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all $transition-fast;
+
+  &:hover:not(:disabled) {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+
+    .checkIcon {
+      color: white;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.checkIcon {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--text-tertiary);
+  line-height: 1;
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/Button';
 import { entriesToModels } from '@/components/ui/ModelInputList';
 import {
   AmpcodeSection,
@@ -50,6 +51,9 @@ export function AiProvidersPage() {
   const [configSwitchingKey, setConfigSwitchingKey] = useState<string | null>(null);
   const [modal, setModal] = useState<ProviderModal | null>(null);
   const [ampcodeBusy, setAmpcodeBusy] = useState(false);
+
+  // Health check state
+  const [healthChecking, setHealthChecking] = useState(false);
 
   const disableControls = connectionStatus !== 'connected';
   const isSwitching = Boolean(configSwitchingKey);
@@ -476,7 +480,6 @@ export function AiProvidersPage() {
           headers: entry.headers,
         })),
       };
-      if (form.testModel) payload.testModel = form.testModel.trim();
       const models = entriesToModels(form.modelEntries);
       if (models.length) payload.models = models;
 
@@ -527,6 +530,49 @@ export function AiProvidersPage() {
     });
   };
 
+  // Health check handler
+  const handleHealthCheck = async (type?: string) => {
+    setHealthChecking(true);
+
+    try {
+      const result = await providersApi.checkProvidersHealth({
+        type,
+        concurrent: true,
+        timeout: 20,
+      });
+
+      // Show summary notification
+      const { healthy_count, unhealthy_count } = result;
+      if (unhealthy_count === 0 && healthy_count > 0) {
+        showNotification(
+          t('ai_providers.health_check_all_healthy', { count: healthy_count }),
+          'success'
+        );
+      } else if (healthy_count === 0 && unhealthy_count > 0) {
+        showNotification(
+          t('ai_providers.health_check_all_unhealthy', { count: unhealthy_count }),
+          'error'
+        );
+      } else if (healthy_count > 0 || unhealthy_count > 0) {
+        showNotification(
+          t('ai_providers.health_check_result', {
+            healthy: healthy_count,
+            unhealthy: unhealthy_count,
+          }),
+          'info'
+        );
+      }
+    } catch (err) {
+      const errorMessage = getErrorMessage(err);
+      showNotification(
+        `${t('ai_providers.health_check_failed')}: ${errorMessage}`,
+        'error'
+      );
+    } finally {
+      setHealthChecking(false);
+    }
+  };
+
   const geminiModalIndex = modal?.type === 'gemini' ? modal.index : null;
   const codexModalIndex = modal?.type === 'codex' ? modal.index : null;
   const claudeModalIndex = modal?.type === 'claude' ? modal.index : null;
@@ -535,7 +581,18 @@ export function AiProvidersPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => void handleHealthCheck()}
+          loading={healthChecking}
+          disabled={disableControls || loading || healthChecking}
+        >
+          {healthChecking ? t('ai_providers.health_checking') : t('ai_providers.health_check_all')}
+        </Button>
+      </div>
       <div className={styles.content}>
         {error && <div className="error-box">{error}</div>}
 

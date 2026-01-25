@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
@@ -6,16 +6,12 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ModelInputList, modelsToEntries } from '@/components/ui/ModelInputList';
 import { useNotificationStore } from '@/stores';
-import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import type { OpenAIProviderConfig, ApiKeyEntry } from '@/types';
-import { buildHeaderObject, headersToEntries } from '@/utils/headers';
+import { headersToEntries } from '@/utils/headers';
 import type { ModelInfo } from '@/utils/models';
-import styles from '@/pages/AiProvidersPage.module.scss';
-import { buildApiKeyEntry, buildOpenAIChatCompletionsEndpoint } from '../utils';
+import { buildApiKeyEntry } from '../utils';
 import type { ModelEntry, OpenAIFormState, ProviderModalProps } from '../types';
 import { OpenAIDiscoveryModal } from './OpenAIDiscoveryModal';
-
-const OPENAI_TEST_TIMEOUT_MS = 30_000;
 
 interface OpenAIModalProps extends ProviderModalProps<OpenAIProviderConfig, OpenAIFormState> {
   isSaving: boolean;
@@ -28,7 +24,6 @@ const buildEmptyForm = (): OpenAIFormState => ({
   headers: [],
   apiKeyEntries: [buildApiKeyEntry()],
   modelEntries: [{ name: '', alias: '' }],
-  testModel: undefined,
 });
 
 export function OpenAIModal({
@@ -43,20 +38,6 @@ export function OpenAIModal({
   const { showNotification } = useNotificationStore();
   const [form, setForm] = useState<OpenAIFormState>(buildEmptyForm);
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
-  const [testModel, setTestModel] = useState('');
-  const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [testMessage, setTestMessage] = useState('');
-
-  const getErrorMessage = (err: unknown) => {
-    if (err instanceof Error) return err.message;
-    if (typeof err === 'string') return err;
-    return '';
-  };
-
-  const availableModels = useMemo(
-    () => form.modelEntries.map((entry) => entry.name.trim()).filter(Boolean),
-    [form.modelEntries]
-  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -71,45 +52,17 @@ export function OpenAIModal({
         prefix: initialData.prefix ?? '',
         baseUrl: initialData.baseUrl,
         headers: headersToEntries(initialData.headers),
-        testModel: initialData.testModel,
         modelEntries,
         apiKeyEntries: initialData.apiKeyEntries?.length
           ? initialData.apiKeyEntries
           : [buildApiKeyEntry()],
       });
-      const available = modelEntries.map((entry) => entry.name.trim()).filter(Boolean);
-      const initialModel =
-        initialData.testModel && available.includes(initialData.testModel)
-          ? initialData.testModel
-          : available[0] || '';
-      setTestModel(initialModel);
     } else {
       setForm(buildEmptyForm());
-      setTestModel('');
     }
 
-    setTestStatus('idle');
-    setTestMessage('');
     setDiscoveryOpen(false);
   }, [initialData, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    if (availableModels.length === 0) {
-      if (testModel) {
-        setTestModel('');
-        setTestStatus('idle');
-        setTestMessage('');
-      }
-      return;
-    }
-
-    if (!testModel || !availableModels.includes(testModel)) {
-      setTestModel(availableModels[0]);
-      setTestStatus('idle');
-      setTestMessage('');
-    }
-  }, [availableModels, isOpen, testModel]);
 
   const renderKeyEntries = (entries: ApiKeyEntry[]) => {
     const list = entries.length ? entries : [buildApiKeyEntry()];
@@ -207,92 +160,6 @@ export function OpenAIModal({
     }
   };
 
-  const testOpenaiProviderConnection = async () => {
-    const baseUrl = form.baseUrl.trim();
-    if (!baseUrl) {
-      const message = t('notification.openai_test_url_required');
-      setTestStatus('error');
-      setTestMessage(message);
-      showNotification(message, 'error');
-      return;
-    }
-
-    const endpoint = buildOpenAIChatCompletionsEndpoint(baseUrl);
-    if (!endpoint) {
-      const message = t('notification.openai_test_url_required');
-      setTestStatus('error');
-      setTestMessage(message);
-      showNotification(message, 'error');
-      return;
-    }
-
-    const firstKeyEntry = form.apiKeyEntries.find((entry) => entry.apiKey?.trim());
-    if (!firstKeyEntry) {
-      const message = t('notification.openai_test_key_required');
-      setTestStatus('error');
-      setTestMessage(message);
-      showNotification(message, 'error');
-      return;
-    }
-
-    const modelName = testModel.trim() || availableModels[0] || '';
-    if (!modelName) {
-      const message = t('notification.openai_test_model_required');
-      setTestStatus('error');
-      setTestMessage(message);
-      showNotification(message, 'error');
-      return;
-    }
-
-    const customHeaders = buildHeaderObject(form.headers);
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...customHeaders,
-    };
-    if (!headers.Authorization && !headers['authorization']) {
-      headers.Authorization = `Bearer ${firstKeyEntry.apiKey.trim()}`;
-    }
-
-    setTestStatus('loading');
-    setTestMessage(t('ai_providers.openai_test_running'));
-
-    try {
-      const result = await apiCallApi.request(
-        {
-          method: 'POST',
-          url: endpoint,
-          header: Object.keys(headers).length ? headers : undefined,
-          data: JSON.stringify({
-            model: modelName,
-            messages: [{ role: 'user', content: 'Hi' }],
-            stream: false,
-            max_tokens: 5,
-          }),
-        },
-        { timeout: OPENAI_TEST_TIMEOUT_MS }
-      );
-
-      if (result.statusCode < 200 || result.statusCode >= 300) {
-        throw new Error(getApiCallErrorMessage(result));
-      }
-
-      setTestStatus('success');
-      setTestMessage(t('ai_providers.openai_test_success'));
-    } catch (err: unknown) {
-      setTestStatus('error');
-      const message = getErrorMessage(err);
-      const errorCode =
-        typeof err === 'object' && err !== null && 'code' in err ? String((err as { code?: string }).code) : '';
-      const isTimeout =
-        errorCode === 'ECONNABORTED' || message.toLowerCase().includes('timeout');
-      if (isTimeout) {
-        setTestMessage(t('ai_providers.openai_test_timeout', { seconds: OPENAI_TEST_TIMEOUT_MS / 1000 }));
-      } else {
-        setTestMessage(`${t('ai_providers.openai_test_failed')}: ${message}`);
-      }
-    }
-  };
-
   return (
     <>
       <Modal
@@ -358,59 +225,6 @@ export function OpenAIModal({
           <Button variant="secondary" size="sm" onClick={openOpenaiModelDiscovery} disabled={isSaving}>
             {t('ai_providers.openai_models_fetch_button')}
           </Button>
-        </div>
-
-        <div className="form-group">
-          <label>{t('ai_providers.openai_test_title')}</label>
-          <div className="hint">{t('ai_providers.openai_test_hint')}</div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <select
-              className={`input ${styles.openaiTestSelect}`}
-              value={testModel}
-              onChange={(e) => {
-                setTestModel(e.target.value);
-                setTestStatus('idle');
-                setTestMessage('');
-              }}
-              disabled={isSaving || availableModels.length === 0}
-            >
-              <option value="">
-                {availableModels.length
-                  ? t('ai_providers.openai_test_select_placeholder')
-                  : t('ai_providers.openai_test_select_empty')}
-              </option>
-              {form.modelEntries
-                .filter((entry) => entry.name.trim())
-                .map((entry, idx) => {
-                  const name = entry.name.trim();
-                  const alias = entry.alias.trim();
-                  const label = alias && alias !== name ? `${name} (${alias})` : name;
-                  return (
-                    <option key={`${name}-${idx}`} value={name}>
-                      {label}
-                    </option>
-                  );
-                })}
-            </select>
-            <Button
-              variant={testStatus === 'error' ? 'danger' : 'secondary'}
-              className={`${styles.openaiTestButton} ${testStatus === 'success' ? styles.openaiTestButtonSuccess : ''}`}
-              onClick={testOpenaiProviderConnection}
-              loading={testStatus === 'loading'}
-              disabled={isSaving || availableModels.length === 0}
-            >
-              {t('ai_providers.openai_test_action')}
-            </Button>
-          </div>
-          {testMessage && (
-            <div
-              className={`status-badge ${
-                testStatus === 'error' ? 'error' : testStatus === 'success' ? 'success' : 'muted'
-              }`}
-            >
-              {testMessage}
-            </div>
-          )}
         </div>
 
         <div className="form-group">

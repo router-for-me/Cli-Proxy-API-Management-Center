@@ -209,10 +209,15 @@ export const authFilesApi = {
     return (data && Array.isArray(data['models'])) ? data['models'] : [];
   },
 
-  // 健康检查 - 检查认证文件支持的所有模型
+  // 健康检查 - 检查认证文件支持的模型
   async checkModelsHealth(
     name: string,
-    options?: { concurrent?: boolean; timeout?: number }
+    options?: {
+      concurrent?: boolean;
+      timeout?: number;
+      model?: string;      // 检查单个模型
+      models?: string;     // 检查多个模型（逗号分隔）
+    }
   ): Promise<{
     auth_id: string;
     status: 'healthy' | 'unhealthy' | 'partial';
@@ -234,6 +239,12 @@ export const authFilesApi = {
     }
     if (options?.timeout) {
       params.append('timeout', String(options.timeout));
+    }
+    if (options?.model) {
+      params.append('model', options.model);
+    }
+    if (options?.models) {
+      params.append('models', options.models);
     }
     return apiClient.get(`/auth-files/health?${params.toString()}`);
   }

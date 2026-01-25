@@ -228,6 +228,7 @@ export function AuthFilesPage() {
 
   // 健康检查相关
   const [healthChecking, setHealthChecking] = useState(false);
+  const [singleModelChecking, setSingleModelChecking] = useState<string | null>(null); // 正在检查的单个模型 ID
   const [healthResults, setHealthResults] = useState<Record<string, {
     status: 'healthy' | 'unhealthy';
     message?: string;
@@ -1089,6 +1090,56 @@ export function AuthFilesPage() {
     }
   };
 
+  // 单个模型健康检查
+  const handleSingleModelHealthCheck = async (modelId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // 防止触发复制操作
+
+    if (!modelsFileName || singleModelChecking) {
+      return;
+    }
+
+    setSingleModelChecking(modelId);
+
+    try {
+      const result = await authFilesApi.checkModelsHealth(modelsFileName, {
+        model: modelId,
+        timeout: 20,
+      });
+
+      if (result.models.length > 0) {
+        const modelResult = result.models[0];
+        setHealthResults((prev) => ({
+          ...prev,
+          [modelResult.model_id]: {
+            status: modelResult.status,
+            message: modelResult.message,
+            latency_ms: modelResult.latency_ms,
+          },
+        }));
+
+        if (modelResult.status === 'healthy') {
+          showNotification(
+            `${modelId}: ${t('auth_files.health_status_healthy', { defaultValue: '健康' })}${modelResult.latency_ms ? ` (${modelResult.latency_ms}ms)` : ''}`,
+            'success'
+          );
+        } else {
+          showNotification(
+            `${modelId}: ${t('auth_files.health_status_unhealthy', { defaultValue: '异常' })} - ${modelResult.message || ''}`,
+            'error'
+          );
+        }
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      showNotification(
+        `${modelId}: ${t('auth_files.health_check_failed', { defaultValue: '健康检查失败' })} - ${errorMessage}`,
+        'error'
+      );
+    } finally {
+      setSingleModelChecking(null);
+    }
+  };
+
   // 检查模型是否被 OAuth 排除
   const isModelExcluded = (modelId: string, providerType: string): boolean => {
     const providerKey = normalizeProviderKey(providerType);
@@ -1864,6 +1915,7 @@ export function AuthFilesPage() {
               const isExcluded = isModelExcluded(model.id, modelsFileType);
               const healthResult = healthResults[model.id];
               const hasHealthResult = healthResult !== undefined;
+              const isCheckingThis = singleModelChecking === model.id;
               return (
                 <div
                   key={model.id}
@@ -1893,34 +1945,49 @@ export function AuthFilesPage() {
                         : t('common.copy', { defaultValue: '点击复制' })
                   }
                 >
-                  <span className={styles.modelId}>{model.id}</span>
-                  {model.display_name && model.display_name !== model.id && (
-                    <span className={styles.modelDisplayName}>{model.display_name}</span>
-                  )}
-                  {model.type && <span className={styles.modelType}>{model.type}</span>}
-                  {isExcluded && (
-                    <span className={styles.modelExcludedBadge}>
-                      {t('auth_files.models_excluded_badge', { defaultValue: '已排除' })}
-                    </span>
-                  )}
-                  {hasHealthResult && (
-                    <span
-                      className={
-                        healthResult.status === 'healthy'
-                          ? styles.modelHealthBadge
-                          : styles.modelHealthBadgeUnhealthy
-                      }
-                    >
-                      {healthResult.status === 'healthy' ? (
-                        <>
-                          {t('auth_files.health_status_healthy', { defaultValue: '健康' })}
-                          {healthResult.latency_ms && ` (${healthResult.latency_ms}ms)`}
-                        </>
-                      ) : (
-                        t('auth_files.health_status_unhealthy', { defaultValue: '异常' })
-                      )}
-                    </span>
-                  )}
+                  <div className={styles.modelInfo}>
+                    <span className={styles.modelId}>{model.id}</span>
+                    {model.display_name && model.display_name !== model.id && (
+                      <span className={styles.modelDisplayName}>{model.display_name}</span>
+                    )}
+                    {model.type && <span className={styles.modelType}>{model.type}</span>}
+                    {isExcluded && (
+                      <span className={styles.modelExcludedBadge}>
+                        {t('auth_files.models_excluded_badge', { defaultValue: '已排除' })}
+                      </span>
+                    )}
+                    {hasHealthResult && (
+                      <span
+                        className={
+                          healthResult.status === 'healthy'
+                            ? styles.modelHealthBadge
+                            : styles.modelHealthBadgeUnhealthy
+                        }
+                      >
+                        {healthResult.status === 'healthy' ? (
+                          <>
+                            {t('auth_files.health_status_healthy', { defaultValue: '健康' })}
+                            {healthResult.latency_ms && ` (${healthResult.latency_ms}ms)`}
+                          </>
+                        ) : (
+                          t('auth_files.health_status_unhealthy', { defaultValue: '异常' })
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.modelCheckButton}
+                    onClick={(e) => void handleSingleModelHealthCheck(model.id, e)}
+                    disabled={healthChecking || singleModelChecking !== null}
+                    title={t('auth_files.health_check_single', { defaultValue: '检查此模型' })}
+                  >
+                    {isCheckingThis ? (
+                      <LoadingSpinner size={14} />
+                    ) : (
+                      <span className={styles.checkIcon}>✓</span>
+                    )}
+                  </button>
                 </div>
               );
             })}
