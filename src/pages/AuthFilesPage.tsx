@@ -1069,7 +1069,7 @@ export function AuthFilesPage() {
       } else {
         showNotification(
           t('auth_files.health_check_partial', {
-            defaultValue: '健康检查完成：{healthy} 个健康，{unhealthy} 个异常',
+            defaultValue: '健康检查完成：{{healthy}} 个健康，{{unhealthy}} 个异常',
             healthy: healthy_count,
             unhealthy: unhealthy_count,
           }),

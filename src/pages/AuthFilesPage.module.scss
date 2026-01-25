@@ -162,6 +162,10 @@
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 
+  @include small-desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -175,6 +179,10 @@
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @include small-desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -190,6 +198,10 @@
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 
+  @include small-desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -203,6 +215,10 @@
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @include small-desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -522,14 +538,14 @@
   align-items: center;
   gap: 8px;
   padding: 4px 0;
-  max-width: 280px;
+  width: 100%;
 }
 
 .statusBlocks {
   display: flex;
   gap: 2px;
   flex: 1;
-  min-width: 180px;
+  min-width: 0;
 }
 
 .statusBlock {
@@ -665,13 +681,14 @@
   align-items: center;
   margin-top: auto;
   padding-top: $spacing-sm;
+  flex-wrap: wrap;
 }
 
 .statusToggle {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  margin-left: $spacing-sm;
+  margin-left: auto;
 }
 
 .iconButton:global(.btn.btn-sm) {

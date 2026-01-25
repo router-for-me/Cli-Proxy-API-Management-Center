@@ -17,8 +17,22 @@
   }
 }
 
+// 小型桌面（1024px - 1280px 之间）
+@mixin small-desktop {
+  @media (min-width: #{$breakpoint-tablet + 1}) and (max-width: #{$breakpoint-desktop}) {
+    @content;
+  }
+}
+
 @mixin desktop {
   @media (min-width: #{$breakpoint-tablet + 1}) {
+    @content;
+  }
+}
+
+// 大于特定宽度
+@mixin min-width($width) {
+  @media (min-width: #{$width}) {
     @content;
   }
 }
