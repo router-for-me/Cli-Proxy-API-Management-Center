@@ -30,7 +30,7 @@
 
 ```yaml
 remote-management:
-  panel-github-repository: "https://github.com/kongkongyo/CLIProxyAPI-Web-Dashboard"
+  panel-github-repository: "https://github.com/kongkongyo/Cli-Proxy-API-Management-Center"
 ```
 
 配置完成后，重启 CLI Proxy API 服务，访问 `http://<host>:<api_port>/management.html` 即可查看管理界面
