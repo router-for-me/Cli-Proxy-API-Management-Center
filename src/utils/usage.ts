@@ -579,6 +579,8 @@ export function getApiStats(usageData: any, modelPrices: Record<string, ModelPri
 export function getModelStats(usageData: any, modelPrices: Record<string, ModelPrice>): Array<{
   model: string;
   requests: number;
+  successCount: number;
+  failureCount: number;
   tokens: number;
   cost: number;
 }> {
@@ -586,20 +588,39 @@ export function getModelStats(usageData: any, modelPrices: Record<string, ModelP
     return [];
   }
 
-  const modelMap = new Map<string, { requests: number; tokens: number; cost: number }>();
+  const modelMap = new Map<string, { requests: number; successCount: number; failureCount: number; tokens: number; cost: number }>();
 
   Object.values(usageData.apis as Record<string, any>).forEach(apiData => {
     const models = apiData?.models || {};
     Object.entries(models as Record<string, any>).forEach(([modelName, modelData]) => {
-      const existing = modelMap.get(modelName) || { requests: 0, tokens: 0, cost: 0 };
+      const existing = modelMap.get(modelName) || { requests: 0, successCount: 0, failureCount: 0, tokens: 0, cost: 0 };
       existing.requests += modelData.total_requests || 0;
       existing.tokens += modelData.total_tokens || 0;
 
+      const details = Array.isArray(modelData.details) ? modelData.details : [];
+
       const price = modelPrices[modelName];
-      if (price) {
-        const details = Array.isArray(modelData.details) ? modelData.details : [];
+
+      const hasExplicitCounts =
+        typeof modelData.success_count === 'number' || typeof modelData.failure_count === 'number';
+      if (hasExplicitCounts) {
+        existing.successCount += Number(modelData.success_count) || 0;
+        existing.failureCount += Number(modelData.failure_count) || 0;
+      }
+
+      if (details.length > 0 && (!hasExplicitCounts || price)) {
         details.forEach((detail: any) => {
-          existing.cost += calculateCost({ ...detail, __modelName: modelName }, modelPrices);
+          if (!hasExplicitCounts) {
+            if (detail?.failed === true) {
+              existing.failureCount += 1;
+            } else {
+              existing.successCount += 1;
+            }
+          }
+
+          if (price) {
+            existing.cost += calculateCost({ ...detail, __modelName: modelName }, modelPrices);
+          }
         });
       }
       modelMap.set(modelName, existing);

@@ -456,6 +456,18 @@
   word-break: break-all;
 }
 
+.requestCountCell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.requestBreakdown {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 // Pricing Section (80%比例)
 .pricingSection {
   display: flex;
