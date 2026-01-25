@@ -10,6 +10,7 @@ import { UsagePage } from '@/pages/UsagePage';
 import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
+import { UnifiedRoutingPage } from '@/pages/UnifiedRoutingPage';
 
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -17,6 +18,7 @@ const mainRoutes = [
   { path: '/settings', element: <SettingsPage /> },
   { path: '/api-keys', element: <ApiKeysPage /> },
   { path: '/ai-providers', element: <AiProvidersPage /> },
+  { path: '/unified-routing', element: <UnifiedRoutingPage /> },
   { path: '/auth-files', element: <AuthFilesPage /> },
   { path: '/oauth', element: <OAuthPage /> },
   { path: '/quota', element: <QuotaPage /> },

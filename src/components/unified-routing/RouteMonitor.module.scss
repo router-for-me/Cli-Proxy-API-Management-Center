@@ -1,0 +1,614 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.routeSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  label {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    min-width: 180px;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+  }
+}
+
+.periodSelector {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 0.25rem;
+
+  button {
+    padding: 0.375rem 0.75rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+
+    &.active {
+      background: var(--bg-primary);
+      color: var(--primary-color);
+      font-weight: 500;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+// Traffic Distribution Section
+.section {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+
+  .icon {
+    font-size: 1rem;
+  }
+}
+
+.trafficSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.layerBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.layerHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.layerName {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  min-width: 60px;
+}
+
+.layerBar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.layerBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+
+  &.layer1 { background: var(--primary-color); }
+  &.layer2 { background: var(--warning-color); }
+  &.layer3 { background: var(--text-tertiary); }
+}
+
+.layerPercent {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: right;
+}
+
+.layerTargets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding-left: 1.5rem;
+  border-left: 2px solid var(--border-color);
+  margin-left: 0.5rem;
+}
+
+.targetRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.targetConnector {
+  color: var(--text-tertiary);
+}
+
+.targetName {
+  color: var(--text-secondary);
+  min-width: 200px;
+  font-family: var(--font-mono);
+}
+
+.targetBar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+  max-width: 200px;
+}
+
+.targetBarFill {
+  height: 100%;
+  background: var(--primary-color);
+  border-radius: 3px;
+  opacity: 0.7;
+}
+
+.targetPercent {
+  min-width: 35px;
+  text-align: right;
+  color: var(--text-tertiary);
+}
+
+.targetSuccessRate {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+
+  &.high {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+
+  &.medium {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+  }
+
+  &.low {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+  }
+}
+
+// Events Section
+.eventsSection {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.eventsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.eventItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.eventTime {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  min-width: 65px;
+}
+
+.eventTarget {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  min-width: 180px;
+}
+
+.eventMessage {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.eventAction {
+  color: var(--text-tertiary);
+}
+
+.eventIcon {
+  &.failure { color: var(--danger-color); }
+  &.recovery { color: var(--success-color); }
+  &.cooldown { color: var(--warning-color); }
+  &.fallback { color: var(--warning-color); }
+}
+
+// Attempts Distribution Section
+.attemptsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attemptRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.attemptLabel {
+  color: var(--text-secondary);
+  min-width: 120px;
+}
+
+.attemptBar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  max-width: 300px;
+}
+
+.attemptBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+
+  &.attempt1 { background: var(--success-color); }
+  &.attempt2 { background: var(--warning-color); }
+  &.attempt3 { background: var(--text-tertiary); }
+}
+
+.attemptStats {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  min-width: 80px;
+}
+
+// Traces Section
+.tracesSection {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.tracesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.traceItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+}
+
+.traceTime {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  min-width: 65px;
+}
+
+.traceId {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  min-width: 60px;
+}
+
+.tracePath {
+  flex: 1;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  font-size: 0.6875rem;
+}
+
+.routeName {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.traceArrow {
+  color: var(--text-tertiary);
+  font-weight: bold;
+  
+  &.arrowSuccess { color: var(--success-color); }
+  &.arrowFailed { color: var(--danger-color); }
+}
+
+.traceTarget {
+  &.targetSuccess { color: var(--success-color); }
+  &.targetFailed { color: var(--danger-color); }
+}
+
+.traceStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.statusSuccess {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+
+  &.statusFailed {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+  }
+}
+
+.traceLatency {
+  color: var(--text-tertiary);
+  min-width: 45px;
+  text-align: right;
+}
+
+// Empty & Loading States
+.emptyState {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+}
+
+.loadingState {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+// Stats Overview
+.statsOverview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.statCard {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+
+  .statValue {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .statLabel {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    margin-top: 0.25rem;
+  }
+
+  &.success .statValue { color: var(--success-color); }
+  &.danger .statValue { color: var(--danger-color); }
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0.5rem 0;
+}
+
+// Trace Info Section
+.traceInfo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.traceInfoRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.traceInfoLabel {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  min-width: 80px;
+}
+
+.traceInfoValue {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  
+  &.successText { color: var(--success-color); font-weight: 500; }
+  &.failedText { color: var(--danger-color); font-weight: 500; }
+}
+
+// Trace Path Section
+.tracePathSection {
+  margin-top: 1rem;
+}
+
+.tracePathTitle {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.tracePathFlow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.attemptCard {
+  border-radius: 8px;
+  padding: 1rem;
+  border-left: 4px solid;
+  background: var(--bg-secondary);
+  
+  &.attemptSuccess {
+    border-left-color: var(--success-color);
+  }
+  
+  &.attemptFailed {
+    border-left-color: var(--danger-color);
+  }
+}
+
+.attemptHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.attemptNumber {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.attemptStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  
+  &.successBadge {
+    background: var(--success-bg);
+    color: var(--success-color);
+  }
+  
+  &.failedBadge {
+    background: var(--danger-bg);
+    color: var(--danger-color);
+  }
+}
+
+.attemptDetail {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.attemptRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.attemptLabel {
+  color: var(--text-tertiary);
+}
+
+.attemptValue {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.attemptError {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  
+  .attemptLabel {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+}
+
+.errorText {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--danger-color);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.noAttempts {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
