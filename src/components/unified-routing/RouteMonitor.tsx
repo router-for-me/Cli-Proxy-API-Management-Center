@@ -35,11 +35,15 @@ export function RouteMonitor({ routes, credentials, disabled }: RouteMonitorProp
   const [traces, setTraces] = useState<RequestTrace[]>([]);
   const [selectedTrace, setSelectedTrace] = useState<RequestTrace | null>(null);
 
-  // Load data
-  const loadData = useCallback(async () => {
+  // Load data - showLoading controls whether to display loading spinner
+  // Set to false for background/auto refresh to avoid UI flicker
+  const loadData = useCallback(async (showLoading = true) => {
     if (disabled) return;
     
-    setLoading(true);
+    // Only show loading on initial load or manual refresh
+    if (showLoading) {
+      setLoading(true);
+    }
     try {
       const routeFilter = selectedRouteId === 'all' ? undefined : selectedRouteId;
       
@@ -61,13 +65,28 @@ export function RouteMonitor({ routes, credentials, disabled }: RouteMonitorProp
     } catch (error) {
       console.error('Failed to load monitoring data:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   }, [disabled, selectedRouteId, period]);
 
+  // Initial load
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Auto-refresh every 1 second for live monitoring
+  // Pass false to avoid showing loading spinner during auto-refresh
+  useEffect(() => {
+    if (disabled) return;
+    
+    const interval = setInterval(() => {
+      loadData(false);  // Silent refresh - no loading spinner
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [disabled, loadData]);
 
   // Format timestamp to HH:MM:SS
   const formatTime = (ts: string): string => {
@@ -143,7 +162,7 @@ export function RouteMonitor({ routes, credentials, disabled }: RouteMonitorProp
         <Button
           variant="secondary"
           size="sm"
-          onClick={loadData}
+          onClick={() => loadData(true)}
           disabled={disabled || loading}
           loading={loading}
         >
