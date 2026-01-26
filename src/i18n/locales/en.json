@@ -995,6 +995,7 @@
     "route_enabled_success": "Route enabled",
     "route_disabled": "Route disabled",
     "target_deleted": "Target deleted successfully",
+    "layer_deleted": "Layer deleted successfully",
     "cooling": "Cooling",
     "unknown": "Unknown",
     "pipeline": "Pipeline Configuration",

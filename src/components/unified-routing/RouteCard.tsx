@@ -23,6 +23,7 @@ interface RouteCardProps {
   onAddTarget: (routeId: string, layerLevel: number) => void;
   onEditTarget: (routeId: string, layerLevel: number, target: Target) => void;
   onDeleteTarget: (routeId: string, layerLevel: number, targetId: string) => void;
+  onDeleteLayer: (routeId: string, layerLevel: number) => void;
   onAddLayer: (routeId: string) => void;
   onSelect: (routeId: string) => void;
 }
@@ -52,11 +53,24 @@ export function RouteCard({
   onAddTarget,
   onEditTarget,
   onDeleteTarget,
+  onDeleteLayer,
   onAddLayer,
   onSelect,
 }: RouteCardProps) {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(true);
+  
+  // Expanded state persisted in localStorage
+  const storageKey = `route-expanded-${route.id}`;
+  const [expanded, setExpanded] = useState(() => {
+    const stored = localStorage.getItem(storageKey);
+    return stored !== 'false'; // Default to expanded (true)
+  });
+  
+  const handleToggleExpand = () => {
+    const newState = !expanded;
+    setExpanded(newState);
+    localStorage.setItem(storageKey, String(newState));
+  };
   
   // Health check state
   const [checkingAll, setCheckingAll] = useState(false);
@@ -179,7 +193,7 @@ export function RouteCard({
   return (
     <div className={`${styles.card} ${!route.enabled ? styles.disabled : ''}`}>
       {/* Header */}
-      <div className={styles.header} onClick={() => setExpanded(!expanded)}>
+      <div className={styles.header} onClick={handleToggleExpand}>
         <div className={styles.headerLeft}>
           <span className={styles.expandIcon}>{expanded ? '▼' : '▶'}</span>
           <span className={styles.routeName}>{route.name}</span>
@@ -258,14 +272,24 @@ export function RouteCard({
                       <span className={styles.layerStrategy}>
                         {layer.strategy}
                       </span>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => onAddTarget(route.id, layer.level)}
-                        disabled={disabled}
-                      >
-                        + {t('unified_routing.add_target')}
-                      </Button>
+                      <div className={styles.layerActions}>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onAddTarget(route.id, layer.level)}
+                          disabled={disabled}
+                        >
+                          + {t('unified_routing.add_target')}
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => onDeleteLayer(route.id, layer.level)}
+                          disabled={disabled}
+                        >
+                          {t('common.delete')}
+                        </Button>
+                      </div>
                     </div>
                     <div className={styles.targets}>
                       {layer.targets.map((target, idx) => {

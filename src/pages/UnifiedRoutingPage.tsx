@@ -149,6 +149,26 @@ export function UnifiedRoutingPage() {
     };
   }, [connectionStatus, routes, selectRoute]);
 
+  // Clean up invalid localStorage keys for deleted routes
+  useEffect(() => {
+    if (routes.length === 0) return;
+
+    const validRouteIds = new Set(routes.map((r) => r.id));
+    const keysToRemove: string[] = [];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('route-expanded-')) {
+        const routeId = key.replace('route-expanded-', '');
+        if (!validRouteIds.has(routeId)) {
+          keysToRemove.push(key);
+        }
+      }
+    }
+
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+  }, [routes]);
+
   // Helper functions
   const getErrorMessage = (err: unknown) => {
     if (err instanceof Error) return err.message;
@@ -287,6 +307,26 @@ export function UnifiedRoutingPage() {
     }
   };
 
+  const handleDeleteLayer = async (routeId: string, layerLevel: number) => {
+    const pipeline = routePipelines[routeId];
+    if (!pipeline) return;
+
+    const newPipeline: Pipeline = {
+      ...pipeline,
+      layers: pipeline.layers.filter((layer) => layer.level !== layerLevel),
+    };
+
+    try {
+      await updatePipeline(routeId, newPipeline);
+      // Update both ref and state
+      routePipelinesRef.current[routeId] = newPipeline;
+      setRoutePipelines({ ...routePipelinesRef.current });
+      showNotification(t('unified_routing.layer_deleted'), 'success');
+    } catch (error) {
+      showNotification(getErrorMessage(error), 'error');
+    }
+  };
+
   const handleSaveTarget = async (layerLevel: number, target: Target, isEdit: boolean) => {
     if (!editingTarget) return;
 
@@ -363,12 +403,10 @@ export function UnifiedRoutingPage() {
     setTargetModalOpen(true);
   };
 
-  // Select route (for configure pipeline)
-  const handleSelectRoute = async (routeId: string) => {
-    // For now, just open add target modal for layer 1
-    const pipeline = routePipelines[routeId];
-    const layerLevel = pipeline?.layers[0]?.level || 1;
-    setEditingTarget({ routeId, layerLevel, target: null });
+  // Configure pipeline (only used when route has no pipeline)
+  const handleConfigurePipeline = (routeId: string) => {
+    // Open target modal to add the first target (creates layer 1)
+    setEditingTarget({ routeId, layerLevel: 1, target: null });
     setTargetModalOpen(true);
   };
 
@@ -481,8 +519,9 @@ export function UnifiedRoutingPage() {
                   onAddTarget={handleAddTarget}
                   onEditTarget={handleEditTarget}
                   onDeleteTarget={handleDeleteTarget}
+                  onDeleteLayer={handleDeleteLayer}
                   onAddLayer={handleAddLayer}
-                  onSelect={handleSelectRoute}
+                  onSelect={handleConfigurePipeline}
                 />
               ))}
             </div>

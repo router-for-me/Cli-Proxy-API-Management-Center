@@ -105,6 +105,12 @@
   font-family: monospace;
 }
 
+.layerActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
 .targets {
   padding-left: 1rem;
 }

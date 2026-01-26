@@ -995,6 +995,7 @@
     "route_enabled_success": "路由已启用",
     "route_disabled": "路由已禁用",
     "target_deleted": "目标删除成功",
+    "layer_deleted": "层级删除成功",
     "cooling": "冷却中",
     "unknown": "未知",
     "pipeline": "流水线配置",
