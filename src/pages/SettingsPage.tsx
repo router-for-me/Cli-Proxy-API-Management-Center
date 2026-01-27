@@ -335,6 +335,7 @@ export function SettingsPage() {
           value={proxyValue}
           onChange={(e) => setProxyValue(e.target.value)}
           disabled={disableControls || loading}
+          hint={t('basic_settings.proxy_url_hint')}
         />
         <div style={{ display: 'flex', gap: 12 }}>
           <Button variant="secondary" onClick={handleProxyClear} disabled={disableControls || pending.proxy || loading}>

@@ -19,6 +19,7 @@ const buildEmptyForm = (): ProviderFormState => ({
   prefix: '',
   baseUrl: '',
   proxyUrl: '',
+  proxyDns: '',
   headers: [],
   models: [],
   excludedModels: [],
@@ -93,6 +94,13 @@ export function ClaudeModal({
         label={t('ai_providers.claude_add_modal_proxy_label')}
         value={form.proxyUrl ?? ''}
         onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
+      />
+      <Input
+        label={t('common.proxy_dns_label')}
+        placeholder={t('common.proxy_dns_placeholder')}
+        value={form.proxyDns ?? ''}
+        onChange={(e) => setForm((prev) => ({ ...prev, proxyDns: e.target.value }))}
+        hint={t('common.proxy_dns_hint')}
       />
       <HeaderInputList
         entries={form.headers}

@@ -98,6 +98,12 @@ export function OpenAIModal({
                 value={entry.proxyUrl ?? ''}
                 onChange={(e) => updateEntry(index, 'proxyUrl', e.target.value)}
               />
+              <Input
+                label={t('common.proxy_dns_label')}
+                placeholder={t('common.proxy_dns_placeholder')}
+                value={entry.proxyDns ?? ''}
+                onChange={(e) => updateEntry(index, 'proxyDns', e.target.value)}
+              />
             </div>
             <div className="item-actions">
               <Button

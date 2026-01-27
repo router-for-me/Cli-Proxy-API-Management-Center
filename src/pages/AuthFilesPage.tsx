@@ -124,6 +124,7 @@ interface PrefixProxyEditorState {
   json: Record<string, unknown> | null;
   prefix: string;
   proxyUrl: string;
+  proxyDns: string;
 }
 
 const buildEmptyMappingEntry = (): OAuthModelMappingFormEntry => ({
@@ -374,9 +375,13 @@ export function AuthFilesPage() {
     if ('proxy_url' in next || prefixProxyEditor.proxyUrl.trim()) {
       next.proxy_url = prefixProxyEditor.proxyUrl;
     }
+    if ('proxy_dns' in next || prefixProxyEditor.proxyDns.trim()) {
+      next.proxy_dns = prefixProxyEditor.proxyDns;
+    }
     return JSON.stringify(next);
   }, [
     prefixProxyEditor?.json,
+    prefixProxyEditor?.proxyDns,
     prefixProxyEditor?.prefix,
     prefixProxyEditor?.proxyUrl,
     prefixProxyEditor?.rawText,
@@ -830,6 +835,7 @@ export function AuthFilesPage() {
       json: null,
       prefix: '',
       proxyUrl: '',
+      proxyDns: '',
     });
 
     try {
@@ -871,6 +877,7 @@ export function AuthFilesPage() {
       const originalText = JSON.stringify(json);
       const prefix = typeof json.prefix === 'string' ? json.prefix : '';
       const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
+      const proxyDns = typeof json.proxy_dns === 'string' ? json.proxy_dns : '';
 
       setPrefixProxyEditor((prev) => {
         if (!prev || prev.fileName !== name) return prev;
@@ -881,6 +888,7 @@ export function AuthFilesPage() {
           rawText: originalText,
           json,
           prefix,
+          proxyDns,
           proxyUrl,
           error: null,
         };
@@ -895,10 +903,11 @@ export function AuthFilesPage() {
     }
   };
 
-  const handlePrefixProxyChange = (field: 'prefix' | 'proxyUrl', value: string) => {
+  const handlePrefixProxyChange = (field: 'prefix' | 'proxyUrl' | 'proxyDns', value: string) => {
     setPrefixProxyEditor((prev) => {
       if (!prev) return prev;
       if (field === 'prefix') return { ...prev, prefix: value };
+      if (field === 'proxyDns') return { ...prev, proxyDns: value };
       return { ...prev, proxyUrl: value };
     });
   };
@@ -2070,6 +2079,16 @@ export function AuthFilesPage() {
                       disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
                     }
                     onChange={(e) => handlePrefixProxyChange('proxyUrl', e.target.value)}
+                  />
+                  <Input
+                    label={t('common.proxy_dns_label')}
+                    value={prefixProxyEditor.proxyDns}
+                    placeholder={t('common.proxy_dns_placeholder')}
+                    disabled={
+                      disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
+                    }
+                    onChange={(e) => handlePrefixProxyChange('proxyDns', e.target.value)}
+                    hint={t('common.proxy_dns_hint')}
                   />
                 </div>
               </>
