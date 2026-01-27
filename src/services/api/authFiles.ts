@@ -101,8 +101,10 @@ const normalizeOauthModelMappings = (payload: unknown): Record<string, OAuthMode
   return result;
 };
 
+// 后端实际支持的端点是 /oauth-model-alias
+// /oauth-model-mappings 是预留的新端点名称，目前后端未实现
+const OAUTH_MODEL_ALIAS_ENDPOINT = '/oauth-model-alias';
 const OAUTH_MODEL_MAPPINGS_ENDPOINT = '/oauth-model-mappings';
-const OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT = '/oauth-model-alias';
 
 export const authFilesApi = {
   list: () => apiClient.get<AuthFilesResponse>('/auth-files'),
@@ -144,13 +146,15 @@ export const authFilesApi = {
     apiClient.put('/oauth-excluded-models', normalizeOauthExcludedModels(map)),
 
   // OAuth 模型映射
+  // 先尝试后端实际支持的 /oauth-model-alias，避免不必要的 404 错误
   async getOauthModelMappings(): Promise<Record<string, OAuthModelMappingEntry[]>> {
     try {
-      const data = await apiClient.get(OAUTH_MODEL_MAPPINGS_ENDPOINT);
+      const data = await apiClient.get(OAUTH_MODEL_ALIAS_ENDPOINT);
       return normalizeOauthModelMappings(data);
     } catch (err: unknown) {
       if (getStatusCode(err) !== 404) throw err;
-      const data = await apiClient.get(OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT);
+      // 降级到新端点（如果后端未来实现）
+      const data = await apiClient.get(OAUTH_MODEL_MAPPINGS_ENDPOINT);
       return normalizeOauthModelMappings(data);
     }
   },
@@ -162,11 +166,12 @@ export const authFilesApi = {
     const normalizedMappings = normalizeOauthModelMappings({ [normalizedChannel]: mappings })[normalizedChannel] ?? [];
 
     try {
-      await apiClient.patch(OAUTH_MODEL_MAPPINGS_ENDPOINT, { channel: normalizedChannel, mappings: normalizedMappings });
+      await apiClient.patch(OAUTH_MODEL_ALIAS_ENDPOINT, { channel: normalizedChannel, aliases: normalizedMappings });
       return;
     } catch (err: unknown) {
       if (getStatusCode(err) !== 404) throw err;
-      await apiClient.patch(OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT, { channel: normalizedChannel, aliases: normalizedMappings });
+      // 降级到新端点
+      await apiClient.patch(OAUTH_MODEL_MAPPINGS_ENDPOINT, { channel: normalizedChannel, mappings: normalizedMappings });
     }
   },
 
@@ -177,11 +182,11 @@ export const authFilesApi = {
 
     const deleteViaPatch = async () => {
       try {
-        await apiClient.patch(OAUTH_MODEL_MAPPINGS_ENDPOINT, { channel: normalizedChannel, mappings: [] });
+        await apiClient.patch(OAUTH_MODEL_ALIAS_ENDPOINT, { channel: normalizedChannel, aliases: [] });
         return true;
       } catch (err: unknown) {
         if (getStatusCode(err) !== 404) throw err;
-        await apiClient.patch(OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT, { channel: normalizedChannel, aliases: [] });
+        await apiClient.patch(OAUTH_MODEL_MAPPINGS_ENDPOINT, { channel: normalizedChannel, mappings: [] });
         return true;
       }
     };
@@ -195,11 +200,11 @@ export const authFilesApi = {
     }
 
     try {
-      await apiClient.delete(`${OAUTH_MODEL_MAPPINGS_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
+      await apiClient.delete(`${OAUTH_MODEL_ALIAS_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
       return;
     } catch (err: unknown) {
       if (getStatusCode(err) !== 404) throw err;
-      await apiClient.delete(`${OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
+      await apiClient.delete(`${OAUTH_MODEL_MAPPINGS_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
     }
   },
 

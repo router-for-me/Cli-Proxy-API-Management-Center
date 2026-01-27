@@ -689,8 +689,15 @@ export function AuthFilesPage() {
         `${t('auth_files.upload_success')}${suffix}`,
         failed.length ? 'warning' : 'success'
       );
+      // 等待后端处理完成
+      await new Promise((resolve) => setTimeout(resolve, 500));
       await loadFiles();
       await loadKeyStats();
+      // 延迟二次刷新，确保后端 watcher 完全处理
+      setTimeout(() => {
+        loadFiles();
+        loadKeyStats();
+      }, 2000);
     }
 
     if (failed.length > 0) {

@@ -71,7 +71,7 @@ export function AiProvidersPage() {
     setError('');
     try {
       const [configResult, vertexResult, ampcodeResult] = await Promise.allSettled([
-        fetchConfig(),
+        fetchConfig(undefined, true),
         providersApi.getVertexConfigs(),
         ampcodeApi.getAmpcode(),
       ]);

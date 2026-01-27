@@ -106,10 +106,11 @@ export function DashboardPage() {
       return;
     }
 
+    apiKeysCache.current = [];
     try {
       const apiKeys = await resolveApiKeysForModels();
       const primaryKey = apiKeys[0];
-      await fetchModelsFromStore(apiBase, primaryKey);
+      await fetchModelsFromStore(apiBase, primaryKey, true);
     } catch {
       // Ignore model fetch errors on dashboard
     }

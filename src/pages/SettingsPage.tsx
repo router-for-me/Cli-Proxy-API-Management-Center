@@ -47,7 +47,7 @@ export function SettingsPage() {
       setError('');
       try {
         const [configResult, logsResult, prefixResult, routingResult] = await Promise.allSettled([
-          fetchConfig(),
+          fetchConfig(undefined, true),
           configApi.getLogsMaxTotalSizeMb(),
           configApi.getForceModelPrefix(),
           configApi.getRoutingStrategy(),
