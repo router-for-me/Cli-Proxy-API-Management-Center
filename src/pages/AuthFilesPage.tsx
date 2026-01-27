@@ -104,7 +104,7 @@ const clampCardPageSize = (value: number) =>
 
 interface ExcludedFormState {
   provider: string;
-  modelsText: string;
+  selectedModels: Set<string>;
 }
 
 type OAuthModelMappingFormEntry = OAuthModelAliasEntry & { id: string };
@@ -232,8 +232,11 @@ export function AuthFilesPage() {
   const [excludedModalOpen, setExcludedModalOpen] = useState(false);
   const [excludedForm, setExcludedForm] = useState<ExcludedFormState>({
     provider: '',
-    modelsText: '',
+    selectedModels: new Set(),
   });
+  const [excludedModelsList, setExcludedModelsList] = useState<AuthFileModelItem[]>([]);
+  const [excludedModelsLoading, setExcludedModelsLoading] = useState(false);
+  const [excludedModelsError, setExcludedModelsError] = useState<'unsupported' | null>(null);
   const [savingExcluded, setSavingExcluded] = useState(false);
 
   // OAuth 模型映射相关
@@ -320,6 +323,61 @@ export function AuthFilesPage() {
       cancelled = true;
     };
   }, [mappingModalOpen, mappingForm.provider, showNotification, t]);
+
+  // 排除列表弹窗：根据 provider 加载模型定义
+  useEffect(() => {
+    if (!excludedModalOpen) return;
+
+    const channel = normalizeProviderKey(excludedForm.provider);
+    if (!channel) {
+      setExcludedModelsList([]);
+      setExcludedModelsError(null);
+      setExcludedModelsLoading(false);
+      return;
+    }
+
+    const cached = modelDefinitionsCacheRef.current.get(channel);
+    if (cached) {
+      setExcludedModelsList(cached);
+      setExcludedModelsError(null);
+      setExcludedModelsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setExcludedModelsLoading(true);
+    setExcludedModelsError(null);
+
+    authFilesApi
+      .getModelDefinitions(channel)
+      .then((models) => {
+        if (cancelled) return;
+        modelDefinitionsCacheRef.current.set(channel, models);
+        setExcludedModelsList(models);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const errorMessage = err instanceof Error ? err.message : '';
+        if (
+          errorMessage.includes('404') ||
+          errorMessage.includes('not found') ||
+          errorMessage.includes('Not Found')
+        ) {
+          setExcludedModelsList([]);
+          setExcludedModelsError('unsupported');
+          return;
+        }
+        showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setExcludedModelsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [excludedModalOpen, excludedForm.provider, showNotification, t]);
 
   const prefixProxyUpdatedText = useMemo(() => {
     if (!prefixProxyEditor?.json) return prefixProxyEditor?.rawText ?? '';
@@ -1008,11 +1066,13 @@ export function AuthFilesPage() {
     const fallbackProvider =
       normalizedProvider || (filter !== 'all' ? normalizeProviderKey(String(filter)) : '');
     const lookupKey = fallbackProvider ? excludedProviderLookup.get(fallbackProvider) : undefined;
-    const models = lookupKey ? excluded[lookupKey] : [];
+    const existingModels = lookupKey ? excluded[lookupKey] : [];
     setExcludedForm({
       provider: lookupKey || fallbackProvider,
-      modelsText: Array.isArray(models) ? models.join('\n') : '',
+      selectedModels: new Set(existingModels),
     });
+    setExcludedModelsList([]);
+    setExcludedModelsError(null);
     setExcludedModalOpen(true);
   };
 
@@ -1022,10 +1082,7 @@ export function AuthFilesPage() {
       showNotification(t('oauth_excluded.provider_required'), 'error');
       return;
     }
-    const models = excludedForm.modelsText
-      .split(/[\n,]+/)
-      .map((item) => item.trim())
-      .filter(Boolean);
+    const models = [...excludedForm.selectedModels];
     setSavingExcluded(true);
     try {
       if (models.length) {
@@ -1886,16 +1943,55 @@ export function AuthFilesPage() {
             </div>
           )}
         </div>
+        {/* 模型勾选列表 */}
         <div className={styles.formGroup}>
           <label>{t('oauth_excluded.models_label')}</label>
-          <textarea
-            className={styles.textarea}
-            rows={4}
-            placeholder={t('oauth_excluded.models_placeholder')}
-            value={excludedForm.modelsText}
-            onChange={(e) => setExcludedForm((prev) => ({ ...prev, modelsText: e.target.value }))}
-          />
-          <div className={styles.hint}>{t('oauth_excluded.models_hint')}</div>
+          {excludedModelsLoading ? (
+            <div className={styles.hint}>{t('common.loading')}</div>
+          ) : excludedModelsList.length > 0 ? (
+            <>
+              <div className={styles.excludedCheckList}>
+                {excludedModelsList.map((model) => {
+                  const isChecked = excludedForm.selectedModels.has(model.id);
+                  return (
+                    <label key={model.id} className={styles.excludedCheckItem}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={savingExcluded}
+                        onChange={(e) => {
+                          setExcludedForm((prev) => {
+                            const next = new Set(prev.selectedModels);
+                            if (e.target.checked) {
+                              next.add(model.id);
+                            } else {
+                              next.delete(model.id);
+                            }
+                            return { ...prev, selectedModels: next };
+                          });
+                        }}
+                      />
+                      <span className={styles.excludedCheckLabel}>
+                        {model.id}
+                        {model.display_name && model.display_name !== model.id && (
+                          <span className={styles.excludedCheckDisplayName}>{model.display_name}</span>
+                        )}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              {excludedForm.provider.trim() && (
+                <div className={styles.hint}>
+                  {excludedModelsError === 'unsupported'
+                    ? t('oauth_excluded.models_unsupported')
+                    : t('oauth_excluded.models_loaded', { count: excludedModelsList.length })}
+                </div>
+              )}
+            </>
+          ) : excludedForm.provider.trim() && !excludedModelsLoading ? (
+            <div className={styles.hint}>{t('oauth_excluded.no_models_available')}</div>
+          ) : null}
         </div>
       </Modal>
 

@@ -995,3 +995,53 @@
   border: 1px solid var(--danger-color);
   flex-shrink: 0;
 }
+
+// 排除模型勾选列表
+.excludedCheckList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  padding: $spacing-sm;
+  background-color: var(--bg-secondary);
+}
+
+.excludedCheckItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background-color: var(--bg-hover);
+  }
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+  }
+}
+
+.excludedCheckLabel {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: 13px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.excludedCheckDisplayName {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: inherit;
+}
