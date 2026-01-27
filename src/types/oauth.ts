@@ -34,11 +34,11 @@ export interface OAuthExcludedModels {
   models: string[];
 }
 
-// OAuth 模型映射
-export interface OAuthModelMappingEntry {
+// OAuth 模型别名
+export interface OAuthModelAliasEntry {
   name: string;
   alias: string;
   fork?: boolean;
 }
 
-export type OAuthModelMappings = Record<string, OAuthModelMappingEntry[]>;
+export type OAuthModelAlias = Record<string, OAuthModelAliasEntry[]>;

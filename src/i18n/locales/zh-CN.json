@@ -512,7 +512,7 @@
     "upgrade_required_title": "需要升级 CPA 版本",
     "upgrade_required_desc": "当前服务器版本不支持获取模型排除列表功能，请升级到最新版本的 CPA（CLI Proxy API）后重试。"
   },
-  "oauth_model_mappings": {
+  "oauth_model_alias": {
     "title": "OAuth 模型别名",
     "add": "新增别名",
     "add_title": "新增提供商模型别名",

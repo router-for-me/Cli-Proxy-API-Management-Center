@@ -512,7 +512,7 @@
     "upgrade_required_title": "Please upgrade CLI Proxy API",
     "upgrade_required_desc": "The current server does not support the OAuth excluded models API. Please upgrade to the latest CLI Proxy API (CPA) version."
   },
-  "oauth_model_mappings": {
+  "oauth_model_alias": {
     "title": "OAuth Model Aliases",
     "add": "Add Alias",
     "add_title": "Add provider model aliases",
