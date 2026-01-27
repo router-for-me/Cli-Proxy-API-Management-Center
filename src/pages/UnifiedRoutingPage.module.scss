@@ -1,0 +1,177 @@
+.container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.enableToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.toggleLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.section {
+  margin-bottom: 1.5rem;
+}
+
+.loadingState,
+.emptyState {
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.emptyState p {
+  margin: 0;
+
+  &:first-child {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+}
+
+.emptyHint {
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+}
+
+.routesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Global styles for route-related elements */
+:global {
+  .route-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .route-item {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      border-color: var(--primary-color);
+      background: var(--bg-hover);
+    }
+
+    &.selected {
+      border-color: var(--primary-color);
+      background: var(--primary-bg);
+    }
+  }
+
+  .route-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .route-item-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .route-name {
+    font-weight: 600;
+    font-family: monospace;
+  }
+
+  .route-status {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+
+    &.enabled {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    &.disabled {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+    }
+  }
+
+  .route-item-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+
+  .route-item-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    margin-bottom: 0.75rem;
+  }
+
+  .route-item-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+  }
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.healthCheckWrapper {
+  margin-bottom: 1rem;
+}

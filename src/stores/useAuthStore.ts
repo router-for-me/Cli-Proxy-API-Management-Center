@@ -10,6 +10,7 @@ import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { secureStorage } from '@/services/storage/secureStorage';
 import { apiClient } from '@/services/api/client';
 import { useConfigStore } from './useConfigStore';
+import { useUnifiedRoutingStore } from './useUnifiedRoutingStore';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 
 interface AuthStoreState extends AuthState {
@@ -130,6 +131,8 @@ export const useAuthStore = create<AuthStoreState>()(
       logout: () => {
         restoreSessionPromise = null;
         useConfigStore.getState().clearCache();
+        // Reset unified routing store to clear stale data
+        useUnifiedRoutingStore.getState().reset();
         set({
           isAuthenticated: false,
           apiBase: '',

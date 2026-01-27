@@ -13,6 +13,7 @@ export interface ModelAlias {
 export interface ApiKeyEntry {
   apiKey: string;
   proxyUrl?: string;
+  proxyDns?: string;
   headers?: Record<string, string>;
 }
 
@@ -29,6 +30,7 @@ export interface ProviderKeyConfig {
   prefix?: string;
   baseUrl?: string;
   proxyUrl?: string;
+  proxyDns?: string;
   headers?: Record<string, string>;
   models?: ModelAlias[];
   excludedModels?: string[];

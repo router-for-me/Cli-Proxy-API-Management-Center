@@ -18,6 +18,7 @@ const buildEmptyForm = (): VertexFormState => ({
   prefix: '',
   baseUrl: '',
   proxyUrl: '',
+  proxyDns: '',
   headers: [],
   models: [],
   modelEntries: [{ name: '', alias: '' }],
@@ -92,6 +93,13 @@ export function VertexModal({
         placeholder={t('ai_providers.vertex_add_modal_proxy_placeholder')}
         value={form.proxyUrl ?? ''}
         onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
+      />
+      <Input
+        label={t('common.proxy_dns_label')}
+        placeholder={t('common.proxy_dns_placeholder')}
+        value={form.proxyDns ?? ''}
+        onChange={(e) => setForm((prev) => ({ ...prev, proxyDns: e.target.value }))}
+        hint={t('common.proxy_dns_hint')}
       />
       <HeaderInputList
         entries={form.headers}

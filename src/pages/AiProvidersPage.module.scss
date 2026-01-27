@@ -16,11 +16,19 @@
   height: 24px;
 }
 
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xl;
+  gap: $spacing-md;
+}
+
 .pageTitle {
   font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 $spacing-xl 0;
+  margin: 0;
 }
 
 .content {
@@ -198,6 +206,82 @@
   }
 }
 
+// 模型健康检查样式
+.modelTagHealthy {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(34, 197, 94, 0.08);
+
+  &:hover {
+    border-color: rgba(34, 197, 94, 0.8);
+  }
+}
+
+.modelTagUnhealthy {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.08);
+
+  &:hover {
+    border-color: rgba(239, 68, 68, 0.8);
+  }
+}
+
+.modelHealthBadge {
+  font-size: 10px;
+  color: rgb(34, 197, 94);
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+.modelHealthBadgeUnhealthy {
+  font-size: 10px;
+  color: var(--danger-color);
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+.modelCheckButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  transition: all 0.15s ease;
+  opacity: 0.5;
+
+  &:hover:not(:disabled) {
+    opacity: 1;
+    background: var(--primary-color);
+
+    .checkIcon {
+      color: white;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+}
+
+.checkIcon {
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--text-tertiary);
+  line-height: 1;
+}
+
+// Provider 级别的健康检查按钮
+.providerHealthCheckButton {
+  min-width: 72px;
+  margin-right: 8px;
+}
+
 // 排除模型标签（警告色）
 .excludedModelTag {
   background: var(--warning-bg, #fef3c7);
@@ -371,30 +455,6 @@
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.4;
-}
-
-.openaiTestButtonSuccess {
-  background-color: var(--success-badge-bg, #d1fae5);
-  border-color: var(--success-badge-border, #6ee7b7);
-  color: var(--success-badge-text, #065f46);
-
-  &:hover {
-    background-color: var(--success-badge-bg, #d1fae5);
-    border-color: var(--success-badge-border, #6ee7b7);
-  }
-}
-
-// 连通性测试按钮高度对齐
-.openaiTestSelect {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.openaiTestButton {
-  flex: 1 1 0;
-  padding: 8px 12px;
-  font-size: 14px;
-  line-height: 1.5;
 }
 
 // 状态监测栏

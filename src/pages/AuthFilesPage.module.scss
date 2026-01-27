@@ -162,6 +162,10 @@
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 
+  @include small-desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -175,6 +179,10 @@
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @include small-desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -190,6 +198,10 @@
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 
+  @include small-desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -203,6 +215,10 @@
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @include small-desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -532,14 +548,14 @@
   align-items: center;
   gap: 8px;
   padding: 4px 0;
-  max-width: 280px;
+  width: 100%;
 }
 
 .statusBlocks {
   display: flex;
   gap: 2px;
   flex: 1;
-  min-width: 180px;
+  min-width: 0;
 }
 
 .statusBlock {
@@ -675,13 +691,14 @@
   align-items: center;
   margin-top: auto;
   padding-top: $spacing-sm;
+  flex-wrap: wrap;
 }
 
 .statusToggle {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  margin-left: $spacing-sm;
+  margin-left: auto;
 }
 
 .iconButton:global(.btn.btn-sm) {
@@ -928,12 +945,12 @@
 .modelItem {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: $spacing-sm;
   padding: $spacing-sm $spacing-md;
   background-color: var(--bg-secondary);
   border-radius: $radius-md;
   border: 1px solid var(--border-color);
-  flex-wrap: wrap;
   cursor: pointer;
   transition: all $transition-fast;
 
@@ -994,4 +1011,91 @@
   border-radius: 8px;
   border: 1px solid var(--danger-color);
   flex-shrink: 0;
+}
+
+.modelItemHealthy {
+  border-color: rgba(34, 197, 94, 0.5);
+  background-color: rgba(34, 197, 94, 0.05);
+
+  &:hover {
+    border-color: rgba(34, 197, 94, 0.8);
+    background-color: rgba(34, 197, 94, 0.1);
+  }
+}
+
+.modelItemUnhealthy {
+  border-color: rgba(239, 68, 68, 0.5);
+  background-color: rgba(239, 68, 68, 0.05);
+
+  &:hover {
+    border-color: rgba(239, 68, 68, 0.8);
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+}
+
+.modelHealthBadge {
+  font-size: 10px;
+  color: rgb(34, 197, 94);
+  background-color: rgba(34, 197, 94, 0.1);
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.modelHealthBadgeUnhealthy {
+  font-size: 10px;
+  color: var(--danger-color);
+  background-color: rgba(239, 68, 68, 0.1);
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--danger-color);
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.modelInfo {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.modelCheckButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all $transition-fast;
+
+  &:hover:not(:disabled) {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+
+    .checkIcon {
+      color: white;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.checkIcon {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--text-tertiary);
+  line-height: 1;
 }

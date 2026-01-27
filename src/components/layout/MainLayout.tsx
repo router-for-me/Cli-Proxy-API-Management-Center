@@ -43,6 +43,16 @@ const sidebarIcons: Record<string, ReactNode> = {
   settings: <IconSlidersHorizontal size={18} />,
   apiKeys: <IconKey size={18} />,
   aiProviders: <IconBot size={18} />,
+  unifiedRouting: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2v6"/>
+      <circle cx="12" cy="12" r="4"/>
+      <path d="m6.34 17.66-4.24 4.24"/>
+      <path d="m17.66 17.66 4.24 4.24"/>
+      <path d="M6.34 6.34 2.1 2.1"/>
+      <path d="m17.66 6.34 4.24-4.24"/>
+    </svg>
+  ),
   authFiles: <IconFileText size={18} />,
   oauth: <IconShield size={18} />,
   quota: <IconTimer size={18} />,
@@ -359,6 +369,7 @@ export function MainLayout() {
     { path: '/', label: t('nav.dashboard'), icon: sidebarIcons.dashboard },
     { path: '/settings', label: t('nav.basic_settings'), icon: sidebarIcons.settings },
     { path: '/api-keys', label: t('nav.api_keys'), icon: sidebarIcons.apiKeys },
+    { path: '/unified-routing', label: t('nav.unified_routing'), icon: sidebarIcons.unifiedRouting },
     { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },

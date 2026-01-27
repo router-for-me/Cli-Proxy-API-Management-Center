@@ -122,13 +122,13 @@ export function SystemPage() {
   };
 
   useEffect(() => {
-    fetchConfig().catch(() => {
+    fetchConfig(undefined, true).catch(() => {
       // ignore
     });
   }, [fetchConfig]);
 
   useEffect(() => {
-    fetchModels();
+    fetchModels({ forceRefresh: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.connectionStatus, auth.apiBase]);
 

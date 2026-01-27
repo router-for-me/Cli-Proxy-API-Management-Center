@@ -83,11 +83,13 @@ const normalizeApiKeyEntry = (entry: any): ApiKeyEntry | null => {
   if (!trimmed) return null;
 
   const proxyUrl = entry['proxy-url'] ?? entry.proxyUrl;
+  const proxyDns = entry['proxy-dns'] ?? entry.proxyDns;
   const headers = normalizeHeaders(entry.headers);
 
   return {
     apiKey: trimmed,
     proxyUrl: proxyUrl ? String(proxyUrl) : undefined,
+    proxyDns: proxyDns ? String(proxyDns) : undefined,
     headers
   };
 };
@@ -103,8 +105,10 @@ const normalizeProviderKeyConfig = (item: any): ProviderKeyConfig | null => {
   if (prefix) config.prefix = prefix;
   const baseUrl = item['base-url'] ?? item.baseUrl;
   const proxyUrl = item['proxy-url'] ?? item.proxyUrl;
+  const proxyDns = item['proxy-dns'] ?? item.proxyDns;
   if (baseUrl) config.baseUrl = String(baseUrl);
   if (proxyUrl) config.proxyUrl = String(proxyUrl);
+  if (proxyDns) config.proxyDns = String(proxyDns);
   const headers = normalizeHeaders(item.headers);
   if (headers) config.headers = headers;
   const models = normalizeModelAliases(item.models);

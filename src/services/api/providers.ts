@@ -41,6 +41,7 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
 const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
   const payload: Record<string, any> = { 'api-key': entry.apiKey };
   if (entry.proxyUrl) payload['proxy-url'] = entry.proxyUrl;
+  if (entry.proxyDns) payload['proxy-dns'] = entry.proxyDns;
   const headers = serializeHeaders(entry.headers);
   if (headers) payload.headers = headers;
   return payload;
@@ -51,6 +52,7 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
+  if (config.proxyDns) payload['proxy-dns'] = config.proxyDns;
   const headers = serializeHeaders(config.headers);
   if (headers) payload.headers = headers;
   const models = serializeModelAliases(config.models);
@@ -78,6 +80,7 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
+  if (config.proxyDns) payload['proxy-dns'] = config.proxyDns;
   const headers = serializeHeaders(config.headers);
   if (headers) payload.headers = headers;
   const models = serializeVertexModelAliases(config.models);
@@ -194,5 +197,60 @@ export const providersApi = {
     apiClient.patch('/openai-compatibility', { index, value: serializeOpenAIProvider(value) }),
 
   deleteOpenAIProvider: (name: string) =>
-    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`)
+    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`),
+
+  // Provider 健康检查 API
+  async listProviders(type?: string): Promise<{
+    total: number;
+    providers: Array<{
+      id: string;
+      name: string;
+      type: string;
+      label?: string;
+      prefix?: string;
+      base_url?: string;
+      proxy_url?: string;
+      api_key?: string;
+      status: string;
+      disabled: boolean;
+    }>;
+  }> {
+    const params = type ? `?type=${encodeURIComponent(type)}` : '';
+    return apiClient.get(`/providers${params}`);
+  },
+
+  async checkProvidersHealth(options?: {
+    name?: string;
+    type?: string;
+    model?: string;
+    models?: string;
+    concurrent?: boolean;
+    timeout?: number;
+  }): Promise<{
+    status: 'healthy' | 'unhealthy' | 'partial';
+    healthy_count: number;
+    unhealthy_count: number;
+    total_count: number;
+    providers: Array<{
+      id: string;
+      name: string;
+      type: string;
+      label?: string;
+      base_url?: string;
+      status: 'healthy' | 'unhealthy';
+      message?: string;
+      latency_ms?: number;
+      model_tested?: string;
+    }>;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.name) params.append('name', options.name);
+    if (options?.type) params.append('type', options.type);
+    if (options?.model) params.append('model', options.model);
+    if (options?.models) params.append('models', options.models);
+    if (options?.concurrent) params.append('concurrent', 'true');
+    if (options?.timeout) params.append('timeout', String(options.timeout));
+    const queryString = params.toString();
+    return apiClient.get(`/providers/health${queryString ? `?${queryString}` : ''}`);
+  }
 };

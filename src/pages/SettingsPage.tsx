@@ -47,7 +47,7 @@ export function SettingsPage() {
       setError('');
       try {
         const [configResult, logsResult, prefixResult, routingResult] = await Promise.allSettled([
-          fetchConfig(),
+          fetchConfig(undefined, true),
           configApi.getLogsMaxTotalSizeMb(),
           configApi.getForceModelPrefix(),
           configApi.getRoutingStrategy(),
@@ -335,6 +335,7 @@ export function SettingsPage() {
           value={proxyValue}
           onChange={(e) => setProxyValue(e.target.value)}
           disabled={disableControls || loading}
+          hint={t('basic_settings.proxy_url_hint')}
         />
         <div style={{ display: 'flex', gap: 12 }}>
           <Button variant="secondary" onClick={handleProxyClear} disabled={disableControls || pending.proxy || loading}>
