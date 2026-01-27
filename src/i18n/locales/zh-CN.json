@@ -316,7 +316,7 @@
     "openai_keys_count": "密钥数量",
     "openai_models_count": "模型数量",
     "openai_test_title": "连通性测试",
-    "openai_test_hint": "使用当前配置向 /v1/chat/completions 请求，验证是否可用。",
+    "openai_test_hint": "使用当前配置向 /chat/completions 请求，验证是否可用。",
     "openai_test_model_placeholder": "选择或输入要测试的模型",
     "openai_test_action": "发送测试",
     "openai_test_running": "正在发送测试请求...",

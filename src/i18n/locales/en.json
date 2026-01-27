@@ -316,7 +316,7 @@
     "openai_keys_count": "Keys Count",
     "openai_models_count": "Models Count",
     "openai_test_title": "Connection Test",
-    "openai_test_hint": "Send a /v1/chat/completions request with the current settings to verify availability.",
+    "openai_test_hint": "Send a /chat/completions request with the current settings to verify availability.",
     "openai_test_model_placeholder": "Model to test",
     "openai_test_action": "Run Test",
     "openai_test_running": "Sending test request...",
