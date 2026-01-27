@@ -2058,14 +2058,14 @@ export function AuthFilesPage() {
           </div>
         )}
         <div className={styles.formGroup}>
-          <label>{t('oauth_model_alias.mappings_label')}</label>
+          <label>{t('oauth_model_alias.alias_label')}</label>
           <div className="header-input-list">
             {(mappingForm.mappings.length ? mappingForm.mappings : [buildEmptyMappingEntry()]).map(
               (entry, index) => (
                 <div key={entry.id} className={styles.mappingRow}>
                   <AutocompleteInput
                     wrapperStyle={{ flex: 1, marginBottom: 0 }}
-                    placeholder={t('oauth_model_alias.mapping_name_placeholder')}
+                    placeholder={t('oauth_model_alias.alias_name_placeholder')}
                     value={entry.name}
                     onChange={(val) => updateMappingEntry(index, 'name', val)}
                     disabled={savingMappings}
@@ -2077,7 +2077,7 @@ export function AuthFilesPage() {
                   <span className={styles.mappingSeparator}>→</span>
                   <input
                     className="input"
-                    placeholder={t('oauth_model_alias.mapping_alias_placeholder')}
+                    placeholder={t('oauth_model_alias.alias_placeholder')}
                     value={entry.alias}
                     onChange={(e) => updateMappingEntry(index, 'alias', e.target.value)}
                     disabled={savingMappings}
@@ -2085,7 +2085,7 @@ export function AuthFilesPage() {
                   />
                   <div className={styles.mappingFork}>
                     <ToggleSwitch
-                      label={t('oauth_model_alias.mapping_fork_label')}
+                      label={t('oauth_model_alias.alias_fork_label')}
                       labelPosition="left"
                       checked={Boolean(entry.fork)}
                       onChange={(value) => updateMappingEntry(index, 'fork', value)}
@@ -2112,10 +2112,9 @@ export function AuthFilesPage() {
               disabled={savingMappings}
               className="align-start"
             >
-              {t('oauth_model_alias.add_mapping')}
+              {t('oauth_model_alias.add_alias')}
             </Button>
           </div>
-          <div className={styles.hint}>{t('oauth_model_alias.mappings_hint')}</div>
         </div>
       </Modal>
     </div>
