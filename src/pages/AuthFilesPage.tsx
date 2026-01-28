@@ -21,7 +21,7 @@ import {
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
-import type { AuthFileItem, OAuthModelMappingEntry } from '@/types';
+import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
 import {
   calculateStatusBarData,
   collectUsageDetails,
@@ -104,12 +104,12 @@ const clampCardPageSize = (value: number) =>
 
 interface ExcludedFormState {
   provider: string;
-  modelsText: string;
+  selectedModels: Set<string>;
 }
 
-type OAuthModelMappingFormEntry = OAuthModelMappingEntry & { id: string };
+type OAuthModelMappingFormEntry = OAuthModelAliasEntry & { id: string };
 
-interface ModelMappingsFormState {
+interface ModelAliasFormState {
   provider: string;
   mappings: OAuthModelMappingFormEntry[];
 }
@@ -232,19 +232,21 @@ export function AuthFilesPage() {
   const [excludedModalOpen, setExcludedModalOpen] = useState(false);
   const [excludedForm, setExcludedForm] = useState<ExcludedFormState>({
     provider: '',
-    modelsText: '',
+    selectedModels: new Set(),
   });
+  const [excludedModelsList, setExcludedModelsList] = useState<AuthFileModelItem[]>([]);
+  const [excludedModelsLoading, setExcludedModelsLoading] = useState(false);
+  const [excludedModelsError, setExcludedModelsError] = useState<'unsupported' | null>(null);
   const [savingExcluded, setSavingExcluded] = useState(false);
 
   // OAuth 模型映射相关
-  const [modelMappings, setModelMappings] = useState<Record<string, OAuthModelMappingEntry[]>>({});
-  const [modelMappingsError, setModelMappingsError] = useState<'unsupported' | null>(null);
+  const [modelAlias, setModelAlias] = useState<Record<string, OAuthModelAliasEntry[]>>({});
+  const [modelAliasError, setModelAliasError] = useState<'unsupported' | null>(null);
   const [mappingModalOpen, setMappingModalOpen] = useState(false);
-  const [mappingForm, setMappingForm] = useState<ModelMappingsFormState>({
+  const [mappingForm, setMappingForm] = useState<ModelAliasFormState>({
     provider: '',
     mappings: [buildEmptyMappingEntry()],
   });
-  const [mappingModelsFileName, setMappingModelsFileName] = useState('');
   const [mappingModelsList, setMappingModelsList] = useState<AuthFileModelItem[]>([]);
   const [mappingModelsLoading, setMappingModelsLoading] = useState(false);
   const [mappingModelsError, setMappingModelsError] = useState<'unsupported' | null>(null);
@@ -265,55 +267,21 @@ export function AuthFilesPage() {
     setPageSizeInput(String(pageSize));
   }, [pageSize]);
 
-  const modelSourceFileOptions = useMemo(() => {
-    const normalizedProvider = normalizeProviderKey(mappingForm.provider);
-    const matching: string[] = [];
-    const others: string[] = [];
-    const seen = new Set<string>();
-
-    files.forEach((file) => {
-      const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
-      const isAistudio = (file.type || '').toLowerCase() === 'aistudio';
-      const canShowModels = !isRuntimeOnly || isAistudio;
-      if (!canShowModels) return;
-
-      const fileName = String(file.name || '').trim();
-      if (!fileName) return;
-      if (seen.has(fileName)) return;
-      seen.add(fileName);
-
-      if (!normalizedProvider) {
-        matching.push(fileName);
-        return;
-      }
-
-      const typeKey = normalizeProviderKey(String(file.type || ''));
-      const providerKey = normalizeProviderKey(String(file.provider || ''));
-      const isMatch = typeKey === normalizedProvider || providerKey === normalizedProvider;
-      if (isMatch) {
-        matching.push(fileName);
-      } else {
-        others.push(fileName);
-      }
-    });
-
-    matching.sort((a, b) => a.localeCompare(b));
-    others.sort((a, b) => a.localeCompare(b));
-    return [...matching, ...others];
-  }, [files, mappingForm.provider]);
+  // 模型定义缓存（按 channel 缓存）
+  const modelDefinitionsCacheRef = useRef<Map<string, AuthFileModelItem[]>>(new Map());
 
   useEffect(() => {
     if (!mappingModalOpen) return;
 
-    const fileName = mappingModelsFileName.trim();
-    if (!fileName) {
+    const channel = normalizeProviderKey(mappingForm.provider);
+    if (!channel) {
       setMappingModelsList([]);
       setMappingModelsError(null);
       setMappingModelsLoading(false);
       return;
     }
 
-    const cached = modelsCacheRef.current.get(fileName);
+    const cached = modelDefinitionsCacheRef.current.get(channel);
     if (cached) {
       setMappingModelsList(cached);
       setMappingModelsError(null);
@@ -326,10 +294,10 @@ export function AuthFilesPage() {
     setMappingModelsError(null);
 
     authFilesApi
-      .getModelsForAuthFile(fileName)
+      .getModelDefinitions(channel)
       .then((models) => {
         if (cancelled) return;
-        modelsCacheRef.current.set(fileName, models);
+        modelDefinitionsCacheRef.current.set(channel, models);
         setMappingModelsList(models);
       })
       .catch((err: unknown) => {
@@ -354,7 +322,62 @@ export function AuthFilesPage() {
     return () => {
       cancelled = true;
     };
-  }, [mappingModalOpen, mappingModelsFileName, showNotification, t]);
+  }, [mappingModalOpen, mappingForm.provider, showNotification, t]);
+
+  // 排除列表弹窗：根据 provider 加载模型定义
+  useEffect(() => {
+    if (!excludedModalOpen) return;
+
+    const channel = normalizeProviderKey(excludedForm.provider);
+    if (!channel) {
+      setExcludedModelsList([]);
+      setExcludedModelsError(null);
+      setExcludedModelsLoading(false);
+      return;
+    }
+
+    const cached = modelDefinitionsCacheRef.current.get(channel);
+    if (cached) {
+      setExcludedModelsList(cached);
+      setExcludedModelsError(null);
+      setExcludedModelsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setExcludedModelsLoading(true);
+    setExcludedModelsError(null);
+
+    authFilesApi
+      .getModelDefinitions(channel)
+      .then((models) => {
+        if (cancelled) return;
+        modelDefinitionsCacheRef.current.set(channel, models);
+        setExcludedModelsList(models);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const errorMessage = err instanceof Error ? err.message : '';
+        if (
+          errorMessage.includes('404') ||
+          errorMessage.includes('not found') ||
+          errorMessage.includes('Not Found')
+        ) {
+          setExcludedModelsList([]);
+          setExcludedModelsError('unsupported');
+          return;
+        }
+        showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setExcludedModelsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [excludedModalOpen, excludedForm.provider, showNotification, t]);
 
   const prefixProxyUpdatedText = useMemo(() => {
     if (!prefixProxyEditor?.json) return prefixProxyEditor?.rawText ?? '';
@@ -489,12 +512,12 @@ export function AuthFilesPage() {
   }, [showNotification, t]);
 
   // 加载 OAuth 模型映射
-  const loadModelMappings = useCallback(async () => {
+  const loadModelAlias = useCallback(async () => {
     try {
-      const res = await authFilesApi.getOauthModelMappings();
+      const res = await authFilesApi.getOauthModelAlias();
       mappingsUnsupportedRef.current = false;
-      setModelMappings(res || {});
-      setModelMappingsError(null);
+      setModelAlias(res || {});
+      setModelAliasError(null);
     } catch (err: unknown) {
       const status =
         typeof err === 'object' && err !== null && 'status' in err
@@ -502,11 +525,11 @@ export function AuthFilesPage() {
           : undefined;
 
       if (status === 404) {
-        setModelMappings({});
-        setModelMappingsError('unsupported');
+        setModelAlias({});
+        setModelAliasError('unsupported');
         if (!mappingsUnsupportedRef.current) {
           mappingsUnsupportedRef.current = true;
-          showNotification(t('oauth_model_mappings.upgrade_required'), 'warning');
+          showNotification(t('oauth_model_alias.upgrade_required'), 'warning');
         }
         return;
       }
@@ -515,8 +538,8 @@ export function AuthFilesPage() {
   }, [showNotification, t]);
 
   const handleHeaderRefresh = useCallback(async () => {
-    await Promise.all([loadFiles(), loadKeyStats(), loadExcluded(), loadModelMappings()]);
-  }, [loadFiles, loadKeyStats, loadExcluded, loadModelMappings]);
+    await Promise.all([loadFiles(), loadKeyStats(), loadExcluded(), loadModelAlias()]);
+  }, [loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
 
   useHeaderRefresh(handleHeaderRefresh);
 
@@ -524,8 +547,8 @@ export function AuthFilesPage() {
     loadFiles();
     loadKeyStats();
     loadExcluded();
-    loadModelMappings();
-  }, [loadFiles, loadKeyStats, loadExcluded, loadModelMappings]);
+    loadModelAlias();
+  }, [loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
 
   // 定时刷新状态数据（每240秒）
   useInterval(loadKeyStats, 240_000);
@@ -554,14 +577,14 @@ export function AuthFilesPage() {
 
   const mappingProviderLookup = useMemo(() => {
     const lookup = new Map<string, string>();
-    Object.keys(modelMappings).forEach((provider) => {
+    Object.keys(modelAlias).forEach((provider) => {
       const key = provider.trim().toLowerCase();
       if (key && !lookup.has(key)) {
         lookup.set(key, provider);
       }
     });
     return lookup;
-  }, [modelMappings]);
+  }, [modelAlias]);
 
   const providerOptions = useMemo(() => {
     const extraProviders = new Set<string>();
@@ -569,7 +592,7 @@ export function AuthFilesPage() {
     Object.keys(excluded).forEach((provider) => {
       extraProviders.add(provider);
     });
-    Object.keys(modelMappings).forEach((provider) => {
+    Object.keys(modelAlias).forEach((provider) => {
       extraProviders.add(provider);
     });
     files.forEach((file) => {
@@ -591,7 +614,7 @@ export function AuthFilesPage() {
       .sort((a, b) => a.localeCompare(b));
 
     return [...OAUTH_PROVIDER_PRESETS, ...extraList];
-  }, [excluded, files, modelMappings]);
+  }, [excluded, files, modelAlias]);
 
   // 过滤和搜索
   const filtered = useMemo(() => {
@@ -1043,11 +1066,13 @@ export function AuthFilesPage() {
     const fallbackProvider =
       normalizedProvider || (filter !== 'all' ? normalizeProviderKey(String(filter)) : '');
     const lookupKey = fallbackProvider ? excludedProviderLookup.get(fallbackProvider) : undefined;
-    const models = lookupKey ? excluded[lookupKey] : [];
+    const existingModels = lookupKey ? excluded[lookupKey] : [];
     setExcludedForm({
       provider: lookupKey || fallbackProvider,
-      modelsText: Array.isArray(models) ? models.join('\n') : '',
+      selectedModels: new Set(existingModels),
     });
+    setExcludedModelsList([]);
+    setExcludedModelsError(null);
     setExcludedModalOpen(true);
   };
 
@@ -1057,10 +1082,7 @@ export function AuthFilesPage() {
       showNotification(t('oauth_excluded.provider_required'), 'error');
       return;
     }
-    const models = excludedForm.modelsText
-      .split(/[\n,]+/)
-      .map((item) => item.trim())
-      .filter(Boolean);
+    const models = [...excludedForm.selectedModels];
     setSavingExcluded(true);
     try {
       if (models.length) {
@@ -1123,7 +1145,7 @@ export function AuthFilesPage() {
 
   // OAuth 模型映射相关方法
   const normalizeMappingEntries = (
-    entries?: OAuthModelMappingEntry[]
+    entries?: OAuthModelAliasEntry[]
   ): OAuthModelMappingFormEntry[] => {
     if (!Array.isArray(entries) || entries.length === 0) {
       return [buildEmptyMappingEntry()];
@@ -1142,29 +1164,13 @@ export function AuthFilesPage() {
     const lookupKey = fallbackProvider
       ? mappingProviderLookup.get(fallbackProvider.toLowerCase())
       : undefined;
-    const mappings = lookupKey ? modelMappings[lookupKey] : [];
+    const mappings = lookupKey ? modelAlias[lookupKey] : [];
     const providerValue = lookupKey || fallbackProvider;
-
-    const normalizedProviderKey = normalizeProviderKey(providerValue);
-    const defaultModelsFileName = files
-      .filter((file) => {
-        const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
-        const isAistudio = (file.type || '').toLowerCase() === 'aistudio';
-        const canShowModels = !isRuntimeOnly || isAistudio;
-        if (!canShowModels) return false;
-        if (!normalizedProviderKey) return false;
-        const typeKey = normalizeProviderKey(String(file.type || ''));
-        const providerKey = normalizeProviderKey(String(file.provider || ''));
-        return typeKey === normalizedProviderKey || providerKey === normalizedProviderKey;
-      })
-      .map((file) => file.name)
-      .sort((a, b) => a.localeCompare(b))[0];
 
     setMappingForm({
       provider: providerValue,
       mappings: normalizeMappingEntries(mappings),
     });
-    setMappingModelsFileName(defaultModelsFileName || '');
     setMappingModelsList([]);
     setMappingModelsError(null);
     setMappingModalOpen(true);
@@ -1172,7 +1178,7 @@ export function AuthFilesPage() {
 
   const updateMappingEntry = (
     index: number,
-    field: keyof OAuthModelMappingEntry,
+    field: keyof OAuthModelAliasEntry,
     value: string | boolean
   ) => {
     setMappingForm((prev) => ({
@@ -1200,10 +1206,10 @@ export function AuthFilesPage() {
     });
   };
 
-  const saveModelMappings = async () => {
+  const saveModelAlias = async () => {
     const provider = mappingForm.provider.trim();
     if (!provider) {
-      showNotification(t('oauth_model_mappings.provider_required'), 'error');
+      showNotification(t('oauth_model_alias.provider_required'), 'error');
       return;
     }
 
@@ -1218,40 +1224,40 @@ export function AuthFilesPage() {
         seen.add(key);
         return entry.fork ? { name, alias, fork: true } : { name, alias };
       })
-      .filter(Boolean) as OAuthModelMappingEntry[];
+      .filter(Boolean) as OAuthModelAliasEntry[];
 
     setSavingMappings(true);
     try {
       if (mappings.length) {
-        await authFilesApi.saveOauthModelMappings(provider, mappings);
+        await authFilesApi.saveOauthModelAlias(provider, mappings);
       } else {
-        await authFilesApi.deleteOauthModelMappings(provider);
+        await authFilesApi.deleteOauthModelAlias(provider);
       }
-      await loadModelMappings();
-      showNotification(t('oauth_model_mappings.save_success'), 'success');
+      await loadModelAlias();
+      showNotification(t('oauth_model_alias.save_success'), 'success');
       setMappingModalOpen(false);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '';
-      showNotification(`${t('oauth_model_mappings.save_failed')}: ${errorMessage}`, 'error');
+      showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
     } finally {
       setSavingMappings(false);
     }
   };
 
-  const deleteModelMappings = async (provider: string) => {
+  const deleteModelAlias = async (provider: string) => {
     showConfirmation({
-      title: t('oauth_model_mappings.delete_title', { defaultValue: 'Delete Mappings' }),
-      message: t('oauth_model_mappings.delete_confirm', { provider }),
+      title: t('oauth_model_alias.delete_title', { defaultValue: 'Delete Mappings' }),
+      message: t('oauth_model_alias.delete_confirm', { provider }),
       variant: 'danger',
       confirmText: t('common.confirm'),
       onConfirm: async () => {
         try {
-          await authFilesApi.deleteOauthModelMappings(provider);
-          await loadModelMappings();
-          showNotification(t('oauth_model_mappings.delete_success'), 'success');
+          await authFilesApi.deleteOauthModelAlias(provider);
+          await loadModelAlias();
+          showNotification(t('oauth_model_alias.delete_success'), 'success');
         } catch (err: unknown) {
           const errorMessage = err instanceof Error ? err.message : '';
-          showNotification(`${t('oauth_model_mappings.delete_failed')}: ${errorMessage}`, 'error');
+          showNotification(`${t('oauth_model_alias.delete_failed')}: ${errorMessage}`, 'error');
         }
       },
     });
@@ -1657,42 +1663,42 @@ export function AuthFilesPage() {
 
       {/* OAuth 模型映射卡片 */}
       <Card
-        title={t('oauth_model_mappings.title')}
+        title={t('oauth_model_alias.title')}
         extra={
           <Button
             size="sm"
             onClick={() => openMappingsModal()}
-            disabled={disableControls || modelMappingsError === 'unsupported'}
+            disabled={disableControls || modelAliasError === 'unsupported'}
           >
-            {t('oauth_model_mappings.add')}
+            {t('oauth_model_alias.add')}
           </Button>
         }
       >
-        {modelMappingsError === 'unsupported' ? (
+        {modelAliasError === 'unsupported' ? (
           <EmptyState
-            title={t('oauth_model_mappings.upgrade_required_title')}
-            description={t('oauth_model_mappings.upgrade_required_desc')}
+            title={t('oauth_model_alias.upgrade_required_title')}
+            description={t('oauth_model_alias.upgrade_required_desc')}
           />
-        ) : Object.keys(modelMappings).length === 0 ? (
-          <EmptyState title={t('oauth_model_mappings.list_empty_all')} />
+        ) : Object.keys(modelAlias).length === 0 ? (
+          <EmptyState title={t('oauth_model_alias.list_empty_all')} />
         ) : (
           <div className={styles.excludedList}>
-            {Object.entries(modelMappings).map(([provider, mappings]) => (
+            {Object.entries(modelAlias).map(([provider, mappings]) => (
               <div key={provider} className={styles.excludedItem}>
                 <div className={styles.excludedInfo}>
                   <div className={styles.excludedProvider}>{provider}</div>
                   <div className={styles.excludedModels}>
                     {mappings?.length
-                      ? t('oauth_model_mappings.model_count', { count: mappings.length })
-                      : t('oauth_model_mappings.no_models')}
+                      ? t('oauth_model_alias.model_count', { count: mappings.length })
+                      : t('oauth_model_alias.no_models')}
                   </div>
                 </div>
                 <div className={styles.excludedActions}>
                   <Button variant="secondary" size="sm" onClick={() => openMappingsModal(provider)}>
                     {t('common.edit')}
                   </Button>
-                  <Button variant="danger" size="sm" onClick={() => deleteModelMappings(provider)}>
-                    {t('oauth_model_mappings.delete')}
+                  <Button variant="danger" size="sm" onClick={() => deleteModelAlias(provider)}>
+                    {t('oauth_model_alias.delete')}
                   </Button>
                 </div>
               </div>
@@ -1937,16 +1943,55 @@ export function AuthFilesPage() {
             </div>
           )}
         </div>
+        {/* 模型勾选列表 */}
         <div className={styles.formGroup}>
           <label>{t('oauth_excluded.models_label')}</label>
-          <textarea
-            className={styles.textarea}
-            rows={4}
-            placeholder={t('oauth_excluded.models_placeholder')}
-            value={excludedForm.modelsText}
-            onChange={(e) => setExcludedForm((prev) => ({ ...prev, modelsText: e.target.value }))}
-          />
-          <div className={styles.hint}>{t('oauth_excluded.models_hint')}</div>
+          {excludedModelsLoading ? (
+            <div className={styles.hint}>{t('common.loading')}</div>
+          ) : excludedModelsList.length > 0 ? (
+            <>
+              <div className={styles.excludedCheckList}>
+                {excludedModelsList.map((model) => {
+                  const isChecked = excludedForm.selectedModels.has(model.id);
+                  return (
+                    <label key={model.id} className={styles.excludedCheckItem}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={savingExcluded}
+                        onChange={(e) => {
+                          setExcludedForm((prev) => {
+                            const next = new Set(prev.selectedModels);
+                            if (e.target.checked) {
+                              next.add(model.id);
+                            } else {
+                              next.delete(model.id);
+                            }
+                            return { ...prev, selectedModels: next };
+                          });
+                        }}
+                      />
+                      <span className={styles.excludedCheckLabel}>
+                        {model.id}
+                        {model.display_name && model.display_name !== model.id && (
+                          <span className={styles.excludedCheckDisplayName}>{model.display_name}</span>
+                        )}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              {excludedForm.provider.trim() && (
+                <div className={styles.hint}>
+                  {excludedModelsError === 'unsupported'
+                    ? t('oauth_excluded.models_unsupported')
+                    : t('oauth_excluded.models_loaded', { count: excludedModelsList.length })}
+                </div>
+              )}
+            </>
+          ) : excludedForm.provider.trim() && !excludedModelsLoading ? (
+            <div className={styles.hint}>{t('oauth_excluded.no_models_available')}</div>
+          ) : null}
         </div>
       </Modal>
 
@@ -1954,7 +1999,7 @@ export function AuthFilesPage() {
       <Modal
         open={mappingModalOpen}
         onClose={() => setMappingModalOpen(false)}
-        title={t('oauth_model_mappings.add_title')}
+        title={t('oauth_model_alias.add_title')}
         footer={
           <>
             <Button
@@ -1964,8 +2009,8 @@ export function AuthFilesPage() {
             >
               {t('common.cancel')}
             </Button>
-            <Button onClick={saveModelMappings} loading={savingMappings}>
-              {t('oauth_model_mappings.save')}
+            <Button onClick={saveModelAlias} loading={savingMappings}>
+              {t('oauth_model_alias.save')}
             </Button>
           </>
         }
@@ -1973,9 +2018,9 @@ export function AuthFilesPage() {
         <div className={styles.providerField}>
           <AutocompleteInput
             id="oauth-model-alias-provider"
-            label={t('oauth_model_mappings.provider_label')}
-            hint={t('oauth_model_mappings.provider_hint')}
-            placeholder={t('oauth_model_mappings.provider_placeholder')}
+            label={t('oauth_model_alias.provider_label')}
+            hint={t('oauth_model_alias.provider_hint')}
+            placeholder={t('oauth_model_alias.provider_placeholder')}
             value={mappingForm.provider}
             onChange={(val) => setMappingForm((prev) => ({ ...prev, provider: val }))}
             options={providerOptions}
@@ -2000,37 +2045,27 @@ export function AuthFilesPage() {
             </div>
           )}
         </div>
-        <div className={styles.providerField}>
-          <AutocompleteInput
-            id="oauth-model-mapping-model-source"
-            label={t('oauth_model_mappings.model_source_label')}
-            hint={
-              mappingModelsLoading
-                ? t('oauth_model_mappings.model_source_loading')
-                : mappingModelsError === 'unsupported'
-                  ? t('oauth_model_mappings.model_source_unsupported')
-                  : !mappingModelsFileName.trim()
-                    ? t('oauth_model_mappings.model_source_hint')
-                    : t('oauth_model_mappings.model_source_loaded', {
-                        count: mappingModelsList.length,
-                      })
-            }
-            placeholder={t('oauth_model_mappings.model_source_placeholder')}
-            value={mappingModelsFileName}
-            onChange={(val) => setMappingModelsFileName(val)}
-            disabled={savingMappings}
-            options={modelSourceFileOptions}
-          />
-        </div>
+        {/* 模型定义加载状态提示 */}
+        {mappingForm.provider.trim() && (
+          <div className={styles.hint}>
+            {mappingModelsLoading
+              ? t('oauth_model_alias.model_source_loading')
+              : mappingModelsError === 'unsupported'
+                ? t('oauth_model_alias.model_source_unsupported')
+                : t('oauth_model_alias.model_source_loaded', {
+                    count: mappingModelsList.length,
+                  })}
+          </div>
+        )}
         <div className={styles.formGroup}>
-          <label>{t('oauth_model_mappings.mappings_label')}</label>
+          <label>{t('oauth_model_alias.alias_label')}</label>
           <div className="header-input-list">
             {(mappingForm.mappings.length ? mappingForm.mappings : [buildEmptyMappingEntry()]).map(
               (entry, index) => (
                 <div key={entry.id} className={styles.mappingRow}>
                   <AutocompleteInput
                     wrapperStyle={{ flex: 1, marginBottom: 0 }}
-                    placeholder={t('oauth_model_mappings.mapping_name_placeholder')}
+                    placeholder={t('oauth_model_alias.alias_name_placeholder')}
                     value={entry.name}
                     onChange={(val) => updateMappingEntry(index, 'name', val)}
                     disabled={savingMappings}
@@ -2042,7 +2077,7 @@ export function AuthFilesPage() {
                   <span className={styles.mappingSeparator}>→</span>
                   <input
                     className="input"
-                    placeholder={t('oauth_model_mappings.mapping_alias_placeholder')}
+                    placeholder={t('oauth_model_alias.alias_placeholder')}
                     value={entry.alias}
                     onChange={(e) => updateMappingEntry(index, 'alias', e.target.value)}
                     disabled={savingMappings}
@@ -2050,7 +2085,7 @@ export function AuthFilesPage() {
                   />
                   <div className={styles.mappingFork}>
                     <ToggleSwitch
-                      label={t('oauth_model_mappings.mapping_fork_label')}
+                      label={t('oauth_model_alias.alias_fork_label')}
                       labelPosition="left"
                       checked={Boolean(entry.fork)}
                       onChange={(value) => updateMappingEntry(index, 'fork', value)}
@@ -2077,10 +2112,9 @@ export function AuthFilesPage() {
               disabled={savingMappings}
               className="align-start"
             >
-              {t('oauth_model_mappings.add_mapping')}
+              {t('oauth_model_alias.add_alias')}
             </Button>
           </div>
-          <div className={styles.hint}>{t('oauth_model_mappings.mappings_hint')}</div>
         </div>
       </Modal>
     </div>

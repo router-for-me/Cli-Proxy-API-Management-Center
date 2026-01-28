@@ -4,7 +4,7 @@
 
 import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
-import type { OAuthModelMappingEntry } from '@/types';
+import type { OAuthModelAliasEntry } from '@/types';
 
 type StatusError = { status?: number };
 type AuthFileStatusResponse = { status: string; disabled: boolean };
@@ -53,18 +53,17 @@ const normalizeOauthExcludedModels = (payload: unknown): Record<string, string[]
   return result;
 };
 
-const normalizeOauthModelMappings = (payload: unknown): Record<string, OAuthModelMappingEntry[]> => {
+const normalizeOauthModelAlias = (payload: unknown): Record<string, OAuthModelAliasEntry[]> => {
   if (!payload || typeof payload !== 'object') return {};
 
   const record = payload as Record<string, unknown>;
   const source =
-    record['oauth-model-mappings'] ??
     record['oauth-model-alias'] ??
     record.items ??
     payload;
   if (!source || typeof source !== 'object') return {};
 
-  const result: Record<string, OAuthModelMappingEntry[]> = {};
+  const result: Record<string, OAuthModelAliasEntry[]> = {};
 
   Object.entries(source as Record<string, unknown>).forEach(([channel, mappings]) => {
     const key = String(channel ?? '')
@@ -86,12 +85,12 @@ const normalizeOauthModelMappings = (payload: unknown): Record<string, OAuthMode
 	      })
       .filter(Boolean)
       .filter((entry) => {
-        const mapping = entry as OAuthModelMappingEntry;
-        const dedupeKey = `${mapping.name.toLowerCase()}::${mapping.alias.toLowerCase()}::${mapping.fork ? '1' : '0'}`;
+        const aliasEntry = entry as OAuthModelAliasEntry;
+        const dedupeKey = `${aliasEntry.name.toLowerCase()}::${aliasEntry.alias.toLowerCase()}::${aliasEntry.fork ? '1' : '0'}`;
         if (seen.has(dedupeKey)) return false;
         seen.add(dedupeKey);
         return true;
-      }) as OAuthModelMappingEntry[];
+      }) as OAuthModelAliasEntry[];
 
     if (normalized.length) {
       result[key] = normalized;
@@ -101,8 +100,7 @@ const normalizeOauthModelMappings = (payload: unknown): Record<string, OAuthMode
   return result;
 };
 
-const OAUTH_MODEL_MAPPINGS_ENDPOINT = '/oauth-model-mappings';
-const OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT = '/oauth-model-alias';
+const OAUTH_MODEL_ALIAS_ENDPOINT = '/oauth-model-alias';
 
 export const authFilesApi = {
   list: () => apiClient.get<AuthFilesResponse>('/auth-files'),
@@ -143,69 +141,45 @@ export const authFilesApi = {
   replaceOauthExcludedModels: (map: Record<string, string[]>) =>
     apiClient.put('/oauth-excluded-models', normalizeOauthExcludedModels(map)),
 
-  // OAuth 模型映射
-  async getOauthModelMappings(): Promise<Record<string, OAuthModelMappingEntry[]>> {
-    try {
-      const data = await apiClient.get(OAUTH_MODEL_MAPPINGS_ENDPOINT);
-      return normalizeOauthModelMappings(data);
-    } catch (err: unknown) {
-      if (getStatusCode(err) !== 404) throw err;
-      const data = await apiClient.get(OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT);
-      return normalizeOauthModelMappings(data);
-    }
+  // OAuth 模型别名
+  async getOauthModelAlias(): Promise<Record<string, OAuthModelAliasEntry[]>> {
+    const data = await apiClient.get(OAUTH_MODEL_ALIAS_ENDPOINT);
+    return normalizeOauthModelAlias(data);
   },
 
-  saveOauthModelMappings: async (channel: string, mappings: OAuthModelMappingEntry[]) => {
+  saveOauthModelAlias: async (channel: string, aliases: OAuthModelAliasEntry[]) => {
     const normalizedChannel = String(channel ?? '')
       .trim()
       .toLowerCase();
-    const normalizedMappings = normalizeOauthModelMappings({ [normalizedChannel]: mappings })[normalizedChannel] ?? [];
-
-    try {
-      await apiClient.patch(OAUTH_MODEL_MAPPINGS_ENDPOINT, { channel: normalizedChannel, mappings: normalizedMappings });
-      return;
-    } catch (err: unknown) {
-      if (getStatusCode(err) !== 404) throw err;
-      await apiClient.patch(OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT, { channel: normalizedChannel, aliases: normalizedMappings });
-    }
+    const normalizedAliases = normalizeOauthModelAlias({ [normalizedChannel]: aliases })[normalizedChannel] ?? [];
+    await apiClient.patch(OAUTH_MODEL_ALIAS_ENDPOINT, { channel: normalizedChannel, aliases: normalizedAliases });
   },
 
-  deleteOauthModelMappings: async (channel: string) => {
+  deleteOauthModelAlias: async (channel: string) => {
     const normalizedChannel = String(channel ?? '')
       .trim()
       .toLowerCase();
 
-    const deleteViaPatch = async () => {
-      try {
-        await apiClient.patch(OAUTH_MODEL_MAPPINGS_ENDPOINT, { channel: normalizedChannel, mappings: [] });
-        return true;
-      } catch (err: unknown) {
-        if (getStatusCode(err) !== 404) throw err;
-        await apiClient.patch(OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT, { channel: normalizedChannel, aliases: [] });
-        return true;
-      }
-    };
-
     try {
-      await deleteViaPatch();
-      return;
+      await apiClient.patch(OAUTH_MODEL_ALIAS_ENDPOINT, { channel: normalizedChannel, aliases: [] });
     } catch (err: unknown) {
       const status = getStatusCode(err);
       if (status !== 405) throw err;
-    }
-
-    try {
-      await apiClient.delete(`${OAUTH_MODEL_MAPPINGS_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
-      return;
-    } catch (err: unknown) {
-      if (getStatusCode(err) !== 404) throw err;
-      await apiClient.delete(`${OAUTH_MODEL_MAPPINGS_LEGACY_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
+      await apiClient.delete(`${OAUTH_MODEL_ALIAS_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
     }
   },
 
   // 获取认证凭证支持的模型
   async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
     const data = await apiClient.get(`/auth-files/models?name=${encodeURIComponent(name)}`);
+    return (data && Array.isArray(data['models'])) ? data['models'] : [];
+  },
+
+  // 获取指定 channel 的模型定义
+  async getModelDefinitions(channel: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
+    const normalizedChannel = String(channel ?? '').trim().toLowerCase();
+    if (!normalizedChannel) return [];
+    const data = await apiClient.get(`/model-definitions/${encodeURIComponent(normalizedChannel)}`);
     return (data && Array.isArray(data['models'])) ? data['models'] : [];
   }
 };
