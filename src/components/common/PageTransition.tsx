@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ReactNode, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, type Location } from 'react-router-dom';
 import gsap from 'gsap';
 import './PageTransition.scss';
@@ -64,7 +64,7 @@ export function PageTransition({
     return document.scrollingElement as HTMLElement | null;
   }, [scrollContainerRef]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isAnimating) return;
     if (location.key === currentLayerKey) return;
     if (currentLayerPathname === location.pathname) return;
@@ -89,39 +89,38 @@ export function PageTransition({
       ? getTransitionVariant(currentLayerPathname ?? '', location.pathname)
       : 'vertical';
 
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      setLayers((prev) => {
-        const variant = transitionVariantRef.current;
-        const direction = transitionDirectionRef.current;
-        const previousCurrentIndex = prev.findIndex((layer) => layer.status === 'current');
-        const resolvedCurrentIndex =
-          previousCurrentIndex >= 0 ? previousCurrentIndex : prev.length - 1;
-        const previousCurrent = prev[resolvedCurrentIndex];
-        const previousStack: Layer[] = prev
-          .filter((_, idx) => idx !== resolvedCurrentIndex)
-          .map((layer): Layer => ({ ...layer, status: 'stacked' }));
+    setLayers((prev) => {
+      const variant = transitionVariantRef.current;
+      const direction = transitionDirectionRef.current;
+      const previousCurrentIndex = prev.findIndex((layer) => layer.status === 'current');
+      const resolvedCurrentIndex =
+        previousCurrentIndex >= 0 ? previousCurrentIndex : prev.length - 1;
+      const previousCurrent = prev[resolvedCurrentIndex];
+      const previousStack: Layer[] = prev
+        .filter((_, idx) => idx !== resolvedCurrentIndex)
+        .map((layer): Layer => ({ ...layer, status: 'stacked' }));
 
-        const nextCurrent: Layer = { key: location.key, location, status: 'current' };
+      const nextCurrent: Layer = { key: location.key, location, status: 'current' };
 
-        if (!previousCurrent) {
-          nextLayersRef.current = [nextCurrent];
-          return [nextCurrent];
+      if (!previousCurrent) {
+        nextLayersRef.current = [nextCurrent];
+        return [nextCurrent];
+      }
+
+      if (variant === 'ios') {
+        if (direction === 'forward') {
+          const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
+          const stackedLayer: Layer = { ...previousCurrent, status: 'stacked' };
+
+          nextLayersRef.current = [...previousStack, stackedLayer, nextCurrent];
+          return [...previousStack, exitingLayer, nextCurrent];
         }
 
-        if (variant === 'ios') {
-          if (direction === 'forward') {
-            const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
-            const stackedLayer: Layer = { ...previousCurrent, status: 'stacked' };
-
-            nextLayersRef.current = [...previousStack, stackedLayer, nextCurrent];
-            return [...previousStack, exitingLayer, nextCurrent];
-          }
-
-          const targetIndex = prev.findIndex((layer) => layer.key === location.key);
-          if (targetIndex !== -1) {
-            const targetStack: Layer[] = prev.slice(0, targetIndex + 1).map((layer, idx): Layer => {
+        const targetIndex = prev.findIndex((layer) => layer.key === location.key);
+        if (targetIndex !== -1) {
+          const targetStack: Layer[] = prev
+            .slice(0, targetIndex + 1)
+            .map((layer, idx): Layer => {
               const isTarget = idx === targetIndex;
               return {
                 ...layer,
@@ -130,24 +129,19 @@ export function PageTransition({
               };
             });
 
-            const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
+          const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
 
-            nextLayersRef.current = targetStack;
-            return [...targetStack, exitingLayer];
-          }
+          nextLayersRef.current = targetStack;
+          return [...targetStack, exitingLayer];
         }
+      }
 
-        const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
+      const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
 
-        nextLayersRef.current = [nextCurrent];
-        return [exitingLayer, nextCurrent];
-      });
-      setIsAnimating(true);
+      nextLayersRef.current = [nextCurrent];
+      return [exitingLayer, nextCurrent];
     });
-
-    return () => {
-      cancelled = true;
-    };
+    setIsAnimating(true);
   }, [
     isAnimating,
     location,
@@ -186,6 +180,10 @@ export function PageTransition({
         nextLayersRef.current = null;
         setLayers((prev) => nextLayers ?? prev.filter((layer) => layer.status !== 'exiting'));
         setIsAnimating(false);
+
+        if (currentLayerEl) {
+          gsap.set(currentLayerEl, { clearProps: 'transform,opacity,boxShadow' });
+        }
       },
     });
 
@@ -202,14 +200,12 @@ export function PageTransition({
           y: exitBaseY,
           xPercent: 0,
           opacity: 1,
-          zIndex: isForward ? 0 : 1,
         });
       }
 
       gsap.set(currentLayerEl, {
         xPercent: enterFromXPercent,
         opacity: 1,
-        zIndex: isForward ? 1 : 0,
       });
 
       const shadowValue = '-14px 0 24px rgba(0, 0, 0, 0.16)';
@@ -241,14 +237,6 @@ export function PageTransition({
           duration: IOS_TRANSITION_DURATION,
           ease: 'power2.out',
           force3D: true,
-          onComplete: () => {
-            if (currentLayerEl) {
-              gsap.set(currentLayerEl, { clearProps: 'transform,opacity,boxShadow,zIndex' });
-            }
-            if (exitingLayerEl) {
-              gsap.set(exitingLayerEl, { clearProps: 'transform,opacity,boxShadow,zIndex' });
-            }
-          },
         },
         0
       );
@@ -300,10 +288,13 @@ export function PageTransition({
       {layers.map((layer) => (
         <div
           key={layer.key}
-          className={`page-transition__layer${
-            layer.status === 'exiting' ? ' page-transition__layer--exit' : ''
-          }${layer.status === 'stacked' ? ' page-transition__layer--stacked' : ''
-          }`}
+          className={[
+            'page-transition__layer',
+            layer.status === 'exiting' ? 'page-transition__layer--exit' : '',
+            layer.status === 'stacked' ? 'page-transition__layer--stacked' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
           ref={
             layer.status === 'exiting'
               ? exitingLayerRef
