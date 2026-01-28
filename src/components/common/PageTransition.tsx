@@ -6,13 +6,20 @@ import './PageTransition.scss';
 interface PageTransitionProps {
   render: (location: Location) => ReactNode;
   getRouteOrder?: (pathname: string) => number | null;
+  getTransitionVariant?: (fromPathname: string, toPathname: string) => TransitionVariant;
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
-const TRANSITION_DURATION = 0.35;
-const TRAVEL_DISTANCE = 60;
+const VERTICAL_TRANSITION_DURATION = 0.35;
+const VERTICAL_TRAVEL_DISTANCE = 60;
+const IOS_TRANSITION_DURATION = 0.42;
+const IOS_ENTER_FROM_X_PERCENT = 100;
+const IOS_EXIT_TO_X_PERCENT_FORWARD = -30;
+const IOS_EXIT_TO_X_PERCENT_BACKWARD = 100;
+const IOS_ENTER_FROM_X_PERCENT_BACKWARD = -30;
+const IOS_EXIT_DIM_OPACITY = 0.72;
 
-type LayerStatus = 'current' | 'exiting';
+type LayerStatus = 'current' | 'exiting' | 'stacked';
 
 type Layer = {
   key: string;
@@ -22,12 +29,21 @@ type Layer = {
 
 type TransitionDirection = 'forward' | 'backward';
 
-export function PageTransition({ render, getRouteOrder, scrollContainerRef }: PageTransitionProps) {
+type TransitionVariant = 'vertical' | 'ios';
+
+export function PageTransition({
+  render,
+  getRouteOrder,
+  getTransitionVariant,
+  scrollContainerRef,
+}: PageTransitionProps) {
   const location = useLocation();
   const currentLayerRef = useRef<HTMLDivElement>(null);
   const exitingLayerRef = useRef<HTMLDivElement>(null);
   const transitionDirectionRef = useRef<TransitionDirection>('forward');
+  const transitionVariantRef = useRef<TransitionVariant>('vertical');
   const exitScrollOffsetRef = useRef(0);
+  const nextLayersRef = useRef<Layer[] | null>(null);
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [layers, setLayers] = useState<Layer[]>(() => [
@@ -37,8 +53,10 @@ export function PageTransition({ render, getRouteOrder, scrollContainerRef }: Pa
       status: 'current',
     },
   ]);
-  const currentLayerKey = layers[layers.length - 1]?.key ?? location.key;
-  const currentLayerPathname = layers[layers.length - 1]?.location.pathname;
+  const currentLayer =
+    layers.find((layer) => layer.status === 'current') ?? layers[layers.length - 1];
+  const currentLayerKey = currentLayer?.key ?? location.key;
+  const currentLayerPathname = currentLayer?.location.pathname;
 
   const resolveScrollContainer = useCallback(() => {
     if (scrollContainerRef?.current) return scrollContainerRef.current;
@@ -67,18 +85,62 @@ export function PageTransition({ render, getRouteOrder, scrollContainerRef }: Pa
           : 'backward';
 
     transitionDirectionRef.current = nextDirection;
+    transitionVariantRef.current = getTransitionVariant
+      ? getTransitionVariant(currentLayerPathname ?? '', location.pathname)
+      : 'vertical';
 
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
       setLayers((prev) => {
-        const prevCurrent = prev[prev.length - 1];
-        return [
-          prevCurrent
-            ? { ...prevCurrent, status: 'exiting' }
-            : { key: location.key, location, status: 'exiting' },
-          { key: location.key, location, status: 'current' },
-        ];
+        const variant = transitionVariantRef.current;
+        const direction = transitionDirectionRef.current;
+        const previousCurrentIndex = prev.findIndex((layer) => layer.status === 'current');
+        const resolvedCurrentIndex =
+          previousCurrentIndex >= 0 ? previousCurrentIndex : prev.length - 1;
+        const previousCurrent = prev[resolvedCurrentIndex];
+        const previousStack: Layer[] = prev
+          .filter((_, idx) => idx !== resolvedCurrentIndex)
+          .map((layer): Layer => ({ ...layer, status: 'stacked' }));
+
+        const nextCurrent: Layer = { key: location.key, location, status: 'current' };
+
+        if (!previousCurrent) {
+          nextLayersRef.current = [nextCurrent];
+          return [nextCurrent];
+        }
+
+        if (variant === 'ios') {
+          if (direction === 'forward') {
+            const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
+            const stackedLayer: Layer = { ...previousCurrent, status: 'stacked' };
+
+            nextLayersRef.current = [...previousStack, stackedLayer, nextCurrent];
+            return [...previousStack, exitingLayer, nextCurrent];
+          }
+
+          const targetIndex = prev.findIndex((layer) => layer.key === location.key);
+          if (targetIndex !== -1) {
+            const targetStack: Layer[] = prev.slice(0, targetIndex + 1).map((layer, idx): Layer => {
+              const isTarget = idx === targetIndex;
+              return {
+                ...layer,
+                location: isTarget ? location : layer.location,
+                status: isTarget ? 'current' : 'stacked',
+              };
+            });
+
+            const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
+
+            nextLayersRef.current = targetStack;
+            return [...targetStack, exitingLayer];
+          }
+        }
+
+        const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
+
+        nextLayersRef.current = [nextCurrent];
+        return [exitingLayer, nextCurrent];
       });
       setIsAnimating(true);
     });
@@ -92,6 +154,7 @@ export function PageTransition({ render, getRouteOrder, scrollContainerRef }: Pa
     currentLayerKey,
     currentLayerPathname,
     getRouteOrder,
+    getTransitionVariant,
     resolveScrollContainer,
   ]);
 
@@ -103,6 +166,7 @@ export function PageTransition({ render, getRouteOrder, scrollContainerRef }: Pa
 
     const currentLayerEl = currentLayerRef.current;
     const exitingLayerEl = exitingLayerRef.current;
+    const transitionVariant = transitionVariantRef.current;
 
     const scrollContainer = resolveScrollContainer();
     const scrollOffset = exitScrollOffsetRef.current;
@@ -111,51 +175,119 @@ export function PageTransition({ render, getRouteOrder, scrollContainerRef }: Pa
     }
 
     const transitionDirection = transitionDirectionRef.current;
-    const enterFromY = transitionDirection === 'forward' ? TRAVEL_DISTANCE : -TRAVEL_DISTANCE;
-    const exitToY = transitionDirection === 'forward' ? -TRAVEL_DISTANCE : TRAVEL_DISTANCE;
+    const isForward = transitionDirection === 'forward';
+    const enterFromY = isForward ? VERTICAL_TRAVEL_DISTANCE : -VERTICAL_TRAVEL_DISTANCE;
+    const exitToY = isForward ? -VERTICAL_TRAVEL_DISTANCE : VERTICAL_TRAVEL_DISTANCE;
     const exitBaseY = scrollOffset ? -scrollOffset : 0;
 
     const tl = gsap.timeline({
       onComplete: () => {
-        setLayers((prev) => prev.filter((layer) => layer.status !== 'exiting'));
+        const nextLayers = nextLayersRef.current;
+        nextLayersRef.current = null;
+        setLayers((prev) => nextLayers ?? prev.filter((layer) => layer.status !== 'exiting'));
         setIsAnimating(false);
       },
     });
 
-    // Exit animation: fade out with slight movement (runs simultaneously)
-    if (exitingLayerEl) {
-      gsap.set(exitingLayerEl, { y: exitBaseY });
+    if (transitionVariant === 'ios') {
+      const exitToXPercent = isForward
+        ? IOS_EXIT_TO_X_PERCENT_FORWARD
+        : IOS_EXIT_TO_X_PERCENT_BACKWARD;
+      const enterFromXPercent = isForward
+        ? IOS_ENTER_FROM_X_PERCENT
+        : IOS_ENTER_FROM_X_PERCENT_BACKWARD;
+
+      if (exitingLayerEl) {
+        gsap.set(exitingLayerEl, {
+          y: exitBaseY,
+          xPercent: 0,
+          opacity: 1,
+          zIndex: isForward ? 0 : 1,
+        });
+      }
+
+      gsap.set(currentLayerEl, {
+        xPercent: enterFromXPercent,
+        opacity: 1,
+        zIndex: isForward ? 1 : 0,
+      });
+
+      const shadowValue = '-14px 0 24px rgba(0, 0, 0, 0.16)';
+
+      const topLayerEl = isForward ? currentLayerEl : exitingLayerEl;
+      if (topLayerEl) {
+        gsap.set(topLayerEl, { boxShadow: shadowValue });
+      }
+
+      if (exitingLayerEl) {
+        tl.to(
+          exitingLayerEl,
+          {
+            xPercent: exitToXPercent,
+            opacity: isForward ? IOS_EXIT_DIM_OPACITY : 1,
+            duration: IOS_TRANSITION_DURATION,
+            ease: 'power2.out',
+            force3D: true,
+          },
+          0
+        );
+      }
+
       tl.to(
-        exitingLayerEl,
+        currentLayerEl,
         {
-          y: exitBaseY + exitToY,
-          opacity: 0,
-          duration: TRANSITION_DURATION,
+          xPercent: 0,
+          opacity: 1,
+          duration: IOS_TRANSITION_DURATION,
+          ease: 'power2.out',
+          force3D: true,
+          onComplete: () => {
+            if (currentLayerEl) {
+              gsap.set(currentLayerEl, { clearProps: 'transform,opacity,boxShadow,zIndex' });
+            }
+            if (exitingLayerEl) {
+              gsap.set(exitingLayerEl, { clearProps: 'transform,opacity,boxShadow,zIndex' });
+            }
+          },
+        },
+        0
+      );
+    } else {
+      // Exit animation: fade out with slight movement (runs simultaneously)
+      if (exitingLayerEl) {
+        gsap.set(exitingLayerEl, { y: exitBaseY });
+        tl.to(
+          exitingLayerEl,
+          {
+            y: exitBaseY + exitToY,
+            opacity: 0,
+            duration: VERTICAL_TRANSITION_DURATION,
+            ease: 'circ.out',
+            force3D: true,
+          },
+          0
+        );
+      }
+
+      // Enter animation: fade in with slight movement (runs simultaneously)
+      tl.fromTo(
+        currentLayerEl,
+        { y: enterFromY, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: VERTICAL_TRANSITION_DURATION,
           ease: 'circ.out',
           force3D: true,
+          onComplete: () => {
+            if (currentLayerEl) {
+              gsap.set(currentLayerEl, { clearProps: 'transform,opacity' });
+            }
+          },
         },
         0
       );
     }
-
-    // Enter animation: fade in with slight movement (runs simultaneously)
-    tl.fromTo(
-      currentLayerEl,
-      { y: enterFromY, opacity: 0 },
-      {
-        y: 0,
-        opacity: 1,
-        duration: TRANSITION_DURATION,
-        ease: 'circ.out',
-        force3D: true,
-        onComplete: () => {
-          if (currentLayerEl) {
-            gsap.set(currentLayerEl, { clearProps: 'transform,opacity' });
-          }
-        },
-      },
-      0
-    );
 
     return () => {
       tl.kill();
@@ -170,8 +302,15 @@ export function PageTransition({ render, getRouteOrder, scrollContainerRef }: Pa
           key={layer.key}
           className={`page-transition__layer${
             layer.status === 'exiting' ? ' page-transition__layer--exit' : ''
+          }${layer.status === 'stacked' ? ' page-transition__layer--stacked' : ''
           }`}
-          ref={layer.status === 'exiting' ? exitingLayerRef : currentLayerRef}
+          ref={
+            layer.status === 'exiting'
+              ? exitingLayerRef
+              : layer.status === 'current'
+                ? currentLayerRef
+                : undefined
+          }
         >
           {render(layer.location)}
         </div>

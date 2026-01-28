@@ -26,6 +26,10 @@
       pointer-events: none;
       will-change: transform, opacity;
     }
+
+    &--stacked {
+      display: none;
+    }
   }
 
   &--animating &__layer {

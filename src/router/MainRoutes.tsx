@@ -4,6 +4,8 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { ApiKeysPage } from '@/pages/ApiKeysPage';
 import { AiProvidersPage } from '@/pages/AiProvidersPage';
 import { AuthFilesPage } from '@/pages/AuthFilesPage';
+import { AuthFilesOAuthExcludedEditPage } from '@/pages/AuthFilesOAuthExcludedEditPage';
+import { AuthFilesOAuthModelAliasEditPage } from '@/pages/AuthFilesOAuthModelAliasEditPage';
 import { OAuthPage } from '@/pages/OAuthPage';
 import { QuotaPage } from '@/pages/QuotaPage';
 import { UsagePage } from '@/pages/UsagePage';
@@ -18,6 +20,8 @@ const mainRoutes = [
   { path: '/api-keys', element: <ApiKeysPage /> },
   { path: '/ai-providers', element: <AiProvidersPage /> },
   { path: '/auth-files', element: <AuthFilesPage /> },
+  { path: '/auth-files/oauth-excluded', element: <AuthFilesOAuthExcludedEditPage /> },
+  { path: '/auth-files/oauth-model-alias', element: <AuthFilesOAuthModelAliasEditPage /> },
   { path: '/oauth', element: <OAuthPage /> },
   { path: '/quota', element: <QuotaPage /> },
   { path: '/usage', element: <UsagePage /> },

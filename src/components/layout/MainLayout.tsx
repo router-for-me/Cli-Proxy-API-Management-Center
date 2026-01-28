@@ -375,6 +375,17 @@ export function MainLayout() {
     const trimmedPath =
       pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
     const normalizedPath = trimmedPath === '/dashboard' ? '/' : trimmedPath;
+
+    const authFilesIndex = navOrder.indexOf('/auth-files');
+    if (authFilesIndex !== -1) {
+      if (normalizedPath === '/auth-files') return authFilesIndex;
+      if (normalizedPath.startsWith('/auth-files/')) {
+        if (normalizedPath.startsWith('/auth-files/oauth-excluded')) return authFilesIndex + 0.1;
+        if (normalizedPath.startsWith('/auth-files/oauth-model-alias')) return authFilesIndex + 0.2;
+        return authFilesIndex + 0.05;
+      }
+    }
+
     const exactIndex = navOrder.indexOf(normalizedPath);
     if (exactIndex !== -1) return exactIndex;
     const nestedIndex = navOrder.findIndex(
@@ -382,6 +393,20 @@ export function MainLayout() {
     );
     return nestedIndex === -1 ? null : nestedIndex;
   };
+
+  const getTransitionVariant = useCallback((fromPathname: string, toPathname: string) => {
+    const normalize = (pathname: string) => {
+      const trimmed =
+        pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+      return trimmed === '/dashboard' ? '/' : trimmed;
+    };
+
+    const from = normalize(fromPathname);
+    const to = normalize(toPathname);
+    const isAuthFiles = (pathname: string) =>
+      pathname === '/auth-files' || pathname.startsWith('/auth-files/');
+    return isAuthFiles(from) && isAuthFiles(to) ? 'ios' : 'vertical';
+  }, []);
 
   const handleRefreshAll = async () => {
     clearCache();
@@ -540,6 +565,7 @@ export function MainLayout() {
             <PageTransition
               render={(location) => <MainRoutes location={location} />}
               getRouteOrder={getRouteOrder}
+              getTransitionVariant={getTransitionVariant}
               scrollContainerRef={contentRef}
             />
           </main>

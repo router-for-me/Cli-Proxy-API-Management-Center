@@ -2,6 +2,7 @@
   "common": {
     "login": "登录",
     "logout": "登出",
+    "back": "返回",
     "cancel": "取消",
     "confirm": "确认",
     "save": "保存",
