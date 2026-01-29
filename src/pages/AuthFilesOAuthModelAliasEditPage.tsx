@@ -3,11 +3,11 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { AutocompleteInput } from '@/components/ui/AutocompleteInput';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconChevronLeft, IconInfo, IconX } from '@/components/ui/icons';
+import { IconInfo, IconX } from '@/components/ui/icons';
+import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useAuthStore, useNotificationStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
@@ -341,40 +341,21 @@ export function AuthFilesOAuthModelAliasEditPage() {
   const canSave = !disableControls && !saving && !modelAliasUnsupported;
 
   return (
-    <div className={styles.container} ref={swipeRef}>
-      <div className={styles.topBar}>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleBack}
-          className={styles.backButton}
-          aria-label={t('common.back')}
-        >
-          <span className={styles.backIcon}>
-            <IconChevronLeft size={18} />
-          </span>
-          <span className={styles.backText}>{t('common.back')}</span>
-        </Button>
-        <div className={styles.topBarTitle} title={title}>
-          {title}
-        </div>
-        <Button
-          size="sm"
-          onClick={handleSave}
-          loading={saving}
-          disabled={!canSave}
-          className={styles.saveButton}
-        >
+    <SecondaryScreenShell
+      ref={swipeRef}
+      title={title}
+      onBack={handleBack}
+      backLabel={t('common.back')}
+      backAriaLabel={t('common.back')}
+      rightAction={
+        <Button size="sm" onClick={handleSave} loading={saving} disabled={!canSave}>
           {t('oauth_model_alias.save')}
         </Button>
-      </div>
-
-      {initialLoading ? (
-        <div className={styles.loadingState}>
-          <LoadingSpinner size={16} />
-          <span>{t('common.loading')}</span>
-        </div>
-      ) : modelAliasUnsupported ? (
+      }
+      isLoading={initialLoading}
+      loadingLabel={t('common.loading')}
+    >
+      {modelAliasUnsupported ? (
         <Card>
           <EmptyState
             title={t('oauth_model_alias.upgrade_required_title')}
@@ -382,7 +363,7 @@ export function AuthFilesOAuthModelAliasEditPage() {
           />
         </Card>
       ) : (
-        <div className={styles.content}>
+        <>
           <Card className={styles.settingsCard}>
             <div className={styles.settingsHeader}>
               <div className={styles.settingsHeaderTitle}>
@@ -493,8 +474,8 @@ export function AuthFilesOAuthModelAliasEditPage() {
               ))}
             </div>
           </Card>
-        </div>
+        </>
       )}
-    </div>
+    </SecondaryScreenShell>
   );
 }

@@ -5,32 +5,21 @@ import type { AmpcodeConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { useTranslation } from 'react-i18next';
-import { AmpcodeModal } from './AmpcodeModal';
 
 interface AmpcodeSectionProps {
   config: AmpcodeConfig | null | undefined;
   loading: boolean;
   disableControls: boolean;
-  isSaving: boolean;
   isSwitching: boolean;
-  isBusy: boolean;
-  isModalOpen: boolean;
-  onOpen: () => void;
-  onCloseModal: () => void;
-  onBusyChange: (busy: boolean) => void;
+  onEdit: () => void;
 }
 
 export function AmpcodeSection({
   config,
   loading,
   disableControls,
-  isSaving,
   isSwitching,
-  isBusy,
-  isModalOpen,
-  onOpen,
-  onCloseModal,
-  onBusyChange,
+  onEdit,
 }: AmpcodeSectionProps) {
   const { t } = useTranslation();
 
@@ -46,8 +35,8 @@ export function AmpcodeSection({
         extra={
           <Button
             size="sm"
-            onClick={onOpen}
-            disabled={disableControls || isSaving || isBusy || isSwitching}
+            onClick={onEdit}
+            disabled={disableControls || loading || isSwitching}
           >
             {t('common.edit')}
           </Button>
@@ -99,13 +88,6 @@ export function AmpcodeSection({
           </>
         )}
       </Card>
-
-      <AmpcodeModal
-        isOpen={isModalOpen}
-        disableControls={disableControls}
-        onClose={onCloseModal}
-        onBusyChange={onBusyChange}
-      />
     </>
   );
 }
