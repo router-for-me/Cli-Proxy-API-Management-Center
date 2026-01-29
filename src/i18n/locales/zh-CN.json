@@ -752,6 +752,8 @@
     "loaded_lines": "已载入 {{count}} 行",
     "filtered_lines": "已过滤 {{count}} 行",
     "hide_management_logs": "屏蔽 {{prefix}} 日志",
+    "show_raw_logs": "显示原始日志",
+    "show_raw_logs_hint": "直接显示原始日志文本，方便多行复制",
     "search_placeholder": "搜索日志内容或关键字",
     "search_empty_title": "未找到匹配的日志",
     "search_empty_desc": "尝试更换关键字或清空筛选条件。",

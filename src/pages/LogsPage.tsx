@@ -9,6 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
   IconDownload,
+  IconCode,
   IconEyeOff,
   IconRefreshCw,
   IconSearch,
@@ -383,6 +384,7 @@ export function LogsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [hideManagementLogs, setHideManagementLogs] = useState(true);
+  const [showRawLogs, setShowRawLogs] = useState(false);
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
   const [errorLogsError, setErrorLogsError] = useState('');
@@ -632,10 +634,12 @@ export function LogsPage() {
     return { filteredLines: working, removedCount: removed };
   }, [baseLines, hideManagementLogs, trimmedSearchQuery]);
 
-  const parsedVisibleLines = useMemo(
-    () => filteredLines.map((line) => parseLogLine(line)),
-    [filteredLines]
-  );
+  const parsedVisibleLines = useMemo(() => {
+    if (showRawLogs) return [];
+    return filteredLines.map((line) => parseLogLine(line));
+  }, [filteredLines, showRawLogs]);
+
+  const rawVisibleText = useMemo(() => filteredLines.join('\n'), [filteredLines]);
 
   const canLoadMore = !isSearching && logState.visibleFrom > 0;
 
@@ -817,6 +821,22 @@ export function LogsPage() {
                 }
               />
 
+              <ToggleSwitch
+                checked={showRawLogs}
+                onChange={setShowRawLogs}
+                label={
+                  <span
+                    className={styles.switchLabel}
+                    title={t('logs.show_raw_logs_hint', {
+                      defaultValue: 'Show original log text for easier multi-line copy',
+                    })}
+                  >
+                    <IconCode size={16} />
+                    {t('logs.show_raw_logs', { defaultValue: 'Show raw logs' })}
+                  </span>
+                }
+              />
+
               <div className={styles.toolbar}>
                 <Button
                   variant="secondary"
@@ -870,14 +890,14 @@ export function LogsPage() {
 
             {loading ? (
               <div className="hint">{t('logs.loading')}</div>
-            ) : logState.buffer.length > 0 && parsedVisibleLines.length > 0 ? (
+            ) : logState.buffer.length > 0 && filteredLines.length > 0 ? (
               <div ref={logViewerRef} className={styles.logPanel} onScroll={handleLogScroll}>
                 {canLoadMore && (
                   <div className={styles.loadMoreBanner}>
                     <span>{t('logs.load_more_hint')}</span>
                     <div className={styles.loadMoreStats}>
                       <span>
-                        {t('logs.loaded_lines', { count: parsedVisibleLines.length })}
+                        {t('logs.loaded_lines', { count: filteredLines.length })}
                       </span>
                       {removedCount > 0 && (
                         <span className={styles.loadMoreCount}>
@@ -890,103 +910,109 @@ export function LogsPage() {
                     </div>
                   </div>
                 )}
-                <div className={styles.logList}>
-                  {parsedVisibleLines.map((line, index) => {
-                    const rowClassNames = [styles.logRow];
-                    if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
-                    if (line.level === 'error' || line.level === 'fatal')
-                      rowClassNames.push(styles.rowError);
-                    return (
-                      <div
-                        key={`${logState.visibleFrom + index}-${line.raw}`}
-                        className={rowClassNames.join(' ')}
-                        onDoubleClick={() => {
-                          void copyLogLine(line.raw);
-                        }}
-                        onPointerDown={(event) => startLongPress(event, line.requestId)}
-                        onPointerUp={cancelLongPress}
-                        onPointerLeave={cancelLongPress}
-                        onPointerCancel={cancelLongPress}
-                        onPointerMove={handleLongPressMove}
-                        title={t('logs.double_click_copy_hint', {
-                          defaultValue: 'Double-click to copy',
-                        })}
-                      >
-                        <div className={styles.timestamp}>{line.timestamp || ''}</div>
-                        <div className={styles.rowMain}>
-                          {line.level && (
-                            <span
-                              className={[
-                                styles.badge,
-                                line.level === 'info' ? styles.levelInfo : '',
-                                line.level === 'warn' ? styles.levelWarn : '',
-                                line.level === 'error' || line.level === 'fatal'
-                                  ? styles.levelError
-                                  : '',
-                                line.level === 'debug' ? styles.levelDebug : '',
-                                line.level === 'trace' ? styles.levelTrace : '',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                            >
-                              {line.level.toUpperCase()}
-                            </span>
-                          )}
+                {showRawLogs ? (
+                  <pre className={styles.rawLog} spellCheck={false}>
+                    {rawVisibleText}
+                  </pre>
+                ) : (
+                  <div className={styles.logList}>
+                    {parsedVisibleLines.map((line, index) => {
+                      const rowClassNames = [styles.logRow];
+                      if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
+                      if (line.level === 'error' || line.level === 'fatal')
+                        rowClassNames.push(styles.rowError);
+                      return (
+                        <div
+                          key={`${logState.visibleFrom + index}-${line.raw}`}
+                          className={rowClassNames.join(' ')}
+                          onDoubleClick={() => {
+                            void copyLogLine(line.raw);
+                          }}
+                          onPointerDown={(event) => startLongPress(event, line.requestId)}
+                          onPointerUp={cancelLongPress}
+                          onPointerLeave={cancelLongPress}
+                          onPointerCancel={cancelLongPress}
+                          onPointerMove={handleLongPressMove}
+                          title={t('logs.double_click_copy_hint', {
+                            defaultValue: 'Double-click to copy',
+                          })}
+                        >
+                          <div className={styles.timestamp}>{line.timestamp || ''}</div>
+                          <div className={styles.rowMain}>
+                            {line.level && (
+                              <span
+                                className={[
+                                  styles.badge,
+                                  line.level === 'info' ? styles.levelInfo : '',
+                                  line.level === 'warn' ? styles.levelWarn : '',
+                                  line.level === 'error' || line.level === 'fatal'
+                                    ? styles.levelError
+                                    : '',
+                                  line.level === 'debug' ? styles.levelDebug : '',
+                                  line.level === 'trace' ? styles.levelTrace : '',
+                                ]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                              >
+                                {line.level.toUpperCase()}
+                              </span>
+                            )}
 
-                          {line.source && (
-                            <span className={styles.source} title={line.source}>
-                              {line.source}
-                            </span>
-                          )}
+                            {line.source && (
+                              <span className={styles.source} title={line.source}>
+                                {line.source}
+                              </span>
+                            )}
 
-                          {line.requestId && (
-                            <span
-                              className={[styles.badge, styles.requestIdBadge].join(' ')}
-                              title={line.requestId}
-                            >
-                              {line.requestId}
-                            </span>
-                          )}
+                            {line.requestId && (
+                              <span
+                                className={[styles.badge, styles.requestIdBadge].join(' ')}
+                                title={line.requestId}
+                              >
+                                {line.requestId}
+                              </span>
+                            )}
 
-                          {typeof line.statusCode === 'number' && (
-                            <span
-                              className={[
-                                styles.badge,
-                                styles.statusBadge,
-                                line.statusCode >= 200 && line.statusCode < 300
-                                  ? styles.statusSuccess
-                                  : line.statusCode >= 300 && line.statusCode < 400
-                                    ? styles.statusInfo
-                                    : line.statusCode >= 400 && line.statusCode < 500
-                                      ? styles.statusWarn
-                                      : styles.statusError,
-                              ].join(' ')}
-                            >
-                              {line.statusCode}
-                            </span>
-                          )}
+                            {typeof line.statusCode === 'number' && (
+                              <span
+                                className={[
+                                  styles.badge,
+                                  styles.statusBadge,
+                                  line.statusCode >= 200 && line.statusCode < 300
+                                    ? styles.statusSuccess
+                                    : line.statusCode >= 300 && line.statusCode < 400
+                                      ? styles.statusInfo
+                                      : line.statusCode >= 400 && line.statusCode < 500
+                                        ? styles.statusWarn
+                                        : styles.statusError,
+                                ].join(' ')}
+                              >
+                                {line.statusCode}
+                              </span>
+                            )}
 
-                          {line.latency && <span className={styles.pill}>{line.latency}</span>}
-                          {line.ip && <span className={styles.pill}>{line.ip}</span>}
+                            {line.latency && <span className={styles.pill}>{line.latency}</span>}
+                            {line.ip && <span className={styles.pill}>{line.ip}</span>}
 
-                          {line.method && (
-                            <span className={[styles.badge, styles.methodBadge].join(' ')}>
-                              {line.method}
-                            </span>
-                          )}
+                            {line.method && (
+                              <span className={[styles.badge, styles.methodBadge].join(' ')}>
+                                {line.method}
+                              </span>
+                            )}
 
-                          {line.path && (
-                            <span className={styles.path} title={line.path}>
-                              {line.path}
-                            </span>
-                          )}
+                            {line.path && (
+                              <span className={styles.path} title={line.path}>
+                                {line.path}
+                              </span>
+                            )}
 
-                          {line.message && <span className={styles.message}>{line.message}</span>}
+                            {line.message && <span className={styles.message}>{line.message}</span>}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ) : logState.buffer.length > 0 ? (
               <EmptyState

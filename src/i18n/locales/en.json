@@ -752,6 +752,8 @@
     "loaded_lines": "Loaded: {{count}} lines",
     "filtered_lines": "Filtered: {{count}} lines",
     "hide_management_logs": "Hide {{prefix}} logs",
+    "show_raw_logs": "Show Raw Logs",
+    "show_raw_logs_hint": "Show original log text for easier multi-line copy",
     "search_placeholder": "Search logs by content or keyword",
     "search_empty_title": "No matching logs found",
     "search_empty_desc": "Try a different keyword or clear the filters.",
