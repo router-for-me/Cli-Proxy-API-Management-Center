@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -51,7 +51,6 @@ export function AiProvidersVertexEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<VertexFormState>(() => buildEmptyForm());
-  const initializedRef = useRef(false);
 
   const hasIndexParam = typeof params.index === 'string';
   const editIndex = useMemo(() => parseIndexParam(params.index), [params.index]);
@@ -89,9 +88,6 @@ export function AiProvidersVertexEditPage() {
   }, [handleBack]);
 
   useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
     let cancelled = false;
     setLoading(true);
     setError('');

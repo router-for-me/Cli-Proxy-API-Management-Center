@@ -17,6 +17,12 @@ import type { AmpcodeFormState } from '@/components/providers';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
+const getErrorMessage = (err: unknown) => {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  return '';
+};
+
 export function AiProvidersAmpcodeEditPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -36,14 +42,9 @@ export function AiProvidersAmpcodeEditPage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const initializedRef = useRef(false);
+  const mountedRef = useRef(false);
 
   const title = useMemo(() => t('ai_providers.ampcode_modal_title'), [t]);
-
-  const getErrorMessage = (err: unknown) => {
-    if (err instanceof Error) return err.message;
-    if (typeof err === 'string') return err;
-    return '';
-  };
 
   const handleBack = useCallback(() => {
     const state = location.state as LocationState;
@@ -67,6 +68,13 @@ export function AiProvidersAmpcodeEditPage() {
   }, [handleBack]);
 
   useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
@@ -74,31 +82,26 @@ export function AiProvidersAmpcodeEditPage() {
     setLoaded(false);
     setMappingsDirty(false);
     setError('');
-    setForm(buildAmpcodeFormState(config?.ampcode ?? null));
+    setForm(buildAmpcodeFormState(useConfigStore.getState().config?.ampcode ?? null));
 
-    let cancelled = false;
-    ampcodeApi
-      .getAmpcode()
-      .then((ampcode) => {
-        if (cancelled) return;
+    void (async () => {
+      try {
+        const ampcode = await ampcodeApi.getAmpcode();
+        if (!mountedRef.current) return;
+
         setLoaded(true);
         updateConfigValue('ampcode', ampcode);
         clearCache('ampcode');
         setForm(buildAmpcodeFormState(ampcode));
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
+      } catch (err: unknown) {
+        if (!mountedRef.current) return;
         setError(getErrorMessage(err) || t('notification.refresh_failed'));
-      })
-      .finally(() => {
-        if (cancelled) return;
+      } finally {
+        if (!mountedRef.current) return;
         setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [clearCache, config?.ampcode, t, updateConfigValue]);
+      }
+    })();
+  }, [clearCache, t, updateConfigValue]);
 
   const clearAmpcodeUpstreamApiKey = async () => {
     showConfirmation({
