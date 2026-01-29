@@ -44,6 +44,11 @@
   &:hover {
     color: var(--text-primary);
   }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
 }
 
 .tabActive {
