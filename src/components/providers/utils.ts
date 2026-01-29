@@ -55,9 +55,6 @@ export const buildOpenAIChatCompletionsEndpoint = (baseUrl: string): string => {
   if (trimmed.endsWith('/chat/completions')) {
     return trimmed;
   }
-  if (trimmed.endsWith('/v1')) {
-    return `${trimmed.slice(0, -3)}/chat/completions`;
-  }
   return `${trimmed}/chat/completions`;
 };
 
