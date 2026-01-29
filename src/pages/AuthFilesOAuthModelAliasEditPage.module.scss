@@ -83,7 +83,7 @@
 
 .settingsCard {
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .settingsHeader {
@@ -92,7 +92,11 @@
   gap: $spacing-xs;
   padding: $spacing-md $spacing-lg;
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-primary);
+
+  @include mobile {
+    padding-left: $spacing-md;
+    padding-right: $spacing-md;
+  }
 }
 
 .settingsHeaderTitle {
@@ -113,7 +117,11 @@
   flex-direction: column;
   gap: $spacing-sm;
   padding: $spacing-md $spacing-lg $spacing-lg;
-  background: var(--bg-primary);
+
+  @include mobile {
+    padding-left: $spacing-md;
+    padding-right: $spacing-md;
+  }
 }
 
 .settingsRow {
@@ -121,6 +129,12 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: $spacing-lg;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+    gap: $spacing-sm;
+  }
 }
 
 .settingsInfo {
@@ -202,7 +216,11 @@
   gap: $spacing-md;
   padding: $spacing-md $spacing-lg;
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-primary);
+
+  @include mobile {
+    padding-left: $spacing-md;
+    padding-right: $spacing-md;
+  }
 }
 
 .mappingsTitle {
@@ -217,13 +235,21 @@
   padding: $spacing-sm $spacing-lg;
   font-size: 13px;
   color: var(--text-secondary);
-  background: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
+
+  @include mobile {
+    padding-left: $spacing-md;
+    padding-right: $spacing-md;
+  }
 }
 
 .mappingsBody {
   padding: $spacing-sm $spacing-lg $spacing-lg;
-  background: var(--bg-primary);
+
+  @include mobile {
+    padding-left: $spacing-md;
+    padding-right: $spacing-md;
+  }
 }
 
 .mappingRow {
