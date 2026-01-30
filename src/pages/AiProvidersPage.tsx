@@ -8,6 +8,7 @@ import {
   GeminiSection,
   OpenAISection,
   VertexSection,
+  ProviderNav,
   useProviderStats,
 } from '@/components/providers';
 import {
@@ -322,79 +323,93 @@ export function AiProvidersPage() {
       <div className={styles.content}>
         {error && <div className="error-box">{error}</div>}
 
-        <GeminiSection
-          configs={geminiKeys}
-          keyStats={keyStats}
-          usageDetails={usageDetails}
-          loading={loading}
-          disableControls={disableControls}
-          isSwitching={isSwitching}
-          onAdd={() => openEditor('/ai-providers/gemini/new')}
-          onEdit={(index) => openEditor(`/ai-providers/gemini/${index}`)}
-          onDelete={deleteGemini}
-          onToggle={(index, enabled) => void setConfigEnabled('gemini', index, enabled)}
-        />
+        <div id="provider-gemini">
+          <GeminiSection
+            configs={geminiKeys}
+            keyStats={keyStats}
+            usageDetails={usageDetails}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            onAdd={() => openEditor('/ai-providers/gemini/new')}
+            onEdit={(index) => openEditor(`/ai-providers/gemini/${index}`)}
+            onDelete={deleteGemini}
+            onToggle={(index, enabled) => void setConfigEnabled('gemini', index, enabled)}
+          />
+        </div>
 
-        <CodexSection
-          configs={codexConfigs}
-          keyStats={keyStats}
-          usageDetails={usageDetails}
-          loading={loading}
-          disableControls={disableControls}
-          isSwitching={isSwitching}
-          resolvedTheme={resolvedTheme}
-          onAdd={() => openEditor('/ai-providers/codex/new')}
-          onEdit={(index) => openEditor(`/ai-providers/codex/${index}`)}
-          onDelete={(index) => void deleteProviderEntry('codex', index)}
-          onToggle={(index, enabled) => void setConfigEnabled('codex', index, enabled)}
-        />
+        <div id="provider-codex">
+          <CodexSection
+            configs={codexConfigs}
+            keyStats={keyStats}
+            usageDetails={usageDetails}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            resolvedTheme={resolvedTheme}
+            onAdd={() => openEditor('/ai-providers/codex/new')}
+            onEdit={(index) => openEditor(`/ai-providers/codex/${index}`)}
+            onDelete={(index) => void deleteProviderEntry('codex', index)}
+            onToggle={(index, enabled) => void setConfigEnabled('codex', index, enabled)}
+          />
+        </div>
 
-        <ClaudeSection
-          configs={claudeConfigs}
-          keyStats={keyStats}
-          usageDetails={usageDetails}
-          loading={loading}
-          disableControls={disableControls}
-          isSwitching={isSwitching}
-          onAdd={() => openEditor('/ai-providers/claude/new')}
-          onEdit={(index) => openEditor(`/ai-providers/claude/${index}`)}
-          onDelete={(index) => void deleteProviderEntry('claude', index)}
-          onToggle={(index, enabled) => void setConfigEnabled('claude', index, enabled)}
-        />
+        <div id="provider-claude">
+          <ClaudeSection
+            configs={claudeConfigs}
+            keyStats={keyStats}
+            usageDetails={usageDetails}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            onAdd={() => openEditor('/ai-providers/claude/new')}
+            onEdit={(index) => openEditor(`/ai-providers/claude/${index}`)}
+            onDelete={(index) => void deleteProviderEntry('claude', index)}
+            onToggle={(index, enabled) => void setConfigEnabled('claude', index, enabled)}
+          />
+        </div>
 
-        <VertexSection
-          configs={vertexConfigs}
-          keyStats={keyStats}
-          usageDetails={usageDetails}
-          loading={loading}
-          disableControls={disableControls}
-          isSwitching={isSwitching}
-          onAdd={() => openEditor('/ai-providers/vertex/new')}
-          onEdit={(index) => openEditor(`/ai-providers/vertex/${index}`)}
-          onDelete={deleteVertex}
-        />
+        <div id="provider-vertex">
+          <VertexSection
+            configs={vertexConfigs}
+            keyStats={keyStats}
+            usageDetails={usageDetails}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            onAdd={() => openEditor('/ai-providers/vertex/new')}
+            onEdit={(index) => openEditor(`/ai-providers/vertex/${index}`)}
+            onDelete={deleteVertex}
+          />
+        </div>
 
-        <AmpcodeSection
-          config={config?.ampcode}
-          loading={loading}
-          disableControls={disableControls}
-          isSwitching={isSwitching}
-          onEdit={() => openEditor('/ai-providers/ampcode')}
-        />
+        <div id="provider-ampcode">
+          <AmpcodeSection
+            config={config?.ampcode}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            onEdit={() => openEditor('/ai-providers/ampcode')}
+          />
+        </div>
 
-        <OpenAISection
-          configs={openaiProviders}
-          keyStats={keyStats}
-          usageDetails={usageDetails}
-          loading={loading}
-          disableControls={disableControls}
-          isSwitching={isSwitching}
-          resolvedTheme={resolvedTheme}
-          onAdd={() => openEditor('/ai-providers/openai/new')}
-          onEdit={(index) => openEditor(`/ai-providers/openai/${index}`)}
-          onDelete={deleteOpenai}
-        />
+        <div id="provider-openai">
+          <OpenAISection
+            configs={openaiProviders}
+            keyStats={keyStats}
+            usageDetails={usageDetails}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            resolvedTheme={resolvedTheme}
+            onAdd={() => openEditor('/ai-providers/openai/new')}
+            onEdit={(index) => openEditor(`/ai-providers/openai/${index}`)}
+            onDelete={deleteOpenai}
+          />
+        </div>
       </div>
+
+      <ProviderNav />
     </div>
   );
 }
