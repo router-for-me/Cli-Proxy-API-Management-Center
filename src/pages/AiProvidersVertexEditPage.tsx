@@ -13,6 +13,7 @@ import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries } from '@/utils/headers';
 import type { VertexFormState } from '@/components/providers';
+import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
@@ -200,6 +201,7 @@ export function AiProvidersVertexEditPage() {
   return (
     <SecondaryScreenShell
       ref={swipeRef}
+      contentClassName={layoutStyles.content}
       title={title}
       onBack={handleBack}
       backLabel={t('common.back')}

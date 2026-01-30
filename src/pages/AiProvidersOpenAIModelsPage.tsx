@@ -12,6 +12,7 @@ import { buildHeaderObject } from '@/utils/headers';
 import { buildOpenAIModelsEndpoint } from '@/components/providers/utils';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import styles from './AiProvidersPage.module.scss';
+import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 const getErrorMessage = (err: unknown) => {
   if (err instanceof Error) return err.message;
@@ -138,6 +139,7 @@ export function AiProvidersOpenAIModelsPage() {
   return (
     <SecondaryScreenShell
       ref={swipeRef}
+      contentClassName={layoutStyles.content}
       title={t('ai_providers.openai_models_fetch_title')}
       onBack={handleBack}
       backLabel={t('common.back')}
@@ -219,4 +221,3 @@ export function AiProvidersOpenAIModelsPage() {
     </SecondaryScreenShell>
   );
 }
-

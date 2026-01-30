@@ -15,6 +15,7 @@ import { buildHeaderObject } from '@/utils/headers';
 import { buildApiKeyEntry, buildOpenAIChatCompletionsEndpoint } from '@/components/providers/utils';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import styles from './AiProvidersPage.module.scss';
+import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 const OPENAI_TEST_TIMEOUT_MS = 30_000;
 
@@ -229,6 +230,7 @@ export function AiProvidersOpenAIEditPage() {
   return (
     <SecondaryScreenShell
       ref={swipeRef}
+      contentClassName={layoutStyles.content}
       title={title}
       onBack={handleBack}
       backLabel={t('common.back')}
@@ -370,4 +372,3 @@ export function AiProvidersOpenAIEditPage() {
     </SecondaryScreenShell>
   );
 }
-

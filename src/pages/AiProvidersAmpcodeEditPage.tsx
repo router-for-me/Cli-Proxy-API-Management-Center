@@ -14,6 +14,7 @@ import type { AmpcodeConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import { buildAmpcodeFormState, entriesToAmpcodeMappings } from '@/components/providers/utils';
 import type { AmpcodeFormState } from '@/components/providers';
+import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
@@ -97,8 +98,9 @@ export function AiProvidersAmpcodeEditPage() {
         if (!mountedRef.current) return;
         setError(getErrorMessage(err) || t('notification.refresh_failed'));
       } finally {
-        if (!mountedRef.current) return;
-        setLoading(false);
+        if (mountedRef.current) {
+          setLoading(false);
+        }
       }
     })();
   }, [clearCache, t, updateConfigValue]);
@@ -220,6 +222,7 @@ export function AiProvidersAmpcodeEditPage() {
   return (
     <SecondaryScreenShell
       ref={swipeRef}
+      contentClassName={layoutStyles.content}
       title={title}
       onBack={handleBack}
       backLabel={t('common.back')}
