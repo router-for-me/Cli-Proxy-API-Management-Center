@@ -677,7 +677,7 @@ export type TimePeriodFilter = 'all' | 'hour' | 'day';
 export function aggregateKeyUsage(
   usageData: any,
   modelPrices: Record<string, ModelPrice>,
-  apiKeys?: string[],
+  _apiKeys?: string[],
   apiKeyNames?: Record<string, string>,
   timePeriod: TimePeriodFilter = 'all'
 ): KeyUsageStat[] {
