@@ -22,6 +22,7 @@ export function AmpcodeSection({
   onEdit,
 }: AmpcodeSectionProps) {
   const { t } = useTranslation();
+  const showLoadingPlaceholder = loading && !config;
 
   return (
     <>
@@ -42,7 +43,7 @@ export function AmpcodeSection({
           </Button>
         }
       >
-        {loading ? (
+        {showLoadingPlaceholder ? (
           <div className="hint">{t('common.loading')}</div>
         ) : (
           <>

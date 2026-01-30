@@ -3,15 +3,32 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { IconGithub, IconBookOpen, IconExternalLink, IconCode } from '@/components/ui/icons';
-import { useAuthStore, useConfigStore, useNotificationStore, useModelsStore } from '@/stores';
+import { useAuthStore, useConfigStore, useNotificationStore, useModelsStore, useThemeStore } from '@/stores';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
+import iconGemini from '@/assets/icons/gemini.svg';
+import iconClaude from '@/assets/icons/claude.svg';
+import iconOpenaiLight from '@/assets/icons/openai-light.svg';
+import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
+import iconQwen from '@/assets/icons/qwen.svg';
+import iconKimi from '@/assets/icons/kimi.svg';
+import iconGlm from '@/assets/icons/glm.svg';
 import styles from './SystemPage.module.scss';
+
+const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: string }> = {
+  gpt: { light: iconOpenaiLight, dark: iconOpenaiDark },
+  claude: iconClaude,
+  gemini: iconGemini,
+  qwen: iconQwen,
+  kimi: iconKimi,
+  glm: iconGlm,
+};
 
 export function SystemPage() {
   const { t, i18n } = useTranslation();
   const { showNotification, showConfirmation } = useNotificationStore();
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const auth = useAuthStore();
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
@@ -30,6 +47,13 @@ export function SystemPage() {
     [i18n.language]
   );
   const groupedModels = useMemo(() => classifyModels(models, { otherLabel }), [models, otherLabel]);
+
+  const getIconForCategory = (categoryId: string): string | null => {
+    const iconEntry = MODEL_CATEGORY_ICONS[categoryId];
+    if (!iconEntry) return null;
+    if (typeof iconEntry === 'string') return iconEntry;
+    return resolvedTheme === 'dark' ? iconEntry.dark : iconEntry.light;
+  };
 
   const normalizeApiKeyList = (input: any): string[] => {
     if (!Array.isArray(input)) return [];
@@ -242,26 +266,32 @@ export function SystemPage() {
           <div className="hint">{t('system_info.models_empty')}</div>
         ) : (
           <div className="item-list">
-            {groupedModels.map((group) => (
-              <div key={group.id} className="item-row">
-                <div className="item-meta">
-                  <div className="item-title">{group.label}</div>
-                  <div className="item-subtitle">{t('system_info.models_count', { count: group.items.length })}</div>
+            {groupedModels.map((group) => {
+              const iconSrc = getIconForCategory(group.id);
+              return (
+                <div key={group.id} className="item-row">
+                  <div className="item-meta">
+                    <div className={styles.groupTitle}>
+                      {iconSrc && <img src={iconSrc} alt="" className={styles.groupIcon} />}
+                      <span className="item-title">{group.label}</span>
+                    </div>
+                    <div className="item-subtitle">{t('system_info.models_count', { count: group.items.length })}</div>
+                  </div>
+                  <div className={styles.modelTags}>
+                    {group.items.map((model) => (
+                      <span
+                        key={`${model.name}-${model.alias ?? 'default'}`}
+                        className={styles.modelTag}
+                        title={model.description || ''}
+                      >
+                        <span className={styles.modelName}>{model.name}</span>
+                        {model.alias && <span className={styles.modelAlias}>{model.alias}</span>}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className={styles.modelTags}>
-                  {group.items.map((model) => (
-                    <span
-                      key={`${model.name}-${model.alias ?? 'default'}`}
-                      className={styles.modelTag}
-                      title={model.description || ''}
-                    >
-                      <span className={styles.modelName}>{model.name}</span>
-                      {model.alias && <span className={styles.modelAlias}>{model.alias}</span>}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>

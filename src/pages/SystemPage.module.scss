@@ -90,6 +90,18 @@
   gap: $spacing-sm;
 }
 
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.groupIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 .modelTag {
   display: inline-flex;
   align-items: center;
