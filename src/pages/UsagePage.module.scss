@@ -795,3 +795,27 @@
   color: var(--text-tertiary);
   margin: 10px 0 0 0;
 }
+
+// Key Usage Charts
+.keyChartContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  min-height: 200px;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.keyChartBar,
+.keyChartLine {
+  min-height: 200px;
+}
+
+.keyChartDoughnut {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

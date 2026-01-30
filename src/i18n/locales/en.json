@@ -166,6 +166,8 @@
     "add_modal_key_placeholder": "Please enter API key",
     "edit_modal_title": "Edit API Key",
     "edit_modal_key_label": "API Key:",
+    "key_name_label": "Key Name (Optional):",
+    "key_name_placeholder": "Enter a display name for this key",
     "delete_confirm": "Are you sure you want to delete this API key?"
   },
   "ai_providers": {
@@ -662,8 +664,10 @@
     "requests_trend": "Request Trends",
     "tokens_trend": "Token Usage Trends",
     "api_details": "API Details",
+    "key_stats": "API Key Usage",
     "by_hour": "By Hour",
     "by_day": "By Day",
+    "all_time": "All Time",
     "refresh": "Refresh",
     "export": "Export",
     "import": "Import",
@@ -711,7 +715,15 @@
     "cost_axis_label": "Cost ($)",
     "cost_need_price": "Set a model price to view cost stats",
     "cost_need_usage": "No usage data available to calculate cost",
-    "cost_no_data": "No cost data yet"
+    "cost_no_data": "No cost data yet",
+    "key_name": "API Key",
+    "input_tokens": "Input Tokens",
+    "output_tokens": "Output Tokens",
+    "key_requests": "Requests",
+    "key_tokens": "Tokens",
+    "key_cost": "Cost",
+    "key_requests_chart": "Requests by API Key",
+    "key_tokens_chart": "Tokens by API Key"
   },
   "stats": {
     "success": "Success",

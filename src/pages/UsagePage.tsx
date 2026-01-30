@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { useThemeStore } from '@/stores';
+import { useConfigStore, useThemeStore } from '@/stores';
 import {
   StatCards,
   UsageChart,
@@ -23,11 +23,14 @@ import {
   ApiDetailsCard,
   ModelStatsCard,
   PriceSettingsCard,
+  KeyStatsCard,
+  KeyUsageCharts,
   useUsageData,
   useSparklines,
   useChartData
 } from '@/components/usage';
-import { getModelNamesFromUsage, getApiStats, getModelStats } from '@/utils/usage';
+import { apiKeyNamesApi } from '@/services/api';
+import { getModelNamesFromUsage, getApiStats, getModelStats, aggregateKeyUsage, type TimePeriodFilter } from '@/utils/usage';
 import styles from './UsagePage.module.scss';
 
 // Register Chart.js components
@@ -47,6 +50,7 @@ export function UsagePage() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isDark = resolvedTheme === 'dark';
+  const config = useConfigStore((state) => state.config);
 
   // Data hook
   const {
@@ -66,9 +70,20 @@ export function UsagePage() {
 
   useHeaderRefresh(loadUsage);
 
+  // API key names state
+  const [apiKeyNames, setApiKeyNames] = useState<Record<string, string>>({});
+
+  // Load API key names
+  useEffect(() => {
+    apiKeyNamesApi.get().then(setApiKeyNames).catch(() => {});
+  }, []);
+
   // Chart lines state
   const [chartLines, setChartLines] = useState<string[]>(['all']);
   const MAX_CHART_LINES = 9;
+
+  // Key usage chart period
+  const [keyChartPeriod, setKeyChartPeriod] = useState<TimePeriodFilter>('hour');
 
   // Sparklines hook
   const {
@@ -95,6 +110,11 @@ export function UsagePage() {
   const modelNames = useMemo(() => getModelNamesFromUsage(usage), [usage]);
   const apiStats = useMemo(() => getApiStats(usage, modelPrices), [usage, modelPrices]);
   const modelStats = useMemo(() => getModelStats(usage, modelPrices), [usage, modelPrices]);
+  const apiKeys = useMemo(() => config?.apiKeys || [], [config?.apiKeys]);
+  const keyUsageStats = useMemo(
+    () => aggregateKeyUsage(usage, modelPrices, apiKeys, apiKeyNames, keyChartPeriod),
+    [usage, modelPrices, apiKeys, apiKeyNames, keyChartPeriod]
+  );
   const hasPrices = Object.keys(modelPrices).length > 0;
 
   return (
@@ -200,6 +220,21 @@ export function UsagePage() {
         <ApiDetailsCard apiStats={apiStats} loading={loading} hasPrices={hasPrices} />
         <ModelStatsCard modelStats={modelStats} loading={loading} hasPrices={hasPrices} />
       </div>
+
+      {/* Key Stats */}
+      <KeyStatsCard
+        keyUsageStats={keyUsageStats}
+        loading={loading}
+        hasPrices={hasPrices}
+      />
+
+      {/* Key Usage Charts */}
+      <KeyUsageCharts
+        keyUsageStats={keyUsageStats}
+        loading={loading}
+        period={keyChartPeriod}
+        onPeriodChange={setKeyChartPeriod}
+      />
 
       {/* Price Settings */}
       <PriceSettingsCard

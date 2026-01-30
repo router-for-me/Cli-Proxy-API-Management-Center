@@ -102,3 +102,16 @@ export function truncateText(text: string, maxLength: number): string {
   }
   return text.slice(0, maxLength) + '...';
 }
+
+/**
+ * Get display name for an API key, falls back to masked key if no name set
+ */
+export function getApiKeyDisplayName(key: string, names?: Record<string, string>): string {
+  if (names) {
+    const name = names[key];
+    if (name && name.trim()) {
+      return name.trim();
+    }
+  }
+  return maskApiKey(key);
+}

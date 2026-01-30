@@ -4,7 +4,7 @@
  */
 
 import type { ScriptableContext } from 'chart.js';
-import { maskApiKey } from './format';
+import { maskApiKey, getApiKeyDisplayName } from './format';
 
 export interface KeyStatBucket {
   success: number;
@@ -57,6 +57,16 @@ export interface ApiStats {
   totalTokens: number;
   totalCost: number;
   models: Record<string, { requests: number; tokens: number }>;
+}
+
+export interface KeyUsageStat {
+  source: string;
+  displayName: string;
+  totalRequests: number;
+  successRequests: number;
+  failureRequests: number;
+  totalTokens: number;
+  cost: number;
 }
 
 const TOKENS_PER_PRICE_UNIT = 1_000_000;
@@ -189,6 +199,31 @@ export function buildCandidateUsageSourceIds(input: { apiKey?: string; prefix?: 
   }
 
   return Array.from(new Set(result));
+}
+
+/**
+ * Get display name for a usage source (API key)
+ * Uses key names mapping if available, otherwise falls back to masked key
+ */
+export function getSourceDisplayName(
+  source: string,
+  apiKeys?: string[],
+  apiKeyNames?: Record<string, string>
+): string {
+  if (!source || !apiKeys?.length) {
+    return source || '';
+  }
+
+  // Try to find matching API key by comparing normalized source IDs
+  for (const apiKey of apiKeys) {
+    const candidates = buildCandidateUsageSourceIds({ apiKey });
+    if (candidates.includes(source)) {
+      return getApiKeyDisplayName(apiKey, apiKeyNames);
+    }
+  }
+
+  // If no match found, return the source as-is (it might already be masked)
+  return source;
 }
 
 /**
@@ -630,6 +665,92 @@ export function getModelStats(usageData: any, modelPrices: Record<string, ModelP
   return Array.from(modelMap.entries())
     .map(([model, stats]) => ({ model, ...stats }))
     .sort((a, b) => b.requests - a.requests);
+}
+
+export type TimePeriodFilter = 'all' | 'hour' | 'day';
+
+/**
+ * 聚合按API密钥的使用统计
+ * 按 apis 对象的 key（proxy API key）进行聚合，而非 details 中的 source 字段
+ * @param timePeriod - 时间过滤: 'all' 全部, 'hour' 最近24小时, 'day' 最近7天
+ */
+export function aggregateKeyUsage(
+  usageData: any,
+  modelPrices: Record<string, ModelPrice>,
+  apiKeys?: string[],
+  apiKeyNames?: Record<string, string>,
+  timePeriod: TimePeriodFilter = 'all'
+): KeyUsageStat[] {
+  if (!usageData?.apis) {
+    return [];
+  }
+
+  // Calculate time window based on period
+  const now = Date.now();
+  let windowStart = 0;
+  if (timePeriod === 'hour') {
+    windowStart = now - 24 * 60 * 60 * 1000; // Last 24 hours
+  } else if (timePeriod === 'day') {
+    windowStart = now - 7 * 24 * 60 * 60 * 1000; // Last 7 days
+  }
+
+  const result: KeyUsageStat[] = [];
+
+  // Iterate through apis object - keys are proxy API keys
+  Object.entries(usageData.apis as Record<string, any>).forEach(([apiKey, apiData]) => {
+    if (!apiKey || !apiData) return;
+
+    let successRequests = 0;
+    let failureRequests = 0;
+    let totalCost = 0;
+    let totalTokens = 0;
+    let totalRequests = 0;
+
+    // Calculate stats from model details with time filtering
+    const models = apiData.models || {};
+    Object.entries(models as Record<string, any>).forEach(([modelName, modelData]) => {
+      const details = Array.isArray(modelData?.details) ? modelData.details : [];
+
+      details.forEach((detail: any) => {
+        // Apply time filter
+        if (timePeriod !== 'all') {
+          const timestamp = Date.parse(detail?.timestamp);
+          if (Number.isNaN(timestamp) || timestamp < windowStart) {
+            return;
+          }
+        }
+
+        totalRequests += 1;
+        totalTokens += extractTotalTokens(detail);
+
+        if (detail?.failed === true) {
+          failureRequests += 1;
+        } else {
+          successRequests += 1;
+        }
+        totalCost += calculateCost({ ...detail, __modelName: modelName }, modelPrices);
+      });
+    });
+
+    // Skip keys with no data in the time period
+    if (totalRequests === 0) return;
+
+    // Get display name for the API key
+    const displayName = apiKeyNames?.[apiKey]?.trim() || maskApiKey(apiKey);
+
+    result.push({
+      source: apiKey,
+      displayName,
+      totalRequests,
+      successRequests,
+      failureRequests,
+      totalTokens,
+      cost: totalCost
+    });
+  });
+
+  // Sort by totalRequests descending
+  return result.sort((a, b) => b.totalRequests - a.totalRequests);
 }
 
 /**

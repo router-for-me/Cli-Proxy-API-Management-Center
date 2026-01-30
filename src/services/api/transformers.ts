@@ -269,6 +269,11 @@ export const normalizeConfigResponse = (raw: any): Config => {
   }
   config.apiKeys = Array.isArray(raw['api-keys']) ? raw['api-keys'].slice() : raw.apiKeys;
 
+  const apiKeyNames = raw['api-key-names'] ?? raw.apiKeyNames;
+  if (apiKeyNames && typeof apiKeyNames === 'object') {
+    config.apiKeyNames = apiKeyNames;
+  }
+
   const geminiList = raw['gemini-api-key'] ?? raw.geminiApiKey ?? raw.geminiApiKeys;
   if (Array.isArray(geminiList)) {
     config.geminiApiKeys = geminiList
