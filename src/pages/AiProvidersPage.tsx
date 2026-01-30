@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -31,15 +31,27 @@ export function AiProvidersPage() {
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
   const clearCache = useConfigStore((state) => state.clearCache);
+  const isCacheValid = useConfigStore((state) => state.isCacheValid);
 
-  const [loading, setLoading] = useState(true);
+  const hasMounted = useRef(false);
+  const [loading, setLoading] = useState(() => !isCacheValid());
   const [error, setError] = useState('');
 
-  const [geminiKeys, setGeminiKeys] = useState<GeminiKeyConfig[]>([]);
-  const [codexConfigs, setCodexConfigs] = useState<ProviderKeyConfig[]>([]);
-  const [claudeConfigs, setClaudeConfigs] = useState<ProviderKeyConfig[]>([]);
-  const [vertexConfigs, setVertexConfigs] = useState<ProviderKeyConfig[]>([]);
-  const [openaiProviders, setOpenaiProviders] = useState<OpenAIProviderConfig[]>([]);
+  const [geminiKeys, setGeminiKeys] = useState<GeminiKeyConfig[]>(
+    () => config?.geminiApiKeys || []
+  );
+  const [codexConfigs, setCodexConfigs] = useState<ProviderKeyConfig[]>(
+    () => config?.codexApiKeys || []
+  );
+  const [claudeConfigs, setClaudeConfigs] = useState<ProviderKeyConfig[]>(
+    () => config?.claudeApiKeys || []
+  );
+  const [vertexConfigs, setVertexConfigs] = useState<ProviderKeyConfig[]>(
+    () => config?.vertexApiKeys || []
+  );
+  const [openaiProviders, setOpenaiProviders] = useState<OpenAIProviderConfig[]>(
+    () => config?.openaiCompatibility || []
+  );
 
   const [configSwitchingKey, setConfigSwitchingKey] = useState<string | null>(null);
 
@@ -55,7 +67,10 @@ export function AiProvidersPage() {
   };
 
   const loadConfigs = useCallback(async () => {
-    setLoading(true);
+    const hasValidCache = isCacheValid();
+    if (!hasValidCache) {
+      setLoading(true);
+    }
     setError('');
     try {
       const [configResult, vertexResult, ampcodeResult] = await Promise.allSettled([
@@ -91,9 +106,11 @@ export function AiProvidersPage() {
     } finally {
       setLoading(false);
     }
-  }, [clearCache, fetchConfig, t, updateConfigValue]);
+  }, [clearCache, fetchConfig, isCacheValid, t, updateConfigValue]);
 
   useEffect(() => {
+    if (hasMounted.current) return;
+    hasMounted.current = true;
     loadConfigs();
     loadKeyStats();
   }, [loadConfigs, loadKeyStats]);
