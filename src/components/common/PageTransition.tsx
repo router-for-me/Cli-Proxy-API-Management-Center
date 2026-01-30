@@ -43,6 +43,8 @@ export function PageTransition({
   const transitionDirectionRef = useRef<TransitionDirection>('forward');
   const transitionVariantRef = useRef<TransitionVariant>('vertical');
   const exitScrollOffsetRef = useRef(0);
+  const enterScrollOffsetRef = useRef(0);
+  const scrollPositionsRef = useRef(new Map<string, number>());
   const nextLayersRef = useRef<Layer[] | null>(null);
 
   const [isAnimating, setIsAnimating] = useState(false);
@@ -69,7 +71,11 @@ export function PageTransition({
     if (location.key === currentLayerKey) return;
     if (currentLayerPathname === location.pathname) return;
     const scrollContainer = resolveScrollContainer();
-    exitScrollOffsetRef.current = scrollContainer?.scrollTop ?? 0;
+    const exitScrollOffset = scrollContainer?.scrollTop ?? 0;
+    exitScrollOffsetRef.current = exitScrollOffset;
+    scrollPositionsRef.current.set(currentLayerKey, exitScrollOffset);
+
+    enterScrollOffsetRef.current = scrollPositionsRef.current.get(location.key) ?? 0;
     const resolveOrderIndex = (pathname?: string) => {
       if (!getRouteOrder || !pathname) return null;
       const index = getRouteOrder(pathname);
@@ -162,17 +168,23 @@ export function PageTransition({
     const exitingLayerEl = exitingLayerRef.current;
     const transitionVariant = transitionVariantRef.current;
 
+    gsap.set(currentLayerEl, { clearProps: 'transform,opacity,boxShadow' });
+    if (exitingLayerEl) {
+      gsap.set(exitingLayerEl, { clearProps: 'transform,opacity,boxShadow' });
+    }
+
     const scrollContainer = resolveScrollContainer();
-    const scrollOffset = exitScrollOffsetRef.current;
-    if (scrollContainer && scrollOffset > 0) {
-      scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    const exitScrollOffset = exitScrollOffsetRef.current;
+    const enterScrollOffset = enterScrollOffsetRef.current;
+    if (scrollContainer && exitScrollOffset !== enterScrollOffset) {
+      scrollContainer.scrollTo({ top: enterScrollOffset, left: 0, behavior: 'auto' });
     }
 
     const transitionDirection = transitionDirectionRef.current;
     const isForward = transitionDirection === 'forward';
     const enterFromY = isForward ? VERTICAL_TRAVEL_DISTANCE : -VERTICAL_TRAVEL_DISTANCE;
     const exitToY = isForward ? -VERTICAL_TRAVEL_DISTANCE : VERTICAL_TRAVEL_DISTANCE;
-    const exitBaseY = scrollOffset ? -scrollOffset : 0;
+    const exitBaseY = enterScrollOffset - exitScrollOffset;
 
     const tl = gsap.timeline({
       onComplete: () => {
@@ -183,6 +195,9 @@ export function PageTransition({
 
         if (currentLayerEl) {
           gsap.set(currentLayerEl, { clearProps: 'transform,opacity,boxShadow' });
+        }
+        if (exitingLayerEl) {
+          gsap.set(exitingLayerEl, { clearProps: 'transform,opacity,boxShadow' });
         }
       },
     });
