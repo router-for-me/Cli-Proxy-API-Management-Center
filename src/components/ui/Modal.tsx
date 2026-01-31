@@ -8,6 +8,7 @@ interface ModalProps {
   onClose: () => void;
   footer?: ReactNode;
   width?: number | string;
+  maxWidth?: number | string;
   closeDisabled?: boolean;
 }
 
@@ -39,6 +40,7 @@ export function Modal({
   onClose,
   footer,
   width = 520,
+  maxWidth,
   closeDisabled = false,
   children
 }: PropsWithChildren<ModalProps>) {
@@ -112,9 +114,15 @@ export function Modal({
   const overlayClass = `modal-overlay ${isClosing ? 'modal-overlay-closing' : 'modal-overlay-entering'}`;
   const modalClass = `modal ${isClosing ? 'modal-closing' : 'modal-entering'}`;
 
+  const toCssSize = (v: number | string) => (typeof v === 'number' ? `${v}px` : v);
+  const modalStyle =
+    maxWidth != null
+      ? { width: '100%' as const, maxWidth: toCssSize(maxWidth) }
+      : { width: toCssSize(width) };
+
   const modalContent = (
     <div className={overlayClass}>
-      <div className={modalClass} style={{ width }} role="dialog" aria-modal="true">
+      <div className={modalClass} style={modalStyle} role="dialog" aria-modal="true">
         <button
           type="button"
           className="modal-close-floating"
