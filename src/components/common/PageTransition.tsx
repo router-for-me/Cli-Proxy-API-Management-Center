@@ -95,6 +95,19 @@ export function PageTransition({
       ? getTransitionVariant(currentLayerPathname ?? '', location.pathname)
       : 'vertical';
 
+    const shouldSkipExitLayer = (() => {
+      if (transitionVariantRef.current !== 'ios' || nextDirection !== 'backward') return false;
+      const normalizeSegments = (pathname: string) =>
+        pathname
+          .split('/')
+          .filter(Boolean)
+          .filter((segment) => segment.length > 0);
+      const fromSegments = normalizeSegments(currentLayerPathname ?? '');
+      const toSegments = normalizeSegments(location.pathname);
+      if (!fromSegments.length || !toSegments.length) return false;
+      return fromSegments[0] === toSegments[0] && toSegments.length === 1;
+    })();
+
     setLayers((prev) => {
       const variant = transitionVariantRef.current;
       const direction = transitionDirectionRef.current;
@@ -135,11 +148,20 @@ export function PageTransition({
               };
             });
 
-          const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
+          if (shouldSkipExitLayer) {
+            nextLayersRef.current = targetStack;
+            return targetStack;
+          }
 
+          const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
           nextLayersRef.current = targetStack;
           return [...targetStack, exitingLayer];
         }
+      }
+
+      if (shouldSkipExitLayer) {
+        nextLayersRef.current = [nextCurrent];
+        return [nextCurrent];
       }
 
       const exitingLayer: Layer = { ...previousCurrent, status: 'exiting' };
