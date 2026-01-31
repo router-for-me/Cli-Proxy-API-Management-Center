@@ -539,6 +539,7 @@
     "no_models": "No model aliases",
     "model_count": "{{count}} aliases",
     "list_empty_all": "No model aliases yet—use “Add Alias” to create one.",
+    "chart_title": "All mappings overview",
     "provider_required": "Please enter a provider first",
     "upgrade_required": "This feature requires a newer CLI Proxy API (CPA) version. Please upgrade.",
     "upgrade_required_title": "Please upgrade CLI Proxy API",

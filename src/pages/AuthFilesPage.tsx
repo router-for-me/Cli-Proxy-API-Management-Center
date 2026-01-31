@@ -10,6 +10,7 @@ import { AutocompleteInput } from '@/components/ui/AutocompleteInput';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { ModelMappingDiagram, type ModelMappingDiagramRef } from '@/components/modelAlias';
 import {
   IconBot,
   IconCode,
@@ -241,6 +242,7 @@ export function AuthFilesPage() {
 
   // OAuth 模型映射相关
   const [modelAlias, setModelAlias] = useState<Record<string, OAuthModelAliasEntry[]>>({});
+  const [allProviderModels, setAllProviderModels] = useState<Record<string, AuthFileModelItem[]>>({});
   const [modelAliasError, setModelAliasError] = useState<'unsupported' | null>(null);
   const [mappingModalOpen, setMappingModalOpen] = useState(false);
   const [mappingForm, setMappingForm] = useState<ModelAliasFormState>({
@@ -258,6 +260,7 @@ export function AuthFilesPage() {
   const loadingKeyStatsRef = useRef(false);
   const excludedUnsupportedRef = useRef(false);
   const mappingsUnsupportedRef = useRef(false);
+  const diagramRef = useRef<ModelMappingDiagramRef | null>(null);
 
   const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
 
@@ -537,22 +540,6 @@ export function AuthFilesPage() {
     }
   }, [showNotification, t]);
 
-  const handleHeaderRefresh = useCallback(async () => {
-    await Promise.all([loadFiles(), loadKeyStats(), loadExcluded(), loadModelAlias()]);
-  }, [loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
-
-  useHeaderRefresh(handleHeaderRefresh);
-
-  useEffect(() => {
-    loadFiles();
-    loadKeyStats();
-    loadExcluded();
-    loadModelAlias();
-  }, [loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
-
-  // 定时刷新状态数据（每240秒）
-  useInterval(loadKeyStats, 240_000);
-
   // 提取所有存在的类型
   const existingTypes = useMemo(() => {
     const types = new Set<string>(['all']);
@@ -615,6 +602,67 @@ export function AuthFilesPage() {
 
     return [...OAUTH_PROVIDER_PRESETS, ...extraList];
   }, [excluded, files, modelAlias]);
+
+  // 加载所有提供商的模型定义（用于 Diagram）
+  const loadAllModels = useCallback(async () => {
+    // 收集所有拥有认证文件的提供商
+    const activeProviders = new Set<string>();
+    files.forEach((file) => {
+      if (file.type) activeProviders.add(file.type.toLowerCase());
+      if (file.provider) activeProviders.add(file.provider.toLowerCase());
+    });
+
+    // 过滤 providerOptions，只保留有认证文件的提供商
+    const targetProviders = providerOptions.filter((p) => activeProviders.has(p.toLowerCase()));
+
+    if (targetProviders.length === 0) {
+      setAllProviderModels({});
+      return;
+    }
+
+    const promises = targetProviders.map(async (provider) => {
+      try {
+        const models = await authFilesApi.getModelDefinitions(provider);
+        return { provider, models };
+      } catch {
+        return { provider, models: [] };
+      }
+    });
+
+    const results = await Promise.all(promises);
+    const nextModels: Record<string, AuthFileModelItem[]> = {};
+    results.forEach(({ provider, models }) => {
+      if (models.length > 0) {
+        nextModels[provider.toLowerCase()] = models;
+      }
+    });
+    setAllProviderModels(nextModels);
+  }, [providerOptions, files]);
+
+  const handleHeaderRefresh = useCallback(async () => {
+    await Promise.all([loadFiles(), loadKeyStats(), loadExcluded(), loadModelAlias(), loadAllModels()]);
+  }, [loadFiles, loadKeyStats, loadExcluded, loadModelAlias, loadAllModels]);
+
+  useHeaderRefresh(handleHeaderRefresh);
+
+  useEffect(() => {
+    loadFiles();
+    loadKeyStats();
+    loadExcluded();
+    loadModelAlias();
+  }, [loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
+
+  // 当 providerOptions 变化时加载模型定义（防抖或只加载一次？）
+  // 这里简单处理：当 providerOptions 长度变化或内容变化时加载
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadAllModels();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [loadAllModels]);
+
+  // 定时刷新状态数据（每240秒）
+  useInterval(loadKeyStats, 240_000);
 
   // 过滤和搜索
   const filtered = useMemo(() => {
@@ -1263,6 +1311,129 @@ export function AuthFilesPage() {
     });
   };
 
+  const handleMappingUpdate = async (provider: string, sourceModel: string, newAlias: string) => {
+    if (!provider || !sourceModel || !newAlias) return;
+    const normalizedProvider = provider.trim().toLowerCase();
+    const providerKey = Object.keys(modelAlias).find((k) => k.trim().toLowerCase() === normalizedProvider);
+    const currentMappings = (providerKey ? modelAlias[providerKey] : null) ?? [];
+
+    const nameTrim = sourceModel.trim();
+    const aliasTrim = newAlias.trim();
+    if (currentMappings.some((m) => (m.name ?? '').trim() === nameTrim && (m.alias ?? '').trim() === aliasTrim)) return;
+
+    // Luôn thêm mapping mới (một source model có thể map tới nhiều alias), không thay thế mapping cũ
+    const nextMappings: OAuthModelAliasEntry[] = [...currentMappings, { name: nameTrim, alias: aliasTrim, fork: true }];
+
+    try {
+      await authFilesApi.saveOauthModelAlias(normalizedProvider, nextMappings);
+      setModelAlias((prev) => ({ ...prev, [normalizedProvider]: nextMappings }));
+      await loadModelAlias();
+      showNotification(t('oauth_model_alias.save_success'), 'success');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
+    }
+  };
+
+  const handleDeleteLink = (provider: string, sourceModel: string, alias: string) => {
+    if (!provider || !sourceModel || !alias) return;
+    const nameTrim = sourceModel.trim();
+    const aliasTrim = alias.trim();
+    showConfirmation({
+      title: t('oauth_model_alias.delete_link_title', { defaultValue: 'Xoá link' }),
+      message: t('oauth_model_alias.delete_link_confirm', {
+        provider,
+        sourceModel: nameTrim,
+        alias: aliasTrim,
+        defaultValue: `Xoá link từ "${nameTrim}" (${provider}) tới alias "${aliasTrim}"?`
+      }),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        const normalizedProvider = provider.trim().toLowerCase();
+        const providerKey = Object.keys(modelAlias).find((k) => k.trim().toLowerCase() === normalizedProvider);
+        const currentMappings = (providerKey ? modelAlias[providerKey] : null) ?? [];
+        const nextMappings = currentMappings.filter(
+          (m) => (m.name ?? '').trim() !== nameTrim || (m.alias ?? '').trim() !== aliasTrim
+        );
+        if (nextMappings.length === currentMappings.length) return;
+        try {
+          if (nextMappings.length === 0) {
+            await authFilesApi.deleteOauthModelAlias(normalizedProvider);
+          } else {
+            await authFilesApi.saveOauthModelAlias(normalizedProvider, nextMappings);
+          }
+          setModelAlias((prev) => ({ ...prev, [normalizedProvider]: nextMappings }));
+          await loadModelAlias();
+          showNotification(t('oauth_model_alias.save_success'), 'success');
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : '';
+          showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
+        }
+      }
+    });
+  };
+
+  const handleRenameAlias = async (oldAlias: string, newAlias: string) => {
+    if (!oldAlias || !newAlias || oldAlias === newAlias) return;
+    
+    const providersToUpdate = Object.entries(modelAlias).filter(([_, mappings]) => 
+      mappings.some(m => m.alias === oldAlias)
+    );
+
+    if (providersToUpdate.length === 0) return;
+
+    try {
+      await Promise.all(providersToUpdate.map(async ([provider, mappings]) => {
+        const nextMappings = mappings.map(m => 
+          m.alias === oldAlias ? { ...m, alias: newAlias } : m
+        );
+        await authFilesApi.saveOauthModelAlias(provider, nextMappings);
+      }));
+      await loadModelAlias();
+      showNotification(t('oauth_model_alias.save_success'), 'success');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
+    }
+  };
+
+  const handleDeleteAlias = async (aliasName: string) => {
+    const providersToUpdate = Object.entries(modelAlias).filter(([_, mappings]) => 
+      mappings.some(m => m.alias === aliasName)
+    );
+
+    if (providersToUpdate.length === 0) return;
+
+    showConfirmation({
+      title: t('oauth_model_alias.delete_title', { defaultValue: 'Delete Alias' }),
+      message: t('oauth_model_alias.delete_alias_confirm', { alias: aliasName, defaultValue: `Delete alias "${aliasName}" and unmap all associated models?` }),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        try {
+          await Promise.all(providersToUpdate.map(async ([provider, mappings]) => {
+            const nextMappings = mappings.filter(m => m.alias !== aliasName);
+            // If empty, save empty list or delete? saveOauthModelAlias handles empty list (updates to empty).
+            // Actually saveOauthModelAlias implementation: if empty, it might delete?
+            // "if (mappings.length) ... else deleteOauthModelAlias" in saveModelAlias logic.
+            // Here we should check.
+            if (nextMappings.length === 0) {
+               await authFilesApi.deleteOauthModelAlias(provider);
+            } else {
+               await authFilesApi.saveOauthModelAlias(provider, nextMappings);
+            }
+          }));
+          await loadModelAlias();
+          showNotification(t('oauth_model_alias.delete_success'), 'success');
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : '';
+          showNotification(`${t('oauth_model_alias.delete_failed')}: ${errorMessage}`, 'error');
+        }
+      }
+    });
+  };
+
   // 渲染标签筛选器
   const renderFilterTags = () => (
     <div className={styles.filterTags}>
@@ -1665,13 +1836,23 @@ export function AuthFilesPage() {
       <Card
         title={t('oauth_model_alias.title')}
         extra={
-          <Button
-            size="sm"
-            onClick={() => openMappingsModal()}
-            disabled={disableControls || modelAliasError === 'unsupported'}
-          >
-            {t('oauth_model_alias.add')}
-          </Button>
+          <div className={styles.cardExtraButtons}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => diagramRef.current?.collapseAll()}
+              disabled={disableControls || modelAliasError === 'unsupported'}
+            >
+              Collapse All
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => openMappingsModal()}
+              disabled={disableControls || modelAliasError === 'unsupported'}
+            >
+              {t('oauth_model_alias.add')}
+            </Button>
+          </div>
         }
       >
         {modelAliasError === 'unsupported' ? (
@@ -1679,10 +1860,22 @@ export function AuthFilesPage() {
             title={t('oauth_model_alias.upgrade_required_title')}
             description={t('oauth_model_alias.upgrade_required_desc')}
           />
-        ) : Object.keys(modelAlias).length === 0 ? (
-          <EmptyState title={t('oauth_model_alias.list_empty_all')} />
         ) : (
-          <div className={styles.excludedList}>
+          <>
+            <div className={styles.aliasChartSection}>
+              <h4 className={styles.aliasChartTitle}>{t('oauth_model_alias.chart_title')}</h4>
+              <ModelMappingDiagram
+                ref={diagramRef}
+                modelAlias={modelAlias}
+                allProviderModels={allProviderModels}
+                onUpdate={handleMappingUpdate}
+                onDeleteLink={handleDeleteLink}
+                onRenameAlias={handleRenameAlias}
+                onDeleteAlias={handleDeleteAlias}
+                className={styles.aliasChart}
+              />
+            </div>
+            <div className={styles.excludedList}>
             {Object.entries(modelAlias).map(([provider, mappings]) => (
               <div key={provider} className={styles.excludedItem}>
                 <div className={styles.excludedInfo}>
@@ -1704,6 +1897,7 @@ export function AuthFilesPage() {
               </div>
             ))}
           </div>
+          </>
         )}
       </Card>
 
@@ -2000,6 +2194,7 @@ export function AuthFilesPage() {
         open={mappingModalOpen}
         onClose={() => setMappingModalOpen(false)}
         title={t('oauth_model_alias.add_title')}
+        maxWidth={960}
         footer={
           <>
             <Button
@@ -2059,30 +2254,40 @@ export function AuthFilesPage() {
         )}
         <div className={styles.formGroup}>
           <label>{t('oauth_model_alias.alias_label')}</label>
-          <div className="header-input-list">
+          <div className={styles.mappingTable}>
+            <div className={styles.mappingHeader}>
+              <span>{t('oauth_model_alias.alias_name_placeholder')}</span>
+              <span aria-hidden="true" />
+              <span>{t('oauth_model_alias.alias_placeholder')}</span>
+              <span>{t('oauth_model_alias.alias_fork_label')}</span>
+              <span aria-hidden="true" />
+            </div>
             {(mappingForm.mappings.length ? mappingForm.mappings : [buildEmptyMappingEntry()]).map(
               (entry, index) => (
                 <div key={entry.id} className={styles.mappingRow}>
-                  <AutocompleteInput
-                    wrapperStyle={{ flex: 1, marginBottom: 0 }}
-                    placeholder={t('oauth_model_alias.alias_name_placeholder')}
-                    value={entry.name}
-                    onChange={(val) => updateMappingEntry(index, 'name', val)}
-                    disabled={savingMappings}
-                    options={mappingModelsList.map((m) => ({
-                      value: m.id,
-                      label: m.display_name && m.display_name !== m.id ? m.display_name : undefined,
-                    }))}
-                  />
-                  <span className={styles.mappingSeparator}>→</span>
-                  <input
-                    className="input"
-                    placeholder={t('oauth_model_alias.alias_placeholder')}
-                    value={entry.alias}
-                    onChange={(e) => updateMappingEntry(index, 'alias', e.target.value)}
-                    disabled={savingMappings}
-                    style={{ flex: 1 }}
-                  />
+                  <div className={styles.mappingInputCell}>
+                    <AutocompleteInput
+                      wrapperStyle={{ marginBottom: 0, minWidth: 0 }}
+                      placeholder={t('oauth_model_alias.alias_name_placeholder')}
+                      value={entry.name}
+                      onChange={(val) => updateMappingEntry(index, 'name', val)}
+                      disabled={savingMappings}
+                      options={mappingModelsList.map((m) => ({
+                        value: m.id,
+                        label: m.display_name && m.display_name !== m.id ? m.display_name : undefined,
+                      }))}
+                    />
+                  </div>
+                  <span className={styles.mappingSeparator} aria-hidden="true">→</span>
+                  <div className={styles.mappingInputCell}>
+                    <input
+                      className="input"
+                      placeholder={t('oauth_model_alias.alias_placeholder')}
+                      value={entry.alias}
+                      onChange={(e) => updateMappingEntry(index, 'alias', e.target.value)}
+                      disabled={savingMappings}
+                    />
+                  </div>
                   <div className={styles.mappingFork}>
                     <ToggleSwitch
                       label={t('oauth_model_alias.alias_fork_label')}
@@ -2092,16 +2297,18 @@ export function AuthFilesPage() {
                       disabled={savingMappings}
                     />
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeMappingEntry(index)}
-                    disabled={savingMappings || mappingForm.mappings.length <= 1}
-                    title={t('common.delete')}
-                    aria-label={t('common.delete')}
-                  >
-                    <IconX size={14} />
-                  </Button>
+                  <div className={styles.mappingDelete}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeMappingEntry(index)}
+                      disabled={savingMappings || mappingForm.mappings.length <= 1}
+                      title={t('common.delete')}
+                      aria-label={t('common.delete')}
+                    >
+                      <IconX size={14} />
+                    </Button>
+                  </div>
                 </div>
               )
             )}

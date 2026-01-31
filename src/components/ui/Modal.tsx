@@ -1,4 +1,11 @@
-import { useState, useEffect, useCallback, useRef, type PropsWithChildren, type ReactNode } from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type PropsWithChildren,
+  type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { IconX } from './icons';
 
@@ -42,11 +49,11 @@ export function Modal({
   width = 520,
   maxWidth,
   closeDisabled = false,
-  children
+  children,
 }: PropsWithChildren<ModalProps>) {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
 
   const startClose = useCallback(
     (notifyParent: boolean) => {

@@ -830,30 +830,119 @@
   }
 }
 
-// OAuth 模型映射表单
-.mappingRow {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr auto auto;
-  align-items: center;
-  gap: $spacing-sm;
-
-  @include mobile {
-    grid-template-columns: 1fr;
-  }
+// OAuth 模型别名 -  biểu đồ mapping
+.aliasChartSection {
+  margin-bottom: $spacing-lg;
+  padding-bottom: $spacing-lg;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.mappingSeparator {
+.aliasChartTitle {
+  margin: 0 0 $spacing-sm;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-secondary);
-  text-align: center;
+}
+
+.aliasChart {
+  width: 100%;
+  min-height: 120px;
+}
+
+.cardExtraButtons {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+}
+
+// OAuth 模型映射表单
+.mappingTable {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.mappingHeader {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 24px minmax(160px, 1fr) 140px 44px;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 0 $spacing-xs $spacing-xs;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 
   @include mobile {
     display: none;
   }
 }
 
+.mappingRow {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 24px minmax(160px, 1fr) 140px 44px;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs;
+  border-radius: $radius-md;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: $spacing-sm;
+
+    .mappingSeparator {
+      display: none;
+    }
+
+    .mappingFork {
+      grid-column: 1;
+    }
+
+    .mappingDelete {
+      grid-column: 1;
+      justify-self: start;
+    }
+  }
+}
+
+.mappingSeparator {
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 .mappingFork {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+}
+
+.mappingDelete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mappingInputCell {
+  min-width: 0; // Allow grid item to shrink below content size
+  overflow: hidden;
+
+  .input,
+  .form-group input {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 // 详情弹窗

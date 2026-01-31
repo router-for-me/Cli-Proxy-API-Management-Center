@@ -152,7 +152,11 @@ export const authFilesApi = {
       .trim()
       .toLowerCase();
     const normalizedAliases = normalizeOauthModelAlias({ [normalizedChannel]: aliases })[normalizedChannel] ?? [];
-    await apiClient.patch(OAUTH_MODEL_ALIAS_ENDPOINT, { channel: normalizedChannel, aliases: normalizedAliases });
+    await apiClient.patch(OAUTH_MODEL_ALIAS_ENDPOINT, {
+      provider: normalizedChannel,
+      channel: normalizedChannel,
+      aliases: normalizedAliases
+    });
   },
 
   deleteOauthModelAlias: async (channel: string) => {
