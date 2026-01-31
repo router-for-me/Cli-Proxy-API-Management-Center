@@ -687,9 +687,13 @@ const fetchKiroQuota = async (
   const totalUsage = baseUsage + bonusUsage;
 
   // Calculate next reset time
+  // Note: nextDateReset from Kiro API is in SECONDS (e.g., 1.769904E9 = 1769904000)
+  // JavaScript Date() requires milliseconds, so multiply by 1000
   let nextReset: string | undefined;
   if (payload.nextDateReset) {
-    const resetDate = new Date(payload.nextDateReset);
+    // API returns seconds timestamp (scientific notation like 1.769904E9)
+    const timestampSeconds = payload.nextDateReset;
+    const resetDate = new Date(timestampSeconds * 1000);
     if (!isNaN(resetDate.getTime())) {
       nextReset = resetDate.toISOString();
     }
