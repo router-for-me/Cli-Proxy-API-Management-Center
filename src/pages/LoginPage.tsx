@@ -7,7 +7,51 @@ import { IconEye, IconEyeOff } from '@/components/ui/icons';
 import { useAuthStore, useLanguageStore, useNotificationStore } from '@/stores';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
+import type { ApiError } from '@/types';
 import styles from './LoginPage.module.scss';
+
+/**
+ * 将 API 错误转换为本地化的用户友好消息
+ */
+function getLocalizedErrorMessage(error: any, t: (key: string) => string): string {
+  const apiError = error as ApiError;
+  const status = apiError?.status;
+  const code = apiError?.code;
+  const message = apiError?.message || '';
+
+  // 根据 HTTP 状态码判断
+  if (status === 401) {
+    return t('login.error_unauthorized');
+  }
+  if (status === 403) {
+    return t('login.error_forbidden');
+  }
+  if (status === 404) {
+    return t('login.error_not_found');
+  }
+  if (status && status >= 500) {
+    return t('login.error_server');
+  }
+
+  // 根据 axios 错误码判断
+  if (code === 'ECONNABORTED' || message.toLowerCase().includes('timeout')) {
+    return t('login.error_timeout');
+  }
+  if (code === 'ERR_NETWORK' || message.toLowerCase().includes('network error')) {
+    return t('login.error_network');
+  }
+  if (code === 'ERR_CERT_AUTHORITY_INVALID' || message.toLowerCase().includes('certificate')) {
+    return t('login.error_ssl');
+  }
+
+  // 检查 CORS 错误
+  if (message.toLowerCase().includes('cors') || message.toLowerCase().includes('cross-origin')) {
+    return t('login.error_cors');
+  }
+
+  // 默认错误消息
+  return t('login.error_invalid');
+}
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -81,7 +125,7 @@ export function LoginPage() {
       showNotification(t('common.connected_status'), 'success');
       navigate('/', { replace: true });
     } catch (err: any) {
-      const message = err?.message || t('login.error_invalid');
+      const message = getLocalizedErrorMessage(err, t);
       setError(message);
       showNotification(`${t('notification.login_failed')}: ${message}`, 'error');
     } finally {

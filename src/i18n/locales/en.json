@@ -72,7 +72,15 @@
     "submitting": "Connecting...",
     "error_title": "Login Failed",
     "error_required": "Please fill in complete connection information",
-    "error_invalid": "Connection failed, please check address and key"
+    "error_invalid": "Connection failed, please check address and key",
+    "error_network": "Network connection failed, please check your network or server address",
+    "error_timeout": "Connection timed out, server not responding",
+    "error_unauthorized": "Authentication failed, invalid management key",
+    "error_forbidden": "Access denied, insufficient permissions",
+    "error_not_found": "Server address invalid or management API not enabled",
+    "error_server": "Internal server error, please try again later",
+    "error_cors": "Cross-origin request blocked, please check server configuration",
+    "error_ssl": "SSL/TLS certificate verification failed"
   },
   "header": {
     "check_connection": "Check Connection",
