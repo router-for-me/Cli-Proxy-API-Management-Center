@@ -843,6 +843,49 @@
   }
 }
 
+// OAuth 模型别名 - 映射概览
+.aliasChartSection {
+  margin-bottom: $spacing-lg;
+  padding-bottom: $spacing-lg;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.aliasChartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.aliasChartTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.aliasChart {
+  width: 100%;
+  min-height: 120px;
+}
+
+.cardExtraButtons {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+}
+
+.viewModeSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: 2px;
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
 // OAuth 模型映射表单
 .mappingRow {
   display: grid;

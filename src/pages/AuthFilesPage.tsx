@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useInterval } from '@/hooks/useInterval';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
@@ -10,9 +10,11 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { ModelMappingDiagram, type ModelMappingDiagramRef } from '@/components/modelAlias';
 import {
   IconBot,
   IconCode,
+  IconChevronUp,
   IconDownload,
   IconInfo,
   IconTrash2,
@@ -230,6 +232,10 @@ export function AuthFilesPage() {
   // OAuth 模型映射相关
   const [modelAlias, setModelAlias] = useState<Record<string, OAuthModelAliasEntry[]>>({});
   const [modelAliasError, setModelAliasError] = useState<'unsupported' | null>(null);
+  const [allProviderModels, setAllProviderModels] = useState<Record<string, AuthFileModelItem[]>>(
+    {}
+  );
+  const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
 
   const [prefixProxyEditor, setPrefixProxyEditor] = useState<PrefixProxyEditorState | null>(null);
 
@@ -237,10 +243,71 @@ export function AuthFilesPage() {
   const loadingKeyStatsRef = useRef(false);
   const excludedUnsupportedRef = useRef(false);
   const mappingsUnsupportedRef = useRef(false);
+  const diagramRef = useRef<ModelMappingDiagramRef | null>(null);
 
   const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
 
   const disableControls = connectionStatus !== 'connected';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadAllModels = async () => {
+      const providers = new Set<string>();
+
+      Object.keys(modelAlias).forEach((provider) => {
+        const key = provider.trim().toLowerCase();
+        if (key) providers.add(key);
+      });
+
+      files.forEach((file) => {
+        if (typeof file.type === 'string') {
+          const key = file.type.trim().toLowerCase();
+          if (key) providers.add(key);
+        }
+        if (typeof file.provider === 'string') {
+          const key = file.provider.trim().toLowerCase();
+          if (key) providers.add(key);
+        }
+      });
+
+      const providerList = Array.from(providers);
+      if (providerList.length === 0) {
+        if (!cancelled) setAllProviderModels({});
+        return;
+      }
+
+      const results = await Promise.all(
+        providerList.map(async (provider) => {
+          try {
+            const models = await authFilesApi.getModelDefinitions(provider);
+            return { provider, models };
+          } catch {
+            return { provider, models: [] };
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      const nextModels: Record<string, AuthFileModelItem[]> = {};
+      results.forEach(({ provider, models }) => {
+        if (models.length > 0) {
+          nextModels[provider] = models;
+        }
+      });
+
+      setAllProviderModels(nextModels);
+    };
+
+    void loadAllModels();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [files, modelAlias]);
+
+
 
   useEffect(() => {
     const persisted = readAuthFilesUiState();
@@ -603,7 +670,9 @@ export function AuthFilesPage() {
             setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
           } else {
             // 删除筛选类型的文件
-            const filesToDelete = files.filter((f) => f.type === filter && !isRuntimeOnlyAuthFile(f));
+            const filesToDelete = files.filter(
+              (f) => f.type === filter && !isRuntimeOnlyAuthFile(f)
+            );
 
             if (filesToDelete.length === 0) {
               showNotification(t('auth_files.delete_filtered_none', { type: typeLabel }), 'info');
@@ -991,6 +1060,205 @@ export function AuthFilesPage() {
     });
   };
 
+  const handleMappingUpdate = async (provider: string, sourceModel: string, newAlias: string) => {
+    if (!provider || !sourceModel || !newAlias) return;
+    const normalizedProvider = normalizeProviderKey(provider);
+    if (!normalizedProvider) return;
+
+    const providerKey = Object.keys(modelAlias).find(
+      (key) => normalizeProviderKey(key) === normalizedProvider
+    );
+    const currentMappings = (providerKey ? modelAlias[providerKey] : null) ?? [];
+
+    const nameTrim = sourceModel.trim();
+    const aliasTrim = newAlias.trim();
+    const nameKey = nameTrim.toLowerCase();
+    const aliasKey = aliasTrim.toLowerCase();
+
+    if (
+      currentMappings.some(
+        (m) =>
+          (m.name ?? '').trim().toLowerCase() === nameKey &&
+          (m.alias ?? '').trim().toLowerCase() === aliasKey
+      )
+    ) {
+      return;
+    }
+
+    const nextMappings: OAuthModelAliasEntry[] = [
+      ...currentMappings,
+      { name: nameTrim, alias: aliasTrim, fork: true },
+    ];
+
+    try {
+      await authFilesApi.saveOauthModelAlias(normalizedProvider, nextMappings);
+      await loadModelAlias();
+      showNotification(t('oauth_model_alias.save_success'), 'success');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
+    }
+  };
+
+  const handleDeleteLink = (provider: string, sourceModel: string, alias: string) => {
+    const nameTrim = sourceModel.trim();
+    const aliasTrim = alias.trim();
+    if (!provider || !nameTrim || !aliasTrim) return;
+
+    showConfirmation({
+      title: t('oauth_model_alias.delete_link_title', { defaultValue: 'Unlink mapping' }),
+      message: (
+        <Trans
+          i18nKey="oauth_model_alias.delete_link_confirm"
+          values={{ provider, sourceModel: nameTrim, alias: aliasTrim }}
+          components={{ code: <code /> }}
+        />
+      ),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        const normalizedProvider = normalizeProviderKey(provider);
+        const providerKey = Object.keys(modelAlias).find(
+          (key) => normalizeProviderKey(key) === normalizedProvider
+        );
+        const currentMappings = (providerKey ? modelAlias[providerKey] : null) ?? [];
+        const nameKey = nameTrim.toLowerCase();
+        const aliasKey = aliasTrim.toLowerCase();
+        const nextMappings = currentMappings.filter(
+          (m) =>
+            (m.name ?? '').trim().toLowerCase() !== nameKey ||
+            (m.alias ?? '').trim().toLowerCase() !== aliasKey
+        );
+        if (nextMappings.length === currentMappings.length) return;
+
+        try {
+          if (nextMappings.length === 0) {
+            await authFilesApi.deleteOauthModelAlias(normalizedProvider);
+          } else {
+            await authFilesApi.saveOauthModelAlias(normalizedProvider, nextMappings);
+          }
+          await loadModelAlias();
+          showNotification(t('oauth_model_alias.save_success'), 'success');
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : '';
+          showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
+        }
+      },
+    });
+  };
+
+  const handleToggleFork = async (
+    provider: string,
+    sourceModel: string,
+    alias: string,
+    fork: boolean
+  ) => {
+    const normalizedProvider = normalizeProviderKey(provider);
+    if (!normalizedProvider) return;
+
+    const providerKey = Object.keys(modelAlias).find(
+      (key) => normalizeProviderKey(key) === normalizedProvider
+    );
+    const currentMappings = (providerKey ? modelAlias[providerKey] : null) ?? [];
+    const nameKey = sourceModel.trim().toLowerCase();
+    const aliasKey = alias.trim().toLowerCase();
+    let changed = false;
+
+    const nextMappings = currentMappings.map((m) => {
+      const mName = (m.name ?? '').trim().toLowerCase();
+      const mAlias = (m.alias ?? '').trim().toLowerCase();
+      if (mName === nameKey && mAlias === aliasKey) {
+        changed = true;
+        return fork ? { ...m, fork: true } : { name: m.name, alias: m.alias };
+      }
+      return m;
+    });
+
+    if (!changed) return;
+
+    try {
+      await authFilesApi.saveOauthModelAlias(normalizedProvider, nextMappings);
+      await loadModelAlias();
+      showNotification(t('oauth_model_alias.save_success'), 'success');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
+    }
+  };
+
+  const handleRenameAlias = async (oldAlias: string, newAlias: string) => {
+    const oldTrim = oldAlias.trim();
+    const newTrim = newAlias.trim();
+    if (!oldTrim || !newTrim || oldTrim === newTrim) return;
+
+    const oldKey = oldTrim.toLowerCase();
+    const providersToUpdate = Object.entries(modelAlias).filter(([_, mappings]) =>
+      mappings.some((m) => (m.alias ?? '').trim().toLowerCase() === oldKey)
+    );
+
+    if (providersToUpdate.length === 0) return;
+
+    try {
+      await Promise.all(
+        providersToUpdate.map(([provider, mappings]) => {
+          const nextMappings = mappings.map((m) =>
+            (m.alias ?? '').trim().toLowerCase() === oldKey ? { ...m, alias: newTrim } : m
+          );
+          return authFilesApi.saveOauthModelAlias(provider, nextMappings);
+        })
+      );
+      await loadModelAlias();
+      showNotification(t('oauth_model_alias.save_success'), 'success');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
+    }
+  };
+
+  const handleDeleteAlias = (aliasName: string) => {
+    const aliasTrim = aliasName.trim();
+    if (!aliasTrim) return;
+    const aliasKey = aliasTrim.toLowerCase();
+    const providersToUpdate = Object.entries(modelAlias).filter(([_, mappings]) =>
+      mappings.some((m) => (m.alias ?? '').trim().toLowerCase() === aliasKey)
+    );
+
+    if (providersToUpdate.length === 0) return;
+
+    showConfirmation({
+      title: t('oauth_model_alias.delete_alias_title', { defaultValue: 'Delete Alias' }),
+      message: (
+        <Trans
+          i18nKey="oauth_model_alias.delete_alias_confirm"
+          values={{ alias: aliasTrim }}
+          components={{ code: <code /> }}
+        />
+      ),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        try {
+          await Promise.all(
+            providersToUpdate.map(([provider, mappings]) => {
+              const nextMappings = mappings.filter(
+                (m) => (m.alias ?? '').trim().toLowerCase() !== aliasKey
+              );
+              if (nextMappings.length === 0) {
+                return authFilesApi.deleteOauthModelAlias(provider);
+              }
+              return authFilesApi.saveOauthModelAlias(provider, nextMappings);
+            })
+          );
+          await loadModelAlias();
+          showNotification(t('oauth_model_alias.delete_success'), 'success');
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : '';
+          showNotification(`${t('oauth_model_alias.delete_failed')}: ${errorMessage}`, 'error');
+        }
+      },
+    });
+  };
+
   // 渲染标签筛选器
   const renderFilterTags = () => (
     <div className={styles.filterTags}>
@@ -1084,22 +1352,22 @@ export function AuthFilesPage() {
   };
 
   // 渲染单个认证文件卡片
-	  const renderFileCard = (item: AuthFileItem) => {
-	    const fileStats = resolveAuthFileStats(item, keyStats);
-	    const isRuntimeOnly = isRuntimeOnlyAuthFile(item);
-	    const isAistudio = (item.type || '').toLowerCase() === 'aistudio';
-	    const showModelsButton = !isRuntimeOnly || isAistudio;
-	    const typeColor = getTypeColor(item.type || 'unknown');
+  const renderFileCard = (item: AuthFileItem) => {
+    const fileStats = resolveAuthFileStats(item, keyStats);
+    const isRuntimeOnly = isRuntimeOnlyAuthFile(item);
+    const isAistudio = (item.type || '').toLowerCase() === 'aistudio';
+    const showModelsButton = !isRuntimeOnly || isAistudio;
+    const typeColor = getTypeColor(item.type || 'unknown');
 
-	    return (
-	      <div
-	        key={item.name}
-	        className={`${styles.fileCard} ${item.disabled ? styles.fileCardDisabled : ''}`}
-	      >
-	        <div className={styles.cardHeader}>
-	          <span
-	            className={styles.typeBadge}
-	            style={{
+    return (
+      <div
+        key={item.name}
+        className={`${styles.fileCard} ${item.disabled ? styles.fileCardDisabled : ''}`}
+      >
+        <div className={styles.cardHeader}>
+          <span
+            className={styles.typeBadge}
+            style={{
               backgroundColor: typeColor.bg,
               color: typeColor.text,
               ...(typeColor.border ? { border: typeColor.border } : {}),
@@ -1377,7 +1645,11 @@ export function AuthFilesPage() {
                   </div>
                 </div>
                 <div className={styles.excludedActions}>
-                  <Button variant="secondary" size="sm" onClick={() => openExcludedEditor(provider)}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => openExcludedEditor(provider)}
+                  >
                     {t('common.edit')}
                   </Button>
                   <Button variant="danger" size="sm" onClick={() => deleteExcluded(provider)}>
@@ -1394,13 +1666,33 @@ export function AuthFilesPage() {
       <Card
         title={t('oauth_model_alias.title')}
         extra={
-          <Button
-            size="sm"
-            onClick={() => openModelAliasEditor()}
-            disabled={disableControls || modelAliasError === 'unsupported'}
-          >
-            {t('oauth_model_alias.add')}
-          </Button>
+          <div className={styles.cardExtraButtons}>
+            <div className={styles.viewModeSwitch}>
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                disabled={disableControls || modelAliasError === 'unsupported'}
+              >
+                {t('oauth_model_alias.view_mode_list')}
+              </Button>
+              <Button
+                variant={viewMode === 'diagram' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('diagram')}
+                disabled={disableControls || modelAliasError === 'unsupported'}
+              >
+                {t('oauth_model_alias.view_mode_diagram')}
+              </Button>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => openModelAliasEditor()}
+              disabled={disableControls || modelAliasError === 'unsupported'}
+            >
+              {t('oauth_model_alias.add')}
+            </Button>
+          </div>
         }
       >
         {modelAliasError === 'unsupported' ? (
@@ -1408,6 +1700,39 @@ export function AuthFilesPage() {
             title={t('oauth_model_alias.upgrade_required_title')}
             description={t('oauth_model_alias.upgrade_required_desc')}
           />
+        ) : viewMode === 'diagram' ? (
+          Object.keys(modelAlias).length === 0 ? (
+            <EmptyState title={t('oauth_model_alias.list_empty_all')} />
+          ) : (
+            <div className={styles.aliasChartSection}>
+              <div className={styles.aliasChartHeader}>
+                <h4 className={styles.aliasChartTitle}>{t('oauth_model_alias.chart_title')}</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => diagramRef.current?.collapseAll()}
+                  disabled={disableControls || modelAliasError === 'unsupported'}
+                  title={t('oauth_model_alias.diagram_collapse')}
+                  aria-label={t('oauth_model_alias.diagram_collapse')}
+                >
+                  <IconChevronUp size={16} />
+                </Button>
+              </div>
+              <ModelMappingDiagram
+                ref={diagramRef}
+                modelAlias={modelAlias}
+                allProviderModels={allProviderModels}
+                onUpdate={handleMappingUpdate}
+                onDeleteLink={handleDeleteLink}
+                onToggleFork={handleToggleFork}
+                onRenameAlias={handleRenameAlias}
+                onDeleteAlias={handleDeleteAlias}
+                onEditProvider={openModelAliasEditor}
+                onDeleteProvider={deleteModelAlias}
+                className={styles.aliasChart}
+              />
+            </div>
+          )
         ) : Object.keys(modelAlias).length === 0 ? (
           <EmptyState title={t('oauth_model_alias.list_empty_all')} />
         ) : (
@@ -1625,7 +1950,6 @@ export function AuthFilesPage() {
           </div>
         )}
       </Modal>
-
     </div>
   );
 }
