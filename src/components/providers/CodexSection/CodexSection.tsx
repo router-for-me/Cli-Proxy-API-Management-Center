@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import iconOpenaiLight from '@/assets/icons/openai-light.svg';
-import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
+import iconCodexLight from '@/assets/icons/codex_light.svg';
+import iconCodexDark from '@/assets/icons/codex_drak.svg';
 import type { ProviderKeyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import {
@@ -73,7 +73,7 @@ export function CodexSection({
         title={
           <span className={styles.cardTitle}>
             <img
-              src={resolvedTheme === 'dark' ? iconOpenaiDark : iconOpenaiLight}
+              src={resolvedTheme === 'dark' ? iconCodexDark : iconCodexLight}
               alt=""
               className={styles.cardTitleIcon}
             />

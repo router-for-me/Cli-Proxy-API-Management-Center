@@ -4,6 +4,8 @@ import { useThemeStore } from '@/stores';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
+import iconCodexLight from '@/assets/icons/codex_light.svg';
+import iconCodexDark from '@/assets/icons/codex_drak.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconAmp from '@/assets/icons/amp.svg';
@@ -19,7 +21,7 @@ interface ProviderNavItem {
 
 const PROVIDERS: ProviderNavItem[] = [
   { id: 'gemini', label: 'Gemini', getIcon: () => iconGemini },
-  { id: 'codex', label: 'Codex', getIcon: (theme) => (theme === 'dark' ? iconOpenaiDark : iconOpenaiLight) },
+  { id: 'codex', label: 'Codex', getIcon: (theme) => (theme === 'dark' ? iconCodexDark : iconCodexLight) },
   { id: 'claude', label: 'Claude', getIcon: () => iconClaude },
   { id: 'vertex', label: 'Vertex', getIcon: () => iconVertex },
   { id: 'ampcode', label: 'Ampcode', getIcon: () => iconAmp },
@@ -46,6 +48,7 @@ export function ProviderNav() {
     const triggerPoint = containerRect.top + containerRect.height * 0.3;
 
     let currentActive: ProviderId | null = null;
+    let closestAbove: { id: ProviderId; top: number } | null = null;
 
     for (const provider of PROVIDERS) {
       const element = document.getElementById(`provider-${provider.id}`);
@@ -54,11 +57,25 @@ export function ProviderNav() {
         const elementTop = rect.top;
         const elementBottom = rect.bottom;
 
+        // Check if triggerPoint is within this element's bounds
         if (triggerPoint >= elementTop && triggerPoint < elementBottom) {
           currentActive = provider.id;
           break;
         }
+
+        // Track the element whose top is closest to (but not exceeding) triggerPoint
+        // This handles short cards where triggerPoint may have passed the bottom
+        if (elementTop <= triggerPoint) {
+          if (!closestAbove || elementTop > closestAbove.top) {
+            closestAbove = { id: provider.id, top: elementTop };
+          }
+        }
       }
+    }
+
+    // If no element contains triggerPoint, use the closest one above it
+    if (!currentActive && closestAbove) {
+      currentActive = closestAbove.id;
     }
 
     setActiveProvider(currentActive);
