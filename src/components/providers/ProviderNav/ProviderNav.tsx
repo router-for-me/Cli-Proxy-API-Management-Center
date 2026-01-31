@@ -28,6 +28,8 @@ const PROVIDERS: ProviderNavItem[] = [
   { id: 'openai', label: 'OpenAI', getIcon: (theme) => (theme === 'dark' ? iconOpenaiDark : iconOpenaiLight) },
 ];
 
+const HEADER_OFFSET = 24;
+
 export function ProviderNav() {
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
@@ -45,37 +47,27 @@ export function ProviderNav() {
     if (!container) return;
 
     const containerRect = container.getBoundingClientRect();
-    const triggerPoint = containerRect.top + containerRect.height * 0.3;
-
+    const activationLine = containerRect.top + HEADER_OFFSET + 1;
     let currentActive: ProviderId | null = null;
-    let closestAbove: { id: ProviderId; top: number } | null = null;
 
     for (const provider of PROVIDERS) {
       const element = document.getElementById(`provider-${provider.id}`);
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        const elementTop = rect.top;
-        const elementBottom = rect.bottom;
+      if (!element) continue;
 
-        // Check if triggerPoint is within this element's bounds
-        if (triggerPoint >= elementTop && triggerPoint < elementBottom) {
-          currentActive = provider.id;
-          break;
-        }
-
-        // Track the element whose top is closest to (but not exceeding) triggerPoint
-        // This handles short cards where triggerPoint may have passed the bottom
-        if (elementTop <= triggerPoint) {
-          if (!closestAbove || elementTop > closestAbove.top) {
-            closestAbove = { id: provider.id, top: elementTop };
-          }
-        }
+      const rect = element.getBoundingClientRect();
+      if (rect.top <= activationLine) {
+        currentActive = provider.id;
+        continue;
       }
+
+      if (currentActive) break;
     }
 
-    // If no element contains triggerPoint, use the closest one above it
-    if (!currentActive && closestAbove) {
-      currentActive = closestAbove.id;
+    if (!currentActive) {
+      const firstVisible = PROVIDERS.find((provider) =>
+        document.getElementById(`provider-${provider.id}`)
+      );
+      currentActive = firstVisible?.id ?? null;
     }
 
     setActiveProvider(currentActive);
@@ -86,6 +78,7 @@ export function ProviderNav() {
     if (!container) return;
 
     container.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => container.removeEventListener('scroll', handleScroll);
   }, [handleScroll, getScrollContainer]);
 
@@ -96,9 +89,9 @@ export function ProviderNav() {
 
     const containerRect = container.getBoundingClientRect();
     const elementRect = element.getBoundingClientRect();
-    const headerOffset = 24;
-    const scrollTop = container.scrollTop + (elementRect.top - containerRect.top) - headerOffset;
+    const scrollTop = container.scrollTop + (elementRect.top - containerRect.top) - HEADER_OFFSET;
 
+    setActiveProvider(providerId);
     container.scrollTo({
       top: scrollTop,
       behavior: 'smooth',
