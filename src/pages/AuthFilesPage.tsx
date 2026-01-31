@@ -453,6 +453,15 @@ export function AuthFilesPage() {
     return Array.from(types);
   }, [files]);
 
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: files.length };
+    files.forEach((file) => {
+      if (!file.type) return;
+      counts[file.type] = (counts[file.type] || 0) + 1;
+    });
+    return counts;
+  }, [files]);
+
   // 过滤和搜索
   const filtered = useMemo(() => {
     return files.filter((item) => {
@@ -1006,7 +1015,8 @@ export function AuthFilesPage() {
               setPage(1);
             }}
           >
-            {getTypeLabel(type)}
+            <span className={styles.filterTagLabel}>{getTypeLabel(type)}</span>
+            <span className={styles.filterTagCount}>{typeCounts[type] ?? 0}</span>
           </button>
         );
       })}

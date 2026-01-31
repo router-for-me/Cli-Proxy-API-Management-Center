@@ -45,6 +45,7 @@ import {
   getStatusFromError,
   isAntigravityFile,
   isCodexFile,
+  isDisabledAuthFile,
   isGeminiCliFile,
   isRuntimeOnlyAuthFile
 } from '@/utils/quota';
@@ -519,7 +520,7 @@ const renderGeminiCliItems = (
 export const ANTIGRAVITY_CONFIG: QuotaConfig<AntigravityQuotaState, AntigravityQuotaGroup[]> = {
   type: 'antigravity',
   i18nPrefix: 'antigravity_quota',
-  filterFn: (file) => isAntigravityFile(file),
+  filterFn: (file) => isAntigravityFile(file) && !isDisabledAuthFile(file),
   fetchQuota: fetchAntigravityQuota,
   storeSelector: (state) => state.antigravityQuota,
   storeSetter: 'setAntigravityQuota',
@@ -544,7 +545,7 @@ export const CODEX_CONFIG: QuotaConfig<
 > = {
   type: 'codex',
   i18nPrefix: 'codex_quota',
-  filterFn: (file) => isCodexFile(file),
+  filterFn: (file) => isCodexFile(file) && !isDisabledAuthFile(file),
   fetchQuota: fetchCodexQuota,
   storeSelector: (state) => state.codexQuota,
   storeSetter: 'setCodexQuota',
@@ -570,7 +571,8 @@ export const CODEX_CONFIG: QuotaConfig<
 export const GEMINI_CLI_CONFIG: QuotaConfig<GeminiCliQuotaState, GeminiCliQuotaBucketState[]> = {
   type: 'gemini-cli',
   i18nPrefix: 'gemini_cli_quota',
-  filterFn: (file) => isGeminiCliFile(file) && !isRuntimeOnlyAuthFile(file),
+  filterFn: (file) =>
+    isGeminiCliFile(file) && !isRuntimeOnlyAuthFile(file) && !isDisabledAuthFile(file),
   fetchQuota: fetchGeminiCliQuota,
   storeSelector: (state) => state.geminiCliQuota,
   storeSetter: 'setGeminiCliQuota',
