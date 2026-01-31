@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { OAuthModelAliasEntry } from '@/types';
@@ -104,7 +104,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
 
   // Close context menu on click outside
   useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
+    const handleClick = (event: globalThis.MouseEvent) => {
       if (!contextMenuRef.current?.contains(event.target as Node)) {
         setContextMenu(null);
       }
@@ -355,7 +355,11 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
     setDropTargetSource(null);
   };
 
-  const handleContextMenu = (e: MouseEvent, type: 'alias' | 'background', data?: string) => {
+  const handleContextMenu = (
+    e: ReactMouseEvent,
+    type: 'alias' | 'background' | 'provider' | 'source',
+    data?: string
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({
