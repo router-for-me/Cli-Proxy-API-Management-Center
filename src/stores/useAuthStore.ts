@@ -163,7 +163,7 @@ export const useAuthStore = create<AuthStoreState>()(
           });
 
           return true;
-        } catch (error) {
+        } catch {
           set({
             isAuthenticated: false,
             connectionStatus: 'error'

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -85,11 +85,16 @@ export function OAuthPage() {
   const timers = useRef<Record<string, number>>({});
   const vertexFileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const clearTimers = useCallback(() => {
+    Object.values(timers.current).forEach((timer) => window.clearInterval(timer));
+    timers.current = {};
+  }, []);
+
   useEffect(() => {
     return () => {
-      Object.values(timers.current).forEach((timer) => window.clearInterval(timer));
+      clearTimers();
     };
-  }, []);
+  }, [clearTimers]);
 
   const updateProviderState = (provider: OAuthProvider, next: Partial<ProviderState>) => {
     setStates((prev) => ({

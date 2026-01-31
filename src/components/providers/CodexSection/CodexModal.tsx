@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import type { ProviderKeyConfig } from '@/types';
 import { headersToEntries } from '@/utils/headers';
-import { modelsToEntries } from '@/components/ui/ModelInputList';
+import { modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText } from '../utils';
 import type { ProviderFormState, ProviderModalProps } from '../types';
 

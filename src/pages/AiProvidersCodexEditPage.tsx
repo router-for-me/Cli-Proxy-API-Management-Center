@@ -11,7 +11,7 @@ import { providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries } from '@/utils/headers';
-import { entriesToModels } from '@/components/ui/ModelInputList';
+import { entriesToModels } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import type { ProviderFormState } from '@/components/providers';
 import layoutStyles from './AiProvidersEditLayout.module.scss';

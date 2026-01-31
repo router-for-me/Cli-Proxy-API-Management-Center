@@ -29,13 +29,7 @@ const PROVIDERS: ProviderNavItem[] = [
 export function ProviderNav() {
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
-  const [mounted, setMounted] = useState(false);
   const scrollContainerRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
 
   const getScrollContainer = useCallback(() => {
     if (scrollContainerRef.current) return scrollContainerRef.current;
@@ -74,7 +68,6 @@ export function ProviderNav() {
     const container = getScrollContainer();
     if (!container) return;
 
-    handleScroll();
     container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
   }, [handleScroll, getScrollContainer]);
@@ -120,7 +113,7 @@ export function ProviderNav() {
     </div>
   );
 
-  if (!mounted) return null;
+  if (typeof document === 'undefined') return null;
 
   return createPortal(navContent, document.body);
 }
