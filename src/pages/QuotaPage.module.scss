@@ -104,7 +104,8 @@
 
 .antigravityGrid,
 .codexGrid,
-.geminiCliGrid {
+.geminiCliGrid,
+.kiroGrid {
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -116,7 +117,8 @@
 
 .antigravityControls,
 .codexControls,
-.geminiCliControls {
+.geminiCliControls,
+.kiroControls {
   display: flex;
   gap: $spacing-md;
   flex-wrap: wrap;
@@ -126,7 +128,8 @@
 
 .antigravityControl,
 .codexControl,
-.geminiCliControl {
+.geminiCliControl,
+.kiroControl {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -161,6 +164,12 @@
   background-image: linear-gradient(180deg,
       rgba(231, 239, 255, 0.2),
       rgba(231, 239, 255, 0));
+}
+
+.kiroCard {
+  background-image: linear-gradient(180deg,
+      rgba(255, 248, 225, 0.18),
+      rgba(255, 248, 225, 0));
 }
 
 .quotaSection {
