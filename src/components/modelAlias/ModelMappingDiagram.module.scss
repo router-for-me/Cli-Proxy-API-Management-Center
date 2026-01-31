@@ -1,3 +1,5 @@
+@use '../../styles/variables' as *;
+
 .container {
   display: flex;
   position: relative;
@@ -143,7 +145,8 @@
   }
 }
 
-.sourceItem, .aliasItem {
+.sourceItem,
+.aliasItem {
   cursor: grab;
 
   &:active {
@@ -175,8 +178,7 @@
   right: -3px;
 }
 
-.aliasItem {
-}
+.aliasItem {}
 
 .providerBadge {
   font-size: 11px;

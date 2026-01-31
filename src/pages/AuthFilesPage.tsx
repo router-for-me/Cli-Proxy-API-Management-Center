@@ -249,29 +249,31 @@ export function AuthFilesPage() {
 
   const disableControls = connectionStatus !== 'connected';
 
+  const providerList = useMemo(() => {
+    const providers = new Set<string>();
+
+    Object.keys(modelAlias).forEach((provider) => {
+      const key = provider.trim().toLowerCase();
+      if (key) providers.add(key);
+    });
+
+    files.forEach((file) => {
+      if (typeof file.type === 'string') {
+        const key = file.type.trim().toLowerCase();
+        if (key) providers.add(key);
+      }
+      if (typeof file.provider === 'string') {
+        const key = file.provider.trim().toLowerCase();
+        if (key) providers.add(key);
+      }
+    });
+    return Array.from(providers);
+  }, [files, modelAlias]);
+
   useEffect(() => {
     let cancelled = false;
 
     const loadAllModels = async () => {
-      const providers = new Set<string>();
-
-      Object.keys(modelAlias).forEach((provider) => {
-        const key = provider.trim().toLowerCase();
-        if (key) providers.add(key);
-      });
-
-      files.forEach((file) => {
-        if (typeof file.type === 'string') {
-          const key = file.type.trim().toLowerCase();
-          if (key) providers.add(key);
-        }
-        if (typeof file.provider === 'string') {
-          const key = file.provider.trim().toLowerCase();
-          if (key) providers.add(key);
-        }
-      });
-
-      const providerList = Array.from(providers);
       if (providerList.length === 0) {
         if (!cancelled) setAllProviderModels({});
         return;
@@ -305,7 +307,7 @@ export function AuthFilesPage() {
     return () => {
       cancelled = true;
     };
-  }, [files, modelAlias]);
+  }, [providerList]);
 
 
 
