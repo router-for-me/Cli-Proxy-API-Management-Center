@@ -27,6 +27,10 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
+
+  @include mobile {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
 }
 
 .section {
