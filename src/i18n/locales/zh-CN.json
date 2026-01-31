@@ -474,7 +474,9 @@
     "refresh_button": "刷新额度",
     "fetch_all": "获取全部",
     "subscription_label": "订阅类型",
-    "credits_label": "积分额度",
+    "base_credits_label": "基础额度",
+    "bonus_credits_label": "赠送额度",
+    "total_credits_label": "合计额度",
     "remaining_credits": "剩余 {{count}}"
   },
   "vertex_import": {

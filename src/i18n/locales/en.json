@@ -474,7 +474,9 @@
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All",
     "subscription_label": "Subscription",
-    "credits_label": "Credits",
+    "base_credits_label": "Base Credits",
+    "bonus_credits_label": "Bonus Credits",
+    "total_credits_label": "Total Credits",
     "remaining_credits": "Remaining {{count}}"
   },
   "vertex_import": {

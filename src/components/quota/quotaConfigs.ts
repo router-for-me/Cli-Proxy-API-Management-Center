@@ -612,6 +612,16 @@ export const GEMINI_CLI_CONFIG: QuotaConfig<GeminiCliQuotaState, GeminiCliQuotaB
 
 // Kiro quota data structure from API
 interface KiroQuotaData {
+  // Base quota (原本额度)
+  baseUsage: number | null;
+  baseLimit: number | null;
+  baseRemaining: number | null;
+  // Free trial/bonus quota (赠送额度)
+  bonusUsage: number | null;
+  bonusLimit: number | null;
+  bonusRemaining: number | null;
+  bonusStatus?: string;
+  // Total (合计)
   currentUsage: number | null;
   usageLimit: number | null;
   remainingCredits: number | null;
@@ -645,27 +655,36 @@ const fetchKiroQuota = async (
     throw new Error(t('kiro_quota.empty_data'));
   }
 
-  // Extract usage data from usageBreakdownList (including freeTrialInfo)
+  // Extract usage data from usageBreakdownList (separating base and bonus)
   const breakdownList = payload.usageBreakdownList ?? [];
-  let totalLimit = 0;
-  let totalUsage = 0;
+  let baseLimit = 0;
+  let baseUsage = 0;
+  let bonusLimit = 0;
+  let bonusUsage = 0;
+  let bonusStatus: string | undefined;
 
   for (const breakdown of breakdownList) {
     // Add base quota
     const limit = normalizeNumberValue(breakdown.usageLimitWithPrecision ?? breakdown.usageLimit);
     const usage = normalizeNumberValue(breakdown.currentUsageWithPrecision ?? breakdown.currentUsage);
-    if (limit !== null) totalLimit += limit;
-    if (usage !== null) totalUsage += usage;
+    if (limit !== null) baseLimit += limit;
+    if (usage !== null) baseUsage += usage;
 
     // Add free trial quota if available (e.g., 500 bonus credits)
     const freeTrialInfo = breakdown.freeTrialInfo;
     if (freeTrialInfo) {
       const freeLimit = normalizeNumberValue(freeTrialInfo.usageLimitWithPrecision ?? freeTrialInfo.usageLimit);
       const freeUsage = normalizeNumberValue(freeTrialInfo.currentUsageWithPrecision ?? freeTrialInfo.currentUsage);
-      if (freeLimit !== null) totalLimit += freeLimit;
-      if (freeUsage !== null) totalUsage += freeUsage;
+      if (freeLimit !== null) bonusLimit += freeLimit;
+      if (freeUsage !== null) bonusUsage += freeUsage;
+      if (freeTrialInfo.freeTrialStatus) {
+        bonusStatus = freeTrialInfo.freeTrialStatus;
+      }
     }
   }
+
+  const totalLimit = baseLimit + bonusLimit;
+  const totalUsage = baseUsage + bonusUsage;
 
   // Calculate next reset time
   let nextReset: string | undefined;
@@ -680,6 +699,13 @@ const fetchKiroQuota = async (
   const subscriptionType = payload.subscriptionInfo?.subscriptionTitle ?? payload.subscriptionInfo?.type;
 
   return {
+    baseUsage,
+    baseLimit,
+    baseRemaining: baseLimit > 0 ? Math.max(0, baseLimit - baseUsage) : null,
+    bonusUsage,
+    bonusLimit,
+    bonusRemaining: bonusLimit > 0 ? Math.max(0, bonusLimit - bonusUsage) : null,
+    bonusStatus,
     currentUsage: totalUsage,
     usageLimit: totalLimit,
     remainingCredits: totalLimit > 0 ? Math.max(0, totalLimit - totalUsage) : null,
@@ -710,10 +736,7 @@ const renderKiroItems = (
     );
   }
 
-  // Show credits info
-  const currentUsage = quota.currentUsage;
   const usageLimit = quota.usageLimit;
-  const remainingCredits = quota.remainingCredits;
 
   if (usageLimit === null || usageLimit === 0) {
     nodes.push(
@@ -722,33 +745,94 @@ const renderKiroItems = (
     return h(Fragment, null, ...nodes);
   }
 
-  const usedPercent = currentUsage !== null && usageLimit > 0
-    ? Math.round((currentUsage / usageLimit) * 100)
-    : 0;
-  const remainingPercent = Math.max(0, 100 - usedPercent);
-
   const resetLabel = formatQuotaResetTime(quota.nextReset);
 
-  // Credits display
+  // Base quota display (原本额度)
+  const baseLimit = quota.baseLimit;
+  const baseRemaining = quota.baseRemaining;
+  if (baseLimit !== null && baseLimit > 0) {
+    const baseRemainingPercent = baseRemaining !== null && baseLimit > 0
+      ? Math.round((baseRemaining / baseLimit) * 100)
+      : 0;
+
+    nodes.push(
+      h(
+        'div',
+        { key: 'base-credits', className: styleMap.quotaRow },
+        h(
+          'div',
+          { className: styleMap.quotaRowHeader },
+          h('span', { className: styleMap.quotaModel }, t('kiro_quota.base_credits_label')),
+          h(
+            'div',
+            { className: styleMap.quotaMeta },
+            h('span', { className: styleMap.quotaPercent }, `${baseRemainingPercent}%`),
+            baseRemaining !== null
+              ? h('span', { className: styleMap.quotaAmount }, t('kiro_quota.remaining_credits', { count: Math.round(baseRemaining) }))
+              : null,
+            h('span', { className: styleMap.quotaReset }, resetLabel)
+          )
+        ),
+        h(QuotaProgressBar, { percent: baseRemainingPercent, highThreshold: 60, mediumThreshold: 20 })
+      )
+    );
+  }
+
+  // Bonus quota display (赠送额度)
+  const bonusLimit = quota.bonusLimit;
+  const bonusRemaining = quota.bonusRemaining;
+  if (bonusLimit !== null && bonusLimit > 0) {
+    const bonusRemainingPercent = bonusRemaining !== null && bonusLimit > 0
+      ? Math.round((bonusRemaining / bonusLimit) * 100)
+      : 0;
+
+    nodes.push(
+      h(
+        'div',
+        { key: 'bonus-credits', className: styleMap.quotaRow },
+        h(
+          'div',
+          { className: styleMap.quotaRowHeader },
+          h('span', { className: styleMap.quotaModel }, t('kiro_quota.bonus_credits_label')),
+          h(
+            'div',
+            { className: styleMap.quotaMeta },
+            h('span', { className: styleMap.quotaPercent }, `${bonusRemainingPercent}%`),
+            bonusRemaining !== null
+              ? h('span', { className: styleMap.quotaAmount }, t('kiro_quota.remaining_credits', { count: Math.round(bonusRemaining) }))
+              : null
+          )
+        ),
+        h(QuotaProgressBar, { percent: bonusRemainingPercent, highThreshold: 60, mediumThreshold: 20 })
+      )
+    );
+  }
+
+  // Total credits display (合计)
+  const currentUsage = quota.currentUsage;
+  const remainingCredits = quota.remainingCredits;
+  const totalRemainingPercent = currentUsage !== null && usageLimit > 0
+    ? Math.max(0, 100 - Math.round((currentUsage / usageLimit) * 100))
+    : 0;
+
   nodes.push(
     h(
       'div',
-      { key: 'credits', className: styleMap.quotaRow },
+      { key: 'total-credits', className: styleMap.quotaRow },
       h(
         'div',
         { className: styleMap.quotaRowHeader },
-        h('span', { className: styleMap.quotaModel }, t('kiro_quota.credits_label')),
+        h('span', { className: styleMap.quotaModel }, t('kiro_quota.total_credits_label')),
         h(
           'div',
           { className: styleMap.quotaMeta },
-          h('span', { className: styleMap.quotaPercent }, `${remainingPercent}%`),
+          h('span', { className: styleMap.quotaPercent }, `${totalRemainingPercent}%`),
           remainingCredits !== null
             ? h('span', { className: styleMap.quotaAmount }, t('kiro_quota.remaining_credits', { count: Math.round(remainingCredits) }))
-            : null,
-          h('span', { className: styleMap.quotaReset }, resetLabel)
+            : null
         )
       ),
-      h(QuotaProgressBar, { percent: remainingPercent, highThreshold: 60, mediumThreshold: 20 })
+      h(QuotaProgressBar, { percent: totalRemainingPercent, highThreshold: 60, mediumThreshold: 20 })
     )
   );
 
@@ -764,12 +848,25 @@ export const KIRO_CONFIG: QuotaConfig<KiroQuotaState, KiroQuotaData> = {
   storeSetter: 'setKiroQuota',
   buildLoadingState: () => ({
     status: 'loading',
+    baseUsage: null,
+    baseLimit: null,
+    baseRemaining: null,
+    bonusUsage: null,
+    bonusLimit: null,
+    bonusRemaining: null,
     currentUsage: null,
     usageLimit: null,
     remainingCredits: null
   }),
   buildSuccessState: (data) => ({
     status: 'success',
+    baseUsage: data.baseUsage,
+    baseLimit: data.baseLimit,
+    baseRemaining: data.baseRemaining,
+    bonusUsage: data.bonusUsage,
+    bonusLimit: data.bonusLimit,
+    bonusRemaining: data.bonusRemaining,
+    bonusStatus: data.bonusStatus,
     currentUsage: data.currentUsage,
     usageLimit: data.usageLimit,
     remainingCredits: data.remainingCredits,
@@ -778,6 +875,12 @@ export const KIRO_CONFIG: QuotaConfig<KiroQuotaState, KiroQuotaData> = {
   }),
   buildErrorState: (message, status) => ({
     status: 'error',
+    baseUsage: null,
+    baseLimit: null,
+    baseRemaining: null,
+    bonusUsage: null,
+    bonusLimit: null,
+    bonusRemaining: null,
     currentUsage: null,
     usageLimit: null,
     remainingCredits: null,

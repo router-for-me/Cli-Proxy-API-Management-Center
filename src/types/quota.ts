@@ -182,6 +182,16 @@ export interface KiroQuotaPayload {
 
 export interface KiroQuotaState {
   status: 'idle' | 'loading' | 'success' | 'error';
+  // Base quota (原本额度)
+  baseUsage: number | null;
+  baseLimit: number | null;
+  baseRemaining: number | null;
+  // Free trial/bonus quota (赠送额度)
+  bonusUsage: number | null;
+  bonusLimit: number | null;
+  bonusRemaining: number | null;
+  bonusStatus?: string;
+  // Total (合计)
   currentUsage: number | null;
   usageLimit: number | null;
   remainingCredits: number | null;
