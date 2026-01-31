@@ -657,7 +657,7 @@ export function AuthFilesPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       loadAllModels();
-    }, 1000);
+    }, 300);
     return () => clearTimeout(timer);
   }, [loadAllModels]);
 
@@ -1414,10 +1414,7 @@ export function AuthFilesPage() {
         try {
           await Promise.all(providersToUpdate.map(async ([provider, mappings]) => {
             const nextMappings = mappings.filter(m => m.alias !== aliasName);
-            // If empty, save empty list or delete? saveOauthModelAlias handles empty list (updates to empty).
-            // Actually saveOauthModelAlias implementation: if empty, it might delete?
-            // "if (mappings.length) ... else deleteOauthModelAlias" in saveModelAlias logic.
-            // Here we should check.
+            // If there are no mappings left for the provider, delete the entry, otherwise update it.
             if (nextMappings.length === 0) {
                await authFilesApi.deleteOauthModelAlias(provider);
             } else {

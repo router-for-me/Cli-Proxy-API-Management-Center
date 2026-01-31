@@ -1,5 +1,6 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type DragEvent, type MouseEvent } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import type { OAuthModelAliasEntry } from '@/types';
 import { useThemeStore } from '@/stores';
 import { Modal } from '@/components/ui/Modal';
@@ -69,6 +70,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
   onDeleteAlias,
   className
 }, ref) {
+  const { t } = useTranslation();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isDark = resolvedTheme === 'dark';
   
@@ -95,12 +97,12 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
     return () => document.removeEventListener('click', handleClick);
   }, []);
 
-  // Parse data: mỗi source model (provider+name) và mỗi alias đều distinct theo id; 1 source → nhiều alias.
+  // Parse data: each source model (provider+name) and each alias is distinct by id; 1 source -> many aliases.
   const { aliasNodes, providerNodes } = useMemo(() => {
     const sourceMap = new Map<string, { provider: string; name: string; aliases: Set<string> }>();
     const aliasSet = new Set<string>();
 
-    // 1. Existing mappings: gộp theo (provider, name), mỗi source có tập aliases
+    // 1. Existing mappings: group by (provider, name), each source has a set of aliases
     Object.entries(modelAlias).forEach(([provider, mappings]) => {
       (mappings ?? []).forEach((m) => {
         const name = (m?.name || '').trim();
@@ -116,23 +118,21 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
       });
     });
 
-    // 2. Unmapped models từ allProviderModels (chưa có mapping)
+    // 2. Unmapped models from allProviderModels (no mapping yet)
     Object.entries(allProviderModels).forEach(([provider, models]) => {
       (models ?? []).forEach((m) => {
         const name = (m.id || '').trim();
         if (!name) return;
         const pk = `${provider.toLowerCase()}::${name.toLowerCase()}`;
         if (sourceMap.has(pk)) {
-          // Nếu đã có trong sourceMap (từ mapping), cập nhật provider display name cho khớp với allProviderModels (thường đẹp hơn)
-          // Nhưng cẩn thận nếu provider key khác nhau quá nhiều.
-          // Tốt nhất giữ nguyên provider từ mapping để group đúng logic mapping.
+          // Already in sourceMap from mappings; keep provider from mapping for correct grouping.
           return;
         }
         sourceMap.set(pk, { provider, name, aliases: new Set() });
       });
     });
 
-    // 3. Source nodes: distinct theo id = provider::name
+    // 3. Source nodes: distinct by id = provider::name
     const sources: SourceNode[] = Array.from(sourceMap.entries())
       .map(([id, v]) => ({
         id,
@@ -145,10 +145,10 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
         return a.name.localeCompare(b.name);
       });
 
-    // 4. Extra aliases (chưa có mapping)
+    // 4. Extra aliases (no mapping yet)
     extraAliases.forEach((alias) => aliasSet.add(alias));
 
-    // 5. Alias nodes: distinct theo id = alias; sources = các SourceNode có alias trong aliases
+    // 5. Alias nodes: distinct by id = alias; sources = SourceNodes that have this alias in their aliases
     const aliasNodesList: AliasNode[] = Array.from(aliasSet)
       .map((alias) => ({
         id: alias,
@@ -260,14 +260,12 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
     setLines(newLines);
   }, [providerNodes, collapsedProviders]);
 
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => updateLines());
+  useLayoutEffect(() => {
+    // updateLines is called after layout is calculated, ensuring elements are in place.
+    updateLines();
     window.addEventListener('resize', updateLines);
-    const timer = setTimeout(updateLines, 100);
     return () => {
-      cancelAnimationFrame(raf);
       window.removeEventListener('resize', updateLines);
-      clearTimeout(timer);
     };
   }, [updateLines]);
 
@@ -352,11 +350,11 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
   const handleAddAliasSubmit = () => {
     const trimmed = addAliasValue.trim();
     if (!trimmed) {
-      setAddAliasError('Vui lòng nhập tên alias.');
+      setAddAliasError(t('oauth_model_alias.diagram_please_enter_alias'));
       return;
     }
     if (aliasNodes.some(a => a.alias === trimmed)) {
-      setAddAliasError('Alias này đã tồn tại.');
+      setAddAliasError(t('oauth_model_alias.diagram_alias_exists'));
       return;
     }
     setExtraAliases(prev => [...prev, trimmed]);
@@ -373,7 +371,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
   const handleRenameSubmit = () => {
     const trimmed = renameValue.trim();
     if (!trimmed) {
-      setRenameError('Vui lòng nhập tên alias.');
+      setRenameError(t('oauth_model_alias.diagram_please_enter_alias'));
       return;
     }
     if (trimmed === renameState?.oldAlias) {
@@ -381,7 +379,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
       return;
     }
     if (aliasNodes.some(a => a.alias === trimmed)) {
-      setRenameError('Alias này đã tồn tại.');
+      setRenameError(t('oauth_model_alias.diagram_alias_exists'));
       return;
     }
     if (onRenameAlias && renameState) onRenameAlias(renameState.oldAlias, trimmed);
@@ -401,6 +399,34 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
     } else {
       if (onDeleteAlias) onDeleteAlias(alias);
     }
+  };
+
+  const renderAliasMenu = () => {
+    const aliasData = contextMenu?.data;
+    if (contextMenu?.type !== 'alias' || aliasData == null) return null;
+    const node = aliasNodes.find((n) => n.alias === aliasData);
+    return (
+      <>
+        <div className={styles.menuItem} onClick={() => handleRenameClick(aliasData)}>
+          <span>{t('oauth_model_alias.diagram_rename')}</span>
+        </div>
+        {node && node.sources.length > 0 && onDeleteLink && (
+          <div className={styles.menuDivider} />
+        )}
+        {node?.sources.map((source) => (
+          <div
+            key={source.id}
+            className={`${styles.menuItem} ${styles.danger}`}
+            onClick={() => handleUnlinkSource(source.provider, source.name, aliasData)}
+          >
+            <span>{t('oauth_model_alias.diagram_delete_link', { provider: source.provider, name: source.name })}</span>
+          </div>
+        ))}
+        <div className={`${styles.menuItem} ${styles.danger}`} onClick={() => handleDeleteClick(aliasData)}>
+          <span>{t('oauth_model_alias.diagram_delete_alias')}</span>
+        </div>
+      </>
+    );
   };
 
   return (
@@ -433,7 +459,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
           handleContextMenu(e, 'background');
         }}
       >
-        <div className={styles.columnHeader}>Providers</div>
+        <div className={styles.columnHeader}>{t('oauth_model_alias.diagram_providers')}</div>
         {providerNodes.map(({ provider, sources }) => {
           const collapsed = collapsedProviders.has(provider);
           return (
@@ -450,8 +476,8 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
                 type="button"
                 className={styles.collapseBtn}
                 onClick={() => toggleProviderCollapse(provider)}
-                aria-label={collapsed ? 'Expand' : 'Collapse'}
-                title={collapsed ? 'Mở rộng' : 'Thu gọn'}
+                aria-label={collapsed ? t('oauth_model_alias.diagram_expand') : t('oauth_model_alias.diagram_collapse')}
+                title={collapsed ? t('oauth_model_alias.diagram_expand') : t('oauth_model_alias.diagram_collapse')}
               >
                 <span className={collapsed ? styles.chevronRight : styles.chevronDown} />
               </button>
@@ -476,7 +502,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
           handleContextMenu(e, 'background');
         }}
       >
-        <div className={styles.columnHeader}>Source Models</div>
+        <div className={styles.columnHeader}>{t('oauth_model_alias.diagram_source_models')}</div>
         {providerNodes.flatMap(({ provider, sources }) => {
           if (collapsedProviders.has(provider)) return [];
           return sources.map((source) => (
@@ -527,7 +553,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
           handleContextMenu(e, 'background');
         }}
       >
-        <div className={styles.columnHeader}>Aliases</div>
+        <div className={styles.columnHeader}>{t('oauth_model_alias.diagram_aliases')}</div>
         {aliasNodes.map((node) => (
           <div
             key={node.id}
@@ -571,36 +597,10 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
           >
             {contextMenu.type === 'background' && (
               <div className={styles.menuItem} onClick={handleAddAlias}>
-                <span>Add Alias</span>
+                <span>{t('oauth_model_alias.diagram_add_alias')}</span>
               </div>
             )}
-            {contextMenu.type === 'alias' && (() => {
-              const aliasData = contextMenu.data;
-              if (aliasData == null) return null;
-              const node = aliasNodes.find((n) => n.alias === aliasData);
-              return (
-                <>
-                  <div className={styles.menuItem} onClick={() => handleRenameClick(aliasData)}>
-                    <span>Đổi tên</span>
-                  </div>
-                  {node && node.sources.length > 0 && onDeleteLink && (
-                    <div className={styles.menuDivider} />
-                  )}
-                  {node?.sources.map((source) => (
-                    <div
-                      key={source.id}
-                      className={`${styles.menuItem} ${styles.danger}`}
-                      onClick={() => handleUnlinkSource(source.provider, source.name, aliasData)}
-                    >
-                      <span>Xoá link từ {source.provider} / {source.name}</span>
-                    </div>
-                  ))}
-                  <div className={`${styles.menuItem} ${styles.danger}`} onClick={() => handleDeleteClick(aliasData)}>
-                    <span>Xoá alias</span>
-                  </div>
-                </>
-              );
-            })()}
+            {contextMenu.type === 'alias' && renderAliasMenu()}
           </div>,
           document.body
         )}
@@ -608,21 +608,21 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
       <Modal
         open={!!renameState}
         onClose={() => setRenameState(null)}
-        title="Đổi tên alias"
+        title={t('oauth_model_alias.diagram_rename_alias_title')}
         width={400}
         footer={
           <>
             <Button variant="secondary" onClick={() => setRenameState(null)}>
-              Huỷ
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleRenameSubmit}>
-              Đổi tên
+              {t('oauth_model_alias.diagram_rename_btn')}
             </Button>
           </>
         }
       >
         <Input
-          label="Tên alias mới"
+          label={t('oauth_model_alias.diagram_rename_alias_label')}
           value={renameValue}
           onChange={(e) => {
             setRenameValue(e.target.value);
@@ -632,7 +632,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
             if (e.key === 'Enter') handleRenameSubmit();
           }}
           error={renameError}
-          placeholder="Nhập tên alias..."
+          placeholder={t('oauth_model_alias.diagram_rename_placeholder')}
           autoFocus
         />
       </Modal>
@@ -640,21 +640,21 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
       <Modal
         open={addAliasOpen}
         onClose={() => setAddAliasOpen(false)}
-        title="Thêm alias"
+        title={t('oauth_model_alias.diagram_add_alias_title')}
         width={400}
         footer={
           <>
             <Button variant="secondary" onClick={() => setAddAliasOpen(false)}>
-              Huỷ
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleAddAliasSubmit}>
-              Thêm
+              {t('oauth_model_alias.diagram_add_btn')}
             </Button>
           </>
         }
       >
         <Input
-          label="Tên alias"
+          label={t('oauth_model_alias.diagram_add_alias_label')}
           value={addAliasValue}
           onChange={(e) => {
             setAddAliasValue(e.target.value);
@@ -664,7 +664,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
             if (e.key === 'Enter') handleAddAliasSubmit();
           }}
           error={addAliasError}
-          placeholder="Nhập tên alias mới..."
+          placeholder={t('oauth_model_alias.diagram_add_placeholder')}
           autoFocus
         />
       </Modal>
