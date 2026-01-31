@@ -147,6 +147,14 @@ export interface CodexQuotaState {
 }
 
 // Kiro (AWS CodeWhisperer) quota types
+export interface KiroFreeTrialInfo {
+  freeTrialStatus?: string;
+  usageLimit?: number;
+  currentUsage?: number;
+  usageLimitWithPrecision?: number;
+  currentUsageWithPrecision?: number;
+}
+
 export interface KiroUsageBreakdown {
   usageLimit?: number;
   currentUsage?: number;
@@ -155,6 +163,7 @@ export interface KiroUsageBreakdown {
   nextDateReset?: number;
   displayName?: string;
   resourceType?: string;
+  freeTrialInfo?: KiroFreeTrialInfo;
 }
 
 export interface KiroQuotaPayload {

@@ -645,16 +645,26 @@ const fetchKiroQuota = async (
     throw new Error(t('kiro_quota.empty_data'));
   }
 
-  // Extract usage data from usageBreakdownList
+  // Extract usage data from usageBreakdownList (including freeTrialInfo)
   const breakdownList = payload.usageBreakdownList ?? [];
   let totalLimit = 0;
   let totalUsage = 0;
 
   for (const breakdown of breakdownList) {
+    // Add base quota
     const limit = normalizeNumberValue(breakdown.usageLimitWithPrecision ?? breakdown.usageLimit);
     const usage = normalizeNumberValue(breakdown.currentUsageWithPrecision ?? breakdown.currentUsage);
     if (limit !== null) totalLimit += limit;
     if (usage !== null) totalUsage += usage;
+
+    // Add free trial quota if available (e.g., 500 bonus credits)
+    const freeTrialInfo = breakdown.freeTrialInfo;
+    if (freeTrialInfo) {
+      const freeLimit = normalizeNumberValue(freeTrialInfo.usageLimitWithPrecision ?? freeTrialInfo.usageLimit);
+      const freeUsage = normalizeNumberValue(freeTrialInfo.currentUsageWithPrecision ?? freeTrialInfo.currentUsage);
+      if (freeLimit !== null) totalLimit += freeLimit;
+      if (freeUsage !== null) totalUsage += freeUsage;
+    }
   }
 
   // Calculate next reset time
