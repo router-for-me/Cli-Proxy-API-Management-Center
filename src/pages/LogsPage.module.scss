@@ -45,6 +45,7 @@
     color: var(--text-primary);
   }
 
+  &:focus,
   &:focus-visible {
     outline: none;
     box-shadow: none;
