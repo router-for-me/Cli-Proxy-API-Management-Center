@@ -29,6 +29,18 @@
 
     &--stacked {
       display: none;
+
+      // Keep the previous layer rendered (but invisible) to avoid a blank flash when popping back.
+      // Older stacked layers remain `display: none` for performance.
+      &.page-transition__layer--stacked-keep {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        opacity: 0;
+        will-change: transform, opacity;
+      }
     }
   }
 
@@ -36,7 +48,7 @@
     will-change: transform, opacity;
   }
 
-  &--animating &__layer:not(.page-transition__layer--exit) {
+  &--animating &__layer:not(.page-transition__layer--exit):not(.page-transition__layer--stacked) {
     position: relative;
   }
 }

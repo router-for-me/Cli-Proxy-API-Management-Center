@@ -71,12 +71,18 @@ export function AiProvidersOpenAIEditLayout() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const disableControls = connectionStatus !== 'connected';
 
+  const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
   const clearCache = useConfigStore((state) => state.clearCache);
+  const isCacheValid = useConfigStore((state) => state.isCacheValid);
 
-  const [providers, setProviders] = useState<OpenAIProviderConfig[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [providers, setProviders] = useState<OpenAIProviderConfig[]>(
+    () => config?.openaiCompatibility ?? []
+  );
+  const [loading, setLoading] = useState(
+    () => !isCacheValid('openai-compatibility')
+  );
   const [saving, setSaving] = useState(false);
 
   const draftKey = useMemo(() => {
@@ -156,7 +162,10 @@ export function AiProvidersOpenAIEditLayout() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    const hasValidCache = isCacheValid('openai-compatibility');
+    if (!hasValidCache) {
+      setLoading(true);
+    }
 
     fetchConfig('openai-compatibility')
       .then((value) => {
@@ -176,7 +185,7 @@ export function AiProvidersOpenAIEditLayout() {
     return () => {
       cancelled = true;
     };
-  }, [fetchConfig, showNotification, t]);
+  }, [fetchConfig, isCacheValid, showNotification, t]);
 
   useEffect(() => {
     if (loading) return;
@@ -322,6 +331,8 @@ export function AiProvidersOpenAIEditLayout() {
     updateConfigValue,
   ]);
 
+  const resolvedLoading = !draft?.initialized;
+
   return (
     <Outlet
       context={{
@@ -330,7 +341,7 @@ export function AiProvidersOpenAIEditLayout() {
         invalidIndexParam,
         invalidIndex,
         disableControls,
-        loading,
+        loading: resolvedLoading,
         saving,
         form,
         setForm,

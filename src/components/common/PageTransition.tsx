@@ -331,16 +331,30 @@ export function PageTransition({
 
   return (
     <div className={`page-transition${isAnimating ? ' page-transition--animating' : ''}`}>
-      {layers.map((layer) => (
+      {(() => {
+        const currentIndex = layers.findIndex((layer) => layer.status === 'current');
+        const resolvedCurrentIndex = currentIndex === -1 ? layers.length - 1 : currentIndex;
+        const keepStackedIndex = layers
+          .slice(0, resolvedCurrentIndex)
+          .map((layer, index) => ({ layer, index }))
+          .reverse()
+          .find(({ layer }) => layer.status === 'stacked')?.index;
+
+        return layers.map((layer, index) => {
+          const shouldKeepStacked = layer.status === 'stacked' && index === keepStackedIndex;
+          return (
         <div
           key={layer.key}
           className={[
             'page-transition__layer',
             layer.status === 'exiting' ? 'page-transition__layer--exit' : '',
             layer.status === 'stacked' ? 'page-transition__layer--stacked' : '',
+            shouldKeepStacked ? 'page-transition__layer--stacked-keep' : '',
           ]
             .filter(Boolean)
             .join(' ')}
+          aria-hidden={layer.status !== 'current'}
+          inert={layer.status !== 'current'}
           ref={
             layer.status === 'exiting'
               ? exitingLayerRef
@@ -351,7 +365,9 @@ export function PageTransition({
         >
           {render(layer.location)}
         </div>
-      ))}
+          );
+        });
+      })()}
     </div>
   );
 }
