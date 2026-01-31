@@ -1,6 +1,18 @@
 @use '../styles/variables' as *;
 @use '../styles/mixins' as *;
 
+.pageContent {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 $spacing-lg $spacing-2xl;
+
+  @include mobile {
+    padding-left: $spacing-md;
+    padding-right: $spacing-md;
+  }
+}
+
 .settingsCard {
   padding: 0;
   overflow: visible;

@@ -301,6 +301,7 @@ export function AuthFilesOAuthExcludedEditPage() {
       onBack={handleBack}
       backLabel={t('common.back')}
       backAriaLabel={t('common.back')}
+      contentClassName={styles.pageContent}
       rightAction={
         <Button size="sm" onClick={handleSave} loading={saving} disabled={!canSave}>
           {t('oauth_excluded.save')}
