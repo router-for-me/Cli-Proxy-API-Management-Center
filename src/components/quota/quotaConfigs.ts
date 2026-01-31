@@ -17,8 +17,7 @@ import type {
   GeminiCliParsedBucket,
   GeminiCliQuotaBucketState,
   GeminiCliQuotaState,
-  KiroQuotaState,
-  KiroQuotaPayload
+  KiroQuotaState
 } from '@/types';
 import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
 import {
