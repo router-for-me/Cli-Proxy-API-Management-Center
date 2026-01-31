@@ -90,7 +90,7 @@ export function LoginPage() {
           setTimeout(() => {
             const redirect = (location.state as any)?.from?.pathname || '/';
             navigate(redirect, { replace: true });
-          }, 1500);
+          }, 1300);
         } else {
           setApiBase(storedBase || detectedBase);
           setManagementKey(storedKey || '');

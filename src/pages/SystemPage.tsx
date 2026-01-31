@@ -12,8 +12,12 @@ import iconClaude from '@/assets/icons/claude.svg';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
-import iconKimi from '@/assets/icons/kimi.svg';
+import iconKimiLight from '@/assets/icons/kimi-light.svg';
+import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconGlm from '@/assets/icons/glm.svg';
+import iconGrok from '@/assets/icons/grok.svg';
+import iconDeepseek from '@/assets/icons/deepseek.svg';
+import iconMinimax from '@/assets/icons/minimax.svg';
 import styles from './SystemPage.module.scss';
 
 const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: string }> = {
@@ -21,8 +25,11 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
   claude: iconClaude,
   gemini: iconGemini,
   qwen: iconQwen,
-  kimi: iconKimi,
+  kimi: { light: iconKimiLight, dark: iconKimiDark },
   glm: iconGlm,
+  grok: iconGrok,
+  deepseek: iconDeepseek,
+  minimax: iconMinimax,
 };
 
 export function SystemPage() {

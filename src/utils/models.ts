@@ -17,7 +17,8 @@ const MODEL_CATEGORIES = [
   { id: 'qwen', label: 'Qwen', patterns: [/qwen/i] },
   { id: 'glm', label: 'GLM', patterns: [/glm/i, /chatglm/i] },
   { id: 'grok', label: 'Grok', patterns: [/grok/i] },
-  { id: 'deepseek', label: 'DeepSeek', patterns: [/deepseek/i] }
+  { id: 'deepseek', label: 'DeepSeek', patterns: [/deepseek/i] },
+  { id: 'minimax', label: 'MiniMax', patterns: [/minimax/i, /abab/i] }
 ];
 
 const matchCategory = (text: string) => {
