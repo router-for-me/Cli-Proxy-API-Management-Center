@@ -83,20 +83,28 @@ export function PageTransition({
     };
     const fromIndex = resolveOrderIndex(currentLayerPathname);
     const toIndex = resolveOrderIndex(location.pathname);
-    const nextDirection: TransitionDirection =
+    const nextVariant: TransitionVariant = getTransitionVariant
+      ? getTransitionVariant(currentLayerPathname ?? '', location.pathname)
+      : 'vertical';
+
+    let nextDirection: TransitionDirection =
       fromIndex === null || toIndex === null || fromIndex === toIndex
         ? 'forward'
         : toIndex > fromIndex
           ? 'forward'
           : 'backward';
 
+    // When using iOS-style stacking, history POP within the same "section" can have equal route order.
+    // In that case, prefer treating navigation to an existing layer as a backward (pop) transition.
+    if (nextVariant === 'ios' && layers.some((layer) => layer.key === location.key)) {
+      nextDirection = 'backward';
+    }
+
     transitionDirectionRef.current = nextDirection;
-    transitionVariantRef.current = getTransitionVariant
-      ? getTransitionVariant(currentLayerPathname ?? '', location.pathname)
-      : 'vertical';
+    transitionVariantRef.current = nextVariant;
 
     const shouldSkipExitLayer = (() => {
-      if (transitionVariantRef.current !== 'ios' || nextDirection !== 'backward') return false;
+      if (nextVariant !== 'ios' || nextDirection !== 'backward') return false;
       const normalizeSegments = (pathname: string) =>
         pathname
           .split('/')
@@ -178,6 +186,7 @@ export function PageTransition({
     getRouteOrder,
     getTransitionVariant,
     resolveScrollContainer,
+    layers,
   ]);
 
   // Run GSAP animation when animating starts
