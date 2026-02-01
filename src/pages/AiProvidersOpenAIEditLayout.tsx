@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { providersApi } from '@/services/api';
-import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
+import { useAuthStore, useConfigStore, useNotificationStore, useOpenAIEditDraftStore } from '@/stores';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import type { ApiKeyEntry, OpenAIProviderConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
@@ -71,17 +71,68 @@ export function AiProvidersOpenAIEditLayout() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const disableControls = connectionStatus !== 'connected';
 
+  const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
   const clearCache = useConfigStore((state) => state.clearCache);
+  const isCacheValid = useConfigStore((state) => state.isCacheValid);
 
-  const [providers, setProviders] = useState<OpenAIProviderConfig[]>([]);
-  const [form, setForm] = useState<OpenAIFormState>(() => buildEmptyForm());
-  const [testModel, setTestModel] = useState('');
-  const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [testMessage, setTestMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [providers, setProviders] = useState<OpenAIProviderConfig[]>(
+    () => config?.openaiCompatibility ?? []
+  );
+  const [loading, setLoading] = useState(
+    () => !isCacheValid('openai-compatibility')
+  );
   const [saving, setSaving] = useState(false);
+
+  const draftKey = useMemo(() => {
+    if (invalidIndexParam) return `openai:invalid:${params.index ?? 'unknown'}`;
+    if (editIndex === null) return 'openai:new';
+    return `openai:${editIndex}`;
+  }, [editIndex, invalidIndexParam, params.index]);
+
+  const draft = useOpenAIEditDraftStore((state) => state.drafts[draftKey]);
+  const ensureDraft = useOpenAIEditDraftStore((state) => state.ensureDraft);
+  const initDraft = useOpenAIEditDraftStore((state) => state.initDraft);
+  const clearDraft = useOpenAIEditDraftStore((state) => state.clearDraft);
+  const setDraftForm = useOpenAIEditDraftStore((state) => state.setDraftForm);
+  const setDraftTestModel = useOpenAIEditDraftStore((state) => state.setDraftTestModel);
+  const setDraftTestStatus = useOpenAIEditDraftStore((state) => state.setDraftTestStatus);
+  const setDraftTestMessage = useOpenAIEditDraftStore((state) => state.setDraftTestMessage);
+
+  const form = draft?.form ?? buildEmptyForm();
+  const testModel = draft?.testModel ?? '';
+  const testStatus = draft?.testStatus ?? 'idle';
+  const testMessage = draft?.testMessage ?? '';
+
+  const setForm: Dispatch<SetStateAction<OpenAIFormState>> = useCallback(
+    (action) => {
+      setDraftForm(draftKey, action);
+    },
+    [draftKey, setDraftForm]
+  );
+
+  const setTestModel: Dispatch<SetStateAction<string>> = useCallback(
+    (action) => {
+      setDraftTestModel(draftKey, action);
+    },
+    [draftKey, setDraftTestModel]
+  );
+
+  const setTestStatus: Dispatch<SetStateAction<'idle' | 'loading' | 'success' | 'error'>> =
+    useCallback(
+      (action) => {
+        setDraftTestStatus(draftKey, action);
+      },
+      [draftKey, setDraftTestStatus]
+    );
+
+  const setTestMessage: Dispatch<SetStateAction<string>> = useCallback(
+    (action) => {
+      setDraftTestMessage(draftKey, action);
+    },
+    [draftKey, setDraftTestMessage]
+  );
 
   const initialData = useMemo(() => {
     if (editIndex === null) return undefined;
@@ -95,18 +146,26 @@ export function AiProvidersOpenAIEditLayout() {
     [form.modelEntries]
   );
 
+  useEffect(() => {
+    ensureDraft(draftKey);
+  }, [draftKey, ensureDraft]);
+
   const handleBack = useCallback(() => {
+    clearDraft(draftKey);
     const state = location.state as LocationState;
     if (state?.fromAiProviders) {
       navigate(-1);
       return;
     }
     navigate('/ai-providers', { replace: true });
-  }, [location.state, navigate]);
+  }, [clearDraft, draftKey, location.state, navigate]);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    const hasValidCache = isCacheValid('openai-compatibility');
+    if (!hasValidCache) {
+      setLoading(true);
+    }
 
     fetchConfig('openai-compatibility')
       .then((value) => {
@@ -126,14 +185,15 @@ export function AiProvidersOpenAIEditLayout() {
     return () => {
       cancelled = true;
     };
-  }, [fetchConfig, showNotification, t]);
+  }, [fetchConfig, isCacheValid, showNotification, t]);
 
   useEffect(() => {
     if (loading) return;
+    if (draft?.initialized) return;
 
     if (initialData) {
       const modelEntries = modelsToEntries(initialData.models);
-      setForm({
+      const seededForm: OpenAIFormState = {
         name: initialData.name,
         prefix: initialData.prefix ?? '',
         baseUrl: initialData.baseUrl,
@@ -143,22 +203,28 @@ export function AiProvidersOpenAIEditLayout() {
         apiKeyEntries: initialData.apiKeyEntries?.length
           ? initialData.apiKeyEntries
           : [buildApiKeyEntry()],
-      });
+      };
 
       const available = modelEntries.map((entry) => entry.name.trim()).filter(Boolean);
       const initialTestModel =
         initialData.testModel && available.includes(initialData.testModel)
           ? initialData.testModel
           : available[0] || '';
-      setTestModel(initialTestModel);
+      initDraft(draftKey, {
+        form: seededForm,
+        testModel: initialTestModel,
+        testStatus: 'idle',
+        testMessage: '',
+      });
     } else {
-      setForm(buildEmptyForm());
-      setTestModel('');
+      initDraft(draftKey, {
+        form: buildEmptyForm(),
+        testModel: '',
+        testStatus: 'idle',
+        testMessage: '',
+      });
     }
-
-    setTestStatus('idle');
-    setTestMessage('');
-  }, [initialData, loading]);
+  }, [draft?.initialized, draftKey, initDraft, initialData, loading]);
 
   useEffect(() => {
     if (loading) return;
@@ -183,32 +249,34 @@ export function AiProvidersOpenAIEditLayout() {
     (selectedModels: ModelInfo[]) => {
       if (!selectedModels.length) return;
 
-      const mergedMap = new Map<string, ModelEntry>();
-      form.modelEntries.forEach((entry) => {
-        const name = entry.name.trim();
-        if (!name) return;
-        mergedMap.set(name, { name, alias: entry.alias?.trim() || '' });
-      });
-
       let addedCount = 0;
-      selectedModels.forEach((model) => {
-        const name = model.name.trim();
-        if (!name || mergedMap.has(name)) return;
-        mergedMap.set(name, { name, alias: model.alias ?? '' });
-        addedCount += 1;
-      });
+      setForm((prev) => {
+        const mergedMap = new Map<string, ModelEntry>();
+        prev.modelEntries.forEach((entry) => {
+          const name = entry.name.trim();
+          if (!name) return;
+          mergedMap.set(name, { name, alias: entry.alias?.trim() || '' });
+        });
 
-      const mergedEntries = Array.from(mergedMap.values());
-      setForm((prev) => ({
-        ...prev,
-        modelEntries: mergedEntries.length ? mergedEntries : [{ name: '', alias: '' }],
-      }));
+        selectedModels.forEach((model) => {
+          const name = model.name.trim();
+          if (!name || mergedMap.has(name)) return;
+          mergedMap.set(name, { name, alias: model.alias ?? '' });
+          addedCount += 1;
+        });
+
+        const mergedEntries = Array.from(mergedMap.values());
+        return {
+          ...prev,
+          modelEntries: mergedEntries.length ? mergedEntries : [{ name: '', alias: '' }],
+        };
+      });
 
       if (addedCount > 0) {
         showNotification(t('ai_providers.openai_models_fetch_added', { count: addedCount }), 'success');
       }
     },
-    [form.modelEntries, showNotification, t]
+    [setForm, showNotification, t]
   );
 
   const handleSave = useCallback(async () => {
@@ -225,7 +293,8 @@ export function AiProvidersOpenAIEditLayout() {
           headers: entry.headers,
         })),
       };
-      if (form.testModel) payload.testModel = form.testModel.trim();
+      const resolvedTestModel = testModel.trim();
+      if (resolvedTestModel) payload.testModel = resolvedTestModel;
       const models = entriesToModels(form.modelEntries);
       if (models.length) payload.models = models;
 
@@ -256,10 +325,13 @@ export function AiProvidersOpenAIEditLayout() {
     form,
     handleBack,
     providers,
+    testModel,
     showNotification,
     t,
     updateConfigValue,
   ]);
+
+  const resolvedLoading = !draft?.initialized;
 
   return (
     <Outlet
@@ -269,7 +341,7 @@ export function AiProvidersOpenAIEditLayout() {
         invalidIndexParam,
         invalidIndex,
         disableControls,
-        loading,
+        loading: resolvedLoading,
         saving,
         form,
         setForm,

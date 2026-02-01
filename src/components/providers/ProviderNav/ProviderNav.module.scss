@@ -75,9 +75,39 @@
   }
 }
 
-// 小屏幕隐藏悬浮导航
+// 小屏幕改为底部横向浮层
 @media (max-width: 1200px) {
   .navContainer {
-    display: none;
+    top: auto;
+    right: auto;
+    left: 50%;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(520px, calc(100vw - 24px));
+  }
+
+  .navList {
+    flex-direction: row;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .navItem {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+  }
+
+  .icon {
+    width: 22px;
+    height: 22px;
   }
 }

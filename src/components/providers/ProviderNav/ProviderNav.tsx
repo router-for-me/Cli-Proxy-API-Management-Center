@@ -29,25 +29,47 @@ const PROVIDERS: ProviderNavItem[] = [
 ];
 
 const HEADER_OFFSET = 24;
+type ScrollContainer = HTMLElement | (Window & typeof globalThis);
 
 export function ProviderNav() {
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
-  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  const contentScrollerRef = useRef<HTMLElement | null>(null);
 
-  const getScrollContainer = useCallback(() => {
-    if (scrollContainerRef.current) return scrollContainerRef.current;
+  const getHeaderHeight = useCallback(() => {
+    const header = document.querySelector('.main-header') as HTMLElement | null;
+    if (header) return header.getBoundingClientRect().height;
+
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--header-height');
+    const value = Number.parseFloat(raw);
+    return Number.isFinite(value) ? value : 0;
+  }, []);
+
+  const getContentScroller = useCallback(() => {
+    if (contentScrollerRef.current && document.contains(contentScrollerRef.current)) {
+      return contentScrollerRef.current;
+    }
+
     const container = document.querySelector('.content') as HTMLElement | null;
-    scrollContainerRef.current = container;
+    contentScrollerRef.current = container;
     return container;
   }, []);
+
+  const getScrollContainer = useCallback((): ScrollContainer => {
+    // Mobile layout uses document scroll (layout switches at 768px); desktop uses the `.content` scroller.
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    if (isMobile) return window;
+    return getContentScroller() ?? window;
+  }, [getContentScroller]);
 
   const handleScroll = useCallback(() => {
     const container = getScrollContainer();
     if (!container) return;
 
-    const containerRect = container.getBoundingClientRect();
-    const activationLine = containerRect.top + HEADER_OFFSET + 1;
+    const isElementScroller = container instanceof HTMLElement;
+    const headerHeight = isElementScroller ? 0 : getHeaderHeight();
+    const containerTop = isElementScroller ? container.getBoundingClientRect().top : 0;
+    const activationLine = containerTop + headerHeight + HEADER_OFFSET + 1;
     let currentActive: ProviderId | null = null;
 
     for (const provider of PROVIDERS) {
@@ -71,31 +93,44 @@ export function ProviderNav() {
     }
 
     setActiveProvider(currentActive);
-  }, [getScrollContainer]);
+  }, [getHeaderHeight, getScrollContainer]);
 
   useEffect(() => {
-    const container = getScrollContainer();
-    if (!container) return;
+    const contentScroller = getContentScroller();
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
+    // Listen to both: desktop scroll happens on `.content`; mobile uses `window`.
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    contentScroller?.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
     handleScroll();
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [handleScroll, getScrollContainer]);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      contentScroller?.removeEventListener('scroll', handleScroll);
+    };
+  }, [getContentScroller, handleScroll]);
 
   const scrollToProvider = (providerId: ProviderId) => {
     const container = getScrollContainer();
     const element = document.getElementById(`provider-${providerId}`);
     if (!element || !container) return;
 
+    setActiveProvider(providerId);
+
+    // Mobile: scroll the document (header is fixed, so offset by header height).
+    if (!(container instanceof HTMLElement)) {
+      const headerHeight = getHeaderHeight();
+      const elementTop = element.getBoundingClientRect().top + window.scrollY;
+      const target = Math.max(0, elementTop - headerHeight - HEADER_OFFSET);
+      window.scrollTo({ top: target, behavior: 'smooth' });
+      return;
+    }
+
     const containerRect = container.getBoundingClientRect();
     const elementRect = element.getBoundingClientRect();
     const scrollTop = container.scrollTop + (elementRect.top - containerRect.top) - HEADER_OFFSET;
 
-    setActiveProvider(providerId);
-    container.scrollTo({
-      top: scrollTop,
-      behavior: 'smooth',
-    });
+    container.scrollTo({ top: scrollTop, behavior: 'smooth' });
   };
 
   const navContent = (
