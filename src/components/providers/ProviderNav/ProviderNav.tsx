@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import { useThemeStore } from '@/stores';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
@@ -32,9 +33,36 @@ const HEADER_OFFSET = 24;
 type ScrollContainer = HTMLElement | (Window & typeof globalThis);
 
 export function ProviderNav() {
+  const location = useLocation();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
   const contentScrollerRef = useRef<HTMLElement | null>(null);
+  const navListRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<Record<ProviderId, HTMLButtonElement | null>>({
+    gemini: null,
+    codex: null,
+    claude: null,
+    vertex: null,
+    ampcode: null,
+    openai: null,
+  });
+  const [indicatorRect, setIndicatorRect] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [indicatorTransitionsEnabled, setIndicatorTransitionsEnabled] = useState(false);
+  const indicatorHasEnabledTransitionsRef = useRef(false);
+
+  // Only show this quick-switch overlay on the AI Providers list page.
+  // Note: The app uses iOS-style stacked page transitions inside `/ai-providers/*`,
+  // so this component can stay mounted while the user is on an edit route.
+  const normalizedPathname =
+    location.pathname.length > 1 && location.pathname.endsWith('/')
+      ? location.pathname.slice(0, -1)
+      : location.pathname;
+  const shouldShow = normalizedPathname === '/ai-providers';
 
   const getHeaderHeight = useCallback(() => {
     const header = document.querySelector('.main-header') as HTMLElement | null;
@@ -96,6 +124,7 @@ export function ProviderNav() {
   }, [getHeaderHeight, getScrollContainer]);
 
   useEffect(() => {
+    if (!shouldShow) return;
     const contentScroller = getContentScroller();
 
     // Listen to both: desktop scroll happens on `.content`; mobile uses `window`.
@@ -108,7 +137,35 @@ export function ProviderNav() {
       window.removeEventListener('resize', handleScroll);
       contentScroller?.removeEventListener('scroll', handleScroll);
     };
-  }, [getContentScroller, handleScroll]);
+  }, [getContentScroller, handleScroll, shouldShow]);
+
+  const updateIndicator = useCallback((providerId: ProviderId | null) => {
+    if (!providerId) {
+      setIndicatorRect(null);
+      return;
+    }
+
+    const itemEl = itemRefs.current[providerId];
+    if (!itemEl) return;
+
+    setIndicatorRect({
+      x: itemEl.offsetLeft,
+      y: itemEl.offsetTop,
+      width: itemEl.offsetWidth,
+      height: itemEl.offsetHeight,
+    });
+
+    // Avoid animating from an initial (0,0) state on first paint.
+    if (!indicatorHasEnabledTransitionsRef.current) {
+      indicatorHasEnabledTransitionsRef.current = true;
+      requestAnimationFrame(() => setIndicatorTransitionsEnabled(true));
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!shouldShow) return;
+    updateIndicator(activeProvider);
+  }, [activeProvider, shouldShow, updateIndicator]);
 
   const scrollToProvider = (providerId: ProviderId) => {
     const container = getScrollContainer();
@@ -116,6 +173,7 @@ export function ProviderNav() {
     if (!element || !container) return;
 
     setActiveProvider(providerId);
+    updateIndicator(providerId);
 
     // Mobile: scroll the document (header is fixed, so offset by header height).
     if (!(container instanceof HTMLElement)) {
@@ -133,18 +191,50 @@ export function ProviderNav() {
     container.scrollTo({ top: scrollTop, behavior: 'smooth' });
   };
 
+  useEffect(() => {
+    if (!shouldShow) return;
+    const handleResize = () => updateIndicator(activeProvider);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [activeProvider, shouldShow, updateIndicator]);
+
   const navContent = (
     <div className={styles.navContainer}>
-      <div className={styles.navList}>
+      <div className={styles.navList} ref={navListRef}>
+        <div
+          className={[
+            styles.indicator,
+            indicatorRect ? styles.indicatorVisible : '',
+            indicatorTransitionsEnabled ? '' : styles.indicatorNoTransition,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          style={
+            (indicatorRect
+              ? ({
+                  transform: `translate3d(${indicatorRect.x}px, ${indicatorRect.y}px, 0)`,
+                  width: indicatorRect.width,
+                  height: indicatorRect.height,
+                } satisfies CSSProperties)
+              : undefined) as CSSProperties | undefined
+          }
+        />
         {PROVIDERS.map((provider) => {
           const isActive = activeProvider === provider.id;
           return (
             <button
               key={provider.id}
               className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+              ref={(node) => {
+                itemRefs.current[provider.id] = node;
+              }}
               onClick={() => scrollToProvider(provider.id)}
               title={provider.label}
               type="button"
+              aria-label={provider.label}
+              aria-pressed={isActive}
             >
               <img
                 src={provider.getIcon(resolvedTheme)}
@@ -159,6 +249,8 @@ export function ProviderNav() {
   );
 
   if (typeof document === 'undefined') return null;
+
+  if (!shouldShow) return null;
 
   return createPortal(navContent, document.body);
 }
