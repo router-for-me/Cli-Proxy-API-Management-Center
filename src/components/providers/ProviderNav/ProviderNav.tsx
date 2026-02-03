@@ -1,6 +1,7 @@
 import { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
+import { usePageTransitionLayer } from '@/components/common/PageTransition';
 import { useThemeStore } from '@/stores';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
@@ -34,6 +35,8 @@ type ScrollContainer = HTMLElement | (Window & typeof globalThis);
 
 export function ProviderNav() {
   const location = useLocation();
+  const pageTransitionLayer = usePageTransitionLayer();
+  const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
   const contentScrollerRef = useRef<HTMLElement | null>(null);
@@ -62,7 +65,7 @@ export function ProviderNav() {
     location.pathname.length > 1 && location.pathname.endsWith('/')
       ? location.pathname.slice(0, -1)
       : location.pathname;
-  const shouldShow = normalizedPathname === '/ai-providers';
+  const shouldShow = isCurrentLayer && normalizedPathname === '/ai-providers';
 
   const getHeaderHeight = useCallback(() => {
     const header = document.querySelector('.main-header') as HTMLElement | null;

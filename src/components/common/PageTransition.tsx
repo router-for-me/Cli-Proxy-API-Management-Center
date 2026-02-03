@@ -1,4 +1,12 @@
-import { ReactNode, useCallback, useLayoutEffect, useRef, useState } from 'react';
+import {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation, type Location } from 'react-router-dom';
 import gsap from 'gsap';
 import './PageTransition.scss';
@@ -30,6 +38,16 @@ type Layer = {
 type TransitionDirection = 'forward' | 'backward';
 
 type TransitionVariant = 'vertical' | 'ios';
+
+type PageTransitionLayerContextValue = {
+  status: LayerStatus;
+};
+
+const PageTransitionLayerContext = createContext<PageTransitionLayerContextValue | null>(null);
+
+export function usePageTransitionLayer() {
+  return useContext(PageTransitionLayerContext);
+}
 
 export function PageTransition({
   render,
@@ -363,7 +381,9 @@ export function PageTransition({
                 : undefined
           }
         >
-          {render(layer.location)}
+          <PageTransitionLayerContext.Provider value={{ status: layer.status }}>
+            {render(layer.location)}
+          </PageTransitionLayerContext.Provider>
         </div>
           );
         });
