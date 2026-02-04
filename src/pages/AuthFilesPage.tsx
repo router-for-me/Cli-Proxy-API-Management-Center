@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useInterval } from '@/hooks/useInterval';
@@ -17,12 +17,16 @@ import {
   IconChevronUp,
   IconDownload,
   IconInfo,
+  IconRefreshCw,
   IconTrash2,
 } from '@/components/ui/icons';
-import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
+import type { TFunction } from 'i18next';
+import { ANTIGRAVITY_CONFIG, CODEX_CONFIG, GEMINI_CLI_CONFIG } from '@/components/quota';
+import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
+import { getStatusFromError, resolveAuthProvider } from '@/utils/quota';
 import {
   calculateStatusBarData,
   collectUsageDetails,
@@ -90,6 +94,49 @@ const AUTH_FILES_UI_STATE_KEY = 'authFilesPage.uiState';
 
 const clampCardPageSize = (value: number) =>
   Math.min(MAX_CARD_PAGE_SIZE, Math.max(MIN_CARD_PAGE_SIZE, Math.round(value)));
+
+type QuotaProviderType = 'antigravity' | 'codex' | 'gemini-cli';
+
+const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>(['antigravity', 'codex', 'gemini-cli']);
+
+const resolveQuotaErrorMessage = (
+  t: TFunction,
+  status: number | undefined,
+  fallback: string
+): string => {
+  if (status === 404) return t('common.quota_update_required');
+  if (status === 403) return t('common.quota_check_credential');
+  return fallback;
+};
+
+type QuotaProgressBarProps = {
+  percent: number | null;
+  highThreshold: number;
+  mediumThreshold: number;
+};
+
+function QuotaProgressBar({ percent, highThreshold, mediumThreshold }: QuotaProgressBarProps) {
+  const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+  const normalized = percent === null ? null : clamp(percent, 0, 100);
+  const fillClass =
+    normalized === null
+      ? styles.quotaBarFillMedium
+      : normalized >= highThreshold
+        ? styles.quotaBarFillHigh
+        : normalized >= mediumThreshold
+          ? styles.quotaBarFillMedium
+          : styles.quotaBarFillLow;
+  const widthPercent = Math.round(normalized ?? 0);
+
+  return (
+    <div className={styles.quotaBar}>
+      <div
+        className={`${styles.quotaBarFill} ${fillClass}`}
+        style={{ width: `${widthPercent}%` }}
+      />
+    </div>
+  );
+}
 
 type AuthFilesUiState = {
   filter?: string;
@@ -195,6 +242,12 @@ export function AuthFilesPage() {
   const { showNotification, showConfirmation } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
+  const codexQuota = useQuotaStore((state) => state.codexQuota);
+  const geminiCliQuota = useQuotaStore((state) => state.geminiCliQuota);
+  const setAntigravityQuota = useQuotaStore((state) => state.setAntigravityQuota);
+  const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
+  const setGeminiCliQuota = useQuotaStore((state) => state.setGeminiCliQuota);
   const navigate = useNavigate();
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
@@ -248,6 +301,12 @@ export function AuthFilesPage() {
   const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
 
   const disableControls = connectionStatus !== 'connected';
+  const normalizedFilter = normalizeProviderKey(String(filter));
+  const quotaFilterType: QuotaProviderType | null = QUOTA_PROVIDER_TYPES.has(
+    normalizedFilter as QuotaProviderType
+  )
+    ? (normalizedFilter as QuotaProviderType)
+    : null;
 
   const providerList = useMemo(() => {
     const providers = new Set<string>();
@@ -1397,6 +1456,124 @@ export function AuthFilesPage() {
     );
   };
 
+  const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
+    const provider = resolveAuthProvider(file);
+    if (!QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) return null;
+    return provider as QuotaProviderType;
+  };
+
+  const getQuotaConfig = (type: QuotaProviderType) => {
+    if (type === 'antigravity') return ANTIGRAVITY_CONFIG;
+    if (type === 'codex') return CODEX_CONFIG;
+    return GEMINI_CLI_CONFIG;
+  };
+
+  const getQuotaState = (type: QuotaProviderType, fileName: string) => {
+    if (type === 'antigravity') return antigravityQuota[fileName];
+    if (type === 'codex') return codexQuota[fileName];
+    return geminiCliQuota[fileName];
+  };
+
+  const updateQuotaState = useCallback(
+    (
+      type: QuotaProviderType,
+      updater: (prev: Record<string, unknown>) => Record<string, unknown>
+    ) => {
+      if (type === 'antigravity') {
+        setAntigravityQuota(updater as never);
+        return;
+      }
+      if (type === 'codex') {
+        setCodexQuota(updater as never);
+        return;
+      }
+      setGeminiCliQuota(updater as never);
+    },
+    [setAntigravityQuota, setCodexQuota, setGeminiCliQuota]
+  );
+
+  const refreshQuotaForFile = useCallback(
+    async (file: AuthFileItem, quotaType: QuotaProviderType) => {
+      if (disableControls) return;
+      if (isRuntimeOnlyAuthFile(file)) return;
+      if (file.disabled) return;
+
+      const currentState = getQuotaState(quotaType, file.name);
+      if (currentState?.status === 'loading') return;
+
+      const config = getQuotaConfig(quotaType) as unknown as {
+        i18nPrefix: string;
+        fetchQuota: (file: AuthFileItem, t: TFunction) => Promise<unknown>;
+        buildLoadingState: () => unknown;
+        buildSuccessState: (data: unknown) => unknown;
+        buildErrorState: (message: string, status?: number) => unknown;
+      };
+
+      updateQuotaState(quotaType, (prev) => ({
+        ...prev,
+        [file.name]: config.buildLoadingState()
+      }));
+
+      try {
+        const data = await config.fetchQuota(file, t);
+        updateQuotaState(quotaType, (prev) => ({
+          ...prev,
+          [file.name]: config.buildSuccessState(data)
+        }));
+        showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('common.unknown_error');
+        const status = getStatusFromError(err);
+        updateQuotaState(quotaType, (prev) => ({
+          ...prev,
+          [file.name]: config.buildErrorState(message, status)
+        }));
+        showNotification(
+          t('auth_files.quota_refresh_failed', { name: file.name, message }),
+          'error'
+        );
+      }
+    },
+    [disableControls, getQuotaState, showNotification, t, updateQuotaState]
+  );
+
+  const renderQuotaSection = (item: AuthFileItem, quotaType: QuotaProviderType) => {
+    const config = getQuotaConfig(quotaType) as unknown as {
+      i18nPrefix: string;
+      renderQuotaItems: (quota: unknown, t: TFunction, helpers: unknown) => unknown;
+    };
+
+    const quota = getQuotaState(quotaType, item.name) as
+      | { status?: string; error?: string; errorStatus?: number }
+      | undefined;
+    const quotaStatus = quota?.status ?? 'idle';
+    const quotaErrorMessage = resolveQuotaErrorMessage(
+      t,
+      quota?.errorStatus,
+      quota?.error || t('common.unknown_error')
+    );
+
+    return (
+      <div className={styles.quotaSection}>
+        {quotaStatus === 'loading' ? (
+          <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.loading`)}</div>
+        ) : quotaStatus === 'idle' ? (
+          <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.idle`)}</div>
+        ) : quotaStatus === 'error' ? (
+          <div className={styles.quotaError}>
+            {t(`${config.i18nPrefix}.load_failed`, {
+              message: quotaErrorMessage
+            })}
+          </div>
+        ) : quota ? (
+          (config.renderQuotaItems(quota, t, { styles, QuotaProgressBar }) as ReactNode)
+        ) : (
+          <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.idle`)}</div>
+        )}
+      </div>
+    );
+  };
+
   // 渲染单个认证文件卡片
   const renderFileCard = (item: AuthFileItem) => {
     const fileStats = resolveAuthFileStats(item, keyStats);
@@ -1405,120 +1582,167 @@ export function AuthFilesPage() {
     const showModelsButton = !isRuntimeOnly || isAistudio;
     const typeColor = getTypeColor(item.type || 'unknown');
 
+    const quotaType =
+      quotaFilterType && resolveQuotaType(item) === quotaFilterType ? quotaFilterType : null;
+
+    const showQuotaLayout = Boolean(quotaType) && !isRuntimeOnly;
+    const quotaState = quotaType ? getQuotaState(quotaType, item.name) : undefined;
+    const quotaRefreshing = quotaState?.status === 'loading';
+
+    const providerCardClass =
+      quotaType === 'antigravity'
+        ? styles.antigravityCard
+        : quotaType === 'codex'
+          ? styles.codexCard
+          : quotaType === 'gemini-cli'
+            ? styles.geminiCliCard
+            : '';
+
     return (
       <div
         key={item.name}
-        className={`${styles.fileCard} ${item.disabled ? styles.fileCardDisabled : ''}`}
+        className={`${styles.fileCard} ${providerCardClass} ${item.disabled ? styles.fileCardDisabled : ''}`}
       >
-        <div className={styles.cardHeader}>
-          <span
-            className={styles.typeBadge}
-            style={{
-              backgroundColor: typeColor.bg,
-              color: typeColor.text,
-              ...(typeColor.border ? { border: typeColor.border } : {}),
-            }}
-          >
-            {getTypeLabel(item.type || 'unknown')}
-          </span>
-          <span className={styles.fileName}>{item.name}</span>
-        </div>
-
-        <div className={styles.cardMeta}>
-          <span>
-            {t('auth_files.file_size')}: {item.size ? formatFileSize(item.size) : '-'}
-          </span>
-          <span>
-            {t('auth_files.file_modified')}: {formatModified(item)}
-          </span>
-        </div>
-
-        <div className={styles.cardStats}>
-          <span className={`${styles.statPill} ${styles.statSuccess}`}>
-            {t('stats.success')}: {fileStats.success}
-          </span>
-          <span className={`${styles.statPill} ${styles.statFailure}`}>
-            {t('stats.failure')}: {fileStats.failure}
-          </span>
-        </div>
-
-        {/* 状态监测栏 */}
-        {renderStatusBar(item)}
-
-        <div className={styles.cardActions}>
-          {showModelsButton && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => showModels(item)}
-              className={styles.iconButton}
-              title={t('auth_files.models_button', { defaultValue: '模型' })}
-              disabled={disableControls}
-            >
-              <IconBot className={styles.actionIcon} size={16} />
-            </Button>
-          )}
-          {!isRuntimeOnly && (
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => showDetails(item)}
-                className={styles.iconButton}
-                title={t('common.info', { defaultValue: '关于' })}
-                disabled={disableControls}
+        <div
+          className={`${styles.fileCardLayout} ${showQuotaLayout ? styles.fileCardLayoutQuota : ''}`}
+        >
+          <div className={styles.fileCardMain}>
+            <div className={styles.cardHeader}>
+              <span
+                className={styles.typeBadge}
+                style={{
+                  backgroundColor: typeColor.bg,
+                  color: typeColor.text,
+                  ...(typeColor.border ? { border: typeColor.border } : {}),
+                }}
               >
-                <IconInfo className={styles.actionIcon} size={16} />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleDownload(item.name)}
-                className={styles.iconButton}
-                title={t('auth_files.download_button')}
-                disabled={disableControls}
-              >
-                <IconDownload className={styles.actionIcon} size={16} />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => void openPrefixProxyEditor(item.name)}
-                className={styles.iconButton}
-                title={t('auth_files.prefix_proxy_button')}
-                disabled={disableControls}
-              >
-                <IconCode className={styles.actionIcon} size={16} />
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => handleDelete(item.name)}
-                className={styles.iconButton}
-                title={t('auth_files.delete_button')}
-                disabled={disableControls || deleting === item.name}
-              >
-                {deleting === item.name ? (
-                  <LoadingSpinner size={14} />
-                ) : (
-                  <IconTrash2 className={styles.actionIcon} size={16} />
-                )}
-              </Button>
-            </>
-          )}
-          {!isRuntimeOnly && (
-            <div className={styles.statusToggle}>
-              <ToggleSwitch
-                ariaLabel={t('auth_files.status_toggle_label')}
-                checked={!item.disabled}
-                disabled={disableControls || statusUpdating[item.name] === true}
-                onChange={(value) => void handleStatusToggle(item, value)}
-              />
+                {getTypeLabel(item.type || 'unknown')}
+              </span>
+              <span className={styles.fileName}>{item.name}</span>
             </div>
-          )}
-          {isRuntimeOnly && (
-            <div className={styles.virtualBadge}>
-              {t('auth_files.type_virtual') || '虚拟认证文件'}
+
+            <div className={styles.cardMeta}>
+              <span>
+                {t('auth_files.file_size')}: {item.size ? formatFileSize(item.size) : '-'}
+              </span>
+              <span>
+                {t('auth_files.file_modified')}: {formatModified(item)}
+              </span>
+            </div>
+
+            <div className={styles.cardStats}>
+              <span className={`${styles.statPill} ${styles.statSuccess}`}>
+                {t('stats.success')}: {fileStats.success}
+              </span>
+              <span className={`${styles.statPill} ${styles.statFailure}`}>
+                {t('stats.failure')}: {fileStats.failure}
+              </span>
+            </div>
+
+            {/* 状态监测栏 */}
+            {renderStatusBar(item)}
+
+            {showQuotaLayout && quotaType && renderQuotaSection(item, quotaType)}
+
+            <div className={styles.cardActions}>
+              {showModelsButton && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => showModels(item)}
+                  className={styles.iconButton}
+                  title={t('auth_files.models_button', { defaultValue: '模型' })}
+                  disabled={disableControls}
+                >
+                  <IconBot className={styles.actionIcon} size={16} />
+                </Button>
+              )}
+              {!isRuntimeOnly && (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => showDetails(item)}
+                    className={styles.iconButton}
+                    title={t('common.info', { defaultValue: '关于' })}
+                    disabled={disableControls}
+                  >
+                    <IconInfo className={styles.actionIcon} size={16} />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleDownload(item.name)}
+                    className={styles.iconButton}
+                    title={t('auth_files.download_button')}
+                    disabled={disableControls}
+                  >
+                    <IconDownload className={styles.actionIcon} size={16} />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void openPrefixProxyEditor(item.name)}
+                    className={styles.iconButton}
+                    title={t('auth_files.prefix_proxy_button')}
+                    disabled={disableControls}
+                  >
+                    <IconCode className={styles.actionIcon} size={16} />
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDelete(item.name)}
+                    className={styles.iconButton}
+                    title={t('auth_files.delete_button')}
+                    disabled={disableControls || deleting === item.name}
+                  >
+                    {deleting === item.name ? (
+                      <LoadingSpinner size={14} />
+                    ) : (
+                      <IconTrash2 className={styles.actionIcon} size={16} />
+                    )}
+                  </Button>
+                </>
+              )}
+              {!isRuntimeOnly && (
+                <div className={styles.statusToggle}>
+                  <ToggleSwitch
+                    ariaLabel={t('auth_files.status_toggle_label')}
+                    checked={!item.disabled}
+                    disabled={disableControls || statusUpdating[item.name] === true}
+                    onChange={(value) => void handleStatusToggle(item, value)}
+                  />
+                </div>
+              )}
+              {isRuntimeOnly && (
+                <div className={styles.virtualBadge}>
+                  {t('auth_files.type_virtual') || '虚拟认证文件'}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {showQuotaLayout && quotaType && (
+            <div className={styles.fileCardSidebar}>
+              <div className={styles.fileCardSidebarHeader}>
+                <span className={styles.fileCardSidebarTitle}>
+                  {t('auth_files.card_tools_title')}
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className={styles.iconButton}
+                  onClick={() => void refreshQuotaForFile(item, quotaType)}
+                  disabled={disableControls || item.disabled}
+                  loading={quotaRefreshing}
+                  title={t('auth_files.quota_refresh_single')}
+                  aria-label={t('auth_files.quota_refresh_single')}
+                >
+                  {!quotaRefreshing && <IconRefreshCw className={styles.actionIcon} size={16} />}
+                </Button>
+              </div>
+              <div className={styles.fileCardSidebarHint}>{t('auth_files.quota_refresh_hint')}</div>
             </div>
           )}
         </div>
@@ -1625,7 +1849,11 @@ export function AuthFilesPage() {
             description={t('auth_files.search_empty_desc')}
           />
         ) : (
-          <div className={styles.fileGrid}>{pageItems.map(renderFileCard)}</div>
+          <div
+            className={`${styles.fileGrid} ${quotaFilterType ? styles.fileGridQuotaManaged : ''}`}
+          >
+            {pageItems.map(renderFileCard)}
+          </div>
         )}
 
         {/* 分页 */}

@@ -416,7 +416,12 @@
     "prefix_placeholder": "",
     "proxy_url_placeholder": "socks5://username:password@proxy_ip:port/",
     "prefix_proxy_invalid_json": "This credential is not a JSON object and cannot be edited.",
-    "prefix_proxy_saved_success": "Updated \"{{name}}\" successfully"
+    "prefix_proxy_saved_success": "Updated \"{{name}}\" successfully",
+    "card_tools_title": "Tools",
+    "quota_refresh_single": "Refresh quota",
+    "quota_refresh_hint": "Refresh quota for this credential only",
+    "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",

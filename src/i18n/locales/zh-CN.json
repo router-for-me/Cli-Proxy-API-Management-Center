@@ -416,7 +416,12 @@
     "prefix_placeholder": "",
     "proxy_url_placeholder": "socks5://username:password@proxy_ip:port/",
     "prefix_proxy_invalid_json": "该凭证文件不是 JSON 对象，无法编辑。",
-    "prefix_proxy_saved_success": "已更新 \"{{name}}\""
+    "prefix_proxy_saved_success": "已更新 \"{{name}}\"",
+    "card_tools_title": "配置管理",
+    "quota_refresh_single": "刷新额度",
+    "quota_refresh_hint": "仅刷新当前凭证的额度数据",
+    "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
+    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
   },
   "antigravity_quota": {
     "title": "Antigravity 额度",
