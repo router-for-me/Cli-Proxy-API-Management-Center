@@ -430,73 +430,75 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
 
 
   return (
-    <div 
-      className={[styles.container, className].filter(Boolean).join(' ')} 
-      ref={containerRef}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handleContextMenu(e, 'background');
-      }}
-    >
-      <svg className={styles.connections}>
-        {lines.map((line) => (
-          <path
-            key={line.id}
-            d={line.path}
-            stroke={line.color}
-            strokeOpacity={isDark ? 0.4 : 0.3}
-          />
-        ))}
-      </svg>
+    <div className={[styles.scrollContainer, className].filter(Boolean).join(' ')}>
+      <div
+        className={styles.container}
+        ref={containerRef}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleContextMenu(e, 'background');
+        }}
+      >
+        <svg className={styles.connections}>
+          {lines.map((line) => (
+            <path
+              key={line.id}
+              d={line.path}
+              stroke={line.color}
+              strokeOpacity={isDark ? 0.4 : 0.3}
+            />
+          ))}
+        </svg>
 
-      <ProviderColumn
-        providerNodes={providerNodes}
-        collapsedProviders={collapsedProviders}
-        getProviderColor={getProviderColor}
-        providerRefs={providerRefs}
-        onToggleCollapse={toggleProviderCollapse}
-        onContextMenu={(e, type, data) => handleContextMenu(e, type, data)}
-        label={t('oauth_model_alias.diagram_providers')}
-        expandLabel={t('oauth_model_alias.diagram_expand')}
-        collapseLabel={t('oauth_model_alias.diagram_collapse')}
-      />
-      <SourceColumn
-        providerNodes={providerNodes}
-        collapsedProviders={collapsedProviders}
-        sourceRefs={sourceRefs}
-        getProviderColor={getProviderColor}
-        draggedSource={draggedSource}
-        dropTargetSource={dropTargetSource}
-        draggable={!!onUpdate}
-        onDragStart={handleDragStart}
-        onDragEnd={() => {
-          setDraggedSource(null);
-          setDropTargetAlias(null);
-        }}
-        onDragOver={handleDragOverSource}
-        onDragLeave={handleDragLeaveSource}
-        onDrop={handleDropOnSource}
-        onContextMenu={(e, type, data) => handleContextMenu(e, type, data)}
-        label={t('oauth_model_alias.diagram_source_models')}
-      />
-      <AliasColumn
-        aliasNodes={aliasNodes}
-        aliasRefs={aliasRefs}
-        dropTargetAlias={dropTargetAlias}
-        draggedAlias={draggedAlias}
-        draggable={!!onUpdate}
-        onDragStart={handleDragStartAlias}
-        onDragEnd={() => {
-          setDraggedAlias(null);
-          setDropTargetSource(null);
-        }}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onContextMenu={(e, type, data) => handleContextMenu(e, type, data)}
-        label={t('oauth_model_alias.diagram_aliases')}
-      />
+        <ProviderColumn
+          providerNodes={providerNodes}
+          collapsedProviders={collapsedProviders}
+          getProviderColor={getProviderColor}
+          providerRefs={providerRefs}
+          onToggleCollapse={toggleProviderCollapse}
+          onContextMenu={(e, type, data) => handleContextMenu(e, type, data)}
+          label={t('oauth_model_alias.diagram_providers')}
+          expandLabel={t('oauth_model_alias.diagram_expand')}
+          collapseLabel={t('oauth_model_alias.diagram_collapse')}
+        />
+        <SourceColumn
+          providerNodes={providerNodes}
+          collapsedProviders={collapsedProviders}
+          sourceRefs={sourceRefs}
+          getProviderColor={getProviderColor}
+          draggedSource={draggedSource}
+          dropTargetSource={dropTargetSource}
+          draggable={!!onUpdate}
+          onDragStart={handleDragStart}
+          onDragEnd={() => {
+            setDraggedSource(null);
+            setDropTargetAlias(null);
+          }}
+          onDragOver={handleDragOverSource}
+          onDragLeave={handleDragLeaveSource}
+          onDrop={handleDropOnSource}
+          onContextMenu={(e, type, data) => handleContextMenu(e, type, data)}
+          label={t('oauth_model_alias.diagram_source_models')}
+        />
+        <AliasColumn
+          aliasNodes={aliasNodes}
+          aliasRefs={aliasRefs}
+          dropTargetAlias={dropTargetAlias}
+          draggedAlias={draggedAlias}
+          draggable={!!onUpdate}
+          onDragStart={handleDragStartAlias}
+          onDragEnd={() => {
+            setDraggedAlias(null);
+            setDropTargetSource(null);
+          }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onContextMenu={(e, type, data) => handleContextMenu(e, type, data)}
+          label={t('oauth_model_alias.diagram_aliases')}
+        />
+      </div>
 
       <DiagramContextMenu
         contextMenu={contextMenu}

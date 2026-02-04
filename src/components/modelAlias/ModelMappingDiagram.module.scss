@@ -1,13 +1,26 @@
 @use '../../styles/variables' as *;
 
-.container {
-  display: flex;
-  position: relative;
+.scrollContainer {
   width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.container {
+  display: inline-flex;
+  position: relative;
+  min-width: 100%;
   min-height: 300px;
   justify-content: space-between;
   padding: 20px 0;
   user-select: none;
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+    gap: 16px;
+    padding: 12px 0;
+  }
 }
 
 // SVG layer for connection lines (behind columns so links are visible)
