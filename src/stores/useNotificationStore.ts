@@ -4,13 +4,14 @@
  */
 
 import { create } from 'zustand';
+import type { ReactNode } from 'react';
 import type { Notification, NotificationType } from '@/types';
 import { generateId } from '@/utils/helpers';
 import { NOTIFICATION_DURATION_MS } from '@/utils/constants';
 
 interface ConfirmationOptions {
   title?: string;
-  message: string;
+  message: ReactNode;
   confirmText?: string;
   cancelText?: string;
   variant?: 'danger' | 'primary' | 'secondary';
