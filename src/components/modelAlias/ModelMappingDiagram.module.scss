@@ -17,8 +17,8 @@
   user-select: none;
 
   @media (max-width: 768px) {
-    justify-content: flex-start;
-    gap: 16px;
+    // Give mobile extra horizontal room to reduce line overlap; users can swipe to scroll.
+    min-width: max(100%, 960px);
     padding: 12px 0;
   }
 }
@@ -156,6 +156,13 @@
     border-width: 4px 0 4px 5px;
     border-color: transparent transparent transparent currentColor;
   }
+}
+
+.providerGroup {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
 }
 
 .sourceItem,

@@ -6,6 +6,7 @@ interface ProviderColumnProps {
   providerNodes: ProviderNode[];
   collapsedProviders: Set<string>;
   getProviderColor: (provider: string) => string;
+  providerGroupHeights?: Record<string, number>;
   providerRefs: RefObject<Map<string, HTMLDivElement>>;
   onToggleCollapse: (provider: string) => void;
   onContextMenu: (e: ReactMouseEvent, type: 'provider' | 'background', data?: string) => void;
@@ -18,6 +19,7 @@ export function ProviderColumn({
   providerNodes,
   collapsedProviders,
   getProviderColor,
+  providerGroupHeights = {},
   providerRefs,
   onToggleCollapse,
   onContextMenu,
@@ -37,34 +39,40 @@ export function ProviderColumn({
       <div className={styles.columnHeader}>{label}</div>
       {providerNodes.map(({ provider, sources }) => {
         const collapsed = collapsedProviders.has(provider);
+        const groupHeight = collapsed ? undefined : providerGroupHeights[provider];
         return (
           <div
             key={provider}
-            ref={(el) => {
-              if (el) providerRefs.current?.set(provider, el);
-              else providerRefs.current?.delete(provider);
-            }}
-            className={`${styles.item} ${styles.providerItem}`}
-            style={{ borderLeftColor: getProviderColor(provider) }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onContextMenu(e, 'provider', provider);
-            }}
+            className={styles.providerGroup}
+            style={groupHeight ? { height: groupHeight } : undefined}
           >
-            <button
-              type="button"
-              className={styles.collapseBtn}
-              onClick={() => onToggleCollapse(provider)}
-              aria-label={collapsed ? expandLabel : collapseLabel}
-              title={collapsed ? expandLabel : collapseLabel}
+            <div
+              ref={(el) => {
+                if (el) providerRefs.current?.set(provider, el);
+                else providerRefs.current?.delete(provider);
+              }}
+              className={`${styles.item} ${styles.providerItem}`}
+              style={{ borderLeftColor: getProviderColor(provider) }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onContextMenu(e, 'provider', provider);
+              }}
             >
-              <span className={collapsed ? styles.chevronRight : styles.chevronDown} />
-            </button>
-            <span className={styles.providerLabel} style={{ color: getProviderColor(provider) }}>
-              {provider}
-            </span>
-            <span className={styles.itemCount}>{sources.length}</span>
+              <button
+                type="button"
+                className={styles.collapseBtn}
+                onClick={() => onToggleCollapse(provider)}
+                aria-label={collapsed ? expandLabel : collapseLabel}
+                title={collapsed ? expandLabel : collapseLabel}
+              >
+                <span className={collapsed ? styles.chevronRight : styles.chevronDown} />
+              </button>
+              <span className={styles.providerLabel} style={{ color: getProviderColor(provider) }}>
+                {provider}
+              </span>
+              <span className={styles.itemCount}>{sources.length}</span>
+            </div>
           </div>
         );
       })}

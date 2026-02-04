@@ -72,6 +72,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
   const [extraAliases, setExtraAliases] = useState<string[]>([]);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [collapsedProviders, setCollapsedProviders] = useState<Set<string>>(new Set());
+  const [providerGroupHeights, setProviderGroupHeights] = useState<Record<string, number>>({});
   const [renameState, setRenameState] = useState<{ oldAlias: string } | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [renameError, setRenameError] = useState('');
@@ -179,6 +180,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
     if (!containerRef.current) return;
     const containerRect = containerRef.current.getBoundingClientRect();
     const newLines: { path: string; color: string; id: string }[] = [];
+    const nextProviderGroupHeights: Record<string, number> = {};
 
     const bezier = (
       x1: number, y1: number,
@@ -192,6 +194,15 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
     providerNodes.forEach(({ provider, sources }) => {
       const collapsed = collapsedProviders.has(provider);
       if (collapsed) return;
+
+      if (sources.length > 0) {
+        const firstEl = sourceRefs.current.get(sources[0].id);
+        const lastEl = sourceRefs.current.get(sources[sources.length - 1].id);
+        if (firstEl && lastEl) {
+          const height = Math.max(0, Math.round(lastEl.getBoundingClientRect().bottom - firstEl.getBoundingClientRect().top));
+          if (height > 0) nextProviderGroupHeights[provider] = height;
+        }
+      }
 
       const providerEl = providerRefs.current.get(provider);
       if (!providerEl) return;
@@ -241,6 +252,17 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
     });
 
     setLines(newLines);
+    setProviderGroupHeights((prev) => {
+      const prevKeys = Object.keys(prev);
+      const nextKeys = Object.keys(nextProviderGroupHeights);
+      if (prevKeys.length !== nextKeys.length) return nextProviderGroupHeights;
+      for (const key of nextKeys) {
+        if (!(key in prev) || prev[key] !== nextProviderGroupHeights[key]) {
+          return nextProviderGroupHeights;
+        }
+      }
+      return prev;
+    });
   }, [providerNodes, collapsedProviders]);
 
   useImperativeHandle(
@@ -262,6 +284,12 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
       window.removeEventListener('resize', updateLines);
     };
   }, [updateLines, aliasNodes]);
+
+  useLayoutEffect(() => {
+    updateLines();
+    const raf = requestAnimationFrame(updateLines);
+    return () => cancelAnimationFrame(raf);
+  }, [providerGroupHeights, updateLines]);
 
   useEffect(() => {
     if (!containerRef.current || typeof ResizeObserver === 'undefined') return;
@@ -452,14 +480,15 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
         </svg>
 
         <ProviderColumn
-          providerNodes={providerNodes}
-          collapsedProviders={collapsedProviders}
-          getProviderColor={getProviderColor}
-          providerRefs={providerRefs}
-          onToggleCollapse={toggleProviderCollapse}
-          onContextMenu={(e, type, data) => handleContextMenu(e, type, data)}
-          label={t('oauth_model_alias.diagram_providers')}
-          expandLabel={t('oauth_model_alias.diagram_expand')}
+        providerNodes={providerNodes}
+        collapsedProviders={collapsedProviders}
+        getProviderColor={getProviderColor}
+        providerGroupHeights={providerGroupHeights}
+        providerRefs={providerRefs}
+        onToggleCollapse={toggleProviderCollapse}
+        onContextMenu={(e, type, data) => handleContextMenu(e, type, data)}
+        label={t('oauth_model_alias.diagram_providers')}
+        expandLabel={t('oauth_model_alias.diagram_expand')}
           collapseLabel={t('oauth_model_alias.diagram_collapse')}
         />
         <SourceColumn
