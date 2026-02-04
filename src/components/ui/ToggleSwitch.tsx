@@ -1,4 +1,5 @@
 import type { ChangeEvent, ReactNode } from 'react';
+import styles from './ToggleSwitch.module.scss';
 
 interface ToggleSwitchProps {
   checked: boolean;
@@ -21,7 +22,11 @@ export function ToggleSwitch({
     onChange(event.target.checked);
   };
 
-  const className = ['switch', labelPosition === 'left' ? 'switch-label-left' : '']
+  const className = [
+    styles.root,
+    labelPosition === 'left' ? styles.labelLeft : '',
+    disabled ? styles.disabled : '',
+  ]
     .filter(Boolean)
     .join(' ');
 
@@ -34,10 +39,10 @@ export function ToggleSwitch({
         disabled={disabled}
         aria-label={ariaLabel}
       />
-      <span className="track">
-        <span className="thumb" />
+      <span className={styles.track}>
+        <span className={styles.thumb} />
       </span>
-      {label && <span className="label">{label}</span>}
+      {label && <span className={styles.label}>{label}</span>}
     </label>
   );
 }
