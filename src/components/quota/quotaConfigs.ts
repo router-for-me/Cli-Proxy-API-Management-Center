@@ -10,13 +10,14 @@ import type {
   AntigravityModelsPayload,
   AntigravityQuotaState,
   AuthFileItem,
+  CodexRateLimitInfo,
   CodexQuotaState,
   CodexUsageWindow,
   CodexQuotaWindow,
   CodexUsagePayload,
   GeminiCliParsedBucket,
   GeminiCliQuotaBucketState,
-  GeminiCliQuotaState
+  GeminiCliQuotaState,
 } from '@/types';
 import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
 import {
@@ -47,7 +48,7 @@ import {
   isCodexFile,
   isDisabledAuthFile,
   isGeminiCliFile,
-  isRuntimeOnlyAuthFile
+  isRuntimeOnlyAuthFile,
 } from '@/utils/quota';
 import type { QuotaRenderHelpers } from './QuotaCard';
 import styles from '@/pages/QuotaPage.module.scss';
@@ -142,7 +143,7 @@ const fetchAntigravityQuota = async (
         method: 'POST',
         url,
         header: { ...ANTIGRAVITY_REQUEST_HEADERS },
-        data: requestBody
+        data: requestBody,
       });
 
       if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -189,6 +190,15 @@ const fetchAntigravityQuota = async (
 };
 
 const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): CodexQuotaWindow[] => {
+  const FIVE_HOUR_SECONDS = 18000;
+  const WEEK_SECONDS = 604800;
+  const WINDOW_META = {
+    codeFiveHour: { id: 'five-hour', labelKey: 'codex_quota.primary_window' },
+    codeWeekly: { id: 'weekly', labelKey: 'codex_quota.secondary_window' },
+    codeReviewFiveHour: { id: 'code-review-five-hour', labelKey: 'codex_quota.code_review_primary_window' },
+    codeReviewWeekly: { id: 'code-review-weekly', labelKey: 'codex_quota.code_review_secondary_window' },
+  } as const;
+
   const rateLimit = payload.rate_limit ?? payload.rateLimit ?? undefined;
   const codeReviewLimit = payload.code_review_rate_limit ?? payload.codeReviewRateLimit ?? undefined;
   const windows: CodexQuotaWindow[] = [];
@@ -210,30 +220,74 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
       label: t(labelKey),
       labelKey,
       usedPercent,
-      resetLabel
+      resetLabel,
     });
   };
 
+  const getWindowSeconds = (window?: CodexUsageWindow | null): number | null => {
+    if (!window) return null;
+    return normalizeNumberValue(window.limit_window_seconds ?? window.limitWindowSeconds);
+  };
+
+  const rawLimitReached = rateLimit?.limit_reached ?? rateLimit?.limitReached;
+  const rawAllowed = rateLimit?.allowed;
+
+  const pickClassifiedWindows = (
+    limitInfo?: CodexRateLimitInfo | null
+  ): { fiveHourWindow: CodexUsageWindow | null; weeklyWindow: CodexUsageWindow | null } => {
+    const rawWindows = [
+      limitInfo?.primary_window ?? limitInfo?.primaryWindow ?? null,
+      limitInfo?.secondary_window ?? limitInfo?.secondaryWindow ?? null,
+    ];
+
+    let fiveHourWindow: CodexUsageWindow | null = null;
+    let weeklyWindow: CodexUsageWindow | null = null;
+
+    for (const window of rawWindows) {
+      if (!window) continue;
+      const seconds = getWindowSeconds(window);
+      if (seconds === FIVE_HOUR_SECONDS && !fiveHourWindow) {
+        fiveHourWindow = window;
+      } else if (seconds === WEEK_SECONDS && !weeklyWindow) {
+        weeklyWindow = window;
+      }
+    }
+
+    return { fiveHourWindow, weeklyWindow };
+  };
+
+  const rateWindows = pickClassifiedWindows(rateLimit);
   addWindow(
-    'primary',
-    'codex_quota.primary_window',
-    rateLimit?.primary_window ?? rateLimit?.primaryWindow,
-    rateLimit?.limit_reached ?? rateLimit?.limitReached,
-    rateLimit?.allowed
+    WINDOW_META.codeFiveHour.id,
+    WINDOW_META.codeFiveHour.labelKey,
+    rateWindows.fiveHourWindow,
+    rawLimitReached,
+    rawAllowed
   );
   addWindow(
-    'secondary',
-    'codex_quota.secondary_window',
-    rateLimit?.secondary_window ?? rateLimit?.secondaryWindow,
-    rateLimit?.limit_reached ?? rateLimit?.limitReached,
-    rateLimit?.allowed
+    WINDOW_META.codeWeekly.id,
+    WINDOW_META.codeWeekly.labelKey,
+    rateWindows.weeklyWindow,
+    rawLimitReached,
+    rawAllowed
+  );
+
+  const codeReviewWindows = pickClassifiedWindows(codeReviewLimit);
+  const codeReviewLimitReached = codeReviewLimit?.limit_reached ?? codeReviewLimit?.limitReached;
+  const codeReviewAllowed = codeReviewLimit?.allowed;
+  addWindow(
+    WINDOW_META.codeReviewFiveHour.id,
+    WINDOW_META.codeReviewFiveHour.labelKey,
+    codeReviewWindows.fiveHourWindow,
+    codeReviewLimitReached,
+    codeReviewAllowed
   );
   addWindow(
-    'code-review',
-    'codex_quota.code_review_window',
-    codeReviewLimit?.primary_window ?? codeReviewLimit?.primaryWindow,
-    codeReviewLimit?.limit_reached ?? codeReviewLimit?.limitReached,
-    codeReviewLimit?.allowed
+    WINDOW_META.codeReviewWeekly.id,
+    WINDOW_META.codeReviewWeekly.labelKey,
+    codeReviewWindows.weeklyWindow,
+    codeReviewLimitReached,
+    codeReviewAllowed
   );
 
   return windows;
@@ -257,14 +311,14 @@ const fetchCodexQuota = async (
 
   const requestHeader: Record<string, string> = {
     ...CODEX_REQUEST_HEADERS,
-    'Chatgpt-Account-Id': accountId
+    'Chatgpt-Account-Id': accountId,
   };
 
   const result = await apiCallApi.request({
     authIndex,
     method: 'GET',
     url: CODEX_USAGE_URL,
-    header: requestHeader
+    header: requestHeader,
   });
 
   if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -301,7 +355,7 @@ const fetchGeminiCliQuota = async (
     method: 'POST',
     url: GEMINI_CLI_QUOTA_URL,
     header: { ...GEMINI_CLI_REQUEST_HEADERS },
-    data: JSON.stringify({ project: projectId })
+    data: JSON.stringify({ project: projectId }),
   });
 
   if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -320,7 +374,9 @@ const fetchGeminiCliQuota = async (
       const remainingFractionRaw = normalizeQuotaFraction(
         bucket.remainingFraction ?? bucket.remaining_fraction
       );
-      const remainingAmount = normalizeNumberValue(bucket.remainingAmount ?? bucket.remaining_amount);
+      const remainingAmount = normalizeNumberValue(
+        bucket.remainingAmount ?? bucket.remaining_amount
+      );
       const resetTime = normalizeStringValue(bucket.resetTime ?? bucket.reset_time) ?? undefined;
       let fallbackFraction: number | null = null;
       if (remainingAmount !== null) {
@@ -334,7 +390,7 @@ const fetchGeminiCliQuota = async (
         tokenType,
         remainingFraction,
         remainingAmount,
-        resetTime
+        resetTime,
       };
     })
     .filter((bucket): bucket is GeminiCliParsedBucket => bucket !== null);
@@ -366,11 +422,7 @@ const renderAntigravityItems = (
       h(
         'div',
         { className: styleMap.quotaRowHeader },
-        h(
-          'span',
-          { className: styleMap.quotaModel, title: group.models.join(', ') },
-          group.label
-        ),
+        h('span', { className: styleMap.quotaModel, title: group.models.join(', ') }, group.label),
         h(
           'div',
           { className: styleMap.quotaMeta },
@@ -403,7 +455,6 @@ const renderCodexItems = (
   };
 
   const planLabel = getPlanLabel(planType);
-  const isFreePlan = normalizePlanType(planType) === 'free';
   const nodes: ReactNode[] = [];
 
   if (planLabel) {
@@ -415,17 +466,6 @@ const renderCodexItems = (
         h('span', { className: styleMap.codexPlanValue }, planLabel)
       )
     );
-  }
-
-  if (isFreePlan) {
-    nodes.push(
-      h(
-        'div',
-        { key: 'warning', className: styleMap.quotaWarning },
-        t('codex_quota.no_access')
-      )
-    );
-    return h(Fragment, null, ...nodes);
   }
 
   if (windows.length === 0) {
@@ -487,7 +527,7 @@ const renderGeminiCliItems = (
       bucket.remainingAmount === null || bucket.remainingAmount === undefined
         ? null
         : t('gemini_cli_quota.remaining_amount', {
-            count: bucket.remainingAmount
+            count: bucket.remainingAmount,
           });
     const titleBase =
       bucket.modelIds && bucket.modelIds.length > 0 ? bucket.modelIds.join(', ') : bucket.label;
@@ -530,13 +570,13 @@ export const ANTIGRAVITY_CONFIG: QuotaConfig<AntigravityQuotaState, AntigravityQ
     status: 'error',
     groups: [],
     error: message,
-    errorStatus: status
+    errorStatus: status,
   }),
   cardClassName: styles.antigravityCard,
   controlsClassName: styles.antigravityControls,
   controlClassName: styles.antigravityControl,
   gridClassName: styles.antigravityGrid,
-  renderQuotaItems: renderAntigravityItems
+  renderQuotaItems: renderAntigravityItems,
 };
 
 export const CODEX_CONFIG: QuotaConfig<
@@ -553,19 +593,19 @@ export const CODEX_CONFIG: QuotaConfig<
   buildSuccessState: (data) => ({
     status: 'success',
     windows: data.windows,
-    planType: data.planType
+    planType: data.planType,
   }),
   buildErrorState: (message, status) => ({
     status: 'error',
     windows: [],
     error: message,
-    errorStatus: status
+    errorStatus: status,
   }),
   cardClassName: styles.codexCard,
   controlsClassName: styles.codexControls,
   controlClassName: styles.codexControl,
   gridClassName: styles.codexGrid,
-  renderQuotaItems: renderCodexItems
+  renderQuotaItems: renderCodexItems,
 };
 
 export const GEMINI_CLI_CONFIG: QuotaConfig<GeminiCliQuotaState, GeminiCliQuotaBucketState[]> = {
@@ -582,11 +622,11 @@ export const GEMINI_CLI_CONFIG: QuotaConfig<GeminiCliQuotaState, GeminiCliQuotaB
     status: 'error',
     buckets: [],
     error: message,
-    errorStatus: status
+    errorStatus: status,
   }),
   cardClassName: styles.geminiCliCard,
   controlsClassName: styles.geminiCliControls,
   controlClassName: styles.geminiCliControl,
   gridClassName: styles.geminiCliGrid,
-  renderQuotaItems: renderGeminiCliItems
+  renderQuotaItems: renderGeminiCliItems,
 };
