@@ -271,6 +271,8 @@ export function AuthFilesPage() {
   }, [files, modelAlias]);
 
   useEffect(() => {
+    if (viewMode !== 'diagram') return;
+
     let cancelled = false;
 
     const loadAllModels = async () => {
@@ -307,7 +309,7 @@ export function AuthFilesPage() {
     return () => {
       cancelled = true;
     };
-  }, [providerList]);
+  }, [providerList, viewMode]);
 
 
 
@@ -1200,8 +1202,11 @@ export function AuthFilesPage() {
 
     if (providersToUpdate.length === 0) return;
 
+    let hadFailure = false;
+    let failureMessage = '';
+
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         providersToUpdate.map(([provider, mappings]) => {
           const nextMappings = mappings.map((m) =>
             (m.alias ?? '').trim().toLowerCase() === oldKey ? { ...m, alias: newTrim } : m
@@ -1209,11 +1214,29 @@ export function AuthFilesPage() {
           return authFilesApi.saveOauthModelAlias(provider, nextMappings);
         })
       );
+
+      const failures = results.filter(
+        (result): result is PromiseRejectedResult => result.status === 'rejected'
+      );
+
+      if (failures.length > 0) {
+        hadFailure = true;
+        const reason = failures[0].reason;
+        failureMessage = reason instanceof Error ? reason.message : String(reason ?? '');
+      }
+    } finally {
       await loadModelAlias();
+    }
+
+    if (hadFailure) {
+      showNotification(
+        failureMessage
+          ? `${t('oauth_model_alias.save_failed')}: ${failureMessage}`
+          : t('oauth_model_alias.save_failed'),
+        'error'
+      );
+    } else {
       showNotification(t('oauth_model_alias.save_success'), 'success');
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '';
-      showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
     }
   };
 
@@ -1239,8 +1262,11 @@ export function AuthFilesPage() {
       variant: 'danger',
       confirmText: t('common.confirm'),
       onConfirm: async () => {
+        let hadFailure = false;
+        let failureMessage = '';
+
         try {
-          await Promise.all(
+          const results = await Promise.allSettled(
             providersToUpdate.map(([provider, mappings]) => {
               const nextMappings = mappings.filter(
                 (m) => (m.alias ?? '').trim().toLowerCase() !== aliasKey
@@ -1251,11 +1277,29 @@ export function AuthFilesPage() {
               return authFilesApi.saveOauthModelAlias(provider, nextMappings);
             })
           );
+
+          const failures = results.filter(
+            (result): result is PromiseRejectedResult => result.status === 'rejected'
+          );
+
+          if (failures.length > 0) {
+            hadFailure = true;
+            const reason = failures[0].reason;
+            failureMessage = reason instanceof Error ? reason.message : String(reason ?? '');
+          }
+        } finally {
           await loadModelAlias();
+        }
+
+        if (hadFailure) {
+          showNotification(
+            failureMessage
+              ? `${t('oauth_model_alias.delete_failed')}: ${failureMessage}`
+              : t('oauth_model_alias.delete_failed'),
+            'error'
+          );
+        } else {
           showNotification(t('oauth_model_alias.delete_success'), 'success');
-        } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : '';
-          showNotification(`${t('oauth_model_alias.delete_failed')}: ${errorMessage}`, 'error');
         }
       },
     });

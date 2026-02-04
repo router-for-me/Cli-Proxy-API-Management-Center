@@ -274,6 +274,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
   // 1. Source -> Alias
   const handleDragStart = (e: DragEvent, source: SourceNode) => {
     setDraggedSource(source);
+    e.dataTransfer.setData('text/plain', source.id);
     e.dataTransfer.effectAllowed = 'link';
   };
 
@@ -300,6 +301,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
   // 2. Alias -> Source
   const handleDragStartAlias = (e: DragEvent, alias: string) => {
     setDraggedAlias(alias);
+    e.dataTransfer.setData('text/plain', alias);
     e.dataTransfer.effectAllowed = 'link';
   };
 
@@ -429,7 +431,7 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
 
   return (
     <div 
-      className={`${styles.container} ${className}`} 
+      className={[styles.container, className].filter(Boolean).join(' ')} 
       ref={containerRef}
       onContextMenu={(e) => {
         e.preventDefault();

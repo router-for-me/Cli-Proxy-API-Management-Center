@@ -40,7 +40,7 @@ const buildEmptyMappingEntry = (): OAuthModelMappingFormEntry => ({
   id: generateId(),
   name: '',
   alias: '',
-  fork: false,
+  fork: true,
 });
 
 const normalizeMappingEntries = (
