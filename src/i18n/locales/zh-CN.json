@@ -577,6 +577,7 @@
     "diagram_settings_title": "别名设置 — {{alias}}",
     "diagram_settings_source_title": "源模型设置",
     "diagram_settings_empty": "该别名暂无映射。",
+    "diagram_tap_hint": "触摸设备上：先点选源模型，再点选别名即可建立映射。",
     "view_mode": "视图模式",
     "view_mode_diagram": "概览",
     "view_mode_list": "管理",

@@ -62,6 +62,13 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
   const { t } = useTranslation();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isDark = resolvedTheme === 'dark';
+  const enableTapLinking = useMemo(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia === 'undefined') return false;
+    return (
+      window.matchMedia('(any-pointer: coarse)').matches &&
+      !window.matchMedia('(any-pointer: fine)').matches
+    );
+  }, []);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const [lines, setLines] = useState<DiagramLine[]>([]);
@@ -69,6 +76,8 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
   const [draggedAlias, setDraggedAlias] = useState<string | null>(null);
   const [dropTargetAlias, setDropTargetAlias] = useState<string | null>(null);
   const [dropTargetSource, setDropTargetSource] = useState<string | null>(null);
+  const [tapSourceId, setTapSourceId] = useState<string | null>(null);
+  const [tapAlias, setTapAlias] = useState<string | null>(null);
   const [extraAliases, setExtraAliases] = useState<string[]>([]);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [collapsedProviders, setCollapsedProviders] = useState<Set<string>>(new Set());
@@ -301,16 +310,18 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
   // Drag and Drop handlers
   // 1. Source -> Alias
   const handleDragStart = (e: DragEvent, source: SourceNode) => {
+    setTapSourceId(null);
+    setTapAlias(null);
     setDraggedSource(source);
     e.dataTransfer.setData('text/plain', source.id);
     e.dataTransfer.effectAllowed = 'link';
   };
 
   const handleDragOver = (e: DragEvent, alias: string) => {
+    if (!draggedSource || draggedSource.aliases.some((entry) => entry.alias === alias)) return;
     e.preventDefault(); // Allow drop
-    if (draggedSource && !draggedSource.aliases.some((entry) => entry.alias === alias)) {
-      setDropTargetAlias(alias);
-    }
+    e.dataTransfer.dropEffect = 'link';
+    setDropTargetAlias(alias);
   };
 
   const handleDragLeave = () => {
@@ -328,16 +339,18 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
 
   // 2. Alias -> Source
   const handleDragStartAlias = (e: DragEvent, alias: string) => {
+    setTapSourceId(null);
+    setTapAlias(null);
     setDraggedAlias(alias);
     e.dataTransfer.setData('text/plain', alias);
     e.dataTransfer.effectAllowed = 'link';
   };
 
   const handleDragOverSource = (e: DragEvent, source: SourceNode) => {
+    if (!draggedAlias || source.aliases.some((entry) => entry.alias === draggedAlias)) return;
     e.preventDefault();
-    if (draggedAlias && !source.aliases.some((entry) => entry.alias === draggedAlias)) {
-      setDropTargetSource(source.id);
-    }
+    e.dataTransfer.dropEffect = 'link';
+    setDropTargetSource(source.id);
   };
 
   const handleDragLeaveSource = () => {
@@ -381,6 +394,45 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
     },
     [providerNodes]
   );
+
+  const handleTapSelectSource = (source: SourceNode) => {
+    if (!onUpdate) return;
+    if (tapSourceId === source.id) {
+      setTapSourceId(null);
+      return;
+    }
+
+    if (tapAlias) {
+      onUpdate(source.provider, source.name, tapAlias);
+      setTapSourceId(null);
+      setTapAlias(null);
+      return;
+    }
+
+    setTapSourceId(source.id);
+    setTapAlias(null);
+  };
+
+  const handleTapSelectAlias = (alias: string) => {
+    if (!onUpdate) return;
+    if (tapAlias === alias) {
+      setTapAlias(null);
+      return;
+    }
+
+    if (tapSourceId) {
+      const source = resolveSourceById(tapSourceId);
+      if (source) {
+        onUpdate(source.provider, source.name, alias);
+      }
+      setTapSourceId(null);
+      setTapAlias(null);
+      return;
+    }
+
+    setTapAlias(alias);
+    setTapSourceId(null);
+  };
 
   const handleUnlinkSource = (provider: string, sourceModel: string, alias: string) => {
     if (onDeleteLink) onDeleteLink(provider, sourceModel, alias);
@@ -459,6 +511,9 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
 
   return (
     <div className={[styles.scrollContainer, className].filter(Boolean).join(' ')}>
+      {enableTapLinking && onUpdate && (
+        <div className={styles.tapHint}>{t('oauth_model_alias.diagram_tap_hint')}</div>
+      )}
       <div
         className={styles.container}
         ref={containerRef}
@@ -480,15 +535,15 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
         </svg>
 
         <ProviderColumn
-        providerNodes={providerNodes}
-        collapsedProviders={collapsedProviders}
-        getProviderColor={getProviderColor}
-        providerGroupHeights={providerGroupHeights}
-        providerRefs={providerRefs}
-        onToggleCollapse={toggleProviderCollapse}
-        onContextMenu={(e, type, data) => handleContextMenu(e, type, data)}
-        label={t('oauth_model_alias.diagram_providers')}
-        expandLabel={t('oauth_model_alias.diagram_expand')}
+          providerNodes={providerNodes}
+          collapsedProviders={collapsedProviders}
+          getProviderColor={getProviderColor}
+          providerGroupHeights={providerGroupHeights}
+          providerRefs={providerRefs}
+          onToggleCollapse={toggleProviderCollapse}
+          onContextMenu={(e, type, data) => handleContextMenu(e, type, data)}
+          label={t('oauth_model_alias.diagram_providers')}
+          expandLabel={t('oauth_model_alias.diagram_expand')}
           collapseLabel={t('oauth_model_alias.diagram_collapse')}
         />
         <SourceColumn
@@ -496,6 +551,8 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
           collapsedProviders={collapsedProviders}
           sourceRefs={sourceRefs}
           getProviderColor={getProviderColor}
+          selectedSourceId={enableTapLinking ? tapSourceId : null}
+          onSelectSource={enableTapLinking ? handleTapSelectSource : undefined}
           draggedSource={draggedSource}
           dropTargetSource={dropTargetSource}
           draggable={!!onUpdate}
@@ -515,6 +572,8 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
           aliasRefs={aliasRefs}
           dropTargetAlias={dropTargetAlias}
           draggedAlias={draggedAlias}
+          selectedAlias={enableTapLinking ? tapAlias : null}
+          onSelectAlias={enableTapLinking ? handleTapSelectAlias : undefined}
           draggable={!!onUpdate}
           onDragStart={handleDragStartAlias}
           onDragEnd={() => {

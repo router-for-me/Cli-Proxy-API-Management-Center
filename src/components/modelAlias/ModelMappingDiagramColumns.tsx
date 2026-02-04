@@ -85,6 +85,8 @@ interface SourceColumnProps {
   collapsedProviders: Set<string>;
   sourceRefs: RefObject<Map<string, HTMLDivElement>>;
   getProviderColor: (provider: string) => string;
+  selectedSourceId?: string | null;
+  onSelectSource?: (source: SourceNode) => void;
   draggedSource: SourceNode | null;
   dropTargetSource: string | null;
   draggable: boolean;
@@ -102,6 +104,8 @@ export function SourceColumn({
   collapsedProviders,
   sourceRefs,
   getProviderColor,
+  selectedSourceId,
+  onSelectSource,
   draggedSource,
   dropTargetSource,
   draggable,
@@ -134,7 +138,10 @@ export function SourceColumn({
             }}
             className={`${styles.item} ${styles.sourceItem} ${
               draggedSource?.id === source.id ? styles.dragging : ''
-            } ${dropTargetSource === source.id ? styles.dropTarget : ''}`}
+            } ${dropTargetSource === source.id ? styles.dropTarget : ''} ${
+              selectedSourceId === source.id ? styles.selected : ''
+            }`}
+            onClick={() => onSelectSource?.(source)}
             draggable={draggable}
             onDragStart={(e) => onDragStart(e, source)}
             onDragEnd={onDragEnd}
@@ -169,6 +176,8 @@ interface AliasColumnProps {
   aliasRefs: RefObject<Map<string, HTMLDivElement>>;
   dropTargetAlias: string | null;
   draggedAlias: string | null;
+  selectedAlias?: string | null;
+  onSelectAlias?: (alias: string) => void;
   draggable: boolean;
   onDragStart: (e: DragEvent, alias: string) => void;
   onDragEnd: () => void;
@@ -184,6 +193,8 @@ export function AliasColumn({
   aliasRefs,
   dropTargetAlias,
   draggedAlias,
+  selectedAlias,
+  onSelectAlias,
   draggable,
   onDragStart,
   onDragEnd,
@@ -212,7 +223,10 @@ export function AliasColumn({
           }}
           className={`${styles.item} ${styles.aliasItem} ${
             dropTargetAlias === node.alias ? styles.dropTarget : ''
-          } ${draggedAlias === node.alias ? styles.dragging : ''}`}
+          } ${draggedAlias === node.alias ? styles.dragging : ''} ${
+            selectedAlias === node.alias ? styles.selected : ''
+          }`}
+          onClick={() => onSelectAlias?.(node.alias)}
           draggable={draggable}
           onDragStart={(e) => onDragStart(e, node.alias)}
           onDragEnd={onDragEnd}

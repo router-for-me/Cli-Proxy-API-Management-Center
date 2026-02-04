@@ -7,6 +7,16 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.tapHint {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 0 4px;
+  margin-bottom: 8px;
+}
+
 .container {
   display: inline-flex;
   position: relative;
@@ -99,6 +109,12 @@
     background-color: var(--bg-secondary);
     border-color: var(--primary-color);
     border-width: 2px;
+  }
+
+  &.selected {
+    border-color: var(--primary-color);
+    background-color: var(--bg-secondary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
   }
 }
 

@@ -577,6 +577,7 @@
     "diagram_settings_title": "Alias settings — {{alias}}",
     "diagram_settings_source_title": "Source model settings",
     "diagram_settings_empty": "No mappings for this alias yet.",
+    "diagram_tap_hint": "On touch devices: tap a source model, then tap an alias to link.",
     "view_mode": "View mode",
     "view_mode_diagram": "Diagram",
     "view_mode_list": "List",
