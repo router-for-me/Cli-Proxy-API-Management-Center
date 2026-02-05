@@ -1,7 +1,5 @@
 import { Navigate, useRoutes, type Location } from 'react-router-dom';
 import { DashboardPage } from '@/pages/DashboardPage';
-import { SettingsPage } from '@/pages/SettingsPage';
-import { ApiKeysPage } from '@/pages/ApiKeysPage';
 import { AiProvidersPage } from '@/pages/AiProvidersPage';
 import { AiProvidersAmpcodeEditPage } from '@/pages/AiProvidersAmpcodeEditPage';
 import { AiProvidersClaudeEditPage } from '@/pages/AiProvidersClaudeEditPage';
@@ -24,8 +22,8 @@ import { SystemPage } from '@/pages/SystemPage';
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
   { path: '/dashboard', element: <DashboardPage /> },
-  { path: '/settings', element: <SettingsPage /> },
-  { path: '/api-keys', element: <ApiKeysPage /> },
+  { path: '/settings', element: <Navigate to="/config" replace /> },
+  { path: '/api-keys', element: <Navigate to="/config" replace /> },
   { path: '/ai-providers/gemini/new', element: <AiProvidersGeminiEditPage /> },
   { path: '/ai-providers/gemini/:index', element: <AiProvidersGeminiEditPage /> },
   { path: '/ai-providers/codex/new', element: <AiProvidersCodexEditPage /> },

@@ -172,12 +172,12 @@ export function DashboardPage() {
 
   const quickStats: QuickStat[] = [
     {
-      label: t('nav.api_keys'),
+      label: t('dashboard.management_keys'),
       value: stats.apiKeys ?? '-',
       icon: <IconKey size={24} />,
-      path: '/api-keys',
+      path: '/config',
       loading: loading && stats.apiKeys === null,
-      sublabel: t('dashboard.management_keys')
+      sublabel: t('nav.config_management')
     },
     {
       label: t('nav.ai_providers'),
@@ -309,7 +309,7 @@ export function DashboardPage() {
               </div>
             )}
           </div>
-          <Link to="/settings" className={styles.viewMoreLink}>
+          <Link to="/config" className={styles.viewMoreLink}>
             {t('dashboard.edit_settings')} →
           </Link>
         </div>

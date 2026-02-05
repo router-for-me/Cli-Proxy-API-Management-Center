@@ -24,28 +24,50 @@
 
 .tabBar {
   display: flex;
-  gap: $spacing-xs;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
   margin-bottom: $spacing-lg;
-  border-bottom: 1px solid var(--border-color);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: $radius-full;
+  width: fit-content;
+  max-width: 100%;
   overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @include mobile {
+    width: 100%;
+
+    .tabItem {
+      flex: 1;
+    }
+  }
 }
 
 .tabItem {
   @include button-reset;
-  padding: 12px 20px;
+  padding: 10px 16px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
   background: transparent;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  border: 1px solid transparent;
+  border-radius: $radius-full;
   cursor: pointer;
   transition:
+    background-color 0.15s ease,
     color 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
     color: var(--text-primary);
+    background: var(--bg-tertiary);
   }
 
   &:disabled {
@@ -53,16 +75,21 @@
     cursor: not-allowed;
   }
 
-  &:focus,
-  &:focus-visible {
+  &:focus {
     outline: none;
-    box-shadow: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
   }
 }
 
 .tabActive {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 .content {

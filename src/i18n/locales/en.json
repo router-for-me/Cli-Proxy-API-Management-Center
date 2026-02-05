@@ -102,7 +102,7 @@
     "oauth": "OAuth Login",
     "quota_management": "Quota Management",
     "usage_stats": "Usage Statistics",
-    "config_management": "Config Management",
+    "config_management": "Config Panel",
     "logs": "Logs Viewer",
     "system_info": "Management Center Info"
   },
@@ -812,7 +812,7 @@
     "upgrade_required_desc": "The current server version does not support the logs viewing feature. Please upgrade to the latest version of CLI Proxy API to use this feature."
   },
   "config_management": {
-    "title": "Config Management",
+    "title": "Config Panel",
     "editor_title": "Configuration File",
     "reload": "Reload",
     "save": "Save",

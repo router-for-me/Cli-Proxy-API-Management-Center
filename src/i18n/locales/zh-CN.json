@@ -102,7 +102,7 @@
     "oauth": "OAuth 登录",
     "quota_management": "配额管理",
     "usage_stats": "使用统计",
-    "config_management": "配置管理",
+    "config_management": "配置面板",
     "logs": "日志查看",
     "system_info": "中心信息"
   },
@@ -417,7 +417,7 @@
     "proxy_url_placeholder": "socks5://username:password@proxy_ip:port/",
     "prefix_proxy_invalid_json": "该凭证文件不是 JSON 对象，无法编辑。",
     "prefix_proxy_saved_success": "已更新 \"{{name}}\"",
-    "card_tools_title": "配置管理",
+    "card_tools_title": "配置面板",
     "quota_refresh_single": "刷新额度",
     "quota_refresh_hint": "仅刷新当前凭证的额度数据",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
@@ -812,7 +812,7 @@
     "upgrade_required_desc": "当前服务器版本不支持日志查看功能，请升级到最新版本的 CLI Proxy API 以使用此功能。"
   },
   "config_management": {
-    "title": "配置管理",
+    "title": "配置面板",
     "editor_title": "配置文件",
     "reload": "重新加载",
     "save": "保存",
