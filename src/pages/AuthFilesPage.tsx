@@ -259,6 +259,7 @@ export function AuthFilesPage() {
   const [pageSize, setPageSize] = useState(9);
   const [pageSizeInput, setPageSizeInput] = useState('9');
   const [uploading, setUploading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
@@ -606,6 +607,11 @@ export function AuthFilesPage() {
     });
   }, [files, filter, search]);
 
+  const exportCandidates = useMemo(
+    () => filtered.filter((item) => !isRuntimeOnlyAuthFile(item)),
+    [filtered]
+  );
+
   // 分页计算
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -782,26 +788,71 @@ export function AuthFilesPage() {
     });
   };
 
+  const downloadAuthFile = async (name: string) => {
+    const response = await apiClient.getRaw(
+      `/auth-files/download?name=${encodeURIComponent(name)}`,
+      {
+        responseType: 'blob',
+      }
+    );
+    const blob = response.data as Blob;
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   // 下载文件
   const handleDownload = async (name: string) => {
     try {
-      const response = await apiClient.getRaw(
-        `/auth-files/download?name=${encodeURIComponent(name)}`,
-        {
-          responseType: 'blob',
-        }
-      );
-      const blob = new Blob([response.data]);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      await downloadAuthFile(name);
       showNotification(t('auth_files.download_success'), 'success');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '';
       showNotification(`${t('notification.download_failed')}: ${errorMessage}`, 'error');
+    }
+  };
+
+  const handleExportAll = async () => {
+    if (disableControls || exporting) return;
+
+    const targets = exportCandidates;
+    if (targets.length === 0) {
+      showNotification(t('auth_files.export_empty'), 'info');
+      return;
+    }
+
+    const skipped = Math.max(0, filtered.length - targets.length);
+
+    setExporting(true);
+    let success = 0;
+    let failed = 0;
+
+    try {
+      for (const file of targets) {
+        try {
+          await downloadAuthFile(file.name);
+          success++;
+        } catch {
+          failed++;
+        }
+      }
+    } finally {
+      setExporting(false);
+    }
+
+    if (failed === 0) {
+      showNotification(t('auth_files.export_success', { count: success }), 'success');
+    } else if (success > 0) {
+      showNotification(t('auth_files.export_partial', { success, failed }), 'warning');
+    } else {
+      showNotification(t('auth_files.export_failed'), 'error');
+    }
+
+    if (skipped > 0) {
+      showNotification(t('auth_files.export_skipped_virtual', { count: skipped }), 'info');
     }
   };
 
@@ -1778,6 +1829,17 @@ export function AuthFilesPage() {
               loading={uploading}
             >
               {t('auth_files.upload_button')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void handleExportAll()}
+              disabled={disableControls || loading}
+              loading={exporting}
+            >
+              {filter === 'all'
+                ? t('auth_files.export_all_button')
+                : t('auth_files.export_filtered_button', { type: getTypeLabel(filter) })}
             </Button>
             <Button
               variant="danger"
