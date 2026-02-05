@@ -241,6 +241,37 @@ export function MainLayout() {
     };
   }, []);
 
+  // 将主内容区的中心点写入 CSS 变量，供底部浮层（如配置面板操作栏）对齐到内容区而非整窗
+  useLayoutEffect(() => {
+    const updateContentCenter = () => {
+      const el = contentRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      document.documentElement.style.setProperty('--content-center-x', `${centerX}px`);
+    };
+
+    updateContentCenter();
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' && contentRef.current
+        ? new ResizeObserver(updateContentCenter)
+        : null;
+
+    if (resizeObserver && contentRef.current) {
+      resizeObserver.observe(contentRef.current);
+    }
+
+    window.addEventListener('resize', updateContentCenter);
+
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      window.removeEventListener('resize', updateContentCenter);
+    };
+  }, []);
+
   // 5秒后自动收起品牌名称
   useEffect(() => {
     brandCollapseTimer.current = setTimeout(() => {

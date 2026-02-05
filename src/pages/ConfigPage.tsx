@@ -300,7 +300,7 @@ export function ConfigPage() {
           title={t('config_management.reload')}
           aria-label={t('config_management.reload')}
         >
-          <IconRefreshCw size={18} />
+          <IconRefreshCw size={16} />
         </button>
         <button
           type="button"
@@ -310,7 +310,7 @@ export function ConfigPage() {
           title={t('config_management.save')}
           aria-label={t('config_management.save')}
         >
-          <IconCheck size={18} />
+          <IconCheck size={16} />
           {isDirty && <span className={styles.dirtyDot} aria-hidden="true" />}
         </button>
       </div>

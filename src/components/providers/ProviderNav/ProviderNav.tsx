@@ -41,6 +41,7 @@ export function ProviderNav() {
   const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
   const contentScrollerRef = useRef<HTMLElement | null>(null);
   const navListRef = useRef<HTMLDivElement | null>(null);
+  const navContainerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<Record<ProviderId, HTMLButtonElement | null>>({
     gemini: null,
     codex: null,
@@ -170,6 +171,31 @@ export function ProviderNav() {
     updateIndicator(activeProvider);
   }, [activeProvider, shouldShow, updateIndicator]);
 
+  // Expose overlay height to the page, so it can reserve bottom padding and avoid being covered.
+  useLayoutEffect(() => {
+    if (!shouldShow) return;
+
+    const el = navContainerRef.current;
+    if (!el) return;
+
+    const updateHeight = () => {
+      const height = el.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--provider-nav-height', `${height}px`);
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateHeight);
+    ro?.observe(el);
+
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', updateHeight);
+      document.documentElement.style.removeProperty('--provider-nav-height');
+    };
+  }, [shouldShow]);
+
   const scrollToProvider = (providerId: ProviderId) => {
     const container = getScrollContainer();
     const element = document.getElementById(`provider-${providerId}`);
@@ -204,7 +230,7 @@ export function ProviderNav() {
   }, [activeProvider, shouldShow, updateIndicator]);
 
   const navContent = (
-    <div className={styles.navContainer}>
+    <div className={styles.navContainer} ref={navContainerRef}>
       <div className={styles.navList} ref={navListRef}>
         <div
           className={[

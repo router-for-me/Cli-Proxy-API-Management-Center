@@ -6,7 +6,9 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  padding-bottom: calc(var(--config-action-bar-height, 0px) + #{$spacing-lg});
+  padding-bottom: calc(
+    var(--config-action-bar-height, 0px) + 16px + env(safe-area-inset-bottom) + #{$spacing-md}
+  );
 }
 
 .pageTitle {
@@ -315,7 +317,7 @@
 
 .floatingActionContainer {
   position: fixed;
-  left: 50%;
+  left: var(--content-center-x, 50%);
   bottom: calc(16px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   z-index: 50;
@@ -327,8 +329,8 @@
 .floatingActionList {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 8px 10px;
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -345,13 +347,13 @@
 }
 
 .floatingStatus {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 6px 10px;
+  padding: 5px 8px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.06);
   text-align: center;
-  max-width: min(360px, 52vw);
+  max-width: min(280px, 46vw);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -363,8 +365,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
   cursor: pointer;
   color: var(--text-primary);
@@ -388,10 +390,10 @@
 
 .dirtyDot {
   position: absolute;
-  top: 9px;
-  right: 9px;
-  width: 8px;
-  height: 8px;
+  top: 8px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
   background: #f59e0b;
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
@@ -431,8 +433,8 @@
   }
 
   .floatingActionButton {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     flex: 0 0 auto;
   }
 }
