@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
@@ -198,6 +199,7 @@ function ApiKeysCardEditor({
   disabled?: boolean;
   onChange: (nextValue: string) => void;
 }) {
+  const { t } = useTranslation();
   const apiKeys = useMemo(
     () =>
       value
@@ -244,11 +246,11 @@ function ApiKeysCardEditor({
   const handleSave = () => {
     const trimmed = inputValue.trim();
     if (!trimmed) {
-      setFormError('请输入 API 密钥');
+      setFormError(t('config_management.visual.api_keys.error_empty'));
       return;
     }
     if (!isValidApiKeyCharset(trimmed)) {
-      setFormError('API 密钥包含无效字符');
+      setFormError(t('config_management.visual.api_keys.error_invalid'));
       return;
     }
 
@@ -263,9 +265,9 @@ function ApiKeysCardEditor({
   return (
     <div className="form-group" style={{ marginBottom: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <label style={{ margin: 0 }}>API 密钥列表 (api-keys)</label>
+        <label style={{ margin: 0 }}>{t('config_management.visual.api_keys.label')}</label>
         <Button size="sm" onClick={openAddModal} disabled={disabled}>
-          添加 API 密钥
+          {t('config_management.visual.api_keys.add')}
         </Button>
       </div>
 
@@ -279,7 +281,7 @@ function ApiKeysCardEditor({
             textAlign: 'center',
           }}
         >
-          暂无 API 密钥
+          {t('config_management.visual.api_keys.empty')}
         </div>
       ) : (
         <div className="item-list" style={{ marginTop: 4 }}>
@@ -292,10 +294,10 @@ function ApiKeysCardEditor({
               </div>
               <div className="item-actions">
                 <Button variant="secondary" size="sm" onClick={() => openEditModal(index)} disabled={disabled}>
-                  编辑
+                  {t('config_management.visual.common.edit')}
                 </Button>
                 <Button variant="danger" size="sm" onClick={() => handleDelete(index)} disabled={disabled}>
-                  删除
+                  {t('config_management.visual.common.delete')}
                 </Button>
               </div>
             </div>
@@ -303,31 +305,31 @@ function ApiKeysCardEditor({
         </div>
       )}
 
-      <div className="hint">每个条目代表一个 API 密钥（与 “API 密钥管理” 页面样式一致）</div>
+      <div className="hint">{t('config_management.visual.api_keys.hint')}</div>
 
       <Modal
         open={modalOpen}
         onClose={closeModal}
-        title={editingIndex !== null ? '编辑 API 密钥' : '添加 API 密钥'}
+        title={editingIndex !== null ? t('config_management.visual.api_keys.edit_title') : t('config_management.visual.api_keys.add_title')}
         footer={
           <>
             <Button variant="secondary" onClick={closeModal} disabled={disabled}>
-              取消
+              {t('config_management.visual.common.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={disabled}>
-              {editingIndex !== null ? '更新' : '添加'}
+              {editingIndex !== null ? t('config_management.visual.common.update') : t('config_management.visual.common.add')}
             </Button>
           </>
         }
       >
         <Input
-          label="API 密钥"
-          placeholder="粘贴你的 API 密钥"
+          label={t('config_management.visual.api_keys.input_label')}
+          placeholder={t('config_management.visual.api_keys.input_placeholder')}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           disabled={disabled}
           error={formError || undefined}
-          hint="此处仅修改本地配置文件内容，不会自动同步到 API 密钥管理接口"
+          hint={t('config_management.visual.api_keys.input_hint')}
         />
       </Modal>
     </div>
@@ -345,6 +347,7 @@ function StringListEditor({
   placeholder?: string;
   onChange: (next: string[]) => void;
 }) {
+  const { t } = useTranslation();
   const items = value.length ? value : [];
 
   const updateItem = (index: number, nextValue: string) =>
@@ -365,13 +368,13 @@ function StringListEditor({
             style={{ flex: 1 }}
           />
           <Button variant="ghost" size="sm" onClick={() => removeItem(index)} disabled={disabled}>
-            删除
+            {t('config_management.visual.common.delete')}
           </Button>
         </div>
       ))}
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Button variant="secondary" size="sm" onClick={addItem} disabled={disabled}>
-          添加
+          {t('config_management.visual.common.add')}
         </Button>
       </div>
     </div>
@@ -389,6 +392,7 @@ function PayloadRulesEditor({
   protocolFirst?: boolean;
   onChange: (next: PayloadRule[]) => void;
 }) {
+  const { t } = useTranslation();
   const rules = value.length ? value : [];
 
   const addRule = () => onChange([...rules, { id: makeClientId(), models: [], params: [] }]);
@@ -441,15 +445,15 @@ function PayloadRulesEditor({
   const getValuePlaceholder = (valueType: PayloadParamValueType) => {
     switch (valueType) {
       case 'string':
-        return '字符串值';
+        return t('config_management.visual.payload_rules.value_string');
       case 'number':
-        return '数字值 (如 0.7)';
+        return t('config_management.visual.payload_rules.value_number');
       case 'boolean':
-        return 'true 或 false';
+        return t('config_management.visual.payload_rules.value_boolean');
       case 'json':
-        return 'JSON 值';
+        return t('config_management.visual.payload_rules.value_json');
       default:
-        return '值';
+        return t('config_management.visual.payload_rules.value_default');
     }
   };
 
@@ -468,14 +472,14 @@ function PayloadRulesEditor({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>规则 {ruleIndex + 1}</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{t('config_management.visual.payload_rules.rule')} {ruleIndex + 1}</div>
             <Button variant="ghost" size="sm" onClick={() => removeRule(ruleIndex)} disabled={disabled}>
-              删除
+              {t('config_management.visual.common.delete')}
             </Button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>适用模型</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('config_management.visual.payload_rules.models')}</div>
             {(rule.models.length ? rule.models : []).map((model, modelIndex) => (
               <div
                 key={model.id}
@@ -491,7 +495,7 @@ function PayloadRulesEditor({
                       value={model.protocol ?? ''}
                       options={VISUAL_CONFIG_PROTOCOL_OPTIONS}
                       disabled={disabled}
-                      ariaLabel="供应商类型"
+                      ariaLabel={t('config_management.visual.payload_rules.provider_type')}
                       onChange={(nextValue) =>
                         updateModel(ruleIndex, modelIndex, {
                           protocol: (nextValue || undefined) as PayloadModelEntry['protocol'],
@@ -500,7 +504,7 @@ function PayloadRulesEditor({
                     />
                     <input
                       className="input"
-                      placeholder="模型名称"
+                      placeholder={t('config_management.visual.payload_rules.model_name')}
                       value={model.name}
                       onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
                       disabled={disabled}
@@ -510,7 +514,7 @@ function PayloadRulesEditor({
                   <>
                     <input
                       className="input"
-                      placeholder="模型名称"
+                      placeholder={t('config_management.visual.payload_rules.model_name')}
                       value={model.name}
                       onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
                       disabled={disabled}
@@ -519,7 +523,7 @@ function PayloadRulesEditor({
                       value={model.protocol ?? ''}
                       options={VISUAL_CONFIG_PROTOCOL_OPTIONS}
                       disabled={disabled}
-                      ariaLabel="供应商类型"
+                      ariaLabel={t('config_management.visual.payload_rules.provider_type')}
                       onChange={(nextValue) =>
                         updateModel(ruleIndex, modelIndex, {
                           protocol: (nextValue || undefined) as PayloadModelEntry['protocol'],
@@ -529,24 +533,24 @@ function PayloadRulesEditor({
                   </>
                 )}
                 <Button variant="ghost" size="sm" onClick={() => removeModel(ruleIndex, modelIndex)} disabled={disabled}>
-                  删除
+                  {t('config_management.visual.common.delete')}
                 </Button>
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button variant="secondary" size="sm" onClick={() => addModel(ruleIndex)} disabled={disabled}>
-                添加模型
+                {t('config_management.visual.payload_rules.add_model')}
               </Button>
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>参数设置</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('config_management.visual.payload_rules.params')}</div>
             {(rule.params.length ? rule.params : []).map((param, paramIndex) => (
               <div key={param.id} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 1fr auto', gap: 8 }}>
                 <input
                   className="input"
-                  placeholder="JSON 路径 (如 temperature)"
+                  placeholder={t('config_management.visual.payload_rules.json_path')}
                   value={param.path}
                   onChange={(e) => updateParam(ruleIndex, paramIndex, { path: e.target.value })}
                   disabled={disabled}
@@ -555,7 +559,7 @@ function PayloadRulesEditor({
                   value={param.valueType}
                   options={VISUAL_CONFIG_PAYLOAD_VALUE_TYPE_OPTIONS}
                   disabled={disabled}
-                  ariaLabel="参数类型"
+                  ariaLabel={t('config_management.visual.payload_rules.param_type')}
                   onChange={(nextValue) =>
                     updateParam(ruleIndex, paramIndex, { valueType: nextValue as PayloadParamValueType })
                   }
@@ -568,13 +572,13 @@ function PayloadRulesEditor({
                   disabled={disabled}
                 />
                 <Button variant="ghost" size="sm" onClick={() => removeParam(ruleIndex, paramIndex)} disabled={disabled}>
-                  删除
+                  {t('config_management.visual.common.delete')}
                 </Button>
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button variant="secondary" size="sm" onClick={() => addParam(ruleIndex)} disabled={disabled}>
-                添加参数
+                {t('config_management.visual.payload_rules.add_param')}
               </Button>
             </div>
           </div>
@@ -591,13 +595,13 @@ function PayloadRulesEditor({
             textAlign: 'center',
           }}
         >
-          暂无规则
+          {t('config_management.visual.payload_rules.no_rules')}
         </div>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Button variant="secondary" size="sm" onClick={addRule} disabled={disabled}>
-          添加规则
+          {t('config_management.visual.payload_rules.add_rule')}
         </Button>
       </div>
     </div>
@@ -613,6 +617,7 @@ function PayloadFilterRulesEditor({
   disabled?: boolean;
   onChange: (next: PayloadFilterRule[]) => void;
 }) {
+  const { t } = useTranslation();
   const rules = value.length ? value : [];
 
   const addRule = () => onChange([...rules, { id: makeClientId(), models: [], params: [] }]);
@@ -654,19 +659,19 @@ function PayloadFilterRulesEditor({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>规则 {ruleIndex + 1}</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{t('config_management.visual.payload_rules.rule')} {ruleIndex + 1}</div>
             <Button variant="ghost" size="sm" onClick={() => removeRule(ruleIndex)} disabled={disabled}>
-              删除
+              {t('config_management.visual.common.delete')}
             </Button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>适用模型</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('config_management.visual.payload_rules.models')}</div>
             {rule.models.map((model, modelIndex) => (
               <div key={model.id} style={{ display: 'grid', gridTemplateColumns: '1fr 160px auto', gap: 8 }}>
                 <input
                   className="input"
-                  placeholder="模型名称"
+                  placeholder={t('config_management.visual.payload_rules.model_name')}
                   value={model.name}
                   onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
                   disabled={disabled}
@@ -675,7 +680,7 @@ function PayloadFilterRulesEditor({
                   value={model.protocol ?? ''}
                   options={VISUAL_CONFIG_PROTOCOL_OPTIONS}
                   disabled={disabled}
-                  ariaLabel="供应商类型"
+                  ariaLabel={t('config_management.visual.payload_rules.provider_type')}
                   onChange={(nextValue) =>
                     updateModel(ruleIndex, modelIndex, {
                       protocol: (nextValue || undefined) as PayloadModelEntry['protocol'],
@@ -683,23 +688,23 @@ function PayloadFilterRulesEditor({
                   }
                 />
                 <Button variant="ghost" size="sm" onClick={() => removeModel(ruleIndex, modelIndex)} disabled={disabled}>
-                  删除
+                  {t('config_management.visual.common.delete')}
                 </Button>
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button variant="secondary" size="sm" onClick={() => addModel(ruleIndex)} disabled={disabled}>
-                添加模型
+                {t('config_management.visual.payload_rules.add_model')}
               </Button>
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>移除参数</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('config_management.visual.payload_rules.remove_params')}</div>
             <StringListEditor
               value={rule.params}
               disabled={disabled}
-              placeholder="JSON 路径 (gjson/sjson)，如 generationConfig.thinkingConfig.thinkingBudget"
+              placeholder={t('config_management.visual.payload_rules.json_path_filter')}
               onChange={(params) => updateRule(ruleIndex, { params })}
             />
           </div>
@@ -708,7 +713,7 @@ function PayloadFilterRulesEditor({
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Button variant="secondary" size="sm" onClick={addRule} disabled={disabled}>
-          添加规则
+          {t('config_management.visual.payload_rules.add_rule')}
         </Button>
       </div>
     </div>
@@ -716,23 +721,24 @@ function PayloadFilterRulesEditor({
 }
 
 export function VisualConfigEditor({ values, disabled = false, onChange }: VisualConfigEditorProps) {
+  const { t } = useTranslation();
   const isKeepaliveDisabled = values.streaming.keepaliveSeconds === '' || values.streaming.keepaliveSeconds === '0';
   const isNonstreamKeepaliveDisabled =
     values.streaming.nonstreamKeepaliveInterval === '' || values.streaming.nonstreamKeepaliveInterval === '0';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <ConfigSection title="服务器配置" description="基础服务器设置">
+      <ConfigSection title={t('config_management.visual.sections.server.title')} description={t('config_management.visual.sections.server.description')}>
         <SectionGrid>
           <Input
-            label="主机地址"
+            label={t('config_management.visual.sections.server.host')}
             placeholder="0.0.0.0"
             value={values.host}
             onChange={(e) => onChange({ host: e.target.value })}
             disabled={disabled}
           />
           <Input
-            label="端口"
+            label={t('config_management.visual.sections.server.port')}
             type="number"
             placeholder="8317"
             value={values.port}
@@ -742,11 +748,11 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
         </SectionGrid>
       </ConfigSection>
 
-      <ConfigSection title="TLS/SSL 配置" description="HTTPS 安全连接设置">
+      <ConfigSection title={t('config_management.visual.sections.tls.title')} description={t('config_management.visual.sections.tls.description')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <ToggleRow
-            title="启用 TLS"
-            description="启用 HTTPS 安全连接"
+            title={t('config_management.visual.sections.tls.enable')}
+            description={t('config_management.visual.sections.tls.enable_desc')}
             checked={values.tlsEnable}
             disabled={disabled}
             onChange={(tlsEnable) => onChange({ tlsEnable })}
@@ -756,14 +762,14 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
               <Divider />
               <SectionGrid>
                 <Input
-                  label="证书文件路径"
+                  label={t('config_management.visual.sections.tls.cert')}
                   placeholder="/path/to/cert.pem"
                   value={values.tlsCert}
                   onChange={(e) => onChange({ tlsCert: e.target.value })}
                   disabled={disabled}
                 />
                 <Input
-                  label="私钥文件路径"
+                  label={t('config_management.visual.sections.tls.key')}
                   placeholder="/path/to/key.pem"
                   value={values.tlsKey}
                   onChange={(e) => onChange({ tlsKey: e.target.value })}
@@ -775,33 +781,33 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
         </div>
       </ConfigSection>
 
-      <ConfigSection title="远程管理" description="远程访问和控制面板设置">
+      <ConfigSection title={t('config_management.visual.sections.remote.title')} description={t('config_management.visual.sections.remote.description')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <ToggleRow
-            title="允许远程访问"
-            description="允许从其他主机访问管理接口"
+            title={t('config_management.visual.sections.remote.allow_remote')}
+            description={t('config_management.visual.sections.remote.allow_remote_desc')}
             checked={values.rmAllowRemote}
             disabled={disabled}
             onChange={(rmAllowRemote) => onChange({ rmAllowRemote })}
           />
           <ToggleRow
-            title="禁用控制面板"
-            description="禁用内置的 Web 控制面板"
+            title={t('config_management.visual.sections.remote.disable_panel')}
+            description={t('config_management.visual.sections.remote.disable_panel_desc')}
             checked={values.rmDisableControlPanel}
             disabled={disabled}
             onChange={(rmDisableControlPanel) => onChange({ rmDisableControlPanel })}
           />
           <SectionGrid>
             <Input
-              label="管理密钥"
+              label={t('config_management.visual.sections.remote.secret_key')}
               type="password"
-              placeholder="设置管理密钥"
+              placeholder={t('config_management.visual.sections.remote.secret_key_placeholder')}
               value={values.rmSecretKey}
               onChange={(e) => onChange({ rmSecretKey: e.target.value })}
               disabled={disabled}
             />
             <Input
-              label="面板仓库"
+              label={t('config_management.visual.sections.remote.panel_repo')}
               placeholder="https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
               value={values.rmPanelRepo}
               onChange={(e) => onChange({ rmPanelRepo: e.target.value })}
@@ -811,15 +817,15 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
         </div>
       </ConfigSection>
 
-      <ConfigSection title="认证配置" description="API 密钥与认证文件目录设置">
+      <ConfigSection title={t('config_management.visual.sections.auth.title')} description={t('config_management.visual.sections.auth.description')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Input
-            label="认证文件目录 (auth-dir)"
+            label={t('config_management.visual.sections.auth.auth_dir')}
             placeholder="~/.cli-proxy-api"
             value={values.authDir}
             onChange={(e) => onChange({ authDir: e.target.value })}
             disabled={disabled}
-            hint="存放认证文件的目录路径（支持 ~）"
+            hint={t('config_management.visual.sections.auth.auth_dir_hint')}
           />
           <ApiKeysCardEditor
             value={values.apiKeysText}
@@ -829,33 +835,33 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
         </div>
       </ConfigSection>
 
-      <ConfigSection title="系统配置" description="调试、日志、统计与性能调试设置">
+      <ConfigSection title={t('config_management.visual.sections.system.title')} description={t('config_management.visual.sections.system.description')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <SectionGrid>
             <ToggleRow
-              title="调试模式"
-              description="启用详细的调试日志"
+              title={t('config_management.visual.sections.system.debug')}
+              description={t('config_management.visual.sections.system.debug_desc')}
               checked={values.debug}
               disabled={disabled}
               onChange={(debug) => onChange({ debug })}
             />
             <ToggleRow
-              title="商业模式"
-              description="禁用高开销中间件以减少高并发内存"
+              title={t('config_management.visual.sections.system.commercial_mode')}
+              description={t('config_management.visual.sections.system.commercial_mode_desc')}
               checked={values.commercialMode}
               disabled={disabled}
               onChange={(commercialMode) => onChange({ commercialMode })}
             />
             <ToggleRow
-              title="写入日志文件"
-              description="将日志保存到滚动文件"
+              title={t('config_management.visual.sections.system.logging_to_file')}
+              description={t('config_management.visual.sections.system.logging_to_file_desc')}
               checked={values.loggingToFile}
               disabled={disabled}
               onChange={(loggingToFile) => onChange({ loggingToFile })}
             />
             <ToggleRow
-              title="使用统计"
-              description="收集使用统计信息"
+              title={t('config_management.visual.sections.system.usage_statistics')}
+              description={t('config_management.visual.sections.system.usage_statistics_desc')}
               checked={values.usageStatisticsEnabled}
               disabled={disabled}
               onChange={(usageStatisticsEnabled) => onChange({ usageStatisticsEnabled })}
@@ -864,7 +870,7 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
 
           <SectionGrid>
             <Input
-              label="日志文件大小限制 (MB)"
+              label={t('config_management.visual.sections.system.logs_max_size')}
               type="number"
               placeholder="0"
               value={values.logsMaxTotalSizeMb}
@@ -872,30 +878,30 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
               disabled={disabled}
             />
             <Input
-              label="使用记录保留天数"
+              label={t('config_management.visual.sections.system.usage_retention_days')}
               type="number"
               placeholder="30"
               value={values.usageRecordsRetentionDays}
               onChange={(e) => onChange({ usageRecordsRetentionDays: e.target.value })}
               disabled={disabled}
-              hint="0 为无限制（不清理）"
+              hint={t('config_management.visual.sections.system.usage_retention_hint')}
             />
           </SectionGrid>
         </div>
       </ConfigSection>
 
-      <ConfigSection title="网络配置" description="代理、重试和路由设置">
+      <ConfigSection title={t('config_management.visual.sections.network.title')} description={t('config_management.visual.sections.network.description')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <SectionGrid>
             <Input
-              label="代理 URL"
+              label={t('config_management.visual.sections.network.proxy_url')}
               placeholder="socks5://user:pass@127.0.0.1:1080/"
               value={values.proxyUrl}
               onChange={(e) => onChange({ proxyUrl: e.target.value })}
               disabled={disabled}
             />
             <Input
-              label="请求重试次数"
+              label={t('config_management.visual.sections.network.request_retry')}
               type="number"
               placeholder="3"
               value={values.requestRetry}
@@ -903,7 +909,7 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
               disabled={disabled}
             />
             <Input
-              label="最大重试间隔 (秒)"
+              label={t('config_management.visual.sections.network.max_retry_interval')}
               type="number"
               placeholder="30"
               value={values.maxRetryInterval}
@@ -911,33 +917,33 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
               disabled={disabled}
             />
             <div className="form-group">
-              <label>路由策略</label>
+              <label>{t('config_management.visual.sections.network.routing_strategy')}</label>
               <ToastSelect
                 value={values.routingStrategy}
                 options={[
-                  { value: 'round-robin', label: '轮询 (Round Robin)' },
-                  { value: 'fill-first', label: '填充优先 (Fill First)' },
+                  { value: 'round-robin', label: t('config_management.visual.sections.network.strategy_round_robin') },
+                  { value: 'fill-first', label: t('config_management.visual.sections.network.strategy_fill_first') },
                 ]}
                 disabled={disabled}
-                ariaLabel="路由策略"
+                ariaLabel={t('config_management.visual.sections.network.routing_strategy')}
                 onChange={(nextValue) =>
                   onChange({ routingStrategy: nextValue as VisualConfigValues['routingStrategy'] })
                 }
               />
-              <div className="hint">选择凭据选择策略</div>
+              <div className="hint">{t('config_management.visual.sections.network.routing_strategy_hint')}</div>
             </div>
           </SectionGrid>
 
           <ToggleRow
-            title="强制模型前缀"
-            description="未带前缀的模型请求只使用无前缀凭据"
+            title={t('config_management.visual.sections.network.force_model_prefix')}
+            description={t('config_management.visual.sections.network.force_model_prefix_desc')}
             checked={values.forceModelPrefix}
             disabled={disabled}
             onChange={(forceModelPrefix) => onChange({ forceModelPrefix })}
           />
           <ToggleRow
-            title="WebSocket 认证"
-            description="启用 WebSocket 连接认证 (/v1/ws)"
+            title={t('config_management.visual.sections.network.ws_auth')}
+            description={t('config_management.visual.sections.network.ws_auth_desc')}
             checked={values.wsAuth}
             disabled={disabled}
             onChange={(wsAuth) => onChange({ wsAuth })}
@@ -945,18 +951,18 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
         </div>
       </ConfigSection>
 
-      <ConfigSection title="配额回退" description="配额耗尽时的回退策略">
+      <ConfigSection title={t('config_management.visual.sections.quota.title')} description={t('config_management.visual.sections.quota.description')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <ToggleRow
-            title="切换项目"
-            description="配额耗尽时自动切换到其他项目"
+            title={t('config_management.visual.sections.quota.switch_project')}
+            description={t('config_management.visual.sections.quota.switch_project_desc')}
             checked={values.quotaSwitchProject}
             disabled={disabled}
             onChange={(quotaSwitchProject) => onChange({ quotaSwitchProject })}
           />
           <ToggleRow
-            title="切换预览模型"
-            description="配额耗尽时切换到预览版本模型"
+            title={t('config_management.visual.sections.quota.switch_preview_model')}
+            description={t('config_management.visual.sections.quota.switch_preview_model_desc')}
             checked={values.quotaSwitchPreviewModel}
             disabled={disabled}
             onChange={(quotaSwitchPreviewModel) => onChange({ quotaSwitchPreviewModel })}
@@ -964,11 +970,11 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
         </div>
       </ConfigSection>
 
-      <ConfigSection title="流式传输配置" description="Keepalive 与 bootstrap 重试设置">
+      <ConfigSection title={t('config_management.visual.sections.streaming.title')} description={t('config_management.visual.sections.streaming.description')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <SectionGrid>
             <div className="form-group">
-              <label>Keepalive 秒数</label>
+              <label>{t('config_management.visual.sections.streaming.keepalive_seconds')}</label>
               <div style={{ position: 'relative' }}>
                 <input
                   className="input"
@@ -995,26 +1001,26 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
                       border: '1px solid var(--border-color)',
                     }}
                   >
-                    已禁用
+                    {t('config_management.visual.sections.streaming.disabled')}
                   </span>
                 )}
               </div>
-              <div className="hint">设置为 0 或留空表示禁用 keepalive</div>
+              <div className="hint">{t('config_management.visual.sections.streaming.keepalive_hint')}</div>
             </div>
             <Input
-              label="Bootstrap 重试次数"
+              label={t('config_management.visual.sections.streaming.bootstrap_retries')}
               type="number"
               placeholder="1"
               value={values.streaming.bootstrapRetries}
               onChange={(e) => onChange({ streaming: { ...values.streaming, bootstrapRetries: e.target.value } })}
               disabled={disabled}
-              hint="流式传输启动时（首包前）的重试次数"
+              hint={t('config_management.visual.sections.streaming.bootstrap_hint')}
             />
           </SectionGrid>
 
           <SectionGrid>
             <div className="form-group">
-              <label>非流式 Keepalive 间隔 (秒)</label>
+              <label>{t('config_management.visual.sections.streaming.nonstream_keepalive')}</label>
               <div style={{ position: 'relative' }}>
                 <input
                   className="input"
@@ -1043,24 +1049,24 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
                       border: '1px solid var(--border-color)',
                     }}
                   >
-                    已禁用
+                    {t('config_management.visual.sections.streaming.disabled')}
                   </span>
                 )}
               </div>
               <div className="hint">
-                非流式响应时每隔 N 秒发送空行以防止空闲超时，设置为 0 或留空表示禁用
+                {t('config_management.visual.sections.streaming.nonstream_keepalive_hint')}
               </div>
             </div>
           </SectionGrid>
         </div>
       </ConfigSection>
 
-      <ConfigSection title="Payload 配置" description="默认值、覆盖规则与过滤规则">
+      <ConfigSection title={t('config_management.visual.sections.payload.title')} description={t('config_management.visual.sections.payload.description')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>默认规则</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>{t('config_management.visual.sections.payload.default_rules')}</div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
-              当请求中未指定参数时，使用这些默认值
+              {t('config_management.visual.sections.payload.default_rules_desc')}
             </div>
             <PayloadRulesEditor
               value={values.payloadDefaultRules}
@@ -1070,9 +1076,9 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
           </div>
 
           <div>
-            <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>覆盖规则</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>{t('config_management.visual.sections.payload.override_rules')}</div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
-              强制覆盖请求中的参数值
+              {t('config_management.visual.sections.payload.override_rules_desc')}
             </div>
             <PayloadRulesEditor
               value={values.payloadOverrideRules}
@@ -1083,9 +1089,9 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
           </div>
 
           <div>
-            <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>过滤规则</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>{t('config_management.visual.sections.payload.filter_rules')}</div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
-              通过 JSON Path 预过滤上游请求体，自动剔除不合规/冗余参数（Request Sanitization）
+              {t('config_management.visual.sections.payload.filter_rules_desc')}
             </div>
             <PayloadFilterRulesEditor
               value={values.payloadFilterRules}

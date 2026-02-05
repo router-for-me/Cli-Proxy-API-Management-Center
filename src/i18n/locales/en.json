@@ -816,7 +816,7 @@
     "editor_title": "Configuration File",
     "reload": "Reload",
     "save": "Save",
-    "description": "View and edit the server-side config.yaml file. Validate the syntax before saving.",
+    "description": "Edit config.yaml via visual editor or source file",
     "status_idle": "Waiting for action",
     "status_loading": "Loading configuration...",
     "status_loaded": "Configuration loaded",
@@ -836,7 +836,141 @@
     "search_next": "Next",
     "tabs": {
       "visual": "Visual Editor",
-      "source": "Source Editor"
+      "source": "Source File Editor"
+    },
+    "visual": {
+      "sections": {
+        "server": {
+          "title": "Server Configuration",
+          "description": "Basic server settings",
+          "host": "Host Address",
+          "port": "Port"
+        },
+        "tls": {
+          "title": "TLS/SSL Configuration",
+          "description": "HTTPS secure connection settings",
+          "enable": "Enable TLS",
+          "enable_desc": "Enable HTTPS secure connection",
+          "cert": "Certificate File Path",
+          "key": "Private Key File Path"
+        },
+        "remote": {
+          "title": "Remote Management",
+          "description": "Remote access and control panel settings",
+          "allow_remote": "Allow Remote Access",
+          "allow_remote_desc": "Allow management access from other hosts",
+          "disable_panel": "Disable Control Panel",
+          "disable_panel_desc": "Disable the built-in web control panel",
+          "secret_key": "Management Key",
+          "secret_key_placeholder": "Set management key",
+          "panel_repo": "Panel Repository"
+        },
+        "auth": {
+          "title": "Authentication Configuration",
+          "description": "API keys and authentication directory settings",
+          "auth_dir": "Auth Directory (auth-dir)",
+          "auth_dir_hint": "Directory path for authentication files (supports ~)"
+        },
+        "system": {
+          "title": "System Configuration",
+          "description": "Debug, logging, statistics, and performance settings",
+          "debug": "Debug Mode",
+          "debug_desc": "Enable verbose debug logging",
+          "commercial_mode": "Commercial Mode",
+          "commercial_mode_desc": "Disable high-overhead middleware to reduce memory under high concurrency",
+          "logging_to_file": "Log to File",
+          "logging_to_file_desc": "Save logs to rotating files",
+          "usage_statistics": "Usage Statistics",
+          "usage_statistics_desc": "Collect usage statistics",
+          "logs_max_size": "Log File Size Limit (MB)",
+          "usage_retention_days": "Usage Records Retention Days",
+          "usage_retention_hint": "0 means no limit (no cleanup)"
+        },
+        "network": {
+          "title": "Network Configuration",
+          "description": "Proxy, retry, and routing settings",
+          "proxy_url": "Proxy URL",
+          "request_retry": "Request Retry Count",
+          "max_retry_interval": "Max Retry Interval (seconds)",
+          "routing_strategy": "Routing Strategy",
+          "routing_strategy_hint": "Select credential selection strategy",
+          "strategy_round_robin": "Round Robin",
+          "strategy_fill_first": "Fill First",
+          "force_model_prefix": "Force Model Prefix",
+          "force_model_prefix_desc": "Unprefixed model requests only use credentials without prefix",
+          "ws_auth": "WebSocket Authentication",
+          "ws_auth_desc": "Enable WebSocket authentication (/v1/ws)"
+        },
+        "quota": {
+          "title": "Quota Fallback",
+          "description": "Fallback strategy when quota is exceeded",
+          "switch_project": "Switch Project",
+          "switch_project_desc": "Automatically switch to another project when quota is exceeded",
+          "switch_preview_model": "Switch to Preview Model",
+          "switch_preview_model_desc": "Switch to preview model version when quota is exceeded"
+        },
+        "streaming": {
+          "title": "Streaming Configuration",
+          "description": "Keepalive and bootstrap retry settings",
+          "keepalive_seconds": "Keepalive Seconds",
+          "keepalive_hint": "Set to 0 or leave empty to disable keepalive",
+          "bootstrap_retries": "Bootstrap Retries",
+          "bootstrap_hint": "Number of retries during stream startup (before first byte)",
+          "nonstream_keepalive": "Non-stream Keepalive Interval (seconds)",
+          "nonstream_keepalive_hint": "Send blank lines every N seconds for non-streaming responses to prevent idle timeout, set to 0 or leave empty to disable",
+          "disabled": "Disabled"
+        },
+        "payload": {
+          "title": "Payload Configuration",
+          "description": "Default values, override rules, and filter rules",
+          "default_rules": "Default Rules",
+          "default_rules_desc": "Use these default values when parameters are not specified in the request",
+          "override_rules": "Override Rules",
+          "override_rules_desc": "Force override parameter values in the request",
+          "filter_rules": "Filter Rules",
+          "filter_rules_desc": "Pre-filter upstream request body via JSON Path, automatically remove non-compliant/redundant parameters (Request Sanitization)"
+        }
+      },
+      "api_keys": {
+        "label": "API Keys List (api-keys)",
+        "add": "Add API Key",
+        "empty": "No API keys",
+        "hint": "Each entry represents an API key (consistent with 'API Key Management' page style)",
+        "edit_title": "Edit API Key",
+        "add_title": "Add API Key",
+        "input_label": "API Key",
+        "input_placeholder": "Paste your API key",
+        "input_hint": "This only modifies the local config file content, it will not sync to the API Key Management interface",
+        "error_empty": "Please enter an API key",
+        "error_invalid": "API key contains invalid characters"
+      },
+      "payload_rules": {
+        "rule": "Rule",
+        "models": "Applicable Models",
+        "model_name": "Model Name",
+        "provider_type": "Provider Type",
+        "add_model": "Add Model",
+        "params": "Parameter Settings",
+        "remove_params": "Remove Parameters",
+        "json_path": "JSON Path (e.g., temperature)",
+        "json_path_filter": "JSON Path (gjson/sjson), e.g., generationConfig.thinkingConfig.thinkingBudget",
+        "param_type": "Parameter Type",
+        "add_param": "Add Parameter",
+        "no_rules": "No rules",
+        "add_rule": "Add Rule",
+        "value_string": "String value",
+        "value_number": "Number value (e.g., 0.7)",
+        "value_boolean": "true or false",
+        "value_json": "JSON value",
+        "value_default": "Value"
+      },
+      "common": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "update": "Update",
+        "add": "Add"
+      }
     }
   },
   "quota_management": {

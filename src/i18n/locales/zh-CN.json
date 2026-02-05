@@ -816,7 +816,7 @@
     "editor_title": "配置文件",
     "reload": "重新加载",
     "save": "保存",
-    "description": "查看并编辑服务器上的 config.yaml 配置文件。保存前请确认语法正确。",
+    "description": "通过可视化或者源文件方式编辑 config.yaml 配置文件",
     "status_idle": "等待操作",
     "status_loading": "加载配置中...",
     "status_loaded": "配置已加载",
@@ -836,7 +836,141 @@
     "search_next": "下一个",
     "tabs": {
       "visual": "可视化编辑",
-      "source": "源代码编辑"
+      "source": "源文件编辑"
+    },
+    "visual": {
+      "sections": {
+        "server": {
+          "title": "服务器配置",
+          "description": "基础服务器设置",
+          "host": "主机地址",
+          "port": "端口"
+        },
+        "tls": {
+          "title": "TLS/SSL 配置",
+          "description": "HTTPS 安全连接设置",
+          "enable": "启用 TLS",
+          "enable_desc": "启用 HTTPS 安全连接",
+          "cert": "证书文件路径",
+          "key": "私钥文件路径"
+        },
+        "remote": {
+          "title": "远程管理",
+          "description": "远程访问和控制面板设置",
+          "allow_remote": "允许远程访问",
+          "allow_remote_desc": "允许从其他主机访问管理接口",
+          "disable_panel": "禁用控制面板",
+          "disable_panel_desc": "禁用内置的 Web 控制面板",
+          "secret_key": "管理密钥",
+          "secret_key_placeholder": "设置管理密钥",
+          "panel_repo": "面板仓库"
+        },
+        "auth": {
+          "title": "认证配置",
+          "description": "API 密钥与认证文件目录设置",
+          "auth_dir": "认证文件目录 (auth-dir)",
+          "auth_dir_hint": "存放认证文件的目录路径（支持 ~）"
+        },
+        "system": {
+          "title": "系统配置",
+          "description": "调试、日志、统计与性能调试设置",
+          "debug": "调试模式",
+          "debug_desc": "启用详细的调试日志",
+          "commercial_mode": "商业模式",
+          "commercial_mode_desc": "禁用高开销中间件以减少高并发内存",
+          "logging_to_file": "写入日志文件",
+          "logging_to_file_desc": "将日志保存到滚动文件",
+          "usage_statistics": "使用统计",
+          "usage_statistics_desc": "收集使用统计信息",
+          "logs_max_size": "日志文件大小限制 (MB)",
+          "usage_retention_days": "使用记录保留天数",
+          "usage_retention_hint": "0 为无限制（不清理）"
+        },
+        "network": {
+          "title": "网络配置",
+          "description": "代理、重试和路由设置",
+          "proxy_url": "代理 URL",
+          "request_retry": "请求重试次数",
+          "max_retry_interval": "最大重试间隔 (秒)",
+          "routing_strategy": "路由策略",
+          "routing_strategy_hint": "选择凭据选择策略",
+          "strategy_round_robin": "轮询 (Round Robin)",
+          "strategy_fill_first": "填充优先 (Fill First)",
+          "force_model_prefix": "强制模型前缀",
+          "force_model_prefix_desc": "未带前缀的模型请求只使用无前缀凭据",
+          "ws_auth": "WebSocket 认证",
+          "ws_auth_desc": "启用 WebSocket 连接认证 (/v1/ws)"
+        },
+        "quota": {
+          "title": "配额回退",
+          "description": "配额耗尽时的回退策略",
+          "switch_project": "切换项目",
+          "switch_project_desc": "配额耗尽时自动切换到其他项目",
+          "switch_preview_model": "切换预览模型",
+          "switch_preview_model_desc": "配额耗尽时切换到预览版本模型"
+        },
+        "streaming": {
+          "title": "流式传输配置",
+          "description": "Keepalive 与 bootstrap 重试设置",
+          "keepalive_seconds": "Keepalive 秒数",
+          "keepalive_hint": "设置为 0 或留空表示禁用 keepalive",
+          "bootstrap_retries": "Bootstrap 重试次数",
+          "bootstrap_hint": "流式传输启动时（首包前）的重试次数",
+          "nonstream_keepalive": "非流式 Keepalive 间隔 (秒)",
+          "nonstream_keepalive_hint": "非流式响应时每隔 N 秒发送空行以防止空闲超时，设置为 0 或留空表示禁用",
+          "disabled": "已禁用"
+        },
+        "payload": {
+          "title": "Payload 配置",
+          "description": "默认值、覆盖规则与过滤规则",
+          "default_rules": "默认规则",
+          "default_rules_desc": "当请求中未指定参数时，使用这些默认值",
+          "override_rules": "覆盖规则",
+          "override_rules_desc": "强制覆盖请求中的参数值",
+          "filter_rules": "过滤规则",
+          "filter_rules_desc": "通过 JSON Path 预过滤上游请求体，自动剔除不合规/冗余参数（Request Sanitization）"
+        }
+      },
+      "api_keys": {
+        "label": "API 密钥列表 (api-keys)",
+        "add": "添加 API 密钥",
+        "empty": "暂无 API 密钥",
+        "hint": "每个条目代表一个 API 密钥（与 「API 密钥管理」 页面样式一致）",
+        "edit_title": "编辑 API 密钥",
+        "add_title": "添加 API 密钥",
+        "input_label": "API 密钥",
+        "input_placeholder": "粘贴你的 API 密钥",
+        "input_hint": "此处仅修改本地配置文件内容，不会自动同步到 API 密钥管理接口",
+        "error_empty": "请输入 API 密钥",
+        "error_invalid": "API 密钥包含无效字符"
+      },
+      "payload_rules": {
+        "rule": "规则",
+        "models": "适用模型",
+        "model_name": "模型名称",
+        "provider_type": "供应商类型",
+        "add_model": "添加模型",
+        "params": "参数设置",
+        "remove_params": "移除参数",
+        "json_path": "JSON 路径 (如 temperature)",
+        "json_path_filter": "JSON 路径 (gjson/sjson)，如 generationConfig.thinkingConfig.thinkingBudget",
+        "param_type": "参数类型",
+        "add_param": "添加参数",
+        "no_rules": "暂无规则",
+        "add_rule": "添加规则",
+        "value_string": "字符串值",
+        "value_number": "数字值 (如 0.7)",
+        "value_boolean": "true 或 false",
+        "value_json": "JSON 值",
+        "value_default": "值"
+      },
+      "common": {
+        "edit": "编辑",
+        "delete": "删除",
+        "cancel": "取消",
+        "update": "更新",
+        "add": "添加"
+      }
     }
   },
   "quota_management": {
