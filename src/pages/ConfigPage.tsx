@@ -281,6 +281,8 @@ export function ConfigPage() {
     return t('config_management.status_loaded');
   };
 
+  const isLoadedStatus = !disableControls && !loading && !error && !saving && !isDirty;
+
   const getStatusClass = () => {
     if (error) return styles.error;
     if (isDirty) return styles.modified;
@@ -444,9 +446,11 @@ export function ConfigPage() {
 
           {/* Controls */}
           <div className={styles.controls}>
-            <span className={`${styles.status} ${getStatusClass()}`}>
-              {getStatusText()}
-            </span>
+            {!isLoadedStatus && (
+              <span className={`${styles.status} ${getStatusClass()}`}>
+                {getStatusText()}
+              </span>
+            )}
           </div>
         </div>
       </Card>
