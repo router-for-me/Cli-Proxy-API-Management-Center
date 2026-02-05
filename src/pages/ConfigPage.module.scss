@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  padding-bottom: calc(var(--config-action-bar-height, 0px) + #{$spacing-lg});
 }
 
 .pageTitle {
@@ -19,6 +20,49 @@
   font-size: 14px;
   color: var(--text-secondary);
   margin: 0 0 $spacing-xl 0;
+}
+
+.tabBar {
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-lg;
+  border-bottom: 1px solid var(--border-color);
+  overflow-x: auto;
+}
+
+.tabItem {
+  @include button-reset;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+}
+
+.tabActive {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
 }
 
 .content {
@@ -239,6 +283,130 @@
     button {
       flex: 1;
     }
+  }
+}
+
+.floatingActionContainer {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 50;
+  pointer-events: auto;
+  width: fit-content;
+  max-width: calc(100vw - 24px);
+}
+
+.floatingActionList {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  max-width: inherit;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.floatingStatus {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  text-align: center;
+  max-width: min(360px, 52vw);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.floatingActionButton {
+  @include button-reset;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, transform 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.06);
+    transform: scale(1.08);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.dirtyDot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+:global([data-theme='dark']) {
+  .floatingActionList {
+    background: rgba(30, 30, 30, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .floatingStatus {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .floatingActionButton {
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .floatingActionContainer {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    max-width: calc(100vw - 16px);
+  }
+
+  .floatingActionList {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .floatingStatus {
+    display: none;
+  }
+
+  .floatingActionButton {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
   }
 }
 

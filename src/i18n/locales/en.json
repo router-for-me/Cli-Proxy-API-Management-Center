@@ -833,7 +833,11 @@
     "search_button": "Search",
     "search_no_results": "No results",
     "search_prev": "Previous",
-    "search_next": "Next"
+    "search_next": "Next",
+    "tabs": {
+      "visual": "Visual Editor",
+      "source": "Source Editor"
+    }
   },
   "quota_management": {
     "title": "Quota Management",
