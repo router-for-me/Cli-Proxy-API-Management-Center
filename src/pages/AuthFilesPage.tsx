@@ -801,7 +801,7 @@ export function AuthFilesPage() {
     a.href = url;
     a.download = name;
     a.click();
-    window.URL.revokeObjectURL(url);
+    setTimeout(() => window.URL.revokeObjectURL(url), 100);
   };
 
   // 下载文件
@@ -831,14 +831,16 @@ export function AuthFilesPage() {
     let failed = 0;
 
     try {
-      for (const file of targets) {
-        try {
-          await downloadAuthFile(file.name);
+      const results = await Promise.allSettled(
+        targets.map((file) => downloadAuthFile(file.name))
+      );
+      results.forEach((result) => {
+        if (result.status === 'fulfilled') {
           success++;
-        } catch {
+        } else {
           failed++;
         }
-      }
+      });
     } finally {
       setExporting(false);
     }
