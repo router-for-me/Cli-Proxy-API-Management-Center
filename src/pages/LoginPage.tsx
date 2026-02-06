@@ -60,7 +60,7 @@ export function LoginPage() {
   const location = useLocation();
   const { showNotification } = useNotificationStore();
   const language = useLanguageStore((state) => state.language);
-  const toggleLanguage = useLanguageStore((state) => state.toggleLanguage);
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const login = useAuthStore((state) => state.login);
   const restoreSession = useAuthStore((state) => state.restoreSession);
@@ -79,9 +79,12 @@ export function LoginPage() {
   const [error, setError] = useState('');
 
   const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
-  const nextLanguageIndex = LANGUAGE_ORDER.indexOf(language);
-  const nextLanguage: Language = LANGUAGE_ORDER[(nextLanguageIndex + 1) % LANGUAGE_ORDER.length];
-  const nextLanguageLabel = t(LANGUAGE_LABEL_KEYS[nextLanguage]);
+  const handleLanguageChange = useCallback(
+    (event: React.ChangeEvent<HTMLSelectElement>) => {
+      setLanguage(event.target.value as Language);
+    },
+    [setLanguage]
+  );
 
   useEffect(() => {
     const init = async () => {
@@ -188,17 +191,19 @@ export function LoginPage() {
               <div className={styles.loginHeader}>
                 <div className={styles.titleRow}>
                   <div className={styles.title}>{t('title.login')}</div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className={styles.languageBtn}
-                    onClick={toggleLanguage}
+                  <select
+                    className={styles.languageSelect}
+                    value={language}
+                    onChange={handleLanguageChange}
                     title={t('language.switch')}
                     aria-label={t('language.switch')}
                   >
-                    {nextLanguageLabel}
-                  </Button>
+                    {LANGUAGE_ORDER.map((lang) => (
+                      <option key={lang} value={lang}>
+                        {t(LANGUAGE_LABEL_KEYS[lang])}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className={styles.subtitle}>{t('login.subtitle')}</div>
               </div>

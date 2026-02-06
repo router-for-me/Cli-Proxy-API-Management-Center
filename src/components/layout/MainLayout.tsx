@@ -35,6 +35,8 @@ import {
 } from '@/stores';
 import { configApi, versionApi } from '@/services/api';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
+import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
+import type { Language } from '@/types';
 
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconLayoutDashboard size={18} />,
@@ -189,7 +191,15 @@ export function MainLayout() {
 
   const theme = useThemeStore((state) => state.theme);
   const cycleTheme = useThemeStore((state) => state.cycleTheme);
-  const toggleLanguage = useLanguageStore((state) => state.toggleLanguage);
+  const language = useLanguageStore((state) => state.language);
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
+
+  const handleLanguageChange = useCallback(
+    (event: React.ChangeEvent<HTMLSelectElement>) => {
+      setLanguage(event.target.value as Language);
+    },
+    [setLanguage]
+  );
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -566,9 +576,23 @@ export function MainLayout() {
             >
               {headerIcons.update}
             </Button>
-            <Button variant="ghost" size="sm" onClick={toggleLanguage} title={t('language.switch')}>
-              {headerIcons.language}
-            </Button>
+            <div className="language-select-wrapper" title={t('language.switch')}>
+              <span className="language-select-icon" aria-hidden="true">
+                {headerIcons.language}
+              </span>
+              <select
+                className="language-select"
+                value={language}
+                onChange={handleLanguageChange}
+                aria-label={t('language.switch')}
+              >
+                {LANGUAGE_ORDER.map((lang) => (
+                  <option key={lang} value={lang}>
+                    {t(LANGUAGE_LABEL_KEYS[lang])}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Button variant="ghost" size="sm" onClick={cycleTheme} title={t('theme.switch')}>
               {theme === 'auto'
                 ? headerIcons.autoTheme

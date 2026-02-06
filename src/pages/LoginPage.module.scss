@@ -167,9 +167,24 @@
   font-size: 14px;
 }
 
-// 语言切换按钮
-.languageBtn {
+// 语言下拉选择
+.languageSelect {
   white-space: nowrap;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  height: 40px;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
 }
 
 // 连接信息框
