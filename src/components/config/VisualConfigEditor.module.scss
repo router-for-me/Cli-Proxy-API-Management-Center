@@ -1,0 +1,37 @@
+.payloadRuleModelRow {
+  display: grid;
+  grid-template-columns: 1fr 160px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.payloadRuleModelRowProtocolFirst {
+  grid-template-columns: 160px 1fr auto;
+}
+
+.payloadRuleParamRow {
+  display: grid;
+  grid-template-columns: 1fr 140px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.payloadFilterModelRow {
+  display: grid;
+  grid-template-columns: 1fr 160px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .payloadRuleModelRow,
+  .payloadRuleModelRowProtocolFirst,
+  .payloadRuleParamRow,
+  .payloadFilterModelRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .payloadRowActionButton {
+    width: 100%;
+  }
+}
