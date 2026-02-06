@@ -9,6 +9,7 @@ export type OAuthProvider =
   | 'anthropic'
   | 'antigravity'
   | 'gemini-cli'
+  | 'kimi'
   | 'qwen';
 
 export interface OAuthStartResponse {

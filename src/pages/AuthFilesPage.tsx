@@ -48,6 +48,10 @@ const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#e8f5e9', text: '#2e7d32' },
     dark: { bg: '#1b5e20', text: '#81c784' },
   },
+  kimi: {
+    light: { bg: '#fff4e5', text: '#ad6800' },
+    dark: { bg: '#7c4a03', text: '#ffd591' },
+  },
   gemini: {
     light: { bg: '#e3f2fd', text: '#1565c0' },
     dark: { bg: '#0d47a1', text: '#64b5f6' },
