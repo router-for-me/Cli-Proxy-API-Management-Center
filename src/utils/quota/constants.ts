@@ -159,3 +159,16 @@ export const CODEX_REQUEST_HEADERS = {
   'Content-Type': 'application/json',
   'User-Agent': 'codex_cli_rs/0.76.0 (Debian 13.0.0; x86_64) WindowsTerminal',
 };
+
+// Claude Code configuration
+export const CLAUDE_USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
+export const CLAUDE_PROFILE_URL = 'https://api.anthropic.com/api/oauth/profile'
+
+export const CLAUDE_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  'Content-Type': 'application/json',
+  'User-Agent': 'claude-cli/1.0.83 (external, cli)',
+  'Anthropic-Beta': 'claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14,prompt-caching-2024-07-31',
+  'Anthropic-Version': '2023-06-01',
+  'x-app': 'cli',
+};

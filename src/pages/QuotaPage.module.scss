@@ -104,6 +104,7 @@
 
 .antigravityGrid,
 .codexGrid,
+.claudeGrid,
 .geminiCliGrid {
   display: grid;
   gap: $spacing-md;
@@ -116,6 +117,7 @@
 
 .antigravityControls,
 .codexControls,
+.claudeControls,
 .geminiCliControls {
   display: flex;
   gap: $spacing-md;
@@ -126,6 +128,7 @@
 
 .antigravityControl,
 .codexControl,
+.claudeControl,
 .geminiCliControl {
   display: flex;
   flex-direction: column;
@@ -155,6 +158,12 @@
   background-image: linear-gradient(180deg,
       rgba(255, 243, 224, 0.18),
       rgba(255, 243, 224, 0));
+}
+
+.claudeCard {
+  background-image: linear-gradient(180deg,
+      rgba(255, 231, 245, 0.2),
+      rgba(231, 239, 255, 0));
 }
 
 .geminiCliCard {
@@ -282,7 +291,8 @@
   padding: $spacing-xs $spacing-sm;
 }
 
-.codexPlan {
+.codexPlan,
+.claudePlan {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -290,11 +300,13 @@
   color: var(--text-secondary);
 }
 
-.codexPlanLabel {
+.codexPlanLabel,
+.claudePlanLabel {
   color: var(--text-tertiary);
 }
 
-.codexPlanValue {
+.codexPlanValue,
+.claudePlanValue {
   font-weight: 600;
   color: var(--text-primary);
   text-transform: capitalize;

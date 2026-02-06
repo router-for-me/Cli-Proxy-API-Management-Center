@@ -454,6 +454,28 @@
     "plan_team": "Team",
     "plan_free": "Free"
   },
+  "claude_quota": {
+    "title": "Claude Code Quota",
+    "empty_title": "No Claude Code Auth Files",
+    "empty_desc": "Upload a Claude Code credential to view quota.",
+    "idle": "Not loaded. Click Refresh Button.",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_windows": "No quota data available",
+    "no_access": "This credential has no Claude Code access (plan: free).",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "primary_window": "5-hour limit",
+    "secondary_window": "Weekly limit",
+    "sonnet_window": "Weekly Sonnet limit",
+    "plan_label": "Plan",
+    "plan_unknown": "Unknown",
+    "plan_free": "Free",
+    "plan_pro": "Pro",
+    "plan_max5": "Max 5x",
+    "plan_max20": "Max 20x"
+  },
   "gemini_cli_quota": {
     "title": "Gemini CLI Quota",
     "empty_title": "No Gemini CLI Auth Files",

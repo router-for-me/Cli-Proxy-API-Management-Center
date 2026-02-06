@@ -15,6 +15,7 @@ import {
 } from '@/components/quota';
 import type { AuthFileItem } from '@/types';
 import styles from './QuotaPage.module.scss';
+import { CLAUDE_CONFIG } from '../components/quota/quotaConfigs.ts';
 
 export function QuotaPage() {
   const { t } = useTranslation();
@@ -83,6 +84,12 @@ export function QuotaPage() {
       />
       <QuotaSection
         config={GEMINI_CLI_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
+      <QuotaSection
+        config={CLAUDE_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}

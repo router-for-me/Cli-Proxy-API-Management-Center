@@ -94,9 +94,9 @@ const AUTH_FILES_UI_STATE_KEY = 'authFilesPage.uiState';
 const clampCardPageSize = (value: number) =>
   Math.min(MAX_CARD_PAGE_SIZE, Math.max(MIN_CARD_PAGE_SIZE, Math.round(value)));
 
-type QuotaProviderType = 'antigravity' | 'codex' | 'gemini-cli';
+type QuotaProviderType = 'antigravity' | 'codex' | 'gemini-cli' | 'claude';
 
-const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>(['antigravity', 'codex', 'gemini-cli']);
+const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>(['antigravity', 'codex', 'gemini-cli', 'claude']);
 
 const resolveQuotaErrorMessage = (
   t: TFunction,
@@ -244,9 +244,11 @@ export function AuthFilesPage() {
   const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
   const codexQuota = useQuotaStore((state) => state.codexQuota);
   const geminiCliQuota = useQuotaStore((state) => state.geminiCliQuota);
+  const claudeQuota = useQuotaStore((state) => state.claudeQuota);
   const setAntigravityQuota = useQuotaStore((state) => state.setAntigravityQuota);
   const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
   const setGeminiCliQuota = useQuotaStore((state) => state.setGeminiCliQuota);
+  const setClaudeQuota = useQuotaStore((state) => state.setClaudeQuota);
   const navigate = useNavigate();
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
@@ -1470,6 +1472,7 @@ export function AuthFilesPage() {
   const getQuotaState = (type: QuotaProviderType, fileName: string) => {
     if (type === 'antigravity') return antigravityQuota[fileName];
     if (type === 'codex') return codexQuota[fileName];
+    if (type === 'claude') return claudeQuota[fileName];
     return geminiCliQuota[fileName];
   };
 
@@ -1486,9 +1489,13 @@ export function AuthFilesPage() {
         setCodexQuota(updater as never);
         return;
       }
+      if (type === 'claude') {
+        setClaudeQuota(updater as never);
+        return;
+      }
       setGeminiCliQuota(updater as never);
     },
-    [setAntigravityQuota, setCodexQuota, setGeminiCliQuota]
+    [setAntigravityQuota, setClaudeQuota, setCodexQuota, setGeminiCliQuota]
   );
 
   const refreshQuotaForFile = useCallback(

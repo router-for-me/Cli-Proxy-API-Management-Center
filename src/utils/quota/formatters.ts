@@ -18,9 +18,9 @@ export function formatQuotaResetTime(value?: string): string {
   });
 }
 
-export function formatUnixSeconds(value: number | null): string {
+export function formatUnixSeconds(value: Date | number | null): string {
   if (!value) return '-';
-  const date = new Date(value * 1000);
+  const date = typeof value === 'number' ? new Date(value * 1000) : value;
   if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleString(undefined, {
     month: '2-digit',
