@@ -36,6 +36,7 @@ import {
 } from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
 import styles from './AuthFilesPage.module.scss';
+import { CLAUDE_CONFIG } from '../components/quota/quotaConfigs.ts';
 
 type ThemeColors = { bg: string; text: string; border?: string };
 type TypeColorSet = { light: ThemeColors; dark?: ThemeColors };
@@ -1466,6 +1467,7 @@ export function AuthFilesPage() {
   const getQuotaConfig = (type: QuotaProviderType) => {
     if (type === 'antigravity') return ANTIGRAVITY_CONFIG;
     if (type === 'codex') return CODEX_CONFIG;
+    if (type === 'claude') return CLAUDE_CONFIG;
     return GEMINI_CLI_CONFIG;
   };
 

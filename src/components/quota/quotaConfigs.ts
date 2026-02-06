@@ -443,14 +443,13 @@ const fetchClaudeQuota = async (
 
   const { organization } = JSON.parse(profileRes.bodyText) as ClaudeProfileResponse;
   const tier = organization?.rate_limit_tier
-  let planType = "plan_unknown"
-  if (tier === "default_claude_max_5x") {
-    planType = "plan_max5"
-  } else if (tier === "default_claude_max_20x") {
-    planType = "plan_max20"
-  } else if (tier === "default_claude_ai") {
-    planType = "plan_free"
-  }
+  const tierToPlanMap: Record<string, string> = {
+    'default_claude_max_5x': 'plan_max5',
+    'default_claude_max_20x': 'plan_max20',
+    'default_claude_pro': 'plan_pro',
+    'default_claude_ai': 'plan_free',
+  };
+  const planType = tierToPlanMap[tier ?? ''] ?? 'plan_unknown';
   const usage = JSON.parse(usageRes.bodyText) as ClaudeUsageResponse
 
   return { planType, usage };
@@ -641,7 +640,7 @@ const renderClaudeItems = (
 
   type Window = {
     key: string
-    usage: number
+    usage: number | null
     resetDate: Date
   }
   const windows: Window[] = []
@@ -649,21 +648,21 @@ const renderClaudeItems = (
   if (usage.five_hour) {
     windows.push({
       key: 'primary_window',
-      usage: usage.five_hour.utilization ?? 0,
+      usage: usage.five_hour.utilization,
       resetDate: new Date(usage.five_hour.resets_at)
     })
   }
   if (usage.seven_day) {
     windows.push({
       key: 'secondary_window',
-      usage: usage.seven_day.utilization ?? 0,
+      usage: usage.seven_day.utilization,
       resetDate: new Date(usage.seven_day.resets_at)
     })
   }
   if (usage.seven_day_sonnet) {
     windows.push({
       key: 'sonnet_window',
-      usage: usage.seven_day_sonnet.utilization ?? 0,
+      usage: usage.seven_day_sonnet.utilization,
       resetDate: new Date(usage.seven_day_sonnet.resets_at)
     })
   }
