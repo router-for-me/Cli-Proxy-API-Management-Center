@@ -120,10 +120,16 @@ export const GEMINI_CLI_REQUEST_HEADERS = {
 
 export const GEMINI_CLI_QUOTA_GROUPS: GeminiCliQuotaGroupDefinition[] = [
   {
+    id: 'gemini-flash-lite-series',
+    label: 'Gemini Flash Lite Series',
+    preferredModelId: 'gemini-2.5-flash-lite',
+    modelIds: ['gemini-2.5-flash-lite'],
+  },
+  {
     id: 'gemini-flash-series',
     label: 'Gemini Flash Series',
     preferredModelId: 'gemini-3-flash-preview',
-    modelIds: ['gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
+    modelIds: ['gemini-3-flash-preview', 'gemini-2.5-flash'],
   },
   {
     id: 'gemini-pro-series',
@@ -132,6 +138,10 @@ export const GEMINI_CLI_QUOTA_GROUPS: GeminiCliQuotaGroupDefinition[] = [
     modelIds: ['gemini-3-pro-preview', 'gemini-2.5-pro'],
   },
 ];
+
+export const GEMINI_CLI_GROUP_ORDER = new Map(
+  GEMINI_CLI_QUOTA_GROUPS.map((group, index) => [group.id, index] as const)
+);
 
 export const GEMINI_CLI_GROUP_LOOKUP = new Map(
   GEMINI_CLI_QUOTA_GROUPS.flatMap((group) =>

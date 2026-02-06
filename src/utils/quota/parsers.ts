@@ -4,6 +4,8 @@
 
 import type { CodexUsagePayload, GeminiCliQuotaPayload } from '@/types';
 
+const GEMINI_CLI_MODEL_SUFFIX = '_vertex';
+
 export function normalizeAuthIndexValue(value: unknown): string | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value.toString();
@@ -24,6 +26,15 @@ export function normalizeStringValue(value: unknown): string | null {
     return value.toString();
   }
   return null;
+}
+
+export function normalizeGeminiCliModelId(value: unknown): string | null {
+  const modelId = normalizeStringValue(value);
+  if (!modelId) return null;
+  if (modelId.endsWith(GEMINI_CLI_MODEL_SUFFIX)) {
+    return modelId.slice(0, -GEMINI_CLI_MODEL_SUFFIX.length);
+  }
+  return modelId;
 }
 
 export function normalizeNumberValue(value: unknown): number | null {

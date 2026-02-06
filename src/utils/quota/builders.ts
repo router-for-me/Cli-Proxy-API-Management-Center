@@ -10,7 +10,11 @@ import type {
   GeminiCliParsedBucket,
   GeminiCliQuotaBucketState,
 } from '@/types';
-import { ANTIGRAVITY_QUOTA_GROUPS, GEMINI_CLI_GROUP_LOOKUP } from './constants';
+import {
+  ANTIGRAVITY_QUOTA_GROUPS,
+  GEMINI_CLI_GROUP_LOOKUP,
+  GEMINI_CLI_GROUP_ORDER,
+} from './constants';
 import { normalizeQuotaFraction } from './parsers';
 import { isIgnoredGeminiCliModel } from './validators';
 
@@ -92,24 +96,40 @@ export function buildGeminiCliQuotaBuckets(
     }
   });
 
-  return Array.from(grouped.values()).map((bucket) => {
-    const uniqueModelIds = Array.from(new Set(bucket.modelIds));
-    const preferred = bucket.preferredBucket;
-    const remainingFraction = preferred
-      ? preferred.remainingFraction
-      : bucket.fallbackRemainingFraction;
-    const remainingAmount = preferred ? preferred.remainingAmount : bucket.fallbackRemainingAmount;
-    const resetTime = preferred ? preferred.resetTime : bucket.fallbackResetTime;
-    return {
-      id: bucket.id,
-      label: bucket.label,
-      remainingFraction,
-      remainingAmount,
-      resetTime,
-      tokenType: bucket.tokenType,
-      modelIds: uniqueModelIds,
-    };
-  });
+  const toGroupOrder = (bucket: GeminiCliQuotaBucketGroup): number => {
+    const tokenSuffix = bucket.tokenType ? `-${bucket.tokenType}` : '';
+    const groupId = bucket.id.endsWith(tokenSuffix)
+      ? bucket.id.slice(0, bucket.id.length - tokenSuffix.length)
+      : bucket.id;
+    return GEMINI_CLI_GROUP_ORDER.get(groupId) ?? Number.MAX_SAFE_INTEGER;
+  };
+
+  return Array.from(grouped.values())
+    .sort((a, b) => {
+      const orderDiff = toGroupOrder(a) - toGroupOrder(b);
+      if (orderDiff !== 0) return orderDiff;
+      const tokenTypeA = a.tokenType ?? '';
+      const tokenTypeB = b.tokenType ?? '';
+      return tokenTypeA.localeCompare(tokenTypeB);
+    })
+    .map((bucket) => {
+      const uniqueModelIds = Array.from(new Set(bucket.modelIds));
+      const preferred = bucket.preferredBucket;
+      const remainingFraction = preferred
+        ? preferred.remainingFraction
+        : bucket.fallbackRemainingFraction;
+      const remainingAmount = preferred ? preferred.remainingAmount : bucket.fallbackRemainingAmount;
+      const resetTime = preferred ? preferred.resetTime : bucket.fallbackResetTime;
+      return {
+        id: bucket.id,
+        label: bucket.label,
+        remainingFraction,
+        remainingAmount,
+        resetTime,
+        tokenType: bucket.tokenType,
+        modelIds: uniqueModelIds,
+      };
+    });
 }
 
 export function getAntigravityQuotaInfo(entry?: AntigravityQuotaInfo): {
