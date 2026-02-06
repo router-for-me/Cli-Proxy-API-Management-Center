@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -643,6 +643,29 @@ export function LogsPage() {
 
   const canLoadMore = !isSearching && logState.visibleFrom > 0;
 
+  const prependVisibleLines = useCallback(() => {
+    const node = logViewerRef.current;
+    if (!node) return;
+    if (pendingPrependScrollRef.current) return;
+    if (isSearching) return;
+
+    setLogState((prev) => {
+      if (prev.visibleFrom <= 0) {
+        return prev;
+      }
+
+      pendingPrependScrollRef.current = {
+        scrollHeight: node.scrollHeight,
+        scrollTop: node.scrollTop,
+      };
+
+      return {
+        ...prev,
+        visibleFrom: Math.max(prev.visibleFrom - LOAD_MORE_LINES, 0),
+      };
+    });
+  }, [isSearching]);
+
   const handleLogScroll = () => {
     const node = logViewerRef.current;
     if (!node) return;
@@ -651,14 +674,7 @@ export function LogsPage() {
     if (pendingPrependScrollRef.current) return;
     if (node.scrollTop > LOAD_MORE_THRESHOLD_PX) return;
 
-    pendingPrependScrollRef.current = {
-      scrollHeight: node.scrollHeight,
-      scrollTop: node.scrollTop,
-    };
-    setLogState((prev) => ({
-      ...prev,
-      visibleFrom: Math.max(prev.visibleFrom - LOAD_MORE_LINES, 0),
-    }));
+    prependVisibleLines();
   };
 
   useLayoutEffect(() => {
@@ -670,6 +686,53 @@ export function LogsPage() {
     node.scrollTop = pending.scrollTop + delta;
     pendingPrependScrollRef.current = null;
   }, [logState.visibleFrom]);
+
+  const tryAutoLoadMoreUntilScrollable = useCallback(() => {
+    const node = logViewerRef.current;
+    if (!node) return;
+    if (!canLoadMore) return;
+    if (isSearching) return;
+    if (pendingPrependScrollRef.current) return;
+
+    const hasVerticalOverflow = node.scrollHeight > node.clientHeight + 1;
+    if (hasVerticalOverflow) return;
+
+    prependVisibleLines();
+  }, [canLoadMore, isSearching, prependVisibleLines]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (activeTab !== 'logs') return;
+
+    const raf = window.requestAnimationFrame(() => {
+      tryAutoLoadMoreUntilScrollable();
+    });
+    return () => {
+      window.cancelAnimationFrame(raf);
+    };
+  }, [
+    activeTab,
+    loading,
+    tryAutoLoadMoreUntilScrollable,
+    filteredLines.length,
+    showRawLogs,
+    logState.visibleFrom,
+  ]);
+
+  useEffect(() => {
+    if (activeTab !== 'logs') return;
+
+    const onResize = () => {
+      window.requestAnimationFrame(() => {
+        tryAutoLoadMoreUntilScrollable();
+      });
+    };
+
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+    };
+  }, [activeTab, tryAutoLoadMoreUntilScrollable]);
 
   const copyLogLine = async (raw: string) => {
     const ok = await copyToClipboard(raw);
