@@ -80,9 +80,10 @@ export function ConfigPage() {
     try {
       const nextContent = activeTab === 'visual' ? applyVisualChangesToYaml(content) : content;
       await configFileApi.saveConfigYaml(nextContent);
+      const latestContent = await configFileApi.fetchConfigYaml();
       setDirty(false);
-      setContent(nextContent);
-      loadVisualValuesFromYaml(nextContent);
+      setContent(latestContent);
+      loadVisualValuesFromYaml(latestContent);
       showNotification(t('config_management.save_success'), 'success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';

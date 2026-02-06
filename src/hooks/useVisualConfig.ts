@@ -102,6 +102,27 @@ function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+function parsePayloadParamValue(raw: unknown): { valueType: PayloadParamValueType; value: string } {
+  if (typeof raw === 'number') {
+    return { valueType: 'number', value: String(raw) };
+  }
+
+  if (typeof raw === 'boolean') {
+    return { valueType: 'boolean', value: String(raw) };
+  }
+
+  if (raw === null || typeof raw === 'object') {
+    try {
+      const json = JSON.stringify(raw, null, 2);
+      return { valueType: 'json', value: json ?? 'null' };
+    } catch {
+      return { valueType: 'json', value: String(raw) };
+    }
+  }
+
+  return { valueType: 'string', value: String(raw ?? '') };
+}
+
 function parsePayloadRules(rules: unknown): PayloadRule[] {
   if (!Array.isArray(rules)) return [];
 
@@ -115,19 +136,15 @@ function parsePayloadRules(rules: unknown): PayloadRule[] {
         }))
       : [],
     params: (rule as any)?.params
-      ? Object.entries((rule as any).params as Record<string, unknown>).map(([path, value], pIndex) => ({
-          id: `param-${index}-${pIndex}`,
-          path,
-          valueType:
-            typeof value === 'number'
-              ? 'number'
-              : typeof value === 'boolean'
-                ? 'boolean'
-                : typeof value === 'object'
-                  ? 'json'
-                  : 'string',
-          value: String(value),
-        }))
+      ? Object.entries((rule as any).params as Record<string, unknown>).map(([path, value], pIndex) => {
+          const parsedValue = parsePayloadParamValue(value);
+          return {
+            id: `param-${index}-${pIndex}`,
+            path,
+            valueType: parsedValue.valueType,
+            value: parsedValue.value,
+          };
+        })
       : [],
   }));
 }
@@ -220,7 +237,7 @@ export function useVisualConfig() {
 
       const newValues: VisualConfigValues = {
         host: parsed.host || '',
-        port: String(parsed.port || ''),
+        port: String(parsed.port ?? ''),
 
         tlsEnable: Boolean(parsed.tls?.enable),
         tlsCert: parsed.tls?.cert || '',
@@ -240,14 +257,13 @@ export function useVisualConfig() {
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
         loggingToFile: Boolean(parsed['logging-to-file']),
-        logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] || ''),
+        logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
         usageStatisticsEnabled: Boolean(parsed['usage-statistics-enabled']),
-        usageRecordsRetentionDays: String(parsed['usage-records-retention-days'] ?? ''),
 
         proxyUrl: parsed['proxy-url'] || '',
         forceModelPrefix: Boolean(parsed['force-model-prefix']),
-        requestRetry: String(parsed['request-retry'] || ''),
-        maxRetryInterval: String(parsed['max-retry-interval'] || ''),
+        requestRetry: String(parsed['request-retry'] ?? ''),
+        maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
         wsAuth: Boolean(parsed['ws-auth']),
 
         quotaSwitchProject: Boolean(parsed['quota-exceeded']?.['switch-project'] ?? true),
@@ -333,11 +349,6 @@ export function useVisualConfig() {
         setBoolean(parsed, 'logging-to-file', values.loggingToFile);
         setIntFromString(parsed, 'logs-max-total-size-mb', values.logsMaxTotalSizeMb);
         setBoolean(parsed, 'usage-statistics-enabled', values.usageStatisticsEnabled);
-        setIntFromString(
-          parsed,
-          'usage-records-retention-days',
-          values.usageRecordsRetentionDays
-        );
 
         setString(parsed, 'proxy-url', values.proxyUrl);
         setBoolean(parsed, 'force-model-prefix', values.forceModelPrefix);

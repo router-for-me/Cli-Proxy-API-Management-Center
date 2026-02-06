@@ -882,9 +882,7 @@
           "logging_to_file_desc": "Save logs to rotating files",
           "usage_statistics": "Usage Statistics",
           "usage_statistics_desc": "Collect usage statistics",
-          "logs_max_size": "Log File Size Limit (MB)",
-          "usage_retention_days": "Usage Records Retention Days",
-          "usage_retention_hint": "0 means no limit (no cleanup)"
+          "logs_max_size": "Log File Size Limit (MB)"
         },
         "network": {
           "title": "Network Configuration",

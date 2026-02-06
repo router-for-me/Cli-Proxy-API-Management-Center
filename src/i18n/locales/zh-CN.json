@@ -882,9 +882,7 @@
           "logging_to_file_desc": "将日志保存到滚动文件",
           "usage_statistics": "使用统计",
           "usage_statistics_desc": "收集使用统计信息",
-          "logs_max_size": "日志文件大小限制 (MB)",
-          "usage_retention_days": "使用记录保留天数",
-          "usage_retention_hint": "0 为无限制（不清理）"
+          "logs_max_size": "日志文件大小限制 (MB)"
         },
         "network": {
           "title": "网络配置",

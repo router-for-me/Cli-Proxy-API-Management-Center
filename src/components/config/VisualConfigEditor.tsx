@@ -891,15 +891,6 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
               onChange={(e) => onChange({ logsMaxTotalSizeMb: e.target.value })}
               disabled={disabled}
             />
-            <Input
-              label={t('config_management.visual.sections.system.usage_retention_days')}
-              type="number"
-              placeholder="30"
-              value={values.usageRecordsRetentionDays}
-              onChange={(e) => onChange({ usageRecordsRetentionDays: e.target.value })}
-              disabled={disabled}
-              hint={t('config_management.visual.sections.system.usage_retention_hint')}
-            />
           </SectionGrid>
         </div>
       </ConfigSection>
