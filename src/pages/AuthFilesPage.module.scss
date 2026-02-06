@@ -185,10 +185,10 @@
 }
 
 .fileGridQuotaManaged {
-  grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   @include tablet {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   @include mobile {
@@ -414,6 +414,24 @@
   padding: $spacing-sm 0;
 }
 
+.quotaMessageAction {
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    text-decoration: none;
+  }
+}
+
 .quotaError {
   font-size: 12px;
   color: var(--danger-color);
@@ -487,58 +505,12 @@
   gap: $spacing-md;
 }
 
-.fileCardLayoutQuota {
-  display: grid;
-  grid-template-columns: 1fr 156px;
-  gap: $spacing-md;
-  align-items: stretch;
-
-  @include mobile {
-    grid-template-columns: 1fr;
-  }
-}
-
 .fileCardMain {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
   flex: 1;
   min-width: 0;
-}
-
-.fileCardSidebar {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  padding-left: $spacing-md;
-  border-left: 1px dashed var(--border-color);
-
-  @include mobile {
-    border-left: none;
-    border-top: 1px dashed var(--border-color);
-    padding-left: 0;
-    padding-top: $spacing-md;
-  }
-}
-
-.fileCardSidebarHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $spacing-xs;
-}
-
-.fileCardSidebarTitle {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.fileCardSidebarHint {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  line-height: 1.4;
 }
 
 .cardHeader {
