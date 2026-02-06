@@ -1,16 +1,16 @@
 import type { Language } from '@/types';
-import { STORAGE_KEY_LANGUAGE } from '@/utils/constants';
+import { STORAGE_KEY_LANGUAGE, SUPPORTED_LANGUAGES } from '@/utils/constants';
 
 const parseStoredLanguage = (value: string): Language | null => {
   try {
     const parsed = JSON.parse(value);
     const candidate = parsed?.state?.language ?? parsed?.language ?? parsed;
-    if (candidate === 'zh-CN' || candidate === 'en' || candidate === 'ru') {
-      return candidate;
+    if (SUPPORTED_LANGUAGES.includes(candidate as Language)) {
+      return candidate as Language;
     }
   } catch {
-    if (value === 'zh-CN' || value === 'en' || value === 'ru') {
-      return value;
+    if (SUPPORTED_LANGUAGES.includes(value as Language)) {
+      return value as Language;
     }
   }
   return null;

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { IconEye, IconEyeOff } from '@/components/ui/icons';
 import { useAuthStore, useLanguageStore, useNotificationStore } from '@/stores';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
+import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import type { ApiError, Language } from '@/types';
 import styles from './LoginPage.module.scss';
@@ -78,14 +79,9 @@ export function LoginPage() {
   const [error, setError] = useState('');
 
   const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
-  const nextLanguage: Language = language === 'zh-CN' ? 'en' : language === 'en' ? 'ru' : 'zh-CN';
-  const nextLanguageLabel = t(
-    nextLanguage === 'zh-CN'
-      ? 'language.chinese'
-      : nextLanguage === 'en'
-        ? 'language.english'
-        : 'language.russian'
-  );
+  const nextLanguageIndex = LANGUAGE_ORDER.indexOf(language);
+  const nextLanguage: Language = LANGUAGE_ORDER[(nextLanguageIndex + 1) % LANGUAGE_ORDER.length];
+  const nextLanguageLabel = t(LANGUAGE_LABEL_KEYS[nextLanguage]);
 
   useEffect(() => {
     const init = async () => {

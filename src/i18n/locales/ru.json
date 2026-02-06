@@ -47,8 +47,8 @@
     "model_alias_placeholder": "Псевдоним модели (необязательно)"
   },
   "title": {
-    "main": "CLI Proxy API Management Center",
-    "login": "CLI Proxy API Management Center",
+    "main": "Центр управления CLI Proxy API",
+    "login": "Центр управления CLI Proxy API",
     "abbr": "CPAMC"
   },
   "auto_login": {
@@ -108,7 +108,7 @@
   },
   "dashboard": {
     "title": "Панель управления",
-    "subtitle": "Добро пожаловать в CLI Proxy API Management Center",
+    "subtitle": "Добро пожаловать в Центр управления CLI Proxy API",
     "openai_providers": "Поставщики OpenAI",
     "quick_actions": "Быстрые действия",
     "current_config": "Текущая конфигурация",

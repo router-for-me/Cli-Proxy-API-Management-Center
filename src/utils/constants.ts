@@ -3,6 +3,8 @@
  * 从原项目 src/utils/constants.js 迁移
  */
 
+import type { Language } from '@/types';
+
 // 缓存过期时间（毫秒）
 export const CACHE_EXPIRY_MS = 30 * 1000; // 与基线保持一致，减少管理端压力
 
@@ -32,6 +34,15 @@ export const STORAGE_KEY_THEME = 'cli-proxy-theme';
 export const STORAGE_KEY_LANGUAGE = 'cli-proxy-language';
 export const STORAGE_KEY_SIDEBAR = 'cli-proxy-sidebar-collapsed';
 export const STORAGE_KEY_AUTH_FILES_PAGE_SIZE = 'cli-proxy-auth-files-page-size';
+
+// 语言配置
+export const LANGUAGE_ORDER: Language[] = ['zh-CN', 'en', 'ru'];
+export const LANGUAGE_LABEL_KEYS: Record<Language, string> = {
+  'zh-CN': 'language.chinese',
+  en: 'language.english',
+  ru: 'language.russian'
+};
+export const SUPPORTED_LANGUAGES: Language[] = LANGUAGE_ORDER;
 
 // 通知持续时间
 export const NOTIFICATION_DURATION_MS = 3000;
