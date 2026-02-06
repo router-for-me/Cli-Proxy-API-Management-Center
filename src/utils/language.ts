@@ -1,16 +1,19 @@
 import type { Language } from '@/types';
 import { STORAGE_KEY_LANGUAGE, SUPPORTED_LANGUAGES } from '@/utils/constants';
 
+export const isSupportedLanguage = (value: string): value is Language =>
+  SUPPORTED_LANGUAGES.includes(value as Language);
+
 const parseStoredLanguage = (value: string): Language | null => {
   try {
     const parsed = JSON.parse(value);
     const candidate = parsed?.state?.language ?? parsed?.language ?? parsed;
-    if (SUPPORTED_LANGUAGES.includes(candidate as Language)) {
-      return candidate as Language;
+    if (typeof candidate === 'string' && isSupportedLanguage(candidate)) {
+      return candidate;
     }
   } catch {
-    if (SUPPORTED_LANGUAGES.includes(value as Language)) {
-      return value as Language;
+    if (isSupportedLanguage(value)) {
+      return value;
     }
   }
   return null;

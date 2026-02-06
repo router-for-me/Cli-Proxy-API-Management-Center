@@ -36,7 +36,7 @@ import {
 import { configApi, versionApi } from '@/services/api';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
-import type { Language } from '@/types';
+import { isSupportedLanguage } from '@/utils/language';
 
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconLayoutDashboard size={18} />,
@@ -196,7 +196,11 @@ export function MainLayout() {
 
   const handleLanguageChange = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
-      setLanguage(event.target.value as Language);
+      const selectedLanguage = event.target.value;
+      if (!isSupportedLanguage(selectedLanguage)) {
+        return;
+      }
+      setLanguage(selectedLanguage);
     },
     [setLanguage]
   );

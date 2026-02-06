@@ -7,8 +7,9 @@ import { IconEye, IconEyeOff } from '@/components/ui/icons';
 import { useAuthStore, useLanguageStore, useNotificationStore } from '@/stores';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
+import { isSupportedLanguage } from '@/utils/language';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
-import type { ApiError, Language } from '@/types';
+import type { ApiError } from '@/types';
 import styles from './LoginPage.module.scss';
 
 /**
@@ -81,7 +82,11 @@ export function LoginPage() {
   const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
   const handleLanguageChange = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
-      setLanguage(event.target.value as Language);
+      const selectedLanguage = event.target.value;
+      if (!isSupportedLanguage(selectedLanguage)) {
+        return;
+      }
+      setLanguage(selectedLanguage);
     },
     [setLanguage]
   );
