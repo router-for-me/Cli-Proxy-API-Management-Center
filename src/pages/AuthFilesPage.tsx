@@ -507,7 +507,7 @@ export function AuthFilesPage() {
     }
   }, []);
 
-  // 加载 OAuth 排除列表
+  // 加载 OAuth 模型禁用
   const loadExcluded = useCallback(async () => {
     try {
       const res = await authFilesApi.getOauthExcludedModels();
@@ -1872,7 +1872,7 @@ export function AuthFilesPage() {
         )}
       </Card>
 
-      {/* OAuth 排除列表卡片 */}
+      {/* OAuth 模型禁用卡片 */}
       <Card
         title={t('oauth_excluded.title')}
         extra={
@@ -2106,7 +2106,7 @@ export function AuthFilesPage() {
                   title={
                     isExcluded
                       ? t('auth_files.models_excluded_hint', {
-                          defaultValue: '此模型已被 OAuth 排除',
+                          defaultValue: '此 OAuth 模型已被禁用',
                         })
                       : t('common.copy', { defaultValue: '点击复制' })
                   }
@@ -2118,7 +2118,7 @@ export function AuthFilesPage() {
                   {model.type && <span className={styles.modelType}>{model.type}</span>}
                   {isExcluded && (
                     <span className={styles.modelExcludedBadge}>
-                      {t('auth_files.models_excluded_badge', { defaultValue: '已排除' })}
+                      {t('auth_files.models_excluded_badge', { defaultValue: '已禁用' })}
                     </span>
                   )}
                 </div>

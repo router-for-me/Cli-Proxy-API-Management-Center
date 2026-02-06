@@ -785,7 +785,7 @@
   border-radius: $radius-md;
 }
 
-// OAuth 排除列表
+// OAuth 模型禁用
 .excludedList {
   display: flex;
   flex-direction: column;
@@ -833,7 +833,7 @@
   flex-shrink: 0;
 }
 
-// OAuth 排除列表表单：提供商快捷标签
+// OAuth 模型禁用表单：提供商快捷标签
 .providerField {
   display: flex;
   flex-direction: column;
