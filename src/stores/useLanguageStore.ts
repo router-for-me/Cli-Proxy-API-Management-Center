@@ -29,8 +29,10 @@ export const useLanguageStore = create<LanguageState>()(
 
       toggleLanguage: () => {
         const { language, setLanguage } = get();
-        const newLanguage: Language = language === 'zh-CN' ? 'en' : 'zh-CN';
-        setLanguage(newLanguage);
+        const order: Language[] = ['zh-CN', 'en', 'ru'];
+        const currentIndex = order.indexOf(language);
+        const nextLanguage = order[(currentIndex + 1) % order.length];
+        setLanguage(nextLanguage);
       }
     }),
     {

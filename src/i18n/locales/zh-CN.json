@@ -1090,7 +1090,8 @@
   "language": {
     "switch": "语言",
     "chinese": "中文",
-    "english": "English"
+    "english": "English",
+    "russian": "Русский"
   },
   "theme": {
     "switch": "主题",
