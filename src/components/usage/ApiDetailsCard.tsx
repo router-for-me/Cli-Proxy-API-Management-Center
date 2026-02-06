@@ -39,10 +39,18 @@ export function ApiDetailsCard({ apiStats, loading, hasPrices }: ApiDetailsCardP
                   <span className={styles.apiEndpoint}>{api.endpoint}</span>
                   <div className={styles.apiStats}>
                     <span className={styles.apiBadge}>
-                      {t('usage_stats.requests_count')}: {api.totalRequests}
+                      <span className={styles.requestCountCell}>
+                        <span>
+                          {t('usage_stats.requests_count')}: {api.totalRequests.toLocaleString()}
+                        </span>
+                        <span className={styles.requestBreakdown}>
+                          (<span className={styles.statSuccess}>{api.successCount.toLocaleString()}</span>{' '}
+                          <span className={styles.statFailure}>{api.failureCount.toLocaleString()}</span>)
+                        </span>
+                      </span>
                     </span>
                     <span className={styles.apiBadge}>
-                      Tokens: {formatTokensInMillions(api.totalTokens)}
+                      {t('usage_stats.tokens_count')}: {formatTokensInMillions(api.totalTokens)}
                     </span>
                     {hasPrices && api.totalCost > 0 && (
                       <span className={styles.apiBadge}>
@@ -61,7 +69,13 @@ export function ApiDetailsCard({ apiStats, loading, hasPrices }: ApiDetailsCardP
                     <div key={model} className={styles.modelRow}>
                       <span className={styles.modelName}>{model}</span>
                       <span className={styles.modelStat}>
-                        {stats.requests} {t('usage_stats.requests_count')}
+                        <span className={styles.requestCountCell}>
+                          <span>{stats.requests.toLocaleString()}</span>
+                          <span className={styles.requestBreakdown}>
+                            (<span className={styles.statSuccess}>{stats.successCount.toLocaleString()}</span>{' '}
+                            <span className={styles.statFailure}>{stats.failureCount.toLocaleString()}</span>)
+                          </span>
+                        </span>
                       </span>
                       <span className={styles.modelStat}>{formatTokensInMillions(stats.tokens)}</span>
                     </div>
