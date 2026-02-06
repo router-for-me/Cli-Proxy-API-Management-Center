@@ -194,26 +194,17 @@ export function MainLayout() {
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
 
-  const handleLanguageChange = useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => {
-      const selectedLanguage = event.target.value;
-      if (!isSupportedLanguage(selectedLanguage)) {
-        return;
-      }
-      setLanguage(selectedLanguage);
-    },
-    [setLanguage]
-  );
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [brandExpanded, setBrandExpanded] = useState(true);
   const [requestLogModalOpen, setRequestLogModalOpen] = useState(false);
   const [requestLogDraft, setRequestLogDraft] = useState(false);
   const [requestLogTouched, setRequestLogTouched] = useState(false);
   const [requestLogSaving, setRequestLogSaving] = useState(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const languageMenuRef = useRef<HTMLDivElement | null>(null);
   const brandCollapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
   const versionTapCount = useRef(0);
@@ -313,6 +304,32 @@ export function MainLayout() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!languageMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!languageMenuRef.current?.contains(event.target as Node)) {
+        setLanguageMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setLanguageMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [languageMenuOpen]);
+
   const handleBrandClick = useCallback(() => {
     if (!brandExpanded) {
       setBrandExpanded(true);
@@ -331,6 +348,21 @@ export function MainLayout() {
     setRequestLogDraft(requestLogEnabled);
     setRequestLogModalOpen(true);
   }, [requestLogEnabled]);
+
+  const toggleLanguageMenu = useCallback(() => {
+    setLanguageMenuOpen((prev) => !prev);
+  }, []);
+
+  const handleLanguageSelect = useCallback(
+    (nextLanguage: string) => {
+      if (!isSupportedLanguage(nextLanguage)) {
+        return;
+      }
+      setLanguage(nextLanguage);
+      setLanguageMenuOpen(false);
+    },
+    [setLanguage]
+  );
 
   const handleRequestLogClose = useCallback(() => {
     setRequestLogModalOpen(false);
@@ -580,22 +612,35 @@ export function MainLayout() {
             >
               {headerIcons.update}
             </Button>
-            <div className="language-select-wrapper" title={t('language.switch')}>
-              <span className="language-select-icon" aria-hidden="true">
-                {headerIcons.language}
-              </span>
-              <select
-                className="language-select"
-                value={language}
-                onChange={handleLanguageChange}
+            <div className={`language-menu ${languageMenuOpen ? 'open' : ''}`} ref={languageMenuRef}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleLanguageMenu}
+                title={t('language.switch')}
                 aria-label={t('language.switch')}
+                aria-haspopup="menu"
+                aria-expanded={languageMenuOpen}
               >
-                {LANGUAGE_ORDER.map((lang) => (
-                  <option key={lang} value={lang}>
-                    {t(LANGUAGE_LABEL_KEYS[lang])}
-                  </option>
-                ))}
-              </select>
+                {headerIcons.language}
+              </Button>
+              {languageMenuOpen && (
+                <div className="notification entering language-menu-popover" role="menu" aria-label={t('language.switch')}>
+                  {LANGUAGE_ORDER.map((lang) => (
+                    <button
+                      key={lang}
+                      type="button"
+                      className={`language-menu-option ${language === lang ? 'active' : ''}`}
+                      onClick={() => handleLanguageSelect(lang)}
+                      role="menuitemradio"
+                      aria-checked={language === lang}
+                    >
+                      <span>{t(LANGUAGE_LABEL_KEYS[lang])}</span>
+                      {language === lang ? <span className="language-menu-check">✓</span> : null}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <Button variant="ghost" size="sm" onClick={cycleTheme} title={t('theme.switch')}>
               {theme === 'auto'

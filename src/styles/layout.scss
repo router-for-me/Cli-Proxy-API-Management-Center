@@ -190,38 +190,64 @@
     gap: $spacing-xs;
     flex-shrink: 0;
 
-    .language-select-wrapper {
+    .language-menu {
+      position: relative;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      color: var(--text-secondary);
 
-      &:hover {
-        color: var(--text-primary);
+      .language-menu-popover {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        z-index: $z-dropdown;
+        min-width: 164px;
+        padding: $spacing-xs;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
       }
-    }
 
-    .language-select-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
+      .language-menu-option {
+        width: 100%;
+        border: none;
+        border-radius: $radius-sm;
+        background: transparent;
+        color: var(--text-primary);
+        cursor: pointer;
+        padding: 8px 10px;
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background-color $transition-fast, color $transition-fast;
 
-    .language-select {
-      border: 1px solid var(--border-color);
-      border-radius: $radius-md;
-      padding: 10px 12px;
-      font-size: 14px;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      cursor: pointer;
-      height: 40px;
-      box-sizing: border-box;
+        &:hover {
+          background: var(--bg-secondary);
+        }
 
-      &:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        &:focus-visible {
+          outline: none;
+          background: var(--bg-secondary);
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        &.active {
+          color: var(--primary-color);
+          font-weight: 600;
+        }
+      }
+
+      .language-menu-check {
+        font-size: 13px;
+        line-height: 1;
+      }
+
+      @media (max-width: $breakpoint-mobile) {
+        .language-menu-popover {
+          right: auto;
+          left: 0;
+        }
       }
     }
 
