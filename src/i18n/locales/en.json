@@ -1098,7 +1098,8 @@
   "language": {
     "switch": "Language",
     "chinese": "中文",
-    "english": "English"
+    "english": "English",
+    "russian": "Русский"
   },
   "theme": {
     "switch": "Theme",
