@@ -29,6 +29,7 @@ const OAUTH_PROVIDER_PRESETS = [
   'claude',
   'codex',
   'qwen',
+  'kimi',
   'iflow',
 ];
 
