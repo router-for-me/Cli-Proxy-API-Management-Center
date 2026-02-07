@@ -1094,6 +1094,7 @@
     "gemini_api_key": "Gemini API密钥",
     "codex_api_key": "Codex API密钥",
     "claude_api_key": "Claude API密钥",
+    "copy_failed": "复制失败",
     "link_copied": "已复制"
   },
   "language": {

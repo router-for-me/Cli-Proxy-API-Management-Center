@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconChevronDown } from '@/components/ui/icons';
 import { ConfigSection } from '@/components/config/ConfigSection';
+import { useNotificationStore } from '@/stores';
 import styles from './VisualConfigEditor.module.scss';
 import type {
   PayloadFilterRule,
@@ -201,6 +202,7 @@ function ApiKeysCardEditor({
   onChange: (nextValue: string) => void;
 }) {
   const { t } = useTranslation();
+  const { showNotification } = useNotificationStore();
   const apiKeys = useMemo(
     () =>
       value
@@ -263,6 +265,34 @@ function ApiKeysCardEditor({
     closeModal();
   };
 
+  const handleCopy = async (apiKey: string) => {
+    const copyByExecCommand = () => {
+      const textarea = document.createElement('textarea');
+      textarea.value = apiKey;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      textarea.style.pointerEvents = 'none';
+      document.body.appendChild(textarea);
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      const copied = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (!copied) throw new Error('copy_failed');
+    };
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(apiKey);
+      } else {
+        copyByExecCommand();
+      }
+      showNotification(t('notification.link_copied'), 'success');
+    } catch {
+      showNotification(t('notification.copy_failed'), 'error');
+    }
+  };
+
   return (
     <div className="form-group" style={{ marginBottom: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -294,6 +324,9 @@ function ApiKeysCardEditor({
                 <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
               </div>
               <div className="item-actions">
+                <Button variant="secondary" size="sm" onClick={() => handleCopy(key)} disabled={disabled}>
+                  {t('common.copy')}
+                </Button>
                 <Button variant="secondary" size="sm" onClick={() => openEditModal(index)} disabled={disabled}>
                   {t('config_management.visual.common.edit')}
                 </Button>

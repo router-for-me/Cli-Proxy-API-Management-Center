@@ -1099,6 +1099,7 @@
     "gemini_api_key": "API-ключ Gemini",
     "codex_api_key": "API-ключ Codex",
     "claude_api_key": "API-ключ Claude",
+    "copy_failed": "Не удалось скопировать",
     "link_copied": "Ссылка скопирована в буфер обмена"
   },
   "language": {

@@ -1094,6 +1094,7 @@
     "gemini_api_key": "Gemini API key",
     "codex_api_key": "Codex API key",
     "claude_api_key": "Claude API key",
+    "copy_failed": "Copy failed",
     "link_copied": "Link copied to clipboard"
   },
   "language": {
