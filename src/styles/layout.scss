@@ -448,27 +448,6 @@
   }
 }
 
-.footer {
-  padding: $spacing-md $spacing-lg;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: var(--text-secondary);
-  font-size: 14px;
-  flex-wrap: wrap;
-  gap: $spacing-sm;
-
-  .footer-version {
-    user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    -webkit-touch-callout: none;
-  }
-}
-
-
 .grid {
   display: grid;
   gap: $spacing-lg;

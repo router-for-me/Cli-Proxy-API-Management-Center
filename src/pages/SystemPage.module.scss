@@ -15,6 +15,108 @@
   gap: $spacing-xl;
 }
 
+.aboutCard {
+  overflow: hidden;
+}
+
+.aboutHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: $spacing-md;
+  padding: $spacing-lg 0 $spacing-xl;
+}
+
+.aboutLogo {
+  width: 108px;
+  height: 108px;
+  border-radius: 26px;
+  object-fit: cover;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+.aboutTitle {
+  width: min(100%, 920px);
+  font-size: clamp(28px, 4.2vw, 44px);
+  font-weight: 800;
+  line-height: 1.12;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  text-align: center;
+  text-wrap: balance;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.aboutInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-md;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.infoTile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 120px;
+  padding: $spacing-md $spacing-lg;
+  border-radius: $radius-lg;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  text-align: left;
+}
+
+.tapTile {
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  color: inherit;
+  padding: $spacing-md $spacing-lg;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: var(--primary-color);
+    box-shadow: 0 8px 18px rgba(59, 130, 246, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.tileLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.tileValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.tileSub {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.aboutActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: $spacing-lg;
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -230,4 +332,30 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .aboutLogo {
+    width: 92px;
+    height: 92px;
+    border-radius: 22px;
+  }
+
+  .aboutTitle {
+    width: min(100%, 24ch);
+    font-size: clamp(22px, 6.6vw, 34px);
+    font-weight: 700;
+    line-height: 1.18;
+    letter-spacing: -0.012em;
+  }
+}
+
+@media (max-width: 520px) {
+  .aboutTitle {
+    width: min(100%, 19ch);
+    font-size: clamp(20px, 7.2vw, 28px);
+    font-weight: 600;
+    line-height: 1.22;
+    letter-spacing: -0.006em;
+  }
 }

@@ -2,11 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconGithub, IconBookOpen, IconExternalLink, IconCode } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useNotificationStore, useModelsStore, useThemeStore } from '@/stores';
+import { configApi } from '@/services/api';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
+import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
@@ -39,6 +43,8 @@ export function SystemPage() {
   const auth = useAuthStore();
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
+  const clearCache = useConfigStore((state) => state.clearCache);
+  const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
 
   const models = useModelsStore((state) => state.models);
   const modelsLoading = useModelsStore((state) => state.loading);
@@ -46,14 +52,29 @@ export function SystemPage() {
   const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
 
   const [modelStatus, setModelStatus] = useState<{ type: 'success' | 'warning' | 'error' | 'muted'; message: string }>();
+  const [requestLogModalOpen, setRequestLogModalOpen] = useState(false);
+  const [requestLogDraft, setRequestLogDraft] = useState(false);
+  const [requestLogTouched, setRequestLogTouched] = useState(false);
+  const [requestLogSaving, setRequestLogSaving] = useState(false);
 
   const apiKeysCache = useRef<string[]>([]);
+  const versionTapCount = useRef(0);
+  const versionTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const otherLabel = useMemo(
     () => (i18n.language?.toLowerCase().startsWith('zh') ? '其他' : 'Other'),
     [i18n.language]
   );
   const groupedModels = useMemo(() => classifyModels(models, { otherLabel }), [models, otherLabel]);
+  const requestLogEnabled = config?.requestLog ?? false;
+  const requestLogDirty = requestLogDraft !== requestLogEnabled;
+  const canEditRequestLog = auth.connectionStatus === 'connected' && Boolean(config);
+
+  const appVersion = __APP_VERSION__ || t('system_info.version_unknown');
+  const apiVersion = auth.serverVersion || t('system_info.version_unknown');
+  const buildTime = auth.serverBuildDate
+    ? new Date(auth.serverBuildDate).toLocaleString(i18n.language)
+    : t('system_info.version_unknown');
 
   const getIconForCategory = (categoryId: string): string | null => {
     const iconEntry = MODEL_CATEGORY_ICONS[categoryId];
@@ -152,11 +173,79 @@ export function SystemPage() {
     });
   };
 
+  const openRequestLogModal = useCallback(() => {
+    setRequestLogTouched(false);
+    setRequestLogDraft(requestLogEnabled);
+    setRequestLogModalOpen(true);
+  }, [requestLogEnabled]);
+
+  const handleInfoVersionTap = useCallback(() => {
+    versionTapCount.current += 1;
+    if (versionTapTimer.current) {
+      clearTimeout(versionTapTimer.current);
+    }
+
+    if (versionTapCount.current >= 7) {
+      versionTapCount.current = 0;
+      versionTapTimer.current = null;
+      openRequestLogModal();
+      return;
+    }
+
+    versionTapTimer.current = setTimeout(() => {
+      versionTapCount.current = 0;
+      versionTapTimer.current = null;
+    }, 1500);
+  }, [openRequestLogModal]);
+
+  const handleRequestLogClose = useCallback(() => {
+    setRequestLogModalOpen(false);
+    setRequestLogTouched(false);
+  }, []);
+
+  const handleRequestLogSave = async () => {
+    if (!canEditRequestLog) return;
+    if (!requestLogDirty) {
+      setRequestLogModalOpen(false);
+      return;
+    }
+
+    const previous = requestLogEnabled;
+    setRequestLogSaving(true);
+    updateConfigValue('request-log', requestLogDraft);
+
+    try {
+      await configApi.updateRequestLog(requestLogDraft);
+      clearCache('request-log');
+      showNotification(t('notification.request_log_updated'), 'success');
+      setRequestLogModalOpen(false);
+    } catch (error: any) {
+      updateConfigValue('request-log', previous);
+      showNotification(`${t('notification.update_failed')}: ${error?.message || ''}`, 'error');
+    } finally {
+      setRequestLogSaving(false);
+    }
+  };
+
   useEffect(() => {
     fetchConfig().catch(() => {
       // ignore
     });
   }, [fetchConfig]);
+
+  useEffect(() => {
+    if (requestLogModalOpen && !requestLogTouched) {
+      setRequestLogDraft(requestLogEnabled);
+    }
+  }, [requestLogModalOpen, requestLogTouched, requestLogEnabled]);
+
+  useEffect(() => {
+    return () => {
+      if (versionTapTimer.current) {
+        clearTimeout(versionTapTimer.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     fetchModels();
@@ -167,33 +256,43 @@ export function SystemPage() {
     <div className={styles.container}>
       <h1 className={styles.pageTitle}>{t('system_info.title')}</h1>
       <div className={styles.content}>
-      <Card
-        title={t('system_info.connection_status_title')}
-        extra={
+      <Card className={styles.aboutCard}>
+        <div className={styles.aboutHeader}>
+          <img src={INLINE_LOGO_JPEG} alt="CPAMC" className={styles.aboutLogo} />
+          <div className={styles.aboutTitle}>{t('system_info.about_title')}</div>
+        </div>
+
+        <div className={styles.aboutInfoGrid}>
+          <button
+            type="button"
+            className={`${styles.infoTile} ${styles.tapTile}`}
+            onClick={handleInfoVersionTap}
+          >
+            <div className={styles.tileLabel}>{t('footer.version')}</div>
+            <div className={styles.tileValue}>{appVersion}</div>
+          </button>
+
+          <div className={styles.infoTile}>
+            <div className={styles.tileLabel}>{t('footer.api_version')}</div>
+            <div className={styles.tileValue}>{apiVersion}</div>
+          </div>
+
+          <div className={styles.infoTile}>
+            <div className={styles.tileLabel}>{t('footer.build_date')}</div>
+            <div className={styles.tileValue}>{buildTime}</div>
+          </div>
+
+          <div className={styles.infoTile}>
+            <div className={styles.tileLabel}>{t('connection.status')}</div>
+            <div className={styles.tileValue}>{t(`common.${auth.connectionStatus}_status` as any)}</div>
+            <div className={styles.tileSub}>{auth.apiBase || '-'}</div>
+          </div>
+        </div>
+
+        <div className={styles.aboutActions}>
           <Button variant="secondary" size="sm" onClick={() => fetchConfig(undefined, true)}>
             {t('common.refresh')}
           </Button>
-        }
-      >
-        <div className="grid cols-2">
-          <div className="stat-card">
-            <div className="stat-label">{t('connection.server_address')}</div>
-            <div className="stat-value">{auth.apiBase || '-'}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">{t('footer.api_version')}</div>
-            <div className="stat-value">{auth.serverVersion || t('system_info.version_unknown')}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">{t('footer.build_date')}</div>
-            <div className="stat-value">
-              {auth.serverBuildDate ? new Date(auth.serverBuildDate).toLocaleString() : t('system_info.version_unknown')}
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">{t('connection.status')}</div>
-            <div className="stat-value">{t(`common.${auth.connectionStatus}_status` as any)}</div>
-          </div>
         </div>
       </Card>
 
@@ -312,6 +411,40 @@ export function SystemPage() {
         </div>
       </Card>
       </div>
+
+      <Modal
+        open={requestLogModalOpen}
+        onClose={handleRequestLogClose}
+        title={t('basic_settings.request_log_title')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={handleRequestLogClose} disabled={requestLogSaving}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleRequestLogSave}
+              loading={requestLogSaving}
+              disabled={!canEditRequestLog || !requestLogDirty}
+            >
+              {t('common.save')}
+            </Button>
+          </>
+        }
+      >
+        <div className="request-log-modal">
+          <div className="status-badge warning">{t('basic_settings.request_log_warning')}</div>
+          <ToggleSwitch
+            label={t('basic_settings.request_log_enable')}
+            labelPosition="left"
+            checked={requestLogDraft}
+            disabled={!canEditRequestLog || requestLogSaving}
+            onChange={(value) => {
+              setRequestLogDraft(value);
+              setRequestLogTouched(true);
+            }}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

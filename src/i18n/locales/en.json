@@ -989,6 +989,7 @@
   },
   "system_info": {
     "title": "Management Center Info",
+    "about_title": "CLI Proxy API Management Center",
     "connection_status_title": "Connection Status",
     "api_status_label": "API Status:",
     "config_status_label": "Config Status:",
