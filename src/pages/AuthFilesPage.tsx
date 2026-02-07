@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useInterval } from '@/hooks/useInterval';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
+import { usePageTransitionLayer } from '@/components/common/PageTransition';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -251,6 +252,8 @@ export function AuthFilesPage() {
   const setAntigravityQuota = useQuotaStore((state) => state.setAntigravityQuota);
   const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
   const setGeminiCliQuota = useQuotaStore((state) => state.setGeminiCliQuota);
+  const pageTransitionLayer = usePageTransitionLayer();
+  const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
   const navigate = useNavigate();
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
@@ -566,14 +569,15 @@ export function AuthFilesPage() {
   useHeaderRefresh(handleHeaderRefresh);
 
   useEffect(() => {
+    if (!isCurrentLayer) return;
     loadFiles();
     loadKeyStats();
     loadExcluded();
     loadModelAlias();
-  }, [loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
+  }, [isCurrentLayer, loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
 
   // 定时刷新状态数据（每240秒）
-  useInterval(loadKeyStats, 240_000);
+  useInterval(loadKeyStats, isCurrentLayer ? 240_000 : null);
 
   // 提取所有存在的类型
   const existingTypes = useMemo(() => {
