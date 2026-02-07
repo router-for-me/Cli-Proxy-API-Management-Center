@@ -1099,6 +1099,7 @@
     "gemini_api_key": "API-ключ Gemini",
     "codex_api_key": "API-ключ Codex",
     "claude_api_key": "API-ключ Claude",
+    "commercial_mode_restart_required": "Режим коммерческого использования изменён. Перезапустите сервис, чтобы применить изменения",
     "copy_failed": "Не удалось скопировать",
     "link_copied": "Ссылка скопирована в буфер обмена"
   },

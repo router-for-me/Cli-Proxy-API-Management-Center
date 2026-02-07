@@ -5,6 +5,7 @@ import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { yaml } from '@codemirror/lang-yaml';
 import { search, searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { keymap } from '@codemirror/view';
+import { parse as parseYaml } from 'yaml';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -16,6 +17,16 @@ import { configFileApi } from '@/services/api/configFile';
 import styles from './ConfigPage.module.scss';
 
 type ConfigEditorTab = 'visual' | 'source';
+
+function readCommercialModeFromYaml(yamlContent: string): boolean {
+  try {
+    const parsed = parseYaml(yamlContent);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+    return Boolean((parsed as Record<string, unknown>)['commercial-mode']);
+  } catch {
+    return false;
+  }
+}
 
 export function ConfigPage() {
   const { t } = useTranslation();
@@ -78,13 +89,19 @@ export function ConfigPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const previousCommercialMode = readCommercialModeFromYaml(content);
       const nextContent = activeTab === 'visual' ? applyVisualChangesToYaml(content) : content;
+      const nextCommercialMode = readCommercialModeFromYaml(nextContent);
+      const commercialModeChanged = previousCommercialMode !== nextCommercialMode;
       await configFileApi.saveConfigYaml(nextContent);
       const latestContent = await configFileApi.fetchConfigYaml();
       setDirty(false);
       setContent(latestContent);
       loadVisualValuesFromYaml(latestContent);
       showNotification(t('config_management.save_success'), 'success');
+      if (commercialModeChanged) {
+        showNotification(t('notification.commercial_mode_restart_required'), 'warning');
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
       showNotification(`${t('notification.save_failed')}: ${message}`, 'error');
