@@ -990,7 +990,10 @@
     "title": "Управление квотами",
     "description": "Следите за статусом квот OAuth для учётных данных Antigravity, Codex и Gemini CLI.",
     "refresh_files": "Обновить файлы авторизации",
-    "refresh_files_and_quota": "Обновить файлы и квоты"
+    "refresh_files_and_quota": "Обновить файлы и квоты",
+    "aggregate_title": "Среднее",
+    "loading_aggregate": "Загрузка сводки...",
+    "no_data_for_aggregate": "Нет данных о квотах"
   },
   "system_info": {
     "title": "Информация о центре управления",

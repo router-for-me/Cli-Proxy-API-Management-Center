@@ -12,6 +12,7 @@ import { useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
+import { QuotaAggregateCard } from './QuotaAggregateCard';
 import { useQuotaLoader } from './useQuotaLoader';
 import type { QuotaConfig } from './quotaConfigs';
 import { useGridColumns } from './useGridColumns';
@@ -264,6 +265,13 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       ) : (
         <>
           <div ref={gridRef} className={config.gridClassName}>
+            <QuotaAggregateCard
+              quotaMap={quota}
+              config={config}
+              resolvedTheme={resolvedTheme}
+              loading={sectionLoading}
+              fileCount={filteredFiles.length}
+            />
             {pageItems.map((item) => (
               <QuotaCard
                 key={item.name}

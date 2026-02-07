@@ -985,7 +985,10 @@
     "title": "配额管理",
     "description": "集中查看 OAuth 额度与剩余情况",
     "refresh_files": "刷新认证文件",
-    "refresh_files_and_quota": "刷新认证文件&额度"
+    "refresh_files_and_quota": "刷新认证文件&额度",
+    "aggregate_title": "平均",
+    "loading_aggregate": "加载汇总...",
+    "no_data_for_aggregate": "暂无配额数据"
   },
   "system_info": {
     "title": "管理中心信息",

@@ -145,3 +145,32 @@ export interface CodexQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+// Aggregated quota types for provider-wide statistics
+export interface AggregatedAntigravityGroup {
+  id: string;
+  label: string;
+  models: string[];
+  averageRemainingFraction: number;
+  credentialCount: number;
+  resetTimeRange: { earliest: string; latest: string } | null;
+}
+
+export interface AggregatedCodexWindow {
+  id: string;
+  label: string;
+  labelKey: string;
+  averageRemainingPercent: number | null;
+  credentialCount: number;
+  resetLabelRange: { earliest: string; latest: string } | null;
+}
+
+export interface AggregatedGeminiCliBucket {
+  id: string;
+  label: string;
+  averageRemainingFraction: number | null;
+  credentialCount: number;
+  resetTimeRange: { earliest: string; latest: string } | null;
+  tokenType: string | null;
+  modelIds?: string[];
+}
