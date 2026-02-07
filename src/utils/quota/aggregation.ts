@@ -107,7 +107,7 @@ export function aggregateCodexQuota(
     const validWindows = matchingWindows.filter((w) => w.usedPercent !== null);
     let avgRemainingPercent: number | null = null;
     if (validWindows.length > 0) {
-      const sum = validWindows.reduce((acc, w) => acc + (100 - (w.usedPercent ?? 0)), 0);
+      const sum = validWindows.reduce((acc, w) => acc + (100 - w.usedPercent!), 0);
       avgRemainingPercent = sum / validWindows.length;
     }
 

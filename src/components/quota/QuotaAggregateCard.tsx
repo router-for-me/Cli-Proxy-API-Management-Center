@@ -93,11 +93,7 @@ function renderCodexAggregate(
   return windows.map((window) => {
     const remaining = window.averageRemainingPercent;
     const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
-    const resetLabel = window.resetLabelRange
-      ? window.resetLabelRange.earliest === window.resetLabelRange.latest
-        ? window.resetLabelRange.earliest
-        : `${window.resetLabelRange.earliest} – ${window.resetLabelRange.latest}`
-      : '-';
+    const resetLabel = formatResetRange(window.resetLabelRange, (label) => label || '');
     const windowLabel = window.labelKey ? t(window.labelKey) : window.label;
 
     return (
@@ -211,7 +207,7 @@ export function QuotaAggregateCard<TState extends QuotaStatusState, TData>({
       return <div className={styles.quotaMessage}>{t('quota_management.loading_aggregate')}</div>;
     }
 
-    if (isInitialState && !hasSuccessData) {
+    if (isInitialState) {
       return <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.idle`)}</div>;
     }
 
