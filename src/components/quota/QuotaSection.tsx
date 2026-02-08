@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { createPortal } from 'react-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -216,6 +217,17 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
   const isRefreshing = sectionLoading || loading;
 
+  const warningOverlay = (
+    <div className={styles.warningOverlay} onClick={() => setShowTooManyWarning(false)}>
+      <div className={styles.warningModal} onClick={(e) => e.stopPropagation()}>
+        <p>{t('auth_files.too_many_files_warning')}</p>
+        <Button variant="primary" size="sm" onClick={() => setShowTooManyWarning(false)}>
+          {t('common.confirm')}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <Card
       title={titleNode}
@@ -314,16 +326,10 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
           )}
         </>
       )}
-      {showTooManyWarning && (
-        <div className={styles.warningOverlay} onClick={() => setShowTooManyWarning(false)}>
-          <div className={styles.warningModal} onClick={(e) => e.stopPropagation()}>
-            <p>{t('auth_files.too_many_files_warning')}</p>
-            <Button variant="primary" size="sm" onClick={() => setShowTooManyWarning(false)}>
-              {t('common.confirm')}
-            </Button>
-          </div>
-        </div>
-      )}
+      {showTooManyWarning &&
+        (typeof document !== 'undefined'
+          ? createPortal(warningOverlay, document.body)
+          : warningOverlay)}
     </Card>
   );
 }
