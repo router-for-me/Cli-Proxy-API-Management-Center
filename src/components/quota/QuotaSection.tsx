@@ -155,8 +155,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     if (effectiveViewMode === 'all') {
       setPageSize(Math.max(1, filteredFiles.length));
     } else {
-      // Paged mode: 3 rows * columns, capped to avoid oversized pages.
-      setPageSize(Math.min(columns * 3, MAX_ITEMS_PER_PAGE));
+      // Paged mode: 3 rows * columns - 1 for aggregate card, capped to avoid oversized pages.
+      setPageSize(Math.min(columns * 3 - 1, MAX_ITEMS_PER_PAGE));
     }
   }, [effectiveViewMode, columns, filteredFiles.length, setPageSize]);
 
