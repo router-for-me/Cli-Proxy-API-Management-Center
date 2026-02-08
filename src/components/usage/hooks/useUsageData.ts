@@ -45,8 +45,8 @@ export function useUsageData(): UseUsageDataReturn {
     setError('');
     try {
       const data = await usageApi.getUsage();
-      const payload = data?.usage ?? data;
-      setUsage(payload);
+      const payload = (data?.usage ?? data) as unknown;
+      setUsage(payload && typeof payload === 'object' ? (payload as UsagePayload) : null);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('usage_stats.loading_error');
       setError(message);

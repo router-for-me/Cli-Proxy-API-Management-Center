@@ -10,7 +10,7 @@ import { configApi } from '@/services/api/config';
 import { CACHE_EXPIRY_MS } from '@/utils/constants';
 
 interface ConfigCache {
-  data: any;
+  data: unknown;
   timestamp: number;
 }
 
@@ -21,8 +21,11 @@ interface ConfigState {
   error: string | null;
 
   // 操作
-  fetchConfig: (section?: RawConfigSection, forceRefresh?: boolean) => Promise<Config | any>;
-  updateConfigValue: (section: RawConfigSection, value: any) => void;
+  fetchConfig: {
+    (section?: undefined, forceRefresh?: boolean): Promise<Config>;
+    (section: RawConfigSection, forceRefresh?: boolean): Promise<unknown>;
+  };
+  updateConfigValue: (section: RawConfigSection, value: unknown) => void;
   clearCache: (section?: RawConfigSection) => void;
   isCacheValid: (section?: RawConfigSection) => boolean;
 }
@@ -105,7 +108,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   loading: false,
   error: null,
 
-  fetchConfig: async (section, forceRefresh = false) => {
+  fetchConfig: (async (section?: RawConfigSection, forceRefresh: boolean = false) => {
     const { cache, isCacheValid } = get();
 
     // 检查缓存
@@ -163,10 +166,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       });
 
       return section ? extractSectionValue(data, section) : data;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : typeof error === 'string' ? error : 'Failed to fetch config';
       if (requestId === configRequestToken) {
         set({
-          error: error.message || 'Failed to fetch config',
+          error: message || 'Failed to fetch config',
           loading: false
         });
       }
@@ -176,7 +181,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         inFlightConfigRequest = null;
       }
     }
-  },
+  }) as ConfigState['fetchConfig'],
 
   updateConfigValue: (section, value) => {
     set((state) => {
@@ -186,61 +191,61 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
       switch (section) {
         case 'debug':
-          nextConfig.debug = value;
+          nextConfig.debug = value as Config['debug'];
           break;
         case 'proxy-url':
-          nextConfig.proxyUrl = value;
+          nextConfig.proxyUrl = value as Config['proxyUrl'];
           break;
         case 'request-retry':
-          nextConfig.requestRetry = value;
+          nextConfig.requestRetry = value as Config['requestRetry'];
           break;
         case 'quota-exceeded':
-          nextConfig.quotaExceeded = value;
+          nextConfig.quotaExceeded = value as Config['quotaExceeded'];
           break;
         case 'usage-statistics-enabled':
-          nextConfig.usageStatisticsEnabled = value;
+          nextConfig.usageStatisticsEnabled = value as Config['usageStatisticsEnabled'];
           break;
         case 'request-log':
-          nextConfig.requestLog = value;
+          nextConfig.requestLog = value as Config['requestLog'];
           break;
         case 'logging-to-file':
-          nextConfig.loggingToFile = value;
+          nextConfig.loggingToFile = value as Config['loggingToFile'];
           break;
         case 'logs-max-total-size-mb':
-          nextConfig.logsMaxTotalSizeMb = value;
+          nextConfig.logsMaxTotalSizeMb = value as Config['logsMaxTotalSizeMb'];
           break;
         case 'ws-auth':
-          nextConfig.wsAuth = value;
+          nextConfig.wsAuth = value as Config['wsAuth'];
           break;
         case 'force-model-prefix':
-          nextConfig.forceModelPrefix = value;
+          nextConfig.forceModelPrefix = value as Config['forceModelPrefix'];
           break;
         case 'routing/strategy':
-          nextConfig.routingStrategy = value;
+          nextConfig.routingStrategy = value as Config['routingStrategy'];
           break;
         case 'api-keys':
-          nextConfig.apiKeys = value;
+          nextConfig.apiKeys = value as Config['apiKeys'];
           break;
         case 'ampcode':
-          nextConfig.ampcode = value;
+          nextConfig.ampcode = value as Config['ampcode'];
           break;
         case 'gemini-api-key':
-          nextConfig.geminiApiKeys = value;
+          nextConfig.geminiApiKeys = value as Config['geminiApiKeys'];
           break;
         case 'codex-api-key':
-          nextConfig.codexApiKeys = value;
+          nextConfig.codexApiKeys = value as Config['codexApiKeys'];
           break;
         case 'claude-api-key':
-          nextConfig.claudeApiKeys = value;
+          nextConfig.claudeApiKeys = value as Config['claudeApiKeys'];
           break;
         case 'vertex-api-key':
-          nextConfig.vertexApiKeys = value;
+          nextConfig.vertexApiKeys = value as Config['vertexApiKeys'];
           break;
         case 'openai-compatibility':
-          nextConfig.openaiCompatibility = value;
+          nextConfig.openaiCompatibility = value as Config['openaiCompatibility'];
           break;
         case 'oauth-excluded-models':
-          nextConfig.oauthExcludedModels = value;
+          nextConfig.oauthExcludedModels = value as Config['oauthExcludedModels'];
           break;
         default:
           break;

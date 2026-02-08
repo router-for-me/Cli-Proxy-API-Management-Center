@@ -30,12 +30,15 @@ const matchCategory = (text: string) => {
   return null;
 };
 
-export function normalizeModelList(payload: any, { dedupe = false } = {}): ModelInfo[] {
-  const toModel = (entry: any): ModelInfo | null => {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+export function normalizeModelList(payload: unknown, { dedupe = false } = {}): ModelInfo[] {
+  const toModel = (entry: unknown): ModelInfo | null => {
     if (typeof entry === 'string') {
       return { name: entry };
     }
-    if (!entry || typeof entry !== 'object') {
+    if (!isRecord(entry)) {
       return null;
     }
     const name = entry.id || entry.name || entry.model || entry.value;
@@ -57,7 +60,7 @@ export function normalizeModelList(payload: any, { dedupe = false } = {}): Model
 
   if (Array.isArray(payload)) {
     models = payload.map(toModel);
-  } else if (payload && typeof payload === 'object') {
+  } else if (isRecord(payload)) {
     if (Array.isArray(payload.data)) {
       models = payload.data.map(toModel);
     } else if (Array.isArray(payload.models)) {

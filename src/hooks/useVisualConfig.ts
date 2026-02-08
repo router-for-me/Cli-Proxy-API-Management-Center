@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import type {
   PayloadFilterRule,
@@ -123,20 +123,47 @@ function parsePayloadParamValue(raw: unknown): { valueType: PayloadParamValueTyp
   return { valueType: 'string', value: String(raw ?? '') };
 }
 
+const PAYLOAD_PROTOCOL_VALUES = [
+  'openai',
+  'openai-response',
+  'gemini',
+  'claude',
+  'codex',
+  'antigravity',
+] as const;
+type PayloadProtocol = (typeof PAYLOAD_PROTOCOL_VALUES)[number];
+
+function parsePayloadProtocol(raw: unknown): PayloadProtocol | undefined {
+  if (typeof raw !== 'string') return undefined;
+  return PAYLOAD_PROTOCOL_VALUES.includes(raw as PayloadProtocol)
+    ? (raw as PayloadProtocol)
+    : undefined;
+}
+
 function parsePayloadRules(rules: unknown): PayloadRule[] {
   if (!Array.isArray(rules)) return [];
 
-  return rules.map((rule, index) => ({
-    id: `payload-rule-${index}`,
-    models: Array.isArray((rule as any)?.models)
-      ? ((rule as any).models as unknown[]).map((model: any, modelIndex: number) => ({
-          id: `model-${index}-${modelIndex}`,
-          name: typeof model === 'string' ? model : model?.name || '',
-          protocol: typeof model === 'object' ? (model?.protocol as any) : undefined,
-        }))
-      : [],
-    params: (rule as any)?.params
-      ? Object.entries((rule as any).params as Record<string, unknown>).map(([path, value], pIndex) => {
+  return rules.map((rule, index) => {
+    const record = asRecord(rule) ?? {};
+
+    const modelsRaw = record.models;
+    const models = Array.isArray(modelsRaw)
+      ? modelsRaw.map((model, modelIndex) => {
+          const modelRecord = asRecord(model);
+          const nameRaw =
+            typeof model === 'string' ? model : (modelRecord?.name ?? modelRecord?.id ?? '');
+          const name = typeof nameRaw === 'string' ? nameRaw : String(nameRaw ?? '');
+          return {
+            id: `model-${index}-${modelIndex}`,
+            name,
+            protocol: parsePayloadProtocol(modelRecord?.protocol),
+          };
+        })
+      : [];
+
+    const paramsRecord = asRecord(record.params);
+    const params = paramsRecord
+      ? Object.entries(paramsRecord).map(([path, value], pIndex) => {
           const parsedValue = parsePayloadParamValue(value);
           return {
             id: `param-${index}-${pIndex}`,
@@ -145,41 +172,55 @@ function parsePayloadRules(rules: unknown): PayloadRule[] {
             value: parsedValue.value,
           };
         })
-      : [],
-  }));
+      : [];
+
+    return { id: `payload-rule-${index}`, models, params };
+  });
 }
 
 function parsePayloadFilterRules(rules: unknown): PayloadFilterRule[] {
   if (!Array.isArray(rules)) return [];
 
-  return rules.map((rule, index) => ({
-    id: `payload-filter-rule-${index}`,
-    models: Array.isArray((rule as any)?.models)
-      ? ((rule as any).models as unknown[]).map((model: any, modelIndex: number) => ({
-          id: `filter-model-${index}-${modelIndex}`,
-          name: typeof model === 'string' ? model : model?.name || '',
-          protocol: typeof model === 'object' ? (model?.protocol as any) : undefined,
-        }))
-      : [],
-    params: Array.isArray((rule as any)?.params) ? ((rule as any).params as unknown[]).map(String) : [],
-  }));
+  return rules.map((rule, index) => {
+    const record = asRecord(rule) ?? {};
+
+    const modelsRaw = record.models;
+    const models = Array.isArray(modelsRaw)
+      ? modelsRaw.map((model, modelIndex) => {
+          const modelRecord = asRecord(model);
+          const nameRaw =
+            typeof model === 'string' ? model : (modelRecord?.name ?? modelRecord?.id ?? '');
+          const name = typeof nameRaw === 'string' ? nameRaw : String(nameRaw ?? '');
+          return {
+            id: `filter-model-${index}-${modelIndex}`,
+            name,
+            protocol: parsePayloadProtocol(modelRecord?.protocol),
+          };
+        })
+      : [];
+
+    const paramsRaw = record.params;
+    const params = Array.isArray(paramsRaw) ? paramsRaw.map(String) : [];
+
+    return { id: `payload-filter-rule-${index}`, models, params };
+  });
 }
 
-function serializePayloadRulesForYaml(rules: PayloadRule[]): any[] {
+function serializePayloadRulesForYaml(rules: PayloadRule[]): Array<Record<string, unknown>> {
   return rules
     .map((rule) => {
       const models = (rule.models || [])
         .filter((m) => m.name?.trim())
         .map((m) => {
-          const obj: Record<string, any> = { name: m.name.trim() };
+          const obj: Record<string, unknown> = { name: m.name.trim() };
           if (m.protocol) obj.protocol = m.protocol;
           return obj;
         });
 
-      const params: Record<string, any> = {};
+      const params: Record<string, unknown> = {};
       for (const param of rule.params || []) {
         if (!param.path?.trim()) continue;
-        let value: any = param.value;
+        let value: unknown = param.value;
         if (param.valueType === 'number') {
           const num = Number(param.value);
           value = Number.isFinite(num) ? num : param.value;
@@ -200,13 +241,15 @@ function serializePayloadRulesForYaml(rules: PayloadRule[]): any[] {
     .filter((rule) => rule.models.length > 0);
 }
 
-function serializePayloadFilterRulesForYaml(rules: PayloadFilterRule[]): any[] {
+function serializePayloadFilterRulesForYaml(
+  rules: PayloadFilterRule[]
+): Array<Record<string, unknown>> {
   return rules
     .map((rule) => {
       const models = (rule.models || [])
         .filter((m) => m.name?.trim())
         .map((m) => {
-          const obj: Record<string, any> = { name: m.name.trim() };
+          const obj: Record<string, unknown> = { name: m.name.trim() };
           if (m.protocol) obj.protocol = m.protocol;
           return obj;
         });
@@ -225,33 +268,45 @@ export function useVisualConfig() {
     ...DEFAULT_VISUAL_VALUES,
   });
 
-  const baselineValues = useRef<VisualConfigValues>({ ...DEFAULT_VISUAL_VALUES });
+  const [baselineValues, setBaselineValues] = useState<VisualConfigValues>({
+    ...DEFAULT_VISUAL_VALUES,
+  });
 
   const visualDirty = useMemo(() => {
-    return JSON.stringify(visualValues) !== JSON.stringify(baselineValues.current);
-  }, [visualValues]);
+    return JSON.stringify(visualValues) !== JSON.stringify(baselineValues);
+  }, [baselineValues, visualValues]);
 
   const loadVisualValuesFromYaml = useCallback((yamlContent: string) => {
     try {
-      const parsed: any = parseYaml(yamlContent) || {};
+      const parsedRaw: unknown = parseYaml(yamlContent) || {};
+      const parsed = asRecord(parsedRaw) ?? {};
+      const tls = asRecord(parsed.tls);
+      const remoteManagement = asRecord(parsed['remote-management']);
+      const quotaExceeded = asRecord(parsed['quota-exceeded']);
+      const routing = asRecord(parsed.routing);
+      const payload = asRecord(parsed.payload);
+      const streaming = asRecord(parsed.streaming);
 
       const newValues: VisualConfigValues = {
-        host: parsed.host || '',
+        host: typeof parsed.host === 'string' ? parsed.host : '',
         port: String(parsed.port ?? ''),
 
-        tlsEnable: Boolean(parsed.tls?.enable),
-        tlsCert: parsed.tls?.cert || '',
-        tlsKey: parsed.tls?.key || '',
+        tlsEnable: Boolean(tls?.enable),
+        tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
+        tlsKey: typeof tls?.key === 'string' ? tls.key : '',
 
-        rmAllowRemote: Boolean(parsed['remote-management']?.['allow-remote']),
-        rmSecretKey: parsed['remote-management']?.['secret-key'] || '',
-        rmDisableControlPanel: Boolean(parsed['remote-management']?.['disable-control-panel']),
+        rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
+        rmSecretKey:
+          typeof remoteManagement?.['secret-key'] === 'string' ? remoteManagement['secret-key'] : '',
+        rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
         rmPanelRepo:
-          parsed['remote-management']?.['panel-github-repository'] ??
-          parsed['remote-management']?.['panel-repo'] ??
-          '',
+          typeof remoteManagement?.['panel-github-repository'] === 'string'
+            ? remoteManagement['panel-github-repository']
+            : typeof remoteManagement?.['panel-repo'] === 'string'
+              ? remoteManagement['panel-repo']
+              : '',
 
-        authDir: parsed['auth-dir'] || '',
+        authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
         apiKeysText: parseApiKeysText(parsed['api-keys']),
 
         debug: Boolean(parsed.debug),
@@ -260,35 +315,36 @@ export function useVisualConfig() {
         logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
         usageStatisticsEnabled: Boolean(parsed['usage-statistics-enabled']),
 
-        proxyUrl: parsed['proxy-url'] || '',
+        proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
         forceModelPrefix: Boolean(parsed['force-model-prefix']),
         requestRetry: String(parsed['request-retry'] ?? ''),
         maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
         wsAuth: Boolean(parsed['ws-auth']),
 
-        quotaSwitchProject: Boolean(parsed['quota-exceeded']?.['switch-project'] ?? true),
+        quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
         quotaSwitchPreviewModel: Boolean(
-          parsed['quota-exceeded']?.['switch-preview-model'] ?? true
+          quotaExceeded?.['switch-preview-model'] ?? true
         ),
 
-        routingStrategy: (parsed.routing?.strategy || 'round-robin') as 'round-robin' | 'fill-first',
+        routingStrategy:
+          routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
 
-        payloadDefaultRules: parsePayloadRules(parsed.payload?.default),
-        payloadOverrideRules: parsePayloadRules(parsed.payload?.override),
-        payloadFilterRules: parsePayloadFilterRules(parsed.payload?.filter),
+        payloadDefaultRules: parsePayloadRules(payload?.default),
+        payloadOverrideRules: parsePayloadRules(payload?.override),
+        payloadFilterRules: parsePayloadFilterRules(payload?.filter),
 
         streaming: {
-          keepaliveSeconds: String(parsed.streaming?.['keepalive-seconds'] ?? ''),
-          bootstrapRetries: String(parsed.streaming?.['bootstrap-retries'] ?? ''),
+          keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
+          bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
           nonstreamKeepaliveInterval: String(parsed['nonstream-keepalive-interval'] ?? ''),
         },
       };
 
       setVisualValuesState(newValues);
-      baselineValues.current = deepClone(newValues);
+      setBaselineValues(deepClone(newValues));
     } catch {
       setVisualValuesState({ ...DEFAULT_VISUAL_VALUES });
-      baselineValues.current = deepClone(DEFAULT_VISUAL_VALUES);
+      setBaselineValues(deepClone(DEFAULT_VISUAL_VALUES));
     }
   }, []);
 
@@ -331,7 +387,7 @@ export function useVisualConfig() {
         }
 
         setString(parsed, 'auth-dir', values.authDir);
-        if (values.apiKeysText !== baselineValues.current.apiKeysText) {
+        if (values.apiKeysText !== baselineValues.apiKeysText) {
           const apiKeys = values.apiKeysText
             .split('\n')
             .map((key) => key.trim())
@@ -419,7 +475,7 @@ export function useVisualConfig() {
         return currentYaml;
       }
     },
-    [visualValues]
+    [baselineValues, visualValues]
   );
 
   const setVisualValues = useCallback((newValues: Partial<VisualConfigValues>) => {
@@ -444,6 +500,7 @@ export function useVisualConfig() {
 export const VISUAL_CONFIG_PROTOCOL_OPTIONS = [
   { value: '', label: '默认' },
   { value: 'openai', label: 'OpenAI' },
+  { value: 'openai-response', label: 'OpenAI Response' },
   { value: 'gemini', label: 'Gemini' },
   { value: 'claude', label: 'Claude' },
   { value: 'codex', label: 'Codex' },

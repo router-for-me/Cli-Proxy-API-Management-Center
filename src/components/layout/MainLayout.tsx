@@ -441,7 +441,8 @@ export function MainLayout() {
     setCheckingVersion(true);
     try {
       const data = await versionApi.checkLatest();
-      const latest = data?.['latest-version'] ?? data?.latest_version ?? data?.latest ?? '';
+      const latestRaw = data?.['latest-version'] ?? data?.latest_version ?? data?.latest ?? '';
+      const latest = typeof latestRaw === 'string' ? latestRaw : String(latestRaw ?? '');
       const comparison = compareVersions(latest, serverVersion);
 
       if (!latest) {
@@ -459,8 +460,11 @@ export function MainLayout() {
       } else {
         showNotification(t('system_info.version_is_latest'), 'success');
       }
-    } catch (error: any) {
-      showNotification(`${t('system_info.version_check_error')}: ${error?.message || ''}`, 'error');
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+      const suffix = message ? `: ${message}` : '';
+      showNotification(`${t('system_info.version_check_error')}${suffix}`, 'error');
     } finally {
       setCheckingVersion(false);
     }

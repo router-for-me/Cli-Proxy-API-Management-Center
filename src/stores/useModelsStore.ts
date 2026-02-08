@@ -52,8 +52,9 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
       });
 
       return list;
-    } catch (error: any) {
-      const message = error?.message || 'Failed to fetch models';
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : typeof error === 'string' ? error : 'Failed to fetch models';
       set({
         error: message,
         loading: false,

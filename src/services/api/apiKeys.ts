@@ -6,9 +6,9 @@ import { apiClient } from './client';
 
 export const apiKeysApi = {
   async list(): Promise<string[]> {
-    const data = await apiClient.get('/api-keys');
-    const keys = (data && (data['api-keys'] ?? data.apiKeys)) as unknown;
-    return Array.isArray(keys) ? (keys as string[]) : [];
+    const data = await apiClient.get<Record<string, unknown>>('/api-keys');
+    const keys = data['api-keys'] ?? data.apiKeys;
+    return Array.isArray(keys) ? keys.map((key) => String(key)) : [];
   },
 
   replace: (keys: string[]) => apiClient.put('/api-keys', keys),

@@ -243,7 +243,7 @@ export function AiProvidersOpenAIEditLayout() {
       setTestStatus('idle');
       setTestMessage('');
     }
-  }, [availableModels, loading, testModel]);
+  }, [availableModels, loading, setTestMessage, setTestModel, setTestStatus, testModel]);
 
   const mergeDiscoveredModels = useCallback(
     (selectedModels: ModelInfo[]) => {

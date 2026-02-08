@@ -18,12 +18,22 @@ import type {
 
 const serializeHeaders = (headers?: Record<string, string>) => (headers && Object.keys(headers).length ? headers : undefined);
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const extractArrayPayload = (data: unknown, key: string): unknown[] => {
+  if (Array.isArray(data)) return data;
+  if (!isRecord(data)) return [];
+  const candidate = data[key] ?? data.items ?? data.data ?? data;
+  return Array.isArray(candidate) ? candidate : [];
+};
+
 const serializeModelAliases = (models?: ModelAlias[]) =>
   Array.isArray(models)
     ? models
         .map((model) => {
           if (!model?.name) return null;
-          const payload: Record<string, any> = { name: model.name };
+          const payload: Record<string, unknown> = { name: model.name };
           if (model.alias && model.alias !== model.name) {
             payload.alias = model.alias;
           }
@@ -39,7 +49,7 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
     : undefined;
 
 const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
-  const payload: Record<string, any> = { 'api-key': entry.apiKey };
+  const payload: Record<string, unknown> = { 'api-key': entry.apiKey };
   if (entry.proxyUrl) payload['proxy-url'] = entry.proxyUrl;
   const headers = serializeHeaders(entry.headers);
   if (headers) payload.headers = headers;
@@ -47,7 +57,7 @@ const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
 };
 
 const serializeProviderKey = (config: ProviderKeyConfig) => {
-  const payload: Record<string, any> = { 'api-key': config.apiKey };
+  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
@@ -74,7 +84,7 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
     : undefined;
 
 const serializeVertexKey = (config: ProviderKeyConfig) => {
-  const payload: Record<string, any> = { 'api-key': config.apiKey };
+  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
@@ -86,7 +96,7 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
 };
 
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
-  const payload: Record<string, any> = { 'api-key': config.apiKey };
+  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   const headers = serializeHeaders(config.headers);
@@ -98,7 +108,7 @@ const serializeGeminiKey = (config: GeminiKeyConfig) => {
 };
 
 const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
-  const payload: Record<string, any> = {
+  const payload: Record<string, unknown> = {
     name: provider.name,
     'base-url': provider.baseUrl,
     'api-key-entries': Array.isArray(provider.apiKeyEntries)
@@ -118,8 +128,7 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
 export const providersApi = {
   async getGeminiKeys(): Promise<GeminiKeyConfig[]> {
     const data = await apiClient.get('/gemini-api-key');
-    const list = (data && (data['gemini-api-key'] ?? data.items ?? data)) as any;
-    if (!Array.isArray(list)) return [];
+    const list = extractArrayPayload(data, 'gemini-api-key');
     return list.map((item) => normalizeGeminiKeyConfig(item)).filter(Boolean) as GeminiKeyConfig[];
   },
 
@@ -134,8 +143,7 @@ export const providersApi = {
 
   async getCodexConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/codex-api-key');
-    const list = (data && (data['codex-api-key'] ?? data.items ?? data)) as any;
-    if (!Array.isArray(list)) return [];
+    const list = extractArrayPayload(data, 'codex-api-key');
     return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
   },
 
@@ -150,8 +158,7 @@ export const providersApi = {
 
   async getClaudeConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/claude-api-key');
-    const list = (data && (data['claude-api-key'] ?? data.items ?? data)) as any;
-    if (!Array.isArray(list)) return [];
+    const list = extractArrayPayload(data, 'claude-api-key');
     return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
   },
 
@@ -166,8 +173,7 @@ export const providersApi = {
 
   async getVertexConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/vertex-api-key');
-    const list = (data && (data['vertex-api-key'] ?? data.items ?? data)) as any;
-    if (!Array.isArray(list)) return [];
+    const list = extractArrayPayload(data, 'vertex-api-key');
     return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
   },
 
@@ -182,8 +188,7 @@ export const providersApi = {
 
   async getOpenAIProviders(): Promise<OpenAIProviderConfig[]> {
     const data = await apiClient.get('/openai-compatibility');
-    const list = (data && (data['openai-compatibility'] ?? data.items ?? data)) as any;
-    if (!Array.isArray(list)) return [];
+    const list = extractArrayPayload(data, 'openai-compatibility');
     return list.map((item) => normalizeOpenAIProvider(item)).filter(Boolean) as OpenAIProviderConfig[];
   },
 

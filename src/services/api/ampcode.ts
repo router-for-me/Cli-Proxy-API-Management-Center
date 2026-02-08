@@ -19,7 +19,7 @@ export const ampcodeApi = {
   clearUpstreamApiKey: () => apiClient.delete('/ampcode/upstream-api-key'),
 
   async getModelMappings(): Promise<AmpcodeModelMapping[]> {
-    const data = await apiClient.get('/ampcode/model-mappings');
+    const data = await apiClient.get<Record<string, unknown>>('/ampcode/model-mappings');
     const list = data?.['model-mappings'] ?? data?.modelMappings ?? data?.items ?? data;
     return normalizeAmpcodeModelMappings(list);
   },

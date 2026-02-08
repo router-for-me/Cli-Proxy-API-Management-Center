@@ -13,7 +13,7 @@ class SecureStorageService {
   /**
    * 存储数据
    */
-  setItem(key: string, value: any, options: StorageOptions = {}): void {
+  setItem(key: string, value: unknown, options: StorageOptions = {}): void {
     const { encrypt = true } = options;
 
     if (value === null || value === undefined) {
@@ -30,7 +30,7 @@ class SecureStorageService {
   /**
    * 获取数据
    */
-  getItem<T = any>(key: string, options: StorageOptions = {}): T | null {
+  getItem<T = unknown>(key: string, options: StorageOptions = {}): T | null {
     const { encrypt = true } = options;
 
     const raw = localStorage.getItem(key);
@@ -84,7 +84,7 @@ class SecureStorageService {
         return;
       }
 
-      let parsed: any = raw;
+      let parsed: unknown = raw;
       try {
         parsed = JSON.parse(raw);
       } catch {

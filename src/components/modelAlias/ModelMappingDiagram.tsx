@@ -285,7 +285,6 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
 
   useLayoutEffect(() => {
     // updateLines is called after layout is calculated, ensuring elements are in place.
-    updateLines();
     const raf = requestAnimationFrame(updateLines);
     window.addEventListener('resize', updateLines);
     return () => {
@@ -295,7 +294,6 @@ export const ModelMappingDiagram = forwardRef<ModelMappingDiagramRef, ModelMappi
   }, [updateLines, aliasNodes]);
 
   useLayoutEffect(() => {
-    updateLines();
     const raf = requestAnimationFrame(updateLines);
     return () => cancelAnimationFrame(raf);
   }, [providerGroupHeights, updateLines]);

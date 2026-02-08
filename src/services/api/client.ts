@@ -62,7 +62,10 @@ class ApiClient {
     return `${normalized}${MANAGEMENT_API_PREFIX}`;
   }
 
-  private readHeader(headers: Record<string, any> | undefined, keys: string[]): string | null {
+  private readHeader(
+    headers: Record<string, unknown> | undefined,
+    keys: string[]
+  ): string | null {
     if (!headers) return null;
 
     const normalizeValue = (value: unknown): string | null => {
@@ -75,7 +78,7 @@ class ApiClient {
       return text ? text : null;
     };
 
-    const headerGetter = (headers as { get?: (name: string) => any }).get;
+    const headerGetter = (headers as { get?: (name: string) => unknown }).get;
     if (typeof headerGetter === 'function') {
       for (const key of keys) {
         const match = normalizeValue(headerGetter.call(headers, key));
@@ -84,8 +87,8 @@ class ApiClient {
     }
 
     const entries =
-      typeof (headers as { entries?: () => Iterable<[string, any]> }).entries === 'function'
-        ? Array.from((headers as { entries: () => Iterable<[string, any]> }).entries())
+      typeof (headers as { entries?: () => Iterable<[string, unknown]> }).entries === 'function'
+        ? Array.from((headers as { entries: () => Iterable<[string, unknown]> }).entries())
         : Object.entries(headers);
 
     const normalized = Object.fromEntries(
@@ -147,10 +150,22 @@ class ApiClient {
   /**
    * 错误处理
    */
-  private handleError(error: any): ApiError {
+  private handleError(error: unknown): ApiError {
+    const isRecord = (value: unknown): value is Record<string, unknown> =>
+      value !== null && typeof value === 'object';
+
     if (axios.isAxiosError(error)) {
-      const responseData = error.response?.data as any;
-      const message = responseData?.error || responseData?.message || error.message || 'Request failed';
+      const responseData: unknown = error.response?.data;
+      const responseRecord = isRecord(responseData) ? responseData : null;
+      const errorValue = responseRecord?.error;
+      const message =
+        typeof errorValue === 'string'
+          ? errorValue
+          : isRecord(errorValue) && typeof errorValue.message === 'string'
+            ? errorValue.message
+            : typeof responseRecord?.message === 'string'
+              ? responseRecord.message
+              : error.message || 'Request failed';
       const apiError = new Error(message) as ApiError;
       apiError.name = 'ApiError';
       apiError.status = error.response?.status;
@@ -166,7 +181,9 @@ class ApiClient {
       return apiError;
     }
 
-    const fallback = new Error(error?.message || 'Unknown error occurred') as ApiError;
+    const fallbackMessage =
+      error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error occurred';
+    const fallback = new Error(fallbackMessage) as ApiError;
     fallback.name = 'ApiError';
     return fallback;
   }
@@ -174,7 +191,7 @@ class ApiClient {
   /**
    * GET 请求
    */
-  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.get<T>(url, config);
     return response.data;
   }
@@ -182,7 +199,7 @@ class ApiClient {
   /**
    * POST 请求
    */
-  async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.post<T>(url, data, config);
     return response.data;
   }
@@ -190,7 +207,7 @@ class ApiClient {
   /**
    * PUT 请求
    */
-  async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.put<T>(url, data, config);
     return response.data;
   }
@@ -198,7 +215,7 @@ class ApiClient {
   /**
    * PATCH 请求
    */
-  async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.patch<T>(url, data, config);
     return response.data;
   }
@@ -206,7 +223,7 @@ class ApiClient {
   /**
    * DELETE 请求
    */
-  async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.delete<T>(url, config);
     return response.data;
   }
@@ -221,7 +238,11 @@ class ApiClient {
   /**
    * 发送 FormData
    */
-  async postForm<T = any>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<T> {
+  async postForm<T = unknown>(
+    url: string,
+    formData: FormData,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
     const response = await this.instance.post<T>(url, formData, {
       ...config,
       headers: {

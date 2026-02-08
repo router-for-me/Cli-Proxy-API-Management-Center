@@ -13,14 +13,14 @@ export interface ApiCallRequest {
   data?: string;
 }
 
-export interface ApiCallResult<T = any> {
+export interface ApiCallResult<T = unknown> {
   statusCode: number;
   header: Record<string, string[]>;
   bodyText: string;
   body: T | null;
 }
 
-const normalizeBody = (input: unknown): { bodyText: string; body: any | null } => {
+const normalizeBody = (input: unknown): { bodyText: string; body: unknown | null } => {
   if (input === undefined || input === null) {
     return { bodyText: '', body: null };
   }
@@ -46,13 +46,24 @@ const normalizeBody = (input: unknown): { bodyText: string; body: any | null } =
 };
 
 export const getApiCallErrorMessage = (result: ApiCallResult): string => {
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    value !== null && typeof value === 'object';
+
   const status = result.statusCode;
   const body = result.body;
   const bodyText = result.bodyText;
   let message = '';
 
-  if (body && typeof body === 'object') {
-    message = body?.error?.message || body?.error || body?.message || '';
+  if (isRecord(body)) {
+    const errorValue = body.error;
+    if (isRecord(errorValue) && typeof errorValue.message === 'string') {
+      message = errorValue.message;
+    } else if (typeof errorValue === 'string') {
+      message = errorValue;
+    }
+    if (!message && typeof body.message === 'string') {
+      message = body.message;
+    }
   } else if (typeof body === 'string') {
     message = body;
   }
@@ -71,7 +82,7 @@ export const apiCallApi = {
     payload: ApiCallRequest,
     config?: AxiosRequestConfig
   ): Promise<ApiCallResult> => {
-    const response = await apiClient.post('/api-call', payload, config);
+    const response = await apiClient.post<Record<string, unknown>>('/api-call', payload, config);
     const statusCode = Number(response?.status_code ?? response?.statusCode ?? 0);
     const header = (response?.header ?? response?.headers ?? {}) as Record<string, string[]>;
     const { bodyText, body } = normalizeBody(response?.body);

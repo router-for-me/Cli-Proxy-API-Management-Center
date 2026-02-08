@@ -31,7 +31,7 @@ export interface Config {
   vertexApiKeys?: ProviderKeyConfig[];
   openaiCompatibility?: OpenAIProviderConfig[];
   oauthExcludedModels?: Record<string, string[]>;
-  raw?: Record<string, any>;
+  raw?: Record<string, unknown>;
 }
 
 export type RawConfigSection =

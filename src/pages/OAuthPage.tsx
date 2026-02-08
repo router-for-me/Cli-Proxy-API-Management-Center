@@ -56,6 +56,21 @@ interface VertexImportState {
   result?: VertexImportResult;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object';
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (isRecord(error) && typeof error.message === 'string') return error.message;
+  return typeof error === 'string' ? error : '';
+}
+
+function getErrorStatus(error: unknown): number | undefined {
+  if (!isRecord(error)) return undefined;
+  return typeof error.status === 'number' ? error.status : undefined;
+}
+
 const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string; icon: string | { light: string; dark: string } }[] = [
   { id: 'codex', titleKey: 'auth_login.codex_oauth_title', hintKey: 'auth_login.codex_oauth_hint', urlLabelKey: 'auth_login.codex_oauth_url_label', icon: { light: iconCodexLight, dark: iconCodexDark } },
   { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
@@ -127,8 +142,8 @@ export function OAuthPage() {
           window.clearInterval(timer);
           delete timers.current[provider];
         }
-      } catch (err: any) {
-        updateProviderState(provider, { status: 'error', error: err?.message, polling: false });
+      } catch (err: unknown) {
+        updateProviderState(provider, { status: 'error', error: getErrorMessage(err), polling: false });
         window.clearInterval(timer);
         delete timers.current[provider];
       }
@@ -159,9 +174,13 @@ export function OAuthPage() {
       if (res.state) {
         startPolling(provider, res.state);
       }
-    } catch (err: any) {
-      updateProviderState(provider, { status: 'error', error: err?.message, polling: false });
-      showNotification(`${t(getAuthKey(provider, 'oauth_start_error'))} ${err?.message || ''}`, 'error');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      updateProviderState(provider, { status: 'error', error: message, polling: false });
+      showNotification(
+        `${t(getAuthKey(provider, 'oauth_start_error'))}${message ? ` ${message}` : ''}`,
+        'error'
+      );
     }
   };
 
@@ -190,13 +209,15 @@ export function OAuthPage() {
       await oauthApi.submitCallback(provider, redirectUrl);
       updateProviderState(provider, { callbackSubmitting: false, callbackStatus: 'success' });
       showNotification(t('auth_login.oauth_callback_success'), 'success');
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const status = getErrorStatus(err);
+      const message = getErrorMessage(err);
       const errorMessage =
-        err?.status === 404
+        status === 404
           ? t('auth_login.oauth_callback_upgrade_hint', {
               defaultValue: 'Please update CLI Proxy API or check the connection.'
             })
-          : err?.message;
+          : message || undefined;
       updateProviderState(provider, {
         callbackSubmitting: false,
         callbackStatus: 'error',
@@ -236,15 +257,19 @@ export function OAuthPage() {
         }));
         showNotification(`${t('auth_login.iflow_cookie_status_error')} ${res.error || ''}`, 'error');
       }
-    } catch (err: any) {
-      if (err?.status === 409) {
+    } catch (err: unknown) {
+      if (getErrorStatus(err) === 409) {
         const message = t('auth_login.iflow_cookie_config_duplicate');
         setIflowCookie((prev) => ({ ...prev, loading: false, error: message, errorType: 'warning' }));
         showNotification(message, 'warning');
         return;
       }
-      setIflowCookie((prev) => ({ ...prev, loading: false, error: err?.message, errorType: 'error' }));
-      showNotification(`${t('auth_login.iflow_cookie_start_error')} ${err?.message || ''}`, 'error');
+      const message = getErrorMessage(err);
+      setIflowCookie((prev) => ({ ...prev, loading: false, error: message, errorType: 'error' }));
+      showNotification(
+        `${t('auth_login.iflow_cookie_start_error')}${message ? ` ${message}` : ''}`,
+        'error'
+      );
     }
   };
 
@@ -292,8 +317,8 @@ export function OAuthPage() {
       };
       setVertexState((prev) => ({ ...prev, loading: false, result }));
       showNotification(t('vertex_import.success'), 'success');
-    } catch (err: any) {
-      const message = err?.message || '';
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
       setVertexState((prev) => ({
         ...prev,
         loading: false,

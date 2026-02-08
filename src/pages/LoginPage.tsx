@@ -15,11 +15,20 @@ import styles from './LoginPage.module.scss';
 /**
  * 将 API 错误转换为本地化的用户友好消息
  */
-function getLocalizedErrorMessage(error: any, t: (key: string) => string): string {
-  const apiError = error as ApiError;
-  const status = apiError?.status;
-  const code = apiError?.code;
-  const message = apiError?.message || '';
+type RedirectState = { from?: { pathname?: string } };
+
+function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): string {
+  const apiError = error as Partial<ApiError>;
+  const status = typeof apiError.status === 'number' ? apiError.status : undefined;
+  const code = typeof apiError.code === 'string' ? apiError.code : undefined;
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof apiError.message === 'string'
+        ? apiError.message
+        : typeof error === 'string'
+          ? error
+          : '';
 
   // 根据 HTTP 状态码判断
   if (status === 401) {
@@ -99,7 +108,7 @@ export function LoginPage() {
           setAutoLoginSuccess(true);
           // 延迟跳转，让用户看到成功动画
           setTimeout(() => {
-            const redirect = (location.state as any)?.from?.pathname || '/';
+            const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
             navigate(redirect, { replace: true });
           }, 1500);
         } else {
@@ -135,7 +144,7 @@ export function LoginPage() {
       });
       showNotification(t('common.connected_status'), 'success');
       navigate('/', { replace: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       const message = getLocalizedErrorMessage(err, t);
       setError(message);
       showNotification(`${t('notification.login_failed')}: ${message}`, 'error');
@@ -155,7 +164,7 @@ export function LoginPage() {
   );
 
   if (isAuthenticated && !autoLoading && !autoLoginSuccess) {
-    const redirect = (location.state as any)?.from?.pathname || '/';
+    const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
     return <Navigate to={redirect} replace />;
   }
 

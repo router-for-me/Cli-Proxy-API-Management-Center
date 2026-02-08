@@ -43,5 +43,5 @@ export interface OpenAIProviderConfig {
   models?: ModelAlias[];
   priority?: number;
   testModel?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }

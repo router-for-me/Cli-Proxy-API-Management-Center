@@ -13,7 +13,7 @@ interface UseApiOptions<T> {
   successMessage?: string;
 }
 
-export function useApi<T = any, Args extends any[] = any[]>(
+export function useApi<T = unknown, Args extends unknown[] = unknown[]>(
   apiFunction: (...args: Args) => Promise<T>,
   options: UseApiOptions<T> = {}
 ) {
@@ -38,8 +38,9 @@ export function useApi<T = any, Args extends any[] = any[]>(
 
         options.onSuccess?.(result);
         return result;
-      } catch (err) {
-        const errorObj = err as Error;
+      } catch (err: unknown) {
+        const errorObj =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'Unknown error');
         setError(errorObj);
 
         if (options.showErrorNotification !== false) {

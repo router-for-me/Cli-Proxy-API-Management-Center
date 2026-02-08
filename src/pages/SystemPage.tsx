@@ -83,14 +83,23 @@ export function SystemPage() {
     return resolvedTheme === 'dark' ? iconEntry.dark : iconEntry.light;
   };
 
-  const normalizeApiKeyList = (input: any): string[] => {
+  const normalizeApiKeyList = (input: unknown): string[] => {
     if (!Array.isArray(input)) return [];
     const seen = new Set<string>();
     const keys: string[] = [];
 
     input.forEach((item) => {
-      const value = typeof item === 'string' ? item : item?.['api-key'] ?? item?.apiKey ?? '';
-      const trimmed = String(value || '').trim();
+      const record =
+        item !== null && typeof item === 'object' && !Array.isArray(item)
+          ? (item as Record<string, unknown>)
+          : null;
+      const value =
+        typeof item === 'string'
+          ? item
+          : record
+            ? (record['api-key'] ?? record['apiKey'] ?? record.key ?? record.Key)
+            : '';
+      const trimmed = String(value ?? '').trim();
       if (!trimmed || seen.has(trimmed)) return;
       seen.add(trimmed);
       keys.push(trimmed);
@@ -151,9 +160,12 @@ export function SystemPage() {
         type: hasModels ? 'success' : 'warning',
         message: hasModels ? t('system_info.models_count', { count: list.length }) : t('system_info.models_empty')
       });
-    } catch (err: any) {
-      const message = `${t('system_info.models_error')}: ${err?.message || ''}`;
-      setModelStatus({ type: 'error', message });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+      const suffix = message ? `: ${message}` : '';
+      const text = `${t('system_info.models_error')}${suffix}`;
+      setModelStatus({ type: 'error', message: text });
     }
   };
 
@@ -219,9 +231,14 @@ export function SystemPage() {
       clearCache('request-log');
       showNotification(t('notification.request_log_updated'), 'success');
       setRequestLogModalOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : typeof error === 'string' ? error : '';
       updateConfigValue('request-log', previous);
-      showNotification(`${t('notification.update_failed')}: ${error?.message || ''}`, 'error');
+      showNotification(
+        `${t('notification.update_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
     } finally {
       setRequestLogSaving(false);
     }
@@ -282,11 +299,11 @@ export function SystemPage() {
             <div className={styles.tileValue}>{buildTime}</div>
           </div>
 
-          <div className={styles.infoTile}>
-            <div className={styles.tileLabel}>{t('connection.status')}</div>
-            <div className={styles.tileValue}>{t(`common.${auth.connectionStatus}_status` as any)}</div>
-            <div className={styles.tileSub}>{auth.apiBase || '-'}</div>
-          </div>
+	          <div className={styles.infoTile}>
+	            <div className={styles.tileLabel}>{t('connection.status')}</div>
+	            <div className={styles.tileValue}>{t(`common.${auth.connectionStatus}_status`)}</div>
+	            <div className={styles.tileSub}>{auth.apiBase || '-'}</div>
+	          </div>
         </div>
 
         <div className={styles.aboutActions}>

@@ -10,7 +10,7 @@ export type PayloadParamEntry = {
 export type PayloadModelEntry = {
   id: string;
   name: string;
-  protocol?: 'openai' | 'gemini' | 'claude' | 'codex' | 'antigravity';
+  protocol?: 'openai' | 'openai-response' | 'gemini' | 'claude' | 'codex' | 'antigravity';
 };
 
 export type PayloadRule = {

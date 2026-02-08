@@ -17,8 +17,8 @@ export interface ApiClientConfig {
 export interface RequestOptions {
   method?: HttpMethod;
   headers?: Record<string, string>;
-  params?: Record<string, any>;
-  data?: any;
+  params?: Record<string, unknown>;
+  data?: unknown;
 }
 
 // 服务器版本信息
@@ -31,6 +31,6 @@ export interface ServerVersion {
 export type ApiError = Error & {
   status?: number;
   code?: string;
-  details?: any;
-  data?: any;
+  details?: unknown;
+  data?: unknown;
 };

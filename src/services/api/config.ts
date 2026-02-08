@@ -72,8 +72,10 @@ export const configApi = {
    * 获取日志总大小上限（MB）
    */
   async getLogsMaxTotalSizeMb(): Promise<number> {
-    const data = await apiClient.get('/logs-max-total-size-mb');
-    return data?.['logs-max-total-size-mb'] ?? data?.logsMaxTotalSizeMb ?? 0;
+    const data = await apiClient.get<Record<string, unknown>>('/logs-max-total-size-mb');
+    const value = data?.['logs-max-total-size-mb'] ?? data?.logsMaxTotalSizeMb ?? 0;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   },
 
   /**
@@ -91,8 +93,8 @@ export const configApi = {
    * 获取强制模型前缀开关
    */
   async getForceModelPrefix(): Promise<boolean> {
-    const data = await apiClient.get('/force-model-prefix');
-    return data?.['force-model-prefix'] ?? data?.forceModelPrefix ?? false;
+    const data = await apiClient.get<Record<string, unknown>>('/force-model-prefix');
+    return Boolean(data?.['force-model-prefix'] ?? data?.forceModelPrefix ?? false);
   },
 
   /**
@@ -104,8 +106,9 @@ export const configApi = {
    * 获取路由策略
    */
   async getRoutingStrategy(): Promise<string> {
-    const data = await apiClient.get('/routing/strategy');
-    return data?.strategy ?? data?.['routing-strategy'] ?? data?.routingStrategy ?? 'round-robin';
+    const data = await apiClient.get<Record<string, unknown>>('/routing/strategy');
+    const strategy = data?.strategy ?? data?.['routing-strategy'] ?? data?.routingStrategy;
+    return typeof strategy === 'string' ? strategy : 'round-robin';
   },
 
   /**

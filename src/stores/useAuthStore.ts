@@ -117,10 +117,16 @@ export const useAuthStore = create<AuthStoreState>()(
           } else {
             localStorage.removeItem('isLoggedIn');
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : typeof error === 'string'
+                ? error
+                : 'Connection failed';
           set({
             connectionStatus: 'error',
-            connectionError: error.message || 'Connection failed'
+            connectionError: message || 'Connection failed'
           });
           throw error;
         }

@@ -1,7 +1,7 @@
 import { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
-import { usePageTransitionLayer } from '@/components/common/PageTransition';
+import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import { useThemeStore } from '@/stores';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
@@ -135,8 +135,9 @@ export function ProviderNav() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     contentScroller?.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll);
-    handleScroll();
+    const raf = requestAnimationFrame(handleScroll);
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
       contentScroller?.removeEventListener('scroll', handleScroll);
@@ -168,7 +169,8 @@ export function ProviderNav() {
 
   useLayoutEffect(() => {
     if (!shouldShow) return;
-    updateIndicator(activeProvider);
+    const raf = requestAnimationFrame(() => updateIndicator(activeProvider));
+    return () => cancelAnimationFrame(raf);
   }, [activeProvider, shouldShow, updateIndicator]);
 
   // Expose overlay height to the page, so it can reserve bottom padding and avoid being covered.

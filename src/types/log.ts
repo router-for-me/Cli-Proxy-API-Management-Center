@@ -11,7 +11,7 @@ export interface LogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 // 日志筛选

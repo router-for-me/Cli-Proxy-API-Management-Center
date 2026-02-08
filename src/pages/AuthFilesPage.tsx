@@ -3,7 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useInterval } from '@/hooks/useInterval';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { usePageTransitionLayer } from '@/components/common/PageTransition';
+import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -1475,11 +1475,14 @@ export function AuthFilesPage() {
     return GEMINI_CLI_CONFIG;
   };
 
-  const getQuotaState = (type: QuotaProviderType, fileName: string) => {
-    if (type === 'antigravity') return antigravityQuota[fileName];
-    if (type === 'codex') return codexQuota[fileName];
-    return geminiCliQuota[fileName];
-  };
+  const getQuotaState = useCallback(
+    (type: QuotaProviderType, fileName: string) => {
+      if (type === 'antigravity') return antigravityQuota[fileName];
+      if (type === 'codex') return codexQuota[fileName];
+      return geminiCliQuota[fileName];
+    },
+    [antigravityQuota, codexQuota, geminiCliQuota]
+  );
 
   const updateQuotaState = useCallback(
     (
