@@ -16,7 +16,6 @@
         "@codemirror/lang-yaml": "^6.1.2",
         "@codemirror/search": "^6.6.0",
         "@codemirror/view": "^6.39.13",
-        "@types/node": "^25.2.2",
         "@uiw/react-codemirror": "^4.25.3",
         "axios": "^1.13.2",
         "chart.js": "^4.5.1",
@@ -31,6 +30,7 @@
         "zustand": "^5.0.9"
     },
     "devDependencies": {
+        "@types/node": "^25.2.2",
         "@types/react": "^19.2.7",
         "@types/react-dom": "^19.2.3",
         "@typescript-eslint/eslint-plugin": "^8.48.1",
