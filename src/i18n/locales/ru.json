@@ -988,7 +988,7 @@
   },
   "quota_management": {
     "title": "Управление квотами",
-    "description": "Следите за статусом квот OAuth для учётных данных Antigravity, Codex и Gemini CLI.",
+    "description": "Мониторинг квот OAuth для Antigravity, Codex, Gemini CLI и Kiro.",
     "refresh_files": "Обновить файлы авторизации",
     "refresh_files_and_quota": "Обновить файлы и квоты"
   },
@@ -1126,5 +1126,18 @@
     "build_date": "Время сборки",
     "version": "Версия интерфейса управления",
     "author": "Автор"
+  },
+  "kiro_quota": {
+    "title": "Квота Kiro",
+    "empty_title": "Нет файлов авторизации Kiro",
+    "empty_desc": "Загрузите учётные данные Kiro (AWS CodeWhisperer) для просмотра оставшейся квоты.",
+    "idle": "Нажмите для обновления квоты",
+    "loading": "Загрузка квоты...",
+    "load_failed": "Не удалось загрузить квоту: {{message}}",
+    "missing_auth_index": "В файле авторизации отсутствует auth_index",
+    "empty_resources": "Нет данных о квоте",
+    "refresh_button": "Обновить квоту",
+    "fetch_all": "Получить все",
+    "plan_label": "План:"
   }
 }

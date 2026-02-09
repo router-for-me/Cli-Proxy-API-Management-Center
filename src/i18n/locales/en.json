@@ -983,7 +983,7 @@
   },
   "quota_management": {
     "title": "Quota Management",
-    "description": "Monitor OAuth quota status for Antigravity, Codex, and Gemini CLI credentials.",
+    "description": "Monitor OAuth quota status for Antigravity, Codex, Gemini CLI, and Kiro credentials.",
     "refresh_files": "Refresh auth files",
     "refresh_files_and_quota": "Refresh files & quota"
   },
@@ -1121,5 +1121,18 @@
     "build_date": "Build Time",
     "version": "Management UI Version",
     "author": "Author"
+  },
+  "kiro_quota": {
+    "title": "Kiro Quota",
+    "empty_title": "No Kiro Auth Files",
+    "empty_desc": "Upload a Kiro (AWS CodeWhisperer) credential to view remaining quota.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_resources": "No quota data available",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "plan_label": "Plan:"
   }
 }
