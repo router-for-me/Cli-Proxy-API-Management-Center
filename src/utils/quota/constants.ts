@@ -34,6 +34,10 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
         light: { bg: '#e0f7fa', text: '#006064' },
         dark: { bg: '#004d40', text: '#80deea' },
     },
+    'github-copilot': {
+        light: { bg: '#f0f4f8', text: '#0366d6' },
+        dark: { bg: '#1f2937', text: '#58a6ff' },
+    },
     iflow: {
         light: { bg: '#f3e5f5', text: '#7b1fa2' },
         dark: { bg: '#4a148c', text: '#ce93d8' },
@@ -143,6 +147,24 @@ export const GEMINI_CLI_GROUP_LOOKUP = new Map(
 );
 
 export const GEMINI_CLI_IGNORED_MODEL_PREFIXES = ['gemini-2.0-flash'];
+
+// Copilot API configuration
+export const COPILOT_QUOTA_URL = 'https://api.github.com/copilot_internal/user';
+
+export const COPILOT_REQUEST_HEADERS = {
+    Authorization: 'token $TOKEN$',
+    'Content-Type': 'application/json',
+    'editor-version': 'vscode/1.99.0',
+    'editor-plugin-version': 'copilot-chat/0.26.7',
+    'user-agent': 'GitHubCopilotChat/0.26.7',
+    'x-github-api-version': '2025-04-01',
+};
+
+export const COPILOT_QUOTA_CATEGORIES = [
+    { id: 'premium_interactions', labelKey: 'copilot_quota.premium_interactions' },
+    { id: 'chat', labelKey: 'copilot_quota.chat' },
+    { id: 'completions', labelKey: 'copilot_quota.completions' },
+] as const;
 
 // Codex API configuration
 export const CODEX_USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';

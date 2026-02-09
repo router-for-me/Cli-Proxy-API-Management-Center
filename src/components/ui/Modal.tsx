@@ -111,7 +111,7 @@ export function Modal({
 }: PropsWithChildren<ModalProps>) {
     const [isVisible, setIsVisible] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
-    const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const closeTimerRef = useRef<number | null>(null);
 
     const startClose = useCallback(
         (notifyParent: boolean) => {

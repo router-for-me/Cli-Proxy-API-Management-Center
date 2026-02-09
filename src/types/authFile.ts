@@ -14,6 +14,7 @@ export type AuthFileType =
     | 'antigravity'
     | 'iflow'
     | 'vertex'
+    | 'github-copilot'
     | 'empty'
     | 'unknown';
 

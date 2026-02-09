@@ -7,11 +7,18 @@ import type {
     AntigravityQuotaGroupDefinition,
     AntigravityQuotaInfo,
     AntigravityModelsPayload,
+    CopilotQuotaCategory,
+    CopilotQuotaSnapshots,
     GeminiCliParsedBucket,
     GeminiCliQuotaBucketState,
 } from '@/types';
-import { ANTIGRAVITY_QUOTA_GROUPS, GEMINI_CLI_GROUP_LOOKUP, GEMINI_CLI_GROUP_ORDER } from './constants';
-import { normalizeQuotaFraction } from './parsers';
+import {
+    ANTIGRAVITY_QUOTA_GROUPS,
+    COPILOT_QUOTA_CATEGORIES,
+    GEMINI_CLI_GROUP_LOOKUP,
+    GEMINI_CLI_GROUP_ORDER,
+} from './constants';
+import { normalizeNumberValue, normalizeQuotaFraction } from './parsers';
 import { isIgnoredGeminiCliModel } from './validators';
 
 export function pickEarlierResetTime(current?: string, next?: string): string | undefined {
@@ -242,4 +249,28 @@ export function buildAntigravityQuotaGroups(models: AntigravityModelsPayload): A
     }
 
     return groups;
+}
+
+export function buildCopilotQuotaCategories(snapshots: CopilotQuotaSnapshots): CopilotQuotaCategory[] {
+    return COPILOT_QUOTA_CATEGORIES.map(({ id, labelKey }) => {
+        const detail = snapshots[id as keyof CopilotQuotaSnapshots];
+        const remaining = normalizeNumberValue(detail?.remaining ?? detail?.quota_remaining);
+        const entitlement = normalizeNumberValue(detail?.entitlement);
+        const overageCount = normalizeNumberValue(detail?.overage_count) ?? 0;
+        const overagePermitted = Boolean(detail?.overage_permitted);
+        const unlimited = Boolean(detail?.unlimited);
+        const percentRemainingRaw = normalizeNumberValue(detail?.percent_remaining);
+        const percentRemaining = percentRemainingRaw === null ? null : Math.max(0, Math.min(100, percentRemainingRaw));
+
+        return {
+            id,
+            labelKey,
+            percentRemaining,
+            remaining,
+            entitlement,
+            unlimited,
+            overagePermitted,
+            overageCount,
+        };
+    });
 }

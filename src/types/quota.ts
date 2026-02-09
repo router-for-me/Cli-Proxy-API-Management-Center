@@ -97,6 +97,30 @@ export interface CodexUsagePayload {
     codeReviewRateLimit?: CodexRateLimitInfo | null;
 }
 
+export interface CopilotQuotaDetail {
+    entitlement?: number | string;
+    overage_count?: number | string;
+    overage_permitted?: boolean;
+    percent_remaining?: number | string;
+    quota_id?: string;
+    quota_remaining?: number | string;
+    remaining?: number | string;
+    unlimited?: boolean;
+}
+
+export interface CopilotQuotaSnapshots {
+    chat?: CopilotQuotaDetail;
+    completions?: CopilotQuotaDetail;
+    premium_interactions?: CopilotQuotaDetail;
+}
+
+export interface CopilotQuotaPayload {
+    access_type_sku?: string;
+    copilot_plan?: string;
+    quota_reset_date?: string;
+    quota_snapshots?: CopilotQuotaSnapshots;
+}
+
 // Quota state types
 export interface AntigravityQuotaGroup {
     id: string;
@@ -142,6 +166,26 @@ export interface CodexQuotaState {
     status: 'idle' | 'loading' | 'success' | 'error';
     windows: CodexQuotaWindow[];
     planType?: string | null;
+    error?: string;
+    errorStatus?: number;
+}
+
+export interface CopilotQuotaCategory {
+    id: string;
+    labelKey: string;
+    percentRemaining: number | null;
+    remaining: number | null;
+    entitlement: number | null;
+    unlimited: boolean;
+    overagePermitted: boolean;
+    overageCount: number;
+}
+
+export interface CopilotQuotaState {
+    status: 'idle' | 'loading' | 'success' | 'error';
+    categories: CopilotQuotaCategory[];
+    planType?: string | null;
+    resetDate?: string | null;
     error?: string;
     errorStatus?: number;
 }

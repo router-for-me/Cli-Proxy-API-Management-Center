@@ -104,7 +104,8 @@
 
 .antigravityGrid,
 .codexGrid,
-.geminiCliGrid {
+.geminiCliGrid,
+.copilotGrid {
     display: grid;
     gap: $spacing-md;
     grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -116,7 +117,8 @@
 
 .antigravityControls,
 .codexControls,
-.geminiCliControls {
+.geminiCliControls,
+.copilotControls {
     display: flex;
     gap: $spacing-md;
     flex-wrap: wrap;
@@ -126,7 +128,8 @@
 
 .antigravityControl,
 .codexControl,
-.geminiCliControl {
+.geminiCliControl,
+.copilotControl {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -155,6 +158,10 @@
 
 .geminiCliCard {
     background-image: linear-gradient(180deg, rgba(231, 239, 255, 0.2), rgba(231, 239, 255, 0));
+}
+
+.copilotCard {
+    background-image: linear-gradient(180deg, rgba(240, 244, 248, 0.2), rgba(240, 244, 248, 0));
 }
 
 .quotaSection {
@@ -292,6 +299,31 @@
     font-weight: 600;
     color: var(--text-primary);
     text-transform: capitalize;
+}
+
+.copilotPlan,
+.copilotReset {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.copilotPlanLabel,
+.copilotResetLabel {
+    color: var(--text-tertiary);
+}
+
+.copilotPlanValue,
+.copilotResetValue {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.quotaOverage {
+    color: var(--warning-color, #f59e0b);
+    font-weight: 600;
 }
 
 .fileCard {

@@ -15,6 +15,8 @@ import type {
     CodexUsageWindow,
     CodexQuotaWindow,
     CodexUsagePayload,
+    CopilotQuotaCategory,
+    CopilotQuotaState,
     GeminiCliParsedBucket,
     GeminiCliQuotaBucketState,
     GeminiCliQuotaState,
@@ -25,6 +27,8 @@ import {
     ANTIGRAVITY_REQUEST_HEADERS,
     CODEX_USAGE_URL,
     CODEX_REQUEST_HEADERS,
+    COPILOT_QUOTA_URL,
+    COPILOT_REQUEST_HEADERS,
     GEMINI_CLI_QUOTA_URL,
     GEMINI_CLI_REQUEST_HEADERS,
     normalizeAuthIndexValue,
@@ -35,6 +39,7 @@ import {
     normalizeStringValue,
     parseAntigravityPayload,
     parseCodexUsagePayload,
+    parseCopilotQuotaPayload,
     parseGeminiCliQuotaPayload,
     resolveCodexChatgptAccountId,
     resolveCodexPlanType,
@@ -42,12 +47,14 @@ import {
     formatCodexResetLabel,
     formatQuotaResetTime,
     buildAntigravityQuotaGroups,
+    buildCopilotQuotaCategories,
     buildGeminiCliQuotaBuckets,
     createStatusError,
     getStatusFromError,
     isAntigravityFile,
     isCodexFile,
     isDisabledAuthFile,
+    isCopilotFile,
     isGeminiCliFile,
     isRuntimeOnlyAuthFile,
 } from '@/utils/quota';
@@ -56,7 +63,7 @@ import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-type QuotaType = 'antigravity' | 'codex' | 'gemini-cli';
+type QuotaType = 'antigravity' | 'codex' | 'gemini-cli' | 'github-copilot';
 
 const DEFAULT_ANTIGRAVITY_PROJECT_ID = 'bamboo-precept-lgxtn';
 
@@ -64,9 +71,11 @@ export interface QuotaStore {
     antigravityQuota: Record<string, AntigravityQuotaState>;
     codexQuota: Record<string, CodexQuotaState>;
     geminiCliQuota: Record<string, GeminiCliQuotaState>;
+    copilotQuota: Record<string, CopilotQuotaState>;
     setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
     setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
     setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
+    setCopilotQuota: (updater: QuotaUpdater<Record<string, CopilotQuotaState>>) => void;
     clearQuotaCache: () => void;
 }
 
@@ -393,6 +402,44 @@ const fetchGeminiCliQuota = async (file: AuthFileItem, t: TFunction): Promise<Ge
     return buildGeminiCliQuotaBuckets(parsedBuckets);
 };
 
+const fetchCopilotQuota = async (
+    file: AuthFileItem,
+    t: TFunction
+): Promise<{ planType: string | null; resetDate: string | null; categories: CopilotQuotaCategory[] }> => {
+    const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+    const authIndex = normalizeAuthIndexValue(rawAuthIndex);
+    if (!authIndex) {
+        throw new Error(t('copilot_quota.missing_auth_index'));
+    }
+
+    const result = await apiCallApi.request({
+        authIndex,
+        method: 'GET',
+        url: COPILOT_QUOTA_URL,
+        header: { ...COPILOT_REQUEST_HEADERS },
+    });
+
+    if (result.statusCode < 200 || result.statusCode >= 300) {
+        throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
+    }
+
+    const payload = parseCopilotQuotaPayload(result.body ?? result.bodyText);
+    const snapshots = payload?.quota_snapshots;
+    if (!snapshots) {
+        throw new Error(t('copilot_quota.empty_snapshots'));
+    }
+
+    const planType = normalizeStringValue(payload?.copilot_plan);
+    const resetDate = normalizeStringValue(payload?.quota_reset_date);
+    const categories = buildCopilotQuotaCategories(snapshots);
+
+    return {
+        planType,
+        resetDate,
+        categories,
+    };
+};
+
 const renderAntigravityItems = (quota: AntigravityQuotaState, t: TFunction, helpers: QuotaRenderHelpers): ReactNode => {
     const { styles: styleMap, QuotaProgressBar } = helpers;
     const { createElement: h } = React;
@@ -535,6 +582,85 @@ const renderGeminiCliItems = (quota: GeminiCliQuotaState, t: TFunction, helpers:
     });
 };
 
+const renderCopilotItems = (quota: CopilotQuotaState, t: TFunction, helpers: QuotaRenderHelpers): ReactNode => {
+    const { styles: styleMap, QuotaProgressBar } = helpers;
+    const { createElement: h, Fragment } = React;
+    const categories = quota.categories ?? [];
+    const planType = quota.planType ?? null;
+    const resetDate = quota.resetDate ?? null;
+
+    const nodes: ReactNode[] = [];
+
+    if (planType) {
+        const planLabel = t(`copilot_quota.plan_${planType}`, { defaultValue: planType });
+        nodes.push(
+            h(
+                'div',
+                { key: 'plan', className: styleMap.copilotPlan },
+                h('span', { className: styleMap.copilotPlanLabel }, t('copilot_quota.plan_label')),
+                h('span', { className: styleMap.copilotPlanValue }, planLabel)
+            )
+        );
+    }
+
+    if (resetDate) {
+        nodes.push(
+            h(
+                'div',
+                { key: 'reset', className: styleMap.copilotReset },
+                h('span', { className: styleMap.copilotResetLabel }, t('copilot_quota.reset_label')),
+                h('span', { className: styleMap.copilotResetValue }, formatQuotaResetTime(resetDate))
+            )
+        );
+    }
+
+    if (categories.length === 0) {
+        nodes.push(h('div', { key: 'empty', className: styleMap.quotaMessage }, t('copilot_quota.empty_snapshots')));
+        return h(Fragment, null, ...nodes);
+    }
+
+    nodes.push(
+        ...categories.map((category) => {
+            const categoryLabel = t(category.labelKey);
+            const isUnlimited = category.unlimited;
+            const percent = isUnlimited ? null : category.percentRemaining;
+            const percentLabel = isUnlimited
+                ? t('copilot_quota.unlimited')
+                : percent === null
+                  ? '--'
+                  : `${Math.round(percent)}%`;
+            const remainingLabel =
+                isUnlimited || category.remaining === null
+                    ? null
+                    : t('copilot_quota.remaining_count', { count: category.remaining });
+            const overageLabel =
+                category.overagePermitted && category.overageCount > 0
+                    ? t('copilot_quota.overage', { count: category.overageCount })
+                    : null;
+
+            return h(
+                'div',
+                { key: category.id, className: styleMap.quotaRow },
+                h(
+                    'div',
+                    { className: styleMap.quotaRowHeader },
+                    h('span', { className: styleMap.quotaModel }, categoryLabel),
+                    h(
+                        'div',
+                        { className: styleMap.quotaMeta },
+                        h('span', { className: styleMap.quotaPercent }, percentLabel),
+                        remainingLabel ? h('span', { className: styleMap.quotaAmount }, remainingLabel) : null,
+                        overageLabel ? h('span', { className: styleMap.quotaOverage }, overageLabel) : null
+                    )
+                ),
+                !isUnlimited ? h(QuotaProgressBar, { percent, highThreshold: 60, mediumThreshold: 20 }) : null
+            );
+        })
+    );
+
+    return h(Fragment, null, ...nodes);
+};
+
 export const ANTIGRAVITY_CONFIG: QuotaConfig<AntigravityQuotaState, AntigravityQuotaGroup[]> = {
     type: 'antigravity',
     i18nPrefix: 'antigravity_quota',
@@ -581,6 +707,36 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, { planType: string | nul
     controlClassName: styles.codexControl,
     gridClassName: styles.codexGrid,
     renderQuotaItems: renderCodexItems,
+};
+
+export const COPILOT_CONFIG: QuotaConfig<
+    CopilotQuotaState,
+    { planType: string | null; resetDate: string | null; categories: CopilotQuotaCategory[] }
+> = {
+    type: 'github-copilot',
+    i18nPrefix: 'copilot_quota',
+    filterFn: (file) => isCopilotFile(file) && !isDisabledAuthFile(file),
+    fetchQuota: fetchCopilotQuota,
+    storeSelector: (state) => state.copilotQuota,
+    storeSetter: 'setCopilotQuota',
+    buildLoadingState: () => ({ status: 'loading', categories: [] }),
+    buildSuccessState: (data) => ({
+        status: 'success',
+        categories: data.categories,
+        planType: data.planType,
+        resetDate: data.resetDate,
+    }),
+    buildErrorState: (message, status) => ({
+        status: 'error',
+        categories: [],
+        error: message,
+        errorStatus: status,
+    }),
+    cardClassName: styles.copilotCard,
+    controlsClassName: styles.copilotControls,
+    controlClassName: styles.copilotControl,
+    gridClassName: styles.copilotGrid,
+    renderQuotaItems: renderCopilotItems,
 };
 
 export const GEMINI_CLI_CONFIG: QuotaConfig<GeminiCliQuotaState, GeminiCliQuotaBucketState[]> = {
