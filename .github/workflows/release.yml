@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Build all-in-one HTML
-        run: npm run build
+        run: npx vite build
         env:
           VERSION: ${{ github.ref_name }}
 
