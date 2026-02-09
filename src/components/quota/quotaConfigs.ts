@@ -642,25 +642,30 @@ export const GEMINI_CLI_CONFIG: QuotaConfig<GeminiCliQuotaState, GeminiCliQuotaB
 };
 
 const KIRO_RESOURCE_LABELS: Record<string, string> = {
+  CREDIT: 'Credits',
   AGENTIC_REQUEST: 'Agentic Requests',
   CODE_GENERATION: 'Code Generation',
   CODE_SCAN: 'Code Scan',
+};
+
+const kiroResetTimeFromEpoch = (epoch?: number): string | undefined => {
+  if (!epoch || epoch <= 0) return undefined;
+  // API returns seconds (e.g. 1.7723232E9), convert to ms
+  const ms = epoch < 1e12 ? epoch * 1000 : epoch;
+  return new Date(ms).toISOString();
 };
 
 const buildKiroResources = (payload: KiroUsagePayload): KiroQuotaResource[] => {
   const breakdowns = payload.usageBreakdownList;
   if (!breakdowns || !Array.isArray(breakdowns) || breakdowns.length === 0) return [];
 
-  const globalResetMs = payload.nextDateReset;
-  const globalResetTime =
-    globalResetMs && globalResetMs > 0
-      ? new Date(globalResetMs).toISOString()
-      : undefined;
+  const globalResetTime = kiroResetTimeFromEpoch(payload.nextDateReset);
 
   return breakdowns
     .map((breakdown, index) => {
       const resourceType = breakdown.resourceType ?? `resource-${index}`;
-      const label = KIRO_RESOURCE_LABELS[resourceType] ?? resourceType;
+      const displayName = breakdown.displayName;
+      const label = displayName ?? KIRO_RESOURCE_LABELS[resourceType] ?? resourceType;
 
       let totalLimit = breakdown.usageLimitWithPrecision ?? breakdown.usageLimit ?? 0;
       let currentUsage = breakdown.currentUsageWithPrecision ?? breakdown.currentUsage ?? 0;
@@ -676,11 +681,7 @@ const buildKiroResources = (payload: KiroUsagePayload): KiroQuotaResource[] => {
       const remainingQuota = Math.max(0, totalLimit - currentUsage);
       const usagePercent = totalLimit > 0 ? (currentUsage / totalLimit) * 100 : 100;
 
-      const itemResetMs = breakdown.nextDateReset;
-      const resetTime =
-        itemResetMs && itemResetMs > 0
-          ? new Date(itemResetMs).toISOString()
-          : globalResetTime;
+      const resetTime = kiroResetTimeFromEpoch(breakdown.nextDateReset) ?? globalResetTime;
 
       return {
         id: resourceType.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
