@@ -103,6 +103,7 @@
 }
 
 .antigravityGrid,
+.claudeGrid,
 .codexGrid,
 .geminiCliGrid {
   display: grid;
@@ -115,6 +116,7 @@
 }
 
 .antigravityControls,
+.claudeControls,
 .codexControls,
 .geminiCliControls {
   display: flex;
@@ -125,6 +127,7 @@
 }
 
 .antigravityControl,
+.claudeControl,
 .codexControl,
 .geminiCliControl {
   display: flex;
@@ -143,6 +146,12 @@
   display: flex;
   gap: $spacing-xs;
   align-items: center;
+}
+
+.claudeCard {
+  background-image: linear-gradient(180deg,
+      rgba(252, 228, 236, 0.18),
+      rgba(252, 228, 236, 0));
 }
 
 .antigravityCard {

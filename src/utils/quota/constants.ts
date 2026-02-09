@@ -151,6 +151,25 @@ export const GEMINI_CLI_GROUP_LOOKUP = new Map(
 
 export const GEMINI_CLI_IGNORED_MODEL_PREFIXES = ['gemini-2.0-flash'];
 
+// Claude API configuration
+export const CLAUDE_USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
+
+export const CLAUDE_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  'Content-Type': 'application/json',
+  'anthropic-beta': 'oauth-2025-04-20',
+};
+
+export const CLAUDE_USAGE_WINDOW_KEYS = [
+  { key: 'five_hour', id: 'five-hour', labelKey: 'claude_quota.five_hour' },
+  { key: 'seven_day', id: 'seven-day', labelKey: 'claude_quota.seven_day' },
+  { key: 'seven_day_oauth_apps', id: 'seven-day-oauth-apps', labelKey: 'claude_quota.seven_day_oauth_apps' },
+  { key: 'seven_day_opus', id: 'seven-day-opus', labelKey: 'claude_quota.seven_day_opus' },
+  { key: 'seven_day_sonnet', id: 'seven-day-sonnet', labelKey: 'claude_quota.seven_day_sonnet' },
+  { key: 'seven_day_cowork', id: 'seven-day-cowork', labelKey: 'claude_quota.seven_day_cowork' },
+  { key: 'iguana_necktie', id: 'iguana-necktie', labelKey: 'claude_quota.iguana_necktie' },
+] as const;
+
 // Codex API configuration
 export const CODEX_USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';
 

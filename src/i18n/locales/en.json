@@ -434,6 +434,26 @@
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All"
   },
+  "claude_quota": {
+    "title": "Claude Quota",
+    "empty_title": "No Claude OAuth Files",
+    "empty_desc": "Log in with Claude OAuth to view quota.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_windows": "No quota data available",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "five_hour": "5-hour limit",
+    "seven_day": "7-day limit",
+    "seven_day_oauth_apps": "7-day OAuth apps",
+    "seven_day_opus": "7-day Opus",
+    "seven_day_sonnet": "7-day Sonnet",
+    "seven_day_cowork": "7-day Cowork",
+    "iguana_necktie": "Iguana Necktie",
+    "extra_usage_label": "Extra Usage"
+  },
   "codex_quota": {
     "title": "Codex Quota",
     "empty_title": "No Codex Auth Files",

@@ -434,6 +434,26 @@
     "refresh_button": "刷新额度",
     "fetch_all": "获取全部"
   },
+  "claude_quota": {
+    "title": "Claude 额度",
+    "empty_title": "暂无 Claude OAuth 认证",
+    "empty_desc": "使用 Claude OAuth 登录后即可查看额度。",
+    "idle": "点击此处刷新额度",
+    "loading": "正在加载额度...",
+    "load_failed": "额度获取失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "empty_windows": "暂无额度数据",
+    "refresh_button": "刷新额度",
+    "fetch_all": "获取全部",
+    "five_hour": "5 小时限额",
+    "seven_day": "7 天限额",
+    "seven_day_oauth_apps": "7 天 OAuth 应用",
+    "seven_day_opus": "7 天 Opus",
+    "seven_day_sonnet": "7 天 Sonnet",
+    "seven_day_cowork": "7 天 Cowork",
+    "iguana_necktie": "Iguana Necktie",
+    "extra_usage_label": "额外用量"
+  },
   "codex_quota": {
     "title": "Codex 额度",
     "empty_title": "暂无 Codex 认证",
