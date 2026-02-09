@@ -139,11 +139,11 @@ export const GEMINI_CLI_QUOTA_GROUPS: GeminiCliQuotaGroupDefinition[] = [
 ];
 
 export const GEMINI_CLI_GROUP_ORDER = new Map(
-    GEMINI_CLI_QUOTA_GROUPS.map((group, index) => [group.id, index] as const),
+    GEMINI_CLI_QUOTA_GROUPS.map((group, index) => [group.id, index] as const)
 );
 
 export const GEMINI_CLI_GROUP_LOOKUP = new Map(
-    GEMINI_CLI_QUOTA_GROUPS.flatMap((group) => group.modelIds.map((modelId) => [modelId, group] as const)),
+    GEMINI_CLI_QUOTA_GROUPS.flatMap((group) => group.modelIds.map((modelId) => [modelId, group] as const))
 );
 
 export const GEMINI_CLI_IGNORED_MODEL_PREFIXES = ['gemini-2.0-flash'];

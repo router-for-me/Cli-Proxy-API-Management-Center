@@ -660,8 +660,7 @@ export function getApiStats(usageData: unknown, modelPrices: Record<string, Mode
                     }
 
                     const tokensRaw = isRecord(detailRecord.tokens) ? detailRecord.tokens : {};
-                    inputTokens +=
-                        typeof tokensRaw.input_tokens === 'number' ? Math.max(tokensRaw.input_tokens, 0) : 0;
+                    inputTokens += typeof tokensRaw.input_tokens === 'number' ? Math.max(tokensRaw.input_tokens, 0) : 0;
                     outputTokens +=
                         typeof tokensRaw.output_tokens === 'number' ? Math.max(tokensRaw.output_tokens, 0) : 0;
                     reasoningTokens +=
@@ -680,7 +679,8 @@ export function getApiStats(usageData: unknown, modelPrices: Record<string, Mode
                 });
             }
 
-            const totalTokens = Number(modelData.total_tokens) || inputTokens + outputTokens + reasoningTokens + cachedTokens;
+            const totalTokens =
+                Number(modelData.total_tokens) || inputTokens + outputTokens + reasoningTokens + cachedTokens;
 
             models[modelName] = {
                 requests: Number(modelData.total_requests) || 0,

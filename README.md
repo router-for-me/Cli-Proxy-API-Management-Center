@@ -77,9 +77,9 @@ See `api.md` for the full authentication rules, server-side limits, and edge cas
 - **Basic Settings**: debug, proxy URL, request retry, quota fallback (switch project/preview models), usage statistics, request logging, file logging, WebSocket auth.
 - **API Keys**: manage proxy `api-keys` (add/edit/delete).
 - **AI Providers**:
-  - Gemini/Codex/Claude key entries (base URL, headers, proxy, model aliases, excluded models, prefix).
-  - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side “chat/completions” test).
-  - Ampcode integration (upstream URL/key, force mappings, model mapping table).
+    - Gemini/Codex/Claude key entries (base URL, headers, proxy, model aliases, excluded models, prefix).
+    - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side “chat/completions” test).
+    - Ampcode integration (upstream URL/key, force mappings, model mapping table).
 - **Auth Files**: upload/download/delete JSON credentials, filter/search/pagination, runtime-only indicators, view supported models per credential (when the server supports it), manage OAuth excluded models (supports `*` wildcards).
 - **OAuth**: start OAuth/device flows for supported providers, poll status, optionally submit callback `redirect_url`; includes iFlow cookie import.
 - **Usage**: requests/tokens charts (hour/day), per-API & per-model breakdown, cached/reasoning token breakdown, RPM/TPM window, optional cost estimation with locally-saved model pricing.

@@ -3,7 +3,7 @@ name: Build and Release
 on:
     push:
         tags:
-            - "v*"
+            - 'v*'
 
 jobs:
     build-and-release:
@@ -22,8 +22,8 @@ jobs:
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: "18"
-                  cache: "pnpm"
+                  node-version: '18'
+                  cache: 'pnpm'
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4

@@ -30,7 +30,13 @@ import {
     useSparklines,
     useChartData,
 } from '@/components/usage';
-import { getModelNamesFromUsage, getApiStats, getModelStats, calculateTokenBreakdown, collectRecentRequests } from '@/utils/usage';
+import {
+    getModelNamesFromUsage,
+    getApiStats,
+    getModelStats,
+    calculateTokenBreakdown,
+    collectRecentRequests,
+} from '@/utils/usage';
 import styles from './UsagePage.module.scss';
 
 // Register Chart.js components

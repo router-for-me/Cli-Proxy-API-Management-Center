@@ -96,20 +96,24 @@ export function ApiDetailsCard({ apiStats, loading, hasPrices }: ApiDetailsCardP
                                             </span>
                                             <div className={styles.modelStatsStack}>
                                                 <span className={styles.modelStat}>
-                                                    {t('usage_stats.tokens_count')}: {formatTokensInMillions(stats.totalTokens)}
+                                                    {t('usage_stats.tokens_count')}:{' '}
+                                                    {formatTokensInMillions(stats.totalTokens)}
                                                 </span>
                                                 <span className={styles.modelStat}>
-                                                    {t('usage_stats.input_tokens')}: {formatTokensInMillions(stats.inputTokens)}
+                                                    {t('usage_stats.input_tokens')}:{' '}
+                                                    {formatTokensInMillions(stats.inputTokens)}
                                                 </span>
                                                 <span className={styles.modelStat}>
-                                                    {t('usage_stats.output_tokens')}: {formatTokensInMillions(stats.outputTokens)}
+                                                    {t('usage_stats.output_tokens')}:{' '}
+                                                    {formatTokensInMillions(stats.outputTokens)}
                                                 </span>
                                                 <span className={styles.modelStat}>
                                                     {t('usage_stats.reasoning_tokens')}:{' '}
                                                     {formatTokensInMillions(stats.reasoningTokens)}
                                                 </span>
                                                 <span className={styles.modelStat}>
-                                                    {t('usage_stats.cached_tokens')}: {formatTokensInMillions(stats.cachedTokens)}
+                                                    {t('usage_stats.cached_tokens')}:{' '}
+                                                    {formatTokensInMillions(stats.cachedTokens)}
                                                 </span>
                                             </div>
                                         </div>

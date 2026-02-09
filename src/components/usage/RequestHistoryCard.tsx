@@ -28,10 +28,19 @@ export function RequestHistoryCard({ loading, requests }: RequestHistoryCardProp
             ) : (
                 <div className={styles.requestHistoryList}>
                     {visibleRequests.map((request, index) => (
-                        <div key={`${request.timestamp}-${request.model}-${request.source}-${index}`} className={styles.requestHistoryItem}>
+                        <div
+                            key={`${request.timestamp}-${request.model}-${request.source}-${index}`}
+                            className={styles.requestHistoryItem}
+                        >
                             <div className={styles.requestHistoryHeader}>
-                                <span className={request.failed ? styles.requestStatusFailed : styles.requestStatusSuccess}>
-                                    {request.failed ? t('usage_stats.request_failed') : t('usage_stats.request_success')}
+                                <span
+                                    className={
+                                        request.failed ? styles.requestStatusFailed : styles.requestStatusSuccess
+                                    }
+                                >
+                                    {request.failed
+                                        ? t('usage_stats.request_failed')
+                                        : t('usage_stats.request_success')}
                                 </span>
                                 <span>{new Date(request.timestamp).toLocaleString()}</span>
                                 <span className={styles.requestHistoryModel}>{request.model}</span>
@@ -61,7 +70,11 @@ export function RequestHistoryCard({ loading, requests }: RequestHistoryCardProp
                     ))}
                     {hasMore && (
                         <div className={styles.requestHistoryActions}>
-                            <Button variant="secondary" size="sm" onClick={() => setVisibleCount((prev) => prev + DEFAULT_VISIBLE_COUNT)}>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setVisibleCount((prev) => prev + DEFAULT_VISIBLE_COUNT)}
+                            >
                                 {t('usage_stats.show_more')}
                             </Button>
                         </div>
