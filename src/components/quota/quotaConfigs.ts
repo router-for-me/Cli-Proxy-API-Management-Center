@@ -687,8 +687,8 @@ const buildKiroResources = (payload: KiroUsagePayload): KiroQuotaResource[] => {
 
       // Include free trial quota if available
       if (breakdown.freeTrialInfo) {
-        const freeLimit = breakdown.freeTrialInfo.usageLimitWithPrecision ?? 0;
-        const freeUsage = breakdown.freeTrialInfo.currentUsageWithPrecision ?? 0;
+        const freeLimit = breakdown.freeTrialInfo.usageLimitWithPrecision ?? breakdown.freeTrialInfo.usageLimit ?? 0;
+        const freeUsage = breakdown.freeTrialInfo.currentUsageWithPrecision ?? breakdown.freeTrialInfo.currentUsage ?? 0;
         totalLimit += freeLimit;
         currentUsage += freeUsage;
       }

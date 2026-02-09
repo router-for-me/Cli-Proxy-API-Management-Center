@@ -159,6 +159,8 @@ export interface KiroUsageBreakdown {
     freeTrialStatus?: string;
     usageLimitWithPrecision?: number;
     currentUsageWithPrecision?: number;
+    usageLimit?: number;
+    currentUsage?: number;
   };
 }
 
