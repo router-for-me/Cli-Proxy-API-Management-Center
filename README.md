@@ -4,8 +4,8 @@ A single-file WebUI (React + TypeScript) for operating and troubleshooting the *
 
 [中文文档](README_CN.md)
 
-**Main Project**: https://github.com/router-for-me/CLIProxyAPI  
-**Example URL**: https://remote.router-for.me/  
+**Main Project**: <https://github.com/router-for-me/CLIProxyAPI>  
+**Example URL**: <https://remote.router-for.me/>  
 **Minimum Required Version**: ≥ 6.3.0 (recommended ≥ 6.5.0)
 
 Since version 6.0.19, the WebUI ships with the main program; access it via `/management.html` on the API port once the service is running.
@@ -28,8 +28,8 @@ The address is auto-detected from the current page URL; manual override is suppo
 ### Option B: Run the dev server
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Open `http://localhost:5173`, then connect to your CLI Proxy API instance.
@@ -37,13 +37,13 @@ Open `http://localhost:5173`, then connect to your CLI Proxy API instance.
 ### Option C: Build a single HTML file
 
 ```bash
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 - Output: `dist/index.html` (all assets are inlined).
 - For CLIProxyAPI bundling, the release workflow renames it to `management.html`.
-- To preview locally: `npm run preview`
+- To preview locally: `pnpm run preview`
 
 Tip: opening `dist/index.html` via `file://` may be blocked by browser CORS; serving it (preview/static server) is more reliable.
 
@@ -77,9 +77,9 @@ See `api.md` for the full authentication rules, server-side limits, and edge cas
 - **Basic Settings**: debug, proxy URL, request retry, quota fallback (switch project/preview models), usage statistics, request logging, file logging, WebSocket auth.
 - **API Keys**: manage proxy `api-keys` (add/edit/delete).
 - **AI Providers**:
-    - Gemini/Codex/Claude key entries (base URL, headers, proxy, model aliases, excluded models, prefix).
-    - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side “chat/completions” test).
-    - Ampcode integration (upstream URL/key, force mappings, model mapping table).
+  - Gemini/Codex/Claude key entries (base URL, headers, proxy, model aliases, excluded models, prefix).
+  - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side “chat/completions” test).
+  - Ampcode integration (upstream URL/key, force mappings, model mapping table).
 - **Auth Files**: upload/download/delete JSON credentials, filter/search/pagination, runtime-only indicators, view supported models per credential (when the server supports it), manage OAuth excluded models (supports `*` wildcards).
 - **OAuth**: start OAuth/device flows for supported providers, poll status, optionally submit callback `redirect_url`; includes iFlow cookie import.
 - **Usage**: requests/tokens charts (hour/day), per-API & per-model breakdown, cached/reasoning token breakdown, RPM/TPM window, optional cost estimation with locally-saved model pricing.
@@ -109,12 +109,13 @@ See `api.md` for the full authentication rules, server-side limits, and edge cas
 ## Development
 
 ```bash
-npm run dev        # Vite dev server
-npm run build      # tsc + Vite build
-npm run preview    # serve dist locally
-npm run lint       # ESLint (fails on warnings)
-npm run format     # Prettier
-npm run type-check # tsc --noEmit
+pnpm run dev          # Vite dev server
+pnpm run build        # tsc + Vite build
+pnpm run preview      # serve dist locally
+pnpm run lint         # Oxlint
+pnpm run format       # Oxfmt
+pnpm run format:check # Oxfmt check mode
+pnpm run type-check   # tsc --noEmit
 ```
 
 ## Contributing
@@ -123,7 +124,7 @@ Issues and PRs are welcome. Please include:
 
 - Reproduction steps (server version + UI version)
 - Screenshots for UI changes
-- Verification notes (`npm run lint`, `npm run type-check`)
+- Verification notes (`pnpm run lint`, `pnpm run type-check`, `pnpm run format:check`)
 
 ## License
 

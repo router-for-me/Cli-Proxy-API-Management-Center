@@ -3,7 +3,7 @@ name: Build and Release
 on:
     push:
         tags:
-            - 'v*'
+            - "v*"
 
 jobs:
     build-and-release:
@@ -22,14 +22,19 @@ jobs:
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: '18'
-                  cache: 'npm'
+                  node-version: "18"
+                  cache: "pnpm"
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10
 
             - name: Install dependencies
-              run: npm ci
+              run: pnpm install --frozen-lockfile
 
             - name: Build all-in-one HTML
-              run: npm run build
+              run: pnpm run build
               env:
                   VERSION: ${{ github.ref_name }}
 
