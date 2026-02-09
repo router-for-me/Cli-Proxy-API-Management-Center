@@ -8,29 +8,29 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 // API 客户端配置
 export interface ApiClientConfig {
-  apiBase: string;
-  managementKey: string;
-  timeout?: number;
+    apiBase: string;
+    managementKey: string;
+    timeout?: number;
 }
 
 // 请求选项
 export interface RequestOptions {
-  method?: HttpMethod;
-  headers?: Record<string, string>;
-  params?: Record<string, unknown>;
-  data?: unknown;
+    method?: HttpMethod;
+    headers?: Record<string, string>;
+    params?: Record<string, unknown>;
+    data?: unknown;
 }
 
 // 服务器版本信息
 export interface ServerVersion {
-  version: string;
-  buildDate?: string;
+    version: string;
+    buildDate?: string;
 }
 
 // API 错误
 export type ApiError = Error & {
-  status?: number;
-  code?: string;
-  details?: unknown;
-  data?: unknown;
+    status?: number;
+    code?: string;
+    details?: unknown;
+    data?: unknown;
 };

@@ -4,32 +4,32 @@
  */
 
 export type AuthFileType =
-  | 'qwen'
-  | 'kimi'
-  | 'gemini'
-  | 'gemini-cli'
-  | 'aistudio'
-  | 'claude'
-  | 'codex'
-  | 'antigravity'
-  | 'iflow'
-  | 'vertex'
-  | 'empty'
-  | 'unknown';
+    | 'qwen'
+    | 'kimi'
+    | 'gemini'
+    | 'gemini-cli'
+    | 'aistudio'
+    | 'claude'
+    | 'codex'
+    | 'antigravity'
+    | 'iflow'
+    | 'vertex'
+    | 'empty'
+    | 'unknown';
 
 export interface AuthFileItem {
-  name: string;
-  type?: AuthFileType | string;
-  provider?: string;
-  size?: number;
-  authIndex?: string | number | null;
-  runtimeOnly?: boolean | string;
-  disabled?: boolean;
-  modified?: number;
-  [key: string]: unknown;
+    name: string;
+    type?: AuthFileType | string;
+    provider?: string;
+    size?: number;
+    authIndex?: string | number | null;
+    runtimeOnly?: boolean | string;
+    disabled?: boolean;
+    modified?: number;
+    [key: string]: unknown;
 }
 
 export interface AuthFilesResponse {
-  files: AuthFileItem[];
-  total?: number;
+    files: AuthFileItem[];
+    total?: number;
 }

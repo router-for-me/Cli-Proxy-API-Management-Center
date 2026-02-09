@@ -1,459 +1,462 @@
 @use '../styles/mixins' as *;
 
 .container {
-  width: 100%;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  padding-bottom: calc(
-    var(--config-action-bar-height, 0px) + 16px + env(safe-area-inset-bottom) + #{$spacing-md}
-  );
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding-bottom: calc(var(--config-action-bar-height, 0px) + 16px + env(safe-area-inset-bottom) + #{$spacing-md});
 }
 
 .pageTitle {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 $spacing-md 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 $spacing-md 0;
 }
 
 .description {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0 0 $spacing-xl 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 $spacing-xl 0;
 }
 
 .tabBar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px;
-  margin-bottom: $spacing-lg;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  border-radius: $radius-full;
-  width: fit-content;
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: $spacing-lg;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    border-radius: $radius-full;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
 
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  @include mobile {
-    width: 100%;
-
-    .tabItem {
-      flex: 1;
+    &::-webkit-scrollbar {
+        display: none;
     }
-  }
+
+    @include mobile {
+        width: 100%;
+
+        .tabItem {
+            flex: 1;
+        }
+    }
 }
 
 .tabItem {
-  @include button-reset;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: $radius-full;
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    @include button-reset;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: $radius-full;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
 
-  &:hover:not(:disabled) {
-    color: var(--text-primary);
-    background: var(--bg-tertiary);
-  }
+    &:hover:not(:disabled) {
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+    }
 
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 
-  &:focus {
-    outline: none;
-  }
+    &:focus {
+        outline: none;
+    }
 
-  &:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-  }
+    &:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+    }
 }
 
 .tabActive {
-  color: var(--text-primary);
-  background: var(--bg-primary);
-  border-color: var(--border-color);
-  box-shadow: var(--shadow);
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border-color: var(--border-color);
+    box-shadow: var(--shadow);
 }
 
 .content {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-lg;
-  flex: 1;
-  min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+    flex: 1;
+    min-height: 0;
 }
 
 .searchInputWrapper {
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
 
-  // The shared Input component adds a wrapper (.form-group) with margin-bottom.
-  // In the floating toolbar we want the input to be compact.
-  :global(.form-group) {
-    margin-bottom: 0;
-  }
+    // The shared Input component adds a wrapper (.form-group) with margin-bottom.
+    // In the floating toolbar we want the input to be compact.
+    :global(.form-group) {
+        margin-bottom: 0;
+    }
 }
 
 .searchInput {
-  flex: 1;
-  border-radius: $radius-full !important;
-  padding-right: 132px !important;
+    flex: 1;
+    border-radius: $radius-full !important;
+    padding-right: 132px !important;
 }
 
 .searchCount {
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: var(--bg-secondary);
-  padding: 2px 8px;
-  border-radius: $radius-full;
-  pointer-events: none;
-  white-space: nowrap;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    padding: 2px 8px;
+    border-radius: $radius-full;
+    pointer-events: none;
+    white-space: nowrap;
 }
 
 .searchRight {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .searchButton {
-  @include button-reset;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: $radius-full;
-  background: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  color: #fff;
-  transition: background-color $transition-fast, border-color $transition-fast, opacity $transition-fast;
+    @include button-reset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: $radius-full;
+    background: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    color: #fff;
+    transition:
+        background-color $transition-fast,
+        border-color $transition-fast,
+        opacity $transition-fast;
 
-  &:hover:not(:disabled) {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
-  }
+    &:hover:not(:disabled) {
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
+    }
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
 }
 
 .searchActions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
 
-  button {
-    min-width: 32px;
-    width: 32px;
-    height: 32px;
-    padding: 0 !important;
-    border-radius: $radius-full;
-  }
+    button {
+        min-width: 32px;
+        width: 32px;
+        height: 32px;
+        padding: 0 !important;
+        border-radius: $radius-full;
+    }
 }
 
 .controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: $spacing-md;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacing-md;
 
-  @include mobile {
-    flex-direction: column;
-    align-items: stretch;
-  }
+    @include mobile {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }
 
 .status {
-  font-size: 14px;
-  color: var(--text-secondary);
+    font-size: 14px;
+    color: var(--text-secondary);
 
-  &.modified {
-    color: #f59e0b;
-  }
+    &.modified {
+        color: #f59e0b;
+    }
 
-  &.saved {
-    color: #16a34a;
-  }
+    &.saved {
+        color: #16a34a;
+    }
 
-  &.error {
-    color: #dc2626;
-  }
+    &.error {
+        color: #dc2626;
+    }
 }
 
 .editorWrapper {
-  width: 100%;
-  flex: 0 0 auto;
-  height: clamp(360px, 60vh, 920px);
-  border: 1px solid var(--border-color);
-  border-radius: $radius-lg;
-  overflow: hidden;
-  position: relative;
-  --floating-controls-height: 0px;
+    width: 100%;
+    flex: 0 0 auto;
+    height: clamp(360px, 60vh, 920px);
+    border: 1px solid var(--border-color);
+    border-radius: $radius-lg;
+    overflow: hidden;
+    position: relative;
+    --floating-controls-height: 0px;
 
-  @supports (height: 100dvh) {
-    height: clamp(360px, 60dvh, 920px);
-  }
-
-  // Floating search toolbar on top of the editor (but not covering content).
-  .floatingControls {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    right: 12px;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    flex-wrap: wrap;
-    pointer-events: auto;
-  }
-
-  // CodeMirror theme overrides
-  :global {
-    .cm-editor {
-      height: 100%;
-      font-size: 14px;
-      font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+    @supports (height: 100dvh) {
+        height: clamp(360px, 60dvh, 920px);
     }
 
-    .cm-scroller {
-      overflow: auto;
-      padding-top: calc(var(--floating-controls-height, 0px) + #{$spacing-md});
-      -webkit-overflow-scrolling: touch;
-      touch-action: pan-x pan-y;
-      overscroll-behavior: contain;
+    // Floating search toolbar on top of the editor (but not covering content).
+    .floatingControls {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        flex-wrap: wrap;
+        pointer-events: auto;
     }
 
-    .cm-gutters {
-      border-right: 1px solid var(--border-color);
-      background: var(--bg-secondary);
-    }
+    // CodeMirror theme overrides
+    :global {
+        .cm-editor {
+            height: 100%;
+            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+        }
 
-    .cm-lineNumbers .cm-gutterElement {
-      padding: 0 8px 0 12px;
-      min-width: 40px;
-      color: var(--text-muted);
-    }
+        .cm-scroller {
+            overflow: auto;
+            padding-top: calc(var(--floating-controls-height, 0px) + #{$spacing-md});
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x pan-y;
+            overscroll-behavior: contain;
+        }
 
-    .cm-activeLine {
-      background: var(--bg-hover);
-    }
+        .cm-gutters {
+            border-right: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
 
-    .cm-activeLineGutter {
-      background: var(--bg-hover);
-    }
+        .cm-lineNumbers .cm-gutterElement {
+            padding: 0 8px 0 12px;
+            min-width: 40px;
+            color: var(--text-muted);
+        }
 
-    .cm-selectionMatch {
-      background: rgba(255, 193, 7, 0.3);
-    }
+        .cm-activeLine {
+            background: var(--bg-hover);
+        }
 
-    .cm-searchMatch {
-      background: rgba(255, 193, 7, 0.4);
-      outline: 1px solid rgba(255, 193, 7, 0.6);
-    }
+        .cm-activeLineGutter {
+            background: var(--bg-hover);
+        }
 
-    .cm-searchMatch-selected {
-      background: rgba(255, 152, 0, 0.5);
-    }
+        .cm-selectionMatch {
+            background: rgba(255, 193, 7, 0.3);
+        }
 
-    // Dark theme adjustments
-    [data-theme='dark'] & {
-      .cm-gutters {
-        background: var(--bg-tertiary);
-      }
+        .cm-searchMatch {
+            background: rgba(255, 193, 7, 0.4);
+            outline: 1px solid rgba(255, 193, 7, 0.6);
+        }
 
-      .cm-selectionMatch {
-        background: rgba(255, 193, 7, 0.2);
-      }
+        .cm-searchMatch-selected {
+            background: rgba(255, 152, 0, 0.5);
+        }
+
+        // Dark theme adjustments
+        [data-theme='dark'] & {
+            .cm-gutters {
+                background: var(--bg-tertiary);
+            }
+
+            .cm-selectionMatch {
+                background: rgba(255, 193, 7, 0.2);
+            }
+        }
     }
-  }
 }
 
 .configCard {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: visible;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
 }
 
 .actions {
-  display: flex;
-  gap: $spacing-sm;
-  justify-content: flex-end;
+    display: flex;
+    gap: $spacing-sm;
+    justify-content: flex-end;
 
-  @include mobile {
-    justify-content: stretch;
+    @include mobile {
+        justify-content: stretch;
 
-    button {
-      flex: 1;
+        button {
+            flex: 1;
+        }
     }
-  }
 }
 
 .floatingActionContainer {
-  position: fixed;
-  left: var(--content-center-x, 50%);
-  bottom: calc(16px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  z-index: 50;
-  pointer-events: auto;
-  width: fit-content;
-  max-width: calc(100vw - 24px);
+    position: fixed;
+    left: var(--content-center-x, 50%);
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 50;
+    pointer-events: auto;
+    width: fit-content;
+    max-width: calc(100vw - 24px);
 }
 
 .floatingActionList {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 999px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-  max-width: inherit;
-  overflow-x: auto;
-  scrollbar-width: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    max-width: inherit;
+    overflow-x: auto;
+    scrollbar-width: none;
 
-  &::-webkit-scrollbar {
-    display: none;
-  }
+    &::-webkit-scrollbar {
+        display: none;
+    }
 }
 
 .floatingStatus {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.06);
-  text-align: center;
-  max-width: min(280px, 46vw);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.06);
+    text-align: center;
+    max-width: min(280px, 46vw);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .floatingActionButton {
-  @include button-reset;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  cursor: pointer;
-  color: var(--text-primary);
-  transition: background-color 0.2s ease, transform 0.15s ease;
+    @include button-reset;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition:
+        background-color 0.2s ease,
+        transform 0.15s ease;
 
-  &:hover:not(:disabled) {
-    background: rgba(0, 0, 0, 0.06);
-    transform: scale(1.08);
-  }
+    &:hover:not(:disabled) {
+        background: rgba(0, 0, 0, 0.06);
+        transform: scale(1.08);
+    }
 
-  &:active:not(:disabled) {
-    transform: scale(0.95);
-  }
+    &:active:not(:disabled) {
+        transform: scale(0.95);
+    }
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
 }
 
 .dirtyDot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #f59e0b;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
 }
 
 :global([data-theme='dark']) {
-  .floatingActionList {
-    background: rgba(30, 30, 30, 0.7);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  }
-
-  .floatingStatus {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .floatingActionButton {
-    &:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.1);
+    .floatingActionList {
+        background: rgba(30, 30, 30, 0.7);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
     }
-  }
+
+    .floatingStatus {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .floatingActionButton {
+        &:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    }
 }
 
 @media (max-width: 1200px) {
-  .floatingActionContainer {
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    max-width: calc(100vw - 16px);
-  }
+    .floatingActionContainer {
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        max-width: calc(100vw - 16px);
+    }
 
-  .floatingActionList {
-    gap: 6px;
-    padding: 8px 10px;
-  }
+    .floatingActionList {
+        gap: 6px;
+        padding: 8px 10px;
+    }
 
-  .floatingStatus {
-    display: none;
-  }
+    .floatingStatus {
+        display: none;
+    }
 
-  .floatingActionButton {
-    width: 38px;
-    height: 38px;
-    flex: 0 0 auto;
-  }
+    .floatingActionButton {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 auto;
+    }
 }
 
 @media (max-height: 820px) {
-  .pageTitle {
-    font-size: 24px;
-    margin-bottom: $spacing-sm;
-  }
+    .pageTitle {
+        font-size: 24px;
+        margin-bottom: $spacing-sm;
+    }
 
-  .description {
-    margin-bottom: $spacing-lg;
-  }
+    .description {
+        margin-bottom: $spacing-lg;
+    }
 
-  .content {
-    gap: $spacing-md;
-  }
+    .content {
+        gap: $spacing-md;
+    }
 
-  .configCard {
-    padding: $spacing-md;
-  }
+    .configCard {
+        padding: $spacing-md;
+    }
 }

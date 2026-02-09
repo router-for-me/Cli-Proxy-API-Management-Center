@@ -10,19 +10,19 @@ import ru from './locales/ru.json';
 import { getInitialLanguage } from '@/utils/language';
 
 i18n.use(initReactI18next).init({
-  resources: {
-    'zh-CN': { translation: zhCN },
-    en: { translation: en },
-    ru: { translation: ru }
-  },
-  lng: getInitialLanguage(),
-  fallbackLng: 'zh-CN',
-  interpolation: {
-    escapeValue: false // React 已经转义
-  },
-  react: {
-    useSuspense: false
-  }
+    resources: {
+        'zh-CN': { translation: zhCN },
+        en: { translation: en },
+        ru: { translation: ru },
+    },
+    lng: getInitialLanguage(),
+    fallbackLng: 'zh-CN',
+    interpolation: {
+        escapeValue: false, // React 已经转义
+    },
+    react: {
+        useSuspense: false,
+    },
 });
 
 export default i18n;

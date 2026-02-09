@@ -6,7 +6,7 @@
 import type { Language } from '@/types';
 
 const defineLanguageOrder = <T extends readonly Language[]>(
-  languages: T & ([Language] extends [T[number]] ? unknown : never)
+    languages: T & ([Language] extends [T[number]] ? unknown : never)
 ) => languages;
 
 // 缓存过期时间（毫秒）
@@ -42,9 +42,9 @@ export const STORAGE_KEY_AUTH_FILES_PAGE_SIZE = 'cli-proxy-auth-files-page-size'
 // 语言配置
 export const LANGUAGE_ORDER = defineLanguageOrder(['zh-CN', 'en', 'ru'] as const);
 export const LANGUAGE_LABEL_KEYS: Record<Language, string> = {
-  'zh-CN': 'language.chinese',
-  en: 'language.english',
-  ru: 'language.russian'
+    'zh-CN': 'language.chinese',
+    en: 'language.english',
+    ru: 'language.russian',
 };
 export const SUPPORTED_LANGUAGES = LANGUAGE_ORDER;
 
@@ -53,30 +53,30 @@ export const NOTIFICATION_DURATION_MS = 3000;
 
 // OAuth 卡片 ID 列表
 export const OAUTH_CARD_IDS = [
-  'codex-oauth-card',
-  'anthropic-oauth-card',
-  'antigravity-oauth-card',
-  'gemini-cli-oauth-card',
-  'kimi-oauth-card',
-  'qwen-oauth-card'
+    'codex-oauth-card',
+    'anthropic-oauth-card',
+    'antigravity-oauth-card',
+    'gemini-cli-oauth-card',
+    'kimi-oauth-card',
+    'qwen-oauth-card',
 ];
 export const OAUTH_PROVIDERS = {
-  CODEX: 'codex',
-  ANTHROPIC: 'anthropic',
-  ANTIGRAVITY: 'antigravity',
-  GEMINI_CLI: 'gemini-cli',
-  KIMI: 'kimi',
-  QWEN: 'qwen'
+    CODEX: 'codex',
+    ANTHROPIC: 'anthropic',
+    ANTIGRAVITY: 'antigravity',
+    GEMINI_CLI: 'gemini-cli',
+    KIMI: 'kimi',
+    QWEN: 'qwen',
 } as const;
 
 // API 端点
 export const API_ENDPOINTS = {
-  CONFIG: '/config',
-  LOGIN: '/login',
-  API_KEYS: '/api-keys',
-  PROVIDERS: '/providers',
-  AUTH_FILES: '/auth-files',
-  OAUTH: '/oauth',
-  USAGE: '/usage',
-  LOGS: '/logs'
+    CONFIG: '/config',
+    LOGIN: '/login',
+    API_KEYS: '/api-keys',
+    PROVIDERS: '/providers',
+    AUTH_FILES: '/auth-files',
+    OAUTH: '/oauth',
+    USAGE: '/usage',
+    LOGS: '/logs',
 } as const;

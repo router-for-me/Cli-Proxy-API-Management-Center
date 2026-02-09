@@ -1,0 +1,12 @@
+{
+    "rules": {
+        "correctness": "warn",
+        "suspicious": "warn",
+        "pedantic": "warn",
+        "style": "warn",
+        "nursery": "warn",
+        "restriction": "warn"
+    },
+    "plugins": ["typescript", "jsx", "react"],
+    "allow": ["tsconfig.node.json", "vite.config.ts"]
+}

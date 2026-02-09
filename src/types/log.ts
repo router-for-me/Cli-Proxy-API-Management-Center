@@ -8,16 +8,16 @@ export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
 // 日志条目
 export interface LogEntry {
-  timestamp: string;
-  level: LogLevel;
-  message: string;
-  details?: unknown;
+    timestamp: string;
+    level: LogLevel;
+    message: string;
+    details?: unknown;
 }
 
 // 日志筛选
 export interface LogFilter {
-  level?: LogLevel;
-  searchQuery: string;
-  startTime?: Date;
-  endTime?: Date;
+    level?: LogLevel;
+    searchQuery: string;
+    startTime?: Date;
+    endTime?: Date;
 }

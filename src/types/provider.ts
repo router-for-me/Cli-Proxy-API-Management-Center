@@ -4,44 +4,44 @@
  */
 
 export interface ModelAlias {
-  name: string;
-  alias?: string;
-  priority?: number;
-  testModel?: string;
+    name: string;
+    alias?: string;
+    priority?: number;
+    testModel?: string;
 }
 
 export interface ApiKeyEntry {
-  apiKey: string;
-  proxyUrl?: string;
-  headers?: Record<string, string>;
+    apiKey: string;
+    proxyUrl?: string;
+    headers?: Record<string, string>;
 }
 
 export interface GeminiKeyConfig {
-  apiKey: string;
-  prefix?: string;
-  baseUrl?: string;
-  headers?: Record<string, string>;
-  excludedModels?: string[];
+    apiKey: string;
+    prefix?: string;
+    baseUrl?: string;
+    headers?: Record<string, string>;
+    excludedModels?: string[];
 }
 
 export interface ProviderKeyConfig {
-  apiKey: string;
-  prefix?: string;
-  baseUrl?: string;
-  proxyUrl?: string;
-  headers?: Record<string, string>;
-  models?: ModelAlias[];
-  excludedModels?: string[];
+    apiKey: string;
+    prefix?: string;
+    baseUrl?: string;
+    proxyUrl?: string;
+    headers?: Record<string, string>;
+    models?: ModelAlias[];
+    excludedModels?: string[];
 }
 
 export interface OpenAIProviderConfig {
-  name: string;
-  prefix?: string;
-  baseUrl: string;
-  apiKeyEntries: ApiKeyEntry[];
-  headers?: Record<string, string>;
-  models?: ModelAlias[];
-  priority?: number;
-  testModel?: string;
-  [key: string]: unknown;
+    name: string;
+    prefix?: string;
+    baseUrl: string;
+    apiKeyEntries: ApiKeyEntry[];
+    headers?: Record<string, string>;
+    models?: ModelAlias[];
+    priority?: number;
+    testModel?: string;
+    [key: string]: unknown;
 }
