@@ -145,3 +145,50 @@ export interface CodexQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+// Kiro (AWS CodeWhisperer) quota types
+export interface KiroUsageBreakdown {
+  resourceType?: string;
+  usageLimitWithPrecision?: number;
+  currentUsageWithPrecision?: number;
+  usageLimit?: number;
+  currentUsage?: number;
+  displayName?: string;
+  nextDateReset?: number;
+  freeTrialInfo?: {
+    freeTrialStatus?: string;
+    usageLimitWithPrecision?: number;
+    currentUsageWithPrecision?: number;
+    usageLimit?: number;
+    currentUsage?: number;
+  };
+}
+
+export interface KiroSubscriptionInfo {
+  subscriptionTitle?: string;
+  type?: string;
+}
+
+export interface KiroUsagePayload {
+  usageBreakdownList?: KiroUsageBreakdown[];
+  subscriptionInfo?: KiroSubscriptionInfo;
+  nextDateReset?: number;
+}
+
+export interface KiroQuotaResource {
+  id: string;
+  label: string;
+  totalLimit: number;
+  currentUsage: number;
+  remainingQuota: number;
+  usagePercent: number;
+  resetTime?: string;
+}
+
+export interface KiroQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  resources: KiroQuotaResource[];
+  subscriptionType?: string | null;
+  error?: string;
+  errorStatus?: number;
+}

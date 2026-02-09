@@ -13,6 +13,7 @@ export type AuthFileType =
   | 'codex'
   | 'antigravity'
   | 'iflow'
+  | 'kiro'
   | 'vertex'
   | 'empty'
   | 'unknown';

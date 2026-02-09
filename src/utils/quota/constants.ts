@@ -42,6 +42,10 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#f3e5f5', text: '#7b1fa2' },
     dark: { bg: '#4a148c', text: '#ce93d8' },
   },
+  kiro: {
+    light: { bg: '#e8eaf6', text: '#283593' },
+    dark: { bg: '#1a237e', text: '#9fa8da' },
+  },
   empty: {
     light: { bg: '#f5f5f5', text: '#616161' },
     dark: { bg: '#424242', text: '#bdbdbd' },
@@ -158,4 +162,15 @@ export const CODEX_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
   'Content-Type': 'application/json',
   'User-Agent': 'codex_cli_rs/0.76.0 (Debian 13.0.0; x86_64) WindowsTerminal',
+};
+
+// Kiro (AWS CodeWhisperer) API configuration
+export const KIRO_USAGE_URL =
+  'https://codewhisperer.us-east-1.amazonaws.com/getUsageLimits?isEmailRequired=true&origin=AI_EDITOR&resourceType=AGENTIC_REQUEST';
+
+export const KIRO_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  'Content-Type': 'application/x-amz-json-1.0',
+  'x-amz-user-agent': 'aws-sdk-js/1.0.0 KiroIDE-0.6.18',
+  'User-Agent': 'aws-sdk-js/1.0.0 ua/2.1 os/windows lang/js md/nodejs#20.16.0 api/codewhispererruntime#1.0.0 m/E KiroIDE-0.6.18',
 };

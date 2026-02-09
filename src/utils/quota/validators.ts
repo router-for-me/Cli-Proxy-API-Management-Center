@@ -22,6 +22,10 @@ export function isGeminiCliFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'gemini-cli';
 }
 
+export function isKiroFile(file: AuthFileItem): boolean {
+  return resolveAuthProvider(file) === 'kiro';
+}
+
 export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   const raw = file['runtime_only'] ?? file.runtimeOnly;
   if (typeof raw === 'boolean') return raw;

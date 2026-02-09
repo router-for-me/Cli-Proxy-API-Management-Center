@@ -21,7 +21,7 @@ import {
   IconTrash2,
 } from '@/components/ui/icons';
 import type { TFunction } from 'i18next';
-import { ANTIGRAVITY_CONFIG, CODEX_CONFIG, GEMINI_CLI_CONFIG } from '@/components/quota';
+import { ANTIGRAVITY_CONFIG, CODEX_CONFIG, GEMINI_CLI_CONFIG, KIRO_CONFIG } from '@/components/quota';
 import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import { authFilesApi, usageApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
@@ -99,9 +99,9 @@ const AUTH_FILES_UI_STATE_KEY = 'authFilesPage.uiState';
 const clampCardPageSize = (value: number) =>
   Math.min(MAX_CARD_PAGE_SIZE, Math.max(MIN_CARD_PAGE_SIZE, Math.round(value)));
 
-type QuotaProviderType = 'antigravity' | 'codex' | 'gemini-cli';
+type QuotaProviderType = 'antigravity' | 'codex' | 'gemini-cli' | 'kiro';
 
-const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>(['antigravity', 'codex', 'gemini-cli']);
+const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>(['antigravity', 'codex', 'gemini-cli', 'kiro']);
 
 const resolveQuotaErrorMessage = (
   t: TFunction,
@@ -249,9 +249,11 @@ export function AuthFilesPage() {
   const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
   const codexQuota = useQuotaStore((state) => state.codexQuota);
   const geminiCliQuota = useQuotaStore((state) => state.geminiCliQuota);
+  const kiroQuota = useQuotaStore((state) => state.kiroQuota);
   const setAntigravityQuota = useQuotaStore((state) => state.setAntigravityQuota);
   const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
   const setGeminiCliQuota = useQuotaStore((state) => state.setGeminiCliQuota);
+  const setKiroQuota = useQuotaStore((state) => state.setKiroQuota);
   const pageTransitionLayer = usePageTransitionLayer();
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
   const navigate = useNavigate();
@@ -1472,6 +1474,7 @@ export function AuthFilesPage() {
   const getQuotaConfig = (type: QuotaProviderType) => {
     if (type === 'antigravity') return ANTIGRAVITY_CONFIG;
     if (type === 'codex') return CODEX_CONFIG;
+    if (type === 'kiro') return KIRO_CONFIG;
     return GEMINI_CLI_CONFIG;
   };
 
@@ -1479,9 +1482,10 @@ export function AuthFilesPage() {
     (type: QuotaProviderType, fileName: string) => {
       if (type === 'antigravity') return antigravityQuota[fileName];
       if (type === 'codex') return codexQuota[fileName];
+      if (type === 'kiro') return kiroQuota[fileName];
       return geminiCliQuota[fileName];
     },
-    [antigravityQuota, codexQuota, geminiCliQuota]
+    [antigravityQuota, codexQuota, geminiCliQuota, kiroQuota]
   );
 
   const updateQuotaState = useCallback(
@@ -1497,9 +1501,13 @@ export function AuthFilesPage() {
         setCodexQuota(updater as never);
         return;
       }
+      if (type === 'kiro') {
+        setKiroQuota(updater as never);
+        return;
+      }
       setGeminiCliQuota(updater as never);
     },
-    [setAntigravityQuota, setCodexQuota, setGeminiCliQuota]
+    [setAntigravityQuota, setCodexQuota, setGeminiCliQuota, setKiroQuota]
   );
 
   const refreshQuotaForFile = useCallback(
