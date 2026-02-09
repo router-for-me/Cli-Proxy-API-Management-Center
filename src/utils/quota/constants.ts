@@ -139,11 +139,11 @@ export const GEMINI_CLI_QUOTA_GROUPS: GeminiCliQuotaGroupDefinition[] = [
 ];
 
 export const GEMINI_CLI_GROUP_ORDER = new Map(
-    GEMINI_CLI_QUOTA_GROUPS.map((group, index) => [group.id, index] as const)
+    GEMINI_CLI_QUOTA_GROUPS.map((group, index) => [group.id, index] as const),
 );
 
 export const GEMINI_CLI_GROUP_LOOKUP = new Map(
-    GEMINI_CLI_QUOTA_GROUPS.flatMap((group) => group.modelIds.map((modelId) => [modelId, group] as const))
+    GEMINI_CLI_QUOTA_GROUPS.flatMap((group) => group.modelIds.map((modelId) => [modelId, group] as const)),
 );
 
 export const GEMINI_CLI_IGNORED_MODEL_PREFIXES = ['gemini-2.0-flash'];
@@ -154,10 +154,10 @@ export const COPILOT_QUOTA_URL = 'https://api.github.com/copilot_internal/user';
 export const COPILOT_REQUEST_HEADERS = {
     Authorization: 'token $TOKEN$',
     'Content-Type': 'application/json',
-    'editor-version': 'vscode/1.99.0',
-    'editor-plugin-version': 'copilot-chat/0.26.7',
-    'user-agent': 'GitHubCopilotChat/0.26.7',
-    'x-github-api-version': '2025-04-01',
+    'editor-version': 'vscode/1.109.0',
+    'editor-plugin-version': 'copilot-chat/0.37.2026013001',
+    'user-agent': 'GitHubCopilotChat/0.37.2026013001',
+    'x-github-api-version': '2025-11-01',
 };
 
 export const COPILOT_QUOTA_CATEGORIES = [

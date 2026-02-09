@@ -17,8 +17,11 @@ export interface KeyStats {
 }
 
 export interface TokenBreakdown {
-    cachedTokens: number;
+    inputTokens: number;
+    outputTokens: number;
     reasoningTokens: number;
+    cachedTokens: number;
+    totalTokens: number;
 }
 
 export interface RateStats {
@@ -51,14 +54,57 @@ export interface UsageDetail {
     __modelName?: string;
 }
 
+export interface ModelTokenStats {
+    requests: number;
+    successCount: number;
+    failureCount: number;
+    inputTokens: number;
+    outputTokens: number;
+    reasoningTokens: number;
+    cachedTokens: number;
+    totalTokens: number;
+}
+
 export interface ApiStats {
     endpoint: string;
     totalRequests: number;
     successCount: number;
     failureCount: number;
+    inputTokens: number;
+    outputTokens: number;
+    reasoningTokens: number;
+    cachedTokens: number;
     totalTokens: number;
     totalCost: number;
-    models: Record<string, { requests: number; successCount: number; failureCount: number; tokens: number }>;
+    models: Record<string, ModelTokenStats>;
+}
+
+export interface ModelStatsEntry {
+    model: string;
+    requests: number;
+    successCount: number;
+    failureCount: number;
+    inputTokens: number;
+    outputTokens: number;
+    reasoningTokens: number;
+    cachedTokens: number;
+    totalTokens: number;
+    cost: number;
+}
+
+export interface RecentRequest {
+    timestamp: string;
+    model: string;
+    source: string;
+    authIndex: number | null;
+    failed: boolean;
+    tokens: {
+        input: number;
+        output: number;
+        reasoning: number;
+        cached: number;
+        total: number;
+    };
 }
 
 const TOKENS_PER_PRICE_UNIT = 1_000_000;
@@ -373,24 +419,32 @@ export function extractTotalTokens(detail: unknown): number {
 export function calculateTokenBreakdown(usageData: unknown): TokenBreakdown {
     const details = collectUsageDetails(usageData);
     if (!details.length) {
-        return { cachedTokens: 0, reasoningTokens: 0 };
+        return { inputTokens: 0, outputTokens: 0, reasoningTokens: 0, cachedTokens: 0, totalTokens: 0 };
     }
 
-    let cachedTokens = 0;
+    let inputTokens = 0;
+    let outputTokens = 0;
     let reasoningTokens = 0;
+    let cachedTokens = 0;
 
     details.forEach((detail) => {
         const tokens = detail.tokens;
+        inputTokens += typeof tokens.input_tokens === 'number' ? Math.max(tokens.input_tokens, 0) : 0;
+        outputTokens += typeof tokens.output_tokens === 'number' ? Math.max(tokens.output_tokens, 0) : 0;
+        reasoningTokens += typeof tokens.reasoning_tokens === 'number' ? Math.max(tokens.reasoning_tokens, 0) : 0;
         cachedTokens += Math.max(
             typeof tokens.cached_tokens === 'number' ? Math.max(tokens.cached_tokens, 0) : 0,
             typeof tokens.cache_tokens === 'number' ? Math.max(tokens.cache_tokens, 0) : 0
         );
-        if (typeof tokens.reasoning_tokens === 'number') {
-            reasoningTokens += tokens.reasoning_tokens;
-        }
     });
 
-    return { cachedTokens, reasoningTokens };
+    return {
+        inputTokens,
+        outputTokens,
+        reasoningTokens,
+        cachedTokens,
+        totalTokens: inputTokens + outputTokens + reasoningTokens + cachedTokens,
+    };
 }
 
 /**
@@ -563,10 +617,13 @@ export function getApiStats(usageData: unknown, modelPrices: Record<string, Mode
 
     Object.entries(apis).forEach(([endpoint, apiData]) => {
         if (!isRecord(apiData)) return;
-        const models: Record<string, { requests: number; successCount: number; failureCount: number; tokens: number }> =
-            {};
+        const models: Record<string, ModelTokenStats> = {};
         let derivedSuccessCount = 0;
         let derivedFailureCount = 0;
+        let derivedInputTokens = 0;
+        let derivedOutputTokens = 0;
+        let derivedReasoningTokens = 0;
+        let derivedCachedTokens = 0;
         let totalCost = 0;
 
         const modelsData = isRecord(apiData.models) ? apiData.models : {};
@@ -578,24 +635,43 @@ export function getApiStats(usageData: unknown, modelPrices: Record<string, Mode
 
             let successCount = 0;
             let failureCount = 0;
+            let inputTokens = 0;
+            let outputTokens = 0;
+            let reasoningTokens = 0;
+            let cachedTokens = 0;
+
             if (hasExplicitCounts) {
                 successCount += Number(modelData.success_count) || 0;
                 failureCount += Number(modelData.failure_count) || 0;
             }
 
             const price = modelPrices[modelName];
-            if (details.length > 0 && (!hasExplicitCounts || price)) {
+            if (details.length > 0) {
                 details.forEach((detail) => {
                     const detailRecord = isRecord(detail) ? detail : null;
+                    if (!detailRecord) return;
+
                     if (!hasExplicitCounts) {
-                        if (detailRecord?.failed === true) {
+                        if (detailRecord.failed === true) {
                             failureCount += 1;
                         } else {
                             successCount += 1;
                         }
                     }
 
-                    if (price && detailRecord) {
+                    const tokensRaw = isRecord(detailRecord.tokens) ? detailRecord.tokens : {};
+                    inputTokens +=
+                        typeof tokensRaw.input_tokens === 'number' ? Math.max(tokensRaw.input_tokens, 0) : 0;
+                    outputTokens +=
+                        typeof tokensRaw.output_tokens === 'number' ? Math.max(tokensRaw.output_tokens, 0) : 0;
+                    reasoningTokens +=
+                        typeof tokensRaw.reasoning_tokens === 'number' ? Math.max(tokensRaw.reasoning_tokens, 0) : 0;
+                    cachedTokens += Math.max(
+                        typeof tokensRaw.cached_tokens === 'number' ? Math.max(tokensRaw.cached_tokens, 0) : 0,
+                        typeof tokensRaw.cache_tokens === 'number' ? Math.max(tokensRaw.cache_tokens, 0) : 0
+                    );
+
+                    if (price) {
                         totalCost += calculateCost(
                             { ...(detailRecord as unknown as UsageDetail), __modelName: modelName },
                             modelPrices
@@ -604,27 +680,45 @@ export function getApiStats(usageData: unknown, modelPrices: Record<string, Mode
                 });
             }
 
+            const totalTokens = Number(modelData.total_tokens) || inputTokens + outputTokens + reasoningTokens + cachedTokens;
+
             models[modelName] = {
                 requests: Number(modelData.total_requests) || 0,
                 successCount,
                 failureCount,
-                tokens: Number(modelData.total_tokens) || 0,
+                inputTokens,
+                outputTokens,
+                reasoningTokens,
+                cachedTokens,
+                totalTokens,
             };
+
             derivedSuccessCount += successCount;
             derivedFailureCount += failureCount;
+            derivedInputTokens += inputTokens;
+            derivedOutputTokens += outputTokens;
+            derivedReasoningTokens += reasoningTokens;
+            derivedCachedTokens += cachedTokens;
         });
 
         const hasApiExplicitCounts =
             typeof apiData.success_count === 'number' || typeof apiData.failure_count === 'number';
         const successCount = hasApiExplicitCounts ? Number(apiData.success_count) || 0 : derivedSuccessCount;
         const failureCount = hasApiExplicitCounts ? Number(apiData.failure_count) || 0 : derivedFailureCount;
+        const totalTokens =
+            Number(apiData.total_tokens) ||
+            derivedInputTokens + derivedOutputTokens + derivedReasoningTokens + derivedCachedTokens;
 
         result.push({
             endpoint: maskUsageSensitiveValue(endpoint) || endpoint,
             totalRequests: Number(apiData.total_requests) || 0,
             successCount,
             failureCount,
-            totalTokens: Number(apiData.total_tokens) || 0,
+            inputTokens: derivedInputTokens,
+            outputTokens: derivedOutputTokens,
+            reasoningTokens: derivedReasoningTokens,
+            cachedTokens: derivedCachedTokens,
+            totalTokens,
             totalCost,
             models,
         });
@@ -636,24 +730,11 @@ export function getApiStats(usageData: unknown, modelPrices: Record<string, Mode
 /**
  * 获取模型统计数据
  */
-export function getModelStats(
-    usageData: unknown,
-    modelPrices: Record<string, ModelPrice>
-): Array<{
-    model: string;
-    requests: number;
-    successCount: number;
-    failureCount: number;
-    tokens: number;
-    cost: number;
-}> {
+export function getModelStats(usageData: unknown, modelPrices: Record<string, ModelPrice>): ModelStatsEntry[] {
     const apis = getApisRecord(usageData);
     if (!apis) return [];
 
-    const modelMap = new Map<
-        string,
-        { requests: number; successCount: number; failureCount: number; tokens: number; cost: number }
-    >();
+    const modelMap = new Map<string, ModelStatsEntry>();
 
     Object.values(apis).forEach((apiData) => {
         if (!isRecord(apiData)) return;
@@ -663,39 +744,60 @@ export function getModelStats(
 
         Object.entries(models).forEach(([modelName, modelData]) => {
             if (!isRecord(modelData)) return;
-            const existing = modelMap.get(modelName) || {
-                requests: 0,
-                successCount: 0,
-                failureCount: 0,
-                tokens: 0,
-                cost: 0,
-            };
+            const existing =
+                modelMap.get(modelName) ||
+                ({
+                    model: modelName,
+                    requests: 0,
+                    successCount: 0,
+                    failureCount: 0,
+                    inputTokens: 0,
+                    outputTokens: 0,
+                    reasoningTokens: 0,
+                    cachedTokens: 0,
+                    totalTokens: 0,
+                    cost: 0,
+                } as ModelStatsEntry);
+
             existing.requests += Number(modelData.total_requests) || 0;
-            existing.tokens += Number(modelData.total_tokens) || 0;
+            existing.totalTokens += Number(modelData.total_tokens) || 0;
 
             const details = Array.isArray(modelData.details) ? modelData.details : [];
-
             const price = modelPrices[modelName];
-
             const hasExplicitCounts =
                 typeof modelData.success_count === 'number' || typeof modelData.failure_count === 'number';
+
             if (hasExplicitCounts) {
                 existing.successCount += Number(modelData.success_count) || 0;
                 existing.failureCount += Number(modelData.failure_count) || 0;
             }
 
-            if (details.length > 0 && (!hasExplicitCounts || price)) {
+            if (details.length > 0) {
                 details.forEach((detail) => {
                     const detailRecord = isRecord(detail) ? detail : null;
+                    if (!detailRecord) return;
+
                     if (!hasExplicitCounts) {
-                        if (detailRecord?.failed === true) {
+                        if (detailRecord.failed === true) {
                             existing.failureCount += 1;
                         } else {
                             existing.successCount += 1;
                         }
                     }
 
-                    if (price && detailRecord) {
+                    const tokensRaw = isRecord(detailRecord.tokens) ? detailRecord.tokens : {};
+                    existing.inputTokens +=
+                        typeof tokensRaw.input_tokens === 'number' ? Math.max(tokensRaw.input_tokens, 0) : 0;
+                    existing.outputTokens +=
+                        typeof tokensRaw.output_tokens === 'number' ? Math.max(tokensRaw.output_tokens, 0) : 0;
+                    existing.reasoningTokens +=
+                        typeof tokensRaw.reasoning_tokens === 'number' ? Math.max(tokensRaw.reasoning_tokens, 0) : 0;
+                    existing.cachedTokens += Math.max(
+                        typeof tokensRaw.cached_tokens === 'number' ? Math.max(tokensRaw.cached_tokens, 0) : 0,
+                        typeof tokensRaw.cache_tokens === 'number' ? Math.max(tokensRaw.cache_tokens, 0) : 0
+                    );
+
+                    if (price) {
                         existing.cost += calculateCost(
                             { ...(detailRecord as unknown as UsageDetail), __modelName: modelName },
                             modelPrices
@@ -703,13 +805,57 @@ export function getModelStats(
                     }
                 });
             }
+
+            if (!Number(modelData.total_tokens)) {
+                existing.totalTokens =
+                    existing.inputTokens + existing.outputTokens + existing.reasoningTokens + existing.cachedTokens;
+            }
+
             modelMap.set(modelName, existing);
         });
     });
 
-    return Array.from(modelMap.entries())
-        .map(([model, stats]) => ({ model, ...stats }))
-        .sort((a, b) => b.requests - a.requests);
+    return Array.from(modelMap.values()).sort((a, b) => b.requests - a.requests);
+}
+
+export function collectRecentRequests(usageData: unknown, limit: number = 50): RecentRequest[] {
+    const details = collectUsageDetails(usageData);
+    if (!details.length) {
+        return [];
+    }
+
+    return details
+        .map((detail) => {
+            const tokens = detail.tokens;
+            const input = typeof tokens.input_tokens === 'number' ? Math.max(tokens.input_tokens, 0) : 0;
+            const output = typeof tokens.output_tokens === 'number' ? Math.max(tokens.output_tokens, 0) : 0;
+            const reasoning = typeof tokens.reasoning_tokens === 'number' ? Math.max(tokens.reasoning_tokens, 0) : 0;
+            const cached = Math.max(
+                typeof tokens.cached_tokens === 'number' ? Math.max(tokens.cached_tokens, 0) : 0,
+                typeof tokens.cache_tokens === 'number' ? Math.max(tokens.cache_tokens, 0) : 0
+            );
+            const total =
+                typeof tokens.total_tokens === 'number' && Number.isFinite(tokens.total_tokens)
+                    ? Math.max(tokens.total_tokens, 0)
+                    : input + output + reasoning + cached;
+
+            return {
+                timestamp: detail.timestamp,
+                model: detail.__modelName || 'Unknown',
+                source: maskUsageSensitiveValue(detail.source) || detail.source,
+                authIndex: Number.isFinite(detail.auth_index) ? detail.auth_index : null,
+                failed: detail.failed === true,
+                tokens: {
+                    input,
+                    output,
+                    reasoning,
+                    cached,
+                    total,
+                },
+            };
+        })
+        .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+        .slice(0, Math.max(1, limit));
 }
 
 /**
@@ -878,6 +1024,8 @@ export interface ChartData {
     datasets: ChartDataset[];
 }
 
+export type TokenMetricKey = 'input' | 'output' | 'reasoning' | 'cached';
+
 const CHART_COLORS = [
     { borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)' },
     { borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.15)' },
@@ -979,6 +1127,115 @@ export function buildChartData(
             tension: 0.35,
         };
     });
+
+    return { labels, datasets };
+}
+
+export function buildTokenTypeChartData(usageData: unknown, period: 'hour' | 'day' = 'day'): ChartData {
+    const details = collectUsageDetails(usageData);
+
+    const labels: string[] = [];
+    const input: number[] = [];
+    const output: number[] = [];
+    const reasoning: number[] = [];
+    const cached: number[] = [];
+
+    if (period === 'hour') {
+        const hourMs = 60 * 60 * 1000;
+        const now = new Date();
+        const currentHour = new Date(now);
+        currentHour.setMinutes(0, 0, 0);
+
+        const earliestBucket = new Date(currentHour);
+        earliestBucket.setHours(earliestBucket.getHours() - 23);
+        const earliestTime = earliestBucket.getTime();
+        const bucketCount = 24;
+
+        for (let i = 0; i < bucketCount; i++) {
+            labels.push(formatHourLabel(new Date(earliestTime + i * hourMs)));
+            input.push(0);
+            output.push(0);
+            reasoning.push(0);
+            cached.push(0);
+        }
+
+        const lastBucketTime = earliestTime + (bucketCount - 1) * hourMs;
+
+        details.forEach((detail) => {
+            const timestamp = Date.parse(detail.timestamp);
+            if (Number.isNaN(timestamp)) return;
+
+            const bucketDate = new Date(timestamp);
+            bucketDate.setMinutes(0, 0, 0);
+            const bucketStart = bucketDate.getTime();
+            if (bucketStart < earliestTime || bucketStart > lastBucketTime) return;
+
+            const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
+            if (bucketIndex < 0 || bucketIndex >= bucketCount) return;
+
+            const tokens = detail.tokens;
+            input[bucketIndex] += typeof tokens.input_tokens === 'number' ? Math.max(tokens.input_tokens, 0) : 0;
+            output[bucketIndex] += typeof tokens.output_tokens === 'number' ? Math.max(tokens.output_tokens, 0) : 0;
+            reasoning[bucketIndex] +=
+                typeof tokens.reasoning_tokens === 'number' ? Math.max(tokens.reasoning_tokens, 0) : 0;
+            cached[bucketIndex] += Math.max(
+                typeof tokens.cached_tokens === 'number' ? Math.max(tokens.cached_tokens, 0) : 0,
+                typeof tokens.cache_tokens === 'number' ? Math.max(tokens.cache_tokens, 0) : 0
+            );
+        });
+    } else {
+        const dailyMap = new Map<string, { input: number; output: number; reasoning: number; cached: number }>();
+
+        details.forEach((detail) => {
+            const timestamp = Date.parse(detail.timestamp);
+            if (Number.isNaN(timestamp)) return;
+
+            const dayLabel = formatDayLabel(new Date(timestamp));
+            if (!dayLabel) return;
+
+            if (!dailyMap.has(dayLabel)) {
+                dailyMap.set(dayLabel, { input: 0, output: 0, reasoning: 0, cached: 0 });
+            }
+
+            const tokens = detail.tokens;
+            const target = dailyMap.get(dayLabel)!;
+            target.input += typeof tokens.input_tokens === 'number' ? Math.max(tokens.input_tokens, 0) : 0;
+            target.output += typeof tokens.output_tokens === 'number' ? Math.max(tokens.output_tokens, 0) : 0;
+            target.reasoning += typeof tokens.reasoning_tokens === 'number' ? Math.max(tokens.reasoning_tokens, 0) : 0;
+            target.cached += Math.max(
+                typeof tokens.cached_tokens === 'number' ? Math.max(tokens.cached_tokens, 0) : 0,
+                typeof tokens.cache_tokens === 'number' ? Math.max(tokens.cache_tokens, 0) : 0
+            );
+        });
+
+        const sortedDays = Array.from(dailyMap.keys()).sort();
+        sortedDays.forEach((day) => {
+            const values = dailyMap.get(day)!;
+            labels.push(day);
+            input.push(values.input);
+            output.push(values.output);
+            reasoning.push(values.reasoning);
+            cached.push(values.cached);
+        });
+    }
+
+    const tokenDatasets: Array<{ label: string; key: TokenMetricKey; data: number[]; color: string }> = [
+        { label: 'Input Tokens', key: 'input', data: input, color: '#3b82f6' },
+        { label: 'Output Tokens', key: 'output', data: output, color: '#8b5cf6' },
+        { label: 'Reasoning Tokens', key: 'reasoning', data: reasoning, color: '#f97316' },
+        { label: 'Cached Tokens', key: 'cached', data: cached, color: '#10b981' },
+    ];
+
+    const datasets: ChartDataset[] = tokenDatasets.map((dataset) => ({
+        label: dataset.label,
+        data: dataset.data,
+        borderColor: dataset.color,
+        backgroundColor: withAlpha(dataset.color, 0.14),
+        pointBackgroundColor: dataset.color,
+        pointBorderColor: dataset.color,
+        fill: false,
+        tension: 0.35,
+    }));
 
     return { labels, datasets };
 }

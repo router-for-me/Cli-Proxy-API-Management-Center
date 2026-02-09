@@ -22,7 +22,13 @@ export { ApiDetailsCard } from './ApiDetailsCard';
 export type { ApiDetailsCardProps } from './ApiDetailsCard';
 
 export { ModelStatsCard } from './ModelStatsCard';
-export type { ModelStatsCardProps, ModelStat } from './ModelStatsCard';
+export type { ModelStatsCardProps } from './ModelStatsCard';
 
 export { PriceSettingsCard } from './PriceSettingsCard';
 export type { PriceSettingsCardProps } from './PriceSettingsCard';
+
+export { TokenDistributionCard } from './TokenDistributionCard';
+export type { TokenDistributionCardProps } from './TokenDistributionCard';
+
+export { RequestHistoryCard } from './RequestHistoryCard';
+export type { RequestHistoryCardProps } from './RequestHistoryCard';

@@ -735,6 +735,8 @@
         "total_tokens": "总Token数",
         "cached_tokens": "缓存 Tokens",
         "reasoning_tokens": "思考 Tokens",
+        "input_tokens": "输入 Tokens",
+        "output_tokens": "输出 Tokens",
         "rpm_30m": "RPM",
         "tpm_30m": "TPM",
         "rate_30m": "近30分钟速率",
@@ -793,7 +795,13 @@
         "cost_axis_label": "花费 ($)",
         "cost_need_price": "请先设置模型价格",
         "cost_need_usage": "暂无使用数据，无法计算花费",
-        "cost_no_data": "没有可计算的花费数据"
+        "cost_no_data": "没有可计算的花费数据",
+        "token_distribution": "Token 分布",
+        "recent_requests": "最近请求",
+        "request_auth": "认证",
+        "request_success": "成功",
+        "request_failed": "失败",
+        "show_more": "显示更多"
     },
     "stats": {
         "success": "成功",

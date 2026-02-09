@@ -738,6 +738,8 @@
         "total_tokens": "Всего токенов",
         "cached_tokens": "Кэшированные токены",
         "reasoning_tokens": "Токены рассуждений",
+        "input_tokens": "Входные токены",
+        "output_tokens": "Выходные токены",
         "rpm_30m": "RPM",
         "tpm_30m": "TPM",
         "rate_30m": "Скорость (последние 30 мин)",
@@ -796,7 +798,13 @@
         "cost_axis_label": "Стоимость ($)",
         "cost_need_price": "Задайте стоимость модели, чтобы увидеть статистику затрат",
         "cost_need_usage": "Нет данных использования для расчёта стоимости",
-        "cost_no_data": "Данных о стоимости ещё нет"
+        "cost_no_data": "Данных о стоимости ещё нет",
+        "token_distribution": "Распределение токенов",
+        "recent_requests": "Недавние запросы",
+        "request_auth": "Auth",
+        "request_success": "Успех",
+        "request_failed": "Сбой",
+        "show_more": "Показать ещё"
     },
     "stats": {
         "success": "Успех",

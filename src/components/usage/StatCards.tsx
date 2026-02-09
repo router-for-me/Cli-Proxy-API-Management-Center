@@ -44,7 +44,9 @@ export interface StatCardsProps {
 export function StatCards({ usage, loading, modelPrices, sparklines }: StatCardsProps) {
     const { t } = useTranslation();
 
-    const tokenBreakdown = usage ? calculateTokenBreakdown(usage) : { cachedTokens: 0, reasoningTokens: 0 };
+    const tokenBreakdown = usage
+        ? calculateTokenBreakdown(usage)
+        : { inputTokens: 0, outputTokens: 0, reasoningTokens: 0, cachedTokens: 0, totalTokens: 0 };
     const rateStats = usage
         ? calculateRecentPerMinuteRates(30, usage)
         : { rpm: 0, tpm: 0, windowMinutes: 30, requestCount: 0, tokenCount: 0 };
@@ -84,14 +86,29 @@ export function StatCards({ usage, loading, modelPrices, sparklines }: StatCards
             value: loading ? '-' : formatTokensInMillions(usage?.total_tokens ?? 0),
             meta: (
                 <>
-                    <span className={styles.statMetaItem}>
-                        {t('usage_stats.cached_tokens')}:{' '}
-                        {loading ? '-' : formatTokensInMillions(tokenBreakdown.cachedTokens)}
-                    </span>
-                    <span className={styles.statMetaItem}>
-                        {t('usage_stats.reasoning_tokens')}:{' '}
-                        {loading ? '-' : formatTokensInMillions(tokenBreakdown.reasoningTokens)}
-                    </span>
+                    <div className={styles.tokenBreakdownGrid}>
+                        <span className={styles.statMetaItem}>
+                            <span className={styles.statMetaDot} style={{ backgroundColor: '#3b82f6' }} />
+                            {t('usage_stats.input_tokens')}:{' '}
+                            {loading ? '-' : formatTokensInMillions(tokenBreakdown.inputTokens)}
+                        </span>
+                        <span className={styles.statMetaItem}>
+                            <span className={styles.statMetaDot} style={{ backgroundColor: '#8b5cf6' }} />
+                            {t('usage_stats.output_tokens')}:{' '}
+                            {loading ? '-' : formatTokensInMillions(tokenBreakdown.outputTokens)}
+                        </span>
+                        <span className={styles.statMetaItem}>
+                            <span className={styles.statMetaDot} style={{ backgroundColor: '#f97316' }} />
+                            {t('usage_stats.reasoning_tokens')}:{' '}
+                            {loading ? '-' : formatTokensInMillions(tokenBreakdown.reasoningTokens)}
+                        </span>
+                        <span className={styles.statMetaItem}>
+                            <span className={styles.statMetaDot} style={{ backgroundColor: '#10b981' }} />
+                            {t('usage_stats.cached_tokens')}:{' '}
+                            {loading ? '-' : formatTokensInMillions(tokenBreakdown.cachedTokens)}
+                        </span>
+                    </div>
+                    {null}
                 </>
             ),
             trend: sparklines.tokens,

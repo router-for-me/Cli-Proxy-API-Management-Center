@@ -1,19 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
-import { formatTokensInMillions, formatUsd } from '@/utils/usage';
+import { formatTokensInMillions, formatUsd, type ModelStatsEntry } from '@/utils/usage';
 import styles from '@/pages/UsagePage.module.scss';
 
-export interface ModelStat {
-    model: string;
-    requests: number;
-    successCount: number;
-    failureCount: number;
-    tokens: number;
-    cost: number;
-}
-
 export interface ModelStatsCardProps {
-    modelStats: ModelStat[];
+    modelStats: ModelStatsEntry[];
     loading: boolean;
     hasPrices: boolean;
 }
@@ -32,6 +23,8 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
                             <tr>
                                 <th>{t('usage_stats.model_name')}</th>
                                 <th>{t('usage_stats.requests_count')}</th>
+                                <th>{t('usage_stats.input_tokens')}</th>
+                                <th>{t('usage_stats.output_tokens')}</th>
                                 <th>{t('usage_stats.tokens_count')}</th>
                                 {hasPrices && <th>{t('usage_stats.total_cost')}</th>}
                             </tr>
@@ -55,7 +48,9 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
                                             </span>
                                         </span>
                                     </td>
-                                    <td>{formatTokensInMillions(stat.tokens)}</td>
+                                    <td>{formatTokensInMillions(stat.inputTokens)}</td>
+                                    <td>{formatTokensInMillions(stat.outputTokens)}</td>
+                                    <td>{formatTokensInMillions(stat.totalTokens)}</td>
                                     {hasPrices && <td>{stat.cost > 0 ? formatUsd(stat.cost) : '--'}</td>}
                                 </tr>
                             ))}

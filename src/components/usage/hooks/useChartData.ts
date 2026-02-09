@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { ChartOptions } from 'chart.js';
-import { buildChartData, type ChartData } from '@/utils/usage';
+import { buildChartData, buildTokenTypeChartData, type ChartData } from '@/utils/usage';
 import { buildChartOptions } from '@/utils/usage/chartConfig';
 import type { UsagePayload } from './useUsageData';
 
@@ -33,6 +33,12 @@ export function useChartData({ usage, chartLines, isDark, isMobile }: UseChartDa
 
     const tokensChartData = useMemo(() => {
         if (!usage) return { labels: [], datasets: [] };
+
+        const usingDefaultAllLine = chartLines.length === 1 && chartLines[0] === 'all';
+        if (usingDefaultAllLine) {
+            return buildTokenTypeChartData(usage, tokensPeriod);
+        }
+
         return buildChartData(usage, tokensPeriod, 'tokens', chartLines);
     }, [usage, tokensPeriod, chartLines]);
 
@@ -47,16 +53,42 @@ export function useChartData({ usage, chartLines, isDark, isMobile }: UseChartDa
         [requestsPeriod, requestsChartData.labels, isDark, isMobile]
     );
 
-    const tokensChartOptions = useMemo(
-        () =>
-            buildChartOptions({
-                period: tokensPeriod,
-                labels: tokensChartData.labels,
-                isDark,
-                isMobile,
-            }),
-        [tokensPeriod, tokensChartData.labels, isDark, isMobile]
-    );
+    const tokensChartOptions = useMemo(() => {
+        const base = buildChartOptions({
+            period: tokensPeriod,
+            labels: tokensChartData.labels,
+            isDark,
+            isMobile,
+        });
+
+        return {
+            ...base,
+            elements: {
+                ...base.elements,
+                point: {
+                    ...base.elements?.point,
+                    radius: isMobile ? 1.5 : 2.5,
+                    hoverRadius: isMobile ? 4 : 5,
+                },
+            },
+            plugins: {
+                ...base.plugins,
+                tooltip: {
+                    ...base.plugins?.tooltip,
+                    callbacks: {
+                        label: (context) => {
+                            const value = Number(context.raw ?? 0);
+                            return `${context.dataset.label}: ${value.toLocaleString()}`;
+                        },
+                        footer: (items) => {
+                            const total = items.reduce((sum, item) => sum + Number(item.raw ?? 0), 0);
+                            return `Total: ${total.toLocaleString()}`;
+                        },
+                    },
+                },
+            },
+        } as ChartOptions<'line'>;
+    }, [tokensPeriod, tokensChartData.labels, isDark, isMobile]);
 
     return {
         requestsPeriod,

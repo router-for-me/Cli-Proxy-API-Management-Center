@@ -59,6 +59,12 @@ export function ApiDetailsCard({ apiStats, loading, hasPrices }: ApiDetailsCardP
                                         <span className={styles.apiBadge}>
                                             {t('usage_stats.tokens_count')}: {formatTokensInMillions(api.totalTokens)}
                                         </span>
+                                        <span className={styles.apiBadge}>
+                                            {t('usage_stats.input_tokens')}: {formatTokensInMillions(api.inputTokens)}
+                                        </span>
+                                        <span className={styles.apiBadge}>
+                                            {t('usage_stats.output_tokens')}: {formatTokensInMillions(api.outputTokens)}
+                                        </span>
                                         {hasPrices && api.totalCost > 0 && (
                                             <span className={styles.apiBadge}>
                                                 {t('usage_stats.total_cost')}: {formatUsd(api.totalCost)}
@@ -88,9 +94,24 @@ export function ApiDetailsCard({ apiStats, loading, hasPrices }: ApiDetailsCardP
                                                     </span>
                                                 </span>
                                             </span>
-                                            <span className={styles.modelStat}>
-                                                {formatTokensInMillions(stats.tokens)}
-                                            </span>
+                                            <div className={styles.modelStatsStack}>
+                                                <span className={styles.modelStat}>
+                                                    {t('usage_stats.tokens_count')}: {formatTokensInMillions(stats.totalTokens)}
+                                                </span>
+                                                <span className={styles.modelStat}>
+                                                    {t('usage_stats.input_tokens')}: {formatTokensInMillions(stats.inputTokens)}
+                                                </span>
+                                                <span className={styles.modelStat}>
+                                                    {t('usage_stats.output_tokens')}: {formatTokensInMillions(stats.outputTokens)}
+                                                </span>
+                                                <span className={styles.modelStat}>
+                                                    {t('usage_stats.reasoning_tokens')}:{' '}
+                                                    {formatTokensInMillions(stats.reasoningTokens)}
+                                                </span>
+                                                <span className={styles.modelStat}>
+                                                    {t('usage_stats.cached_tokens')}: {formatTokensInMillions(stats.cachedTokens)}
+                                                </span>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

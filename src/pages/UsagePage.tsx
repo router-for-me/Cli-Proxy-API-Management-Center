@@ -10,6 +10,7 @@ import {
     Tooltip,
     Legend,
     Filler,
+    ArcElement,
 } from 'chart.js';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -23,15 +24,17 @@ import {
     ApiDetailsCard,
     ModelStatsCard,
     PriceSettingsCard,
+    TokenDistributionCard,
+    RequestHistoryCard,
     useUsageData,
     useSparklines,
     useChartData,
 } from '@/components/usage';
-import { getModelNamesFromUsage, getApiStats, getModelStats } from '@/utils/usage';
+import { getModelNamesFromUsage, getApiStats, getModelStats, calculateTokenBreakdown, collectRecentRequests } from '@/utils/usage';
 import styles from './UsagePage.module.scss';
 
 // Register Chart.js components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, ArcElement);
 
 export function UsagePage() {
     const { t } = useTranslation();
@@ -84,6 +87,8 @@ export function UsagePage() {
     const apiStats = useMemo(() => getApiStats(usage, modelPrices), [usage, modelPrices]);
     const modelStats = useMemo(() => getModelStats(usage, modelPrices), [usage, modelPrices]);
     const hasPrices = Object.keys(modelPrices).length > 0;
+    const tokenBreakdown = useMemo(() => calculateTokenBreakdown(usage), [usage]);
+    const recentRequests = useMemo(() => collectRecentRequests(usage, 50), [usage]);
 
     return (
         <div className={styles.container}>
@@ -183,10 +188,16 @@ export function UsagePage() {
                 />
             </div>
 
+            <div className={styles.detailsGrid}>
+                <TokenDistributionCard loading={loading} tokenBreakdown={tokenBreakdown} />
+                <ModelStatsCard modelStats={modelStats} loading={loading} hasPrices={hasPrices} />
+            </div>
+
+            <RequestHistoryCard loading={loading} requests={recentRequests} />
+
             {/* Details Grid */}
             <div className={styles.detailsGrid}>
                 <ApiDetailsCard apiStats={apiStats} loading={loading} hasPrices={hasPrices} />
-                <ModelStatsCard modelStats={modelStats} loading={loading} hasPrices={hasPrices} />
             </div>
 
             {/* Price Settings */}
