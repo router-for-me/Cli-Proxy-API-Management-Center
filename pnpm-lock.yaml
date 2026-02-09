@@ -11,6 +11,12 @@ importers:
       '@codemirror/lang-yaml':
         specifier: ^6.1.2
         version: 6.1.2
+      '@codemirror/search':
+        specifier: ^6.6.0
+        version: 6.6.0
+      '@codemirror/view':
+        specifier: ^6.39.13
+        version: 6.39.13
       '@types/node':
         specifier: ^25.2.2
         version: 25.2.2
