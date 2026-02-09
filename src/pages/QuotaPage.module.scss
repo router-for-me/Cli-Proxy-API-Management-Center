@@ -309,6 +309,23 @@
   text-transform: capitalize;
 }
 
+.kiroPlan {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.kiroPlanLabel {
+  color: var(--text-tertiary);
+}
+
+.kiroPlanValue {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .fileCard {
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);

@@ -641,6 +641,9 @@ export const GEMINI_CLI_CONFIG: QuotaConfig<GeminiCliQuotaState, GeminiCliQuotaB
   renderQuotaItems: renderGeminiCliItems,
 };
 
+// Kiro (AWS CodeWhisperer) quota configuration
+
+/** Fallback labels for Kiro resource types when displayName is absent. */
 const KIRO_RESOURCE_LABELS: Record<string, string> = {
   CREDIT: 'Credits',
   AGENTIC_REQUEST: 'Agentic Requests',
@@ -648,6 +651,17 @@ const KIRO_RESOURCE_LABELS: Record<string, string> = {
   CODE_SCAN: 'Code Scan',
 };
 
+/** Human-readable labels for Kiro subscription plan types. */
+const KIRO_SUBSCRIPTION_LABELS: Record<string, string> = {
+  Q_DEVELOPER_STANDALONE_POWER: 'Kiro Power',
+  Q_DEVELOPER_STANDALONE_FREE: 'Kiro Free',
+  Q_DEVELOPER_STANDALONE_PRO: 'Kiro Pro',
+};
+
+/**
+ * Convert an epoch timestamp (seconds or milliseconds) to an ISO string.
+ * The CodeWhisperer API returns nextDateReset as seconds (e.g. 1.7723232E9).
+ */
 const kiroResetTimeFromEpoch = (epoch?: number): string | undefined => {
   if (!epoch || epoch <= 0) return undefined;
   // API returns seconds (e.g. 1.7723232E9), convert to ms
@@ -655,6 +669,7 @@ const kiroResetTimeFromEpoch = (epoch?: number): string | undefined => {
   return new Date(ms).toISOString();
 };
 
+/** Build normalized quota resources from the CodeWhisperer getUsageLimits response. */
 const buildKiroResources = (payload: KiroUsagePayload): KiroQuotaResource[] => {
   const breakdowns = payload.usageBreakdownList;
   if (!breakdowns || !Array.isArray(breakdowns) || breakdowns.length === 0) return [];
@@ -696,6 +711,16 @@ const buildKiroResources = (payload: KiroUsagePayload): KiroQuotaResource[] => {
     .filter((r) => r.totalLimit > 0);
 };
 
+/** Resolve a human-readable subscription label from the API type/title. */
+const resolveKiroSubscriptionLabel = (payload: KiroUsagePayload): string | null => {
+  const info = payload.subscriptionInfo;
+  if (!info) return null;
+  const type = info.type;
+  if (type && KIRO_SUBSCRIPTION_LABELS[type]) return KIRO_SUBSCRIPTION_LABELS[type];
+  return info.subscriptionTitle ?? type ?? null;
+};
+
+/** Fetch Kiro quota via the management api-call proxy endpoint. */
 const fetchKiroQuota = async (
   file: AuthFileItem,
   t: TFunction
@@ -723,11 +748,12 @@ const fetchKiroQuota = async (
   }
 
   const resources = buildKiroResources(payload);
-  const subscriptionType = payload.subscriptionInfo?.type ?? payload.subscriptionInfo?.subscriptionTitle ?? null;
+  const subscriptionType = resolveKiroSubscriptionLabel(payload);
 
   return { subscriptionType, resources };
 };
 
+/** Render Kiro quota items with progress bars and subscription info. */
 const renderKiroItems = (
   quota: KiroQuotaState,
   t: TFunction,
@@ -744,9 +770,9 @@ const renderKiroItems = (
     nodes.push(
       h(
         'div',
-        { key: 'plan', className: styleMap.codexPlan },
-        h('span', { className: styleMap.codexPlanLabel }, t('kiro_quota.plan_label')),
-        h('span', { className: styleMap.codexPlanValue }, subscriptionType)
+        { key: 'plan', className: styleMap.kiroPlan },
+        h('span', { className: styleMap.kiroPlanLabel }, t('kiro_quota.plan_label')),
+        h('span', { className: styleMap.kiroPlanValue }, subscriptionType)
       )
     );
   }
