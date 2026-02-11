@@ -421,7 +421,7 @@ export function AuthFilesPage() {
       .split('\n')
       .map(s => s.trim())
       .filter(Boolean);
-    if ('excluded_models' in next || excludedLines.length > 0) {
+    if (excludedLines.length > 0) {
       next.excluded_models = excludedLines;
     } else {
       delete next.excluded_models;
@@ -934,10 +934,7 @@ export function AuthFilesPage() {
   const handlePrefixProxyChange = (field: 'prefix' | 'proxyUrl' | 'excludedModels' | 'priority', value: string) => {
     setPrefixProxyEditor((prev) => {
       if (!prev) return prev;
-      if (field === 'prefix') return { ...prev, prefix: value };
-      if (field === 'proxyUrl') return { ...prev, proxyUrl: value };
-      if (field === 'excludedModels') return { ...prev, excludedModels: value };
-      return { ...prev, priority: value };
+      return { ...prev, [field]: value };
     });
   };
 
