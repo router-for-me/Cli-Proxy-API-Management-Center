@@ -180,6 +180,8 @@ interface PrefixProxyEditorState {
   json: Record<string, unknown> | null;
   prefix: string;
   proxyUrl: string;
+  excludedModels: string;
+  priority: string;
 }
 // 标准化 auth_index 值（与 usage.ts 中的 normalizeAuthIndex 保持一致）
 function normalizeAuthIndexValue(value: unknown): string | null {
@@ -413,11 +415,36 @@ export function AuthFilesPage() {
     if ('proxy_url' in next || prefixProxyEditor.proxyUrl.trim()) {
       next.proxy_url = prefixProxyEditor.proxyUrl;
     }
+
+    // Handle excluded_models
+    const excludedLines = prefixProxyEditor.excludedModels
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+    if ('excluded_models' in next || excludedLines.length > 0) {
+      next.excluded_models = excludedLines;
+    } else {
+      delete next.excluded_models;
+    }
+
+    // Handle priority
+    const priorityStr = prefixProxyEditor.priority.trim();
+    if (priorityStr !== '') {
+      const priorityNum = parseInt(priorityStr, 10);
+      if (!isNaN(priorityNum)) {
+        next.priority = priorityNum;
+      }
+    } else if ('priority' in next) {
+      delete next.priority;
+    }
+
     return JSON.stringify(next);
   }, [
     prefixProxyEditor?.json,
     prefixProxyEditor?.prefix,
     prefixProxyEditor?.proxyUrl,
+    prefixProxyEditor?.excludedModels,
+    prefixProxyEditor?.priority,
     prefixProxyEditor?.rawText,
   ]);
 
@@ -829,6 +856,8 @@ export function AuthFilesPage() {
       json: null,
       prefix: '',
       proxyUrl: '',
+      excludedModels: '',
+      priority: '',
     });
 
     try {
@@ -870,6 +899,12 @@ export function AuthFilesPage() {
       const originalText = JSON.stringify(json);
       const prefix = typeof json.prefix === 'string' ? json.prefix : '';
       const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
+      const excludedModels = Array.isArray(json.excluded_models)
+        ? json.excluded_models.filter((m: unknown) => typeof m === 'string').join('\n')
+        : '';
+      const priority = json.priority !== undefined && json.priority !== null
+        ? String(json.priority)
+        : '';
 
       setPrefixProxyEditor((prev) => {
         if (!prev || prev.fileName !== name) return prev;
@@ -881,6 +916,8 @@ export function AuthFilesPage() {
           json,
           prefix,
           proxyUrl,
+          excludedModels,
+          priority,
           error: null,
         };
       });
@@ -894,11 +931,13 @@ export function AuthFilesPage() {
     }
   };
 
-  const handlePrefixProxyChange = (field: 'prefix' | 'proxyUrl', value: string) => {
+  const handlePrefixProxyChange = (field: 'prefix' | 'proxyUrl' | 'excludedModels' | 'priority', value: string) => {
     setPrefixProxyEditor((prev) => {
       if (!prev) return prev;
       if (field === 'prefix') return { ...prev, prefix: value };
-      return { ...prev, proxyUrl: value };
+      if (field === 'proxyUrl') return { ...prev, proxyUrl: value };
+      if (field === 'excludedModels') return { ...prev, excludedModels: value };
+      return { ...prev, priority: value };
     });
   };
 
@@ -2210,6 +2249,29 @@ export function AuthFilesPage() {
                       disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
                     }
                     onChange={(e) => handlePrefixProxyChange('proxyUrl', e.target.value)}
+                  />
+                </div>
+                <div className={styles.prefixProxyFields}>
+                  <label className={styles.prefixProxyLabel}>
+                    Excluded Models (one per line)
+                  </label>
+                  <textarea
+                    className={styles.prefixProxyTextarea}
+                    rows={5}
+                    placeholder={"model-name-1\nmodel-name-2"}
+                    value={prefixProxyEditor.excludedModels}
+                    disabled={disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json}
+                    onChange={(e) => handlePrefixProxyChange('excludedModels', e.target.value)}
+                  />
+                </div>
+                <div className={styles.prefixProxyFields}>
+                  <Input
+                    label="Priority (higher = higher priority, default: 0)"
+                    type="number"
+                    value={prefixProxyEditor.priority}
+                    placeholder="0"
+                    disabled={disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json}
+                    onChange={(e) => handlePrefixProxyChange('priority', e.target.value)}
                   />
                 </div>
               </>
