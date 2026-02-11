@@ -38,13 +38,16 @@
     "quota_update_required": "请更新 CPA 版本或检查更新",
     "quota_check_credential": "请检查凭证状态",
     "copy": "复制",
+    "status": "状态",
+    "action": "操作",
     "custom_headers_label": "自定义请求头",
     "custom_headers_hint": "可选，设置需要附带到请求中的 HTTP 头，名称和值均不能为空。",
     "custom_headers_add": "添加请求头",
     "custom_headers_key_placeholder": "Header 名称，例如 X-Custom-Header",
     "custom_headers_value_placeholder": "Header 值",
     "model_name_placeholder": "模型名称，例如 claude-3-5-sonnet-20241022",
-    "model_alias_placeholder": "模型别名 (可选)"
+    "model_alias_placeholder": "模型别名 (可选)",
+    "invalid_provider_index": "无效的提供商索引。"
   },
   "title": {
     "main": "CLI Proxy API Management Center",
@@ -333,7 +336,13 @@
     "openai_test_success": "测试成功，模型可用。",
     "openai_test_failed": "测试失败",
     "openai_test_select_placeholder": "从当前模型列表选择",
-    "openai_test_select_empty": "当前未配置模型，请先添加模型"
+    "openai_test_select_empty": "当前未配置模型，请先添加模型",
+    "openai_test_single_action": "测试",
+    "openai_test_all_action": "一键测试全部密钥",
+    "openai_test_all_hint": "测试所有密钥的连接状态",
+    "openai_test_all_success": "所有 {{count}} 个密钥测试通过",
+    "openai_test_all_failed": "所有 {{count}} 个密钥测试失败",
+    "openai_test_all_partial": "测试完成：{{success}} 个通过，{{failed}} 个失败"
   },
   "auth_files": {
     "title": "认证文件管理",

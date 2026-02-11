@@ -38,13 +38,16 @@
     "quota_update_required": "Please update the CPA version or check for updates",
     "quota_check_credential": "Please check the credential status",
     "copy": "Copy",
+    "status": "Status",
+    "action": "Action",
     "custom_headers_label": "Custom Headers",
     "custom_headers_hint": "Optional HTTP headers to send with the request. Leave blank to remove.",
     "custom_headers_add": "Add Header",
     "custom_headers_key_placeholder": "Header name, e.g. X-Custom-Header",
     "custom_headers_value_placeholder": "Header value",
     "model_name_placeholder": "Model name, e.g. claude-3-5-sonnet-20241022",
-    "model_alias_placeholder": "Model alias (optional)"
+    "model_alias_placeholder": "Model alias (optional)",
+    "invalid_provider_index": "Invalid provider index."
   },
   "title": {
     "main": "CLI Proxy API Management Center",
@@ -333,7 +336,13 @@
     "openai_test_success": "Test succeeded. The model responded.",
     "openai_test_failed": "Test failed",
     "openai_test_select_placeholder": "Choose from current models",
-    "openai_test_select_empty": "No models configured. Add models first"
+    "openai_test_select_empty": "No models configured. Add models first",
+    "openai_test_single_action": "Test",
+    "openai_test_all_action": "Test All Keys",
+    "openai_test_all_hint": "Test connection status for all keys",
+    "openai_test_all_success": "All {{count}} keys passed the test",
+    "openai_test_all_failed": "All {{count}} keys failed the test",
+    "openai_test_all_partial": "Test completed: {{success}} passed, {{failed}} failed"
   },
   "auth_files": {
     "title": "Auth Files Management",

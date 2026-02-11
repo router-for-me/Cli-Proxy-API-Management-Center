@@ -193,7 +193,7 @@ export function AiProvidersGeminiEditPage() {
       <Card>
         {error && <div className="error-box">{error}</div>}
         {invalidIndexParam || invalidIndex ? (
-          <div className="hint">Invalid provider index.</div>
+          <div className="hint">{t('common.invalid_provider_index')}</div>
         ) : (
           <>
             <Input
@@ -224,6 +224,8 @@ export function AiProvidersGeminiEditPage() {
               addLabel={t('common.custom_headers_add')}
               keyPlaceholder={t('common.custom_headers_key_placeholder')}
               valuePlaceholder={t('common.custom_headers_value_placeholder')}
+              removeButtonTitle={t('common.delete')}
+              removeButtonAriaLabel={t('common.delete')}
               disabled={disableControls || saving}
             />
             <div className="form-group">

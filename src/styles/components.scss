@@ -581,15 +581,16 @@ textarea {
   padding: $spacing-md;
   background: var(--bg-primary);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: $spacing-md;
-  flex-wrap: wrap;
 
   .item-meta {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: $spacing-sm;
+    flex: 1;
+    min-width: 0;
   }
 
   .item-title {

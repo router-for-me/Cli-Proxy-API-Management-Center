@@ -10,6 +10,8 @@ interface HeaderInputListProps {
   disabled?: boolean;
   keyPlaceholder?: string;
   valuePlaceholder?: string;
+  removeButtonTitle?: string;
+  removeButtonAriaLabel?: string;
 }
 
 export function HeaderInputList({
@@ -18,7 +20,9 @@ export function HeaderInputList({
   addLabel,
   disabled = false,
   keyPlaceholder = 'X-Custom-Header',
-  valuePlaceholder = 'value'
+  valuePlaceholder = 'value',
+  removeButtonTitle = 'Remove',
+  removeButtonAriaLabel = 'Remove',
 }: HeaderInputListProps) {
   const currentEntries = entries.length ? entries : [{ key: '', value: '' }];
 
@@ -61,8 +65,8 @@ export function HeaderInputList({
               size="sm"
               onClick={() => removeEntry(index)}
               disabled={disabled || currentEntries.length <= 1}
-              title="Remove"
-              aria-label="Remove"
+              title={removeButtonTitle}
+              aria-label={removeButtonAriaLabel}
             >
               <IconX size={14} />
             </Button>
