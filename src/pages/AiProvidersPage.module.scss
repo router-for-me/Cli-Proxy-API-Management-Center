@@ -647,7 +647,7 @@
 // 表头
 .keyTableHeader {
   display: grid;
-  grid-template-columns: 46px 56px minmax(220px, 1.4fr) minmax(200px, 1.1fr) auto;
+  grid-template-columns: 46px 56px minmax(220px, 1.4fr) minmax(200px, 1.1fr) 180px;
   gap: $spacing-sm;
   min-width: 760px;
   padding: 10px $spacing-md;
@@ -659,12 +659,14 @@
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: none;
+  align-items: center;
+  text-align: center;
 }
 
 // 数据行
 .keyTableRow {
   display: grid;
-  grid-template-columns: 46px 56px minmax(220px, 1.4fr) minmax(200px, 1.1fr) auto;
+  grid-template-columns: 46px 56px minmax(220px, 1.4fr) minmax(200px, 1.1fr) 180px;
   gap: $spacing-sm;
   min-width: 760px;
   padding: 10px $spacing-md;
@@ -704,12 +706,15 @@
 .keyTableColKey,
 .keyTableColProxy {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .keyTableColAction {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: $spacing-xs;
   flex-shrink: 0;
   white-space: nowrap;
@@ -720,6 +725,7 @@
   padding: 8px 10px;
   font-size: 14px;
   min-height: 38px;
+  text-align: center;
 }
 
 .addKeyButton {
