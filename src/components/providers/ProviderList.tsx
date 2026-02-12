@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 interface ProviderListProps<T> {
   items: T[];
   loading: boolean;
-  keyField: (item: T) => string;
+  keyField: (item: T, index: number) => string;
   renderContent: (item: T, index: number) => ReactNode;
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
@@ -48,7 +48,7 @@ export function ProviderList<T>({
         const rowDisabled = getRowDisabled ? getRowDisabled(item, index) : false;
         return (
           <div
-            key={keyField(item)}
+            key={keyField(item, index)}
             className="item-row"
             style={rowDisabled ? { opacity: 0.6 } : undefined}
           >

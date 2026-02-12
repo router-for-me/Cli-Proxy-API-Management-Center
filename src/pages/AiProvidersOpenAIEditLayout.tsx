@@ -77,8 +77,6 @@ export function AiProvidersOpenAIEditLayout() {
 
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
-  const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
-  const clearCache = useConfigStore((state) => state.clearCache);
   const isCacheValid = useConfigStore((state) => state.isCacheValid);
 
   const [providers, setProviders] = useState<OpenAIProviderConfig[]>(
@@ -335,9 +333,18 @@ export function AiProvidersOpenAIEditLayout() {
           : [...providers, payload];
 
       await providersApi.saveOpenAIProviders(nextList);
-      setProviders(nextList);
-      updateConfigValue('openai-compatibility', nextList);
-      clearCache('openai-compatibility');
+
+      let syncedProviders = nextList;
+      try {
+        const latest = await fetchConfig('openai-compatibility', true);
+        if (Array.isArray(latest)) {
+          syncedProviders = latest as OpenAIProviderConfig[];
+        }
+      } catch {
+        // 保存成功后刷新失败时，回退到本地计算结果，避免页面数据为空或回退
+      }
+
+      setProviders(syncedProviders);
       showNotification(
         editIndex !== null
           ? t('notification.openai_provider_updated')
@@ -351,15 +358,14 @@ export function AiProvidersOpenAIEditLayout() {
       setSaving(false);
     }
   }, [
-    clearCache,
     editIndex,
+    fetchConfig,
     form,
     handleBack,
     providers,
     testModel,
     showNotification,
     t,
-    updateConfigValue,
   ]);
 
   const resolvedLoading = !draft?.initialized;

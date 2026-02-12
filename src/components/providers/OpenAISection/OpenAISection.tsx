@@ -87,7 +87,7 @@ export function OpenAISection({
         <ProviderList<OpenAIProviderConfig>
           items={configs}
           loading={loading}
-          keyField={(item) => item.name}
+          keyField={(_, index) => `openai-provider-${index}`}
           emptyTitle={t('ai_providers.openai_empty_title')}
           emptyDescription={t('ai_providers.openai_empty_desc')}
           onEdit={onEdit}
