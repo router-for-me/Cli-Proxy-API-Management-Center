@@ -400,6 +400,8 @@ export function LogsPage() {
     startY: number;
     fired: boolean;
   } | null>(null);
+  const logRequestInFlightRef = useRef(false);
+  const pendingFullReloadRef = useRef(false);
 
   // 保存最新时间戳用于增量获取
   const latestTimestampRef = useRef<number>(0);
@@ -423,6 +425,15 @@ export function LogsPage() {
       setLoading(false);
       return;
     }
+
+    if (logRequestInFlightRef.current) {
+      if (!incremental) {
+        pendingFullReloadRef.current = true;
+      }
+      return;
+    }
+
+    logRequestInFlightRef.current = true;
 
     if (!incremental) {
       setLoading(true);
@@ -473,6 +484,11 @@ export function LogsPage() {
     } finally {
       if (!incremental) {
         setLoading(false);
+      }
+      logRequestInFlightRef.current = false;
+      if (pendingFullReloadRef.current) {
+        pendingFullReloadRef.current = false;
+        void loadLogs(false);
       }
     }
   };
