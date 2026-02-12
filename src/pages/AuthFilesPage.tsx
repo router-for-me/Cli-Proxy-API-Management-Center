@@ -1022,8 +1022,12 @@ export function AuthFilesPage() {
     const excludedModels = excluded[providerKey] || excluded[providerType] || [];
     return excludedModels.some((pattern) => {
       if (pattern.includes('*')) {
-        // 支持通配符匹配
-        const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$', 'i');
+        // 支持通配符匹配：先转义正则特殊字符，再将 * 视为通配符
+        const regexSafePattern = pattern
+          .split('*')
+          .map((segment) => segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+          .join('.*');
+        const regex = new RegExp(`^${regexSafePattern}$`, 'i');
         return regex.test(modelId);
       }
       return pattern.toLowerCase() === modelId.toLowerCase();
