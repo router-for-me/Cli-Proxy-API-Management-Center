@@ -9,6 +9,7 @@ export interface UseChartDataOptions {
   chartLines: string[];
   isDark: boolean;
   isMobile: boolean;
+  hourWindowHours?: number;
 }
 
 export interface UseChartDataReturn {
@@ -26,20 +27,21 @@ export function useChartData({
   usage,
   chartLines,
   isDark,
-  isMobile
+  isMobile,
+  hourWindowHours
 }: UseChartDataOptions): UseChartDataReturn {
   const [requestsPeriod, setRequestsPeriod] = useState<'hour' | 'day'>('day');
   const [tokensPeriod, setTokensPeriod] = useState<'hour' | 'day'>('day');
 
   const requestsChartData = useMemo(() => {
     if (!usage) return { labels: [], datasets: [] };
-    return buildChartData(usage, requestsPeriod, 'requests', chartLines);
-  }, [usage, requestsPeriod, chartLines]);
+    return buildChartData(usage, requestsPeriod, 'requests', chartLines, { hourWindowHours });
+  }, [usage, requestsPeriod, chartLines, hourWindowHours]);
 
   const tokensChartData = useMemo(() => {
     if (!usage) return { labels: [], datasets: [] };
-    return buildChartData(usage, tokensPeriod, 'tokens', chartLines);
-  }, [usage, tokensPeriod, chartLines]);
+    return buildChartData(usage, tokensPeriod, 'tokens', chartLines, { hourWindowHours });
+  }, [usage, tokensPeriod, chartLines, hourWindowHours]);
 
   const requestsChartOptions = useMemo(
     () =>

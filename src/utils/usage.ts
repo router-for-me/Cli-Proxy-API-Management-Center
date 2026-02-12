@@ -61,8 +61,15 @@ export interface ApiStats {
   models: Record<string, { requests: number; successCount: number; failureCount: number; tokens: number }>;
 }
 
+export type UsageTimeRange = '7h' | '24h' | '7d' | 'all';
+
 const TOKENS_PER_PRICE_UNIT = 1_000_000;
 const MODEL_PRICE_STORAGE_KEY = 'cli-proxy-model-prices-v2';
+const USAGE_TIME_RANGE_MS: Record<Exclude<UsageTimeRange, 'all'>, number> = {
+  '7h': 7 * 60 * 60 * 1000,
+  '24h': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -72,6 +79,140 @@ const getApisRecord = (usageData: unknown): Record<string, unknown> | null => {
   const apisRaw = usageRecord ? usageRecord.apis : null;
   return isRecord(apisRaw) ? apisRaw : null;
 };
+
+interface UsageSummary {
+  totalRequests: number;
+  successCount: number;
+  failureCount: number;
+  totalTokens: number;
+}
+
+const createUsageSummary = (): UsageSummary => ({
+  totalRequests: 0,
+  successCount: 0,
+  failureCount: 0,
+  totalTokens: 0
+});
+
+const toUsageSummaryFields = (summary: UsageSummary) => ({
+  total_requests: summary.totalRequests,
+  success_count: summary.successCount,
+  failure_count: summary.failureCount,
+  total_tokens: summary.totalTokens
+});
+
+const isDetailWithinWindow = (detail: unknown, windowStart: number, nowMs: number): detail is Record<string, unknown> => {
+  if (!isRecord(detail) || typeof detail.timestamp !== 'string') {
+    return false;
+  }
+  const timestamp = Date.parse(detail.timestamp);
+  if (Number.isNaN(timestamp)) {
+    return false;
+  }
+  return timestamp >= windowStart && timestamp <= nowMs;
+};
+
+const updateSummaryFromDetails = (summary: UsageSummary, details: unknown[]) => {
+  details.forEach((detail) => {
+    const detailRecord = isRecord(detail) ? detail : null;
+    if (!detailRecord) {
+      return;
+    }
+
+    summary.totalRequests += 1;
+    if (detailRecord.failed === true) {
+      summary.failureCount += 1;
+    } else {
+      summary.successCount += 1;
+    }
+    summary.totalTokens += extractTotalTokens(detailRecord);
+  });
+};
+
+export function filterUsageByTimeRange<T>(usageData: T, range: UsageTimeRange, nowMs: number = Date.now()): T {
+  if (range === 'all') {
+    return usageData;
+  }
+
+  const usageRecord = isRecord(usageData) ? usageData : null;
+  const apis = getApisRecord(usageData);
+  if (!usageRecord || !apis) {
+    return usageData;
+  }
+
+  const rangeMs = USAGE_TIME_RANGE_MS[range];
+  if (!Number.isFinite(rangeMs) || rangeMs <= 0) {
+    return usageData;
+  }
+
+  const windowStart = nowMs - rangeMs;
+  const filteredApis: Record<string, unknown> = {};
+  const totalSummary = createUsageSummary();
+
+  Object.entries(apis).forEach(([apiName, apiEntry]) => {
+    if (!isRecord(apiEntry)) {
+      return;
+    }
+
+    const models = isRecord(apiEntry.models) ? apiEntry.models : null;
+    if (!models) {
+      return;
+    }
+
+    const filteredModels: Record<string, unknown> = {};
+    const apiSummary = createUsageSummary();
+
+    Object.entries(models).forEach(([modelName, modelEntry]) => {
+      if (!isRecord(modelEntry)) {
+        return;
+      }
+
+      const detailsRaw = Array.isArray(modelEntry.details) ? modelEntry.details : [];
+      const filteredDetails = detailsRaw.filter((detail) =>
+        isDetailWithinWindow(detail, windowStart, nowMs)
+      );
+
+      if (!filteredDetails.length) {
+        return;
+      }
+
+      const modelSummary = createUsageSummary();
+      updateSummaryFromDetails(modelSummary, filteredDetails);
+
+      filteredModels[modelName] = {
+        ...modelEntry,
+        ...toUsageSummaryFields(modelSummary),
+        details: filteredDetails
+      };
+
+      apiSummary.totalRequests += modelSummary.totalRequests;
+      apiSummary.successCount += modelSummary.successCount;
+      apiSummary.failureCount += modelSummary.failureCount;
+      apiSummary.totalTokens += modelSummary.totalTokens;
+    });
+
+    if (Object.keys(filteredModels).length === 0) {
+      return;
+    }
+
+    filteredApis[apiName] = {
+      ...apiEntry,
+      ...toUsageSummaryFields(apiSummary),
+      models: filteredModels
+    };
+
+    totalSummary.totalRequests += apiSummary.totalRequests;
+    totalSummary.successCount += apiSummary.successCount;
+    totalSummary.failureCount += apiSummary.failureCount;
+    totalSummary.totalTokens += apiSummary.totalTokens;
+  });
+
+  return {
+    ...usageRecord,
+    ...toUsageSummaryFields(totalSummary),
+    apis: filteredApis
+  } as T;
+}
 
 const normalizeAuthIndex = (value: unknown) => {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -735,23 +876,28 @@ export function formatDayLabel(date: Date): string {
  */
 export function buildHourlySeriesByModel(
   usageData: unknown,
-  metric: 'requests' | 'tokens' = 'requests'
+  metric: 'requests' | 'tokens' = 'requests',
+  hourWindow: number = 24
 ): {
   labels: string[];
   dataByModel: Map<string, number[]>;
   hasData: boolean;
 } {
   const hourMs = 60 * 60 * 1000;
+  const resolvedHourWindow =
+    Number.isFinite(hourWindow) && hourWindow > 0
+      ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
+      : 24;
   const now = new Date();
   const currentHour = new Date(now);
   currentHour.setMinutes(0, 0, 0);
 
   const earliestBucket = new Date(currentHour);
-  earliestBucket.setHours(earliestBucket.getHours() - 23);
+  earliestBucket.setHours(earliestBucket.getHours() - (resolvedHourWindow - 1));
   const earliestTime = earliestBucket.getTime();
 
   const labels: string[] = [];
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < resolvedHourWindow; i++) {
     const bucketStart = earliestTime + i * hourMs;
     labels.push(formatHourLabel(new Date(bucketStart)));
   }
@@ -927,10 +1073,11 @@ export function buildChartData(
   usageData: unknown,
   period: 'hour' | 'day' = 'day',
   metric: 'requests' | 'tokens' = 'requests',
-  selectedModels: string[] = []
+  selectedModels: string[] = [],
+  options: { hourWindowHours?: number } = {}
 ): ChartData {
   const baseSeries = period === 'hour'
-    ? buildHourlySeriesByModel(usageData, metric)
+    ? buildHourlySeriesByModel(usageData, metric, options.hourWindowHours)
     : buildDailySeriesByModel(usageData, metric);
 
   const { labels, dataByModel } = baseSeries;

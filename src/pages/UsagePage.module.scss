@@ -25,6 +25,59 @@
   flex-wrap: wrap;
 }
 
+.timeRangeGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.timeRangeLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.timeRangeSelectWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.select.timeRangeSelect {
+  min-width: 164px;
+  height: 40px;
+  border-color: var(--border-color);
+  border-radius: $radius-md;
+  background-color: var(--bg-primary);
+  box-shadow: var(--shadow);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  padding-right: 34px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  &:hover {
+    border-color: var(--border-hover);
+  }
+
+  &:focus {
+    box-shadow: var(--shadow), 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+}
+
+.timeRangeSelectIcon {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
 .pageTitle {
   font-size: 28px;
   font-weight: 700;
