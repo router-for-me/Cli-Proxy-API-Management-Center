@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
@@ -42,6 +42,39 @@ ChartJS.register(
   Filler
 );
 
+const CHART_LINES_STORAGE_KEY = 'cli-proxy-usage-chart-lines-v1';
+const DEFAULT_CHART_LINES = ['all'];
+const MAX_CHART_LINES = 9;
+
+const normalizeChartLines = (value: unknown, maxLines = MAX_CHART_LINES): string[] => {
+  if (!Array.isArray(value)) {
+    return DEFAULT_CHART_LINES;
+  }
+
+  const filtered = value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, maxLines);
+
+  return filtered.length ? filtered : DEFAULT_CHART_LINES;
+};
+
+const loadChartLines = (): string[] => {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return DEFAULT_CHART_LINES;
+    }
+    const raw = localStorage.getItem(CHART_LINES_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_CHART_LINES;
+    }
+    return normalizeChartLines(JSON.parse(raw));
+  } catch {
+    return DEFAULT_CHART_LINES;
+  }
+};
+
 export function UsagePage() {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -67,8 +100,22 @@ export function UsagePage() {
   useHeaderRefresh(loadUsage);
 
   // Chart lines state
-  const [chartLines, setChartLines] = useState<string[]>(['all']);
-  const MAX_CHART_LINES = 9;
+  const [chartLines, setChartLines] = useState<string[]>(loadChartLines);
+
+  const handleChartLinesChange = useCallback((lines: string[]) => {
+    setChartLines(normalizeChartLines(lines));
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (typeof localStorage === 'undefined') {
+        return;
+      }
+      localStorage.setItem(CHART_LINES_STORAGE_KEY, JSON.stringify(chartLines));
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [chartLines]);
 
   // Sparklines hook
   const {
@@ -168,7 +215,7 @@ export function UsagePage() {
         chartLines={chartLines}
         modelNames={modelNames}
         maxLines={MAX_CHART_LINES}
-        onChange={setChartLines}
+        onChange={handleChartLinesChange}
       />
 
       {/* Charts Grid */}
