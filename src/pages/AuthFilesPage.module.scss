@@ -80,12 +80,13 @@
 
 .filterTag {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
+  line-height: 1;
   border: 1px solid transparent;
   cursor: pointer;
   transition: all $transition-fast;
@@ -101,12 +102,19 @@
 }
 
 .filterTagLabel {
+  display: inline-flex;
+  align-items: baseline;
   white-space: nowrap;
 }
 
 .filterTagCount {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  min-width: 2ch;
   font-size: 12px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   opacity: 0.85;
 }
 
