@@ -446,6 +446,26 @@
     "refresh_button": "Обновить квоту",
     "fetch_all": "Получить все"
   },
+  "claude_quota": {
+    "title": "Квота Claude",
+    "empty_title": "Файлы авторизации Claude OAuth отсутствуют",
+    "empty_desc": "Войдите через Claude OAuth, чтобы увидеть квоту.",
+    "idle": "Не загружено. Нажмите \"Обновить квоту\".",
+    "loading": "Загрузка квоты...",
+    "load_failed": "Не удалось загрузить квоту: {{message}}",
+    "missing_auth_index": "В файле авторизации отсутствует auth_index",
+    "empty_windows": "Данные по квоте отсутствуют",
+    "refresh_button": "Обновить квоту",
+    "fetch_all": "Получить все",
+    "five_hour": "Лимит на 5 часов",
+    "seven_day": "Лимит на 7 дней",
+    "seven_day_oauth_apps": "7 дней OAuth приложения",
+    "seven_day_opus": "7 дней Opus",
+    "seven_day_sonnet": "7 дней Sonnet",
+    "seven_day_cowork": "7 дней Cowork",
+    "iguana_necktie": "Iguana Necktie",
+    "extra_usage_label": "Дополнительное использование"
+  },
   "codex_quota": {
     "title": "Квота Codex",
     "empty_title": "Файлы авторизации Codex отсутствуют",
