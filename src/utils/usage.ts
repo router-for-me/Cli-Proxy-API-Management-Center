@@ -1139,9 +1139,8 @@ export interface StatusBarData {
 }
 
 /**
- * 计算状态栏数据（最近1小时，分为20个5分钟的时间块）
- * 注意：20个块 × 5分钟 = 100分钟，但我们只使用最近60分钟的数据
- * 所以实际只有最后12个块可能有数据，前8个块将始终为 idle
+ * 计算状态栏数据（最近200分钟，分为20个10分钟的时间块）
+ * 每个时间块代表窗口内的一个等长区间，用于展示成功/失败趋势
  */
 export function calculateStatusBarData(
   usageDetails: UsageDetail[],
