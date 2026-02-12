@@ -44,38 +44,94 @@
   align-items: center;
 }
 
-.select.timeRangeSelect {
+.timeRangeSelect {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   min-width: 164px;
   height: 40px;
-  border-color: var(--border-color);
+  padding: 0 12px;
+  border: 1px solid var(--border-color);
   border-radius: $radius-md;
   background-color: var(--bg-primary);
   box-shadow: var(--shadow);
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 500;
-  padding-right: 34px;
+  cursor: pointer;
   appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
+  text-align: left;
 
   &:hover {
     border-color: var(--border-hover);
   }
 
   &:focus {
+    outline: none;
+    box-shadow: var(--shadow), 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+
+  &[aria-expanded='true'] {
+    border-color: var(--primary-color);
     box-shadow: var(--shadow), 0 0 0 3px rgba(59, 130, 246, 0.15);
   }
 }
 
+.timeRangeSelectedText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .timeRangeSelectIcon {
-  position: absolute;
-  right: 11px;
-  top: 50%;
-  transform: translateY(-50%);
   display: inline-flex;
   color: var(--text-secondary);
-  pointer-events: none;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+
+  [aria-expanded='true'] > & {
+    transform: rotate(180deg);
+  }
+}
+
+.timeRangeDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  padding: 6px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeRangeOption {
+  padding: 8px 12px;
+  border-radius: $radius-md;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: var(--bg-secondary);
+  }
+}
+
+.timeRangeOptionActive {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.10);
+  font-weight: 600;
 }
 
 .pageTitle {

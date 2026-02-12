@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
@@ -54,6 +54,12 @@ const TIME_RANGE_STORAGE_KEY = 'cli-proxy-usage-time-range-v1';
 const DEFAULT_CHART_LINES = ['all'];
 const DEFAULT_TIME_RANGE: UsageTimeRange = '24h';
 const MAX_CHART_LINES = 9;
+const TIME_RANGE_OPTIONS: ReadonlyArray<{ value: UsageTimeRange; labelKey: string }> = [
+  { value: 'all', labelKey: 'usage_stats.range_all' },
+  { value: '7h', labelKey: 'usage_stats.range_7h' },
+  { value: '24h', labelKey: 'usage_stats.range_24h' },
+  { value: '7d', labelKey: 'usage_stats.range_7d' },
+];
 const HOUR_WINDOW_BY_TIME_RANGE: Record<Exclude<UsageTimeRange, 'all'>, number> = {
   '7h': 7,
   '24h': 24,
@@ -109,6 +115,19 @@ export function UsagePage() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isDark = resolvedTheme === 'dark';
+
+  // Time range dropdown
+  const [timeRangeOpen, setTimeRangeOpen] = useState(false);
+  const timeRangeRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!timeRangeOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!timeRangeRef.current?.contains(event.target as Node)) setTimeRangeOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [timeRangeOpen]);
 
   // Data hook
   const {
@@ -214,20 +233,43 @@ export function UsagePage() {
         <div className={styles.headerActions}>
           <div className={styles.timeRangeGroup}>
             <span className={styles.timeRangeLabel}>{t('usage_stats.range_filter')}</span>
-            <div className={styles.timeRangeSelectWrap}>
-              <select
-                value={timeRange}
-                onChange={(event) => setTimeRange(event.target.value as UsageTimeRange)}
-                className={`${styles.select} ${styles.timeRangeSelect}`}
+            <div className={styles.timeRangeSelectWrap} ref={timeRangeRef}>
+              <button
+                type="button"
+                className={styles.timeRangeSelect}
+                onClick={() => setTimeRangeOpen((prev) => !prev)}
+                aria-haspopup="listbox"
+                aria-expanded={timeRangeOpen}
               >
-                <option value="all">{t('usage_stats.range_all')}</option>
-                <option value="7h">{t('usage_stats.range_7h')}</option>
-                <option value="24h">{t('usage_stats.range_24h')}</option>
-                <option value="7d">{t('usage_stats.range_7d')}</option>
-              </select>
-              <span className={styles.timeRangeSelectIcon} aria-hidden="true">
-                <IconChevronDown size={14} />
-              </span>
+                <span className={styles.timeRangeSelectedText}>
+                  {t(TIME_RANGE_OPTIONS.find((o) => o.value === timeRange)?.labelKey ?? 'usage_stats.range_24h')}
+                </span>
+                <span className={styles.timeRangeSelectIcon} aria-hidden="true">
+                  <IconChevronDown size={14} />
+                </span>
+              </button>
+              {timeRangeOpen && (
+                <div className={styles.timeRangeDropdown} role="listbox" aria-label={t('usage_stats.range_filter')}>
+                  {TIME_RANGE_OPTIONS.map((opt) => {
+                    const active = opt.value === timeRange;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        className={`${styles.timeRangeOption} ${active ? styles.timeRangeOptionActive : ''}`}
+                        onClick={() => {
+                          setTimeRange(opt.value);
+                          setTimeRangeOpen(false);
+                        }}
+                      >
+                        {t(opt.labelKey)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
           <Button
