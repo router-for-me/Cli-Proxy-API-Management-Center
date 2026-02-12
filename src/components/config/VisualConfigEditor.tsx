@@ -426,8 +426,24 @@ function PayloadRulesEditor({
   protocolFirst?: boolean;
   onChange: (next: PayloadRule[]) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const rules = value.length ? value : [];
+  const protocolOptions = useMemo(
+    () =>
+      VISUAL_CONFIG_PROTOCOL_OPTIONS.map((option) => ({
+        value: option.value,
+        label: t(option.labelKey, { defaultValue: option.defaultLabel }),
+      })),
+    [t, i18n.resolvedLanguage]
+  );
+  const payloadValueTypeOptions = useMemo(
+    () =>
+      VISUAL_CONFIG_PAYLOAD_VALUE_TYPE_OPTIONS.map((option) => ({
+        value: option.value,
+        label: t(option.labelKey, { defaultValue: option.defaultLabel }),
+      })),
+    [t, i18n.resolvedLanguage]
+  );
 
   const addRule = () => onChange([...rules, { id: makeClientId(), models: [], params: [] }]);
   const removeRule = (ruleIndex: number) => onChange(rules.filter((_, i) => i !== ruleIndex));
@@ -533,7 +549,7 @@ function PayloadRulesEditor({
                   <>
                     <ToastSelect
                       value={model.protocol ?? ''}
-                      options={VISUAL_CONFIG_PROTOCOL_OPTIONS}
+                      options={protocolOptions}
                       disabled={disabled}
                       ariaLabel={t('config_management.visual.payload_rules.provider_type')}
                       onChange={(nextValue) =>
@@ -561,7 +577,7 @@ function PayloadRulesEditor({
                     />
                     <ToastSelect
                       value={model.protocol ?? ''}
-                      options={VISUAL_CONFIG_PROTOCOL_OPTIONS}
+                      options={protocolOptions}
                       disabled={disabled}
                       ariaLabel={t('config_management.visual.payload_rules.provider_type')}
                       onChange={(nextValue) =>
@@ -603,7 +619,7 @@ function PayloadRulesEditor({
                 />
                 <ToastSelect
                   value={param.valueType}
-                  options={VISUAL_CONFIG_PAYLOAD_VALUE_TYPE_OPTIONS}
+                  options={payloadValueTypeOptions}
                   disabled={disabled}
                   ariaLabel={t('config_management.visual.payload_rules.param_type')}
                   onChange={(nextValue) =>
@@ -669,8 +685,16 @@ function PayloadFilterRulesEditor({
   disabled?: boolean;
   onChange: (next: PayloadFilterRule[]) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const rules = value.length ? value : [];
+  const protocolOptions = useMemo(
+    () =>
+      VISUAL_CONFIG_PROTOCOL_OPTIONS.map((option) => ({
+        value: option.value,
+        label: t(option.labelKey, { defaultValue: option.defaultLabel }),
+      })),
+    [t, i18n.resolvedLanguage]
+  );
 
   const addRule = () => onChange([...rules, { id: makeClientId(), models: [], params: [] }]);
   const removeRule = (ruleIndex: number) => onChange(rules.filter((_, i) => i !== ruleIndex));
@@ -738,7 +762,7 @@ function PayloadFilterRulesEditor({
                 />
                 <ToastSelect
                   value={model.protocol ?? ''}
-                  options={VISUAL_CONFIG_PROTOCOL_OPTIONS}
+                  options={protocolOptions}
                   disabled={disabled}
                   ariaLabel={t('config_management.visual.payload_rules.provider_type')}
                   onChange={(nextValue) =>
