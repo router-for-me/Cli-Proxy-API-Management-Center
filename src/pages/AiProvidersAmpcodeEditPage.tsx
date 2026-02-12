@@ -302,6 +302,8 @@ export function AiProvidersAmpcodeEditPage() {
             addLabel={t('ai_providers.ampcode_model_mappings_add_btn')}
             namePlaceholder={t('ai_providers.ampcode_model_mappings_from_placeholder')}
             aliasPlaceholder={t('ai_providers.ampcode_model_mappings_to_placeholder')}
+            removeButtonTitle={t('common.delete')}
+            removeButtonAriaLabel={t('common.delete')}
             disabled={loading || saving || disableControls}
           />
           <div className="hint">{t('ai_providers.ampcode_model_mappings_hint')}</div>

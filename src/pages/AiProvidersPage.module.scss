@@ -387,19 +387,6 @@
   }
 }
 
-// 连通性测试按钮高度对齐
-.openaiTestSelect {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.openaiTestButton {
-  flex: 1 1 0;
-  padding: 8px 12px;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
 // 状态监测栏
 .statusBar {
   display: flex;
@@ -471,6 +458,318 @@
 .statusRateLow {
   color: var(--failure-badge-text, #991b1b);
   background: var(--failure-badge-bg, #fee2e2);
+}
+
+// ============================================
+// Model Config Section - Unified Layout
+// ============================================
+
+.modelConfigSection {
+  margin-bottom: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.modelConfigHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+
+  @include mobile {
+    align-items: flex-start;
+  }
+}
+
+.modelConfigTitle {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.modelConfigToolbar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  @include mobile {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  :global(.btn) {
+    white-space: nowrap;
+  }
+}
+
+.modelInputList {
+  gap: $spacing-xs;
+}
+
+.modelInputRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  gap: $spacing-sm;
+  align-items: center;
+
+  @include mobile {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: $spacing-xs;
+
+    > :nth-child(2) {
+      display: none;
+    }
+
+    > :nth-child(3) {
+      grid-column: 1 / 3;
+    }
+
+    > :nth-child(4) {
+      grid-column: 2 / 3;
+      grid-row: 1 / 2;
+    }
+  }
+}
+
+.modelInputField {
+  min-width: 0;
+}
+
+.modelRowRemoveButton {
+  justify-self: center;
+}
+
+.modelTestPanel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  margin-top: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.modelTestMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.modelTestLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.modelTestHint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.modelTestControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-xs;
+  flex: 1;
+  min-width: 0;
+
+  @include mobile {
+    justify-content: flex-start;
+  }
+}
+
+// ============================================
+// Key Entry Styles - Table Design
+// ============================================
+
+.keyEntriesSection {
+  margin-bottom: 0;
+}
+
+.keyEntriesHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: $spacing-sm;
+
+  label {
+    margin: 0;
+  }
+}
+
+.keyEntriesHint {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.keyEntriesList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.keyEntriesToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.keyEntriesCount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.keyTableShell {
+  overflow-x: auto;
+  border-radius: $radius-md;
+}
+
+// 表头
+.keyTableHeader {
+  display: grid;
+  grid-template-columns: 46px 56px minmax(220px, 1.4fr) minmax(200px, 1.1fr) 180px;
+  gap: $spacing-sm;
+  min-width: 760px;
+  padding: 10px $spacing-md;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  border-radius: $radius-md $radius-md 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: none;
+  align-items: center;
+  text-align: center;
+}
+
+// 数据行
+.keyTableRow {
+  display: grid;
+  grid-template-columns: 46px 56px minmax(220px, 1.4fr) minmax(200px, 1.1fr) 180px;
+  gap: $spacing-sm;
+  min-width: 760px;
+  padding: 10px $spacing-md;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  align-items: center;
+
+  &:last-child {
+    border-radius: 0 0 $radius-md $radius-md;
+  }
+
+  &:hover {
+    background: var(--bg-tertiary);
+  }
+}
+
+// 列定义
+.keyTableColIndex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.keyTableColStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    display: block;
+  }
+}
+
+.keyTableColKey,
+.keyTableColProxy {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.keyTableColAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.keyTableInput {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  min-height: 38px;
+  text-align: center;
+}
+
+.addKeyButton {
+  align-self: auto;
+  margin-top: 0;
+}
+
+.openaiTestSelect {
+  flex: 1 1 260px;
+  min-width: 180px;
+  max-width: 380px;
+
+  @include mobile {
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+.modelTestAllButton {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.statusIconWrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.statusIconSpin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // 暗色主题适配

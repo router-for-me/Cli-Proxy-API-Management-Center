@@ -38,13 +38,16 @@
     "quota_update_required": "Пожалуйста, обновите CPA или проверьте наличие обновлений",
     "quota_check_credential": "Пожалуйста, проверьте статус учётных данных",
     "copy": "Копировать",
+    "status": "Статус",
+    "action": "Действие",
     "custom_headers_label": "Пользовательские заголовки",
     "custom_headers_hint": "Необязательно — HTTP-заголовки для отправки с запросом. Оставьте пустым для удаления.",
     "custom_headers_add": "Добавить заголовок",
     "custom_headers_key_placeholder": "Имя заголовка, например X-Custom-Header",
     "custom_headers_value_placeholder": "Значение заголовка",
     "model_name_placeholder": "Имя модели, напр. claude-3-5-sonnet-20241022",
-    "model_alias_placeholder": "Псевдоним модели (необязательно)"
+    "model_alias_placeholder": "Псевдоним модели (необязательно)",
+    "invalid_provider_index": "Неверный индекс провайдера."
   },
   "title": {
     "main": "Центр управления CLI Proxy API",
@@ -333,7 +336,13 @@
     "openai_test_success": "Тест выполнен успешно. Модель ответила.",
     "openai_test_failed": "Тест не выполнен",
     "openai_test_select_placeholder": "Выберите из текущих моделей",
-    "openai_test_select_empty": "Модели не настроены. Сначала добавьте модели"
+    "openai_test_select_empty": "Модели не настроены. Сначала добавьте модели",
+    "openai_test_single_action": "Тест",
+    "openai_test_all_action": "Тестировать все ключи",
+    "openai_test_all_hint": "Проверить состояние подключения для всех ключей",
+    "openai_test_all_success": "Все {{count}} ключей прошли тест",
+    "openai_test_all_failed": "Все {{count}} ключей не прошли тест",
+    "openai_test_all_partial": "Тест завершен: {{success}} прошло, {{failed}} не прошло"
   },
   "auth_files": {
     "title": "Управление файлами авторизации",

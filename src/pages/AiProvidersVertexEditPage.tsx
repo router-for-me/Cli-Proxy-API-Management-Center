@@ -218,7 +218,7 @@ export function AiProvidersVertexEditPage() {
       <Card>
         {error && <div className="error-box">{error}</div>}
         {invalidIndexParam || invalidIndex ? (
-          <div className="hint">Invalid provider index.</div>
+          <div className="hint">{t('common.invalid_provider_index')}</div>
         ) : (
           <>
             <Input
@@ -256,6 +256,8 @@ export function AiProvidersVertexEditPage() {
               addLabel={t('common.custom_headers_add')}
               keyPlaceholder={t('common.custom_headers_key_placeholder')}
               valuePlaceholder={t('common.custom_headers_value_placeholder')}
+              removeButtonTitle={t('common.delete')}
+              removeButtonAriaLabel={t('common.delete')}
               disabled={disableControls || saving}
             />
             <div className="form-group">
@@ -266,6 +268,8 @@ export function AiProvidersVertexEditPage() {
                 addLabel={t('ai_providers.vertex_models_add_btn')}
                 namePlaceholder={t('common.model_name_placeholder')}
                 aliasPlaceholder={t('common.model_alias_placeholder')}
+                removeButtonTitle={t('common.delete')}
+                removeButtonAriaLabel={t('common.delete')}
                 disabled={disableControls || saving}
               />
               <div className="hint">{t('ai_providers.vertex_models_hint')}</div>
