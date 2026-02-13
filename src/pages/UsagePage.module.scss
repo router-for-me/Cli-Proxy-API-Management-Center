@@ -423,6 +423,37 @@
 }
 
 // API List (80%比例)
+.apiSortBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.apiSortBtn {
+  padding: 4px 10px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+}
+
+.apiSortBtnActive {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.10);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 .apiList {
   display: flex;
   flex-direction: column;
@@ -548,6 +579,16 @@
     color: var(--text-tertiary);
     background-color: var(--bg-secondary);
     white-space: nowrap;
+  }
+
+  th.sortableHeader {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--text-primary);
+    }
   }
 
   td {

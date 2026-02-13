@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { formatTokensInMillions, formatUsd } from '@/utils/usage';
@@ -18,26 +19,63 @@ export interface ModelStatsCardProps {
   hasPrices: boolean;
 }
 
+type SortKey = 'model' | 'requests' | 'tokens' | 'cost';
+type SortDir = 'asc' | 'desc';
+
 export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCardProps) {
   const { t } = useTranslation();
+  const [sortKey, setSortKey] = useState<SortKey>('requests');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'model' ? 'asc' : 'desc');
+    }
+  };
+
+  const sorted = useMemo(() => {
+    const list = [...modelStats];
+    const dir = sortDir === 'asc' ? 1 : -1;
+    list.sort((a, b) => {
+      if (sortKey === 'model') return dir * a.model.localeCompare(b.model);
+      return dir * ((a[sortKey] as number) - (b[sortKey] as number));
+    });
+    return list;
+  }, [modelStats, sortKey, sortDir]);
+
+  const arrow = (key: SortKey) =>
+    sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
   return (
     <Card title={t('usage_stats.models')}>
       {loading ? (
         <div className={styles.hint}>{t('common.loading')}</div>
-      ) : modelStats.length > 0 ? (
+      ) : sorted.length > 0 ? (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>{t('usage_stats.model_name')}</th>
-                <th>{t('usage_stats.requests_count')}</th>
-                <th>{t('usage_stats.tokens_count')}</th>
-                {hasPrices && <th>{t('usage_stats.total_cost')}</th>}
+                <th className={styles.sortableHeader} onClick={() => handleSort('model')}>
+                  {t('usage_stats.model_name')}{arrow('model')}
+                </th>
+                <th className={styles.sortableHeader} onClick={() => handleSort('requests')}>
+                  {t('usage_stats.requests_count')}{arrow('requests')}
+                </th>
+                <th className={styles.sortableHeader} onClick={() => handleSort('tokens')}>
+                  {t('usage_stats.tokens_count')}{arrow('tokens')}
+                </th>
+                {hasPrices && (
+                  <th className={styles.sortableHeader} onClick={() => handleSort('cost')}>
+                    {t('usage_stats.total_cost')}{arrow('cost')}
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {modelStats.map((stat) => (
+              {sorted.map((stat) => (
                 <tr key={stat.model}>
                   <td className={styles.modelCell}>{stat.model}</td>
                   <td>
