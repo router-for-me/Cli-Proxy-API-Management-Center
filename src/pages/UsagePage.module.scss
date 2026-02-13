@@ -451,6 +451,11 @@
     background: var(--bg-tertiary);
     color: var(--text-primary);
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+  }
 }
 
 .apiSortBtnActive {
@@ -474,15 +479,26 @@
 }
 
 .apiHeader {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   transition: background-color 0.15s ease;
 
   &:hover {
     background-color: var(--bg-tertiary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
   }
 }
 
@@ -588,7 +604,6 @@
   }
 
   th.sortableHeader {
-    cursor: pointer;
     user-select: none;
     transition: color 0.15s ease;
 
@@ -603,6 +618,25 @@
 
   tbody tr:hover {
     background-color: var(--bg-tertiary);
+  }
+}
+
+.sortHeaderButton {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: $radius-sm;
   }
 }
 

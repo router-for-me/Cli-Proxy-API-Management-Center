@@ -55,6 +55,8 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
 
   const arrow = (key: SortKey) =>
     sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+  const ariaSort = (key: SortKey): 'none' | 'ascending' | 'descending' =>
+    sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
 
   return (
     <Card title={t('usage_stats.models')}>
@@ -65,21 +67,51 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
           <table className={styles.table}>
             <thead>
               <tr>
-                <th className={styles.sortableHeader} onClick={() => handleSort('model')}>
-                  {t('usage_stats.model_name')}{arrow('model')}
+                <th className={styles.sortableHeader} aria-sort={ariaSort('model')}>
+                  <button
+                    type="button"
+                    className={styles.sortHeaderButton}
+                    onClick={() => handleSort('model')}
+                  >
+                    {t('usage_stats.model_name')}{arrow('model')}
+                  </button>
                 </th>
-                <th className={styles.sortableHeader} onClick={() => handleSort('requests')}>
-                  {t('usage_stats.requests_count')}{arrow('requests')}
+                <th className={styles.sortableHeader} aria-sort={ariaSort('requests')}>
+                  <button
+                    type="button"
+                    className={styles.sortHeaderButton}
+                    onClick={() => handleSort('requests')}
+                  >
+                    {t('usage_stats.requests_count')}{arrow('requests')}
+                  </button>
                 </th>
-                <th className={styles.sortableHeader} onClick={() => handleSort('tokens')}>
-                  {t('usage_stats.tokens_count')}{arrow('tokens')}
+                <th className={styles.sortableHeader} aria-sort={ariaSort('tokens')}>
+                  <button
+                    type="button"
+                    className={styles.sortHeaderButton}
+                    onClick={() => handleSort('tokens')}
+                  >
+                    {t('usage_stats.tokens_count')}{arrow('tokens')}
+                  </button>
                 </th>
-                <th className={styles.sortableHeader} onClick={() => handleSort('successRate')}>
-                  {t('usage_stats.success_rate')}{arrow('successRate')}
+                <th className={styles.sortableHeader} aria-sort={ariaSort('successRate')}>
+                  <button
+                    type="button"
+                    className={styles.sortHeaderButton}
+                    onClick={() => handleSort('successRate')}
+                  >
+                    {t('usage_stats.success_rate')}{arrow('successRate')}
+                  </button>
                 </th>
                 {hasPrices && (
-                  <th className={styles.sortableHeader} onClick={() => handleSort('cost')}>
-                    {t('usage_stats.total_cost')}{arrow('cost')}
+                  <th className={styles.sortableHeader} aria-sort={ariaSort('cost')}>
+                    <button
+                      type="button"
+                      className={styles.sortHeaderButton}
+                      onClick={() => handleSort('cost')}
+                    >
+                      {t('usage_stats.total_cost')}{arrow('cost')}
+                    </button>
                   </th>
                 )}
               </tr>
