@@ -95,6 +95,9 @@ const MIN_CARD_PAGE_SIZE = 3;
 const MAX_CARD_PAGE_SIZE = 30;
 const MAX_AUTH_FILE_SIZE = 50 * 1024;
 const AUTH_FILES_UI_STATE_KEY = 'authFilesPage.uiState';
+const INTEGER_STRING_PATTERN = /^[+-]?\d+$/;
+const TRUTHY_TEXT_VALUES = new Set(['true', '1', 'yes', 'y', 'on']);
+const FALSY_TEXT_VALUES = new Set(['false', '0', 'no', 'n', 'off']);
 
 const clampCardPageSize = (value: number) =>
   Math.min(MAX_CARD_PAGE_SIZE, Math.max(MIN_CARD_PAGE_SIZE, Math.round(value)));
@@ -208,7 +211,54 @@ interface PrefixProxyEditorState {
   json: Record<string, unknown> | null;
   prefix: string;
   proxyUrl: string;
+  priority: string;
+  excludedModelsText: string;
+  disableCooling: string;
 }
+
+const parsePriorityValue = (value: unknown): number | undefined => {
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? value : undefined;
+  }
+
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || !INTEGER_STRING_PATTERN.test(trimmed)) return undefined;
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isSafeInteger(parsed) ? parsed : undefined;
+};
+
+const normalizeExcludedModels = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+  value.forEach((entry) => {
+    const model = String(entry ?? '')
+      .trim()
+      .toLowerCase();
+    if (!model || seen.has(model)) return;
+    seen.add(model);
+    normalized.push(model);
+  });
+
+  return normalized.sort((a, b) => a.localeCompare(b));
+};
+
+const parseExcludedModelsText = (value: string): string[] =>
+  normalizeExcludedModels(value.split(/[\n,]+/));
+
+const parseDisableCoolingValue = (value: unknown): boolean | undefined => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return value !== 0;
+  if (typeof value !== 'string') return undefined;
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (TRUTHY_TEXT_VALUES.has(normalized)) return true;
+  if (FALSY_TEXT_VALUES.has(normalized)) return false;
+  return undefined;
+};
 // 标准化 auth_index 值（与 usage.ts 中的 normalizeAuthIndex 保持一致）
 function normalizeAuthIndexValue(value: unknown): string | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -441,11 +491,36 @@ export function AuthFilesPage() {
     if ('proxy_url' in next || prefixProxyEditor.proxyUrl.trim()) {
       next.proxy_url = prefixProxyEditor.proxyUrl;
     }
+
+    const parsedPriority = parsePriorityValue(prefixProxyEditor.priority);
+    if (parsedPriority !== undefined) {
+      next.priority = parsedPriority;
+    } else if ('priority' in next) {
+      delete next.priority;
+    }
+
+    const excludedModels = parseExcludedModelsText(prefixProxyEditor.excludedModelsText);
+    if (excludedModels.length > 0) {
+      next.excluded_models = excludedModels;
+    } else if ('excluded_models' in next) {
+      delete next.excluded_models;
+    }
+
+    const parsedDisableCooling = parseDisableCoolingValue(prefixProxyEditor.disableCooling);
+    if (parsedDisableCooling !== undefined) {
+      next.disable_cooling = parsedDisableCooling;
+    } else if ('disable_cooling' in next) {
+      delete next.disable_cooling;
+    }
+
     return JSON.stringify(next);
   }, [
     prefixProxyEditor?.json,
     prefixProxyEditor?.prefix,
     prefixProxyEditor?.proxyUrl,
+    prefixProxyEditor?.priority,
+    prefixProxyEditor?.excludedModelsText,
+    prefixProxyEditor?.disableCooling,
     prefixProxyEditor?.rawText,
   ]);
 
@@ -857,6 +932,9 @@ export function AuthFilesPage() {
       json: null,
       prefix: '',
       proxyUrl: '',
+      priority: '',
+      excludedModelsText: '',
+      disableCooling: '',
     });
 
     try {
@@ -898,6 +976,9 @@ export function AuthFilesPage() {
       const originalText = JSON.stringify(json);
       const prefix = typeof json.prefix === 'string' ? json.prefix : '';
       const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
+      const priority = parsePriorityValue(json.priority);
+      const excludedModels = normalizeExcludedModels(json.excluded_models);
+      const disableCooling = parseDisableCoolingValue(json.disable_cooling);
 
       setPrefixProxyEditor((prev) => {
         if (!prev || prev.fileName !== name) return prev;
@@ -909,6 +990,10 @@ export function AuthFilesPage() {
           json,
           prefix,
           proxyUrl,
+          priority: priority !== undefined ? String(priority) : '',
+          excludedModelsText: excludedModels.join('\n'),
+          disableCooling:
+            disableCooling === undefined ? '' : disableCooling ? 'true' : 'false',
           error: null,
         };
       });
@@ -922,11 +1007,17 @@ export function AuthFilesPage() {
     }
   };
 
-  const handlePrefixProxyChange = (field: 'prefix' | 'proxyUrl', value: string) => {
+  const handlePrefixProxyChange = (
+    field: 'prefix' | 'proxyUrl' | 'priority' | 'excludedModelsText' | 'disableCooling',
+    value: string
+  ) => {
     setPrefixProxyEditor((prev) => {
       if (!prev) return prev;
       if (field === 'prefix') return { ...prev, prefix: value };
-      return { ...prev, proxyUrl: value };
+      if (field === 'proxyUrl') return { ...prev, proxyUrl: value };
+      if (field === 'priority') return { ...prev, priority: value };
+      if (field === 'excludedModelsText') return { ...prev, excludedModelsText: value };
+      return { ...prev, disableCooling: value };
     });
   };
 
@@ -2171,7 +2262,7 @@ export function AuthFilesPage() {
         )}
       </Modal>
 
-      {/* prefix/proxy_url 编辑弹窗 */}
+      {/* 认证文件字段编辑弹窗 */}
       <Modal
         open={Boolean(prefixProxyEditor)}
         onClose={() => setPrefixProxyEditor(null)}
@@ -2179,7 +2270,7 @@ export function AuthFilesPage() {
         width={720}
         title={
           prefixProxyEditor?.fileName
-            ? `${t('auth_files.prefix_proxy_button')} - ${prefixProxyEditor.fileName}`
+            ? t('auth_files.auth_field_editor_title', { name: prefixProxyEditor.fileName })
             : t('auth_files.prefix_proxy_button')
         }
         footer={
@@ -2246,6 +2337,42 @@ export function AuthFilesPage() {
                       disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
                     }
                     onChange={(e) => handlePrefixProxyChange('proxyUrl', e.target.value)}
+                  />
+                  <Input
+                    label={t('auth_files.priority_label')}
+                    value={prefixProxyEditor.priority}
+                    placeholder={t('auth_files.priority_placeholder')}
+                    hint={t('auth_files.priority_hint')}
+                    disabled={
+                      disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
+                    }
+                    onChange={(e) => handlePrefixProxyChange('priority', e.target.value)}
+                  />
+                  <div className="form-group">
+                    <label>{t('auth_files.excluded_models_label')}</label>
+                    <textarea
+                      className="input"
+                      value={prefixProxyEditor.excludedModelsText}
+                      placeholder={t('auth_files.excluded_models_placeholder')}
+                      rows={4}
+                      disabled={
+                        disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
+                      }
+                      onChange={(e) =>
+                        handlePrefixProxyChange('excludedModelsText', e.target.value)
+                      }
+                    />
+                    <div className="hint">{t('auth_files.excluded_models_hint')}</div>
+                  </div>
+                  <Input
+                    label={t('auth_files.disable_cooling_label')}
+                    value={prefixProxyEditor.disableCooling}
+                    placeholder={t('auth_files.disable_cooling_placeholder')}
+                    hint={t('auth_files.disable_cooling_hint')}
+                    disabled={
+                      disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
+                    }
+                    onChange={(e) => handlePrefixProxyChange('disableCooling', e.target.value)}
                   />
                 </div>
               </>
