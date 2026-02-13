@@ -1,7 +1,12 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
-import { computeKeyStats, collectUsageDetails, buildCandidateUsageSourceIds, formatCompactNumber } from '@/utils/usage';
+import {
+  computeKeyStats,
+  collectUsageDetails,
+  buildCandidateUsageSourceIds,
+  formatCompactNumber
+} from '@/utils/usage';
 import { authFilesApi } from '@/services/api/authFiles';
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
@@ -31,6 +36,11 @@ interface CredentialRow {
   failure: number;
   total: number;
   successRate: number;
+}
+
+interface CredentialBucket {
+  success: number;
+  failure: number;
 }
 
 function normalizeAuthIndexValue(value: unknown): string | null {
@@ -87,8 +97,21 @@ export function CredentialStatsCard({
   const rows = useMemo((): CredentialRow[] => {
     if (!usage) return [];
     const { bySource } = computeKeyStats(usage);
+    const details = collectUsageDetails(usage);
     const result: CredentialRow[] = [];
     const consumedSourceIds = new Set<string>();
+    const authIndexToRowIndex = new Map<string, number>();
+    const sourceToAuthIndex = new Map<string, string>();
+    const fallbackByAuthIndex = new Map<string, CredentialBucket>();
+
+    const mergeBucketToRow = (index: number, bucket: CredentialBucket) => {
+      const target = result[index];
+      if (!target) return;
+      target.success += bucket.success;
+      target.failure += bucket.failure;
+      target.total = target.success + target.failure;
+      target.successRate = target.total > 0 ? (target.success / target.total) * 100 : 100;
+    };
 
     // Aggregate all candidate source IDs for one provider config into a single row
     const addConfigRow = (
@@ -140,26 +163,38 @@ export function CredentialStatsCard({
     });
 
     // Build source → auth file name mapping for remaining unmatched entries.
-    // Cross-reference via usage details: each detail has both source and auth_index.
+    // Also collect fallback stats for details without source but with auth_index.
     const sourceToAuthFile = new Map<string, CredentialInfo>();
-    if (authFileMap.size > 0) {
-      const details = collectUsageDetails(usage);
-      details.forEach((d) => {
-        if (consumedSourceIds.has(d.source) || sourceToAuthFile.has(d.source)) return;
-        const authIdx = normalizeAuthIndexValue(d.auth_index);
-        if (authIdx) {
-          const mapped = authFileMap.get(authIdx);
-          if (mapped) sourceToAuthFile.set(d.source, mapped);
+    details.forEach((d) => {
+      const authIdx = normalizeAuthIndexValue(d.auth_index);
+      if (!d.source) {
+        if (!authIdx) return;
+        const fallback = fallbackByAuthIndex.get(authIdx) ?? { success: 0, failure: 0 };
+        if (d.failed === true) {
+          fallback.failure += 1;
+        } else {
+          fallback.success += 1;
         }
-      });
-    }
+        fallbackByAuthIndex.set(authIdx, fallback);
+        return;
+      }
+
+      if (!authIdx || consumedSourceIds.has(d.source)) return;
+      if (!sourceToAuthIndex.has(d.source)) {
+        sourceToAuthIndex.set(d.source, authIdx);
+      }
+      if (!sourceToAuthFile.has(d.source)) {
+        const mapped = authFileMap.get(authIdx);
+        if (mapped) sourceToAuthFile.set(d.source, mapped);
+      }
+    });
 
     // Remaining unmatched bySource entries — resolve name from auth files if possible
     Object.entries(bySource).forEach(([key, bucket]) => {
       if (consumedSourceIds.has(key)) return;
       const total = bucket.success + bucket.failure;
       const authFile = sourceToAuthFile.get(key);
-      result.push({
+      const row = {
         key,
         displayName: authFile?.name || (key.startsWith('t:') ? key.slice(2) : key),
         type: authFile?.type || '',
@@ -167,7 +202,46 @@ export function CredentialStatsCard({
         failure: bucket.failure,
         total,
         successRate: total > 0 ? (bucket.success / total) * 100 : 100,
-      });
+      };
+      const rowIndex = result.push(row) - 1;
+      const authIdx = sourceToAuthIndex.get(key);
+      if (authIdx && !authIndexToRowIndex.has(authIdx)) {
+        authIndexToRowIndex.set(authIdx, rowIndex);
+      }
+    });
+
+    // Include requests that have auth_index but missing source.
+    fallbackByAuthIndex.forEach((bucket, authIdx) => {
+      if (bucket.success + bucket.failure === 0) return;
+
+      const mapped = authFileMap.get(authIdx);
+      let targetRowIndex = authIndexToRowIndex.get(authIdx);
+      if (targetRowIndex === undefined && mapped) {
+        const matchedIndex = result.findIndex(
+          (row) => row.displayName === mapped.name && row.type === mapped.type
+        );
+        if (matchedIndex >= 0) {
+          targetRowIndex = matchedIndex;
+          authIndexToRowIndex.set(authIdx, matchedIndex);
+        }
+      }
+
+      if (targetRowIndex !== undefined) {
+        mergeBucketToRow(targetRowIndex, bucket);
+        return;
+      }
+
+      const total = bucket.success + bucket.failure;
+      const rowIndex = result.push({
+        key: `auth:${authIdx}`,
+        displayName: mapped?.name || authIdx,
+        type: mapped?.type || '',
+        success: bucket.success,
+        failure: bucket.failure,
+        total,
+        successRate: (bucket.success / total) * 100
+      }) - 1;
+      authIndexToRowIndex.set(authIdx, rowIndex);
     });
 
     return result.sort((a, b) => b.total - a.total);
