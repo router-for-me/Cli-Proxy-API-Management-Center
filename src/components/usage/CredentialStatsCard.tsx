@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { computeKeyStats, formatCompactNumber } from '@/utils/usage';
+import { authFilesApi } from '@/services/api/authFiles';
+import type { AuthFileItem } from '@/types/authFile';
 import type { UsagePayload } from './hooks/useUsageData';
 import styles from '@/pages/UsagePage.module.scss';
 
@@ -12,14 +14,59 @@ export interface CredentialStatsCardProps {
 
 interface CredentialRow {
   key: string;
+  displayName: string;
+  type: string;
   success: number;
   failure: number;
   total: number;
   successRate: number;
 }
 
+function normalizeAuthIndexValue(value: unknown): string | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toString();
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+  return null;
+}
+
+function buildAuthIndexMap(files: AuthFileItem[]): Map<string, { name: string; type: string }> {
+  const map = new Map<string, { name: string; type: string }>();
+  files.forEach((file) => {
+    const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+    const key = normalizeAuthIndexValue(rawAuthIndex);
+    if (key) {
+      map.set(key, {
+        name: file.name || key,
+        type: (file.type || file.provider || '').toString(),
+      });
+    }
+  });
+  return map;
+}
+
 export function CredentialStatsCard({ usage, loading }: CredentialStatsCardProps) {
   const { t } = useTranslation();
+  const [authFiles, setAuthFiles] = useState<AuthFileItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    authFilesApi.list().then((res) => {
+      if (cancelled) return;
+      const files = Array.isArray(res) ? res : (res as { files?: AuthFileItem[] })?.files;
+      if (Array.isArray(files)) {
+        setAuthFiles(files);
+      }
+    }).catch(() => {
+      // silently ignore - credential names will just show raw auth_index
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const authIndexMap = useMemo(() => buildAuthIndexMap(authFiles), [authFiles]);
 
   const rows = useMemo((): CredentialRow[] => {
     if (!usage) return [];
@@ -27,8 +74,11 @@ export function CredentialStatsCard({ usage, loading }: CredentialStatsCardProps
     return Object.entries(byAuthIndex)
       .map(([key, bucket]) => {
         const total = bucket.success + bucket.failure;
+        const mapped = authIndexMap.get(key);
         return {
           key,
+          displayName: mapped?.name || key,
+          type: mapped?.type || '',
           success: bucket.success,
           failure: bucket.failure,
           total,
@@ -36,7 +86,7 @@ export function CredentialStatsCard({ usage, loading }: CredentialStatsCardProps
         };
       })
       .sort((a, b) => b.total - a.total);
-  }, [usage]);
+  }, [usage, authIndexMap]);
 
   return (
     <Card title={t('usage_stats.credential_stats')}>
@@ -55,7 +105,12 @@ export function CredentialStatsCard({ usage, loading }: CredentialStatsCardProps
             <tbody>
               {rows.map((row) => (
                 <tr key={row.key}>
-                  <td className={styles.modelCell}>{row.key}</td>
+                  <td className={styles.modelCell}>
+                    <span>{row.displayName}</span>
+                    {row.type && (
+                      <span className={styles.credentialType}>{row.type}</span>
+                    )}
+                  </td>
                   <td>
                     <span className={styles.requestCountCell}>
                       <span>{formatCompactNumber(row.total)}</span>

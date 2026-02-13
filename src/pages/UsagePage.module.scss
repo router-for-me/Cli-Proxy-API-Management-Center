@@ -612,6 +612,19 @@
   word-break: break-all;
 }
 
+.credentialType {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: $radius-full;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
 .requestCountCell {
   display: inline-flex;
   align-items: baseline;
