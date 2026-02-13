@@ -817,7 +817,8 @@
     "credential_name": "Credential",
     "token_breakdown": "Token Type Breakdown",
     "input_tokens": "Input Tokens",
-    "output_tokens": "Output Tokens"
+    "output_tokens": "Output Tokens",
+    "last_updated": "Updated"
   },
   "stats": {
     "success": "Success",

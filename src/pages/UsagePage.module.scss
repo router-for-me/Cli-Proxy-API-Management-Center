@@ -25,6 +25,12 @@
   flex-wrap: wrap;
 }
 
+.lastRefreshed {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
 .timeRangeGroup {
   display: inline-flex;
   align-items: center;

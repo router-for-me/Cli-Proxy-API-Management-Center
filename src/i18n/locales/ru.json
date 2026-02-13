@@ -820,7 +820,8 @@
     "credential_name": "Учётные данные",
     "token_breakdown": "Распределение типов токенов",
     "input_tokens": "Входные токены",
-    "output_tokens": "Выходные токены"
+    "output_tokens": "Выходные токены",
+    "last_updated": "Обновлено"
   },
   "stats": {
     "success": "Успех",

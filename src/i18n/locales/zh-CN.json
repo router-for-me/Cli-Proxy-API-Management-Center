@@ -817,7 +817,8 @@
     "credential_name": "凭证",
     "token_breakdown": "Token 类型分布",
     "input_tokens": "输入 Tokens",
-    "output_tokens": "输出 Tokens"
+    "output_tokens": "输出 Tokens",
+    "last_updated": "更新于"
   },
   "stats": {
     "success": "成功",

@@ -137,6 +137,7 @@ export function UsagePage() {
     usage,
     loading,
     error,
+    lastRefreshedAt,
     modelPrices,
     setModelPrices,
     loadUsage,
@@ -308,6 +309,11 @@ export function UsagePage() {
             style={{ display: 'none' }}
             onChange={handleImportChange}
           />
+          {lastRefreshedAt && (
+            <span className={styles.lastRefreshed}>
+              {t('usage_stats.last_updated')}: {lastRefreshedAt.toLocaleTimeString()}
+            </span>
+          )}
         </div>
       </div>
 

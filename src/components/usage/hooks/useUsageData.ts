@@ -17,6 +17,7 @@ export interface UseUsageDataReturn {
   usage: UsagePayload | null;
   loading: boolean;
   error: string;
+  lastRefreshedAt: Date | null;
   modelPrices: Record<string, ModelPrice>;
   setModelPrices: (prices: Record<string, ModelPrice>) => void;
   loadUsage: () => Promise<void>;
@@ -38,6 +39,7 @@ export function useUsageData(): UseUsageDataReturn {
   const [modelPrices, setModelPrices] = useState<Record<string, ModelPrice>>({});
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadUsage = useCallback(async () => {
@@ -47,6 +49,7 @@ export function useUsageData(): UseUsageDataReturn {
       const data = await usageApi.getUsage();
       const payload = (data?.usage ?? data) as unknown;
       setUsage(payload && typeof payload === 'object' ? (payload as UsagePayload) : null);
+      setLastRefreshedAt(new Date());
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('usage_stats.loading_error');
       setError(message);
@@ -140,6 +143,7 @@ export function useUsageData(): UseUsageDataReturn {
     usage,
     loading,
     error,
+    lastRefreshedAt,
     modelPrices,
     setModelPrices: handleSetModelPrices,
     loadUsage,
