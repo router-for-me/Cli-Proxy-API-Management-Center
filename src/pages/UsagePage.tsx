@@ -26,6 +26,7 @@ import {
   PriceSettingsCard,
   CredentialStatsCard,
   TokenBreakdownChart,
+  CostTrendChart,
   useUsageData,
   useSparklines,
   useChartData
@@ -364,6 +365,16 @@ export function UsagePage() {
         loading={loading}
         isDark={isDark}
         isMobile={isMobile}
+        hourWindowHours={hourWindowHours}
+      />
+
+      {/* Cost Trend Chart */}
+      <CostTrendChart
+        usage={filteredUsage}
+        loading={loading}
+        isDark={isDark}
+        isMobile={isMobile}
+        modelPrices={modelPrices}
         hourWindowHours={hourWindowHours}
       />
 
