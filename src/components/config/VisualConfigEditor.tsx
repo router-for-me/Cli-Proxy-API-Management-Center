@@ -8,6 +8,7 @@ import { IconChevronDown } from '@/components/ui/icons';
 import { ConfigSection } from '@/components/config/ConfigSection';
 import { useNotificationStore } from '@/stores';
 import styles from './VisualConfigEditor.module.scss';
+import { copyToClipboard } from '@/utils/clipboard';
 import type {
   PayloadFilterRule,
   PayloadModelEntry,
@@ -268,31 +269,11 @@ function ApiKeysCardEditor({
   };
 
   const handleCopy = async (apiKey: string) => {
-    const copyByExecCommand = () => {
-      const textarea = document.createElement('textarea');
-      textarea.value = apiKey;
-      textarea.setAttribute('readonly', '');
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      textarea.style.pointerEvents = 'none';
-      document.body.appendChild(textarea);
-      textarea.select();
-      textarea.setSelectionRange(0, textarea.value.length);
-      const copied = document.execCommand('copy');
-      document.body.removeChild(textarea);
-      if (!copied) throw new Error('copy_failed');
-    };
-
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(apiKey);
-      } else {
-        copyByExecCommand();
-      }
-      showNotification(t('notification.link_copied'), 'success');
-    } catch {
-      showNotification(t('notification.copy_failed'), 'error');
-    }
+    const copied = await copyToClipboard(apiKey);
+    showNotification(
+      t(copied ? 'notification.link_copied' : 'notification.copy_failed'),
+      copied ? 'success' : 'error'
+    );
   };
 
   return (

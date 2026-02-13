@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { useNotificationStore, useThemeStore } from '@/stores';
 import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
 import { vertexApi, type VertexImportResponse } from '@/services/api/vertex';
+import { copyToClipboard } from '@/utils/clipboard';
 import styles from './OAuthPage.module.scss';
 import iconCodexLight from '@/assets/icons/codex_light.svg';
 import iconCodexDark from '@/assets/icons/codex_drak.svg';
@@ -186,12 +187,11 @@ export function OAuthPage() {
 
   const copyLink = async (url?: string) => {
     if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
-      showNotification(t('notification.link_copied'), 'success');
-    } catch {
-      showNotification(t('notification.copy_failed'), 'error');
-    }
+    const copied = await copyToClipboard(url);
+    showNotification(
+      t(copied ? 'notification.link_copied' : 'notification.copy_failed'),
+      copied ? 'success' : 'error'
+    );
   };
 
   const submitCallback = async (provider: OAuthProvider) => {
