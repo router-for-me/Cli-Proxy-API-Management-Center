@@ -5,7 +5,8 @@ import { apiClient } from '@/services/api/client';
 import { useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { formatFileSize } from '@/utils/format';
-import { MAX_AUTH_FILE_SIZE, getTypeLabel, isRuntimeOnlyAuthFile } from '@/features/authFiles/constants';
+import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
+import { getTypeLabel, isRuntimeOnlyAuthFile } from '@/features/authFiles/constants';
 
 type DeleteAllOptions = {
   filter: string;

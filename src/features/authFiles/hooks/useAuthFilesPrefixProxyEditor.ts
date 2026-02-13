@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { useNotificationStore } from '@/stores';
 import { formatFileSize } from '@/utils/format';
+import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
 import {
-  MAX_AUTH_FILE_SIZE,
   normalizeExcludedModels,
   parseDisableCoolingValue,
   parseExcludedModelsText,

@@ -17,7 +17,6 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>(['antigravity', '
 
 export const MIN_CARD_PAGE_SIZE = 3;
 export const MAX_CARD_PAGE_SIZE = 30;
-export const MAX_AUTH_FILE_SIZE = 50 * 1024;
 
 export const INTEGER_STRING_PATTERN = /^[+-]?\d+$/;
 export const TRUTHY_TEXT_VALUES = new Set(['true', '1', 'yes', 'y', 'on']);
