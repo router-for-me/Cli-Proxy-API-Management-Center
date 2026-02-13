@@ -20,6 +20,7 @@ export interface GeminiKeyConfig {
   apiKey: string;
   prefix?: string;
   baseUrl?: string;
+  proxyUrl?: string;
   headers?: Record<string, string>;
   excludedModels?: string[];
 }

@@ -194,6 +194,8 @@
     "gemini_keys_add_btn": "Добавить ключ",
     "gemini_base_url_label": "Базовый URL (необязательно):",
     "gemini_base_url_placeholder": "например: https://generativelanguage.googleapis.com",
+    "gemini_add_modal_proxy_label": "URL прокси (необязательно):",
+    "gemini_add_modal_proxy_placeholder": "например: socks5://proxy.example.com:1080",
     "gemini_edit_modal_title": "Редактирование API-ключа Gemini",
     "gemini_edit_modal_key_label": "API-ключ:",
     "gemini_delete_confirm": "Удалить этот ключ Gemini?",

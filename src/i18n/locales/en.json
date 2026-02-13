@@ -194,6 +194,8 @@
     "gemini_keys_add_btn": "Add Key",
     "gemini_base_url_label": "Base URL (Optional):",
     "gemini_base_url_placeholder": "e.g.: https://generativelanguage.googleapis.com",
+    "gemini_add_modal_proxy_label": "Proxy URL (Optional):",
+    "gemini_add_modal_proxy_placeholder": "e.g.: socks5://proxy.example.com:1080",
     "gemini_edit_modal_title": "Edit Gemini API Key",
     "gemini_edit_modal_key_label": "API Key:",
     "gemini_delete_confirm": "Are you sure you want to delete this Gemini key?",

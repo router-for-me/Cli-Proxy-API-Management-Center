@@ -125,6 +125,12 @@ export function GeminiSection({
                     <span className={styles.fieldValue}>{item.baseUrl}</span>
                   </div>
                 )}
+                {item.proxyUrl && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.proxy_url')}:</span>
+                    <span className={styles.fieldValue}>{item.proxyUrl}</span>
+                  </div>
+                )}
                 {headerEntries.length > 0 && (
                   <div className={styles.headerBadgeList}>
                     {headerEntries.map(([key, value]) => (

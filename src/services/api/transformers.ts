@@ -153,6 +153,8 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   if (prefix) config.prefix = prefix;
   const baseUrl = record ? record['base-url'] ?? record.baseUrl ?? record['base_url'] : undefined;
   if (baseUrl) config.baseUrl = String(baseUrl);
+  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl ?? record['proxy_url'] : undefined;
+  if (proxyUrl) config.proxyUrl = String(proxyUrl);
   const headers = normalizeHeaders(record?.headers);
   if (headers) config.headers = headers;
   const excludedModels = normalizeExcludedModels(record?.['excluded-models'] ?? record?.excludedModels);

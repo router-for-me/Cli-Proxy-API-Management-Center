@@ -21,6 +21,7 @@ const buildEmptyForm = (): GeminiFormState => ({
   apiKey: '',
   prefix: '',
   baseUrl: '',
+  proxyUrl: '',
   headers: [],
   excludedModels: [],
   excludedText: '',
@@ -138,6 +139,7 @@ export function AiProvidersGeminiEditPage() {
         apiKey: form.apiKey.trim(),
         prefix: form.prefix?.trim() || undefined,
         baseUrl: form.baseUrl?.trim() || undefined,
+        proxyUrl: form.proxyUrl?.trim() || undefined,
         headers: buildHeaderObject(form.headers),
         excludedModels: parseExcludedModels(form.excludedText),
       };
@@ -216,6 +218,13 @@ export function AiProvidersGeminiEditPage() {
               placeholder={t('ai_providers.gemini_base_url_placeholder')}
               value={form.baseUrl ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
+              disabled={disableControls || saving}
+            />
+            <Input
+              label={t('ai_providers.gemini_add_modal_proxy_label')}
+              placeholder={t('ai_providers.gemini_add_modal_proxy_placeholder')}
+              value={form.proxyUrl ?? ''}
+              onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
               disabled={disableControls || saving}
             />
             <HeaderInputList
