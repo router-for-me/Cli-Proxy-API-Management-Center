@@ -580,6 +580,26 @@
   }
 }
 
+// Fixed-height cards with internal scrolling (API details / model stats)
+.detailsFixedCard {
+  display: flex;
+  flex-direction: column;
+  height: 520px;
+  overflow: hidden;
+
+  @include mobile {
+    height: 420px;
+  }
+}
+
+.detailsScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
 // Table (80%比例)
 .tableWrapper {
   overflow-x: auto;
