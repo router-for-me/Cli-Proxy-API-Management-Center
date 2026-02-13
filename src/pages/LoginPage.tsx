@@ -188,8 +188,8 @@ export function LoginPage() {
           /* 启动动画 */
           <div className={styles.splashContent}>
             <img src={INLINE_LOGO_JPEG} alt="CPAMC" className={styles.splashLogo} />
-            <h1 className={styles.splashTitle}>CLI Proxy API</h1>
-            <p className={styles.splashSubtitle}>Management Center</p>
+            <h1 className={styles.splashTitle}>{t('splash.title')}</h1>
+            <p className={styles.splashSubtitle}>{t('splash.subtitle')}</p>
             <div className={styles.splashLoader}>
               <div className={styles.splashLoaderBar} />
             </div>

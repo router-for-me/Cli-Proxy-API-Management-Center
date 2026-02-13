@@ -54,6 +54,10 @@
     "login": "Центр управления CLI Proxy API",
     "abbr": "CPAMC"
   },
+  "splash": {
+    "title": "CLI Proxy API",
+    "subtitle": "Центр управления"
+  },
   "auto_login": {
     "title": "Автовход...",
     "message": "Пытаемся подключиться к серверу, используя сохранённые данные"

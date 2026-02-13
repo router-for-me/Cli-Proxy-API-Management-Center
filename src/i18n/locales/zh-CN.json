@@ -54,6 +54,10 @@
     "login": "CLI Proxy API Management Center",
     "abbr": "CPAMC"
   },
+  "splash": {
+    "title": "CLI Proxy API",
+    "subtitle": "管理中心"
+  },
   "auto_login": {
     "title": "正在自动登录...",
     "message": "正在使用本地保存的连接信息尝试连接服务器"

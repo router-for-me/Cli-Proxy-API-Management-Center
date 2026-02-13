@@ -190,7 +190,7 @@ export function OAuthPage() {
       await navigator.clipboard.writeText(url);
       showNotification(t('notification.link_copied'), 'success');
     } catch {
-      showNotification('Copy failed', 'error');
+      showNotification(t('notification.copy_failed'), 'error');
     }
   };
 

@@ -54,6 +54,10 @@
     "login": "CLI Proxy API Management Center",
     "abbr": "CPAMC"
   },
+  "splash": {
+    "title": "CLI Proxy API",
+    "subtitle": "Management Center"
+  },
   "auto_login": {
     "title": "Auto Login in Progress...",
     "message": "Attempting to connect to server using locally saved connection information"
