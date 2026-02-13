@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { computeKeyStats, formatCompactNumber } from '@/utils/usage';
 import { authFilesApi } from '@/services/api/authFiles';
+import { providersApi } from '@/services/api/providers';
 import type { AuthFileItem } from '@/types/authFile';
 import type { UsagePayload } from './hooks/useUsageData';
 import styles from '@/pages/UsagePage.module.scss';
@@ -10,6 +11,11 @@ import styles from '@/pages/UsagePage.module.scss';
 export interface CredentialStatsCardProps {
   usage: UsagePayload | null;
   loading: boolean;
+}
+
+interface CredentialInfo {
+  name: string;
+  type: string;
 }
 
 interface CredentialRow {
@@ -33,8 +39,22 @@ function normalizeAuthIndexValue(value: unknown): string | null {
   return null;
 }
 
-function buildAuthIndexMap(files: AuthFileItem[]): Map<string, { name: string; type: string }> {
-  const map = new Map<string, { name: string; type: string }>();
+/**
+ * Replicate backend stableAuthIndex: SHA-256 of seed, first 8 bytes as hex (16 chars)
+ */
+async function computeAuthIndex(seed: string): Promise<string> {
+  const trimmed = seed.trim();
+  if (!trimmed) return '';
+  const data = new TextEncoder().encode(trimmed);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = new Uint8Array(hashBuffer);
+  return Array.from(hashArray.slice(0, 8))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function buildAuthFileMap(files: AuthFileItem[]): Map<string, CredentialInfo> {
+  const map = new Map<string, CredentialInfo>();
   files.forEach((file) => {
     const rawAuthIndex = file['auth_index'] ?? file.authIndex;
     const key = normalizeAuthIndexValue(rawAuthIndex);
@@ -48,25 +68,95 @@ function buildAuthIndexMap(files: AuthFileItem[]): Map<string, { name: string; t
   return map;
 }
 
+interface ProviderKeyInfo {
+  apiKey: string;
+  providerType: string;
+  label: string;
+}
+
+async function buildProviderMap(): Promise<Map<string, CredentialInfo>> {
+  const map = new Map<string, CredentialInfo>();
+  const allKeys: ProviderKeyInfo[] = [];
+
+  const results = await Promise.allSettled([
+    providersApi.getGeminiKeys().then((keys) =>
+      keys.forEach((k, i) =>
+        allKeys.push({ apiKey: k.apiKey, providerType: 'gemini', label: k.prefix?.trim() || `Gemini #${i + 1}` })
+      )
+    ),
+    providersApi.getClaudeConfigs().then((keys) =>
+      keys.forEach((k, i) =>
+        allKeys.push({ apiKey: k.apiKey, providerType: 'claude', label: k.prefix?.trim() || `Claude #${i + 1}` })
+      )
+    ),
+    providersApi.getCodexConfigs().then((keys) =>
+      keys.forEach((k, i) =>
+        allKeys.push({ apiKey: k.apiKey, providerType: 'codex', label: k.prefix?.trim() || `Codex #${i + 1}` })
+      )
+    ),
+    providersApi.getVertexConfigs().then((keys) =>
+      keys.forEach((k, i) =>
+        allKeys.push({ apiKey: k.apiKey, providerType: 'vertex', label: k.prefix?.trim() || `Vertex #${i + 1}` })
+      )
+    ),
+    providersApi.getOpenAIProviders().then((providers) =>
+      providers.forEach((p) =>
+        p.apiKeyEntries?.forEach((entry, i) =>
+          allKeys.push({
+            apiKey: entry.apiKey,
+            providerType: 'openai',
+            label: p.prefix?.trim() || (p.apiKeyEntries.length > 1 ? `${p.name} #${i + 1}` : p.name),
+          })
+        )
+      )
+    ),
+  ]);
+
+  // Ignore individual failures
+  void results;
+
+  await Promise.all(
+    allKeys.map(async ({ apiKey, providerType, label }) => {
+      const key = apiKey?.trim();
+      if (!key) return;
+      const authIndex = await computeAuthIndex(`api_key:${key}`);
+      if (authIndex) {
+        map.set(authIndex, { name: label, type: providerType });
+      }
+    })
+  );
+
+  return map;
+}
+
 export function CredentialStatsCard({ usage, loading }: CredentialStatsCardProps) {
   const { t } = useTranslation();
-  const [authFiles, setAuthFiles] = useState<AuthFileItem[]>([]);
+  const [credentialMap, setCredentialMap] = useState<Map<string, CredentialInfo>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
-    authFilesApi.list().then((res) => {
+
+    Promise.allSettled([
+      authFilesApi.list().then((res) => {
+        const files = Array.isArray(res) ? res : (res as { files?: AuthFileItem[] })?.files;
+        return Array.isArray(files) ? buildAuthFileMap(files) : new Map<string, CredentialInfo>();
+      }),
+      buildProviderMap(),
+    ]).then(([authResult, providerResult]) => {
       if (cancelled) return;
-      const files = Array.isArray(res) ? res : (res as { files?: AuthFileItem[] })?.files;
-      if (Array.isArray(files)) {
-        setAuthFiles(files);
+      // Provider map as base, auth-files override (more authoritative)
+      const merged = new Map<string, CredentialInfo>();
+      if (providerResult.status === 'fulfilled') {
+        providerResult.value.forEach((v, k) => merged.set(k, v));
       }
-    }).catch(() => {
-      // silently ignore - credential names will just show raw auth_index
+      if (authResult.status === 'fulfilled') {
+        authResult.value.forEach((v, k) => merged.set(k, v));
+      }
+      setCredentialMap(merged);
     });
+
     return () => { cancelled = true; };
   }, []);
-
-  const authIndexMap = useMemo(() => buildAuthIndexMap(authFiles), [authFiles]);
 
   const rows = useMemo((): CredentialRow[] => {
     if (!usage) return [];
@@ -74,7 +164,7 @@ export function CredentialStatsCard({ usage, loading }: CredentialStatsCardProps
     return Object.entries(byAuthIndex)
       .map(([key, bucket]) => {
         const total = bucket.success + bucket.failure;
-        const mapped = authIndexMap.get(key);
+        const mapped = credentialMap.get(key);
         return {
           key,
           displayName: mapped?.name || key,
@@ -86,7 +176,7 @@ export function CredentialStatsCard({ usage, loading }: CredentialStatsCardProps
         };
       })
       .sort((a, b) => b.total - a.total);
-  }, [usage, authIndexMap]);
+  }, [usage, credentialMap]);
 
   return (
     <Card title={t('usage_stats.credential_stats')}>
