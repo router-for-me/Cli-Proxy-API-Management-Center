@@ -409,7 +409,7 @@ function PayloadRulesEditor({
   protocolFirst?: boolean;
   onChange: (next: PayloadRule[]) => void;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const rules = value.length ? value : [];
   const protocolOptions = useMemo(
     () =>
@@ -417,7 +417,7 @@ function PayloadRulesEditor({
         value: option.value,
         label: t(option.labelKey, { defaultValue: option.defaultLabel }),
       })),
-    [t, i18n.resolvedLanguage]
+    [t]
   );
   const payloadValueTypeOptions = useMemo(
     () =>
@@ -425,7 +425,7 @@ function PayloadRulesEditor({
         value: option.value,
         label: t(option.labelKey, { defaultValue: option.defaultLabel }),
       })),
-    [t, i18n.resolvedLanguage]
+    [t]
   );
 
   const addRule = () => onChange([...rules, { id: makeClientId(), models: [], params: [] }]);
@@ -668,7 +668,7 @@ function PayloadFilterRulesEditor({
   disabled?: boolean;
   onChange: (next: PayloadFilterRule[]) => void;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const rules = value.length ? value : [];
   const protocolOptions = useMemo(
     () =>
@@ -676,7 +676,7 @@ function PayloadFilterRulesEditor({
         value: option.value,
         label: t(option.labelKey, { defaultValue: option.defaultLabel }),
       })),
-    [t, i18n.resolvedLanguage]
+    [t]
   );
 
   const addRule = () => onChange([...rules, { id: makeClientId(), models: [], params: [] }]);
