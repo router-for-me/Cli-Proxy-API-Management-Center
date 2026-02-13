@@ -19,8 +19,12 @@ export interface ModelStatsCardProps {
   hasPrices: boolean;
 }
 
-type SortKey = 'model' | 'requests' | 'tokens' | 'cost';
+type SortKey = 'model' | 'requests' | 'tokens' | 'cost' | 'successRate';
 type SortDir = 'asc' | 'desc';
+
+interface ModelStatWithRate extends ModelStat {
+  successRate: number;
+}
 
 export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCardProps) {
   const { t } = useTranslation();
@@ -36,8 +40,11 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
     }
   };
 
-  const sorted = useMemo(() => {
-    const list = [...modelStats];
+  const sorted = useMemo((): ModelStatWithRate[] => {
+    const list: ModelStatWithRate[] = modelStats.map((s) => ({
+      ...s,
+      successRate: s.requests > 0 ? (s.successCount / s.requests) * 100 : 100,
+    }));
     const dir = sortDir === 'asc' ? 1 : -1;
     list.sort((a, b) => {
       if (sortKey === 'model') return dir * a.model.localeCompare(b.model);
@@ -67,6 +74,9 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
                 <th className={styles.sortableHeader} onClick={() => handleSort('tokens')}>
                   {t('usage_stats.tokens_count')}{arrow('tokens')}
                 </th>
+                <th className={styles.sortableHeader} onClick={() => handleSort('successRate')}>
+                  {t('usage_stats.success_rate')}{arrow('successRate')}
+                </th>
                 {hasPrices && (
                   <th className={styles.sortableHeader} onClick={() => handleSort('cost')}>
                     {t('usage_stats.total_cost')}{arrow('cost')}
@@ -88,6 +98,19 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
                     </span>
                   </td>
                   <td>{formatTokensInMillions(stat.tokens)}</td>
+                  <td>
+                    <span
+                      className={
+                        stat.successRate >= 95
+                          ? styles.statSuccess
+                          : stat.successRate >= 80
+                            ? styles.statNeutral
+                            : styles.statFailure
+                      }
+                    >
+                      {stat.successRate.toFixed(1)}%
+                    </span>
+                  </td>
                   {hasPrices && <td>{stat.cost > 0 ? formatUsd(stat.cost) : '--'}</td>}
                 </tr>
               ))}
