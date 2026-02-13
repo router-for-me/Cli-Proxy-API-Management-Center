@@ -7,10 +7,10 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import type { ApiClientConfig, ApiError } from '@/types';
 import {
   BUILD_DATE_HEADER_KEYS,
-  MANAGEMENT_API_PREFIX,
   REQUEST_TIMEOUT_MS,
   VERSION_HEADER_KEYS
 } from '@/utils/constants';
+import { computeApiUrl } from '@/utils/connection';
 
 class ApiClient {
   private instance: AxiosInstance;
@@ -32,7 +32,7 @@ class ApiClient {
    * 设置 API 配置
    */
   setConfig(config: ApiClientConfig): void {
-    this.apiBase = this.normalizeApiBase(config.apiBase);
+    this.apiBase = computeApiUrl(config.apiBase);
     this.managementKey = config.managementKey;
 
     if (config.timeout) {
@@ -40,26 +40,6 @@ class ApiClient {
     } else {
       this.instance.defaults.timeout = REQUEST_TIMEOUT_MS;
     }
-  }
-
-  /**
-   * 规范化 API Base URL
-   */
-  private normalizeApiBase(base: string): string {
-    let normalized = base.trim();
-
-    // 移除尾部的 /v0/management
-    normalized = normalized.replace(/\/?v0\/management\/?$/i, '');
-
-    // 移除尾部斜杠
-    normalized = normalized.replace(/\/+$/, '');
-
-    // 添加协议
-    if (!/^https?:\/\//i.test(normalized)) {
-      normalized = `http://${normalized}`;
-    }
-
-    return `${normalized}${MANAGEMENT_API_PREFIX}`;
   }
 
   private readHeader(

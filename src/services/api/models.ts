@@ -4,27 +4,17 @@
 
 import axios from 'axios';
 import { normalizeModelList } from '@/utils/models';
+import { normalizeApiBase } from '@/utils/connection';
 import { apiCallApi, getApiCallErrorMessage } from './apiCall';
 
-const normalizeBaseUrl = (baseUrl: string): string => {
-  let normalized = String(baseUrl || '').trim();
-  if (!normalized) return '';
-  normalized = normalized.replace(/\/?v0\/management\/?$/i, '');
-  normalized = normalized.replace(/\/+$/g, '');
-  if (!/^https?:\/\//i.test(normalized)) {
-    normalized = `http://${normalized}`;
-  }
-  return normalized;
-};
-
 const buildModelsEndpoint = (baseUrl: string): string => {
-  const normalized = normalizeBaseUrl(baseUrl);
+  const normalized = normalizeApiBase(baseUrl);
   if (!normalized) return '';
   return `${normalized}/models`;
 };
 
 const buildV1ModelsEndpoint = (baseUrl: string): string => {
-  const normalized = normalizeBaseUrl(baseUrl);
+  const normalized = normalizeApiBase(baseUrl);
   if (!normalized) return '';
   return `${normalized}/v1/models`;
 };
