@@ -1,23 +1,23 @@
 # CLI Proxy API Management Center
 
-A single-file WebUI (React + TypeScript) for operating and troubleshooting the **CLI Proxy API** via its **Management API** (config, credentials, logs, and usage).
+A single-file Web UI (React + TypeScript) for operating and troubleshooting the **CLI Proxy API** via its **Management API** (config, credentials, logs, and usage).
 
 [中文文档](README_CN.md)
 
 **Main Project**: https://github.com/router-for-me/CLIProxyAPI  
 **Example URL**: https://remote.router-for.me/  
-**Minimum Required Version**: ≥ 6.3.0 (recommended ≥ 6.5.0)
+**Minimum Required Version**: ≥ 6.8.0 (recommended ≥ 6.8.15)
 
-Since version 6.0.19, the WebUI ships with the main program; access it via `/management.html` on the API port once the service is running.
+Since version 6.0.19, the Web UI ships with the main program; access it via `/management.html` on the API port once the service is running.
 
 ## What this is (and isn’t)
 
-- This repository is the WebUI only. It talks to the CLI Proxy API **Management API** (`/v0/management`) to read/update config, upload credentials, view logs, and inspect usage.
+- This repository is the Web UI only. It talks to the CLI Proxy API **Management API** (`/v0/management`) to read/update config, upload credentials, view logs, and inspect usage.
 - It is **not** a proxy and does not forward traffic.
 
 ## Quick start
 
-### Option A: Use the WebUI bundled in CLIProxyAPI (recommended)
+### Option A: Use the Web UI bundled in CLI Proxy API (recommended)
 
 1. Start your CLI Proxy API service.
 2. Open: `http://<host>:<api_port>/management.html`
@@ -32,7 +32,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`, then connect to your CLI Proxy API instance.
+Open `http://localhost:5173`, then connect to your CLI Proxy API backend instance.
 
 ### Option C: Build a single HTML file
 
@@ -42,7 +42,7 @@ npm run build
 ```
 
 - Output: `dist/index.html` (all assets are inlined).
-- For CLIProxyAPI bundling, the release workflow renames it to `management.html`.
+- For CLI Proxy API bundling, the release workflow renames it to `management.html`.
 - To preview locally: `npm run preview`
 
 Tip: opening `dist/index.html` via `file://` may be blocked by browser CORS; serving it (preview/static server) is more reliable.
@@ -74,18 +74,47 @@ See `api.md` for the full authentication rules, server-side limits, and edge cas
 ## What you can manage (mapped to the UI pages)
 
 - **Dashboard**: connection status, server version/build date, quick counts, model availability snapshot.
-- **Basic Settings**: debug, proxy URL, request retry, quota fallback (switch project/preview models), usage statistics, request logging, file logging, WebSocket auth.
+- **Basic Settings**: debug, proxy URL, request retry, quota fallback (switch project or preview models when limits reached), usage statistics, request logging, file logging, WebSocket auth.
 - **API Keys**: manage proxy `api-keys` (add/edit/delete).
 - **AI Providers**:
-  - Gemini/Codex/Claude key entries (base URL, headers, proxy, model aliases, excluded models, prefix).
-  - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side “chat/completions” test).
+  - Gemini/Codex/Claude/Vertex key entries (base URL, headers, proxy, model aliases, excluded models, prefix).
+  - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side "chat/completions" test).
   - Ampcode integration (upstream URL/key, force mappings, model mapping table).
-- **Auth Files**: upload/download/delete JSON credentials, filter/search/pagination, runtime-only indicators, view supported models per credential (when the server supports it), manage OAuth excluded models (supports `*` wildcards).
+- **Auth Files**: upload/download/delete JSON credentials, filter/search/pagination, runtime-only indicators, view supported models per credential (when the server supports it), manage OAuth excluded models (supports `*` wildcards), configure OAuth model alias mappings.
 - **OAuth**: start OAuth/device flows for supported providers, poll status, optionally submit callback `redirect_url`; includes iFlow cookie import.
+- **Quota Management**: manage quota limits and usage for Claude, Antigravity, Codex, Gemini CLI, and other providers.
 - **Usage**: requests/tokens charts (hour/day), per-API & per-model breakdown, cached/reasoning token breakdown, RPM/TPM window, optional cost estimation with locally-saved model pricing.
 - **Config**: edit `/config.yaml` in-browser with YAML highlighting + search, then save/reload.
 - **Logs**: tail logs with incremental polling, auto-refresh, search, hide management traffic, clear logs; download request error log files.
 - **System**: quick links + fetch `/v1/models` (grouped view). Requires at least one proxy API key to query models.
+
+## Tech Stack
+
+- React 19 + TypeScript 5.9
+- Vite 7 (single-file build)
+- Zustand (state management)
+- Axios (HTTP client)
+- react-router-dom v7 (HashRouter)
+- Chart.js (data visualization)
+- CodeMirror 6 (YAML editor)
+- SCSS Modules (styling)
+- i18next (internationalization)
+
+## Internationalization
+
+Currently supports three languages:
+
+- English (en)
+- Simplified Chinese (zh-CN)
+- Russian (ru)
+
+The UI language is automatically detected from browser settings and can be manually switched at the bottom of the page.
+
+## Browser Compatibility
+
+- Build target: `ES2015`
+- Supports modern browsers (Chrome, Firefox, Safari, Edge)
+- Responsive layout for mobile and tablet access
 
 ## Build & release notes
 
