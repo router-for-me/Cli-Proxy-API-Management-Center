@@ -812,7 +812,9 @@
     "cost_axis_label": "Cost ($)",
     "cost_need_price": "Set a model price to view cost stats",
     "cost_need_usage": "No usage data available to calculate cost",
-    "cost_no_data": "No cost data yet"
+    "cost_no_data": "No cost data yet",
+    "credential_stats": "Credential Statistics",
+    "credential_name": "Credential"
   },
   "stats": {
     "success": "Success",

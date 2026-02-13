@@ -812,7 +812,9 @@
     "cost_axis_label": "花费 ($)",
     "cost_need_price": "请先设置模型价格",
     "cost_need_usage": "暂无使用数据，无法计算花费",
-    "cost_no_data": "没有可计算的花费数据"
+    "cost_no_data": "没有可计算的花费数据",
+    "credential_stats": "凭证统计",
+    "credential_name": "凭证"
   },
   "stats": {
     "success": "成功",

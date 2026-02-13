@@ -24,6 +24,7 @@ import {
   ApiDetailsCard,
   ModelStatsCard,
   PriceSettingsCard,
+  CredentialStatsCard,
   useUsageData,
   useSparklines,
   useChartData
@@ -361,6 +362,9 @@ export function UsagePage() {
         <ApiDetailsCard apiStats={apiStats} loading={loading} hasPrices={hasPrices} />
         <ModelStatsCard modelStats={modelStats} loading={loading} hasPrices={hasPrices} />
       </div>
+
+      {/* Credential Stats */}
+      <CredentialStatsCard usage={filteredUsage} loading={loading} />
 
       {/* Price Settings */}
       <PriceSettingsCard
