@@ -17,7 +17,7 @@
 
   &.btn-primary {
     background-color: var(--primary-color);
-    color: #fff;
+    color: var(--primary-contrast, #fff);
     border-color: var(--primary-color);
 
     &:hover {
@@ -32,6 +32,7 @@
     color: var(--text-primary);
 
     &:hover {
+      background-color: var(--bg-hover, var(--bg-tertiary));
       border-color: var(--border-hover);
     }
   }
@@ -43,7 +44,7 @@
 
     &:hover {
       color: var(--text-primary);
-      background: var(--bg-secondary);
+      background: var(--bg-tertiary);
     }
   }
 
@@ -69,6 +70,17 @@
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+}
+
+:global([data-theme='dark']) {
+  .btn {
+    color: #fff;
+  }
+
+  .btn.btn-secondary,
+  .btn.btn-ghost {
+    color: #fff;
   }
 }
 
@@ -324,12 +336,20 @@ textarea {
 }
 
 .loading-spinner {
+  // Fallback: legacy white spinner (in case color-mix is unsupported)
   border: 3px solid rgba(255, 255, 255, 0.2);
   border-top-color: #fff;
   border-radius: 50%;
   width: 16px;
   height: 16px;
   animation: spin 0.8s linear infinite;
+}
+
+@supports (color: color-mix(in srgb, currentColor 22%, transparent)) {
+  .loading-spinner {
+    border-color: color-mix(in srgb, currentColor 22%, transparent);
+    border-top-color: currentColor;
+  }
 }
 
 @keyframes spin {

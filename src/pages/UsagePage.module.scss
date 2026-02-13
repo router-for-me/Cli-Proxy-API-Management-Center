@@ -175,10 +175,6 @@
   -webkit-backdrop-filter: blur(6px);
 }
 
-:global([data-theme='dark']) .loadingOverlay {
-  background: rgba(25, 25, 25, 0.72);
-}
-
 .loadingOverlayContent {
   display: inline-flex;
   align-items: center;

@@ -331,12 +331,12 @@
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
   border-radius: 999px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
   max-width: inherit;
   overflow-x: auto;
   scrollbar-width: none;
@@ -351,7 +351,7 @@
   font-weight: 600;
   padding: 5px 8px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.06);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
   text-align: center;
   max-width: min(280px, 46vw);
   white-space: nowrap;
@@ -373,7 +373,7 @@
   transition: background-color 0.2s ease, transform 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: rgba(0, 0, 0, 0.06);
+    background: color-mix(in srgb, var(--text-primary) 10%, transparent);
     transform: scale(1.08);
   }
 
@@ -397,24 +397,6 @@
   border-radius: 999px;
   background: var(--warning-color);
   box-shadow: 0 0 0 2px rgba($warning-color, 0.25);
-}
-
-:global([data-theme='dark']) {
-  .floatingActionList {
-    background: rgba(30, 30, 30, 0.7);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  }
-
-  .floatingStatus {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .floatingActionButton {
-    &:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.1);
-    }
-  }
 }
 
 @media (max-width: 1200px) {

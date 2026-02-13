@@ -73,7 +73,7 @@
   flex: 0 0 auto;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.06);
+    background: color-mix(in srgb, var(--text-primary) 10%, transparent);
     transform: scale(1.08);
   }
 
@@ -107,12 +107,6 @@
     background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
     border-color: color-mix(in srgb, var(--border-color) 55%, transparent);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  }
-
-  .navItem {
-    &:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
   }
 
   .indicator {
