@@ -112,7 +112,7 @@ The UI language is automatically detected from browser settings and can be manua
 
 ## Browser Compatibility
 
-- Build target: `ES2015`
+- Build target: `ES2020`
 - Supports modern browsers (Chrome, Firefox, Safari, Edge)
 - Responsive layout for mobile and tablet access
 

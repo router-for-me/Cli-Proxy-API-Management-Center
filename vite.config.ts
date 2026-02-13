@@ -63,7 +63,7 @@ export default defineConfig({
     }
   },
   build: {
-    target: 'es2015',
+    target: 'es2020',
     outDir: 'dist',
     assetsInlineLimit: 100000000,
     chunkSizeWarningLimit: 100000000,

@@ -111,7 +111,7 @@ npm run build
 
 ## 浏览器兼容性
 
-- 构建目标：`ES2015`
+- 构建目标：`ES2020`
 - 支持 Chrome、Firefox、Safari、Edge 等现代浏览器
 - 支持移动端响应式布局，可通过手机/平板访问
 
