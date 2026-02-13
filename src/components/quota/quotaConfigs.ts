@@ -220,6 +220,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     id: string,
     label: string,
     labelKey: string | undefined,
+    labelParams: Record<string, string | number> | undefined,
     window?: CodexUsageWindow | null,
     limitReached?: boolean,
     allowed?: boolean
@@ -233,6 +234,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
       id,
       label,
       labelKey,
+      labelParams,
       usedPercent,
       resetLabel,
     });
@@ -286,6 +288,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     WINDOW_META.codeFiveHour.id,
     t(WINDOW_META.codeFiveHour.labelKey),
     WINDOW_META.codeFiveHour.labelKey,
+    undefined,
     rateWindows.fiveHourWindow,
     rawLimitReached,
     rawAllowed
@@ -294,6 +297,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     WINDOW_META.codeWeekly.id,
     t(WINDOW_META.codeWeekly.labelKey),
     WINDOW_META.codeWeekly.labelKey,
+    undefined,
     rateWindows.weeklyWindow,
     rawLimitReached,
     rawAllowed
@@ -306,6 +310,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     WINDOW_META.codeReviewFiveHour.id,
     t(WINDOW_META.codeReviewFiveHour.labelKey),
     WINDOW_META.codeReviewFiveHour.labelKey,
+    undefined,
     codeReviewWindows.fiveHourWindow,
     codeReviewLimitReached,
     codeReviewAllowed
@@ -314,6 +319,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     WINDOW_META.codeReviewWeekly.id,
     t(WINDOW_META.codeReviewWeekly.labelKey),
     WINDOW_META.codeReviewWeekly.labelKey,
+    undefined,
     codeReviewWindows.weeklyWindow,
     codeReviewLimitReached,
     codeReviewAllowed
@@ -337,23 +343,26 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
         `additional-${index + 1}`;
 
       const idPrefix = normalizeWindowId(limitName) || `additional-${index + 1}`;
-      const additionalWindows = pickClassifiedWindows(rateInfo, { allowOrderFallback: false });
+      const additionalPrimaryWindow = rateInfo.primary_window ?? rateInfo.primaryWindow ?? null;
+      const additionalSecondaryWindow = rateInfo.secondary_window ?? rateInfo.secondaryWindow ?? null;
       const additionalLimitReached = rateInfo.limit_reached ?? rateInfo.limitReached;
       const additionalAllowed = rateInfo.allowed;
 
       addWindow(
         `${idPrefix}-five-hour-${index}`,
         t('codex_quota.additional_primary_window', { name: limitName }),
-        undefined,
-        additionalWindows.fiveHourWindow,
+        'codex_quota.additional_primary_window',
+        { name: limitName },
+        additionalPrimaryWindow,
         additionalLimitReached,
         additionalAllowed
       );
       addWindow(
         `${idPrefix}-weekly-${index}`,
         t('codex_quota.additional_secondary_window', { name: limitName }),
-        undefined,
-        additionalWindows.weeklyWindow,
+        'codex_quota.additional_secondary_window',
+        { name: limitName },
+        additionalSecondaryWindow,
         additionalLimitReached,
         additionalAllowed
       );
@@ -551,7 +560,9 @@ const renderCodexItems = (
       const clampedUsed = used === null ? null : Math.max(0, Math.min(100, used));
       const remaining = clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
       const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
-      const windowLabel = window.labelKey ? t(window.labelKey) : window.label;
+      const windowLabel = window.labelKey
+        ? t(window.labelKey, window.labelParams as Record<string, string | number>)
+        : window.label;
 
       return h(
         'div',

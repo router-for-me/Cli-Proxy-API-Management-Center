@@ -185,6 +185,7 @@ export interface CodexQuotaWindow {
   id: string;
   label: string;
   labelKey?: string;
+  labelParams?: Record<string, string | number>;
   usedPercent: number | null;
   resetLabel: string;
 }
