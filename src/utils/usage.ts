@@ -388,17 +388,6 @@ export function maskUsageSensitiveValue(value: unknown, masker: (val: string) =>
 }
 
 /**
- * 格式化 tokens 为百万单位
- */
-export function formatTokensInMillions(value: number): string {
-  const num = Number(value);
-  if (!Number.isFinite(num)) {
-    return '0.00M';
-  }
-  return `${(num / 1_000_000).toFixed(2)}M`;
-}
-
-/**
  * 格式化每分钟数值
  */
 export function formatPerMinuteValue(value: number): string {
