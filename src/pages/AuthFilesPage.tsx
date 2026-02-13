@@ -1,388 +1,122 @@
-import { useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react';
-import { Trans, useTranslation } from 'react-i18next';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useInterval } from '@/hooks/useInterval';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
-import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { ModelMappingDiagram, type ModelMappingDiagramRef } from '@/components/modelAlias';
+import { copyToClipboard } from '@/features/authFiles/clipboard';
 import {
-  IconBot,
-  IconCode,
-  IconChevronUp,
-  IconDownload,
-  IconInfo,
-  IconTrash2,
-} from '@/components/ui/icons';
-import type { TFunction } from 'i18next';
-import { ANTIGRAVITY_CONFIG, CODEX_CONFIG, GEMINI_CLI_CONFIG } from '@/components/quota';
-import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
-import { authFilesApi, usageApi } from '@/services/api';
-import { apiClient } from '@/services/api/client';
-import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
-import { getStatusFromError, resolveAuthProvider } from '@/utils/quota';
-import {
-  calculateStatusBarData,
-  collectUsageDetails,
-  normalizeUsageSourceId,
-  type KeyStatBucket,
-  type KeyStats,
-  type UsageDetail,
-} from '@/utils/usage';
-import { formatFileSize } from '@/utils/format';
+  MAX_CARD_PAGE_SIZE,
+  MIN_CARD_PAGE_SIZE,
+  QUOTA_PROVIDER_TYPES,
+  clampCardPageSize,
+  getTypeColor,
+  getTypeLabel,
+  normalizeProviderKey,
+  type QuotaProviderType,
+  type ResolvedTheme
+} from '@/features/authFiles/constants';
+import { AuthFileCard } from '@/features/authFiles/components/AuthFileCard';
+import { AuthFileDetailModal } from '@/features/authFiles/components/AuthFileDetailModal';
+import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
+import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components/AuthFilesPrefixProxyEditorModal';
+import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
+import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelAliasCard';
+import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
+import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
+import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
+import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
+import { useAuthFilesStats } from '@/features/authFiles/hooks/useAuthFilesStats';
+import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
+import { readAuthFilesUiState, writeAuthFilesUiState } from '@/features/authFiles/uiState';
+import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
+import type { AuthFileItem } from '@/types';
 import styles from './AuthFilesPage.module.scss';
-
-type ThemeColors = { bg: string; text: string; border?: string };
-type TypeColorSet = { light: ThemeColors; dark?: ThemeColors };
-type ResolvedTheme = 'light' | 'dark';
-type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
-
-// 标签类型颜色配置（对齐重构前 styles.css 的 file-type-badge 颜色）
-const TYPE_COLORS: Record<string, TypeColorSet> = {
-  qwen: {
-    light: { bg: '#e8f5e9', text: '#2e7d32' },
-    dark: { bg: '#1b5e20', text: '#81c784' },
-  },
-  kimi: {
-    light: { bg: '#fff4e5', text: '#ad6800' },
-    dark: { bg: '#7c4a03', text: '#ffd591' },
-  },
-  gemini: {
-    light: { bg: '#e3f2fd', text: '#1565c0' },
-    dark: { bg: '#0d47a1', text: '#64b5f6' },
-  },
-  'gemini-cli': {
-    light: { bg: '#e7efff', text: '#1e4fa3' },
-    dark: { bg: '#1c3f73', text: '#a8c7ff' },
-  },
-  aistudio: {
-    light: { bg: '#f0f2f5', text: '#2f343c' },
-    dark: { bg: '#373c42', text: '#cfd3db' },
-  },
-  claude: {
-    light: { bg: '#fce4ec', text: '#c2185b' },
-    dark: { bg: '#880e4f', text: '#f48fb1' },
-  },
-  codex: {
-    light: { bg: '#fff3e0', text: '#ef6c00' },
-    dark: { bg: '#e65100', text: '#ffb74d' },
-  },
-  antigravity: {
-    light: { bg: '#e0f7fa', text: '#006064' },
-    dark: { bg: '#004d40', text: '#80deea' },
-  },
-  iflow: {
-    light: { bg: '#f3e5f5', text: '#7b1fa2' },
-    dark: { bg: '#4a148c', text: '#ce93d8' },
-  },
-  empty: {
-    light: { bg: '#f5f5f5', text: '#616161' },
-    dark: { bg: '#424242', text: '#bdbdbd' },
-  },
-  unknown: {
-    light: { bg: '#f0f0f0', text: '#666666', border: '1px dashed #999999' },
-    dark: { bg: '#3a3a3a', text: '#aaaaaa', border: '1px dashed #666666' },
-  },
-};
-
-const MIN_CARD_PAGE_SIZE = 3;
-const MAX_CARD_PAGE_SIZE = 30;
-const MAX_AUTH_FILE_SIZE = 50 * 1024;
-const AUTH_FILES_UI_STATE_KEY = 'authFilesPage.uiState';
-const INTEGER_STRING_PATTERN = /^[+-]?\d+$/;
-const TRUTHY_TEXT_VALUES = new Set(['true', '1', 'yes', 'y', 'on']);
-const FALSY_TEXT_VALUES = new Set(['false', '0', 'no', 'n', 'off']);
-
-const clampCardPageSize = (value: number) =>
-  Math.min(MAX_CARD_PAGE_SIZE, Math.max(MIN_CARD_PAGE_SIZE, Math.round(value)));
-
-type QuotaProviderType = 'antigravity' | 'codex' | 'gemini-cli';
-
-const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>(['antigravity', 'codex', 'gemini-cli']);
-
-const resolveQuotaErrorMessage = (
-  t: TFunction,
-  status: number | undefined,
-  fallback: string
-): string => {
-  if (status === 404) return t('common.quota_update_required');
-  if (status === 403) return t('common.quota_check_credential');
-  return fallback;
-};
-
-type QuotaProgressBarProps = {
-  percent: number | null;
-  highThreshold: number;
-  mediumThreshold: number;
-};
-
-function QuotaProgressBar({ percent, highThreshold, mediumThreshold }: QuotaProgressBarProps) {
-  const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-  const normalized = percent === null ? null : clamp(percent, 0, 100);
-  const fillClass =
-    normalized === null
-      ? styles.quotaBarFillMedium
-      : normalized >= highThreshold
-        ? styles.quotaBarFillHigh
-        : normalized >= mediumThreshold
-          ? styles.quotaBarFillMedium
-          : styles.quotaBarFillLow;
-  const widthPercent = Math.round(normalized ?? 0);
-
-  return (
-    <div className={styles.quotaBar}>
-      <div
-        className={`${styles.quotaBarFill} ${fillClass}`}
-        style={{ width: `${widthPercent}%` }}
-      />
-    </div>
-  );
-}
-
-type AuthFilesUiState = {
-  filter?: string;
-  search?: string;
-  page?: number;
-  pageSize?: number;
-};
-
-const readAuthFilesUiState = (): AuthFilesUiState | null => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.sessionStorage.getItem(AUTH_FILES_UI_STATE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as AuthFilesUiState;
-    return parsed && typeof parsed === 'object' ? parsed : null;
-  } catch {
-    return null;
-  }
-};
-
-const writeAuthFilesUiState = (state: AuthFilesUiState) => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.sessionStorage.setItem(AUTH_FILES_UI_STATE_KEY, JSON.stringify(state));
-  } catch {
-    // ignore
-  }
-};
-
-const copyToClipboard = async (text: string): Promise<boolean> => {
-  try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // fallback below
-  }
-
-  try {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    textarea.style.left = '-9999px';
-    textarea.style.top = '0';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    const copied = document.execCommand('copy');
-    document.body.removeChild(textarea);
-    return copied;
-  } catch {
-    return false;
-  }
-};
-
-interface PrefixProxyEditorState {
-  fileName: string;
-  loading: boolean;
-  saving: boolean;
-  error: string | null;
-  originalText: string;
-  rawText: string;
-  json: Record<string, unknown> | null;
-  prefix: string;
-  proxyUrl: string;
-  priority: string;
-  excludedModelsText: string;
-  disableCooling: string;
-}
-
-const parsePriorityValue = (value: unknown): number | undefined => {
-  if (typeof value === 'number') {
-    return Number.isInteger(value) ? value : undefined;
-  }
-
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  if (!trimmed || !INTEGER_STRING_PATTERN.test(trimmed)) return undefined;
-  const parsed = Number.parseInt(trimmed, 10);
-  return Number.isSafeInteger(parsed) ? parsed : undefined;
-};
-
-const normalizeExcludedModels = (value: unknown): string[] => {
-  if (!Array.isArray(value)) return [];
-
-  const seen = new Set<string>();
-  const normalized: string[] = [];
-  value.forEach((entry) => {
-    const model = String(entry ?? '')
-      .trim()
-      .toLowerCase();
-    if (!model || seen.has(model)) return;
-    seen.add(model);
-    normalized.push(model);
-  });
-
-  return normalized.sort((a, b) => a.localeCompare(b));
-};
-
-const parseExcludedModelsText = (value: string): string[] =>
-  normalizeExcludedModels(value.split(/[\n,]+/));
-
-const parseDisableCoolingValue = (value: unknown): boolean | undefined => {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'number' && Number.isFinite(value)) return value !== 0;
-  if (typeof value !== 'string') return undefined;
-
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) return undefined;
-  if (TRUTHY_TEXT_VALUES.has(normalized)) return true;
-  if (FALSY_TEXT_VALUES.has(normalized)) return false;
-  return undefined;
-};
-// 标准化 auth_index 值（与 usage.ts 中的 normalizeAuthIndex 保持一致）
-function normalizeAuthIndexValue(value: unknown): string | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value.toString();
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed ? trimmed : null;
-  }
-  return null;
-}
-
-function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
-  const raw = file['runtime_only'] ?? file.runtimeOnly;
-  if (typeof raw === 'boolean') return raw;
-  if (typeof raw === 'string') return raw.trim().toLowerCase() === 'true';
-  return false;
-}
-
-// 解析认证文件的统计数据
-function resolveAuthFileStats(file: AuthFileItem, stats: KeyStats): KeyStatBucket {
-  const defaultStats: KeyStatBucket = { success: 0, failure: 0 };
-  const rawFileName = file?.name || '';
-
-  // 兼容 auth_index 和 authIndex 两种字段名（API 返回的是 auth_index）
-  const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-  const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
-
-  // 尝试根据 authIndex 匹配
-  if (authIndexKey && stats.byAuthIndex?.[authIndexKey]) {
-    return stats.byAuthIndex[authIndexKey];
-  }
-
-  // 尝试根据 source (文件名) 匹配
-  const fileNameId = rawFileName ? normalizeUsageSourceId(rawFileName) : '';
-  if (fileNameId && stats.bySource?.[fileNameId]) {
-    const fromName = stats.bySource[fileNameId];
-    if (fromName.success > 0 || fromName.failure > 0) {
-      return fromName;
-    }
-  }
-
-  // 尝试去掉扩展名后匹配
-  if (rawFileName) {
-    const nameWithoutExt = rawFileName.replace(/\.[^/.]+$/, '');
-    if (nameWithoutExt && nameWithoutExt !== rawFileName) {
-      const nameWithoutExtId = normalizeUsageSourceId(nameWithoutExt);
-      const fromNameWithoutExt = nameWithoutExtId ? stats.bySource?.[nameWithoutExtId] : undefined;
-      if (
-        fromNameWithoutExt &&
-        (fromNameWithoutExt.success > 0 || fromNameWithoutExt.failure > 0)
-      ) {
-        return fromNameWithoutExt;
-      }
-    }
-  }
-
-  return defaultStats;
-}
 
 export function AuthFilesPage() {
   const { t } = useTranslation();
-  const { showNotification, showConfirmation } = useNotificationStore();
+  const showNotification = useNotificationStore((state) => state.showNotification);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
-  const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
-  const codexQuota = useQuotaStore((state) => state.codexQuota);
-  const geminiCliQuota = useQuotaStore((state) => state.geminiCliQuota);
-  const setAntigravityQuota = useQuotaStore((state) => state.setAntigravityQuota);
-  const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
-  const setGeminiCliQuota = useQuotaStore((state) => state.setGeminiCliQuota);
   const pageTransitionLayer = usePageTransitionLayer();
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
   const navigate = useNavigate();
 
-  const [files, setFiles] = useState<AuthFileItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [filter, setFilter] = useState<'all' | string>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
   const [pageSizeInput, setPageSizeInput] = useState('9');
-  const [uploading, setUploading] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [deletingAll, setDeletingAll] = useState(false);
-  const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
-  const [keyStats, setKeyStats] = useState<KeyStats>({ bySource: {}, byAuthIndex: {} });
-  const [usageDetails, setUsageDetails] = useState<UsageDetail[]>([]);
-
-  // 详情弹窗相关
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<AuthFileItem | null>(null);
-
-  // 模型列表弹窗相关
-  const [modelsModalOpen, setModelsModalOpen] = useState(false);
-  const [modelsLoading, setModelsLoading] = useState(false);
-  const [modelsList, setModelsList] = useState<AuthFileModelItem[]>([]);
-  const [modelsFileName, setModelsFileName] = useState('');
-  const [modelsFileType, setModelsFileType] = useState('');
-  const [modelsError, setModelsError] = useState<'unsupported' | null>(null);
-  const modelsCacheRef = useRef<Map<string, AuthFileModelItem[]>>(new Map());
-
-  // OAuth 排除模型相关
-  const [excluded, setExcluded] = useState<Record<string, string[]>>({});
-  const [excludedError, setExcludedError] = useState<'unsupported' | null>(null);
-
-  // OAuth 模型映射相关
-  const [modelAlias, setModelAlias] = useState<Record<string, OAuthModelAliasEntry[]>>({});
-  const [modelAliasError, setModelAliasError] = useState<'unsupported' | null>(null);
-  const [allProviderModels, setAllProviderModels] = useState<Record<string, AuthFileModelItem[]>>(
-    {}
-  );
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
 
-  const [prefixProxyEditor, setPrefixProxyEditor] = useState<PrefixProxyEditorState | null>(null);
+  const { keyStats, usageDetails, loadKeyStats } = useAuthFilesStats();
+  const {
+    files,
+    loading,
+    error,
+    uploading,
+    deleting,
+    deletingAll,
+    statusUpdating,
+    fileInputRef,
+    loadFiles,
+    handleUploadClick,
+    handleFileChange,
+    handleDelete,
+    handleDeleteAll,
+    handleDownload,
+    handleStatusToggle
+  } = useAuthFilesData({ refreshKeyStats: loadKeyStats });
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const loadingKeyStatsRef = useRef(false);
-  const excludedUnsupportedRef = useRef(false);
-  const mappingsUnsupportedRef = useRef(false);
-  const diagramRef = useRef<ModelMappingDiagramRef | null>(null);
+  const statusBarCache = useAuthFilesStatusBarCache(files, usageDetails);
 
-  const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
+  const {
+    excluded,
+    excludedError,
+    modelAlias,
+    modelAliasError,
+    allProviderModels,
+    loadExcluded,
+    loadModelAlias,
+    deleteExcluded,
+    deleteModelAlias,
+    handleMappingUpdate,
+    handleDeleteLink,
+    handleToggleFork,
+    handleRenameAlias,
+    handleDeleteAlias
+  } = useAuthFilesOauth({ viewMode, files });
+
+  const {
+    modelsModalOpen,
+    modelsLoading,
+    modelsList,
+    modelsFileName,
+    modelsFileType,
+    modelsError,
+    showModels,
+    closeModelsModal
+  } = useAuthFilesModels();
+
+  const {
+    prefixProxyEditor,
+    prefixProxyUpdatedText,
+    prefixProxyDirty,
+    openPrefixProxyEditor,
+    closePrefixProxyEditor,
+    handlePrefixProxyChange,
+    handlePrefixProxySave
+  } = useAuthFilesPrefixProxyEditor({
+    disableControls: connectionStatus !== 'connected',
+    loadFiles,
+    loadKeyStats
+  });
 
   const disableControls = connectionStatus !== 'connected';
   const normalizedFilter = normalizeProviderKey(String(filter));
@@ -391,70 +125,6 @@ export function AuthFilesPage() {
   )
     ? (normalizedFilter as QuotaProviderType)
     : null;
-
-  const providerList = useMemo(() => {
-    const providers = new Set<string>();
-
-    Object.keys(modelAlias).forEach((provider) => {
-      const key = provider.trim().toLowerCase();
-      if (key) providers.add(key);
-    });
-
-    files.forEach((file) => {
-      if (typeof file.type === 'string') {
-        const key = file.type.trim().toLowerCase();
-        if (key) providers.add(key);
-      }
-      if (typeof file.provider === 'string') {
-        const key = file.provider.trim().toLowerCase();
-        if (key) providers.add(key);
-      }
-    });
-    return Array.from(providers);
-  }, [files, modelAlias]);
-
-  useEffect(() => {
-    if (viewMode !== 'diagram') return;
-
-    let cancelled = false;
-
-    const loadAllModels = async () => {
-      if (providerList.length === 0) {
-        if (!cancelled) setAllProviderModels({});
-        return;
-      }
-
-      const results = await Promise.all(
-        providerList.map(async (provider) => {
-          try {
-            const models = await authFilesApi.getModelDefinitions(provider);
-            return { provider, models };
-          } catch {
-            return { provider, models: [] };
-          }
-        })
-      );
-
-      if (cancelled) return;
-
-      const nextModels: Record<string, AuthFileModelItem[]> = {};
-      results.forEach(({ provider, models }) => {
-        if (models.length > 0) {
-          nextModels[provider] = models;
-        }
-      });
-
-      setAllProviderModels(nextModels);
-    };
-
-    void loadAllModels();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [providerList, viewMode]);
-
-
 
   useEffect(() => {
     const persisted = readAuthFilesUiState();
@@ -482,54 +152,6 @@ export function AuthFilesPage() {
     setPageSizeInput(String(pageSize));
   }, [pageSize]);
 
-  const prefixProxyUpdatedText = useMemo(() => {
-    if (!prefixProxyEditor?.json) return prefixProxyEditor?.rawText ?? '';
-    const next: Record<string, unknown> = { ...prefixProxyEditor.json };
-    if ('prefix' in next || prefixProxyEditor.prefix.trim()) {
-      next.prefix = prefixProxyEditor.prefix;
-    }
-    if ('proxy_url' in next || prefixProxyEditor.proxyUrl.trim()) {
-      next.proxy_url = prefixProxyEditor.proxyUrl;
-    }
-
-    const parsedPriority = parsePriorityValue(prefixProxyEditor.priority);
-    if (parsedPriority !== undefined) {
-      next.priority = parsedPriority;
-    } else if ('priority' in next) {
-      delete next.priority;
-    }
-
-    const excludedModels = parseExcludedModelsText(prefixProxyEditor.excludedModelsText);
-    if (excludedModels.length > 0) {
-      next.excluded_models = excludedModels;
-    } else if ('excluded_models' in next) {
-      delete next.excluded_models;
-    }
-
-    const parsedDisableCooling = parseDisableCoolingValue(prefixProxyEditor.disableCooling);
-    if (parsedDisableCooling !== undefined) {
-      next.disable_cooling = parsedDisableCooling;
-    } else if ('disable_cooling' in next) {
-      delete next.disable_cooling;
-    }
-
-    return JSON.stringify(next);
-  }, [
-    prefixProxyEditor?.json,
-    prefixProxyEditor?.prefix,
-    prefixProxyEditor?.proxyUrl,
-    prefixProxyEditor?.priority,
-    prefixProxyEditor?.excludedModelsText,
-    prefixProxyEditor?.disableCooling,
-    prefixProxyEditor?.rawText,
-  ]);
-
-  const prefixProxyDirty = useMemo(() => {
-    if (!prefixProxyEditor?.json) return false;
-    if (!prefixProxyEditor.originalText) return false;
-    return prefixProxyUpdatedText !== prefixProxyEditor.originalText;
-  }, [prefixProxyEditor?.json, prefixProxyEditor?.originalText, prefixProxyUpdatedText]);
-
   const commitPageSizeInput = (rawValue: string) => {
     const trimmed = rawValue.trim();
     if (!trimmed) {
@@ -549,7 +171,7 @@ export function AuthFilesPage() {
     setPage(1);
   };
 
-  const handlePageSizeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePageSizeChange = (event: ChangeEvent<HTMLInputElement>) => {
     const rawValue = event.currentTarget.value;
     setPageSizeInput(rawValue);
 
@@ -566,105 +188,6 @@ export function AuthFilesPage() {
     setPage(1);
   };
 
-  // 格式化修改时间
-  const formatModified = (item: AuthFileItem): string => {
-    const raw = item['modtime'] ?? item.modified;
-    if (!raw) return '-';
-    const asNumber = Number(raw);
-    const date =
-      Number.isFinite(asNumber) && !Number.isNaN(asNumber)
-        ? new Date(asNumber < 1e12 ? asNumber * 1000 : asNumber)
-        : new Date(String(raw));
-    return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString();
-  };
-
-  // 加载文件列表
-  const loadFiles = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await authFilesApi.list();
-      setFiles(data?.files || []);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  // 加载 key 统计和 usage 明细（API 层已有60秒超时）
-  const loadKeyStats = useCallback(async () => {
-    // 防止重复请求
-    if (loadingKeyStatsRef.current) return;
-    loadingKeyStatsRef.current = true;
-    try {
-      const usageResponse = await usageApi.getUsage();
-      const usageData = usageResponse?.usage ?? usageResponse;
-      const stats = await usageApi.getKeyStats(usageData);
-      setKeyStats(stats);
-      // 收集 usage 明细用于状态栏
-      const details = collectUsageDetails(usageData);
-      setUsageDetails(details);
-    } catch {
-      // 静默失败
-    } finally {
-      loadingKeyStatsRef.current = false;
-    }
-  }, []);
-
-  // 加载 OAuth 模型禁用
-  const loadExcluded = useCallback(async () => {
-    try {
-      const res = await authFilesApi.getOauthExcludedModels();
-      excludedUnsupportedRef.current = false;
-      setExcluded(res || {});
-      setExcludedError(null);
-    } catch (err: unknown) {
-      const status =
-        typeof err === 'object' && err !== null && 'status' in err
-          ? (err as { status?: unknown }).status
-          : undefined;
-
-      if (status === 404) {
-        setExcluded({});
-        setExcludedError('unsupported');
-        if (!excludedUnsupportedRef.current) {
-          excludedUnsupportedRef.current = true;
-          showNotification(t('oauth_excluded.upgrade_required'), 'warning');
-        }
-        return;
-      }
-      // 静默失败
-    }
-  }, [showNotification, t]);
-
-  // 加载 OAuth 模型映射
-  const loadModelAlias = useCallback(async () => {
-    try {
-      const res = await authFilesApi.getOauthModelAlias();
-      mappingsUnsupportedRef.current = false;
-      setModelAlias(res || {});
-      setModelAliasError(null);
-    } catch (err: unknown) {
-      const status =
-        typeof err === 'object' && err !== null && 'status' in err
-          ? (err as { status?: unknown }).status
-          : undefined;
-
-      if (status === 404) {
-        setModelAlias({});
-        setModelAliasError('unsupported');
-        if (!mappingsUnsupportedRef.current) {
-          mappingsUnsupportedRef.current = true;
-          showNotification(t('oauth_model_alias.upgrade_required'), 'warning');
-        }
-        return;
-      }
-      // 静默失败
-    }
-  }, [showNotification, t]);
-
   const handleHeaderRefresh = useCallback(async () => {
     await Promise.all([loadFiles(), loadKeyStats(), loadExcluded(), loadModelAlias()]);
   }, [loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
@@ -679,10 +202,8 @@ export function AuthFilesPage() {
     loadModelAlias();
   }, [isCurrentLayer, loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
 
-  // 定时刷新状态数据（每240秒）
   useInterval(loadKeyStats, isCurrentLayer ? 240_000 : null);
 
-  // 提取所有存在的类型
   const existingTypes = useMemo(() => {
     const types = new Set<string>(['all']);
     files.forEach((file) => {
@@ -702,7 +223,6 @@ export function AuthFilesPage() {
     return counts;
   }, [files]);
 
-  // 过滤和搜索
   const filtered = useMemo(() => {
     return files.filter((item) => {
       const matchType = filter === 'all' || item.type === filter;
@@ -716,795 +236,59 @@ export function AuthFilesPage() {
     });
   }, [files, filter, search]);
 
-  // 分页计算
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
   const pageItems = filtered.slice(start, start + pageSize);
 
-  // 点击上传
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  // 处理文件上传（支持多选）
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = event.target.files;
-    if (!fileList || fileList.length === 0) return;
-
-    const filesToUpload = Array.from(fileList);
-    const validFiles: File[] = [];
-    const invalidFiles: string[] = [];
-    const oversizedFiles: string[] = [];
-
-    filesToUpload.forEach((file) => {
-      if (!file.name.endsWith('.json')) {
-        invalidFiles.push(file.name);
-        return;
-      }
-      if (file.size > MAX_AUTH_FILE_SIZE) {
-        oversizedFiles.push(file.name);
-        return;
-      }
-      validFiles.push(file);
-    });
-
-    if (invalidFiles.length > 0) {
-      showNotification(t('auth_files.upload_error_json'), 'error');
-    }
-    if (oversizedFiles.length > 0) {
-      showNotification(
-        t('auth_files.upload_error_size', { maxSize: formatFileSize(MAX_AUTH_FILE_SIZE) }),
-        'error'
-      );
-    }
-
-    if (validFiles.length === 0) {
-      event.target.value = '';
-      return;
-    }
-
-    setUploading(true);
-    let successCount = 0;
-    const failed: { name: string; message: string }[] = [];
-
-    for (const file of validFiles) {
-      try {
-        await authFilesApi.upload(file);
-        successCount++;
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        failed.push({ name: file.name, message: errorMessage });
-      }
-    }
-
-    if (successCount > 0) {
-      const suffix = validFiles.length > 1 ? ` (${successCount}/${validFiles.length})` : '';
-      showNotification(
-        `${t('auth_files.upload_success')}${suffix}`,
-        failed.length ? 'warning' : 'success'
-      );
-      await loadFiles();
-      await loadKeyStats();
-    }
-
-    if (failed.length > 0) {
-      const details = failed.map((item) => `${item.name}: ${item.message}`).join('; ');
-      showNotification(`${t('notification.upload_failed')}: ${details}`, 'error');
-    }
-
-    setUploading(false);
-    event.target.value = '';
-  };
-
-  // 删除单个文件
-  const handleDelete = async (name: string) => {
-    showConfirmation({
-      title: t('auth_files.delete_title', { defaultValue: 'Delete File' }),
-      message: `${t('auth_files.delete_confirm')} "${name}" ?`,
-      variant: 'danger',
-      confirmText: t('common.confirm'),
-      onConfirm: async () => {
-        setDeleting(name);
-        try {
-          await authFilesApi.deleteFile(name);
-          showNotification(t('auth_files.delete_success'), 'success');
-          setFiles((prev) => prev.filter((item) => item.name !== name));
-        } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : '';
-          showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
-        } finally {
-          setDeleting(null);
-        }
-      },
-    });
-  };
-
-  // 删除全部（根据筛选类型）
-  const handleDeleteAll = async () => {
-    const isFiltered = filter !== 'all';
-    const typeLabel = isFiltered ? getTypeLabel(filter) : t('auth_files.filter_all');
-    const confirmMessage = isFiltered
-      ? t('auth_files.delete_filtered_confirm', { type: typeLabel })
-      : t('auth_files.delete_all_confirm');
-
-    showConfirmation({
-      title: t('auth_files.delete_all_title', { defaultValue: 'Delete All Files' }),
-      message: confirmMessage,
-      variant: 'danger',
-      confirmText: t('common.confirm'),
-      onConfirm: async () => {
-        setDeletingAll(true);
-        try {
-          if (!isFiltered) {
-            // 删除全部
-            await authFilesApi.deleteAll();
-            showNotification(t('auth_files.delete_all_success'), 'success');
-            setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
-          } else {
-            // 删除筛选类型的文件
-            const filesToDelete = files.filter(
-              (f) => f.type === filter && !isRuntimeOnlyAuthFile(f)
-            );
-
-            if (filesToDelete.length === 0) {
-              showNotification(t('auth_files.delete_filtered_none', { type: typeLabel }), 'info');
-              setDeletingAll(false);
-              return;
-            }
-
-            let success = 0;
-            let failed = 0;
-            const deletedNames: string[] = [];
-
-            for (const file of filesToDelete) {
-              try {
-                await authFilesApi.deleteFile(file.name);
-                success++;
-                deletedNames.push(file.name);
-              } catch {
-                failed++;
-              }
-            }
-
-            setFiles((prev) => prev.filter((f) => !deletedNames.includes(f.name)));
-
-            if (failed === 0) {
-              showNotification(
-                t('auth_files.delete_filtered_success', { count: success, type: typeLabel }),
-                'success'
-              );
-            } else {
-              showNotification(
-                t('auth_files.delete_filtered_partial', { success, failed, type: typeLabel }),
-                'warning'
-              );
-            }
-            setFilter('all');
-          }
-        } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : '';
-          showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
-        } finally {
-          setDeletingAll(false);
-        }
-      },
-    });
-  };
-
-  // 下载文件
-  const handleDownload = async (name: string) => {
-    try {
-      const response = await apiClient.getRaw(
-        `/auth-files/download?name=${encodeURIComponent(name)}`,
-        {
-          responseType: 'blob',
-        }
-      );
-      const blob = new Blob([response.data]);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      showNotification(t('auth_files.download_success'), 'success');
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '';
-      showNotification(`${t('notification.download_failed')}: ${errorMessage}`, 'error');
-    }
-  };
-
-  const openPrefixProxyEditor = async (name: string) => {
-    if (disableControls) return;
-    if (prefixProxyEditor?.fileName === name) {
-      setPrefixProxyEditor(null);
-      return;
-    }
-
-    setPrefixProxyEditor({
-      fileName: name,
-      loading: true,
-      saving: false,
-      error: null,
-      originalText: '',
-      rawText: '',
-      json: null,
-      prefix: '',
-      proxyUrl: '',
-      priority: '',
-      excludedModelsText: '',
-      disableCooling: '',
-    });
-
-    try {
-      const rawText = await authFilesApi.downloadText(name);
-      const trimmed = rawText.trim();
-
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(trimmed) as unknown;
-      } catch {
-        setPrefixProxyEditor((prev) => {
-          if (!prev || prev.fileName !== name) return prev;
-          return {
-            ...prev,
-            loading: false,
-            error: t('auth_files.prefix_proxy_invalid_json'),
-            rawText: trimmed,
-            originalText: trimmed,
-          };
-        });
-        return;
-      }
-
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        setPrefixProxyEditor((prev) => {
-          if (!prev || prev.fileName !== name) return prev;
-          return {
-            ...prev,
-            loading: false,
-            error: t('auth_files.prefix_proxy_invalid_json'),
-            rawText: trimmed,
-            originalText: trimmed,
-          };
-        });
-        return;
-      }
-
-      const json = parsed as Record<string, unknown>;
-      const originalText = JSON.stringify(json);
-      const prefix = typeof json.prefix === 'string' ? json.prefix : '';
-      const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
-      const priority = parsePriorityValue(json.priority);
-      const excludedModels = normalizeExcludedModels(json.excluded_models);
-      const disableCooling = parseDisableCoolingValue(json.disable_cooling);
-
-      setPrefixProxyEditor((prev) => {
-        if (!prev || prev.fileName !== name) return prev;
-        return {
-          ...prev,
-          loading: false,
-          originalText,
-          rawText: originalText,
-          json,
-          prefix,
-          proxyUrl,
-          priority: priority !== undefined ? String(priority) : '',
-          excludedModelsText: excludedModels.join('\n'),
-          disableCooling:
-            disableCooling === undefined ? '' : disableCooling ? 'true' : 'false',
-          error: null,
-        };
-      });
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : t('notification.download_failed');
-      setPrefixProxyEditor((prev) => {
-        if (!prev || prev.fileName !== name) return prev;
-        return { ...prev, loading: false, error: errorMessage, rawText: '' };
-      });
-      showNotification(`${t('notification.download_failed')}: ${errorMessage}`, 'error');
-    }
-  };
-
-  const handlePrefixProxyChange = (
-    field: 'prefix' | 'proxyUrl' | 'priority' | 'excludedModelsText' | 'disableCooling',
-    value: string
-  ) => {
-    setPrefixProxyEditor((prev) => {
-      if (!prev) return prev;
-      if (field === 'prefix') return { ...prev, prefix: value };
-      if (field === 'proxyUrl') return { ...prev, proxyUrl: value };
-      if (field === 'priority') return { ...prev, priority: value };
-      if (field === 'excludedModelsText') return { ...prev, excludedModelsText: value };
-      return { ...prev, disableCooling: value };
-    });
-  };
-
-  const handlePrefixProxySave = async () => {
-    if (!prefixProxyEditor?.json) return;
-    if (!prefixProxyDirty) return;
-
-    const name = prefixProxyEditor.fileName;
-    const payload = prefixProxyUpdatedText;
-    const fileSize = new Blob([payload]).size;
-    if (fileSize > MAX_AUTH_FILE_SIZE) {
-      showNotification(
-        t('auth_files.upload_error_size', { maxSize: formatFileSize(MAX_AUTH_FILE_SIZE) }),
-        'error'
-      );
-      return;
-    }
-
-    setPrefixProxyEditor((prev) => {
-      if (!prev || prev.fileName !== name) return prev;
-      return { ...prev, saving: true };
-    });
-
-    try {
-      const file = new File([payload], name, { type: 'application/json' });
-      await authFilesApi.upload(file);
-      showNotification(t('auth_files.prefix_proxy_saved_success', { name }), 'success');
-      await loadFiles();
-      await loadKeyStats();
-      setPrefixProxyEditor(null);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '';
-      showNotification(`${t('notification.upload_failed')}: ${errorMessage}`, 'error');
-      setPrefixProxyEditor((prev) => {
-        if (!prev || prev.fileName !== name) return prev;
-        return { ...prev, saving: false };
-      });
-    }
-  };
-
-  const handleStatusToggle = async (item: AuthFileItem, enabled: boolean) => {
-    const name = item.name;
-    const nextDisabled = !enabled;
-    const previousDisabled = item.disabled === true;
-
-    setStatusUpdating((prev) => ({ ...prev, [name]: true }));
-    // Optimistic update for snappy UI.
-    setFiles((prev) => prev.map((f) => (f.name === name ? { ...f, disabled: nextDisabled } : f)));
-
-    try {
-      const res = await authFilesApi.setStatus(name, nextDisabled);
-      setFiles((prev) => prev.map((f) => (f.name === name ? { ...f, disabled: res.disabled } : f)));
-      showNotification(
-        enabled
-          ? t('auth_files.status_enabled_success', { name })
-          : t('auth_files.status_disabled_success', { name }),
-        'success'
-      );
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '';
-      setFiles((prev) =>
-        prev.map((f) => (f.name === name ? { ...f, disabled: previousDisabled } : f))
-      );
-      showNotification(`${t('notification.update_failed')}: ${errorMessage}`, 'error');
-    } finally {
-      setStatusUpdating((prev) => {
-        if (!prev[name]) return prev;
-        const next = { ...prev };
-        delete next[name];
-        return next;
-      });
-    }
-  };
-
-  // 显示详情弹窗
   const showDetails = (file: AuthFileItem) => {
     setSelectedFile(file);
     setDetailModalOpen(true);
   };
 
-  // 显示模型列表
-  const showModels = async (item: AuthFileItem) => {
-    setModelsFileName(item.name);
-    setModelsFileType(item.type || '');
-    setModelsList([]);
-    setModelsError(null);
-    setModelsModalOpen(true);
-
-    const cached = modelsCacheRef.current.get(item.name);
-    if (cached) {
-      setModelsList(cached);
-      setModelsLoading(false);
-      return;
-    }
-
-    setModelsLoading(true);
-    try {
-      const models = await authFilesApi.getModelsForAuthFile(item.name);
-      modelsCacheRef.current.set(item.name, models);
-      setModelsList(models);
-    } catch (err) {
-      // 检测是否是 API 不支持的错误 (404 或特定错误消息)
-      const errorMessage = err instanceof Error ? err.message : '';
-      if (
-        errorMessage.includes('404') ||
-        errorMessage.includes('not found') ||
-        errorMessage.includes('Not Found')
-      ) {
-        setModelsError('unsupported');
-      } else {
-        showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
-      }
-    } finally {
-      setModelsLoading(false);
-    }
-  };
-
-  const copyTextWithNotification = async (text: string) => {
-    const copied = await copyToClipboard(text);
-    showNotification(
-      copied
-        ? t('notification.link_copied', { defaultValue: 'Copied to clipboard' })
-        : t('notification.copy_failed', { defaultValue: 'Copy failed' }),
-      copied ? 'success' : 'error'
-    );
-  };
-
-  // 检查模型是否被 OAuth 排除
-  const isModelExcluded = (modelId: string, providerType: string): boolean => {
-    const providerKey = normalizeProviderKey(providerType);
-    const excludedModels = excluded[providerKey] || excluded[providerType] || [];
-    return excludedModels.some((pattern) => {
-      if (pattern.includes('*')) {
-        // 支持通配符匹配：先转义正则特殊字符，再将 * 视为通配符
-        const regexSafePattern = pattern
-          .split('*')
-          .map((segment) => segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-          .join('.*');
-        const regex = new RegExp(`^${regexSafePattern}$`, 'i');
-        return regex.test(modelId);
-      }
-      return pattern.toLowerCase() === modelId.toLowerCase();
-    });
-  };
-
-  // 获取类型标签显示文本
-  const getTypeLabel = (type: string): string => {
-    const key = `auth_files.filter_${type}`;
-    const translated = t(key);
-    if (translated !== key) return translated;
-    if (type.toLowerCase() === 'iflow') return 'iFlow';
-    return type.charAt(0).toUpperCase() + type.slice(1);
-  };
-
-  // 获取类型颜色
-  const getTypeColor = (type: string): ThemeColors => {
-    const set = TYPE_COLORS[type] || TYPE_COLORS.unknown;
-    return resolvedTheme === 'dark' && set.dark ? set.dark : set.light;
-  };
-
-  const openExcludedEditor = (provider?: string) => {
-    const providerValue = (provider || (filter !== 'all' ? String(filter) : '')).trim();
-    const params = new URLSearchParams();
-    if (providerValue) {
-      params.set('provider', providerValue);
-    }
-    const search = params.toString();
-    navigate(`/auth-files/oauth-excluded${search ? `?${search}` : ''}`, {
-      state: { fromAuthFiles: true },
-    });
-  };
-
-  const deleteExcluded = async (provider: string) => {
-    const providerLabel = provider.trim() || provider;
-    showConfirmation({
-      title: t('oauth_excluded.delete_title', { defaultValue: 'Delete Exclusion' }),
-      message: t('oauth_excluded.delete_confirm', { provider: providerLabel }),
-      variant: 'danger',
-      confirmText: t('common.confirm'),
-      onConfirm: async () => {
-        const providerKey = normalizeProviderKey(provider);
-        if (!providerKey) {
-          showNotification(t('oauth_excluded.provider_required'), 'error');
-          return;
-        }
-        try {
-          await authFilesApi.deleteOauthExcludedEntry(providerKey);
-          await loadExcluded();
-          showNotification(t('oauth_excluded.delete_success'), 'success');
-        } catch (err: unknown) {
-          try {
-            const current = await authFilesApi.getOauthExcludedModels();
-            const next: Record<string, string[]> = {};
-            Object.entries(current).forEach(([key, models]) => {
-              if (normalizeProviderKey(key) === providerKey) return;
-              next[key] = models;
-            });
-            await authFilesApi.replaceOauthExcludedModels(next);
-            await loadExcluded();
-            showNotification(t('oauth_excluded.delete_success'), 'success');
-          } catch (fallbackErr: unknown) {
-            const errorMessage =
-              fallbackErr instanceof Error
-                ? fallbackErr.message
-                : err instanceof Error
-                  ? err.message
-                  : '';
-            showNotification(`${t('oauth_excluded.delete_failed')}: ${errorMessage}`, 'error');
-          }
-        }
-      },
-    });
-  };
-
-  const openModelAliasEditor = (provider?: string) => {
-    const providerValue = (provider || (filter !== 'all' ? String(filter) : '')).trim();
-    const params = new URLSearchParams();
-    if (providerValue) {
-      params.set('provider', providerValue);
-    }
-    const search = params.toString();
-    navigate(`/auth-files/oauth-model-alias${search ? `?${search}` : ''}`, {
-      state: { fromAuthFiles: true },
-    });
-  };
-
-  const deleteModelAlias = async (provider: string) => {
-    showConfirmation({
-      title: t('oauth_model_alias.delete_title', { defaultValue: 'Delete Mappings' }),
-      message: t('oauth_model_alias.delete_confirm', { provider }),
-      variant: 'danger',
-      confirmText: t('common.confirm'),
-      onConfirm: async () => {
-        try {
-          await authFilesApi.deleteOauthModelAlias(provider);
-          await loadModelAlias();
-          showNotification(t('oauth_model_alias.delete_success'), 'success');
-        } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : '';
-          showNotification(`${t('oauth_model_alias.delete_failed')}: ${errorMessage}`, 'error');
-        }
-      },
-    });
-  };
-
-  const handleMappingUpdate = async (provider: string, sourceModel: string, newAlias: string) => {
-    if (!provider || !sourceModel || !newAlias) return;
-    const normalizedProvider = normalizeProviderKey(provider);
-    if (!normalizedProvider) return;
-
-    const providerKey = Object.keys(modelAlias).find(
-      (key) => normalizeProviderKey(key) === normalizedProvider
-    );
-    const currentMappings = (providerKey ? modelAlias[providerKey] : null) ?? [];
-
-    const nameTrim = sourceModel.trim();
-    const aliasTrim = newAlias.trim();
-    const nameKey = nameTrim.toLowerCase();
-    const aliasKey = aliasTrim.toLowerCase();
-
-    if (
-      currentMappings.some(
-        (m) =>
-          (m.name ?? '').trim().toLowerCase() === nameKey &&
-          (m.alias ?? '').trim().toLowerCase() === aliasKey
-      )
-    ) {
-      return;
-    }
-
-    const nextMappings: OAuthModelAliasEntry[] = [
-      ...currentMappings,
-      { name: nameTrim, alias: aliasTrim, fork: true },
-    ];
-
-    try {
-      await authFilesApi.saveOauthModelAlias(normalizedProvider, nextMappings);
-      await loadModelAlias();
-      showNotification(t('oauth_model_alias.save_success'), 'success');
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '';
-      showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
-    }
-  };
-
-  const handleDeleteLink = (provider: string, sourceModel: string, alias: string) => {
-    const nameTrim = sourceModel.trim();
-    const aliasTrim = alias.trim();
-    if (!provider || !nameTrim || !aliasTrim) return;
-
-    showConfirmation({
-      title: t('oauth_model_alias.delete_link_title', { defaultValue: 'Unlink mapping' }),
-      message: (
-        <Trans
-          i18nKey="oauth_model_alias.delete_link_confirm"
-          values={{ provider, sourceModel: nameTrim, alias: aliasTrim }}
-          components={{ code: <code /> }}
-        />
-      ),
-      variant: 'danger',
-      confirmText: t('common.confirm'),
-      onConfirm: async () => {
-        const normalizedProvider = normalizeProviderKey(provider);
-        const providerKey = Object.keys(modelAlias).find(
-          (key) => normalizeProviderKey(key) === normalizedProvider
-        );
-        const currentMappings = (providerKey ? modelAlias[providerKey] : null) ?? [];
-        const nameKey = nameTrim.toLowerCase();
-        const aliasKey = aliasTrim.toLowerCase();
-        const nextMappings = currentMappings.filter(
-          (m) =>
-            (m.name ?? '').trim().toLowerCase() !== nameKey ||
-            (m.alias ?? '').trim().toLowerCase() !== aliasKey
-        );
-        if (nextMappings.length === currentMappings.length) return;
-
-        try {
-          if (nextMappings.length === 0) {
-            await authFilesApi.deleteOauthModelAlias(normalizedProvider);
-          } else {
-            await authFilesApi.saveOauthModelAlias(normalizedProvider, nextMappings);
-          }
-          await loadModelAlias();
-          showNotification(t('oauth_model_alias.save_success'), 'success');
-        } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : '';
-          showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
-        }
-      },
-    });
-  };
-
-  const handleToggleFork = async (
-    provider: string,
-    sourceModel: string,
-    alias: string,
-    fork: boolean
-  ) => {
-    const normalizedProvider = normalizeProviderKey(provider);
-    if (!normalizedProvider) return;
-
-    const providerKey = Object.keys(modelAlias).find(
-      (key) => normalizeProviderKey(key) === normalizedProvider
-    );
-    const currentMappings = (providerKey ? modelAlias[providerKey] : null) ?? [];
-    const nameKey = sourceModel.trim().toLowerCase();
-    const aliasKey = alias.trim().toLowerCase();
-    let changed = false;
-
-    const nextMappings = currentMappings.map((m) => {
-      const mName = (m.name ?? '').trim().toLowerCase();
-      const mAlias = (m.alias ?? '').trim().toLowerCase();
-      if (mName === nameKey && mAlias === aliasKey) {
-        changed = true;
-        return fork ? { ...m, fork: true } : { name: m.name, alias: m.alias };
-      }
-      return m;
-    });
-
-    if (!changed) return;
-
-    try {
-      await authFilesApi.saveOauthModelAlias(normalizedProvider, nextMappings);
-      await loadModelAlias();
-      showNotification(t('oauth_model_alias.save_success'), 'success');
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '';
-      showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
-    }
-  };
-
-  const handleRenameAlias = async (oldAlias: string, newAlias: string) => {
-    const oldTrim = oldAlias.trim();
-    const newTrim = newAlias.trim();
-    if (!oldTrim || !newTrim || oldTrim === newTrim) return;
-
-    const oldKey = oldTrim.toLowerCase();
-    const providersToUpdate = Object.entries(modelAlias).filter(([_, mappings]) =>
-      mappings.some((m) => (m.alias ?? '').trim().toLowerCase() === oldKey)
-    );
-
-    if (providersToUpdate.length === 0) return;
-
-    let hadFailure = false;
-    let failureMessage = '';
-
-    try {
-      const results = await Promise.allSettled(
-        providersToUpdate.map(([provider, mappings]) => {
-          const nextMappings = mappings.map((m) =>
-            (m.alias ?? '').trim().toLowerCase() === oldKey ? { ...m, alias: newTrim } : m
-          );
-          return authFilesApi.saveOauthModelAlias(provider, nextMappings);
-        })
-      );
-
-      const failures = results.filter(
-        (result): result is PromiseRejectedResult => result.status === 'rejected'
-      );
-
-      if (failures.length > 0) {
-        hadFailure = true;
-        const reason = failures[0].reason;
-        failureMessage = reason instanceof Error ? reason.message : String(reason ?? '');
-      }
-    } finally {
-      await loadModelAlias();
-    }
-
-    if (hadFailure) {
+  const copyTextWithNotification = useCallback(
+    async (text: string) => {
+      const copied = await copyToClipboard(text);
       showNotification(
-        failureMessage
-          ? `${t('oauth_model_alias.save_failed')}: ${failureMessage}`
-          : t('oauth_model_alias.save_failed'),
-        'error'
+        copied
+          ? t('notification.link_copied', { defaultValue: 'Copied to clipboard' })
+          : t('notification.copy_failed', { defaultValue: 'Copy failed' }),
+        copied ? 'success' : 'error'
       );
-    } else {
-      showNotification(t('oauth_model_alias.save_success'), 'success');
-    }
-  };
+    },
+    [showNotification, t]
+  );
 
-  const handleDeleteAlias = (aliasName: string) => {
-    const aliasTrim = aliasName.trim();
-    if (!aliasTrim) return;
-    const aliasKey = aliasTrim.toLowerCase();
-    const providersToUpdate = Object.entries(modelAlias).filter(([_, mappings]) =>
-      mappings.some((m) => (m.alias ?? '').trim().toLowerCase() === aliasKey)
-    );
+  const openExcludedEditor = useCallback(
+    (provider?: string) => {
+      const providerValue = (provider || (filter !== 'all' ? String(filter) : '')).trim();
+      const params = new URLSearchParams();
+      if (providerValue) {
+        params.set('provider', providerValue);
+      }
+      const nextSearch = params.toString();
+      navigate(`/auth-files/oauth-excluded${nextSearch ? `?${nextSearch}` : ''}`, {
+        state: { fromAuthFiles: true }
+      });
+    },
+    [filter, navigate]
+  );
 
-    if (providersToUpdate.length === 0) return;
+  const openModelAliasEditor = useCallback(
+    (provider?: string) => {
+      const providerValue = (provider || (filter !== 'all' ? String(filter) : '')).trim();
+      const params = new URLSearchParams();
+      if (providerValue) {
+        params.set('provider', providerValue);
+      }
+      const nextSearch = params.toString();
+      navigate(`/auth-files/oauth-model-alias${nextSearch ? `?${nextSearch}` : ''}`, {
+        state: { fromAuthFiles: true }
+      });
+    },
+    [filter, navigate]
+  );
 
-    showConfirmation({
-      title: t('oauth_model_alias.delete_alias_title', { defaultValue: 'Delete Alias' }),
-      message: (
-        <Trans
-          i18nKey="oauth_model_alias.delete_alias_confirm"
-          values={{ alias: aliasTrim }}
-          components={{ code: <code /> }}
-        />
-      ),
-      variant: 'danger',
-      confirmText: t('common.confirm'),
-      onConfirm: async () => {
-        let hadFailure = false;
-        let failureMessage = '';
-
-        try {
-          const results = await Promise.allSettled(
-            providersToUpdate.map(([provider, mappings]) => {
-              const nextMappings = mappings.filter(
-                (m) => (m.alias ?? '').trim().toLowerCase() !== aliasKey
-              );
-              if (nextMappings.length === 0) {
-                return authFilesApi.deleteOauthModelAlias(provider);
-              }
-              return authFilesApi.saveOauthModelAlias(provider, nextMappings);
-            })
-          );
-
-          const failures = results.filter(
-            (result): result is PromiseRejectedResult => result.status === 'rejected'
-          );
-
-          if (failures.length > 0) {
-            hadFailure = true;
-            const reason = failures[0].reason;
-            failureMessage = reason instanceof Error ? reason.message : String(reason ?? '');
-          }
-        } finally {
-          await loadModelAlias();
-        }
-
-        if (hadFailure) {
-          showNotification(
-            failureMessage
-              ? `${t('oauth_model_alias.delete_failed')}: ${failureMessage}`
-              : t('oauth_model_alias.delete_failed'),
-            'error'
-          );
-        } else {
-          showNotification(t('oauth_model_alias.delete_success'), 'success');
-        }
-      },
-    });
-  };
-
-  // 渲染标签筛选器
   const renderFilterTags = () => (
     <div className={styles.filterTags}>
       {existingTypes.map((type) => {
@@ -1512,7 +296,7 @@ export function AuthFilesPage() {
         const color =
           type === 'all'
             ? { bg: 'var(--bg-tertiary)', text: 'var(--text-primary)' }
-            : getTypeColor(type);
+            : getTypeColor(type, resolvedTheme);
         const activeTextColor = resolvedTheme === 'dark' ? '#111827' : '#fff';
         return (
           <button
@@ -1521,360 +305,20 @@ export function AuthFilesPage() {
             style={{
               backgroundColor: isActive ? color.text : color.bg,
               color: isActive ? activeTextColor : color.text,
-              borderColor: color.text,
+              borderColor: color.text
             }}
             onClick={() => {
               setFilter(type);
               setPage(1);
             }}
           >
-            <span className={styles.filterTagLabel}>{getTypeLabel(type)}</span>
+            <span className={styles.filterTagLabel}>{getTypeLabel(t, type)}</span>
             <span className={styles.filterTagCount}>{typeCounts[type] ?? 0}</span>
           </button>
         );
       })}
     </div>
   );
-
-  // 预计算所有认证文件的状态栏数据（避免每次渲染重复计算）
-  const statusBarCache = useMemo(() => {
-    const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
-
-    files.forEach((file) => {
-      const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-      const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
-
-      if (authIndexKey) {
-        // 过滤出属于该认证文件的 usage 明细
-        const filteredDetails = usageDetails.filter((detail) => {
-          const detailAuthIndex = normalizeAuthIndexValue(detail.auth_index);
-          return detailAuthIndex !== null && detailAuthIndex === authIndexKey;
-        });
-        cache.set(authIndexKey, calculateStatusBarData(filteredDetails));
-      }
-    });
-
-    return cache;
-  }, [usageDetails, files]);
-
-  // 渲染状态监测栏
-  const renderStatusBar = (item: AuthFileItem) => {
-    // 认证文件使用 authIndex 来匹配 usage 数据
-    const rawAuthIndex = item['auth_index'] ?? item.authIndex;
-    const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
-
-    const statusData =
-      (authIndexKey && statusBarCache.get(authIndexKey)) || calculateStatusBarData([]);
-    const hasData = statusData.totalSuccess + statusData.totalFailure > 0;
-    const rateClass = !hasData
-      ? ''
-      : statusData.successRate >= 90
-        ? styles.statusRateHigh
-        : statusData.successRate >= 50
-          ? styles.statusRateMedium
-          : styles.statusRateLow;
-
-    return (
-      <div className={styles.statusBar}>
-        <div className={styles.statusBlocks}>
-          {statusData.blocks.map((state, idx) => {
-            const blockClass =
-              state === 'success'
-                ? styles.statusBlockSuccess
-                : state === 'failure'
-                  ? styles.statusBlockFailure
-                  : state === 'mixed'
-                    ? styles.statusBlockMixed
-                    : styles.statusBlockIdle;
-            return <div key={idx} className={`${styles.statusBlock} ${blockClass}`} />;
-          })}
-        </div>
-        <span className={`${styles.statusRate} ${rateClass}`}>
-          {hasData ? `${statusData.successRate.toFixed(1)}%` : '--'}
-        </span>
-      </div>
-    );
-  };
-
-  const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
-    const provider = resolveAuthProvider(file);
-    if (!QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) return null;
-    return provider as QuotaProviderType;
-  };
-
-  const getQuotaConfig = (type: QuotaProviderType) => {
-    if (type === 'antigravity') return ANTIGRAVITY_CONFIG;
-    if (type === 'codex') return CODEX_CONFIG;
-    return GEMINI_CLI_CONFIG;
-  };
-
-  const getQuotaState = useCallback(
-    (type: QuotaProviderType, fileName: string) => {
-      if (type === 'antigravity') return antigravityQuota[fileName];
-      if (type === 'codex') return codexQuota[fileName];
-      return geminiCliQuota[fileName];
-    },
-    [antigravityQuota, codexQuota, geminiCliQuota]
-  );
-
-  const updateQuotaState = useCallback(
-    (
-      type: QuotaProviderType,
-      updater: (prev: Record<string, unknown>) => Record<string, unknown>
-    ) => {
-      if (type === 'antigravity') {
-        setAntigravityQuota(updater as never);
-        return;
-      }
-      if (type === 'codex') {
-        setCodexQuota(updater as never);
-        return;
-      }
-      setGeminiCliQuota(updater as never);
-    },
-    [setAntigravityQuota, setCodexQuota, setGeminiCliQuota]
-  );
-
-  const refreshQuotaForFile = useCallback(
-    async (file: AuthFileItem, quotaType: QuotaProviderType) => {
-      if (disableControls) return;
-      if (isRuntimeOnlyAuthFile(file)) return;
-      if (file.disabled) return;
-
-      const currentState = getQuotaState(quotaType, file.name);
-      if (currentState?.status === 'loading') return;
-
-      const config = getQuotaConfig(quotaType) as unknown as {
-        i18nPrefix: string;
-        fetchQuota: (file: AuthFileItem, t: TFunction) => Promise<unknown>;
-        buildLoadingState: () => unknown;
-        buildSuccessState: (data: unknown) => unknown;
-        buildErrorState: (message: string, status?: number) => unknown;
-      };
-
-      updateQuotaState(quotaType, (prev) => ({
-        ...prev,
-        [file.name]: config.buildLoadingState()
-      }));
-
-      try {
-        const data = await config.fetchQuota(file, t);
-        updateQuotaState(quotaType, (prev) => ({
-          ...prev,
-          [file.name]: config.buildSuccessState(data)
-        }));
-        showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : t('common.unknown_error');
-        const status = getStatusFromError(err);
-        updateQuotaState(quotaType, (prev) => ({
-          ...prev,
-          [file.name]: config.buildErrorState(message, status)
-        }));
-        showNotification(
-          t('auth_files.quota_refresh_failed', { name: file.name, message }),
-          'error'
-        );
-      }
-    },
-    [disableControls, getQuotaState, showNotification, t, updateQuotaState]
-  );
-
-  const renderQuotaSection = (item: AuthFileItem, quotaType: QuotaProviderType) => {
-    const config = getQuotaConfig(quotaType) as unknown as {
-      i18nPrefix: string;
-      renderQuotaItems: (quota: unknown, t: TFunction, helpers: unknown) => unknown;
-    };
-
-    const quota = getQuotaState(quotaType, item.name) as
-      | { status?: string; error?: string; errorStatus?: number }
-      | undefined;
-    const quotaStatus = quota?.status ?? 'idle';
-    const canRefreshQuota = !disableControls && !item.disabled;
-    const quotaErrorMessage = resolveQuotaErrorMessage(
-      t,
-      quota?.errorStatus,
-      quota?.error || t('common.unknown_error')
-    );
-
-    return (
-      <div className={styles.quotaSection}>
-        {quotaStatus === 'loading' ? (
-          <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.loading`)}</div>
-        ) : quotaStatus === 'idle' ? (
-          <button
-            type="button"
-            className={`${styles.quotaMessage} ${styles.quotaMessageAction}`}
-            onClick={() => void refreshQuotaForFile(item, quotaType)}
-            disabled={!canRefreshQuota}
-          >
-            {t(`${config.i18nPrefix}.idle`)}
-          </button>
-        ) : quotaStatus === 'error' ? (
-          <div className={styles.quotaError}>
-            {t(`${config.i18nPrefix}.load_failed`, {
-              message: quotaErrorMessage
-            })}
-          </div>
-        ) : quota ? (
-          (config.renderQuotaItems(quota, t, { styles, QuotaProgressBar }) as ReactNode)
-        ) : (
-          <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.idle`)}</div>
-        )}
-      </div>
-    );
-  };
-
-  // 渲染单个认证文件卡片
-  const renderFileCard = (item: AuthFileItem) => {
-    const fileStats = resolveAuthFileStats(item, keyStats);
-    const isRuntimeOnly = isRuntimeOnlyAuthFile(item);
-    const isAistudio = (item.type || '').toLowerCase() === 'aistudio';
-    const showModelsButton = !isRuntimeOnly || isAistudio;
-    const typeColor = getTypeColor(item.type || 'unknown');
-
-    const quotaType =
-      quotaFilterType && resolveQuotaType(item) === quotaFilterType ? quotaFilterType : null;
-
-    const showQuotaLayout = Boolean(quotaType) && !isRuntimeOnly;
-
-    const providerCardClass =
-      quotaType === 'antigravity'
-        ? styles.antigravityCard
-        : quotaType === 'codex'
-          ? styles.codexCard
-          : quotaType === 'gemini-cli'
-            ? styles.geminiCliCard
-            : '';
-
-    return (
-      <div
-        key={item.name}
-        className={`${styles.fileCard} ${providerCardClass} ${item.disabled ? styles.fileCardDisabled : ''}`}
-      >
-        <div
-          className={styles.fileCardLayout}
-        >
-          <div className={styles.fileCardMain}>
-            <div className={styles.cardHeader}>
-              <span
-                className={styles.typeBadge}
-                style={{
-                  backgroundColor: typeColor.bg,
-                  color: typeColor.text,
-                  ...(typeColor.border ? { border: typeColor.border } : {}),
-                }}
-              >
-                {getTypeLabel(item.type || 'unknown')}
-              </span>
-              <span className={styles.fileName}>{item.name}</span>
-            </div>
-
-            <div className={styles.cardMeta}>
-              <span>
-                {t('auth_files.file_size')}: {item.size ? formatFileSize(item.size) : '-'}
-              </span>
-              <span>
-                {t('auth_files.file_modified')}: {formatModified(item)}
-              </span>
-            </div>
-
-            <div className={styles.cardStats}>
-              <span className={`${styles.statPill} ${styles.statSuccess}`}>
-                {t('stats.success')}: {fileStats.success}
-              </span>
-              <span className={`${styles.statPill} ${styles.statFailure}`}>
-                {t('stats.failure')}: {fileStats.failure}
-              </span>
-            </div>
-
-            {/* 状态监测栏 */}
-            {renderStatusBar(item)}
-
-            {showQuotaLayout && quotaType && renderQuotaSection(item, quotaType)}
-
-            <div className={styles.cardActions}>
-              {showModelsButton && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => showModels(item)}
-                  className={styles.iconButton}
-                  title={t('auth_files.models_button', { defaultValue: '模型' })}
-                  disabled={disableControls}
-                >
-                  <IconBot className={styles.actionIcon} size={16} />
-                </Button>
-              )}
-              {!isRuntimeOnly && (
-                <>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => showDetails(item)}
-                    className={styles.iconButton}
-                    title={t('common.info', { defaultValue: '关于' })}
-                    disabled={disableControls}
-                  >
-                    <IconInfo className={styles.actionIcon} size={16} />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleDownload(item.name)}
-                    className={styles.iconButton}
-                    title={t('auth_files.download_button')}
-                    disabled={disableControls}
-                  >
-                    <IconDownload className={styles.actionIcon} size={16} />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void openPrefixProxyEditor(item.name)}
-                    className={styles.iconButton}
-                    title={t('auth_files.prefix_proxy_button')}
-                    disabled={disableControls}
-                  >
-                    <IconCode className={styles.actionIcon} size={16} />
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(item.name)}
-                    className={styles.iconButton}
-                    title={t('auth_files.delete_button')}
-                    disabled={disableControls || deleting === item.name}
-                  >
-                    {deleting === item.name ? (
-                      <LoadingSpinner size={14} />
-                    ) : (
-                      <IconTrash2 className={styles.actionIcon} size={16} />
-                    )}
-                  </Button>
-                </>
-              )}
-              {!isRuntimeOnly && (
-                <div className={styles.statusToggle}>
-                  <ToggleSwitch
-                    ariaLabel={t('auth_files.status_toggle_label')}
-                    checked={!item.disabled}
-                    disabled={disableControls || statusUpdating[item.name] === true}
-                    onChange={(value) => void handleStatusToggle(item, value)}
-                  />
-                </div>
-              )}
-              {isRuntimeOnly && (
-                <div className={styles.virtualBadge}>
-                  {t('auth_files.type_virtual') || '虚拟认证文件'}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   const titleNode = (
     <div className={styles.titleWrapper}>
@@ -1908,13 +352,13 @@ export function AuthFilesPage() {
             <Button
               variant="danger"
               size="sm"
-              onClick={handleDeleteAll}
+              onClick={() => handleDeleteAll({ filter, onResetFilterToAll: () => setFilter('all') })}
               disabled={disableControls || loading || deletingAll}
               loading={deletingAll}
             >
               {filter === 'all'
                 ? t('auth_files.delete_all_button')
-                : `${t('common.delete')} ${getTypeLabel(filter)}`}
+                : `${t('common.delete')} ${getTypeLabel(t, filter)}`}
             </Button>
             <input
               ref={fileInputRef}
@@ -1929,7 +373,6 @@ export function AuthFilesPage() {
       >
         {error && <div className={styles.errorBox}>{error}</div>}
 
-        {/* 筛选区域 */}
         <div className={styles.filterSection}>
           {renderFilterTags()}
 
@@ -1966,23 +409,34 @@ export function AuthFilesPage() {
           </div>
         </div>
 
-        {/* 卡片网格 */}
         {loading ? (
           <div className={styles.hint}>{t('common.loading')}</div>
         ) : pageItems.length === 0 ? (
-          <EmptyState
-            title={t('auth_files.search_empty_title')}
-            description={t('auth_files.search_empty_desc')}
-          />
+          <EmptyState title={t('auth_files.search_empty_title')} description={t('auth_files.search_empty_desc')} />
         ) : (
-          <div
-            className={`${styles.fileGrid} ${quotaFilterType ? styles.fileGridQuotaManaged : ''}`}
-          >
-            {pageItems.map(renderFileCard)}
+          <div className={`${styles.fileGrid} ${quotaFilterType ? styles.fileGridQuotaManaged : ''}`}>
+            {pageItems.map((file) => (
+              <AuthFileCard
+                key={file.name}
+                file={file}
+                resolvedTheme={resolvedTheme}
+                disableControls={disableControls}
+                deleting={deleting}
+                statusUpdating={statusUpdating}
+                quotaFilterType={quotaFilterType}
+                keyStats={keyStats}
+                statusBarCache={statusBarCache}
+                onShowModels={showModels}
+                onShowDetails={showDetails}
+                onDownload={handleDownload}
+                onOpenPrefixProxyEditor={openPrefixProxyEditor}
+                onDelete={handleDelete}
+                onToggleStatus={handleStatusToggle}
+              />
+            ))}
           </div>
         )}
 
-        {/* 分页 */}
         {!loading && filtered.length > pageSize && (
           <div className={styles.pagination}>
             <Button
@@ -1997,7 +451,7 @@ export function AuthFilesPage() {
               {t('auth_files.pagination_info', {
                 current: currentPage,
                 total: totalPages,
-                count: filtered.length,
+                count: filtered.length
               })}
             </div>
             <Button
@@ -2012,374 +466,61 @@ export function AuthFilesPage() {
         )}
       </Card>
 
-      {/* OAuth 模型禁用卡片 */}
-      <Card
-        title={t('oauth_excluded.title')}
-        extra={
-          <Button
-            size="sm"
-            onClick={() => openExcludedEditor()}
-            disabled={disableControls || excludedError === 'unsupported'}
-          >
-            {t('oauth_excluded.add')}
-          </Button>
-        }
-      >
-        {excludedError === 'unsupported' ? (
-          <EmptyState
-            title={t('oauth_excluded.upgrade_required_title')}
-            description={t('oauth_excluded.upgrade_required_desc')}
-          />
-        ) : Object.keys(excluded).length === 0 ? (
-          <EmptyState title={t('oauth_excluded.list_empty_all')} />
-        ) : (
-          <div className={styles.excludedList}>
-            {Object.entries(excluded).map(([provider, models]) => (
-              <div key={provider} className={styles.excludedItem}>
-                <div className={styles.excludedInfo}>
-                  <div className={styles.excludedProvider}>{provider}</div>
-                  <div className={styles.excludedModels}>
-                    {models?.length
-                      ? t('oauth_excluded.model_count', { count: models.length })
-                      : t('oauth_excluded.no_models')}
-                  </div>
-                </div>
-                <div className={styles.excludedActions}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => openExcludedEditor(provider)}
-                  >
-                    {t('common.edit')}
-                  </Button>
-                  <Button variant="danger" size="sm" onClick={() => deleteExcluded(provider)}>
-                    {t('oauth_excluded.delete')}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
+      <OAuthExcludedCard
+        disableControls={disableControls}
+        excludedError={excludedError}
+        excluded={excluded}
+        onAdd={() => openExcludedEditor()}
+        onEdit={openExcludedEditor}
+        onDelete={deleteExcluded}
+      />
 
-      {/* OAuth 模型映射卡片 */}
-      <Card
-        title={t('oauth_model_alias.title')}
-        extra={
-          <div className={styles.cardExtraButtons}>
-            <div className={styles.viewModeSwitch}>
-              <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                disabled={disableControls || modelAliasError === 'unsupported'}
-              >
-                {t('oauth_model_alias.view_mode_list')}
-              </Button>
-              <Button
-                variant={viewMode === 'diagram' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('diagram')}
-                disabled={disableControls || modelAliasError === 'unsupported'}
-              >
-                {t('oauth_model_alias.view_mode_diagram')}
-              </Button>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => openModelAliasEditor()}
-              disabled={disableControls || modelAliasError === 'unsupported'}
-            >
-              {t('oauth_model_alias.add')}
-            </Button>
-          </div>
-        }
-      >
-        {modelAliasError === 'unsupported' ? (
-          <EmptyState
-            title={t('oauth_model_alias.upgrade_required_title')}
-            description={t('oauth_model_alias.upgrade_required_desc')}
-          />
-        ) : viewMode === 'diagram' ? (
-          Object.keys(modelAlias).length === 0 ? (
-            <EmptyState title={t('oauth_model_alias.list_empty_all')} />
-          ) : (
-            <div className={styles.aliasChartSection}>
-              <div className={styles.aliasChartHeader}>
-                <h4 className={styles.aliasChartTitle}>{t('oauth_model_alias.chart_title')}</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => diagramRef.current?.collapseAll()}
-                  disabled={disableControls || modelAliasError === 'unsupported'}
-                  title={t('oauth_model_alias.diagram_collapse')}
-                  aria-label={t('oauth_model_alias.diagram_collapse')}
-                >
-                  <IconChevronUp size={16} />
-                </Button>
-              </div>
-              <ModelMappingDiagram
-                ref={diagramRef}
-                modelAlias={modelAlias}
-                allProviderModels={allProviderModels}
-                onUpdate={handleMappingUpdate}
-                onDeleteLink={handleDeleteLink}
-                onToggleFork={handleToggleFork}
-                onRenameAlias={handleRenameAlias}
-                onDeleteAlias={handleDeleteAlias}
-                onEditProvider={openModelAliasEditor}
-                onDeleteProvider={deleteModelAlias}
-                className={styles.aliasChart}
-              />
-            </div>
-          )
-        ) : Object.keys(modelAlias).length === 0 ? (
-          <EmptyState title={t('oauth_model_alias.list_empty_all')} />
-        ) : (
-          <div className={styles.excludedList}>
-            {Object.entries(modelAlias).map(([provider, mappings]) => (
-              <div key={provider} className={styles.excludedItem}>
-                <div className={styles.excludedInfo}>
-                  <div className={styles.excludedProvider}>{provider}</div>
-                  <div className={styles.excludedModels}>
-                    {mappings?.length
-                      ? t('oauth_model_alias.model_count', { count: mappings.length })
-                      : t('oauth_model_alias.no_models')}
-                  </div>
-                </div>
-                <div className={styles.excludedActions}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => openModelAliasEditor(provider)}
-                  >
-                    {t('common.edit')}
-                  </Button>
-                  <Button variant="danger" size="sm" onClick={() => deleteModelAlias(provider)}>
-                    {t('oauth_model_alias.delete')}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
+      <OAuthModelAliasCard
+        disableControls={disableControls}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onAdd={() => openModelAliasEditor()}
+        onEditProvider={openModelAliasEditor}
+        onDeleteProvider={deleteModelAlias}
+        modelAliasError={modelAliasError}
+        modelAlias={modelAlias}
+        allProviderModels={allProviderModels}
+        onUpdate={handleMappingUpdate}
+        onDeleteLink={handleDeleteLink}
+        onToggleFork={handleToggleFork}
+        onRenameAlias={handleRenameAlias}
+        onDeleteAlias={handleDeleteAlias}
+      />
 
-      {/* 详情弹窗 */}
-      <Modal
+      <AuthFileDetailModal
         open={detailModalOpen}
+        file={selectedFile}
         onClose={() => setDetailModalOpen(false)}
-        title={selectedFile?.name || t('auth_files.title_section')}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setDetailModalOpen(false)}>
-              {t('common.close')}
-            </Button>
-            <Button
-              onClick={() => {
-                if (selectedFile) {
-                  const text = JSON.stringify(selectedFile, null, 2);
-                  void copyTextWithNotification(text);
-                }
-              }}
-            >
-              {t('common.copy')}
-            </Button>
-          </>
-        }
-      >
-        {selectedFile && (
-          <div className={styles.detailContent}>
-            <pre className={styles.jsonContent}>{JSON.stringify(selectedFile, null, 2)}</pre>
-          </div>
-        )}
-      </Modal>
+        onCopyText={copyTextWithNotification}
+      />
 
-      {/* 模型列表弹窗 */}
-      <Modal
+      <AuthFileModelsModal
         open={modelsModalOpen}
-        onClose={() => setModelsModalOpen(false)}
-        title={
-          t('auth_files.models_title', { defaultValue: '支持的模型' }) + ` - ${modelsFileName}`
-        }
-        footer={
-          <Button variant="secondary" onClick={() => setModelsModalOpen(false)}>
-            {t('common.close')}
-          </Button>
-        }
-      >
-        {modelsLoading ? (
-          <div className={styles.hint}>
-            {t('auth_files.models_loading', { defaultValue: '正在加载模型列表...' })}
-          </div>
-        ) : modelsError === 'unsupported' ? (
-          <EmptyState
-            title={t('auth_files.models_unsupported', { defaultValue: '当前版本不支持此功能' })}
-            description={t('auth_files.models_unsupported_desc', {
-              defaultValue: '请更新 CLI Proxy API 到最新版本后重试',
-            })}
-          />
-        ) : modelsList.length === 0 ? (
-          <EmptyState
-            title={t('auth_files.models_empty', { defaultValue: '该凭证暂无可用模型' })}
-            description={t('auth_files.models_empty_desc', {
-              defaultValue: '该认证凭证可能尚未被服务器加载或没有绑定任何模型',
-            })}
-          />
-        ) : (
-          <div className={styles.modelsList}>
-            {modelsList.map((model) => {
-              const isExcluded = isModelExcluded(model.id, modelsFileType);
-              return (
-                <div
-                  key={model.id}
-                  className={`${styles.modelItem} ${isExcluded ? styles.modelItemExcluded : ''}`}
-                  onClick={() => {
-                    void copyTextWithNotification(model.id);
-                  }}
-                  title={
-                    isExcluded
-                      ? t('auth_files.models_excluded_hint', {
-                          defaultValue: '此 OAuth 模型已被禁用',
-                        })
-                      : t('common.copy', { defaultValue: '点击复制' })
-                  }
-                >
-                  <span className={styles.modelId}>{model.id}</span>
-                  {model.display_name && model.display_name !== model.id && (
-                    <span className={styles.modelDisplayName}>{model.display_name}</span>
-                  )}
-                  {model.type && <span className={styles.modelType}>{model.type}</span>}
-                  {isExcluded && (
-                    <span className={styles.modelExcludedBadge}>
-                      {t('auth_files.models_excluded_badge', { defaultValue: '已禁用' })}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Modal>
+        fileName={modelsFileName}
+        fileType={modelsFileType}
+        loading={modelsLoading}
+        error={modelsError}
+        models={modelsList}
+        excluded={excluded}
+        onClose={closeModelsModal}
+        onCopyText={copyTextWithNotification}
+      />
 
-      {/* 认证文件字段编辑弹窗 */}
-      <Modal
-        open={Boolean(prefixProxyEditor)}
-        onClose={() => setPrefixProxyEditor(null)}
-        closeDisabled={prefixProxyEditor?.saving === true}
-        width={720}
-        title={
-          prefixProxyEditor?.fileName
-            ? t('auth_files.auth_field_editor_title', { name: prefixProxyEditor.fileName })
-            : t('auth_files.prefix_proxy_button')
-        }
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setPrefixProxyEditor(null)}
-              disabled={prefixProxyEditor?.saving === true}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              onClick={() => void handlePrefixProxySave()}
-              loading={prefixProxyEditor?.saving === true}
-              disabled={
-                disableControls ||
-                prefixProxyEditor?.saving === true ||
-                !prefixProxyDirty ||
-                !prefixProxyEditor?.json
-              }
-            >
-              {t('common.save')}
-            </Button>
-          </>
-        }
-      >
-        {prefixProxyEditor && (
-          <div className={styles.prefixProxyEditor}>
-            {prefixProxyEditor.loading ? (
-              <div className={styles.prefixProxyLoading}>
-                <LoadingSpinner size={14} />
-                <span>{t('auth_files.prefix_proxy_loading')}</span>
-              </div>
-            ) : (
-              <>
-                {prefixProxyEditor.error && (
-                  <div className={styles.prefixProxyError}>{prefixProxyEditor.error}</div>
-                )}
-                <div className={styles.prefixProxyJsonWrapper}>
-                  <label className={styles.prefixProxyLabel}>
-                    {t('auth_files.prefix_proxy_source_label')}
-                  </label>
-                  <textarea
-                    className={styles.prefixProxyTextarea}
-                    rows={10}
-                    readOnly
-                    value={prefixProxyUpdatedText}
-                  />
-                </div>
-                <div className={styles.prefixProxyFields}>
-                  <Input
-                    label={t('auth_files.prefix_label')}
-                    value={prefixProxyEditor.prefix}
-                    disabled={
-                      disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
-                    }
-                    onChange={(e) => handlePrefixProxyChange('prefix', e.target.value)}
-                  />
-                  <Input
-                    label={t('auth_files.proxy_url_label')}
-                    value={prefixProxyEditor.proxyUrl}
-                    placeholder={t('auth_files.proxy_url_placeholder')}
-                    disabled={
-                      disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
-                    }
-                    onChange={(e) => handlePrefixProxyChange('proxyUrl', e.target.value)}
-                  />
-                  <Input
-                    label={t('auth_files.priority_label')}
-                    value={prefixProxyEditor.priority}
-                    placeholder={t('auth_files.priority_placeholder')}
-                    hint={t('auth_files.priority_hint')}
-                    disabled={
-                      disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
-                    }
-                    onChange={(e) => handlePrefixProxyChange('priority', e.target.value)}
-                  />
-                  <div className="form-group">
-                    <label>{t('auth_files.excluded_models_label')}</label>
-                    <textarea
-                      className="input"
-                      value={prefixProxyEditor.excludedModelsText}
-                      placeholder={t('auth_files.excluded_models_placeholder')}
-                      rows={4}
-                      disabled={
-                        disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
-                      }
-                      onChange={(e) =>
-                        handlePrefixProxyChange('excludedModelsText', e.target.value)
-                      }
-                    />
-                    <div className="hint">{t('auth_files.excluded_models_hint')}</div>
-                  </div>
-                  <Input
-                    label={t('auth_files.disable_cooling_label')}
-                    value={prefixProxyEditor.disableCooling}
-                    placeholder={t('auth_files.disable_cooling_placeholder')}
-                    hint={t('auth_files.disable_cooling_hint')}
-                    disabled={
-                      disableControls || prefixProxyEditor.saving || !prefixProxyEditor.json
-                    }
-                    onChange={(e) => handlePrefixProxyChange('disableCooling', e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </Modal>
+      <AuthFilesPrefixProxyEditorModal
+        disableControls={disableControls}
+        editor={prefixProxyEditor}
+        updatedText={prefixProxyUpdatedText}
+        dirty={prefixProxyDirty}
+        onClose={closePrefixProxyEditor}
+        onSave={handlePrefixProxySave}
+        onChange={handlePrefixProxyChange}
+      />
     </div>
   );
 }
+
