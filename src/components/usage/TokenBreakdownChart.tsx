@@ -6,17 +6,17 @@ import { Button } from '@/components/ui/Button';
 import {
   buildHourlyTokenBreakdown,
   buildDailyTokenBreakdown,
-  type TokenCategory,
+  type TokenCategory
 } from '@/utils/usage';
 import { buildChartOptions, getHourChartMinWidth } from '@/utils/usage/chartConfig';
 import type { UsagePayload } from './hooks/useUsageData';
 import styles from '@/pages/UsagePage.module.scss';
 
 const TOKEN_COLORS: Record<TokenCategory, { border: string; bg: string }> = {
-  input:     { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.25)' },
-  output:    { border: '#22c55e', bg: 'rgba(34, 197, 94, 0.25)' },
-  cached:    { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.25)' },
-  reasoning: { border: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.25)' },
+  input: { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.25)' },
+  output: { border: '#22c55e', bg: 'rgba(34, 197, 94, 0.25)' },
+  cached: { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.25)' },
+  reasoning: { border: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.25)' }
 };
 
 const CATEGORIES: TokenCategory[] = ['input', 'output', 'cached', 'reasoning'];
@@ -34,56 +34,55 @@ export function TokenBreakdownChart({
   loading,
   isDark,
   isMobile,
-  hourWindowHours,
+  hourWindowHours
 }: TokenBreakdownChartProps) {
   const { t } = useTranslation();
   const [period, setPeriod] = useState<'hour' | 'day'>('hour');
-
-  const CATEGORY_LABELS: Record<TokenCategory, string> = {
-    input: t('usage_stats.input_tokens'),
-    output: t('usage_stats.output_tokens'),
-    cached: t('usage_stats.cached_tokens'),
-    reasoning: t('usage_stats.reasoning_tokens'),
-  };
 
   const { chartData, chartOptions } = useMemo(() => {
     const series =
       period === 'hour'
         ? buildHourlyTokenBreakdown(usage, hourWindowHours)
         : buildDailyTokenBreakdown(usage);
+    const categoryLabels: Record<TokenCategory, string> = {
+      input: t('usage_stats.input_tokens'),
+      output: t('usage_stats.output_tokens'),
+      cached: t('usage_stats.cached_tokens'),
+      reasoning: t('usage_stats.reasoning_tokens')
+    };
 
     const data = {
       labels: series.labels,
       datasets: CATEGORIES.map((cat) => ({
-        label: CATEGORY_LABELS[cat],
+        label: categoryLabels[cat],
         data: series.dataByCategory[cat],
         borderColor: TOKEN_COLORS[cat].border,
         backgroundColor: TOKEN_COLORS[cat].bg,
         pointBackgroundColor: TOKEN_COLORS[cat].border,
         pointBorderColor: TOKEN_COLORS[cat].border,
         fill: true,
-        tension: 0.35,
-      })),
+        tension: 0.35
+      }))
     };
 
+    const baseOptions = buildChartOptions({ period, labels: series.labels, isDark, isMobile });
     const options = {
-      ...buildChartOptions({ period, labels: series.labels, isDark, isMobile }),
+      ...baseOptions,
       scales: {
-        ...buildChartOptions({ period, labels: series.labels, isDark, isMobile }).scales,
+        ...baseOptions.scales,
         y: {
-          ...buildChartOptions({ period, labels: series.labels, isDark, isMobile }).scales?.y,
-          stacked: true,
+          ...baseOptions.scales?.y,
+          stacked: true
         },
         x: {
-          ...buildChartOptions({ period, labels: series.labels, isDark, isMobile }).scales?.x,
-          stacked: true,
-        },
-      },
+          ...baseOptions.scales?.x,
+          stacked: true
+        }
+      }
     };
 
-    return { chartData: data, chartOptions: options, hasData: series.hasData };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usage, period, isDark, isMobile, hourWindowHours]);
+    return { chartData: data, chartOptions: options };
+  }, [usage, period, isDark, isMobile, hourWindowHours, t]);
 
   return (
     <Card
