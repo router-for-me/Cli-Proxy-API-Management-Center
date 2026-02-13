@@ -155,11 +155,40 @@ export function CredentialStatsCard({
       addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Codex #${i + 1}`, 'codex', `codex:${i}`));
     vertexConfigs.forEach((c, i) =>
       addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Vertex #${i + 1}`, 'vertex', `vertex:${i}`));
-    openaiProviders.forEach((p, pi) => {
-      p.apiKeyEntries?.forEach((entry, ei) => {
-        const name = p.prefix?.trim() || (p.apiKeyEntries.length > 1 ? `${p.name} #${ei + 1}` : p.name);
-        addConfigRow(entry.apiKey, p.prefix, name, 'openai', `openai:${pi}:${ei}`);
+    // OpenAI compatibility providers — one row per provider, merged across all apiKey entries (prefix counted once).
+    openaiProviders.forEach((provider, providerIndex) => {
+      const prefix = provider.prefix;
+      const displayName = prefix?.trim() || provider.name || `OpenAI #${providerIndex + 1}`;
+
+      const candidates = new Set<string>();
+      buildCandidateUsageSourceIds({ prefix }).forEach((id) => candidates.add(id));
+      (provider.apiKeyEntries || []).forEach((entry) => {
+        buildCandidateUsageSourceIds({ apiKey: entry.apiKey }).forEach((id) => candidates.add(id));
       });
+
+      let success = 0;
+      let failure = 0;
+      candidates.forEach((id) => {
+        const bucket = bySource[id];
+        if (bucket) {
+          success += bucket.success;
+          failure += bucket.failure;
+          consumedSourceIds.add(id);
+        }
+      });
+
+      const total = success + failure;
+      if (total > 0) {
+        result.push({
+          key: `openai:${providerIndex}`,
+          displayName,
+          type: 'openai',
+          success,
+          failure,
+          total,
+          successRate: (success / total) * 100,
+        });
+      }
     });
 
     // Build source → auth file name mapping for remaining unmatched entries.
