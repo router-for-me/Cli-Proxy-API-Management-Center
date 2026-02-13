@@ -817,7 +817,10 @@
     "cost_need_usage": "Нет данных использования для расчёта стоимости",
     "cost_no_data": "Данных о стоимости ещё нет",
     "credential_stats": "Статистика учётных данных",
-    "credential_name": "Учётные данные"
+    "credential_name": "Учётные данные",
+    "token_breakdown": "Распределение типов токенов",
+    "input_tokens": "Входные токены",
+    "output_tokens": "Выходные токены"
   },
   "stats": {
     "success": "Успех",

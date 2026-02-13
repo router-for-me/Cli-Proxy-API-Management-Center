@@ -814,7 +814,10 @@
     "cost_need_usage": "暂无使用数据，无法计算花费",
     "cost_no_data": "没有可计算的花费数据",
     "credential_stats": "凭证统计",
-    "credential_name": "凭证"
+    "credential_name": "凭证",
+    "token_breakdown": "Token 类型分布",
+    "input_tokens": "输入 Tokens",
+    "output_tokens": "输出 Tokens"
   },
   "stats": {
     "success": "成功",

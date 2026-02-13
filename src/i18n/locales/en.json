@@ -814,7 +814,10 @@
     "cost_need_usage": "No usage data available to calculate cost",
     "cost_no_data": "No cost data yet",
     "credential_stats": "Credential Statistics",
-    "credential_name": "Credential"
+    "credential_name": "Credential",
+    "token_breakdown": "Token Type Breakdown",
+    "input_tokens": "Input Tokens",
+    "output_tokens": "Output Tokens"
   },
   "stats": {
     "success": "Success",

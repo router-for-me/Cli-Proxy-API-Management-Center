@@ -25,6 +25,7 @@ import {
   ModelStatsCard,
   PriceSettingsCard,
   CredentialStatsCard,
+  TokenBreakdownChart,
   useUsageData,
   useSparklines,
   useChartData
@@ -356,6 +357,15 @@ export function UsagePage() {
           emptyText={t('usage_stats.no_data')}
         />
       </div>
+
+      {/* Token Breakdown Chart */}
+      <TokenBreakdownChart
+        usage={filteredUsage}
+        loading={loading}
+        isDark={isDark}
+        isMobile={isMobile}
+        hourWindowHours={hourWindowHours}
+      />
 
       {/* Details Grid */}
       <div className={styles.detailsGrid}>
