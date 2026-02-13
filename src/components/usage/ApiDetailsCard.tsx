@@ -59,7 +59,7 @@ export function ApiDetailsCard({ apiStats, loading, hasPrices }: ApiDetailsCardP
     sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
   return (
-    <Card title={t('usage_stats.api_details')}>
+    <Card title={t('usage_stats.api_details')} className={styles.detailsFixedCard}>
       {loading ? (
         <div className={styles.hint}>{t('common.loading')}</div>
       ) : sorted.length > 0 ? (
@@ -82,70 +82,72 @@ export function ApiDetailsCard({ apiStats, loading, hasPrices }: ApiDetailsCardP
               </button>
             ))}
           </div>
-          <div className={styles.apiList}>
-            {sorted.map((api, index) => {
-              const isExpanded = expandedApis.has(api.endpoint);
-              const panelId = `api-models-${index}`;
+          <div className={styles.detailsScroll}>
+            <div className={styles.apiList}>
+              {sorted.map((api, index) => {
+                const isExpanded = expandedApis.has(api.endpoint);
+                const panelId = `api-models-${index}`;
 
-              return (
-                <div key={api.endpoint} className={styles.apiItem}>
-                  <button
-                    type="button"
-                    className={styles.apiHeader}
-                    onClick={() => toggleExpand(api.endpoint)}
-                    aria-expanded={isExpanded}
-                    aria-controls={panelId}
-                  >
-                    <div className={styles.apiInfo}>
-                      <span className={styles.apiEndpoint}>{api.endpoint}</span>
-                      <div className={styles.apiStats}>
-                        <span className={styles.apiBadge}>
-                          <span className={styles.requestCountCell}>
-                            <span>
-                              {t('usage_stats.requests_count')}: {api.totalRequests.toLocaleString()}
-                            </span>
-                            <span className={styles.requestBreakdown}>
-                              (<span className={styles.statSuccess}>{api.successCount.toLocaleString()}</span>{' '}
-                              <span className={styles.statFailure}>{api.failureCount.toLocaleString()}</span>)
-                            </span>
-                          </span>
-                        </span>
-                        <span className={styles.apiBadge}>
-                          {t('usage_stats.tokens_count')}: {formatCompactNumber(api.totalTokens)}
-                        </span>
-                        {hasPrices && api.totalCost > 0 && (
+                return (
+                  <div key={api.endpoint} className={styles.apiItem}>
+                    <button
+                      type="button"
+                      className={styles.apiHeader}
+                      onClick={() => toggleExpand(api.endpoint)}
+                      aria-expanded={isExpanded}
+                      aria-controls={panelId}
+                    >
+                      <div className={styles.apiInfo}>
+                        <span className={styles.apiEndpoint}>{api.endpoint}</span>
+                        <div className={styles.apiStats}>
                           <span className={styles.apiBadge}>
-                            {t('usage_stats.total_cost')}: {formatUsd(api.totalCost)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <span className={styles.expandIcon}>
-                      {isExpanded ? '▼' : '▶'}
-                    </span>
-                  </button>
-                  {isExpanded && (
-                    <div id={panelId} className={styles.apiModels}>
-                      {Object.entries(api.models).map(([model, stats]) => (
-                        <div key={model} className={styles.modelRow}>
-                          <span className={styles.modelName}>{model}</span>
-                          <span className={styles.modelStat}>
                             <span className={styles.requestCountCell}>
-                              <span>{stats.requests.toLocaleString()}</span>
+                              <span>
+                                {t('usage_stats.requests_count')}: {api.totalRequests.toLocaleString()}
+                              </span>
                               <span className={styles.requestBreakdown}>
-                                (<span className={styles.statSuccess}>{stats.successCount.toLocaleString()}</span>{' '}
-                                <span className={styles.statFailure}>{stats.failureCount.toLocaleString()}</span>)
+                                (<span className={styles.statSuccess}>{api.successCount.toLocaleString()}</span>{' '}
+                                <span className={styles.statFailure}>{api.failureCount.toLocaleString()}</span>)
                               </span>
                             </span>
                           </span>
-                          <span className={styles.modelStat}>{formatCompactNumber(stats.tokens)}</span>
+                          <span className={styles.apiBadge}>
+                            {t('usage_stats.tokens_count')}: {formatCompactNumber(api.totalTokens)}
+                          </span>
+                          {hasPrices && api.totalCost > 0 && (
+                            <span className={styles.apiBadge}>
+                              {t('usage_stats.total_cost')}: {formatUsd(api.totalCost)}
+                            </span>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                      </div>
+                      <span className={styles.expandIcon}>
+                        {isExpanded ? '▼' : '▶'}
+                      </span>
+                    </button>
+                    {isExpanded && (
+                      <div id={panelId} className={styles.apiModels}>
+                        {Object.entries(api.models).map(([model, stats]) => (
+                          <div key={model} className={styles.modelRow}>
+                            <span className={styles.modelName}>{model}</span>
+                            <span className={styles.modelStat}>
+                              <span className={styles.requestCountCell}>
+                                <span>{stats.requests.toLocaleString()}</span>
+                                <span className={styles.requestBreakdown}>
+                                  (<span className={styles.statSuccess}>{stats.successCount.toLocaleString()}</span>{' '}
+                                  <span className={styles.statFailure}>{stats.failureCount.toLocaleString()}</span>)
+                                </span>
+                              </span>
+                            </span>
+                            <span className={styles.modelStat}>{formatCompactNumber(stats.tokens)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </>
       ) : (
