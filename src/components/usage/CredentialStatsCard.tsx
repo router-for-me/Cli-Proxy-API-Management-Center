@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
-import { computeKeyStats, formatCompactNumber } from '@/utils/usage';
+import { computeKeyStats, collectUsageDetails, buildCandidateUsageSourceIds, formatCompactNumber } from '@/utils/usage';
 import { authFilesApi } from '@/services/api/authFiles';
-import { providersApi } from '@/services/api/providers';
+import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
 import type { UsagePayload } from './hooks/useUsageData';
 import styles from '@/pages/UsagePage.module.scss';
@@ -11,6 +11,11 @@ import styles from '@/pages/UsagePage.module.scss';
 export interface CredentialStatsCardProps {
   usage: UsagePayload | null;
   loading: boolean;
+  geminiKeys: GeminiKeyConfig[];
+  claudeConfigs: ProviderKeyConfig[];
+  codexConfigs: ProviderKeyConfig[];
+  vertexConfigs: ProviderKeyConfig[];
+  openaiProviders: OpenAIProviderConfig[];
 }
 
 interface CredentialInfo {
@@ -39,144 +44,134 @@ function normalizeAuthIndexValue(value: unknown): string | null {
   return null;
 }
 
-/**
- * Replicate backend stableAuthIndex: SHA-256 of seed, first 8 bytes as hex (16 chars)
- */
-async function computeAuthIndex(seed: string): Promise<string> {
-  const trimmed = seed.trim();
-  if (!trimmed) return '';
-  const data = new TextEncoder().encode(trimmed);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = new Uint8Array(hashBuffer);
-  return Array.from(hashArray.slice(0, 8))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-function buildAuthFileMap(files: AuthFileItem[]): Map<string, CredentialInfo> {
-  const map = new Map<string, CredentialInfo>();
-  files.forEach((file) => {
-    const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-    const key = normalizeAuthIndexValue(rawAuthIndex);
-    if (key) {
-      map.set(key, {
-        name: file.name || key,
-        type: (file.type || file.provider || '').toString(),
-      });
-    }
-  });
-  return map;
-}
-
-interface ProviderKeyInfo {
-  apiKey: string;
-  providerType: string;
-  label: string;
-}
-
-async function buildProviderMap(): Promise<Map<string, CredentialInfo>> {
-  const map = new Map<string, CredentialInfo>();
-  const allKeys: ProviderKeyInfo[] = [];
-
-  const results = await Promise.allSettled([
-    providersApi.getGeminiKeys().then((keys) =>
-      keys.forEach((k, i) =>
-        allKeys.push({ apiKey: k.apiKey, providerType: 'gemini', label: k.prefix?.trim() || `Gemini #${i + 1}` })
-      )
-    ),
-    providersApi.getClaudeConfigs().then((keys) =>
-      keys.forEach((k, i) =>
-        allKeys.push({ apiKey: k.apiKey, providerType: 'claude', label: k.prefix?.trim() || `Claude #${i + 1}` })
-      )
-    ),
-    providersApi.getCodexConfigs().then((keys) =>
-      keys.forEach((k, i) =>
-        allKeys.push({ apiKey: k.apiKey, providerType: 'codex', label: k.prefix?.trim() || `Codex #${i + 1}` })
-      )
-    ),
-    providersApi.getVertexConfigs().then((keys) =>
-      keys.forEach((k, i) =>
-        allKeys.push({ apiKey: k.apiKey, providerType: 'vertex', label: k.prefix?.trim() || `Vertex #${i + 1}` })
-      )
-    ),
-    providersApi.getOpenAIProviders().then((providers) =>
-      providers.forEach((p) =>
-        p.apiKeyEntries?.forEach((entry, i) =>
-          allKeys.push({
-            apiKey: entry.apiKey,
-            providerType: 'openai',
-            label: p.prefix?.trim() || (p.apiKeyEntries.length > 1 ? `${p.name} #${i + 1}` : p.name),
-          })
-        )
-      )
-    ),
-  ]);
-
-  // Ignore individual failures
-  void results;
-
-  await Promise.all(
-    allKeys.map(async ({ apiKey, providerType, label }) => {
-      const key = apiKey?.trim();
-      if (!key) return;
-      const authIndex = await computeAuthIndex(`api_key:${key}`);
-      if (authIndex) {
-        map.set(authIndex, { name: label, type: providerType });
-      }
-    })
-  );
-
-  return map;
-}
-
-export function CredentialStatsCard({ usage, loading }: CredentialStatsCardProps) {
+export function CredentialStatsCard({
+  usage,
+  loading,
+  geminiKeys,
+  claudeConfigs,
+  codexConfigs,
+  vertexConfigs,
+  openaiProviders,
+}: CredentialStatsCardProps) {
   const { t } = useTranslation();
-  const [credentialMap, setCredentialMap] = useState<Map<string, CredentialInfo>>(new Map());
+  const [authFileMap, setAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
 
+  // Fetch auth files for auth_index-based matching
   useEffect(() => {
     let cancelled = false;
-
-    Promise.allSettled([
-      authFilesApi.list().then((res) => {
+    authFilesApi
+      .list()
+      .then((res) => {
+        if (cancelled) return;
         const files = Array.isArray(res) ? res : (res as { files?: AuthFileItem[] })?.files;
-        return Array.isArray(files) ? buildAuthFileMap(files) : new Map<string, CredentialInfo>();
-      }),
-      buildProviderMap(),
-    ]).then(([authResult, providerResult]) => {
-      if (cancelled) return;
-      // Provider map as base, auth-files override (more authoritative)
-      const merged = new Map<string, CredentialInfo>();
-      if (providerResult.status === 'fulfilled') {
-        providerResult.value.forEach((v, k) => merged.set(k, v));
-      }
-      if (authResult.status === 'fulfilled') {
-        authResult.value.forEach((v, k) => merged.set(k, v));
-      }
-      setCredentialMap(merged);
-    });
-
+        if (!Array.isArray(files)) return;
+        const map = new Map<string, CredentialInfo>();
+        files.forEach((file) => {
+          const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+          const key = normalizeAuthIndexValue(rawAuthIndex);
+          if (key) {
+            map.set(key, {
+              name: file.name || key,
+              type: (file.type || file.provider || '').toString(),
+            });
+          }
+        });
+        setAuthFileMap(map);
+      })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
+  // Aggregate rows: all from bySource only (no separate byAuthIndex rows to avoid duplicates).
+  // Auth files are used purely for name resolution of unmatched source IDs.
   const rows = useMemo((): CredentialRow[] => {
     if (!usage) return [];
-    const { byAuthIndex } = computeKeyStats(usage);
-    return Object.entries(byAuthIndex)
-      .map(([key, bucket]) => {
-        const total = bucket.success + bucket.failure;
-        const mapped = credentialMap.get(key);
-        return {
-          key,
-          displayName: mapped?.name || key,
-          type: mapped?.type || '',
-          success: bucket.success,
-          failure: bucket.failure,
+    const { bySource } = computeKeyStats(usage);
+    const result: CredentialRow[] = [];
+    const consumedSourceIds = new Set<string>();
+
+    // Aggregate all candidate source IDs for one provider config into a single row
+    const addConfigRow = (
+      apiKey: string,
+      prefix: string | undefined,
+      name: string,
+      type: string,
+      rowKey: string,
+    ) => {
+      const candidates = buildCandidateUsageSourceIds({ apiKey, prefix });
+      let success = 0;
+      let failure = 0;
+      candidates.forEach((id) => {
+        const bucket = bySource[id];
+        if (bucket) {
+          success += bucket.success;
+          failure += bucket.failure;
+          consumedSourceIds.add(id);
+        }
+      });
+      const total = success + failure;
+      if (total > 0) {
+        result.push({
+          key: rowKey,
+          displayName: name,
+          type,
+          success,
+          failure,
           total,
-          successRate: total > 0 ? (bucket.success / total) * 100 : 100,
-        };
-      })
-      .sort((a, b) => b.total - a.total);
-  }, [usage, credentialMap]);
+          successRate: (success / total) * 100,
+        });
+      }
+    };
+
+    // Provider rows — one row per config, stats merged across all its candidate source IDs
+    geminiKeys.forEach((c, i) =>
+      addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Gemini #${i + 1}`, 'gemini', `gemini:${i}`));
+    claudeConfigs.forEach((c, i) =>
+      addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Claude #${i + 1}`, 'claude', `claude:${i}`));
+    codexConfigs.forEach((c, i) =>
+      addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Codex #${i + 1}`, 'codex', `codex:${i}`));
+    vertexConfigs.forEach((c, i) =>
+      addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Vertex #${i + 1}`, 'vertex', `vertex:${i}`));
+    openaiProviders.forEach((p, pi) => {
+      p.apiKeyEntries?.forEach((entry, ei) => {
+        const name = p.prefix?.trim() || (p.apiKeyEntries.length > 1 ? `${p.name} #${ei + 1}` : p.name);
+        addConfigRow(entry.apiKey, p.prefix, name, 'openai', `openai:${pi}:${ei}`);
+      });
+    });
+
+    // Build source → auth file name mapping for remaining unmatched entries.
+    // Cross-reference via usage details: each detail has both source and auth_index.
+    const sourceToAuthFile = new Map<string, CredentialInfo>();
+    if (authFileMap.size > 0) {
+      const details = collectUsageDetails(usage);
+      details.forEach((d) => {
+        if (consumedSourceIds.has(d.source) || sourceToAuthFile.has(d.source)) return;
+        const authIdx = normalizeAuthIndexValue(d.auth_index);
+        if (authIdx) {
+          const mapped = authFileMap.get(authIdx);
+          if (mapped) sourceToAuthFile.set(d.source, mapped);
+        }
+      });
+    }
+
+    // Remaining unmatched bySource entries — resolve name from auth files if possible
+    Object.entries(bySource).forEach(([key, bucket]) => {
+      if (consumedSourceIds.has(key)) return;
+      const total = bucket.success + bucket.failure;
+      const authFile = sourceToAuthFile.get(key);
+      result.push({
+        key,
+        displayName: authFile?.name || (key.startsWith('t:') ? key.slice(2) : key),
+        type: authFile?.type || '',
+        success: bucket.success,
+        failure: bucket.failure,
+        total,
+        successRate: total > 0 ? (bucket.success / total) * 100 : 100,
+      });
+    });
+
+    return result.sort((a, b) => b.total - a.total);
+  }, [usage, geminiKeys, claudeConfigs, codexConfigs, vertexConfigs, openaiProviders, authFileMap]);
 
   return (
     <Card title={t('usage_stats.credential_stats')}>

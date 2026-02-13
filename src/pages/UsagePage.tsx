@@ -16,7 +16,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { IconChevronDown } from '@/components/ui/icons';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { useThemeStore } from '@/stores';
+import { useThemeStore, useConfigStore } from '@/stores';
 import {
   StatCards,
   UsageChart,
@@ -118,6 +118,7 @@ export function UsagePage() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isDark = resolvedTheme === 'dark';
+  const config = useConfigStore((state) => state.config);
 
   // Time range dropdown
   const [timeRangeOpen, setTimeRangeOpen] = useState(false);
@@ -391,7 +392,15 @@ export function UsagePage() {
       </div>
 
       {/* Credential Stats */}
-      <CredentialStatsCard usage={filteredUsage} loading={loading} />
+      <CredentialStatsCard
+        usage={filteredUsage}
+        loading={loading}
+        geminiKeys={config?.geminiApiKeys || []}
+        claudeConfigs={config?.claudeApiKeys || []}
+        codexConfigs={config?.codexApiKeys || []}
+        vertexConfigs={config?.vertexApiKeys || []}
+        openaiProviders={config?.openaiCompatibility || []}
+      />
 
       {/* Price Settings */}
       <PriceSettingsCard
