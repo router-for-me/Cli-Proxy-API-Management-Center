@@ -490,6 +490,8 @@
     "secondary_window": "Weekly limit",
     "code_review_primary_window": "Code review 5-hour limit",
     "code_review_secondary_window": "Code review weekly limit",
+    "additional_primary_window": "{{name}} 5-hour limit",
+    "additional_secondary_window": "{{name}} weekly limit",
     "plan_label": "Plan",
     "plan_plus": "Plus",
     "plan_team": "Team",

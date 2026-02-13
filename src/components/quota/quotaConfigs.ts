@@ -213,11 +213,14 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
 
   const rateLimit = payload.rate_limit ?? payload.rateLimit ?? undefined;
   const codeReviewLimit = payload.code_review_rate_limit ?? payload.codeReviewRateLimit ?? undefined;
+  const additionalRateLimits = payload.additional_rate_limits ?? payload.additionalRateLimits ?? [];
   const windows: CodexQuotaWindow[] = [];
 
   const addWindow = (
     id: string,
-    labelKey: string,
+    label: string,
+    labelKey: string | undefined,
+    labelParams: Record<string, string | number> | undefined,
     window?: CodexUsageWindow | null,
     limitReached?: boolean,
     allowed?: boolean
@@ -229,8 +232,9 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     const usedPercent = usedPercentRaw ?? (isLimitReached && resetLabel !== '-' ? 100 : null);
     windows.push({
       id,
-      label: t(labelKey),
+      label,
       labelKey,
+      labelParams,
       usedPercent,
       resetLabel,
     });
@@ -245,12 +249,13 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
   const rawAllowed = rateLimit?.allowed;
 
   const pickClassifiedWindows = (
-    limitInfo?: CodexRateLimitInfo | null
+    limitInfo?: CodexRateLimitInfo | null,
+    options?: { allowOrderFallback?: boolean }
   ): { fiveHourWindow: CodexUsageWindow | null; weeklyWindow: CodexUsageWindow | null } => {
-    const rawWindows = [
-      limitInfo?.primary_window ?? limitInfo?.primaryWindow ?? null,
-      limitInfo?.secondary_window ?? limitInfo?.secondaryWindow ?? null,
-    ];
+    const allowOrderFallback = options?.allowOrderFallback ?? true;
+    const primaryWindow = limitInfo?.primary_window ?? limitInfo?.primaryWindow ?? null;
+    const secondaryWindow = limitInfo?.secondary_window ?? limitInfo?.secondaryWindow ?? null;
+    const rawWindows = [primaryWindow, secondaryWindow];
 
     let fiveHourWindow: CodexUsageWindow | null = null;
     let weeklyWindow: CodexUsageWindow | null = null;
@@ -265,20 +270,34 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
       }
     }
 
+    // For legacy payloads without window duration, fallback to primary/secondary ordering.
+    if (allowOrderFallback) {
+      if (!fiveHourWindow) {
+        fiveHourWindow = primaryWindow && primaryWindow !== weeklyWindow ? primaryWindow : null;
+      }
+      if (!weeklyWindow) {
+        weeklyWindow = secondaryWindow && secondaryWindow !== fiveHourWindow ? secondaryWindow : null;
+      }
+    }
+
     return { fiveHourWindow, weeklyWindow };
   };
 
   const rateWindows = pickClassifiedWindows(rateLimit);
   addWindow(
     WINDOW_META.codeFiveHour.id,
+    t(WINDOW_META.codeFiveHour.labelKey),
     WINDOW_META.codeFiveHour.labelKey,
+    undefined,
     rateWindows.fiveHourWindow,
     rawLimitReached,
     rawAllowed
   );
   addWindow(
     WINDOW_META.codeWeekly.id,
+    t(WINDOW_META.codeWeekly.labelKey),
     WINDOW_META.codeWeekly.labelKey,
+    undefined,
     rateWindows.weeklyWindow,
     rawLimitReached,
     rawAllowed
@@ -289,18 +308,66 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
   const codeReviewAllowed = codeReviewLimit?.allowed;
   addWindow(
     WINDOW_META.codeReviewFiveHour.id,
+    t(WINDOW_META.codeReviewFiveHour.labelKey),
     WINDOW_META.codeReviewFiveHour.labelKey,
+    undefined,
     codeReviewWindows.fiveHourWindow,
     codeReviewLimitReached,
     codeReviewAllowed
   );
   addWindow(
     WINDOW_META.codeReviewWeekly.id,
+    t(WINDOW_META.codeReviewWeekly.labelKey),
     WINDOW_META.codeReviewWeekly.labelKey,
+    undefined,
     codeReviewWindows.weeklyWindow,
     codeReviewLimitReached,
     codeReviewAllowed
   );
+
+  const normalizeWindowId = (raw: string) =>
+    raw
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+  if (Array.isArray(additionalRateLimits)) {
+    additionalRateLimits.forEach((limitItem, index) => {
+      const rateInfo = limitItem?.rate_limit ?? limitItem?.rateLimit ?? null;
+      if (!rateInfo) return;
+
+      const limitName =
+        normalizeStringValue(limitItem?.limit_name ?? limitItem?.limitName) ??
+        normalizeStringValue(limitItem?.metered_feature ?? limitItem?.meteredFeature) ??
+        `additional-${index + 1}`;
+
+      const idPrefix = normalizeWindowId(limitName) || `additional-${index + 1}`;
+      const additionalPrimaryWindow = rateInfo.primary_window ?? rateInfo.primaryWindow ?? null;
+      const additionalSecondaryWindow = rateInfo.secondary_window ?? rateInfo.secondaryWindow ?? null;
+      const additionalLimitReached = rateInfo.limit_reached ?? rateInfo.limitReached;
+      const additionalAllowed = rateInfo.allowed;
+
+      addWindow(
+        `${idPrefix}-five-hour-${index}`,
+        t('codex_quota.additional_primary_window', { name: limitName }),
+        'codex_quota.additional_primary_window',
+        { name: limitName },
+        additionalPrimaryWindow,
+        additionalLimitReached,
+        additionalAllowed
+      );
+      addWindow(
+        `${idPrefix}-weekly-${index}`,
+        t('codex_quota.additional_secondary_window', { name: limitName }),
+        'codex_quota.additional_secondary_window',
+        { name: limitName },
+        additionalSecondaryWindow,
+        additionalLimitReached,
+        additionalAllowed
+      );
+    });
+  }
 
   return windows;
 };
@@ -493,7 +560,9 @@ const renderCodexItems = (
       const clampedUsed = used === null ? null : Math.max(0, Math.min(100, used));
       const remaining = clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
       const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
-      const windowLabel = window.labelKey ? t(window.labelKey) : window.label;
+      const windowLabel = window.labelKey
+        ? t(window.labelKey, window.labelParams as Record<string, string | number>)
+        : window.label;
 
       return h(
         'div',

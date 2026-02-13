@@ -88,6 +88,15 @@ export interface CodexRateLimitInfo {
   secondaryWindow?: CodexUsageWindow | null;
 }
 
+export interface CodexAdditionalRateLimit {
+  limit_name?: string;
+  limitName?: string;
+  metered_feature?: string;
+  meteredFeature?: string;
+  rate_limit?: CodexRateLimitInfo | null;
+  rateLimit?: CodexRateLimitInfo | null;
+}
+
 export interface CodexUsagePayload {
   plan_type?: string;
   planType?: string;
@@ -95,6 +104,8 @@ export interface CodexUsagePayload {
   rateLimit?: CodexRateLimitInfo | null;
   code_review_rate_limit?: CodexRateLimitInfo | null;
   codeReviewRateLimit?: CodexRateLimitInfo | null;
+  additional_rate_limits?: CodexAdditionalRateLimit[] | null;
+  additionalRateLimits?: CodexAdditionalRateLimit[] | null;
 }
 
 // Claude API payload types
@@ -174,6 +185,7 @@ export interface CodexQuotaWindow {
   id: string;
   label: string;
   labelKey?: string;
+  labelParams?: Record<string, string | number>;
   usedPercent: number | null;
   resetLabel: string;
 }
