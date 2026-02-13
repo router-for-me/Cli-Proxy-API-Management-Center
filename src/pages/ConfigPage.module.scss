@@ -192,15 +192,15 @@
   color: var(--text-secondary);
 
   &.modified {
-    color: #f59e0b;
+    color: var(--warning-color);
   }
 
   &.saved {
-    color: #16a34a;
+    color: var(--success-color);
   }
 
   &.error {
-    color: #dc2626;
+    color: var(--danger-color);
   }
 }
 
@@ -395,8 +395,8 @@
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: #f59e0b;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+  background: var(--warning-color);
+  box-shadow: 0 0 0 2px rgba($warning-color, 0.25);
 }
 
 :global([data-theme='dark']) {

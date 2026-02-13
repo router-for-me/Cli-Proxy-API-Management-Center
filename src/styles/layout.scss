@@ -229,7 +229,7 @@
         &:focus-visible {
           outline: none;
           background: var(--bg-secondary);
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+          box-shadow: 0 0 0 2px rgba($primary-color, 0.22);
         }
 
         &.active {
@@ -382,9 +382,9 @@
     }
 
     &.active {
-      background: rgba(59, 130, 246, 0.12);
+      background: rgba($primary-color, 0.14);
       color: var(--primary-color);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      border: 1px solid rgba($primary-color, 0.35);
     }
   }
 

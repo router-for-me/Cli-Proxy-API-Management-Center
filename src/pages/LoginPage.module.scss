@@ -4,7 +4,7 @@
 .container {
   min-height: 100vh;
   display: flex;
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
 }
 
 // 左侧品牌展示区
@@ -88,7 +88,7 @@
   justify-content: center;
   align-items: center;
   padding: $spacing-2xl;
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   position: relative;
 
   @media (max-width: $breakpoint-mobile) {
@@ -183,7 +183,7 @@
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.18);
   }
 }
 
@@ -235,8 +235,8 @@
 
 // 错误提示框
 .errorBox {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba($error-color, 0.1);
+  border: 1px solid rgba($error-color, 0.4);
   border-radius: $radius-md;
   padding: $spacing-sm $spacing-md;
   color: $error-color;

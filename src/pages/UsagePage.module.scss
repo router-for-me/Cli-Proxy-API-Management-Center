@@ -75,12 +75,12 @@
 
   &:focus {
     outline: none;
-    box-shadow: var(--shadow), 0 0 0 3px rgba(59, 130, 246, 0.15);
+    box-shadow: var(--shadow), 0 0 0 3px rgba($primary-color, 0.18);
   }
 
   &[aria-expanded='true'] {
     border-color: var(--primary-color);
-    box-shadow: var(--shadow), 0 0 0 3px rgba(59, 130, 246, 0.15);
+    box-shadow: var(--shadow), 0 0 0 3px rgba($primary-color, 0.18);
   }
 }
 
@@ -135,8 +135,8 @@
 }
 
 .timeRangeOptionActive {
-  border-color: rgba(59, 130, 246, 0.5);
-  background: rgba(59, 130, 246, 0.10);
+  border-color: rgba($primary-color, 0.5);
+  background: rgba($primary-color, 0.1);
   font-weight: 600;
 }
 
@@ -149,7 +149,7 @@
 
 .errorBox {
   padding: 10px;
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba($error-color, 0.1);
   border: 1px solid var(--error-color);
   border-radius: $radius-sm;
   color: var(--error-color);
@@ -170,7 +170,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(243, 244, 246, 0.75);
+  background: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
@@ -191,9 +191,9 @@
 }
 
 .loadingOverlaySpinner {
-  border-color: rgba(59, 130, 246, 0.25);
+  border-color: rgba($primary-color, 0.25);
   border-top-color: var(--primary-color);
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 10px rgba($primary-color, 0.25);
 }
 
 .loadingOverlayText {
@@ -214,9 +214,9 @@
 }
 
 .statCard {
-  --accent: #3b82f6;
-  --accent-soft: rgba(59, 130, 246, 0.18);
-  --accent-border: rgba(59, 130, 246, 0.35);
+  --accent: var(--primary-color);
+  --accent-soft: rgba($primary-color, 0.18);
+  --accent-border: rgba($primary-color, 0.35);
 
   grid-column: span 4;
   position: relative;
@@ -366,11 +366,11 @@
 }
 
 .statSuccess {
-  color: var(--success-color, #22c55e);
+  color: var(--success-color);
 }
 
 .statFailure {
-  color: var(--danger-color, #ef4444);
+  color: var(--danger-color);
 }
 
 .statNeutral {
@@ -459,8 +459,8 @@
 }
 
 .apiSortBtnActive {
-  border-color: rgba(59, 130, 246, 0.5);
-  background: rgba(59, 130, 246, 0.10);
+  border-color: rgba($primary-color, 0.5);
+  background: rgba($primary-color, 0.1);
   color: var(--text-primary);
   font-weight: 600;
 }
@@ -759,7 +759,7 @@
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.18);
   }
 }
 

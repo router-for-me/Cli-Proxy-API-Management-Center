@@ -308,7 +308,7 @@
   color: var(--text-primary);
 
   &:hover {
-    background: rgba(59, 130, 246, 0.06);
+    background: rgba($primary-color, 0.06);
   }
 
   @include tablet {
@@ -409,14 +409,14 @@
 
 .statusInfo {
   color: var(--info-color);
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.25);
+  background: rgba($primary-color, 0.12);
+  border-color: rgba($primary-color, 0.25);
 }
 
 .statusWarn {
-  color: var(--warning-color);
-  background: rgba(245, 158, 11, 0.14);
-  border-color: rgba(245, 158, 11, 0.25);
+  color: var(--warning-text);
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
 }
 
 .statusError {
@@ -427,20 +427,20 @@
 
 .levelInfo {
   color: var(--info-color);
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.25);
+  background: rgba($primary-color, 0.12);
+  border-color: rgba($primary-color, 0.25);
 }
 
 .levelWarn {
-  color: var(--warning-color);
-  background: rgba(245, 158, 11, 0.14);
-  border-color: rgba(245, 158, 11, 0.25);
+  color: var(--warning-text);
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
 }
 
 .levelError {
   color: var(--error-color);
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba($error-color, 0.12);
+  border-color: rgba($error-color, 0.25);
 }
 
 .levelDebug,
@@ -452,8 +452,8 @@
 
 .methodBadge {
   color: var(--text-primary);
-  background: rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.22);
+  background: rgba($primary-color, 0.08);
+  border-color: rgba($primary-color, 0.22);
 }
 
 .path {

@@ -83,7 +83,7 @@
   &:hover {
     transform: translateY(-1px);
     border-color: var(--primary-color);
-    box-shadow: 0 8px 18px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 8px 18px rgba($primary-color, 0.18);
   }
 
   &:active {

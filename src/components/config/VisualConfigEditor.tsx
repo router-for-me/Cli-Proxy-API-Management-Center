@@ -174,8 +174,10 @@ function ToastSelect({
                 style={{
                   padding: '10px 12px',
                   borderRadius: 10,
-                  border: active ? '1px solid rgba(59, 130, 246, 0.5)' : '1px solid var(--border-color)',
-                  background: active ? 'rgba(59, 130, 246, 0.10)' : 'var(--bg-primary)',
+                  border: active
+                    ? '1px solid rgba(139, 134, 128, 0.5)'
+                    : '1px solid var(--border-color)',
+                  background: active ? 'rgba(139, 134, 128, 0.12)' : 'var(--bg-primary)',
                   color: 'var(--text-primary)',
                   cursor: 'pointer',
                   textAlign: 'left',

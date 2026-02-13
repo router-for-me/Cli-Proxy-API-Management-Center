@@ -61,13 +61,13 @@
   }
 
   &.error {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
+    background-color: rgba($error-color, 0.12);
+    color: $error-color;
   }
 
   &.waiting {
-    background-color: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
+    background-color: rgba($primary-color, 0.12);
+    color: var(--primary-color);
   }
 }
 

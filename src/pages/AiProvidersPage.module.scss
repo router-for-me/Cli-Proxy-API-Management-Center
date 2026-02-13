@@ -93,9 +93,9 @@
 }
 
 .statFailure {
-  background-color: var(--failure-badge-bg, #fee2e2);
-  color: var(--failure-badge-text, #991b1b);
-  border-color: var(--failure-badge-border, #fca5a5);
+  background-color: var(--failure-badge-bg);
+  color: var(--failure-badge-text);
+  border-color: var(--failure-badge-border);
 }
 
 // 字段行样式：标签 + 值
@@ -311,8 +311,8 @@
 }
 
 .apiKeyEntryStatFailure {
-  background: var(--failure-badge-bg, #fee2e2);
-  color: var(--failure-badge-text, #991b1b);
+  background: var(--failure-badge-bg);
+  color: var(--failure-badge-text);
 }
 
 // OpenAI 模型发现（二级界面）
@@ -422,11 +422,11 @@
 }
 
 .statusBlockFailure {
-  background-color: var(--danger-color, #ef4444);
+  background-color: var(--danger-color);
 }
 
 .statusBlockMixed {
-  background-color: var(--warning-color, #f59e0b);
+  background-color: var(--warning-color);
 }
 
 .statusBlockIdle {
@@ -456,8 +456,8 @@
 }
 
 .statusRateLow {
-  color: var(--failure-badge-text, #991b1b);
-  background: var(--failure-badge-bg, #fee2e2);
+  color: var(--failure-badge-text);
+  background: var(--failure-badge-bg);
 }
 
 // ============================================
@@ -775,8 +775,8 @@
 // 暗色主题适配
 :global([data-theme='dark']) {
   .headerBadge {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.3);
+    background: rgba($primary-color, 0.14);
+    border-color: rgba($primary-color, 0.35);
     color: var(--text-secondary);
 
     strong {
@@ -785,22 +785,22 @@
   }
 
   .modelTag {
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba($primary-color, 0.1);
     border-color: var(--border-secondary);
   }
 
   .excludedModelTag {
-    background: rgba(251, 191, 36, 0.22);
-    border-color: rgba(251, 191, 36, 0.55);
-    color: #fde68a;
+    background: rgba($warning-color, 0.22);
+    border-color: rgba($warning-color, 0.55);
+    color: var(--warning-color);
 
     .modelName {
-      color: #fde68a;
+      color: var(--warning-color);
     }
   }
 
   .excludedModelsLabel {
-    color: #fde68a;
+    color: var(--warning-color);
   }
 
   .apiKeyEntryCard {
@@ -827,7 +827,7 @@
   }
 
   .statusRateLow {
-    background: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
+    background: rgba($error-color, 0.24);
+    color: #f1b0a6;
   }
 }

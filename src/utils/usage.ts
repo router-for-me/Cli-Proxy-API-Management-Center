@@ -1003,10 +1003,10 @@ export interface ChartData {
 }
 
 const CHART_COLORS = [
-  { borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)' },
+  { borderColor: '#8b8680', backgroundColor: 'rgba(139, 134, 128, 0.15)' },
   { borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.15)' },
   { borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.15)' },
-  { borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.15)' },
+  { borderColor: '#c65746', backgroundColor: 'rgba(198, 87, 70, 0.15)' },
   { borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.15)' },
   { borderColor: '#06b6d4', backgroundColor: 'rgba(6, 182, 212, 0.15)' },
   { borderColor: '#ec4899', backgroundColor: 'rgba(236, 72, 153, 0.15)' },

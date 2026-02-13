@@ -104,7 +104,7 @@ export function useSparklines({ usage, loading }: UseSparklinesOptions): UseSpar
   );
 
   const requestsSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('requests'), '#3b82f6', 'rgba(59, 130, 246, 0.18)'),
+    () => buildSparkline(buildLastHourSeries('requests'), '#8b8680', 'rgba(139, 134, 128, 0.18)'),
     [buildLastHourSeries, buildSparkline]
   );
 

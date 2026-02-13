@@ -65,7 +65,7 @@
 
 .errorBox {
   padding: $spacing-md;
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba($error-color, 0.1);
   border: 1px solid var(--danger-color);
   border-radius: $radius-md;
   color: var(--danger-color);
@@ -233,11 +233,11 @@
 }
 
 .quotaBarFillMedium {
-  background-color: var(--warning-color, #f59e0b);
+  background-color: var(--warning-color);
 }
 
 .quotaBarFillLow {
-  background-color: var(--danger-color, #ef4444);
+  background-color: var(--danger-color);
 }
 
 .quotaMeta {
@@ -276,7 +276,7 @@
 .quotaError {
   font-size: 12px;
   color: var(--danger-color);
-  background-color: rgba(239, 68, 68, 0.08);
+  background-color: rgba($error-color, 0.08);
   border: 1px solid var(--danger-color);
   border-radius: $radius-sm;
   padding: $spacing-xs $spacing-sm;
@@ -284,9 +284,9 @@
 
 .quotaWarning {
   font-size: 12px;
-  color: var(--warning-color, #f59e0b);
-  background-color: rgba(245, 158, 11, 0.12);
-  border: 1px solid var(--warning-color, #f59e0b);
+  color: var(--warning-text);
+  background-color: var(--warning-bg);
+  border: 1px solid var(--warning-border);
   border-radius: $radius-sm;
   padding: $spacing-xs $spacing-sm;
 }

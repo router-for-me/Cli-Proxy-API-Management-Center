@@ -17,12 +17,12 @@
   flex-direction: row;
   gap: 6px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
   border-radius: 999px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   overflow-x: auto;
   scrollbar-width: none;
   max-width: inherit;
@@ -39,7 +39,7 @@
   pointer-events: none;
   opacity: 0;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba($primary-color, 0.16);
   box-shadow: inset 0 0 0 2px var(--primary-color);
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
     width 220ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -104,8 +104,8 @@
 // 暗色主题适配
 :global([data-theme='dark']) {
   .navList {
-    background: rgba(30, 30, 30, 0.7);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+    border-color: color-mix(in srgb, var(--border-color) 55%, transparent);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   }
 
@@ -116,7 +116,7 @@
   }
 
   .indicator {
-    background: rgba(59, 130, 246, 0.25);
+    background: rgba($primary-color, 0.28);
   }
 }
 

@@ -59,7 +59,7 @@ function StatusSuccessIcon() {
 function StatusErrorIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="8" fill="var(--danger-color, #ef4444)" />
+      <circle cx="8" cy="8" r="8" fill="var(--danger-color, #c65746)" />
       <path
         d="M5 5L11 11M11 5L5 11"
         stroke="white"

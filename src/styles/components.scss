@@ -78,14 +78,14 @@ textarea {
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
   padding: 10px 12px;
-  background-color: var(--bg-primary);
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
   transition: border-color $transition-fast, box-shadow $transition-fast;
 
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.18);
   }
 }
 
@@ -144,20 +144,20 @@ textarea {
 
   &.success {
     color: $success-color;
-    border-color: rgba(16, 185, 129, 0.35);
-    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba($success-color, 0.35);
+    background: rgba($success-color, 0.08);
   }
 
   &.warning {
     color: $warning-color;
-    border-color: rgba(245, 158, 11, 0.35);
-    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba($warning-color, 0.35);
+    background: rgba($warning-color, 0.08);
   }
 
   &.error {
     color: $error-color;
-    border-color: rgba(239, 68, 68, 0.35);
-    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba($error-color, 0.35);
+    background: rgba($error-color, 0.08);
   }
 
   &.muted {
@@ -220,13 +220,13 @@ textarea {
   }
 
   &.success {
-    border-color: rgba(16, 185, 129, 0.4);
+    border-color: rgba($success-color, 0.4);
   }
   &.warning {
-    border-color: rgba(245, 158, 11, 0.4);
+    border-color: rgba($warning-color, 0.4);
   }
   &.error {
-    border-color: rgba(239, 68, 68, 0.4);
+    border-color: rgba($error-color, 0.4);
   }
 
   .message {
@@ -611,8 +611,8 @@ textarea {
 }
 
 .error-box {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba($error-color, 0.1);
+  border: 1px solid rgba($error-color, 0.4);
   border-radius: $radius-md;
   padding: $spacing-sm $spacing-md;
   color: $error-color;

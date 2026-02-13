@@ -13,7 +13,7 @@ import type { UsagePayload } from './hooks/useUsageData';
 import styles from '@/pages/UsagePage.module.scss';
 
 const TOKEN_COLORS: Record<TokenCategory, { border: string; bg: string }> = {
-  input: { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.25)' },
+  input: { border: '#8b8680', bg: 'rgba(139, 134, 128, 0.25)' },
   output: { border: '#22c55e', bg: 'rgba(34, 197, 94, 0.25)' },
   cached: { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.25)' },
   reasoning: { border: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.25)' }
