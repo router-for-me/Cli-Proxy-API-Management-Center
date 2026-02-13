@@ -493,6 +493,8 @@
     "secondary_window": "Недельный лимит",
     "code_review_primary_window": "Лимит code review на 5 часов",
     "code_review_secondary_window": "Недельный лимит code review",
+    "additional_primary_window": "{{name}}: лимит на 5 часов",
+    "additional_secondary_window": "{{name}}: недельный лимит",
     "plan_label": "Тариф",
     "plan_plus": "Plus",
     "plan_team": "Team",
