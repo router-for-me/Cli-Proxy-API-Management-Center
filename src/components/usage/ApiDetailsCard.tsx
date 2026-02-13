@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
-import { formatTokensInMillions, formatUsd, type ApiStats } from '@/utils/usage';
+import { formatCompactNumber, formatUsd, type ApiStats } from '@/utils/usage';
 import styles from '@/pages/UsagePage.module.scss';
 
 export interface ApiDetailsCardProps {
@@ -100,7 +100,7 @@ export function ApiDetailsCard({ apiStats, loading, hasPrices }: ApiDetailsCardP
                         </span>
                       </span>
                       <span className={styles.apiBadge}>
-                        {t('usage_stats.tokens_count')}: {formatTokensInMillions(api.totalTokens)}
+                        {t('usage_stats.tokens_count')}: {formatCompactNumber(api.totalTokens)}
                       </span>
                       {hasPrices && api.totalCost > 0 && (
                         <span className={styles.apiBadge}>
@@ -127,7 +127,7 @@ export function ApiDetailsCard({ apiStats, loading, hasPrices }: ApiDetailsCardP
                             </span>
                           </span>
                         </span>
-                        <span className={styles.modelStat}>{formatTokensInMillions(stats.tokens)}</span>
+                        <span className={styles.modelStat}>{formatCompactNumber(stats.tokens)}</span>
                       </div>
                     ))}
                   </div>

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Line } from 'react-chartjs-2';
 import { IconDiamond, IconDollarSign, IconSatellite, IconTimer, IconTrendingUp } from '@/components/ui/icons';
 import {
-  formatTokensInMillions,
+  formatCompactNumber,
   formatPerMinuteValue,
   formatUsd,
   calculateTokenBreakdown,
@@ -81,14 +81,14 @@ export function StatCards({ usage, loading, modelPrices, sparklines }: StatCards
       accent: '#8b5cf6',
       accentSoft: 'rgba(139, 92, 246, 0.18)',
       accentBorder: 'rgba(139, 92, 246, 0.35)',
-      value: loading ? '-' : formatTokensInMillions(usage?.total_tokens ?? 0),
+      value: loading ? '-' : formatCompactNumber(usage?.total_tokens ?? 0),
       meta: (
         <>
           <span className={styles.statMetaItem}>
-            {t('usage_stats.cached_tokens')}: {loading ? '-' : formatTokensInMillions(tokenBreakdown.cachedTokens)}
+            {t('usage_stats.cached_tokens')}: {loading ? '-' : formatCompactNumber(tokenBreakdown.cachedTokens)}
           </span>
           <span className={styles.statMetaItem}>
-            {t('usage_stats.reasoning_tokens')}: {loading ? '-' : formatTokensInMillions(tokenBreakdown.reasoningTokens)}
+            {t('usage_stats.reasoning_tokens')}: {loading ? '-' : formatCompactNumber(tokenBreakdown.reasoningTokens)}
           </span>
         </>
       ),
@@ -119,7 +119,7 @@ export function StatCards({ usage, loading, modelPrices, sparklines }: StatCards
       value: loading ? '-' : formatPerMinuteValue(rateStats.tpm),
       meta: (
         <span className={styles.statMetaItem}>
-          {t('usage_stats.total_tokens')}: {loading ? '-' : formatTokensInMillions(rateStats.tokenCount)}
+          {t('usage_stats.total_tokens')}: {loading ? '-' : formatCompactNumber(rateStats.tokenCount)}
         </span>
       ),
       trend: sparklines.tpm
@@ -135,7 +135,7 @@ export function StatCards({ usage, loading, modelPrices, sparklines }: StatCards
       meta: (
         <>
           <span className={styles.statMetaItem}>
-            {t('usage_stats.total_tokens')}: {loading ? '-' : formatTokensInMillions(usage?.total_tokens ?? 0)}
+            {t('usage_stats.total_tokens')}: {loading ? '-' : formatCompactNumber(usage?.total_tokens ?? 0)}
           </span>
           {!hasPrices && (
             <span className={`${styles.statMetaItem} ${styles.statSubtle}`}>

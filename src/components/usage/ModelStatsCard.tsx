@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
-import { formatTokensInMillions, formatUsd } from '@/utils/usage';
+import { formatCompactNumber, formatUsd } from '@/utils/usage';
 import styles from '@/pages/UsagePage.module.scss';
 
 export interface ModelStat {
@@ -97,7 +97,7 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
                       </span>
                     </span>
                   </td>
-                  <td>{formatTokensInMillions(stat.tokens)}</td>
+                  <td>{formatCompactNumber(stat.tokens)}</td>
                   <td>
                     <span
                       className={
