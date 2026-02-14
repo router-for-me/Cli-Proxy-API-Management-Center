@@ -1118,10 +1118,25 @@ export function buildChartData(
 export type StatusBlockState = 'success' | 'failure' | 'mixed' | 'idle';
 
 /**
+ * 状态栏单个格子的详细信息
+ */
+export interface StatusBlockDetail {
+  success: number;
+  failure: number;
+  /** 该格子的成功率 (0–1)，无请求时为 -1 */
+  rate: number;
+  /** 格子起始时间戳 (ms) */
+  startTime: number;
+  /** 格子结束时间戳 (ms) */
+  endTime: number;
+}
+
+/**
  * 状态栏数据
  */
 export interface StatusBarData {
   blocks: StatusBlockState[];
+  blockDetails: StatusBlockDetail[];
   successRate: number;
   totalSuccess: number;
   totalFailure: number;
@@ -1138,7 +1153,7 @@ export function calculateStatusBarData(
 ): StatusBarData {
   const BLOCK_COUNT = 20;
   const BLOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutes
-  const WINDOW_MS = 200 * 60 * 1000; // 200 minutes
+  const WINDOW_MS = BLOCK_COUNT * BLOCK_DURATION_MS; // 200 minutes
 
   const now = Date.now();
   const windowStart = now - WINDOW_MS;
@@ -1182,18 +1197,30 @@ export function calculateStatusBarData(
     }
   });
 
-  // Convert stats to block states
-  const blocks: StatusBlockState[] = blockStats.map((stat) => {
-    if (stat.success === 0 && stat.failure === 0) {
-      return 'idle';
+  // Convert stats to block states and build details
+  const blocks: StatusBlockState[] = [];
+  const blockDetails: StatusBlockDetail[] = [];
+
+  blockStats.forEach((stat, idx) => {
+    const total = stat.success + stat.failure;
+    if (total === 0) {
+      blocks.push('idle');
+    } else if (stat.failure === 0) {
+      blocks.push('success');
+    } else if (stat.success === 0) {
+      blocks.push('failure');
+    } else {
+      blocks.push('mixed');
     }
-    if (stat.failure === 0) {
-      return 'success';
-    }
-    if (stat.success === 0) {
-      return 'failure';
-    }
-    return 'mixed';
+
+    const blockStartTime = windowStart + idx * BLOCK_DURATION_MS;
+    blockDetails.push({
+      success: stat.success,
+      failure: stat.failure,
+      rate: total > 0 ? stat.success / total : -1,
+      startTime: blockStartTime,
+      endTime: blockStartTime + BLOCK_DURATION_MS,
+    });
   });
 
   // Calculate success rate
@@ -1202,6 +1229,7 @@ export function calculateStatusBarData(
 
   return {
     blocks,
+    blockDetails,
     successRate,
     totalSuccess,
     totalFailure

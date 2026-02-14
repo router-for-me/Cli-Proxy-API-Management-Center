@@ -832,6 +832,11 @@
     "success": "成功",
     "failure": "失败"
   },
+  "status_bar": {
+    "success_short": "✓",
+    "failure_short": "✗",
+    "no_requests": "无请求"
+  },
   "logs": {
     "title": "日志查看",
     "refresh_button": "刷新日志",

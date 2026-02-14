@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconBot, IconCode, IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
+import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import type { AuthFileItem } from '@/types';
 import { resolveAuthProvider } from '@/utils/quota';
 import { calculateStatusBarData, type KeyStats } from '@/utils/usage';
@@ -88,14 +89,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
   const statusData =
     (authIndexKey && statusBarCache.get(authIndexKey)) || calculateStatusBarData([]);
-  const hasData = statusData.totalSuccess + statusData.totalFailure > 0;
-  const rateClass = !hasData
-    ? ''
-    : statusData.successRate >= 90
-      ? styles.statusRateHigh
-      : statusData.successRate >= 50
-        ? styles.statusRateMedium
-        : styles.statusRateLow;
 
   return (
     <div
@@ -135,24 +128,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
             </span>
           </div>
 
-          <div className={styles.statusBar}>
-            <div className={styles.statusBlocks}>
-              {statusData.blocks.map((state, idx) => {
-                const blockClass =
-                  state === 'success'
-                    ? styles.statusBlockSuccess
-                    : state === 'failure'
-                      ? styles.statusBlockFailure
-                      : state === 'mixed'
-                        ? styles.statusBlockMixed
-                        : styles.statusBlockIdle;
-                return <div key={idx} className={`${styles.statusBlock} ${blockClass}`} />;
-              })}
-            </div>
-            <span className={`${styles.statusRate} ${rateClass}`}>
-              {hasData ? `${statusData.successRate.toFixed(1)}%` : '--'}
-            </span>
-          </div>
+          <ProviderStatusBar statusData={statusData} styles={styles} />
 
           {showQuotaLayout && quotaType && (
             <AuthFileQuotaSection file={file} quotaType={quotaType} disableControls={disableControls} />

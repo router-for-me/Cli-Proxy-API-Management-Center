@@ -832,6 +832,11 @@
     "success": "Success",
     "failure": "Failure"
   },
+  "status_bar": {
+    "success_short": "✓",
+    "failure_short": "✗",
+    "no_requests": "No requests"
+  },
   "logs": {
     "title": "Logs Viewer",
     "refresh_button": "Refresh Logs",
