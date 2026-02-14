@@ -137,13 +137,11 @@ export function ServiceHealthCard({ usage, loading }: ServiceHealthCardProps) {
           </span>
         </div>
       </div>
-      <div
-        className={styles.healthGrid}
-        ref={gridRef}
-        style={{
-          gridTemplateRows: `repeat(${healthData.rows}, 10px)`,
-        }}
-      >
+      <div className={styles.healthGridScroller}>
+        <div
+          className={styles.healthGrid}
+          ref={gridRef}
+        >
         {healthData.blockDetails.map((detail, idx) => {
           const isIdle = detail.rate === -1;
           const blockStyle = isIdle ? undefined : { backgroundColor: rateToColor(detail.rate) };
@@ -165,6 +163,7 @@ export function ServiceHealthCard({ usage, loading }: ServiceHealthCardProps) {
             </div>
           );
         })}
+      </div>
       </div>
       <div className={styles.healthLegend}>
         <span className={styles.healthLegendLabel}>{t('service_health.oldest')}</span>

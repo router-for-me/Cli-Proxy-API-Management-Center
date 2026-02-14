@@ -975,10 +975,17 @@
   background: var(--failure-badge-bg);
 }
 
+.healthGridScroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
 .healthGrid {
   display: grid;
   gap: 3px;
   grid-auto-flow: column;
+  grid-template-rows: repeat(7, 10px);
   width: fit-content;
   margin: 0 auto;
 }
@@ -1140,9 +1147,20 @@
 }
 
 @include mobile {
+  .healthCard {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .healthGrid {
+    grid-template-rows: repeat(7, 6px);
+    gap: 2px;
+    margin: 0;
+  }
+
   .healthBlockWrapper {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   .healthTooltip {
