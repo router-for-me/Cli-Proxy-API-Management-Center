@@ -153,70 +153,76 @@ export function AiProvidersOpenAIModelsPage() {
       loadingLabel={t('common.loading')}
     >
       <Card>
-        <div className="hint" style={{ marginBottom: 8 }}>
-          {t('ai_providers.openai_models_fetch_hint')}
-        </div>
-        <div className="form-group">
-          <label>{t('ai_providers.openai_models_fetch_url_label')}</label>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input className="input" readOnly value={endpoint} />
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => void fetchOpenaiModelDiscovery({ allowFallback: true })}
-              loading={fetching}
-              disabled={disableControls || saving}
-            >
-              {t('ai_providers.openai_models_fetch_refresh')}
-            </Button>
+        <div className={styles.openaiModelsContent}>
+          <div className={styles.sectionHint}>{t('ai_providers.openai_models_fetch_hint')}</div>
+          <div className={styles.openaiModelsEndpointSection}>
+            <label className={styles.openaiModelsEndpointLabel}>
+              {t('ai_providers.openai_models_fetch_url_label')}
+            </label>
+            <div className={styles.openaiModelsEndpointControls}>
+              <input
+                className={`input ${styles.openaiModelsEndpointInput}`}
+                readOnly
+                value={endpoint}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void fetchOpenaiModelDiscovery({ allowFallback: true })}
+                loading={fetching}
+                disabled={disableControls || saving}
+              >
+                {t('ai_providers.openai_models_fetch_refresh')}
+              </Button>
+            </div>
           </div>
-        </div>
-        <Input
-          label={t('ai_providers.openai_models_search_label')}
-          placeholder={t('ai_providers.openai_models_search_placeholder')}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          disabled={fetching}
-        />
-        {error && <div className="error-box">{error}</div>}
-        {fetching ? (
-          <div className="hint">{t('ai_providers.openai_models_fetch_loading')}</div>
-        ) : models.length === 0 ? (
-          <div className="hint">{t('ai_providers.openai_models_fetch_empty')}</div>
-        ) : filteredModels.length === 0 ? (
-          <div className="hint">{t('ai_providers.openai_models_search_empty')}</div>
-        ) : (
-          <div className={styles.modelDiscoveryList}>
-            {filteredModels.map((model) => {
-              const checked = selected.has(model.name);
-              return (
-                <label
-                  key={model.name}
-                  className={`${styles.modelDiscoveryRow} ${
-                    checked ? styles.modelDiscoveryRowSelected : ''
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleSelection(model.name)}
-                  />
-                  <div className={styles.modelDiscoveryMeta}>
-                    <div className={styles.modelDiscoveryName}>
-                      {model.name}
-                      {model.alias && (
-                        <span className={styles.modelDiscoveryAlias}>{model.alias}</span>
+          <Input
+            label={t('ai_providers.openai_models_search_label')}
+            placeholder={t('ai_providers.openai_models_search_placeholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            disabled={fetching}
+          />
+          {error && <div className="error-box">{error}</div>}
+          {fetching ? (
+            <div className={styles.sectionHint}>{t('ai_providers.openai_models_fetch_loading')}</div>
+          ) : models.length === 0 ? (
+            <div className={styles.sectionHint}>{t('ai_providers.openai_models_fetch_empty')}</div>
+          ) : filteredModels.length === 0 ? (
+            <div className={styles.sectionHint}>{t('ai_providers.openai_models_search_empty')}</div>
+          ) : (
+            <div className={styles.modelDiscoveryList}>
+              {filteredModels.map((model) => {
+                const checked = selected.has(model.name);
+                return (
+                  <label
+                    key={model.name}
+                    className={`${styles.modelDiscoveryRow} ${
+                      checked ? styles.modelDiscoveryRowSelected : ''
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleSelection(model.name)}
+                    />
+                    <div className={styles.modelDiscoveryMeta}>
+                      <div className={styles.modelDiscoveryName}>
+                        {model.name}
+                        {model.alias && (
+                          <span className={styles.modelDiscoveryAlias}>{model.alias}</span>
+                        )}
+                      </div>
+                      {model.description && (
+                        <div className={styles.modelDiscoveryDesc}>{model.description}</div>
                       )}
                     </div>
-                    {model.description && (
-                      <div className={styles.modelDiscoveryDesc}>{model.description}</div>
-                    )}
-                  </div>
-                </label>
-              );
-            })}
-          </div>
-        )}
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </Card>
     </SecondaryScreenShell>
   );

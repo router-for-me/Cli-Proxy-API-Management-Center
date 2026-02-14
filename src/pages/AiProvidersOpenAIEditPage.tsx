@@ -511,9 +511,9 @@ export function AiProvidersOpenAIEditPage() {
     >
       <Card>
         {invalidIndexParam || invalidIndex ? (
-          <div className="hint">{t('common.invalid_provider_index')}</div>
+          <div className={styles.sectionHint}>{t('common.invalid_provider_index')}</div>
         ) : (
-          <>
+          <div className={styles.openaiEditForm}>
             <Input
               label={t('ai_providers.openai_add_modal_name_label')}
               value={form.name}
@@ -579,7 +579,7 @@ export function AiProvidersOpenAIEditPage() {
               </div>
 
               {/* 提示文本 */}
-              <div className="hint">{t('ai_providers.openai_models_hint')}</div>
+              <div className={styles.sectionHint}>{t('ai_providers.openai_models_hint')}</div>
 
               {/* 模型列表 */}
               <ModelInputList
@@ -649,14 +649,14 @@ export function AiProvidersOpenAIEditPage() {
               )}
             </div>
 
-            <div className={`form-group ${styles.keyEntriesSection}`}>
+            <div className={styles.keyEntriesSection}>
               <div className={styles.keyEntriesHeader}>
-                <label>{t('ai_providers.openai_add_modal_keys_label')}</label>
+                <label className={styles.keyEntriesTitle}>{t('ai_providers.openai_add_modal_keys_label')}</label>
                 <span className={styles.keyEntriesHint}>{t('ai_providers.openai_keys_hint')}</span>
               </div>
               {renderKeyEntries(form.apiKeyEntries)}
             </div>
-          </>
+          </div>
         )}
       </Card>
     </SecondaryScreenShell>

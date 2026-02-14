@@ -322,7 +322,7 @@
   gap: 6px;
   max-height: 360px;
   overflow-y: auto;
-  margin-top: 8px;
+  margin-top: 0;
   padding-right: 4px;
 }
 
@@ -561,11 +561,72 @@
 // Model Config Section - Unified Layout
 // ============================================
 
-.modelConfigSection {
-  margin-bottom: $spacing-md;
+.openaiEditForm {
   display: flex;
   flex-direction: column;
+  gap: $spacing-md;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+
+  :global(.status-badge) {
+    margin-bottom: 0;
+    align-self: flex-start;
+  }
+}
+
+.sectionHint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.openaiModelsContent {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+.openaiModelsEndpointSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.openaiModelsEndpointLabel {
+  display: block;
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.openaiModelsEndpointControls {
+  display: flex;
+  align-items: center;
   gap: $spacing-sm;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.openaiModelsEndpointInput {
+  flex: 1;
+  min-width: 0;
+}
+
+.modelConfigSection {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
 }
 
 .modelConfigHeader {
@@ -581,10 +642,11 @@
 }
 
 .modelConfigTitle {
+  margin: 0;
   font-weight: 600;
   color: var(--text-primary);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .modelConfigToolbar {
@@ -646,7 +708,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: $spacing-md;
-  margin-top: $spacing-sm;
+  margin-top: 0;
   padding: $spacing-sm $spacing-md;
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
@@ -661,7 +723,7 @@
 .modelTestMeta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -669,13 +731,13 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .modelTestHint {
   font-size: 12px;
   color: var(--text-tertiary);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .modelTestControls {
@@ -697,22 +759,29 @@
 
 .keyEntriesSection {
   margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
 }
 
 .keyEntriesHeader {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: $spacing-sm;
+  gap: 6px;
+  margin-bottom: 0;
+}
 
-  label {
-    margin: 0;
-  }
+.keyEntriesTitle {
+  display: block;
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
 }
 
 .keyEntriesHint {
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.5;
   color: var(--text-secondary);
 }
 
