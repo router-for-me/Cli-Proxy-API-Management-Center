@@ -809,6 +809,12 @@
   flex-shrink: 0;
 }
 
+.editModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 // Chart Section (80%比例)
 .chartSection {
   display: flex;
