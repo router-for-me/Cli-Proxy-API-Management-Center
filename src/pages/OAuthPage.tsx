@@ -358,88 +358,90 @@ export function OAuthPage() {
                   </Button>
                 }
               >
-                <div className="hint">{t(provider.hintKey)}</div>
-                {provider.id === 'gemini-cli' && (
-                  <div className={styles.geminiProjectField}>
-                    <Input
-                      label={t('auth_login.gemini_cli_project_id_label')}
-                      hint={t('auth_login.gemini_cli_project_id_hint')}
-                      value={state.projectId || ''}
-                      error={state.projectIdError}
-                      onChange={(e) =>
-                        updateProviderState(provider.id, {
-                          projectId: e.target.value,
-                          projectIdError: undefined
-                        })
-                      }
-                      placeholder={t('auth_login.gemini_cli_project_id_placeholder')}
-                    />
-                  </div>
-                )}
-                {state.url && (
-                  <div className={`connection-box ${styles.authUrlBox}`}>
-                    <div className={styles.authUrlLabel}>{t(provider.urlLabelKey)}</div>
-                    <div className={styles.authUrlValue}>{state.url}</div>
-                    <div className={styles.authUrlActions}>
-                      <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
-                        {t(getAuthKey(provider.id, 'copy_link'))}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}
-                      >
-                        {t(getAuthKey(provider.id, 'open_link'))}
-                      </Button>
+                <div className={styles.cardContent}>
+                  <div className={styles.cardHint}>{t(provider.hintKey)}</div>
+                  {provider.id === 'gemini-cli' && (
+                    <div className={styles.geminiProjectField}>
+                      <Input
+                        label={t('auth_login.gemini_cli_project_id_label')}
+                        hint={t('auth_login.gemini_cli_project_id_hint')}
+                        value={state.projectId || ''}
+                        error={state.projectIdError}
+                        onChange={(e) =>
+                          updateProviderState(provider.id, {
+                            projectId: e.target.value,
+                            projectIdError: undefined
+                          })
+                        }
+                        placeholder={t('auth_login.gemini_cli_project_id_placeholder')}
+                      />
                     </div>
-                  </div>
-                )}
-                {canSubmitCallback && (
-                  <div className={styles.callbackSection}>
-                    <Input
-                      label={t('auth_login.oauth_callback_label')}
-                      hint={t('auth_login.oauth_callback_hint')}
-                      value={state.callbackUrl || ''}
-                      onChange={(e) =>
-                        updateProviderState(provider.id, {
-                          callbackUrl: e.target.value,
-                          callbackStatus: undefined,
-                          callbackError: undefined
-                        })
-                      }
-                      placeholder={t('auth_login.oauth_callback_placeholder')}
-                    />
-                    <div className={styles.callbackActions}>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => submitCallback(provider.id)}
-                        loading={state.callbackSubmitting}
-                      >
-                        {t('auth_login.oauth_callback_button')}
-                      </Button>
+                  )}
+                  {state.url && (
+                    <div className={styles.authUrlBox}>
+                      <div className={styles.authUrlLabel}>{t(provider.urlLabelKey)}</div>
+                      <div className={styles.authUrlValue}>{state.url}</div>
+                      <div className={styles.authUrlActions}>
+                        <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
+                          {t(getAuthKey(provider.id, 'copy_link'))}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}
+                        >
+                          {t(getAuthKey(provider.id, 'open_link'))}
+                        </Button>
+                      </div>
                     </div>
-                    {state.callbackStatus === 'success' && state.status === 'waiting' && (
-                      <div className="status-badge success" style={{ marginTop: 8 }}>
-                        {t('auth_login.oauth_callback_status_success')}
+                  )}
+                  {canSubmitCallback && (
+                    <div className={styles.callbackSection}>
+                      <Input
+                        label={t('auth_login.oauth_callback_label')}
+                        hint={t('auth_login.oauth_callback_hint')}
+                        value={state.callbackUrl || ''}
+                        onChange={(e) =>
+                          updateProviderState(provider.id, {
+                            callbackUrl: e.target.value,
+                            callbackStatus: undefined,
+                            callbackError: undefined
+                          })
+                        }
+                        placeholder={t('auth_login.oauth_callback_placeholder')}
+                      />
+                      <div className={styles.callbackActions}>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => submitCallback(provider.id)}
+                          loading={state.callbackSubmitting}
+                        >
+                          {t('auth_login.oauth_callback_button')}
+                        </Button>
                       </div>
-                    )}
-                    {state.callbackStatus === 'error' && (
-                      <div className="status-badge error" style={{ marginTop: 8 }}>
-                        {t('auth_login.oauth_callback_status_error')} {state.callbackError || ''}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {state.status && state.status !== 'idle' && (
-                  <div className="status-badge" style={{ marginTop: 8 }}>
-                    {state.status === 'success'
-                      ? t(getAuthKey(provider.id, 'oauth_status_success'))
-                      : state.status === 'error'
-                        ? `${t(getAuthKey(provider.id, 'oauth_status_error'))} ${state.error || ''}`
-                        : t(getAuthKey(provider.id, 'oauth_status_waiting'))}
-                  </div>
-                )}
+                      {state.callbackStatus === 'success' && state.status === 'waiting' && (
+                        <div className="status-badge success">
+                          {t('auth_login.oauth_callback_status_success')}
+                        </div>
+                      )}
+                      {state.callbackStatus === 'error' && (
+                        <div className="status-badge error">
+                          {t('auth_login.oauth_callback_status_error')} {state.callbackError || ''}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {state.status && state.status !== 'idle' && (
+                    <div className="status-badge">
+                      {state.status === 'success'
+                        ? t(getAuthKey(provider.id, 'oauth_status_success'))
+                        : state.status === 'error'
+                          ? `${t(getAuthKey(provider.id, 'oauth_status_error'))} ${state.error || ''}`
+                          : t(getAuthKey(provider.id, 'oauth_status_waiting'))}
+                    </div>
+                  )}
+                </div>
               </Card>
             </div>
           );
@@ -459,78 +461,80 @@ export function OAuthPage() {
             </Button>
           }
         >
-          <div className="hint">{t('vertex_import.description')}</div>
-          <Input
-            label={t('vertex_import.location_label')}
-            hint={t('vertex_import.location_hint')}
-            value={vertexState.location}
-            onChange={(e) =>
-              setVertexState((prev) => ({
-                ...prev,
-                location: e.target.value
-              }))
-            }
-            placeholder={t('vertex_import.location_placeholder')}
-          />
-          <div className="form-group">
-            <label>{t('vertex_import.file_label')}</label>
-            <div className={styles.filePicker}>
-              <Button variant="secondary" size="sm" onClick={handleVertexFilePick}>
-                {t('vertex_import.choose_file')}
-              </Button>
-              <div
-                className={`${styles.fileName} ${
-                  vertexState.fileName ? '' : styles.fileNamePlaceholder
-                }`.trim()}
-              >
-                {vertexState.fileName || t('vertex_import.file_placeholder')}
-              </div>
-            </div>
-            <div className="hint">{t('vertex_import.file_hint')}</div>
-            <input
-              ref={vertexFileInputRef}
-              type="file"
-              accept=".json,application/json"
-              style={{ display: 'none' }}
-              onChange={handleVertexFileChange}
+          <div className={styles.cardContent}>
+            <div className={styles.cardHint}>{t('vertex_import.description')}</div>
+            <Input
+              label={t('vertex_import.location_label')}
+              hint={t('vertex_import.location_hint')}
+              value={vertexState.location}
+              onChange={(e) =>
+                setVertexState((prev) => ({
+                  ...prev,
+                  location: e.target.value
+                }))
+              }
+              placeholder={t('vertex_import.location_placeholder')}
             />
-          </div>
-          {vertexState.error && (
-            <div className="status-badge error" style={{ marginTop: 8 }}>
-              {vertexState.error}
-            </div>
-          )}
-          {vertexState.result && (
-            <div className="connection-box" style={{ marginTop: 12 }}>
-              <div className="label">{t('vertex_import.result_title')}</div>
-              <div className="key-value-list">
-                {vertexState.result.projectId && (
-                  <div className="key-value-item">
-                    <span className="key">{t('vertex_import.result_project')}</span>
-                    <span className="value">{vertexState.result.projectId}</span>
-                  </div>
-                )}
-                {vertexState.result.email && (
-                  <div className="key-value-item">
-                    <span className="key">{t('vertex_import.result_email')}</span>
-                    <span className="value">{vertexState.result.email}</span>
-                  </div>
-                )}
-                {vertexState.result.location && (
-                  <div className="key-value-item">
-                    <span className="key">{t('vertex_import.result_location')}</span>
-                    <span className="value">{vertexState.result.location}</span>
-                  </div>
-                )}
-                {vertexState.result.authFile && (
-                  <div className="key-value-item">
-                    <span className="key">{t('vertex_import.result_file')}</span>
-                    <span className="value">{vertexState.result.authFile}</span>
-                  </div>
-                )}
+            <div className={styles.formItem}>
+              <label className={styles.formItemLabel}>{t('vertex_import.file_label')}</label>
+              <div className={styles.filePicker}>
+                <Button variant="secondary" size="sm" onClick={handleVertexFilePick}>
+                  {t('vertex_import.choose_file')}
+                </Button>
+                <div
+                  className={`${styles.fileName} ${
+                    vertexState.fileName ? '' : styles.fileNamePlaceholder
+                  }`.trim()}
+                >
+                  {vertexState.fileName || t('vertex_import.file_placeholder')}
+                </div>
               </div>
+              <div className={styles.cardHintSecondary}>{t('vertex_import.file_hint')}</div>
+              <input
+                ref={vertexFileInputRef}
+                type="file"
+                accept=".json,application/json"
+                style={{ display: 'none' }}
+                onChange={handleVertexFileChange}
+              />
             </div>
-          )}
+            {vertexState.error && (
+              <div className="status-badge error">
+                {vertexState.error}
+              </div>
+            )}
+            {vertexState.result && (
+              <div className={styles.connectionBox}>
+                <div className={styles.connectionLabel}>{t('vertex_import.result_title')}</div>
+                <div className={styles.keyValueList}>
+                  {vertexState.result.projectId && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('vertex_import.result_project')}</span>
+                      <span className={styles.keyValueValue}>{vertexState.result.projectId}</span>
+                    </div>
+                  )}
+                  {vertexState.result.email && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('vertex_import.result_email')}</span>
+                      <span className={styles.keyValueValue}>{vertexState.result.email}</span>
+                    </div>
+                  )}
+                  {vertexState.result.location && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('vertex_import.result_location')}</span>
+                      <span className={styles.keyValueValue}>{vertexState.result.location}</span>
+                    </div>
+                  )}
+                  {vertexState.result.authFile && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('vertex_import.result_file')}</span>
+                      <span className={styles.keyValueValue}>{vertexState.result.authFile}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* iFlow Cookie 登录 */}
@@ -547,60 +551,61 @@ export function OAuthPage() {
             </Button>
           }
         >
-          <div className="hint">{t('auth_login.iflow_cookie_hint')}</div>
-          <div className="hint" style={{ marginTop: 4 }}>
-            {t('auth_login.iflow_cookie_key_hint')}
-          </div>
-          <div className="form-item" style={{ marginTop: 12 }}>
-            <label className="label">{t('auth_login.iflow_cookie_label')}</label>
-            <Input
-              value={iflowCookie.cookie}
-              onChange={(e) => setIflowCookie((prev) => ({ ...prev, cookie: e.target.value }))}
-              placeholder={t('auth_login.iflow_cookie_placeholder')}
-            />
-          </div>
-          {iflowCookie.error && (
-            <div
-              className={`status-badge ${iflowCookie.errorType === 'warning' ? 'warning' : 'error'}`}
-              style={{ marginTop: 8 }}
-            >
-              {iflowCookie.errorType === 'warning'
-                ? t('auth_login.iflow_cookie_status_duplicate')
-                : t('auth_login.iflow_cookie_status_error')}{' '}
-              {iflowCookie.error}
+          <div className={styles.cardContent}>
+            <div className={styles.cardHint}>{t('auth_login.iflow_cookie_hint')}</div>
+            <div className={styles.cardHintSecondary}>
+              {t('auth_login.iflow_cookie_key_hint')}
             </div>
-          )}
-          {iflowCookie.result && iflowCookie.result.status === 'ok' && (
-            <div className="connection-box" style={{ marginTop: 12 }}>
-              <div className="label">{t('auth_login.iflow_cookie_result_title')}</div>
-              <div className="key-value-list">
-                {iflowCookie.result.email && (
-                  <div className="key-value-item">
-                    <span className="key">{t('auth_login.iflow_cookie_result_email')}</span>
-                    <span className="value">{iflowCookie.result.email}</span>
-                  </div>
-                )}
-                {iflowCookie.result.expired && (
-                  <div className="key-value-item">
-                    <span className="key">{t('auth_login.iflow_cookie_result_expired')}</span>
-                    <span className="value">{iflowCookie.result.expired}</span>
-                  </div>
-                )}
-                {iflowCookie.result.saved_path && (
-                  <div className="key-value-item">
-                    <span className="key">{t('auth_login.iflow_cookie_result_path')}</span>
-                    <span className="value">{iflowCookie.result.saved_path}</span>
-                  </div>
-                )}
-                {iflowCookie.result.type && (
-                  <div className="key-value-item">
-                    <span className="key">{t('auth_login.iflow_cookie_result_type')}</span>
-                    <span className="value">{iflowCookie.result.type}</span>
-                  </div>
-                )}
+            <div className={styles.formItem}>
+              <label className={styles.formItemLabel}>{t('auth_login.iflow_cookie_label')}</label>
+              <Input
+                value={iflowCookie.cookie}
+                onChange={(e) => setIflowCookie((prev) => ({ ...prev, cookie: e.target.value }))}
+                placeholder={t('auth_login.iflow_cookie_placeholder')}
+              />
+            </div>
+            {iflowCookie.error && (
+              <div
+                className={`status-badge ${iflowCookie.errorType === 'warning' ? 'warning' : 'error'}`}
+              >
+                {iflowCookie.errorType === 'warning'
+                  ? t('auth_login.iflow_cookie_status_duplicate')
+                  : t('auth_login.iflow_cookie_status_error')}{' '}
+                {iflowCookie.error}
               </div>
-            </div>
-          )}
+            )}
+            {iflowCookie.result && iflowCookie.result.status === 'ok' && (
+              <div className={styles.connectionBox}>
+                <div className={styles.connectionLabel}>{t('auth_login.iflow_cookie_result_title')}</div>
+                <div className={styles.keyValueList}>
+                  {iflowCookie.result.email && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.iflow_cookie_result_email')}</span>
+                      <span className={styles.keyValueValue}>{iflowCookie.result.email}</span>
+                    </div>
+                  )}
+                  {iflowCookie.result.expired && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.iflow_cookie_result_expired')}</span>
+                      <span className={styles.keyValueValue}>{iflowCookie.result.expired}</span>
+                    </div>
+                  )}
+                  {iflowCookie.result.saved_path && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.iflow_cookie_result_path')}</span>
+                      <span className={styles.keyValueValue}>{iflowCookie.result.saved_path}</span>
+                    </div>
+                  )}
+                  {iflowCookie.result.type && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.iflow_cookie_result_type')}</span>
+                      <span className={styles.keyValueValue}>{iflowCookie.result.type}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </Card>
       </div>
     </div>
