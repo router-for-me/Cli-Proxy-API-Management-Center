@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconChevronDown } from '@/components/ui/icons';
 import { ConfigSection } from '@/components/config/ConfigSection';
 import { useNotificationStore } from '@/stores';
 import styles from './VisualConfigEditor.module.scss';
@@ -79,120 +79,6 @@ function SectionGrid({ children }: { children: ReactNode }) {
 
 function Divider() {
   return <div style={{ height: 1, background: 'var(--border-color)', margin: '16px 0' }} />;
-}
-
-type ToastSelectOption = { value: string; label: string };
-
-function ToastSelect({
-  value,
-  options,
-  disabled,
-  ariaLabel,
-  onChange,
-}: {
-  value: string;
-  options: ReadonlyArray<ToastSelectOption>;
-  disabled?: boolean;
-  ariaLabel: string;
-  onChange: (value: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  const selectedOption = options.find((opt) => opt.value === value) ?? options[0];
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!containerRef.current) return;
-      if (!containerRef.current.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [open]);
-
-  return (
-    <div ref={containerRef} style={{ position: 'relative' }}>
-      <button
-        type="button"
-        className="input"
-        disabled={disabled}
-        onClick={() => setOpen((prev) => !prev)}
-        aria-label={ariaLabel}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          textAlign: 'left',
-          width: '100%',
-          appearance: 'none',
-        }}
-      >
-        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-          {selectedOption?.label ?? ''}
-        </span>
-        <IconChevronDown size={16} style={{ opacity: 0.6, flex: '0 0 auto' }} />
-      </button>
-
-      {open && !disabled && (
-        <div
-          role="listbox"
-          aria-label={ariaLabel}
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            left: 0,
-            right: 0,
-            zIndex: 1000,
-            background: 'var(--bg-primary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 12,
-            padding: 6,
-            boxShadow: 'var(--shadow)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-            maxHeight: 260,
-            overflowY: 'auto',
-          }}
-        >
-          {options.map((opt) => {
-            const active = opt.value === value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="option"
-                aria-selected={active}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 10,
-                  border: active
-                    ? '1px solid rgba(139, 134, 128, 0.5)'
-                    : '1px solid var(--border-color)',
-                  background: active ? 'rgba(139, 134, 128, 0.12)' : 'var(--bg-primary)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontWeight: 600,
-                }}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 }
 
 function ApiKeysCardEditor({
@@ -530,7 +416,7 @@ function PayloadRulesEditor({
               >
                 {protocolFirst ? (
                   <>
-                    <ToastSelect
+                    <Select
                       value={model.protocol ?? ''}
                       options={protocolOptions}
                       disabled={disabled}
@@ -558,7 +444,7 @@ function PayloadRulesEditor({
                       onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
                       disabled={disabled}
                     />
-                    <ToastSelect
+                    <Select
                       value={model.protocol ?? ''}
                       options={protocolOptions}
                       disabled={disabled}
@@ -600,7 +486,7 @@ function PayloadRulesEditor({
                   onChange={(e) => updateParam(ruleIndex, paramIndex, { path: e.target.value })}
                   disabled={disabled}
                 />
-                <ToastSelect
+                <Select
                   value={param.valueType}
                   options={payloadValueTypeOptions}
                   disabled={disabled}
@@ -743,7 +629,7 @@ function PayloadFilterRulesEditor({
                   onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
                   disabled={disabled}
                 />
-                <ToastSelect
+                <Select
                   value={model.protocol ?? ''}
                   options={protocolOptions}
                   disabled={disabled}
@@ -996,7 +882,7 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
             />
             <div className="form-group">
               <label>{t('config_management.visual.sections.network.routing_strategy')}</label>
-              <ToastSelect
+              <Select
                 value={values.routingStrategy}
                 options={[
                   { value: 'round-robin', label: t('config_management.visual.sections.network.strategy_round_robin') },
