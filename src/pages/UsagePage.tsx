@@ -27,6 +27,7 @@ import {
   CredentialStatsCard,
   TokenBreakdownChart,
   CostTrendChart,
+  ServiceHealthCard,
   useUsageData,
   useSparklines,
   useChartData
@@ -307,6 +308,9 @@ export function UsagePage() {
         maxLines={MAX_CHART_LINES}
         onChange={handleChartLinesChange}
       />
+
+      {/* Service Health */}
+      <ServiceHealthCard usage={usage} loading={loading} />
 
       {/* Charts Grid */}
       <div className={styles.chartsGrid}>

@@ -837,6 +837,12 @@
     "failure_short": "✗",
     "no_requests": "No requests"
   },
+  "service_health": {
+    "title": "Service Health",
+    "window": "Last 7 days",
+    "oldest": "Oldest",
+    "newest": "Latest"
+  },
   "logs": {
     "title": "Logs Viewer",
     "refresh_button": "Refresh Logs",

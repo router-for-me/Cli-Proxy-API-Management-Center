@@ -837,6 +837,12 @@
     "failure_short": "✗",
     "no_requests": "无请求"
   },
+  "service_health": {
+    "title": "服务健康监测",
+    "window": "最近 7 天",
+    "oldest": "最早",
+    "newest": "最新"
+  },
   "logs": {
     "title": "日志查看",
     "refresh_button": "刷新日志",

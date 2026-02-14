@@ -840,6 +840,12 @@
     "failure_short": "✗",
     "no_requests": "Нет запросов"
   },
+  "service_health": {
+    "title": "Состояние сервиса",
+    "window": "Последние 7 дней",
+    "oldest": "Старые",
+    "newest": "Новые"
+  },
   "logs": {
     "title": "Просмотр журналов",
     "refresh_button": "Обновить журналы",

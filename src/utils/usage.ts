@@ -1236,6 +1236,99 @@ export function calculateStatusBarData(
   };
 }
 
+/**
+ * 服务健康监测数据（最近168小时/7天，7×96网格）
+ * 每个格子代表15分钟的健康度
+ */
+export interface ServiceHealthData {
+  blocks: StatusBlockState[];
+  blockDetails: StatusBlockDetail[];
+  successRate: number;
+  totalSuccess: number;
+  totalFailure: number;
+  rows: number;
+  cols: number;
+}
+
+export function calculateServiceHealthData(
+  usageDetails: UsageDetail[]
+): ServiceHealthData {
+  const ROWS = 7;
+  const COLS = 96;
+  const BLOCK_COUNT = ROWS * COLS; // 672
+  const BLOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+  const WINDOW_MS = BLOCK_COUNT * BLOCK_DURATION_MS; // 168 hours (7 days)
+
+  const now = Date.now();
+  const windowStart = now - WINDOW_MS;
+
+  const blockStats: Array<{ success: number; failure: number }> = Array.from(
+    { length: BLOCK_COUNT },
+    () => ({ success: 0, failure: 0 })
+  );
+
+  let totalSuccess = 0;
+  let totalFailure = 0;
+
+  usageDetails.forEach((detail) => {
+    const timestamp = Date.parse(detail.timestamp);
+    if (Number.isNaN(timestamp) || timestamp < windowStart || timestamp > now) {
+      return;
+    }
+
+    const ageMs = now - timestamp;
+    const blockIndex = BLOCK_COUNT - 1 - Math.floor(ageMs / BLOCK_DURATION_MS);
+
+    if (blockIndex >= 0 && blockIndex < BLOCK_COUNT) {
+      if (detail.failed) {
+        blockStats[blockIndex].failure += 1;
+        totalFailure += 1;
+      } else {
+        blockStats[blockIndex].success += 1;
+        totalSuccess += 1;
+      }
+    }
+  });
+
+  const blocks: StatusBlockState[] = [];
+  const blockDetails: StatusBlockDetail[] = [];
+
+  blockStats.forEach((stat, idx) => {
+    const total = stat.success + stat.failure;
+    if (total === 0) {
+      blocks.push('idle');
+    } else if (stat.failure === 0) {
+      blocks.push('success');
+    } else if (stat.success === 0) {
+      blocks.push('failure');
+    } else {
+      blocks.push('mixed');
+    }
+
+    const blockStartTime = windowStart + idx * BLOCK_DURATION_MS;
+    blockDetails.push({
+      success: stat.success,
+      failure: stat.failure,
+      rate: total > 0 ? stat.success / total : -1,
+      startTime: blockStartTime,
+      endTime: blockStartTime + BLOCK_DURATION_MS,
+    });
+  });
+
+  const total = totalSuccess + totalFailure;
+  const successRate = total > 0 ? (totalSuccess / total) * 100 : 100;
+
+  return {
+    blocks,
+    blockDetails,
+    successRate,
+    totalSuccess,
+    totalFailure,
+    rows: ROWS,
+    cols: COLS,
+  };
+}
+
 export function computeKeyStats(usageData: unknown, masker: (val: string) => string = maskApiKey): KeyStats {
   const apis = getApisRecord(usageData);
   if (!apis) {

@@ -910,3 +910,248 @@
   color: var(--text-tertiary);
   margin: 10px 0 0 0;
 }
+
+// Service Health Card
+.healthCard {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-lg);
+}
+
+.healthHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.healthTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.healthMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.healthWindow {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.healthRate {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+}
+
+.healthRateHigh {
+  color: var(--success-badge-text, #065f46);
+  background: var(--success-badge-bg, #d1fae5);
+}
+
+.healthRateMedium {
+  color: var(--warning-text, #92400e);
+  background: var(--warning-bg, #fef3c7);
+}
+
+.healthRateLow {
+  color: var(--failure-badge-text);
+  background: var(--failure-badge-bg);
+}
+
+.healthGrid {
+  display: grid;
+  gap: 3px;
+  grid-auto-flow: column;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.healthBlockWrapper {
+  position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  width: 10px;
+  height: 10px;
+}
+
+.healthBlock {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+
+  .healthBlockWrapper:hover &,
+  .healthBlockWrapper.healthBlockActive & {
+    transform: scaleY(1.6);
+    opacity: 0.85;
+  }
+}
+
+.healthBlockIdle {
+  background-color: var(--border-secondary, #e5e7eb);
+}
+
+.healthTooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-secondary, #e5e7eb);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: $z-dropdown;
+  pointer-events: none;
+  color: var(--text-primary);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--bg-primary, #fff);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--border-secondary, #e5e7eb);
+  }
+}
+
+// When tooltip should appear below (for top rows)
+.healthTooltipBelow {
+  bottom: auto;
+  top: calc(100% + 8px);
+
+  &::after {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: var(--bg-primary, #fff);
+  }
+
+  &::before {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: var(--border-secondary, #e5e7eb);
+  }
+}
+
+.healthTooltipLeft {
+  left: 0;
+  transform: translateX(0);
+
+  &::after,
+  &::before {
+    left: 8px;
+    transform: none;
+  }
+}
+
+.healthTooltipRight {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+
+  &::after,
+  &::before {
+    left: auto;
+    right: 8px;
+    transform: none;
+  }
+}
+
+.healthTooltipTime {
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.healthTooltipStats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.healthTooltipSuccess {
+  color: var(--success-color, #22c55e);
+}
+
+.healthTooltipFailure {
+  color: var(--danger-color, #ef4444);
+}
+
+.healthTooltipRate {
+  color: var(--text-secondary);
+  margin-left: 2px;
+}
+
+.healthLegend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.healthLegendLabel {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.healthLegendColors {
+  display: flex;
+  gap: 3px;
+}
+
+.healthLegendBlock {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+@include mobile {
+  .healthBlockWrapper {
+    width: 8px;
+    height: 8px;
+  }
+
+  .healthTooltip {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  .healthLegendBlock {
+    width: 8px;
+    height: 8px;
+  }
+}

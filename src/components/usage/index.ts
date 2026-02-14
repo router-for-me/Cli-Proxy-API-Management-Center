@@ -35,3 +35,6 @@ export type { TokenBreakdownChartProps } from './TokenBreakdownChart';
 
 export { CostTrendChart } from './CostTrendChart';
 export type { CostTrendChartProps } from './CostTrendChart';
+
+export { ServiceHealthCard } from './ServiceHealthCard';
+export type { ServiceHealthCardProps } from './ServiceHealthCard';
