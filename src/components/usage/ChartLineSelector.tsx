@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import styles from '@/pages/UsagePage.module.scss';
 
 export interface ChartLineSelectorProps {
@@ -41,6 +43,14 @@ export function ChartLineSelector({
     onChange(newLines);
   };
 
+  const options = useMemo(
+    () => [
+      { value: 'all', label: t('usage_stats.chart_line_all') },
+      ...modelNames.map((name) => ({ value: name, label: name }))
+    ],
+    [modelNames, t]
+  );
+
   return (
     <Card
       title={t('usage_stats.chart_line_actions_label')}
@@ -66,18 +76,11 @@ export function ChartLineSelector({
             <span className={styles.chartLineLabel}>
               {t(`usage_stats.chart_line_label_${index + 1}`)}
             </span>
-            <select
+            <Select
               value={line}
-              onChange={(e) => handleChange(index, e.target.value)}
-              className={styles.select}
-            >
-              <option value="all">{t('usage_stats.chart_line_all')}</option>
-              {modelNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+              options={options}
+              onChange={(value) => handleChange(index, value)}
+            />
             {chartLines.length > 1 && (
               <Button variant="danger" size="sm" onClick={() => handleRemove(index)}>
                 {t('usage_stats.chart_line_delete')}

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import type { ModelPrice } from '@/utils/usage';
 import styles from '@/pages/UsagePage.module.scss';
 
@@ -65,6 +66,14 @@ export function PriceSettingsCard({
     }
   };
 
+  const options = useMemo(
+    () => [
+      { value: '', label: t('usage_stats.model_price_select_placeholder') },
+      ...modelNames.map((name) => ({ value: name, label: name }))
+    ],
+    [modelNames, t]
+  );
+
   return (
     <Card title={t('usage_stats.model_price_settings')}>
       <div className={styles.pricingSection}>
@@ -73,18 +82,12 @@ export function PriceSettingsCard({
           <div className={styles.formRow}>
             <div className={styles.formField}>
               <label>{t('usage_stats.model_name')}</label>
-              <select
+              <Select
                 value={selectedModel}
-                onChange={(e) => handleModelSelect(e.target.value)}
-                className={styles.select}
-              >
-                <option value="">{t('usage_stats.model_price_select_placeholder')}</option>
-                {modelNames.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
+                options={options}
+                onChange={handleModelSelect}
+                placeholder={t('usage_stats.model_price_select_placeholder')}
+              />
             </div>
             <div className={styles.formField}>
               <label>{t('usage_stats.model_price_prompt')} ($/1M)</label>

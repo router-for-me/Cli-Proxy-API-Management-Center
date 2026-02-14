@@ -741,24 +741,6 @@
   }
 }
 
-.select {
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 14px;
-  cursor: pointer;
-  height: 40px;
-  box-sizing: border-box;
-
-  &:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba($primary-color, 0.18);
-  }
-}
-
 .pricesList {
   display: flex;
   flex-direction: column;

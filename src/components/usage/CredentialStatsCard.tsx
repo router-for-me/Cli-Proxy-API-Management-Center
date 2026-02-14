@@ -277,10 +277,11 @@ export function CredentialStatsCard({
   }, [usage, geminiKeys, claudeConfigs, codexConfigs, vertexConfigs, openaiProviders, authFileMap]);
 
   return (
-    <Card title={t('usage_stats.credential_stats')}>
+    <Card title={t('usage_stats.credential_stats')} className={styles.detailsFixedCard}>
       {loading ? (
         <div className={styles.hint}>{t('common.loading')}</div>
       ) : rows.length > 0 ? (
+        <div className={styles.detailsScroll}>
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
@@ -325,6 +326,7 @@ export function CredentialStatsCard({
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       ) : (
         <div className={styles.hint}>{t('usage_stats.no_data')}</div>
