@@ -254,17 +254,8 @@ export function AiProvidersAmpcodeEditPage() {
           disabled={loading || saving || disableControls}
           hint={t('ai_providers.ampcode_upstream_api_key_hint')}
         />
-        <div
-          style={{
-            display: 'flex',
-            gap: 8,
-            alignItems: 'center',
-            marginTop: -8,
-            marginBottom: 12,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div className="hint" style={{ margin: 0 }}>
+        <div className={layoutStyles.upstreamApiKeyRow}>
+          <div className={layoutStyles.upstreamApiKeyHint}>
             {t('ai_providers.ampcode_upstream_api_key_current', {
               key: config?.ampcode?.upstreamApiKey
                 ? maskApiKey(config.ampcode.upstreamApiKey)

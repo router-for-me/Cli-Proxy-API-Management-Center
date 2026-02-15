@@ -3,3 +3,17 @@
   max-width: 960px;
   margin: 0 auto;
 }
+
+.upstreamApiKeyRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.upstreamApiKeyHint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
