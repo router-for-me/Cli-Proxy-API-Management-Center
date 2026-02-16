@@ -17,31 +17,63 @@ type DiffModalProps = {
 
 type DiffChunkCard = {
   id: string;
-  currentLines: string;
-  modifiedLines: string;
-  currentText: string;
-  modifiedText: string;
+  current: DiffSide;
+  modified: DiffSide;
 };
+
+type LineRange = {
+  start: number;
+  end: number;
+};
+
+type DiffSideLine = {
+  lineNumber: number;
+  text: string;
+  changed: boolean;
+};
+
+type DiffSide = {
+  changedRangeLabel: string;
+  contextRangeLabel: string;
+  lines: DiffSideLine[];
+};
+
+const DIFF_CONTEXT_LINES = 2;
 
 const clampPos = (doc: Text, pos: number) => Math.max(0, Math.min(pos, doc.length));
 
-const getLineRangeLabel = (doc: Text, from: number, to: number): string => {
+const getLineRangeLabel = (range: LineRange): string => {
+  return range.start === range.end ? String(range.start) : `${range.start}-${range.end}`;
+};
+
+const getChangedLineRange = (doc: Text, from: number, to: number): LineRange => {
   const start = clampPos(doc, from);
   const end = clampPos(doc, to);
   if (start === end) {
     const linePos = Math.min(start, doc.length);
-    return String(doc.lineAt(linePos).number);
+    const anchorLine = doc.lineAt(linePos).number;
+    return { start: anchorLine, end: anchorLine };
   }
   const startLine = doc.lineAt(start).number;
   const endLine = doc.lineAt(Math.max(start, end - 1)).number;
-  return startLine === endLine ? String(startLine) : `${startLine}-${endLine}`;
+  return { start: startLine, end: endLine };
 };
 
-const getChunkText = (doc: Text, from: number, to: number): string => {
-  const start = clampPos(doc, from);
-  const end = clampPos(doc, to);
-  if (start >= end) return '';
-  return doc.sliceString(start, end).trimEnd();
+const expandContextRange = (doc: Text, range: LineRange): LineRange => ({
+  start: Math.max(1, range.start - DIFF_CONTEXT_LINES),
+  end: Math.min(doc.lines, range.end + DIFF_CONTEXT_LINES)
+});
+
+const buildSideLines = (doc: Text, contextRange: LineRange, changedRange: LineRange): DiffSideLine[] => {
+  const lines: DiffSideLine[] = [];
+  for (let lineNumber = contextRange.start; lineNumber <= contextRange.end; lineNumber += 1) {
+    lines.push({
+      lineNumber,
+      text: doc.line(lineNumber).text,
+      changed: lineNumber >= changedRange.start && lineNumber <= changedRange.end
+    });
+  }
+  return lines;
 };
 
 export function DiffModal({
@@ -59,13 +91,26 @@ export function DiffModal({
     const modifiedDoc = Text.of(modified.split('\n'));
     const chunks = Chunk.build(currentDoc, modifiedDoc);
 
-    return chunks.map((chunk, index) => ({
-      id: `${index}-${chunk.fromA}-${chunk.toA}-${chunk.fromB}-${chunk.toB}`,
-      currentLines: getLineRangeLabel(currentDoc, chunk.fromA, chunk.toA),
-      modifiedLines: getLineRangeLabel(modifiedDoc, chunk.fromB, chunk.toB),
-      currentText: getChunkText(currentDoc, chunk.fromA, chunk.toA),
-      modifiedText: getChunkText(modifiedDoc, chunk.fromB, chunk.toB)
-    }));
+    return chunks.map((chunk, index) => {
+      const currentChangedRange = getChangedLineRange(currentDoc, chunk.fromA, chunk.toA);
+      const modifiedChangedRange = getChangedLineRange(modifiedDoc, chunk.fromB, chunk.toB);
+      const currentContextRange = expandContextRange(currentDoc, currentChangedRange);
+      const modifiedContextRange = expandContextRange(modifiedDoc, modifiedChangedRange);
+
+      return {
+        id: `${index}-${chunk.fromA}-${chunk.toA}-${chunk.fromB}-${chunk.toB}`,
+        current: {
+          changedRangeLabel: getLineRangeLabel(currentChangedRange),
+          contextRangeLabel: getLineRangeLabel(currentContextRange),
+          lines: buildSideLines(currentDoc, currentContextRange, currentChangedRange)
+        },
+        modified: {
+          changedRangeLabel: getLineRangeLabel(modifiedChangedRange),
+          contextRangeLabel: getLineRangeLabel(modifiedContextRange),
+          lines: buildSideLines(modifiedDoc, modifiedContextRange, modifiedChangedRange)
+        }
+      };
+    });
   }, [modified, original]);
 
   return (
@@ -99,16 +144,46 @@ export function DiffModal({
                   <section className={styles.diffColumn}>
                     <header className={styles.diffColumnHeader}>
                       <span>{t('config_management.diff.current')}</span>
-                      <span className={styles.lineRange}>L{card.currentLines}</span>
+                      <span className={styles.lineMeta}>
+                        <span className={styles.lineRange}>L{card.current.changedRangeLabel}</span>
+                        <span className={styles.contextRange}>
+                          ±{DIFF_CONTEXT_LINES}: L{card.current.contextRangeLabel}
+                        </span>
+                      </span>
                     </header>
-                    <pre className={styles.codeBlock}>{card.currentText || '-'}</pre>
+                    <div className={styles.codeList}>
+                      {card.current.lines.map((line) => (
+                        <div
+                          key={`${card.id}-a-${line.lineNumber}`}
+                          className={`${styles.codeLine} ${line.changed ? styles.codeLineChanged : ''}`}
+                        >
+                          <span className={styles.codeLineNumber}>{line.lineNumber}</span>
+                          <code className={styles.codeLineText}>{line.text || ' '}</code>
+                        </div>
+                      ))}
+                    </div>
                   </section>
                   <section className={styles.diffColumn}>
                     <header className={styles.diffColumnHeader}>
                       <span>{t('config_management.diff.modified')}</span>
-                      <span className={styles.lineRange}>L{card.modifiedLines}</span>
+                      <span className={styles.lineMeta}>
+                        <span className={styles.lineRange}>L{card.modified.changedRangeLabel}</span>
+                        <span className={styles.contextRange}>
+                          ±{DIFF_CONTEXT_LINES}: L{card.modified.contextRangeLabel}
+                        </span>
+                      </span>
                     </header>
-                    <pre className={styles.codeBlock}>{card.modifiedText || '-'}</pre>
+                    <div className={styles.codeList}>
+                      {card.modified.lines.map((line) => (
+                        <div
+                          key={`${card.id}-b-${line.lineNumber}`}
+                          className={`${styles.codeLine} ${line.changed ? styles.codeLineChanged : ''}`}
+                        >
+                          <span className={styles.codeLineNumber}>{line.lineNumber}</span>
+                          <code className={styles.codeLineText}>{line.text || ' '}</code>
+                        </div>
+                      ))}
+                    </div>
                   </section>
                 </div>
               </article>

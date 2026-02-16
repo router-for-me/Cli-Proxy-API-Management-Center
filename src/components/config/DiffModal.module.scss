@@ -70,7 +70,7 @@
 
 .diffColumnHeader {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: $spacing-sm;
   padding: 8px 10px;
@@ -81,23 +81,66 @@
   background: var(--bg-secondary);
 }
 
+.lineMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .lineRange {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+}
+
+.contextRange {
   font-size: 11px;
   color: var(--text-tertiary);
   font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
 }
 
-.codeBlock {
-  margin: 0;
-  padding: 10px;
+.codeList {
+  overflow: auto;
+  max-height: 280px;
+  font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+}
+
+.codeLine {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: start;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+}
+
+.codeLine:first-child {
+  border-top: none;
+}
+
+.codeLineChanged {
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+}
+
+.codeLineNumber {
+  padding: 7px 10px 7px 8px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  border-right: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.codeLineText {
+  padding: 7px 10px;
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
-  overflow: auto;
-  max-height: 240px;
+  display: block;
+  box-sizing: border-box;
 }
 
 @include mobile {
@@ -108,5 +151,26 @@
 
   .diffColumns {
     grid-template-columns: 1fr;
+  }
+
+  .lineMeta {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+  }
+
+  .codeLine {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .codeLineNumber {
+    padding: 6px 6px 6px 4px;
+    font-size: 10px;
+  }
+
+  .codeLineText {
+    padding: 6px 8px;
+    font-size: 11px;
+    line-height: 1.4;
   }
 }
