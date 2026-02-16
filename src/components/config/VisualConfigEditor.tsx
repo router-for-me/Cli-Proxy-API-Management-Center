@@ -106,6 +106,13 @@ function ApiKeysCardEditor({
   const [inputValue, setInputValue] = useState('');
   const [formError, setFormError] = useState('');
 
+  function generateSecureApiKey(): string {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const array = new Uint8Array(17);
+    crypto.getRandomValues(array);
+    return 'sk-' + Array.from(array, (b) => charset[b % charset.length]).join('');
+  }
+
   const openAddModal = () => {
     setEditingIndex(null);
     setInputValue('');
@@ -160,6 +167,11 @@ function ApiKeysCardEditor({
       t(copied ? 'notification.link_copied' : 'notification.copy_failed'),
       copied ? 'success' : 'error'
     );
+  };
+
+  const handleGenerate = () => {
+    setInputValue(generateSecureApiKey());
+    setFormError('');
   };
 
   return (
@@ -233,6 +245,18 @@ function ApiKeysCardEditor({
           disabled={disabled}
           error={formError || undefined}
           hint={t('config_management.visual.api_keys.input_hint')}
+          style={{ paddingRight: 148 }}
+          rightElement={
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleGenerate}
+              disabled={disabled}
+            >
+              {t('config_management.visual.api_keys.generate')}
+            </Button>
+          }
         />
       </Modal>
     </div>

@@ -1011,6 +1011,7 @@
       "api_keys": {
         "label": "API 密钥列表 (api-keys)",
         "add": "添加 API 密钥",
+        "generate": "生成",
         "empty": "暂无 API 密钥",
         "hint": "每个条目代表一个 API 密钥（与 「API 密钥管理」 页面样式一致）",
         "edit_title": "编辑 API 密钥",

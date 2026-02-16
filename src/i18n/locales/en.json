@@ -1011,6 +1011,7 @@
       "api_keys": {
         "label": "API Keys List (api-keys)",
         "add": "Add API Key",
+        "generate": "Generate",
         "empty": "No API keys",
         "hint": "Each entry represents an API key (consistent with 'API Key Management' page style)",
         "edit_title": "Edit API Key",
