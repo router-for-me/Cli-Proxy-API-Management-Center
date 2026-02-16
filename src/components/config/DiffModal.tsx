@@ -1,12 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EditorState } from '@codemirror/state';
-import { EditorView } from '@codemirror/view';
-import { yaml } from '@codemirror/lang-yaml';
-import { MergeView } from '@codemirror/merge';
+import { Text } from '@codemirror/state';
+import { Chunk } from '@codemirror/merge';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { useThemeStore } from '@/stores';
 import styles from './DiffModal.module.scss';
 
 type DiffModalProps = {
@@ -18,6 +15,35 @@ type DiffModalProps = {
   loading?: boolean;
 };
 
+type DiffChunkCard = {
+  id: string;
+  currentLines: string;
+  modifiedLines: string;
+  currentText: string;
+  modifiedText: string;
+};
+
+const clampPos = (doc: Text, pos: number) => Math.max(0, Math.min(pos, doc.length));
+
+const getLineRangeLabel = (doc: Text, from: number, to: number): string => {
+  const start = clampPos(doc, from);
+  const end = clampPos(doc, to);
+  if (start === end) {
+    const linePos = Math.min(start, doc.length);
+    return String(doc.lineAt(linePos).number);
+  }
+  const startLine = doc.lineAt(start).number;
+  const endLine = doc.lineAt(Math.max(start, end - 1)).number;
+  return startLine === endLine ? String(startLine) : `${startLine}-${endLine}`;
+};
+
+const getChunkText = (doc: Text, from: number, to: number): string => {
+  const start = clampPos(doc, from);
+  const end = clampPos(doc, to);
+  if (start >= end) return '';
+  return doc.sliceString(start, end).trimEnd();
+};
+
 export function DiffModal({
   open,
   original,
@@ -27,50 +53,20 @@ export function DiffModal({
   loading = false
 }: DiffModalProps) {
   const { t } = useTranslation();
-  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
-  const mergeContainerRef = useRef<HTMLDivElement>(null);
-  const mergeViewRef = useRef<MergeView | null>(null);
 
-  useEffect(() => {
-    if (!open || !mergeContainerRef.current) return;
+  const diffCards = useMemo<DiffChunkCard[]>(() => {
+    const currentDoc = Text.of(original.split('\n'));
+    const modifiedDoc = Text.of(modified.split('\n'));
+    const chunks = Chunk.build(currentDoc, modifiedDoc);
 
-    const mountEl = mergeContainerRef.current;
-    mountEl.innerHTML = '';
-
-    const commonExtensions = [
-      yaml(),
-      EditorState.readOnly.of(true),
-      EditorView.editable.of(false),
-      EditorView.lineWrapping,
-      EditorView.theme(
-        {
-          '&': { height: '100%' },
-          '.cm-scroller': {
-            fontFamily: "'Consolas', 'Monaco', 'Menlo', monospace"
-          }
-        },
-        { dark: resolvedTheme === 'dark' }
-      )
-    ];
-
-    const view = new MergeView({
-      parent: mountEl,
-      a: { doc: original, extensions: commonExtensions },
-      b: { doc: modified, extensions: commonExtensions },
-      orientation: 'a-b',
-      highlightChanges: true,
-      gutter: true
-    });
-    mergeViewRef.current = view;
-
-    return () => {
-      view.destroy();
-      if (mergeViewRef.current === view) {
-        mergeViewRef.current = null;
-      }
-      mountEl.innerHTML = '';
-    };
-  }, [modified, open, original, resolvedTheme]);
+    return chunks.map((chunk, index) => ({
+      id: `${index}-${chunk.fromA}-${chunk.toA}-${chunk.fromB}-${chunk.toB}`,
+      currentLines: getLineRangeLabel(currentDoc, chunk.fromA, chunk.toA),
+      modifiedLines: getLineRangeLabel(modifiedDoc, chunk.fromB, chunk.toB),
+      currentText: getChunkText(currentDoc, chunk.fromA, chunk.toA),
+      modifiedText: getChunkText(modifiedDoc, chunk.fromB, chunk.toB)
+    }));
+  }, [modified, original]);
 
   return (
     <Modal
@@ -92,11 +88,33 @@ export function DiffModal({
       }
     >
       <div className={styles.content}>
-        <div className={styles.columnLabels}>
-          <span>{t('config_management.diff.current')}</span>
-          <span>{t('config_management.diff.modified')}</span>
-        </div>
-        <div className={styles.mergeRoot} ref={mergeContainerRef} />
+        {diffCards.length === 0 ? (
+          <div className={styles.emptyState}>{t('config_management.diff.no_changes')}</div>
+        ) : (
+          <div className={styles.diffList}>
+            {diffCards.map((card, index) => (
+              <article key={card.id} className={styles.diffCard}>
+                <div className={styles.diffCardHeader}>#{index + 1}</div>
+                <div className={styles.diffColumns}>
+                  <section className={styles.diffColumn}>
+                    <header className={styles.diffColumnHeader}>
+                      <span>{t('config_management.diff.current')}</span>
+                      <span className={styles.lineRange}>L{card.currentLines}</span>
+                    </header>
+                    <pre className={styles.codeBlock}>{card.currentText || '-'}</pre>
+                  </section>
+                  <section className={styles.diffColumn}>
+                    <header className={styles.diffColumnHeader}>
+                      <span>{t('config_management.diff.modified')}</span>
+                      <span className={styles.lineRange}>L{card.modifiedLines}</span>
+                    </header>
+                    <pre className={styles.codeBlock}>{card.modifiedText || '-'}</pre>
+                  </section>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </div>
     </Modal>
   );

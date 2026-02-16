@@ -12,62 +12,101 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
   height: 70vh;
   min-height: 420px;
 }
 
-.columnLabels {
+.emptyState {
+  flex: 1;
+  border: 1px dashed var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+}
+
+.diffList {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.diffCard {
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.diffCardHeader {
+  padding: 8px 10px;
+  border-bottom: 1px dashed var(--border-color);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+}
+
+.diffColumns {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $spacing-sm;
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 600;
-
-  span {
-    padding: 0 2px;
-  }
+  padding: $spacing-sm;
 }
 
-.mergeRoot {
-  flex: 1;
-  min-height: 0;
+.diffColumn {
+  min-width: 0;
   border: 1px solid var(--border-color);
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
   overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.diffColumnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
   background: var(--bg-secondary);
+}
 
-  :global(.cm-mergeView) {
-    height: 100%;
-    overflow: auto !important;
-    -webkit-overflow-scrolling: touch;
-    background: var(--bg-primary);
-  }
+.lineRange {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+}
 
-  :global(.cm-mergeViewEditors) {
-    min-height: 100%;
-  }
-
-  :global(.cm-mergeViewEditor) {
-    height: 100%;
-  }
-
-  :global(.cm-gutters) {
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-color);
-  }
-
-  :global(.cm-mergeGap) {
-    background: var(--bg-secondary);
-    border-left: 1px solid var(--border-color);
-    border-right: 1px solid var(--border-color);
-  }
+.codeBlock {
+  margin: 0;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+  overflow: auto;
+  max-height: 240px;
 }
 
 @include mobile {
   .content {
     height: 65vh;
     min-height: 360px;
+  }
+
+  .diffColumns {
+    grid-template-columns: 1fr;
   }
 }

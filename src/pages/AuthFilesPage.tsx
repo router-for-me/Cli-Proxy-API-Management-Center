@@ -57,8 +57,10 @@ export function AuthFilesPage() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<AuthFileItem | null>(null);
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
+  const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
   const previousSelectionCountRef = useRef(0);
+  const selectionCountRef = useRef(0);
 
   const { keyStats, usageDetails, loadKeyStats } = useAuthFilesStats();
   const {
@@ -331,24 +333,46 @@ export function AuthFilesPage() {
       window.removeEventListener('resize', updatePadding);
       document.documentElement.style.removeProperty('--auth-files-action-bar-height');
     };
+  }, [batchActionBarVisible, selectionCount]);
+
+  useEffect(() => {
+    selectionCountRef.current = selectionCount;
+    if (selectionCount > 0) {
+      setBatchActionBarVisible(true);
+    }
   }, [selectionCount]);
 
   useLayoutEffect(() => {
+    if (!batchActionBarVisible) return;
     const currentCount = selectionCount;
     const previousCount = previousSelectionCountRef.current;
     const actionsEl = floatingBatchActionsRef.current;
+    if (!actionsEl) return;
 
-    if (currentCount > 0 && previousCount === 0 && actionsEl) {
-      gsap.killTweensOf(actionsEl);
+    gsap.killTweensOf(actionsEl);
+
+    if (currentCount > 0 && previousCount === 0) {
       gsap.fromTo(
         actionsEl,
         { y: 56, autoAlpha: 0 },
         { y: 0, autoAlpha: 1, duration: 0.28, ease: 'power3.out' }
       );
+    } else if (currentCount === 0 && previousCount > 0) {
+      gsap.to(actionsEl, {
+        y: 56,
+        autoAlpha: 0,
+        duration: 0.22,
+        ease: 'power2.in',
+        onComplete: () => {
+          if (selectionCountRef.current === 0) {
+            setBatchActionBarVisible(false);
+          }
+        }
+      });
     }
 
     previousSelectionCountRef.current = currentCount;
-  }, [selectionCount]);
+  }, [batchActionBarVisible, selectionCount]);
 
   const renderFilterTags = () => (
     <div className={styles.filterTags}>
@@ -584,7 +608,7 @@ export function AuthFilesPage() {
         onChange={handlePrefixProxyChange}
       />
 
-      {selectionCount > 0 && typeof document !== 'undefined'
+      {batchActionBarVisible && typeof document !== 'undefined'
         ? createPortal(
             <div className={styles.batchActionContainer} ref={floatingBatchActionsRef}>
               <div className={styles.batchActionBar}>
