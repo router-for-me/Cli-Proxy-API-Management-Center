@@ -1,0 +1,72 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.diffModal {
+  :global(.modal-body) {
+    padding: $spacing-md $spacing-lg;
+    max-height: none;
+  }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  height: 70vh;
+  min-height: 420px;
+}
+
+.columnLabels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-sm;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+
+  span {
+    padding: 0 2px;
+  }
+}
+
+.mergeRoot {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  overflow: hidden;
+  background: var(--bg-secondary);
+
+  :global(.cm-mergeView) {
+    height: 100%;
+    background: var(--bg-primary);
+  }
+
+  :global(.cm-mergeViewEditors),
+  :global(.cm-mergeViewEditor),
+  :global(.cm-editor) {
+    height: 100%;
+  }
+
+  :global(.cm-scroller) {
+    overflow: auto;
+  }
+
+  :global(.cm-gutters) {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+  }
+
+  :global(.cm-mergeGap) {
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+  }
+}
+
+@include mobile {
+  .content {
+    height: 65vh;
+    min-height: 360px;
+  }
+}

@@ -922,6 +922,13 @@
     "search_no_results": "无结果",
     "search_prev": "上一个",
     "search_next": "下一个",
+    "diff": {
+      "title": "确认变更",
+      "current": "当前配置",
+      "modified": "修改后",
+      "confirm": "确认保存",
+      "no_changes": "未检测到变更"
+    },
     "tabs": {
       "visual": "可视化编辑",
       "source": "源文件编辑"

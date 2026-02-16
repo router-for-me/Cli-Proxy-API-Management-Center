@@ -922,6 +922,13 @@
     "search_no_results": "No results",
     "search_prev": "Previous",
     "search_next": "Next",
+    "diff": {
+      "title": "Review Changes",
+      "current": "Current",
+      "modified": "Modified",
+      "confirm": "Confirm Save",
+      "no_changes": "No changes detected"
+    },
     "tabs": {
       "visual": "Visual Editor",
       "source": "Source File Editor"
