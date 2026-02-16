@@ -5,6 +5,7 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+  padding-bottom: calc(var(--auth-files-action-bar-height, 0px) + 16px + env(safe-area-inset-bottom));
 }
 
 .pageHeader {
@@ -497,6 +498,15 @@
   }
 }
 
+.fileCardSelected {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+
+  &:hover {
+    border-color: var(--primary-color);
+  }
+}
+
 .fileCardDisabled {
   opacity: 0.6;
 
@@ -526,6 +536,15 @@
   align-items: center;
   gap: $spacing-sm;
   min-height: 28px;
+}
+
+.selectionCheckbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--primary-color);
+  cursor: pointer;
 }
 
 .typeBadge {
@@ -876,6 +895,65 @@
   margin-top: $spacing-lg;
   padding-top: $spacing-md;
   border-top: 1px solid var(--border-color);
+}
+
+.batchActionContainer {
+  position: fixed;
+  left: var(--content-center-x, 50%);
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 50;
+  width: min(960px, calc(100vw - 24px));
+}
+
+.batchActionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: 10px 12px;
+  border-radius: $radius-lg;
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-lg);
+}
+
+.batchActionLeft,
+.batchActionRight {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+}
+
+.batchActionRight {
+  justify-content: flex-end;
+}
+
+.batchSelectionText {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-right: 2px;
+}
+
+@include mobile {
+  .batchActionContainer {
+    width: calc(100vw - 16px);
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .batchActionBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .batchActionLeft,
+  .batchActionRight {
+    justify-content: center;
+  }
 }
 
 .pageInfo {

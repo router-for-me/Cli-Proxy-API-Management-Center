@@ -25,6 +25,7 @@ import styles from '@/pages/AuthFilesPage.module.scss';
 
 export type AuthFileCardProps = {
   file: AuthFileItem;
+  selected: boolean;
   resolvedTheme: ResolvedTheme;
   disableControls: boolean;
   deleting: string | null;
@@ -38,6 +39,7 @@ export type AuthFileCardProps = {
   onOpenPrefixProxyEditor: (name: string) => void;
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
+  onToggleSelect: (name: string) => void;
 };
 
 const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
@@ -50,6 +52,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const { t } = useTranslation();
   const {
     file,
+    selected,
     resolvedTheme,
     disableControls,
     deleting,
@@ -62,7 +65,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
     onDownload,
     onOpenPrefixProxyEditor,
     onDelete,
-    onToggleStatus
+    onToggleStatus,
+    onToggleSelect
   } = props;
 
   const fileStats = resolveAuthFileStats(file, keyStats);
@@ -92,11 +96,20 @@ export function AuthFileCard(props: AuthFileCardProps) {
 
   return (
     <div
-      className={`${styles.fileCard} ${providerCardClass} ${file.disabled ? styles.fileCardDisabled : ''}`}
+      className={`${styles.fileCard} ${providerCardClass} ${selected ? styles.fileCardSelected : ''} ${file.disabled ? styles.fileCardDisabled : ''}`}
     >
       <div className={styles.fileCardLayout}>
         <div className={styles.fileCardMain}>
           <div className={styles.cardHeader}>
+            {!isRuntimeOnly && (
+              <input
+                type="checkbox"
+                className={styles.selectionCheckbox}
+                checked={selected}
+                onChange={() => onToggleSelect(file.name)}
+                aria-label={t('auth_files.batch_select_all')}
+              />
+            )}
             <span
               className={styles.typeBadge}
               style={{

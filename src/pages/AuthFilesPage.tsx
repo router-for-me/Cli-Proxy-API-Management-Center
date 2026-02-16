@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useInterval } from '@/hooks/useInterval';
@@ -16,6 +17,7 @@ import {
   clampCardPageSize,
   getTypeColor,
   getTypeLabel,
+  isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   type QuotaProviderType,
   type ResolvedTheme
@@ -54,10 +56,13 @@ export function AuthFilesPage() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<AuthFileItem | null>(null);
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
+  const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
 
   const { keyStats, usageDetails, loadKeyStats } = useAuthFilesStats();
   const {
     files,
+    selectedFiles,
+    selectionCount,
     loading,
     error,
     uploading,
@@ -71,7 +76,12 @@ export function AuthFilesPage() {
     handleDelete,
     handleDeleteAll,
     handleDownload,
-    handleStatusToggle
+    handleStatusToggle,
+    toggleSelect,
+    selectAllVisible,
+    deselectAll,
+    batchSetStatus,
+    batchDelete
   } = useAuthFilesData({ refreshKeyStats: loadKeyStats });
 
   const statusBarCache = useAuthFilesStatusBarCache(files, usageDetails);
@@ -240,6 +250,11 @@ export function AuthFilesPage() {
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
   const pageItems = filtered.slice(start, start + pageSize);
+  const selectablePageItems = useMemo(
+    () => pageItems.filter((file) => !isRuntimeOnlyAuthFile(file)),
+    [pageItems]
+  );
+  const selectedNames = useMemo(() => Array.from(selectedFiles), [selectedFiles]);
 
   const showDetails = (file: AuthFileItem) => {
     setSelectedFile(file);
@@ -288,6 +303,33 @@ export function AuthFilesPage() {
     },
     [filter, navigate]
   );
+
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const actionsEl = floatingBatchActionsRef.current;
+    if (!actionsEl) {
+      document.documentElement.style.removeProperty('--auth-files-action-bar-height');
+      return;
+    }
+
+    const updatePadding = () => {
+      const height = actionsEl.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--auth-files-action-bar-height', `${height}px`);
+    };
+
+    updatePadding();
+    window.addEventListener('resize', updatePadding);
+
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updatePadding);
+    ro?.observe(actionsEl);
+
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', updatePadding);
+      document.documentElement.style.removeProperty('--auth-files-action-bar-height');
+    };
+  }, [selectionCount]);
 
   const renderFilterTags = () => (
     <div className={styles.filterTags}>
@@ -419,6 +461,7 @@ export function AuthFilesPage() {
               <AuthFileCard
                 key={file.name}
                 file={file}
+                selected={selectedFiles.has(file.name)}
                 resolvedTheme={resolvedTheme}
                 disableControls={disableControls}
                 deleting={deleting}
@@ -432,6 +475,7 @@ export function AuthFilesPage() {
                 onOpenPrefixProxyEditor={openPrefixProxyEditor}
                 onDelete={handleDelete}
                 onToggleStatus={handleStatusToggle}
+                onToggleSelect={toggleSelect}
               />
             ))}
           </div>
@@ -520,6 +564,57 @@ export function AuthFilesPage() {
         onSave={handlePrefixProxySave}
         onChange={handlePrefixProxyChange}
       />
+
+      {selectionCount > 0 && typeof document !== 'undefined'
+        ? createPortal(
+            <div className={styles.batchActionContainer} ref={floatingBatchActionsRef}>
+              <div className={styles.batchActionBar}>
+                <div className={styles.batchActionLeft}>
+                  <span className={styles.batchSelectionText}>
+                    {t('auth_files.batch_selected', { count: selectionCount })}
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => selectAllVisible(pageItems)}
+                    disabled={selectablePageItems.length === 0}
+                  >
+                    {t('auth_files.batch_select_all')}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={deselectAll}>
+                    {t('auth_files.batch_deselect')}
+                  </Button>
+                </div>
+                <div className={styles.batchActionRight}>
+                  <Button
+                    size="sm"
+                    onClick={() => batchSetStatus(selectedNames, true)}
+                    disabled={disableControls || selectedNames.length === 0}
+                  >
+                    {t('auth_files.batch_enable')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => batchSetStatus(selectedNames, false)}
+                    disabled={disableControls || selectedNames.length === 0}
+                  >
+                    {t('auth_files.batch_disable')}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => batchDelete(selectedNames)}
+                    disabled={disableControls || selectedNames.length === 0}
+                  >
+                    {t('common.delete')}
+                  </Button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
