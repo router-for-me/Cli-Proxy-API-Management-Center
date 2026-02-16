@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import gsap from 'gsap';
 import { useInterval } from '@/hooks/useInterval';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
@@ -57,6 +58,7 @@ export function AuthFilesPage() {
   const [selectedFile, setSelectedFile] = useState<AuthFileItem | null>(null);
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
+  const previousSelectionCountRef = useRef(0);
 
   const { keyStats, usageDetails, loadKeyStats } = useAuthFilesStats();
   const {
@@ -329,6 +331,23 @@ export function AuthFilesPage() {
       window.removeEventListener('resize', updatePadding);
       document.documentElement.style.removeProperty('--auth-files-action-bar-height');
     };
+  }, [selectionCount]);
+
+  useLayoutEffect(() => {
+    const currentCount = selectionCount;
+    const previousCount = previousSelectionCountRef.current;
+    const actionsEl = floatingBatchActionsRef.current;
+
+    if (currentCount > 0 && previousCount === 0 && actionsEl) {
+      gsap.killTweensOf(actionsEl);
+      gsap.fromTo(
+        actionsEl,
+        { y: 56, autoAlpha: 0 },
+        { y: 0, autoAlpha: 1, duration: 0.28, ease: 'power3.out' }
+      );
+    }
+
+    previousSelectionCountRef.current = currentCount;
   }, [selectionCount]);
 
   const renderFilterTags = () => (

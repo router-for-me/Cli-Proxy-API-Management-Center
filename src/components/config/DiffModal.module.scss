@@ -5,6 +5,7 @@
   :global(.modal-body) {
     padding: $spacing-md $spacing-lg;
     max-height: none;
+    overflow: hidden;
   }
 }
 
@@ -39,17 +40,17 @@
 
   :global(.cm-mergeView) {
     height: 100%;
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch;
     background: var(--bg-primary);
   }
 
-  :global(.cm-mergeViewEditors),
-  :global(.cm-mergeViewEditor),
-  :global(.cm-editor) {
-    height: 100%;
+  :global(.cm-mergeViewEditors) {
+    min-height: 100%;
   }
 
-  :global(.cm-scroller) {
-    overflow: auto;
+  :global(.cm-mergeViewEditor) {
+    height: 100%;
   }
 
   :global(.cm-gutters) {

@@ -500,7 +500,7 @@
 
 .fileCardSelected {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 1px var(--primary-color);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-color) 70%, transparent);
 
   &:hover {
     border-color: var(--primary-color);
@@ -538,13 +538,43 @@
   min-height: 28px;
 }
 
-.selectionCheckbox {
-  width: 16px;
-  height: 16px;
+.selectionToggle {
+  width: 22px;
+  height: 22px;
   margin: 0;
   flex-shrink: 0;
-  accent-color: var(--primary-color);
+  border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  color: var(--primary-contrast, #fff);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  transition:
+    border-color $transition-fast,
+    background-color $transition-fast,
+    box-shadow $transition-fast,
+    transform $transition-fast;
+
+  &:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 16%, transparent);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.selectionToggleActive {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+}
+
+.selectionToggleActive svg {
+  display: block;
+  stroke-width: 2.4;
 }
 
 .typeBadge {
@@ -904,6 +934,7 @@
   transform: translateX(-50%);
   z-index: 50;
   width: min(960px, calc(100vw - 24px));
+  will-change: transform, opacity;
 }
 
 .batchActionBar {

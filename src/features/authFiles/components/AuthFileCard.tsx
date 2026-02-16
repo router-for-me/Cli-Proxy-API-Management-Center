@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconBot, IconCode, IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
+import { IconBot, IconCheck, IconCode, IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import type { AuthFileItem } from '@/types';
 import { resolveAuthProvider } from '@/utils/quota';
@@ -102,13 +102,16 @@ export function AuthFileCard(props: AuthFileCardProps) {
         <div className={styles.fileCardMain}>
           <div className={styles.cardHeader}>
             {!isRuntimeOnly && (
-              <input
-                type="checkbox"
-                className={styles.selectionCheckbox}
-                checked={selected}
-                onChange={() => onToggleSelect(file.name)}
-                aria-label={t('auth_files.batch_select_all')}
-              />
+              <button
+                type="button"
+                className={`${styles.selectionToggle} ${selected ? styles.selectionToggleActive : ''}`}
+                onClick={() => onToggleSelect(file.name)}
+                aria-label={selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')}
+                aria-pressed={selected}
+                title={selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')}
+              >
+                {selected && <IconCheck size={12} />}
+              </button>
             )}
             <span
               className={styles.typeBadge}
