@@ -1,88 +1,75 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { ModelInputList } from '@/components/ui/ModelInputList';
-import { modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
-import { providersApi } from '@/services/api';
-import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
-import type { ProviderKeyConfig } from '@/types';
-import { buildHeaderObject, headersToEntries } from '@/utils/headers';
-import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
-import type { ProviderFormState } from '@/components/providers';
+import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
+import { useNotificationStore } from '@/stores';
+import { buildHeaderObject } from '@/utils/headers';
+import { buildClaudeMessagesEndpoint } from '@/components/providers/utils';
+import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
+import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
-type LocationState = { fromAiProviders?: boolean } | null;
+const CLAUDE_TEST_TIMEOUT_MS = 30_000;
+const DEFAULT_ANTHROPIC_VERSION = '2023-06-01';
 
-const buildEmptyForm = (): ProviderFormState => ({
-  apiKey: '',
-  prefix: '',
-  baseUrl: '',
-  proxyUrl: '',
-  headers: [],
-  models: [],
-  excludedModels: [],
-  modelEntries: [{ name: '', alias: '' }],
-  excludedText: '',
-});
+const getErrorMessage = (err: unknown) => {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  return '';
+};
 
-const parseIndexParam = (value: string | undefined) => {
-  if (!value) return null;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : null;
+const hasHeader = (headers: Record<string, string>, name: string) => {
+  const target = name.toLowerCase();
+  return Object.keys(headers).some((key) => key.toLowerCase() === target);
+};
+
+const resolveBearerTokenFromAuthorization = (headers: Record<string, string>): string => {
+  const entry = Object.entries(headers).find(([key]) => key.toLowerCase() === 'authorization');
+  if (!entry) return '';
+  const value = String(entry[1] ?? '').trim();
+  if (!value) return '';
+  const match = value.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || '';
 };
 
 export function AiProvidersClaudeEditPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const location = useLocation();
-  const params = useParams<{ index?: string }>();
-
   const { showNotification } = useNotificationStore();
-  const connectionStatus = useAuthStore((state) => state.connectionStatus);
-  const disableControls = connectionStatus !== 'connected';
+  const {
+    hasIndexParam,
+    invalidIndexParam,
+    invalidIndex,
+    disableControls,
+    loading,
+    saving,
+    form,
+    setForm,
+    testModel,
+    setTestModel,
+    testStatus,
+    setTestStatus,
+    testMessage,
+    setTestMessage,
+    availableModels,
+    handleBack,
+    handleSave,
+  } = useOutletContext<ClaudeEditOutletContext>();
 
-  const fetchConfig = useConfigStore((state) => state.fetchConfig);
-  const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
-  const clearCache = useConfigStore((state) => state.clearCache);
-
-  const [configs, setConfigs] = useState<ProviderKeyConfig[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [form, setForm] = useState<ProviderFormState>(() => buildEmptyForm());
-
-  const hasIndexParam = typeof params.index === 'string';
-  const editIndex = useMemo(() => parseIndexParam(params.index), [params.index]);
-  const invalidIndexParam = hasIndexParam && editIndex === null;
-
-  const initialData = useMemo(() => {
-    if (editIndex === null) return undefined;
-    return configs[editIndex];
-  }, [configs, editIndex]);
-
-  const invalidIndex = editIndex !== null && !initialData;
-
-  const title =
-    editIndex !== null
-      ? t('ai_providers.claude_edit_modal_title')
-      : t('ai_providers.claude_add_modal_title');
-
-  const handleBack = useCallback(() => {
-    const state = location.state as LocationState;
-    if (state?.fromAiProviders) {
-      navigate(-1);
-      return;
-    }
-    navigate('/ai-providers', { replace: true });
-  }, [location.state, navigate]);
+  const title = hasIndexParam
+    ? t('ai_providers.claude_edit_modal_title')
+    : t('ai_providers.claude_add_modal_title');
 
   const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
+  const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -94,101 +81,163 @@ export function AiProvidersClaudeEditPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleBack]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError('');
+  const canSave =
+    !disableControls && !loading && !saving && !invalidIndexParam && !invalidIndex && !isTesting;
 
-    fetchConfig('claude-api-key')
-      .then((value) => {
-        if (cancelled) return;
-        setConfigs(Array.isArray(value) ? (value as ProviderKeyConfig[]) : []);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        const message = err instanceof Error ? err.message : '';
-        setError(message || t('notification.refresh_failed'));
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setLoading(false);
+  const modelSelectOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return form.modelEntries.reduce<Array<{ value: string; label: string }>>((acc, entry) => {
+      const name = entry.name.trim();
+      if (!name || seen.has(name)) return acc;
+      seen.add(name);
+      const alias = entry.alias.trim();
+      acc.push({
+        value: name,
+        label: alias && alias !== name ? `${name} (${alias})` : name,
       });
+      return acc;
+    }, []);
+  }, [form.modelEntries]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchConfig, t]);
+  const connectivityConfigSignature = useMemo(() => {
+    const headersSignature = form.headers
+      .map((entry) => `${entry.key.trim()}:${entry.value.trim()}`)
+      .join('|');
+    const modelsSignature = form.modelEntries
+      .map((entry) => `${entry.name.trim()}:${entry.alias.trim()}`)
+      .join('|');
+    return [
+      form.apiKey.trim(),
+      form.baseUrl?.trim() ?? '',
+      testModel.trim(),
+      headersSignature,
+      modelsSignature,
+    ].join('||');
+  }, [form.apiKey, form.baseUrl, form.headers, form.modelEntries, testModel]);
+
+  const previousConnectivityConfigRef = useRef(connectivityConfigSignature);
 
   useEffect(() => {
-    if (loading) return;
-
-    if (initialData) {
-      setForm({
-        ...initialData,
-        headers: headersToEntries(initialData.headers),
-        modelEntries: modelsToEntries(initialData.models),
-        excludedText: excludedModelsToText(initialData.excludedModels),
-      });
+    if (previousConnectivityConfigRef.current === connectivityConfigSignature) {
       return;
     }
-    setForm(buildEmptyForm());
-  }, [initialData, loading]);
+    previousConnectivityConfigRef.current = connectivityConfigSignature;
+    setTestStatus('idle');
+    setTestMessage('');
+  }, [connectivityConfigSignature, setTestMessage, setTestStatus]);
 
-  const canSave = !disableControls && !saving && !loading && !invalidIndexParam && !invalidIndex;
+  const openClaudeModelDiscovery = () => {
+    navigate('models');
+  };
 
-  const handleSave = useCallback(async () => {
-    if (!canSave) return;
+  const runClaudeConnectivityTest = useCallback(async () => {
+    if (isTesting) return;
 
-    setSaving(true);
-    setError('');
+    const modelName = testModel.trim() || availableModels[0] || '';
+    if (!modelName) {
+      const message = t('ai_providers.claude_test_model_required');
+      setTestStatus('error');
+      setTestMessage(message);
+      showNotification(message, 'error');
+      return;
+    }
+
+    const customHeaders = buildHeaderObject(form.headers);
+    const apiKey = form.apiKey.trim();
+    const hasApiKeyHeader = hasHeader(customHeaders, 'x-api-key');
+    const apiKeyFromAuthorization = resolveBearerTokenFromAuthorization(customHeaders);
+    const resolvedApiKey = apiKey || apiKeyFromAuthorization;
+
+    if (!resolvedApiKey && !hasApiKeyHeader) {
+      const message = t('ai_providers.claude_test_key_required');
+      setTestStatus('error');
+      setTestMessage(message);
+      showNotification(message, 'error');
+      return;
+    }
+
+    const endpoint = buildClaudeMessagesEndpoint(form.baseUrl ?? '');
+    if (!endpoint) {
+      const message = t('ai_providers.claude_test_endpoint_invalid');
+      setTestStatus('error');
+      setTestMessage(message);
+      showNotification(message, 'error');
+      return;
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...customHeaders,
+    };
+
+    if (!hasHeader(headers, 'anthropic-version')) {
+      headers['anthropic-version'] = DEFAULT_ANTHROPIC_VERSION;
+    }
+    if (!Object.prototype.hasOwnProperty.call(headers, 'Anthropic-Version')) {
+      headers['Anthropic-Version'] = headers['anthropic-version'] ?? DEFAULT_ANTHROPIC_VERSION;
+    }
+
+    if (!hasApiKeyHeader && resolvedApiKey) {
+      headers['x-api-key'] = resolvedApiKey;
+    }
+    if (!Object.prototype.hasOwnProperty.call(headers, 'X-Api-Key') && resolvedApiKey) {
+      headers['X-Api-Key'] = resolvedApiKey;
+    }
+
+    setIsTesting(true);
+    setTestStatus('loading');
+    setTestMessage(t('ai_providers.claude_test_running'));
+
     try {
-      const payload: ProviderKeyConfig = {
-        apiKey: form.apiKey.trim(),
-        prefix: form.prefix?.trim() || undefined,
-        baseUrl: (form.baseUrl ?? '').trim() || undefined,
-        proxyUrl: form.proxyUrl?.trim() || undefined,
-        headers: buildHeaderObject(form.headers),
-        models: form.modelEntries
-          .map((entry) => {
-            const name = entry.name.trim();
-            if (!name) return null;
-            const alias = entry.alias.trim();
-            return { name, alias: alias || name };
-          })
-          .filter(Boolean) as ProviderKeyConfig['models'],
-        excludedModels: parseExcludedModels(form.excludedText),
-      };
-
-      const nextList =
-        editIndex !== null
-          ? configs.map((item, idx) => (idx === editIndex ? payload : item))
-          : [...configs, payload];
-
-      await providersApi.saveClaudeConfigs(nextList);
-      updateConfigValue('claude-api-key', nextList);
-      clearCache('claude-api-key');
-      showNotification(
-        editIndex !== null ? t('notification.claude_config_updated') : t('notification.claude_config_added'),
-        'success'
+      const result = await apiCallApi.request(
+        {
+          method: 'POST',
+          url: endpoint,
+          header: headers,
+          data: JSON.stringify({
+            model: modelName,
+            max_tokens: 8,
+            messages: [{ role: 'user', content: 'Hi' }],
+          }),
+        },
+        { timeout: CLAUDE_TEST_TIMEOUT_MS }
       );
-      handleBack();
+
+      if (result.statusCode < 200 || result.statusCode >= 300) {
+        throw new Error(getApiCallErrorMessage(result));
+      }
+
+      const message = t('ai_providers.claude_test_success');
+      setTestStatus('success');
+      setTestMessage(message);
+      showNotification(message, 'success');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '';
-      setError(message);
-      showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+      const message = getErrorMessage(err);
+      const errorCode =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? String((err as { code?: string }).code)
+          : '';
+      const isTimeout = errorCode === 'ECONNABORTED' || message.toLowerCase().includes('timeout');
+      const resolvedMessage = isTimeout
+        ? t('ai_providers.claude_test_timeout', { seconds: CLAUDE_TEST_TIMEOUT_MS / 1000 })
+        : `${t('ai_providers.claude_test_failed')}: ${message || t('common.unknown_error')}`;
+      setTestStatus('error');
+      setTestMessage(resolvedMessage);
+      showNotification(resolvedMessage, 'error');
     } finally {
-      setSaving(false);
+      setIsTesting(false);
     }
   }, [
-    canSave,
-    clearCache,
-    configs,
-    editIndex,
-    form,
-    handleBack,
+    availableModels,
+    form.apiKey,
+    form.baseUrl,
+    form.headers,
+    isTesting,
+    setTestMessage,
+    setTestStatus,
     showNotification,
     t,
-    updateConfigValue,
+    testModel,
   ]);
 
   return (
@@ -200,7 +249,7 @@ export function AiProvidersClaudeEditPage() {
       backLabel={t('common.back')}
       backAriaLabel={t('common.back')}
       rightAction={
-        <Button size="sm" onClick={handleSave} loading={saving} disabled={!canSave}>
+        <Button size="sm" onClick={() => void handleSave()} loading={saving} disabled={!canSave}>
           {t('common.save')}
         </Button>
       }
@@ -208,16 +257,15 @@ export function AiProvidersClaudeEditPage() {
       loadingLabel={t('common.loading')}
     >
       <Card>
-        {error && <div className="error-box">{error}</div>}
         {invalidIndexParam || invalidIndex ? (
-          <div className="hint">{t('common.invalid_provider_index')}</div>
+          <div className={styles.sectionHint}>{t('common.invalid_provider_index')}</div>
         ) : (
-          <>
+          <div className={styles.openaiEditForm}>
             <Input
               label={t('ai_providers.claude_add_modal_key_label')}
               value={form.apiKey}
               onChange={(e) => setForm((prev) => ({ ...prev, apiKey: e.target.value }))}
-              disabled={disableControls || saving}
+              disabled={saving || disableControls || isTesting}
             />
             <Input
               label={t('ai_providers.prefix_label')}
@@ -225,19 +273,19 @@ export function AiProvidersClaudeEditPage() {
               value={form.prefix ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, prefix: e.target.value }))}
               hint={t('ai_providers.prefix_hint')}
-              disabled={disableControls || saving}
+              disabled={saving || disableControls || isTesting}
             />
             <Input
               label={t('ai_providers.claude_add_modal_url_label')}
               value={form.baseUrl ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
-              disabled={disableControls || saving}
+              disabled={saving || disableControls || isTesting}
             />
             <Input
               label={t('ai_providers.claude_add_modal_proxy_label')}
               value={form.proxyUrl ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
-              disabled={disableControls || saving}
+              disabled={saving || disableControls || isTesting}
             />
             <HeaderInputList
               entries={form.headers}
@@ -247,21 +295,117 @@ export function AiProvidersClaudeEditPage() {
               valuePlaceholder={t('common.custom_headers_value_placeholder')}
               removeButtonTitle={t('common.delete')}
               removeButtonAriaLabel={t('common.delete')}
-              disabled={disableControls || saving}
+              disabled={saving || disableControls || isTesting}
             />
-            <div className="form-group">
-              <label>{t('ai_providers.claude_models_label')}</label>
+
+            <div className={styles.modelConfigSection}>
+              <div className={styles.modelConfigHeader}>
+                <label className={styles.modelConfigTitle}>{t('ai_providers.claude_models_label')}</label>
+                <div className={styles.modelConfigToolbar}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        modelEntries: [...prev.modelEntries, { name: '', alias: '' }],
+                      }))
+                    }
+                    disabled={saving || disableControls || isTesting}
+                  >
+                    {t('ai_providers.claude_models_add_btn')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={openClaudeModelDiscovery}
+                    disabled={saving || disableControls || isTesting}
+                  >
+                    {t('ai_providers.claude_models_fetch_button')}
+                  </Button>
+                </div>
+              </div>
+
+              <div className={styles.sectionHint}>{t('ai_providers.claude_models_hint')}</div>
+
               <ModelInputList
                 entries={form.modelEntries}
                 onChange={(entries) => setForm((prev) => ({ ...prev, modelEntries: entries }))}
-                addLabel={t('ai_providers.claude_models_add_btn')}
                 namePlaceholder={t('common.model_name_placeholder')}
                 aliasPlaceholder={t('common.model_alias_placeholder')}
+                disabled={saving || disableControls || isTesting}
+                hideAddButton
+                className={styles.modelInputList}
+                rowClassName={styles.modelInputRow}
+                inputClassName={styles.modelInputField}
+                removeButtonClassName={styles.modelRowRemoveButton}
                 removeButtonTitle={t('common.delete')}
                 removeButtonAriaLabel={t('common.delete')}
-                disabled={disableControls || saving}
               />
+
+              <div className={styles.modelTestPanel}>
+                <div className={styles.modelTestMeta}>
+                  <label className={styles.modelTestLabel}>{t('ai_providers.claude_test_title')}</label>
+                  <span className={styles.modelTestHint}>{t('ai_providers.claude_test_hint')}</span>
+                </div>
+                <div className={styles.modelTestControls}>
+                  <Select
+                    value={testModel}
+                    options={modelSelectOptions}
+                    onChange={(value) => {
+                      setTestModel(value);
+                      setTestStatus('idle');
+                      setTestMessage('');
+                    }}
+                    placeholder={
+                      availableModels.length
+                        ? t('ai_providers.claude_test_select_placeholder')
+                        : t('ai_providers.claude_test_select_empty')
+                    }
+                    className={styles.openaiTestSelect}
+                    ariaLabel={t('ai_providers.claude_test_title')}
+                    disabled={
+                      saving ||
+                      disableControls ||
+                      isTesting ||
+                      testStatus === 'loading' ||
+                      availableModels.length === 0
+                    }
+                  />
+                  <Button
+                    variant={testStatus === 'error' ? 'danger' : 'secondary'}
+                    size="sm"
+                    onClick={() => void runClaudeConnectivityTest()}
+                    loading={testStatus === 'loading'}
+                    disabled={
+                      saving ||
+                      disableControls ||
+                      isTesting ||
+                      testStatus === 'loading' ||
+                      availableModels.length === 0
+                    }
+                    className={styles.modelTestAllButton}
+                  >
+                    {t('ai_providers.claude_test_action')}
+                  </Button>
+                </div>
+              </div>
+
+              {testMessage && (
+                <div
+                  className={`status-badge ${
+                    testStatus === 'error'
+                      ? 'error'
+                      : testStatus === 'success'
+                        ? 'success'
+                        : 'muted'
+                  }`}
+                >
+                  {testMessage}
+                </div>
+              )}
             </div>
+
             <div className="form-group">
               <label>{t('ai_providers.excluded_models_label')}</label>
               <textarea
@@ -270,11 +414,11 @@ export function AiProvidersClaudeEditPage() {
                 value={form.excludedText}
                 onChange={(e) => setForm((prev) => ({ ...prev, excludedText: e.target.value }))}
                 rows={4}
-                disabled={disableControls || saving}
+                disabled={saving || disableControls || isTesting}
               />
               <div className="hint">{t('ai_providers.excluded_models_hint')}</div>
             </div>
-          </>
+          </div>
         )}
       </Card>
     </SecondaryScreenShell>

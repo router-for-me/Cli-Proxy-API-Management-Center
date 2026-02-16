@@ -2,7 +2,9 @@ import { Navigate, useRoutes, type Location } from 'react-router-dom';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { AiProvidersPage } from '@/pages/AiProvidersPage';
 import { AiProvidersAmpcodeEditPage } from '@/pages/AiProvidersAmpcodeEditPage';
+import { AiProvidersClaudeEditLayout } from '@/pages/AiProvidersClaudeEditLayout';
 import { AiProvidersClaudeEditPage } from '@/pages/AiProvidersClaudeEditPage';
+import { AiProvidersClaudeModelsPage } from '@/pages/AiProvidersClaudeModelsPage';
 import { AiProvidersCodexEditPage } from '@/pages/AiProvidersCodexEditPage';
 import { AiProvidersGeminiEditPage } from '@/pages/AiProvidersGeminiEditPage';
 import { AiProvidersOpenAIEditLayout } from '@/pages/AiProvidersOpenAIEditLayout';
@@ -28,8 +30,22 @@ const mainRoutes = [
   { path: '/ai-providers/gemini/:index', element: <AiProvidersGeminiEditPage /> },
   { path: '/ai-providers/codex/new', element: <AiProvidersCodexEditPage /> },
   { path: '/ai-providers/codex/:index', element: <AiProvidersCodexEditPage /> },
-  { path: '/ai-providers/claude/new', element: <AiProvidersClaudeEditPage /> },
-  { path: '/ai-providers/claude/:index', element: <AiProvidersClaudeEditPage /> },
+  {
+    path: '/ai-providers/claude/new',
+    element: <AiProvidersClaudeEditLayout />,
+    children: [
+      { index: true, element: <AiProvidersClaudeEditPage /> },
+      { path: 'models', element: <AiProvidersClaudeModelsPage /> },
+    ],
+  },
+  {
+    path: '/ai-providers/claude/:index',
+    element: <AiProvidersClaudeEditLayout />,
+    children: [
+      { index: true, element: <AiProvidersClaudeEditPage /> },
+      { path: 'models', element: <AiProvidersClaudeModelsPage /> },
+    ],
+  },
   { path: '/ai-providers/vertex/new', element: <AiProvidersVertexEditPage /> },
   { path: '/ai-providers/vertex/:index', element: <AiProvidersVertexEditPage /> },
   {
