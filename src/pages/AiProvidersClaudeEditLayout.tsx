@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { providersApi } from '@/services/api';
-import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
+import { useAuthStore, useClaudeEditDraftStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
 import type { ModelEntry, ProviderFormState } from '@/components/providers/types';
@@ -84,10 +84,54 @@ export function AiProvidersClaudeEditLayout() {
   const [configs, setConfigs] = useState<ProviderKeyConfig[]>(() => config?.claudeApiKeys ?? []);
   const [loading, setLoading] = useState(() => !isCacheValid('claude-api-key'));
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<ProviderFormState>(() => buildEmptyForm());
-  const [testModel, setTestModel] = useState('');
-  const [testStatus, setTestStatus] = useState<TestStatus>('idle');
-  const [testMessage, setTestMessage] = useState('');
+
+  const draftKey = useMemo(() => {
+    if (invalidIndexParam) return `claude:invalid:${params.index ?? 'unknown'}`;
+    if (editIndex === null) return 'claude:new';
+    return `claude:${editIndex}`;
+  }, [editIndex, invalidIndexParam, params.index]);
+
+  const draft = useClaudeEditDraftStore((state) => state.drafts[draftKey]);
+  const ensureDraft = useClaudeEditDraftStore((state) => state.ensureDraft);
+  const initDraft = useClaudeEditDraftStore((state) => state.initDraft);
+  const clearDraft = useClaudeEditDraftStore((state) => state.clearDraft);
+  const setDraftForm = useClaudeEditDraftStore((state) => state.setDraftForm);
+  const setDraftTestModel = useClaudeEditDraftStore((state) => state.setDraftTestModel);
+  const setDraftTestStatus = useClaudeEditDraftStore((state) => state.setDraftTestStatus);
+  const setDraftTestMessage = useClaudeEditDraftStore((state) => state.setDraftTestMessage);
+
+  const form = draft?.form ?? buildEmptyForm();
+  const testModel = draft?.testModel ?? '';
+  const testStatus = draft?.testStatus ?? 'idle';
+  const testMessage = draft?.testMessage ?? '';
+
+  const setForm: Dispatch<SetStateAction<ProviderFormState>> = useCallback(
+    (action) => {
+      setDraftForm(draftKey, action);
+    },
+    [draftKey, setDraftForm]
+  );
+
+  const setTestModel: Dispatch<SetStateAction<string>> = useCallback(
+    (action) => {
+      setDraftTestModel(draftKey, action);
+    },
+    [draftKey, setDraftTestModel]
+  );
+
+  const setTestStatus: Dispatch<SetStateAction<TestStatus>> = useCallback(
+    (action) => {
+      setDraftTestStatus(draftKey, action);
+    },
+    [draftKey, setDraftTestStatus]
+  );
+
+  const setTestMessage: Dispatch<SetStateAction<string>> = useCallback(
+    (action) => {
+      setDraftTestMessage(draftKey, action);
+    },
+    [draftKey, setDraftTestMessage]
+  );
 
   const initialData = useMemo(() => {
     if (editIndex === null) return undefined;
@@ -101,14 +145,19 @@ export function AiProvidersClaudeEditLayout() {
     [form.modelEntries]
   );
 
+  useEffect(() => {
+    ensureDraft(draftKey);
+  }, [draftKey, ensureDraft]);
+
   const handleBack = useCallback(() => {
+    clearDraft(draftKey);
     const state = location.state as LocationState;
     if (state?.fromAiProviders) {
       navigate(-1);
       return;
     }
     navigate('/ai-providers', { replace: true });
-  }, [location.state, navigate]);
+  }, [clearDraft, draftKey, location.state, navigate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,22 +188,37 @@ export function AiProvidersClaudeEditLayout() {
 
   useEffect(() => {
     if (loading) return;
+    if (draft?.initialized) return;
 
     if (initialData) {
-      setForm({
+      const seededForm: ProviderFormState = {
         ...initialData,
         headers: headersToEntries(initialData.headers),
         modelEntries: modelsToEntries(initialData.models),
         excludedText: excludedModelsToText(initialData.excludedModels),
+      };
+      const available = seededForm.modelEntries.map((entry) => entry.name.trim()).filter(Boolean);
+      initDraft(draftKey, {
+        form: seededForm,
+        testModel: available[0] || '',
+        testStatus: 'idle',
+        testMessage: '',
       });
       return;
     }
 
-    setForm(buildEmptyForm());
-  }, [initialData, loading]);
+    initDraft(draftKey, {
+      form: buildEmptyForm(),
+      testModel: '',
+      testStatus: 'idle',
+      testMessage: '',
+    });
+  }, [draft?.initialized, draftKey, initDraft, initialData, loading]);
+
+  const resolvedLoading = !draft?.initialized;
 
   useEffect(() => {
-    if (loading) return;
+    if (resolvedLoading) return;
 
     if (availableModels.length === 0) {
       if (testModel) {
@@ -170,7 +234,7 @@ export function AiProvidersClaudeEditLayout() {
       setTestStatus('idle');
       setTestMessage('');
     }
-  }, [availableModels, loading, testModel]);
+  }, [availableModels, resolvedLoading, setTestMessage, setTestModel, setTestStatus, testModel]);
 
   const mergeDiscoveredModels = useCallback(
     (selectedModels: ModelInfo[]) => {
@@ -203,11 +267,12 @@ export function AiProvidersClaudeEditLayout() {
         showNotification(t('ai_providers.claude_models_fetch_added', { count: addedCount }), 'success');
       }
     },
-    [showNotification, t]
+    [setForm, showNotification, t]
   );
 
   const handleSave = useCallback(async () => {
-    const canSave = !disableControls && !saving && !loading && !invalidIndexParam && !invalidIndex;
+    const canSave =
+      !disableControls && !saving && !resolvedLoading && !invalidIndexParam && !invalidIndex;
     if (!canSave) return;
 
     setSaving(true);
@@ -257,7 +322,7 @@ export function AiProvidersClaudeEditLayout() {
     handleBack,
     invalidIndex,
     invalidIndexParam,
-    loading,
+    resolvedLoading,
     saving,
     showNotification,
     t,
@@ -272,7 +337,7 @@ export function AiProvidersClaudeEditLayout() {
         invalidIndexParam,
         invalidIndex,
         disableControls,
-        loading,
+        loading: resolvedLoading,
         saving,
         form,
         setForm,
