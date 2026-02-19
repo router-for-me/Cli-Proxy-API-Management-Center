@@ -467,7 +467,7 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
         details.push({
           ...detail,
           source: normalizeUsageSourceId(detail.source),
-          failedStatusCode: extractFailedStatusCode(detailRecord),
+          failedStatusCode: extractFailedStatusCode(detailRaw),
           __modelName: modelName,
         });
       });

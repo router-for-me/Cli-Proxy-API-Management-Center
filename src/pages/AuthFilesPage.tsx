@@ -163,26 +163,35 @@ export function AuthFilesPage() {
       const quotaType = resolveAuthProvider(file) as QuotaProviderType;
       if (!QUOTA_PROVIDER_TYPES.has(quotaType)) return false;
 
-      const config =
-        (quotaType === 'antigravity'
-          ? ANTIGRAVITY_CONFIG
-          : quotaType === 'codex'
-            ? CODEX_CONFIG
-            : GEMINI_CLI_CONFIG) as any;
+      let config: any;
+      let setState: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
+      let quotaMap: Record<string, unknown>;
 
-      const setState: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void =
-        quotaType === 'antigravity'
-          ? (setAntigravityQuota as unknown as (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void)
-          : quotaType === 'codex'
-            ? (setCodexQuota as unknown as (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void)
-            : (setGeminiCliQuota as unknown as (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void);
-
-      const quotaMap =
-        quotaType === 'antigravity'
-          ? antigravityQuota
-          : quotaType === 'codex'
-            ? codexQuota
-            : geminiCliQuota;
+      switch (quotaType) {
+        case 'antigravity':
+          config = ANTIGRAVITY_CONFIG;
+          setState = setAntigravityQuota as unknown as (
+            updater: (prev: Record<string, unknown>) => Record<string, unknown>
+          ) => void;
+          quotaMap = antigravityQuota as unknown as Record<string, unknown>;
+          break;
+        case 'codex':
+          config = CODEX_CONFIG;
+          setState = setCodexQuota as unknown as (
+            updater: (prev: Record<string, unknown>) => Record<string, unknown>
+          ) => void;
+          quotaMap = codexQuota as unknown as Record<string, unknown>;
+          break;
+        case 'gemini-cli':
+          config = GEMINI_CLI_CONFIG;
+          setState = setGeminiCliQuota as unknown as (
+            updater: (prev: Record<string, unknown>) => Record<string, unknown>
+          ) => void;
+          quotaMap = geminiCliQuota as unknown as Record<string, unknown>;
+          break;
+        default:
+          return false;
+      }
 
       const quota = quotaMap[file.name] as
         | AntigravityQuotaState
