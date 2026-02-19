@@ -479,7 +479,18 @@
     "prefix_proxy_invalid_json": "This auth file is not a JSON object, so fields cannot be edited.",
     "prefix_proxy_saved_success": "Updated auth file \"{{name}}\" successfully",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "refresh_visible_quota_button": "Refresh Visible Quota",
+    "refresh_visible_quota_none": "No quota-supported auth files on this page",
+    "refresh_visible_quota_success": "Refreshed quota for {{count}} auth files",
+    "refresh_visible_quota_partial": "Quota refresh finished: {{success}} succeeded, {{failed}} failed",
+    "batch_select_abnormal": "Select Abnormal",
+    "select_abnormal_none": "No abnormal auth files on this page",
+    "select_abnormal_success": "Selected {{count}} abnormal auth files",
+    "batch_select_by_code": "Select by Code",
+    "select_by_code_none_selected": "Select at least one code",
+    "select_by_code_empty": "No auth files matched selected codes",
+    "select_by_code_success": "Selected {{count}} auth files by code"
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",

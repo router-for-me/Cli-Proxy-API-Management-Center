@@ -39,6 +39,7 @@ export interface UsageDetail {
   timestamp: string;
   source: string;
   auth_index: number;
+  failedStatusCode?: number;
   tokens: {
     input_tokens: number;
     output_tokens: number;
@@ -466,6 +467,7 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
         details.push({
           ...detail,
           source: normalizeUsageSourceId(detail.source),
+          failedStatusCode: extractFailedStatusCode(detailRecord),
           __modelName: modelName,
         });
       });
@@ -477,6 +479,102 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
 /**
  * 从单条明细提取总 tokens
  */
+
+const parseStatusCodeFromUnknown = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const code = Math.trunc(value);
+    return code >= 100 && code <= 599 ? code : undefined;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    if (!/^\d{3}$/.test(trimmed)) return undefined;
+    const code = Number.parseInt(trimmed, 10);
+    return code >= 100 && code <= 599 ? code : undefined;
+  }
+  return undefined;
+};
+
+export function extractFailedStatusCode(detail: unknown): number | undefined {
+  const record = isRecord(detail) ? detail : null;
+  if (!record) return undefined;
+
+  const directCandidates = [
+    record.status_code,
+    record.statusCode,
+    record.http_status,
+    record.httpStatus,
+    record.response_status,
+    record.responseStatus,
+    record.error_status,
+    record.errorStatus,
+    record.code,
+    record.error_code,
+    record.errorCode,
+  ];
+
+  for (const candidate of directCandidates) {
+    const parsed = parseStatusCodeFromUnknown(candidate);
+    if (parsed !== undefined) return parsed;
+  }
+
+  const nestedCandidates: unknown[] = [];
+  const errorRecord = isRecord(record.error) ? record.error : null;
+  if (errorRecord) {
+    nestedCandidates.push(
+      errorRecord.status,
+      errorRecord.status_code,
+      errorRecord.statusCode,
+      errorRecord.http_status,
+      errorRecord.httpStatus,
+      errorRecord.code,
+      errorRecord.error_code,
+      errorRecord.errorCode,
+    );
+  }
+
+  const responseRecord = isRecord(record.response) ? record.response : null;
+  if (responseRecord) {
+    nestedCandidates.push(
+      responseRecord.status,
+      responseRecord.status_code,
+      responseRecord.statusCode,
+      responseRecord.http_status,
+      responseRecord.httpStatus,
+      responseRecord.code,
+    );
+  }
+
+  for (const candidate of nestedCandidates) {
+    const parsed = parseStatusCodeFromUnknown(candidate);
+    if (parsed !== undefined) return parsed;
+  }
+
+  const textCandidates = [
+    typeof record.message === 'string' ? record.message : '',
+    typeof record.error_message === 'string' ? record.error_message : '',
+    typeof record.errorMessage === 'string' ? record.errorMessage : '',
+    typeof record.body === 'string' ? record.body : '',
+  ];
+
+  for (const text of textCandidates) {
+    if (!text) continue;
+    const match = text.match(/([1-5]\d{2})/);
+    if (!match?.[1]) continue;
+    const parsed = parseStatusCodeFromUnknown(match[1]);
+    if (parsed !== undefined) return parsed;
+  }
+
+  return undefined;
+}
+
+export function getFailedStatusCodeLabel(code: number | undefined): string {
+  if (typeof code === 'number' && Number.isFinite(code)) {
+    return String(Math.trunc(code));
+  }
+  return 'unknown';
+}
+
 export function extractTotalTokens(detail: unknown): number {
   const record = isRecord(detail) ? detail : null;
   const tokensRaw = record?.tokens;

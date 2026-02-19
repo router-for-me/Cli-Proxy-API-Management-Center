@@ -479,7 +479,18 @@
     "prefix_proxy_invalid_json": "该认证文件不是 JSON 对象，无法编辑字段。",
     "prefix_proxy_saved_success": "已更新认证文件 \"{{name}}\"",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
-    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
+    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
+    "refresh_visible_quota_button": "刷新本页额度",
+    "refresh_visible_quota_none": "本页没有可刷新额度的认证文件",
+    "refresh_visible_quota_success": "已刷新 {{count}} 个认证文件的额度",
+    "refresh_visible_quota_partial": "额度刷新完成：成功 {{success}} 个，失败 {{failed}} 个",
+    "batch_select_abnormal": "勾选非正常",
+    "select_abnormal_none": "本页没有非正常状态认证文件",
+    "select_abnormal_success": "已勾选 {{count}} 个非正常状态认证文件",
+    "batch_select_by_code": "按错误码勾选",
+    "select_by_code_none_selected": "请先选择错误码",
+    "select_by_code_empty": "没有认证文件命中已选错误码",
+    "select_by_code_success": "已按错误码勾选 {{count}} 个认证文件"
   },
   "antigravity_quota": {
     "title": "Antigravity 额度",

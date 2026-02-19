@@ -482,7 +482,18 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "refresh_visible_quota_button": "Обновить квоту на странице",
+    "refresh_visible_quota_none": "На этой странице нет файлов с поддержкой квоты",
+    "refresh_visible_quota_success": "Квота обновлена для {{count}} файлов",
+    "refresh_visible_quota_partial": "Обновление квоты завершено: успешно {{success}}, с ошибкой {{failed}}",
+    "batch_select_abnormal": "Выбрать аномальные",
+    "select_abnormal_none": "На этой странице нет файлов с аномальным статусом",
+    "select_abnormal_success": "Выбрано {{count}} файлов с аномальным статусом",
+    "batch_select_by_code": "Выбрать по коду",
+    "select_by_code_none_selected": "Выберите хотя бы один код",
+    "select_by_code_empty": "Нет файлов, подходящих под выбранные коды",
+    "select_by_code_success": "Выбрано {{count}} файлов по коду"
   },
   "antigravity_quota": {
     "title": "Квота Antigravity",

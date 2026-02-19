@@ -33,6 +33,8 @@ export type UseAuthFilesDataResult = {
   handleStatusToggle: (item: AuthFileItem, enabled: boolean) => Promise<void>;
   toggleSelect: (name: string) => void;
   selectAllVisible: (visibleFiles: AuthFileItem[]) => void;
+  selectAbnormalVisible: (visibleFiles: AuthFileItem[]) => number;
+  selectByNames: (names: string[]) => number;
   deselectAll: () => void;
   batchSetStatus: (names: string[], enabled: boolean) => Promise<void>;
   batchDelete: (names: string[]) => void;
@@ -76,6 +78,20 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
       .filter((file) => !isRuntimeOnlyAuthFile(file))
       .map((file) => file.name);
     setSelectedFiles(new Set(nextSelected));
+  }, []);
+
+  const selectAbnormalVisible = useCallback((visibleFiles: AuthFileItem[]) => {
+    const abnormal = visibleFiles
+      .filter((file) => !isRuntimeOnlyAuthFile(file) && file.disabled === true)
+      .map((file) => file.name);
+    setSelectedFiles(new Set(abnormal));
+    return abnormal.length;
+  }, []);
+
+  const selectByNames = useCallback((names: string[]) => {
+    const normalized = Array.from(new Set(names.filter((name) => typeof name === 'string' && name.trim().length > 0)));
+    setSelectedFiles(new Set(normalized));
+    return normalized.length;
   }, []);
 
   const deselectAll = useCallback(() => {
@@ -512,6 +528,8 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     handleStatusToggle,
     toggleSelect,
     selectAllVisible,
+    selectAbnormalVisible,
+    selectByNames,
     deselectAll,
     batchSetStatus,
     batchDelete

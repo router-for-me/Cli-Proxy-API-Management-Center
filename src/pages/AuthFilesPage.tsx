@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { copyToClipboard } from '@/utils/clipboard';
+import { getFailedStatusCodeLabel, type UsageDetail } from '@/utils/usage';
 import {
   MAX_CARD_PAGE_SIZE,
   MIN_CARD_PAGE_SIZE,
@@ -36,8 +37,10 @@ import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAut
 import { useAuthFilesStats } from '@/features/authFiles/hooks/useAuthFilesStats';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { readAuthFilesUiState, writeAuthFilesUiState } from '@/features/authFiles/uiState';
-import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
-import type { AuthFileItem } from '@/types';
+import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
+import type { AuthFileItem, AntigravityQuotaState, CodexQuotaState, GeminiCliQuotaState } from '@/types';
+import { ANTIGRAVITY_CONFIG, CODEX_CONFIG, GEMINI_CLI_CONFIG } from '@/components/quota';
+import { getStatusFromError, resolveAuthProvider } from '@/utils/quota';
 import styles from './AuthFilesPage.module.scss';
 
 export function AuthFilesPage() {
@@ -61,6 +64,7 @@ export function AuthFilesPage() {
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
   const previousSelectionCountRef = useRef(0);
   const selectionCountRef = useRef(0);
+  const [selectedErrorCodes, setSelectedErrorCodes] = useState<Set<string>>(new Set());
 
   const { keyStats, usageDetails, loadKeyStats } = useAuthFilesStats();
   const {
@@ -83,6 +87,8 @@ export function AuthFilesPage() {
     handleStatusToggle,
     toggleSelect,
     selectAllVisible,
+    selectAbnormalVisible,
+    selectByNames,
     deselectAll,
     batchSetStatus,
     batchDelete
@@ -139,6 +145,87 @@ export function AuthFilesPage() {
   )
     ? (normalizedFilter as QuotaProviderType)
     : null;
+  const { antigravityQuota, codexQuota, geminiCliQuota, setAntigravityQuota, setCodexQuota, setGeminiCliQuota } =
+    useQuotaStore((state) => ({
+      antigravityQuota: state.antigravityQuota,
+      codexQuota: state.codexQuota,
+      geminiCliQuota: state.geminiCliQuota,
+      setAntigravityQuota: state.setAntigravityQuota,
+      setCodexQuota: state.setCodexQuota,
+      setGeminiCliQuota: state.setGeminiCliQuota
+    }));
+
+  const refreshQuotaForFile = useCallback(
+    async (file: AuthFileItem): Promise<boolean> => {
+      if (disableControls) return false;
+      if (isRuntimeOnlyAuthFile(file) || file.disabled) return false;
+
+      const quotaType = resolveAuthProvider(file) as QuotaProviderType;
+      if (!QUOTA_PROVIDER_TYPES.has(quotaType)) return false;
+
+      const config =
+        (quotaType === 'antigravity'
+          ? ANTIGRAVITY_CONFIG
+          : quotaType === 'codex'
+            ? CODEX_CONFIG
+            : GEMINI_CLI_CONFIG) as any;
+
+      const setState: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void =
+        quotaType === 'antigravity'
+          ? (setAntigravityQuota as unknown as (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void)
+          : quotaType === 'codex'
+            ? (setCodexQuota as unknown as (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void)
+            : (setGeminiCliQuota as unknown as (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void);
+
+      const quotaMap =
+        quotaType === 'antigravity'
+          ? antigravityQuota
+          : quotaType === 'codex'
+            ? codexQuota
+            : geminiCliQuota;
+
+      const quota = quotaMap[file.name] as
+        | AntigravityQuotaState
+        | CodexQuotaState
+        | GeminiCliQuotaState
+        | undefined;
+
+      if (quota?.status === 'loading') return false;
+
+      setState((prev: Record<string, unknown>) => ({
+        ...prev,
+        [file.name]: config.buildLoadingState()
+      }));
+
+      try {
+        const data = await config.fetchQuota(file, t as any);
+        setState((prev: Record<string, unknown>) => ({
+          ...prev,
+          [file.name]: config.buildSuccessState(data)
+        }));
+        return true;
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('common.unknown_error');
+        const status = getStatusFromError(err);
+        setState((prev: Record<string, unknown>) => ({
+          ...prev,
+          [file.name]: config.buildErrorState(message, status)
+        }));
+        return false;
+      }
+    },
+    [
+      antigravityQuota,
+      codexQuota,
+      disableControls,
+      geminiCliQuota,
+      setAntigravityQuota,
+      setCodexQuota,
+      setGeminiCliQuota,
+      t
+    ]
+  );
+
 
   useEffect(() => {
     const persisted = readAuthFilesUiState();
@@ -259,6 +346,141 @@ export function AuthFilesPage() {
     [pageItems]
   );
   const selectedNames = useMemo(() => Array.from(selectedFiles), [selectedFiles]);
+
+  const usageDetailsByAuthIndex = useMemo(() => {
+    const map = new Map<string, UsageDetail[]>();
+    usageDetails.forEach((detail) => {
+      const key = normalizeProviderKey(String(detail.auth_index ?? '')).trim();
+      if (!key) return;
+      const prev = map.get(key);
+      if (prev) {
+        prev.push(detail);
+      } else {
+        map.set(key, [detail]);
+      }
+    });
+    return map;
+  }, [usageDetails]);
+
+  const pageErrorCodeOptions = useMemo(() => {
+    const set = new Set<string>();
+    selectablePageItems.forEach((file) => {
+      const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+      const authIndexKey = rawAuthIndex === undefined || rawAuthIndex === null ? '' : String(rawAuthIndex).trim();
+      if (!authIndexKey) return;
+      const details = usageDetailsByAuthIndex.get(authIndexKey) || [];
+      details.forEach((detail) => {
+        if (!detail.failed) return;
+        set.add(getFailedStatusCodeLabel(detail.failedStatusCode));
+      });
+    });
+
+    const options = Array.from(set);
+    return options.sort((a, b) => {
+      if (a === 'unknown') return 1;
+      if (b === 'unknown') return -1;
+      return Number(a) - Number(b);
+    });
+  }, [selectablePageItems, usageDetailsByAuthIndex]);
+
+  useEffect(() => {
+    setSelectedErrorCodes((prev) => {
+      if (prev.size === 0) return prev;
+      const available = new Set(pageErrorCodeOptions);
+      let changed = false;
+      const next = new Set<string>();
+      prev.forEach((code) => {
+        if (available.has(code)) {
+          next.add(code);
+        } else {
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [pageErrorCodeOptions]);
+
+  const toggleErrorCodeSelection = useCallback((code: string) => {
+    setSelectedErrorCodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) {
+        next.delete(code);
+      } else {
+        next.add(code);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectByErrorCodes = useCallback(() => {
+    if (selectedErrorCodes.size === 0) {
+      showNotification(t('auth_files.select_by_code_none_selected'), 'info');
+      return;
+    }
+
+    const matched = new Set<string>();
+    selectablePageItems.forEach((file) => {
+      const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+      const authIndexKey = rawAuthIndex === undefined || rawAuthIndex === null ? '' : String(rawAuthIndex).trim();
+      if (!authIndexKey) return;
+      const details = usageDetailsByAuthIndex.get(authIndexKey) || [];
+      const hit = details.some((detail) => {
+        if (!detail.failed) return false;
+        const code = getFailedStatusCodeLabel(detail.failedStatusCode);
+        return selectedErrorCodes.has(code);
+      });
+      if (hit) {
+        matched.add(file.name);
+      }
+    });
+
+    const count = selectByNames(Array.from(matched));
+    if (count === 0) {
+      showNotification(t('auth_files.select_by_code_empty'), 'info');
+      return;
+    }
+    showNotification(t('auth_files.select_by_code_success', { count }), 'success');
+  }, [selectByNames, selectablePageItems, selectedErrorCodes, showNotification, t, usageDetailsByAuthIndex]);
+
+  const handleRefreshVisibleQuota = useCallback(async () => {
+    if (disableControls) return;
+
+    const eligible = pageItems.filter((file) => {
+      if (isRuntimeOnlyAuthFile(file) || file.disabled) return false;
+      const provider = resolveAuthProvider(file) as QuotaProviderType;
+      return QUOTA_PROVIDER_TYPES.has(provider);
+    });
+
+    if (eligible.length === 0) {
+      showNotification(t('auth_files.refresh_visible_quota_none'), 'info');
+      return;
+    }
+
+    let success = 0;
+    for (const file of eligible) {
+      const ok = await refreshQuotaForFile(file);
+      if (ok) success += 1;
+    }
+
+    const failed = eligible.length - success;
+    if (failed === 0) {
+      showNotification(t('auth_files.refresh_visible_quota_success', { count: success }), 'success');
+    } else {
+      showNotification(
+        t('auth_files.refresh_visible_quota_partial', { success, failed, count: eligible.length }),
+        'warning'
+      );
+    }
+  }, [disableControls, pageItems, refreshQuotaForFile, showNotification, t]);
+
+  const handleSelectAbnormalVisible = useCallback(() => {
+    const count = selectAbnormalVisible(pageItems);
+    if (count === 0) {
+      showNotification(t('auth_files.select_abnormal_none'), 'info');
+      return;
+    }
+    showNotification(t('auth_files.select_abnormal_success', { count }), 'success');
+  }, [pageItems, selectAbnormalVisible, showNotification, t]);
 
   const showDetails = (file: AuthFileItem) => {
     setSelectedFile(file);
@@ -425,6 +647,14 @@ export function AuthFilesPage() {
           <div className={styles.headerActions}>
             <Button variant="secondary" size="sm" onClick={handleHeaderRefresh} disabled={loading}>
               {t('common.refresh')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void handleRefreshVisibleQuota()}
+              disabled={disableControls || loading || pageItems.length === 0}
+            >
+              {t('auth_files.refresh_visible_quota_button')}
             </Button>
             <Button
               size="sm"
@@ -623,6 +853,33 @@ export function AuthFilesPage() {
                     disabled={selectablePageItems.length === 0}
                   >
                     {t('auth_files.batch_select_all')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleSelectAbnormalVisible}
+                    disabled={selectablePageItems.length === 0}
+                  >
+                    {t('auth_files.batch_select_abnormal')}
+                  </Button>
+                  {pageErrorCodeOptions.map((code) => (
+                    <Button
+                      key={code}
+                      variant={selectedErrorCodes.has(code) ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => toggleErrorCodeSelection(code)}
+                      disabled={selectablePageItems.length === 0}
+                    >
+                      {code}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleSelectByErrorCodes}
+                    disabled={selectablePageItems.length === 0 || selectedErrorCodes.size === 0}
+                  >
+                    {t('auth_files.batch_select_by_code')}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={deselectAll}>
                     {t('auth_files.batch_deselect')}
