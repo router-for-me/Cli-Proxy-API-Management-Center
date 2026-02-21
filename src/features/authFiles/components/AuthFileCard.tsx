@@ -117,9 +117,9 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const isFileDisabled = file.disabled === true || rawStatus === 'disabled';
   const isUnavailable = file.unavailable === true || rawStatus === 'unavailable';
   const lastRefreshDate = parseDateFromUnknown(file['last_refresh'] ?? file.lastRefresh);
-  const isRefreshStale =
-    Boolean(lastRefreshDate) &&
-    Date.now() - lastRefreshDate.getTime() > AUTH_FILE_REFRESH_WARNING_MS;
+  const isRefreshStale = lastRefreshDate
+    ? Date.now() - lastRefreshDate.getTime() > AUTH_FILE_REFRESH_WARNING_MS
+    : false;
   const hasStatusWarning =
     Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(normalizedStatusMessage);
   const hasStatusFailure = rawStatus === 'error' || rawStatus === 'failed' || rawStatus === 'warning';
@@ -156,13 +156,16 @@ export function AuthFileCard(props: AuthFileCardProps) {
     ];
     const matched = units.find(({ ms }) => absMs >= ms) || units[units.length - 1];
     const value = Math.round(diffMs / matched.ms);
+    if (typeof Intl === 'undefined' || typeof Intl.RelativeTimeFormat !== 'function') {
+      return lastRefreshDate.toLocaleString(i18n.language);
+    }
     const formatter = new Intl.RelativeTimeFormat(i18n.language, { numeric: 'auto' });
     return formatter.format(value, matched.unit);
   })();
   const lastRefreshTitle = lastRefreshDate
     ? lastRefreshDate.toLocaleString(i18n.language)
     : t('auth_files.refresh_not_available');
-  const healthStatusTitle = rawStatusMessage || t('auth_files.refresh_not_available');
+  const healthStatusTitle = rawStatusMessage || t('auth_files.health_status_no_message');
 
   return (
     <div

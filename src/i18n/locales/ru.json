@@ -393,6 +393,7 @@
     "health_status_warning": "Предупреждение",
     "health_status_disabled": "Отключено",
     "health_status_unknown": "Неизвестно",
+    "health_status_no_message": "Нет сообщения о статусе",
     "last_refresh_label": "Последнее обновление",
     "refresh_not_available": "Н/Д",
     "refresh_just_now": "Только что",

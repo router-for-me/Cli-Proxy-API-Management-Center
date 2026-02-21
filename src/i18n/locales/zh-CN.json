@@ -393,6 +393,7 @@
     "health_status_warning": "警告",
     "health_status_disabled": "已停用",
     "health_status_unknown": "未知",
+    "health_status_no_message": "暂无状态说明",
     "last_refresh_label": "最近刷新",
     "refresh_not_available": "暂无",
     "refresh_just_now": "刚刚",
