@@ -5,6 +5,8 @@
     "back": "Back",
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "leave": "Leave",
+    "stay": "Stay",
     "save": "Save",
     "delete": "Delete",
     "edit": "Edit",
@@ -48,7 +50,9 @@
     "custom_headers_value_placeholder": "Header value",
     "model_name_placeholder": "Model name, e.g. claude-3-5-sonnet-20241022",
     "model_alias_placeholder": "Model alias (optional)",
-    "invalid_provider_index": "Invalid provider index."
+    "invalid_provider_index": "Invalid provider index.",
+    "unsaved_changes_title": "Unsaved changes",
+    "unsaved_changes_message": "You have unsaved changes. Leaving now will discard them. Do you want to leave?"
   },
   "title": {
     "main": "CLI Proxy API Management Center",

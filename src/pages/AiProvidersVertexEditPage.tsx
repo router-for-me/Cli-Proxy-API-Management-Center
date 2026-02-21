@@ -8,11 +8,12 @@ import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { ModelInputList } from '@/components/ui/ModelInputList';
 import { modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
-import { buildHeaderObject, headersToEntries } from '@/utils/headers';
+import { buildHeaderObject, headersToEntries, type HeaderEntry } from '@/utils/headers';
 import type { VertexFormState } from '@/components/providers';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
@@ -34,6 +35,38 @@ const parseIndexParam = (value: string | undefined) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const normalizeHeaderEntries = (entries: HeaderEntry[]) =>
+  (entries ?? [])
+    .map((entry) => ({
+      key: String(entry?.key ?? '').trim(),
+      value: String(entry?.value ?? '').trim(),
+    }))
+    .filter((entry) => entry.key || entry.value)
+    .sort((a, b) => {
+      const byKey = a.key.toLowerCase().localeCompare(b.key.toLowerCase());
+      if (byKey !== 0) return byKey;
+      return a.value.localeCompare(b.value);
+    });
+
+const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) =>
+  (entries ?? []).reduce<Array<{ name: string; alias: string }>>((acc, entry) => {
+    const name = String(entry?.name ?? '').trim();
+    const alias = String(entry?.alias ?? '').trim();
+    if (!name && !alias) return acc;
+    acc.push({ name, alias });
+    return acc;
+  }, []);
+
+const buildVertexSignature = (form: VertexFormState) =>
+  JSON.stringify({
+    apiKey: String(form.apiKey ?? '').trim(),
+    prefix: String(form.prefix ?? '').trim(),
+    baseUrl: String(form.baseUrl ?? '').trim(),
+    proxyUrl: String(form.proxyUrl ?? '').trim(),
+    headers: normalizeHeaderEntries(form.headers),
+    models: normalizeModelEntries(form.modelEntries),
+  });
+
 export function AiProvidersVertexEditPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -53,6 +86,7 @@ export function AiProvidersVertexEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<VertexFormState>(() => buildEmptyForm());
+  const [baselineSignature, setBaselineSignature] = useState(() => buildVertexSignature(buildEmptyForm()));
 
   const hasIndexParam = typeof params.index === 'string';
   const editIndex = useMemo(() => parseIndexParam(params.index), [params.index]);
@@ -126,17 +160,38 @@ export function AiProvidersVertexEditPage() {
     if (loading) return;
 
     if (initialData) {
-      setForm({
+      const nextForm: VertexFormState = {
         ...initialData,
         headers: headersToEntries(initialData.headers),
         modelEntries: modelsToEntries(initialData.models),
-      });
+      };
+      setForm(nextForm);
+      setBaselineSignature(buildVertexSignature(nextForm));
       return;
     }
-    setForm(buildEmptyForm());
+    const nextForm = buildEmptyForm();
+    setForm(nextForm);
+    setBaselineSignature(buildVertexSignature(nextForm));
   }, [initialData, loading]);
 
   const canSave = !disableControls && !saving && !loading && !invalidIndexParam && !invalidIndex;
+
+  const currentSignature = useMemo(() => buildVertexSignature(form), [form]);
+  const isDirty = baselineSignature !== currentSignature;
+  const canGuard = !loading && !saving && !invalidIndexParam && !invalidIndex;
+
+  useUnsavedChangesGuard({
+    enabled: canGuard,
+    shouldBlock: ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname,
+    dialog: {
+      title: t('common.unsaved_changes_title'),
+      message: t('common.unsaved_changes_message'),
+      confirmText: t('common.leave'),
+      cancelText: t('common.stay'),
+      variant: 'danger',
+    },
+  });
 
   const handleSave = useCallback(async () => {
     if (!canSave) return;

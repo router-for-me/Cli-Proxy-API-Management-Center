@@ -5,6 +5,8 @@
     "back": "Назад",
     "cancel": "Отмена",
     "confirm": "Подтвердить",
+    "leave": "Уйти",
+    "stay": "Остаться",
     "save": "Сохранить",
     "delete": "Удалить",
     "edit": "Редактировать",
@@ -48,7 +50,9 @@
     "custom_headers_value_placeholder": "Значение заголовка",
     "model_name_placeholder": "Имя модели, напр. claude-3-5-sonnet-20241022",
     "model_alias_placeholder": "Псевдоним модели (необязательно)",
-    "invalid_provider_index": "Неверный индекс провайдера."
+    "invalid_provider_index": "Неверный индекс провайдера.",
+    "unsaved_changes_title": "Несохранённые изменения",
+    "unsaved_changes_message": "У вас есть несохранённые изменения. Если вы уйдёте, они будут потеряны. Выйти?"
   },
   "title": {
     "main": "Центр управления CLI Proxy API",

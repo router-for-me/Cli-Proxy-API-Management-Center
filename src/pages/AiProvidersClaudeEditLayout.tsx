@@ -2,12 +2,13 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { providersApi } from '@/services/api';
 import { useAuthStore, useClaudeEditDraftStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
 import type { ModelEntry, ProviderFormState } from '@/components/providers/types';
-import { buildHeaderObject, headersToEntries } from '@/utils/headers';
+import { buildHeaderObject, headersToEntries, type HeaderEntry } from '@/utils/headers';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import { modelsToEntries } from '@/components/ui/modelInputListUtils';
 
@@ -62,6 +63,59 @@ const getErrorMessage = (err: unknown) => {
   return '';
 };
 
+const normalizeHeaderEntries = (entries: HeaderEntry[]) =>
+  (entries ?? [])
+    .map((entry) => ({
+      key: String(entry?.key ?? '').trim(),
+      value: String(entry?.value ?? '').trim(),
+    }))
+    .filter((entry) => entry.key || entry.value)
+    .sort((a, b) => {
+      const byKey = a.key.toLowerCase().localeCompare(b.key.toLowerCase());
+      if (byKey !== 0) return byKey;
+      return a.value.localeCompare(b.value);
+    });
+
+const normalizeClaudeModelEntries = (entries: Array<{ name: string; alias: string }>) =>
+  (entries ?? []).reduce<Array<{ name: string; alias: string }>>((acc, entry) => {
+    const name = String(entry?.name ?? '').trim();
+    let alias = String(entry?.alias ?? '').trim();
+    if (name) {
+      alias = alias || name;
+    }
+    if (!name && !alias) return acc;
+    acc.push({ name, alias });
+    return acc;
+  }, []);
+
+const normalizeCloakConfig = (cloak: ProviderFormState['cloak']) => {
+  if (!cloak) return null;
+  const mode = String(cloak.mode ?? '').trim().toLowerCase() || 'auto';
+  const strictMode = Boolean(cloak.strictMode);
+  const sensitiveWords = Array.isArray(cloak.sensitiveWords)
+    ? cloak.sensitiveWords.map((word) => String(word ?? '').trim()).filter(Boolean)
+    : [];
+  return {
+    mode,
+    strictMode,
+    sensitiveWords: sensitiveWords.length ? sensitiveWords : null,
+  };
+};
+
+const buildClaudeSignature = (form: ProviderFormState) =>
+  JSON.stringify({
+    apiKey: String(form.apiKey ?? '').trim(),
+    priority:
+      form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
+    prefix: String(form.prefix ?? '').trim(),
+    baseUrl: String(form.baseUrl ?? '').trim(),
+    proxyUrl: String(form.proxyUrl ?? '').trim(),
+    headers: normalizeHeaderEntries(form.headers),
+    models: normalizeClaudeModelEntries(form.modelEntries),
+    excludedModels: parseExcludedModels(form.excludedText ?? ''),
+    cloak: normalizeCloakConfig(form.cloak),
+  });
+
 export function AiProvidersClaudeEditLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -85,6 +139,8 @@ export function AiProvidersClaudeEditLayout() {
   const [configs, setConfigs] = useState<ProviderKeyConfig[]>(() => config?.claudeApiKeys ?? []);
   const [loading, setLoading] = useState(() => !isCacheValid('claude-api-key'));
   const [saving, setSaving] = useState(false);
+  const [baselineDraftKey, setBaselineDraftKey] = useState<string>('');
+  const [baselineSignature, setBaselineSignature] = useState<string>('');
 
   const draftKey = useMemo(() => {
     if (invalidIndexParam) return `claude:invalid:${params.index ?? 'unknown'}`;
@@ -151,14 +207,19 @@ export function AiProvidersClaudeEditLayout() {
   }, [draftKey, ensureDraft]);
 
   const handleBack = useCallback(() => {
-    clearDraft(draftKey);
     const state = location.state as LocationState;
     if (state?.fromAiProviders) {
       navigate(-1);
       return;
     }
     navigate('/ai-providers', { replace: true });
-  }, [clearDraft, draftKey, location.state, navigate]);
+  }, [location.state, navigate]);
+
+  useEffect(() => {
+    return () => {
+      clearDraft(draftKey);
+    };
+  }, [clearDraft, draftKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -217,6 +278,40 @@ export function AiProvidersClaudeEditLayout() {
   }, [draft?.initialized, draftKey, initDraft, initialData, loading]);
 
   const resolvedLoading = !draft?.initialized;
+  const currentSignature = useMemo(() => buildClaudeSignature(form), [form]);
+
+  useEffect(() => {
+    if (resolvedLoading) return;
+    if (baselineDraftKey === draftKey) return;
+    setBaselineDraftKey(draftKey);
+    setBaselineSignature(currentSignature);
+  }, [baselineDraftKey, currentSignature, draftKey, resolvedLoading]);
+
+  const isDirty = baselineDraftKey === draftKey && baselineSignature !== currentSignature;
+  const editorRootPath = useMemo(() => {
+    if (hasIndexParam) {
+      return `/ai-providers/claude/${params.index ?? ''}`;
+    }
+    return '/ai-providers/claude/new';
+  }, [hasIndexParam, params.index]);
+  const canGuard = !resolvedLoading && !saving && !invalidIndexParam && !invalidIndex;
+
+  useUnsavedChangesGuard({
+    enabled: canGuard,
+    shouldBlock: ({ nextLocation }) => {
+      const nextPath = nextLocation.pathname;
+      const isWithinRoot =
+        nextPath === editorRootPath || nextPath.startsWith(`${editorRootPath}/`);
+      return isDirty && !isWithinRoot;
+    },
+    dialog: {
+      title: t('common.unsaved_changes_title'),
+      message: t('common.unsaved_changes_message'),
+      confirmText: t('common.leave'),
+      cancelText: t('common.stay'),
+      variant: 'danger',
+    },
+  });
 
   useEffect(() => {
     if (resolvedLoading) return;

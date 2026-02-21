@@ -5,6 +5,8 @@
     "back": "返回",
     "cancel": "取消",
     "confirm": "确认",
+    "leave": "离开",
+    "stay": "继续编辑",
     "save": "保存",
     "delete": "删除",
     "edit": "编辑",
@@ -48,7 +50,9 @@
     "custom_headers_value_placeholder": "Header 值",
     "model_name_placeholder": "模型名称，例如 claude-3-5-sonnet-20241022",
     "model_alias_placeholder": "模型别名 (可选)",
-    "invalid_provider_index": "无效的提供商索引。"
+    "invalid_provider_index": "无效的提供商索引。",
+    "unsaved_changes_title": "未保存的更改",
+    "unsaved_changes_message": "你有未保存的更改，离开后将丢失这些更改。确定要离开吗？"
   },
   "title": {
     "main": "CLI Proxy API Management Center",

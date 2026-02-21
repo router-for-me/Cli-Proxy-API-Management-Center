@@ -2,12 +2,13 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useOpenAIEditDraftStore } from '@/stores';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import type { ApiKeyEntry, OpenAIProviderConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
-import { buildHeaderObject, headersToEntries } from '@/utils/headers';
+import { buildHeaderObject, headersToEntries, type HeaderEntry } from '@/utils/headers';
 import { buildApiKeyEntry } from '@/components/providers/utils';
 import type { ModelEntry, OpenAIFormState } from '@/components/providers/types';
 import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
@@ -62,6 +63,72 @@ const getErrorMessage = (err: unknown) => {
   return '';
 };
 
+const normalizeHeaderEntries = (entries: HeaderEntry[]) =>
+  (entries ?? [])
+    .map((entry) => ({
+      key: String(entry?.key ?? '').trim(),
+      value: String(entry?.value ?? '').trim(),
+    }))
+    .filter((entry) => entry.key || entry.value)
+    .sort((a, b) => {
+      const byKey = a.key.toLowerCase().localeCompare(b.key.toLowerCase());
+      if (byKey !== 0) return byKey;
+      return a.value.localeCompare(b.value);
+    });
+
+const normalizeModelEntries = (entries: ModelEntry[]) =>
+  (entries ?? []).reduce<Array<{ name: string; alias: string }>>((acc, entry) => {
+    const name = String(entry?.name ?? '').trim();
+    let alias = String(entry?.alias ?? '').trim();
+    if (name && (alias === '' || alias === name)) {
+      alias = '';
+    }
+    if (!name && !alias) return acc;
+    acc.push({ name, alias });
+    return acc;
+  }, []);
+
+const normalizeKeyHeaders = (headers: ApiKeyEntry['headers']) => {
+  if (!headers || typeof headers !== 'object') return [];
+  return Object.entries(headers)
+    .map(([key, value]) => ({ key: String(key ?? '').trim(), value: String(value ?? '').trim() }))
+    .filter((entry) => entry.key || entry.value)
+    .sort((a, b) => {
+      const byKey = a.key.toLowerCase().localeCompare(b.key.toLowerCase());
+      if (byKey !== 0) return byKey;
+      return a.value.localeCompare(b.value);
+    });
+};
+
+const normalizeApiKeyEntries = (entries: ApiKeyEntry[]) =>
+  (entries ?? []).reduce<
+    Array<{
+      apiKey: string;
+      proxyUrl: string;
+      headers: Array<{ key: string; value: string }>;
+    }>
+  >((acc, entry) => {
+    const apiKey = String(entry?.apiKey ?? '').trim();
+    const proxyUrl = String(entry?.proxyUrl ?? '').trim();
+    const headers = normalizeKeyHeaders(entry?.headers);
+    if (!apiKey && !proxyUrl && headers.length === 0) return acc;
+    acc.push({ apiKey, proxyUrl, headers });
+    return acc;
+  }, []);
+
+const buildOpenAISignature = (form: OpenAIFormState, testModel: string) =>
+  JSON.stringify({
+    name: String(form.name ?? '').trim(),
+    priority:
+      form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
+    prefix: String(form.prefix ?? '').trim(),
+    baseUrl: String(form.baseUrl ?? '').trim(),
+    headers: normalizeHeaderEntries(form.headers),
+    apiKeyEntries: normalizeApiKeyEntries(form.apiKeyEntries),
+    models: normalizeModelEntries(form.modelEntries),
+    testModel: String(testModel ?? '').trim(),
+  });
+
 export function AiProvidersOpenAIEditLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -87,6 +154,8 @@ export function AiProvidersOpenAIEditLayout() {
     () => !isCacheValid('openai-compatibility')
   );
   const [saving, setSaving] = useState(false);
+  const [baselineDraftKey, setBaselineDraftKey] = useState<string>('');
+  const [baselineSignature, setBaselineSignature] = useState<string>('');
 
   const draftKey = useMemo(() => {
     if (invalidIndexParam) return `openai:invalid:${params.index ?? 'unknown'}`;
@@ -171,14 +240,19 @@ export function AiProvidersOpenAIEditLayout() {
   }, [draftKey, ensureDraft]);
 
   const handleBack = useCallback(() => {
-    clearDraft(draftKey);
     const state = location.state as LocationState;
     if (state?.fromAiProviders) {
       navigate(-1);
       return;
     }
     navigate('/ai-providers', { replace: true });
-  }, [clearDraft, draftKey, location.state, navigate]);
+  }, [location.state, navigate]);
+
+  useEffect(() => {
+    return () => {
+      clearDraft(draftKey);
+    };
+  }, [clearDraft, draftKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -374,6 +448,40 @@ export function AiProvidersOpenAIEditLayout() {
   ]);
 
   const resolvedLoading = !draft?.initialized;
+  const currentSignature = useMemo(() => buildOpenAISignature(form, testModel), [form, testModel]);
+
+  useEffect(() => {
+    if (resolvedLoading) return;
+    if (baselineDraftKey === draftKey) return;
+    setBaselineDraftKey(draftKey);
+    setBaselineSignature(currentSignature);
+  }, [baselineDraftKey, currentSignature, draftKey, resolvedLoading]);
+
+  const isDirty = baselineDraftKey === draftKey && baselineSignature !== currentSignature;
+  const editorRootPath = useMemo(() => {
+    if (hasIndexParam) {
+      return `/ai-providers/openai/${params.index ?? ''}`;
+    }
+    return '/ai-providers/openai/new';
+  }, [hasIndexParam, params.index]);
+  const canGuard = !resolvedLoading && !saving && !invalidIndexParam && !invalidIndex;
+
+  useUnsavedChangesGuard({
+    enabled: canGuard,
+    shouldBlock: ({ nextLocation }) => {
+      const nextPath = nextLocation.pathname;
+      const isWithinRoot =
+        nextPath === editorRootPath || nextPath.startsWith(`${editorRootPath}/`);
+      return isDirty && !isWithinRoot;
+    },
+    dialog: {
+      title: t('common.unsaved_changes_title'),
+      message: t('common.unsaved_changes_message'),
+      confirmText: t('common.leave'),
+      cancelText: t('common.stay'),
+      variant: 'danger',
+    },
+  });
 
   return (
     <Outlet

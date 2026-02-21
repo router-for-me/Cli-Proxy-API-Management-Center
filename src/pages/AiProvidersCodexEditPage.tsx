@@ -9,11 +9,12 @@ import { ModelInputList } from '@/components/ui/ModelInputList';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { modelsApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
-import { buildHeaderObject, headersToEntries } from '@/utils/headers';
+import { buildHeaderObject, headersToEntries, type HeaderEntry } from '@/utils/headers';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import type { ProviderFormState } from '@/components/providers';
@@ -49,6 +50,45 @@ const getErrorMessage = (err: unknown) => {
   return '';
 };
 
+const normalizeHeaderEntries = (entries: HeaderEntry[]) =>
+  (entries ?? [])
+    .map((entry) => ({
+      key: String(entry?.key ?? '').trim(),
+      value: String(entry?.value ?? '').trim(),
+    }))
+    .filter((entry) => entry.key || entry.value)
+    .sort((a, b) => {
+      const byKey = a.key.toLowerCase().localeCompare(b.key.toLowerCase());
+      if (byKey !== 0) return byKey;
+      return a.value.localeCompare(b.value);
+    });
+
+const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) =>
+  (entries ?? []).reduce<Array<{ name: string; alias: string }>>((acc, entry) => {
+    const name = String(entry?.name ?? '').trim();
+    let alias = String(entry?.alias ?? '').trim();
+    if (name && alias === name) {
+      alias = '';
+    }
+    if (!name && !alias) return acc;
+    acc.push({ name, alias });
+    return acc;
+  }, []);
+
+const buildCodexSignature = (form: ProviderFormState) =>
+  JSON.stringify({
+    apiKey: String(form.apiKey ?? '').trim(),
+    priority:
+      form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
+    prefix: String(form.prefix ?? '').trim(),
+    baseUrl: String(form.baseUrl ?? '').trim(),
+    websockets: Boolean(form.websockets),
+    proxyUrl: String(form.proxyUrl ?? '').trim(),
+    headers: normalizeHeaderEntries(form.headers),
+    models: normalizeModelEntries(form.modelEntries),
+    excludedModels: parseExcludedModels(form.excludedText ?? ''),
+  });
+
 export function AiProvidersCodexEditPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -68,6 +108,7 @@ export function AiProvidersCodexEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<ProviderFormState>(() => buildEmptyForm());
+  const [baselineSignature, setBaselineSignature] = useState(() => buildCodexSignature(buildEmptyForm()));
 
   const [modelDiscoveryOpen, setModelDiscoveryOpen] = useState(false);
   const [modelDiscoveryEndpoint, setModelDiscoveryEndpoint] = useState('');
@@ -142,16 +183,37 @@ export function AiProvidersCodexEditPage() {
     if (loading) return;
 
     if (initialData) {
-      setForm({
+      const nextForm: ProviderFormState = {
         ...initialData,
         headers: headersToEntries(initialData.headers),
         modelEntries: modelsToEntries(initialData.models),
         excludedText: excludedModelsToText(initialData.excludedModels),
-      });
+      };
+      setForm(nextForm);
+      setBaselineSignature(buildCodexSignature(nextForm));
       return;
     }
-    setForm(buildEmptyForm());
+    const nextForm = buildEmptyForm();
+    setForm(nextForm);
+    setBaselineSignature(buildCodexSignature(nextForm));
   }, [initialData, loading]);
+
+  const currentSignature = useMemo(() => buildCodexSignature(form), [form]);
+  const isDirty = baselineSignature !== currentSignature;
+  const canGuard = !loading && !saving && !invalidIndexParam && !invalidIndex;
+
+  useUnsavedChangesGuard({
+    enabled: canGuard,
+    shouldBlock: ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname,
+    dialog: {
+      title: t('common.unsaved_changes_title'),
+      message: t('common.unsaved_changes_message'),
+      confirmText: t('common.leave'),
+      cancelText: t('common.stay'),
+      variant: 'danger',
+    },
+  });
 
   const canSave = !disableControls && !saving && !loading && !invalidIndexParam && !invalidIndex;
 
