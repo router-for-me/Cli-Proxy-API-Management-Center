@@ -49,6 +49,7 @@ export type AuthFileCardProps = {
   quotaFilterType: QuotaProviderType | null;
   keyStats: KeyStats;
   statusBarCache: Map<string, AuthFileStatusBarData>;
+  nowMs: number;
   onShowModels: (file: AuthFileItem) => void;
   onShowDetails: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
@@ -76,6 +77,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     quotaFilterType,
     keyStats,
     statusBarCache,
+    nowMs,
     onShowModels,
     onShowDetails,
     onDownload,
@@ -118,7 +120,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const isUnavailable = file.unavailable === true || rawStatus === 'unavailable';
   const lastRefreshDate = parseDateFromUnknown(file['last_refresh'] ?? file.lastRefresh);
   const isRefreshStale = lastRefreshDate
-    ? Date.now() - lastRefreshDate.getTime() > AUTH_FILE_REFRESH_WARNING_MS
+    ? nowMs - lastRefreshDate.getTime() > AUTH_FILE_REFRESH_WARNING_MS
     : false;
   const hasStatusWarning =
     Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(normalizedStatusMessage);
@@ -142,7 +144,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const lastRefreshText = (() => {
     if (!lastRefreshDate) return t('auth_files.refresh_not_available');
 
-    const diffMs = lastRefreshDate.getTime() - Date.now();
+    const diffMs = lastRefreshDate.getTime() - nowMs;
     const absMs = Math.abs(diffMs);
     if (absMs < 30 * 1000) {
       return t('auth_files.refresh_just_now');

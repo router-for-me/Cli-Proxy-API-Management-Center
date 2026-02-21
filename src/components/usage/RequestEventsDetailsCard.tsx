@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -138,33 +138,35 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
     [rows, t]
   );
 
-  useEffect(() => {
-    if (!modelOptions.some((option) => option.value === modelFilter)) {
-      setModelFilter(ALL_FILTER);
-    }
-  }, [modelFilter, modelOptions]);
+  const modelOptionSet = useMemo(
+    () => new Set(modelOptions.map((option) => option.value)),
+    [modelOptions]
+  );
+  const sourceOptionSet = useMemo(
+    () => new Set(sourceOptions.map((option) => option.value)),
+    [sourceOptions]
+  );
+  const authIndexOptionSet = useMemo(
+    () => new Set(authIndexOptions.map((option) => option.value)),
+    [authIndexOptions]
+  );
 
-  useEffect(() => {
-    if (!sourceOptions.some((option) => option.value === sourceFilter)) {
-      setSourceFilter(ALL_FILTER);
-    }
-  }, [sourceFilter, sourceOptions]);
-
-  useEffect(() => {
-    if (!authIndexOptions.some((option) => option.value === authIndexFilter)) {
-      setAuthIndexFilter(ALL_FILTER);
-    }
-  }, [authIndexFilter, authIndexOptions]);
+  const effectiveModelFilter = modelOptionSet.has(modelFilter) ? modelFilter : ALL_FILTER;
+  const effectiveSourceFilter = sourceOptionSet.has(sourceFilter) ? sourceFilter : ALL_FILTER;
+  const effectiveAuthIndexFilter = authIndexOptionSet.has(authIndexFilter)
+    ? authIndexFilter
+    : ALL_FILTER;
 
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        const modelMatched = modelFilter === ALL_FILTER || row.model === modelFilter;
-        const sourceMatched = sourceFilter === ALL_FILTER || row.source === sourceFilter;
-        const authIndexMatched = authIndexFilter === ALL_FILTER || row.authIndex === authIndexFilter;
+        const modelMatched = effectiveModelFilter === ALL_FILTER || row.model === effectiveModelFilter;
+        const sourceMatched = effectiveSourceFilter === ALL_FILTER || row.source === effectiveSourceFilter;
+        const authIndexMatched =
+          effectiveAuthIndexFilter === ALL_FILTER || row.authIndex === effectiveAuthIndexFilter;
         return modelMatched && sourceMatched && authIndexMatched;
       }),
-    [authIndexFilter, modelFilter, rows, sourceFilter]
+    [effectiveAuthIndexFilter, effectiveModelFilter, effectiveSourceFilter, rows]
   );
 
   const renderedRows = useMemo(
@@ -173,7 +175,9 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
   );
 
   const hasActiveFilters =
-    modelFilter !== ALL_FILTER || sourceFilter !== ALL_FILTER || authIndexFilter !== ALL_FILTER;
+    effectiveModelFilter !== ALL_FILTER ||
+    effectiveSourceFilter !== ALL_FILTER ||
+    effectiveAuthIndexFilter !== ALL_FILTER;
 
   const handleClearFilters = () => {
     setModelFilter(ALL_FILTER);
@@ -280,7 +284,7 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
             {t('usage_stats.request_events_filter_model')}
           </span>
           <Select
-            value={modelFilter}
+            value={effectiveModelFilter}
             options={modelOptions}
             onChange={setModelFilter}
             className={styles.requestEventsSelect}
@@ -293,7 +297,7 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
             {t('usage_stats.request_events_filter_source')}
           </span>
           <Select
-            value={sourceFilter}
+            value={effectiveSourceFilter}
             options={sourceOptions}
             onChange={setSourceFilter}
             className={styles.requestEventsSelect}
@@ -306,7 +310,7 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
             {t('usage_stats.request_events_filter_auth_index')}
           </span>
           <Select
-            value={authIndexFilter}
+            value={effectiveAuthIndexFilter}
             options={authIndexOptions}
             onChange={setAuthIndexFilter}
             className={styles.requestEventsSelect}
