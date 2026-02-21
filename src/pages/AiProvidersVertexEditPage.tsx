@@ -180,7 +180,7 @@ export function AiProvidersVertexEditPage() {
   const isDirty = baselineSignature !== currentSignature;
   const canGuard = !loading && !saving && !invalidIndexParam && !invalidIndex;
 
-  useUnsavedChangesGuard({
+  const { allowNextNavigation } = useUnsavedChangesGuard({
     enabled: canGuard,
     shouldBlock: ({ currentLocation, nextLocation }) =>
       isDirty && currentLocation.pathname !== nextLocation.pathname,
@@ -234,6 +234,8 @@ export function AiProvidersVertexEditPage() {
         editIndex !== null ? t('notification.vertex_config_updated') : t('notification.vertex_config_added'),
         'success'
       );
+      allowNextNavigation();
+      setBaselineSignature(buildVertexSignature(form));
       handleBack();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
@@ -243,6 +245,7 @@ export function AiProvidersVertexEditPage() {
       setSaving(false);
     }
   }, [
+    allowNextNavigation,
     canSave,
     clearCache,
     configs,

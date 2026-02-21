@@ -22,6 +22,7 @@ export type KeyTestStatus = {
 
 export type OpenAIEditDraft = {
   initialized: boolean;
+  baselineSignature: string;
   form: OpenAIFormState;
   testModel: string;
   testStatus: OpenAITestStatus;
@@ -31,8 +32,12 @@ export type OpenAIEditDraft = {
 
 interface OpenAIEditDraftState {
   drafts: Record<string, OpenAIEditDraft>;
+  refCounts: Record<string, number>;
+  acquireDraft: (key: string) => void;
+  releaseDraft: (key: string) => void;
   ensureDraft: (key: string) => void;
   initDraft: (key: string, draft: Omit<OpenAIEditDraft, 'initialized'>) => void;
+  setDraftBaselineSignature: (key: string, signature: string) => void;
   setDraftForm: (key: string, action: SetStateAction<OpenAIFormState>) => void;
   setDraftTestModel: (key: string, action: SetStateAction<string>) => void;
   setDraftTestStatus: (key: string, action: SetStateAction<OpenAITestStatus>) => void;
@@ -57,6 +62,7 @@ const buildEmptyForm = (): OpenAIFormState => ({
 
 const buildEmptyDraft = (): OpenAIEditDraft => ({
   initialized: false,
+  baselineSignature: '',
   form: buildEmptyForm(),
   testModel: '',
   testStatus: 'idle',
@@ -66,6 +72,35 @@ const buildEmptyDraft = (): OpenAIEditDraft => ({
 
 export const useOpenAIEditDraftStore = create<OpenAIEditDraftState>((set, get) => ({
   drafts: {},
+  refCounts: {},
+
+  acquireDraft: (key) => {
+    if (!key) return;
+    set((state) => {
+      const existingDraft = state.drafts[key];
+      const currentCount = state.refCounts[key] ?? 0;
+      return {
+        drafts: existingDraft ? state.drafts : { ...state.drafts, [key]: buildEmptyDraft() },
+        refCounts: { ...state.refCounts, [key]: currentCount + 1 },
+      };
+    });
+  },
+
+  releaseDraft: (key) => {
+    if (!key) return;
+    set((state) => {
+      const currentCount = state.refCounts[key];
+      if (!currentCount) return state;
+      if (currentCount > 1) {
+        return { refCounts: { ...state.refCounts, [key]: currentCount - 1 } };
+      }
+      const nextCounts = { ...state.refCounts };
+      delete nextCounts[key];
+      const nextDrafts = { ...state.drafts };
+      delete nextDrafts[key];
+      return { refCounts: nextCounts, drafts: nextDrafts };
+    });
+  },
 
   ensureDraft: (key) => {
     if (!key) return;
@@ -86,6 +121,19 @@ export const useOpenAIEditDraftStore = create<OpenAIEditDraftState>((set, get) =
         [key]: { ...draft, initialized: true },
       },
     }));
+  },
+
+  setDraftBaselineSignature: (key, signature) => {
+    if (!key) return;
+    set((state) => {
+      const existing = state.drafts[key] ?? buildEmptyDraft();
+      return {
+        drafts: {
+          ...state.drafts,
+          [key]: { ...existing, initialized: true, baselineSignature: signature },
+        },
+      };
+    });
   },
 
   setDraftForm: (key, action) => {
@@ -186,4 +234,3 @@ export const useOpenAIEditDraftStore = create<OpenAIEditDraftState>((set, get) =
     });
   },
 }));
-

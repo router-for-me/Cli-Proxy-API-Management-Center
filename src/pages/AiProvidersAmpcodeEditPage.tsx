@@ -134,7 +134,7 @@ export function AiProvidersAmpcodeEditPage() {
   const isDirty = baselineSignature !== currentSignature;
   const canGuard = !loading && !saving;
 
-  useUnsavedChangesGuard({
+  const { allowNextNavigation } = useUnsavedChangesGuard({
     enabled: canGuard,
     shouldBlock: ({ currentLocation, nextLocation }) =>
       isDirty && currentLocation.pathname !== nextLocation.pathname,
@@ -234,6 +234,8 @@ export function AiProvidersAmpcodeEditPage() {
       updateConfigValue('ampcode', next);
       clearCache('ampcode');
       showNotification(t('notification.ampcode_updated'), 'success');
+      allowNextNavigation();
+      setBaselineSignature(buildAmpcodeSignature(form));
       handleBack();
     } catch (err: unknown) {
       const message = getErrorMessage(err);

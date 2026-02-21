@@ -202,7 +202,7 @@ export function AiProvidersCodexEditPage() {
   const isDirty = baselineSignature !== currentSignature;
   const canGuard = !loading && !saving && !invalidIndexParam && !invalidIndex;
 
-  useUnsavedChangesGuard({
+  const { allowNextNavigation } = useUnsavedChangesGuard({
     enabled: canGuard,
     shouldBlock: ({ currentLocation, nextLocation }) =>
       isDirty && currentLocation.pathname !== nextLocation.pathname,
@@ -381,6 +381,8 @@ export function AiProvidersCodexEditPage() {
         editIndex !== null ? t('notification.codex_config_updated') : t('notification.codex_config_added'),
         'success'
       );
+      allowNextNavigation();
+      setBaselineSignature(buildCodexSignature(form));
       handleBack();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
@@ -390,6 +392,7 @@ export function AiProvidersCodexEditPage() {
       setSaving(false);
     }
   }, [
+    allowNextNavigation,
     canSave,
     clearCache,
     configs,

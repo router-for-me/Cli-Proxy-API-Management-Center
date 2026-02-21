@@ -154,8 +154,6 @@ export function AiProvidersOpenAIEditLayout() {
     () => !isCacheValid('openai-compatibility')
   );
   const [saving, setSaving] = useState(false);
-  const [baselineDraftKey, setBaselineDraftKey] = useState<string>('');
-  const [baselineSignature, setBaselineSignature] = useState<string>('');
 
   const draftKey = useMemo(() => {
     if (invalidIndexParam) return `openai:invalid:${params.index ?? 'unknown'}`;
@@ -164,9 +162,10 @@ export function AiProvidersOpenAIEditLayout() {
   }, [editIndex, invalidIndexParam, params.index]);
 
   const draft = useOpenAIEditDraftStore((state) => state.drafts[draftKey]);
-  const ensureDraft = useOpenAIEditDraftStore((state) => state.ensureDraft);
+  const acquireDraft = useOpenAIEditDraftStore((state) => state.acquireDraft);
+  const releaseDraft = useOpenAIEditDraftStore((state) => state.releaseDraft);
   const initDraft = useOpenAIEditDraftStore((state) => state.initDraft);
-  const clearDraft = useOpenAIEditDraftStore((state) => state.clearDraft);
+  const setDraftBaselineSignature = useOpenAIEditDraftStore((state) => state.setDraftBaselineSignature);
   const setDraftForm = useOpenAIEditDraftStore((state) => state.setDraftForm);
   const setDraftTestModel = useOpenAIEditDraftStore((state) => state.setDraftTestModel);
   const setDraftTestStatus = useOpenAIEditDraftStore((state) => state.setDraftTestStatus);
@@ -236,8 +235,9 @@ export function AiProvidersOpenAIEditLayout() {
   );
 
   useEffect(() => {
-    ensureDraft(draftKey);
-  }, [draftKey, ensureDraft]);
+    acquireDraft(draftKey);
+    return () => releaseDraft(draftKey);
+  }, [acquireDraft, draftKey, releaseDraft]);
 
   const handleBack = useCallback(() => {
     const state = location.state as LocationState;
@@ -247,12 +247,6 @@ export function AiProvidersOpenAIEditLayout() {
     }
     navigate('/ai-providers', { replace: true });
   }, [location.state, navigate]);
-
-  useEffect(() => {
-    return () => {
-      clearDraft(draftKey);
-    };
-  }, [clearDraft, draftKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -305,7 +299,9 @@ export function AiProvidersOpenAIEditLayout() {
         initialData.testModel && available.includes(initialData.testModel)
           ? initialData.testModel
           : available[0] || '';
+      const baselineSignature = buildOpenAISignature(seededForm, initialTestModel);
       initDraft(draftKey, {
+        baselineSignature,
         form: seededForm,
         testModel: initialTestModel,
         testStatus: 'idle',
@@ -313,8 +309,10 @@ export function AiProvidersOpenAIEditLayout() {
         keyTestStatuses: [],
       });
     } else {
+      const emptyForm = buildEmptyForm();
       initDraft(draftKey, {
-        form: buildEmptyForm(),
+        baselineSignature: buildOpenAISignature(emptyForm, ''),
+        form: emptyForm,
         testModel: '',
         testStatus: 'idle',
         testMessage: '',
@@ -376,6 +374,35 @@ export function AiProvidersOpenAIEditLayout() {
     [setForm, showNotification, t]
   );
 
+  const resolvedLoading = !draft?.initialized;
+  const currentSignature = useMemo(() => buildOpenAISignature(form, testModel), [form, testModel]);
+  const baselineSignature = draft?.baselineSignature ?? '';
+  const isDirty = Boolean(draft?.initialized) && baselineSignature !== currentSignature;
+  const editorRootPath = useMemo(() => {
+    if (hasIndexParam) {
+      return `/ai-providers/openai/${params.index ?? ''}`;
+    }
+    return '/ai-providers/openai/new';
+  }, [hasIndexParam, params.index]);
+  const canGuard = !resolvedLoading && !saving && !invalidIndexParam && !invalidIndex;
+
+  const { allowNextNavigation } = useUnsavedChangesGuard({
+    enabled: canGuard,
+    shouldBlock: ({ nextLocation }) => {
+      const nextPath = nextLocation.pathname;
+      const isWithinRoot =
+        nextPath === editorRootPath || nextPath.startsWith(`${editorRootPath}/`);
+      return isDirty && !isWithinRoot;
+    },
+    dialog: {
+      title: t('common.unsaved_changes_title'),
+      message: t('common.unsaved_changes_message'),
+      confirmText: t('common.leave'),
+      cancelText: t('common.stay'),
+      variant: 'danger',
+    },
+  });
+
   const handleSave = useCallback(async () => {
     const name = form.name.trim();
     const baseUrl = form.baseUrl.trim();
@@ -430,6 +457,8 @@ export function AiProvidersOpenAIEditLayout() {
           : t('notification.openai_provider_added'),
         'success'
       );
+      allowNextNavigation();
+      setDraftBaselineSignature(draftKey, buildOpenAISignature(form, testModel));
       handleBack();
     } catch (err: unknown) {
       showNotification(`${t('notification.update_failed')}: ${getErrorMessage(err)}`, 'error');
@@ -437,51 +466,18 @@ export function AiProvidersOpenAIEditLayout() {
       setSaving(false);
     }
   }, [
+    allowNextNavigation,
+    draftKey,
     editIndex,
     fetchConfig,
     form,
     handleBack,
     providers,
-    testModel,
+    setDraftBaselineSignature,
     showNotification,
     t,
+    testModel,
   ]);
-
-  const resolvedLoading = !draft?.initialized;
-  const currentSignature = useMemo(() => buildOpenAISignature(form, testModel), [form, testModel]);
-
-  useEffect(() => {
-    if (resolvedLoading) return;
-    if (baselineDraftKey === draftKey) return;
-    setBaselineDraftKey(draftKey);
-    setBaselineSignature(currentSignature);
-  }, [baselineDraftKey, currentSignature, draftKey, resolvedLoading]);
-
-  const isDirty = baselineDraftKey === draftKey && baselineSignature !== currentSignature;
-  const editorRootPath = useMemo(() => {
-    if (hasIndexParam) {
-      return `/ai-providers/openai/${params.index ?? ''}`;
-    }
-    return '/ai-providers/openai/new';
-  }, [hasIndexParam, params.index]);
-  const canGuard = !resolvedLoading && !saving && !invalidIndexParam && !invalidIndex;
-
-  useUnsavedChangesGuard({
-    enabled: canGuard,
-    shouldBlock: ({ nextLocation }) => {
-      const nextPath = nextLocation.pathname;
-      const isWithinRoot =
-        nextPath === editorRootPath || nextPath.startsWith(`${editorRootPath}/`);
-      return isDirty && !isWithinRoot;
-    },
-    dialog: {
-      title: t('common.unsaved_changes_title'),
-      message: t('common.unsaved_changes_message'),
-      confirmText: t('common.leave'),
-      cancelText: t('common.stay'),
-      variant: 'danger',
-    },
-  });
 
   return (
     <Outlet

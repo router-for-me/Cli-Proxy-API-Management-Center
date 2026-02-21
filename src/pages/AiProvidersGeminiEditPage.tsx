@@ -335,7 +335,7 @@ export function AiProvidersGeminiEditPage() {
   const isDirty = baselineSignature !== currentSignature;
   const canGuard = !loading && !saving && !invalidIndexParam && !invalidIndex;
 
-  useUnsavedChangesGuard({
+  const { allowNextNavigation } = useUnsavedChangesGuard({
     enabled: canGuard,
     shouldBlock: ({ currentLocation, nextLocation }) =>
       isDirty && currentLocation.pathname !== nextLocation.pathname,
@@ -382,6 +382,8 @@ export function AiProvidersGeminiEditPage() {
         editIndex !== null ? t('notification.gemini_key_updated') : t('notification.gemini_key_added'),
         'success'
       );
+      allowNextNavigation();
+      setBaselineSignature(buildGeminiSignature(form));
       handleBack();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
@@ -391,6 +393,7 @@ export function AiProvidersGeminiEditPage() {
       setSaving(false);
     }
   }, [
+    allowNextNavigation,
     canSave,
     clearCache,
     configs,

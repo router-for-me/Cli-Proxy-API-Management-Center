@@ -16,6 +16,7 @@ export type ClaudeTestStatus = 'idle' | 'loading' | 'success' | 'error';
 
 type ClaudeEditDraft = {
   initialized: boolean;
+  baselineSignature: string;
   form: ProviderFormState;
   testModel: string;
   testStatus: ClaudeTestStatus;
@@ -24,11 +25,15 @@ type ClaudeEditDraft = {
 
 interface ClaudeEditDraftState {
   drafts: Record<string, ClaudeEditDraft>;
+  refCounts: Record<string, number>;
+  acquireDraft: (key: string) => void;
+  releaseDraft: (key: string) => void;
   ensureDraft: (key: string) => void;
   initDraft: (
     key: string,
     draft: Omit<ClaudeEditDraft, 'initialized'>
   ) => void;
+  setDraftBaselineSignature: (key: string, signature: string) => void;
   setDraftForm: (
     key: string,
     action: SetStateAction<ProviderFormState>
@@ -59,6 +64,7 @@ const buildEmptyForm = (): ProviderFormState => ({
 
 const buildEmptyDraft = (): ClaudeEditDraft => ({
   initialized: false,
+  baselineSignature: '',
   form: buildEmptyForm(),
   testModel: '',
   testStatus: 'idle',
@@ -67,6 +73,35 @@ const buildEmptyDraft = (): ClaudeEditDraft => ({
 
 export const useClaudeEditDraftStore = create<ClaudeEditDraftState>((set, get) => ({
   drafts: {},
+  refCounts: {},
+
+  acquireDraft: (key) => {
+    if (!key) return;
+    set((state) => {
+      const existingDraft = state.drafts[key];
+      const currentCount = state.refCounts[key] ?? 0;
+      return {
+        drafts: existingDraft ? state.drafts : { ...state.drafts, [key]: buildEmptyDraft() },
+        refCounts: { ...state.refCounts, [key]: currentCount + 1 },
+      };
+    });
+  },
+
+  releaseDraft: (key) => {
+    if (!key) return;
+    set((state) => {
+      const currentCount = state.refCounts[key];
+      if (!currentCount) return state;
+      if (currentCount > 1) {
+        return { refCounts: { ...state.refCounts, [key]: currentCount - 1 } };
+      }
+      const nextCounts = { ...state.refCounts };
+      delete nextCounts[key];
+      const nextDrafts = { ...state.drafts };
+      delete nextDrafts[key];
+      return { refCounts: nextCounts, drafts: nextDrafts };
+    });
+  },
 
   ensureDraft: (key) => {
     if (!key) return;
@@ -87,6 +122,19 @@ export const useClaudeEditDraftStore = create<ClaudeEditDraftState>((set, get) =
         [key]: { ...draft, initialized: true },
       },
     }));
+  },
+
+  setDraftBaselineSignature: (key, signature) => {
+    if (!key) return;
+    set((state) => {
+      const existing = state.drafts[key] ?? buildEmptyDraft();
+      return {
+        drafts: {
+          ...state.drafts,
+          [key]: { ...existing, initialized: true, baselineSignature: signature },
+        },
+      };
+    });
   },
 
   setDraftForm: (key, action) => {

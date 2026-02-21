@@ -1,11 +1,38 @@
 import { useEffect } from 'react';
-import { HashRouter, Route, Routes } from 'react-router-dom';
+import { Outlet, RouterProvider, createHashRouter } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotificationContainer } from '@/components/common/NotificationContainer';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { useLanguageStore, useThemeStore } from '@/stores';
+
+function RootShell() {
+  return (
+    <>
+      <NotificationContainer />
+      <ConfirmationModal />
+      <Outlet />
+    </>
+  );
+}
+
+const router = createHashRouter([
+  {
+    element: <RootShell />,
+    children: [
+      { path: '/login', element: <LoginPage /> },
+      {
+        path: '/*',
+        element: (
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        ),
+      },
+    ],
+  },
+]);
 
 function App() {
   const initializeTheme = useThemeStore((state) => state.initializeTheme);
@@ -26,23 +53,7 @@ function App() {
     document.documentElement.lang = language;
   }, [language]);
 
-  return (
-    <HashRouter>
-      <NotificationContainer />
-      <ConfirmationModal />
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <MainLayout />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </HashRouter>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

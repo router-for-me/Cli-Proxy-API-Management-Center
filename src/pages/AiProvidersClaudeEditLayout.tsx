@@ -139,8 +139,6 @@ export function AiProvidersClaudeEditLayout() {
   const [configs, setConfigs] = useState<ProviderKeyConfig[]>(() => config?.claudeApiKeys ?? []);
   const [loading, setLoading] = useState(() => !isCacheValid('claude-api-key'));
   const [saving, setSaving] = useState(false);
-  const [baselineDraftKey, setBaselineDraftKey] = useState<string>('');
-  const [baselineSignature, setBaselineSignature] = useState<string>('');
 
   const draftKey = useMemo(() => {
     if (invalidIndexParam) return `claude:invalid:${params.index ?? 'unknown'}`;
@@ -149,9 +147,10 @@ export function AiProvidersClaudeEditLayout() {
   }, [editIndex, invalidIndexParam, params.index]);
 
   const draft = useClaudeEditDraftStore((state) => state.drafts[draftKey]);
-  const ensureDraft = useClaudeEditDraftStore((state) => state.ensureDraft);
+  const acquireDraft = useClaudeEditDraftStore((state) => state.acquireDraft);
+  const releaseDraft = useClaudeEditDraftStore((state) => state.releaseDraft);
   const initDraft = useClaudeEditDraftStore((state) => state.initDraft);
-  const clearDraft = useClaudeEditDraftStore((state) => state.clearDraft);
+  const setDraftBaselineSignature = useClaudeEditDraftStore((state) => state.setDraftBaselineSignature);
   const setDraftForm = useClaudeEditDraftStore((state) => state.setDraftForm);
   const setDraftTestModel = useClaudeEditDraftStore((state) => state.setDraftTestModel);
   const setDraftTestStatus = useClaudeEditDraftStore((state) => state.setDraftTestStatus);
@@ -203,8 +202,9 @@ export function AiProvidersClaudeEditLayout() {
   );
 
   useEffect(() => {
-    ensureDraft(draftKey);
-  }, [draftKey, ensureDraft]);
+    acquireDraft(draftKey);
+    return () => releaseDraft(draftKey);
+  }, [acquireDraft, draftKey, releaseDraft]);
 
   const handleBack = useCallback(() => {
     const state = location.state as LocationState;
@@ -214,12 +214,6 @@ export function AiProvidersClaudeEditLayout() {
     }
     navigate('/ai-providers', { replace: true });
   }, [location.state, navigate]);
-
-  useEffect(() => {
-    return () => {
-      clearDraft(draftKey);
-    };
-  }, [clearDraft, draftKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -260,7 +254,9 @@ export function AiProvidersClaudeEditLayout() {
         excludedText: excludedModelsToText(initialData.excludedModels),
       };
       const available = seededForm.modelEntries.map((entry) => entry.name.trim()).filter(Boolean);
+      const baselineSignature = buildClaudeSignature(seededForm);
       initDraft(draftKey, {
+        baselineSignature,
         form: seededForm,
         testModel: available[0] || '',
         testStatus: 'idle',
@@ -269,8 +265,10 @@ export function AiProvidersClaudeEditLayout() {
       return;
     }
 
+    const emptyForm = buildEmptyForm();
     initDraft(draftKey, {
-      form: buildEmptyForm(),
+      baselineSignature: buildClaudeSignature(emptyForm),
+      form: emptyForm,
       testModel: '',
       testStatus: 'idle',
       testMessage: '',
@@ -279,15 +277,8 @@ export function AiProvidersClaudeEditLayout() {
 
   const resolvedLoading = !draft?.initialized;
   const currentSignature = useMemo(() => buildClaudeSignature(form), [form]);
-
-  useEffect(() => {
-    if (resolvedLoading) return;
-    if (baselineDraftKey === draftKey) return;
-    setBaselineDraftKey(draftKey);
-    setBaselineSignature(currentSignature);
-  }, [baselineDraftKey, currentSignature, draftKey, resolvedLoading]);
-
-  const isDirty = baselineDraftKey === draftKey && baselineSignature !== currentSignature;
+  const baselineSignature = draft?.baselineSignature ?? '';
+  const isDirty = Boolean(draft?.initialized) && baselineSignature !== currentSignature;
   const editorRootPath = useMemo(() => {
     if (hasIndexParam) {
       return `/ai-providers/claude/${params.index ?? ''}`;
@@ -296,7 +287,7 @@ export function AiProvidersClaudeEditLayout() {
   }, [hasIndexParam, params.index]);
   const canGuard = !resolvedLoading && !saving && !invalidIndexParam && !invalidIndex;
 
-  useUnsavedChangesGuard({
+  const { allowNextNavigation } = useUnsavedChangesGuard({
     enabled: canGuard,
     shouldBlock: ({ nextLocation }) => {
       const nextPath = nextLocation.pathname;
@@ -405,6 +396,8 @@ export function AiProvidersClaudeEditLayout() {
         editIndex !== null ? t('notification.claude_config_updated') : t('notification.claude_config_added'),
         'success'
       );
+      allowNextNavigation();
+      setDraftBaselineSignature(draftKey, buildClaudeSignature(form));
       handleBack();
     } catch (err: unknown) {
       showNotification(`${t('notification.update_failed')}: ${getErrorMessage(err)}`, 'error');
@@ -412,8 +405,10 @@ export function AiProvidersClaudeEditLayout() {
       setSaving(false);
     }
   }, [
+    allowNextNavigation,
     clearCache,
     configs,
+    draftKey,
     disableControls,
     editIndex,
     form,
@@ -421,6 +416,7 @@ export function AiProvidersClaudeEditLayout() {
     invalidIndex,
     invalidIndexParam,
     resolvedLoading,
+    setDraftBaselineSignature,
     saving,
     showNotification,
     t,
