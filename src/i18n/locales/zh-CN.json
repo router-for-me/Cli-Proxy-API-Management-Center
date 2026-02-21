@@ -711,8 +711,6 @@
     "gemini_cli_project_id_label": "Google Cloud 项目 ID (可选):",
     "gemini_cli_project_id_placeholder": "留空将自动选择第一个可用项目",
     "gemini_cli_project_id_hint": "可选填写项目 ID。如不填写，系统将自动选择您账号下的第一个可用项目。输入 ALL 可获取全部项目。",
-    "gemini_cli_fetch_all_projects_label": "获取全部项目",
-    "gemini_cli_fetch_all_projects_hint": "可选填写项目 ID。如不填写，系统将自动选择您账号下的第一个可用项目。",
     "gemini_cli_project_id_required": "请填写 Google Cloud 项目 ID。",
     "gemini_cli_oauth_url_label": "授权链接:",
     "gemini_cli_open_link": "打开链接",
