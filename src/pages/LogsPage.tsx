@@ -49,6 +49,9 @@ const LONG_PRESS_MOVE_THRESHOLD = 10;
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'] as const;
 type HttpMethod = (typeof HTTP_METHODS)[number];
 const HTTP_METHOD_REGEX = new RegExp(`\\b(${HTTP_METHODS.join('|')})\\b`);
+const STATUS_GROUPS = ['2xx', '3xx', '4xx', '5xx'] as const;
+type StatusGroup = (typeof STATUS_GROUPS)[number];
+const PATH_FILTER_LIMIT = 12;
 
 const LOG_TIMESTAMP_REGEX = /^\[?(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\]?/;
 const LOG_LEVEL_REGEX = /^\[?(trace|debug|info|warn|warning|error|fatal)\s*\]?(?=\s|\[|$)\s*/i;
@@ -78,6 +81,15 @@ const detectHttpStatusCode = (text: string): number | undefined => {
     if (!Number.isFinite(code)) continue;
     if (code >= 100 && code <= 599) return code;
   }
+  return undefined;
+};
+
+const resolveStatusGroup = (statusCode?: number): StatusGroup | undefined => {
+  if (typeof statusCode !== 'number') return undefined;
+  if (statusCode >= 200 && statusCode < 300) return '2xx';
+  if (statusCode >= 300 && statusCode < 400) return '3xx';
+  if (statusCode >= 400 && statusCode < 500) return '4xx';
+  if (statusCode >= 500 && statusCode < 600) return '5xx';
   return undefined;
 };
 
@@ -362,6 +374,9 @@ export function LogsPage() {
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [hideManagementLogs, setHideManagementLogs] = useState(true);
   const [showRawLogs, setShowRawLogs] = useState(false);
+  const [methodFilters, setMethodFilters] = useState<HttpMethod[]>([]);
+  const [statusFilters, setStatusFilters] = useState<StatusGroup[]>([]);
+  const [pathFilters, setPathFilters] = useState<string[]>([]);
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
   const [errorLogsError, setErrorLogsError] = useState('');
@@ -595,46 +610,130 @@ export function LogsPage() {
   const isSearching = trimmedSearchQuery.length > 0;
   const baseLines = isSearching ? logState.buffer : visibleLines;
 
-  const { filteredLines, removedCount } = useMemo(() => {
+  const methodFilterSet = useMemo(() => new Set(methodFilters), [methodFilters]);
+  const statusFilterSet = useMemo(() => new Set(statusFilters), [statusFilters]);
+  const pathFilterSet = useMemo(() => new Set(pathFilters), [pathFilters]);
+  const hasStructuredFilters = methodFilters.length > 0 || statusFilters.length > 0 || pathFilters.length > 0;
+
+  const {
+    parsedSearchLines,
+    filteredParsedLines,
+    filteredLines,
+    removedCount,
+  } = useMemo(() => {
     let working = baseLines;
-    let removed = 0;
 
     if (hideManagementLogs) {
-      const next: string[] = [];
-      for (const line of working) {
-        if (line.includes(MANAGEMENT_API_PREFIX)) {
-          removed += 1;
-        } else {
-          next.push(line);
-        }
-      }
-      working = next;
+      working = working.filter((line) => !line.includes(MANAGEMENT_API_PREFIX));
     }
 
     if (trimmedSearchQuery) {
       const queryLowered = trimmedSearchQuery.toLowerCase();
-      const next: string[] = [];
-      for (const line of working) {
-        if (line.toLowerCase().includes(queryLowered)) {
-          next.push(line);
-        } else {
-          removed += 1;
-        }
-      }
-      working = next;
+      working = working.filter((line) => line.toLowerCase().includes(queryLowered));
     }
 
-    return { filteredLines: working, removedCount: removed };
-  }, [baseLines, hideManagementLogs, trimmedSearchQuery]);
+    const parsed = working.map((line) => parseLogLine(line));
+    const filteredParsed = parsed.filter((line) => {
+      if (methodFilterSet.size > 0 && (!line.method || !methodFilterSet.has(line.method))) {
+        return false;
+      }
 
-  const parsedVisibleLines = useMemo(() => {
-    if (showRawLogs) return [];
-    return filteredLines.map((line) => parseLogLine(line));
-  }, [filteredLines, showRawLogs]);
+      const statusGroup = resolveStatusGroup(line.statusCode);
+      if (statusFilterSet.size > 0 && (!statusGroup || !statusFilterSet.has(statusGroup))) {
+        return false;
+      }
+
+      if (pathFilterSet.size > 0 && (!line.path || !pathFilterSet.has(line.path))) {
+        return false;
+      }
+
+      return true;
+    });
+
+    return {
+      parsedSearchLines: parsed,
+      filteredParsedLines: filteredParsed,
+      filteredLines: filteredParsed.map((line) => line.raw),
+      removedCount: Math.max(baseLines.length - filteredParsed.length, 0)
+    };
+  }, [
+    baseLines,
+    hideManagementLogs,
+    methodFilterSet,
+    pathFilterSet,
+    statusFilterSet,
+    trimmedSearchQuery
+  ]);
+
+  const parsedVisibleLines = useMemo(
+    () => (showRawLogs ? [] : filteredParsedLines),
+    [filteredParsedLines, showRawLogs]
+  );
 
   const rawVisibleText = useMemo(() => filteredLines.join('\n'), [filteredLines]);
 
   const canLoadMore = !isSearching && logState.visibleFrom > 0;
+
+  const methodCounts = useMemo(() => {
+    const counts: Partial<Record<HttpMethod, number>> = {};
+    parsedSearchLines.forEach((line) => {
+      if (!line.method) return;
+      counts[line.method] = (counts[line.method] ?? 0) + 1;
+    });
+    return counts;
+  }, [parsedSearchLines]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Partial<Record<StatusGroup, number>> = {};
+    parsedSearchLines.forEach((line) => {
+      const statusGroup = resolveStatusGroup(line.statusCode);
+      if (!statusGroup) return;
+      counts[statusGroup] = (counts[statusGroup] ?? 0) + 1;
+    });
+    return counts;
+  }, [parsedSearchLines]);
+
+  const pathOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    parsedSearchLines.forEach((line) => {
+      if (!line.path) return;
+      counts.set(line.path, (counts.get(line.path) ?? 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, PATH_FILTER_LIMIT)
+      .map(([path, count]) => ({ path, count }));
+  }, [parsedSearchLines]);
+
+  useEffect(() => {
+    if (pathFilters.length === 0) return;
+    const validPathSet = new Set(pathOptions.map((item) => item.path));
+    setPathFilters((prev) => prev.filter((path) => validPathSet.has(path)));
+  }, [pathFilters, pathOptions]);
+
+  const toggleMethodFilter = (method: HttpMethod) => {
+    setMethodFilters((prev) =>
+      prev.includes(method) ? prev.filter((item) => item !== method) : [...prev, method]
+    );
+  };
+
+  const toggleStatusFilter = (statusGroup: StatusGroup) => {
+    setStatusFilters((prev) =>
+      prev.includes(statusGroup) ? prev.filter((item) => item !== statusGroup) : [...prev, statusGroup]
+    );
+  };
+
+  const togglePathFilter = (path: string) => {
+    setPathFilters((prev) =>
+      prev.includes(path) ? prev.filter((item) => item !== path) : [...prev, path]
+    );
+  };
+
+  const clearStructuredFilters = () => {
+    setMethodFilters([]);
+    setStatusFilters([]);
+    setPathFilters([]);
+  };
 
   const prependVisibleLines = useCallback(() => {
     const node = logViewerRef.current;
@@ -864,6 +963,86 @@ export function LogsPage() {
                     )
                   }
                 />
+              </div>
+
+              <div className={styles.structuredFilters}>
+                <div className={styles.filterChipGroup}>
+                  <span className={styles.filterChipLabel}>{t('logs.filter_method')}</span>
+                  <div className={styles.filterChipList}>
+                    {HTTP_METHODS.map((method) => {
+                      const active = methodFilters.includes(method);
+                      const count = methodCounts[method] ?? 0;
+                      return (
+                        <button
+                          key={method}
+                          type="button"
+                          className={`${styles.filterChip} ${active ? styles.filterChipActive : ''}`}
+                          onClick={() => toggleMethodFilter(method)}
+                          disabled={count === 0 && !active}
+                          aria-pressed={active}
+                        >
+                          {method} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className={styles.filterChipGroup}>
+                  <span className={styles.filterChipLabel}>{t('logs.filter_status')}</span>
+                  <div className={styles.filterChipList}>
+                    {STATUS_GROUPS.map((statusGroup) => {
+                      const active = statusFilters.includes(statusGroup);
+                      const count = statusCounts[statusGroup] ?? 0;
+                      return (
+                        <button
+                          key={statusGroup}
+                          type="button"
+                          className={`${styles.filterChip} ${active ? styles.filterChipActive : ''}`}
+                          onClick={() => toggleStatusFilter(statusGroup)}
+                          disabled={count === 0 && !active}
+                          aria-pressed={active}
+                        >
+                          {t(`logs.filter_status_${statusGroup}`)} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className={styles.filterChipGroup}>
+                  <span className={styles.filterChipLabel}>{t('logs.filter_path')}</span>
+                  <div className={styles.filterChipList}>
+                    {pathOptions.length === 0 ? (
+                      <span className={styles.filterChipHint}>{t('logs.filter_path_empty')}</span>
+                    ) : (
+                      pathOptions.map(({ path, count }) => {
+                        const active = pathFilters.includes(path);
+                        return (
+                          <button
+                            key={path}
+                            type="button"
+                            className={`${styles.filterChip} ${active ? styles.filterChipActive : ''}`}
+                            onClick={() => togglePathFilter(path)}
+                            aria-pressed={active}
+                            title={path}
+                          >
+                            {path} ({count})
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearStructuredFilters}
+                  disabled={!hasStructuredFilters}
+                >
+                  {t('logs.clear_filters')}
+                </Button>
               </div>
 
               <ToggleSwitch
