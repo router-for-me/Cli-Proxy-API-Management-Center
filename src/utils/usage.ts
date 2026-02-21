@@ -51,6 +51,13 @@ export interface UsageDetail {
   __modelName?: string;
 }
 
+export interface UsageDetailWithEndpoint extends UsageDetail {
+  __endpoint: string;
+  __endpointMethod?: string;
+  __endpointPath?: string;
+  __timestampMs: number;
+}
+
 export interface ApiStats {
   endpoint: string;
   totalRequests: number;
@@ -65,6 +72,7 @@ export type UsageTimeRange = '7h' | '24h' | '7d' | 'all';
 
 const TOKENS_PER_PRICE_UNIT = 1_000_000;
 const MODEL_PRICE_STORAGE_KEY = 'cli-proxy-model-prices-v2';
+const USAGE_ENDPOINT_METHOD_REGEX = /^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+(\S+)/i;
 const USAGE_TIME_RANGE_MS: Record<Exclude<UsageTimeRange, 'all'>, number> = {
   '7h': 7 * 60 * 60 * 1000,
   '24h': 24 * 60 * 60 * 1000,
@@ -471,6 +479,49 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
       });
     });
   });
+  return details;
+}
+
+/**
+ * 从使用数据中收集包含 endpoint/method/path 的请求明细
+ */
+export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetailWithEndpoint[] {
+  const apis = getApisRecord(usageData);
+  if (!apis) return [];
+
+  const details: UsageDetailWithEndpoint[] = [];
+  Object.entries(apis).forEach(([endpoint, apiEntry]) => {
+    if (!isRecord(apiEntry)) return;
+    const modelsRaw = apiEntry.models;
+    const models = isRecord(modelsRaw) ? modelsRaw : null;
+    if (!models) return;
+
+    const endpointMatch = endpoint.match(USAGE_ENDPOINT_METHOD_REGEX);
+    const endpointMethod = endpointMatch?.[1]?.toUpperCase();
+    const endpointPath = endpointMatch?.[2];
+
+    Object.entries(models).forEach(([modelName, modelEntry]) => {
+      if (!isRecord(modelEntry)) return;
+      const modelDetailsRaw = modelEntry.details;
+      const modelDetails = Array.isArray(modelDetailsRaw) ? modelDetailsRaw : [];
+
+      modelDetails.forEach((detailRaw) => {
+        if (!isRecord(detailRaw) || typeof detailRaw.timestamp !== 'string') return;
+        const detail = detailRaw as unknown as UsageDetail;
+        const timestampMs = Date.parse(detail.timestamp);
+        details.push({
+          ...detail,
+          source: normalizeUsageSourceId(detail.source),
+          __modelName: modelName,
+          __endpoint: endpoint,
+          __endpointMethod: endpointMethod,
+          __endpointPath: endpointPath,
+          __timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
+        });
+      });
+    });
+  });
+
   return details;
 }
 
