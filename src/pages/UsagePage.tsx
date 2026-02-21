@@ -362,7 +362,15 @@ export function UsagePage() {
         <ModelStatsCard modelStats={modelStats} loading={loading} hasPrices={hasPrices} />
       </div>
 
-      <RequestEventsDetailsCard usage={filteredUsage} loading={loading} />
+      <RequestEventsDetailsCard
+        usage={filteredUsage}
+        loading={loading}
+        geminiKeys={config?.geminiApiKeys || []}
+        claudeConfigs={config?.claudeApiKeys || []}
+        codexConfigs={config?.codexApiKeys || []}
+        vertexConfigs={config?.vertexApiKeys || []}
+        openaiProviders={config?.openaiCompatibility || []}
+      />
 
       {/* Credential Stats */}
       <CredentialStatsCard

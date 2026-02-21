@@ -1,10 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Select';
-import { collectUsageDetails, extractTotalTokens } from '@/utils/usage';
+import { authFilesApi } from '@/services/api/authFiles';
+import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
+import type { AuthFileItem } from '@/types/authFile';
+import {
+  buildCandidateUsageSourceIds,
+  collectUsageDetails,
+  extractTotalTokens
+} from '@/utils/usage';
 import styles from '@/pages/UsagePage.module.scss';
 
 const ALL_FILTER = '__all__';
@@ -16,7 +23,9 @@ type RequestEventRow = {
   timestampMs: number;
   timestampLabel: string;
   model: string;
+  sourceRaw: string;
   source: string;
+  sourceType: string;
   authIndex: string;
   failed: boolean;
   inputTokens: number;
@@ -29,6 +38,11 @@ type RequestEventRow = {
 export interface RequestEventsDetailsCardProps {
   usage: unknown;
   loading: boolean;
+  geminiKeys: GeminiKeyConfig[];
+  claudeConfigs: ProviderKeyConfig[];
+  codexConfigs: ProviderKeyConfig[];
+  vertexConfigs: ProviderKeyConfig[];
+  openaiProviders: OpenAIProviderConfig[];
 }
 
 const toNumber = (value: unknown): number => {
@@ -52,12 +66,137 @@ const downloadFile = (filename: string, content: string, mimeType: string) => {
   window.URL.revokeObjectURL(url);
 };
 
-export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetailsCardProps) {
+type CredentialInfo = {
+  name: string;
+  type: string;
+};
+
+type SourceInfo = {
+  displayName: string;
+  type: string;
+};
+
+function normalizeAuthIndexValue(value: unknown): string | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toString();
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+  return null;
+}
+
+export function RequestEventsDetailsCard({
+  usage,
+  loading,
+  geminiKeys,
+  claudeConfigs,
+  codexConfigs,
+  vertexConfigs,
+  openaiProviders
+}: RequestEventsDetailsCardProps) {
   const { t, i18n } = useTranslation();
 
   const [modelFilter, setModelFilter] = useState(ALL_FILTER);
   const [sourceFilter, setSourceFilter] = useState(ALL_FILTER);
   const [authIndexFilter, setAuthIndexFilter] = useState(ALL_FILTER);
+  const [authFileMap, setAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
+
+  useEffect(() => {
+    let cancelled = false;
+    authFilesApi
+      .list()
+      .then((res) => {
+        if (cancelled) return;
+        const files = Array.isArray(res) ? res : (res as { files?: AuthFileItem[] })?.files;
+        if (!Array.isArray(files)) return;
+        const map = new Map<string, CredentialInfo>();
+        files.forEach((file) => {
+          const key = normalizeAuthIndexValue(file['auth_index'] ?? file.authIndex);
+          if (!key) return;
+          map.set(key, {
+            name: file.name || key,
+            type: (file.type || file.provider || '').toString()
+          });
+        });
+        setAuthFileMap(map);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const sourceInfoMap = useMemo(() => {
+    const map = new Map<string, SourceInfo>();
+
+    const registerSource = (sourceId: string, displayName: string, type: string) => {
+      if (!sourceId || !displayName) return;
+      if (map.has(sourceId)) return;
+      map.set(sourceId, { displayName, type });
+    };
+
+    const registerCandidates = (
+      displayName: string,
+      type: string,
+      candidates: string[]
+    ) => {
+      candidates.forEach((sourceId) => registerSource(sourceId, displayName, type));
+    };
+
+    geminiKeys.forEach((config, index) => {
+      const displayName = config.prefix?.trim() || `Gemini #${index + 1}`;
+      registerCandidates(
+        displayName,
+        'gemini',
+        buildCandidateUsageSourceIds({ apiKey: config.apiKey, prefix: config.prefix })
+      );
+    });
+
+    claudeConfigs.forEach((config, index) => {
+      const displayName = config.prefix?.trim() || `Claude #${index + 1}`;
+      registerCandidates(
+        displayName,
+        'claude',
+        buildCandidateUsageSourceIds({ apiKey: config.apiKey, prefix: config.prefix })
+      );
+    });
+
+    codexConfigs.forEach((config, index) => {
+      const displayName = config.prefix?.trim() || `Codex #${index + 1}`;
+      registerCandidates(
+        displayName,
+        'codex',
+        buildCandidateUsageSourceIds({ apiKey: config.apiKey, prefix: config.prefix })
+      );
+    });
+
+    vertexConfigs.forEach((config, index) => {
+      const displayName = config.prefix?.trim() || `Vertex #${index + 1}`;
+      registerCandidates(
+        displayName,
+        'vertex',
+        buildCandidateUsageSourceIds({ apiKey: config.apiKey, prefix: config.prefix })
+      );
+    });
+
+    openaiProviders.forEach((provider, providerIndex) => {
+      const displayName = provider.prefix?.trim() || provider.name || `OpenAI #${providerIndex + 1}`;
+      const candidates = new Set<string>();
+      buildCandidateUsageSourceIds({ prefix: provider.prefix }).forEach((sourceId) =>
+        candidates.add(sourceId)
+      );
+      (provider.apiKeyEntries || []).forEach((entry) => {
+        buildCandidateUsageSourceIds({ apiKey: entry.apiKey }).forEach((sourceId) =>
+          candidates.add(sourceId)
+        );
+      });
+      registerCandidates(displayName, 'openai', Array.from(candidates));
+    });
+
+    return map;
+  }, [claudeConfigs, codexConfigs, geminiKeys, openaiProviders, vertexConfigs]);
 
   const rows = useMemo<RequestEventRow[]>(() => {
     const details = collectUsageDetails(usage);
@@ -67,13 +206,20 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
         const timestamp = typeof detail.timestamp === 'string' ? detail.timestamp : '';
         const timestampMs = Date.parse(timestamp);
         const date = Number.isNaN(timestampMs) ? null : new Date(timestampMs);
-        const source = String(detail.source ?? '').trim() || '-';
-        const model = String(detail.__modelName ?? '').trim() || '-';
+        const sourceRaw = String(detail.source ?? '').trim();
         const authIndexRaw = detail.auth_index as unknown;
         const authIndex =
           authIndexRaw === null || authIndexRaw === undefined || authIndexRaw === ''
             ? '-'
             : String(authIndexRaw);
+        const normalizedAuthIndex = normalizeAuthIndexValue(authIndexRaw);
+        const sourceInfo = sourceInfoMap.get(sourceRaw);
+        const authInfo = normalizedAuthIndex ? authFileMap.get(normalizedAuthIndex) : undefined;
+        const source = sourceInfo?.displayName
+          || authInfo?.name
+          || (sourceRaw.startsWith('t:') ? sourceRaw.slice(2) : sourceRaw || '-');
+        const sourceType = sourceInfo?.type || authInfo?.type || '';
+        const model = String(detail.__modelName ?? '').trim() || '-';
         const inputTokens = Math.max(toNumber(detail.tokens?.input_tokens), 0);
         const outputTokens = Math.max(toNumber(detail.tokens?.output_tokens), 0);
         const reasoningTokens = Math.max(toNumber(detail.tokens?.reasoning_tokens), 0);
@@ -87,12 +233,14 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
         );
 
         return {
-          id: `${timestamp}-${model}-${source}-${authIndex}-${index}`,
+          id: `${timestamp}-${model}-${sourceRaw || source}-${authIndex}-${index}`,
           timestamp,
           timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
           timestampLabel: date ? date.toLocaleString(i18n.language) : timestamp || '-',
           model,
+          sourceRaw: sourceRaw || '-',
           source,
+          sourceType,
           authIndex,
           failed: detail.failed === true,
           inputTokens,
@@ -103,7 +251,7 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
         };
       })
       .sort((a, b) => b.timestampMs - a.timestampMs);
-  }, [i18n.language, usage]);
+  }, [authFileMap, i18n.language, sourceInfoMap, usage]);
 
   const modelOptions = useMemo(
     () => [
@@ -192,6 +340,7 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
       'timestamp',
       'model',
       'source',
+      'source_raw',
       'auth_index',
       'result',
       'input_tokens',
@@ -206,6 +355,7 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
         row.timestamp,
         row.model,
         row.source,
+        row.sourceRaw,
         row.authIndex,
         row.failed ? 'failed' : 'success',
         row.inputTokens,
@@ -230,6 +380,7 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
       timestamp: row.timestamp,
       model: row.model,
       source: row.source,
+      source_raw: row.sourceRaw,
       auth_index: row.authIndex,
       failed: row.failed,
       tokens: {
@@ -370,7 +521,10 @@ export function RequestEventsDetailsCard({ usage, loading }: RequestEventsDetail
                     </td>
                     <td className={styles.modelCell}>{row.model}</td>
                     <td className={styles.requestEventsSourceCell} title={row.source}>
-                      {row.source}
+                      <span>{row.source}</span>
+                      {row.sourceType && (
+                        <span className={styles.credentialType}>{row.sourceType}</span>
+                      )}
                     </td>
                     <td className={styles.requestEventsAuthIndex} title={row.authIndex}>
                       {row.authIndex}
