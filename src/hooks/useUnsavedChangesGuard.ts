@@ -23,19 +23,21 @@ export function useUnsavedChangesGuard(options: UseUnsavedChangesGuardOptions) {
   const { enabled = true, shouldBlock, dialog } = options;
   const { showConfirmation } = useNotificationStore();
   const lastBlockedRef = useRef<string>('');
-  const allowNextNavigationRef = useRef(false);
+  const allowNextNavigationUntilRef = useRef(0);
   const location = useLocation();
 
   const allowNextNavigation = useCallback(() => {
-    allowNextNavigationRef.current = true;
+    // Allow a short window for programmatic navigations after successful save.
+    // This avoids stale "allow" flags lingering when no navigation happens.
+    allowNextNavigationUntilRef.current = Date.now() + 2_000;
   }, []);
 
   const shouldBlockFunction = useCallback<BlockerFunction>(
     (args) => {
-      if (allowNextNavigationRef.current) {
+      if (!enabled) return false;
+      if (allowNextNavigationUntilRef.current > Date.now()) {
         return false;
       }
-      if (!enabled) return false;
       return typeof shouldBlock === 'function' ? shouldBlock(args) : shouldBlock;
     },
     [enabled, shouldBlock]
@@ -44,8 +46,8 @@ export function useUnsavedChangesGuard(options: UseUnsavedChangesGuardOptions) {
   const blocker = useBlocker(shouldBlockFunction);
 
   useEffect(() => {
-    if (!allowNextNavigationRef.current) return;
-    allowNextNavigationRef.current = false;
+    if (allowNextNavigationUntilRef.current === 0) return;
+    allowNextNavigationUntilRef.current = 0;
   }, [location.key]);
 
   const blockedKey = useMemo(() => {

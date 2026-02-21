@@ -196,10 +196,12 @@ export const useClaudeEditDraftStore = create<ClaudeEditDraftState>((set, get) =
   clearDraft: (key) => {
     if (!key) return;
     set((state) => {
-      if (!state.drafts[key]) return state;
-      const next = { ...state.drafts };
-      delete next[key];
-      return { drafts: next };
+      if (!state.drafts[key] && !state.refCounts[key]) return state;
+      const nextDrafts = { ...state.drafts };
+      delete nextDrafts[key];
+      const nextCounts = { ...state.refCounts };
+      delete nextCounts[key];
+      return { drafts: nextDrafts, refCounts: nextCounts };
     });
   },
 }));

@@ -185,6 +185,7 @@ export function AiProvidersCodexEditPage() {
     if (initialData) {
       const nextForm: ProviderFormState = {
         ...initialData,
+        websockets: Boolean(initialData.websockets),
         headers: headersToEntries(initialData.headers),
         modelEntries: modelsToEntries(initialData.models),
         excludedText: excludedModelsToText(initialData.excludedModels),
@@ -362,7 +363,7 @@ export function AiProvidersCodexEditPage() {
         priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
         prefix: form.prefix?.trim() || undefined,
         baseUrl,
-        websockets: form.websockets ?? false,
+        websockets: Boolean(form.websockets),
         proxyUrl: form.proxyUrl?.trim() || undefined,
         headers: buildHeaderObject(form.headers),
         models: entriesToModels(form.modelEntries),
