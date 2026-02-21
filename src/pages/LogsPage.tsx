@@ -187,6 +187,22 @@ const normalizeTracePath = (value?: string) =>
     .split('?')[0]
     .trim();
 
+const TRACEABLE_EXACT_PATHS = new Set(['/v1/chat/completions', '/v1/messages', '/v1/responses']);
+const TRACEABLE_PREFIX_PATHS = ['/v1beta/models'];
+
+const normalizeTraceablePath = (value?: string): string => {
+  const normalized = normalizeTracePath(value);
+  if (!normalized || normalized === '/') return normalized;
+  return normalized.replace(/\/+$/, '');
+};
+
+const isTraceableRequestPath = (value?: string): boolean => {
+  const normalizedPath = normalizeTraceablePath(value);
+  if (!normalizedPath) return false;
+  if (TRACEABLE_EXACT_PATHS.has(normalizedPath)) return true;
+  return TRACEABLE_PREFIX_PATHS.some((prefix) => normalizedPath.startsWith(prefix));
+};
+
 const scoreTraceCandidate = (
   line: ParsedLogLine,
   detail: UsageDetailWithEndpoint
@@ -1146,6 +1162,7 @@ export function LogsPage() {
   };
 
   const openTraceModal = (line: ParsedLogLine) => {
+    if (!isTraceableRequestPath(line.path)) return;
     cancelLongPress();
     setTraceLogLine(line);
     void loadTraceUsageDetails();
@@ -1432,6 +1449,7 @@ export function LogsPage() {
                 ) : (
                   <div className={styles.logList}>
                     {parsedVisibleLines.map((line, index) => {
+                      const canTraceRequest = isTraceableRequestPath(line.path);
                       const rowClassNames = [styles.logRow];
                       if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
                       if (line.level === 'error' || line.level === 'fatal')
@@ -1523,17 +1541,19 @@ export function LogsPage() {
 
                             {line.message && <span className={styles.message}>{line.message}</span>}
 
-                            <button
-                              type="button"
-                              className={styles.traceButton}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openTraceModal(line);
-                              }}
-                              title={t('logs.trace_button')}
-                            >
-                              {t('logs.trace_button')}
-                            </button>
+                            {canTraceRequest && (
+                              <button
+                                type="button"
+                                className={styles.traceButton}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openTraceModal(line);
+                                }}
+                                title={t('logs.trace_button')}
+                              >
+                                {t('logs.trace_button')}
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
