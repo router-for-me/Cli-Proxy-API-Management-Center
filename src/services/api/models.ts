@@ -102,6 +102,40 @@ export const modelsApi = {
   },
 
   /**
+   * Fetch models from /v1/models endpoint via api-call.
+   * Useful when the configured baseUrl is the upstream host root (e.g. https://api.example.com).
+   */
+  async fetchV1ModelsViaApiCall(
+    baseUrl: string,
+    apiKey?: string,
+    headers: Record<string, string> = {}
+  ) {
+    const endpoint = buildV1ModelsEndpoint(baseUrl);
+    if (!endpoint) {
+      throw new Error('Invalid base url');
+    }
+
+    const resolvedHeaders = { ...headers };
+    const hasAuthHeader = Boolean(resolvedHeaders.Authorization || resolvedHeaders.authorization);
+    if (apiKey && !hasAuthHeader) {
+      resolvedHeaders.Authorization = `Bearer ${apiKey}`;
+    }
+
+    const result = await apiCallApi.request({
+      method: 'GET',
+      url: endpoint,
+      header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+    });
+
+    if (result.statusCode < 200 || result.statusCode >= 300) {
+      throw new Error(getApiCallErrorMessage(result));
+    }
+
+    const payload = result.body ?? result.bodyText;
+    return normalizeModelList(payload, { dedupe: true });
+  },
+
+  /**
    * Fetch models from /models endpoint via api-call (for OpenAI provider discovery)
    */
   async fetchModelsViaApiCall(
@@ -132,6 +166,10 @@ export const modelsApi = {
 
     const payload = result.body ?? result.bodyText;
     return normalizeModelList(payload, { dedupe: true });
+  },
+
+  buildV1ModelsEndpoint(baseUrl: string) {
+    return buildV1ModelsEndpoint(baseUrl);
   },
 
   buildClaudeModelsEndpoint(baseUrl: string) {
