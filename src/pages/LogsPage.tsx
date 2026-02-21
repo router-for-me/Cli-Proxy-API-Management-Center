@@ -527,6 +527,7 @@ export function LogsPage() {
   const logRequestInFlightRef = useRef(false);
   const pendingFullReloadRef = useRef(false);
   const traceUsageLoadedAtRef = useRef(0);
+  const traceAuthLoadedAtRef = useRef(0);
 
   // 保存最新时间戳用于增量获取
   const latestTimestampRef = useRef<number>(0);
@@ -767,26 +768,28 @@ export function LogsPage() {
     if (traceLoading) return;
 
     const now = Date.now();
-    if (
-      traceUsageDetails.length > 0 &&
-      traceAuthFileMap.size > 0 &&
-      now - traceUsageLoadedAtRef.current < TRACE_USAGE_CACHE_MS
-    ) {
-      return;
-    }
+    const usageFresh =
+      traceUsageLoadedAtRef.current > 0 && now - traceUsageLoadedAtRef.current < TRACE_USAGE_CACHE_MS;
+    const authFresh =
+      traceAuthLoadedAtRef.current > 0 && now - traceAuthLoadedAtRef.current < TRACE_USAGE_CACHE_MS;
+    if (usageFresh && authFresh) return;
 
     setTraceLoading(true);
     setTraceError('');
     try {
       const [usageResponse, authFilesResponse] = await Promise.all([
-        usageApi.getUsage(),
-        authFilesApi.list().catch(() => null)
+        usageFresh ? Promise.resolve(null) : usageApi.getUsage(),
+        authFresh ? Promise.resolve(null) : authFilesApi.list().catch(() => null)
       ]);
-      const usageData = usageResponse?.usage ?? usageResponse;
-      const details = collectUsageDetailsWithEndpoint(usageData);
-      setTraceUsageDetails(details);
 
-      if (authFilesResponse) {
+      if (usageResponse !== null) {
+        const usageData = usageResponse?.usage ?? usageResponse;
+        const details = collectUsageDetailsWithEndpoint(usageData);
+        setTraceUsageDetails(details);
+        traceUsageLoadedAtRef.current = now;
+      }
+
+      if (authFilesResponse !== null) {
         const files = Array.isArray(authFilesResponse)
           ? authFilesResponse
           : (authFilesResponse as { files?: AuthFileItem[] })?.files;
@@ -801,16 +804,15 @@ export function LogsPage() {
             });
           });
           setTraceAuthFileMap(map);
+          traceAuthLoadedAtRef.current = now;
         }
       }
-
-      traceUsageLoadedAtRef.current = now;
     } catch (err: unknown) {
       setTraceError(getErrorMessage(err) || t('logs.trace_usage_load_error'));
     } finally {
       setTraceLoading(false);
     }
-  }, [t, traceAuthFileMap.size, traceLoading, traceUsageDetails.length]);
+  }, [t, traceLoading]);
 
   useEffect(() => {
     if (connectionStatus === 'connected') {
@@ -993,7 +995,10 @@ export function LogsPage() {
   useEffect(() => {
     if (pathFilters.length === 0) return;
     const validPathSet = new Set(pathOptions.map((item) => item.path));
-    setPathFilters((prev) => prev.filter((path) => validPathSet.has(path)));
+    setPathFilters((prev) => {
+      const next = prev.filter((path) => validPathSet.has(path));
+      return next.length === prev.length ? prev : next;
+    });
   }, [pathFilters, pathOptions]);
 
   const toggleMethodFilter = (method: HttpMethod) => {
