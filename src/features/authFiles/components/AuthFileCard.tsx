@@ -9,6 +9,7 @@ import { resolveAuthProvider } from '@/utils/quota';
 import { calculateStatusBarData, type KeyStats } from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
 import {
+  AUTH_FILE_REFRESH_WARNING_MS,
   QUOTA_PROVIDER_TYPES,
   formatModified,
   getTypeColor,
@@ -22,6 +23,21 @@ import {
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import styles from '@/pages/AuthFilesPage.module.scss';
+
+type AuthFileHealthStatus = 'healthy' | 'warning' | 'disabled' | 'unknown';
+
+const HEALTHY_STATUS_MESSAGES = new Set(['ok', 'healthy', 'ready', 'success', 'available']);
+const GOOD_STATUS_VALUES = new Set(['', 'ok', 'ready', 'healthy', 'available']);
+
+const parseDateFromUnknown = (value: unknown): Date | null => {
+  if (value === null || value === undefined || value === '') return null;
+  const asNumber = Number(value);
+  const date =
+    Number.isFinite(asNumber) && !Number.isNaN(asNumber)
+      ? new Date(Math.abs(asNumber) < 1e12 ? asNumber * 1000 : asNumber)
+      : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+};
 
 export type AuthFileCardProps = {
   file: AuthFileItem;
@@ -49,7 +65,7 @@ const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
 };
 
 export function AuthFileCard(props: AuthFileCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     file,
     selected,
@@ -93,6 +109,60 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
   const statusData =
     (authIndexKey && statusBarCache.get(authIndexKey)) || calculateStatusBarData([]);
+  const rawStatus = String(file.status ?? file['status'] ?? '')
+    .trim()
+    .toLowerCase();
+  const rawStatusMessage = String(file['status_message'] ?? file.statusMessage ?? '').trim();
+  const normalizedStatusMessage = rawStatusMessage.toLowerCase();
+  const isFileDisabled = file.disabled === true || rawStatus === 'disabled';
+  const isUnavailable = file.unavailable === true || rawStatus === 'unavailable';
+  const lastRefreshDate = parseDateFromUnknown(file['last_refresh'] ?? file.lastRefresh);
+  const isRefreshStale =
+    Boolean(lastRefreshDate) &&
+    Date.now() - lastRefreshDate.getTime() > AUTH_FILE_REFRESH_WARNING_MS;
+  const hasStatusWarning =
+    Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(normalizedStatusMessage);
+  const hasStatusFailure = rawStatus === 'error' || rawStatus === 'failed' || rawStatus === 'warning';
+  const healthStatus: AuthFileHealthStatus = isFileDisabled
+    ? 'disabled'
+    : hasStatusWarning || hasStatusFailure || isUnavailable || isRefreshStale
+      ? 'warning'
+      : lastRefreshDate && !isRefreshStale && GOOD_STATUS_VALUES.has(rawStatus)
+        ? 'healthy'
+        : 'unknown';
+  const healthStatusClass =
+    healthStatus === 'healthy'
+      ? styles.healthStatusHealthy
+      : healthStatus === 'warning'
+        ? styles.healthStatusWarning
+        : healthStatus === 'disabled'
+          ? styles.healthStatusDisabled
+          : styles.healthStatusUnknown;
+  const healthStatusLabel = t(`auth_files.health_status_${healthStatus}`);
+  const lastRefreshText = (() => {
+    if (!lastRefreshDate) return t('auth_files.refresh_not_available');
+
+    const diffMs = lastRefreshDate.getTime() - Date.now();
+    const absMs = Math.abs(diffMs);
+    if (absMs < 30 * 1000) {
+      return t('auth_files.refresh_just_now');
+    }
+
+    const units: ReadonlyArray<{ unit: Intl.RelativeTimeFormatUnit; ms: number }> = [
+      { unit: 'day', ms: 24 * 60 * 60 * 1000 },
+      { unit: 'hour', ms: 60 * 60 * 1000 },
+      { unit: 'minute', ms: 60 * 1000 },
+      { unit: 'second', ms: 1000 }
+    ];
+    const matched = units.find(({ ms }) => absMs >= ms) || units[units.length - 1];
+    const value = Math.round(diffMs / matched.ms);
+    const formatter = new Intl.RelativeTimeFormat(i18n.language, { numeric: 'auto' });
+    return formatter.format(value, matched.unit);
+  })();
+  const lastRefreshTitle = lastRefreshDate
+    ? lastRefreshDate.toLocaleString(i18n.language)
+    : t('auth_files.refresh_not_available');
+  const healthStatusTitle = rawStatusMessage || t('auth_files.refresh_not_available');
 
   return (
     <div
@@ -134,6 +204,23 @@ export function AuthFileCard(props: AuthFileCardProps) {
               {t('auth_files.file_modified')}: {formatModified(file)}
             </span>
           </div>
+
+          <div className={styles.cardHealthRow}>
+            <span className={`${styles.healthStatusBadge} ${healthStatusClass}`} title={healthStatusTitle}>
+              {t('auth_files.health_status_label')}: {healthStatusLabel}
+            </span>
+            <span
+              className={`${styles.lastRefreshText} ${isRefreshStale ? styles.lastRefreshStale : ''}`}
+              title={lastRefreshTitle}
+            >
+              {t('auth_files.last_refresh_label')}: {lastRefreshText}
+            </span>
+          </div>
+          {rawStatusMessage && hasStatusWarning && (
+            <div className={styles.healthStatusMessage} title={rawStatusMessage}>
+              {rawStatusMessage}
+            </div>
+          )}
 
           <div className={styles.cardStats}>
             <span className={`${styles.statPill} ${styles.statSuccess}`}>

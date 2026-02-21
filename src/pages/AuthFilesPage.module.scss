@@ -605,6 +605,69 @@
   border-bottom: 1px solid var(--border-color);
 }
 
+.cardHealthRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.healthStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.healthStatusHealthy {
+  color: var(--success-badge-text, #065f46);
+  background-color: var(--success-badge-bg, #d1fae5);
+  border-color: var(--success-badge-border, #6ee7b7);
+}
+
+.healthStatusWarning {
+  color: var(--warning-text);
+  background-color: var(--warning-bg);
+  border-color: var(--warning-border);
+}
+
+.healthStatusDisabled {
+  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+.healthStatusUnknown {
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  border-style: dashed;
+}
+
+.lastRefreshText {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.lastRefreshStale {
+  color: var(--warning-text);
+}
+
+.healthStatusMessage {
+  font-size: 12px;
+  color: var(--warning-text);
+  background-color: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: $radius-sm;
+  padding: 5px 8px;
+  word-break: break-word;
+}
+
 .cardStats {
   display: flex;
   flex-wrap: wrap;
