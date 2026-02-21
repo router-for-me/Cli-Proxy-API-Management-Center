@@ -153,8 +153,16 @@ export function OAuthPage() {
   };
 
   const startAuth = async (provider: OAuthProvider) => {
-    const projectId = provider === 'gemini-cli' ? (states[provider]?.projectId || '').trim() : undefined;
-    // 项目 ID 现在是可选的，如果不输入将自动选择第一个可用项目
+    const geminiState = provider === 'gemini-cli' ? states[provider] : undefined;
+    const projectId =
+      provider === 'gemini-cli'
+        ? (() => {
+            const rawProjectId = (geminiState?.projectId || '').trim();
+            if (!rawProjectId) return undefined;
+            return rawProjectId.toUpperCase() === 'ALL' ? 'ALL' : rawProjectId;
+          })()
+        : undefined;
+    // 项目 ID 现在是可选的，如果不输入将自动选择第一个可用项目；可切换为获取全部项目
     if (provider === 'gemini-cli') {
       updateProviderState(provider, { projectIdError: undefined });
     }
