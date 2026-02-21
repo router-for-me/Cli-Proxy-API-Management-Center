@@ -38,3 +38,6 @@ export type { CostTrendChartProps } from './CostTrendChart';
 
 export { ServiceHealthCard } from './ServiceHealthCard';
 export type { ServiceHealthCardProps } from './ServiceHealthCard';
+
+export { RequestEventsDetailsCard } from './RequestEventsDetailsCard';
+export type { RequestEventsDetailsCardProps } from './RequestEventsDetailsCard';

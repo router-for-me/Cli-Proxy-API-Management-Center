@@ -25,6 +25,7 @@ import {
   ModelStatsCard,
   PriceSettingsCard,
   CredentialStatsCard,
+  RequestEventsDetailsCard,
   TokenBreakdownChart,
   CostTrendChart,
   ServiceHealthCard,
@@ -360,6 +361,8 @@ export function UsagePage() {
         <ApiDetailsCard apiStats={apiStats} loading={loading} hasPrices={hasPrices} />
         <ModelStatsCard modelStats={modelStats} loading={loading} hasPrices={hasPrices} />
       </div>
+
+      <RequestEventsDetailsCard usage={filteredUsage} loading={loading} />
 
       {/* Credential Stats */}
       <CredentialStatsCard
