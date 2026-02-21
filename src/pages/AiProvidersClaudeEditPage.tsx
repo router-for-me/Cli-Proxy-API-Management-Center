@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { ModelInputList } from '@/components/ui/ModelInputList';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import { useNotificationStore } from '@/stores';
 import { buildHeaderObject } from '@/utils/headers';
-import { buildClaudeMessagesEndpoint } from '@/components/providers/utils';
+import { buildClaudeMessagesEndpoint, parseExcludedModels } from '@/components/providers/utils';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
@@ -98,6 +99,23 @@ export function AiProvidersClaudeEditPage() {
       return acc;
     }, []);
   }, [form.modelEntries]);
+
+  const cloakModeOptions = useMemo(
+    () => [
+      { value: 'auto', label: t('ai_providers.claude_cloak_mode_auto') },
+      { value: 'always', label: t('ai_providers.claude_cloak_mode_always') },
+      { value: 'never', label: t('ai_providers.claude_cloak_mode_never') },
+    ],
+    [t]
+  );
+
+  const resolvedCloakMode = useMemo(() => {
+    const mode = (form.cloak?.mode ?? '').trim().toLowerCase();
+    if (!mode) return 'auto';
+    if (mode === 'provider') return 'auto';
+    if (mode === 'auto' || mode === 'always' || mode === 'never') return mode;
+    return 'auto';
+  }, [form.cloak?.mode]);
 
   const connectivityConfigSignature = useMemo(() => {
     const headersSignature = form.headers
@@ -268,6 +286,22 @@ export function AiProvidersClaudeEditPage() {
               disabled={saving || disableControls || isTesting}
             />
             <Input
+              label={t('ai_providers.priority_label')}
+              hint={t('ai_providers.priority_hint')}
+              type="number"
+              step={1}
+              value={form.priority ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const parsed = raw.trim() === '' ? undefined : Number(raw);
+                setForm((prev) => ({
+                  ...prev,
+                  priority: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
+                }));
+              }}
+              disabled={saving || disableControls || isTesting}
+            />
+            <Input
               label={t('ai_providers.prefix_label')}
               placeholder={t('ai_providers.prefix_placeholder')}
               value={form.prefix ?? ''}
@@ -417,6 +451,98 @@ export function AiProvidersClaudeEditPage() {
                 disabled={saving || disableControls || isTesting}
               />
               <div className="hint">{t('ai_providers.excluded_models_hint')}</div>
+            </div>
+
+            <div className={styles.modelConfigSection}>
+              <div className={styles.modelConfigHeader}>
+                <label className={styles.modelConfigTitle}>{t('ai_providers.claude_cloak_title')}</label>
+                <div className={styles.modelConfigToolbar}>
+                  <ToggleSwitch
+                    checked={Boolean(form.cloak)}
+                    onChange={(enabled) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        cloak: enabled
+                          ? {
+                              mode: (prev.cloak?.mode ?? 'auto').trim() || 'auto',
+                              strictMode: prev.cloak?.strictMode ?? false,
+                              sensitiveWords: prev.cloak?.sensitiveWords ?? [],
+                            }
+                          : undefined,
+                      }))
+                    }
+                    disabled={saving || disableControls || isTesting}
+                    ariaLabel={t('ai_providers.claude_cloak_toggle_aria')}
+                    label={t('ai_providers.claude_cloak_toggle_label')}
+                  />
+                </div>
+              </div>
+              <div className={styles.sectionHint}>{t('ai_providers.claude_cloak_hint')}</div>
+
+              {form.cloak ? (
+                <>
+                  <div className="form-group">
+                    <label>{t('ai_providers.claude_cloak_mode_label')}</label>
+                    <Select
+                      value={resolvedCloakMode}
+                      options={cloakModeOptions}
+                      onChange={(value) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          cloak: {
+                            ...(prev.cloak ?? {}),
+                            mode: value,
+                          },
+                        }))
+                      }
+                      ariaLabel={t('ai_providers.claude_cloak_mode_label')}
+                      disabled={saving || disableControls || isTesting}
+                    />
+                    <div className="hint">{t('ai_providers.claude_cloak_mode_hint')}</div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>{t('ai_providers.claude_cloak_strict_label')}</label>
+                    <ToggleSwitch
+                      checked={Boolean(form.cloak.strictMode)}
+                      onChange={(value) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          cloak: {
+                            ...(prev.cloak ?? {}),
+                            strictMode: value,
+                          },
+                        }))
+                      }
+                      disabled={saving || disableControls || isTesting}
+                      ariaLabel={t('ai_providers.claude_cloak_strict_label')}
+                    />
+                    <div className="hint">{t('ai_providers.claude_cloak_strict_hint')}</div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>{t('ai_providers.claude_cloak_sensitive_words_label')}</label>
+                    <textarea
+                      className="input"
+                      placeholder={t('ai_providers.claude_cloak_sensitive_words_placeholder')}
+                      value={(form.cloak.sensitiveWords ?? []).join('\n')}
+                      onChange={(e) => {
+                        const nextWords = parseExcludedModels(e.target.value);
+                        setForm((prev) => ({
+                          ...prev,
+                          cloak: {
+                            ...(prev.cloak ?? {}),
+                            sensitiveWords: nextWords.length ? nextWords : undefined,
+                          },
+                        }));
+                      }}
+                      rows={3}
+                      disabled={saving || disableControls || isTesting}
+                    />
+                    <div className="hint">{t('ai_providers.claude_cloak_sensitive_words_hint')}</div>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
         )}

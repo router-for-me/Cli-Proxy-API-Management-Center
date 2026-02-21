@@ -521,6 +521,22 @@ export function AiProvidersOpenAIEditPage() {
               disabled={saving || disableControls || isTestingKeys}
             />
             <Input
+              label={t('ai_providers.priority_label')}
+              hint={t('ai_providers.priority_hint')}
+              type="number"
+              step={1}
+              value={form.priority ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const parsed = raw.trim() === '' ? undefined : Number(raw);
+                setForm((prev) => ({
+                  ...prev,
+                  priority: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
+                }));
+              }}
+              disabled={saving || disableControls || isTestingKeys}
+            />
+            <Input
               label={t('ai_providers.prefix_label')}
               placeholder={t('ai_providers.prefix_placeholder')}
               value={form.prefix ?? ''}

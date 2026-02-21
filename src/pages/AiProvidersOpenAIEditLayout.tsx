@@ -41,6 +41,7 @@ export type OpenAIEditOutletContext = {
 
 const buildEmptyForm = (): OpenAIFormState => ({
   name: '',
+  priority: undefined,
   prefix: '',
   baseUrl: '',
   headers: [],
@@ -214,6 +215,7 @@ export function AiProvidersOpenAIEditLayout() {
       const modelEntries = modelsToEntries(initialData.models);
       const seededForm: OpenAIFormState = {
         name: initialData.name,
+        priority: initialData.priority,
         prefix: initialData.prefix ?? '',
         baseUrl: initialData.baseUrl,
         headers: headersToEntries(initialData.headers),
@@ -322,6 +324,9 @@ export function AiProvidersOpenAIEditLayout() {
           headers: entry.headers,
         })),
       };
+      if (form.priority !== undefined && Number.isFinite(form.priority)) {
+        payload.priority = Math.trunc(form.priority);
+      }
       const resolvedTestModel = testModel.trim();
       if (resolvedTestModel) payload.testModel = resolvedTestModel;
       const models = entriesToModels(form.modelEntries);
@@ -399,4 +404,3 @@ export function AiProvidersOpenAIEditLayout() {
     />
   );
 }
-

@@ -111,6 +111,12 @@ export function ClaudeSection({
                   <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
                   <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
                 </div>
+                {item.priority !== undefined && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.priority')}:</span>
+                    <span className={styles.fieldValue}>{item.priority}</span>
+                  </div>
+                )}
                 {item.prefix && (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('common.prefix')}:</span>
@@ -129,6 +135,32 @@ export function ClaudeSection({
                     <span className={styles.fieldValue}>{item.proxyUrl}</span>
                   </div>
                 )}
+                {item.cloak && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('ai_providers.claude_cloak_mode_label')}:</span>
+                    <span className={styles.fieldValue}>
+                      {(() => {
+                        const raw = (item.cloak?.mode ?? '').trim().toLowerCase();
+                        const key = raw === 'always' || raw === 'never' ? raw : 'auto';
+                        return t(`ai_providers.claude_cloak_mode_${key}`);
+                      })()}
+                    </span>
+                  </div>
+                )}
+                {item.cloak?.strictMode ? (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('ai_providers.claude_cloak_strict_label')}:</span>
+                    <span className={styles.fieldValue}>{t('common.yes')}</span>
+                  </div>
+                ) : null}
+                {item.cloak?.sensitiveWords?.length ? (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>
+                      {t('ai_providers.claude_cloak_sensitive_words_count')}:
+                    </span>
+                    <span className={styles.fieldValue}>{item.cloak.sensitiveWords.length}</span>
+                  </div>
+                ) : null}
                 {headerEntries.length > 0 && (
                   <div className={styles.headerBadgeList}>
                     {headerEntries.map(([key, value]) => (

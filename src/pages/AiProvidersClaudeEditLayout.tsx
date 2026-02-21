@@ -39,6 +39,7 @@ export type ClaudeEditOutletContext = {
 
 const buildEmptyForm = (): ProviderFormState => ({
   apiKey: '',
+  priority: undefined,
   prefix: '',
   baseUrl: '',
   proxyUrl: '',
@@ -279,6 +280,7 @@ export function AiProvidersClaudeEditLayout() {
     try {
       const payload: ProviderKeyConfig = {
         apiKey: form.apiKey.trim(),
+        priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
         prefix: form.prefix?.trim() || undefined,
         baseUrl: (form.baseUrl ?? '').trim() || undefined,
         proxyUrl: form.proxyUrl?.trim() || undefined,
@@ -292,6 +294,7 @@ export function AiProvidersClaudeEditLayout() {
           })
           .filter(Boolean) as ProviderKeyConfig['models'],
         excludedModels: parseExcludedModels(form.excludedText),
+        cloak: form.cloak,
       };
 
       const nextList =

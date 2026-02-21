@@ -113,6 +113,12 @@ export function GeminiSection({
                   <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
                   <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>
                 </div>
+                {item.priority !== undefined && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.priority')}:</span>
+                    <span className={styles.fieldValue}>{item.priority}</span>
+                  </div>
+                )}
                 {item.prefix && (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('common.prefix')}:</span>
@@ -145,6 +151,21 @@ export function GeminiSection({
                     {t('ai_providers.config_disabled_badge')}
                   </div>
                 )}
+                {item.models?.length ? (
+                  <div className={styles.modelTagList}>
+                    <span className={styles.modelCountLabel}>
+                      {t('ai_providers.gemini_models_count')}: {item.models.length}
+                    </span>
+                    {item.models.map((model) => (
+                      <span key={model.name} className={styles.modelTag}>
+                        <span className={styles.modelName}>{model.name}</span>
+                        {model.alias && model.alias !== model.name && (
+                          <span className={styles.modelAlias}>{model.alias}</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
                 {excludedModels.length ? (
                   <div className={styles.excludedModelsSection}>
                     <div className={styles.excludedModelsLabel}>

@@ -5,24 +5,29 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
+import { ModelInputList } from '@/components/ui/ModelInputList';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { GeminiKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries } from '@/utils/headers';
+import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import type { GeminiFormState } from '@/components/providers';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
+import styles from './AiProvidersPage.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
 const buildEmptyForm = (): GeminiFormState => ({
   apiKey: '',
+  priority: undefined,
   prefix: '',
   baseUrl: '',
   proxyUrl: '',
   headers: [],
+  modelEntries: [{ name: '', alias: '' }],
   excludedModels: [],
   excludedText: '',
 });
@@ -117,9 +122,11 @@ export function AiProvidersGeminiEditPage() {
     if (loading) return;
 
     if (initialData) {
+      const { headers, models, ...rest } = initialData;
       setForm({
-        ...initialData,
-        headers: headersToEntries(initialData.headers),
+        ...rest,
+        headers: headersToEntries(headers),
+        modelEntries: modelsToEntries(models),
         excludedText: excludedModelsToText(initialData.excludedModels),
       });
       return;
@@ -137,10 +144,12 @@ export function AiProvidersGeminiEditPage() {
     try {
       const payload: GeminiKeyConfig = {
         apiKey: form.apiKey.trim(),
+        priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
         prefix: form.prefix?.trim() || undefined,
         baseUrl: form.baseUrl?.trim() || undefined,
         proxyUrl: form.proxyUrl?.trim() || undefined,
         headers: buildHeaderObject(form.headers),
+        models: entriesToModels(form.modelEntries),
         excludedModels: parseExcludedModels(form.excludedText),
       };
 
@@ -206,6 +215,22 @@ export function AiProvidersGeminiEditPage() {
               disabled={disableControls || saving}
             />
             <Input
+              label={t('ai_providers.priority_label')}
+              hint={t('ai_providers.priority_hint')}
+              type="number"
+              step={1}
+              value={form.priority ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const parsed = raw.trim() === '' ? undefined : Number(raw);
+                setForm((prev) => ({
+                  ...prev,
+                  priority: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
+                }));
+              }}
+              disabled={disableControls || saving}
+            />
+            <Input
               label={t('ai_providers.prefix_label')}
               placeholder={t('ai_providers.prefix_placeholder')}
               value={form.prefix ?? ''}
@@ -237,6 +262,44 @@ export function AiProvidersGeminiEditPage() {
               removeButtonAriaLabel={t('common.delete')}
               disabled={disableControls || saving}
             />
+
+            <div className={styles.modelConfigSection}>
+              <div className={styles.modelConfigHeader}>
+                <label className={styles.modelConfigTitle}>{t('ai_providers.gemini_models_label')}</label>
+                <div className={styles.modelConfigToolbar}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        modelEntries: [...prev.modelEntries, { name: '', alias: '' }],
+                      }))
+                    }
+                    disabled={disableControls || saving}
+                  >
+                    {t('ai_providers.gemini_models_add_btn')}
+                  </Button>
+                </div>
+              </div>
+              <div className={styles.sectionHint}>{t('ai_providers.gemini_models_hint')}</div>
+
+              <ModelInputList
+                entries={form.modelEntries}
+                onChange={(entries) => setForm((prev) => ({ ...prev, modelEntries: entries }))}
+                namePlaceholder={t('common.model_name_placeholder')}
+                aliasPlaceholder={t('common.model_alias_placeholder')}
+                disabled={disableControls || saving}
+                hideAddButton
+                className={styles.modelInputList}
+                rowClassName={styles.modelInputRow}
+                inputClassName={styles.modelInputField}
+                removeButtonClassName={styles.modelRowRemoveButton}
+                removeButtonTitle={t('common.delete')}
+                removeButtonAriaLabel={t('common.delete')}
+              />
+            </div>
+
             <div className="form-group">
               <label>{t('ai_providers.excluded_models_label')}</label>
               <textarea
