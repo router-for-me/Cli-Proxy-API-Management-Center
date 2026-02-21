@@ -1,35 +1,26 @@
-import { useCallback, useRef, useState } from 'react';
-import { usageApi } from '@/services/api';
-import { collectUsageDetails, type KeyStats, type UsageDetail } from '@/utils/usage';
+import { useCallback } from 'react';
+import { USAGE_STATS_STALE_TIME_MS, useUsageStatsStore } from '@/stores';
+import type { KeyStats, UsageDetail } from '@/utils/usage';
 
 export type UseAuthFilesStatsResult = {
   keyStats: KeyStats;
   usageDetails: UsageDetail[];
   loadKeyStats: () => Promise<void>;
+  refreshKeyStats: () => Promise<void>;
 };
 
 export function useAuthFilesStats(): UseAuthFilesStatsResult {
-  const [keyStats, setKeyStats] = useState<KeyStats>({ bySource: {}, byAuthIndex: {} });
-  const [usageDetails, setUsageDetails] = useState<UsageDetail[]>([]);
-  const loadingKeyStatsRef = useRef(false);
+  const keyStats = useUsageStatsStore((state) => state.keyStats);
+  const usageDetails = useUsageStatsStore((state) => state.usageDetails);
+  const loadUsageStats = useUsageStatsStore((state) => state.loadUsageStats);
 
   const loadKeyStats = useCallback(async () => {
-    if (loadingKeyStatsRef.current) return;
-    loadingKeyStatsRef.current = true;
-    try {
-      const usageResponse = await usageApi.getUsage();
-      const usageData = usageResponse?.usage ?? usageResponse;
-      const stats = await usageApi.getKeyStats(usageData);
-      setKeyStats(stats);
-      const details = collectUsageDetails(usageData);
-      setUsageDetails(details);
-    } catch {
-      // 静默失败
-    } finally {
-      loadingKeyStatsRef.current = false;
-    }
-  }, []);
+    await loadUsageStats({ staleTimeMs: USAGE_STATS_STALE_TIME_MS });
+  }, [loadUsageStats]);
 
-  return { keyStats, usageDetails, loadKeyStats };
+  const refreshKeyStats = useCallback(async () => {
+    await loadUsageStats({ force: true, staleTimeMs: USAGE_STATS_STALE_TIME_MS });
+  }, [loadUsageStats]);
+
+  return { keyStats, usageDetails, loadKeyStats, refreshKeyStats };
 }
-

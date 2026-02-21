@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNotificationStore } from '@/stores';
+import { USAGE_STATS_STALE_TIME_MS, useNotificationStore, useUsageStatsStore } from '@/stores';
 import { usageApi } from '@/services/api/usage';
 import { loadModelPrices, saveModelPrices, type ModelPrice } from '@/utils/usage';
 
@@ -32,36 +32,25 @@ export interface UseUsageDataReturn {
 export function useUsageData(): UseUsageDataReturn {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
+  const usageSnapshot = useUsageStatsStore((state) => state.usage);
+  const loading = useUsageStatsStore((state) => state.loading);
+  const storeError = useUsageStatsStore((state) => state.error);
+  const lastRefreshedAtTs = useUsageStatsStore((state) => state.lastRefreshedAt);
+  const loadUsageStats = useUsageStatsStore((state) => state.loadUsageStats);
 
-  const [usage, setUsage] = useState<UsagePayload | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [modelPrices, setModelPrices] = useState<Record<string, ModelPrice>>({});
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadUsage = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await usageApi.getUsage();
-      const payload = (data?.usage ?? data) as unknown;
-      setUsage(payload && typeof payload === 'object' ? (payload as UsagePayload) : null);
-      setLastRefreshedAt(new Date());
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('usage_stats.loading_error');
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+    await loadUsageStats({ force: true, staleTimeMs: USAGE_STATS_STALE_TIME_MS });
+  }, [loadUsageStats]);
 
   useEffect(() => {
-    loadUsage();
+    void loadUsageStats({ staleTimeMs: USAGE_STATS_STALE_TIME_MS });
     setModelPrices(loadModelPrices());
-  }, [loadUsage]);
+  }, [loadUsageStats]);
 
   const handleExport = async () => {
     setExporting(true);
@@ -122,7 +111,7 @@ export function useUsageData(): UseUsageDataReturn {
         }),
         'success'
       );
-      await loadUsage();
+      await loadUsageStats({ force: true, staleTimeMs: USAGE_STATS_STALE_TIME_MS });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
       showNotification(
@@ -138,6 +127,10 @@ export function useUsageData(): UseUsageDataReturn {
     setModelPrices(prices);
     saveModelPrices(prices);
   }, []);
+
+  const usage = usageSnapshot as UsagePayload | null;
+  const error = storeError || '';
+  const lastRefreshedAt = lastRefreshedAtTs ? new Date(lastRefreshedAtTs) : null;
 
   return {
     usage,

@@ -1,37 +1,26 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import { useInterval } from '@/hooks/useInterval';
-import { usageApi } from '@/services/api';
-import { collectUsageDetails, type KeyStats, type UsageDetail } from '@/utils/usage';
-
-const EMPTY_STATS: KeyStats = { bySource: {}, byAuthIndex: {} };
+import { USAGE_STATS_STALE_TIME_MS, useUsageStatsStore } from '@/stores';
 
 export const useProviderStats = () => {
-  const [keyStats, setKeyStats] = useState<KeyStats>(EMPTY_STATS);
-  const [usageDetails, setUsageDetails] = useState<UsageDetail[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const loadingRef = useRef(false);
+  const keyStats = useUsageStatsStore((state) => state.keyStats);
+  const usageDetails = useUsageStatsStore((state) => state.usageDetails);
+  const isLoading = useUsageStatsStore((state) => state.loading);
+  const loadUsageStats = useUsageStatsStore((state) => state.loadUsageStats);
 
-  // 加载 key 统计和 usage 明细（API 层已有60秒超时）
+  // 首次进入页面优先复用缓存，避免跨页面重复拉取 /usage。
   const loadKeyStats = useCallback(async () => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
-    setIsLoading(true);
-    try {
-      const usageResponse = await usageApi.getUsage();
-      const usageData = usageResponse?.usage ?? usageResponse;
-      const stats = await usageApi.getKeyStats(usageData);
-      setKeyStats(stats);
-      setUsageDetails(collectUsageDetails(usageData));
-    } catch {
-      // 静默失败
-    } finally {
-      loadingRef.current = false;
-      setIsLoading(false);
-    }
-  }, []);
+    await loadUsageStats({ staleTimeMs: USAGE_STATS_STALE_TIME_MS });
+  }, [loadUsageStats]);
 
-  // 定时刷新状态数据（每240秒）
-  useInterval(loadKeyStats, 240_000);
+  // 定时器触发时强制刷新共享 usage。
+  const refreshKeyStats = useCallback(async () => {
+    await loadUsageStats({ force: true, staleTimeMs: USAGE_STATS_STALE_TIME_MS });
+  }, [loadUsageStats]);
 
-  return { keyStats, usageDetails, loadKeyStats, isLoading };
+  useInterval(() => {
+    void refreshKeyStats();
+  }, 240_000);
+
+  return { keyStats, usageDetails, loadKeyStats, refreshKeyStats, isLoading };
 };
