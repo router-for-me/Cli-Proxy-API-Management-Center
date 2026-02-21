@@ -19,12 +19,18 @@ import {
 } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
+import { authFilesApi } from '@/services/api/authFiles';
 import { logsApi } from '@/services/api/logs';
 import { usageApi } from '@/services/api/usage';
+import type { AuthFileItem } from '@/types';
 import { copyToClipboard } from '@/utils/clipboard';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
-import { collectUsageDetailsWithEndpoint, type UsageDetailWithEndpoint } from '@/utils/usage';
+import {
+  buildCandidateUsageSourceIds,
+  collectUsageDetailsWithEndpoint,
+  type UsageDetailWithEndpoint
+} from '@/utils/usage';
 import styles from './LogsPage.module.scss';
 
 interface ErrorLogItem {
@@ -149,10 +155,31 @@ type TraceCandidate = {
   timeDeltaMs: number | null;
 };
 
+type TraceCredentialInfo = {
+  name: string;
+  type: string;
+};
+
+type TraceSourceInfo = {
+  displayName: string;
+  type: string;
+};
+
 const TRACE_USAGE_CACHE_MS = 60 * 1000;
 const TRACE_MATCH_STRONG_WINDOW_MS = 3 * 1000;
 const TRACE_MATCH_WINDOW_MS = 10 * 1000;
 const TRACE_MATCH_MAX_WINDOW_MS = 30 * 1000;
+
+const normalizeTraceAuthIndex = (value: unknown): string | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toString();
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+  return null;
+};
 
 const normalizeTracePath = (value?: string) =>
   String(value ?? '')
@@ -446,7 +473,8 @@ export function LogsPage() {
   const { t } = useTranslation();
   const { showNotification, showConfirmation } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
-  const requestLogEnabled = useConfigStore((state) => state.config?.requestLog ?? false);
+  const config = useConfigStore((state) => state.config);
+  const requestLogEnabled = config?.requestLog ?? false;
 
   const [activeTab, setActiveTab] = useState<TabType>('logs');
   const [logState, setLogState] = useState<LogState>({ buffer: [], visibleFrom: 0 });
@@ -467,6 +495,7 @@ export function LogsPage() {
   const [requestLogDownloading, setRequestLogDownloading] = useState(false);
   const [traceLogLine, setTraceLogLine] = useState<ParsedLogLine | null>(null);
   const [traceUsageDetails, setTraceUsageDetails] = useState<UsageDetailWithEndpoint[]>([]);
+  const [traceAuthFileMap, setTraceAuthFileMap] = useState<Map<string, TraceCredentialInfo>>(new Map());
   const [traceLoading, setTraceLoading] = useState(false);
   const [traceError, setTraceError] = useState('');
 
@@ -487,6 +516,70 @@ export function LogsPage() {
   const latestTimestampRef = useRef<number>(0);
 
   const disableControls = connectionStatus !== 'connected';
+  const traceSourceInfoMap = useMemo(() => {
+    const map = new Map<string, TraceSourceInfo>();
+
+    const registerSource = (sourceId: string, displayName: string, type: string) => {
+      if (!sourceId || !displayName || map.has(sourceId)) return;
+      map.set(sourceId, { displayName, type });
+    };
+
+    const registerCandidates = (displayName: string, type: string, candidates: string[]) => {
+      candidates.forEach((sourceId) => registerSource(sourceId, displayName, type));
+    };
+
+    (config?.geminiApiKeys || []).forEach((item, index) => {
+      const displayName = item.prefix?.trim() || `Gemini #${index + 1}`;
+      registerCandidates(
+        displayName,
+        'gemini',
+        buildCandidateUsageSourceIds({ apiKey: item.apiKey, prefix: item.prefix })
+      );
+    });
+
+    (config?.claudeApiKeys || []).forEach((item, index) => {
+      const displayName = item.prefix?.trim() || `Claude #${index + 1}`;
+      registerCandidates(
+        displayName,
+        'claude',
+        buildCandidateUsageSourceIds({ apiKey: item.apiKey, prefix: item.prefix })
+      );
+    });
+
+    (config?.codexApiKeys || []).forEach((item, index) => {
+      const displayName = item.prefix?.trim() || `Codex #${index + 1}`;
+      registerCandidates(
+        displayName,
+        'codex',
+        buildCandidateUsageSourceIds({ apiKey: item.apiKey, prefix: item.prefix })
+      );
+    });
+
+    (config?.vertexApiKeys || []).forEach((item, index) => {
+      const displayName = item.prefix?.trim() || `Vertex #${index + 1}`;
+      registerCandidates(
+        displayName,
+        'vertex',
+        buildCandidateUsageSourceIds({ apiKey: item.apiKey, prefix: item.prefix })
+      );
+    });
+
+    (config?.openaiCompatibility || []).forEach((provider, providerIndex) => {
+      const displayName = provider.prefix?.trim() || provider.name || `OpenAI #${providerIndex + 1}`;
+      const candidates = new Set<string>();
+      buildCandidateUsageSourceIds({ prefix: provider.prefix }).forEach((sourceId) =>
+        candidates.add(sourceId)
+      );
+      (provider.apiKeyEntries || []).forEach((entry) => {
+        buildCandidateUsageSourceIds({ apiKey: entry.apiKey }).forEach((sourceId) =>
+          candidates.add(sourceId)
+        );
+      });
+      registerCandidates(displayName, 'openai', Array.from(candidates));
+    });
+
+    return map;
+  }, [config]);
 
   const isNearBottom = (node: HTMLDivElement | null) => {
     if (!node) return true;
@@ -660,6 +753,7 @@ export function LogsPage() {
     const now = Date.now();
     if (
       traceUsageDetails.length > 0 &&
+      traceAuthFileMap.size > 0 &&
       now - traceUsageLoadedAtRef.current < TRACE_USAGE_CACHE_MS
     ) {
       return;
@@ -668,17 +762,39 @@ export function LogsPage() {
     setTraceLoading(true);
     setTraceError('');
     try {
-      const usageResponse = await usageApi.getUsage();
+      const [usageResponse, authFilesResponse] = await Promise.all([
+        usageApi.getUsage(),
+        authFilesApi.list().catch(() => null)
+      ]);
       const usageData = usageResponse?.usage ?? usageResponse;
       const details = collectUsageDetailsWithEndpoint(usageData);
       setTraceUsageDetails(details);
+
+      if (authFilesResponse) {
+        const files = Array.isArray(authFilesResponse)
+          ? authFilesResponse
+          : (authFilesResponse as { files?: AuthFileItem[] })?.files;
+        if (Array.isArray(files)) {
+          const map = new Map<string, TraceCredentialInfo>();
+          files.forEach((file) => {
+            const key = normalizeTraceAuthIndex(file['auth_index'] ?? file.authIndex);
+            if (!key) return;
+            map.set(key, {
+              name: file.name || key,
+              type: (file.type || file.provider || '').toString()
+            });
+          });
+          setTraceAuthFileMap(map);
+        }
+      }
+
       traceUsageLoadedAtRef.current = now;
     } catch (err: unknown) {
       setTraceError(getErrorMessage(err) || t('logs.trace_usage_load_error'));
     } finally {
       setTraceLoading(false);
     }
-  }, [t, traceLoading, traceUsageDetails.length]);
+  }, [t, traceAuthFileMap.size, traceLoading, traceUsageDetails.length]);
 
   useEffect(() => {
     if (connectionStatus === 'connected') {
@@ -798,6 +914,32 @@ export function LogsPage() {
       });
     return scored.slice(0, 8);
   }, [traceLogLine, traceUsageDetails]);
+  const resolveTraceSourceInfo = useCallback(
+    (sourceRaw: string, authIndex: unknown): TraceSourceInfo => {
+      const source = sourceRaw.trim();
+      const matchedSource = traceSourceInfoMap.get(source);
+      if (matchedSource) {
+        return matchedSource;
+      }
+
+      const authIndexKey = normalizeTraceAuthIndex(authIndex);
+      if (authIndexKey) {
+        const authInfo = traceAuthFileMap.get(authIndexKey);
+        if (authInfo) {
+          return {
+            displayName: authInfo.name || authIndexKey,
+            type: authInfo.type
+          };
+        }
+      }
+
+      return {
+        displayName: source.startsWith('t:') ? source.slice(2) : source || '-',
+        type: ''
+      };
+    },
+    [traceAuthFileMap, traceSourceInfoMap]
+  );
 
   const canLoadMore = !isSearching && logState.visibleFrom > 0;
 
@@ -1554,6 +1696,10 @@ export function LogsPage() {
                       : candidate.confidence === 'medium'
                         ? styles.traceConfidenceMedium
                         : styles.traceConfidenceLow;
+                  const sourceInfo = resolveTraceSourceInfo(
+                    String(candidate.detail.source ?? ''),
+                    candidate.detail.auth_index
+                  );
                   return (
                     <div
                       key={`${candidate.detail.__endpoint}-${candidate.detail.__modelName}-${candidate.detail.timestamp}-${candidate.detail.source}`}
@@ -1585,7 +1731,15 @@ export function LogsPage() {
                         </div>
                         <div className={styles.traceInfoItem}>
                           <span className={styles.traceInfoLabel}>{t('logs.trace_source')}</span>
-                          <span className={styles.traceInfoValue}>{candidate.detail.source || '-'}</span>
+                          <span
+                            className={styles.traceInfoValue}
+                            title={String(candidate.detail.source || '-')}
+                          >
+                            <span>{sourceInfo.displayName}</span>
+                            {sourceInfo.type && (
+                              <span className={styles.traceSourceType}>{sourceInfo.type}</span>
+                            )}
+                          </span>
                         </div>
                         <div className={styles.traceInfoItem}>
                           <span className={styles.traceInfoLabel}>{t('logs.trace_auth_index')}</span>

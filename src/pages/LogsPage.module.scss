@@ -649,6 +649,18 @@
   word-break: break-word;
 }
 
+.traceSourceType {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+}
+
 .traceCandidates {
   display: flex;
   flex-direction: column;
