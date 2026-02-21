@@ -261,6 +261,39 @@
   word-break: break-all;
 }
 
+.configBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.configBadgeRoundRobin {
+  color: var(--primary-color);
+  border-color: rgba($primary-color, 0.24);
+  background: rgba($primary-color, 0.12);
+}
+
+.configBadgeFillFirst {
+  color: $success-color;
+  border-color: rgba($success-color, 0.3);
+  background: rgba($success-color, 0.12);
+}
+
+.configBadgeUnknown {
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+}
+
 .configItemFull {
   grid-column: 1 / -1;
 }

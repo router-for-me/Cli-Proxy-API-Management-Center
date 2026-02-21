@@ -131,6 +131,7 @@
     "no_usage_data": "No usage data available",
     "view_detailed_usage": "View Detailed Stats",
     "edit_settings": "Edit Settings",
+    "routing_strategy": "Routing Strategy",
     "available_models": "Available Models",
     "available_models_desc": "Total models from all providers"
   },

@@ -131,6 +131,7 @@
     "no_usage_data": "暂无使用数据",
     "view_detailed_usage": "查看详细统计",
     "edit_settings": "编辑设置",
+    "routing_strategy": "路由策略",
     "available_models": "可用模型",
     "available_models_desc": "所有提供商的模型总数"
   },

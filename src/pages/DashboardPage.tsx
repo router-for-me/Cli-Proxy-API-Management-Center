@@ -221,6 +221,22 @@ export function DashboardPage() {
     }
   ];
 
+  const routingStrategyRaw = config?.routingStrategy?.trim() || '';
+  const routingStrategyDisplay = !routingStrategyRaw
+    ? '-'
+    : routingStrategyRaw === 'round-robin'
+      ? t('basic_settings.routing_strategy_round_robin')
+      : routingStrategyRaw === 'fill-first'
+        ? t('basic_settings.routing_strategy_fill_first')
+        : routingStrategyRaw;
+  const routingStrategyBadgeClass = !routingStrategyRaw
+    ? styles.configBadgeUnknown
+    : routingStrategyRaw === 'round-robin'
+      ? styles.configBadgeRoundRobin
+      : routingStrategyRaw === 'fill-first'
+        ? styles.configBadgeFillFirst
+        : styles.configBadgeUnknown;
+
   return (
     <div className={styles.dashboard}>
       <div className={styles.header}>
@@ -309,6 +325,12 @@ export function DashboardPage() {
               <span className={styles.configLabel}>{t('basic_settings.ws_auth_enable')}</span>
               <span className={`${styles.configValue} ${config.wsAuth ? styles.enabled : styles.disabled}`}>
                 {config.wsAuth ? t('common.yes') : t('common.no')}
+              </span>
+            </div>
+            <div className={styles.configItem}>
+              <span className={styles.configLabel}>{t('dashboard.routing_strategy')}</span>
+              <span className={`${styles.configBadge} ${routingStrategyBadgeClass}`}>
+                {routingStrategyDisplay}
               </span>
             </div>
             {config.proxyUrl && (
