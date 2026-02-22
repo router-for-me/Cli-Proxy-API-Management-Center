@@ -8,7 +8,7 @@ import { useAuthStore, useConfigStore, useNotificationStore, useOpenAIEditDraftS
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import type { ApiKeyEntry, OpenAIProviderConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
-import { buildHeaderObject, headersToEntries, type HeaderEntry } from '@/utils/headers';
+import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { buildApiKeyEntry } from '@/components/providers/utils';
 import type { ModelEntry, OpenAIFormState } from '@/components/providers/types';
 import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
@@ -62,19 +62,6 @@ const getErrorMessage = (err: unknown) => {
   if (typeof err === 'string') return err;
   return '';
 };
-
-const normalizeHeaderEntries = (entries: HeaderEntry[]) =>
-  (entries ?? [])
-    .map((entry) => ({
-      key: String(entry?.key ?? '').trim(),
-      value: String(entry?.value ?? '').trim(),
-    }))
-    .filter((entry) => entry.key || entry.value)
-    .sort((a, b) => {
-      const byKey = a.key.toLowerCase().localeCompare(b.key.toLowerCase());
-      if (byKey !== 0) return byKey;
-      return a.value.localeCompare(b.value);
-    });
 
 const normalizeModelEntries = (entries: ModelEntry[]) =>
   (entries ?? []).reduce<Array<{ name: string; alias: string }>>((acc, entry) => {

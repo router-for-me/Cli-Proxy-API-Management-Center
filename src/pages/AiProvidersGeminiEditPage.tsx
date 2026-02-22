@@ -13,7 +13,7 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { modelsApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { GeminiKeyConfig } from '@/types';
-import { buildHeaderObject, headersToEntries, type HeaderEntry } from '@/utils/headers';
+import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import type { ModelInfo } from '@/utils/models';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
@@ -44,19 +44,6 @@ const parseIndexParam = (value: string | undefined) => {
 const stripGeminiModelResourceName = (value: string) => {
   return String(value ?? '').trim().replace(/^\/?models\//i, '');
 };
-
-const normalizeHeaderEntries = (entries: HeaderEntry[]) =>
-  (entries ?? [])
-    .map((entry) => ({
-      key: String(entry?.key ?? '').trim(),
-      value: String(entry?.value ?? '').trim(),
-    }))
-    .filter((entry) => entry.key || entry.value)
-    .sort((a, b) => {
-      const byKey = a.key.toLowerCase().localeCompare(b.key.toLowerCase());
-      if (byKey !== 0) return byKey;
-      return a.value.localeCompare(b.value);
-    });
 
 const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) =>
   (entries ?? []).reduce<Array<{ name: string; alias: string }>>((acc, entry) => {

@@ -13,7 +13,7 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
-import { buildHeaderObject, headersToEntries, type HeaderEntry } from '@/utils/headers';
+import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import type { VertexFormState } from '@/components/providers';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
@@ -34,19 +34,6 @@ const parseIndexParam = (value: string | undefined) => {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : null;
 };
-
-const normalizeHeaderEntries = (entries: HeaderEntry[]) =>
-  (entries ?? [])
-    .map((entry) => ({
-      key: String(entry?.key ?? '').trim(),
-      value: String(entry?.value ?? '').trim(),
-    }))
-    .filter((entry) => entry.key || entry.value)
-    .sort((a, b) => {
-      const byKey = a.key.toLowerCase().localeCompare(b.key.toLowerCase());
-      if (byKey !== 0) return byKey;
-      return a.value.localeCompare(b.value);
-    });
 
 const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) =>
   (entries ?? []).reduce<Array<{ name: string; alias: string }>>((acc, entry) => {
