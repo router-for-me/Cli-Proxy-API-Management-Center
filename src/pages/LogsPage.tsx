@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -34,6 +34,7 @@ import {
   type ParsedLogLine,
 } from './hooks/logTypes';
 import { useLogFilters } from './hooks/useLogFilters';
+import { isNearBottom, useLogScroller } from './hooks/useLogScroller';
 import { isTraceableRequestPath, useTraceResolver } from './hooks/useTraceResolver';
 import styles from './LogsPage.module.scss';
 
@@ -45,9 +46,7 @@ interface ErrorLogItem {
 
 // 初始只渲染最近 100 行，滚动到顶部再逐步加载更多（避免一次性渲染过多导致卡顿）
 const INITIAL_DISPLAY_LINES = 100;
-const LOAD_MORE_LINES = 200;
 const MAX_BUFFER_LINES = 10000;
-const LOAD_MORE_THRESHOLD_PX = 72;
 const LONG_PRESS_MS = 650;
 const LONG_PRESS_MOVE_THRESHOLD = 10;
 
@@ -369,9 +368,7 @@ export function LogsPage() {
     requestLogDownloading
   });
 
-  const logViewerRef = useRef<HTMLDivElement | null>(null);
-  const pendingScrollToBottomRef = useRef(false);
-  const pendingPrependScrollRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
+  const logScrollerRef = useRef<ReturnType<typeof useLogScroller> | null>(null);
   const longPressRef = useRef<{
     timer: number | null;
     startX: number;
@@ -385,18 +382,6 @@ export function LogsPage() {
   const latestTimestampRef = useRef<number>(0);
 
   const disableControls = connectionStatus !== 'connected';
-
-  const isNearBottom = (node: HTMLDivElement | null) => {
-    if (!node) return true;
-    const threshold = 24;
-    return node.scrollHeight - node.scrollTop - node.clientHeight <= threshold;
-  };
-
-  const scrollToBottom = () => {
-    const node = logViewerRef.current;
-    if (!node) return;
-    node.scrollTop = node.scrollHeight;
-  };
 
   const loadLogs = async (incremental = false) => {
     if (connectionStatus !== 'connected') {
@@ -419,7 +404,11 @@ export function LogsPage() {
     setError('');
 
     try {
-      pendingScrollToBottomRef.current = !incremental || isNearBottom(logViewerRef.current);
+      const scroller = logScrollerRef.current;
+      const stickToBottom = !incremental || isNearBottom(scroller?.logViewerRef.current ?? null);
+      if (stickToBottom) {
+        scroller?.requestScrollToBottom();
+      }
 
       const params =
         incremental && latestTimestampRef.current > 0 ? { after: latestTimestampRef.current } : {};
@@ -442,7 +431,7 @@ export function LogsPage() {
           let visibleFrom = Math.max(prev.visibleFrom - dropCount, 0);
 
           // 若用户停留在底部（跟随最新日志），则保持“渲染窗口”大小不变，避免无限增长
-          if (pendingScrollToBottomRef.current) {
+          if (stickToBottom) {
             visibleFrom = Math.max(buffer.length - prevRenderedCount, 0);
           }
 
@@ -566,15 +555,6 @@ export function LogsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefresh, connectionStatus]);
 
-  useEffect(() => {
-    if (!pendingScrollToBottomRef.current) return;
-    if (loading) return;
-    if (!logViewerRef.current) return;
-
-    scrollToBottom();
-    pendingScrollToBottomRef.current = false;
-  }, [loading, logState.buffer, logState.visibleFrom]);
-
   const visibleLines = useMemo(
     () => logState.buffer.slice(logState.visibleFrom),
     [logState.buffer, logState.visibleFrom]
@@ -645,98 +625,17 @@ export function LogsPage() {
 
   const rawVisibleText = useMemo(() => filteredLines.join('\n'), [filteredLines]);
 
-  const canLoadMore = !isSearching && logState.visibleFrom > 0;
-
-  const prependVisibleLines = useCallback(() => {
-    const node = logViewerRef.current;
-    if (!node) return;
-    if (pendingPrependScrollRef.current) return;
-    if (isSearching) return;
-
-    setLogState((prev) => {
-      if (prev.visibleFrom <= 0) {
-        return prev;
-      }
-
-      pendingPrependScrollRef.current = {
-        scrollHeight: node.scrollHeight,
-        scrollTop: node.scrollTop,
-      };
-
-      return {
-        ...prev,
-        visibleFrom: Math.max(prev.visibleFrom - LOAD_MORE_LINES, 0),
-      };
-    });
-  }, [isSearching]);
-
-  const handleLogScroll = () => {
-    const node = logViewerRef.current;
-    if (!node) return;
-    if (isSearching) return;
-    if (!canLoadMore) return;
-    if (pendingPrependScrollRef.current) return;
-    if (node.scrollTop > LOAD_MORE_THRESHOLD_PX) return;
-
-    prependVisibleLines();
-  };
-
-  useLayoutEffect(() => {
-    const node = logViewerRef.current;
-    const pending = pendingPrependScrollRef.current;
-    if (!node || !pending) return;
-
-    const delta = node.scrollHeight - pending.scrollHeight;
-    node.scrollTop = pending.scrollTop + delta;
-    pendingPrependScrollRef.current = null;
-  }, [logState.visibleFrom]);
-
-  const tryAutoLoadMoreUntilScrollable = useCallback(() => {
-    const node = logViewerRef.current;
-    if (!node) return;
-    if (!canLoadMore) return;
-    if (isSearching) return;
-    if (pendingPrependScrollRef.current) return;
-
-    const hasVerticalOverflow = node.scrollHeight > node.clientHeight + 1;
-    if (hasVerticalOverflow) return;
-
-    prependVisibleLines();
-  }, [canLoadMore, isSearching, prependVisibleLines]);
-
-  useEffect(() => {
-    if (loading) return;
-    if (activeTab !== 'logs') return;
-
-    const raf = window.requestAnimationFrame(() => {
-      tryAutoLoadMoreUntilScrollable();
-    });
-    return () => {
-      window.cancelAnimationFrame(raf);
-    };
-  }, [
-    activeTab,
+  const scroller = useLogScroller({
+    logState,
+    setLogState,
     loading,
-    tryAutoLoadMoreUntilScrollable,
-    filteredLines.length,
-    showRawLogs,
-    logState.visibleFrom,
-  ]);
+    isSearching,
+    filteredLineCount: filteredLines.length,
+    hasStructuredFilters: filters.hasStructuredFilters,
+    showRawLogs
+  });
 
-  useEffect(() => {
-    if (activeTab !== 'logs') return;
-
-    const onResize = () => {
-      window.requestAnimationFrame(() => {
-        tryAutoLoadMoreUntilScrollable();
-      });
-    };
-
-    window.addEventListener('resize', onResize);
-    return () => {
-      window.removeEventListener('resize', onResize);
-    };
-  }, [activeTab, tryAutoLoadMoreUntilScrollable]);
+  logScrollerRef.current = scroller;
 
   const copyLogLine = async (raw: string) => {
     const ok = await copyToClipboard(raw);
@@ -1035,8 +934,12 @@ export function LogsPage() {
             {loading ? (
               <div className="hint">{t('logs.loading')}</div>
             ) : logState.buffer.length > 0 && filteredLines.length > 0 ? (
-              <div ref={logViewerRef} className={styles.logPanel} onScroll={handleLogScroll}>
-                {canLoadMore && (
+              <div
+                ref={scroller.logViewerRef}
+                className={styles.logPanel}
+                onScroll={scroller.handleLogScroll}
+              >
+                {scroller.canLoadMore && (
                   <div className={styles.loadMoreBanner}>
                     <span>{t('logs.load_more_hint')}</span>
                     <div className={styles.loadMoreStats}>
