@@ -1,6 +1,6 @@
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
-import type { SourceInfo } from '@/types/sourceInfo';
-import { buildCandidateUsageSourceIds } from '@/utils/usage';
+import type { CredentialInfo, SourceInfo } from '@/types/sourceInfo';
+import { buildCandidateUsageSourceIds, normalizeAuthIndex } from '@/utils/usage';
 
 export interface SourceInfoMapInput {
   geminiApiKeys?: GeminiKeyConfig[];
@@ -56,4 +56,28 @@ export function buildSourceInfoMap(input: SourceInfoMapInput): Map<string, Sourc
   });
 
   return map;
+}
+
+export function resolveSourceDisplay(
+  sourceRaw: string,
+  authIndex: unknown,
+  sourceInfoMap: Map<string, SourceInfo>,
+  authFileMap: Map<string, CredentialInfo>
+): SourceInfo {
+  const source = sourceRaw.trim();
+  const matched = sourceInfoMap.get(source);
+  if (matched) return matched;
+
+  const authIndexKey = normalizeAuthIndex(authIndex);
+  if (authIndexKey) {
+    const authInfo = authFileMap.get(authIndexKey);
+    if (authInfo) {
+      return { displayName: authInfo.name || authIndexKey, type: authInfo.type };
+    }
+  }
+
+  return {
+    displayName: source.startsWith('t:') ? source.slice(2) : source || '-',
+    type: '',
+  };
 }

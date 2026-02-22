@@ -28,7 +28,7 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { downloadBlob } from '@/utils/download';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
-import { buildSourceInfoMap } from '@/utils/sourceResolver';
+import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver';
 import {
   collectUsageDetailsWithEndpoint,
   normalizeAuthIndex,
@@ -860,29 +860,8 @@ export function LogsPage() {
     return scored.slice(0, 8);
   }, [traceLogLine, traceUsageDetails]);
   const resolveTraceSourceInfo = useCallback(
-    (sourceRaw: string, authIndex: unknown): SourceInfo => {
-      const source = sourceRaw.trim();
-      const matchedSource = traceSourceInfoMap.get(source);
-      if (matchedSource) {
-        return matchedSource;
-      }
-
-      const authIndexKey = normalizeAuthIndex(authIndex);
-      if (authIndexKey) {
-        const authInfo = traceAuthFileMap.get(authIndexKey);
-        if (authInfo) {
-          return {
-            displayName: authInfo.name || authIndexKey,
-            type: authInfo.type
-          };
-        }
-      }
-
-      return {
-        displayName: source.startsWith('t:') ? source.slice(2) : source || '-',
-        type: ''
-      };
-    },
+    (sourceRaw: string, authIndex: unknown): SourceInfo =>
+      resolveSourceDisplay(sourceRaw, authIndex, traceSourceInfoMap, traceAuthFileMap),
     [traceAuthFileMap, traceSourceInfoMap]
   );
 

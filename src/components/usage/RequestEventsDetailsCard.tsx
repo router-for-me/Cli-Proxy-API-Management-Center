@@ -8,7 +8,7 @@ import { authFilesApi } from '@/services/api/authFiles';
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
 import type { CredentialInfo } from '@/types/sourceInfo';
-import { buildSourceInfoMap } from '@/utils/sourceResolver';
+import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver';
 import {
   collectUsageDetails,
   extractTotalTokens,
@@ -128,13 +128,9 @@ export function RequestEventsDetailsCard({
           authIndexRaw === null || authIndexRaw === undefined || authIndexRaw === ''
             ? '-'
             : String(authIndexRaw);
-        const normalizedAuthIndex = normalizeAuthIndex(authIndexRaw);
-        const sourceInfo = sourceInfoMap.get(sourceRaw);
-        const authInfo = normalizedAuthIndex ? authFileMap.get(normalizedAuthIndex) : undefined;
-        const source = sourceInfo?.displayName
-          || authInfo?.name
-          || (sourceRaw.startsWith('t:') ? sourceRaw.slice(2) : sourceRaw || '-');
-        const sourceType = sourceInfo?.type || authInfo?.type || '';
+        const sourceInfo = resolveSourceDisplay(sourceRaw, authIndexRaw, sourceInfoMap, authFileMap);
+        const source = sourceInfo.displayName;
+        const sourceType = sourceInfo.type;
         const model = String(detail.__modelName ?? '').trim() || '-';
         const inputTokens = Math.max(toNumber(detail.tokens?.input_tokens), 0);
         const outputTokens = Math.max(toNumber(detail.tokens?.output_tokens), 0);
