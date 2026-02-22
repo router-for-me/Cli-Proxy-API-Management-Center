@@ -713,7 +713,7 @@
     "gemini_cli_oauth_hint": "Выполните вход в сервис Google Gemini CLI через OAuth и автоматически получите/сохраните файлы авторизации.",
     "gemini_cli_project_id_label": "Google Cloud Project ID (необязательно):",
     "gemini_cli_project_id_placeholder": "Оставьте пустым, чтобы выбрать первый доступный проект автоматически",
-    "gemini_cli_project_id_hint": "Необязательно. Если не указано, система автоматически выберет первый доступный проект вашей учётной записи.",
+    "gemini_cli_project_id_hint": "Необязательно. Если не указано, система автоматически выберет первый доступный проект вашей учётной записи. Введите ALL, чтобы получить все проекты.",
     "gemini_cli_project_id_required": "Укажите идентификатор проекта Google Cloud.",
     "gemini_cli_oauth_url_label": "URL авторизации:",
     "gemini_cli_open_link": "Открыть ссылку",
