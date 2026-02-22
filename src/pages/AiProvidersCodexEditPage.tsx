@@ -118,6 +118,7 @@ export function AiProvidersCodexEditPage() {
   const [modelDiscoverySearch, setModelDiscoverySearch] = useState('');
   const [modelDiscoverySelected, setModelDiscoverySelected] = useState<Set<string>>(new Set());
   const autoFetchSignatureRef = useRef<string>('');
+  const modelDiscoveryRequestIdRef = useRef(0);
 
   const hasIndexParam = typeof params.index === 'string';
   const editIndex = useMemo(() => parseIndexParam(params.index), [params.index]);
@@ -266,6 +267,7 @@ export function AiProvidersCodexEditPage() {
   );
 
   const fetchCodexModelDiscovery = useCallback(async () => {
+    const requestId = (modelDiscoveryRequestIdRef.current += 1);
     setModelDiscoveryFetching(true);
     setModelDiscoveryError('');
 
@@ -280,19 +282,25 @@ export function AiProvidersCodexEditPage() {
         hasCustomAuthorization ? undefined : apiKey,
         headerObject
       );
+      if (modelDiscoveryRequestIdRef.current !== requestId) return;
       setDiscoveredModels(list);
     } catch (err: unknown) {
+      if (modelDiscoveryRequestIdRef.current !== requestId) return;
       setDiscoveredModels([]);
       const message = getErrorMessage(err);
       setModelDiscoveryError(`${t('ai_providers.codex_models_fetch_error')}: ${message}`);
     } finally {
-      setModelDiscoveryFetching(false);
+      if (modelDiscoveryRequestIdRef.current === requestId) {
+        setModelDiscoveryFetching(false);
+      }
     }
   }, [form.apiKey, form.baseUrl, form.headers, t]);
 
   useEffect(() => {
     if (!modelDiscoveryOpen) {
       autoFetchSignatureRef.current = '';
+      modelDiscoveryRequestIdRef.current += 1;
+      setModelDiscoveryFetching(false);
       return;
     }
 
