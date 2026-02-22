@@ -150,6 +150,13 @@
     margin-bottom: 0;
     gap: $spacing-sm;
   }
+
+  :global(.input:disabled) {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-tertiary);
+    cursor: not-allowed;
+  }
 }
 
 .formItem {

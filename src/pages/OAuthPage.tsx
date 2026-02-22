@@ -153,8 +153,14 @@ export function OAuthPage() {
   };
 
   const startAuth = async (provider: OAuthProvider) => {
-    const projectId = provider === 'gemini-cli' ? (states[provider]?.projectId || '').trim() : undefined;
-    // 项目 ID 现在是可选的，如果不输入将自动选择第一个可用项目
+    const geminiState = provider === 'gemini-cli' ? states[provider] : undefined;
+    const rawProjectId = provider === 'gemini-cli' ? (geminiState?.projectId || '').trim() : '';
+    const projectId = rawProjectId
+      ? rawProjectId.toUpperCase() === 'ALL'
+        ? 'ALL'
+        : rawProjectId
+      : undefined;
+    // 项目 ID 可选：留空自动选择第一个可用项目；输入 ALL 获取全部项目
     if (provider === 'gemini-cli') {
       updateProviderState(provider, { projectIdError: undefined });
     }
@@ -367,6 +373,7 @@ export function OAuthPage() {
                         hint={t('auth_login.gemini_cli_project_id_hint')}
                         value={state.projectId || ''}
                         error={state.projectIdError}
+                        disabled={Boolean(state.polling)}
                         onChange={(e) =>
                           updateProviderState(provider.id, {
                             projectId: e.target.value,
