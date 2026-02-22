@@ -30,6 +30,7 @@ import { formatUnixTimestamp } from '@/utils/format';
 import {
   buildCandidateUsageSourceIds,
   collectUsageDetailsWithEndpoint,
+  normalizeAuthIndex,
   type UsageDetailWithEndpoint
 } from '@/utils/usage';
 import styles from './LogsPage.module.scss';
@@ -170,17 +171,6 @@ const TRACE_USAGE_CACHE_MS = 60 * 1000;
 const TRACE_MATCH_STRONG_WINDOW_MS = 3 * 1000;
 const TRACE_MATCH_WINDOW_MS = 10 * 1000;
 const TRACE_MATCH_MAX_WINDOW_MS = 30 * 1000;
-
-const normalizeTraceAuthIndex = (value: unknown): string | null => {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value.toString();
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed || null;
-  }
-  return null;
-};
 
 const normalizeTracePath = (value?: string) =>
   String(value ?? '')
@@ -798,7 +788,7 @@ export function LogsPage() {
         if (Array.isArray(files)) {
           const map = new Map<string, TraceCredentialInfo>();
           files.forEach((file) => {
-            const key = normalizeTraceAuthIndex(file['auth_index'] ?? file.authIndex);
+            const key = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
             if (!key) return;
             map.set(key, {
               name: file.name || key,
@@ -949,7 +939,7 @@ export function LogsPage() {
         return matchedSource;
       }
 
-      const authIndexKey = normalizeTraceAuthIndex(authIndex);
+      const authIndexKey = normalizeAuthIndex(authIndex);
       if (authIndexKey) {
         const authInfo = traceAuthFileMap.get(authIndexKey);
         if (authInfo) {

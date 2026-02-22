@@ -222,7 +222,7 @@ export function filterUsageByTimeRange<T>(usageData: T, range: UsageTimeRange, n
   } as T;
 }
 
-const normalizeAuthIndex = (value: unknown) => {
+export const normalizeAuthIndex = (value: unknown) => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value.toString();
   }

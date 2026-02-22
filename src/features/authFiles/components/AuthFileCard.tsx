@@ -6,7 +6,7 @@ import { IconBot, IconCheck, IconCode, IconDownload, IconInfo, IconTrash2 } from
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import type { AuthFileItem } from '@/types';
 import { resolveAuthProvider } from '@/utils/quota';
-import { calculateStatusBarData, type KeyStats } from '@/utils/usage';
+import { calculateStatusBarData, normalizeAuthIndex, type KeyStats } from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
 import {
   AUTH_FILE_REFRESH_WARNING_MS,
@@ -15,7 +15,6 @@ import {
   getTypeColor,
   getTypeLabel,
   isRuntimeOnlyAuthFile,
-  normalizeAuthIndexValue,
   resolveAuthFileStats,
   type QuotaProviderType,
   type ResolvedTheme
@@ -108,7 +107,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
           : '';
 
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-  const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
+  const authIndexKey = normalizeAuthIndex(rawAuthIndex);
   const statusData =
     (authIndexKey && statusBarCache.get(authIndexKey)) || calculateStatusBarData([]);
   const rawStatus = String(file.status ?? file['status'] ?? '')

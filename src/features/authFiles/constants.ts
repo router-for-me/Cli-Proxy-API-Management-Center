@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import type { AuthFileItem } from '@/types';
 import {
+  normalizeAuthIndex,
   normalizeUsageSourceId,
   type KeyStatBucket,
   type KeyStats
@@ -143,18 +144,6 @@ export const parseDisableCoolingValue = (value: unknown): boolean | undefined =>
   return undefined;
 };
 
-// 标准化 auth_index 值（与 usage.ts 中的 normalizeAuthIndex 保持一致）
-export function normalizeAuthIndexValue(value: unknown): string | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value.toString();
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed ? trimmed : null;
-  }
-  return null;
-}
-
 export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   const raw = file['runtime_only'] ?? file.runtimeOnly;
   if (typeof raw === 'boolean') return raw;
@@ -168,7 +157,7 @@ export function resolveAuthFileStats(file: AuthFileItem, stats: KeyStats): KeySt
 
   // 兼容 auth_index 和 authIndex 两种字段名（API 返回的是 auth_index）
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-  const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
+  const authIndexKey = normalizeAuthIndex(rawAuthIndex);
 
   // 尝试根据 authIndex 匹配
   if (authIndexKey && stats.byAuthIndex?.[authIndexKey]) {

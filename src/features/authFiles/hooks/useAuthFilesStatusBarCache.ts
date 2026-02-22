@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import type { AuthFileItem } from '@/types';
-import { calculateStatusBarData, type UsageDetail } from '@/utils/usage';
-import { normalizeAuthIndexValue } from '@/features/authFiles/constants';
+import { calculateStatusBarData, normalizeAuthIndex, type UsageDetail } from '@/utils/usage';
 
 export type AuthFileStatusBarData = ReturnType<typeof calculateStatusBarData>;
 
@@ -11,11 +10,11 @@ export function useAuthFilesStatusBarCache(files: AuthFileItem[], usageDetails: 
 
     files.forEach((file) => {
       const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-      const authIndexKey = normalizeAuthIndexValue(rawAuthIndex);
+      const authIndexKey = normalizeAuthIndex(rawAuthIndex);
 
       if (authIndexKey) {
         const filteredDetails = usageDetails.filter((detail) => {
-          const detailAuthIndex = normalizeAuthIndexValue(detail.auth_index);
+          const detailAuthIndex = normalizeAuthIndex(detail.auth_index);
           return detailAuthIndex !== null && detailAuthIndex === authIndexKey;
         });
         cache.set(authIndexKey, calculateStatusBarData(filteredDetails));
@@ -25,4 +24,3 @@ export function useAuthFilesStatusBarCache(files: AuthFileItem[], usageDetails: 
     return cache;
   }, [files, usageDetails]);
 }
-

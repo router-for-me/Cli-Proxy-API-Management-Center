@@ -3,19 +3,10 @@
  */
 
 import type { ClaudeUsagePayload, CodexUsagePayload, GeminiCliQuotaPayload } from '@/types';
+import { normalizeAuthIndex } from '@/utils/usage';
 
 const GEMINI_CLI_MODEL_SUFFIX = '_vertex';
-
-export function normalizeAuthIndexValue(value: unknown): string | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value.toString();
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed ? trimmed : null;
-  }
-  return null;
-}
+export { normalizeAuthIndex };
 
 export function normalizeStringValue(value: unknown): string | null {
   if (typeof value === 'string') {

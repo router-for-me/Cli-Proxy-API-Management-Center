@@ -10,7 +10,8 @@ import type { AuthFileItem } from '@/types/authFile';
 import {
   buildCandidateUsageSourceIds,
   collectUsageDetails,
-  extractTotalTokens
+  extractTotalTokens,
+  normalizeAuthIndex
 } from '@/utils/usage';
 import { downloadBlob } from '@/utils/download';
 import styles from '@/pages/UsagePage.module.scss';
@@ -69,17 +70,6 @@ type SourceInfo = {
   type: string;
 };
 
-function normalizeAuthIndexValue(value: unknown): string | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value.toString();
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed || null;
-  }
-  return null;
-}
-
 export function RequestEventsDetailsCard({
   usage,
   loading,
@@ -106,7 +96,7 @@ export function RequestEventsDetailsCard({
         if (!Array.isArray(files)) return;
         const map = new Map<string, CredentialInfo>();
         files.forEach((file) => {
-          const key = normalizeAuthIndexValue(file['auth_index'] ?? file.authIndex);
+          const key = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
           if (!key) return;
           map.set(key, {
             name: file.name || key,
@@ -205,7 +195,7 @@ export function RequestEventsDetailsCard({
           authIndexRaw === null || authIndexRaw === undefined || authIndexRaw === ''
             ? '-'
             : String(authIndexRaw);
-        const normalizedAuthIndex = normalizeAuthIndexValue(authIndexRaw);
+        const normalizedAuthIndex = normalizeAuthIndex(authIndexRaw);
         const sourceInfo = sourceInfoMap.get(sourceRaw);
         const authInfo = normalizedAuthIndex ? authFileMap.get(normalizedAuthIndex) : undefined;
         const source = sourceInfo?.displayName

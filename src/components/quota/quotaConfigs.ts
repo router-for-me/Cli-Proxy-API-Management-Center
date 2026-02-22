@@ -34,7 +34,6 @@ import {
   CODEX_REQUEST_HEADERS,
   GEMINI_CLI_QUOTA_URL,
   GEMINI_CLI_REQUEST_HEADERS,
-  normalizeAuthIndexValue,
   normalizeGeminiCliModelId,
   normalizeNumberValue,
   normalizePlanType,
@@ -60,6 +59,7 @@ import {
   isGeminiCliFile,
   isRuntimeOnlyAuthFile,
 } from '@/utils/quota';
+import { normalizeAuthIndex } from '@/utils/usage';
 import type { QuotaRenderHelpers } from './QuotaCard';
 import styles from '@/pages/QuotaPage.module.scss';
 
@@ -135,7 +135,7 @@ const fetchAntigravityQuota = async (
   t: TFunction
 ): Promise<AntigravityQuotaGroup[]> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-  const authIndex = normalizeAuthIndexValue(rawAuthIndex);
+  const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
     throw new Error(t('antigravity_quota.missing_auth_index'));
   }
@@ -377,7 +377,7 @@ const fetchCodexQuota = async (
   t: TFunction
 ): Promise<{ planType: string | null; windows: CodexQuotaWindow[] }> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-  const authIndex = normalizeAuthIndexValue(rawAuthIndex);
+  const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
     throw new Error(t('codex_quota.missing_auth_index'));
   }
@@ -419,7 +419,7 @@ const fetchGeminiCliQuota = async (
   t: TFunction
 ): Promise<GeminiCliQuotaBucketState[]> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-  const authIndex = normalizeAuthIndexValue(rawAuthIndex);
+  const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
     throw new Error(t('gemini_cli_quota.missing_auth_index'));
   }
@@ -667,7 +667,7 @@ const fetchClaudeQuota = async (
   t: TFunction
 ): Promise<{ windows: ClaudeQuotaWindow[]; extraUsage?: ClaudeExtraUsage | null }> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-  const authIndex = normalizeAuthIndexValue(rawAuthIndex);
+  const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
     throw new Error(t('claude_quota.missing_auth_index'));
   }
