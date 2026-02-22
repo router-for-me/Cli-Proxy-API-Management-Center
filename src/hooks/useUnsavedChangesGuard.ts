@@ -24,20 +24,34 @@ export function useUnsavedChangesGuard(options: UseUnsavedChangesGuardOptions) {
   const { showConfirmation } = useNotificationStore();
   const lastBlockedRef = useRef<string>('');
   const allowNextNavigationUntilRef = useRef(0);
+  const allowNextNavigationKeyRef = useRef('');
   const location = useLocation();
 
   const allowNextNavigation = useCallback(() => {
-    // Allow a short window for programmatic navigations after successful save.
-    // This avoids stale "allow" flags lingering when no navigation happens.
+    // Allow one programmatic navigation after successful save.
+    // A short window is used to avoid stale flags lingering when no navigation happens.
     allowNextNavigationUntilRef.current = Date.now() + 2_000;
+    allowNextNavigationKeyRef.current = '';
   }, []);
 
   const shouldBlockFunction = useCallback<BlockerFunction>(
     (args) => {
       if (!enabled) return false;
-      if (allowNextNavigationUntilRef.current > Date.now()) {
-        return false;
+      const now = Date.now();
+
+      if (allowNextNavigationUntilRef.current > now) {
+        const nextKey = `${args.nextLocation.pathname}${args.nextLocation.search}${args.nextLocation.hash}`;
+        if (!allowNextNavigationKeyRef.current) {
+          allowNextNavigationKeyRef.current = nextKey;
+        }
+        if (allowNextNavigationKeyRef.current === nextKey) {
+          return false;
+        }
+      } else if (allowNextNavigationUntilRef.current !== 0) {
+        allowNextNavigationUntilRef.current = 0;
+        allowNextNavigationKeyRef.current = '';
       }
+
       return typeof shouldBlock === 'function' ? shouldBlock(args) : shouldBlock;
     },
     [enabled, shouldBlock]
@@ -48,6 +62,7 @@ export function useUnsavedChangesGuard(options: UseUnsavedChangesGuardOptions) {
   useEffect(() => {
     if (allowNextNavigationUntilRef.current === 0) return;
     allowNextNavigationUntilRef.current = 0;
+    allowNextNavigationKeyRef.current = '';
   }, [location.key]);
 
   const blockedKey = useMemo(() => {
