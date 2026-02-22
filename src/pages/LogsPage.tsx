@@ -24,6 +24,7 @@ import { logsApi } from '@/services/api/logs';
 import { usageApi } from '@/services/api/usage';
 import type { AuthFileItem } from '@/types';
 import { copyToClipboard } from '@/utils/clipboard';
+import { downloadBlob } from '@/utils/download';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
 import {
@@ -710,13 +711,7 @@ export function LogsPage() {
 
   const downloadLogs = () => {
     const text = logState.buffer.join('\n');
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'logs.txt';
-    a.click();
-    window.URL.revokeObjectURL(url);
+    downloadBlob({ filename: 'logs.txt', blob: new Blob([text], { type: 'text/plain' }) });
     showNotification(t('logs.download_success'), 'success');
   };
 
@@ -747,13 +742,7 @@ export function LogsPage() {
   const downloadErrorLog = async (name: string) => {
     try {
       const response = await logsApi.downloadErrorLog(name);
-      const blob = new Blob([response.data], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      downloadBlob({ filename: name, blob: new Blob([response.data], { type: 'text/plain' }) });
       showNotification(t('logs.error_log_download_success'), 'success');
     } catch (err: unknown) {
       const message = getErrorMessage(err);
@@ -1187,13 +1176,10 @@ export function LogsPage() {
     setRequestLogDownloading(true);
     try {
       const response = await logsApi.downloadRequestLogById(id);
-      const blob = new Blob([response.data], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `request-${id}.log`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      downloadBlob({
+        filename: `request-${id}.log`,
+        blob: new Blob([response.data], { type: 'text/plain' })
+      });
       showNotification(t('logs.request_log_download_success'), 'success');
       setRequestLogId(null);
     } catch (err: unknown) {

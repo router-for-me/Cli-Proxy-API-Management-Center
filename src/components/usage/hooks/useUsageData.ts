@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { USAGE_STATS_STALE_TIME_MS, useNotificationStore, useUsageStatsStore } from '@/stores';
 import { usageApi } from '@/services/api/usage';
+import { downloadBlob } from '@/utils/download';
 import { loadModelPrices, saveModelPrices, type ModelPrice } from '@/utils/usage';
 
 export interface UsagePayload {
@@ -62,13 +63,10 @@ export function useUsageData(): UseUsageDataReturn {
         ? new Date().toISOString()
         : exportedAt.toISOString();
       const filename = `usage-export-${safeTimestamp.replace(/[:.]/g, '-')}.json`;
-      const blob = new Blob([JSON.stringify(data ?? {}, null, 2)], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.click();
-      window.URL.revokeObjectURL(url);
+      downloadBlob({
+        filename,
+        blob: new Blob([JSON.stringify(data ?? {}, null, 2)], { type: 'application/json' })
+      });
       showNotification(t('usage_stats.export_success'), 'success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';

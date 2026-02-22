@@ -12,6 +12,7 @@ import {
   collectUsageDetails,
   extractTotalTokens
 } from '@/utils/usage';
+import { downloadBlob } from '@/utils/download';
 import styles from '@/pages/UsagePage.module.scss';
 
 const ALL_FILTER = '__all__';
@@ -53,17 +54,9 @@ const toNumber = (value: unknown): number => {
 
 const encodeCsv = (value: string | number): string => {
   const text = String(value ?? '');
-  return `"${text.replace(/"/g, '""')}"`;
-};
-
-const downloadFile = (filename: string, content: string, mimeType: string) => {
-  const blob = new Blob([content], { type: mimeType });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  window.URL.revokeObjectURL(url);
+  const trimmedLeft = text.replace(/^\s+/, '');
+  const safeText = trimmedLeft && /^[=+\-@]/.test(trimmedLeft) ? `'${text}` : text;
+  return `"${safeText.replace(/"/g, '""')}"`;
 };
 
 type CredentialInfo = {
@@ -370,7 +363,10 @@ export function RequestEventsDetailsCard({
 
     const content = [csvHeader.join(','), ...csvRows].join('\n');
     const fileTime = new Date().toISOString().replace(/[:.]/g, '-');
-    downloadFile(`usage-events-${fileTime}.csv`, content, 'text/csv;charset=utf-8');
+    downloadBlob({
+      filename: `usage-events-${fileTime}.csv`,
+      blob: new Blob([content], { type: 'text/csv;charset=utf-8' })
+    });
   };
 
   const handleExportJson = () => {
@@ -394,7 +390,10 @@ export function RequestEventsDetailsCard({
 
     const content = JSON.stringify(payload, null, 2);
     const fileTime = new Date().toISOString().replace(/[:.]/g, '-');
-    downloadFile(`usage-events-${fileTime}.json`, content, 'application/json;charset=utf-8');
+    downloadBlob({
+      filename: `usage-events-${fileTime}.json`,
+      blob: new Blob([content], { type: 'application/json;charset=utf-8' })
+    });
   };
 
   return (

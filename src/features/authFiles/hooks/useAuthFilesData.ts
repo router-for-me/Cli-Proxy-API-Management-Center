@@ -6,6 +6,7 @@ import { useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { formatFileSize } from '@/utils/format';
 import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
+import { downloadBlob } from '@/utils/download';
 import { getTypeLabel, isRuntimeOnlyAuthFile } from '@/features/authFiles/constants';
 
 type DeleteAllOptions = {
@@ -316,12 +317,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
           { responseType: 'blob' }
         );
         const blob = new Blob([response.data]);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = name;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        downloadBlob({ filename: name, blob });
         showNotification(t('auth_files.download_success'), 'success');
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : '';
