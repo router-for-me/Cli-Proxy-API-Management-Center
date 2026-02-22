@@ -113,7 +113,7 @@ export function AiProvidersPage() {
     if (hasMounted.current) return;
     hasMounted.current = true;
     loadConfigs();
-    loadKeyStats();
+    void loadKeyStats().catch(() => {});
   }, [loadConfigs, loadKeyStats]);
 
   useEffect(() => {

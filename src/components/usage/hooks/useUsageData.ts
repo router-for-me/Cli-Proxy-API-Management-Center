@@ -49,7 +49,7 @@ export function useUsageData(): UseUsageDataReturn {
   }, [loadUsageStats]);
 
   useEffect(() => {
-    void loadUsageStats({ staleTimeMs: USAGE_STATS_STALE_TIME_MS });
+    void loadUsageStats({ staleTimeMs: USAGE_STATS_STALE_TIME_MS }).catch(() => {});
     setModelPrices(loadModelPrices());
   }, [loadUsageStats]);
 
@@ -109,7 +109,15 @@ export function useUsageData(): UseUsageDataReturn {
         }),
         'success'
       );
-      await loadUsageStats({ force: true, staleTimeMs: USAGE_STATS_STALE_TIME_MS });
+      try {
+        await loadUsageStats({ force: true, staleTimeMs: USAGE_STATS_STALE_TIME_MS });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : '';
+        showNotification(
+          `${t('notification.refresh_failed')}${message ? `: ${message}` : ''}`,
+          'error'
+        );
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
       showNotification(

@@ -109,11 +109,13 @@ export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
         });
       } catch (error: unknown) {
         if (requestId !== usageRequestToken) return;
+        const message = getErrorMessage(error);
         set({
           loading: false,
-          error: getErrorMessage(error),
+          error: message,
           scopeKey
         });
+        throw new Error(message);
       } finally {
         if (inFlightUsageRequest?.id === requestId) {
           inFlightUsageRequest = null;

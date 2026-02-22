@@ -212,14 +212,14 @@ export function AuthFilesPage() {
   useEffect(() => {
     if (!isCurrentLayer) return;
     loadFiles();
-    loadKeyStats();
+    void loadKeyStats().catch(() => {});
     loadExcluded();
     loadModelAlias();
   }, [isCurrentLayer, loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
 
   useInterval(
     () => {
-      void refreshKeyStats();
+      void refreshKeyStats().catch(() => {});
     },
     isCurrentLayer ? 240_000 : null
   );

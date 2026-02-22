@@ -19,7 +19,7 @@ export const useProviderStats = () => {
   }, [loadUsageStats]);
 
   useInterval(() => {
-    void refreshKeyStats();
+    void refreshKeyStats().catch(() => {});
   }, 240_000);
 
   return { keyStats, usageDetails, loadKeyStats, refreshKeyStats, isLoading };
