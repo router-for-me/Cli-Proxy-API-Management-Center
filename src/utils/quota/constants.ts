@@ -134,8 +134,8 @@ export const GEMINI_CLI_QUOTA_GROUPS: GeminiCliQuotaGroupDefinition[] = [
   {
     id: 'gemini-pro-series',
     label: 'Gemini Pro Series',
-    preferredModelId: 'gemini-3-1-pro-preview',
-    modelIds: ['gemini-3-1-pro-preview', 'gemini-3-pro-preview', 'gemini-2.5-pro'],
+    preferredModelId: 'gemini-3.1-pro-preview',
+    modelIds: ['gemini-3.1-pro-preview', 'gemini-3-pro-preview', 'gemini-2.5-pro'],
   },
 ];
 
