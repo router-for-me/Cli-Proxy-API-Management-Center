@@ -993,13 +993,13 @@ export function LogsPage() {
   }, [parsedSearchLines]);
 
   useEffect(() => {
-    if (pathFilters.length === 0) return;
     const validPathSet = new Set(pathOptions.map((item) => item.path));
     setPathFilters((prev) => {
+      if (prev.length === 0) return prev;
       const next = prev.filter((path) => validPathSet.has(path));
       return next.length === prev.length ? prev : next;
     });
-  }, [pathFilters, pathOptions]);
+  }, [pathOptions]);
 
   const toggleMethodFilter = (method: HttpMethod) => {
     setMethodFilters((prev) =>
