@@ -49,6 +49,7 @@ export interface UsageDetail {
   };
   failed: boolean;
   __modelName?: string;
+  __timestampMs?: number;
 }
 
 export interface UsageDetailWithEndpoint extends UsageDetail {
@@ -109,34 +110,6 @@ const toUsageSummaryFields = (summary: UsageSummary) => ({
   total_tokens: summary.totalTokens
 });
 
-const isDetailWithinWindow = (detail: unknown, windowStart: number, nowMs: number): detail is Record<string, unknown> => {
-  if (!isRecord(detail) || typeof detail.timestamp !== 'string') {
-    return false;
-  }
-  const timestamp = Date.parse(detail.timestamp);
-  if (Number.isNaN(timestamp)) {
-    return false;
-  }
-  return timestamp >= windowStart && timestamp <= nowMs;
-};
-
-const updateSummaryFromDetails = (summary: UsageSummary, details: unknown[]) => {
-  details.forEach((detail) => {
-    const detailRecord = isRecord(detail) ? detail : null;
-    if (!detailRecord) {
-      return;
-    }
-
-    summary.totalRequests += 1;
-    if (detailRecord.failed === true) {
-      summary.failureCount += 1;
-    } else {
-      summary.successCount += 1;
-    }
-    summary.totalTokens += extractTotalTokens(detailRecord);
-  });
-};
-
 export function filterUsageByTimeRange<T>(usageData: T, range: UsageTimeRange, nowMs: number = Date.now()): T {
   if (range === 'all') {
     return usageData;
@@ -169,6 +142,7 @@ export function filterUsageByTimeRange<T>(usageData: T, range: UsageTimeRange, n
 
     const filteredModels: Record<string, unknown> = {};
     const apiSummary = createUsageSummary();
+    let hasModelData = false;
 
     Object.entries(models).forEach(([modelName, modelEntry]) => {
       if (!isRecord(modelEntry)) {
@@ -176,22 +150,39 @@ export function filterUsageByTimeRange<T>(usageData: T, range: UsageTimeRange, n
       }
 
       const detailsRaw = Array.isArray(modelEntry.details) ? modelEntry.details : [];
-      const filteredDetails = detailsRaw.filter((detail) =>
-        isDetailWithinWindow(detail, windowStart, nowMs)
-      );
+      const modelSummary = createUsageSummary();
+      const filteredDetails: unknown[] = [];
+
+      detailsRaw.forEach((detail) => {
+        const detailRecord = isRecord(detail) ? detail : null;
+        if (!detailRecord || typeof detailRecord.timestamp !== 'string') {
+          return;
+        }
+        const timestamp = Date.parse(detailRecord.timestamp);
+        if (Number.isNaN(timestamp) || timestamp < windowStart || timestamp > nowMs) {
+          return;
+        }
+
+        filteredDetails.push(detail);
+        modelSummary.totalRequests += 1;
+        if (detailRecord.failed === true) {
+          modelSummary.failureCount += 1;
+        } else {
+          modelSummary.successCount += 1;
+        }
+        modelSummary.totalTokens += extractTotalTokens(detailRecord);
+      });
 
       if (!filteredDetails.length) {
         return;
       }
-
-      const modelSummary = createUsageSummary();
-      updateSummaryFromDetails(modelSummary, filteredDetails);
 
       filteredModels[modelName] = {
         ...modelEntry,
         ...toUsageSummaryFields(modelSummary),
         details: filteredDetails
       };
+      hasModelData = true;
 
       apiSummary.totalRequests += modelSummary.totalRequests;
       apiSummary.successCount += modelSummary.successCount;
@@ -199,7 +190,7 @@ export function filterUsageByTimeRange<T>(usageData: T, range: UsageTimeRange, n
       apiSummary.totalTokens += modelSummary.totalTokens;
     });
 
-    if (Object.keys(filteredModels).length === 0) {
+    if (!hasModelData) {
       return;
     }
 
@@ -450,13 +441,40 @@ export function formatUsd(value: number): string {
   return `$${parts}`;
 }
 
+const usageDetailsCache = new WeakMap<object, UsageDetail[]>();
+const usageDetailsWithEndpointCache = new WeakMap<object, UsageDetailWithEndpoint[]>();
+
 /**
  * 从使用数据中收集所有请求明细
  */
 export function collectUsageDetails(usageData: unknown): UsageDetail[] {
+  const cacheKey = isRecord(usageData) ? (usageData as object) : null;
+  if (cacheKey) {
+    const cached = usageDetailsCache.get(cacheKey);
+    if (cached) return cached;
+  }
+
   const apis = getApisRecord(usageData);
   if (!apis) return [];
   const details: UsageDetail[] = [];
+  const sourceCache = new Map<string, string>();
+
+  const normalizeSource = (value: unknown): string => {
+    const raw =
+      typeof value === 'string'
+        ? value
+        : value === null || value === undefined
+          ? ''
+          : String(value);
+    const trimmed = raw.trim();
+    if (!trimmed) return '';
+    const cached = sourceCache.get(trimmed);
+    if (cached !== undefined) return cached;
+    const normalized = normalizeUsageSourceId(trimmed);
+    sourceCache.set(trimmed, normalized);
+    return normalized;
+  };
+
   Object.values(apis).forEach((apiEntry) => {
     if (!isRecord(apiEntry)) return;
     const modelsRaw = apiEntry.models;
@@ -470,15 +488,25 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
 
       modelDetails.forEach((detailRaw) => {
         if (!isRecord(detailRaw) || typeof detailRaw.timestamp !== 'string') return;
-        const detail = detailRaw as unknown as UsageDetail;
+        const timestamp = detailRaw.timestamp;
+        const timestampMs = Date.parse(timestamp);
+        const tokensRaw = isRecord(detailRaw.tokens) ? detailRaw.tokens : {};
         details.push({
-          ...detail,
-          source: normalizeUsageSourceId(detail.source),
+          timestamp,
+          source: normalizeSource(detailRaw.source),
+          auth_index: detailRaw.auth_index as unknown as number,
+          tokens: tokensRaw as unknown as UsageDetail['tokens'],
+          failed: detailRaw.failed === true,
           __modelName: modelName,
+          __timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
         });
       });
     });
   });
+
+  if (cacheKey) {
+    usageDetailsCache.set(cacheKey, details);
+  }
   return details;
 }
 
@@ -486,10 +514,34 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
  * 从使用数据中收集包含 endpoint/method/path 的请求明细
  */
 export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetailWithEndpoint[] {
+  const cacheKey = isRecord(usageData) ? (usageData as object) : null;
+  if (cacheKey) {
+    const cached = usageDetailsWithEndpointCache.get(cacheKey);
+    if (cached) return cached;
+  }
+
   const apis = getApisRecord(usageData);
   if (!apis) return [];
 
   const details: UsageDetailWithEndpoint[] = [];
+  const sourceCache = new Map<string, string>();
+
+  const normalizeSource = (value: unknown): string => {
+    const raw =
+      typeof value === 'string'
+        ? value
+        : value === null || value === undefined
+          ? ''
+          : String(value);
+    const trimmed = raw.trim();
+    if (!trimmed) return '';
+    const cached = sourceCache.get(trimmed);
+    if (cached !== undefined) return cached;
+    const normalized = normalizeUsageSourceId(trimmed);
+    sourceCache.set(trimmed, normalized);
+    return normalized;
+  };
+
   Object.entries(apis).forEach(([endpoint, apiEntry]) => {
     if (!isRecord(apiEntry)) return;
     const modelsRaw = apiEntry.models;
@@ -507,11 +559,15 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
 
       modelDetails.forEach((detailRaw) => {
         if (!isRecord(detailRaw) || typeof detailRaw.timestamp !== 'string') return;
-        const detail = detailRaw as unknown as UsageDetail;
-        const timestampMs = Date.parse(detail.timestamp);
+        const timestamp = detailRaw.timestamp;
+        const timestampMs = Date.parse(timestamp);
+        const tokensRaw = isRecord(detailRaw.tokens) ? detailRaw.tokens : {};
         details.push({
-          ...detail,
-          source: normalizeUsageSourceId(detail.source),
+          timestamp,
+          source: normalizeSource(detailRaw.source),
+          auth_index: detailRaw.auth_index as unknown as number,
+          tokens: tokensRaw as unknown as UsageDetail['tokens'],
+          failed: detailRaw.failed === true,
           __modelName: modelName,
           __endpoint: endpoint,
           __endpointMethod: endpointMethod,
@@ -522,6 +578,9 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
     });
   });
 
+  if (cacheKey) {
+    usageDetailsWithEndpointCache.set(cacheKey, details);
+  }
   return details;
 }
 
@@ -592,8 +651,9 @@ export function calculateRecentPerMinuteRates(
   let tokenCount = 0;
 
   details.forEach((detail) => {
-    const timestamp = Date.parse(detail.timestamp);
-    if (Number.isNaN(timestamp) || timestamp < windowStart) {
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp < windowStart || timestamp > now) {
       return;
     }
     requestCount += 1;
@@ -951,8 +1011,9 @@ export function buildHourlySeriesByModel(
   }
 
   details.forEach((detail) => {
-    const timestamp = Date.parse(detail.timestamp);
-    if (Number.isNaN(timestamp)) {
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) {
       return;
     }
 
@@ -1007,8 +1068,9 @@ export function buildDailySeriesByModel(
   }
 
   details.forEach((detail) => {
-    const timestamp = Date.parse(detail.timestamp);
-    if (Number.isNaN(timestamp)) {
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) {
       return;
     }
     const dayLabel = formatDayLabel(new Date(timestamp));
@@ -1220,8 +1282,9 @@ export function calculateStatusBarData(
 
   // Filter and bucket the usage details
   usageDetails.forEach((detail) => {
-    const timestamp = Date.parse(detail.timestamp);
-    if (Number.isNaN(timestamp) || timestamp < windowStart || timestamp > now) {
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0 || timestamp < windowStart || timestamp > now) {
       return;
     }
 
@@ -1322,8 +1385,9 @@ export function calculateServiceHealthData(
   let totalFailure = 0;
 
   usageDetails.forEach((detail) => {
-    const timestamp = Date.parse(detail.timestamp);
-    if (Number.isNaN(timestamp) || timestamp < windowStart || timestamp > now) {
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0 || timestamp < windowStart || timestamp > now) {
       return;
     }
 
@@ -1439,6 +1503,44 @@ export function computeKeyStats(usageData: unknown, masker: (val: string) => str
   };
 }
 
+export function computeKeyStatsFromDetails(usageDetails: UsageDetail[]): KeyStats {
+  const bySource: Record<string, KeyStatBucket> = {};
+  const byAuthIndex: Record<string, KeyStatBucket> = {};
+
+  const ensureBucket = (bucket: Record<string, KeyStatBucket>, key: string) => {
+    if (!bucket[key]) {
+      bucket[key] = { success: 0, failure: 0 };
+    }
+    return bucket[key];
+  };
+
+  usageDetails.forEach((detail) => {
+    const source = detail.source;
+    const authIndexKey = normalizeAuthIndex(detail.auth_index);
+    const isFailed = detail.failed === true;
+
+    if (source) {
+      const bucket = ensureBucket(bySource, source);
+      if (isFailed) {
+        bucket.failure += 1;
+      } else {
+        bucket.success += 1;
+      }
+    }
+
+    if (authIndexKey) {
+      const bucket = ensureBucket(byAuthIndex, authIndexKey);
+      if (isFailed) {
+        bucket.failure += 1;
+      } else {
+        bucket.success += 1;
+      }
+    }
+  });
+
+  return { bySource, byAuthIndex };
+}
+
 export type TokenCategory = 'input' | 'output' | 'cached' | 'reasoning';
 
 export interface TokenBreakdownSeries {
@@ -1483,8 +1585,9 @@ export function buildHourlyTokenBreakdown(
   let hasData = false;
 
   details.forEach((detail) => {
-    const timestamp = Date.parse(detail.timestamp);
-    if (Number.isNaN(timestamp)) return;
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
     const normalized = new Date(timestamp);
     normalized.setMinutes(0, 0, 0);
     const bucketStart = normalized.getTime();
@@ -1521,8 +1624,9 @@ export function buildDailyTokenBreakdown(usageData: unknown): TokenBreakdownSeri
   let hasData = false;
 
   details.forEach((detail) => {
-    const timestamp = Date.parse(detail.timestamp);
-    if (Number.isNaN(timestamp)) return;
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
     const dayLabel = formatDayLabel(new Date(timestamp));
     if (!dayLabel) return;
 
@@ -1594,8 +1698,9 @@ export function buildHourlyCostSeries(
   let hasData = false;
 
   details.forEach((detail) => {
-    const timestamp = Date.parse(detail.timestamp);
-    if (Number.isNaN(timestamp)) return;
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
     const normalized = new Date(timestamp);
     normalized.setMinutes(0, 0, 0);
     const bucketStart = normalized.getTime();
@@ -1626,8 +1731,9 @@ export function buildDailyCostSeries(
   let hasData = false;
 
   details.forEach((detail) => {
-    const timestamp = Date.parse(detail.timestamp);
-    if (Number.isNaN(timestamp)) return;
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
     const dayLabel = formatDayLabel(new Date(timestamp));
     if (!dayLabel) return;
 

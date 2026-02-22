@@ -187,6 +187,8 @@ export function UsagePage() {
     }
   }, [timeRange]);
 
+  const nowMs = lastRefreshedAt?.getTime() ?? 0;
+
   // Sparklines hook
   const {
     requestsSparkline,
@@ -194,7 +196,7 @@ export function UsagePage() {
     rpmSparkline,
     tpmSparkline,
     costSparkline
-  } = useSparklines({ usage: filteredUsage, loading });
+  } = useSparklines({ usage: filteredUsage, loading, nowMs });
 
   // Chart data hook
   const {
@@ -293,6 +295,7 @@ export function UsagePage() {
         usage={filteredUsage}
         loading={loading}
         modelPrices={modelPrices}
+        nowMs={nowMs}
         sparklines={{
           requests: requestsSparkline,
           tokens: tokensSparkline,

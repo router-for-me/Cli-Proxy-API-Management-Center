@@ -119,8 +119,11 @@ export function RequestEventsDetailsCard({
 
     return details
       .map((detail, index) => {
-        const timestamp = typeof detail.timestamp === 'string' ? detail.timestamp : '';
-        const timestampMs = Date.parse(timestamp);
+        const timestamp = detail.timestamp;
+        const timestampMs =
+          typeof detail.__timestampMs === 'number' && detail.__timestampMs > 0
+            ? detail.__timestampMs
+            : Date.parse(timestamp);
         const date = Number.isNaN(timestampMs) ? null : new Date(timestampMs);
         const sourceRaw = String(detail.source ?? '').trim();
         const authIndexRaw = detail.auth_index as unknown;

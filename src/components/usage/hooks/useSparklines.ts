@@ -24,6 +24,7 @@ export interface SparklineBundle {
 export interface UseSparklinesOptions {
   usage: UsagePayload | null;
   loading: boolean;
+  nowMs: number;
 }
 
 export interface UseSparklinesReturn {
@@ -34,42 +35,43 @@ export interface UseSparklinesReturn {
   costSparkline: SparklineBundle | null;
 }
 
-export function useSparklines({ usage, loading }: UseSparklinesOptions): UseSparklinesReturn {
-  const buildLastHourSeries = useCallback(
-    (metric: 'requests' | 'tokens'): { labels: string[]; data: number[] } => {
-      if (!usage) return { labels: [], data: [] };
-      const details = collectUsageDetails(usage);
-      if (!details.length) return { labels: [], data: [] };
+export function useSparklines({ usage, loading, nowMs }: UseSparklinesOptions): UseSparklinesReturn {
+  const lastHourSeries = useMemo(() => {
+    if (!usage) return { labels: [], requests: [], tokens: [] };
+    if (!Number.isFinite(nowMs) || nowMs <= 0) {
+      return { labels: [], requests: [], tokens: [] };
+    }
+    const details = collectUsageDetails(usage);
+    if (!details.length) return { labels: [], requests: [], tokens: [] };
 
-      const windowMinutes = 60;
-      const now = Date.now();
-      const windowStart = now - windowMinutes * 60 * 1000;
-      const buckets = new Array(windowMinutes).fill(0);
+    const windowMinutes = 60;
+    const now = nowMs;
+    const windowStart = now - windowMinutes * 60 * 1000;
+    const requestBuckets = new Array(windowMinutes).fill(0);
+    const tokenBuckets = new Array(windowMinutes).fill(0);
 
-      details.forEach((detail) => {
-        const timestamp = Date.parse(detail.timestamp);
-        if (Number.isNaN(timestamp) || timestamp < windowStart) {
-          return;
-        }
-        const minuteIndex = Math.min(
-          windowMinutes - 1,
-          Math.floor((timestamp - windowStart) / 60000)
-        );
-        const increment = metric === 'tokens' ? extractTotalTokens(detail) : 1;
-        buckets[minuteIndex] += increment;
-      });
+    details.forEach((detail) => {
+      const timestamp = detail.__timestampMs ?? 0;
+      if (!Number.isFinite(timestamp) || timestamp < windowStart || timestamp > now) {
+        return;
+      }
+      const minuteIndex = Math.min(
+        windowMinutes - 1,
+        Math.floor((timestamp - windowStart) / 60000)
+      );
+      requestBuckets[minuteIndex] += 1;
+      tokenBuckets[minuteIndex] += extractTotalTokens(detail);
+    });
 
-      const labels = buckets.map((_, idx) => {
-        const date = new Date(windowStart + (idx + 1) * 60000);
-        const h = date.getHours().toString().padStart(2, '0');
-        const m = date.getMinutes().toString().padStart(2, '0');
-        return `${h}:${m}`;
-      });
+    const labels = requestBuckets.map((_, idx) => {
+      const date = new Date(windowStart + (idx + 1) * 60000);
+      const h = date.getHours().toString().padStart(2, '0');
+      const m = date.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    });
 
-      return { labels, data: buckets };
-    },
-    [usage]
-  );
+    return { labels, requests: requestBuckets, tokens: tokenBuckets };
+  }, [nowMs, usage]);
 
   const buildSparkline = useCallback(
     (
@@ -104,28 +106,53 @@ export function useSparklines({ usage, loading }: UseSparklinesOptions): UseSpar
   );
 
   const requestsSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('requests'), '#8b8680', 'rgba(139, 134, 128, 0.18)'),
-    [buildLastHourSeries, buildSparkline]
+    () =>
+      buildSparkline(
+        { labels: lastHourSeries.labels, data: lastHourSeries.requests },
+        '#8b8680',
+        'rgba(139, 134, 128, 0.18)'
+      ),
+    [buildSparkline, lastHourSeries.labels, lastHourSeries.requests]
   );
 
   const tokensSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('tokens'), '#8b5cf6', 'rgba(139, 92, 246, 0.18)'),
-    [buildLastHourSeries, buildSparkline]
+    () =>
+      buildSparkline(
+        { labels: lastHourSeries.labels, data: lastHourSeries.tokens },
+        '#8b5cf6',
+        'rgba(139, 92, 246, 0.18)'
+      ),
+    [buildSparkline, lastHourSeries.labels, lastHourSeries.tokens]
   );
 
   const rpmSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('requests'), '#22c55e', 'rgba(34, 197, 94, 0.18)'),
-    [buildLastHourSeries, buildSparkline]
+    () =>
+      buildSparkline(
+        { labels: lastHourSeries.labels, data: lastHourSeries.requests },
+        '#22c55e',
+        'rgba(34, 197, 94, 0.18)'
+      ),
+    [buildSparkline, lastHourSeries.labels, lastHourSeries.requests]
   );
 
   const tpmSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('tokens'), '#f97316', 'rgba(249, 115, 22, 0.18)'),
-    [buildLastHourSeries, buildSparkline]
+    () =>
+      buildSparkline(
+        { labels: lastHourSeries.labels, data: lastHourSeries.tokens },
+        '#f97316',
+        'rgba(249, 115, 22, 0.18)'
+      ),
+    [buildSparkline, lastHourSeries.labels, lastHourSeries.tokens]
   );
 
   const costSparkline = useMemo(
-    () => buildSparkline(buildLastHourSeries('tokens'), '#f59e0b', 'rgba(245, 158, 11, 0.18)'),
-    [buildLastHourSeries, buildSparkline]
+    () =>
+      buildSparkline(
+        { labels: lastHourSeries.labels, data: lastHourSeries.tokens },
+        '#f59e0b',
+        'rgba(245, 158, 11, 0.18)'
+      ),
+    [buildSparkline, lastHourSeries.labels, lastHourSeries.tokens]
   );
 
   return {

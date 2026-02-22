@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import {
-  computeKeyStats,
   collectUsageDetails,
   buildCandidateUsageSourceIds,
   formatCompactNumber,
@@ -82,13 +81,48 @@ export function CredentialStatsCard({
   // Auth files are used purely for name resolution of unmatched source IDs.
   const rows = useMemo((): CredentialRow[] => {
     if (!usage) return [];
-    const { bySource } = computeKeyStats(usage);
     const details = collectUsageDetails(usage);
+    const bySource: Record<string, CredentialBucket> = {};
     const result: CredentialRow[] = [];
     const consumedSourceIds = new Set<string>();
     const authIndexToRowIndex = new Map<string, number>();
     const sourceToAuthIndex = new Map<string, string>();
+    const sourceToAuthFile = new Map<string, CredentialInfo>();
     const fallbackByAuthIndex = new Map<string, CredentialBucket>();
+
+    details.forEach((detail) => {
+      const authIdx = normalizeAuthIndex(detail.auth_index);
+      const source = detail.source;
+      const isFailed = detail.failed === true;
+
+      if (!source) {
+        if (!authIdx) return;
+        const fallback = fallbackByAuthIndex.get(authIdx) ?? { success: 0, failure: 0 };
+        if (isFailed) {
+          fallback.failure += 1;
+        } else {
+          fallback.success += 1;
+        }
+        fallbackByAuthIndex.set(authIdx, fallback);
+        return;
+      }
+
+      const bucket = bySource[source] ?? { success: 0, failure: 0 };
+      if (isFailed) {
+        bucket.failure += 1;
+      } else {
+        bucket.success += 1;
+      }
+      bySource[source] = bucket;
+
+      if (authIdx && !sourceToAuthIndex.has(source)) {
+        sourceToAuthIndex.set(source, authIdx);
+      }
+      if (authIdx && !sourceToAuthFile.has(source)) {
+        const mapped = authFileMap.get(authIdx);
+        if (mapped) sourceToAuthFile.set(source, mapped);
+      }
+    });
 
     const mergeBucketToRow = (index: number, bucket: CredentialBucket) => {
       const target = result[index];
@@ -174,33 +208,6 @@ export function CredentialStatsCard({
           total,
           successRate: (success / total) * 100,
         });
-      }
-    });
-
-    // Build source → auth file name mapping for remaining unmatched entries.
-    // Also collect fallback stats for details without source but with auth_index.
-    const sourceToAuthFile = new Map<string, CredentialInfo>();
-    details.forEach((d) => {
-      const authIdx = normalizeAuthIndex(d.auth_index);
-      if (!d.source) {
-        if (!authIdx) return;
-        const fallback = fallbackByAuthIndex.get(authIdx) ?? { success: 0, failure: 0 };
-        if (d.failed === true) {
-          fallback.failure += 1;
-        } else {
-          fallback.success += 1;
-        }
-        fallbackByAuthIndex.set(authIdx, fallback);
-        return;
-      }
-
-      if (!authIdx || consumedSourceIds.has(d.source)) return;
-      if (!sourceToAuthIndex.has(d.source)) {
-        sourceToAuthIndex.set(d.source, authIdx);
-      }
-      if (!sourceToAuthFile.has(d.source)) {
-        const mapped = authFileMap.get(authIdx);
-        if (mapped) sourceToAuthFile.set(d.source, mapped);
       }
     });
 
