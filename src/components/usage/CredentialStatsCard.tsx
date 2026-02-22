@@ -11,6 +11,7 @@ import {
 import { authFilesApi } from '@/services/api/authFiles';
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
+import type { CredentialInfo } from '@/types/sourceInfo';
 import type { UsagePayload } from './hooks/useUsageData';
 import styles from '@/pages/UsagePage.module.scss';
 
@@ -22,11 +23,6 @@ export interface CredentialStatsCardProps {
   codexConfigs: ProviderKeyConfig[];
   vertexConfigs: ProviderKeyConfig[];
   openaiProviders: OpenAIProviderConfig[];
-}
-
-interface CredentialInfo {
-  name: string;
-  type: string;
 }
 
 interface CredentialRow {

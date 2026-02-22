@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/Select';
 import { authFilesApi } from '@/services/api/authFiles';
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
+import type { CredentialInfo, SourceInfo } from '@/types/sourceInfo';
 import {
   buildCandidateUsageSourceIds,
   collectUsageDetails,
@@ -58,16 +59,6 @@ const encodeCsv = (value: string | number): string => {
   const trimmedLeft = text.replace(/^\s+/, '');
   const safeText = trimmedLeft && /^[=+\-@]/.test(trimmedLeft) ? `'${text}` : text;
   return `"${safeText.replace(/"/g, '""')}"`;
-};
-
-type CredentialInfo = {
-  name: string;
-  type: string;
-};
-
-type SourceInfo = {
-  displayName: string;
-  type: string;
 };
 
 export function RequestEventsDetailsCard({
