@@ -50,7 +50,6 @@ const MAX_BUFFER_LINES = 10000;
 const LONG_PRESS_MS = 650;
 const LONG_PRESS_MOVE_THRESHOLD = 10;
 
- 
 const HTTP_METHOD_REGEX = new RegExp(`\\b(${HTTP_METHODS.join('|')})\\b`);
 
 const LOG_TIMESTAMP_REGEX = /^\[?(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\]?/;
@@ -404,10 +403,11 @@ export function LogsPage() {
     setError('');
 
     try {
-      const scroller = logScrollerRef.current;
-      const stickToBottom = !incremental || isNearBottom(scroller?.logViewerRef.current ?? null);
+      const scrollerInstance = logScrollerRef.current;
+      const stickToBottom =
+        !incremental || isNearBottom(scrollerInstance?.logViewerRef.current ?? null);
       if (stickToBottom) {
-        scroller?.requestScrollToBottom();
+        scrollerInstance?.requestScrollToBottom();
       }
 
       const params =
