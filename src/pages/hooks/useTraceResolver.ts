@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api/authFiles';
-import { usageApi } from '@/services/api/usage';
+import { USAGE_STATS_STALE_TIME_MS, useUsageStatsStore } from '@/stores';
 import type { AuthFileItem, Config } from '@/types';
 import type { CredentialInfo, SourceInfo } from '@/types/sourceInfo';
 import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver';
@@ -21,7 +21,7 @@ export type TraceCandidate = {
   timeDeltaMs: number | null;
 };
 
-const TRACE_USAGE_CACHE_MS = 60 * 1000;
+const TRACE_AUTH_CACHE_MS = 60 * 1000;
 const TRACE_MATCH_STRONG_WINDOW_MS = 3 * 1000;
 const TRACE_MATCH_WINDOW_MS = 10 * 1000;
 const TRACE_MATCH_MAX_WINDOW_MS = 30 * 1000;
@@ -138,6 +138,7 @@ interface UseTraceResolverReturn {
   traceCandidates: TraceCandidate[];
   resolveTraceSourceInfo: (sourceRaw: string, authIndex: unknown) => SourceInfo;
   loadTraceUsageDetails: () => Promise<void>;
+  refreshTraceUsageDetails: () => Promise<void>;
   openTraceModal: (line: ParsedLogLine) => void;
   closeTraceModal: () => void;
 }
@@ -145,25 +146,30 @@ interface UseTraceResolverReturn {
 export function useTraceResolver(options: UseTraceResolverOptions): UseTraceResolverReturn {
   const { traceScopeKey, connectionStatus, config, requestLogDownloading } = options;
   const { t } = useTranslation();
+  const usageSnapshot = useUsageStatsStore((state) => state.usage);
+  const usageScopeKey = useUsageStatsStore((state) => state.scopeKey);
+  const loadUsageStats = useUsageStatsStore((state) => state.loadUsageStats);
 
   const [traceLogLine, setTraceLogLine] = useState<ParsedLogLine | null>(null);
-  const [traceUsageDetails, setTraceUsageDetails] = useState<UsageDetailWithEndpoint[]>([]);
   const [traceAuthFileMap, setTraceAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
   const [traceLoading, setTraceLoading] = useState(false);
   const [traceError, setTraceError] = useState('');
 
-  const traceUsageLoadedAtRef = useRef(0);
   const traceAuthLoadedAtRef = useRef(0);
   const traceScopeKeyRef = useRef('');
 
+  const scopedUsageSnapshot = usageScopeKey === traceScopeKey ? usageSnapshot : null;
+  const traceUsageDetails = useMemo<UsageDetailWithEndpoint[]>(
+    () => collectUsageDetailsWithEndpoint(scopedUsageSnapshot),
+    [scopedUsageSnapshot]
+  );
+
   const traceSourceInfoMap = useMemo(() => buildSourceInfoMap(config ?? {}), [config]);
 
-  const loadTraceUsageDetails = useCallback(async () => {
+  const loadTraceUsageDetailsInternal = useCallback(async (forceUsage: boolean) => {
     if (traceScopeKeyRef.current !== traceScopeKey) {
       traceScopeKeyRef.current = traceScopeKey;
-      traceUsageLoadedAtRef.current = 0;
       traceAuthLoadedAtRef.current = 0;
-      setTraceUsageDetails([]);
       setTraceAuthFileMap(new Map());
       setTraceError('');
     }
@@ -171,26 +177,19 @@ export function useTraceResolver(options: UseTraceResolverOptions): UseTraceReso
     if (traceLoading) return;
 
     const now = Date.now();
-    const usageFresh =
-      traceUsageLoadedAtRef.current > 0 && now - traceUsageLoadedAtRef.current < TRACE_USAGE_CACHE_MS;
     const authFresh =
-      traceAuthLoadedAtRef.current > 0 && now - traceAuthLoadedAtRef.current < TRACE_USAGE_CACHE_MS;
-    if (usageFresh && authFresh) return;
+      traceAuthLoadedAtRef.current > 0 && now - traceAuthLoadedAtRef.current < TRACE_AUTH_CACHE_MS;
 
     setTraceLoading(true);
     setTraceError('');
     try {
-      const [usageResponse, authFilesResponse] = await Promise.all([
-        usageFresh ? Promise.resolve(null) : usageApi.getUsage(),
+      const [, authFilesResponse] = await Promise.all([
+        loadUsageStats({
+          force: forceUsage,
+          staleTimeMs: USAGE_STATS_STALE_TIME_MS
+        }),
         authFresh ? Promise.resolve(null) : authFilesApi.list().catch(() => null)
       ]);
-
-      if (usageResponse !== null) {
-        const usageData = usageResponse?.usage ?? usageResponse;
-        const details = collectUsageDetailsWithEndpoint(usageData);
-        setTraceUsageDetails(details);
-        traceUsageLoadedAtRef.current = now;
-      }
 
       if (authFilesResponse !== null) {
         const files = Array.isArray(authFilesResponse)
@@ -207,7 +206,7 @@ export function useTraceResolver(options: UseTraceResolverOptions): UseTraceReso
             });
           });
           setTraceAuthFileMap(map);
-          traceAuthLoadedAtRef.current = now;
+          traceAuthLoadedAtRef.current = Date.now();
         }
       }
     } catch (err: unknown) {
@@ -215,14 +214,20 @@ export function useTraceResolver(options: UseTraceResolverOptions): UseTraceReso
     } finally {
       setTraceLoading(false);
     }
-  }, [t, traceLoading, traceScopeKey]);
+  }, [loadUsageStats, t, traceLoading, traceScopeKey]);
+
+  const loadTraceUsageDetails = useCallback(async () => {
+    await loadTraceUsageDetailsInternal(false);
+  }, [loadTraceUsageDetailsInternal]);
+
+  const refreshTraceUsageDetails = useCallback(async () => {
+    await loadTraceUsageDetailsInternal(true);
+  }, [loadTraceUsageDetailsInternal]);
 
   useEffect(() => {
     if (connectionStatus === 'connected') {
       traceScopeKeyRef.current = traceScopeKey;
-      traceUsageLoadedAtRef.current = 0;
       traceAuthLoadedAtRef.current = 0;
-      setTraceUsageDetails([]);
       setTraceAuthFileMap(new Map());
       setTraceLoading(false);
       setTraceError('');
@@ -271,6 +276,7 @@ export function useTraceResolver(options: UseTraceResolverOptions): UseTraceReso
     traceCandidates,
     resolveTraceSourceInfo,
     loadTraceUsageDetails,
+    refreshTraceUsageDetails,
     openTraceModal,
     closeTraceModal
   };

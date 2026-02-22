@@ -163,10 +163,27 @@ export function AiProvidersClaudeModelsPage() {
       onBack={handleBack}
       backLabel={t('common.back')}
       backAriaLabel={t('common.back')}
-      rightAction={
-        <Button size="sm" onClick={handleApply} disabled={!canApply}>
-          {t('ai_providers.claude_models_fetch_apply')}
-        </Button>
+      hideTopBarBackButton
+      hideTopBarRightAction
+      floatingAction={
+        <div className={layoutStyles.floatingActions}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleBack}
+            className={layoutStyles.floatingBackButton}
+          >
+            {t('common.back')}
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleApply}
+            disabled={!canApply}
+            className={layoutStyles.floatingSaveButton}
+          >
+            {t('ai_providers.claude_models_fetch_apply')}
+          </Button>
+        </div>
       }
       isLoading={initialLoading}
       loadingLabel={t('common.loading')}

@@ -947,7 +947,20 @@ export function LogsPage() {
               </div>
             </div>
 
-            <h3 className={styles.traceSectionTitle}>{t('logs.trace_candidates_title')}</h3>
+            <div className={styles.traceCandidatesHeader}>
+              <h3 className={styles.traceSectionTitle}>{t('logs.trace_candidates_title')}</h3>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  void trace.refreshTraceUsageDetails().catch(() => {});
+                }}
+                loading={trace.traceLoading}
+                disabled={requestLogDownloading}
+              >
+                {t('common.refresh')}
+              </Button>
+            </div>
             {trace.traceLoading ? (
               <div className="hint">{t('logs.trace_loading')}</div>
             ) : trace.traceError ? (
