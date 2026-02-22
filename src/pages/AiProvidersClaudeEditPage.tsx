@@ -71,6 +71,7 @@ export function AiProvidersClaudeEditPage() {
 
   const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
   const [isTesting, setIsTesting] = useState(false);
+  const lastCloakConfigRef = useRef<typeof form.cloak>(null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -81,6 +82,11 @@ export function AiProvidersClaudeEditPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleBack]);
+
+  useEffect(() => {
+    if (!form.cloak) return;
+    lastCloakConfigRef.current = form.cloak;
+  }, [form.cloak]);
 
   const canSave =
     !disableControls && !loading && !saving && !invalidIndexParam && !invalidIndex && !isTesting;
@@ -460,16 +466,27 @@ export function AiProvidersClaudeEditPage() {
                   <ToggleSwitch
                     checked={Boolean(form.cloak)}
                     onChange={(enabled) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        cloak: enabled
-                          ? {
-                              mode: (prev.cloak?.mode ?? 'auto').trim() || 'auto',
-                              strictMode: prev.cloak?.strictMode ?? false,
-                              sensitiveWords: prev.cloak?.sensitiveWords ?? [],
-                            }
-                          : undefined,
-                      }))
+                      setForm((prev) => {
+                        if (!enabled) {
+                          if (prev.cloak) {
+                            lastCloakConfigRef.current = prev.cloak;
+                          }
+                          return { ...prev, cloak: undefined };
+                        }
+
+                        const restored = prev.cloak
+                          ?? lastCloakConfigRef.current
+                          ?? { mode: 'auto', strictMode: false, sensitiveWords: [] };
+                        const mode = String(restored.mode ?? 'auto').trim() || 'auto';
+                        return {
+                          ...prev,
+                          cloak: {
+                            mode,
+                            strictMode: restored.strictMode ?? false,
+                            sensitiveWords: restored.sensitiveWords ?? [],
+                          },
+                        };
+                      })
                     }
                     disabled={saving || disableControls || isTesting}
                     ariaLabel={t('ai_providers.claude_cloak_toggle_aria')}
