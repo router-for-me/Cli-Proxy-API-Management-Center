@@ -60,6 +60,8 @@ const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) 
 const buildVertexSignature = (form: VertexFormState) =>
   JSON.stringify({
     apiKey: String(form.apiKey ?? '').trim(),
+    priority:
+      form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
     prefix: String(form.prefix ?? '').trim(),
     baseUrl: String(form.baseUrl ?? '').trim(),
     proxyUrl: String(form.proxyUrl ?? '').trim(),
@@ -208,6 +210,10 @@ export function AiProvidersVertexEditPage() {
     try {
       const payload: ProviderKeyConfig = {
         apiKey: form.apiKey.trim(),
+        priority:
+          form.priority !== undefined && Number.isFinite(form.priority)
+            ? Math.trunc(form.priority)
+            : undefined,
         prefix: form.prefix?.trim() || undefined,
         baseUrl,
         proxyUrl: form.proxyUrl?.trim() || undefined,
