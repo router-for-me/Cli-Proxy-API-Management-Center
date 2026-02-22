@@ -34,6 +34,16 @@ import {
   normalizeAuthIndex,
   type UsageDetailWithEndpoint
 } from '@/utils/usage';
+import {
+  HTTP_METHODS,
+  STATUS_GROUPS,
+  resolveStatusGroup,
+  type HttpMethod,
+  type LogLevel,
+  type LogState,
+  type ParsedLogLine,
+} from './hooks/logTypes';
+import { useLogFilters } from './hooks/useLogFilters';
 import styles from './LogsPage.module.scss';
 
 interface ErrorLogItem {
@@ -41,13 +51,6 @@ interface ErrorLogItem {
   size?: number;
   modified?: number;
 }
-
-type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
-
-type LogState = {
-  buffer: string[];
-  visibleFrom: number;
-};
 
 // 初始只渲染最近 100 行，滚动到顶部再逐步加载更多（避免一次性渲染过多导致卡顿）
 const INITIAL_DISPLAY_LINES = 100;
@@ -57,12 +60,8 @@ const LOAD_MORE_THRESHOLD_PX = 72;
 const LONG_PRESS_MS = 650;
 const LONG_PRESS_MOVE_THRESHOLD = 10;
 
-const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'] as const;
-type HttpMethod = (typeof HTTP_METHODS)[number];
+ 
 const HTTP_METHOD_REGEX = new RegExp(`\\b(${HTTP_METHODS.join('|')})\\b`);
-const STATUS_GROUPS = ['2xx', '3xx', '4xx', '5xx'] as const;
-type StatusGroup = (typeof STATUS_GROUPS)[number];
-const PATH_FILTER_LIMIT = 12;
 
 const LOG_TIMESTAMP_REGEX = /^\[?(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\]?/;
 const LOG_LEVEL_REGEX = /^\[?(trace|debug|info|warn|warning|error|fatal)\s*\]?(?=\s|\[|$)\s*/i;
@@ -95,15 +94,6 @@ const detectHttpStatusCode = (text: string): number | undefined => {
   return undefined;
 };
 
-const resolveStatusGroup = (statusCode?: number): StatusGroup | undefined => {
-  if (typeof statusCode !== 'number') return undefined;
-  if (statusCode >= 200 && statusCode < 300) return '2xx';
-  if (statusCode >= 300 && statusCode < 400) return '3xx';
-  if (statusCode >= 400 && statusCode < 500) return '4xx';
-  if (statusCode >= 500 && statusCode < 600) return '5xx';
-  return undefined;
-};
-
 const extractIp = (text: string): string | undefined => {
   const ipv4Match = text.match(LOG_IPV4_REGEX);
   if (ipv4Match) return ipv4Match[0];
@@ -133,20 +123,6 @@ const extractLatency = (text: string): string | undefined => {
   const match = text.match(LOG_LATENCY_REGEX);
   if (!match) return undefined;
   return match[0].replace(/\s+/g, '');
-};
-
-type ParsedLogLine = {
-  raw: string;
-  timestamp?: string;
-  level?: LogLevel;
-  source?: string;
-  requestId?: string;
-  statusCode?: number;
-  latency?: string;
-  ip?: string;
-  method?: HttpMethod;
-  path?: string;
-  message: string;
 };
 
 type TraceConfidence = 'high' | 'medium' | 'low';
@@ -486,9 +462,6 @@ export function LogsPage() {
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [hideManagementLogs, setHideManagementLogs] = useState(true);
   const [showRawLogs, setShowRawLogs] = useState(false);
-  const [methodFilters, setMethodFilters] = useState<HttpMethod[]>([]);
-  const [statusFilters, setStatusFilters] = useState<StatusGroup[]>([]);
-  const [pathFilters, setPathFilters] = useState<string[]>([]);
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
   const [errorLogsError, setErrorLogsError] = useState('');
@@ -785,17 +758,7 @@ export function LogsPage() {
   const isSearching = trimmedSearchQuery.length > 0;
   const baseLines = isSearching ? logState.buffer : visibleLines;
 
-  const methodFilterSet = useMemo(() => new Set(methodFilters), [methodFilters]);
-  const statusFilterSet = useMemo(() => new Set(statusFilters), [statusFilters]);
-  const pathFilterSet = useMemo(() => new Set(pathFilters), [pathFilters]);
-  const hasStructuredFilters = methodFilters.length > 0 || statusFilters.length > 0 || pathFilters.length > 0;
-
-  const {
-    parsedSearchLines,
-    filteredParsedLines,
-    filteredLines,
-    removedCount,
-  } = useMemo(() => {
+  const parsedSearchLines = useMemo(() => {
     let working = baseLines;
 
     if (hideManagementLogs) {
@@ -807,18 +770,29 @@ export function LogsPage() {
       working = working.filter((line) => line.toLowerCase().includes(queryLowered));
     }
 
-    const parsed = working.map((line) => parseLogLine(line));
-    const filteredParsed = parsed.filter((line) => {
-      if (methodFilterSet.size > 0 && (!line.method || !methodFilterSet.has(line.method))) {
+    return working.map((line) => parseLogLine(line));
+  }, [baseLines, hideManagementLogs, trimmedSearchQuery]);
+
+  const filters = useLogFilters({ parsedLines: parsedSearchLines });
+
+  const { filteredParsedLines, filteredLines, removedCount } = useMemo(() => {
+    const filteredParsed = parsedSearchLines.filter((line) => {
+      if (
+        filters.methodFilterSet.size > 0 &&
+        (!line.method || !filters.methodFilterSet.has(line.method))
+      ) {
         return false;
       }
 
       const statusGroup = resolveStatusGroup(line.statusCode);
-      if (statusFilterSet.size > 0 && (!statusGroup || !statusFilterSet.has(statusGroup))) {
+      if (
+        filters.statusFilterSet.size > 0 &&
+        (!statusGroup || !filters.statusFilterSet.has(statusGroup))
+      ) {
         return false;
       }
 
-      if (pathFilterSet.size > 0 && (!line.path || !pathFilterSet.has(line.path))) {
+      if (filters.pathFilterSet.size > 0 && (!line.path || !filters.pathFilterSet.has(line.path))) {
         return false;
       }
 
@@ -826,18 +800,16 @@ export function LogsPage() {
     });
 
     return {
-      parsedSearchLines: parsed,
       filteredParsedLines: filteredParsed,
       filteredLines: filteredParsed.map((line) => line.raw),
       removedCount: Math.max(baseLines.length - filteredParsed.length, 0)
     };
   }, [
     baseLines,
-    hideManagementLogs,
-    methodFilterSet,
-    pathFilterSet,
-    statusFilterSet,
-    trimmedSearchQuery
+    filters.methodFilterSet,
+    filters.pathFilterSet,
+    filters.statusFilterSet,
+    parsedSearchLines
   ]);
 
   const parsedVisibleLines = useMemo(
@@ -866,70 +838,6 @@ export function LogsPage() {
   );
 
   const canLoadMore = !isSearching && logState.visibleFrom > 0;
-
-  const methodCounts = useMemo(() => {
-    const counts: Partial<Record<HttpMethod, number>> = {};
-    parsedSearchLines.forEach((line) => {
-      if (!line.method) return;
-      counts[line.method] = (counts[line.method] ?? 0) + 1;
-    });
-    return counts;
-  }, [parsedSearchLines]);
-
-  const statusCounts = useMemo(() => {
-    const counts: Partial<Record<StatusGroup, number>> = {};
-    parsedSearchLines.forEach((line) => {
-      const statusGroup = resolveStatusGroup(line.statusCode);
-      if (!statusGroup) return;
-      counts[statusGroup] = (counts[statusGroup] ?? 0) + 1;
-    });
-    return counts;
-  }, [parsedSearchLines]);
-
-  const pathOptions = useMemo(() => {
-    const counts = new Map<string, number>();
-    parsedSearchLines.forEach((line) => {
-      if (!line.path) return;
-      counts.set(line.path, (counts.get(line.path) ?? 0) + 1);
-    });
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .slice(0, PATH_FILTER_LIMIT)
-      .map(([path, count]) => ({ path, count }));
-  }, [parsedSearchLines]);
-
-  useEffect(() => {
-    const validPathSet = new Set(pathOptions.map((item) => item.path));
-    setPathFilters((prev) => {
-      if (prev.length === 0) return prev;
-      const next = prev.filter((path) => validPathSet.has(path));
-      return next.length === prev.length ? prev : next;
-    });
-  }, [pathOptions]);
-
-  const toggleMethodFilter = (method: HttpMethod) => {
-    setMethodFilters((prev) =>
-      prev.includes(method) ? prev.filter((item) => item !== method) : [...prev, method]
-    );
-  };
-
-  const toggleStatusFilter = (statusGroup: StatusGroup) => {
-    setStatusFilters((prev) =>
-      prev.includes(statusGroup) ? prev.filter((item) => item !== statusGroup) : [...prev, statusGroup]
-    );
-  };
-
-  const togglePathFilter = (path: string) => {
-    setPathFilters((prev) =>
-      prev.includes(path) ? prev.filter((item) => item !== path) : [...prev, path]
-    );
-  };
-
-  const clearStructuredFilters = () => {
-    setMethodFilters([]);
-    setStatusFilters([]);
-    setPathFilters([]);
-  };
 
   const prependVisibleLines = useCallback(() => {
     const node = logViewerRef.current;
@@ -1176,14 +1084,14 @@ export function LogsPage() {
                   <span className={styles.filterChipLabel}>{t('logs.filter_method')}</span>
                   <div className={styles.filterChipList}>
                     {HTTP_METHODS.map((method) => {
-                      const active = methodFilters.includes(method);
-                      const count = methodCounts[method] ?? 0;
+                      const active = filters.methodFilters.includes(method);
+                      const count = filters.methodCounts[method] ?? 0;
                       return (
                         <button
                           key={method}
                           type="button"
                           className={`${styles.filterChip} ${active ? styles.filterChipActive : ''}`}
-                          onClick={() => toggleMethodFilter(method)}
+                          onClick={() => filters.toggleMethodFilter(method)}
                           disabled={count === 0 && !active}
                           aria-pressed={active}
                         >
@@ -1198,14 +1106,14 @@ export function LogsPage() {
                   <span className={styles.filterChipLabel}>{t('logs.filter_status')}</span>
                   <div className={styles.filterChipList}>
                     {STATUS_GROUPS.map((statusGroup) => {
-                      const active = statusFilters.includes(statusGroup);
-                      const count = statusCounts[statusGroup] ?? 0;
+                      const active = filters.statusFilters.includes(statusGroup);
+                      const count = filters.statusCounts[statusGroup] ?? 0;
                       return (
                         <button
                           key={statusGroup}
                           type="button"
                           className={`${styles.filterChip} ${active ? styles.filterChipActive : ''}`}
-                          onClick={() => toggleStatusFilter(statusGroup)}
+                          onClick={() => filters.toggleStatusFilter(statusGroup)}
                           disabled={count === 0 && !active}
                           aria-pressed={active}
                         >
@@ -1219,17 +1127,17 @@ export function LogsPage() {
                 <div className={styles.filterChipGroup}>
                   <span className={styles.filterChipLabel}>{t('logs.filter_path')}</span>
                   <div className={styles.filterChipList}>
-                    {pathOptions.length === 0 ? (
+                    {filters.pathOptions.length === 0 ? (
                       <span className={styles.filterChipHint}>{t('logs.filter_path_empty')}</span>
                     ) : (
-                      pathOptions.map(({ path, count }) => {
-                        const active = pathFilters.includes(path);
+                      filters.pathOptions.map(({ path, count }) => {
+                        const active = filters.pathFilters.includes(path);
                         return (
                           <button
                             key={path}
                             type="button"
                             className={`${styles.filterChip} ${active ? styles.filterChipActive : ''}`}
-                            onClick={() => togglePathFilter(path)}
+                            onClick={() => filters.togglePathFilter(path)}
                             aria-pressed={active}
                             title={path}
                           >
@@ -1244,8 +1152,8 @@ export function LogsPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={clearStructuredFilters}
-                  disabled={!hasStructuredFilters}
+                  onClick={filters.clearStructuredFilters}
+                  disabled={!filters.hasStructuredFilters}
                 >
                   {t('logs.clear_filters')}
                 </Button>
