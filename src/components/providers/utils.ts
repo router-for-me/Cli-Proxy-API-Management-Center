@@ -23,11 +23,13 @@ export const withoutDisableAllModelsRule = (models?: string[]) => {
   return base;
 };
 
-export const parseExcludedModels = (text: string): string[] =>
+export const parseTextList = (text: string): string[] =>
   text
     .split(/[\n,]+/)
     .map((item) => item.trim())
     .filter(Boolean);
+
+export const parseExcludedModels = parseTextList;
 
 export const excludedModelsToText = (models?: string[]) =>
   Array.isArray(models) ? models.join('\n') : '';

@@ -13,7 +13,7 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import { useNotificationStore } from '@/stores';
 import { buildHeaderObject } from '@/utils/headers';
-import { buildClaudeMessagesEndpoint, parseExcludedModels } from '@/components/providers/utils';
+import { buildClaudeMessagesEndpoint, parseTextList } from '@/components/providers/utils';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
@@ -544,7 +544,7 @@ export function AiProvidersClaudeEditPage() {
                       placeholder={t('ai_providers.claude_cloak_sensitive_words_placeholder')}
                       value={(form.cloak.sensitiveWords ?? []).join('\n')}
                       onChange={(e) => {
-                        const nextWords = parseExcludedModels(e.target.value);
+                        const nextWords = parseTextList(e.target.value);
                         setForm((prev) => ({
                           ...prev,
                           cloak: {
