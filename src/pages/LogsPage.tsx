@@ -19,21 +19,11 @@ import {
 } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
-import { authFilesApi } from '@/services/api/authFiles';
 import { logsApi } from '@/services/api/logs';
-import { usageApi } from '@/services/api/usage';
-import type { AuthFileItem } from '@/types';
-import type { CredentialInfo, SourceInfo } from '@/types/sourceInfo';
 import { copyToClipboard } from '@/utils/clipboard';
 import { downloadBlob } from '@/utils/download';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
-import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver';
-import {
-  collectUsageDetailsWithEndpoint,
-  normalizeAuthIndex,
-  type UsageDetailWithEndpoint
-} from '@/utils/usage';
 import {
   HTTP_METHODS,
   STATUS_GROUPS,
@@ -44,6 +34,7 @@ import {
   type ParsedLogLine,
 } from './hooks/logTypes';
 import { useLogFilters } from './hooks/useLogFilters';
+import { isTraceableRequestPath, useTraceResolver } from './hooks/useTraceResolver';
 import styles from './LogsPage.module.scss';
 
 interface ErrorLogItem {
@@ -123,103 +114,6 @@ const extractLatency = (text: string): string | undefined => {
   const match = text.match(LOG_LATENCY_REGEX);
   if (!match) return undefined;
   return match[0].replace(/\s+/g, '');
-};
-
-type TraceConfidence = 'high' | 'medium' | 'low';
-
-type TraceCandidate = {
-  detail: UsageDetailWithEndpoint;
-  score: number;
-  confidence: TraceConfidence;
-  timeDeltaMs: number | null;
-};
-
-const TRACE_USAGE_CACHE_MS = 60 * 1000;
-const TRACE_MATCH_STRONG_WINDOW_MS = 3 * 1000;
-const TRACE_MATCH_WINDOW_MS = 10 * 1000;
-const TRACE_MATCH_MAX_WINDOW_MS = 30 * 1000;
-
-const normalizeTracePath = (value?: string) =>
-  String(value ?? '')
-    .replace(/^"+|"+$/g, '')
-    .split('?')[0]
-    .trim();
-
-const TRACEABLE_EXACT_PATHS = new Set(['/v1/chat/completions', '/v1/messages', '/v1/responses']);
-const TRACEABLE_PREFIX_PATHS = ['/v1beta/models'];
-
-const normalizeTraceablePath = (value?: string): string => {
-  const normalized = normalizeTracePath(value);
-  if (!normalized || normalized === '/') return normalized;
-  return normalized.replace(/\/+$/, '');
-};
-
-const isTraceableRequestPath = (value?: string): boolean => {
-  const normalizedPath = normalizeTraceablePath(value);
-  if (!normalizedPath) return false;
-  if (TRACEABLE_EXACT_PATHS.has(normalizedPath)) return true;
-  return TRACEABLE_PREFIX_PATHS.some((prefix) => normalizedPath.startsWith(prefix));
-};
-
-const scoreTraceCandidate = (
-  line: ParsedLogLine,
-  detail: UsageDetailWithEndpoint
-): TraceCandidate | null => {
-  let score = 0;
-  let timeDeltaMs: number | null = null;
-
-  const logTimestampMs = line.timestamp ? Date.parse(line.timestamp) : Number.NaN;
-  const detailTimestampMs = detail.__timestampMs;
-  if (!Number.isNaN(logTimestampMs) && detailTimestampMs > 0) {
-    timeDeltaMs = Math.abs(logTimestampMs - detailTimestampMs);
-    if (timeDeltaMs <= TRACE_MATCH_STRONG_WINDOW_MS) {
-      score += 42;
-    } else if (timeDeltaMs <= TRACE_MATCH_WINDOW_MS) {
-      score += 30;
-    } else if (timeDeltaMs <= TRACE_MATCH_MAX_WINDOW_MS) {
-      score += 12;
-    } else {
-      score -= 12;
-    }
-  }
-
-  let methodMatched = false;
-  if (line.method && detail.__endpointMethod) {
-    if (line.method.toUpperCase() === detail.__endpointMethod.toUpperCase()) {
-      score += 18;
-      methodMatched = true;
-    } else {
-      score -= 8;
-    }
-  }
-
-  const logPath = normalizeTracePath(line.path);
-  const detailPath = normalizeTracePath(detail.__endpointPath);
-  let pathMatched = false;
-  if (logPath && detailPath) {
-    if (logPath === detailPath) {
-      score += 24;
-      pathMatched = true;
-    } else if (logPath.startsWith(detailPath) || detailPath.startsWith(logPath)) {
-      score += 12;
-      pathMatched = true;
-    } else {
-      score -= 8;
-    }
-  }
-
-  if (typeof line.statusCode === 'number') {
-    const logFailed = line.statusCode >= 400;
-    score += logFailed === detail.failed ? 10 : -6;
-  }
-
-  if (timeDeltaMs !== null && timeDeltaMs > TRACE_MATCH_MAX_WINDOW_MS && !methodMatched && !pathMatched) {
-    return null;
-  }
-
-  if (score <= 0) return null;
-  const confidence: TraceConfidence = score >= 70 ? 'high' : score >= 45 ? 'medium' : 'low';
-  return { detail, score, confidence, timeDeltaMs };
 };
 
 const extractLogLevel = (value: string): LogLevel | undefined => {
@@ -467,11 +361,13 @@ export function LogsPage() {
   const [errorLogsError, setErrorLogsError] = useState('');
   const [requestLogId, setRequestLogId] = useState<string | null>(null);
   const [requestLogDownloading, setRequestLogDownloading] = useState(false);
-  const [traceLogLine, setTraceLogLine] = useState<ParsedLogLine | null>(null);
-  const [traceUsageDetails, setTraceUsageDetails] = useState<UsageDetailWithEndpoint[]>([]);
-  const [traceAuthFileMap, setTraceAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
-  const [traceLoading, setTraceLoading] = useState(false);
-  const [traceError, setTraceError] = useState('');
+
+  const trace = useTraceResolver({
+    traceScopeKey,
+    connectionStatus,
+    config,
+    requestLogDownloading
+  });
 
   const logViewerRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollToBottomRef = useRef(false);
@@ -484,15 +380,11 @@ export function LogsPage() {
   } | null>(null);
   const logRequestInFlightRef = useRef(false);
   const pendingFullReloadRef = useRef(false);
-  const traceUsageLoadedAtRef = useRef(0);
-  const traceAuthLoadedAtRef = useRef(0);
-  const traceScopeKeyRef = useRef('');
 
   // 保存最新时间戳用于增量获取
   const latestTimestampRef = useRef<number>(0);
 
   const disableControls = connectionStatus !== 'connected';
-  const traceSourceInfoMap = useMemo(() => buildSourceInfoMap(config ?? {}), [config]);
 
   const isNearBottom = (node: HTMLDivElement | null) => {
     if (!node) return true;
@@ -648,75 +540,9 @@ export function LogsPage() {
     }
   };
 
-  const loadTraceUsageDetails = useCallback(async () => {
-    if (traceScopeKeyRef.current !== traceScopeKey) {
-      traceScopeKeyRef.current = traceScopeKey;
-      traceUsageLoadedAtRef.current = 0;
-      traceAuthLoadedAtRef.current = 0;
-      setTraceUsageDetails([]);
-      setTraceAuthFileMap(new Map());
-      setTraceError('');
-    }
-
-    if (traceLoading) return;
-
-    const now = Date.now();
-    const usageFresh =
-      traceUsageLoadedAtRef.current > 0 && now - traceUsageLoadedAtRef.current < TRACE_USAGE_CACHE_MS;
-    const authFresh =
-      traceAuthLoadedAtRef.current > 0 && now - traceAuthLoadedAtRef.current < TRACE_USAGE_CACHE_MS;
-    if (usageFresh && authFresh) return;
-
-    setTraceLoading(true);
-    setTraceError('');
-    try {
-      const [usageResponse, authFilesResponse] = await Promise.all([
-        usageFresh ? Promise.resolve(null) : usageApi.getUsage(),
-        authFresh ? Promise.resolve(null) : authFilesApi.list().catch(() => null)
-      ]);
-
-      if (usageResponse !== null) {
-        const usageData = usageResponse?.usage ?? usageResponse;
-        const details = collectUsageDetailsWithEndpoint(usageData);
-        setTraceUsageDetails(details);
-        traceUsageLoadedAtRef.current = now;
-      }
-
-      if (authFilesResponse !== null) {
-        const files = Array.isArray(authFilesResponse)
-          ? authFilesResponse
-          : (authFilesResponse as { files?: AuthFileItem[] })?.files;
-        if (Array.isArray(files)) {
-          const map = new Map<string, CredentialInfo>();
-          files.forEach((file) => {
-            const key = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
-            if (!key) return;
-            map.set(key, {
-              name: file.name || key,
-              type: (file.type || file.provider || '').toString()
-            });
-          });
-          setTraceAuthFileMap(map);
-          traceAuthLoadedAtRef.current = now;
-        }
-      }
-    } catch (err: unknown) {
-      setTraceError(getErrorMessage(err) || t('logs.trace_usage_load_error'));
-    } finally {
-      setTraceLoading(false);
-    }
-  }, [t, traceLoading, traceScopeKey]);
-
   useEffect(() => {
     if (connectionStatus === 'connected') {
       latestTimestampRef.current = 0;
-      traceScopeKeyRef.current = traceScopeKey;
-      traceUsageLoadedAtRef.current = 0;
-      traceAuthLoadedAtRef.current = 0;
-      setTraceUsageDetails([]);
-      setTraceAuthFileMap(new Map());
-      setTraceLoading(false);
-      setTraceError('');
       loadLogs(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -818,24 +644,6 @@ export function LogsPage() {
   );
 
   const rawVisibleText = useMemo(() => filteredLines.join('\n'), [filteredLines]);
-  const traceCandidates = useMemo(() => {
-    if (!traceLogLine) return [];
-    const scored = traceUsageDetails
-      .map((detail) => scoreTraceCandidate(traceLogLine, detail))
-      .filter((item): item is TraceCandidate => item !== null)
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        const aDelta = a.timeDeltaMs ?? Number.MAX_SAFE_INTEGER;
-        const bDelta = b.timeDeltaMs ?? Number.MAX_SAFE_INTEGER;
-        return aDelta - bDelta;
-      });
-    return scored.slice(0, 8);
-  }, [traceLogLine, traceUsageDetails]);
-  const resolveTraceSourceInfo = useCallback(
-    (sourceRaw: string, authIndex: unknown): SourceInfo =>
-      resolveSourceDisplay(sourceRaw, authIndex, traceSourceInfoMap, traceAuthFileMap),
-    [traceAuthFileMap, traceSourceInfoMap]
-  );
 
   const canLoadMore = !isSearching && logState.visibleFrom > 0;
 
@@ -978,19 +786,6 @@ export function LogsPage() {
     if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
       cancelLongPress();
     }
-  };
-
-  const openTraceModal = (line: ParsedLogLine) => {
-    if (!isTraceableRequestPath(line.path)) return;
-    cancelLongPress();
-    setTraceError('');
-    setTraceLogLine(line);
-    void loadTraceUsageDetails();
-  };
-
-  const closeTraceModal = () => {
-    if (requestLogDownloading) return;
-    setTraceLogLine(null);
   };
 
   const closeRequestLogModal = () => {
@@ -1364,7 +1159,8 @@ export function LogsPage() {
                                 className={styles.traceButton}
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  openTraceModal(line);
+                                  cancelLongPress();
+                                  trace.openTraceModal(line);
                                 }}
                                 title={t('logs.trace_button')}
                               >
@@ -1451,17 +1247,17 @@ export function LogsPage() {
       </div>
 
       <Modal
-        open={Boolean(traceLogLine)}
-        onClose={closeTraceModal}
+        open={Boolean(trace.traceLogLine)}
+        onClose={trace.closeTraceModal}
         title={t('logs.trace_title')}
         footer={
           <>
-            {traceLogLine?.requestId && (
+            {trace.traceLogLine?.requestId && (
               <Button
                 variant="secondary"
                 onClick={() => {
-                  if (traceLogLine.requestId) {
-                    void downloadRequestLog(traceLogLine.requestId);
+                  if (trace.traceLogLine?.requestId) {
+                    void downloadRequestLog(trace.traceLogLine.requestId);
                   }
                 }}
                 loading={requestLogDownloading}
@@ -1469,13 +1265,17 @@ export function LogsPage() {
                 {t('logs.trace_download_request_log')}
               </Button>
             )}
-            <Button variant="secondary" onClick={closeTraceModal} disabled={requestLogDownloading}>
+            <Button
+              variant="secondary"
+              onClick={trace.closeTraceModal}
+              disabled={requestLogDownloading}
+            >
               {t('common.close')}
             </Button>
           </>
         }
       >
-        {traceLogLine && (
+        {trace.traceLogLine && (
           <div className={styles.tracePanel}>
             <div className={styles.traceNotice}>{t('logs.trace_notice')}</div>
 
@@ -1483,57 +1283,59 @@ export function LogsPage() {
             <div className={styles.traceInfoGrid}>
               <div className={styles.traceInfoItem}>
                 <span className={styles.traceInfoLabel}>{t('logs.trace_request_id')}</span>
-                <span className={styles.traceInfoValue}>{traceLogLine.requestId || '-'}</span>
+                <span className={styles.traceInfoValue}>{trace.traceLogLine.requestId || '-'}</span>
               </div>
               <div className={styles.traceInfoItem}>
                 <span className={styles.traceInfoLabel}>{t('logs.trace_method')}</span>
-                <span className={styles.traceInfoValue}>{traceLogLine.method || '-'}</span>
+                <span className={styles.traceInfoValue}>{trace.traceLogLine.method || '-'}</span>
               </div>
               <div className={styles.traceInfoItem}>
                 <span className={styles.traceInfoLabel}>{t('logs.trace_path')}</span>
-                <span className={styles.traceInfoValue}>{traceLogLine.path || '-'}</span>
+                <span className={styles.traceInfoValue}>{trace.traceLogLine.path || '-'}</span>
               </div>
               <div className={styles.traceInfoItem}>
                 <span className={styles.traceInfoLabel}>{t('logs.trace_status_code')}</span>
                 <span className={styles.traceInfoValue}>
-                  {typeof traceLogLine.statusCode === 'number' ? traceLogLine.statusCode : '-'}
+                  {typeof trace.traceLogLine.statusCode === 'number'
+                    ? trace.traceLogLine.statusCode
+                    : '-'}
                 </span>
               </div>
               <div className={styles.traceInfoItem}>
                 <span className={styles.traceInfoLabel}>{t('logs.trace_latency')}</span>
-                <span className={styles.traceInfoValue}>{traceLogLine.latency || '-'}</span>
+                <span className={styles.traceInfoValue}>{trace.traceLogLine.latency || '-'}</span>
               </div>
               <div className={styles.traceInfoItem}>
                 <span className={styles.traceInfoLabel}>{t('logs.trace_ip')}</span>
-                <span className={styles.traceInfoValue}>{traceLogLine.ip || '-'}</span>
+                <span className={styles.traceInfoValue}>{trace.traceLogLine.ip || '-'}</span>
               </div>
               <div className={styles.traceInfoItem}>
                 <span className={styles.traceInfoLabel}>{t('logs.trace_timestamp')}</span>
-                <span className={styles.traceInfoValue}>{traceLogLine.timestamp || '-'}</span>
+                <span className={styles.traceInfoValue}>{trace.traceLogLine.timestamp || '-'}</span>
               </div>
               <div className={`${styles.traceInfoItem} ${styles.traceInfoItemWide}`}>
                 <span className={styles.traceInfoLabel}>{t('logs.trace_message')}</span>
-                <span className={styles.traceInfoValue}>{traceLogLine.message || '-'}</span>
+                <span className={styles.traceInfoValue}>{trace.traceLogLine.message || '-'}</span>
               </div>
             </div>
 
             <h3 className={styles.traceSectionTitle}>{t('logs.trace_candidates_title')}</h3>
-            {traceLoading ? (
+            {trace.traceLoading ? (
               <div className="hint">{t('logs.trace_loading')}</div>
-            ) : traceError ? (
-              <div className="error-box">{traceError}</div>
-            ) : traceCandidates.length === 0 ? (
+            ) : trace.traceError ? (
+              <div className="error-box">{trace.traceError}</div>
+            ) : trace.traceCandidates.length === 0 ? (
               <div className="hint">{t('logs.trace_no_match')}</div>
             ) : (
               <div className={styles.traceCandidates}>
-                {traceCandidates.map((candidate) => {
+                {trace.traceCandidates.map((candidate) => {
                   const confidenceClass =
                     candidate.confidence === 'high'
                       ? styles.traceConfidenceHigh
                       : candidate.confidence === 'medium'
                         ? styles.traceConfidenceMedium
                         : styles.traceConfidenceLow;
-                  const sourceInfo = resolveTraceSourceInfo(
+                  const sourceInfo = trace.resolveTraceSourceInfo(
                     String(candidate.detail.source ?? ''),
                     candidate.detail.auth_index
                   );
