@@ -271,6 +271,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                 quota={quota[item.name]}
                 resolvedTheme={resolvedTheme}
                 i18nPrefix={config.i18nPrefix}
+                cardIdleMessageKey={config.cardIdleMessageKey}
                 cardClassName={config.cardClassName}
                 defaultType={config.type}
                 renderQuotaItems={config.renderQuotaItems}

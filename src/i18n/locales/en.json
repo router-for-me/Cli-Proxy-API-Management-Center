@@ -1229,7 +1229,8 @@
     "title": "Quota Management",
     "description": "Monitor OAuth quota status for Antigravity, Codex, and Gemini CLI credentials.",
     "refresh_files": "Refresh auth files",
-    "refresh_files_and_quota": "Refresh files & quota"
+    "refresh_files_and_quota": "Refresh files & quota",
+    "card_idle_hint": "Use the top \"Refresh files & quota\" button to fetch the latest quota data."
   },
   "system_info": {
     "title": "Management Center Info",
