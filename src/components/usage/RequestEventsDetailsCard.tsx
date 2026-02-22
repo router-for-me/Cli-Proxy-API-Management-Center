@@ -7,9 +7,9 @@ import { Select } from '@/components/ui/Select';
 import { authFilesApi } from '@/services/api/authFiles';
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
-import type { CredentialInfo, SourceInfo } from '@/types/sourceInfo';
+import type { CredentialInfo } from '@/types/sourceInfo';
+import { buildSourceInfoMap } from '@/utils/sourceResolver';
 import {
-  buildCandidateUsageSourceIds,
   collectUsageDetails,
   extractTotalTokens,
   normalizeAuthIndex
@@ -102,75 +102,17 @@ export function RequestEventsDetailsCard({
     };
   }, []);
 
-  const sourceInfoMap = useMemo(() => {
-    const map = new Map<string, SourceInfo>();
-
-    const registerSource = (sourceId: string, displayName: string, type: string) => {
-      if (!sourceId || !displayName) return;
-      if (map.has(sourceId)) return;
-      map.set(sourceId, { displayName, type });
-    };
-
-    const registerCandidates = (
-      displayName: string,
-      type: string,
-      candidates: string[]
-    ) => {
-      candidates.forEach((sourceId) => registerSource(sourceId, displayName, type));
-    };
-
-    geminiKeys.forEach((config, index) => {
-      const displayName = config.prefix?.trim() || `Gemini #${index + 1}`;
-      registerCandidates(
-        displayName,
-        'gemini',
-        buildCandidateUsageSourceIds({ apiKey: config.apiKey, prefix: config.prefix })
-      );
-    });
-
-    claudeConfigs.forEach((config, index) => {
-      const displayName = config.prefix?.trim() || `Claude #${index + 1}`;
-      registerCandidates(
-        displayName,
-        'claude',
-        buildCandidateUsageSourceIds({ apiKey: config.apiKey, prefix: config.prefix })
-      );
-    });
-
-    codexConfigs.forEach((config, index) => {
-      const displayName = config.prefix?.trim() || `Codex #${index + 1}`;
-      registerCandidates(
-        displayName,
-        'codex',
-        buildCandidateUsageSourceIds({ apiKey: config.apiKey, prefix: config.prefix })
-      );
-    });
-
-    vertexConfigs.forEach((config, index) => {
-      const displayName = config.prefix?.trim() || `Vertex #${index + 1}`;
-      registerCandidates(
-        displayName,
-        'vertex',
-        buildCandidateUsageSourceIds({ apiKey: config.apiKey, prefix: config.prefix })
-      );
-    });
-
-    openaiProviders.forEach((provider, providerIndex) => {
-      const displayName = provider.prefix?.trim() || provider.name || `OpenAI #${providerIndex + 1}`;
-      const candidates = new Set<string>();
-      buildCandidateUsageSourceIds({ prefix: provider.prefix }).forEach((sourceId) =>
-        candidates.add(sourceId)
-      );
-      (provider.apiKeyEntries || []).forEach((entry) => {
-        buildCandidateUsageSourceIds({ apiKey: entry.apiKey }).forEach((sourceId) =>
-          candidates.add(sourceId)
-        );
-      });
-      registerCandidates(displayName, 'openai', Array.from(candidates));
-    });
-
-    return map;
-  }, [claudeConfigs, codexConfigs, geminiKeys, openaiProviders, vertexConfigs]);
+  const sourceInfoMap = useMemo(
+    () =>
+      buildSourceInfoMap({
+        geminiApiKeys: geminiKeys,
+        claudeApiKeys: claudeConfigs,
+        codexApiKeys: codexConfigs,
+        vertexApiKeys: vertexConfigs,
+        openaiCompatibility: openaiProviders,
+      }),
+    [claudeConfigs, codexConfigs, geminiKeys, openaiProviders, vertexConfigs]
+  );
 
   const rows = useMemo<RequestEventRow[]>(() => {
     const details = collectUsageDetails(usage);

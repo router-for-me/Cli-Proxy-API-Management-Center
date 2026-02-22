@@ -28,8 +28,8 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { downloadBlob } from '@/utils/download';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
+import { buildSourceInfoMap } from '@/utils/sourceResolver';
 import {
-  buildCandidateUsageSourceIds,
   collectUsageDetailsWithEndpoint,
   normalizeAuthIndex,
   type UsageDetailWithEndpoint
@@ -519,70 +519,7 @@ export function LogsPage() {
   const latestTimestampRef = useRef<number>(0);
 
   const disableControls = connectionStatus !== 'connected';
-  const traceSourceInfoMap = useMemo(() => {
-    const map = new Map<string, SourceInfo>();
-
-    const registerSource = (sourceId: string, displayName: string, type: string) => {
-      if (!sourceId || !displayName || map.has(sourceId)) return;
-      map.set(sourceId, { displayName, type });
-    };
-
-    const registerCandidates = (displayName: string, type: string, candidates: string[]) => {
-      candidates.forEach((sourceId) => registerSource(sourceId, displayName, type));
-    };
-
-    (config?.geminiApiKeys || []).forEach((item, index) => {
-      const displayName = item.prefix?.trim() || `Gemini #${index + 1}`;
-      registerCandidates(
-        displayName,
-        'gemini',
-        buildCandidateUsageSourceIds({ apiKey: item.apiKey, prefix: item.prefix })
-      );
-    });
-
-    (config?.claudeApiKeys || []).forEach((item, index) => {
-      const displayName = item.prefix?.trim() || `Claude #${index + 1}`;
-      registerCandidates(
-        displayName,
-        'claude',
-        buildCandidateUsageSourceIds({ apiKey: item.apiKey, prefix: item.prefix })
-      );
-    });
-
-    (config?.codexApiKeys || []).forEach((item, index) => {
-      const displayName = item.prefix?.trim() || `Codex #${index + 1}`;
-      registerCandidates(
-        displayName,
-        'codex',
-        buildCandidateUsageSourceIds({ apiKey: item.apiKey, prefix: item.prefix })
-      );
-    });
-
-    (config?.vertexApiKeys || []).forEach((item, index) => {
-      const displayName = item.prefix?.trim() || `Vertex #${index + 1}`;
-      registerCandidates(
-        displayName,
-        'vertex',
-        buildCandidateUsageSourceIds({ apiKey: item.apiKey, prefix: item.prefix })
-      );
-    });
-
-    (config?.openaiCompatibility || []).forEach((provider, providerIndex) => {
-      const displayName = provider.prefix?.trim() || provider.name || `OpenAI #${providerIndex + 1}`;
-      const candidates = new Set<string>();
-      buildCandidateUsageSourceIds({ prefix: provider.prefix }).forEach((sourceId) =>
-        candidates.add(sourceId)
-      );
-      (provider.apiKeyEntries || []).forEach((entry) => {
-        buildCandidateUsageSourceIds({ apiKey: entry.apiKey }).forEach((sourceId) =>
-          candidates.add(sourceId)
-        );
-      });
-      registerCandidates(displayName, 'openai', Array.from(candidates));
-    });
-
-    return map;
-  }, [config]);
+  const traceSourceInfoMap = useMemo(() => buildSourceInfoMap(config ?? {}), [config]);
 
   const isNearBottom = (node: HTMLDivElement | null) => {
     if (!node) return true;
