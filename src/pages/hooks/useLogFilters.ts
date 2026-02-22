@@ -71,6 +71,7 @@ export function useLogFilters(options: UseLogFiltersOptions): UseLogFiltersRetur
 
   useEffect(() => {
     const validPathSet = new Set(pathOptions.map((item) => item.path));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPathFilters((prev) => {
       if (prev.length === 0) return prev;
       const next = prev.filter((path) => validPathSet.has(path));
@@ -119,4 +120,3 @@ export function useLogFilters(options: UseLogFiltersOptions): UseLogFiltersRetur
     clearStructuredFilters,
   };
 }
-

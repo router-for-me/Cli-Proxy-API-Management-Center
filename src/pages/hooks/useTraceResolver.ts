@@ -31,7 +31,7 @@ const TRACEABLE_PREFIX_PATHS = ['/v1beta/models'];
 
 const normalizeTracePath = (value?: string) =>
   String(value ?? '')
-    .replace(/^\"+|\"+$/g, '')
+    .replace(/^"+|"+$/g, '')
     .split('?')[0]
     .trim();
 
