@@ -58,7 +58,6 @@ export function AuthFilesPage() {
   const [selectedFile, setSelectedFile] = useState<AuthFileItem | null>(null);
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
-  const [nowMs, setNowMs] = useState(() => Date.now());
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
   const previousSelectionCountRef = useRef(0);
   const selectionCountRef = useRef(0);
@@ -223,7 +222,6 @@ export function AuthFilesPage() {
     },
     isCurrentLayer ? 240_000 : null
   );
-  useInterval(() => setNowMs(Date.now()), isCurrentLayer ? 60_000 : null);
 
   const existingTypes = useMemo(() => {
     const types = new Set<string>(['all']);
@@ -519,7 +517,6 @@ export function AuthFilesPage() {
                 quotaFilterType={quotaFilterType}
                 keyStats={keyStats}
                 statusBarCache={statusBarCache}
-                nowMs={nowMs}
                 onShowModels={showModels}
                 onShowDetails={showDetails}
                 onDownload={handleDownload}
