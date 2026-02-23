@@ -12,19 +12,14 @@ import {
 } from '@/utils/usage';
 import type { ParsedLogLine } from './logTypes';
 
-type TraceConfidence = 'high' | 'medium' | 'low';
-
 export type TraceCandidate = {
   detail: UsageDetailWithEndpoint;
-  score: number;
-  confidence: TraceConfidence;
+  modelMatched: boolean;
   timeDeltaMs: number | null;
 };
 
 const TRACE_AUTH_CACHE_MS = 60 * 1000;
-const TRACE_MATCH_STRONG_WINDOW_MS = 3 * 1000;
-const TRACE_MATCH_WINDOW_MS = 10 * 1000;
-const TRACE_MATCH_MAX_WINDOW_MS = 30 * 1000;
+const TRACE_MAX_CANDIDATES = 5;
 
 const TRACEABLE_EXACT_PATHS = new Set(['/v1/chat/completions', '/v1/messages', '/v1/responses']);
 const TRACEABLE_PREFIX_PATHS = ['/v1beta/models'];
@@ -48,70 +43,17 @@ export const isTraceableRequestPath = (value?: string): boolean => {
   return TRACEABLE_PREFIX_PATHS.some((prefix) => normalizedPath.startsWith(prefix));
 };
 
-const scoreTraceCandidate = (
-  line: ParsedLogLine,
-  detail: UsageDetailWithEndpoint
-): TraceCandidate | null => {
-  let score = 0;
-  let timeDeltaMs: number | null = null;
+const MODEL_EXTRACT_REGEX = /\bmodel[=:]\s*"?([a-zA-Z0-9._\-/]+)"?/i;
 
-  const logTimestampMs = line.timestamp ? Date.parse(line.timestamp) : Number.NaN;
-  const detailTimestampMs = detail.__timestampMs;
-  if (!Number.isNaN(logTimestampMs) && detailTimestampMs > 0) {
-    timeDeltaMs = Math.abs(logTimestampMs - detailTimestampMs);
-    if (timeDeltaMs <= TRACE_MATCH_STRONG_WINDOW_MS) {
-      score += 42;
-    } else if (timeDeltaMs <= TRACE_MATCH_WINDOW_MS) {
-      score += 30;
-    } else if (timeDeltaMs <= TRACE_MATCH_MAX_WINDOW_MS) {
-      score += 12;
-    } else {
-      score -= 12;
-    }
-  }
+const extractModelFromMessage = (message?: string): string | undefined => {
+  if (!message) return undefined;
+  const match = message.match(MODEL_EXTRACT_REGEX);
+  return match?.[1] || undefined;
+};
 
-  let methodMatched = false;
-  if (line.method && detail.__endpointMethod) {
-    if (line.method.toUpperCase() === detail.__endpointMethod.toUpperCase()) {
-      score += 18;
-      methodMatched = true;
-    } else {
-      score -= 8;
-    }
-  }
-
-  const logPath = normalizeTracePath(line.path);
-  const detailPath = normalizeTracePath(detail.__endpointPath);
-  let pathMatched = false;
-  if (logPath && detailPath) {
-    if (logPath === detailPath) {
-      score += 24;
-      pathMatched = true;
-    } else if (logPath.startsWith(detailPath) || detailPath.startsWith(logPath)) {
-      score += 12;
-      pathMatched = true;
-    } else {
-      score -= 8;
-    }
-  }
-
-  if (typeof line.statusCode === 'number') {
-    const logFailed = line.statusCode >= 400;
-    score += logFailed === detail.failed ? 10 : -6;
-  }
-
-  if (
-    timeDeltaMs !== null &&
-    timeDeltaMs > TRACE_MATCH_MAX_WINDOW_MS &&
-    !methodMatched &&
-    !pathMatched
-  ) {
-    return null;
-  }
-
-  if (score <= 0) return null;
-  const confidence: TraceConfidence = score >= 70 ? 'high' : score >= 45 ? 'medium' : 'low';
-  return { detail, score, confidence, timeDeltaMs };
+const isPathMatch = (logPath: string, detailPath: string): boolean => {
+  if (!logPath || !detailPath) return false;
+  return logPath === detailPath || logPath.startsWith(detailPath) || detailPath.startsWith(logPath);
 };
 
 const getErrorMessage = (err: unknown): string => {
@@ -236,16 +178,42 @@ export function useTraceResolver(options: UseTraceResolverOptions): UseTraceReso
 
   const traceCandidates = useMemo(() => {
     if (!traceLogLine) return [];
-    const scored = traceUsageDetails
-      .map((detail) => scoreTraceCandidate(traceLogLine, detail))
-      .filter((item): item is TraceCandidate => item !== null)
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        const aDelta = a.timeDeltaMs ?? Number.MAX_SAFE_INTEGER;
-        const bDelta = b.timeDeltaMs ?? Number.MAX_SAFE_INTEGER;
-        return aDelta - bDelta;
-      });
-    return scored.slice(0, 8);
+
+    const logPath = normalizeTracePath(traceLogLine.path);
+    if (!logPath) return [];
+
+    const logTimestampMs = traceLogLine.timestamp
+      ? Date.parse(traceLogLine.timestamp)
+      : Number.NaN;
+
+    // Step 1: filter by path match
+    const pathMatched = traceUsageDetails.filter((detail) =>
+      isPathMatch(logPath, normalizeTracePath(detail.__endpointPath))
+    );
+    if (pathMatched.length === 0) return [];
+
+    // Step 2: try to extract model from log message, then filter by model
+    const logModel = extractModelFromMessage(traceLogLine.message);
+    const modelMatched = logModel
+      ? pathMatched.filter(
+          (d) => d.__modelName?.toLowerCase() === logModel.toLowerCase()
+        )
+      : [];
+
+    // Step 3: prefer model-matched set; fall back to path-matched
+    const useModelSet = modelMatched.length > 0;
+    const source = useModelSet ? modelMatched : pathMatched;
+
+    return source
+      .map((detail) => {
+        const timeDeltaMs =
+          !Number.isNaN(logTimestampMs) && detail.__timestampMs > 0
+            ? Math.abs(logTimestampMs - detail.__timestampMs)
+            : null;
+        return { detail, modelMatched: useModelSet, timeDeltaMs } satisfies TraceCandidate;
+      })
+      .sort((a, b) => (b.detail.__timestampMs || 0) - (a.detail.__timestampMs || 0))
+      .slice(0, TRACE_MAX_CANDIDATES);
   }, [traceLogLine, traceUsageDetails]);
 
   const resolveTraceSourceInfo = useCallback(

@@ -970,12 +970,6 @@ export function LogsPage() {
             ) : (
               <div className={styles.traceCandidates}>
                 {trace.traceCandidates.map((candidate) => {
-                  const confidenceClass =
-                    candidate.confidence === 'high'
-                      ? styles.traceConfidenceHigh
-                      : candidate.confidence === 'medium'
-                        ? styles.traceConfidenceMedium
-                        : styles.traceConfidenceLow;
                   const sourceInfo = trace.resolveTraceSourceInfo(
                     String(candidate.detail.source ?? ''),
                     candidate.detail.auth_index
@@ -986,12 +980,11 @@ export function LogsPage() {
                       className={styles.traceCandidate}
                     >
                       <div className={styles.traceCandidateHeader}>
-                        <span className={`${styles.traceConfidenceBadge} ${confidenceClass}`}>
-                          {t(`logs.trace_confidence_${candidate.confidence}`)}
-                        </span>
-                        <span className={styles.traceScore}>
-                          {t('logs.trace_score', { score: candidate.score })}
-                        </span>
+                        {candidate.modelMatched && (
+                          <span className={styles.traceModelBadge}>
+                            {t('logs.trace_model_matched')}
+                          </span>
+                        )}
                         {candidate.timeDeltaMs !== null && (
                           <span className={styles.traceDelta}>
                             {t('logs.trace_delta_seconds', {

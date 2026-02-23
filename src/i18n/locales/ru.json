@@ -1026,6 +1026,7 @@
     "trace_confidence_low": "Низкая",
     "trace_score": "Оценка {{score}}",
     "trace_delta_seconds": "Δt {{seconds}}с",
+    "trace_model_matched": "Модель совпала",
     "trace_request_id": "Request ID",
     "trace_method": "Метод",
     "trace_path": "Путь",

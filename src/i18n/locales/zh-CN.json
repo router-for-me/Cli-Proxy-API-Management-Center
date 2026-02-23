@@ -1023,6 +1023,7 @@
     "trace_confidence_low": "低",
     "trace_score": "分数 {{score}}",
     "trace_delta_seconds": "时间差 {{seconds}} 秒",
+    "trace_model_matched": "模型匹配",
     "trace_request_id": "请求 ID",
     "trace_method": "请求方法",
     "trace_path": "路径",
