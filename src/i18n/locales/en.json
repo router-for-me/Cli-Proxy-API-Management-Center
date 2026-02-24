@@ -629,7 +629,11 @@
     "missing_auth_index": "Auth file missing auth_index",
     "empty_data": "No quota data available",
     "refresh_button": "Refresh Quota",
-    "fetch_all": "Fetch All"
+    "fetch_all": "Fetch All",
+    "weekly_limit": "Weekly limit",
+    "limit_window": "{{duration}} limit",
+    "limit_index": "Limit #{{index}}",
+    "reset_hint": "resets in {{hint}}"
   },
   "vertex_import": {
     "title": "Vertex JSON Login",

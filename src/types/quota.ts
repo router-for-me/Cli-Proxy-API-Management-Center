@@ -244,7 +244,9 @@ export interface KimiUsagePayload {
 
 export interface KimiQuotaRow {
   id: string;
-  label: string;
+  label?: string;
+  labelKey?: string;
+  labelParams?: Record<string, string | number>;
   used: number;
   limit: number;
   resetHint?: string;

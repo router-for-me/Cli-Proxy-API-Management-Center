@@ -915,9 +915,17 @@ const renderKimiItems = (
   return rows.map((row) => {
     const limit = row.limit;
     const used = row.used;
-    const remaining = limit > 0 ? Math.max(0, Math.min(100, Math.round(((limit - used) / limit) * 100))) : (used > 0 ? 0 : null);
+    const remaining =
+      limit > 0
+        ? Math.max(0, Math.min(100, Math.round(((limit - used) / limit) * 100)))
+        : used > 0
+          ? 0
+          : null;
     const percentLabel = remaining === null ? '--' : `${remaining}%`;
-    const resetLabel = formatKimiResetHint(row.resetHint);
+    const rowLabel = row.labelKey
+      ? t(row.labelKey, (row.labelParams ?? {}) as Record<string, string | number>)
+      : row.label ?? '';
+    const resetLabel = formatKimiResetHint(t, row.resetHint);
 
     return h(
       'div',
@@ -925,7 +933,7 @@ const renderKimiItems = (
       h(
         'div',
         { className: styleMap.quotaRowHeader },
-        h('span', { className: styleMap.quotaModel }, row.label),
+        h('span', { className: styleMap.quotaModel }, rowLabel),
         h(
           'div',
           { className: styleMap.quotaMeta },

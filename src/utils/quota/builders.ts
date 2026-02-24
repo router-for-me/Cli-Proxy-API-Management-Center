@@ -275,6 +275,8 @@ function toInt(value: unknown): number | null {
   return null;
 }
 
+type KimiRowLabel = Pick<KimiQuotaRow, 'label' | 'labelKey' | 'labelParams'>;
+
 function kimiResetHint(data: Record<string, unknown>): string | undefined {
   const absoluteKeys = ['reset_at', 'resetAt', 'reset_time', 'resetTime'];
   for (const key of absoluteKeys) {
@@ -316,39 +318,57 @@ function kimiResetHint(data: Record<string, unknown>): string | undefined {
   return undefined;
 }
 
+function kimiDurationToken(duration: number, rawTimeUnit: unknown): string {
+  const unit = typeof rawTimeUnit === 'string' ? rawTimeUnit.trim().toUpperCase() : '';
+  if (unit === 'MINUTES') {
+    return duration % 60 === 0 ? `${duration / 60}h` : `${duration}m`;
+  }
+  if (unit === 'HOURS') return `${duration}h`;
+  if (unit === 'DAYS') return `${duration}d`;
+  return `${duration}s`;
+}
+
 function kimiLimitLabel(
   item: KimiLimitItem,
   detail: KimiUsageDetail | KimiLimitItem,
   window: KimiLimitWindow,
   index: number
-): string {
+): KimiRowLabel {
   for (const key of ['name', 'title', 'scope'] as const) {
     const val = (item as Record<string, unknown>)[key] ?? (detail as Record<string, unknown>)[key];
-    if (typeof val === 'string' && val.trim()) return val.trim();
+    if (typeof val === 'string' && val.trim()) return { label: val.trim() };
   }
 
   const duration =
-    toInt(window.duration) ?? toInt((item as Record<string, unknown>).duration) ?? toInt((detail as Record<string, unknown>).duration);
+    toInt(window.duration) ??
+    toInt((item as Record<string, unknown>).duration) ??
+    toInt((detail as Record<string, unknown>).duration);
   const timeUnit =
-    (window.timeUnit as string) ?? (item as Record<string, unknown>).timeUnit ?? (detail as Record<string, unknown>).timeUnit;
+    (window as Record<string, unknown>).timeUnit ??
+    (item as Record<string, unknown>).timeUnit ??
+    (detail as Record<string, unknown>).timeUnit;
 
   if (duration !== null && duration > 0) {
-    const unit = typeof timeUnit === 'string' ? timeUnit.toUpperCase() : '';
-    if (unit === 'MINUTES') {
-      return duration % 60 === 0 ? `${duration / 60}h limit` : `${duration}m limit`;
-    }
-    if (unit === 'HOURS') return `${duration}h limit`;
-    if (unit === 'DAYS') return `${duration}d limit`;
-    return `${duration}s limit`;
+    return {
+      labelKey: 'kimi_quota.limit_window',
+      labelParams: {
+        duration: kimiDurationToken(duration, timeUnit),
+      },
+    };
   }
 
-  return `Limit #${index + 1}`;
+  return {
+    labelKey: 'kimi_quota.limit_index',
+    labelParams: {
+      index: index + 1,
+    },
+  };
 }
 
 function toKimiUsageRow(
   data: Record<string, unknown>,
-  defaultLabel: string
-): { label: string; used: number; limit: number; resetHint?: string } | null {
+  fallbackLabel: KimiRowLabel
+): (KimiRowLabel & { used: number; limit: number; resetHint?: string }) | null {
   const limit = toInt(data.limit);
   let used = toInt(data.used);
   if (used === null) {
@@ -358,12 +378,12 @@ function toKimiUsageRow(
     }
   }
   if (used === null && limit === null) return null;
-  const label =
+  const explicitLabel =
     (typeof data.name === 'string' && data.name.trim()) ||
-    (typeof data.title === 'string' && data.title.trim()) ||
-    defaultLabel;
+    (typeof data.title === 'string' && data.title.trim());
+  const label = explicitLabel ? { label: explicitLabel } : fallbackLabel;
   return {
-    label,
+    ...label,
     used: used ?? 0,
     limit: limit ?? 0,
     resetHint: kimiResetHint(data),
@@ -375,7 +395,9 @@ export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
 
   const usage = payload.usage;
   if (usage && typeof usage === 'object') {
-    const summary = toKimiUsageRow(usage as Record<string, unknown>, 'Weekly limit');
+    const summary = toKimiUsageRow(usage as Record<string, unknown>, {
+      labelKey: 'kimi_quota.weekly_limit',
+    });
     if (summary) {
       rows.push({ id: 'summary', ...summary });
     }
@@ -386,8 +408,8 @@ export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
     limits.forEach((item, idx) => {
       const detail = (item.detail && typeof item.detail === 'object' ? item.detail : item) as KimiUsageDetail | KimiLimitItem;
       const window = (item.window && typeof item.window === 'object' ? item.window : {}) as KimiLimitWindow;
-      const label = kimiLimitLabel(item, detail, window, idx);
-      const row = toKimiUsageRow(detail as Record<string, unknown>, label);
+      const fallbackLabel = kimiLimitLabel(item, detail, window, idx);
+      const row = toKimiUsageRow(detail as Record<string, unknown>, fallbackLabel);
       if (row) {
         rows.push({ id: `limit-${idx}`, ...row });
       }

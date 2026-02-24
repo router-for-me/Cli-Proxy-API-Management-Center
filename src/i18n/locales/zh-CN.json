@@ -629,7 +629,11 @@
     "missing_auth_index": "认证文件缺少 auth_index",
     "empty_data": "暂无额度数据",
     "refresh_button": "刷新额度",
-    "fetch_all": "获取全部"
+    "fetch_all": "获取全部",
+    "weekly_limit": "周限额",
+    "limit_window": "{{duration}} 限额",
+    "limit_index": "限额 #{{index}}",
+    "reset_hint": "{{hint}} 后重置"
   },
   "vertex_import": {
     "title": "Vertex JSON 登录",

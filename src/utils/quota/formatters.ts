@@ -2,6 +2,7 @@
  * Formatting functions for quota display.
  */
 
+import type { TFunction } from 'i18next';
 import type { CodexUsageWindow } from '@/types';
 import { normalizeNumberValue } from './parsers';
 
@@ -67,7 +68,7 @@ export function getStatusFromError(err: unknown): number | undefined {
   return undefined;
 }
 
-export function formatKimiResetHint(hint?: string): string {
+export function formatKimiResetHint(t: TFunction, hint?: string): string {
   if (!hint) return '';
-  return `resets in ${hint}`;
+  return t('kimi_quota.reset_hint', { hint });
 }

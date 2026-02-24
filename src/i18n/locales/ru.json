@@ -632,7 +632,11 @@
     "missing_auth_index": "В файле авторизации отсутствует auth_index",
     "empty_data": "Данные по квоте отсутствуют",
     "refresh_button": "Обновить квоту",
-    "fetch_all": "Получить все"
+    "fetch_all": "Получить все",
+    "weekly_limit": "Недельный лимит",
+    "limit_window": "Лимит {{duration}}",
+    "limit_index": "Лимит #{{index}}",
+    "reset_hint": "сброс через {{hint}}"
   },
   "vertex_import": {
     "title": "Вход с Vertex JSON",
