@@ -12,7 +12,8 @@ import {
   ANTIGRAVITY_CONFIG,
   CLAUDE_CONFIG,
   CODEX_CONFIG,
-  GEMINI_CLI_CONFIG
+  GEMINI_CLI_CONFIG,
+  KIMI_CONFIG
 } from '@/components/quota';
 import type { AuthFileItem } from '@/types';
 import styles from './QuotaPage.module.scss';
@@ -90,6 +91,12 @@ export function QuotaPage() {
       />
       <QuotaSection
         config={GEMINI_CLI_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
+      <QuotaSection
+        config={KIMI_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}

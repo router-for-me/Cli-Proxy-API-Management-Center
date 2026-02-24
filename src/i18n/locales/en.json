@@ -619,6 +619,18 @@
     "fetch_all": "Fetch All",
     "remaining_amount": "Remaining {{count}}"
   },
+  "kimi_quota": {
+    "title": "Kimi Quota",
+    "empty_title": "No Kimi Auth Files",
+    "empty_desc": "Upload a Kimi credential to view remaining quota.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_data": "No quota data available",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All"
+  },
   "vertex_import": {
     "title": "Vertex JSON Login",
     "description": "Upload a Google service account JSON to store it as auth-dir/vertex-<project>.json using the same rules as the CLI vertex-import helper.",

@@ -197,3 +197,62 @@ export interface CodexQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+// Kimi API payload types
+export interface KimiUsageDetail {
+  used?: number;
+  limit?: number;
+  remaining?: number;
+  name?: string;
+  title?: string;
+  resetAt?: string;
+  reset_at?: string;
+  resetTime?: string;
+  reset_time?: string;
+  resetIn?: number;
+  reset_in?: number;
+  ttl?: number;
+}
+
+export interface KimiLimitWindow {
+  duration?: number;
+  timeUnit?: string;
+}
+
+export interface KimiLimitItem {
+  name?: string;
+  title?: string;
+  scope?: string;
+  detail?: KimiUsageDetail;
+  window?: KimiLimitWindow;
+  used?: number;
+  limit?: number;
+  remaining?: number;
+  duration?: number;
+  timeUnit?: string;
+  resetAt?: string;
+  reset_at?: string;
+  resetIn?: number;
+  reset_in?: number;
+  ttl?: number;
+}
+
+export interface KimiUsagePayload {
+  usage?: KimiUsageDetail;
+  limits?: KimiLimitItem[];
+}
+
+export interface KimiQuotaRow {
+  id: string;
+  label: string;
+  used: number;
+  limit: number;
+  resetHint?: string;
+}
+
+export interface KimiQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  rows: KimiQuotaRow[];
+  error?: string;
+  errorStatus?: number;
+}

@@ -2,7 +2,7 @@
  * Normalization and parsing functions for quota data.
  */
 
-import type { ClaudeUsagePayload, CodexUsagePayload, GeminiCliQuotaPayload } from '@/types';
+import type { ClaudeUsagePayload, CodexUsagePayload, GeminiCliQuotaPayload, KimiUsagePayload } from '@/types';
 import { normalizeAuthIndex } from '@/utils/usage';
 
 const GEMINI_CLI_MODEL_SUFFIX = '_vertex';
@@ -167,6 +167,23 @@ export function parseGeminiCliQuotaPayload(payload: unknown): GeminiCliQuotaPayl
   }
   if (typeof payload === 'object') {
     return payload as GeminiCliQuotaPayload;
+  }
+  return null;
+}
+
+export function parseKimiUsagePayload(payload: unknown): KimiUsagePayload | null {
+  if (payload === undefined || payload === null) return null;
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim();
+    if (!trimmed) return null;
+    try {
+      return JSON.parse(trimmed) as KimiUsagePayload;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof payload === 'object') {
+    return payload as KimiUsagePayload;
   }
   return null;
 }

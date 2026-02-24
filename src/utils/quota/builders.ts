@@ -9,6 +9,11 @@ import type {
   AntigravityModelsPayload,
   GeminiCliParsedBucket,
   GeminiCliQuotaBucketState,
+  KimiUsagePayload,
+  KimiUsageDetail,
+  KimiLimitItem,
+  KimiLimitWindow,
+  KimiQuotaRow,
 } from '@/types';
 import {
   ANTIGRAVITY_QUOTA_GROUPS,
@@ -259,4 +264,135 @@ export function buildAntigravityQuotaGroups(
   }
 
   return groups;
+}
+
+function toInt(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.floor(value);
+  if (typeof value === 'string') {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) ? Math.floor(parsed) : null;
+  }
+  return null;
+}
+
+function kimiResetHint(data: Record<string, unknown>): string | undefined {
+  const absoluteKeys = ['reset_at', 'resetAt', 'reset_time', 'resetTime'];
+  for (const key of absoluteKeys) {
+    const raw = data[key];
+    if (typeof raw === 'string' && raw.trim()) {
+      try {
+        const truncated = raw.replace(/(\.\d{6})\d+/, '$1');
+        const date = new Date(truncated);
+        if (Number.isNaN(date.getTime())) continue;
+        const now = Date.now();
+        const delta = date.getTime() - now;
+        if (delta <= 0) return undefined;
+        const totalMinutes = Math.floor(delta / 60000);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+        if (hours > 0) return `${hours}h`;
+        if (minutes > 0) return `${minutes}m`;
+        return '<1m';
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  const relativeKeys = ['reset_in', 'resetIn', 'ttl'];
+  for (const key of relativeKeys) {
+    const raw = toInt(data[key]);
+    if (raw !== null && raw > 0) {
+      const hours = Math.floor(raw / 3600);
+      const minutes = Math.floor((raw % 3600) / 60);
+      if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+      if (hours > 0) return `${hours}h`;
+      if (minutes > 0) return `${minutes}m`;
+      return '<1m';
+    }
+  }
+
+  return undefined;
+}
+
+function kimiLimitLabel(
+  item: KimiLimitItem,
+  detail: KimiUsageDetail | KimiLimitItem,
+  window: KimiLimitWindow,
+  index: number
+): string {
+  for (const key of ['name', 'title', 'scope'] as const) {
+    const val = (item as Record<string, unknown>)[key] ?? (detail as Record<string, unknown>)[key];
+    if (typeof val === 'string' && val.trim()) return val.trim();
+  }
+
+  const duration =
+    toInt(window.duration) ?? toInt((item as Record<string, unknown>).duration) ?? toInt((detail as Record<string, unknown>).duration);
+  const timeUnit =
+    (window.timeUnit as string) ?? (item as Record<string, unknown>).timeUnit ?? (detail as Record<string, unknown>).timeUnit;
+
+  if (duration !== null && duration > 0) {
+    const unit = typeof timeUnit === 'string' ? timeUnit.toUpperCase() : '';
+    if (unit === 'MINUTES') {
+      return duration % 60 === 0 ? `${duration / 60}h limit` : `${duration}m limit`;
+    }
+    if (unit === 'HOURS') return `${duration}h limit`;
+    if (unit === 'DAYS') return `${duration}d limit`;
+    return `${duration}s limit`;
+  }
+
+  return `Limit #${index + 1}`;
+}
+
+function toKimiUsageRow(
+  data: Record<string, unknown>,
+  defaultLabel: string
+): { label: string; used: number; limit: number; resetHint?: string } | null {
+  const limit = toInt(data.limit);
+  let used = toInt(data.used);
+  if (used === null) {
+    const remaining = toInt(data.remaining);
+    if (remaining !== null && limit !== null) {
+      used = limit - remaining;
+    }
+  }
+  if (used === null && limit === null) return null;
+  const label =
+    (typeof data.name === 'string' && data.name.trim()) ||
+    (typeof data.title === 'string' && data.title.trim()) ||
+    defaultLabel;
+  return {
+    label,
+    used: used ?? 0,
+    limit: limit ?? 0,
+    resetHint: kimiResetHint(data),
+  };
+}
+
+export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
+  const rows: KimiQuotaRow[] = [];
+
+  const usage = payload.usage;
+  if (usage && typeof usage === 'object') {
+    const summary = toKimiUsageRow(usage as Record<string, unknown>, 'Weekly limit');
+    if (summary) {
+      rows.push({ id: 'summary', ...summary });
+    }
+  }
+
+  const limits = payload.limits;
+  if (Array.isArray(limits)) {
+    limits.forEach((item, idx) => {
+      const detail = (item.detail && typeof item.detail === 'object' ? item.detail : item) as KimiUsageDetail | KimiLimitItem;
+      const window = (item.window && typeof item.window === 'object' ? item.window : {}) as KimiLimitWindow;
+      const label = kimiLimitLabel(item, detail, window, idx);
+      const row = toKimiUsageRow(detail as Record<string, unknown>, label);
+      if (row) {
+        rows.push({ id: `limit-${idx}`, ...row });
+      }
+    });
+  }
+
+  return rows;
 }

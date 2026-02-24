@@ -619,6 +619,18 @@
     "fetch_all": "获取全部",
     "remaining_amount": "剩余 {{count}}"
   },
+  "kimi_quota": {
+    "title": "Kimi 额度",
+    "empty_title": "暂无 Kimi 认证",
+    "empty_desc": "上传 Kimi 认证文件后即可查看额度。",
+    "idle": "点击此处刷新额度",
+    "loading": "正在加载额度...",
+    "load_failed": "额度获取失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "empty_data": "暂无额度数据",
+    "refresh_button": "刷新额度",
+    "fetch_all": "获取全部"
+  },
   "vertex_import": {
     "title": "Vertex JSON 登录",
     "description": "上传 Google 服务账号 JSON，使用 CLI vertex-import 同步规则写入 auth-dir/vertex-<project>.json。",

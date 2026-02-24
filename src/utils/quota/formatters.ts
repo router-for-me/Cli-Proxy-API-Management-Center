@@ -66,3 +66,8 @@ export function getStatusFromError(err: unknown): number | undefined {
   }
   return undefined;
 }
+
+export function formatKimiResetHint(hint?: string): string {
+  if (!hint) return '';
+  return `resets in ${hint}`;
+}
