@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
+import type { AuthFileItem } from '@/types';
 import { useNotificationStore } from '@/stores';
 import { formatFileSize } from '@/utils/format';
 import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
@@ -8,7 +9,7 @@ import {
   normalizeExcludedModels,
   parseDisableCoolingValue,
   parseExcludedModelsText,
-  parsePriorityValue
+  parsePriorityValue,
 } from '@/features/authFiles/constants';
 
 export type PrefixProxyEditorField =
@@ -16,10 +17,14 @@ export type PrefixProxyEditorField =
   | 'proxyUrl'
   | 'priority'
   | 'excludedModelsText'
-  | 'disableCooling';
+  | 'disableCooling'
+  | 'websocket';
+
+export type PrefixProxyEditorFieldValue = string | boolean;
 
 export type PrefixProxyEditorState = {
   fileName: string;
+  isCodexFile: boolean;
   loading: boolean;
   saving: boolean;
   error: string | null;
@@ -31,6 +36,7 @@ export type PrefixProxyEditorState = {
   priority: string;
   excludedModelsText: string;
   disableCooling: string;
+  websocket: boolean;
 };
 
 export type UseAuthFilesPrefixProxyEditorOptions = {
@@ -43,9 +49,12 @@ export type UseAuthFilesPrefixProxyEditorResult = {
   prefixProxyEditor: PrefixProxyEditorState | null;
   prefixProxyUpdatedText: string;
   prefixProxyDirty: boolean;
-  openPrefixProxyEditor: (name: string) => Promise<void>;
+  openPrefixProxyEditor: (file: Pick<AuthFileItem, 'name' | 'type' | 'provider'>) => Promise<void>;
   closePrefixProxyEditor: () => void;
-  handlePrefixProxyChange: (field: PrefixProxyEditorField, value: string) => void;
+  handlePrefixProxyChange: (
+    field: PrefixProxyEditorField,
+    value: PrefixProxyEditorFieldValue
+  ) => void;
   handlePrefixProxySave: () => Promise<void>;
 };
 
@@ -80,6 +89,10 @@ const buildPrefixProxyUpdatedText = (editor: PrefixProxyEditorState | null): str
     delete next.disable_cooling;
   }
 
+  if (editor.isCodexFile) {
+    next.websocket = editor.websocket;
+  }
+
   return JSON.stringify(next);
 };
 
@@ -102,7 +115,16 @@ export function useAuthFilesPrefixProxyEditor(
     setPrefixProxyEditor(null);
   };
 
-  const openPrefixProxyEditor = async (name: string) => {
+  const openPrefixProxyEditor = async (file: Pick<AuthFileItem, 'name' | 'type' | 'provider'>) => {
+    const name = file.name;
+    const normalizedType = String(file.type ?? '')
+      .trim()
+      .toLowerCase();
+    const normalizedProvider = String(file.provider ?? '')
+      .trim()
+      .toLowerCase();
+    const isCodexFile = normalizedType === 'codex' || normalizedProvider === 'codex';
+
     if (disableControls) return;
     if (prefixProxyEditor?.fileName === name) {
       setPrefixProxyEditor(null);
@@ -111,6 +133,7 @@ export function useAuthFilesPrefixProxyEditor(
 
     setPrefixProxyEditor({
       fileName: name,
+      isCodexFile,
       loading: true,
       saving: false,
       error: null,
@@ -121,7 +144,8 @@ export function useAuthFilesPrefixProxyEditor(
       proxyUrl: '',
       priority: '',
       excludedModelsText: '',
-      disableCooling: ''
+      disableCooling: '',
+      websocket: false,
     });
 
     try {
@@ -139,7 +163,7 @@ export function useAuthFilesPrefixProxyEditor(
             loading: false,
             error: t('auth_files.prefix_proxy_invalid_json'),
             rawText: trimmed,
-            originalText: trimmed
+            originalText: trimmed,
           };
         });
         return;
@@ -153,19 +177,24 @@ export function useAuthFilesPrefixProxyEditor(
             loading: false,
             error: t('auth_files.prefix_proxy_invalid_json'),
             rawText: trimmed,
-            originalText: trimmed
+            originalText: trimmed,
           };
         });
         return;
       }
 
-      const json = parsed as Record<string, unknown>;
+      const json = { ...(parsed as Record<string, unknown>) };
+      if (isCodexFile) {
+        const websocketValue = parseDisableCoolingValue(json.websocket);
+        json.websocket = websocketValue ?? false;
+      }
       const originalText = JSON.stringify(json);
       const prefix = typeof json.prefix === 'string' ? json.prefix : '';
       const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
       const priority = parsePriorityValue(json.priority);
       const excludedModels = normalizeExcludedModels(json.excluded_models);
       const disableCoolingValue = parseDisableCoolingValue(json.disable_cooling);
+      const websocketValue = parseDisableCoolingValue(json.websocket);
 
       setPrefixProxyEditor((prev) => {
         if (!prev || prev.fileName !== name) return prev;
@@ -181,7 +210,8 @@ export function useAuthFilesPrefixProxyEditor(
           excludedModelsText: excludedModels.join('\n'),
           disableCooling:
             disableCoolingValue === undefined ? '' : disableCoolingValue ? 'true' : 'false',
-          error: null
+          websocket: websocketValue ?? false,
+          error: null,
         };
       });
     } catch (err: unknown) {
@@ -194,14 +224,18 @@ export function useAuthFilesPrefixProxyEditor(
     }
   };
 
-  const handlePrefixProxyChange = (field: PrefixProxyEditorField, value: string) => {
+  const handlePrefixProxyChange = (
+    field: PrefixProxyEditorField,
+    value: PrefixProxyEditorFieldValue
+  ) => {
     setPrefixProxyEditor((prev) => {
       if (!prev) return prev;
-      if (field === 'prefix') return { ...prev, prefix: value };
-      if (field === 'proxyUrl') return { ...prev, proxyUrl: value };
-      if (field === 'priority') return { ...prev, priority: value };
-      if (field === 'excludedModelsText') return { ...prev, excludedModelsText: value };
-      return { ...prev, disableCooling: value };
+      if (field === 'prefix') return { ...prev, prefix: String(value) };
+      if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
+      if (field === 'priority') return { ...prev, priority: String(value) };
+      if (field === 'excludedModelsText') return { ...prev, excludedModelsText: String(value) };
+      if (field === 'disableCooling') return { ...prev, disableCooling: String(value) };
+      return { ...prev, websocket: Boolean(value) };
     });
   };
 
@@ -249,6 +283,6 @@ export function useAuthFilesPrefixProxyEditor(
     openPrefixProxyEditor,
     closePrefixProxyEditor,
     handlePrefixProxyChange,
-    handlePrefixProxySave
+    handlePrefixProxySave,
   };
 }

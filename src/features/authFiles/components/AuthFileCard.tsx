@@ -2,7 +2,14 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconBot, IconCheck, IconCode, IconDownload, IconInfo, IconTrash2 } from '@/components/ui/icons';
+import {
+  IconBot,
+  IconCheck,
+  IconCode,
+  IconDownload,
+  IconInfo,
+  IconTrash2,
+} from '@/components/ui/icons';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import type { AuthFileItem } from '@/types';
 import { resolveAuthProvider } from '@/utils/quota';
@@ -16,7 +23,7 @@ import {
   isRuntimeOnlyAuthFile,
   resolveAuthFileStats,
   type QuotaProviderType,
-  type ResolvedTheme
+  type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
@@ -37,7 +44,7 @@ export type AuthFileCardProps = {
   onShowModels: (file: AuthFileItem) => void;
   onShowDetails: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
-  onOpenPrefixProxyEditor: (name: string) => void;
+  onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
   onToggleSelect: (name: string) => void;
@@ -67,7 +74,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     onOpenPrefixProxyEditor,
     onDelete,
     onToggleStatus,
-    onToggleSelect
+    onToggleSelect,
   } = props;
 
   const fileStats = resolveAuthFileStats(file, keyStats);
@@ -110,7 +117,9 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 type="button"
                 className={`${styles.selectionToggle} ${selected ? styles.selectionToggleActive : ''}`}
                 onClick={() => onToggleSelect(file.name)}
-                aria-label={selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')}
+                aria-label={
+                  selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')
+                }
                 aria-pressed={selected}
                 title={selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')}
               >
@@ -122,7 +131,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
               style={{
                 backgroundColor: typeColor.bg,
                 color: typeColor.text,
-                ...(typeColor.border ? { border: typeColor.border } : {})
+                ...(typeColor.border ? { border: typeColor.border } : {}),
               }}
             >
               {getTypeLabel(t, file.type || 'unknown')}
@@ -157,7 +166,11 @@ export function AuthFileCard(props: AuthFileCardProps) {
           <ProviderStatusBar statusData={statusData} styles={styles} />
 
           {showQuotaLayout && quotaType && (
-            <AuthFileQuotaSection file={file} quotaType={quotaType} disableControls={disableControls} />
+            <AuthFileQuotaSection
+              file={file}
+              quotaType={quotaType}
+              disableControls={disableControls}
+            />
           )}
 
           <div className={styles.cardActions}>
@@ -198,7 +211,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => onOpenPrefixProxyEditor(file.name)}
+                  onClick={() => onOpenPrefixProxyEditor(file)}
                   className={styles.iconButton}
                   title={t('auth_files.prefix_proxy_button')}
                   disabled={disableControls}
@@ -232,7 +245,9 @@ export function AuthFileCard(props: AuthFileCardProps) {
               </div>
             )}
             {isRuntimeOnly && (
-              <div className={styles.virtualBadge}>{t('auth_files.type_virtual') || '虚拟认证文件'}</div>
+              <div className={styles.virtualBadge}>
+                {t('auth_files.type_virtual') || '虚拟认证文件'}
+              </div>
             )}
           </div>
         </div>

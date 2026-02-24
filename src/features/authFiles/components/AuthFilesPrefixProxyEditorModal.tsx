@@ -3,9 +3,11 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import type {
   PrefixProxyEditorField,
-  PrefixProxyEditorState
+  PrefixProxyEditorFieldValue,
+  PrefixProxyEditorState,
 } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
@@ -16,7 +18,7 @@ export type AuthFilesPrefixProxyEditorModalProps = {
   dirty: boolean;
   onClose: () => void;
   onSave: () => void;
-  onChange: (field: PrefixProxyEditorField, value: string) => void;
+  onChange: (field: PrefixProxyEditorField, value: PrefixProxyEditorFieldValue) => void;
 };
 
 export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEditorModalProps) {
@@ -42,9 +44,7 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
           <Button
             onClick={onSave}
             loading={editor?.saving === true}
-            disabled={
-              disableControls || editor?.saving === true || !dirty || !editor?.json
-            }
+            disabled={disableControls || editor?.saving === true || !dirty || !editor?.json}
           >
             {t('common.save')}
           </Button>
@@ -114,6 +114,18 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                   disabled={disableControls || editor.saving || !editor.json}
                   onChange={(e) => onChange('disableCooling', e.target.value)}
                 />
+                {editor.isCodexFile && (
+                  <div className="form-group">
+                    <label>{t('ai_providers.codex_websockets_label')}</label>
+                    <ToggleSwitch
+                      checked={Boolean(editor.websocket)}
+                      disabled={disableControls || editor.saving || !editor.json}
+                      ariaLabel={t('ai_providers.codex_websockets_label')}
+                      onChange={(value) => onChange('websocket', value)}
+                    />
+                    <div className="hint">{t('ai_providers.codex_websockets_hint')}</div>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -122,4 +134,3 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
     </Modal>
   );
 }
-
