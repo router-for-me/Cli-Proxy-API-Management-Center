@@ -10,6 +10,79 @@
  * but are ignored by the YAML parser.
  */
 
+type OpenAISectionRange = {
+  start: number;
+  end: number;
+  entryIndent: number;
+};
+
+function getLeadingIndent(line: string): number {
+  const match = line.match(/^ */);
+  return match ? match[0].length : 0;
+}
+
+function isCommentedLine(line: string): boolean {
+  return /^\s*#/.test(line);
+}
+
+function stripCommentPrefixes(line: string): string {
+  let normalized = line;
+  while (/^# ?/.test(normalized)) {
+    normalized = normalized.replace(/^# ?/, '');
+  }
+  return normalized;
+}
+
+function getListItemIndent(line: string): number | null {
+  const match = line.match(/^(\s*)-\s/);
+  return match ? match[1].length : null;
+}
+
+function findOpenAISectionRange(lines: string[]): OpenAISectionRange | null {
+  let sectionStart = -1;
+  let sectionIndent = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    if (isCommentedLine(raw)) continue;
+
+    if (/^\s*openai-compatibility\s*:/.test(raw)) {
+      sectionStart = i + 1;
+      sectionIndent = getLeadingIndent(raw);
+      break;
+    }
+  }
+
+  if (sectionStart === -1) return null;
+
+  let sectionEnd = lines.length;
+  for (let i = sectionStart; i < lines.length; i++) {
+    const raw = lines[i];
+    if (raw.trim().length === 0) continue;
+    if (isCommentedLine(raw)) continue;
+
+    const indent = getLeadingIndent(raw);
+    if (indent <= sectionIndent) {
+      sectionEnd = i;
+      break;
+    }
+  }
+
+  return {
+    start: sectionStart,
+    end: sectionEnd,
+    entryIndent: sectionIndent + 2,
+  };
+}
+
+function isTopLevelEntryStart(line: string, entryIndent: number, commented: boolean): boolean {
+  if (commented && !isCommentedLine(line)) return false;
+
+  const effective = commented ? stripCommentPrefixes(line) : line;
+  const listIndent = getListItemIndent(effective);
+  return listIndent === entryIndent;
+}
+
 /**
  * Find the boundaries of a YAML list entry that contains `name: <targetName>`
  * within the `openai-compatibility:` section.
@@ -21,36 +94,21 @@ function findOpenAIEntryRange(
   targetName: string,
   commented: boolean
 ): [number, number] | null {
-  // Step 1: Find the `openai-compatibility:` section header
-  let sectionStart = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (/^openai-compatibility\s*:/.test(lines[i].trimStart())) {
-      sectionStart = i + 1;
-      break;
-    }
-  }
-  if (sectionStart === -1) return null;
+  const section = findOpenAISectionRange(lines);
+  if (!section) return null;
 
-  // Step 2: Determine section boundaries and collect entry ranges
-  // Entries are YAML list items starting with `  - ` (or `#  - ` if commented)
+  // Step 2: Collect top-level entry ranges inside the section.
   const entries: Array<{ start: number; end: number; name: string | null }> = [];
   let currentStart = -1;
 
-  for (let i = sectionStart; i < lines.length; i++) {
-    const raw = lines[i];
-
-    // If we hit a non-indented, non-blank, non-comment line → section ended
-    if (raw.length > 0 && !/^\s/.test(raw) && !/^#/.test(raw)) {
-      break;
-    }
-
-    const effective = commented ? raw.replace(/^#\s?/, '') : raw;
-
-    // Check if this line starts a new list item (e.g. `  - name:` or `  - base-url:`)
-    if (/^\s{1,4}-\s/.test(effective)) {
+  for (let i = section.start; i < section.end; i++) {
+    if (isTopLevelEntryStart(lines[i], section.entryIndent, commented)) {
       if (currentStart !== -1) {
-        // Close previous entry
-        entries.push({ start: currentStart, end: i, name: extractName(lines, currentStart, i, commented) });
+        entries.push({
+          start: currentStart,
+          end: i,
+          name: extractName(lines, currentStart, i, commented, section.entryIndent),
+        });
       }
       currentStart = i;
     }
@@ -58,20 +116,11 @@ function findOpenAIEntryRange(
 
   // Close last entry
   if (currentStart !== -1) {
-    let endIdx = lines.length;
-    for (let i = currentStart + 1; i < lines.length; i++) {
-      const raw = lines[i];
-      if (raw.length > 0 && !/^\s/.test(raw) && !/^#/.test(raw)) {
-        endIdx = i;
-        break;
-      }
-      const effective = commented ? raw.replace(/^#\s?/, '') : raw;
-      if (/^\s{1,4}-\s/.test(effective)) {
-        endIdx = i;
-        break;
-      }
-    }
-    entries.push({ start: currentStart, end: endIdx, name: extractName(lines, currentStart, endIdx, commented) });
+    entries.push({
+      start: currentStart,
+      end: section.end,
+      name: extractName(lines, currentStart, section.end, commented, section.entryIndent),
+    });
   }
 
   // Step 3: Find the entry matching targetName
@@ -88,10 +137,19 @@ function findOpenAIEntryRange(
 /**
  * Extract the `name` value from lines within [start, end).
  */
-function extractName(lines: string[], start: number, end: number, commented: boolean): string | null {
+function extractName(
+  lines: string[],
+  start: number,
+  end: number,
+  commented: boolean,
+  entryIndent: number
+): string | null {
+  const inlineNamePattern = new RegExp(`^\\s{${entryIndent}}-\\s*name\\s*:\\s*["']?([^"'\\n#]+)`);
+  const topLevelNamePattern = new RegExp(`^\\s{${entryIndent + 2}}name\\s*:\\s*["']?([^"'\\n#]+)`);
+
   for (let i = start; i < end; i++) {
-    const line = commented ? lines[i].replace(/^#\s?/, '') : lines[i];
-    const match = line.match(/\bname\s*:\s*["']?([^"'\n#]+)/);
+    const line = commented ? stripCommentPrefixes(lines[i]) : lines[i];
+    const match = line.match(inlineNamePattern) ?? line.match(topLevelNamePattern);
     if (match) {
       return match[1].trim();
     }
@@ -110,8 +168,8 @@ export function commentOpenAIEntry(yamlContent: string, providerName: string): s
 
   const [start, end] = range;
   for (let i = start; i < end; i++) {
-    // Only comment non-empty lines; preserve blank lines
-    if (lines[i].trim().length > 0) {
+    // Only comment non-empty lines that are not already comments; preserve blank lines
+    if (lines[i].trim().length > 0 && !isCommentedLine(lines[i])) {
       lines[i] = '# ' + lines[i];
     }
   }
@@ -130,8 +188,8 @@ export function uncommentOpenAIEntry(yamlContent: string, providerName: string):
 
   const [start, end] = range;
   for (let i = start; i < end; i++) {
-    // Remove leading `# ` or `#` (one level of commenting)
-    lines[i] = lines[i].replace(/^# ?/, '');
+    // Remove all stacked leading comment prefixes introduced by repeated comment toggles.
+    lines[i] = stripCommentPrefixes(lines[i]);
   }
 
   return lines.join('\n');
@@ -152,44 +210,24 @@ export function isOpenAIEntryCommented(yamlContent: string, providerName: string
 export function getCommentedOpenAIEntryNames(yamlContent: string): string[] {
   const lines = yamlContent.split('\n');
   const names: string[] = [];
+  const section = findOpenAISectionRange(lines);
+  if (!section) return names;
 
-  // Find section
-  let sectionStart = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (/^openai-compatibility\s*:/.test(lines[i].trimStart())) {
-      sectionStart = i + 1;
-      break;
-    }
-  }
-  if (sectionStart === -1) return names;
-
-  // Scan for commented list items
-  let currentStart = -1;
-  for (let i = sectionStart; i < lines.length; i++) {
-    const raw = lines[i];
-    if (raw.length > 0 && !/^\s/.test(raw) && !/^#/.test(raw)) break;
-
-    // Check if this is a commented list item start
-    const uncommented = raw.replace(/^#\s?/, '');
-    if (/^\s{1,4}-\s/.test(uncommented) && /^#/.test(raw)) {
-      if (currentStart !== -1) {
-        const name = extractName(lines, currentStart, i, true);
-        if (name && !isActiveEntry(lines, name)) names.push(name);
-      }
-      currentStart = i;
-    } else if (/^\s{1,4}-\s/.test(raw) && !/^#/.test(raw)) {
-      // Active (uncommented) entry start - close any pending commented entry
-      if (currentStart !== -1) {
-        const name = extractName(lines, currentStart, i, true);
-        if (name && !isActiveEntry(lines, name)) names.push(name);
-        currentStart = -1;
-      }
+  const starts: Array<{ index: number; commented: boolean }> = [];
+  for (let i = section.start; i < section.end; i++) {
+    const effective = stripCommentPrefixes(lines[i]);
+    const listIndent = getListItemIndent(effective);
+    if (listIndent === section.entryIndent) {
+      starts.push({ index: i, commented: isCommentedLine(lines[i]) });
     }
   }
 
-  // Close last entry
-  if (currentStart !== -1) {
-    const name = extractName(lines, currentStart, lines.length, true);
+  for (let i = 0; i < starts.length; i++) {
+    const current = starts[i];
+    if (!current.commented) continue;
+
+    const end = i + 1 < starts.length ? starts[i + 1].index : section.end;
+    const name = extractName(lines, current.index, end, true, section.entryIndent);
     if (name && !isActiveEntry(lines, name)) names.push(name);
   }
 
@@ -200,14 +238,5 @@ export function getCommentedOpenAIEntryNames(yamlContent: string): string[] {
  * Check if a name exists as an active (non-commented) entry.
  */
 function isActiveEntry(lines: string[], name: string): boolean {
-  const normalizedName = name.trim().toLowerCase();
-  // Simple check: find an uncommented line with this name
-  for (const line of lines) {
-    if (/^#/.test(line)) continue;
-    const match = line.match(/\bname\s*:\s*["']?([^"'\n#]+)/);
-    if (match && match[1].trim().toLowerCase() === normalizedName) {
-      return true;
-    }
-  }
-  return false;
+  return findOpenAIEntryRange(lines, name, false) !== null;
 }
