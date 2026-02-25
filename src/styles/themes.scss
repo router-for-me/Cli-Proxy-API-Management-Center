@@ -109,3 +109,56 @@
   --radius-md: 8px;
   --accent-tertiary: var(--bg-tertiary);
 }
+
+// 纯白主题
+[data-theme='light-pure'] {
+  --bg-secondary: #ffffff; // 纯白背景
+  --bg-primary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-hover: var(--bg-tertiary);
+  --bg-quinary: #ffffff;
+  --bg-error-light: rgba(198, 87, 70, 0.1);
+
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
+  --text-quaternary: #d1d5db;
+  --text-muted: var(--text-tertiary);
+
+  --border-color: #e5e7eb;
+  --border-secondary: var(--border-color);
+  --border-primary: #d1d5db;
+  --border-hover: #9ca3af;
+
+  --primary-color: #8b8680;
+  --primary-hover: #7f7a74;
+  --primary-active: #726d67;
+  --primary-contrast: #ffffff;
+
+  --success-color: #10b981;
+  --warning-color: #c65746;
+  --error-color: #c65746;
+  --danger-color: var(--error-color);
+  --info-color: var(--primary-color);
+
+  --warning-bg: rgba(198, 87, 70, 0.12);
+  --warning-border: rgba(198, 87, 70, 0.35);
+  --warning-text: var(--warning-color);
+
+  --success-badge-bg: #d1fae5;
+  --success-badge-text: #065f46;
+  --success-badge-border: #6ee7b7;
+
+  --failure-badge-bg: rgba(198, 87, 70, 0.14);
+  --failure-badge-text: #8a3a30;
+  --failure-badge-border: rgba(198, 87, 70, 0.35);
+
+  --count-badge-bg: rgba(139, 134, 128, 0.18);
+  --count-badge-text: var(--primary-active);
+
+  --shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+
+  --radius-md: 8px;
+  --accent-tertiary: var(--bg-tertiary);
+}

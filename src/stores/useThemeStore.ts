@@ -8,7 +8,7 @@ import { persist } from 'zustand/middleware';
 import type { Theme } from '@/types';
 import { STORAGE_KEY_THEME } from '@/utils/constants';
 
-type ResolvedTheme = 'light' | 'dark';
+type ResolvedTheme = 'light' | 'light-pure' | 'dark';
 
 interface ThemeState {
   theme: Theme;
@@ -28,6 +28,8 @@ const getSystemTheme = (): ResolvedTheme => {
 const applyTheme = (resolved: ResolvedTheme) => {
   if (resolved === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
+  } else if (resolved === 'light-pure') {
+    document.documentElement.setAttribute('data-theme', 'light-pure');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
@@ -47,7 +49,7 @@ export const useThemeStore = create<ThemeState>()(
 
       cycleTheme: () => {
         const { theme, setTheme } = get();
-        const order: Theme[] = ['light', 'dark', 'auto'];
+        const order: Theme[] = ['light', 'light-pure', 'dark', 'auto'];
         const currentIndex = order.indexOf(theme);
         const nextTheme = order[(currentIndex + 1) % order.length];
         setTheme(nextTheme);
