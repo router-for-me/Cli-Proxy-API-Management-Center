@@ -16,9 +16,14 @@ import {
   withoutDisableAllModelsRule,
 } from '@/components/providers/utils';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { ampcodeApi, providersApi } from '@/services/api';
+import { ampcodeApi, configFileApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import {
+  commentOpenAIEntry,
+  getCommentedOpenAIEntryNames,
+  uncommentOpenAIEntry,
+} from '@/utils/yamlToggle';
 import styles from './AiProvidersPage.module.scss';
 
 export function AiProvidersPage() {
@@ -53,6 +58,7 @@ export function AiProvidersPage() {
   const [openaiProviders, setOpenaiProviders] = useState<OpenAIProviderConfig[]>(
     () => config?.openaiCompatibility || []
   );
+  const [disabledOpenAINames, setDisabledOpenAINames] = useState<string[]>([]);
 
   const [configSwitchingKey, setConfigSwitchingKey] = useState<string | null>(null);
 
@@ -74,10 +80,11 @@ export function AiProvidersPage() {
     }
     setError('');
     try {
-      const [configResult, vertexResult, ampcodeResult] = await Promise.allSettled([
+      const [configResult, vertexResult, ampcodeResult, yamlResult] = await Promise.allSettled([
         fetchConfig(),
         providersApi.getVertexConfigs(),
         ampcodeApi.getAmpcode(),
+        configFileApi.fetchConfigYaml(),
       ]);
 
       if (configResult.status !== 'fulfilled') {
@@ -100,6 +107,10 @@ export function AiProvidersPage() {
       if (ampcodeResult.status === 'fulfilled') {
         updateConfigValue('ampcode', ampcodeResult.value);
         clearCache('ampcode');
+      }
+
+      if (yamlResult.status === 'fulfilled') {
+        setDisabledOpenAINames(getCommentedOpenAIEntryNames(yamlResult.value));
       }
     } catch (err: unknown) {
       const message = getErrorMessage(err) || t('notification.refresh_failed');
@@ -255,12 +266,45 @@ export function AiProvidersPage() {
     }
   };
 
+  const handleOpenAIToggle = async (name: string, enabled: boolean) => {
+    const switchingKey = `openai:${name}`;
+    setConfigSwitchingKey(switchingKey);
+    try {
+      const yaml = await configFileApi.fetchConfigYaml();
+      const nextYaml = enabled
+        ? uncommentOpenAIEntry(yaml, name)
+        : commentOpenAIEntry(yaml, name);
+
+      if (nextYaml === null) {
+        throw new Error(t('notification.provider_not_found_in_yaml'));
+      }
+
+      await configFileApi.saveConfigYaml(nextYaml);
+      setDisabledOpenAINames(getCommentedOpenAIEntryNames(nextYaml));
+
+      // Refresh data store
+      await fetchConfig();
+
+      showNotification(
+        enabled ? t('notification.config_enabled') : t('notification.config_disabled'),
+        'success'
+      );
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+    } finally {
+      setConfigSwitchingKey(null);
+    }
+  };
+
   const deleteProviderEntry = async (type: 'codex' | 'claude', index: number) => {
     const source = type === 'codex' ? codexConfigs : claudeConfigs;
     const entry = source[index];
     if (!entry) return;
     showConfirmation({
-      title: t(`ai_providers.${type}_delete_title`, { defaultValue: `Delete ${type === 'codex' ? 'Codex' : 'Claude'} Config` }),
+      title: t(`ai_providers.${type}_delete_title`, {
+        defaultValue: `Delete ${type === 'codex' ? 'Codex' : 'Claude'} Config`,
+      }),
       message: t(`ai_providers.${type}_delete_confirm`),
       variant: 'danger',
       confirmText: t('common.confirm'),
@@ -416,6 +460,7 @@ export function AiProvidersPage() {
         <div id="provider-openai">
           <OpenAISection
             configs={openaiProviders}
+            disabledNames={disabledOpenAINames}
             keyStats={keyStats}
             usageDetails={usageDetails}
             loading={loading}
@@ -425,6 +470,7 @@ export function AiProvidersPage() {
             onAdd={() => openEditor('/ai-providers/openai/new')}
             onEdit={(index) => openEditor(`/ai-providers/openai/${index}`)}
             onDelete={deleteOpenai}
+            onToggle={handleOpenAIToggle}
           />
         </div>
       </div>

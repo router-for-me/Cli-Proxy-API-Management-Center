@@ -2,6 +2,7 @@ import { Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconCheck, IconX } from '@/components/ui/icons';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
@@ -20,6 +21,7 @@ import { getOpenAIProviderStats, getStatsBySource } from '../utils';
 
 interface OpenAISectionProps {
   configs: OpenAIProviderConfig[];
+  disabledNames?: string[];
   keyStats: KeyStats;
   usageDetails: UsageDetail[];
   loading: boolean;
@@ -29,10 +31,12 @@ interface OpenAISectionProps {
   onAdd: () => void;
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
+  onToggle?: (name: string, enabled: boolean) => void;
 }
 
 export function OpenAISection({
   configs,
+  disabledNames = [],
   keyStats,
   usageDetails,
   loading,
@@ -42,9 +46,21 @@ export function OpenAISection({
   onAdd,
   onEdit,
   onDelete,
+  onToggle,
 }: OpenAISectionProps) {
   const { t } = useTranslation();
   const actionsDisabled = disableControls || loading || isSwitching;
+
+  const allItems = useMemo(() => {
+    const active = configs.map(c => ({ ...c, disabled: false }));
+    const disabled = disabledNames.map(name => ({
+      name,
+      disabled: true,
+      baseUrl: '',
+      apiKeyEntries: [],
+    } as unknown as OpenAIProviderConfig & { disabled: boolean }));
+    return [...active, ...disabled].sort((a, b) => a.name.localeCompare(b.name));
+  }, [configs, disabledNames]);
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
@@ -84,16 +100,45 @@ export function OpenAISection({
           </Button>
         }
       >
-        <ProviderList<OpenAIProviderConfig>
-          items={configs}
+        <ProviderList<OpenAIProviderConfig & { disabled: boolean }>
+          items={allItems}
           loading={loading}
-          keyField={(_, index) => `openai-provider-${index}`}
+          keyField={(item) => `openai-provider-${item.name}`}
           emptyTitle={t('ai_providers.openai_empty_title')}
           emptyDescription={t('ai_providers.openai_empty_desc')}
-          onEdit={onEdit}
-          onDelete={onDelete}
+          onEdit={(idx) => {
+            const item = allItems[idx];
+            if (item.disabled) return;
+            const originalIdx = configs.findIndex(c => c.name === item.name);
+            onEdit(originalIdx);
+          }}
+          onDelete={(idx) => {
+            const item = allItems[idx];
+            if (item.disabled) return;
+            const originalIdx = configs.findIndex(c => c.name === item.name);
+            onDelete(originalIdx);
+          }}
           actionsDisabled={actionsDisabled}
+          getRowDisabled={(item) => item.disabled}
+          renderExtraActions={(item) => (
+            <ToggleSwitch
+              label={t('ai_providers.config_toggle_label')}
+              checked={!item.disabled}
+              disabled={actionsDisabled}
+              onChange={(value) => onToggle?.(item.name, value)}
+            />
+          )}
           renderContent={(item) => {
+            if (item.disabled) {
+              return (
+                <Fragment>
+                  <div className="item-title">{item.name}</div>
+                  <div className="status-badge warning" style={{ marginTop: 8, marginBottom: 0 }}>
+                    {t('ai_providers.config_disabled_badge')}
+                  </div>
+                </Fragment>
+              );
+            }
             const stats = getOpenAIProviderStats(item.apiKeyEntries, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});
             const apiKeyEntries = item.apiKeyEntries || [];
