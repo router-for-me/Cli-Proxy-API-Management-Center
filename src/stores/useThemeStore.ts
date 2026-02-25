@@ -8,7 +8,8 @@ import { persist } from 'zustand/middleware';
 import type { Theme } from '@/types';
 import { STORAGE_KEY_THEME } from '@/utils/constants';
 
-type ResolvedTheme = 'light' | 'light-pure' | 'dark';
+// 保持底层状态只有 light 和 dark，解决组件报错
+type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeState {
   theme: Theme;
@@ -25,11 +26,12 @@ const getSystemTheme = (): ResolvedTheme => {
   return 'light';
 };
 
-const applyTheme = (resolved: ResolvedTheme) => {
-  if (resolved === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  } else if (resolved === 'light-pure') {
+// 核心修改点：在这里处理纯白主题的 CSS 挂载
+const applyTheme = (theme: Theme, resolved: ResolvedTheme) => {
+  if (theme === 'light-pure') {
     document.documentElement.setAttribute('data-theme', 'light-pure');
+  } else if (resolved === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
@@ -42,13 +44,15 @@ export const useThemeStore = create<ThemeState>()(
       resolvedTheme: 'light',
 
       setTheme: (theme) => {
-        const resolved: ResolvedTheme = theme === 'auto' ? getSystemTheme() : theme;
-        applyTheme(resolved);
+        // 如果是纯白主题，它的底层 resolved 状态依然算作 'light'
+        const resolved: ResolvedTheme = theme === 'auto' ? getSystemTheme() : (theme === 'dark' ? 'dark' : 'light');
+        applyTheme(theme, resolved);
         set({ theme, resolvedTheme: resolved });
       },
 
       cycleTheme: () => {
         const { theme, setTheme } = get();
+        // 在这里加入纯白主题的循环顺序
         const order: Theme[] = ['light', 'light-pure', 'dark', 'auto'];
         const currentIndex = order.indexOf(theme);
         const nextTheme = order[(currentIndex + 1) % order.length];
@@ -71,7 +75,7 @@ export const useThemeStore = create<ThemeState>()(
           const { theme: currentTheme } = get();
           if (currentTheme === 'auto') {
             const resolved = getSystemTheme();
-            applyTheme(resolved);
+            applyTheme(currentTheme, resolved);
             set({ resolvedTheme: resolved });
           }
         };
