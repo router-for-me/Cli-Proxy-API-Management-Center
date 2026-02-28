@@ -15,66 +15,189 @@ type DiffModalProps = {
   loading?: boolean;
 };
 
-type DiffChunkCard = {
-  id: string;
-  current: DiffSide;
-  modified: DiffSide;
-};
+type UnifiedLineType = 'context' | 'addition' | 'deletion';
 
-type LineRange = {
-  start: number;
-  end: number;
-};
-
-type DiffSideLine = {
-  lineNumber: number;
+type UnifiedLine = {
+  type: UnifiedLineType;
+  oldNum: number | null;
+  newNum: number | null;
   text: string;
-  changed: boolean;
 };
 
-type DiffSide = {
-  changedRangeLabel: string;
-  contextRangeLabel: string;
-  lines: DiffSideLine[];
+type Hunk = {
+  oldStart: number;
+  oldCount: number;
+  newStart: number;
+  newCount: number;
+  lines: UnifiedLine[];
 };
 
-const DIFF_CONTEXT_LINES = 2;
+type DiffResult = {
+  hunks: Hunk[];
+  additions: number;
+  deletions: number;
+};
+
+const DIFF_CONTEXT_LINES = 3;
 
 const clampPos = (doc: Text, pos: number) => Math.max(0, Math.min(pos, doc.length));
 
-const getLineRangeLabel = (range: LineRange): string => {
-  return range.start === range.end ? String(range.start) : `${range.start}-${range.end}`;
-};
+function computeUnifiedDiff(original: string, modified: string): DiffResult {
+  const oldDoc = Text.of(original.split('\n'));
+  const newDoc = Text.of(modified.split('\n'));
+  const chunks = Chunk.build(oldDoc, newDoc);
 
-const getChangedLineRange = (doc: Text, from: number, to: number): LineRange => {
-  const start = clampPos(doc, from);
-  const end = clampPos(doc, to);
-  if (start === end) {
-    const linePos = Math.min(start, doc.length);
-    const anchorLine = doc.lineAt(linePos).number;
-    return { start: anchorLine, end: anchorLine };
-  }
-  const startLine = doc.lineAt(start).number;
-  const endLine = doc.lineAt(Math.max(start, end - 1)).number;
-  return { start: startLine, end: endLine };
-};
+  let totalAdditions = 0;
+  let totalDeletions = 0;
 
-const expandContextRange = (doc: Text, range: LineRange): LineRange => ({
-  start: Math.max(1, range.start - DIFF_CONTEXT_LINES),
-  end: Math.min(doc.lines, range.end + DIFF_CONTEXT_LINES)
-});
+  const hunks: Hunk[] = chunks.map((chunk) => {
+    const lines: UnifiedLine[] = [];
 
-const buildSideLines = (doc: Text, contextRange: LineRange, changedRange: LineRange): DiffSideLine[] => {
-  const lines: DiffSideLine[] = [];
-  for (let lineNumber = contextRange.start; lineNumber <= contextRange.end; lineNumber += 1) {
-    lines.push({
-      lineNumber,
-      text: doc.line(lineNumber).text,
-      changed: lineNumber >= changedRange.start && lineNumber <= changedRange.end
-    });
-  }
-  return lines;
-};
+    const hasDel = chunk.fromA < chunk.toA;
+    const hasAdd = chunk.fromB < chunk.toB;
+
+    // Collect deleted lines from old doc
+    const delLines: { num: number; text: string }[] = [];
+    if (hasDel) {
+      const startLine = oldDoc.lineAt(chunk.fromA).number;
+      const endLine = oldDoc.lineAt(chunk.toA - 1).number;
+      for (let i = startLine; i <= endLine; i++) {
+        delLines.push({ num: i, text: oldDoc.line(i).text });
+      }
+    }
+
+    // Collect added lines from new doc
+    const addLines: { num: number; text: string }[] = [];
+    if (hasAdd) {
+      const startLine = newDoc.lineAt(chunk.fromB).number;
+      const endLine = newDoc.lineAt(chunk.toB - 1).number;
+      for (let i = startLine; i <= endLine; i++) {
+        addLines.push({ num: i, text: newDoc.line(i).text });
+      }
+    }
+
+    totalDeletions += delLines.length;
+    totalAdditions += addLines.length;
+
+    // Compute context boundaries
+    let ctxBeforeEndOld: number;
+    let ctxAfterStartOld: number;
+    let ctxBeforeEndNew: number;
+    let ctxAfterStartNew: number;
+
+    if (hasDel) {
+      ctxBeforeEndOld = delLines[0].num - 1;
+      ctxAfterStartOld = delLines[delLines.length - 1].num + 1;
+    } else {
+      const anchorPos = clampPos(oldDoc, chunk.fromA);
+      const lineInfo = oldDoc.lineAt(anchorPos);
+      if (chunk.fromA === lineInfo.from) {
+        ctxBeforeEndOld = lineInfo.number - 1;
+        ctxAfterStartOld = lineInfo.number;
+      } else {
+        ctxBeforeEndOld = lineInfo.number;
+        ctxAfterStartOld = lineInfo.number + 1;
+      }
+    }
+
+    if (hasAdd) {
+      ctxBeforeEndNew = addLines[0].num - 1;
+      ctxAfterStartNew = addLines[addLines.length - 1].num + 1;
+    } else {
+      const anchorPos = clampPos(newDoc, chunk.fromB);
+      const lineInfo = newDoc.lineAt(anchorPos);
+      if (chunk.fromB === lineInfo.from) {
+        ctxBeforeEndNew = lineInfo.number - 1;
+        ctxAfterStartNew = lineInfo.number;
+      } else {
+        ctxBeforeEndNew = lineInfo.number;
+        ctxAfterStartNew = lineInfo.number + 1;
+      }
+    }
+
+    // Context before
+    const ctxBeforeCount = Math.min(
+      DIFF_CONTEXT_LINES,
+      Math.max(0, ctxBeforeEndOld),
+      Math.max(0, ctxBeforeEndNew)
+    );
+
+    for (let i = ctxBeforeCount; i > 0; i--) {
+      const oldNum = ctxBeforeEndOld - i + 1;
+      const newNum = ctxBeforeEndNew - i + 1;
+      if (oldNum >= 1 && newNum >= 1 && oldNum <= oldDoc.lines) {
+        lines.push({
+          type: 'context',
+          oldNum,
+          newNum,
+          text: oldDoc.line(oldNum).text
+        });
+      }
+    }
+
+    // Deletions
+    for (const del of delLines) {
+      lines.push({ type: 'deletion', oldNum: del.num, newNum: null, text: del.text });
+    }
+
+    // Additions
+    for (const add of addLines) {
+      lines.push({ type: 'addition', oldNum: null, newNum: add.num, text: add.text });
+    }
+
+    // Context after
+    const ctxAfterCountOld = Math.max(
+      0,
+      Math.min(DIFF_CONTEXT_LINES, oldDoc.lines - ctxAfterStartOld + 1)
+    );
+    const ctxAfterCountNew = Math.max(
+      0,
+      Math.min(DIFF_CONTEXT_LINES, newDoc.lines - ctxAfterStartNew + 1)
+    );
+    const ctxAfterCount = Math.min(ctxAfterCountOld, ctxAfterCountNew);
+
+    for (let i = 0; i < ctxAfterCount; i++) {
+      const oldNum = ctxAfterStartOld + i;
+      const newNum = ctxAfterStartNew + i;
+      if (oldNum >= 1 && oldNum <= oldDoc.lines && newNum >= 1 && newNum <= newDoc.lines) {
+        lines.push({
+          type: 'context',
+          oldNum,
+          newNum,
+          text: oldDoc.line(oldNum).text
+        });
+      }
+    }
+
+    // Compute hunk header values
+    const firstOld = lines.find((l) => l.oldNum !== null)?.oldNum ?? 1;
+    const firstNew = lines.find((l) => l.newNum !== null)?.newNum ?? 1;
+    const oldCount = lines.filter((l) => l.type !== 'addition').length;
+    const newCount = lines.filter((l) => l.type !== 'deletion').length;
+
+    return { oldStart: firstOld, oldCount, newStart: firstNew, newCount, lines };
+  });
+
+  return { hunks, additions: totalAdditions, deletions: totalDeletions };
+}
+
+const STAT_BLOCKS = 5;
+
+function StatBar({ additions, deletions }: { additions: number; deletions: number }) {
+  const total = additions + deletions;
+  if (total === 0) return null;
+  const addBlocks = Math.round((additions / total) * STAT_BLOCKS);
+  return (
+    <span className={styles.statBar}>
+      {Array.from({ length: STAT_BLOCKS }, (_, i) => (
+        <span
+          key={i}
+          className={`${styles.statBlock} ${i < addBlocks ? styles.statBlockAdd : styles.statBlockDel}`}
+        />
+      ))}
+    </span>
+  );
+}
 
 export function DiffModal({
   open,
@@ -86,32 +209,10 @@ export function DiffModal({
 }: DiffModalProps) {
   const { t } = useTranslation();
 
-  const diffCards = useMemo<DiffChunkCard[]>(() => {
-    const currentDoc = Text.of(original.split('\n'));
-    const modifiedDoc = Text.of(modified.split('\n'));
-    const chunks = Chunk.build(currentDoc, modifiedDoc);
-
-    return chunks.map((chunk, index) => {
-      const currentChangedRange = getChangedLineRange(currentDoc, chunk.fromA, chunk.toA);
-      const modifiedChangedRange = getChangedLineRange(modifiedDoc, chunk.fromB, chunk.toB);
-      const currentContextRange = expandContextRange(currentDoc, currentChangedRange);
-      const modifiedContextRange = expandContextRange(modifiedDoc, modifiedChangedRange);
-
-      return {
-        id: `${index}-${chunk.fromA}-${chunk.toA}-${chunk.fromB}-${chunk.toB}`,
-        current: {
-          changedRangeLabel: getLineRangeLabel(currentChangedRange),
-          contextRangeLabel: getLineRangeLabel(currentContextRange),
-          lines: buildSideLines(currentDoc, currentContextRange, currentChangedRange)
-        },
-        modified: {
-          changedRangeLabel: getLineRangeLabel(modifiedChangedRange),
-          contextRangeLabel: getLineRangeLabel(modifiedContextRange),
-          lines: buildSideLines(modifiedDoc, modifiedContextRange, modifiedChangedRange)
-        }
-      };
-    });
-  }, [modified, original]);
+  const diff = useMemo<DiffResult>(
+    () => computeUnifiedDiff(original, modified),
+    [original, modified]
+  );
 
   return (
     <Modal
@@ -133,61 +234,73 @@ export function DiffModal({
       }
     >
       <div className={styles.content}>
-        {diffCards.length === 0 ? (
+        {diff.hunks.length === 0 ? (
           <div className={styles.emptyState}>{t('config_management.diff.no_changes')}</div>
         ) : (
-          <div className={styles.diffList}>
-            {diffCards.map((card, index) => (
-              <article key={card.id} className={styles.diffCard}>
-                <div className={styles.diffCardHeader}>#{index + 1}</div>
-                <div className={styles.diffColumns}>
-                  <section className={styles.diffColumn}>
-                    <header className={styles.diffColumnHeader}>
-                      <span>{t('config_management.diff.current')}</span>
-                      <span className={styles.lineMeta}>
-                        <span className={styles.lineRange}>L{card.current.changedRangeLabel}</span>
-                        <span className={styles.contextRange}>
-                          ±{DIFF_CONTEXT_LINES}: L{card.current.contextRangeLabel}
-                        </span>
+          <div className={styles.diffContainer}>
+            <div className={styles.fileHeader}>
+              <svg className={styles.fileIcon} viewBox="0 0 16 16" width="16" height="16">
+                <path
+                  fillRule="evenodd"
+                  d="M3.75 1.5a.25.25 0 00-.25.25v11.5c0 .138.112.25.25.25h8.5a.25.25 0 00.25-.25V6H9.75A1.75 1.75 0 018 4.25V1.5H3.75zm5.75.56v2.19c0 .138.112.25.25.25h2.19L9.5 2.06zM2 1.75C2 .784 2.784 0 3.75 0h5.086c.464 0 .909.184 1.237.513l3.414 3.414c.329.328.513.773.513 1.237v8.086A1.75 1.75 0 0112.25 15h-8.5A1.75 1.75 0 012 13.25V1.75z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span className={styles.fileName}>config.yaml</span>
+              <span className={styles.fileStats}>
+                <span className={styles.statAdditions}>+{diff.additions}</span>
+                <span className={styles.statDeletions}>-{diff.deletions}</span>
+                <StatBar additions={diff.additions} deletions={diff.deletions} />
+              </span>
+            </div>
+
+            <div className={styles.diffBody}>
+              {diff.hunks.map((hunk, hunkIdx) => (
+                <div key={hunkIdx} className={styles.hunk}>
+                  <div className={styles.hunkHeader}>
+                    <span className={styles.hunkGutter}>
+                      <svg
+                        className={styles.hunkExpandIcon}
+                        viewBox="0 0 16 16"
+                        width="12"
+                        height="12"
+                      >
+                        <path
+                          d="M8.177 1.677l2.896 2.896a.25.25 0 01-.177.427H8.75v1.25a.75.75 0 01-1.5 0V5H5.104a.25.25 0 01-.177-.427l2.896-2.896a.25.25 0 01.354 0zM7.25 11.75a.75.75 0 011.5 0V13h2.146a.25.25 0 01.177.427l-2.896 2.896a.25.25 0 01-.354 0l-2.896-2.896A.25.25 0 015.104 13H7.25v-1.25z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </span>
+                    <span className={styles.hunkGutter} />
+                    <span className={styles.hunkText}>
+                      @@ -{hunk.oldStart},{hunk.oldCount} +{hunk.newStart},{hunk.newCount} @@
+                    </span>
+                  </div>
+
+                  {hunk.lines.map((line, lineIdx) => (
+                    <div
+                      key={`${hunkIdx}-${lineIdx}`}
+                      className={`${styles.diffLine} ${styles[line.type]}`}
+                    >
+                      <span
+                        className={`${styles.lineNum} ${line.oldNum === null ? styles.lineNumEmpty : ''}`}
+                      >
+                        {line.oldNum ?? ''}
                       </span>
-                    </header>
-                    <div className={styles.codeList}>
-                      {card.current.lines.map((line) => (
-                        <div
-                          key={`${card.id}-a-${line.lineNumber}`}
-                          className={`${styles.codeLine} ${line.changed ? styles.codeLineChanged : ''}`}
-                        >
-                          <span className={styles.codeLineNumber}>{line.lineNumber}</span>
-                          <code className={styles.codeLineText}>{line.text || ' '}</code>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                  <section className={styles.diffColumn}>
-                    <header className={styles.diffColumnHeader}>
-                      <span>{t('config_management.diff.modified')}</span>
-                      <span className={styles.lineMeta}>
-                        <span className={styles.lineRange}>L{card.modified.changedRangeLabel}</span>
-                        <span className={styles.contextRange}>
-                          ±{DIFF_CONTEXT_LINES}: L{card.modified.contextRangeLabel}
-                        </span>
+                      <span
+                        className={`${styles.lineNum} ${line.newNum === null ? styles.lineNumEmpty : ''}`}
+                      >
+                        {line.newNum ?? ''}
                       </span>
-                    </header>
-                    <div className={styles.codeList}>
-                      {card.modified.lines.map((line) => (
-                        <div
-                          key={`${card.id}-b-${line.lineNumber}`}
-                          className={`${styles.codeLine} ${line.changed ? styles.codeLineChanged : ''}`}
-                        >
-                          <span className={styles.codeLineNumber}>{line.lineNumber}</span>
-                          <code className={styles.codeLineText}>{line.text || ' '}</code>
-                        </div>
-                      ))}
+                      <span className={styles.linePrefix}>
+                        {line.type === 'deletion' ? '-' : line.type === 'addition' ? '+' : ' '}
+                      </span>
+                      <code className={styles.lineText}>{line.text || ' '}</code>
                     </div>
-                  </section>
+                  ))}
                 </div>
-              </article>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>

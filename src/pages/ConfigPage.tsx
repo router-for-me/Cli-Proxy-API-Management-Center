@@ -5,7 +5,7 @@ import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { yaml } from '@codemirror/lang-yaml';
 import { search, searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { keymap } from '@codemirror/view';
-import { parse as parseYaml } from 'yaml';
+import { parse as parseYaml, parseDocument } from 'yaml';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -127,7 +127,18 @@ export function ConfigPage() {
       const nextMergedYaml = activeTab === 'source' ? content : applyVisualChangesToYaml(content);
       const latestServerYaml = await configFileApi.fetchConfigYaml();
 
-      if (latestServerYaml === nextMergedYaml) {
+      // In visual mode, applyVisualChangesToYaml re-serializes YAML via parseDocument → toString,
+      // which may reformat comments/whitespace. Normalize the server YAML through the same pipeline
+      // so the diff only shows actual value changes, not cosmetic reformatting.
+      let diffOriginal = latestServerYaml;
+      if (activeTab !== 'source') {
+        try {
+          const doc = parseDocument(latestServerYaml);
+          diffOriginal = doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
+        } catch { /* keep raw on parse failure */ }
+      }
+
+      if (diffOriginal === nextMergedYaml) {
         setDirty(false);
         setContent(latestServerYaml);
         setServerYaml(latestServerYaml);
@@ -137,7 +148,7 @@ export function ConfigPage() {
         return;
       }
 
-      setServerYaml(latestServerYaml);
+      setServerYaml(diffOriginal);
       setMergedYaml(nextMergedYaml);
       setDiffModalOpen(true);
     } catch (err: unknown) {
