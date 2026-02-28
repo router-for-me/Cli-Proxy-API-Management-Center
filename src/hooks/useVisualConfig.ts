@@ -78,7 +78,11 @@ function setStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown): void
     doc.setIn(path, safe);
     return;
   }
-  if (docHas(doc, path)) doc.deleteIn(path);
+  // Preserve existing empty-string keys to avoid dropping template blocks/comments.
+  // Only keep the key when it already exists in the YAML.
+  if (docHas(doc, path)) {
+    doc.setIn(path, '');
+  }
 }
 
 function setIntFromStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown): void {

@@ -123,7 +123,8 @@ export function ConfigPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const nextMergedYaml = applyVisualChangesToYaml(content);
+      // In source mode, save exactly what the user edited. In visual mode, materialize visual changes into YAML.
+      const nextMergedYaml = activeTab === 'source' ? content : applyVisualChangesToYaml(content);
       const latestServerYaml = await configFileApi.fetchConfigYaml();
 
       if (latestServerYaml === nextMergedYaml) {
@@ -156,10 +157,13 @@ export function ConfigPage() {
     if (tab === activeTab) return;
 
     if (tab === 'source') {
-      const nextContent = applyVisualChangesToYaml(content);
-      if (nextContent !== content) {
-        setContent(nextContent);
-        setDirty(true);
+      // Only rewrite YAML when there are pending visual changes; otherwise preserve raw YAML + comments.
+      if (visualDirty) {
+        const nextContent = applyVisualChangesToYaml(content);
+        if (nextContent !== content) {
+          setContent(nextContent);
+          setDirty(true);
+        }
       }
     } else {
       loadVisualValuesFromYaml(content);
@@ -167,7 +171,7 @@ export function ConfigPage() {
 
     setActiveTab(tab);
     localStorage.setItem('config-management:tab', tab);
-  }, [activeTab, applyVisualChangesToYaml, content, loadVisualValuesFromYaml]);
+  }, [activeTab, applyVisualChangesToYaml, content, loadVisualValuesFromYaml, visualDirty]);
 
   // Search functionality
   const performSearch = useCallback((query: string, direction: 'next' | 'prev' = 'next') => {
