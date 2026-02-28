@@ -184,9 +184,9 @@ export function buildAntigravityQuotaGroups(
   models: AntigravityModelsPayload
 ): AntigravityQuotaGroup[] {
   const groups: AntigravityQuotaGroup[] = [];
-  let geminiProResetTime: string | undefined;
-  const [claudeDef, geminiProDef, flashDef, flashLiteDef, cuDef, geminiFlashDef, imageDef] =
-    ANTIGRAVITY_QUOTA_GROUPS;
+  const definitions = new Map(
+    ANTIGRAVITY_QUOTA_GROUPS.map((definition) => [definition.id, definition] as const)
+  );
 
   const buildGroup = (
     def: AntigravityQuotaGroupDefinition,
@@ -227,41 +227,28 @@ export function buildAntigravityQuotaGroups(
     };
   };
 
-  const claudeGroup = buildGroup(claudeDef);
-  if (claudeGroup) {
-    groups.push(claudeGroup);
-  }
+  const appendGroup = (
+    id: string,
+    overrideResetTime?: string
+  ): AntigravityQuotaGroup | null => {
+    const definition = definitions.get(id);
+    if (!definition) return null;
+    const group = buildGroup(definition, overrideResetTime);
+    if (group) {
+      groups.push(group);
+    }
+    return group;
+  };
 
-  const geminiProGroup = buildGroup(geminiProDef);
-  if (geminiProGroup) {
-    geminiProResetTime = geminiProGroup.resetTime;
-    groups.push(geminiProGroup);
-  }
-
-  const flashGroup = buildGroup(flashDef);
-  if (flashGroup) {
-    groups.push(flashGroup);
-  }
-
-  const flashLiteGroup = buildGroup(flashLiteDef);
-  if (flashLiteGroup) {
-    groups.push(flashLiteGroup);
-  }
-
-  const cuGroup = buildGroup(cuDef);
-  if (cuGroup) {
-    groups.push(cuGroup);
-  }
-
-  const geminiFlashGroup = buildGroup(geminiFlashDef);
-  if (geminiFlashGroup) {
-    groups.push(geminiFlashGroup);
-  }
-
-  const imageGroup = buildGroup(imageDef, geminiProResetTime);
-  if (imageGroup) {
-    groups.push(imageGroup);
-  }
+  appendGroup('claude-gpt');
+  const gemini31ProGroup = appendGroup('gemini-3-1-pro-series');
+  const geminiProGroup = appendGroup('gemini-3-pro');
+  const geminiProResetTime = gemini31ProGroup?.resetTime ?? geminiProGroup?.resetTime;
+  appendGroup('gemini-2-5-flash');
+  appendGroup('gemini-2-5-flash-lite');
+  appendGroup('gemini-2-5-cu');
+  appendGroup('gemini-3-flash');
+  appendGroup('gemini-image', geminiProResetTime);
 
   return groups;
 }
