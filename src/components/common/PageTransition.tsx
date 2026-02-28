@@ -1,12 +1,7 @@
-import {
-  ReactNode,
-  useCallback,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { ReactNode, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, type Location } from 'react-router-dom';
-import gsap from 'gsap';
+import { animate } from 'motion/mini';
+import type { AnimationPlaybackControlsWithThen } from 'motion-dom';
 import { PageTransitionLayerContext, type LayerStatus } from './PageTransitionLayer';
 import './PageTransition.scss';
 
@@ -25,6 +20,20 @@ const IOS_EXIT_TO_X_PERCENT_FORWARD = -30;
 const IOS_EXIT_TO_X_PERCENT_BACKWARD = 100;
 const IOS_ENTER_FROM_X_PERCENT_BACKWARD = -30;
 const IOS_EXIT_DIM_OPACITY = 0.72;
+const IOS_SHADOW_VALUE = '-14px 0 24px rgba(0, 0, 0, 0.16)';
+
+const easePower2Out = (progress: number) => 1 - (1 - progress) ** 3;
+const easeCircOut = (progress: number) => Math.sqrt(1 - (progress - 1) ** 2);
+
+const buildVerticalTransform = (y: number) => `translate3d(0px, ${y}px, 0px)`;
+const buildIosTransform = (xPercent: number, y: number) => `translate3d(${xPercent}%, ${y}px, 0px)`;
+
+const clearLayerStyles = (element: HTMLElement | null) => {
+  if (!element) return;
+  element.style.removeProperty('transform');
+  element.style.removeProperty('opacity');
+  element.style.removeProperty('box-shadow');
+};
 
 type Layer = {
   key: string;
@@ -150,16 +159,14 @@ export function PageTransition({
 
         const targetIndex = prev.findIndex((layer) => layer.key === location.key);
         if (targetIndex !== -1) {
-          const targetStack: Layer[] = prev
-            .slice(0, targetIndex + 1)
-            .map((layer, idx): Layer => {
-              const isTarget = idx === targetIndex;
-              return {
-                ...layer,
-                location: isTarget ? location : layer.location,
-                status: isTarget ? 'current' : 'stacked',
-              };
-            });
+          const targetStack: Layer[] = prev.slice(0, targetIndex + 1).map((layer, idx): Layer => {
+            const isTarget = idx === targetIndex;
+            return {
+              ...layer,
+              location: isTarget ? location : layer.location,
+              status: isTarget ? 'current' : 'stacked',
+            };
+          });
 
           if (shouldSkipExitLayer) {
             nextLayersRef.current = targetStack;
@@ -194,7 +201,7 @@ export function PageTransition({
     layers,
   ]);
 
-  // Run GSAP animation when animating starts
+  // Run Motion animation when animating starts
   useLayoutEffect(() => {
     if (!isAnimating) return;
 
@@ -204,10 +211,8 @@ export function PageTransition({
     const exitingLayerEl = exitingLayerRef.current;
     const transitionVariant = transitionVariantRef.current;
 
-    gsap.set(currentLayerEl, { clearProps: 'transform,opacity,boxShadow' });
-    if (exitingLayerEl) {
-      gsap.set(exitingLayerEl, { clearProps: 'transform,opacity,boxShadow' });
-    }
+    clearLayerStyles(currentLayerEl);
+    clearLayerStyles(exitingLayerEl);
 
     const scrollContainer = resolveScrollContainer();
     const exitScrollOffset = exitScrollOffsetRef.current;
@@ -221,22 +226,21 @@ export function PageTransition({
     const enterFromY = isForward ? VERTICAL_TRAVEL_DISTANCE : -VERTICAL_TRAVEL_DISTANCE;
     const exitToY = isForward ? -VERTICAL_TRAVEL_DISTANCE : VERTICAL_TRAVEL_DISTANCE;
     const exitBaseY = enterScrollOffset - exitScrollOffset;
+    const activeAnimations: AnimationPlaybackControlsWithThen[] = [];
+    let cancelled = false;
+    let completed = false;
+    const completeTransition = () => {
+      if (completed) return;
+      completed = true;
 
-    const tl = gsap.timeline({
-      onComplete: () => {
-        const nextLayers = nextLayersRef.current;
-        nextLayersRef.current = null;
-        setLayers((prev) => nextLayers ?? prev.filter((layer) => layer.status !== 'exiting'));
-        setIsAnimating(false);
+      const nextLayers = nextLayersRef.current;
+      nextLayersRef.current = null;
+      setLayers((prev) => nextLayers ?? prev.filter((layer) => layer.status !== 'exiting'));
+      setIsAnimating(false);
 
-        if (currentLayerEl) {
-          gsap.set(currentLayerEl, { clearProps: 'transform,opacity,boxShadow' });
-        }
-        if (exitingLayerEl) {
-          gsap.set(exitingLayerEl, { clearProps: 'transform,opacity,boxShadow' });
-        }
-      },
-    });
+      clearLayerStyles(currentLayerEl);
+      clearLayerStyles(exitingLayerEl);
+    };
 
     if (transitionVariant === 'ios') {
       const exitToXPercent = isForward
@@ -247,90 +251,104 @@ export function PageTransition({
         : IOS_ENTER_FROM_X_PERCENT_BACKWARD;
 
       if (exitingLayerEl) {
-        gsap.set(exitingLayerEl, {
-          y: exitBaseY,
-          xPercent: 0,
-          opacity: 1,
-        });
+        exitingLayerEl.style.transform = buildIosTransform(0, exitBaseY);
+        exitingLayerEl.style.opacity = '1';
       }
 
-      gsap.set(currentLayerEl, {
-        xPercent: enterFromXPercent,
-        opacity: 1,
-      });
-
-      const shadowValue = '-14px 0 24px rgba(0, 0, 0, 0.16)';
+      currentLayerEl.style.transform = buildIosTransform(enterFromXPercent, 0);
+      currentLayerEl.style.opacity = '1';
 
       const topLayerEl = isForward ? currentLayerEl : exitingLayerEl;
       if (topLayerEl) {
-        gsap.set(topLayerEl, { boxShadow: shadowValue });
+        topLayerEl.style.boxShadow = IOS_SHADOW_VALUE;
       }
 
       if (exitingLayerEl) {
-        tl.to(
-          exitingLayerEl,
-          {
-            xPercent: exitToXPercent,
-            opacity: isForward ? IOS_EXIT_DIM_OPACITY : 1,
-            duration: IOS_TRANSITION_DURATION,
-            ease: 'power2.out',
-            force3D: true,
-          },
-          0
+        activeAnimations.push(
+          animate(
+            exitingLayerEl,
+            {
+              transform: [
+                buildIosTransform(0, exitBaseY),
+                buildIosTransform(exitToXPercent, exitBaseY),
+              ],
+              opacity: [1, isForward ? IOS_EXIT_DIM_OPACITY : 1],
+            },
+            {
+              duration: IOS_TRANSITION_DURATION,
+              ease: easePower2Out,
+            }
+          )
         );
       }
 
-      tl.to(
-        currentLayerEl,
-        {
-          xPercent: 0,
-          opacity: 1,
-          duration: IOS_TRANSITION_DURATION,
-          ease: 'power2.out',
-          force3D: true,
-        },
-        0
+      activeAnimations.push(
+        animate(
+          currentLayerEl,
+          {
+            transform: [buildIosTransform(enterFromXPercent, 0), buildIosTransform(0, 0)],
+            opacity: [1, 1],
+          },
+          {
+            duration: IOS_TRANSITION_DURATION,
+            ease: easePower2Out,
+          }
+        )
       );
     } else {
       // Exit animation: fade out with slight movement (runs simultaneously)
       if (exitingLayerEl) {
-        gsap.set(exitingLayerEl, { y: exitBaseY });
-        tl.to(
-          exitingLayerEl,
-          {
-            y: exitBaseY + exitToY,
-            opacity: 0,
-            duration: VERTICAL_TRANSITION_DURATION,
-            ease: 'circ.out',
-            force3D: true,
-          },
-          0
+        exitingLayerEl.style.transform = buildVerticalTransform(exitBaseY);
+        activeAnimations.push(
+          animate(
+            exitingLayerEl,
+            {
+              transform: [
+                buildVerticalTransform(exitBaseY),
+                buildVerticalTransform(exitBaseY + exitToY),
+              ],
+              opacity: [1, 0],
+            },
+            {
+              duration: VERTICAL_TRANSITION_DURATION,
+              ease: easeCircOut,
+            }
+          )
         );
       }
 
       // Enter animation: fade in with slight movement (runs simultaneously)
-      tl.fromTo(
-        currentLayerEl,
-        { y: enterFromY, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: VERTICAL_TRANSITION_DURATION,
-          ease: 'circ.out',
-          force3D: true,
-          onComplete: () => {
-            if (currentLayerEl) {
-              gsap.set(currentLayerEl, { clearProps: 'transform,opacity' });
-            }
+      currentLayerEl.style.transform = buildVerticalTransform(enterFromY);
+      currentLayerEl.style.opacity = '0';
+      activeAnimations.push(
+        animate(
+          currentLayerEl,
+          {
+            transform: [buildVerticalTransform(enterFromY), buildVerticalTransform(0)],
+            opacity: [0, 1],
           },
-        },
-        0
+          {
+            duration: VERTICAL_TRANSITION_DURATION,
+            ease: easeCircOut,
+          }
+        )
       );
     }
 
+    if (!activeAnimations.length) {
+      completeTransition();
+    } else {
+      void Promise.all(
+        activeAnimations.map((animation) => animation.finished.catch(() => undefined))
+      ).then(() => {
+        if (cancelled) return;
+        completeTransition();
+      });
+    }
+
     return () => {
-      tl.kill();
-      gsap.killTweensOf([currentLayerEl, exitingLayerEl]);
+      cancelled = true;
+      activeAnimations.forEach((animation) => animation.stop());
     };
   }, [isAnimating, resolveScrollContainer]);
 
@@ -348,30 +366,30 @@ export function PageTransition({
         return layers.map((layer, index) => {
           const shouldKeepStacked = layer.status === 'stacked' && index === keepStackedIndex;
           return (
-        <div
-          key={layer.key}
-          className={[
-            'page-transition__layer',
-            layer.status === 'exiting' ? 'page-transition__layer--exit' : '',
-            layer.status === 'stacked' ? 'page-transition__layer--stacked' : '',
-            shouldKeepStacked ? 'page-transition__layer--stacked-keep' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          aria-hidden={layer.status !== 'current'}
-          inert={layer.status !== 'current'}
-          ref={
-            layer.status === 'exiting'
-              ? exitingLayerRef
-              : layer.status === 'current'
-                ? currentLayerRef
-                : undefined
-          }
-        >
-          <PageTransitionLayerContext.Provider value={{ status: layer.status }}>
-            {render(layer.location)}
-          </PageTransitionLayerContext.Provider>
-        </div>
+            <div
+              key={layer.key}
+              className={[
+                'page-transition__layer',
+                layer.status === 'exiting' ? 'page-transition__layer--exit' : '',
+                layer.status === 'stacked' ? 'page-transition__layer--stacked' : '',
+                shouldKeepStacked ? 'page-transition__layer--stacked-keep' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              aria-hidden={layer.status !== 'current'}
+              inert={layer.status !== 'current'}
+              ref={
+                layer.status === 'exiting'
+                  ? exitingLayerRef
+                  : layer.status === 'current'
+                    ? currentLayerRef
+                    : undefined
+              }
+            >
+              <PageTransitionLayerContext.Provider value={{ status: layer.status }}>
+                {render(layer.location)}
+              </PageTransitionLayerContext.Provider>
+            </div>
           );
         });
       })()}
