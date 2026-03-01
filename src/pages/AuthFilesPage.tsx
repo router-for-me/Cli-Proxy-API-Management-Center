@@ -27,6 +27,9 @@ import {
   clampCardPageSize,
   getTypeColor,
   getTypeLabel,
+  isAuthFileDisabled,
+  isAuthFileErrorOrInvalid,
+  isAuthFileQuotaZero,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   type QuotaProviderType,
@@ -44,7 +47,11 @@ import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth'
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStats } from '@/features/authFiles/hooks/useAuthFilesStats';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
-import { readAuthFilesUiState, writeAuthFilesUiState } from '@/features/authFiles/uiState';
+import {
+  readAuthFilesUiState,
+  writeAuthFilesUiState,
+  type AuthFilesStatusFilter,
+} from '@/features/authFiles/uiState';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import styles from './AuthFilesPage.module.scss';
@@ -64,6 +71,7 @@ export function AuthFilesPage() {
   const navigate = useNavigate();
 
   const [filter, setFilter] = useState<'all' | string>('all');
+  const [statusFilter, setStatusFilter] = useState<AuthFilesStatusFilter>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
@@ -162,6 +170,13 @@ export function AuthFilesPage() {
     if (typeof persisted.filter === 'string' && persisted.filter.trim()) {
       setFilter(persisted.filter);
     }
+    if (
+      persisted.statusFilter === 'error' ||
+      persisted.statusFilter === 'disabled' ||
+      persisted.statusFilter === 'quotaZero'
+    ) {
+      setStatusFilter(persisted.statusFilter);
+    }
     if (typeof persisted.search === 'string') {
       setSearch(persisted.search);
     }
@@ -174,8 +189,8 @@ export function AuthFilesPage() {
   }, []);
 
   useEffect(() => {
-    writeAuthFilesUiState({ filter, search, page, pageSize });
-  }, [filter, search, page, pageSize]);
+    writeAuthFilesUiState({ filter, statusFilter, search, page, pageSize });
+  }, [filter, statusFilter, search, page, pageSize]);
 
   useEffect(() => {
     setPageSizeInput(String(pageSize));
@@ -257,6 +272,21 @@ export function AuthFilesPage() {
     return counts;
   }, [files]);
 
+  const statusCounts = useMemo(() => {
+    const counts: Record<AuthFilesStatusFilter, number> = {
+      all: files.length,
+      error: 0,
+      disabled: 0,
+      quotaZero: 0,
+    };
+    files.forEach((file) => {
+      if (isAuthFileErrorOrInvalid(file)) counts.error += 1;
+      if (isAuthFileDisabled(file)) counts.disabled += 1;
+      if (isAuthFileQuotaZero(file, keyStats)) counts.quotaZero += 1;
+    });
+    return counts;
+  }, [files, keyStats]);
+
   const filtered = useMemo(() => {
     return files.filter((item) => {
       const matchType = filter === 'all' || item.type === filter;
@@ -266,9 +296,14 @@ export function AuthFilesPage() {
         item.name.toLowerCase().includes(term) ||
         (item.type || '').toString().toLowerCase().includes(term) ||
         (item.provider || '').toString().toLowerCase().includes(term);
-      return matchType && matchSearch;
+      const matchStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'error' && isAuthFileErrorOrInvalid(item)) ||
+        (statusFilter === 'disabled' && isAuthFileDisabled(item)) ||
+        (statusFilter === 'quotaZero' && isAuthFileQuotaZero(item, keyStats));
+      return matchType && matchSearch && matchStatus;
     });
-  }, [files, filter, search]);
+  }, [files, filter, search, statusFilter, keyStats]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -418,6 +453,13 @@ export function AuthFilesPage() {
     []
   );
 
+  const statusFilterOptions: AuthFilesStatusFilter[] = [
+    'all',
+    'error',
+    'disabled',
+    'quotaZero',
+  ];
+
   const renderFilterTags = () => (
     <div className={styles.filterTags}>
       {existingTypes.map((type) => {
@@ -443,6 +485,30 @@ export function AuthFilesPage() {
           >
             <span className={styles.filterTagLabel}>{getTypeLabel(t, type)}</span>
             <span className={styles.filterTagCount}>{typeCounts[type] ?? 0}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderStatusFilterTags = () => (
+    <div className={styles.filterTags}>
+      {statusFilterOptions.map((statusKey) => {
+        const isActive = statusFilter === statusKey;
+        const labelKey = `auth_files.status_filter_${statusKey}` as const;
+        const count = statusCounts[statusKey] ?? 0;
+        return (
+          <button
+            key={statusKey}
+            type="button"
+            className={`${styles.filterTag} ${styles.statusFilterTag} ${isActive ? styles.filterTagActive : ''}`}
+            onClick={() => {
+              setStatusFilter(statusKey);
+              setPage(1);
+            }}
+          >
+            <span className={styles.filterTagLabel}>{t(labelKey)}</span>
+            <span className={styles.filterTagCount}>{count}</span>
           </button>
         );
       })}
@@ -506,7 +572,10 @@ export function AuthFilesPage() {
 
         <div className={styles.filterSection}>
           {renderFilterTags()}
-
+          <div className={styles.statusFilterRow}>
+            <span className={styles.statusFilterLabel}>{t('auth_files.status_filter_label')}</span>
+            {renderStatusFilterTags()}
+          </div>
           <div className={styles.filterControls}>
             <div className={styles.filterItem}>
               <label>{t('auth_files.search_label')}</label>

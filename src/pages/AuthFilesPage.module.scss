@@ -119,6 +119,37 @@
   opacity: 0.85;
 }
 
+.statusFilterRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.statusFilterLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.statusFilterTag {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-color: var(--border-primary);
+
+  &:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+
+  &.filterTagActive {
+    background-color: var(--primary-color);
+    color: var(--primary-contrast, #fff);
+    border-color: var(--primary-color);
+  }
+}
+
 .filterControls {
   display: flex;
   gap: $spacing-md;

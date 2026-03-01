@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next';
 import type { AuthFileItem } from '@/types';
+import { resolveAuthProvider } from '@/utils/quota';
 import {
   normalizeAuthIndex,
   normalizeUsageSourceId,
@@ -149,6 +150,30 @@ export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   if (typeof raw === 'boolean') return raw;
   if (typeof raw === 'string') return raw.trim().toLowerCase() === 'true';
   return false;
+}
+
+export const HEALTHY_STATUS_MESSAGES = new Set([
+  'ok',
+  'healthy',
+  'ready',
+  'success',
+  'available'
+]);
+
+export function isAuthFileErrorOrInvalid(file: AuthFileItem): boolean {
+  const raw = String(file['status_message'] ?? file.statusMessage ?? '').trim();
+  return raw.length > 0 && !HEALTHY_STATUS_MESSAGES.has(raw.toLowerCase());
+}
+
+export function isAuthFileDisabled(file: AuthFileItem): boolean {
+  return file.disabled === true;
+}
+
+export function isAuthFileQuotaZero(file: AuthFileItem, stats: KeyStats): boolean {
+  const provider = resolveAuthProvider(file);
+  if (!QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) return false;
+  const bucket = resolveAuthFileStats(file, stats);
+  return bucket.success === 0;
 }
 
 export function resolveAuthFileStats(file: AuthFileItem, stats: KeyStats): KeyStatBucket {

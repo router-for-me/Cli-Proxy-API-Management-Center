@@ -1,5 +1,8 @@
+export type AuthFilesStatusFilter = 'all' | 'error' | 'disabled' | 'quotaZero';
+
 export type AuthFilesUiState = {
   filter?: string;
+  statusFilter?: AuthFilesStatusFilter;
   search?: string;
   page?: number;
   pageSize?: number;
