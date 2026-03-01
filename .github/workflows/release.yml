@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - 'latest'
 
 jobs:
   build-and-release:
@@ -42,23 +43,30 @@ jobs:
       - name: Generate release notes
         run: |
           set -euo pipefail
-          current_tag="${GITHUB_REF_NAME}"
-          previous_tag="$(git tag --list 'v*' --sort=-v:refname | grep -v "^${current_tag}$" | head -n 1 || true)"
-          if [ -n "${previous_tag}" ]; then
-            range="${previous_tag}..${current_tag}"
+          current_tag="${{ github.ref_name }}"
+          if [ "${current_tag}" = "latest" ]; then
+            echo "Latest build - ${{ github.sha }}" > release-notes.md
+            git log -5 --pretty=format:"- %h %s" >> release-notes.md
           else
-            range="${current_tag}"
+            previous_tag="$(git tag --list 'v*' --sort=-v:refname | grep -v "^${current_tag}$" | head -n 1 || true)"
+            if [ -n "${previous_tag}" ]; then
+              range="${previous_tag}..${current_tag}"
+            else
+              range="${current_tag}"
+            fi
+            : > release-notes.md
+            git log --pretty=format:"- %h %s" "${range}" >> release-notes.md
           fi
 
-          : > release-notes.md
-          git log --pretty=format:"- %h %s" "${range}" >> release-notes.md
-
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name == 'latest' && 'Latest' || github.ref_name }}
           files: dist/management.html
           body_path: release-notes.md
           draft: false
           prerelease: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

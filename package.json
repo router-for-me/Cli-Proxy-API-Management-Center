@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:management": "npm run build && node -e \"const fs=require('fs'); const i='dist/index.html'; const o='dist/management.html'; if(fs.existsSync(i)){fs.copyFileSync(i,o);}\"",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\"",
