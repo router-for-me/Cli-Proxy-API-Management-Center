@@ -497,7 +497,6 @@
     "status_filter_all": "All",
     "status_filter_error": "Error/Invalid",
     "status_filter_disabled": "Disabled",
-    "status_filter_quota_zero": "Quota zero",
     "type_qwen": "Qwen",
     "type_gemini": "Gemini",
     "type_gemini-cli": "GeminiCLI",

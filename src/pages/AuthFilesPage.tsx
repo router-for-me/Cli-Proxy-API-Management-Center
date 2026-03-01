@@ -29,7 +29,6 @@ import {
   getTypeLabel,
   isAuthFileDisabled,
   isAuthFileErrorOrInvalid,
-  isAuthFileQuotaZero,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   type QuotaProviderType,
@@ -170,11 +169,7 @@ export function AuthFilesPage() {
     if (typeof persisted.filter === 'string' && persisted.filter.trim()) {
       setFilter(persisted.filter);
     }
-    if (
-      persisted.statusFilter === 'error' ||
-      persisted.statusFilter === 'disabled' ||
-      persisted.statusFilter === 'quotaZero'
-    ) {
+    if (persisted.statusFilter === 'error' || persisted.statusFilter === 'disabled') {
       setStatusFilter(persisted.statusFilter);
     }
     if (typeof persisted.search === 'string') {
@@ -277,15 +272,13 @@ export function AuthFilesPage() {
       all: files.length,
       error: 0,
       disabled: 0,
-      quotaZero: 0,
     };
     files.forEach((file) => {
       if (isAuthFileErrorOrInvalid(file)) counts.error += 1;
       if (isAuthFileDisabled(file)) counts.disabled += 1;
-      if (isAuthFileQuotaZero(file, keyStats)) counts.quotaZero += 1;
     });
     return counts;
-  }, [files, keyStats]);
+  }, [files]);
 
   const filtered = useMemo(() => {
     return files.filter((item) => {
@@ -299,11 +292,10 @@ export function AuthFilesPage() {
       const matchStatus =
         statusFilter === 'all' ||
         (statusFilter === 'error' && isAuthFileErrorOrInvalid(item)) ||
-        (statusFilter === 'disabled' && isAuthFileDisabled(item)) ||
-        (statusFilter === 'quotaZero' && isAuthFileQuotaZero(item, keyStats));
+        (statusFilter === 'disabled' && isAuthFileDisabled(item));
       return matchType && matchSearch && matchStatus;
     });
-  }, [files, filter, search, statusFilter, keyStats]);
+  }, [files, filter, search, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -453,12 +445,7 @@ export function AuthFilesPage() {
     []
   );
 
-  const statusFilterOptions: AuthFilesStatusFilter[] = [
-    'all',
-    'error',
-    'disabled',
-    'quotaZero',
-  ];
+  const statusFilterOptions: AuthFilesStatusFilter[] = ['all', 'error', 'disabled'];
 
   const renderFilterTags = () => (
     <div className={styles.filterTags}>

@@ -1,4 +1,4 @@
-export type AuthFilesStatusFilter = 'all' | 'error' | 'disabled' | 'quotaZero';
+export type AuthFilesStatusFilter = 'all' | 'error' | 'disabled';
 
 export type AuthFilesUiState = {
   filter?: string;

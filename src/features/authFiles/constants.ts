@@ -1,6 +1,5 @@
 import type { TFunction } from 'i18next';
 import type { AuthFileItem } from '@/types';
-import { resolveAuthProvider } from '@/utils/quota';
 import {
   normalizeAuthIndex,
   normalizeUsageSourceId,
@@ -167,13 +166,6 @@ export function isAuthFileErrorOrInvalid(file: AuthFileItem): boolean {
 
 export function isAuthFileDisabled(file: AuthFileItem): boolean {
   return file.disabled === true;
-}
-
-export function isAuthFileQuotaZero(file: AuthFileItem, stats: KeyStats): boolean {
-  const provider = resolveAuthProvider(file);
-  if (!QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) return false;
-  const bucket = resolveAuthFileStats(file, stats);
-  return bucket.success === 0;
 }
 
 export function resolveAuthFileStats(file: AuthFileItem, stats: KeyStats): KeyStatBucket {

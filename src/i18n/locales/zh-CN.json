@@ -497,7 +497,6 @@
     "status_filter_all": "全部",
     "status_filter_error": "错误/失效",
     "status_filter_disabled": "已禁用",
-    "status_filter_quota_zero": "额度为0",
     "type_qwen": "Qwen",
     "type_gemini": "Gemini",
     "type_gemini-cli": "GeminiCLI",
