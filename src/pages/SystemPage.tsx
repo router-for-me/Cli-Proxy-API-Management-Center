@@ -375,10 +375,11 @@ export function SystemPage() {
   }, [modelOptions]);
 
   useEffect(() => {
-    loadModelDefinitions().catch(() => {
-      // ignore
+    loadModelDefinitions().catch((err) => {
+      console.error('Failed to load model definitions:', err);
+      showNotification(t('notification.refresh_failed'), 'error');
     });
-  }, [loadModelDefinitions]);
+  }, [loadModelDefinitions, showNotification, t]);
 
   return (
     <div className={styles.container}>
@@ -491,8 +492,9 @@ export function SystemPage() {
               variant="secondary"
               size="sm"
               onClick={() => {
-                loadModelDefinitions().catch(() => {
-                  // ignore
+                loadModelDefinitions().catch((err) => {
+                  console.error('Failed to refresh model definitions:', err);
+                  showNotification(t('notification.refresh_failed'), 'error');
                 });
               }}
               loading={definitionsLoading}

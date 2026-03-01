@@ -57,14 +57,7 @@ const clamp = (value: number, min: number, max: number): number => {
 };
 
 const unique = <T,>(items: T[]): T[] => {
-  const seen = new Set<T>();
-  const out: T[] = [];
-  items.forEach((item) => {
-    if (seen.has(item)) return;
-    seen.add(item);
-    out.push(item);
-  });
-  return out;
+  return [...new Set(items)];
 };
 
 const modelToChannelHints = (modelId: string): string[] => {
