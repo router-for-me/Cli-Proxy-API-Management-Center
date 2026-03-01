@@ -3,12 +3,30 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconGithub, IconBookOpen, IconExternalLink, IconCode } from '@/components/ui/icons';
+import {
+  IconGithub,
+  IconBookOpen,
+  IconExternalLink,
+  IconCode,
+  IconChevronDown,
+  IconChevronUp
+} from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useNotificationStore, useModelsStore, useThemeStore } from '@/stores';
-import { configApi } from '@/services/api';
+import { authFilesApi, configApi } from '@/services/api';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
+import { copyToClipboard } from '@/utils/clipboard';
+import {
+  buildDefinitionsIndex,
+  buildCurlSnippet,
+  buildEnvSnippet,
+  buildOpenCodeConfigSnippet,
+  inferDefinitionChannels,
+  resolveThinkingPreset,
+  type ModelDefinitionItem
+} from '@/utils/generatedConfigs';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import iconGemini from '@/assets/icons/gemini.svg';
@@ -56,6 +74,10 @@ export function SystemPage() {
   const [requestLogDraft, setRequestLogDraft] = useState(false);
   const [requestLogTouched, setRequestLogTouched] = useState(false);
   const [requestLogSaving, setRequestLogSaving] = useState(false);
+  const [generatedCardExpanded, setGeneratedCardExpanded] = useState(true);
+  const [definitionsByChannel, setDefinitionsByChannel] = useState<Record<string, ModelDefinitionItem[]>>({});
+  const [definitionsLoading, setDefinitionsLoading] = useState(false);
+  const [selectedGeneratedModel, setSelectedGeneratedModel] = useState('');
 
   const apiKeysCache = useRef<string[]>([]);
   const versionTapCount = useRef(0);
@@ -66,6 +88,26 @@ export function SystemPage() {
     [i18n.language]
   );
   const groupedModels = useMemo(() => classifyModels(models, { otherLabel }), [models, otherLabel]);
+  const modelOptions = useMemo(
+    () => models.map((model) => ({ value: model.name, label: model.alias ? `${model.name} (${model.alias})` : model.name })),
+    [models]
+  );
+  const selectedModel = useMemo(
+    () => modelOptions.find((item) => item.value === selectedGeneratedModel)?.value || modelOptions[0]?.value || '',
+    [modelOptions, selectedGeneratedModel]
+  );
+
+  const definitionsIndex = useMemo(() => buildDefinitionsIndex(definitionsByChannel), [definitionsByChannel]);
+  const selectedPreset = useMemo(
+    () => resolveThinkingPreset(selectedModel, definitionsIndex),
+    [selectedModel, definitionsIndex]
+  );
+  const opencodeSnippet = useMemo(
+    () => buildOpenCodeConfigSnippet(selectedModel, selectedPreset),
+    [selectedModel, selectedPreset]
+  );
+  const envSnippet = useMemo(() => buildEnvSnippet(auth.apiBase || '', selectedModel), [auth.apiBase, selectedModel]);
+  const curlSnippet = useMemo(() => buildCurlSnippet(auth.apiBase || '', selectedModel), [auth.apiBase, selectedModel]);
   const requestLogEnabled = config?.requestLog ?? false;
   const requestLogDirty = requestLogDraft !== requestLogEnabled;
   const canEditRequestLog = auth.connectionStatus === 'connected' && Boolean(config);
@@ -169,6 +211,55 @@ export function SystemPage() {
     }
   };
 
+  const loadModelDefinitions = useCallback(async () => {
+    if (!models.length) {
+      setDefinitionsByChannel({});
+      return;
+    }
+
+    const channels = inferDefinitionChannels(models);
+    if (!channels.length) {
+      setDefinitionsByChannel({});
+      return;
+    }
+
+    setDefinitionsLoading(true);
+    try {
+      const resultEntries = await Promise.all(
+        channels.map(async (channel) => {
+          try {
+            const list = await authFilesApi.getModelDefinitions(channel);
+            return [channel, list] as [string, ModelDefinitionItem[]];
+          } catch {
+            return [channel, [] as ModelDefinitionItem[]] as [string, ModelDefinitionItem[]];
+          }
+        })
+      );
+
+      const next: Record<string, ModelDefinitionItem[]> = {};
+      resultEntries.forEach(([channel, list]) => {
+        if (list.length) {
+          next[channel] = list;
+        }
+      });
+      setDefinitionsByChannel(next);
+    } finally {
+      setDefinitionsLoading(false);
+    }
+  }, [models]);
+
+  const handleCopySnippet = useCallback(
+    async (text: string) => {
+      const ok = await copyToClipboard(text);
+      if (ok) {
+        showNotification(t('system_info.generated_configs_copy_success'), 'success');
+      } else {
+        showNotification(t('notification.copy_failed'), 'error');
+      }
+    },
+    [showNotification, t]
+  );
+
   const handleClearLoginStorage = () => {
     showConfirmation({
       title: t('system_info.clear_login_title', { defaultValue: 'Clear Login Storage' }),
@@ -268,6 +359,27 @@ export function SystemPage() {
     fetchModels();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.connectionStatus, auth.apiBase]);
+
+  useEffect(() => {
+    if (!modelOptions.length) {
+      setSelectedGeneratedModel('');
+      return;
+    }
+
+    setSelectedGeneratedModel((prev) => {
+      if (prev && modelOptions.some((option) => option.value === prev)) {
+        return prev;
+      }
+      return modelOptions[0].value;
+    });
+  }, [modelOptions]);
+
+  useEffect(() => {
+    loadModelDefinitions().catch((err) => {
+      console.error('Failed to load model definitions:', err);
+      showNotification(t('notification.refresh_failed'), 'error');
+    });
+  }, [loadModelDefinitions, showNotification, t]);
 
   return (
     <div className={styles.container}>
@@ -370,6 +482,103 @@ export function SystemPage() {
             </div>
           </a>
         </div>
+      </Card>
+
+      <Card
+        title={t('system_info.generated_configs_title')}
+        extra={
+          <div className={styles.generatedCardActions}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                loadModelDefinitions().catch((err) => {
+                  console.error('Failed to refresh model definitions:', err);
+                  showNotification(t('notification.refresh_failed'), 'error');
+                });
+              }}
+              loading={definitionsLoading}
+            >
+              {t('common.refresh')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setGeneratedCardExpanded((prev) => !prev)}
+              aria-label={
+                generatedCardExpanded
+                  ? t('system_info.generated_configs_collapse')
+                  : t('system_info.generated_configs_expand')
+              }
+              title={
+                generatedCardExpanded
+                  ? t('system_info.generated_configs_collapse')
+                  : t('system_info.generated_configs_expand')
+              }
+            >
+              {generatedCardExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+            </Button>
+          </div>
+        }
+      >
+        <p className={styles.sectionDescription}>{t('system_info.generated_configs_desc')}</p>
+        {generatedCardExpanded && (
+          <div className={styles.generatedBody}>
+            {selectedModel ? (
+              <>
+                <div className={styles.generatedTopRow}>
+                  <div className={styles.generatedSelector}>
+                    <div className={styles.generatedLabel}>{t('system_info.generated_configs_model_label')}</div>
+                    <Select
+                      value={selectedModel}
+                      options={modelOptions}
+                      onChange={setSelectedGeneratedModel}
+                      ariaLabel={t('system_info.generated_configs_model_label')}
+                    />
+                  </div>
+                  <div className={styles.generatedHintBox}>
+                    <div className={styles.generatedHintTitle}>{t('system_info.generated_configs_reasoning_title')}</div>
+                    <div className={styles.generatedHintText}>{selectedPreset.summary}</div>
+                  </div>
+                </div>
+
+                <div className={styles.generatedGrid}>
+                  <div className={styles.generatedSnippetCard}>
+                    <div className={styles.generatedSnippetHeader}>
+                      <div className={styles.generatedSnippetTitle}>OpenCode</div>
+                      <Button variant="secondary" size="sm" onClick={() => void handleCopySnippet(opencodeSnippet)}>
+                        {t('common.copy')}
+                      </Button>
+                    </div>
+                    <pre className={styles.generatedCode}>{opencodeSnippet}</pre>
+                  </div>
+
+                  <div className={styles.generatedSnippetCard}>
+                    <div className={styles.generatedSnippetHeader}>
+                      <div className={styles.generatedSnippetTitle}>{t('system_info.generated_configs_env_title')}</div>
+                      <Button variant="secondary" size="sm" onClick={() => void handleCopySnippet(envSnippet)}>
+                        {t('common.copy')}
+                      </Button>
+                    </div>
+                    <pre className={styles.generatedCode}>{envSnippet}</pre>
+                  </div>
+
+                  <div className={styles.generatedSnippetCard}>
+                    <div className={styles.generatedSnippetHeader}>
+                      <div className={styles.generatedSnippetTitle}>curl</div>
+                      <Button variant="secondary" size="sm" onClick={() => void handleCopySnippet(curlSnippet)}>
+                        {t('common.copy')}
+                      </Button>
+                    </div>
+                    <pre className={styles.generatedCode}>{curlSnippet}</pre>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="hint">{t('system_info.models_empty')}</div>
+            )}
+          </div>
+        )}
       </Card>
 
       <Card

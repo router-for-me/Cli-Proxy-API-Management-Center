@@ -6,6 +6,22 @@ import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
 import type { OAuthModelAliasEntry } from '@/types';
 
+export type ModelDefinitionThinkingSupport = {
+  min?: number;
+  max?: number;
+  zero_allowed?: boolean;
+  dynamic_allowed?: boolean;
+  levels?: string[];
+};
+
+export type ModelDefinitionItem = {
+  id: string;
+  display_name?: string;
+  type?: string;
+  owned_by?: string;
+  thinking?: ModelDefinitionThinkingSupport;
+};
+
 type StatusError = { status?: number };
 type AuthFileStatusResponse = { status: string; disabled: boolean };
 
@@ -170,18 +186,18 @@ export const authFilesApi = {
   },
 
   // 获取认证凭证支持的模型
-  async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
+  async getModelsForAuthFile(name: string): Promise<ModelDefinitionItem[]> {
     const data = await apiClient.get<Record<string, unknown>>(
       `/auth-files/models?name=${encodeURIComponent(name)}`
     );
     const models = data.models ?? data['models'];
     return Array.isArray(models)
-      ? (models as { id: string; display_name?: string; type?: string; owned_by?: string }[])
+      ? (models as ModelDefinitionItem[])
       : [];
   },
 
   // 获取指定 channel 的模型定义
-  async getModelDefinitions(channel: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
+  async getModelDefinitions(channel: string): Promise<ModelDefinitionItem[]> {
     const normalizedChannel = String(channel ?? '').trim().toLowerCase();
     if (!normalizedChannel) return [];
     const data = await apiClient.get<Record<string, unknown>>(
@@ -189,7 +205,7 @@ export const authFilesApi = {
     );
     const models = data.models ?? data['models'];
     return Array.isArray(models)
-      ? (models as { id: string; display_name?: string; type?: string; owned_by?: string }[])
+      ? (models as ModelDefinitionItem[])
       : [];
   }
 };

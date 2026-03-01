@@ -334,6 +334,106 @@
   text-overflow: ellipsis;
 }
 
+.generatedCardActions {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.generatedBody {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.generatedTopRow {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: $spacing-md;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.generatedSelector {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.generatedLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.generatedHintBox {
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  padding: $spacing-sm $spacing-md;
+}
+
+.generatedHintTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.generatedHintText {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.generatedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-md;
+
+  @media (max-width: 1080px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.generatedSnippetCard {
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+  padding: $spacing-sm;
+  min-width: 0;
+}
+
+.generatedSnippetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.generatedSnippetTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.generatedCode {
+  margin: 0;
+  padding: $spacing-sm;
+  border-radius: $radius-sm;
+  border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 82%, var(--bg-secondary));
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
 @media (max-width: 768px) {
   .aboutLogo {
     width: 92px;
