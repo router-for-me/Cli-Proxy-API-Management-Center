@@ -1,6 +1,7 @@
 export type AuthFilesUiState = {
   filter?: string;
   search?: string;
+  failedOnly?: boolean;
   page?: number;
   pageSize?: number;
 };

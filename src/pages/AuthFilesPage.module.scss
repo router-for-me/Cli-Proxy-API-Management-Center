@@ -161,6 +161,24 @@
   }
 }
 
+.filterToggle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  color: var(--text-secondary);
+
+  input[type='checkbox'] {
+    cursor: pointer;
+  }
+
+  label {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}
+
 .pageSizeSelect {
   padding: 8px 12px;
   border: 1px solid var(--border-color);

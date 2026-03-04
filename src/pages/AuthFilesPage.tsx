@@ -29,6 +29,7 @@ import {
   getTypeLabel,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
+  resolveAuthFileStats,
   type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
@@ -65,6 +66,7 @@ export function AuthFilesPage() {
 
   const [filter, setFilter] = useState<'all' | string>('all');
   const [search, setSearch] = useState('');
+  const [failedOnly, setFailedOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
   const [pageSizeInput, setPageSizeInput] = useState('9');
@@ -165,6 +167,9 @@ export function AuthFilesPage() {
     if (typeof persisted.search === 'string') {
       setSearch(persisted.search);
     }
+    if (typeof persisted.failedOnly === 'boolean') {
+      setFailedOnly(persisted.failedOnly);
+    }
     if (typeof persisted.page === 'number' && Number.isFinite(persisted.page)) {
       setPage(Math.max(1, Math.round(persisted.page)));
     }
@@ -174,8 +179,8 @@ export function AuthFilesPage() {
   }, []);
 
   useEffect(() => {
-    writeAuthFilesUiState({ filter, search, page, pageSize });
-  }, [filter, search, page, pageSize]);
+    writeAuthFilesUiState({ filter, search, failedOnly, page, pageSize });
+  }, [filter, search, failedOnly, page, pageSize]);
 
   useEffect(() => {
     setPageSizeInput(String(pageSize));
@@ -258,17 +263,34 @@ export function AuthFilesPage() {
   }, [files]);
 
   const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
     return files.filter((item) => {
       const matchType = filter === 'all' || item.type === filter;
-      const term = search.trim().toLowerCase();
       const matchSearch =
         !term ||
         item.name.toLowerCase().includes(term) ||
         (item.type || '').toString().toLowerCase().includes(term) ||
         (item.provider || '').toString().toLowerCase().includes(term);
-      return matchType && matchSearch;
+      const matchFailed = !failedOnly || resolveAuthFileStats(item, keyStats).failure > 0;
+      return matchType && matchSearch && matchFailed;
     });
-  }, [files, filter, search]);
+  }, [files, filter, search, failedOnly, keyStats]);
+
+  const failedDeletableNames = useMemo(
+    () =>
+      filtered
+        .filter((file) => !isRuntimeOnlyAuthFile(file) && resolveAuthFileStats(file, keyStats).failure > 0)
+        .map((file) => file.name),
+    [filtered, keyStats]
+  );
+
+  const handleDeleteFailedFiles = useCallback(() => {
+    if (failedDeletableNames.length === 0) {
+      showNotification(t('auth_files.delete_failed_none'), 'info');
+      return;
+    }
+    batchDelete(failedDeletableNames);
+  }, [batchDelete, failedDeletableNames, showNotification, t]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -491,6 +513,14 @@ export function AuthFilesPage() {
                 ? t('auth_files.delete_all_button')
                 : `${t('common.delete')} ${getTypeLabel(t, filter)}`}
             </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDeleteFailedFiles}
+              disabled={disableControls || loading}
+            >
+              {t('auth_files.delete_failed_button')}
+            </Button>
             <input
               ref={fileInputRef}
               type="file"
@@ -536,6 +566,18 @@ export function AuthFilesPage() {
                   }
                 }}
               />
+            </div>
+            <div className={styles.filterToggle}>
+              <input
+                id="auth-files-failed-only"
+                type="checkbox"
+                checked={failedOnly}
+                onChange={(event) => {
+                  setFailedOnly(event.target.checked);
+                  setPage(1);
+                }}
+              />
+              <label htmlFor="auth-files-failed-only">{t('auth_files.failed_only_label')}</label>
             </div>
           </div>
         </div>
