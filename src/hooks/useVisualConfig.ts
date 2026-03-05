@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { isMap, parse as parseYaml, parseDocument } from 'yaml';
 import type {
+  APIKeyEntry,
   PayloadFilterRule,
   PayloadParamValueType,
   PayloadRule,
@@ -33,15 +34,29 @@ function extractApiKeyValue(raw: unknown): string | null {
   return null;
 }
 
-function parseApiKeysText(raw: unknown): string {
-  if (!Array.isArray(raw)) return '';
+function parseApiKeyEntries(raw: unknown): APIKeyEntry[] {
+  if (!Array.isArray(raw)) return [];
 
-  const keys: string[] = [];
+  const entries: APIKeyEntry[] = [];
   for (const item of raw) {
     const key = extractApiKeyValue(item);
-    if (key) keys.push(key);
+    if (!key) continue;
+
+    const record = asRecord(item);
+    const allowedRaw = record?.['allowed-models'] ?? record?.allowedModels;
+    const allowedModels = Array.isArray(allowedRaw)
+      ? allowedRaw.map((m) => String(m ?? '').trim()).filter(Boolean)
+      : [];
+
+    entries.push({ key, allowedModels: Array.from(new Set(allowedModels)) });
   }
-  return keys.join('\n');
+  return entries;
+}
+
+function parseApiKeysText(raw: unknown): string {
+  return parseApiKeyEntries(raw)
+    .map((entry) => entry.key)
+    .join('\n');
 }
 
 type YamlDocument = ReturnType<typeof parseDocument>;
@@ -313,6 +328,7 @@ export function useVisualConfig() {
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
         apiKeysText: parseApiKeysText(parsed['api-keys']),
+        apiKeyEntries: parseApiKeyEntries(parsed['api-keys']),
 
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
@@ -402,13 +418,50 @@ export function useVisualConfig() {
         }
 
         setStringInDoc(doc, ['auth-dir'], values.authDir);
-        if (values.apiKeysText !== baselineValues.apiKeysText) {
-          const apiKeys = values.apiKeysText
+        if (
+          values.apiKeysText !== baselineValues.apiKeysText ||
+          JSON.stringify(values.apiKeyEntries) !== JSON.stringify(baselineValues.apiKeyEntries)
+        ) {
+          const apiEntries = (values.apiKeyEntries?.length ? values.apiKeyEntries : [])
+            .map((entry) => ({
+              key: String(entry.key ?? '').trim(),
+              allowedModels: Array.from(
+                new Set((entry.allowedModels ?? []).map((m) => String(m ?? '').trim()).filter(Boolean))
+              ),
+            }))
+            .filter((entry) => entry.key);
+
+          // Fallback to textarea content for backward compatibility when structured list is empty.
+          const fallbackKeys = values.apiKeysText
             .split('\n')
             .map((key) => key.trim())
             .filter(Boolean);
-          if (apiKeys.length > 0) {
-            doc.setIn(['api-keys'], apiKeys);
+
+          const merged =
+            apiEntries.length > 0
+              ? apiEntries
+              : fallbackKeys.map((key) => ({ key, allowedModels: [] as string[] }));
+
+          if (merged.length > 0) {
+            const hasRestrictions = merged.some((entry) => entry.allowedModels.length > 0);
+            if (hasRestrictions) {
+              doc.setIn(
+                ['api-keys'],
+                merged.map((entry) =>
+                  entry.allowedModels.length > 0
+                    ? {
+                        key: entry.key,
+                        'allowed-models': entry.allowedModels,
+                      }
+                    : entry.key
+                )
+              );
+            } else {
+              doc.setIn(
+                ['api-keys'],
+                merged.map((entry) => entry.key)
+              );
+            }
           } else if (docHas(doc, ['api-keys'])) {
             doc.deleteIn(['api-keys']);
           }

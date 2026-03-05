@@ -9,7 +9,9 @@ import { ConfigSection } from '@/components/config/ConfigSection';
 import { useNotificationStore } from '@/stores';
 import styles from './VisualConfigEditor.module.scss';
 import { copyToClipboard } from '@/utils/clipboard';
+import { authFilesApi } from '@/services/api/authFiles';
 import type {
+  APIKeyEntry,
   PayloadFilterRule,
   PayloadModelEntry,
   PayloadParamEntry,
@@ -83,28 +85,46 @@ function Divider() {
 
 function ApiKeysCardEditor({
   value,
+  entries,
   disabled,
   onChange,
 }: {
   value: string;
+  entries: APIKeyEntry[];
   disabled?: boolean;
-  onChange: (nextValue: string) => void;
+  onChange: (nextValue: string, nextEntries: APIKeyEntry[]) => void;
 }) {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
-  const apiKeys = useMemo(
-    () =>
-      value
-        .split('\n')
-        .map((key) => key.trim())
-        .filter(Boolean),
-    [value]
-  );
+  const apiKeys = useMemo(() => {
+    if (entries.length > 0) {
+      return entries
+        .map((entry) => ({
+          key: String(entry.key ?? '').trim(),
+          allowedModels: Array.from(
+            new Set((entry.allowedModels ?? []).map((model) => String(model ?? '').trim()).filter(Boolean))
+          ),
+        }))
+        .filter((entry) => entry.key);
+    }
+
+    return value
+      .split('\n')
+      .map((key) => key.trim())
+      .filter(Boolean)
+      .map((key) => ({ key, allowedModels: [] as string[] }));
+  }, [entries, value]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [formError, setFormError] = useState('');
+
+  const [modelsModalOpen, setModelsModalOpen] = useState(false);
+  const [modelsEditingIndex, setModelsEditingIndex] = useState<number | null>(null);
+  const [modelsByProvider, setModelsByProvider] = useState<Record<string, string[]>>({});
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [selectedAllowedModels, setSelectedAllowedModels] = useState<Set<string>>(new Set());
 
   function generateSecureApiKey(): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -122,7 +142,7 @@ function ApiKeysCardEditor({
 
   const openEditModal = (index: number) => {
     setEditingIndex(index);
-    setInputValue(apiKeys[index] ?? '');
+    setInputValue(apiKeys[index]?.key ?? '');
     setFormError('');
     setModalOpen(true);
   };
@@ -134,12 +154,78 @@ function ApiKeysCardEditor({
     setFormError('');
   };
 
-  const updateApiKeys = (nextKeys: string[]) => {
-    onChange(nextKeys.join('\n'));
+  const updateApiKeys = (nextKeys: APIKeyEntry[]) => {
+    const normalized = nextKeys
+      .map((entry) => ({
+        key: String(entry.key ?? '').trim(),
+        allowedModels: Array.from(
+          new Set((entry.allowedModels ?? []).map((model) => String(model ?? '').trim()).filter(Boolean))
+        ),
+      }))
+      .filter((entry) => entry.key);
+    onChange(
+      normalized.map((entry) => entry.key).join('\n'),
+      normalized
+    );
   };
 
   const handleDelete = (index: number) => {
     updateApiKeys(apiKeys.filter((_, i) => i !== index));
+  };
+
+  const openConfigureModels = async (index: number) => {
+    setModelsEditingIndex(index);
+    setSelectedAllowedModels(new Set(apiKeys[index]?.allowedModels ?? []));
+    setModelsModalOpen(true);
+    setModelsLoading(true);
+    try {
+      const providers = ['gemini', 'codex', 'claude', 'antigravity'];
+      const loaded: Record<string, string[]> = {};
+      await Promise.all(
+        providers.map(async (provider) => {
+          try {
+            const defs = await authFilesApi.getModelDefinitions(provider);
+            loaded[provider] = defs.map((item) => String(item.id ?? '').trim()).filter(Boolean);
+          } catch {
+            loaded[provider] = [];
+          }
+        })
+      );
+      setModelsByProvider(loaded);
+    } finally {
+      setModelsLoading(false);
+    }
+  };
+
+  const toggleAllowedModel = (modelId: string, checked: boolean) => {
+    setSelectedAllowedModels((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(modelId);
+      else next.delete(modelId);
+      return next;
+    });
+  };
+
+  const toggleProviderWildcard = (provider: string, checked: boolean) => {
+    const wildcard = `${provider}:*`;
+    setSelectedAllowedModels((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(wildcard);
+      else next.delete(wildcard);
+      return next;
+    });
+  };
+
+  const saveAllowedModels = () => {
+    if (modelsEditingIndex === null || !apiKeys[modelsEditingIndex]) {
+      setModelsModalOpen(false);
+      return;
+    }
+    const next = apiKeys.map((entry, idx) =>
+      idx === modelsEditingIndex ? { ...entry, allowedModels: Array.from(selectedAllowedModels) } : entry
+    );
+    updateApiKeys(next);
+    setModelsModalOpen(false);
   };
 
   const handleSave = () => {
@@ -155,8 +241,8 @@ function ApiKeysCardEditor({
 
     const nextKeys =
       editingIndex === null
-        ? [...apiKeys, trimmed]
-        : apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
+        ? [...apiKeys, { key: trimmed, allowedModels: [] as string[] }]
+        : apiKeys.map((entry, idx) => (idx === editingIndex ? { ...entry, key: trimmed } : entry));
     updateApiKeys(nextKeys);
     closeModal();
   };
@@ -198,14 +284,22 @@ function ApiKeysCardEditor({
       ) : (
         <div className="item-list" style={{ marginTop: 4 }}>
           {apiKeys.map((key, index) => (
-            <div key={`${key}-${index}`} className="item-row">
+            <div key={`${key.key}-${index}`} className="item-row">
               <div className="item-meta">
                 <div className="pill">#{index + 1}</div>
                 <div className="item-title">API Key</div>
-                <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
+                <div className="item-subtitle">{maskApiKey(String(key.key || ''))}</div>
+                <div className="hint" style={{ marginTop: 2 }}>
+                  {t('config_management.visual.api_keys.allowed_models_label')}: {key.allowedModels.length > 0
+                    ? t('config_management.visual.api_keys.allowed_models_count', { count: key.allowedModels.length })
+                    : t('config_management.visual.api_keys.allowed_models_all')}
+                </div>
               </div>
               <div className="item-actions">
-                <Button variant="secondary" size="sm" onClick={() => handleCopy(key)} disabled={disabled}>
+                <Button variant="secondary" size="sm" onClick={() => openConfigureModels(index)} disabled={disabled}>
+                  {t('config_management.visual.api_keys.allowed_models_configure')}
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => handleCopy(key.key)} disabled={disabled}>
                   {t('common.copy')}
                 </Button>
                 <Button variant="secondary" size="sm" onClick={() => openEditModal(index)} disabled={disabled}>
@@ -258,6 +352,59 @@ function ApiKeysCardEditor({
             </Button>
           }
         />
+      </Modal>
+
+      <Modal
+        open={modelsModalOpen}
+        onClose={() => setModelsModalOpen(false)}
+        title={t('config_management.visual.api_keys.allowed_models_label')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setModelsModalOpen(false)} disabled={disabled || modelsLoading}>
+              {t('config_management.visual.common.cancel')}
+            </Button>
+            <Button onClick={saveAllowedModels} disabled={disabled || modelsLoading}>
+              {t('common.save')}
+            </Button>
+          </>
+        }
+      >
+        <div className="hint" style={{ marginBottom: 8 }}>
+          {t('config_management.visual.api_keys.allowed_models_hint')}
+        </div>
+        {modelsLoading ? (
+          <div className="hint">{t('common.loading')}</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflow: 'auto' }}>
+            {Object.entries(modelsByProvider).map(([provider, models]) => (
+              <div key={provider} style={{ border: '1px solid var(--border-color)', borderRadius: 10, padding: 10 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedAllowedModels.has(`${provider}:*`)}
+                    onChange={(e) => toggleProviderWildcard(provider, e.target.checked)}
+                    disabled={disabled}
+                  />
+                  {provider}:*
+                </label>
+                <div style={{ marginTop: 8, display: 'grid', gap: 6 }}>
+                  {models.map((modelId) => (
+                    <label key={modelId} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedAllowedModels.has(modelId)}
+                        onChange={(e) => toggleAllowedModel(modelId, e.target.checked)}
+                        disabled={disabled}
+                      />
+                      <span style={{ wordBreak: 'break-all' }}>{modelId}</span>
+                    </label>
+                  ))}
+                  {models.length === 0 && <div className="hint">{t('config_management.visual.api_keys.empty')}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Modal>
     </div>
   );
@@ -826,8 +973,9 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
           />
           <ApiKeysCardEditor
             value={values.apiKeysText}
+            entries={values.apiKeyEntries}
             disabled={disabled}
-            onChange={(apiKeysText) => onChange({ apiKeysText })}
+            onChange={(apiKeysText, apiKeyEntries) => onChange({ apiKeysText, apiKeyEntries })}
           />
         </div>
       </ConfigSection>

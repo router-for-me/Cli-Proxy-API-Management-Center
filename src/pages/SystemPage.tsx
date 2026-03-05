@@ -121,7 +121,7 @@ export function SystemPage() {
 
     try {
       const list = await apiKeysApi.list();
-      const normalized = normalizeApiKeyList(list);
+      const normalized = normalizeApiKeyList(list.map((entry) => entry.key));
       if (normalized.length) {
         apiKeysCache.current = normalized;
       }
