@@ -176,6 +176,18 @@ function ApiKeysCardEditor({
     updateApiKeys(apiKeys.filter((_, i) => i !== index));
   };
 
+  const extractApiKeyValue = (entry: unknown): string => {
+    if (typeof entry === 'string') {
+      return entry.trim();
+    }
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return '';
+    }
+    const record = entry as Record<string, unknown>;
+    const value = record.key ?? record['api-key'] ?? record.apiKey ?? record.Key;
+    return String(value ?? '').trim();
+  };
+
   const openConfigureModels = async (index: number) => {
     setModelsEditingIndex(index);
     setSelectedAllowedModels(new Set(apiKeys[index]?.allowedModels ?? []));
@@ -183,8 +195,10 @@ function ApiKeysCardEditor({
     setModelsLoading(true);
     try {
       const loaded: Record<string, string[]> = {};
-      const firstConfigKey = Array.isArray(configApiKeys) && configApiKeys.length > 0 ? configApiKeys[0] : '';
-      const fallbackApiKey = String(firstConfigKey ?? '').trim();
+      const fallbackApiKey =
+        Array.isArray(configApiKeys)
+          ? configApiKeys.map((entry) => extractApiKeyValue(entry)).find((value) => value.length > 0) ?? ''
+          : '';
 
       if (authApiBase) {
         const models = await fetchModelsFromStore(authApiBase, fallbackApiKey || undefined, true);
