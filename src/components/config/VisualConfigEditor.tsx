@@ -6,7 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { ConfigSection } from '@/components/config/ConfigSection';
-import { useAuthStore, useModelsStore, useNotificationStore } from '@/stores';
+import { useAuthStore, useConfigStore, useModelsStore, useNotificationStore } from '@/stores';
 import styles from './VisualConfigEditor.module.scss';
 import { copyToClipboard } from '@/utils/clipboard';
 import type {
@@ -126,6 +126,7 @@ function ApiKeysCardEditor({
   const [selectedAllowedModels, setSelectedAllowedModels] = useState<Set<string>>(new Set());
 
   const authApiBase = useAuthStore((state) => state.apiBase);
+  const configApiKeys = useConfigStore((state) => state.config?.apiKeys);
   const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
 
   function generateSecureApiKey(): string {
@@ -182,8 +183,11 @@ function ApiKeysCardEditor({
     setModelsLoading(true);
     try {
       const loaded: Record<string, string[]> = {};
+      const firstConfigKey = Array.isArray(configApiKeys) && configApiKeys.length > 0 ? configApiKeys[0] : '';
+      const fallbackApiKey = String(firstConfigKey ?? '').trim();
+
       if (authApiBase) {
-        const models = await fetchModelsFromStore(authApiBase, undefined, true);
+        const models = await fetchModelsFromStore(authApiBase, fallbackApiKey || undefined, true);
         models.forEach((item) => {
           const modelName = String(item.name ?? '').trim();
           if (!modelName) return;
