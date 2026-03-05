@@ -6,10 +6,9 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { ConfigSection } from '@/components/config/ConfigSection';
-import { useNotificationStore } from '@/stores';
+import { useAuthStore, useModelsStore, useNotificationStore } from '@/stores';
 import styles from './VisualConfigEditor.module.scss';
 import { copyToClipboard } from '@/utils/clipboard';
-import { authFilesApi } from '@/services/api/authFiles';
 import type {
   APIKeyEntry,
   PayloadFilterRule,
@@ -126,6 +125,9 @@ function ApiKeysCardEditor({
   const [modelsLoading, setModelsLoading] = useState(false);
   const [selectedAllowedModels, setSelectedAllowedModels] = useState<Set<string>>(new Set());
 
+  const authApiBase = useAuthStore((state) => state.apiBase);
+  const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
+
   function generateSecureApiKey(): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const array = new Uint8Array(17);
@@ -179,19 +181,27 @@ function ApiKeysCardEditor({
     setModelsModalOpen(true);
     setModelsLoading(true);
     try {
-      const providers = ['gemini', 'codex', 'claude', 'antigravity'];
       const loaded: Record<string, string[]> = {};
-      await Promise.all(
-        providers.map(async (provider) => {
-          try {
-            const defs = await authFilesApi.getModelDefinitions(provider);
-            loaded[provider] = defs.map((item) => String(item.id ?? '').trim()).filter(Boolean);
-          } catch {
-            loaded[provider] = [];
-          }
-        })
-      );
-      setModelsByProvider(loaded);
+      if (authApiBase) {
+        const models = await fetchModelsFromStore(authApiBase, undefined, true);
+        models.forEach((item) => {
+          const modelName = String(item.name ?? '').trim();
+          if (!modelName) return;
+          const provider = modelName.split('-')[0]?.trim().toLowerCase();
+          if (!provider) return;
+          if (!loaded[provider]) loaded[provider] = [];
+          if (!loaded[provider].includes(modelName)) loaded[provider].push(modelName);
+        });
+      }
+
+      const sorted: Record<string, string[]> = {};
+      Object.keys(loaded)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((provider) => {
+          sorted[provider] = loaded[provider].slice().sort((a, b) => a.localeCompare(b));
+        });
+
+      setModelsByProvider(sorted);
     } finally {
       setModelsLoading(false);
     }
