@@ -24,6 +24,12 @@ import {
   VISUAL_CONFIG_PROTOCOL_OPTIONS,
 } from '@/hooks/useVisualConfig';
 import { maskApiKey } from '@/utils/format';
+import {
+  apiKeyEntriesToText,
+  extractApiKeyValue,
+  normalizeApiKeyEntries,
+  parseApiKeysTextToEntries,
+} from '@/utils/apiKeys';
 import { isValidApiKeyCharset } from '@/utils/validation';
 
 interface VisualConfigEditorProps {
@@ -96,22 +102,12 @@ function ApiKeysCardEditor({
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const apiKeys = useMemo(() => {
-    if (entries.length > 0) {
-      return entries
-        .map((entry) => ({
-          key: String(entry.key ?? '').trim(),
-          allowedModels: Array.from(
-            new Set((entry.allowedModels ?? []).map((model) => String(model ?? '').trim()).filter(Boolean))
-          ),
-        }))
-        .filter((entry) => entry.key);
+    const normalizedEntries = normalizeApiKeyEntries(entries);
+    if (normalizedEntries.length > 0) {
+      return normalizedEntries;
     }
 
-    return value
-      .split('\n')
-      .map((key) => key.trim())
-      .filter(Boolean)
-      .map((key) => ({ key, allowedModels: [] as string[] }));
+    return parseApiKeysTextToEntries(value);
   }, [entries, value]);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -158,34 +154,12 @@ function ApiKeysCardEditor({
   };
 
   const updateApiKeys = (nextKeys: APIKeyEntry[]) => {
-    const normalized = nextKeys
-      .map((entry) => ({
-        key: String(entry.key ?? '').trim(),
-        allowedModels: Array.from(
-          new Set((entry.allowedModels ?? []).map((model) => String(model ?? '').trim()).filter(Boolean))
-        ),
-      }))
-      .filter((entry) => entry.key);
-    onChange(
-      normalized.map((entry) => entry.key).join('\n'),
-      normalized
-    );
+    const normalized = normalizeApiKeyEntries(nextKeys);
+    onChange(apiKeyEntriesToText(normalized), normalized);
   };
 
   const handleDelete = (index: number) => {
     updateApiKeys(apiKeys.filter((_, i) => i !== index));
-  };
-
-  const extractApiKeyValue = (entry: unknown): string => {
-    if (typeof entry === 'string') {
-      return entry.trim();
-    }
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-      return '';
-    }
-    const record = entry as Record<string, unknown>;
-    const value = record.key ?? record['api-key'] ?? record.apiKey ?? record.Key;
-    return String(value ?? '').trim();
   };
 
   const openConfigureModels = async (index: number) => {
@@ -197,7 +171,9 @@ function ApiKeysCardEditor({
       const loaded: Record<string, string[]> = {};
       const fallbackApiKey =
         Array.isArray(configApiKeys)
-          ? configApiKeys.map((entry) => extractApiKeyValue(entry)).find((value) => value.length > 0) ?? ''
+          ? configApiKeys
+              .map((entry) => extractApiKeyValue(entry) ?? '')
+              .find((value) => value.length > 0) ?? ''
           : '';
 
       if (authApiBase) {

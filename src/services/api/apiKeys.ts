@@ -3,46 +3,8 @@
  */
 
 import { apiClient } from './client';
-
-export type APIKeyEntry = {
-  key: string;
-  allowedModels: string[];
-};
-
-function normalizeAllowedModels(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return [];
-  const out: string[] = [];
-  for (const item of raw) {
-    const model = String(item ?? '').trim();
-    if (!model) continue;
-    if (!out.includes(model)) out.push(model);
-  }
-  return out;
-}
-
-function normalizeEntry(raw: unknown): APIKeyEntry | null {
-  if (typeof raw === 'string') {
-    const key = raw.trim();
-    return key ? { key, allowedModels: [] } : null;
-  }
-
-  if (!raw || typeof raw !== 'object') return null;
-  const record = raw as Record<string, unknown>;
-  const keyCandidates = [record.key, record['api-key'], record.apiKey, record.Key];
-  let key = '';
-  for (const candidate of keyCandidates) {
-    if (typeof candidate === 'string' && candidate.trim()) {
-      key = candidate.trim();
-      break;
-    }
-  }
-  if (!key) return null;
-
-  return {
-    key,
-    allowedModels: normalizeAllowedModels(record['allowed-models'] ?? record.allowedModels)
-  };
-}
+import type { APIKeyEntry } from '@/types/visualConfig';
+import { normalizeAllowedModels, normalizeApiKeyEntries } from '@/utils/apiKeys';
 
 export const apiKeysApi = {
   async list(): Promise<APIKeyEntry[]> {
@@ -50,12 +12,7 @@ export const apiKeysApi = {
     const keys = data['api-keys'] ?? data.apiKeys;
     if (!Array.isArray(keys)) return [];
 
-    const out: APIKeyEntry[] = [];
-    for (const item of keys) {
-      const entry = normalizeEntry(item);
-      if (entry) out.push(entry);
-    }
-    return out;
+    return normalizeApiKeyEntries(keys);
   },
 
   replace: (keys: string[] | APIKeyEntry[]) =>

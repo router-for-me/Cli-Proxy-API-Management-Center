@@ -1,62 +1,22 @@
 import { useCallback, useMemo, useState } from 'react';
 import { isMap, parse as parseYaml, parseDocument } from 'yaml';
 import type {
-  APIKeyEntry,
   PayloadFilterRule,
   PayloadParamValueType,
   PayloadRule,
   VisualConfigValues,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
+import {
+  apiKeyEntriesToText,
+  normalizeApiKeyEntries,
+  parseApiKeysTextToEntries,
+  serializeApiKeysForYaml,
+} from '@/utils/apiKeys';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
-}
-
-function extractApiKeyValue(raw: unknown): string | null {
-  if (typeof raw === 'string') {
-    const trimmed = raw.trim();
-    return trimmed ? trimmed : null;
-  }
-
-  const record = asRecord(raw);
-  if (!record) return null;
-
-  const candidates = [record['api-key'], record.apiKey, record.key, record.Key];
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string') {
-      const trimmed = candidate.trim();
-      if (trimmed) return trimmed;
-    }
-  }
-
-  return null;
-}
-
-function parseApiKeyEntries(raw: unknown): APIKeyEntry[] {
-  if (!Array.isArray(raw)) return [];
-
-  const entries: APIKeyEntry[] = [];
-  for (const item of raw) {
-    const key = extractApiKeyValue(item);
-    if (!key) continue;
-
-    const record = asRecord(item);
-    const allowedRaw = record?.['allowed-models'] ?? record?.allowedModels;
-    const allowedModels = Array.isArray(allowedRaw)
-      ? allowedRaw.map((m) => String(m ?? '').trim()).filter(Boolean)
-      : [];
-
-    entries.push({ key, allowedModels: Array.from(new Set(allowedModels)) });
-  }
-  return entries;
-}
-
-function parseApiKeysText(raw: unknown): string {
-  return parseApiKeyEntries(raw)
-    .map((entry) => entry.key)
-    .join('\n');
 }
 
 type YamlDocument = ReturnType<typeof parseDocument>;
@@ -327,8 +287,8 @@ export function useVisualConfig() {
               : '',
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
-        apiKeysText: parseApiKeysText(parsed['api-keys']),
-        apiKeyEntries: parseApiKeyEntries(parsed['api-keys']),
+        apiKeysText: apiKeyEntriesToText(normalizeApiKeyEntries(parsed['api-keys'])),
+        apiKeyEntries: normalizeApiKeyEntries(parsed['api-keys']),
 
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
@@ -422,46 +382,16 @@ export function useVisualConfig() {
           values.apiKeysText !== baselineValues.apiKeysText ||
           JSON.stringify(values.apiKeyEntries) !== JSON.stringify(baselineValues.apiKeyEntries)
         ) {
-          const apiEntries = (values.apiKeyEntries?.length ? values.apiKeyEntries : [])
-            .map((entry) => ({
-              key: String(entry.key ?? '').trim(),
-              allowedModels: Array.from(
-                new Set((entry.allowedModels ?? []).map((m) => String(m ?? '').trim()).filter(Boolean))
-              ),
-            }))
-            .filter((entry) => entry.key);
+          const normalizedEntries = normalizeApiKeyEntries(values.apiKeyEntries);
 
           // Fallback to textarea content for backward compatibility when structured list is empty.
-          const fallbackKeys = values.apiKeysText
-            .split('\n')
-            .map((key) => key.trim())
-            .filter(Boolean);
-
           const merged =
-            apiEntries.length > 0
-              ? apiEntries
-              : fallbackKeys.map((key) => ({ key, allowedModels: [] as string[] }));
+            normalizedEntries.length > 0
+              ? normalizedEntries
+              : parseApiKeysTextToEntries(values.apiKeysText);
 
           if (merged.length > 0) {
-            const hasRestrictions = merged.some((entry) => entry.allowedModels.length > 0);
-            if (hasRestrictions) {
-              doc.setIn(
-                ['api-keys'],
-                merged.map((entry) =>
-                  entry.allowedModels.length > 0
-                    ? {
-                        key: entry.key,
-                        'allowed-models': entry.allowedModels,
-                      }
-                    : entry.key
-                )
-              );
-            } else {
-              doc.setIn(
-                ['api-keys'],
-                merged.map((entry) => entry.key)
-              );
-            }
+            doc.setIn(['api-keys'], serializeApiKeysForYaml(merged));
           } else if (docHas(doc, ['api-keys'])) {
             doc.deleteIn(['api-keys']);
           }
