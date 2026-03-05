@@ -517,7 +517,7 @@ export function AuthFilesPage() {
               variant="danger"
               size="sm"
               onClick={handleDeleteFailedFiles}
-              disabled={disableControls || loading}
+              disabled={disableControls || loading || failedDeletableNames.length === 0}
             >
               {t('auth_files.delete_failed_button')}
             </Button>
