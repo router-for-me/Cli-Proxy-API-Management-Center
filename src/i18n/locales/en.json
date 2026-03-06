@@ -475,7 +475,7 @@
     "pagination_info": "Page {{current}} / {{total}} · {{count}} files",
     "search_label": "Search configs",
     "search_placeholder": "Filter by name, type, or provider",
-    "page_size_label": "Per page",
+    "page_size_label": "Per page (max 100)",
     "page_size_unit": "items",
     "view_mode_paged": "Paged",
     "view_mode_all": "Show all",

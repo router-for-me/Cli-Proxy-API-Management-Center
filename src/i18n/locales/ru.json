@@ -475,7 +475,7 @@
     "pagination_info": "Страница {{current}} / {{total}} · {{count}} файлов",
     "search_label": "Поиск конфигов",
     "search_placeholder": "Фильтр по имени, типу или провайдеру",
-    "page_size_label": "На странице",
+    "page_size_label": "На странице (макс. 100)",
     "page_size_unit": "элементов",
     "view_mode_paged": "Постранично",
     "view_mode_all": "Показать все",
