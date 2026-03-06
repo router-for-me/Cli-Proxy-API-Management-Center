@@ -581,7 +581,7 @@ export function AuthFilesPage() {
                 className={styles.pageSizeSelect}
                 type="number"
                 min={MIN_CARD_PAGE_SIZE}
-                max={MAX_CARD_PAGE_SIZE}
+                max={100}
                 step={1}
                 value={pageSizeInput}
                 onChange={handlePageSizeChange}
