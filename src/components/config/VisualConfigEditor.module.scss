@@ -39,12 +39,27 @@
   align-items: center;
 }
 
+.apiKeyModalInputRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  :global(.input) {
+    flex: 1;
+  }
+}
+
 @media (max-width: 900px) {
   .payloadRuleModelRow,
   .payloadRuleModelRowProtocolFirst,
   .payloadRuleParamRow,
   .payloadFilterModelRow {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .apiKeyModalInputRow {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .payloadRowActionButton {

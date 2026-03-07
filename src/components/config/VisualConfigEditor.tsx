@@ -274,16 +274,16 @@ function ApiKeysCardEditor({
           </>
         }
       >
-        <Input
-          label={t('config_management.visual.api_keys.input_label')}
-          placeholder={t('config_management.visual.api_keys.input_placeholder')}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          disabled={disabled}
-          error={formError || undefined}
-          hint={t('config_management.visual.api_keys.input_hint')}
-          style={{ paddingRight: 148 }}
-          rightElement={
+        <div className="form-group">
+          <label>{t('config_management.visual.api_keys.input_label')}</label>
+          <div className={styles.apiKeyModalInputRow}>
+            <input
+              className="input"
+              placeholder={t('config_management.visual.api_keys.input_placeholder')}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              disabled={disabled}
+            />
             <Button
               type="button"
               variant="secondary"
@@ -293,8 +293,10 @@ function ApiKeysCardEditor({
             >
               {t('config_management.visual.api_keys.generate')}
             </Button>
-          }
-        />
+          </div>
+          <div className="hint">{t('config_management.visual.api_keys.input_hint')}</div>
+          {formError && <div className="error-box">{formError}</div>}
+        </div>
       </Modal>
     </div>
   );
