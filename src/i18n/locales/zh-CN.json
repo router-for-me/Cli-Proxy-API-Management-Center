@@ -588,7 +588,13 @@
     "seven_day_sonnet": "7 天 Sonnet",
     "seven_day_cowork": "7 天 Cowork",
     "iguana_necktie": "Iguana Necktie",
-    "extra_usage_label": "额外用量"
+    "extra_usage_label": "额外用量",
+    "plan_label": "套餐",
+    "plan_unknown": "未知",
+    "plan_free": "免费版",
+    "plan_pro": "专业版",
+    "plan_max5": "Max 5x",
+    "plan_max20": "Max 20x"
   },
   "codex_quota": {
     "title": "Codex 额度",

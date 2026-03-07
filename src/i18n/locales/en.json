@@ -588,7 +588,13 @@
     "seven_day_sonnet": "7-day Sonnet",
     "seven_day_cowork": "7-day Cowork",
     "iguana_necktie": "Iguana Necktie",
-    "extra_usage_label": "Extra Usage"
+    "extra_usage_label": "Extra Usage",
+    "plan_label": "Plan",
+    "plan_unknown": "Unknown",
+    "plan_free": "Free",
+    "plan_pro": "Pro",
+    "plan_max5": "Max 5x",
+    "plan_max20": "Max 20x"
   },
   "codex_quota": {
     "title": "Codex Quota",

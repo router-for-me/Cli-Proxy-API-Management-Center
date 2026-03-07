@@ -591,7 +591,13 @@
     "seven_day_sonnet": "7 дней Sonnet",
     "seven_day_cowork": "7 дней Cowork",
     "iguana_necktie": "Iguana Necktie",
-    "extra_usage_label": "Дополнительное использование"
+    "extra_usage_label": "Дополнительное использование",
+    "plan_label": "План",
+    "plan_unknown": "Неизвестно",
+    "plan_free": "Free",
+    "plan_pro": "Pro",
+    "plan_max5": "Max 5x",
+    "plan_max20": "Max 20x"
   },
   "codex_quota": {
     "title": "Квота Codex",
