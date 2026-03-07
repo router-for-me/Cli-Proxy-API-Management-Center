@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useId, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -120,6 +120,9 @@ function ApiKeysCardEditor({
     return [...apiKeyIds, ...Array.from({ length: apiKeys.length - apiKeyIds.length }, () => makeClientId())];
   }, [apiKeyIds, apiKeys.length]);
 
+  const apiKeyInputId = useId();
+  const apiKeyHintId = `${apiKeyInputId}-hint`;
+  const apiKeyErrorId = `${apiKeyInputId}-error`;
   const [modalOpen, setModalOpen] = useState(false);
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
@@ -275,14 +278,17 @@ function ApiKeysCardEditor({
         }
       >
         <div className="form-group">
-          <label>{t('config_management.visual.api_keys.input_label')}</label>
+          <label htmlFor={apiKeyInputId}>{t('config_management.visual.api_keys.input_label')}</label>
           <div className={styles.apiKeyModalInputRow}>
             <input
+              id={apiKeyInputId}
               className="input"
               placeholder={t('config_management.visual.api_keys.input_placeholder')}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               disabled={disabled}
+              aria-describedby={formError ? `${apiKeyErrorId} ${apiKeyHintId}` : apiKeyHintId}
+              aria-invalid={Boolean(formError)}
             />
             <Button
               type="button"
@@ -294,8 +300,8 @@ function ApiKeysCardEditor({
               {t('config_management.visual.api_keys.generate')}
             </Button>
           </div>
-          <div className="hint">{t('config_management.visual.api_keys.input_hint')}</div>
-          {formError && <div className="error-box">{formError}</div>}
+          <div id={apiKeyHintId} className="hint">{t('config_management.visual.api_keys.input_hint')}</div>
+          {formError && <div id={apiKeyErrorId} className="error-box">{formError}</div>}
         </div>
       </Modal>
     </div>
@@ -832,6 +838,14 @@ function PayloadFilterRulesEditor({
 
 export function VisualConfigEditor({ values, validationErrors, disabled = false, onChange }: VisualConfigEditorProps) {
   const { t } = useTranslation();
+  const routingStrategyLabelId = useId();
+  const routingStrategyHintId = `${routingStrategyLabelId}-hint`;
+  const keepaliveInputId = useId();
+  const keepaliveHintId = `${keepaliveInputId}-hint`;
+  const keepaliveErrorId = `${keepaliveInputId}-error`;
+  const nonstreamKeepaliveInputId = useId();
+  const nonstreamKeepaliveHintId = `${nonstreamKeepaliveInputId}-hint`;
+  const nonstreamKeepaliveErrorId = `${nonstreamKeepaliveInputId}-error`;
   const isKeepaliveDisabled = values.streaming.keepaliveSeconds === '' || values.streaming.keepaliveSeconds === '0';
   const isNonstreamKeepaliveDisabled =
     values.streaming.nonstreamKeepaliveInterval === '' || values.streaming.nonstreamKeepaliveInterval === '0';
@@ -1032,20 +1046,22 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
               error={maxRetryIntervalError}
             />
             <div className="form-group">
-              <label>{t('config_management.visual.sections.network.routing_strategy')}</label>
+              <label id={routingStrategyLabelId} htmlFor={`${routingStrategyLabelId}-select`}>{t('config_management.visual.sections.network.routing_strategy')}</label>
               <Select
                 value={values.routingStrategy}
                 options={[
                   { value: 'round-robin', label: t('config_management.visual.sections.network.strategy_round_robin') },
                   { value: 'fill-first', label: t('config_management.visual.sections.network.strategy_fill_first') },
                 ]}
+                id={`${routingStrategyLabelId}-select`}
                 disabled={disabled}
-                ariaLabel={t('config_management.visual.sections.network.routing_strategy')}
+                ariaLabelledBy={routingStrategyLabelId}
+                ariaDescribedBy={routingStrategyHintId}
                 onChange={(nextValue) =>
                   onChange({ routingStrategy: nextValue as VisualConfigValues['routingStrategy'] })
                 }
               />
-              <div className="hint">{t('config_management.visual.sections.network.routing_strategy_hint')}</div>
+              <div id={routingStrategyHintId} className="hint">{t('config_management.visual.sections.network.routing_strategy_hint')}</div>
             </div>
           </SectionGrid>
 
@@ -1089,9 +1105,10 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <SectionGrid>
             <div className="form-group">
-              <label>{t('config_management.visual.sections.streaming.keepalive_seconds')}</label>
+              <label htmlFor={keepaliveInputId}>{t('config_management.visual.sections.streaming.keepalive_seconds')}</label>
               <div style={{ position: 'relative' }}>
                 <input
+                  id={keepaliveInputId}
                   className="input"
                   type="number"
                   placeholder="0"
@@ -1120,8 +1137,8 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
                   </span>
                 )}
               </div>
-              {keepaliveError && <div className="error-box">{keepaliveError}</div>}
-              <div className="hint">{t('config_management.visual.sections.streaming.keepalive_hint')}</div>
+              {keepaliveError && <div id={keepaliveErrorId} className="error-box">{keepaliveError}</div>}
+              <div id={keepaliveHintId} className="hint">{t('config_management.visual.sections.streaming.keepalive_hint')}</div>
             </div>
             <Input
               label={t('config_management.visual.sections.streaming.bootstrap_retries')}
@@ -1137,7 +1154,7 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
 
           <SectionGrid>
             <div className="form-group">
-              <label>{t('config_management.visual.sections.streaming.nonstream_keepalive')}</label>
+              <label htmlFor={nonstreamKeepaliveInputId}>{t('config_management.visual.sections.streaming.nonstream_keepalive')}</label>
               <div style={{ position: 'relative' }}>
                 <input
                   className="input"
@@ -1170,8 +1187,8 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
                   </span>
                 )}
               </div>
-              {nonstreamKeepaliveError && <div className="error-box">{nonstreamKeepaliveError}</div>}
-              <div className="hint">
+              {nonstreamKeepaliveError && <div id={nonstreamKeepaliveErrorId} className="error-box">{nonstreamKeepaliveError}</div>}
+              <div id={nonstreamKeepaliveHintId} className="hint">
                 {t('config_management.visual.sections.streaming.nonstream_keepalive_hint')}
               </div>
             </div>
