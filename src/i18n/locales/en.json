@@ -1238,6 +1238,11 @@
         "value_json": "JSON value",
         "value_default": "Value"
       },
+      "validation": {
+        "validation_blocked": "Fix validation errors before saving",
+        "port_range": "Enter a valid port between 1 and 65535",
+        "non_negative_integer": "Enter a non-negative whole number"
+      },
       "common": {
         "edit": "Edit",
         "delete": "Delete",

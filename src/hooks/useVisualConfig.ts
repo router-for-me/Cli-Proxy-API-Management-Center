@@ -5,6 +5,7 @@ import type {
   PayloadParamValueType,
   PayloadRule,
   VisualConfigValues,
+  VisualConfigValidationErrors,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
 
@@ -93,13 +94,46 @@ function setIntFromStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown
     return;
   }
 
-  const parsed = Number.parseInt(trimmed, 10);
+  if (!/^-?\d+$/.test(trimmed)) {
+    return;
+  }
+
+  const parsed = Number(trimmed);
   if (Number.isFinite(parsed)) {
     doc.setIn(path, parsed);
     return;
   }
+}
 
-  if (docHas(doc, path)) doc.deleteIn(path);
+function getNonNegativeIntegerError(value: string): 'non_negative_integer' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (!/^-?\d+$/.test(trimmed)) return 'non_negative_integer';
+  return Number(trimmed) >= 0 ? undefined : 'non_negative_integer';
+}
+
+function getPortError(value: string): 'port_range' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (!/^\d+$/.test(trimmed)) return 'port_range';
+  const parsed = Number(trimmed);
+  return parsed >= 1 && parsed <= 65535 ? undefined : 'port_range';
+}
+
+export function getVisualConfigValidationErrors(
+  values: VisualConfigValues
+): VisualConfigValidationErrors {
+  return {
+    port: getPortError(values.port),
+    logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
+    requestRetry: getNonNegativeIntegerError(values.requestRetry),
+    maxRetryInterval: getNonNegativeIntegerError(values.maxRetryInterval),
+    'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
+    'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
+    'streaming.nonstreamKeepaliveInterval': getNonNegativeIntegerError(
+      values.streaming.nonstreamKeepaliveInterval
+    ),
+  };
 }
 
 function deepClone<T>(value: T): T {
@@ -277,6 +311,10 @@ export function useVisualConfig() {
     ...DEFAULT_VISUAL_VALUES,
   });
   const [visualParseError, setVisualParseError] = useState<string | null>(null);
+  const visualValidationErrors = useMemo(
+    () => getVisualConfigValidationErrors(visualValues),
+    [visualValues]
+  );
 
   const visualDirty = useMemo(() => {
     return JSON.stringify(visualValues) !== JSON.stringify(baselineValues);
@@ -536,6 +574,7 @@ export function useVisualConfig() {
     visualValues,
     visualDirty,
     visualParseError,
+    visualValidationErrors,
     loadVisualValuesFromYaml,
     applyVisualChangesToYaml,
     setVisualValues,

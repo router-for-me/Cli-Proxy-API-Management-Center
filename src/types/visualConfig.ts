@@ -1,5 +1,20 @@
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
 
+export type VisualConfigFieldPath =
+  | 'port'
+  | 'logsMaxTotalSizeMb'
+  | 'requestRetry'
+  | 'maxRetryInterval'
+  | 'streaming.keepaliveSeconds'
+  | 'streaming.bootstrapRetries'
+  | 'streaming.nonstreamKeepaliveInterval';
+
+export type VisualConfigValidationErrorCode = 'port_range' | 'non_negative_integer';
+
+export type VisualConfigValidationErrors = Partial<
+  Record<VisualConfigFieldPath, VisualConfigValidationErrorCode>
+>;
+
 export type PayloadParamEntry = {
   id: string;
   path: string;

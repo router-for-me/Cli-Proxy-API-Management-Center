@@ -1243,6 +1243,11 @@
         "value_json": "Значение JSON",
         "value_default": "Значение"
       },
+      "validation": {
+        "validation_blocked": "Исправьте ошибки валидации перед сохранением",
+        "port_range": "Введите корректный порт от 1 до 65535",
+        "non_negative_integer": "Введите неотрицательное целое число"
+      },
       "common": {
         "edit": "Изменить",
         "delete": "Удалить",

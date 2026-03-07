@@ -1238,6 +1238,11 @@
         "value_json": "JSON 值",
         "value_default": "值"
       },
+      "validation": {
+        "validation_blocked": "请先修复表单校验错误再保存",
+        "port_range": "请输入 1 到 65535 之间的有效端口",
+        "non_negative_integer": "请输入非负整数"
+      },
       "common": {
         "edit": "编辑",
         "delete": "删除",

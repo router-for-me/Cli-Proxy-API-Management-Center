@@ -40,6 +40,7 @@ export function ConfigPage() {
     visualValues,
     visualDirty,
     visualParseError,
+    visualValidationErrors,
     loadVisualValuesFromYaml,
     applyVisualChangesToYaml,
     setVisualValues
@@ -72,6 +73,8 @@ export function ConfigPage() {
   const disableControls = connectionStatus !== 'connected';
   const isDirty = dirty || visualDirty;
   const hasVisualModeError = !!visualParseError;
+  const hasVisualValidationErrors =
+    activeTab === 'visual' && Object.values(visualValidationErrors).some(Boolean);
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
@@ -388,15 +391,23 @@ export function ConfigPage() {
     if (loading) return t('config_management.status_loading');
     if (error) return t('config_management.status_load_failed');
     if (hasVisualModeError) return t('config_management.visual_mode_unavailable');
+    if (hasVisualValidationErrors) return t('config_management.visual.validation.validation_blocked');
     if (saving) return t('config_management.status_saving');
     if (isDirty) return t('config_management.status_dirty');
     return t('config_management.status_loaded');
   };
 
-  const isLoadedStatus = !disableControls && !loading && !error && !saving && !isDirty && !hasVisualModeError;
+  const isLoadedStatus =
+    !disableControls &&
+    !loading &&
+    !error &&
+    !saving &&
+    !isDirty &&
+    !hasVisualModeError &&
+    !hasVisualValidationErrors;
 
   const getStatusClass = () => {
-    if (error || hasVisualModeError) return styles.error;
+    if (error || hasVisualModeError || hasVisualValidationErrors) return styles.error;
     if (isDirty) return styles.modified;
     if (!loading && !saving) return styles.saved;
     return '';
@@ -438,7 +449,15 @@ export function ConfigPage() {
           type="button"
           className={styles.floatingActionButton}
           onClick={handleSave}
-          disabled={disableControls || loading || saving || !isDirty || diffModalOpen || hasVisualModeError}
+          disabled={
+            disableControls ||
+            loading ||
+            saving ||
+            !isDirty ||
+            diffModalOpen ||
+            hasVisualModeError ||
+            hasVisualValidationErrors
+          }
           title={t('config_management.save')}
           aria-label={t('config_management.save')}
         >
@@ -485,6 +504,7 @@ export function ConfigPage() {
           {activeTab === 'visual' ? (
             <VisualConfigEditor
               values={visualValues}
+              validationErrors={visualValidationErrors}
               disabled={disableControls || loading}
               onChange={setVisualValues}
             />

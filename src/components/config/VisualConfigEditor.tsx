@@ -15,6 +15,8 @@ import type {
   PayloadParamEntry,
   PayloadParamValueType,
   PayloadRule,
+  VisualConfigValidationErrorCode,
+  VisualConfigValidationErrors,
   VisualConfigValues,
 } from '@/types/visualConfig';
 import { makeClientId } from '@/types/visualConfig';
@@ -27,8 +29,17 @@ import { isValidApiKeyCharset } from '@/utils/validation';
 
 interface VisualConfigEditorProps {
   values: VisualConfigValues;
+  validationErrors?: VisualConfigValidationErrors;
   disabled?: boolean;
   onChange: (values: Partial<VisualConfigValues>) => void;
+}
+
+function getValidationMessage(
+  t: ReturnType<typeof useTranslation>['t'],
+  errorCode?: VisualConfigValidationErrorCode
+) {
+  if (!errorCode) return undefined;
+  return t(`config_management.visual.validation.${errorCode}`);
 }
 
 type ToggleRowProps = {
@@ -717,11 +728,21 @@ function PayloadFilterRulesEditor({
   );
 }
 
-export function VisualConfigEditor({ values, disabled = false, onChange }: VisualConfigEditorProps) {
+export function VisualConfigEditor({ values, validationErrors, disabled = false, onChange }: VisualConfigEditorProps) {
   const { t } = useTranslation();
   const isKeepaliveDisabled = values.streaming.keepaliveSeconds === '' || values.streaming.keepaliveSeconds === '0';
   const isNonstreamKeepaliveDisabled =
     values.streaming.nonstreamKeepaliveInterval === '' || values.streaming.nonstreamKeepaliveInterval === '0';
+  const portError = getValidationMessage(t, validationErrors?.port);
+  const logsMaxSizeError = getValidationMessage(t, validationErrors?.logsMaxTotalSizeMb);
+  const requestRetryError = getValidationMessage(t, validationErrors?.requestRetry);
+  const maxRetryIntervalError = getValidationMessage(t, validationErrors?.maxRetryInterval);
+  const keepaliveError = getValidationMessage(t, validationErrors?.['streaming.keepaliveSeconds']);
+  const bootstrapRetriesError = getValidationMessage(t, validationErrors?.['streaming.bootstrapRetries']);
+  const nonstreamKeepaliveError = getValidationMessage(
+    t,
+    validationErrors?.['streaming.nonstreamKeepaliveInterval']
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -741,6 +762,7 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
             value={values.port}
             onChange={(e) => onChange({ port: e.target.value })}
             disabled={disabled}
+            error={portError}
           />
         </SectionGrid>
       </ConfigSection>
@@ -873,6 +895,7 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
               value={values.logsMaxTotalSizeMb}
               onChange={(e) => onChange({ logsMaxTotalSizeMb: e.target.value })}
               disabled={disabled}
+              error={logsMaxSizeError}
             />
           </SectionGrid>
         </div>
@@ -895,6 +918,7 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
               value={values.requestRetry}
               onChange={(e) => onChange({ requestRetry: e.target.value })}
               disabled={disabled}
+              error={requestRetryError}
             />
             <Input
               label={t('config_management.visual.sections.network.max_retry_interval')}
@@ -903,6 +927,7 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
               value={values.maxRetryInterval}
               onChange={(e) => onChange({ maxRetryInterval: e.target.value })}
               disabled={disabled}
+              error={maxRetryIntervalError}
             />
             <div className="form-group">
               <label>{t('config_management.visual.sections.network.routing_strategy')}</label>
@@ -993,6 +1018,7 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
                   </span>
                 )}
               </div>
+              {keepaliveError && <div className="error-box">{keepaliveError}</div>}
               <div className="hint">{t('config_management.visual.sections.streaming.keepalive_hint')}</div>
             </div>
             <Input
@@ -1003,6 +1029,7 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
               onChange={(e) => onChange({ streaming: { ...values.streaming, bootstrapRetries: e.target.value } })}
               disabled={disabled}
               hint={t('config_management.visual.sections.streaming.bootstrap_hint')}
+              error={bootstrapRetriesError}
             />
           </SectionGrid>
 
@@ -1041,6 +1068,7 @@ export function VisualConfigEditor({ values, disabled = false, onChange }: Visua
                   </span>
                 )}
               </div>
+              {nonstreamKeepaliveError && <div className="error-box">{nonstreamKeepaliveError}</div>}
               <div className="hint">
                 {t('config_management.visual.sections.streaming.nonstream_keepalive_hint')}
               </div>
