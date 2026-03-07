@@ -1083,6 +1083,7 @@
     "visual_mode_unavailable": "YAML 语法修复前无法使用可视化编辑",
     "visual_mode_unavailable_detail": "当前配置存在无效 YAML，暂时无法使用可视化编辑：{{message}}",
     "visual_mode_save_blocked": "请先修复 YAML 语法错误，再从可视化模式保存",
+    "visual_mode_latest_yaml_invalid": "服务端最新配置包含无效 YAML，请先切回源码模式检查后再保存可视化修改：{{message}}",
     "editor_placeholder": "key: value",
     "search_placeholder": "搜索配置内容...",
     "search_button": "搜索",

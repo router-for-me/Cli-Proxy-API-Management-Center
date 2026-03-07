@@ -1083,6 +1083,7 @@
     "visual_mode_unavailable": "Visual editor unavailable until YAML syntax is fixed",
     "visual_mode_unavailable_detail": "Visual editor is unavailable because the configuration contains invalid YAML: {{message}}",
     "visual_mode_save_blocked": "Cannot save from visual mode until the YAML syntax is fixed",
+    "visual_mode_latest_yaml_invalid": "The latest server configuration contains invalid YAML. Review it in source mode before saving visual changes: {{message}}",
     "editor_placeholder": "key: value",
     "search_placeholder": "Search config...",
     "search_button": "Search",

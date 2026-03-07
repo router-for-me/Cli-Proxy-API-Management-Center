@@ -1086,6 +1086,7 @@
     "visual_mode_unavailable": "Визуальный редактор недоступен, пока не исправлен синтаксис YAML",
     "visual_mode_unavailable_detail": "Визуальный редактор недоступен, потому что в конфигурации есть некорректный YAML: {{message}}",
     "visual_mode_save_blocked": "Нельзя сохранять из визуального режима, пока не исправлен синтаксис YAML",
+    "visual_mode_latest_yaml_invalid": "Последняя конфигурация на сервере содержит некорректный YAML. Проверьте её в режиме исходника перед сохранением визуальных изменений: {{message}}",
     "editor_placeholder": "key: value",
     "search_placeholder": "Поиск по конфигурации...",
     "search_button": "Поиск",

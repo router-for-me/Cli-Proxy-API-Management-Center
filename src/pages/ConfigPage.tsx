@@ -141,9 +141,24 @@ export function ConfigPage() {
 
     setSaving(true);
     try {
-      // In source mode, save exactly what the user edited. In visual mode, materialize visual changes into YAML.
-      const nextMergedYaml = activeTab === 'source' ? content : applyVisualChangesToYaml(content);
       const latestServerYaml = await configFileApi.fetchConfigYaml();
+
+      if (activeTab !== 'source') {
+        const latestDocument = parseDocument(latestServerYaml);
+        if (latestDocument.errors.length > 0) {
+          showNotification(
+            t('config_management.visual_mode_latest_yaml_invalid', {
+              message: latestDocument.errors[0]?.message ?? t('config_management.visual_mode_save_blocked')
+            }),
+            'error'
+          );
+          return;
+        }
+      }
+
+      // In source mode, save exactly what the user edited. In visual mode, materialize visual changes into the latest YAML.
+      const nextMergedYaml =
+        activeTab === 'source' ? content : applyVisualChangesToYaml(latestServerYaml);
 
       // In visual mode, applyVisualChangesToYaml re-serializes YAML via parseDocument → toString,
       // which may reformat comments/whitespace. Normalize the server YAML through the same pipeline
