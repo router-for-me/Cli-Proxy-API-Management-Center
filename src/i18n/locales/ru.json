@@ -1223,6 +1223,7 @@
         "json_path": "JSON Path (например, temperature)",
         "json_path_filter": "JSON Path (gjson/sjson), например generationConfig.thinkingConfig.thinkingBudget",
         "param_type": "Тип параметра",
+        "param_value": "Значение параметра",
         "add_param": "Добавить параметр",
         "no_rules": "Правил нет",
         "add_rule": "Добавить правило",
@@ -1241,12 +1242,17 @@
         "value_number": "Числовое значение (например, 0.7)",
         "value_boolean": "true или false",
         "value_json": "Значение JSON",
-        "value_default": "Значение"
+        "value_default": "Значение",
+        "boolean_true": "true",
+        "boolean_false": "false"
       },
       "validation": {
         "validation_blocked": "Исправьте ошибки валидации перед сохранением",
         "port_range": "Введите корректный порт от 1 до 65535",
-        "non_negative_integer": "Введите неотрицательное целое число"
+        "non_negative_integer": "Введите неотрицательное целое число",
+        "payload_invalid_number": "Введите корректное число",
+        "payload_invalid_boolean": "Выберите true или false",
+        "payload_invalid_json": "Введите корректный JSON"
       },
       "common": {
         "edit": "Изменить",

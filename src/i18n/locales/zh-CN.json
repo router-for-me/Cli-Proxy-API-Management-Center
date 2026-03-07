@@ -1218,6 +1218,7 @@
         "json_path": "JSON 路径 (如 temperature)",
         "json_path_filter": "JSON 路径 (gjson/sjson)，如 generationConfig.thinkingConfig.thinkingBudget",
         "param_type": "参数类型",
+        "param_value": "参数值",
         "add_param": "添加参数",
         "no_rules": "暂无规则",
         "add_rule": "添加规则",
@@ -1236,12 +1237,17 @@
         "value_number": "数字值 (如 0.7)",
         "value_boolean": "true 或 false",
         "value_json": "JSON 值",
-        "value_default": "值"
+        "value_default": "值",
+        "boolean_true": "true",
+        "boolean_false": "false"
       },
       "validation": {
         "validation_blocked": "请先修复表单校验错误再保存",
         "port_range": "请输入 1 到 65535 之间的有效端口",
-        "non_negative_integer": "请输入非负整数"
+        "non_negative_integer": "请输入非负整数",
+        "payload_invalid_number": "请输入有效数字",
+        "payload_invalid_boolean": "请选择 true 或 false",
+        "payload_invalid_json": "请输入有效的 JSON"
       },
       "common": {
         "edit": "编辑",

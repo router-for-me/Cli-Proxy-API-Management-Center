@@ -13,6 +13,7 @@ import type {
   PayloadFilterRule,
   PayloadModelEntry,
   PayloadParamEntry,
+  PayloadParamValidationErrorCode,
   PayloadParamValueType,
   PayloadRule,
   VisualConfigValidationErrorCode,
@@ -21,6 +22,7 @@ import type {
 } from '@/types/visualConfig';
 import { makeClientId } from '@/types/visualConfig';
 import {
+  getPayloadParamValidationError,
   VISUAL_CONFIG_PAYLOAD_VALUE_TYPE_OPTIONS,
   VISUAL_CONFIG_PROTOCOL_OPTIONS,
 } from '@/hooks/useVisualConfig';
@@ -36,7 +38,7 @@ interface VisualConfigEditorProps {
 
 function getValidationMessage(
   t: ReturnType<typeof useTranslation>['t'],
-  errorCode?: VisualConfigValidationErrorCode
+  errorCode?: VisualConfigValidationErrorCode | PayloadParamValidationErrorCode
 ) {
   if (!errorCode) return undefined;
   return t(`config_management.visual.validation.${errorCode}`);
@@ -348,6 +350,13 @@ function PayloadRulesEditor({
       })),
     [t]
   );
+  const booleanValueOptions = useMemo(
+    () => [
+      { value: 'true', label: t('config_management.visual.payload_rules.boolean_true') },
+      { value: 'false', label: t('config_management.visual.payload_rules.boolean_false') },
+    ],
+    [t]
+  );
 
   const addRule = () => onChange([...rules, { id: makeClientId(), models: [], params: [] }]);
   const removeRule = (ruleIndex: number) => onChange(rules.filter((_, i) => i !== ruleIndex));
@@ -409,6 +418,52 @@ function PayloadRulesEditor({
       default:
         return t('config_management.visual.payload_rules.value_default');
     }
+  };
+
+  const getParamErrorMessage = (param: PayloadParamEntry) => {
+    const errorCode = getPayloadParamValidationError(param);
+    return getValidationMessage(t, errorCode);
+  };
+
+  const renderParamValueEditor = (
+    ruleIndex: number,
+    paramIndex: number,
+    param: PayloadParamEntry
+  ) => {
+    if (param.valueType === 'boolean') {
+      return (
+        <Select
+          value={param.value.toLowerCase() === 'true' || param.value.toLowerCase() === 'false' ? param.value.toLowerCase() : ''}
+          options={booleanValueOptions}
+          placeholder={t('config_management.visual.payload_rules.value_boolean')}
+          disabled={disabled}
+          ariaLabel={t('config_management.visual.payload_rules.param_value')}
+          onChange={(nextValue) => updateParam(ruleIndex, paramIndex, { value: nextValue })}
+        />
+      );
+    }
+
+    if (param.valueType === 'json') {
+      return (
+        <textarea
+          className={`input ${styles.payloadJsonInput}`}
+          placeholder={getValuePlaceholder(param.valueType)}
+          value={param.value}
+          onChange={(e) => updateParam(ruleIndex, paramIndex, { value: e.target.value })}
+          disabled={disabled}
+        />
+      );
+    }
+
+    return (
+      <input
+        className="input"
+        placeholder={getValuePlaceholder(param.valueType)}
+        value={param.value}
+        onChange={(e) => updateParam(ruleIndex, paramIndex, { value: e.target.value })}
+        disabled={disabled}
+      />
+    );
   };
 
   return (
@@ -512,42 +567,51 @@ function PayloadRulesEditor({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('config_management.visual.payload_rules.params')}</div>
-            {(rule.params.length ? rule.params : []).map((param, paramIndex) => (
-              <div key={param.id} className={styles.payloadRuleParamRow}>
-                <input
-                  className="input"
-                  placeholder={t('config_management.visual.payload_rules.json_path')}
-                  value={param.path}
-                  onChange={(e) => updateParam(ruleIndex, paramIndex, { path: e.target.value })}
-                  disabled={disabled}
-                />
-                <Select
-                  value={param.valueType}
-                  options={payloadValueTypeOptions}
-                  disabled={disabled}
-                  ariaLabel={t('config_management.visual.payload_rules.param_type')}
-                  onChange={(nextValue) =>
-                    updateParam(ruleIndex, paramIndex, { valueType: nextValue as PayloadParamValueType })
-                  }
-                />
-                <input
-                  className="input"
-                  placeholder={getValuePlaceholder(param.valueType)}
-                  value={param.value}
-                  onChange={(e) => updateParam(ruleIndex, paramIndex, { value: e.target.value })}
-                  disabled={disabled}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={styles.payloadRowActionButton}
-                  onClick={() => removeParam(ruleIndex, paramIndex)}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.delete')}
-                </Button>
-              </div>
-            ))}
+            {(rule.params.length ? rule.params : []).map((param, paramIndex) => {
+              const paramError = getParamErrorMessage(param);
+
+              return (
+                <div key={param.id} className={styles.payloadRuleParamGroup}>
+                  <div className={styles.payloadRuleParamRow}>
+                    <input
+                      className="input"
+                      placeholder={t('config_management.visual.payload_rules.json_path')}
+                      value={param.path}
+                      onChange={(e) => updateParam(ruleIndex, paramIndex, { path: e.target.value })}
+                      disabled={disabled}
+                    />
+                    <Select
+                      value={param.valueType}
+                      options={payloadValueTypeOptions}
+                      disabled={disabled}
+                      ariaLabel={t('config_management.visual.payload_rules.param_type')}
+                      onChange={(nextValue) =>
+                        updateParam(ruleIndex, paramIndex, {
+                          valueType: nextValue as PayloadParamValueType,
+                          value:
+                            nextValue === 'boolean'
+                              ? 'true'
+                              : nextValue === 'json' && param.value.trim() === ''
+                                ? '{}'
+                                : param.value,
+                        })
+                      }
+                    />
+                    {renderParamValueEditor(ruleIndex, paramIndex, param)}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={styles.payloadRowActionButton}
+                      onClick={() => removeParam(ruleIndex, paramIndex)}
+                      disabled={disabled}
+                    >
+                      {t('config_management.visual.common.delete')}
+                    </Button>
+                  </div>
+                  {paramError && <div className={`error-box ${styles.payloadParamError}`}>{paramError}</div>}
+                </div>
+              );
+            })}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button variant="secondary" size="sm" onClick={() => addParam(ruleIndex)} disabled={disabled}>
                 {t('config_management.visual.payload_rules.add_param')}

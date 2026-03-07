@@ -16,6 +16,22 @@
   align-items: center;
 }
 
+.payloadRuleParamGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.payloadJsonInput {
+  min-height: 96px;
+  resize: vertical;
+  font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+}
+
+.payloadParamError {
+  margin: 0;
+}
+
 .payloadFilterModelRow {
   display: grid;
   grid-template-columns: 1fr 160px auto;

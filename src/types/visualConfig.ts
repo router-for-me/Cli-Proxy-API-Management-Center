@@ -1,4 +1,8 @@
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
+export type PayloadParamValidationErrorCode =
+  | 'payload_invalid_number'
+  | 'payload_invalid_boolean'
+  | 'payload_invalid_json';
 
 export type VisualConfigFieldPath =
   | 'port'

@@ -41,6 +41,7 @@ export function ConfigPage() {
     visualDirty,
     visualParseError,
     visualValidationErrors,
+    visualHasPayloadValidationErrors,
     loadVisualValuesFromYaml,
     applyVisualChangesToYaml,
     setVisualValues
@@ -74,7 +75,8 @@ export function ConfigPage() {
   const isDirty = dirty || visualDirty;
   const hasVisualModeError = !!visualParseError;
   const hasVisualValidationErrors =
-    activeTab === 'visual' && Object.values(visualValidationErrors).some(Boolean);
+    activeTab === 'visual' &&
+    (Object.values(visualValidationErrors).some(Boolean) || visualHasPayloadValidationErrors);
 
   const loadConfig = useCallback(async () => {
     setLoading(true);

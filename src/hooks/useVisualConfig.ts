@@ -2,10 +2,12 @@ import { useCallback, useMemo, useState } from 'react';
 import { isMap, parse as parseYaml, parseDocument } from 'yaml';
 import type {
   PayloadFilterRule,
+  PayloadParamEntry,
   PayloadParamValueType,
   PayloadRule,
   VisualConfigValues,
   VisualConfigValidationErrors,
+  PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
 
@@ -134,6 +136,41 @@ export function getVisualConfigValidationErrors(
       values.streaming.nonstreamKeepaliveInterval
     ),
   };
+}
+
+export function getPayloadParamValidationError(
+  param: PayloadParamEntry
+): PayloadParamValidationErrorCode | undefined {
+  const trimmedValue = param.value.trim();
+
+  switch (param.valueType) {
+    case 'number': {
+      if (!trimmedValue) return 'payload_invalid_number';
+      const parsed = Number(trimmedValue);
+      return Number.isFinite(parsed) ? undefined : 'payload_invalid_number';
+    }
+    case 'boolean': {
+      const normalized = trimmedValue.toLowerCase();
+      return normalized === 'true' || normalized === 'false'
+        ? undefined
+        : 'payload_invalid_boolean';
+    }
+    case 'json': {
+      if (!trimmedValue) return 'payload_invalid_json';
+      try {
+        JSON.parse(param.value);
+        return undefined;
+      } catch {
+        return 'payload_invalid_json';
+      }
+    }
+    default:
+      return undefined;
+  }
+}
+
+function hasPayloadParamValidationErrors(rules: PayloadRule[]): boolean {
+  return rules.some((rule) => rule.params.some((param) => Boolean(getPayloadParamValidationError(param))));
 }
 
 function deepClone<T>(value: T): T {
@@ -314,6 +351,12 @@ export function useVisualConfig() {
   const visualValidationErrors = useMemo(
     () => getVisualConfigValidationErrors(visualValues),
     [visualValues]
+  );
+  const visualHasPayloadValidationErrors = useMemo(
+    () =>
+      hasPayloadParamValidationErrors(visualValues.payloadDefaultRules) ||
+      hasPayloadParamValidationErrors(visualValues.payloadOverrideRules),
+    [visualValues.payloadDefaultRules, visualValues.payloadOverrideRules]
   );
 
   const visualDirty = useMemo(() => {
@@ -575,6 +618,7 @@ export function useVisualConfig() {
     visualDirty,
     visualParseError,
     visualValidationErrors,
+    visualHasPayloadValidationErrors,
     loadVisualValuesFromYaml,
     applyVisualChangesToYaml,
     setVisualValues,
