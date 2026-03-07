@@ -113,9 +113,15 @@ function ApiKeysCardEditor({
         .filter(Boolean),
     [value]
   );
+  const [apiKeyIds, setApiKeyIds] = useState(() => apiKeys.map(() => makeClientId()));
+  const renderApiKeyIds = useMemo(() => {
+    if (apiKeyIds.length === apiKeys.length) return apiKeyIds;
+    if (apiKeyIds.length > apiKeys.length) return apiKeyIds.slice(0, apiKeys.length);
+    return [...apiKeyIds, ...Array.from({ length: apiKeys.length - apiKeyIds.length }, () => makeClientId())];
+  }, [apiKeyIds, apiKeys.length]);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [formError, setFormError] = useState('');
 
@@ -127,15 +133,16 @@ function ApiKeysCardEditor({
   }
 
   const openAddModal = () => {
-    setEditingIndex(null);
+    setEditingApiKeyId(null);
     setInputValue('');
     setFormError('');
     setModalOpen(true);
   };
 
-  const openEditModal = (index: number) => {
-    setEditingIndex(index);
-    setInputValue(apiKeys[index] ?? '');
+  const openEditModal = (apiKeyId: string) => {
+    const editingIndex = renderApiKeyIds.findIndex((id) => id === apiKeyId);
+    setEditingApiKeyId(apiKeyId);
+    setInputValue(apiKeys[editingIndex] ?? '');
     setFormError('');
     setModalOpen(true);
   };
@@ -143,7 +150,7 @@ function ApiKeysCardEditor({
   const closeModal = () => {
     setModalOpen(false);
     setInputValue('');
-    setEditingIndex(null);
+    setEditingApiKeyId(null);
     setFormError('');
   };
 
@@ -151,7 +158,10 @@ function ApiKeysCardEditor({
     onChange(nextKeys.join('\n'));
   };
 
-  const handleDelete = (index: number) => {
+  const handleDelete = (apiKeyId: string) => {
+    const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
+    if (index < 0) return;
+    setApiKeyIds(renderApiKeyIds.filter((id) => id !== apiKeyId));
     updateApiKeys(apiKeys.filter((_, i) => i !== index));
   };
 
@@ -166,10 +176,14 @@ function ApiKeysCardEditor({
       return;
     }
 
+    const editingIndex = editingApiKeyId ? renderApiKeyIds.findIndex((id) => id === editingApiKeyId) : -1;
     const nextKeys =
-      editingIndex === null
+      editingApiKeyId === null
         ? [...apiKeys, trimmed]
         : apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
+    if (editingApiKeyId === null) {
+      setApiKeyIds([...renderApiKeyIds, makeClientId()]);
+    }
     updateApiKeys(nextKeys);
     closeModal();
   };
@@ -211,7 +225,7 @@ function ApiKeysCardEditor({
       ) : (
         <div className="item-list" style={{ marginTop: 4 }}>
           {apiKeys.map((key, index) => (
-            <div key={`${key}-${index}`} className="item-row">
+            <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
               <div className="item-meta">
                 <div className="pill">#{index + 1}</div>
                 <div className="item-title">API Key</div>
@@ -221,10 +235,20 @@ function ApiKeysCardEditor({
                 <Button variant="secondary" size="sm" onClick={() => handleCopy(key)} disabled={disabled}>
                   {t('common.copy')}
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => openEditModal(index)} disabled={disabled}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
+                  disabled={disabled}
+                >
                   {t('config_management.visual.common.edit')}
                 </Button>
-                <Button variant="danger" size="sm" onClick={() => handleDelete(index)} disabled={disabled}>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
+                  disabled={disabled}
+                >
                   {t('config_management.visual.common.delete')}
                 </Button>
               </div>
@@ -238,14 +262,14 @@ function ApiKeysCardEditor({
       <Modal
         open={modalOpen}
         onClose={closeModal}
-        title={editingIndex !== null ? t('config_management.visual.api_keys.edit_title') : t('config_management.visual.api_keys.add_title')}
+        title={editingApiKeyId !== null ? t('config_management.visual.api_keys.edit_title') : t('config_management.visual.api_keys.add_title')}
         footer={
           <>
             <Button variant="secondary" onClick={closeModal} disabled={disabled}>
               {t('config_management.visual.common.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={disabled}>
-              {editingIndex !== null ? t('config_management.visual.common.update') : t('config_management.visual.common.add')}
+              {editingApiKeyId !== null ? t('config_management.visual.common.update') : t('config_management.visual.common.add')}
             </Button>
           </>
         }
