@@ -12,9 +12,15 @@ export type TypeColorSet = { light: ThemeColors; dark?: ThemeColors };
 export type ResolvedTheme = 'light' | 'dark';
 export type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
 
-export type QuotaProviderType = 'antigravity' | 'codex' | 'gemini-cli' | 'kimi';
+export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi';
 
-export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>(['antigravity', 'codex', 'gemini-cli', 'kimi']);
+export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
+  'antigravity',
+  'claude',
+  'codex',
+  'gemini-cli',
+  'kimi'
+]);
 
 export const MIN_CARD_PAGE_SIZE = 3;
 export const MAX_CARD_PAGE_SIZE = 30;
