@@ -1,5 +1,6 @@
 export type AuthFilesUiState = {
   filter?: string;
+  problemOnly?: boolean;
   search?: string;
   page?: number;
   pageSize?: number;
@@ -27,4 +28,3 @@ export const writeAuthFilesUiState = (state: AuthFilesUiState) => {
     // ignore
   }
 };
-

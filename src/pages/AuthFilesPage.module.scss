@@ -161,6 +161,25 @@
   }
 }
 
+.filterToggleItem {
+  min-width: 220px;
+}
+
+.filterToggle {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+}
+
+.filterToggleLabel {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .pageSizeSelect {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
