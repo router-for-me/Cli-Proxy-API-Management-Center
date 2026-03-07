@@ -276,6 +276,7 @@ export function useVisualConfig() {
   const [baselineValues, setBaselineValues] = useState<VisualConfigValues>({
     ...DEFAULT_VISUAL_VALUES,
   });
+  const [visualParseError, setVisualParseError] = useState<string | null>(null);
 
   const visualDirty = useMemo(() => {
     return JSON.stringify(visualValues) !== JSON.stringify(baselineValues);
@@ -283,6 +284,11 @@ export function useVisualConfig() {
 
   const loadVisualValuesFromYaml = useCallback((yamlContent: string) => {
     try {
+      const document = parseDocument(yamlContent);
+      if (document.errors.length > 0) {
+        throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
+      }
+
       const parsedRaw: unknown = parseYaml(yamlContent) || {};
       const parsed = asRecord(parsedRaw) ?? {};
       const tls = asRecord(parsed.tls);
@@ -347,9 +353,12 @@ export function useVisualConfig() {
 
       setVisualValuesState(newValues);
       setBaselineValues(deepClone(newValues));
-    } catch {
-      setVisualValuesState({ ...DEFAULT_VISUAL_VALUES });
-      setBaselineValues(deepClone(DEFAULT_VISUAL_VALUES));
+      setVisualParseError(null);
+      return { ok: true as const };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Invalid YAML';
+      setVisualParseError(message);
+      return { ok: false as const, error: message };
     }
   }, []);
 
@@ -526,6 +535,7 @@ export function useVisualConfig() {
   return {
     visualValues,
     visualDirty,
+    visualParseError,
     loadVisualValuesFromYaml,
     applyVisualChangesToYaml,
     setVisualValues,
