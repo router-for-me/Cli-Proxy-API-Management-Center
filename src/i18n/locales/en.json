@@ -1067,6 +1067,7 @@
     "title": "Config Panel",
     "editor_title": "Configuration File",
     "reload": "Reload",
+    "reload_confirm_message": "Reloading will discard your unsaved changes. Do you want to continue?",
     "save": "Save",
     "description": "Edit config.yaml via visual editor or source file",
     "status_idle": "Waiting for action",

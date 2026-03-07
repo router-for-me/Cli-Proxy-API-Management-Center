@@ -31,7 +31,8 @@ function readCommercialModeFromYaml(yamlContent: string): boolean {
 
 export function ConfigPage() {
   const { t } = useTranslation();
-  const { showNotification } = useNotificationStore();
+  const showNotification = useNotificationStore((state) => state.showNotification);
+  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
 
@@ -401,6 +402,24 @@ export function ConfigPage() {
     return '';
   };
 
+  const handleReload = useCallback(() => {
+    if (!isDirty) {
+      void loadConfig();
+      return;
+    }
+
+    showConfirmation({
+      title: t('common.unsaved_changes_title'),
+      message: t('config_management.reload_confirm_message'),
+      confirmText: t('config_management.reload'),
+      cancelText: t('common.cancel'),
+      variant: 'danger',
+      onConfirm: async () => {
+        await loadConfig();
+      },
+    });
+  }, [isDirty, loadConfig, showConfirmation, t]);
+
   const floatingActions = (
     <div className={styles.floatingActionContainer} ref={floatingActionsRef}>
       <div className={styles.floatingActionList}>
@@ -408,8 +427,8 @@ export function ConfigPage() {
         <button
           type="button"
           className={styles.floatingActionButton}
-          onClick={loadConfig}
-          disabled={loading}
+          onClick={handleReload}
+          disabled={loading || saving}
           title={t('config_management.reload')}
           aria-label={t('config_management.reload')}
         >

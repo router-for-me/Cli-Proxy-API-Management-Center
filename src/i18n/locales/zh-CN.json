@@ -1067,6 +1067,7 @@
     "title": "配置面板",
     "editor_title": "配置文件",
     "reload": "重新加载",
+    "reload_confirm_message": "重新加载将丢弃你当前未保存的修改，确定继续吗？",
     "save": "保存",
     "description": "通过可视化或者源文件方式编辑 config.yaml 配置文件",
     "status_idle": "等待操作",
