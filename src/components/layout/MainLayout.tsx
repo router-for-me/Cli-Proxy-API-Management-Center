@@ -117,6 +117,12 @@ const headerIcons = {
       <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
     </svg>
   ),
+  whiteTheme: (
+    <svg {...headerIconProps}>
+      <circle cx="12" cy="12" r="7" />
+      <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+    </svg>
+  ),
   autoTheme: (
     <svg {...headerIconProps}>
       <defs>
@@ -571,7 +577,9 @@ export function MainLayout() {
                 ? headerIcons.autoTheme
                 : theme === 'dark'
                   ? headerIcons.moon
-                  : headerIcons.sun}
+                  : theme === 'white'
+                    ? headerIcons.whiteTheme
+                    : headerIcons.sun}
             </Button>
             <Button variant="ghost" size="sm" onClick={logout} title={t('header.logout')}>
               {headerIcons.logout}

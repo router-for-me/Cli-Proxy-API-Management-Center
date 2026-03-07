@@ -1385,6 +1385,7 @@
   "theme": {
     "switch": "主题",
     "light": "亮色",
+    "white": "纯白",
     "dark": "暗色",
     "switch_to_light": "切换到亮色模式",
     "switch_to_dark": "切换到暗色模式",
