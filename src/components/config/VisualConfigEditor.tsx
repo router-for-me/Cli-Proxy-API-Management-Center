@@ -289,16 +289,28 @@ function StringListEditor({
 }) {
   const { t } = useTranslation();
   const items = value.length ? value : [];
+  const [itemIds, setItemIds] = useState(() => items.map(() => makeClientId()));
+  const renderItemIds = useMemo(() => {
+    if (itemIds.length === items.length) return itemIds;
+    if (itemIds.length > items.length) return itemIds.slice(0, items.length);
+    return [...itemIds, ...Array.from({ length: items.length - itemIds.length }, () => makeClientId())];
+  }, [itemIds, items.length]);
 
   const updateItem = (index: number, nextValue: string) =>
     onChange(items.map((item, i) => (i === index ? nextValue : item)));
-  const addItem = () => onChange([...items, '']);
-  const removeItem = (index: number) => onChange(items.filter((_, i) => i !== index));
+  const addItem = () => {
+    setItemIds([...renderItemIds, makeClientId()]);
+    onChange([...items, '']);
+  };
+  const removeItem = (index: number) => {
+    setItemIds(renderItemIds.filter((_, i) => i !== index));
+    onChange(items.filter((_, i) => i !== index));
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {items.map((item, index) => (
-        <div key={index} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div key={renderItemIds[index] ?? `item-${index}`} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             className="input"
             placeholder={placeholder}
