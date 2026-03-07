@@ -8,16 +8,20 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
-  IconDownload,
+  IconChevronDown,
+  IconChevronUp,
   IconCode,
+  IconDownload,
   IconEyeOff,
   IconRefreshCw,
   IconSearch,
+  IconSlidersHorizontal,
   IconTimer,
   IconTrash2,
   IconX,
 } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -79,6 +83,10 @@ export function LogsPage() {
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [hideManagementLogs, setHideManagementLogs] = useState(true);
   const [showRawLogs, setShowRawLogs] = useState(false);
+  const [structuredFiltersExpanded, setStructuredFiltersExpanded] = useLocalStorage(
+    'logsPage.structuredFiltersExpanded',
+    true
+  );
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
   const [errorLogsError, setErrorLogsError] = useState('');
@@ -305,6 +313,9 @@ export function LogsPage() {
   }, [baseLines, hideManagementLogs, trimmedSearchQuery]);
 
   const filters = useLogFilters({ parsedLines: parsedSearchLines });
+  const structuredFiltersPanelId = 'logs-structured-filters';
+  const structuredFilterCount =
+    filters.methodFilters.length + filters.statusFilters.length + filters.pathFilters.length;
 
   const { filteredParsedLines, filteredLines, removedCount } = useMemo(() => {
     const filteredParsed = parsedSearchLines.filter((line) => {
@@ -498,7 +509,43 @@ export function LogsPage() {
                 />
               </div>
 
-              <div className={styles.structuredFilters}>
+              <div className={styles.filterPanelHeader}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className={styles.filterPanelToggle}
+                  onClick={() => setStructuredFiltersExpanded((prev) => !prev)}
+                  aria-expanded={structuredFiltersExpanded}
+                  aria-controls={structuredFiltersPanelId}
+                  title={
+                    structuredFiltersExpanded
+                      ? t('logs.filter_panel_collapse')
+                      : t('logs.filter_panel_expand')
+                  }
+                >
+                  <span className={styles.filterPanelButtonContent}>
+                    <IconSlidersHorizontal size={16} />
+                    <span>{t('logs.filter_panel_title')}</span>
+                    {structuredFilterCount > 0 && (
+                      <span className={styles.filterPanelCount}>
+                        {t('logs.filter_panel_active_count', { count: structuredFilterCount })}
+                      </span>
+                    )}
+                    {structuredFiltersExpanded ? (
+                      <IconChevronUp size={16} />
+                    ) : (
+                      <IconChevronDown size={16} />
+                    )}
+                  </span>
+                </Button>
+              </div>
+
+              <div
+                id={structuredFiltersPanelId}
+                className={styles.structuredFilters}
+                hidden={!structuredFiltersExpanded}
+              >
                 <div className={styles.filterChipGroup}>
                   <span className={styles.filterChipLabel}>{t('logs.filter_method')}</span>
                   <div className={styles.filterChipList}>
