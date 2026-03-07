@@ -35,6 +35,7 @@ import { versionApi } from '@/services/api';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
+import type { Theme } from '@/types';
 
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconLayoutDashboard size={18} />,
@@ -151,6 +152,39 @@ const headerIcons = {
   ),
 };
 
+const THEME_CARDS: Array<{
+  key: Theme;
+  labelKey: string;
+  colors: { bg: string; card: string; border: string; text: string; textMuted: string };
+}> = [
+  {
+    key: 'auto',
+    labelKey: 'theme.auto',
+    colors: {
+      bg: 'linear-gradient(135deg, #faf9f5 0 50%, #151412 50% 100%)',
+      card: 'linear-gradient(135deg, #f0eee8 0 50%, #1d1b18 50% 100%)',
+      border: '#bdb6ae',
+      text: '#2d2a26',
+      textMuted: 'linear-gradient(135deg, #a29c95 0 50%, #9c958d 50% 100%)',
+    },
+  },
+  {
+    key: 'white',
+    labelKey: 'theme.white',
+    colors: { bg: '#ffffff', card: '#ffffff', border: '#e5e5e5', text: '#2d2a26', textMuted: '#a29c95' },
+  },
+  {
+    key: 'light',
+    labelKey: 'theme.light',
+    colors: { bg: '#faf9f5', card: '#f0eee8', border: '#e3e1db', text: '#2d2a26', textMuted: '#a29c95' },
+  },
+  {
+    key: 'dark',
+    labelKey: 'theme.dark',
+    colors: { bg: '#151412', card: '#1d1b18', border: '#3a3530', text: '#f6f4f1', textMuted: '#9c958d' },
+  },
+];
+
 const parseVersionSegments = (version?: string | null) => {
   if (!version) return null;
   const cleaned = version.trim().replace(/^v/i, '');
@@ -192,7 +226,7 @@ export function MainLayout() {
   const clearCache = useConfigStore((state) => state.clearCache);
 
   const theme = useThemeStore((state) => state.theme);
-  const cycleTheme = useThemeStore((state) => state.cycleTheme);
+  const setTheme = useThemeStore((state) => state.setTheme);
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
 
@@ -200,9 +234,11 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [brandExpanded, setBrandExpanded] = useState(true);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const languageMenuRef = useRef<HTMLDivElement | null>(null);
+  const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const brandCollapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
 
@@ -310,6 +346,32 @@ export function MainLayout() {
     };
   }, [languageMenuOpen]);
 
+  useEffect(() => {
+    if (!themeMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!themeMenuRef.current?.contains(event.target as Node)) {
+        setThemeMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setThemeMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [themeMenuOpen]);
+
   const handleBrandClick = useCallback(() => {
     if (!brandExpanded) {
       setBrandExpanded(true);
@@ -325,7 +387,21 @@ export function MainLayout() {
 
   const toggleLanguageMenu = useCallback(() => {
     setLanguageMenuOpen((prev) => !prev);
+    setThemeMenuOpen(false);
   }, []);
+
+  const toggleThemeMenu = useCallback(() => {
+    setThemeMenuOpen((prev) => !prev);
+    setLanguageMenuOpen(false);
+  }, []);
+
+  const handleThemeSelect = useCallback(
+    (nextTheme: Theme) => {
+      setTheme(nextTheme);
+      setThemeMenuOpen(false);
+    },
+    [setTheme]
+  );
 
   const handleLanguageSelect = useCallback(
     (nextLanguage: string) => {
@@ -572,15 +648,72 @@ export function MainLayout() {
                 </div>
               )}
             </div>
-            <Button variant="ghost" size="sm" onClick={cycleTheme} title={t('theme.switch')}>
-              {theme === 'auto'
-                ? headerIcons.autoTheme
-                : theme === 'dark'
-                  ? headerIcons.moon
-                  : theme === 'white'
-                    ? headerIcons.whiteTheme
-                    : headerIcons.sun}
-            </Button>
+            <div className={`theme-menu ${themeMenuOpen ? 'open' : ''}`} ref={themeMenuRef}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleThemeMenu}
+                title={t('theme.switch')}
+                aria-label={t('theme.switch')}
+                aria-haspopup="menu"
+                aria-expanded={themeMenuOpen}
+              >
+                {theme === 'auto'
+                  ? headerIcons.autoTheme
+                  : theme === 'dark'
+                    ? headerIcons.moon
+                    : theme === 'white'
+                      ? headerIcons.whiteTheme
+                      : headerIcons.sun}
+              </Button>
+              {themeMenuOpen && (
+                <div className="notification entering theme-menu-popover" role="menu" aria-label={t('theme.switch')}>
+                  {THEME_CARDS.map((tc) => (
+                    <button
+                      key={tc.key}
+                      type="button"
+                      className={`theme-card ${theme === tc.key ? 'active' : ''}`}
+                      onClick={() => handleThemeSelect(tc.key)}
+                      role="menuitemradio"
+                      aria-checked={theme === tc.key}
+                    >
+                      <div
+                        className="theme-card-preview"
+                        style={{ background: tc.colors.bg, border: `1px solid ${tc.colors.border}` }}
+                      >
+                        <div
+                          className="theme-card-header"
+                          style={{
+                            background: tc.colors.card,
+                            borderBottom: `1px solid ${tc.colors.border}`,
+                          }}
+                        />
+                        <div className="theme-card-body">
+                          <div
+                            className="theme-card-sidebar"
+                            style={{
+                              background: tc.colors.card,
+                              borderRight: `1px solid ${tc.colors.border}`,
+                            }}
+                          />
+                          <div className="theme-card-content" style={{ background: tc.colors.bg }}>
+                            <div
+                              className="theme-card-line"
+                              style={{ background: tc.colors.textMuted }}
+                            />
+                            <div
+                              className="theme-card-line short"
+                              style={{ background: tc.colors.textMuted }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <span className="theme-card-label">{t(tc.labelKey)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Button variant="ghost" size="sm" onClick={logout} title={t('header.logout')}>
               {headerIcons.logout}
             </Button>

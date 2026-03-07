@@ -251,6 +251,111 @@
       }
     }
 
+    .theme-menu {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+
+      .theme-menu-popover {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        z-index: $z-dropdown;
+        padding: $spacing-sm $spacing-sm $spacing-xs;
+        display: flex;
+        gap: $spacing-xs;
+        width: max-content;
+        max-width: calc(100vw - 16px);
+      }
+
+      .theme-card {
+        border: 2px solid transparent;
+        border-radius: $radius-md;
+        background: transparent;
+        cursor: pointer;
+        padding: 6px 6px 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        transition: border-color $transition-fast, background-color $transition-fast;
+
+        &:hover {
+          background: var(--bg-secondary);
+        }
+
+        &:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 2px rgba($primary-color, 0.22);
+        }
+
+        &.active {
+          border-color: var(--primary-color);
+        }
+      }
+
+      .theme-card-preview {
+        width: 72px;
+        height: 52px;
+        border-radius: $radius-sm;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .theme-card-header {
+        height: 10px;
+        flex-shrink: 0;
+      }
+
+      .theme-card-body {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+
+      .theme-card-sidebar {
+        width: 16px;
+        flex-shrink: 0;
+      }
+
+      .theme-card-content {
+        flex: 1;
+        padding: 5px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        justify-content: center;
+      }
+
+      .theme-card-line {
+        height: 3px;
+        border-radius: 1px;
+
+        &.short {
+          width: 60%;
+        }
+      }
+
+      .theme-card-label {
+        font-size: 11px;
+        color: var(--text-primary);
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      @media (max-width: $breakpoint-mobile) {
+        .theme-menu-popover {
+          right: auto;
+          left: 50%;
+          transform: translateX(-50%);
+          display: grid;
+          grid-template-columns: repeat(2, max-content);
+          justify-content: center;
+        }
+      }
+    }
+
     svg {
       display: block;
     }
