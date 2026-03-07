@@ -25,12 +25,28 @@ const getSystemTheme = (): ResolvedTheme => {
   return 'light';
 };
 
-const applyTheme = (resolved: ResolvedTheme) => {
+const resolveTheme = (theme: Theme): ResolvedTheme | 'white' => {
+  if (theme === 'auto') {
+    return getSystemTheme();
+  }
+  if (theme === 'white') {
+    return 'white';
+  }
+  return theme;
+};
+
+const applyTheme = (resolved: ResolvedTheme | 'white') => {
   if (resolved === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
-  } else {
-    document.documentElement.removeAttribute('data-theme');
+    return;
   }
+
+  if (resolved === 'white') {
+    document.documentElement.setAttribute('data-theme', 'white');
+    return;
+  }
+
+  document.documentElement.removeAttribute('data-theme');
 };
 
 export const useThemeStore = create<ThemeState>()(
@@ -40,14 +56,17 @@ export const useThemeStore = create<ThemeState>()(
       resolvedTheme: 'light',
 
       setTheme: (theme) => {
-        const resolved: ResolvedTheme = theme === 'auto' ? getSystemTheme() : theme;
+        const resolved = resolveTheme(theme);
         applyTheme(resolved);
-        set({ theme, resolvedTheme: resolved });
+        set({
+          theme,
+          resolvedTheme: resolved === 'white' ? 'light' : resolved,
+        });
       },
 
       cycleTheme: () => {
         const { theme, setTheme } = get();
-        const order: Theme[] = ['light', 'dark', 'auto'];
+        const order: Theme[] = ['light', 'white', 'dark', 'auto'];
         const currentIndex = order.indexOf(theme);
         const nextTheme = order[(currentIndex + 1) % order.length];
         setTheme(nextTheme);
