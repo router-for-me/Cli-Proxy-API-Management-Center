@@ -1,4 +1,4 @@
-import { useId, useMemo, useState, type ReactNode } from 'react';
+import { memo, useCallback, useId, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -94,7 +94,7 @@ function Divider() {
   return <div style={{ height: 1, background: 'var(--border-color)', margin: '16px 0' }} />;
 }
 
-function ApiKeysCardEditor({
+const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   value,
   disabled,
   onChange,
@@ -306,9 +306,9 @@ function ApiKeysCardEditor({
       </Modal>
     </div>
   );
-}
+});
 
-function StringListEditor({
+const StringListEditor = memo(function StringListEditor({
   value,
   disabled,
   placeholder,
@@ -363,9 +363,9 @@ function StringListEditor({
       </div>
     </div>
   );
-}
+});
 
-function PayloadRulesEditor({
+const PayloadRulesEditor = memo(function PayloadRulesEditor({
   value,
   disabled,
   protocolFirst = false,
@@ -686,9 +686,9 @@ function PayloadRulesEditor({
       </div>
     </div>
   );
-}
+});
 
-function PayloadFilterRulesEditor({
+const PayloadFilterRulesEditor = memo(function PayloadFilterRulesEditor({
   value,
   disabled,
   onChange,
@@ -834,7 +834,7 @@ function PayloadFilterRulesEditor({
       </div>
     </div>
   );
-}
+});
 
 export function VisualConfigEditor({ values, validationErrors, disabled = false, onChange }: VisualConfigEditorProps) {
   const { t } = useTranslation();
@@ -858,6 +858,20 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
   const nonstreamKeepaliveError = getValidationMessage(
     t,
     validationErrors?.['streaming.nonstreamKeepaliveInterval']
+  );
+
+  const handleApiKeysTextChange = useCallback((apiKeysText: string) => onChange({ apiKeysText }), [onChange]);
+  const handlePayloadDefaultRulesChange = useCallback(
+    (payloadDefaultRules: PayloadRule[]) => onChange({ payloadDefaultRules }),
+    [onChange]
+  );
+  const handlePayloadOverrideRulesChange = useCallback(
+    (payloadOverrideRules: PayloadRule[]) => onChange({ payloadOverrideRules }),
+    [onChange]
+  );
+  const handlePayloadFilterRulesChange = useCallback(
+    (payloadFilterRules: PayloadFilterRule[]) => onChange({ payloadFilterRules }),
+    [onChange]
   );
 
   return (
@@ -965,7 +979,7 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
           <ApiKeysCardEditor
             value={values.apiKeysText}
             disabled={disabled}
-            onChange={(apiKeysText) => onChange({ apiKeysText })}
+            onChange={handleApiKeysTextChange}
           />
         </div>
       </ConfigSection>
@@ -1206,7 +1220,7 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
             <PayloadRulesEditor
               value={values.payloadDefaultRules}
               disabled={disabled}
-              onChange={(payloadDefaultRules) => onChange({ payloadDefaultRules })}
+              onChange={handlePayloadDefaultRulesChange}
             />
           </div>
 
@@ -1219,7 +1233,7 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
               value={values.payloadOverrideRules}
               disabled={disabled}
               protocolFirst
-              onChange={(payloadOverrideRules) => onChange({ payloadOverrideRules })}
+              onChange={handlePayloadOverrideRulesChange}
             />
           </div>
 
@@ -1231,7 +1245,7 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
             <PayloadFilterRulesEditor
               value={values.payloadFilterRules}
               disabled={disabled}
-              onChange={(payloadFilterRules) => onChange({ payloadFilterRules })}
+              onChange={handlePayloadFilterRulesChange}
             />
           </div>
         </div>
