@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { authFilesApi, isAuthFileInvalidJsonObjectError } from '@/services/api';
+import { authFilesApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
 import { useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
@@ -65,17 +65,6 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const selectionCount = selectedFiles.size;
-
-  const resolveStatusUpdateErrorMessage = useCallback(
-    (err: unknown) => {
-      if (isAuthFileInvalidJsonObjectError(err)) {
-        return t('auth_files.prefix_proxy_invalid_json');
-      }
-      return err instanceof Error ? err.message : '';
-    },
-    [t]
-  );
-
   const toggleSelect = useCallback((name: string) => {
     setSelectedFiles((prev) => {
       const next = new Set(prev);
@@ -393,9 +382,10 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
       setFiles((prev) => prev.map((f) => (f.name === name ? { ...f, disabled: nextDisabled } : f)));
 
       try {
-        await authFilesApi.setStatus(name, nextDisabled);
-        await loadFiles();
-        void refreshKeyStats().catch(() => {});
+        const res = await authFilesApi.setStatus(name, nextDisabled);
+        setFiles((prev) =>
+          prev.map((f) => (f.name === name ? { ...f, disabled: res.disabled } : f))
+        );
         showNotification(
           enabled
             ? t('auth_files.status_enabled_success', { name })
@@ -403,7 +393,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
           'success'
         );
       } catch (err: unknown) {
-        const errorMessage = resolveStatusUpdateErrorMessage(err);
+        const errorMessage = err instanceof Error ? err.message : '';
         setFiles((prev) =>
           prev.map((f) => (f.name === name ? { ...f, disabled: previousDisabled } : f))
         );
@@ -417,7 +407,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
         });
       }
     },
-    [loadFiles, refreshKeyStats, resolveStatusUpdateErrorMessage, showNotification, t]
+    [showNotification, t]
   );
 
   const batchSetStatus = useCallback(
@@ -427,9 +417,6 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
       const targetNames = new Set(uniqueNames);
       const nextDisabled = !enabled;
-      const previousDisabled = new Map(
-        files.map((file) => [file.name, file.disabled === true] as const)
-      );
 
       setFiles((prev) =>
         prev.map((file) =>
@@ -443,26 +430,31 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
       let successCount = 0;
       let failCount = 0;
+      const failedNames = new Set<string>();
+      const confirmedDisabled = new Map<string, boolean>();
 
-      results.forEach((result) => {
+      results.forEach((result, index) => {
+        const name = uniqueNames[index];
         if (result.status === 'fulfilled') {
           successCount++;
+          confirmedDisabled.set(name, result.value.disabled);
         } else {
           failCount++;
+          failedNames.add(name);
         }
       });
 
-      if (successCount > 0) {
-        await loadFiles();
-        void refreshKeyStats().catch(() => {});
-      } else {
-        setFiles((prev) =>
-          prev.map((file) => {
-            if (!targetNames.has(file.name)) return file;
-            return { ...file, disabled: previousDisabled.get(file.name) === true };
-          })
-        );
-      }
+      setFiles((prev) =>
+        prev.map((file) => {
+          if (failedNames.has(file.name)) {
+            return { ...file, disabled: !nextDisabled };
+          }
+          if (confirmedDisabled.has(file.name)) {
+            return { ...file, disabled: confirmedDisabled.get(file.name) };
+          }
+          return file;
+        })
+      );
 
       if (failCount === 0) {
         showNotification(t('auth_files.batch_status_success', { count: successCount }), 'success');
@@ -475,7 +467,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
       deselectAll();
     },
-    [deselectAll, files, loadFiles, refreshKeyStats, showNotification, t]
+    [deselectAll, showNotification, t]
   );
 
   const batchDelete = useCallback(
