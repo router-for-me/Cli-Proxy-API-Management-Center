@@ -346,12 +346,24 @@
 
       @media (max-width: $breakpoint-mobile) {
         .theme-menu-popover {
-          right: auto;
-          left: 50%;
-          transform: translateX(-50%);
+          right: 0;
+          left: auto;
+          transform: none;
           display: grid;
-          grid-template-columns: repeat(2, max-content);
-          justify-content: center;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          justify-content: stretch;
+          width: min(188px, calc(100vw - 16px));
+        }
+
+        .theme-card {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .theme-card-label {
+          white-space: normal;
+          text-align: center;
+          line-height: 1.2;
         }
       }
     }
