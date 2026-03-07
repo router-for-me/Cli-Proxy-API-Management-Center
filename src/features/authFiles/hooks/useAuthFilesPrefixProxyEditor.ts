@@ -260,8 +260,7 @@ export function useAuthFilesPrefixProxyEditor(
     });
 
     try {
-      const file = new File([payload], name, { type: 'application/json' });
-      await authFilesApi.upload(file);
+      await authFilesApi.saveText(name, payload);
       showNotification(t('auth_files.prefix_proxy_saved_success', { name }), 'success');
       await loadFiles();
       await loadKeyStats();
