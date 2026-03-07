@@ -249,11 +249,13 @@ const StringListEditor = memo(function StringListEditor({
   value,
   disabled,
   placeholder,
+  inputAriaLabel,
   onChange,
 }: {
   value: string[];
   disabled?: boolean;
   placeholder?: string;
+  inputAriaLabel?: string;
   onChange: (next: string[]) => void;
 }) {
   const { t } = useTranslation();
@@ -283,6 +285,7 @@ const StringListEditor = memo(function StringListEditor({
           <input
             className="input"
             placeholder={placeholder}
+            aria-label={inputAriaLabel ?? placeholder}
             value={item}
             onChange={(e) => updateItem(index, e.target.value)}
             disabled={disabled}
@@ -429,6 +432,7 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
         <textarea
           className={`input ${styles.payloadJsonInput}`}
           placeholder={getValuePlaceholder(param.valueType)}
+          aria-label={t('config_management.visual.payload_rules.param_value')}
           value={param.value}
           onChange={(e) => updateParam(ruleIndex, paramIndex, { value: e.target.value })}
           disabled={disabled}
@@ -440,6 +444,7 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
       <input
         className="input"
         placeholder={getValuePlaceholder(param.valueType)}
+        aria-label={t('config_management.visual.payload_rules.param_value')}
         value={param.value}
         onChange={(e) => updateParam(ruleIndex, paramIndex, { value: e.target.value })}
         disabled={disabled}
@@ -501,6 +506,7 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                     <input
                       className="input"
                       placeholder={t('config_management.visual.payload_rules.model_name')}
+                      aria-label={t('config_management.visual.payload_rules.model_name')}
                       value={model.name}
                       onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
                       disabled={disabled}
@@ -511,6 +517,7 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                     <input
                       className="input"
                       placeholder={t('config_management.visual.payload_rules.model_name')}
+                      aria-label={t('config_management.visual.payload_rules.model_name')}
                       value={model.name}
                       onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
                       disabled={disabled}
@@ -557,6 +564,7 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                     <input
                       className="input"
                       placeholder={t('config_management.visual.payload_rules.json_path')}
+                      aria-label={t('config_management.visual.payload_rules.json_path')}
                       value={param.path}
                       onChange={(e) => updateParam(ruleIndex, paramIndex, { path: e.target.value })}
                       disabled={disabled}
@@ -705,6 +713,7 @@ export const PayloadFilterRulesEditor = memo(function PayloadFilterRulesEditor({
                 <input
                   className="input"
                   placeholder={t('config_management.visual.payload_rules.model_name')}
+                  aria-label={t('config_management.visual.payload_rules.model_name')}
                   value={model.name}
                   onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
                   disabled={disabled}
@@ -744,6 +753,7 @@ export const PayloadFilterRulesEditor = memo(function PayloadFilterRulesEditor({
               value={rule.params}
               disabled={disabled}
               placeholder={t('config_management.visual.payload_rules.json_path_filter')}
+              inputAriaLabel={t('config_management.visual.payload_rules.json_path_filter')}
               onChange={(params) => updateRule(ruleIndex, { params })}
             />
           </div>
