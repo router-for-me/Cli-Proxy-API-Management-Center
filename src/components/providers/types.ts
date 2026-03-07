@@ -18,11 +18,17 @@ export interface OpenAIFormState {
   apiKeyEntries: ApiKeyEntry[];
 }
 
+export interface AmpcodeUpstreamApiKeyEntry {
+  upstreamApiKey: string;
+  clientApiKeysText: string;
+}
+
 export interface AmpcodeFormState {
   upstreamUrl: string;
   upstreamApiKey: string;
   forceModelMappings: boolean;
   mappingEntries: ModelEntry[];
+  upstreamApiKeyEntries: AmpcodeUpstreamApiKeyEntry[];
 }
 
 export type GeminiFormState = Omit<GeminiKeyConfig, 'headers' | 'models'> & {
@@ -37,9 +43,10 @@ export type ProviderFormState = Omit<ProviderKeyConfig, 'headers'> & {
   excludedText: string;
 };
 
-export type VertexFormState = Omit<ProviderKeyConfig, 'headers' | 'excludedModels'> & {
+export type VertexFormState = Omit<ProviderKeyConfig, 'headers'> & {
   headers: HeaderEntry[];
   modelEntries: ModelEntry[];
+  excludedText: string;
 };
 
 export interface ProviderSectionProps<TConfig> {

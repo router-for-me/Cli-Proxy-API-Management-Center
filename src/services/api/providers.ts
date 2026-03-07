@@ -107,6 +107,9 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
   if (headers) payload.headers = headers;
   const models = serializeVertexModelAliases(config.models);
   if (models && models.length) payload.models = models;
+  if (config.excludedModels && config.excludedModels.length) {
+    payload['excluded-models'] = config.excludedModels;
+  }
   return payload;
 };
 

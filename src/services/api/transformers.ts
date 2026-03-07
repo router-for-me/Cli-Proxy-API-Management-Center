@@ -6,7 +6,8 @@ import type {
   OpenAIProviderConfig,
   ProviderKeyConfig,
   AmpcodeConfig,
-  AmpcodeModelMapping
+  AmpcodeModelMapping,
+  AmpcodeUpstreamApiKeyMapping
 } from '@/types';
 import type { Config } from '@/types/config';
 import { buildHeaderObject } from '@/utils/headers';
@@ -276,6 +277,33 @@ const normalizeAmpcodeModelMappings = (input: unknown): AmpcodeModelMapping[] =>
   return mappings;
 };
 
+const normalizeAmpcodeUpstreamApiKeys = (input: unknown): AmpcodeUpstreamApiKeyMapping[] => {
+  if (!Array.isArray(input)) return [];
+
+  const seen = new Set<string>();
+  const mappings: AmpcodeUpstreamApiKeyMapping[] = [];
+
+  input.forEach((entry) => {
+    if (!isRecord(entry)) return;
+
+    const upstreamApiKey = String(
+      entry['upstream-api-key'] ?? entry.upstreamApiKey ?? entry['upstream_api_key'] ?? ''
+    ).trim();
+    if (!upstreamApiKey || seen.has(upstreamApiKey)) return;
+
+    const rawApiKeys = entry['api-keys'] ?? entry.apiKeys ?? entry['api_keys'] ?? [];
+    const apiKeys = Array.isArray(rawApiKeys)
+      ? Array.from(new Set(rawApiKeys.map((item) => String(item ?? '').trim()).filter(Boolean)))
+      : [];
+    if (!apiKeys.length) return;
+
+    seen.add(upstreamApiKey);
+    mappings.push({ upstreamApiKey, apiKeys });
+  });
+
+  return mappings;
+};
+
 const normalizeAmpcodeConfig = (payload: unknown): AmpcodeConfig | undefined => {
   const sourceRaw = isRecord(payload) ? (payload.ampcode ?? payload) : payload;
   if (!isRecord(sourceRaw)) return undefined;
@@ -286,6 +314,13 @@ const normalizeAmpcodeConfig = (payload: unknown): AmpcodeConfig | undefined => 
   if (upstreamUrl) config.upstreamUrl = String(upstreamUrl);
   const upstreamApiKey = source['upstream-api-key'] ?? source.upstreamApiKey ?? source['upstream_api_key'];
   if (upstreamApiKey) config.upstreamApiKey = String(upstreamApiKey);
+
+  const upstreamApiKeys = normalizeAmpcodeUpstreamApiKeys(
+    source['upstream-api-keys'] ?? source.upstreamApiKeys ?? source['upstream_api_keys']
+  );
+  if (upstreamApiKeys.length) {
+    config.upstreamApiKeys = upstreamApiKeys;
+  }
 
   const forceModelMappings = normalizeBoolean(
     source['force-model-mappings'] ?? source.forceModelMappings ?? source['force_model_mappings']
@@ -420,5 +455,6 @@ export {
   normalizeHeaders,
   normalizeExcludedModels,
   normalizeAmpcodeConfig,
-  normalizeAmpcodeModelMappings
+  normalizeAmpcodeModelMappings,
+  normalizeAmpcodeUpstreamApiKeys
 };

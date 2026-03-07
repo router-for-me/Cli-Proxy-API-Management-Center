@@ -3,8 +3,18 @@
  */
 
 import { apiClient } from './client';
-import { normalizeAmpcodeConfig, normalizeAmpcodeModelMappings } from './transformers';
-import type { AmpcodeConfig, AmpcodeModelMapping } from '@/types';
+import {
+  normalizeAmpcodeConfig,
+  normalizeAmpcodeModelMappings,
+  normalizeAmpcodeUpstreamApiKeys,
+} from './transformers';
+import type { AmpcodeConfig, AmpcodeModelMapping, AmpcodeUpstreamApiKeyMapping } from '@/types';
+
+const serializeUpstreamApiKeyMappings = (mappings: AmpcodeUpstreamApiKeyMapping[]) =>
+  mappings.map((mapping) => ({
+    'upstream-api-key': mapping.upstreamApiKey,
+    'api-keys': mapping.apiKeys,
+  }));
 
 export const ampcodeApi = {
   async getAmpcode(): Promise<AmpcodeConfig> {
@@ -17,6 +27,19 @@ export const ampcodeApi = {
 
   updateUpstreamApiKey: (apiKey: string) => apiClient.put('/ampcode/upstream-api-key', { value: apiKey }),
   clearUpstreamApiKey: () => apiClient.delete('/ampcode/upstream-api-key'),
+
+  async getUpstreamApiKeys(): Promise<AmpcodeUpstreamApiKeyMapping[]> {
+    const data = await apiClient.get<Record<string, unknown>>('/ampcode/upstream-api-keys');
+    const list = data?.['upstream-api-keys'] ?? data?.upstreamApiKeys ?? data?.items ?? data;
+    return normalizeAmpcodeUpstreamApiKeys(list);
+  },
+
+  saveUpstreamApiKeys: (mappings: AmpcodeUpstreamApiKeyMapping[]) =>
+    apiClient.put('/ampcode/upstream-api-keys', { value: serializeUpstreamApiKeyMappings(mappings) }),
+  patchUpstreamApiKeys: (mappings: AmpcodeUpstreamApiKeyMapping[]) =>
+    apiClient.patch('/ampcode/upstream-api-keys', { value: serializeUpstreamApiKeyMappings(mappings) }),
+  deleteUpstreamApiKeys: (upstreamApiKeys: string[]) =>
+    apiClient.delete('/ampcode/upstream-api-keys', { data: { value: upstreamApiKeys } }),
 
   async getModelMappings(): Promise<AmpcodeModelMapping[]> {
     const data = await apiClient.get<Record<string, unknown>>('/ampcode/model-mappings');
@@ -34,4 +57,3 @@ export const ampcodeApi = {
 
   updateForceModelMappings: (enabled: boolean) => apiClient.put('/ampcode/force-model-mappings', { value: enabled })
 };
-

@@ -87,6 +87,7 @@ export function VertexSection({
           renderContent={(item, index) => {
             const stats = getStatsBySource(item.apiKey, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});
+            const excludedModels = item.excludedModels ?? [];
             const statusData = statusBarCache.get(item.apiKey) || calculateStatusBarData([]);
 
             return (
@@ -138,6 +139,20 @@ export function VertexSection({
                         )}
                       </span>
                     ))}
+                  </div>
+                ) : null}
+                {excludedModels.length ? (
+                  <div className={styles.excludedModelsSection}>
+                    <div className={styles.excludedModelsLabel}>
+                      {t('ai_providers.excluded_models_count', { count: excludedModels.length })}
+                    </div>
+                    <div className={styles.modelTagList}>
+                      {excludedModels.map((model) => (
+                        <span key={model} className={`${styles.modelTag} ${styles.excludedModelTag}`}>
+                          <span className={styles.modelName}>{model}</span>
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
                 <div className={styles.cardStats}>
