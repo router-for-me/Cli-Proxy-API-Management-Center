@@ -351,7 +351,7 @@ export function MainLayout() {
       return;
     }
 
-    const handlePointerDown = (event: MouseEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
       if (!themeMenuRef.current?.contains(event.target as Node)) {
         setThemeMenuOpen(false);
       }
@@ -363,11 +363,11 @@ export function MainLayout() {
       }
     };
 
-    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [themeMenuOpen]);
