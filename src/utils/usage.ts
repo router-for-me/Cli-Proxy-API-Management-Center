@@ -195,7 +195,7 @@ export function filterUsageByDetail<T>(usageData: T, predicate: (detail: UsageDe
           return;
         }
 
-        filteredDetails.push(detail);
+        filteredDetails.push({ ...detailRecord, ...usageDetail });
         modelSummary.totalRequests += 1;
         if (usageDetail.failed) {
           modelSummary.failureCount += 1;

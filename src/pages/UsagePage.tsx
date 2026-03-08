@@ -331,15 +331,20 @@ export function UsagePage() {
     (value: string) => {
       setSubProviderFilter(value);
       if (modelFilter !== ALL_FILTER_VALUE) {
-        // Check if current model is still valid under the new sub-provider scope.
-        // We derive this from subProviderScopedUsage's model names.
-        const nextModelNames = getModelNamesFromUsage(subProviderScopedUsage);
+        const nextSubProviderScopedUsage =
+          value === ALL_FILTER_VALUE
+            ? providerScopedUsage
+            : filterUsageByDetail(
+                providerScopedUsage,
+                (detail) => resolveSourceInfo(detail.source, sourceInfoMap)?.displayName === value
+              );
+        const nextModelNames = getModelNamesFromUsage(nextSubProviderScopedUsage);
         if (!nextModelNames.includes(modelFilter)) {
           setModelFilter(DEFAULT_MODEL_FILTER);
         }
       }
     },
-    [modelFilter, subProviderScopedUsage]
+    [modelFilter, providerScopedUsage, sourceInfoMap]
   );
 
   const handleModelFilterChange = useCallback((value: string) => {
