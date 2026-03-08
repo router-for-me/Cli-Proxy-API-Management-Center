@@ -25,27 +25,48 @@
   flex-wrap: wrap;
 }
 
-.lastRefreshed {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  white-space: nowrap;
+.headerFilters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  @include mobile {
+    width: 100%;
+  }
 }
 
-.timeRangeGroup {
+.filterGroup {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+
+  @include mobile {
+    width: 100%;
+    align-items: stretch;
+  }
 }
 
-.timeRangeLabel {
+.filterLabel {
   font-size: 12px;
   color: var(--text-secondary);
   font-weight: 600;
 }
 
-.timeRangeSelectControl {
+.filterSelectControl {
   min-width: 164px;
+
+  @include mobile {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.lastRefreshed {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
 }
 
 .pageTitle {
