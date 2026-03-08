@@ -132,7 +132,13 @@ const headerIcons = {
         </clipPath>
       </defs>
       <circle cx="12" cy="12" r="4" />
-      <circle cx="12" cy="12" r="4" clipPath="url(#mainLayoutAutoThemeSunLeftHalf)" fill="currentColor" />
+      <circle
+        cx="12"
+        cy="12"
+        r="4"
+        clipPath="url(#mainLayoutAutoThemeSunLeftHalf)"
+        fill="currentColor"
+      />
       <path d="M12 2v2" />
       <path d="M12 20v2" />
       <path d="M4.93 4.93l1.41 1.41" />
@@ -171,17 +177,35 @@ const THEME_CARDS: Array<{
   {
     key: 'white',
     labelKey: 'theme.white',
-    colors: { bg: '#ffffff', card: '#ffffff', border: '#e5e5e5', text: '#2d2a26', textMuted: '#a29c95' },
+    colors: {
+      bg: '#ffffff',
+      card: '#ffffff',
+      border: '#e5e5e5',
+      text: '#2d2a26',
+      textMuted: '#a29c95',
+    },
   },
   {
     key: 'light',
     labelKey: 'theme.light',
-    colors: { bg: '#faf9f5', card: '#f0eee8', border: '#e3e1db', text: '#2d2a26', textMuted: '#a29c95' },
+    colors: {
+      bg: '#faf9f5',
+      card: '#f0eee8',
+      border: '#e3e1db',
+      text: '#2d2a26',
+      textMuted: '#a29c95',
+    },
   },
   {
     key: 'dark',
     labelKey: 'theme.dark',
-    colors: { bg: '#151412', card: '#1d1b18', border: '#3a3530', text: '#f6f4f1', textMuted: '#9c958d' },
+    colors: {
+      bg: '#151412',
+      card: '#1d1b18',
+      border: '#3a3530',
+      text: '#f6f4f1',
+      textMuted: '#9c958d',
+    },
   },
 ];
 
@@ -420,7 +444,6 @@ export function MainLayout() {
     });
   }, [fetchConfig]);
 
-
   const statusClass =
     connectionStatus === 'connected'
       ? 'success'
@@ -503,7 +526,7 @@ export function MainLayout() {
     clearCache();
     const results = await Promise.allSettled([
       fetchConfig(undefined, true),
-      triggerHeaderRefresh()
+      triggerHeaderRefresh(),
     ]);
     const rejected = results.find((result) => result.status === 'rejected');
     if (rejected && rejected.status === 'rejected') {
@@ -618,7 +641,10 @@ export function MainLayout() {
             >
               {headerIcons.update}
             </Button>
-            <div className={`language-menu ${languageMenuOpen ? 'open' : ''}`} ref={languageMenuRef}>
+            <div
+              className={`language-menu ${languageMenuOpen ? 'open' : ''}`}
+              ref={languageMenuRef}
+            >
               <Button
                 variant="ghost"
                 size="sm"
@@ -631,7 +657,11 @@ export function MainLayout() {
                 {headerIcons.language}
               </Button>
               {languageMenuOpen && (
-                <div className="notification entering language-menu-popover" role="menu" aria-label={t('language.switch')}>
+                <div
+                  className="notification entering language-menu-popover"
+                  role="menu"
+                  aria-label={t('language.switch')}
+                >
                   {LANGUAGE_ORDER.map((lang) => (
                     <button
                       key={lang}
@@ -667,7 +697,11 @@ export function MainLayout() {
                       : headerIcons.sun}
               </Button>
               {themeMenuOpen && (
-                <div className="notification entering theme-menu-popover" role="menu" aria-label={t('theme.switch')}>
+                <div
+                  className="notification entering theme-menu-popover"
+                  role="menu"
+                  aria-label={t('theme.switch')}
+                >
                   {THEME_CARDS.map((tc) => (
                     <button
                       key={tc.key}
@@ -679,7 +713,10 @@ export function MainLayout() {
                     >
                       <div
                         className="theme-card-preview"
-                        style={{ background: tc.colors.bg, border: `1px solid ${tc.colors.border}` }}
+                        style={{
+                          background: tc.colors.bg,
+                          border: `1px solid ${tc.colors.border}`,
+                        }}
                       >
                         <div
                           className="theme-card-header"
