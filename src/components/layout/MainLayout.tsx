@@ -672,7 +672,7 @@ export function MainLayout() {
                     <button
                       key={tc.key}
                       type="button"
-                      className={`theme-card ${theme === tc.key ? 'active' : ''}`}
+                      className={`theme-card theme-card-${tc.key} ${theme === tc.key ? 'active' : ''}`}
                       onClick={() => handleThemeSelect(tc.key)}
                       role="menuitemradio"
                       aria-checked={theme === tc.key}
