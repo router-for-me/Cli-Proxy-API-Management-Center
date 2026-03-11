@@ -4,7 +4,12 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useNotificationStore, useThemeStore } from '@/stores';
-import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
+import {
+  oauthApi,
+  type GitLabPatAuthResponse,
+  type IFlowCookieAuthResponse,
+  type OAuthProvider
+} from '@/services/api/oauth';
 import { vertexApi, type VertexImportResponse } from '@/services/api/vertex';
 import { copyToClipboard } from '@/utils/clipboard';
 import styles from './OAuthPage.module.scss';
@@ -13,6 +18,7 @@ import iconCodexDark from '@/assets/icons/codex_drak.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconGemini from '@/assets/icons/gemini.svg';
+import iconGitlab from '@/assets/icons/gitlab.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
@@ -31,6 +37,9 @@ interface ProviderState {
   callbackSubmitting?: boolean;
   callbackStatus?: 'success' | 'error';
   callbackError?: string;
+  baseUrl?: string;
+  clientId?: string;
+  clientSecret?: string;
 }
 
 interface IFlowCookieState {
@@ -39,6 +48,14 @@ interface IFlowCookieState {
   result?: IFlowCookieAuthResponse;
   error?: string;
   errorType?: 'error' | 'warning';
+}
+
+interface GitLabPatState {
+  baseUrl: string;
+  personalAccessToken: string;
+  loading: boolean;
+  result?: GitLabPatAuthResponse;
+  error?: string;
 }
 
 interface VertexImportResult {
@@ -74,6 +91,7 @@ function getErrorStatus(error: unknown): number | undefined {
 
 const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string; icon: string | { light: string; dark: string } }[] = [
   { id: 'codex', titleKey: 'auth_login.codex_oauth_title', hintKey: 'auth_login.codex_oauth_hint', urlLabelKey: 'auth_login.codex_oauth_url_label', icon: { light: iconCodexLight, dark: iconCodexDark } },
+  { id: 'gitlab', titleKey: 'auth_login.gitlab_oauth_title', hintKey: 'auth_login.gitlab_oauth_hint', urlLabelKey: 'auth_login.gitlab_oauth_url_label', icon: iconGitlab },
   { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
   { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconAntigravity },
   { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini },
@@ -81,7 +99,7 @@ const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabe
   { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label', icon: iconQwen }
 ];
 
-const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli'];
+const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'gitlab', 'anthropic', 'antigravity', 'gemini-cli'];
 const getProviderI18nPrefix = (provider: OAuthProvider) => provider.replace('-', '_');
 const getAuthKey = (provider: OAuthProvider, suffix: string) =>
   `auth_login.${getProviderI18nPrefix(provider)}_${suffix}`;
@@ -96,6 +114,11 @@ export function OAuthPage() {
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
   const [iflowCookie, setIflowCookie] = useState<IFlowCookieState>({ cookie: '', loading: false });
+  const [gitlabPat, setGitlabPat] = useState<GitLabPatState>({
+    baseUrl: 'https://gitlab.com',
+    personalAccessToken: '',
+    loading: false
+  });
   const [vertexState, setVertexState] = useState<VertexImportState>({
     fileName: '',
     location: '',
@@ -160,9 +183,17 @@ export function OAuthPage() {
         ? 'ALL'
         : rawProjectId
       : undefined;
+    const gitlabState = provider === 'gitlab' ? states[provider] : undefined;
+    const gitlabClientId = provider === 'gitlab' ? (gitlabState?.clientId || '').trim() : '';
+    const gitlabClientSecret = provider === 'gitlab' ? (gitlabState?.clientSecret || '').trim() : '';
+    const gitlabBaseUrl = provider === 'gitlab' ? (gitlabState?.baseUrl || '').trim() : '';
     // 项目 ID 可选：留空自动选择第一个可用项目；输入 ALL 获取全部项目
     if (provider === 'gemini-cli') {
       updateProviderState(provider, { projectIdError: undefined });
+    }
+    if (provider === 'gitlab' && !gitlabClientId) {
+      showNotification(t('auth_login.gitlab_oauth_client_id_required'), 'warning');
+      return;
     }
     updateProviderState(provider, {
       status: 'waiting',
@@ -175,7 +206,15 @@ export function OAuthPage() {
     try {
       const res = await oauthApi.startAuth(
         provider,
-        provider === 'gemini-cli' ? { projectId: projectId || undefined } : undefined
+        provider === 'gemini-cli'
+          ? { projectId: projectId || undefined }
+          : provider === 'gitlab'
+            ? {
+                baseUrl: gitlabBaseUrl || undefined,
+                clientId: gitlabClientId,
+                clientSecret: gitlabClientSecret || undefined
+              }
+            : undefined
       );
       updateProviderState(provider, { url: res.url, state: res.state, status: 'waiting', polling: true });
       if (res.state) {
@@ -186,6 +225,45 @@ export function OAuthPage() {
       updateProviderState(provider, { status: 'error', error: message, polling: false });
       showNotification(
         `${t(getAuthKey(provider, 'oauth_start_error'))}${message ? ` ${message}` : ''}`,
+        'error'
+      );
+    }
+  };
+
+  const submitGitlabPat = async () => {
+    const personalAccessToken = gitlabPat.personalAccessToken.trim();
+    if (!personalAccessToken) {
+      showNotification(t('auth_login.gitlab_pat_required'), 'warning');
+      return;
+    }
+
+    setGitlabPat((prev) => ({
+      ...prev,
+      loading: true,
+      error: undefined,
+      result: undefined
+    }));
+
+    try {
+      const res = await oauthApi.gitlabPatAuth({
+        baseUrl: gitlabPat.baseUrl.trim() || undefined,
+        personalAccessToken
+      });
+      setGitlabPat((prev) => ({
+        ...prev,
+        loading: false,
+        result: res
+      }));
+      showNotification(t('auth_login.gitlab_pat_status_success'), 'success');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      setGitlabPat((prev) => ({
+        ...prev,
+        loading: false,
+        error: message
+      }));
+      showNotification(
+        `${t('auth_login.gitlab_pat_start_error')}${message ? ` ${message}` : ''}`,
         'error'
       );
     }
@@ -384,6 +462,48 @@ export function OAuthPage() {
                       />
                     </div>
                   )}
+                  {provider.id === 'gitlab' && (
+                    <>
+                      <Input
+                        label={t('auth_login.gitlab_oauth_base_url_label')}
+                        hint={t('auth_login.gitlab_oauth_base_url_hint')}
+                        value={state.baseUrl || 'https://gitlab.com'}
+                        disabled={Boolean(state.polling)}
+                        onChange={(e) =>
+                          updateProviderState(provider.id, {
+                            baseUrl: e.target.value
+                          })
+                        }
+                        placeholder={t('auth_login.gitlab_oauth_base_url_placeholder')}
+                      />
+                      <Input
+                        label={t('auth_login.gitlab_oauth_client_id_label')}
+                        hint={t('auth_login.gitlab_oauth_client_id_hint')}
+                        value={state.clientId || ''}
+                        disabled={Boolean(state.polling)}
+                        onChange={(e) =>
+                          updateProviderState(provider.id, {
+                            clientId: e.target.value
+                          })
+                        }
+                        placeholder={t('auth_login.gitlab_oauth_client_id_placeholder')}
+                      />
+                      <Input
+                        type="password"
+                        autoComplete="off"
+                        label={t('auth_login.gitlab_oauth_client_secret_label')}
+                        hint={t('auth_login.gitlab_oauth_client_secret_hint')}
+                        value={state.clientSecret || ''}
+                        disabled={Boolean(state.polling)}
+                        onChange={(e) =>
+                          updateProviderState(provider.id, {
+                            clientSecret: e.target.value
+                          })
+                        }
+                        placeholder={t('auth_login.gitlab_oauth_client_secret_placeholder')}
+                      />
+                    </>
+                  )}
                   {state.url && (
                     <div className={styles.authUrlBox}>
                       <div className={styles.authUrlLabel}>{t(provider.urlLabelKey)}</div>
@@ -453,6 +573,90 @@ export function OAuthPage() {
             </div>
           );
         })}
+
+        <Card
+          title={
+            <span className={styles.cardTitle}>
+              <img src={iconGitlab} alt="" className={styles.cardTitleIcon} />
+              {t('auth_login.gitlab_pat_title')}
+            </span>
+          }
+          extra={
+            <Button onClick={submitGitlabPat} loading={gitlabPat.loading}>
+              {t('auth_login.gitlab_pat_button')}
+            </Button>
+          }
+        >
+          <div className={styles.cardContent}>
+            <div className={styles.cardHint}>{t('auth_login.gitlab_pat_hint')}</div>
+            <Input
+              label={t('auth_login.gitlab_pat_base_url_label')}
+              hint={t('auth_login.gitlab_pat_base_url_hint')}
+              value={gitlabPat.baseUrl}
+              onChange={(e) =>
+                setGitlabPat((prev) => ({
+                  ...prev,
+                  baseUrl: e.target.value
+                }))
+              }
+              placeholder={t('auth_login.gitlab_pat_base_url_placeholder')}
+            />
+            <Input
+              type="password"
+              autoComplete="off"
+              label={t('auth_login.gitlab_pat_token_label')}
+              hint={t('auth_login.gitlab_pat_token_hint')}
+              value={gitlabPat.personalAccessToken}
+              onChange={(e) =>
+                setGitlabPat((prev) => ({
+                  ...prev,
+                  personalAccessToken: e.target.value
+                }))
+              }
+              placeholder={t('auth_login.gitlab_pat_token_placeholder')}
+            />
+            {gitlabPat.error && (
+              <div className="status-badge error">
+                {t('auth_login.gitlab_pat_status_error')} {gitlabPat.error}
+              </div>
+            )}
+            {gitlabPat.result?.status === 'ok' && (
+              <div className={styles.connectionBox}>
+                <div className={styles.connectionLabel}>{t('auth_login.gitlab_pat_result_title')}</div>
+                <div className={styles.keyValueList}>
+                  {gitlabPat.result.username && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_username')}</span>
+                      <span className={styles.keyValueValue}>{gitlabPat.result.username}</span>
+                    </div>
+                  )}
+                  {gitlabPat.result.email && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_email')}</span>
+                      <span className={styles.keyValueValue}>{gitlabPat.result.email}</span>
+                    </div>
+                  )}
+                  {gitlabPat.result.saved_path && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_path')}</span>
+                      <span className={styles.keyValueValue}>{gitlabPat.result.saved_path}</span>
+                    </div>
+                  )}
+                  {(gitlabPat.result.model_provider || gitlabPat.result.model_name) && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_model')}</span>
+                      <span className={styles.keyValueValue}>
+                        {[gitlabPat.result.model_provider, gitlabPat.result.model_name]
+                          .filter(Boolean)
+                          .join(' / ')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
 
         {/* Vertex JSON 登录 */}
         <Card

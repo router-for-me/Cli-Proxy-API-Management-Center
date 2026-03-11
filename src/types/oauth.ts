@@ -9,8 +9,30 @@ export type OAuthProvider =
   | 'anthropic'
   | 'antigravity'
   | 'gemini-cli'
+  | 'gitlab'
   | 'kimi'
   | 'qwen';
+
+export interface OAuthStartOptions {
+  projectId?: string;
+  baseUrl?: string;
+  clientId?: string;
+  clientSecret?: string;
+}
+
+export interface OAuthStartResponse {
+  url: string;
+  state?: string;
+}
+
+export interface OAuthStatusResponse {
+  status: 'ok' | 'wait' | 'error';
+  error?: string;
+}
+
+export interface OAuthCallbackResponse {
+  status: 'ok';
+}
 
 // OAuth 流程状态
 export interface OAuthFlow {
@@ -28,6 +50,26 @@ export interface OAuthConfig {
   clientId?: string;
   clientSecret?: string;
   redirectUri?: string;
+}
+
+export interface IFlowCookieAuthResponse {
+  status: 'ok' | 'error';
+  error?: string;
+  saved_path?: string;
+  email?: string;
+  expired?: string;
+  type?: string;
+}
+
+export interface GitLabPatAuthResponse {
+  status: 'ok' | 'error';
+  error?: string;
+  saved_path?: string;
+  username?: string;
+  email?: string;
+  token_label?: string;
+  model_provider?: string;
+  model_name?: string;
 }
 
 // OAuth 排除模型列表
