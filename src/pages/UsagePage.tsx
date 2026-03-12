@@ -6,6 +6,7 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -27,6 +28,7 @@ import {
   CredentialStatsCard,
   RequestEventsDetailsCard,
   TokenBreakdownChart,
+  TokenDistributionChart,
   CostTrendChart,
   ServiceHealthCard,
   useUsageData,
@@ -48,6 +50,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -340,14 +343,21 @@ export function UsagePage() {
         />
       </div>
 
-      {/* Token Breakdown Chart */}
-      <TokenBreakdownChart
-        usage={filteredUsage}
-        loading={loading}
-        isDark={isDark}
-        isMobile={isMobile}
-        hourWindowHours={hourWindowHours}
-      />
+      {/* Token Distribution & Breakdown Charts */}
+      <div className={styles.chartsGrid}>
+        <TokenDistributionChart
+          usage={filteredUsage}
+          loading={loading}
+          isDark={isDark}
+        />
+        <TokenBreakdownChart
+          usage={filteredUsage}
+          loading={loading}
+          isDark={isDark}
+          isMobile={isMobile}
+          hourWindowHours={hourWindowHours}
+        />
+      </div>
 
       {/* Cost Trend Chart */}
       <CostTrendChart

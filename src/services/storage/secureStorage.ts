@@ -3,13 +3,44 @@
  * 基于原项目 src/utils/secure-storage.js
  */
 
-import { encryptData, decryptData } from '@/utils/encryption';
+import { encryptData, decryptData, isEncrypted } from '@/utils/encryption';
 
 interface StorageOptions {
   encrypt?: boolean;
 }
 
 class SecureStorageService {
+  private migrateLegacyValue(key: string, value: unknown): void {
+    try {
+      this.setItem(key, value);
+    } catch {
+      // 读取旧值成功时优先保证兼容返回，迁移失败不影响本次恢复流程。
+    }
+  }
+
+  private decodeStoredValue(
+    raw: string,
+    encrypt: boolean
+  ): { serialized: string; legacyEncrypted: boolean } | null {
+    if (!encrypt) {
+      return { serialized: raw, legacyEncrypted: false };
+    }
+
+    if (raw.startsWith('enc::v2::')) {
+      const decrypted = decryptData(raw);
+      if (decrypted === raw) return null;
+      return { serialized: decrypted, legacyEncrypted: false };
+    }
+
+    if (raw.startsWith('enc::v1::')) {
+      const decrypted = decryptData(raw);
+      if (decrypted === raw) return null;
+      return { serialized: decrypted, legacyEncrypted: true };
+    }
+
+    return { serialized: raw, legacyEncrypted: false };
+  }
+
   /**
    * 存储数据
    */
@@ -36,24 +67,25 @@ class SecureStorageService {
     const raw = localStorage.getItem(key);
     if (raw === null) return null;
 
+    const decoded = this.decodeStoredValue(raw, encrypt);
+    if (!decoded) {
+      return null;
+    }
+
     try {
-      const decrypted = encrypt ? decryptData(raw) : raw;
-      return JSON.parse(decrypted) as T;
-    } catch {
-      // JSON解析失败,尝试兼容旧的纯字符串数据 (非JSON格式)
-      try {
-        // 如果是加密的,尝试解密后直接返回
-        if (encrypt && raw.startsWith('enc::v1::')) {
-          const decrypted = decryptData(raw);
-          // 解密后如果还不是JSON,返回原始字符串
-          return decrypted as T;
-        }
-        // 非加密的纯字符串,直接返回
-        return raw as T;
-      } catch {
-        // 完全失败,静默返回null (避免控制台污染)
-        return null;
+      const parsed = JSON.parse(decoded.serialized) as T;
+
+      if (encrypt && decoded.legacyEncrypted) {
+        this.migrateLegacyValue(key, parsed);
       }
+
+      return parsed;
+    } catch {
+      if (encrypt && decoded.legacyEncrypted) {
+        this.migrateLegacyValue(key, decoded.serialized);
+      }
+
+      return decoded.serialized as T;
     }
   }
 
@@ -80,7 +112,7 @@ class SecureStorageService {
       if (!raw) return;
 
       // 如果已经是加密格式，跳过
-      if (raw.startsWith('enc::v1::')) {
+      if (isEncrypted(raw)) {
         return;
       }
 

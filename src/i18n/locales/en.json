@@ -989,7 +989,15 @@
     "request_events_limit_hint": "Showing {{shown}} of {{total}} events to keep rendering responsive.",
     "input_tokens": "Input Tokens",
     "output_tokens": "Output Tokens",
-    "last_updated": "Updated"
+    "last_updated": "Updated",
+    "token_distribution": "Token Distribution",
+    "token_efficiency": "Token Efficiency",
+    "cache_hit_rate": "Cache Hit Rate",
+    "output_efficiency": "Output Efficiency",
+    "cost_efficiency": "Cost Efficiency",
+    "current": "Current",
+    "peak": "Peak",
+    "total": "Total"
   },
   "stats": {
     "success": "Success",

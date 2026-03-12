@@ -1,0 +1,59 @@
+@use '../../styles/variables' as *;
+
+.smartNumber {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clickable {
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.value {
+  font-weight: inherit;
+}
+
+.trend {
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: $radius-sm;
+  background: var(--bg-tertiary);
+}
+
+.trendUp {
+  color: var(--success-color);
+  background: rgba($success-color, 0.1);
+}
+
+.trendDown {
+  color: var(--danger-color);
+  background: rgba($error-color, 0.1);
+}
+
+.compactNumber,
+.tokenNumber,
+.costNumber,
+.rateNumber {
+  font-variant-numeric: tabular-nums;
+}
+
+.tokenNumber {
+  color: var(--text-primary);
+}
+
+.costNumber {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.rateNumber {
+  color: var(--text-primary);
+}

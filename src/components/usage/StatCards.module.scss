@@ -1,0 +1,373 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+// 增强型卡片样式
+.enhancedCard {
+  .enhancedMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .rateRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+  }
+
+  .rateLabel {
+    color: var(--text-tertiary);
+  }
+
+  .rateValue {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Token效率卡片样式
+.efficiencyCard {
+  grid-column: span 4;
+
+  @include tablet {
+    grid-column: span 6;
+  }
+
+  @include mobile {
+    grid-column: auto;
+  }
+}
+
+.efficiencyGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.efficiencyItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.efficiencyLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.efficiencyValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.progressBar {
+  width: 100%;
+  height: 6px;
+  background-color: var(--bg-tertiary);
+  border-radius: $radius-full;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: $radius-full;
+  transition: width 0.3s ease;
+}
+
+// 健康评分卡片样式
+.healthScoreCard {
+  grid-column: span 4;
+
+  @include tablet {
+    grid-column: span 6;
+  }
+
+  @include mobile {
+    grid-column: auto;
+  }
+}
+
+.healthScoreContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.scoreSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.scoreRingContainer {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.scoreRingSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.scoreRingBg {
+  stroke: var(--bg-tertiary);
+}
+
+.scoreRingProgress {
+  transition: stroke-dashoffset 0.5s ease;
+}
+
+.scoreRingText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.scoreValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scoreGrade {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.scoreTrend {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.metricsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metricRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metricInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 80px;
+}
+
+.metricLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.metricValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.metricBar {
+  flex: 1;
+  height: 4px;
+  background-color: var(--bg-tertiary);
+  border-radius: $radius-full;
+  overflow: hidden;
+}
+
+.metricBarFill {
+  height: 100%;
+  border-radius: $radius-full;
+  transition: width 0.3s ease;
+}
+
+.metricGrade {
+  font-size: 11px;
+  font-weight: 500;
+  min-width: 36px;
+  text-align: right;
+}
+
+.healthFooter {
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.consecutiveDays {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+// SLA 监控卡片样式
+.slaMonitorCard {
+  grid-column: span 4;
+
+  @include tablet {
+    grid-column: span 6;
+  }
+
+  @include mobile {
+    grid-column: auto;
+  }
+}
+
+.slaContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.tierSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tierLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.tierValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.slaMetricsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.slaMetricRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slaMetricHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slaMetricLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.statusBadge {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.slaMetricValues {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.slaMetricCurrent {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.slaMetricTarget {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.slaProgressBar {
+  width: 100%;
+  height: 4px;
+  background-color: var(--bg-tertiary);
+  border-radius: $radius-full;
+  overflow: hidden;
+}
+
+.slaProgressFill {
+  height: 100%;
+  border-radius: $radius-full;
+  transition: width 0.3s ease;
+}
+
+.slaFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.budgetSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.budgetLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.budgetValues {
+  display: flex;
+  gap: 12px;
+}
+
+.budgetItem {
+  font-size: 11px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.compensationSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-radius: $radius-sm;
+}
+
+.compensationLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.compensationValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.overallStatus {
+  font-size: 12px;
+  font-weight: 500;
+}

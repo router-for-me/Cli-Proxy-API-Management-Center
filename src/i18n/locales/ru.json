@@ -992,7 +992,15 @@
     "request_events_limit_hint": "Показано {{shown}} из {{total}} событий для стабильной производительности.",
     "input_tokens": "Входные токены",
     "output_tokens": "Выходные токены",
-    "last_updated": "Обновлено"
+    "last_updated": "Обновлено",
+    "token_distribution": "Распределение токенов",
+    "token_efficiency": "Эффективность токенов",
+    "cache_hit_rate": "Процент попаданий в кэш",
+    "output_efficiency": "Эффективность вывода",
+    "cost_efficiency": "Эффективность затрат",
+    "current": "Текущий",
+    "peak": "Пик",
+    "total": "Всего"
   },
   "stats": {
     "success": "Успех",

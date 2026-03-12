@@ -33,6 +33,9 @@ export type { CredentialStatsCardProps } from './CredentialStatsCard';
 export { TokenBreakdownChart } from './TokenBreakdownChart';
 export type { TokenBreakdownChartProps } from './TokenBreakdownChart';
 
+export { TokenDistributionChart } from './TokenDistributionChart';
+export type { TokenDistributionChartProps } from './TokenDistributionChart';
+
 export { CostTrendChart } from './CostTrendChart';
 export type { CostTrendChartProps } from './CostTrendChart';
 
