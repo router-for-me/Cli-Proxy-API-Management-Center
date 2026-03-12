@@ -14,6 +14,7 @@ management-api*
 antigravity_usage.json
 codex_usage.json
 style.md
+.trae/
 
 node_modules
 dist
