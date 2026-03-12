@@ -21,6 +21,11 @@ import type { SubscriptionTier } from '@/utils/usage/slaCalculator';
 import styles from '@/pages/UsagePage.module.scss';
 import cardStyles from './StatCards.module.scss';
 
+const CACHE_HIT_RATE_GOOD_THRESHOLD = 0.5;
+const OUTPUT_EFFICIENCY_GOOD_THRESHOLD = 0.3;
+const COST_EFFICIENCY_GOOD_THRESHOLD = 50000;
+const COST_EFFICIENCY_PROGRESS_MAX = 100000;
+
 interface StatCardData {
   key: string;
   label: string;
@@ -338,7 +343,8 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines, subs
                   className={cardStyles.progressFill}
                   style={{
                     width: `${Math.min(tokenEfficiency.cacheHitRate * 100, 100)}%`,
-                    backgroundColor: tokenEfficiency.cacheHitRate > 0.5 ? '#22c55e' : '#f59e0b'
+                    backgroundColor:
+                      tokenEfficiency.cacheHitRate > CACHE_HIT_RATE_GOOD_THRESHOLD ? '#22c55e' : '#f59e0b'
                   }}
                 />
               </div>
@@ -351,7 +357,10 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines, subs
                   className={cardStyles.progressFill}
                   style={{
                     width: `${Math.min(tokenEfficiency.outputEfficiency * 100, 100)}%`,
-                    backgroundColor: tokenEfficiency.outputEfficiency > 0.3 ? '#22c55e' : '#f59e0b'
+                    backgroundColor:
+                      tokenEfficiency.outputEfficiency > OUTPUT_EFFICIENCY_GOOD_THRESHOLD
+                        ? '#22c55e'
+                        : '#f59e0b'
                   }}
                 />
               </div>
@@ -366,8 +375,9 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines, subs
                   <div
                     className={cardStyles.progressFill}
                     style={{
-                      width: `${Math.min((tokenEfficiency.costEfficiency / 100000) * 100, 100)}%`,
-                      backgroundColor: tokenEfficiency.costEfficiency > 50000 ? '#22c55e' : '#f59e0b'
+                      width: `${Math.min((tokenEfficiency.costEfficiency / COST_EFFICIENCY_PROGRESS_MAX) * 100, 100)}%`,
+                      backgroundColor:
+                        tokenEfficiency.costEfficiency > COST_EFFICIENCY_GOOD_THRESHOLD ? '#22c55e' : '#f59e0b'
                     }}
                   />
                 </div>

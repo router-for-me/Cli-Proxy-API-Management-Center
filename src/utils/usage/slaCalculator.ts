@@ -94,6 +94,8 @@ export const SLA_TIERS: Record<SubscriptionTier, SLATierConfig> = {
   }
 };
 
+const MINUTE_AVAILABILITY_SUCCESS_RATE_THRESHOLD = 0.5;
+
 export function getSLAStatus(current: number, target: number): SLAStatus {
   if (target === 0) return 'met';
   
@@ -148,7 +150,9 @@ function calculateAvailability(
   
   minuteBuckets.forEach((bucket) => {
     totalMinutes++;
-    if (bucket.failure > 0 && bucket.success === 0) {
+    const totalRequests = bucket.success + bucket.failure;
+    const successRate = totalRequests > 0 ? bucket.success / totalRequests : 1;
+    if (successRate < MINUTE_AVAILABILITY_SUCCESS_RATE_THRESHOLD) {
       downMinutes++;
     }
   });
