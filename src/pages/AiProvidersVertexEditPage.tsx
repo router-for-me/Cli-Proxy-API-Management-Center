@@ -192,10 +192,6 @@ export function AiProvidersVertexEditPage() {
 
     const trimmedBaseUrl = (form.baseUrl ?? '').trim();
     const baseUrl = trimmedBaseUrl || undefined;
-    if (!baseUrl) {
-      showNotification(t('notification.vertex_base_url_required'), 'error');
-      return;
-    }
 
     setSaving(true);
     setError('');
@@ -347,7 +343,6 @@ export function AiProvidersVertexEditPage() {
                 removeButtonAriaLabel={t('common.delete')}
                 disabled={disableControls || saving}
               />
-              <div className="hint">{t('ai_providers.vertex_models_hint')}</div>
             </div>
             <div className="form-group">
               <label>{t('ai_providers.excluded_models_label')}</label>
