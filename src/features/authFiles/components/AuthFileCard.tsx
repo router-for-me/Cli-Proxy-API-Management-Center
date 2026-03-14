@@ -112,6 +112,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(rawStatusMessage.toLowerCase());
 
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
+  const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
 
   return (
     <div
@@ -160,6 +161,13 @@ export function AuthFileCard(props: AuthFileCardProps) {
               </span>
             )}
           </div>
+
+          {noteValue && (
+            <div className={styles.noteText} title={noteValue}>
+              <span className={styles.noteLabel}>{t('auth_files.note_display')}: </span>
+              {noteValue}
+            </div>
+          )}
 
           {rawStatusMessage && hasStatusWarning && (
             <div className={styles.healthStatusMessage} title={rawStatusMessage}>
