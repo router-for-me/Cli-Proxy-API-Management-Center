@@ -607,6 +607,7 @@
     "plan_unknown": "Неизвестно",
     "plan_free": "Free",
     "plan_pro": "Pro",
+    "plan_max": "Max",
     "plan_max5": "Max 5x",
     "plan_max20": "Max 20x"
   },
