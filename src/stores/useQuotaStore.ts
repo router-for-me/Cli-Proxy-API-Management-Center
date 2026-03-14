@@ -3,7 +3,15 @@
  */
 
 import { create } from 'zustand';
-import type { AntigravityQuotaState, ClaudeQuotaState, CodexQuotaState, GeminiCliQuotaState, KimiQuotaState } from '@/types';
+import type {
+  AntigravityQuotaState,
+  ClaudeQuotaState,
+  CodexQuotaState,
+  GeminiCliQuotaState,
+  KimiQuotaState,
+  KiroQuotaState,
+  CopilotQuotaState,
+} from '@/types';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
@@ -13,11 +21,15 @@ interface QuotaStoreState {
   codexQuota: Record<string, CodexQuotaState>;
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
+  kiroQuota: Record<string, KiroQuotaState>;
+  copilotQuota: Record<string, CopilotQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
+  setKiroQuota: (updater: QuotaUpdater<Record<string, KiroQuotaState>>) => void;
+  setCopilotQuota: (updater: QuotaUpdater<Record<string, CopilotQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -34,6 +46,8 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
   codexQuota: {},
   geminiCliQuota: {},
   kimiQuota: {},
+  kiroQuota: {},
+  copilotQuota: {},
   setAntigravityQuota: (updater) =>
     set((state) => ({
       antigravityQuota: resolveUpdater(updater, state.antigravityQuota)
@@ -54,12 +68,22 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
     set((state) => ({
       kimiQuota: resolveUpdater(updater, state.kimiQuota)
     })),
+  setKiroQuota: (updater) =>
+    set((state) => ({
+      kiroQuota: resolveUpdater(updater, state.kiroQuota)
+    })),
+  setCopilotQuota: (updater) =>
+    set((state) => ({
+      copilotQuota: resolveUpdater(updater, state.copilotQuota)
+    })),
   clearQuotaCache: () =>
     set({
       antigravityQuota: {},
       claudeQuota: {},
       codexQuota: {},
       geminiCliQuota: {},
-      kimiQuota: {}
+      kimiQuota: {},
+      kiroQuota: {},
+      copilotQuota: {}
     })
 }));

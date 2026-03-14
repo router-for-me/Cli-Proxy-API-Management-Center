@@ -1,5 +1,5 @@
 /**
- * Quota management page - coordinates the three quota sections.
+ * Quota management page - coordinates the quota sections.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -13,7 +13,9 @@ import {
   CLAUDE_CONFIG,
   CODEX_CONFIG,
   GEMINI_CLI_CONFIG,
-  KIMI_CONFIG
+  KIMI_CONFIG,
+  KIRO_CONFIG,
+  COPILOT_CONFIG
 } from '@/components/quota';
 import type { AuthFileItem } from '@/types';
 import styles from './QuotaPage.module.scss';
@@ -97,6 +99,18 @@ export function QuotaPage() {
       />
       <QuotaSection
         config={KIMI_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
+      <QuotaSection
+        config={KIRO_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
+      <QuotaSection
+        config={COPILOT_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}

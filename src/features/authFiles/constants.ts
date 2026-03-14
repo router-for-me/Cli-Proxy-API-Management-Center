@@ -12,14 +12,23 @@ export type TypeColorSet = { light: ThemeColors; dark?: ThemeColors };
 export type ResolvedTheme = 'light' | 'dark';
 export type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
 
-export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi';
+export type QuotaProviderType =
+  | 'antigravity'
+  | 'claude'
+  | 'codex'
+  | 'gemini-cli'
+  | 'kimi'
+  | 'kiro'
+  | 'github-copilot';
 
 export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'antigravity',
   'claude',
   'codex',
   'gemini-cli',
-  'kimi'
+  'kimi',
+  'kiro',
+  'github-copilot'
 ]);
 
 export const MIN_CARD_PAGE_SIZE = 3;
@@ -59,6 +68,14 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
   codex: {
     light: { bg: '#fff3e0', text: '#ef6c00' },
     dark: { bg: '#e65100', text: '#ffb74d' }
+  },
+  kiro: {
+    light: { bg: '#fff8e1', text: '#ff8f00' },
+    dark: { bg: '#ff6f00', text: '#ffe082' }
+  },
+  'github-copilot': {
+    light: { bg: '#f0f0f0', text: '#24292f' },
+    dark: { bg: '#30363d', text: '#c9d1d9' }
   },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },

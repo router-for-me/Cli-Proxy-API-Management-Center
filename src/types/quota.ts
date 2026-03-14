@@ -221,6 +221,118 @@ export interface CodexQuotaState {
   errorStatus?: number;
 }
 
+// Kiro API payload types
+export interface KiroSubscriptionInfo {
+  subscriptionTitle?: string;
+  type?: string;
+  overageCapability?: string;
+  upgradeCapability?: string;
+}
+
+export interface KiroFreeTrialInfo {
+  freeTrialStatus?: string;
+  usageLimitWithPrecision?: number | string;
+  currentUsageWithPrecision?: number | string;
+  freeTrialExpiry?: number | string;
+}
+
+export interface KiroUsageBreakdown {
+  resourceType?: string;
+  usageLimitWithPrecision?: number | string;
+  currentUsageWithPrecision?: number | string;
+  nextDateReset?: number | string;
+  freeTrialInfo?: KiroFreeTrialInfo;
+  overageRate?: number;
+  currency?: string;
+}
+
+export interface KiroQuotaPayload {
+  daysUntilReset?: number;
+  nextDateReset?: number | string;
+  subscriptionInfo?: KiroSubscriptionInfo;
+  usageBreakdownList?: KiroUsageBreakdown[];
+  userInfo?: { userId?: string };
+}
+
+export interface KiroQuotaErrorPayload {
+  __type?: string;
+  message?: string;
+  reason?: string;
+}
+
+export interface KiroBaseQuota {
+  used: number;
+  limit: number;
+  resetTime: number;
+}
+
+export interface KiroFreeTrialQuota {
+  used: number;
+  limit: number;
+  expiry: number;
+  status: string;
+}
+
+export interface KiroQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  subscriptionTitle: string | null;
+  baseQuota: KiroBaseQuota | null;
+  freeTrialQuota: KiroFreeTrialQuota | null;
+  error?: string;
+  errorStatus?: number;
+}
+
+// GitHub Copilot API payload types
+export interface CopilotLimitedQuotas {
+  chat?: number | string;
+  completions?: number | string;
+}
+
+export interface CopilotQuotaSnapshot {
+  entitlement?: number | string;
+  remaining?: number | string;
+  percent_remaining?: number | string;
+  unlimited?: boolean;
+  overage_permitted?: boolean;
+  overage_count?: number;
+}
+
+export interface CopilotQuotaSnapshots {
+  chat?: CopilotQuotaSnapshot;
+  completions?: CopilotQuotaSnapshot;
+  premium_interactions?: CopilotQuotaSnapshot;
+}
+
+export interface CopilotQuotaPayload {
+  login?: string;
+  copilot_plan?: string;
+  access_type_sku?: string;
+  chat_enabled?: boolean;
+  limited_user_quotas?: CopilotLimitedQuotas;
+  monthly_quotas?: CopilotLimitedQuotas;
+  limited_user_reset_date?: string;
+  quota_reset_date?: string;
+  quota_snapshots?: CopilotQuotaSnapshots;
+}
+
+export interface CopilotQuotaItem {
+  id: string;
+  label: string;
+  used: number;
+  limit: number;
+  percent: number;
+  unlimited: boolean;
+}
+
+export interface CopilotQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  plan: string | null;
+  items: CopilotQuotaItem[];
+  resetDate: string | null;
+  error?: string;
+  errorStatus?: number;
+}
+
 // Kimi API payload types
 export interface KimiUsageDetail {
   used?: number;

@@ -38,6 +38,14 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#fff4e5', text: '#ad6800' },
     dark: { bg: '#7c4a03', text: '#ffd591' },
   },
+  kiro: {
+    light: { bg: '#fff8e1', text: '#ff8f00' },
+    dark: { bg: '#ff6f00', text: '#ffe082' },
+  },
+  'github-copilot': {
+    light: { bg: '#f0f0f0', text: '#24292f' },
+    dark: { bg: '#30363d', text: '#c9d1d9' },
+  },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
     dark: { bg: '#004d40', text: '#80deea' },
@@ -190,4 +198,27 @@ export const KIMI_USAGE_URL = 'https://api.kimi.com/coding/v1/usages';
 
 export const KIMI_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
+};
+
+// Kiro API configuration
+export const KIRO_QUOTA_URL = 'https://codewhisperer.us-east-1.amazonaws.com';
+
+export const KIRO_REQUEST_HEADERS = {
+  'Content-Type': 'application/x-amz-json-1.0',
+  'x-amz-target': 'AmazonCodeWhispererService.GetUsageLimits',
+  Authorization: 'Bearer $TOKEN$',
+};
+
+export const KIRO_REQUEST_BODY = JSON.stringify({
+  origin: 'AI_EDITOR',
+  resourceType: 'AGENTIC_REQUEST',
+});
+
+// GitHub Copilot API configuration
+export const COPILOT_QUOTA_URL = 'https://api.github.com/copilot_internal/user';
+
+export const COPILOT_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  Accept: 'application/json',
+  'User-Agent': 'CLIProxyAPIPlus',
 };

@@ -106,7 +106,9 @@
 .claudeGrid,
 .codexGrid,
 .geminiCliGrid,
-.kimiGrid {
+.kimiGrid,
+.kiroGrid,
+.copilotGrid {
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -120,7 +122,9 @@
 .claudeControls,
 .codexControls,
 .geminiCliControls,
-.kimiControls {
+.kimiControls,
+.kiroControls,
+.copilotControls {
   display: flex;
   gap: $spacing-md;
   flex-wrap: wrap;
@@ -132,7 +136,9 @@
 .claudeControl,
 .codexControl,
 .geminiCliControl,
-.kimiControl {
+.kimiControl,
+.kiroControl,
+.copilotControl {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -179,6 +185,18 @@
   background-image: linear-gradient(180deg,
       rgba(255, 244, 229, 0.2),
       rgba(255, 244, 229, 0));
+}
+
+.kiroCard {
+  background-image: linear-gradient(180deg,
+      rgba(255, 248, 225, 0.24),
+      rgba(255, 248, 225, 0));
+}
+
+.copilotCard {
+  background-image: linear-gradient(180deg,
+      rgba(240, 240, 240, 0.2),
+      rgba(240, 240, 240, 0));
 }
 
 .quotaSection {
