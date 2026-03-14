@@ -675,11 +675,16 @@ const buildClaudeQuotaWindows = (
   return windows;
 };
 
-const CLAUDE_PLAN_TYPE_MAP: Record<string, string> = {
-  default_claude_max_5x: 'plan_max5',
-  default_claude_max_20x: 'plan_max20',
-  default_claude_pro: 'plan_pro',
-  default_claude_ai: 'plan_free',
+const normalizeFlagValue = (value: unknown): boolean | undefined => {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const trimmed = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'y', 'on'].includes(trimmed)) return true;
+    if (['false', '0', 'no', 'n', 'off'].includes(trimmed)) return false;
+  }
+  return undefined;
 };
 
 const parseClaudeProfilePayload = (payload: unknown): ClaudeProfileResponse | null => {
@@ -702,10 +707,15 @@ const parseClaudeProfilePayload = (payload: unknown): ClaudeProfileResponse | nu
 const resolveClaudePlanType = (profile: ClaudeProfileResponse | null): string | null => {
   if (!profile) return null;
 
-  const tier = normalizeStringValue(profile.organization?.rate_limit_tier);
-  if (!tier) return null;
+  const hasClaudeMax = normalizeFlagValue(profile.account?.has_claude_max);
+  if (hasClaudeMax) return 'plan_max';
 
-  return CLAUDE_PLAN_TYPE_MAP[tier] ?? 'plan_unknown';
+  const hasClaudePro = normalizeFlagValue(profile.account?.has_claude_pro);
+  if (hasClaudePro) return 'plan_pro';
+
+  if (hasClaudeMax === false && hasClaudePro === false) return 'plan_free';
+
+  return null;
 };
 
 const fetchClaudeQuota = async (
