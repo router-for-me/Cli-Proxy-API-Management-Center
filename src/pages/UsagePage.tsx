@@ -128,6 +128,7 @@ export function UsagePage() {
     loading,
     error,
     lastRefreshedAt,
+    usagePersistenceStatus,
     modelPrices,
     setModelPrices,
     loadUsage,
@@ -136,7 +137,8 @@ export function UsagePage() {
     handleImportChange,
     importInputRef,
     exporting,
-    importing
+    importing,
+    usagePersistenceError,
   } = useUsageData();
 
   useHeaderRefresh(loadUsage);
@@ -285,10 +287,17 @@ export function UsagePage() {
               {t('usage_stats.last_updated')}: {lastRefreshedAt.toLocaleTimeString()}
             </span>
           )}
+          {usagePersistenceStatus.lastSavedAt && (
+            <span className={styles.lastRefreshed}>
+              {t('usage_stats.persistence_last_saved_at')}:{' '}
+              {new Date(usagePersistenceStatus.lastSavedAt).toLocaleString()}
+            </span>
+          )}
         </div>
       </div>
 
       {error && <div className={styles.errorBox}>{error}</div>}
+      {usagePersistenceError && <div className={styles.errorBox}>{usagePersistenceError}</div>}
 
       {/* Stats Overview Cards */}
       <StatCards

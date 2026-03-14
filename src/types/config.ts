@@ -11,12 +11,19 @@ export interface QuotaExceededConfig {
   switchPreviewModel?: boolean;
 }
 
+export interface UsagePersistenceConfig {
+  enabled?: boolean;
+  filePath?: string;
+  intervalSeconds?: number;
+}
+
 export interface Config {
   debug?: boolean;
   proxyUrl?: string;
   requestRetry?: number;
   quotaExceeded?: QuotaExceededConfig;
   usageStatisticsEnabled?: boolean;
+  usagePersistence?: UsagePersistenceConfig;
   requestLog?: boolean;
   loggingToFile?: boolean;
   logsMaxTotalSizeMb?: number;
@@ -40,6 +47,7 @@ export type RawConfigSection =
   | 'request-retry'
   | 'quota-exceeded'
   | 'usage-statistics-enabled'
+  | 'usage-persistence'
   | 'request-log'
   | 'logging-to-file'
   | 'logs-max-total-size-mb'

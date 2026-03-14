@@ -7,6 +7,7 @@ export type PayloadParamValidationErrorCode =
 export type VisualConfigFieldPath =
   | 'port'
   | 'logsMaxTotalSizeMb'
+  | 'usagePersistenceIntervalSeconds'
   | 'requestRetry'
   | 'maxRetryInterval'
   | 'streaming.keepaliveSeconds'
@@ -67,6 +68,9 @@ export type VisualConfigValues = {
   loggingToFile: boolean;
   logsMaxTotalSizeMb: string;
   usageStatisticsEnabled: boolean;
+  usagePersistenceEnabled: boolean;
+  usagePersistenceFilePath: string;
+  usagePersistenceIntervalSeconds: string;
   proxyUrl: string;
   forceModelPrefix: boolean;
   requestRetry: string;
@@ -103,6 +107,9 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   loggingToFile: false,
   logsMaxTotalSizeMb: '',
   usageStatisticsEnabled: false,
+  usagePersistenceEnabled: false,
+  usagePersistenceFilePath: '',
+  usagePersistenceIntervalSeconds: '',
   proxyUrl: '',
   forceModelPrefix: false,
   requestRetry: '',

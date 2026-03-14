@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { USAGE_STATS_STALE_TIME_MS, useNotificationStore, useUsageStatsStore } from '@/stores';
 import { usageApi } from '@/services/api/usage';
+import type { UsagePersistenceConfig, UsagePersistenceStatus } from '@/services/api/usage';
 import { downloadBlob } from '@/utils/download';
 import { loadModelPrices, saveModelPrices, type ModelPrice } from '@/utils/usage';
 
@@ -28,6 +29,13 @@ export interface UseUsageDataReturn {
   importInputRef: React.RefObject<HTMLInputElement | null>;
   exporting: boolean;
   importing: boolean;
+  usagePersistenceConfig: UsagePersistenceConfig;
+  usagePersistenceStatus: UsagePersistenceStatus;
+  usagePersistenceLoading: boolean;
+  usagePersistenceError: string;
+  updateUsagePersistenceConfig: (config: UsagePersistenceConfig) => Promise<void>;
+  saveUsageStatsNow: () => Promise<void>;
+  loadUsageStatsNow: () => Promise<void>;
 }
 
 export function useUsageData(): UseUsageDataReturn {
@@ -38,6 +46,14 @@ export function useUsageData(): UseUsageDataReturn {
   const storeError = useUsageStatsStore((state) => state.error);
   const lastRefreshedAtTs = useUsageStatsStore((state) => state.lastRefreshedAt);
   const loadUsageStats = useUsageStatsStore((state) => state.loadUsageStats);
+  const usagePersistenceConfig = useUsageStatsStore((state) => state.usagePersistenceConfig);
+  const usagePersistenceStatus = useUsageStatsStore((state) => state.usagePersistenceStatus);
+  const usagePersistenceLoading = useUsageStatsStore((state) => state.usagePersistenceLoading);
+  const usagePersistenceError = useUsageStatsStore((state) => state.usagePersistenceError);
+  const loadUsagePersistenceState = useUsageStatsStore((state) => state.loadUsagePersistenceState);
+  const updateUsagePersistenceConfigInStore = useUsageStatsStore((state) => state.updateUsagePersistenceConfig);
+  const saveUsageStatsNowInStore = useUsageStatsStore((state) => state.saveUsageStatsNow);
+  const loadUsageStatsNowInStore = useUsageStatsStore((state) => state.loadUsageStatsNow);
 
   const [modelPrices, setModelPrices] = useState<Record<string, ModelPrice>>({});
   const [exporting, setExporting] = useState(false);
@@ -46,12 +62,26 @@ export function useUsageData(): UseUsageDataReturn {
 
   const loadUsage = useCallback(async () => {
     await loadUsageStats({ force: true, staleTimeMs: USAGE_STATS_STALE_TIME_MS });
-  }, [loadUsageStats]);
+    await saveUsageStatsNowInStore();
+  }, [loadUsageStats, saveUsageStatsNowInStore]);
 
   useEffect(() => {
     void loadUsageStats({ staleTimeMs: USAGE_STATS_STALE_TIME_MS }).catch(() => {});
+    void loadUsagePersistenceState().catch(() => {});
     setModelPrices(loadModelPrices());
-  }, [loadUsageStats]);
+  }, [loadUsagePersistenceState, loadUsageStats]);
+
+  const updateUsagePersistenceConfig = useCallback(async (config: UsagePersistenceConfig) => {
+    await updateUsagePersistenceConfigInStore(config);
+  }, [updateUsagePersistenceConfigInStore]);
+
+  const saveUsageStatsNow = useCallback(async () => {
+    await saveUsageStatsNowInStore();
+  }, [saveUsageStatsNowInStore]);
+
+  const loadUsageStatsNow = useCallback(async () => {
+    await loadUsageStatsNowInStore();
+  }, [loadUsageStatsNowInStore]);
 
   const handleExport = async () => {
     setExporting(true);
@@ -151,6 +181,13 @@ export function useUsageData(): UseUsageDataReturn {
     handleImportChange,
     importInputRef,
     exporting,
-    importing
+    importing,
+    usagePersistenceConfig,
+    usagePersistenceStatus,
+    usagePersistenceLoading,
+    usagePersistenceError: usagePersistenceError || '',
+    updateUsagePersistenceConfig,
+    saveUsageStatsNow,
+    loadUsageStatsNow
   };
 }

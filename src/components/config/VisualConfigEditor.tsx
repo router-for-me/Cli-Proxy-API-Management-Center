@@ -98,6 +98,10 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
     values.streaming.nonstreamKeepaliveInterval === '' || values.streaming.nonstreamKeepaliveInterval === '0';
   const portError = getValidationMessage(t, validationErrors?.port);
   const logsMaxSizeError = getValidationMessage(t, validationErrors?.logsMaxTotalSizeMb);
+  const usagePersistenceIntervalError = getValidationMessage(
+    t,
+    validationErrors?.usagePersistenceIntervalSeconds
+  );
   const requestRetryError = getValidationMessage(t, validationErrors?.requestRetry);
   const maxRetryIntervalError = getValidationMessage(t, validationErrors?.maxRetryInterval);
   const keepaliveError = getValidationMessage(t, validationErrors?.['streaming.keepaliveSeconds']);
@@ -262,6 +266,13 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
               disabled={disabled}
               onChange={(usageStatisticsEnabled) => onChange({ usageStatisticsEnabled })}
             />
+            <ToggleRow
+              title={t('config_management.visual.sections.system.usage_persistence_enabled')}
+              description={t('config_management.visual.sections.system.usage_persistence_enabled_desc')}
+              checked={values.usagePersistenceEnabled}
+              disabled={disabled}
+              onChange={(usagePersistenceEnabled) => onChange({ usagePersistenceEnabled })}
+            />
           </SectionGrid>
 
           <SectionGrid>
@@ -273,6 +284,22 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
               onChange={(e) => onChange({ logsMaxTotalSizeMb: e.target.value })}
               disabled={disabled}
               error={logsMaxSizeError}
+            />
+            <Input
+              label={t('config_management.visual.sections.system.usage_persistence_file_path')}
+              placeholder="usage-statistics.json"
+              value={values.usagePersistenceFilePath}
+              onChange={(e) => onChange({ usagePersistenceFilePath: e.target.value })}
+              disabled={disabled}
+            />
+            <Input
+              label={t('config_management.visual.sections.system.usage_persistence_interval_seconds')}
+              type="number"
+              placeholder="300"
+              value={values.usagePersistenceIntervalSeconds}
+              onChange={(e) => onChange({ usagePersistenceIntervalSeconds: e.target.value })}
+              disabled={disabled}
+              error={usagePersistenceIntervalError}
             />
           </SectionGrid>
         </div>

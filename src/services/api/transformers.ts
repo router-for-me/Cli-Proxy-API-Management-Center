@@ -27,6 +27,16 @@ const normalizeBoolean = (value: unknown): boolean | undefined => {
   return Boolean(value);
 };
 
+const normalizeNumber = (value: unknown): number | undefined => {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+};
+
 const normalizeModelAliases = (models: unknown): ModelAlias[] => {
   if (!Array.isArray(models)) return [];
   return models
@@ -373,6 +383,21 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   config.usageStatisticsEnabled = normalizeBoolean(
     raw['usage-statistics-enabled'] ?? raw.usageStatisticsEnabled
   );
+  const usagePersistenceRaw = raw['usage-persistence'] ?? raw.usagePersistence;
+  if (isRecord(usagePersistenceRaw)) {
+    config.usagePersistence = {
+      enabled: normalizeBoolean(usagePersistenceRaw.enabled),
+      filePath:
+        typeof usagePersistenceRaw['file-path'] === 'string'
+          ? usagePersistenceRaw['file-path']
+          : typeof usagePersistenceRaw.filePath === 'string'
+            ? usagePersistenceRaw.filePath
+            : undefined,
+      intervalSeconds: normalizeNumber(
+        usagePersistenceRaw['interval-seconds'] ?? usagePersistenceRaw.intervalSeconds
+      )
+    };
+  }
   config.requestLog = normalizeBoolean(raw['request-log'] ?? raw.requestLog);
   config.loggingToFile = normalizeBoolean(raw['logging-to-file'] ?? raw.loggingToFile);
   const logsMaxTotalSizeMb = raw['logs-max-total-size-mb'] ?? raw.logsMaxTotalSizeMb;
