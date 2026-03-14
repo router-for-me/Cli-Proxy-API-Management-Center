@@ -81,7 +81,9 @@
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
-    transition: background $transition-fast, color $transition-fast;
+    transition:
+      background $transition-fast,
+      color $transition-fast;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -118,7 +120,10 @@
       max-width: 320px;
       opacity: 1;
       transform: translateX(0);
-      transition: max-width 0.4s ease, opacity 0.4s ease, transform 0.4s ease;
+      transition:
+        max-width 0.4s ease,
+        opacity 0.4s ease,
+        transform 0.4s ease;
     }
 
     .brand-abbr {
@@ -126,7 +131,9 @@
       transform: translateX(12px);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.4s ease, transform 0.4s ease;
+      transition:
+        opacity 0.4s ease,
+        transform 0.4s ease;
     }
 
     &.collapsed {
@@ -220,7 +227,9 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        transition: background-color $transition-fast, color $transition-fast;
+        transition:
+          background-color $transition-fast,
+          color $transition-fast;
 
         &:hover {
           background: var(--bg-secondary);
@@ -278,7 +287,9 @@
         flex-direction: column;
         align-items: center;
         gap: 4px;
-        transition: border-color $transition-fast, background-color $transition-fast;
+        transition:
+          border-color $transition-fast,
+          background-color $transition-fast;
 
         &:hover {
           background: var(--bg-secondary);
@@ -439,7 +450,9 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
-  transition: width $transition-normal, transform $transition-normal;
+  transition:
+    width $transition-normal,
+    transform $transition-normal;
   overflow-y: auto;
   flex-shrink: 0;
   height: 100%;
@@ -464,22 +477,33 @@
   .nav-item {
     padding: 10px 12px;
     border-radius: $radius-md;
+    border: 1px solid transparent;
     color: var(--text-primary);
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: $spacing-sm;
     cursor: pointer;
-    transition: background $transition-fast, color $transition-fast;
+    transition:
+      background $transition-fast,
+      color $transition-fast;
 
     .nav-icon {
-      width: 20px;
-      height: 20px;
+      width: 28px;
+      height: 28px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      opacity: 0.9;
+      opacity: 0.96;
+      border-radius: 7px;
+      background: linear-gradient(180deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0))
+        var(--bg-secondary);
+      box-shadow: inset 0 0 0 1px var(--border-primary);
+      transition:
+        background $transition-fast,
+        box-shadow $transition-fast,
+        color $transition-fast;
 
       svg {
         width: 18px;
@@ -496,12 +520,24 @@
 
     &:hover {
       background: var(--bg-secondary);
+
+      .nav-icon {
+        background: linear-gradient(180deg, rgb(255 255 255 / 0.24), rgb(255 255 255 / 0))
+          var(--bg-primary);
+        box-shadow: inset 0 0 0 1px var(--border-hover);
+      }
     }
 
     &.active {
       background: rgba($primary-color, 0.14);
       color: var(--primary-color);
       border: 1px solid rgba($primary-color, 0.35);
+
+      .nav-icon {
+        background: linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0))
+          rgba($primary-color, 0.1);
+        box-shadow: inset 0 0 0 1px rgba($primary-color, 0.26);
+      }
     }
   }
 
