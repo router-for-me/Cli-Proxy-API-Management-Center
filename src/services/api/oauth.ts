@@ -9,6 +9,7 @@ export type OAuthProvider =
   | 'anthropic'
   | 'antigravity'
   | 'gemini-cli'
+  | 'gitlab'
   | 'kimi'
   | 'qwen';
 
@@ -30,7 +31,18 @@ export interface IFlowCookieAuthResponse {
   type?: string;
 }
 
-const WEBUI_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli'];
+export interface GitLabPATAuthResponse {
+  status: 'ok' | 'error';
+  error?: string;
+  saved_path?: string;
+  username?: string;
+  email?: string;
+  token_label?: string;
+  model_provider?: string;
+  model_name?: string;
+}
+
+const WEBUI_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'gitlab'];
 const CALLBACK_PROVIDER_MAP: Partial<Record<OAuthProvider, string>> = {
   'gemini-cli': 'gemini'
 };
@@ -61,6 +73,12 @@ export const oauthApi = {
       redirect_url: redirectUrl
     });
   },
+
+  gitlabPatAuth: (payload: { baseUrl?: string; personalAccessToken: string }) =>
+    apiClient.post<GitLabPATAuthResponse>('/gitlab-auth-url', {
+      base_url: payload.baseUrl?.trim() || undefined,
+      personal_access_token: payload.personalAccessToken
+    }),
 
   /** iFlow cookie 认证 */
   iflowCookieAuth: (cookie: string) =>

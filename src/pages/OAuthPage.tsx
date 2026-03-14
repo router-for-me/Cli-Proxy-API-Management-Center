@@ -4,7 +4,12 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useNotificationStore, useThemeStore } from '@/stores';
-import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
+import {
+  oauthApi,
+  type GitLabPATAuthResponse,
+  type OAuthProvider,
+  type IFlowCookieAuthResponse
+} from '@/services/api/oauth';
 import { vertexApi, type VertexImportResponse } from '@/services/api/vertex';
 import { copyToClipboard } from '@/utils/clipboard';
 import styles from './OAuthPage.module.scss';
@@ -13,6 +18,7 @@ import iconCodexDark from '@/assets/icons/codex_drak.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconGemini from '@/assets/icons/gemini.svg';
+import iconGitLab from '@/assets/icons/gitlab.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
@@ -57,6 +63,14 @@ interface VertexImportState {
   result?: VertexImportResult;
 }
 
+interface GitLabPATState {
+  baseUrl: string;
+  personalAccessToken: string;
+  loading: boolean;
+  error?: string;
+  result?: GitLabPATAuthResponse;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object';
 }
@@ -77,11 +91,12 @@ const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabe
   { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
   { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconAntigravity },
   { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini },
+  { id: 'gitlab', titleKey: 'auth_login.gitlab_oauth_title', hintKey: 'auth_login.gitlab_oauth_hint', urlLabelKey: 'auth_login.gitlab_oauth_url_label', icon: iconGitLab },
   { id: 'kimi', titleKey: 'auth_login.kimi_oauth_title', hintKey: 'auth_login.kimi_oauth_hint', urlLabelKey: 'auth_login.kimi_oauth_url_label', icon: { light: iconKimiLight, dark: iconKimiDark } },
   { id: 'qwen', titleKey: 'auth_login.qwen_oauth_title', hintKey: 'auth_login.qwen_oauth_hint', urlLabelKey: 'auth_login.qwen_oauth_url_label', icon: iconQwen }
 ];
 
-const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli'];
+const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'gitlab'];
 const getProviderI18nPrefix = (provider: OAuthProvider) => provider.replace('-', '_');
 const getAuthKey = (provider: OAuthProvider, suffix: string) =>
   `auth_login.${getProviderI18nPrefix(provider)}_${suffix}`;
@@ -96,6 +111,11 @@ export function OAuthPage() {
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
   const [iflowCookie, setIflowCookie] = useState<IFlowCookieState>({ cookie: '', loading: false });
+  const [gitLabPat, setGitLabPat] = useState<GitLabPATState>({
+    baseUrl: '',
+    personalAccessToken: '',
+    loading: false
+  });
   const [vertexState, setVertexState] = useState<VertexImportState>({
     fileName: '',
     location: '',
@@ -279,6 +299,55 @@ export function OAuthPage() {
     }
   };
 
+  const submitGitLabPat = async () => {
+    const personalAccessToken = gitLabPat.personalAccessToken.trim();
+    if (!personalAccessToken) {
+      showNotification(t('auth_login.gitlab_pat_token_required'), 'warning');
+      return;
+    }
+    setGitLabPat((prev) => ({
+      ...prev,
+      loading: true,
+      error: undefined,
+      result: undefined
+    }));
+    try {
+      const res = await oauthApi.gitlabPatAuth({
+        baseUrl: gitLabPat.baseUrl,
+        personalAccessToken
+      });
+      if (res.status === 'ok') {
+        setGitLabPat((prev) => ({
+          ...prev,
+          loading: false,
+          personalAccessToken: '',
+          result: res
+        }));
+        showNotification(t('auth_login.gitlab_pat_status_success'), 'success');
+        return;
+      }
+      const message = res.error || t('auth_login.gitlab_pat_status_error');
+      setGitLabPat((prev) => ({
+        ...prev,
+        loading: false,
+        error: message
+      }));
+      showNotification(`${t('auth_login.gitlab_pat_status_error')} ${message}`, 'error');
+    } catch (err: unknown) {
+      const status = getErrorStatus(err);
+      const message =
+        status === 404
+          ? t('auth_login.oauth_callback_upgrade_hint')
+          : getErrorMessage(err) || t('auth_login.gitlab_pat_status_error');
+      setGitLabPat((prev) => ({
+        ...prev,
+        loading: false,
+        error: message
+      }));
+      showNotification(`${t('auth_login.gitlab_pat_start_error')} ${message}`, 'error');
+    }
+  };
+
   const handleVertexFilePick = () => {
     vertexFileInputRef.current?.click();
   };
@@ -453,6 +522,96 @@ export function OAuthPage() {
             </div>
           );
         })}
+
+        <Card
+          title={
+            <span className={styles.cardTitle}>
+              <img src={iconGitLab} alt="" className={styles.cardTitleIcon} />
+              {t('auth_login.gitlab_pat_title')}
+            </span>
+          }
+          extra={
+            <Button onClick={submitGitLabPat} loading={gitLabPat.loading}>
+              {t('auth_login.gitlab_pat_button')}
+            </Button>
+          }
+        >
+          <div className={styles.cardContent}>
+            <div className={styles.cardHint}>{t('auth_login.gitlab_pat_hint')}</div>
+            <Input
+              label={t('auth_login.gitlab_pat_base_url_label')}
+              hint={t('auth_login.gitlab_pat_base_url_hint')}
+              value={gitLabPat.baseUrl}
+              onChange={(e) =>
+                setGitLabPat((prev) => ({
+                  ...prev,
+                  baseUrl: e.target.value
+                }))
+              }
+              placeholder={t('auth_login.gitlab_pat_base_url_placeholder')}
+              autoComplete="url"
+            />
+            <Input
+              label={t('auth_login.gitlab_pat_token_label')}
+              hint={t('auth_login.gitlab_pat_token_hint')}
+              value={gitLabPat.personalAccessToken}
+              onChange={(e) =>
+                setGitLabPat((prev) => ({
+                  ...prev,
+                  personalAccessToken: e.target.value
+                }))
+              }
+              placeholder={t('auth_login.gitlab_pat_token_placeholder')}
+              type="password"
+              autoComplete="new-password"
+              spellCheck={false}
+            />
+            {gitLabPat.error && <div className="status-badge error">{gitLabPat.error}</div>}
+            {gitLabPat.result?.status === 'ok' && (
+              <div className={styles.connectionBox}>
+                <div className={styles.connectionLabel}>{t('auth_login.gitlab_pat_result_title')}</div>
+                <div className={styles.keyValueList}>
+                  {gitLabPat.result.token_label && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_account')}</span>
+                      <span className={styles.keyValueValue}>{gitLabPat.result.token_label}</span>
+                    </div>
+                  )}
+                  {gitLabPat.result.username && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_username')}</span>
+                      <span className={styles.keyValueValue}>{gitLabPat.result.username}</span>
+                    </div>
+                  )}
+                  {gitLabPat.result.email && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_email')}</span>
+                      <span className={styles.keyValueValue}>{gitLabPat.result.email}</span>
+                    </div>
+                  )}
+                  {gitLabPat.result.saved_path && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_path')}</span>
+                      <span className={styles.keyValueValue}>{gitLabPat.result.saved_path}</span>
+                    </div>
+                  )}
+                  {gitLabPat.result.model_provider && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_provider')}</span>
+                      <span className={styles.keyValueValue}>{gitLabPat.result.model_provider}</span>
+                    </div>
+                  )}
+                  {gitLabPat.result.model_name && (
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_model')}</span>
+                      <span className={styles.keyValueValue}>{gitLabPat.result.model_name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
 
         {/* Vertex JSON 登录 */}
         <Card
