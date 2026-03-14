@@ -22,6 +22,7 @@ import {
   getTypeColor,
   getTypeLabel,
   isRuntimeOnlyAuthFile,
+  parsePriorityValue,
   resolveAuthFileStats,
   type QuotaProviderType,
   type ResolvedTheme,
@@ -110,6 +111,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const hasStatusWarning =
     Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(rawStatusMessage.toLowerCase());
 
+  const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
+
   return (
     <div
       className={`${styles.fileCard} ${providerCardClass} ${selected ? styles.fileCardSelected : ''} ${file.disabled ? styles.fileCardDisabled : ''}`}
@@ -151,6 +154,11 @@ export function AuthFileCard(props: AuthFileCardProps) {
             <span>
               {t('auth_files.file_modified')}: {formatModified(file)}
             </span>
+            {priorityValue !== undefined && (
+              <span className={styles.priorityBadge}>
+                {t('auth_files.priority_display')}: <span className={styles.priorityValue}>{priorityValue}</span>
+              </span>
+            )}
           </div>
 
           {rawStatusMessage && hasStatusWarning && (
