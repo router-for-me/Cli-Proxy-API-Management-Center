@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { IconEye, IconEyeOff } from '@/components/ui/icons';
 import { useAuthStore, useLanguageStore, useNotificationStore } from '@/stores';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
@@ -233,11 +233,12 @@ export function LoginPage() {
               </div>
 
               <div className={styles.toggleAdvanced}>
-                <ToggleSwitch
+                <SelectionCheckbox
                   checked={showCustomBase}
                   onChange={setShowCustomBase}
                   ariaLabel={t('login.custom_connection_label')}
-                  label={<span className={styles.toggleLabel}>{t('login.custom_connection_label')}</span>}
+                  label={t('login.custom_connection_label')}
+                  labelClassName={styles.toggleLabel}
                 />
               </div>
 
@@ -281,11 +282,12 @@ export function LoginPage() {
               />
 
               <div className={styles.toggleAdvanced}>
-                <ToggleSwitch
+                <SelectionCheckbox
                   checked={rememberPassword}
                   onChange={setRememberPassword}
                   ariaLabel={t('login.remember_password_label')}
-                  label={<span className={styles.toggleLabel}>{t('login.remember_password_label')}</span>}
+                  label={t('login.remember_password_label')}
+                  labelClassName={styles.toggleLabel}
                 />
               </div>
 

@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
   IconBot,
-  IconCheck,
   IconCode,
   IconDownload,
   IconInfo,
@@ -118,18 +118,14 @@ export function AuthFileCard(props: AuthFileCardProps) {
         <div className={styles.fileCardMain}>
           <div className={styles.cardHeader}>
             {!isRuntimeOnly && (
-              <button
-                type="button"
-                className={`${styles.selectionToggle} ${selected ? styles.selectionToggleActive : ''}`}
-                onClick={() => onToggleSelect(file.name)}
+              <SelectionCheckbox
+                checked={selected}
+                onChange={() => onToggleSelect(file.name)}
                 aria-label={
                   selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')
                 }
-                aria-pressed={selected}
                 title={selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')}
-              >
-                {selected && <IconCheck size={12} />}
-              </button>
+              />
             )}
             <span
               className={styles.typeBadge}
