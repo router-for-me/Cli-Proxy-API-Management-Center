@@ -2,6 +2,7 @@ import { Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import iconVertex from '@/assets/icons/vertex.svg';
 import type { ProviderKeyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
@@ -14,7 +15,7 @@ import {
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
 import { ProviderStatusBar } from '../ProviderStatusBar';
-import { getStatsBySource } from '../utils';
+import { getStatsBySource, hasDisableAllModelsRule } from '../utils';
 
 interface VertexSectionProps {
   configs: ProviderKeyConfig[];
@@ -26,6 +27,7 @@ interface VertexSectionProps {
   onAdd: () => void;
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
+  onToggle: (index: number, enabled: boolean) => void;
 }
 
 export function VertexSection({
@@ -38,9 +40,11 @@ export function VertexSection({
   onAdd,
   onEdit,
   onDelete,
+  onToggle,
 }: VertexSectionProps) {
   const { t } = useTranslation();
   const actionsDisabled = disableControls || loading || isSwitching;
+  const toggleDisabled = disableControls || loading || isSwitching;
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
@@ -84,9 +88,19 @@ export function VertexSection({
           onEdit={onEdit}
           onDelete={onDelete}
           actionsDisabled={actionsDisabled}
+          getRowDisabled={(item) => hasDisableAllModelsRule(item.excludedModels)}
+          renderExtraActions={(item, index) => (
+            <ToggleSwitch
+              label={t('ai_providers.config_toggle_label')}
+              checked={!hasDisableAllModelsRule(item.excludedModels)}
+              disabled={toggleDisabled}
+              onChange={(value) => void onToggle(index, value)}
+            />
+          )}
           renderContent={(item, index) => {
             const stats = getStatsBySource(item.apiKey, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});
+            const configDisabled = hasDisableAllModelsRule(item.excludedModels);
             const excludedModels = item.excludedModels ?? [];
             const statusData = statusBarCache.get(item.apiKey) || calculateStatusBarData([]);
 
@@ -124,6 +138,11 @@ export function VertexSection({
                         <strong>{key}:</strong> {value}
                       </span>
                     ))}
+                  </div>
+                )}
+                {configDisabled && (
+                  <div className="status-badge warning" style={{ marginTop: 8, marginBottom: 0 }}>
+                    {t('ai_providers.config_disabled_badge')}
                   </div>
                 )}
                 {item.models?.length ? (

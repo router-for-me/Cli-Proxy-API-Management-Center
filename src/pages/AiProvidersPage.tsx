@@ -164,7 +164,7 @@ export function AiProvidersPage() {
   };
 
   const setConfigEnabled = async (
-    provider: 'gemini' | 'codex' | 'claude',
+    provider: 'gemini' | 'codex' | 'claude' | 'vertex',
     index: number,
     enabled: boolean
   ) => {
@@ -204,7 +204,12 @@ export function AiProvidersPage() {
       return;
     }
 
-    const source = provider === 'codex' ? codexConfigs : claudeConfigs;
+    const source =
+      provider === 'codex'
+        ? codexConfigs
+        : provider === 'claude'
+          ? claudeConfigs
+          : vertexConfigs;
     const current = source[index];
     if (!current) return;
 
@@ -222,17 +227,23 @@ export function AiProvidersPage() {
       setCodexConfigs(nextList);
       updateConfigValue('codex-api-key', nextList);
       clearCache('codex-api-key');
-    } else {
+    } else if (provider === 'claude') {
       setClaudeConfigs(nextList);
       updateConfigValue('claude-api-key', nextList);
       clearCache('claude-api-key');
+    } else {
+      setVertexConfigs(nextList);
+      updateConfigValue('vertex-api-key', nextList);
+      clearCache('vertex-api-key');
     }
 
     try {
       if (provider === 'codex') {
         await providersApi.saveCodexConfigs(nextList);
-      } else {
+      } else if (provider === 'claude') {
         await providersApi.saveClaudeConfigs(nextList);
+      } else {
+        await providersApi.saveVertexConfigs(nextList);
       }
       showNotification(
         enabled ? t('notification.config_enabled') : t('notification.config_disabled'),
@@ -244,10 +255,14 @@ export function AiProvidersPage() {
         setCodexConfigs(previousList);
         updateConfigValue('codex-api-key', previousList);
         clearCache('codex-api-key');
-      } else {
+      } else if (provider === 'claude') {
         setClaudeConfigs(previousList);
         updateConfigValue('claude-api-key', previousList);
         clearCache('claude-api-key');
+      } else {
+        setVertexConfigs(previousList);
+        updateConfigValue('vertex-api-key', previousList);
+        clearCache('vertex-api-key');
       }
       showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
     } finally {
@@ -400,6 +415,7 @@ export function AiProvidersPage() {
             onAdd={() => openEditor('/ai-providers/vertex/new')}
             onEdit={(index) => openEditor(`/ai-providers/vertex/${index}`)}
             onDelete={deleteVertex}
+            onToggle={(index, enabled) => void setConfigEnabled('vertex', index, enabled)}
           />
         </div>
 
