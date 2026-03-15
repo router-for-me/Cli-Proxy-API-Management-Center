@@ -114,6 +114,14 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                   disabled={disableControls || editor.saving || !editor.json}
                   onChange={(e) => onChange('disableCooling', e.target.value)}
                 />
+                <Input
+                  label={t('auth_files.note_label')}
+                  value={editor.note}
+                  placeholder={t('auth_files.note_placeholder')}
+                  hint={t('auth_files.note_hint')}
+                  disabled={disableControls || editor.saving || !editor.json}
+                  onChange={(e) => onChange('note', e.target.value)}
+                />
                 {editor.isCodexFile && (
                   <div className="form-group">
                     <label>{t('ai_providers.codex_websockets_label')}</label>

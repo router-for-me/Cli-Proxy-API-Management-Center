@@ -31,6 +31,7 @@ import {
   hasAuthFileStatusMessage,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
+  parsePriorityValue,
   type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
@@ -74,6 +75,7 @@ export function AuthFilesPage() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<AuthFileItem | null>(null);
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
+  const [sortMode, setSortMode] = useState<'default' | 'az' | 'priority'>('default');
   const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
   const batchActionAnimationRef = useRef<AnimationPlaybackControlsWithThen | null>(null);
@@ -281,10 +283,25 @@ export function AuthFilesPage() {
     });
   }, [filesMatchingProblemFilter, filter, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const sorted = useMemo(() => {
+    if (sortMode === 'default') return filtered;
+    const copy = [...filtered];
+    if (sortMode === 'az') {
+      copy.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortMode === 'priority') {
+      copy.sort((a, b) => {
+        const pa = parsePriorityValue(a.priority ?? a['priority']) ?? 0;
+        const pb = parsePriorityValue(b.priority ?? b['priority']) ?? 0;
+        return pb - pa; // 高优先级排前面
+      });
+    }
+    return copy;
+  }, [filtered, sortMode]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
-  const pageItems = filtered.slice(start, start + pageSize);
+  const pageItems = sorted.slice(start, start + pageSize);
   const selectablePageItems = useMemo(
     () => pageItems.filter((file) => !isRuntimeOnlyAuthFile(file)),
     [pageItems]
@@ -559,6 +576,21 @@ export function AuthFilesPage() {
                 }}
               />
             </div>
+            <div className={styles.filterItem}>
+              <label>{t('auth_files.sort_label')}</label>
+              <select
+                className={styles.sortSelect}
+                value={sortMode}
+                onChange={(e) => {
+                  setSortMode(e.target.value as 'default' | 'az' | 'priority');
+                  setPage(1);
+                }}
+              >
+                <option value="default">{t('auth_files.sort_default')}</option>
+                <option value="az">{t('auth_files.sort_az')}</option>
+                <option value="priority">{t('auth_files.sort_priority')}</option>
+              </select>
+            </div>
             <div className={`${styles.filterItem} ${styles.filterToggleItem}`}>
               <label>{t('auth_files.problem_filter_label')}</label>
               <div className={styles.filterToggle}>
@@ -615,7 +647,7 @@ export function AuthFilesPage() {
           </div>
         )}
 
-        {!loading && filtered.length > pageSize && (
+        {!loading && sorted.length > pageSize && (
           <div className={styles.pagination}>
             <Button
               variant="secondary"
@@ -629,7 +661,7 @@ export function AuthFilesPage() {
               {t('auth_files.pagination_info', {
                 current: currentPage,
                 total: totalPages,
-                count: filtered.length,
+                count: sorted.length,
               })}
             </div>
             <Button
