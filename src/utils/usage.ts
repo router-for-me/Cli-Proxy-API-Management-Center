@@ -48,6 +48,7 @@ export interface UsageDetail {
     total_tokens: number;
   };
   failed: boolean;
+  thinking_level?: string;
   __modelName?: string;
   __timestampMs?: number;
 }
@@ -139,12 +140,16 @@ const buildUsageDetail = (
   const timestampMs = Date.parse(timestamp);
   const tokensRaw = isRecord(detailRecord.tokens) ? detailRecord.tokens : {};
 
+  const rawThinkingLevel =
+    typeof detailRecord.thinking_level === 'string' ? detailRecord.thinking_level.trim() : undefined;
+
   return {
     timestamp,
     source: normalizeUsageSourceWithCache(detailRecord.source, sourceCache),
     auth_index: detailRecord.auth_index as unknown as number,
     tokens: tokensRaw as unknown as UsageDetail['tokens'],
     failed: detailRecord.failed === true,
+    thinking_level: rawThinkingLevel || undefined,
     __modelName: modelName,
     __timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
   };

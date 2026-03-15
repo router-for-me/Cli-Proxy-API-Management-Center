@@ -36,6 +36,7 @@ type RequestEventRow = {
   reasoningTokens: number;
   cachedTokens: number;
   totalTokens: number;
+  thinkingLevel: string;
 };
 
 export interface RequestEventsDetailsCardProps {
@@ -146,6 +147,7 @@ export function RequestEventsDetailsCard({
           toNumber(detail.tokens?.total_tokens),
           extractTotalTokens(detail)
         );
+        const thinkingLevel = String(detail.thinking_level ?? '').trim() || 'off';
 
         return {
           id: `${timestamp}-${model}-${sourceRaw || source}-${authIndex}-${index}`,
@@ -162,7 +164,8 @@ export function RequestEventsDetailsCard({
           outputTokens,
           reasoningTokens,
           cachedTokens,
-          totalTokens
+          totalTokens,
+          thinkingLevel
         };
       })
       .sort((a, b) => b.timestampMs - a.timestampMs);
@@ -258,6 +261,7 @@ export function RequestEventsDetailsCard({
       'source_raw',
       'auth_index',
       'result',
+      'thinking_level',
       'input_tokens',
       'output_tokens',
       'reasoning_tokens',
@@ -273,6 +277,7 @@ export function RequestEventsDetailsCard({
         row.sourceRaw,
         row.authIndex,
         row.failed ? 'failed' : 'success',
+        row.thinkingLevel,
         row.inputTokens,
         row.outputTokens,
         row.reasoningTokens,
@@ -301,6 +306,7 @@ export function RequestEventsDetailsCard({
       source_raw: row.sourceRaw,
       auth_index: row.authIndex,
       failed: row.failed,
+      thinking_level: row.thinkingLevel,
       tokens: {
         input_tokens: row.inputTokens,
         output_tokens: row.outputTokens,
@@ -427,6 +433,7 @@ export function RequestEventsDetailsCard({
                   <th>{t('usage_stats.request_events_source')}</th>
                   <th>{t('usage_stats.request_events_auth_index')}</th>
                   <th>{t('usage_stats.request_events_result')}</th>
+                  <th>{t('usage_stats.request_events_thinking_level')}</th>
                   <th>{t('usage_stats.input_tokens')}</th>
                   <th>{t('usage_stats.output_tokens')}</th>
                   <th>{t('usage_stats.reasoning_tokens')}</th>
@@ -457,6 +464,7 @@ export function RequestEventsDetailsCard({
                         {row.failed ? t('stats.failure') : t('stats.success')}
                       </span>
                     </td>
+                    <td className={styles.requestEventsThinkingLevel}>{row.thinkingLevel}</td>
                     <td>{row.inputTokens.toLocaleString()}</td>
                     <td>{row.outputTokens.toLocaleString()}</td>
                     <td>{row.reasoningTokens.toLocaleString()}</td>

@@ -972,6 +972,14 @@
   white-space: nowrap;
 }
 
+.requestEventsThinkingLevel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
 .chartLineHeader {
   display: inline-flex;
   align-items: center;
