@@ -3,6 +3,10 @@ import { usageApi } from '@/services/api';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { collectUsageDetails, computeKeyStatsFromDetails, type KeyStats, type UsageDetail } from '@/utils/usage';
 import i18n from '@/i18n';
+import type {
+  UsagePersistenceConfig,
+  UsagePersistenceStatus,
+} from '@/services/api/usage';
 
 export const USAGE_STATS_STALE_TIME_MS = 240_000;
 
@@ -20,8 +24,16 @@ type UsageStatsState = {
   loading: boolean;
   error: string | null;
   lastRefreshedAt: number | null;
+  usagePersistenceConfig: UsagePersistenceConfig;
+  usagePersistenceStatus: UsagePersistenceStatus;
+  usagePersistenceLoading: boolean;
+  usagePersistenceError: string | null;
   scopeKey: string;
   loadUsageStats: (options?: LoadUsageStatsOptions) => Promise<void>;
+  loadUsagePersistenceState: () => Promise<void>;
+  updateUsagePersistenceConfig: (config: UsagePersistenceConfig) => Promise<void>;
+  saveUsageStatsNow: () => Promise<void>;
+  loadUsageStatsNow: () => Promise<void>;
   clearUsageStats: () => void;
 };
 
@@ -44,6 +56,10 @@ export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
   loading: false,
   error: null,
   lastRefreshedAt: null,
+  usagePersistenceConfig: {},
+  usagePersistenceStatus: {},
+  usagePersistenceLoading: false,
+  usagePersistenceError: null,
   scopeKey: '',
 
   loadUsageStats: async (options = {}) => {
@@ -82,6 +98,10 @@ export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
         usageDetails: [],
         error: null,
         lastRefreshedAt: null,
+        usagePersistenceConfig: {},
+        usagePersistenceStatus: {},
+        usagePersistenceLoading: false,
+        usagePersistenceError: null,
         scopeKey
       });
     }
@@ -128,6 +148,89 @@ export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
     await requestPromise;
   },
 
+  loadUsagePersistenceState: async () => {
+    set({ usagePersistenceLoading: true, usagePersistenceError: null });
+    try {
+      const [configRes, statusRes] = await Promise.all([
+        usageApi.getUsagePersistenceConfig(),
+        usageApi.getUsagePersistenceStatus(),
+      ]);
+      set({
+        usagePersistenceConfig: configRes.config,
+        usagePersistenceStatus: statusRes,
+        usagePersistenceLoading: false,
+        usagePersistenceError: null,
+      });
+    } catch (error: unknown) {
+      set({
+        usagePersistenceLoading: false,
+        usagePersistenceError: getErrorMessage(error),
+      });
+      throw error;
+    }
+  },
+
+  updateUsagePersistenceConfig: async (config) => {
+    set({ usagePersistenceLoading: true, usagePersistenceError: null });
+    try {
+      await usageApi.updateUsagePersistenceConfig(config);
+      const [configRes, statusRes] = await Promise.all([
+        usageApi.getUsagePersistenceConfig(),
+        usageApi.getUsagePersistenceStatus(),
+      ]);
+      set({
+        usagePersistenceConfig: configRes.config,
+        usagePersistenceStatus: statusRes,
+        usagePersistenceLoading: false,
+        usagePersistenceError: null,
+      });
+    } catch (error: unknown) {
+      set({
+        usagePersistenceLoading: false,
+        usagePersistenceError: getErrorMessage(error),
+      });
+      throw error;
+    }
+  },
+
+  saveUsageStatsNow: async () => {
+    set({ usagePersistenceLoading: true, usagePersistenceError: null });
+    try {
+      const status = await usageApi.saveUsageStatistics();
+      set({
+        usagePersistenceStatus: status,
+        usagePersistenceLoading: false,
+        usagePersistenceError: null,
+      });
+    } catch (error: unknown) {
+      set({
+        usagePersistenceLoading: false,
+        usagePersistenceError: getErrorMessage(error),
+      });
+      throw error;
+    }
+  },
+
+  loadUsageStatsNow: async () => {
+    set({ usagePersistenceLoading: true, usagePersistenceError: null });
+    try {
+      await usageApi.loadUsageStatistics();
+      await get().loadUsageStats({ force: true, staleTimeMs: USAGE_STATS_STALE_TIME_MS });
+      const status = await usageApi.getUsagePersistenceStatus();
+      set({
+        usagePersistenceStatus: status,
+        usagePersistenceLoading: false,
+        usagePersistenceError: null,
+      });
+    } catch (error: unknown) {
+      set({
+        usagePersistenceLoading: false,
+        usagePersistenceError: getErrorMessage(error),
+      });
+      throw error;
+    }
+  },
+
   clearUsageStats: () => {
     usageRequestToken += 1;
     inFlightUsageRequest = null;
@@ -138,6 +241,10 @@ export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
       loading: false,
       error: null,
       lastRefreshedAt: null,
+      usagePersistenceConfig: {},
+      usagePersistenceStatus: {},
+      usagePersistenceLoading: false,
+      usagePersistenceError: null,
       scopeKey: ''
     });
   }

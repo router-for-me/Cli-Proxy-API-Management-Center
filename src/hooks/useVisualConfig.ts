@@ -219,6 +219,9 @@ export function getVisualConfigValidationErrors(
   return {
     port: getPortError(values.port),
     logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
+    usagePersistenceIntervalSeconds: getNonNegativeIntegerError(
+      values.usagePersistenceIntervalSeconds
+    ),
     requestRetry: getNonNegativeIntegerError(values.requestRetry),
     maxRetryInterval: getNonNegativeIntegerError(values.maxRetryInterval),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
@@ -468,6 +471,7 @@ export function useVisualConfig() {
       const tls = asRecord(parsed.tls);
       const remoteManagement = asRecord(parsed['remote-management']);
       const quotaExceeded = asRecord(parsed['quota-exceeded']);
+      const usagePersistence = asRecord(parsed['usage-persistence']);
       const routing = asRecord(parsed.routing);
       const payload = asRecord(parsed.payload);
       const streaming = asRecord(parsed.streaming);
@@ -500,6 +504,10 @@ export function useVisualConfig() {
         loggingToFile: Boolean(parsed['logging-to-file']),
         logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
         usageStatisticsEnabled: Boolean(parsed['usage-statistics-enabled']),
+        usagePersistenceEnabled: Boolean(usagePersistence?.enabled),
+        usagePersistenceFilePath:
+          typeof usagePersistence?.['file-path'] === 'string' ? usagePersistence['file-path'] : '',
+        usagePersistenceIntervalSeconds: String(usagePersistence?.['interval-seconds'] ?? '300'),
 
         proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
         forceModelPrefix: Boolean(parsed['force-model-prefix']),
@@ -632,6 +640,23 @@ export function useVisualConfig() {
         setBooleanInDoc(doc, ['logging-to-file'], values.loggingToFile);
         setIntFromStringInDoc(doc, ['logs-max-total-size-mb'], values.logsMaxTotalSizeMb);
         setBooleanInDoc(doc, ['usage-statistics-enabled'], values.usageStatisticsEnabled);
+
+        if (
+          docHas(doc, ['usage-persistence']) ||
+          values.usagePersistenceEnabled ||
+          values.usagePersistenceFilePath.trim() ||
+          values.usagePersistenceIntervalSeconds.trim()
+        ) {
+          ensureMapInDoc(doc, ['usage-persistence']);
+          setBooleanInDoc(doc, ['usage-persistence', 'enabled'], values.usagePersistenceEnabled);
+          setStringInDoc(doc, ['usage-persistence', 'file-path'], values.usagePersistenceFilePath);
+          setIntFromStringInDoc(
+            doc,
+            ['usage-persistence', 'interval-seconds'],
+            values.usagePersistenceIntervalSeconds
+          );
+          deleteIfMapEmpty(doc, ['usage-persistence']);
+        }
 
         setStringInDoc(doc, ['proxy-url'], values.proxyUrl);
         setBooleanInDoc(doc, ['force-model-prefix'], values.forceModelPrefix);

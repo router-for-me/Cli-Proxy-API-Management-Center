@@ -444,6 +444,59 @@ export function formatUsd(value: number): string {
 const usageDetailsCache = new WeakMap<object, UsageDetail[]>();
 const usageDetailsWithEndpointCache = new WeakMap<object, UsageDetailWithEndpoint[]>();
 
+const getModelBucketRecord = (
+  modelEntry: Record<string, unknown>,
+  metric: 'requests' | 'tokens',
+  granularity: 'hour' | 'day'
+): Record<string, unknown> | null => {
+  const snakeCaseKey = `${metric}_by_${granularity}`;
+  const camelCaseKey =
+    metric === 'requests'
+      ? granularity === 'hour'
+        ? 'requestsByHour'
+        : 'requestsByDay'
+      : granularity === 'hour'
+        ? 'tokensByHour'
+        : 'tokensByDay';
+  const value = modelEntry[snakeCaseKey] ?? modelEntry[camelCaseKey];
+  return isRecord(value) ? value : null;
+};
+
+const collectModelMetricBuckets = (
+  usageData: unknown,
+  metric: 'requests' | 'tokens',
+  granularity: 'hour' | 'day'
+): Map<string, Map<string, number>> => {
+  const apis = getApisRecord(usageData);
+  const totalsByModel = new Map<string, Map<string, number>>();
+  if (!apis) return totalsByModel;
+
+  Object.values(apis).forEach((apiEntry) => {
+    if (!isRecord(apiEntry)) return;
+    const models = isRecord(apiEntry.models) ? apiEntry.models : null;
+    if (!models) return;
+
+    Object.entries(models).forEach(([modelName, modelEntry]) => {
+      if (!isRecord(modelEntry)) return;
+      const bucketRecord = getModelBucketRecord(modelEntry, metric, granularity);
+      if (!bucketRecord) return;
+
+      if (!totalsByModel.has(modelName)) {
+        totalsByModel.set(modelName, new Map<string, number>());
+      }
+
+      const bucketMap = totalsByModel.get(modelName)!;
+      Object.entries(bucketRecord).forEach(([bucketKey, bucketValue]) => {
+        const value = Number(bucketValue);
+        if (!Number.isFinite(value)) return;
+        bucketMap.set(bucketKey, (bucketMap.get(bucketKey) || 0) + value);
+      });
+    });
+  });
+
+  return totalsByModel;
+};
+
 /**
  * 从使用数据中收集所有请求明细
  */
@@ -1002,6 +1055,35 @@ export function buildHourlySeriesByModel(
     labels.push(formatHourLabel(new Date(bucketStart)));
   }
 
+  const aggregatedByModel = collectModelMetricBuckets(usageData, metric, 'hour');
+  if (aggregatedByModel.size > 0) {
+    const dataByModel = new Map<string, number[]>();
+    let hasData = false;
+    const lastBucketTime = earliestTime + (labels.length - 1) * hourMs;
+
+    aggregatedByModel.forEach((bucketMap, modelName) => {
+      const values = new Array(labels.length).fill(0);
+      bucketMap.forEach((bucketValue, bucketKey) => {
+        const parsed = Date.parse(bucketKey);
+        if (!Number.isFinite(parsed)) return;
+
+        const normalized = new Date(parsed);
+        normalized.setMinutes(0, 0, 0);
+        const bucketStart = normalized.getTime();
+        if (bucketStart < earliestTime || bucketStart > lastBucketTime) return;
+
+        const index = Math.floor((bucketStart - earliestTime) / hourMs);
+        if (index < 0 || index >= labels.length) return;
+
+        values[index] += bucketValue;
+        hasData = true;
+      });
+      dataByModel.set(modelName, values);
+    });
+
+    return { labels, dataByModel, hasData };
+  }
+
   const details = collectUsageDetails(usageData);
   const dataByModel = new Map<string, number[]>();
   let hasData = false;
@@ -1058,6 +1140,31 @@ export function buildDailySeriesByModel(
   dataByModel: Map<string, number[]>;
   hasData: boolean;
 } {
+  const aggregatedByModel = collectModelMetricBuckets(usageData, metric, 'day');
+  if (aggregatedByModel.size > 0) {
+    const labelsSet = new Set<string>();
+    const dataByModel = new Map<string, number[]>();
+    let hasData = false;
+
+    aggregatedByModel.forEach((bucketMap) => {
+      bucketMap.forEach((_value, bucketKey) => {
+        if (bucketKey) labelsSet.add(bucketKey);
+      });
+    });
+
+    const labels = Array.from(labelsSet).sort();
+    aggregatedByModel.forEach((bucketMap, modelName) => {
+      const values = labels.map((label) => {
+        const value = bucketMap.get(label) || 0;
+        if (value !== 0) hasData = true;
+        return value;
+      });
+      dataByModel.set(modelName, values);
+    });
+
+    return { labels, dataByModel, hasData };
+  }
+
   const details = collectUsageDetails(usageData);
   const valuesByModel = new Map<string, Map<string, number>>();
   const labelsSet = new Set<string>();
