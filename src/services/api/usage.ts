@@ -26,12 +26,14 @@ export interface UsagePersistenceConfig {
   enabled?: boolean;
   filePath?: string;
   intervalSeconds?: number;
+  maxDetailsPerModel?: number;
 }
 
 export interface UsagePersistenceStatus {
   enabled?: boolean;
   filePath?: string;
   intervalSeconds?: number;
+  maxDetailsPerModel?: number;
   lastLoadedAt?: string;
   lastSavedAt?: string;
   saveCount?: number;
@@ -73,6 +75,12 @@ const parseUsagePersistenceConfig = (payload: unknown): UsagePersistenceConfig =
         ? record['interval-seconds']
         : typeof record.intervalSeconds === 'number'
           ? record.intervalSeconds
+          : undefined,
+    maxDetailsPerModel:
+      typeof record['max-details-per-model'] === 'number'
+        ? record['max-details-per-model']
+        : typeof record.maxDetailsPerModel === 'number'
+          ? record.maxDetailsPerModel
           : undefined
   };
 };
@@ -98,6 +106,14 @@ const parseUsagePersistenceStatus = (payload: unknown): UsagePersistenceStatus =
         : typeof record.intervalSeconds === 'number'
           ? record.intervalSeconds
           : undefined,
+    maxDetailsPerModel:
+      typeof record['max-details-per-model'] === 'number'
+        ? record['max-details-per-model']
+        : typeof record.max_details_per_model === 'number'
+          ? record.max_details_per_model
+          : typeof record.maxDetailsPerModel === 'number'
+            ? record.maxDetailsPerModel
+            : undefined,
     lastLoadedAt:
       typeof record['last-loaded-at'] === 'string'
         ? record['last-loaded-at']
@@ -207,6 +223,9 @@ export const usageApi = {
     if (typeof config.filePath === 'string') payload['file-path'] = config.filePath;
     if (typeof config.intervalSeconds === 'number') {
       payload['interval-seconds'] = config.intervalSeconds;
+    }
+    if (typeof config.maxDetailsPerModel === 'number') {
+      payload['max-details-per-model'] = config.maxDetailsPerModel;
     }
     const response = await apiClient.put<UsagePersistenceConfigResponse>('/usage-persistence', payload, {
       timeout: USAGE_TIMEOUT_MS

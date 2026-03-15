@@ -15,6 +15,7 @@ export interface UsagePersistenceConfig {
   enabled?: boolean;
   filePath?: string;
   intervalSeconds?: number;
+  maxDetailsPerModel?: number;
 }
 
 export interface Config {
