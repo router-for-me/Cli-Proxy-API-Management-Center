@@ -7,11 +7,17 @@ import type { AuthFileItem } from '@/types';
 import { formatFileSize } from '@/utils/format';
 import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
 import { downloadBlob } from '@/utils/download';
-import { getTypeLabel, isRuntimeOnlyAuthFile } from '@/features/authFiles/constants';
+import {
+  getTypeLabel,
+  hasAuthFileStatusMessage,
+  isRuntimeOnlyAuthFile,
+} from '@/features/authFiles/constants';
 
 type DeleteAllOptions = {
   filter: string;
+  problemOnly: boolean;
   onResetFilterToAll: () => void;
+  onResetProblemOnly: () => void;
 };
 
 export type UseAuthFilesDataResult = {
@@ -59,7 +65,6 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const selectionCount = selectedFiles.size;
-
   const toggleSelect = useCallback((name: string) => {
     setSelectedFiles((prev) => {
       const next = new Set(prev);
@@ -223,12 +228,17 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
   const handleDeleteAll = useCallback(
     (deleteAllOptions: DeleteAllOptions) => {
-      const { filter, onResetFilterToAll } = deleteAllOptions;
+      const { filter, problemOnly, onResetFilterToAll, onResetProblemOnly } = deleteAllOptions;
       const isFiltered = filter !== 'all';
+      const isProblemOnly = problemOnly === true;
       const typeLabel = isFiltered ? getTypeLabel(t, filter) : t('auth_files.filter_all');
-      const confirmMessage = isFiltered
-        ? t('auth_files.delete_filtered_confirm', { type: typeLabel })
-        : t('auth_files.delete_all_confirm');
+      const confirmMessage = isProblemOnly
+        ? isFiltered
+          ? t('auth_files.delete_problem_filtered_confirm', { type: typeLabel })
+          : t('auth_files.delete_problem_confirm')
+        : isFiltered
+          ? t('auth_files.delete_filtered_confirm', { type: typeLabel })
+          : t('auth_files.delete_all_confirm');
 
       showConfirmation({
         title: t('auth_files.delete_all_title', { defaultValue: 'Delete All Files' }),
@@ -238,18 +248,26 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
         onConfirm: async () => {
           setDeletingAll(true);
           try {
-            if (!isFiltered) {
+            if (!isFiltered && !isProblemOnly) {
               await authFilesApi.deleteAll();
               showNotification(t('auth_files.delete_all_success'), 'success');
               setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
               deselectAll();
             } else {
-              const filesToDelete = files.filter(
-                (f) => f.type === filter && !isRuntimeOnlyAuthFile(f)
-              );
+              const filesToDelete = files.filter((file) => {
+                if (isRuntimeOnlyAuthFile(file)) return false;
+                if (isFiltered && file.type !== filter) return false;
+                if (isProblemOnly && !hasAuthFileStatusMessage(file)) return false;
+                return true;
+              });
 
               if (filesToDelete.length === 0) {
-                showNotification(t('auth_files.delete_filtered_none', { type: typeLabel }), 'info');
+                const emptyMessage = isProblemOnly
+                  ? isFiltered
+                    ? t('auth_files.delete_problem_filtered_none', { type: typeLabel })
+                    : t('auth_files.delete_problem_none')
+                  : t('auth_files.delete_filtered_none', { type: typeLabel });
+                showNotification(emptyMessage, 'info');
                 setDeletingAll(false);
                 return;
               }
@@ -284,10 +302,31 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
                 return changed ? next : prev;
               });
 
-              if (failed === 0) {
+              if (failed === 0 && isProblemOnly) {
+                showNotification(
+                  isFiltered
+                    ? t('auth_files.delete_problem_filtered_success', {
+                        count: success,
+                        type: typeLabel,
+                      })
+                    : t('auth_files.delete_problem_success', { count: success }),
+                  'success'
+                );
+              } else if (failed === 0) {
                 showNotification(
                   t('auth_files.delete_filtered_success', { count: success, type: typeLabel }),
                   'success'
+                );
+              } else if (isProblemOnly) {
+                showNotification(
+                  isFiltered
+                    ? t('auth_files.delete_problem_filtered_partial', {
+                        success,
+                        failed,
+                        type: typeLabel,
+                      })
+                    : t('auth_files.delete_problem_partial', { success, failed }),
+                  'warning'
                 );
               } else {
                 showNotification(
@@ -295,7 +334,13 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
                   'warning'
                 );
               }
-              onResetFilterToAll();
+
+              if (isFiltered) {
+                onResetFilterToAll();
+              }
+              if (isProblemOnly) {
+                onResetProblemOnly();
+              }
             }
           } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : '';

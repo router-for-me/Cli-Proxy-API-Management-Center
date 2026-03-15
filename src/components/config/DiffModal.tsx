@@ -50,7 +50,7 @@ function computeUnifiedDiff(original: string, modified: string): DiffResult {
   let totalAdditions = 0;
   let totalDeletions = 0;
 
-  const hunks: Hunk[] = chunks.map((chunk) => {
+  const hunks: Hunk[] = chunks.map((chunk: Chunk) => {
     const lines: UnifiedLine[] = [];
 
     const hasDel = chunk.fromA < chunk.toA;

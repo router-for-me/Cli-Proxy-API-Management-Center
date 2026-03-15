@@ -108,3 +108,7 @@
   background: rgba($primary-color, 0.1);
   font-weight: 600;
 }
+
+.optionHighlighted {
+  background: var(--bg-secondary);
+}

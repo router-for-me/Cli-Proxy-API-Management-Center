@@ -156,6 +156,8 @@ export const GEMINI_CLI_GROUP_LOOKUP = new Map(
 export const GEMINI_CLI_IGNORED_MODEL_PREFIXES = ['gemini-2.0-flash'];
 
 // Claude API configuration
+export const CLAUDE_PROFILE_URL = 'https://api.anthropic.com/api/oauth/profile';
+
 export const CLAUDE_USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
 
 export const CLAUDE_REQUEST_HEADERS = {

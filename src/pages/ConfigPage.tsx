@@ -31,13 +31,17 @@ function readCommercialModeFromYaml(yamlContent: string): boolean {
 
 export function ConfigPage() {
   const { t } = useTranslation();
-  const { showNotification } = useNotificationStore();
+  const showNotification = useNotificationStore((state) => state.showNotification);
+  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
 
   const {
     visualValues,
     visualDirty,
+    visualParseError,
+    visualValidationErrors,
+    visualHasPayloadValidationErrors,
     loadVisualValuesFromYaml,
     applyVisualChangesToYaml,
     setVisualValues
@@ -69,6 +73,10 @@ export function ConfigPage() {
 
   const disableControls = connectionStatus !== 'connected';
   const isDirty = dirty || visualDirty;
+  const hasVisualModeError = !!visualParseError;
+  const hasVisualValidationErrors =
+    activeTab === 'visual' &&
+    (Object.values(visualValidationErrors).some(Boolean) || visualHasPayloadValidationErrors);
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
@@ -92,6 +100,17 @@ export function ConfigPage() {
   useEffect(() => {
     loadConfig();
   }, [loadConfig]);
+
+  useEffect(() => {
+    if (activeTab !== 'visual' || !visualParseError) return;
+
+    setActiveTab('source');
+    localStorage.setItem('config-management:tab', 'source');
+    showNotification(
+      t('config_management.visual_mode_unavailable_detail', { message: visualParseError }),
+      'error'
+    );
+  }, [activeTab, showNotification, t, visualParseError]);
 
   const handleConfirmSave = async () => {
     setSaving(true);
@@ -121,11 +140,31 @@ export function ConfigPage() {
   };
 
   const handleSave = async () => {
+    if (activeTab === 'visual' && visualParseError) {
+      showNotification(t('config_management.visual_mode_save_blocked'), 'error');
+      return;
+    }
+
     setSaving(true);
     try {
-      // In source mode, save exactly what the user edited. In visual mode, materialize visual changes into YAML.
-      const nextMergedYaml = activeTab === 'source' ? content : applyVisualChangesToYaml(content);
       const latestServerYaml = await configFileApi.fetchConfigYaml();
+
+      if (activeTab !== 'source') {
+        const latestDocument = parseDocument(latestServerYaml);
+        if (latestDocument.errors.length > 0) {
+          showNotification(
+            t('config_management.visual_mode_latest_yaml_invalid', {
+              message: latestDocument.errors[0]?.message ?? t('config_management.visual_mode_save_blocked')
+            }),
+            'error'
+          );
+          return;
+        }
+      }
+
+      // In source mode, save exactly what the user edited. In visual mode, materialize visual changes into the latest YAML.
+      const nextMergedYaml =
+        activeTab === 'source' ? content : applyVisualChangesToYaml(latestServerYaml);
 
       // In visual mode, applyVisualChangesToYaml re-serializes YAML via parseDocument → toString,
       // which may reformat comments/whitespace. Normalize the server YAML through the same pipeline
@@ -177,12 +216,19 @@ export function ConfigPage() {
         }
       }
     } else {
-      loadVisualValuesFromYaml(content);
+      const result = loadVisualValuesFromYaml(content);
+      if (!result.ok) {
+        showNotification(
+          t('config_management.visual_mode_unavailable_detail', { message: result.error }),
+          'error'
+        );
+        return;
+      }
     }
 
     setActiveTab(tab);
     localStorage.setItem('config-management:tab', tab);
-  }, [activeTab, applyVisualChangesToYaml, content, loadVisualValuesFromYaml, visualDirty]);
+  }, [activeTab, applyVisualChangesToYaml, content, loadVisualValuesFromYaml, showNotification, t, visualDirty]);
 
   // Search functionality
   const performSearch = useCallback((query: string, direction: 'next' | 'prev' = 'next') => {
@@ -346,19 +392,46 @@ export function ConfigPage() {
     if (disableControls) return t('config_management.status_disconnected');
     if (loading) return t('config_management.status_loading');
     if (error) return t('config_management.status_load_failed');
+    if (hasVisualModeError) return t('config_management.visual_mode_unavailable');
+    if (hasVisualValidationErrors) return t('config_management.visual.validation.validation_blocked');
     if (saving) return t('config_management.status_saving');
     if (isDirty) return t('config_management.status_dirty');
     return t('config_management.status_loaded');
   };
 
-  const isLoadedStatus = !disableControls && !loading && !error && !saving && !isDirty;
+  const isLoadedStatus =
+    !disableControls &&
+    !loading &&
+    !error &&
+    !saving &&
+    !isDirty &&
+    !hasVisualModeError &&
+    !hasVisualValidationErrors;
 
   const getStatusClass = () => {
-    if (error) return styles.error;
+    if (error || hasVisualModeError || hasVisualValidationErrors) return styles.error;
     if (isDirty) return styles.modified;
     if (!loading && !saving) return styles.saved;
     return '';
   };
+
+  const handleReload = useCallback(() => {
+    if (!isDirty) {
+      void loadConfig();
+      return;
+    }
+
+    showConfirmation({
+      title: t('common.unsaved_changes_title'),
+      message: t('config_management.reload_confirm_message'),
+      confirmText: t('config_management.reload'),
+      cancelText: t('common.cancel'),
+      variant: 'danger',
+      onConfirm: async () => {
+        await loadConfig();
+      },
+    });
+  }, [isDirty, loadConfig, showConfirmation, t]);
 
   const floatingActions = (
     <div className={styles.floatingActionContainer} ref={floatingActionsRef}>
@@ -367,8 +440,8 @@ export function ConfigPage() {
         <button
           type="button"
           className={styles.floatingActionButton}
-          onClick={loadConfig}
-          disabled={loading}
+          onClick={handleReload}
+          disabled={loading || saving}
           title={t('config_management.reload')}
           aria-label={t('config_management.reload')}
         >
@@ -378,7 +451,15 @@ export function ConfigPage() {
           type="button"
           className={styles.floatingActionButton}
           onClick={handleSave}
-          disabled={disableControls || loading || saving || !isDirty || diffModalOpen}
+          disabled={
+            disableControls ||
+            loading ||
+            saving ||
+            !isDirty ||
+            diffModalOpen ||
+            hasVisualModeError ||
+            hasVisualValidationErrors
+          }
           title={t('config_management.save')}
           aria-label={t('config_management.save')}
         >
@@ -416,10 +497,16 @@ export function ConfigPage() {
       <Card className={styles.configCard}>
         <div className={styles.content}>
           {error && <div className="error-box">{error}</div>}
+          {!error && visualParseError && (
+            <div className="error-box">
+              {t('config_management.visual_mode_unavailable_detail', { message: visualParseError })}
+            </div>
+          )}
 
           {activeTab === 'visual' ? (
             <VisualConfigEditor
               values={visualValues}
+              validationErrors={visualValidationErrors}
               disabled={disableControls || loading}
               onChange={setVisualValues}
             />

@@ -1,6 +1,6 @@
-import type { AmpcodeConfig, AmpcodeModelMapping, ApiKeyEntry } from '@/types';
+import type { AmpcodeConfig, AmpcodeModelMapping, AmpcodeUpstreamApiKeyMapping, ApiKeyEntry } from '@/types';
 import { buildCandidateUsageSourceIds, type KeyStatBucket, type KeyStats } from '@/utils/usage';
-import type { AmpcodeFormState, ModelEntry } from './types';
+import type { AmpcodeFormState, AmpcodeUpstreamApiKeyEntry, ModelEntry } from './types';
 
 export const DISABLE_ALL_MODELS_RULE = '*';
 
@@ -168,9 +168,43 @@ export const entriesToAmpcodeMappings = (entries: ModelEntry[]): AmpcodeModelMap
   return mappings;
 };
 
+export const ampcodeUpstreamApiKeysToEntries = (
+  mappings?: AmpcodeUpstreamApiKeyMapping[]
+): AmpcodeUpstreamApiKeyEntry[] => {
+  if (!Array.isArray(mappings) || mappings.length === 0) {
+    return [{ upstreamApiKey: '', clientApiKeysText: '' }];
+  }
+
+  return mappings.map((mapping) => ({
+    upstreamApiKey: mapping.upstreamApiKey ?? '',
+    clientApiKeysText: Array.isArray(mapping.apiKeys) ? mapping.apiKeys.join('\n') : '',
+  }));
+};
+
+export const entriesToAmpcodeUpstreamApiKeys = (
+  entries: AmpcodeUpstreamApiKeyEntry[]
+): AmpcodeUpstreamApiKeyMapping[] => {
+  const seen = new Set<string>();
+  const mappings: AmpcodeUpstreamApiKeyMapping[] = [];
+
+  entries.forEach((entry) => {
+    const upstreamApiKey = String(entry?.upstreamApiKey ?? '').trim();
+    if (!upstreamApiKey || seen.has(upstreamApiKey)) return;
+
+    const apiKeys = Array.from(new Set(parseTextList(String(entry?.clientApiKeysText ?? ''))));
+    if (!apiKeys.length) return;
+
+    seen.add(upstreamApiKey);
+    mappings.push({ upstreamApiKey, apiKeys });
+  });
+
+  return mappings;
+};
+
 export const buildAmpcodeFormState = (ampcode?: AmpcodeConfig | null): AmpcodeFormState => ({
   upstreamUrl: ampcode?.upstreamUrl ?? '',
   upstreamApiKey: '',
   forceModelMappings: ampcode?.forceModelMappings ?? false,
   mappingEntries: ampcodeMappingsToEntries(ampcode?.modelMappings),
+  upstreamApiKeyEntries: ampcodeUpstreamApiKeysToEntries(ampcode?.upstreamApiKeys),
 });

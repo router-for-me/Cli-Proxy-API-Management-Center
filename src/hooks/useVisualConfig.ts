@@ -2,9 +2,12 @@ import { useCallback, useMemo, useState } from 'react';
 import { isMap, parse as parseYaml, parseDocument } from 'yaml';
 import type {
   PayloadFilterRule,
+  PayloadParamEntry,
   PayloadParamValueType,
   PayloadRule,
   VisualConfigValues,
+  VisualConfigValidationErrors,
+  PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
 
@@ -44,8 +47,99 @@ function parseApiKeysText(raw: unknown): string {
   return keys.join('\n');
 }
 
+function replaceApiKeyValue(entry: unknown, apiKey: string): unknown {
+  const record = asRecord(entry);
+  if (!record) return apiKey;
+
+  if ('api-key' in record) return { ...record, 'api-key': apiKey };
+  if ('apiKey' in record) return { ...record, apiKey };
+  if ('key' in record) return { ...record, key: apiKey };
+  if ('Key' in record) return { ...record, Key: apiKey };
+
+  return { ...record, 'api-key': apiKey };
+}
+
+function buildApiKeyEntries(
+  apiKeys: string[],
+  metadata: ApiKeysStorageMetadata
+): Array<string | Record<string, unknown>> {
+  return apiKeys.map((apiKey, index) => {
+    const originalEntry = metadata.originalEntries[index];
+    if (metadata.entryMode === 'object') {
+      const replaced = replaceApiKeyValue(originalEntry, apiKey);
+      return asRecord(replaced) ?? { 'api-key': apiKey };
+    }
+
+    const record = asRecord(originalEntry);
+    return record ? ({ ...record, ...(replaceApiKeyValue(record, apiKey) as Record<string, unknown>) }) : apiKey;
+  });
+}
+
+function resolveApiKeysStorage(parsed: Record<string, unknown>): {
+  text: string;
+  metadata: ApiKeysStorageMetadata;
+} {
+  const legacyEntries = Array.isArray(parsed['api-keys']) ? parsed['api-keys'] : [];
+  const auth = asRecord(parsed.auth);
+  const providers = asRecord(auth?.providers);
+  const configApiKeyProvider = asRecord(providers?.['config-api-key']);
+
+  if (configApiKeyProvider) {
+    const providerEntries = Array.isArray(configApiKeyProvider['api-key-entries'])
+      ? configApiKeyProvider['api-key-entries']
+      : Array.isArray(configApiKeyProvider['api-keys'])
+        ? configApiKeyProvider['api-keys']
+        : [];
+    const providerListKey = Array.isArray(configApiKeyProvider['api-key-entries'])
+      ? 'api-key-entries'
+      : 'api-keys';
+
+    return {
+      text: parseApiKeysText(providerEntries),
+      metadata: {
+        source: 'auth-provider',
+        providerListKey,
+        entryMode:
+          providerListKey === 'api-key-entries' || providerEntries.some((entry) => Boolean(asRecord(entry)))
+            ? 'object'
+            : 'string',
+        originalEntries: providerEntries,
+        syncLegacy: legacyEntries.length > 0,
+      },
+    };
+  }
+
+  return {
+    text: parseApiKeysText(legacyEntries),
+    metadata: {
+      source: 'legacy',
+      entryMode: legacyEntries.some((entry) => Boolean(asRecord(entry))) ? 'object' : 'string',
+      originalEntries: legacyEntries,
+      syncLegacy: false,
+    },
+  };
+}
+
 type YamlDocument = ReturnType<typeof parseDocument>;
 type YamlPath = string[];
+
+type ApiKeysStorageMode = 'legacy' | 'auth-provider';
+type ApiKeysEntryMode = 'string' | 'object';
+
+type ApiKeysStorageMetadata = {
+  source: ApiKeysStorageMode;
+  providerListKey?: 'api-keys' | 'api-key-entries';
+  entryMode: ApiKeysEntryMode;
+  originalEntries: unknown[];
+  syncLegacy: boolean;
+};
+
+const DEFAULT_API_KEYS_STORAGE_METADATA: ApiKeysStorageMetadata = {
+  source: 'legacy',
+  entryMode: 'string',
+  originalEntries: [],
+  syncLegacy: false,
+};
 
 function docHas(doc: YamlDocument, path: YamlPath): boolean {
   return doc.hasIn(path);
@@ -93,13 +187,81 @@ function setIntFromStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown
     return;
   }
 
-  const parsed = Number.parseInt(trimmed, 10);
+  if (!/^-?\d+$/.test(trimmed)) {
+    return;
+  }
+
+  const parsed = Number(trimmed);
   if (Number.isFinite(parsed)) {
     doc.setIn(path, parsed);
     return;
   }
+}
 
-  if (docHas(doc, path)) doc.deleteIn(path);
+function getNonNegativeIntegerError(value: string): 'non_negative_integer' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (!/^-?\d+$/.test(trimmed)) return 'non_negative_integer';
+  return Number(trimmed) >= 0 ? undefined : 'non_negative_integer';
+}
+
+function getPortError(value: string): 'port_range' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (!/^\d+$/.test(trimmed)) return 'port_range';
+  const parsed = Number(trimmed);
+  return parsed >= 1 && parsed <= 65535 ? undefined : 'port_range';
+}
+
+export function getVisualConfigValidationErrors(
+  values: VisualConfigValues
+): VisualConfigValidationErrors {
+  return {
+    port: getPortError(values.port),
+    logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
+    requestRetry: getNonNegativeIntegerError(values.requestRetry),
+    maxRetryInterval: getNonNegativeIntegerError(values.maxRetryInterval),
+    'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
+    'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
+    'streaming.nonstreamKeepaliveInterval': getNonNegativeIntegerError(
+      values.streaming.nonstreamKeepaliveInterval
+    ),
+  };
+}
+
+export function getPayloadParamValidationError(
+  param: PayloadParamEntry
+): PayloadParamValidationErrorCode | undefined {
+  const trimmedValue = param.value.trim();
+
+  switch (param.valueType) {
+    case 'number': {
+      if (!trimmedValue) return 'payload_invalid_number';
+      const parsed = Number(trimmedValue);
+      return Number.isFinite(parsed) ? undefined : 'payload_invalid_number';
+    }
+    case 'boolean': {
+      const normalized = trimmedValue.toLowerCase();
+      return normalized === 'true' || normalized === 'false'
+        ? undefined
+        : 'payload_invalid_boolean';
+    }
+    case 'json': {
+      if (!trimmedValue) return 'payload_invalid_json';
+      try {
+        JSON.parse(param.value);
+        return undefined;
+      } catch {
+        return 'payload_invalid_json';
+      }
+    }
+    default:
+      return undefined;
+  }
+}
+
+function hasPayloadParamValidationErrors(rules: PayloadRule[]): boolean {
+  return rules.some((rule) => rule.params.some((param) => Boolean(getPayloadParamValidationError(param))));
 }
 
 function deepClone<T>(value: T): T {
@@ -276,6 +438,19 @@ export function useVisualConfig() {
   const [baselineValues, setBaselineValues] = useState<VisualConfigValues>({
     ...DEFAULT_VISUAL_VALUES,
   });
+  const [visualParseError, setVisualParseError] = useState<string | null>(null);
+  const [apiKeysStorageMetadata, setApiKeysStorageMetadata] =
+    useState<ApiKeysStorageMetadata>(DEFAULT_API_KEYS_STORAGE_METADATA);
+  const visualValidationErrors = useMemo(
+    () => getVisualConfigValidationErrors(visualValues),
+    [visualValues]
+  );
+  const visualHasPayloadValidationErrors = useMemo(
+    () =>
+      hasPayloadParamValidationErrors(visualValues.payloadDefaultRules) ||
+      hasPayloadParamValidationErrors(visualValues.payloadOverrideRules),
+    [visualValues.payloadDefaultRules, visualValues.payloadOverrideRules]
+  );
 
   const visualDirty = useMemo(() => {
     return JSON.stringify(visualValues) !== JSON.stringify(baselineValues);
@@ -283,6 +458,11 @@ export function useVisualConfig() {
 
   const loadVisualValuesFromYaml = useCallback((yamlContent: string) => {
     try {
+      const document = parseDocument(yamlContent);
+      if (document.errors.length > 0) {
+        throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
+      }
+
       const parsedRaw: unknown = parseYaml(yamlContent) || {};
       const parsed = asRecord(parsedRaw) ?? {};
       const tls = asRecord(parsed.tls);
@@ -291,6 +471,7 @@ export function useVisualConfig() {
       const routing = asRecord(parsed.routing);
       const payload = asRecord(parsed.payload);
       const streaming = asRecord(parsed.streaming);
+      const apiKeysStorage = resolveApiKeysStorage(parsed);
 
       const newValues: VisualConfigValues = {
         host: typeof parsed.host === 'string' ? parsed.host : '',
@@ -312,7 +493,7 @@ export function useVisualConfig() {
               : '',
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
-        apiKeysText: parseApiKeysText(parsed['api-keys']),
+        apiKeysText: apiKeysStorage.text,
 
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
@@ -347,9 +528,13 @@ export function useVisualConfig() {
 
       setVisualValuesState(newValues);
       setBaselineValues(deepClone(newValues));
-    } catch {
-      setVisualValuesState({ ...DEFAULT_VISUAL_VALUES });
-      setBaselineValues(deepClone(DEFAULT_VISUAL_VALUES));
+      setApiKeysStorageMetadata(apiKeysStorage.metadata);
+      setVisualParseError(null);
+      return { ok: true as const };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Invalid YAML';
+      setVisualParseError(message);
+      return { ok: false as const, error: message };
     }
   }, []);
 
@@ -407,8 +592,35 @@ export function useVisualConfig() {
             .split('\n')
             .map((key) => key.trim())
             .filter(Boolean);
-          if (apiKeys.length > 0) {
-            doc.setIn(['api-keys'], apiKeys);
+          const apiKeyEntries = buildApiKeyEntries(apiKeys, apiKeysStorageMetadata);
+
+          if (apiKeysStorageMetadata.source === 'auth-provider') {
+            ensureMapInDoc(doc, ['auth']);
+            ensureMapInDoc(doc, ['auth', 'providers']);
+            ensureMapInDoc(doc, ['auth', 'providers', 'config-api-key']);
+
+            const providerListKey = apiKeysStorageMetadata.providerListKey ?? 'api-key-entries';
+            const providerPath = ['auth', 'providers', 'config-api-key', providerListKey];
+
+            if (apiKeys.length > 0) {
+              doc.setIn(providerPath, apiKeyEntries);
+            } else if (docHas(doc, providerPath)) {
+              doc.deleteIn(providerPath);
+            }
+
+            deleteIfMapEmpty(doc, ['auth', 'providers', 'config-api-key']);
+            deleteIfMapEmpty(doc, ['auth', 'providers']);
+            deleteIfMapEmpty(doc, ['auth']);
+
+            if (apiKeysStorageMetadata.syncLegacy) {
+              if (apiKeys.length > 0) {
+                doc.setIn(['api-keys'], apiKeys);
+              } else if (docHas(doc, ['api-keys'])) {
+                doc.deleteIn(['api-keys']);
+              }
+            }
+          } else if (apiKeys.length > 0) {
+            doc.setIn(['api-keys'], apiKeyEntries);
           } else if (docHas(doc, ['api-keys'])) {
             doc.deleteIn(['api-keys']);
           }
@@ -510,7 +722,7 @@ export function useVisualConfig() {
         return currentYaml;
       }
     },
-    [baselineValues, visualValues]
+    [apiKeysStorageMetadata, baselineValues, visualValues]
   );
 
   const setVisualValues = useCallback((newValues: Partial<VisualConfigValues>) => {
@@ -526,6 +738,9 @@ export function useVisualConfig() {
   return {
     visualValues,
     visualDirty,
+    visualParseError,
+    visualValidationErrors,
+    visualHasPayloadValidationErrors,
     loadVisualValuesFromYaml,
     applyVisualChangesToYaml,
     setVisualValues,

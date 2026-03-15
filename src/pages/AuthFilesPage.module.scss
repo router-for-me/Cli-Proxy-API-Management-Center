@@ -161,6 +161,25 @@
   }
 }
 
+.filterToggleItem {
+  min-width: 220px;
+}
+
+.filterToggle {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+}
+
+.filterToggleLabel {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .pageSizeSelect {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
@@ -312,6 +331,10 @@
 
 .antigravityCard {
   background-image: linear-gradient(180deg, rgba(224, 247, 250, 0.12), rgba(224, 247, 250, 0));
+}
+
+.claudeCard {
+  background-image: linear-gradient(180deg, rgba(252, 228, 236, 0.18), rgba(252, 228, 236, 0));
 }
 
 .codexCard {
@@ -540,45 +563,6 @@
   align-items: center;
   gap: $spacing-sm;
   min-height: 28px;
-}
-
-.selectionToggle {
-  width: 22px;
-  height: 22px;
-  margin: 0;
-  flex-shrink: 0;
-  border-radius: 7px;
-  border: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
-  color: var(--primary-contrast, #fff);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    border-color $transition-fast,
-    background-color $transition-fast,
-    box-shadow $transition-fast,
-    transform $transition-fast;
-
-  &:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 16%, transparent);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-}
-
-.selectionToggleActive {
-  border-color: var(--primary-color);
-  background: var(--primary-color);
-}
-
-.selectionToggleActive svg {
-  display: block;
-  stroke-width: 2.4;
 }
 
 .typeBadge {

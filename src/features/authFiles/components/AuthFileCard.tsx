@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
   IconBot,
-  IconCheck,
   IconCode,
   IconDownload,
   IconInfo,
@@ -18,6 +18,7 @@ import { formatFileSize } from '@/utils/format';
 import {
   QUOTA_PROVIDER_TYPES,
   formatModified,
+  getAuthFileStatusMessage,
   getTypeColor,
   getTypeLabel,
   isRuntimeOnlyAuthFile,
@@ -91,6 +92,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const providerCardClass =
     quotaType === 'antigravity'
       ? styles.antigravityCard
+      : quotaType === 'claude'
+        ? styles.claudeCard
       : quotaType === 'codex'
         ? styles.codexCard
         : quotaType === 'gemini-cli'
@@ -103,7 +106,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const authIndexKey = normalizeAuthIndex(rawAuthIndex);
   const statusData =
     (authIndexKey && statusBarCache.get(authIndexKey)) || calculateStatusBarData([]);
-  const rawStatusMessage = String(file['status_message'] ?? file.statusMessage ?? '').trim();
+  const rawStatusMessage = getAuthFileStatusMessage(file);
   const hasStatusWarning =
     Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(rawStatusMessage.toLowerCase());
 
@@ -115,18 +118,14 @@ export function AuthFileCard(props: AuthFileCardProps) {
         <div className={styles.fileCardMain}>
           <div className={styles.cardHeader}>
             {!isRuntimeOnly && (
-              <button
-                type="button"
-                className={`${styles.selectionToggle} ${selected ? styles.selectionToggleActive : ''}`}
-                onClick={() => onToggleSelect(file.name)}
+              <SelectionCheckbox
+                checked={selected}
+                onChange={() => onToggleSelect(file.name)}
                 aria-label={
                   selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')
                 }
-                aria-pressed={selected}
                 title={selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')}
-              >
-                {selected && <IconCheck size={12} />}
-              </button>
+              />
             )}
             <span
               className={styles.typeBadge}

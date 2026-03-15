@@ -121,6 +121,33 @@
   max-width: 420px;
 }
 
+.filterPanelHeader {
+  display: flex;
+  align-items: center;
+  flex: 1 1 100%;
+}
+
+.filterPanelToggle {
+  white-space: nowrap;
+}
+
+.filterPanelButtonContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filterPanelCount {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  background: rgba($primary-color, 0.12);
+  color: var(--primary-color);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
 .structuredFilters {
   display: flex;
   flex-direction: column;
@@ -200,6 +227,20 @@
 }
 
 @include mobile {
+  .filterPanelHeader {
+    width: 100%;
+  }
+
+  .filterPanelToggle {
+    width: 100%;
+  }
+
+  .filterPanelButtonContent {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
   .filterChipGroup {
     flex-direction: column;
     gap: 6px;

@@ -19,6 +19,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { copyToClipboard } from '@/utils/clipboard';
 import {
   MAX_CARD_PAGE_SIZE,
@@ -27,6 +28,7 @@ import {
   clampCardPageSize,
   getTypeColor,
   getTypeLabel,
+  hasAuthFileStatusMessage,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   type QuotaProviderType,
@@ -64,6 +66,7 @@ export function AuthFilesPage() {
   const navigate = useNavigate();
 
   const [filter, setFilter] = useState<'all' | string>('all');
+  const [problemOnly, setProblemOnly] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
@@ -162,6 +165,9 @@ export function AuthFilesPage() {
     if (typeof persisted.filter === 'string' && persisted.filter.trim()) {
       setFilter(persisted.filter);
     }
+    if (typeof persisted.problemOnly === 'boolean') {
+      setProblemOnly(persisted.problemOnly);
+    }
     if (typeof persisted.search === 'string') {
       setSearch(persisted.search);
     }
@@ -174,8 +180,8 @@ export function AuthFilesPage() {
   }, []);
 
   useEffect(() => {
-    writeAuthFilesUiState({ filter, search, page, pageSize });
-  }, [filter, search, page, pageSize]);
+    writeAuthFilesUiState({ filter, problemOnly, search, page, pageSize });
+  }, [filter, problemOnly, search, page, pageSize]);
 
   useEffect(() => {
     setPageSizeInput(String(pageSize));
@@ -248,17 +254,22 @@ export function AuthFilesPage() {
     return Array.from(types);
   }, [files]);
 
+  const filesMatchingProblemFilter = useMemo(
+    () => (problemOnly ? files.filter(hasAuthFileStatusMessage) : files),
+    [files, problemOnly]
+  );
+
   const typeCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: files.length };
-    files.forEach((file) => {
+    const counts: Record<string, number> = { all: filesMatchingProblemFilter.length };
+    filesMatchingProblemFilter.forEach((file) => {
       if (!file.type) return;
       counts[file.type] = (counts[file.type] || 0) + 1;
     });
     return counts;
-  }, [files]);
+  }, [filesMatchingProblemFilter]);
 
   const filtered = useMemo(() => {
-    return files.filter((item) => {
+    return filesMatchingProblemFilter.filter((item) => {
       const matchType = filter === 'all' || item.type === filter;
       const term = search.trim().toLowerCase();
       const matchSearch =
@@ -268,7 +279,7 @@ export function AuthFilesPage() {
         (item.provider || '').toString().toLowerCase().includes(term);
       return matchType && matchSearch;
     });
-  }, [files, filter, search]);
+  }, [filesMatchingProblemFilter, filter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -456,6 +467,14 @@ export function AuthFilesPage() {
     </div>
   );
 
+  const deleteAllButtonLabel = problemOnly
+    ? filter === 'all'
+      ? t('auth_files.delete_problem_button')
+      : t('auth_files.delete_problem_button_with_type', { type: getTypeLabel(t, filter) })
+    : filter === 'all'
+      ? t('auth_files.delete_all_button')
+      : `${t('common.delete')} ${getTypeLabel(t, filter)}`;
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
@@ -482,14 +501,17 @@ export function AuthFilesPage() {
               variant="danger"
               size="sm"
               onClick={() =>
-                handleDeleteAll({ filter, onResetFilterToAll: () => setFilter('all') })
+                handleDeleteAll({
+                  filter,
+                  problemOnly,
+                  onResetFilterToAll: () => setFilter('all'),
+                  onResetProblemOnly: () => setProblemOnly(false),
+                })
               }
               disabled={disableControls || loading || deletingAll}
               loading={deletingAll}
             >
-              {filter === 'all'
-                ? t('auth_files.delete_all_button')
-                : `${t('common.delete')} ${getTypeLabel(t, filter)}`}
+              {deleteAllButtonLabel}
             </Button>
             <input
               ref={fileInputRef}
@@ -536,6 +558,24 @@ export function AuthFilesPage() {
                   }
                 }}
               />
+            </div>
+            <div className={`${styles.filterItem} ${styles.filterToggleItem}`}>
+              <label>{t('auth_files.problem_filter_label')}</label>
+              <div className={styles.filterToggle}>
+                <ToggleSwitch
+                  checked={problemOnly}
+                  onChange={(value) => {
+                    setProblemOnly(value);
+                    setPage(1);
+                  }}
+                  ariaLabel={t('auth_files.problem_filter_only')}
+                  label={
+                    <span className={styles.filterToggleLabel}>
+                      {t('auth_files.problem_filter_only')}
+                    </span>
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>

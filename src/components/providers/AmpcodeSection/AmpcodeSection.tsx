@@ -71,6 +71,10 @@ export function AmpcodeSection({
               <span className={styles.fieldLabel}>{t('ai_providers.ampcode_model_mappings_count')}:</span>
               <span className={styles.fieldValue}>{config?.modelMappings?.length || 0}</span>
             </div>
+            <div className={styles.fieldRow}>
+              <span className={styles.fieldLabel}>{t('ai_providers.ampcode_upstream_api_keys_count')}:</span>
+              <span className={styles.fieldValue}>{config?.upstreamApiKeys?.length || 0}</span>
+            </div>
             {config?.modelMappings?.length ? (
               <div className={styles.modelTagList}>
                 {config.modelMappings.slice(0, 5).map((mapping) => (

@@ -11,6 +11,7 @@ import type {
   AntigravityQuotaState,
   AuthFileItem,
   ClaudeExtraUsage,
+  ClaudeProfileResponse,
   ClaudeQuotaState,
   ClaudeQuotaWindow,
   ClaudeUsagePayload,
@@ -29,6 +30,7 @@ import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api
 import {
   ANTIGRAVITY_QUOTA_URLS,
   ANTIGRAVITY_REQUEST_HEADERS,
+  CLAUDE_PROFILE_URL,
   CLAUDE_USAGE_URL,
   CLAUDE_REQUEST_HEADERS,
   CLAUDE_USAGE_WINDOW_KEYS,
@@ -673,22 +675,79 @@ const buildClaudeQuotaWindows = (
   return windows;
 };
 
+const normalizeFlagValue = (value: unknown): boolean | undefined => {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const trimmed = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'y', 'on'].includes(trimmed)) return true;
+    if (['false', '0', 'no', 'n', 'off'].includes(trimmed)) return false;
+  }
+  return undefined;
+};
+
+const parseClaudeProfilePayload = (payload: unknown): ClaudeProfileResponse | null => {
+  if (payload === undefined || payload === null) return null;
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim();
+    if (!trimmed) return null;
+    try {
+      return JSON.parse(trimmed) as ClaudeProfileResponse;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof payload === 'object') {
+    return payload as ClaudeProfileResponse;
+  }
+  return null;
+};
+
+const resolveClaudePlanType = (profile: ClaudeProfileResponse | null): string | null => {
+  if (!profile) return null;
+
+  const hasClaudeMax = normalizeFlagValue(profile.account?.has_claude_max);
+  if (hasClaudeMax) return 'plan_max';
+
+  const hasClaudePro = normalizeFlagValue(profile.account?.has_claude_pro);
+  if (hasClaudePro) return 'plan_pro';
+
+  if (hasClaudeMax === false && hasClaudePro === false) return 'plan_free';
+
+  return null;
+};
+
 const fetchClaudeQuota = async (
   file: AuthFileItem,
   t: TFunction
-): Promise<{ windows: ClaudeQuotaWindow[]; extraUsage?: ClaudeExtraUsage | null }> => {
+): Promise<{ windows: ClaudeQuotaWindow[]; extraUsage?: ClaudeExtraUsage | null; planType?: string | null }> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
     throw new Error(t('claude_quota.missing_auth_index'));
   }
 
-  const result = await apiCallApi.request({
-    authIndex,
-    method: 'GET',
-    url: CLAUDE_USAGE_URL,
-    header: { ...CLAUDE_REQUEST_HEADERS },
-  });
+  const [usageResult, profileResult] = await Promise.allSettled([
+    apiCallApi.request({
+      authIndex,
+      method: 'GET',
+      url: CLAUDE_USAGE_URL,
+      header: { ...CLAUDE_REQUEST_HEADERS },
+    }),
+    apiCallApi.request({
+      authIndex,
+      method: 'GET',
+      url: CLAUDE_PROFILE_URL,
+      header: { ...CLAUDE_REQUEST_HEADERS },
+    }),
+  ]);
+
+  if (usageResult.status === 'rejected') {
+    throw usageResult.reason;
+  }
+
+  const result = usageResult.value;
 
   if (result.statusCode < 200 || result.statusCode >= 300) {
     throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
@@ -700,7 +759,16 @@ const fetchClaudeQuota = async (
   }
 
   const windows = buildClaudeQuotaWindows(payload, t);
-  return { windows, extraUsage: payload.extra_usage };
+  const planType =
+    profileResult.status === 'fulfilled' &&
+    profileResult.value.statusCode >= 200 &&
+    profileResult.value.statusCode < 300
+      ? resolveClaudePlanType(
+          parseClaudeProfilePayload(profileResult.value.body ?? profileResult.value.bodyText)
+        )
+      : null;
+
+  return { windows, extraUsage: payload.extra_usage, planType };
 };
 
 const renderClaudeItems = (
@@ -712,7 +780,19 @@ const renderClaudeItems = (
   const { createElement: h, Fragment } = React;
   const windows = quota.windows ?? [];
   const extraUsage = quota.extraUsage ?? null;
+  const planType = quota.planType ?? null;
   const nodes: ReactNode[] = [];
+
+  if (planType) {
+    nodes.push(
+      h(
+        'div',
+        { key: 'plan', className: styleMap.codexPlan },
+        h('span', { className: styleMap.codexPlanLabel }, t('claude_quota.plan_label')),
+        h('span', { className: styleMap.codexPlanValue }, t(`claude_quota.${planType}`))
+      )
+    );
+  }
 
   if (extraUsage && extraUsage.is_enabled) {
     const usedLabel = `$${(extraUsage.used_credits / 100).toFixed(2)} / $${(extraUsage.monthly_limit / 100).toFixed(2)}`;
@@ -765,7 +845,7 @@ const renderClaudeItems = (
 
 export const CLAUDE_CONFIG: QuotaConfig<
   ClaudeQuotaState,
-  { windows: ClaudeQuotaWindow[]; extraUsage?: ClaudeExtraUsage | null }
+  { windows: ClaudeQuotaWindow[]; extraUsage?: ClaudeExtraUsage | null; planType?: string | null }
 > = {
   type: 'claude',
   i18nPrefix: 'claude_quota',
@@ -779,6 +859,7 @@ export const CLAUDE_CONFIG: QuotaConfig<
     status: 'success',
     windows: data.windows,
     extraUsage: data.extraUsage,
+    planType: data.planType,
   }),
   buildErrorState: (message, status) => ({
     status: 'error',
