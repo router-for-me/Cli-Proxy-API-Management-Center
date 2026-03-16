@@ -381,7 +381,6 @@ export function AiProvidersPage() {
             loading={loading}
             disableControls={disableControls}
             isSwitching={isSwitching}
-            resolvedTheme={resolvedTheme}
             onAdd={() => openEditor('/ai-providers/codex/new')}
             onEdit={(index) => openEditor(`/ai-providers/codex/${index}`)}
             onDelete={(index) => void deleteProviderEntry('codex', index)}

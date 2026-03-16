@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import iconCodexLight from '@/assets/icons/codex_light.svg';
-import iconCodexDark from '@/assets/icons/codex_drak.svg';
+import iconCodex from '@/assets/icons/codex.svg';
 import type { ProviderKeyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import {
@@ -25,7 +24,6 @@ interface CodexSectionProps {
   loading: boolean;
   disableControls: boolean;
   isSwitching: boolean;
-  resolvedTheme: string;
   onAdd: () => void;
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
@@ -39,7 +37,6 @@ export function CodexSection({
   loading,
   disableControls,
   isSwitching,
-  resolvedTheme,
   onAdd,
   onEdit,
   onDelete,
@@ -72,11 +69,7 @@ export function CodexSection({
       <Card
         title={
           <span className={styles.cardTitle}>
-            <img
-              src={resolvedTheme === 'dark' ? iconCodexDark : iconCodexLight}
-              alt=""
-              className={styles.cardTitleIcon}
-            />
+            <img src={iconCodex} alt="" className={styles.cardTitleIcon} />
             {t('ai_providers.codex_title')}
           </span>
         }
