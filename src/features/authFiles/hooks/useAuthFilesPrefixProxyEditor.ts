@@ -39,6 +39,7 @@ export type PrefixProxyEditorState = {
   disableCooling: string;
   websocket: boolean;
   note: string;
+  noteTouched: boolean;
 };
 
 export type UseAuthFilesPrefixProxyEditorOptions = {
@@ -95,11 +96,13 @@ const buildPrefixProxyUpdatedText = (editor: PrefixProxyEditorState | null): str
     next.websocket = editor.websocket;
   }
 
-  const noteValue = editor.note.trim();
-  if (noteValue) {
-    next.note = noteValue;
-  } else if ('note' in next) {
-    delete next.note;
+  if (editor.noteTouched) {
+    const noteValue = editor.note.trim();
+    if (noteValue) {
+      next.note = editor.note;
+    } else if ('note' in next) {
+      delete next.note;
+    }
   }
 
   return JSON.stringify(next);
@@ -156,6 +159,7 @@ export function useAuthFilesPrefixProxyEditor(
       disableCooling: '',
       websocket: false,
       note: '',
+      noteTouched: false,
     });
 
     try {
@@ -223,6 +227,7 @@ export function useAuthFilesPrefixProxyEditor(
             disableCoolingValue === undefined ? '' : disableCoolingValue ? 'true' : 'false',
           websocket: websocketValue ?? false,
           note,
+          noteTouched: false,
           error: null,
         };
       });
@@ -247,7 +252,7 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'priority') return { ...prev, priority: String(value) };
       if (field === 'excludedModelsText') return { ...prev, excludedModelsText: String(value) };
       if (field === 'disableCooling') return { ...prev, disableCooling: String(value) };
-      if (field === 'note') return { ...prev, note: String(value) };
+      if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
       return { ...prev, websocket: Boolean(value) };
     });
   };

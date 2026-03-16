@@ -623,21 +623,7 @@
 }
 
 .sortSelect {
-  padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 14px;
-  cursor: pointer;
-  height: 38px;
-  box-sizing: border-box;
   min-width: 140px;
-
-  &:focus {
-    outline: none;
-    border-color: var(--primary-color);
-  }
 }
 
 .healthStatusMessage {
