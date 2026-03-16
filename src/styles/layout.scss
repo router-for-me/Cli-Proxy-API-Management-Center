@@ -442,6 +442,29 @@
   }
 }
 
+.sidebar-backdrop {
+  display: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgb(15 23 42 / 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity $transition-fast;
+
+  @media (max-width: $breakpoint-mobile) {
+    display: block;
+    position: fixed;
+    inset: var(--header-height) 0 0;
+    z-index: $z-dropdown - 1;
+
+    &.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+
 .sidebar {
   width: 240px;
   background: var(--bg-primary);
