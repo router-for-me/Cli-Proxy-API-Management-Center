@@ -273,104 +273,98 @@ export function SystemPage() {
     <div className={styles.container}>
       <h1 className={styles.pageTitle}>{t('system_info.title')}</h1>
       <div className={styles.content}>
-      <Card className={styles.aboutCard}>
-        <div className={styles.aboutHeader}>
-          <img src={INLINE_LOGO_JPEG} alt="CPAMC" className={styles.aboutLogo} />
-          <div className={styles.aboutTitle}>{t('system_info.about_title')}</div>
-        </div>
-
-        <div className={styles.aboutInfoGrid}>
-          <button
-            type="button"
-            className={`${styles.infoTile} ${styles.tapTile}`}
-            onClick={handleInfoVersionTap}
-          >
-            <div className={styles.tileLabel}>{t('footer.version')}</div>
-            <div className={styles.tileValue}>{appVersion}</div>
-          </button>
-
-          <div className={styles.infoTile}>
-            <div className={styles.tileLabel}>{t('footer.api_version')}</div>
-            <div className={styles.tileValue}>{apiVersion}</div>
+        <Card className={styles.aboutCard}>
+          <div className={styles.aboutHeader}>
+            <img src={INLINE_LOGO_JPEG} alt="CPAMC" className={styles.aboutLogo} />
+            <div className={styles.aboutTitle}>{t('system_info.about_title')}</div>
           </div>
 
-          <div className={styles.infoTile}>
-            <div className={styles.tileLabel}>{t('footer.build_date')}</div>
-            <div className={styles.tileValue}>{buildTime}</div>
+          <div className={styles.aboutInfoGrid}>
+            <button
+              type="button"
+              className={`${styles.infoTile} ${styles.tapTile}`}
+              onClick={handleInfoVersionTap}
+            >
+              <div className={styles.tileLabel}>{t('footer.version')}</div>
+              <div className={styles.tileValue}>{appVersion}</div>
+            </button>
+
+            <div className={styles.infoTile}>
+              <div className={styles.tileLabel}>{t('footer.api_version')}</div>
+              <div className={styles.tileValue}>{apiVersion}</div>
+            </div>
+
+            <div className={styles.infoTile}>
+              <div className={styles.tileLabel}>{t('footer.build_date')}</div>
+              <div className={styles.tileValue}>{buildTime}</div>
+            </div>
+
+            <div className={styles.infoTile}>
+              <div className={styles.tileLabel}>{t('connection.status')}</div>
+              <div className={styles.tileValue}>{t(`common.${auth.connectionStatus}_status`)}</div>
+              <div className={styles.tileSub}>{auth.apiBase || '-'}</div>
+            </div>
           </div>
+        </Card>
 
-	          <div className={styles.infoTile}>
-	            <div className={styles.tileLabel}>{t('connection.status')}</div>
-	            <div className={styles.tileValue}>{t(`common.${auth.connectionStatus}_status`)}</div>
-	            <div className={styles.tileSub}>{auth.apiBase || '-'}</div>
-	          </div>
-        </div>
-
-        <div className={styles.aboutActions}>
-          <Button variant="secondary" size="sm" onClick={() => fetchConfig(undefined, true)}>
-            {t('common.refresh')}
-          </Button>
-        </div>
-      </Card>
-
-      <Card title={t('system_info.quick_links_title')}>
-        <p className={styles.sectionDescription}>{t('system_info.quick_links_desc')}</p>
-        <div className={styles.quickLinks}>
-          <a
-            href="https://github.com/router-for-me/CLIProxyAPI"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.linkCard}
-          >
-            <div className={`${styles.linkIcon} ${styles.github}`}>
-              <IconGithub size={22} />
-            </div>
-            <div className={styles.linkContent}>
-              <div className={styles.linkTitle}>
-                {t('system_info.link_main_repo')}
-                <IconExternalLink size={14} />
+        <Card title={t('system_info.quick_links_title')}>
+          <p className={styles.sectionDescription}>{t('system_info.quick_links_desc')}</p>
+          <div className={styles.quickLinks}>
+            <a
+              href="https://github.com/router-for-me/CLIProxyAPI"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.linkCard}
+            >
+              <div className={`${styles.linkIcon} ${styles.github}`}>
+                <IconGithub size={22} />
               </div>
-              <div className={styles.linkDesc}>{t('system_info.link_main_repo_desc')}</div>
-            </div>
-          </a>
-
-          <a
-            href="https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.linkCard}
-          >
-            <div className={`${styles.linkIcon} ${styles.github}`}>
-              <IconCode size={22} />
-            </div>
-            <div className={styles.linkContent}>
-              <div className={styles.linkTitle}>
-                {t('system_info.link_webui_repo')}
-                <IconExternalLink size={14} />
+              <div className={styles.linkContent}>
+                <div className={styles.linkTitle}>
+                  {t('system_info.link_main_repo')}
+                  <IconExternalLink size={14} />
+                </div>
+                <div className={styles.linkDesc}>{t('system_info.link_main_repo_desc')}</div>
               </div>
-              <div className={styles.linkDesc}>{t('system_info.link_webui_repo_desc')}</div>
-            </div>
-          </a>
+            </a>
 
-          <a
-            href="https://help.router-for.me/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.linkCard}
-          >
-            <div className={`${styles.linkIcon} ${styles.docs}`}>
-              <IconBookOpen size={22} />
-            </div>
-            <div className={styles.linkContent}>
-              <div className={styles.linkTitle}>
-                {t('system_info.link_docs')}
-                <IconExternalLink size={14} />
+            <a
+              href="https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.linkCard}
+            >
+              <div className={`${styles.linkIcon} ${styles.github}`}>
+                <IconCode size={22} />
               </div>
-              <div className={styles.linkDesc}>{t('system_info.link_docs_desc')}</div>
-            </div>
-          </a>
-        </div>
-      </Card>
+              <div className={styles.linkContent}>
+                <div className={styles.linkTitle}>
+                  {t('system_info.link_webui_repo')}
+                  <IconExternalLink size={14} />
+                </div>
+                <div className={styles.linkDesc}>{t('system_info.link_webui_repo_desc')}</div>
+              </div>
+            </a>
+
+            <a
+              href="https://help.router-for.me/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.linkCard}
+            >
+              <div className={`${styles.linkIcon} ${styles.docs}`}>
+                <IconBookOpen size={22} />
+              </div>
+              <div className={styles.linkContent}>
+                <div className={styles.linkTitle}>
+                  {t('system_info.link_docs')}
+                  <IconExternalLink size={14} />
+                </div>
+                <div className={styles.linkDesc}>{t('system_info.link_docs_desc')}</div>
+              </div>
+            </a>
+          </div>
+        </Card>
 
       <Card
         title={t('system_info.models_title')}
