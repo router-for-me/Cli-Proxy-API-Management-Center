@@ -312,9 +312,16 @@ export function AuthFilesPage() {
   }, [filesMatchingProblemFilter, filter, search]);
 
   const sorted = useMemo(() => {
-    if (sortMode === 'default') return filtered;
     const copy = [...filtered];
-    if (sortMode === 'az') {
+    if (sortMode === 'default') {
+      copy.sort((a, b) => {
+        const providerA = normalizeProviderKey(String(a.provider ?? a.type ?? 'unknown'));
+        const providerB = normalizeProviderKey(String(b.provider ?? b.type ?? 'unknown'));
+        const providerCompare = providerA.localeCompare(providerB);
+        if (providerCompare !== 0) return providerCompare;
+        return a.name.localeCompare(b.name);
+      });
+    } else if (sortMode === 'az') {
       copy.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortMode === 'priority') {
       copy.sort((a, b) => {
