@@ -644,7 +644,13 @@
     "empty_buckets": "No quota data available",
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All",
-    "remaining_amount": "Remaining {{count}}"
+    "remaining_amount": "Remaining {{count}}",
+    "tier_label": "Tier",
+    "tier_free": "Free",
+    "tier_legacy": "Legacy",
+    "tier_standard": "Standard",
+    "credit_label": "Google One AI Credits",
+    "credit_amount": "{{count}} credits"
   },
   "kimi_quota": {
     "title": "Kimi Quota",

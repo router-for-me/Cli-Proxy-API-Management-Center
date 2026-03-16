@@ -644,7 +644,13 @@
     "empty_buckets": "暂无额度数据",
     "refresh_button": "刷新额度",
     "fetch_all": "获取全部",
-    "remaining_amount": "剩余 {{count}}"
+    "remaining_amount": "剩余 {{count}}",
+    "tier_label": "层级",
+    "tier_free": "免费版",
+    "tier_legacy": "旧版",
+    "tier_standard": "标准版",
+    "credit_label": "Google One AI 积分",
+    "credit_amount": "{{count}} 积分"
   },
   "kimi_quota": {
     "title": "Kimi 额度",

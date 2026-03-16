@@ -647,7 +647,13 @@
     "empty_buckets": "Данные по квоте отсутствуют",
     "refresh_button": "Обновить квоту",
     "fetch_all": "Получить все",
-    "remaining_amount": "Осталось {{count}}"
+    "remaining_amount": "Осталось {{count}}",
+    "tier_label": "Уровень",
+    "tier_free": "Бесплатный",
+    "tier_legacy": "Устаревший",
+    "tier_standard": "Стандартный",
+    "credit_label": "Google One AI кредиты",
+    "credit_amount": "{{count}} кредитов"
   },
   "kimi_quota": {
     "title": "Квота Kimi",

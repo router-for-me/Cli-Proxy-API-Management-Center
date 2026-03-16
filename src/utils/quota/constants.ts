@@ -117,6 +117,9 @@ export const ANTIGRAVITY_QUOTA_GROUPS: AntigravityQuotaGroupDefinition[] = [
 export const GEMINI_CLI_QUOTA_URL =
   'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota';
 
+export const GEMINI_CLI_CODE_ASSIST_URL =
+  'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist';
+
 export const GEMINI_CLI_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
   'Content-Type': 'application/json',

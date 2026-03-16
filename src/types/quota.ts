@@ -25,6 +25,28 @@ export interface GeminiCliQuotaPayload {
   buckets?: GeminiCliQuotaBucket[];
 }
 
+export interface GeminiCliCredits {
+  creditType?: string;
+  credit_type?: string;
+  creditAmount?: string | number;
+  credit_amount?: string | number;
+}
+
+export interface GeminiCliUserTier {
+  id?: string;
+  name?: string;
+  description?: string;
+  availableCredits?: GeminiCliCredits[];
+  available_credits?: GeminiCliCredits[];
+}
+
+export interface GeminiCliCodeAssistPayload {
+  currentTier?: GeminiCliUserTier | null;
+  current_tier?: GeminiCliUserTier | null;
+  paidTier?: GeminiCliUserTier | null;
+  paid_tier?: GeminiCliUserTier | null;
+}
+
 export interface AntigravityQuotaInfo {
   displayName?: string;
   quotaInfo?: {
@@ -200,6 +222,8 @@ export interface GeminiCliQuotaBucketState {
 export interface GeminiCliQuotaState {
   status: 'idle' | 'loading' | 'success' | 'error';
   buckets: GeminiCliQuotaBucketState[];
+  tierLabel?: string | null;
+  creditBalance?: number | null;
   error?: string;
   errorStatus?: number;
 }
