@@ -31,7 +31,6 @@ import {
   useNotificationStore,
   useThemeStore,
 } from '@/stores';
-import { versionApi } from '@/services/api';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
@@ -68,12 +67,6 @@ const headerIcons = {
     <svg {...headerIconProps}>
       <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
       <path d="M21 3v5h-5" />
-    </svg>
-  ),
-  update: (
-    <svg {...headerIconProps}>
-      <path d="M12 19V5" />
-      <path d="m5 12 7-7 7 7" />
     </svg>
   ),
   menu: (
@@ -209,39 +202,12 @@ const THEME_CARDS: Array<{
   },
 ];
 
-const parseVersionSegments = (version?: string | null) => {
-  if (!version) return null;
-  const cleaned = version.trim().replace(/^v/i, '');
-  if (!cleaned) return null;
-  const parts = cleaned
-    .split(/[^0-9]+/)
-    .filter(Boolean)
-    .map((segment) => Number.parseInt(segment, 10))
-    .filter(Number.isFinite);
-  return parts.length ? parts : null;
-};
-
-const compareVersions = (latest?: string | null, current?: string | null) => {
-  const latestParts = parseVersionSegments(latest);
-  const currentParts = parseVersionSegments(current);
-  if (!latestParts || !currentParts) return null;
-  const length = Math.max(latestParts.length, currentParts.length);
-  for (let i = 0; i < length; i++) {
-    const l = latestParts[i] || 0;
-    const c = currentParts[i] || 0;
-    if (l > c) return 1;
-    if (l < c) return -1;
-  }
-  return 0;
-};
-
 export function MainLayout() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const location = useLocation();
 
   const apiBase = useAuthStore((state) => state.apiBase);
-  const serverVersion = useAuthStore((state) => state.serverVersion);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const logout = useAuthStore((state) => state.logout);
 
@@ -256,7 +222,6 @@ export function MainLayout() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [checkingVersion, setCheckingVersion] = useState(false);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [brandExpanded, setBrandExpanded] = useState(true);
@@ -542,39 +507,6 @@ export function MainLayout() {
     showNotification(t('notification.data_refreshed'), 'success');
   };
 
-  const handleVersionCheck = async () => {
-    setCheckingVersion(true);
-    try {
-      const data = await versionApi.checkLatest();
-      const latestRaw = data?.['latest-version'] ?? data?.latest_version ?? data?.latest ?? '';
-      const latest = typeof latestRaw === 'string' ? latestRaw : String(latestRaw ?? '');
-      const comparison = compareVersions(latest, serverVersion);
-
-      if (!latest) {
-        showNotification(t('system_info.version_check_error'), 'error');
-        return;
-      }
-
-      if (comparison === null) {
-        showNotification(t('system_info.version_current_missing'), 'warning');
-        return;
-      }
-
-      if (comparison > 0) {
-        showNotification(t('system_info.version_update_available', { version: latest }), 'warning');
-      } else {
-        showNotification(t('system_info.version_is_latest'), 'success');
-      }
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : '';
-      const suffix = message ? `: ${message}` : '';
-      showNotification(`${t('system_info.version_check_error')}${suffix}`, 'error');
-    } finally {
-      setCheckingVersion(false);
-    }
-  };
-
   return (
     <div className="app-shell">
       <header className="main-header" ref={headerRef}>
@@ -631,15 +563,6 @@ export function MainLayout() {
               title={t('header.refresh_all')}
             >
               {headerIcons.refresh}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleVersionCheck}
-              loading={checkingVersion}
-              title={t('system_info.version_check_button')}
-            >
-              {headerIcons.update}
             </Button>
             <div
               className={`language-menu ${languageMenuOpen ? 'open' : ''}`}

@@ -78,7 +78,10 @@
   color: inherit;
   padding: $spacing-md $spacing-lg;
   cursor: pointer;
-  transition: transform 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.18s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 
   &:hover {
     transform: translateY(-1px);
@@ -95,6 +98,19 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
+}
+
+.tileHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.tileAction {
+  flex-shrink: 0;
+  white-space: nowrap;
+  margin: -4px -8px 0 0;
 }
 
 .tileValue {
@@ -206,7 +222,9 @@
   border-radius: $radius-full;
   border: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
 }
 
 .modelName {
