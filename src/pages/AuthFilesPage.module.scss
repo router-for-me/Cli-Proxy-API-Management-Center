@@ -81,7 +81,7 @@
 
 .filterTag {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   padding: 6px 14px;
   border-radius: 20px;
@@ -104,13 +104,21 @@
 
 .filterTagLabel {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
+}
+
+.filterTagIcon {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .filterTagCount {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: flex-end;
   min-width: 2ch;
   font-size: 12px;

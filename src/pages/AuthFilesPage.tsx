@@ -42,6 +42,15 @@ import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileMod
 import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components/AuthFilesPrefixProxyEditorModal';
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
 import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelAliasCard';
+import iconAntigravity from '@/assets/icons/antigravity.svg';
+import iconClaude from '@/assets/icons/claude.svg';
+import iconCodex from '@/assets/icons/codex.svg';
+import iconGemini from '@/assets/icons/gemini.svg';
+import iconIflow from '@/assets/icons/iflow.svg';
+import iconKimiDark from '@/assets/icons/kimi-dark.svg';
+import iconKimiLight from '@/assets/icons/kimi-light.svg';
+import iconQwen from '@/assets/icons/qwen.svg';
+import iconVertex from '@/assets/icons/vertex.svg';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
 import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
@@ -62,6 +71,28 @@ const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
 const easePower2In = (progress: number) => progress ** 3;
 const BATCH_BAR_BASE_TRANSFORM = 'translateX(-50%)';
 const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
+const AUTH_FILE_FILTER_ICONS: Record<string, string | { light: string; dark: string }> = {
+  antigravity: iconAntigravity,
+  aistudio: iconGemini,
+  claude: iconClaude,
+  codex: iconCodex,
+  gemini: iconGemini,
+  'gemini-cli': iconGemini,
+  iflow: iconIflow,
+  kimi: { light: iconKimiLight, dark: iconKimiDark },
+  qwen: iconQwen,
+  vertex: iconVertex,
+};
+
+const getFilterTagIcon = (type: string, resolvedTheme: ResolvedTheme): string | null => {
+  const iconEntry = AUTH_FILE_FILTER_ICONS[normalizeProviderKey(type)];
+  if (!iconEntry) return null;
+  return typeof iconEntry === 'string'
+    ? iconEntry
+    : resolvedTheme === 'dark'
+      ? iconEntry.dark
+      : iconEntry.light;
+};
 
 export function AuthFilesPage() {
   const { t } = useTranslation();
@@ -485,6 +516,7 @@ export function AuthFilesPage() {
     <div className={styles.filterTags}>
       {existingTypes.map((type) => {
         const isActive = filter === type;
+        const iconSrc = getFilterTagIcon(type, resolvedTheme);
         const color =
           type === 'all'
             ? { bg: 'var(--bg-tertiary)', text: 'var(--text-primary)' }
@@ -504,7 +536,10 @@ export function AuthFilesPage() {
               setPage(1);
             }}
           >
-            <span className={styles.filterTagLabel}>{getTypeLabel(t, type)}</span>
+            <span className={styles.filterTagLabel}>
+              {iconSrc && <img src={iconSrc} alt="" className={styles.filterTagIcon} />}
+              <span>{getTypeLabel(t, type)}</span>
+            </span>
             <span className={styles.filterTagCount}>{typeCounts[type] ?? 0}</span>
           </button>
         );
