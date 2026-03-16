@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { AutocompleteInput } from '@/components/ui/AutocompleteInput';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { IconInfo } from '@/components/ui/icons';
@@ -400,20 +401,22 @@ export function AuthFilesOAuthExcludedEditPage() {
                 {modelsList.map((model) => {
                   const checked = selectedModels.has(model.id);
                   return (
-                    <label key={model.id} className={styles.modelItem}>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={disableControls || saving}
-                        onChange={(event) => toggleModel(model.id, event.target.checked)}
-                      />
-                      <span className={styles.modelText}>
-                        <span className={styles.modelId}>{model.id}</span>
-                        {model.display_name && model.display_name !== model.id && (
-                          <span className={styles.modelDisplayName}>{model.display_name}</span>
-                        )}
-                      </span>
-                    </label>
+                    <SelectionCheckbox
+                      key={model.id}
+                      checked={checked}
+                      disabled={disableControls || saving}
+                      onChange={(value) => toggleModel(model.id, value)}
+                      className={styles.modelItem}
+                      labelClassName={styles.modelText}
+                      label={
+                        <>
+                          <span className={styles.modelId}>{model.id}</span>
+                          {model.display_name && model.display_name !== model.id && (
+                            <span className={styles.modelDisplayName}>{model.display_name}</span>
+                          )}
+                        </>
+                      }
+                    />
                   );
                 })}
               </div>

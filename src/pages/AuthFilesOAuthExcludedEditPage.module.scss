@@ -170,19 +170,19 @@
 }
 
 .modelItem {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
+  width: 100%;
+  align-items: flex-start;
   padding: 10px 0;
   border-bottom: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+  transition: background-color $transition-fast;
 
   &:last-child {
     border-bottom: none;
   }
 
-  input {
-    width: 16px;
-    height: 16px;
+  &:hover {
+    background-color: var(--bg-hover);
   }
 }
 
@@ -191,6 +191,7 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 
 .modelId {
