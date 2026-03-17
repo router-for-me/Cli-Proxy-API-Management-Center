@@ -223,6 +223,7 @@ export interface GeminiCliQuotaState {
   status: 'idle' | 'loading' | 'success' | 'error';
   buckets: GeminiCliQuotaBucketState[];
   tierLabel?: string | null;
+  tierId?: string | null;
   creditBalance?: number | null;
   error?: string;
   errorStatus?: number;

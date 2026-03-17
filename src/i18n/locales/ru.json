@@ -642,7 +642,8 @@
     "plan_label": "Тариф",
     "plan_plus": "Plus",
     "plan_team": "Team",
-    "plan_free": "Free"
+    "plan_free": "Free",
+    "plan_pro": "Pro"
   },
   "gemini_cli_quota": {
     "title": "Квота Gemini CLI",
@@ -661,6 +662,8 @@
     "tier_free": "Бесплатный",
     "tier_legacy": "Устаревший",
     "tier_standard": "Стандартный",
+    "tier_pro": "Pro",
+    "tier_ultra": "Ultra",
     "credit_label": "Google One AI кредиты",
     "credit_amount": "{{count}} кредитов"
   },

@@ -639,7 +639,8 @@
     "plan_label": "Plan",
     "plan_plus": "Plus",
     "plan_team": "Team",
-    "plan_free": "Free"
+    "plan_free": "Free",
+    "plan_pro": "Pro"
   },
   "gemini_cli_quota": {
     "title": "Gemini CLI Quota",
@@ -658,6 +659,8 @@
     "tier_free": "Free",
     "tier_legacy": "Legacy",
     "tier_standard": "Standard",
+    "tier_pro": "Pro",
+    "tier_ultra": "Ultra",
     "credit_label": "Google One AI Credits",
     "credit_amount": "{{count}} credits"
   },

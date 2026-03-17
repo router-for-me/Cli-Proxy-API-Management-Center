@@ -512,6 +512,45 @@
   text-transform: capitalize;
 }
 
+.premiumPlanValue {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fdf3d7, #f0d060);
+  border: 1px solid #e0b830;
+  box-shadow: 0 1px 4px rgba(200, 160, 0, 0.18);
+  color: #7a5c00;
+  text-transform: capitalize;
+
+  @media (dynamic-range: high) {
+    background: linear-gradient(135deg,
+      color(display-p3 0.99 0.95 0.82),
+      color(display-p3 0.97 0.82 0.28));
+    border-color: color(display-p3 0.90 0.73 0.12);
+    box-shadow: 0 1px 8px color(display-p3 1.0 0.84 0.0 / 0.25);
+    color: color(display-p3 0.50 0.38 0.0);
+  }
+}
+
+:global([data-theme='dark']) .premiumPlanValue {
+  background: linear-gradient(135deg, #3d3210, #5a4a18);
+  border-color: #8b7030;
+  box-shadow: 0 1px 8px rgba(180, 140, 0, 0.2);
+  color: #e8c84c;
+
+  @media (dynamic-range: high) {
+    background: linear-gradient(135deg,
+      color(display-p3 0.24 0.20 0.06),
+      color(display-p3 0.38 0.30 0.08));
+    border-color: color(display-p3 0.58 0.46 0.15);
+    box-shadow: 0 1px 12px color(display-p3 0.80 0.65 0.0 / 0.2);
+    color: color(display-p3 0.95 0.82 0.25);
+  }
+}
+
 // 单个认证文件卡片
 .fileCard {
   background-color: var(--bg-primary);

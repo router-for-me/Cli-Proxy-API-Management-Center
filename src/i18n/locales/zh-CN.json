@@ -639,7 +639,8 @@
     "plan_label": "套餐",
     "plan_plus": "Plus",
     "plan_team": "Team",
-    "plan_free": "Free"
+    "plan_free": "Free",
+    "plan_pro": "Pro"
   },
   "gemini_cli_quota": {
     "title": "Gemini CLI 额度",
@@ -658,6 +659,8 @@
     "tier_free": "免费版",
     "tier_legacy": "旧版",
     "tier_standard": "标准版",
+    "tier_pro": "Pro",
+    "tier_ultra": "Ultra",
     "credit_label": "Google One AI 积分",
     "credit_amount": "{{count}} 积分"
   },
