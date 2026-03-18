@@ -285,6 +285,16 @@
   }
 }
 
+.apiKeyEntryRemark {
+  color: var(--text-tertiary);
+  font-size: 11px;
+
+  &::before {
+    content: '| Remark: ';
+    color: var(--text-quaternary);
+  }
+}
+
 .apiKeyEntryStats {
   display: flex;
   gap: 6px;
@@ -878,6 +888,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.keyTableColRemark {
+  @extend .keyTableColProxy;
 }
 
 .keyTableColAction {

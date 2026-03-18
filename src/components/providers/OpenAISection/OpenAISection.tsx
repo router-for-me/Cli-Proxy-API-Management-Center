@@ -143,7 +143,7 @@ export function OpenAISection({
                               <span className={styles.apiKeyEntryProxy}>{entry.proxyUrl}</span>
                             )}
                             {entry.remark && (
-                              <span className={styles.apiKeyEntryProxy}>{entry.remark}</span>
+                              <span className={styles.apiKeyEntryRemark}>{entry.remark}</span>
                             )}
                             <div className={styles.apiKeyEntryStats}>
                               <span

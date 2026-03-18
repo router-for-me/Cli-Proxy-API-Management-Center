@@ -420,7 +420,7 @@ export function AiProvidersOpenAIEditPage() {
             <div className={styles.keyTableColStatus}>{t('common.status')}</div>
             <div className={styles.keyTableColKey}>{t('common.api_key')}</div>
             <div className={styles.keyTableColProxy}>{t('common.proxy_url')}</div>
-            <div className={styles.keyTableColProxy}>{t('common.remark')}</div>
+            <div className={styles.keyTableColRemark}>{t('common.remark')}</div>
             <div className={styles.keyTableColAction}>{t('common.action')}</div>
           </div>
 
@@ -466,8 +466,8 @@ export function AiProvidersOpenAIEditPage() {
                   />
                 </div>
 
-                {/* 备注输入框 */}
-                <div className={styles.keyTableColProxy}>
+                {/* Remark input */}
+                <div className={styles.keyTableColRemark}>
                   <input
                     type="text"
                     value={entry.remark ?? ''}
