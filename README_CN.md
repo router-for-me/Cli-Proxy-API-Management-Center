@@ -1,22 +1,29 @@
-# CLI Proxy API 管理中心
+# ⚙️ CLI Proxy API 管理中心
 
-这是一个用于 **CLI Proxy API** 管理与排障的单文件 Web UI。
-它通过 **Management API** 完成配置、凭据、日志和使用统计等操作。
+> 一个更顺手、更易读的单文件 Web UI，用来管理和排查 **CLI Proxy API**。
+> 它通过 **Management API** 完成配置、凭据、日志和使用统计等操作。
 
-[English](README.md)
+[![主项目](https://img.shields.io/badge/Main%20Project-CLIProxyAPI-2563eb?style=flat-square)](https://github.com/router-for-me/CLIProxyAPI)
+[![最低版本](https://img.shields.io/badge/Minimum%20Version-%E2%89%A5%206.8.0-16a34a?style=flat-square)](https://github.com/router-for-me/CLIProxyAPI)
+[![推荐版本](https://img.shields.io/badge/Recommended-%E2%89%A5%206.8.15-0f766e?style=flat-square)](https://github.com/router-for-me/CLIProxyAPI)
+[![构建产物](https://img.shields.io/badge/Build-Single%20HTML-f59e0b?style=flat-square)](#-构建与发布)
+
+🌐 [English](README.md)
 
 - **主项目**: https://github.com/router-for-me/CLIProxyAPI
 - **示例地址**: https://remote.router-for.me/
-- **最低版本要求**: `>= 6.8.0`（推荐 `>= 6.8.15`）
+- **最低版本要求**: `>= 6.8.0`
+- **推荐版本**: `>= 6.8.15`
 
-> 从 `6.0.19` 开始，这个 Web UI 已随 CLI Proxy API 主程序一起发布。
+> [!TIP]
+> 从 `6.0.19` 开始，这个 Web UI 已经随 CLI Proxy API 主程序一起提供。
 > 服务启动后，直接访问 API 端口上的 `/management.html` 即可。
 
 ---
 
-## 一眼看懂
+## ✨ 一眼看懂
 
-### 如果你已经在运行 CLI Proxy API
+### 🚀 如果你已经在运行 CLI Proxy API
 
 直接打开：
 
@@ -26,22 +33,16 @@ http://<host>:<api_port>/management.html
 
 然后输入 **管理密钥** 即可连接。
 
-### 如果你想本地开发
+### 🛠 如果你想本地开发
 
 ```bash
 npm install
 npm run dev
 ```
 
-打开：
+打开 `http://localhost:5173`，再连接到你的 CLI Proxy API 后端。
 
-```text
-http://localhost:5173
-```
-
-再连接到你的 CLI Proxy API 后端。
-
-### 如果你想构建单文件版本
+### 📦 如果你想构建单文件版本
 
 ```bash
 npm install
@@ -56,23 +57,23 @@ dist/index.html
 
 ---
 
-## 这个项目是什么
+## 📌 这个项目是什么
 
 本仓库只包含 **Web 管理界面本身**。
 
-它可以用来：
+### ✅ 它可以做什么
 - 读取和更新配置
-- 管理 API keys 与 provider 配置
+- 管理 API Keys 与 provider 配置
 - 上传认证文件
 - 查看日志与使用统计
 - 做管理侧排障
 
-它**不是**：
+### ❌ 它不是什么
 - 代理服务本体
 - 流量转发器
 - CLI Proxy API 主项目的替代品
 
-Web UI 通过下面这个管理接口与后端通信：
+Web UI 通过下面这个管理接口和后端通信：
 
 ```text
 /v0/management
@@ -80,9 +81,9 @@ Web UI 通过下面这个管理接口与后端通信：
 
 ---
 
-## 快速开始
+## 🚀 快速开始
 
-### 方式 A：使用 CLI Proxy API 自带的 Web UI（推荐）
+### 方式 A — 使用 CLI Proxy API 自带的 Web UI（推荐）
 
 1. 启动 CLI Proxy API。
 2. 打开：
@@ -94,9 +95,10 @@ Web UI 通过下面这个管理接口与后端通信：
 3. 输入 **管理密钥**。
 4. 点击连接。
 
-页面会根据当前 URL 自动推断后端地址，也支持手动修改。
+> [!NOTE]
+> 页面会根据当前 URL 自动推断后端地址，但你也可以手动改成其他地址。
 
-### 方式 B：启动开发服务器
+### 方式 B — 启动开发服务器
 
 ```bash
 npm install
@@ -109,7 +111,7 @@ npm run dev
 http://localhost:5173
 ```
 
-### 方式 C：构建单文件 HTML
+### 方式 C — 构建单文件 HTML
 
 ```bash
 npm install
@@ -117,17 +119,17 @@ npm run build
 npm run preview
 ```
 
-说明：
+**说明：**
 - 构建输出为 `dist/index.html`
 - 发布流程里会重命名为 `management.html`
-- 直接用 `file://` 打开可能会遇到浏览器 CORS 限制
+- 直接用 `file://` 打开可能会碰到浏览器 CORS 限制
 - 更稳妥的方式是使用 `npm run preview` 或静态服务器访问
 
 ---
 
-## 如何连接
+## 🔌 如何连接
 
-### API 地址支持哪些格式
+### 1）API 地址支持哪些格式
 
 下面这些格式都可以，UI 会自动归一化：
 
@@ -136,7 +138,7 @@ npm run preview
 - `https://example.com:8317`
 - `http://example.com:8317/v0/management`
 
-### 管理密钥是什么
+### 2）管理密钥是什么
 
 **管理密钥** 会以以下方式发送：
 
@@ -144,12 +146,14 @@ npm run preview
 Authorization: Bearer <MANAGEMENT_KEY>
 ```
 
-注意，这和 UI 里管理的代理 `api-keys` **不是一回事**。
+注意，这和 UI 里管理的代理 `api-keys` **不是同一个东西**。
 
-- **管理密钥** → 用于访问 Web UI / Management API
-- **API Keys** → 用于客户端调用代理接口
+| 项目 | 用途 |
+|---|---|
+| **管理密钥** | 用于访问 Web UI / Management API |
+| **API Keys** | 用于客户端调用代理接口 |
 
-### 远程管理
+### 3）远程管理
 
 如果你是从非 localhost 浏览器访问，服务端通常需要开启远程管理，例如：
 
@@ -157,17 +161,20 @@ Authorization: Bearer <MANAGEMENT_KEY>
 allow-remote-management: true
 ```
 
+> [!WARNING]
+> 开启远程管理会增加暴露面。别把它当成“顺手一开”的小选项，它本质上是个运维安全决策。
+
 ---
 
-## 你可以管理什么
+## 🧭 你可以管理什么
 
-### 仪表盘
+### 📊 仪表盘
 - 连接状态
 - 服务版本 / 构建时间
 - 核心数量概览
 - 可用模型快照
 
-### 基础设置
+### ⚙️ 基础设置
 - 调试模式
 - 代理 URL
 - 重试设置
@@ -177,10 +184,10 @@ allow-remote-management: true
 - 文件日志
 - WebSocket 鉴权
 
-### API Keys
+### 🔑 API Keys
 - 增 / 改 / 删 代理 `api-keys`
 
-### AI 提供商
+### 🤖 AI 提供商
 - Gemini / Codex / Claude / Vertex 配置
 - Base URL、Headers、代理、模型别名、排除模型、Prefix
 - OpenAI 兼容提供商支持多 API key
@@ -188,35 +195,35 @@ allow-remote-management: true
 - OpenAI 兼容提供商支持浏览器侧 `chat/completions` 测试
 - 支持 Ampcode 集成
 
-### 认证文件
+### 🪪 认证文件
 - 上传 / 下载 / 删除 JSON 凭据
 - 搜索 / 筛选 / 分页
 - runtime-only 标记
 - 后端支持时可查看单个凭据对应模型
 - 管理 OAuth 排除模型与模型别名映射
 
-### OAuth
+### 🔐 OAuth
 - 发起 OAuth / 设备码流程
 - 轮询状态
 - 提交可选回调 `redirect_url`
 - 导入 iFlow Cookie
 
-### 配额管理
+### 📉 配额管理
 - 管理 Claude、Antigravity、Codex、Gemini CLI 等提供商配额与使用情况
 
-### 使用统计
+### 📈 使用统计
 - 请求 / Token 图表
 - 按 API 和按模型拆分
 - 缓存 / 推理 Token 拆分
 - RPM / TPM 时间窗
 - 支持基于本地价格表的费用估算
 
-### 配置文件
+### 🧾 配置文件
 - 浏览器内编辑 `/config.yaml`
 - YAML 高亮 + 搜索
 - 保存并重载
 
-### 日志
+### 📜 日志
 - 增量拉取日志
 - 自动刷新
 - 搜索
@@ -224,25 +231,32 @@ allow-remote-management: true
 - 清空日志
 - 下载请求错误日志
 
-### 系统信息
+### 🖥 系统信息
 - 快捷链接
 - 拉取并分组展示 `/v1/models`
 - 需要至少一个代理 API key
 
 ---
 
-## 典型使用流程
+## 🪜 典型使用流程
 
-1. 打开 `/management.html`
-2. 用 **管理密钥** 登录
-3. 在 **仪表盘** 检查服务状态
-4. 在 **API Keys** 和 **AI 提供商** 里完成配置
-5. 按需上传 **认证文件**
-6. 用 **日志** 和 **使用统计** 做排障
+```text
+打开 /management.html
+        ↓
+使用管理密钥登录
+        ↓
+在仪表盘检查服务状态
+        ↓
+配置 API Keys 和 AI 提供商
+        ↓
+按需上传认证文件
+        ↓
+用日志 + 使用统计做排障
+```
 
 ---
 
-## 技术栈
+## 🧱 技术栈
 
 - React 19
 - TypeScript 5.9
@@ -257,7 +271,7 @@ allow-remote-management: true
 
 ---
 
-## 多语言支持
+## 🌍 多语言支持
 
 当前支持：
 - 英文（`en`）
@@ -268,15 +282,15 @@ allow-remote-management: true
 
 ---
 
-## 浏览器支持
+## 🧪 浏览器支持
 
 - 构建目标：`ES2020`
 - 支持现代 Chrome / Firefox / Safari / Edge
-- 适配平板与移动端响应式布局
+- 支持平板与移动端响应式布局
 
 ---
 
-## 构建与发布
+## 📦 构建与发布
 
 - 输出为 **单文件 HTML**：`dist/index.html`
 - 资源通过 `vite-plugin-singlefile` 内联
@@ -286,7 +300,7 @@ allow-remote-management: true
 
 ---
 
-## 安全提示
+## 🔒 安全提示
 
 - 管理密钥会存进浏览器 `localStorage`
 - 存储格式是轻量混淆：`enc::v1::...`
@@ -296,7 +310,7 @@ allow-remote-management: true
 
 ---
 
-## 常见问题
+## 🩺 常见问题
 
 ### 无法连接 / 401
 - 检查 API 地址
@@ -320,7 +334,7 @@ allow-remote-management: true
 
 ---
 
-## 开发命令
+## 👨‍💻 开发命令
 
 ```bash
 npm run dev        # 启动 Vite 开发服务器
@@ -333,7 +347,7 @@ npm run type-check # 仅执行 TypeScript 检查
 
 ---
 
-## 贡献
+## 🤝 贡献
 
 欢迎提 Issue 和 PR。
 
@@ -345,6 +359,6 @@ npm run type-check # 仅执行 TypeScript 检查
 
 ---
 
-## 许可证
+## 📄 许可证
 
 MIT
