@@ -103,11 +103,13 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   if (!trimmed) return null;
 
   const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl : undefined;
+  const remark = record ? record.remark ?? record['remark'] ?? record.note ?? record['note'] : undefined;
   const headers = record ? normalizeHeaders(record.headers) : undefined;
 
   return {
     apiKey: trimmed,
     proxyUrl: proxyUrl ? String(proxyUrl) : undefined,
+    remark: remark ? String(remark).trim() || undefined : undefined,
     headers
   };
 };
@@ -135,6 +137,8 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   const websockets = normalizeBoolean(record?.websockets ?? record?.['websockets']);
   if (websockets !== undefined) config.websockets = websockets;
   if (proxyUrl) config.proxyUrl = String(proxyUrl);
+  const remark = record ? record.remark ?? record['remark'] ?? record.note ?? record['note'] : undefined;
+  if (remark) config.remark = String(remark).trim();
   const headers = normalizeHeaders(record?.headers);
   if (headers) config.headers = headers;
   const models = normalizeModelAliases(record?.models);
@@ -198,6 +202,8 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   if (baseUrl) config.baseUrl = String(baseUrl);
   const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl ?? record['proxy_url'] : undefined;
   if (proxyUrl) config.proxyUrl = String(proxyUrl);
+  const remark = record ? record.remark ?? record['remark'] ?? record.note ?? record['note'] : undefined;
+  if (remark) config.remark = String(remark).trim();
   const models = normalizeModelAliases(record?.models);
   if (models.length) config.models = models;
   const headers = normalizeHeaders(record?.headers);

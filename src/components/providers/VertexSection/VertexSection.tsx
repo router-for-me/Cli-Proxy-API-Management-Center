@@ -131,6 +131,12 @@ export function VertexSection({
                     <span className={styles.fieldValue}>{item.proxyUrl}</span>
                   </div>
                 )}
+                {item.remark && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.remark')}:</span>
+                    <span className={styles.fieldValue}>{item.remark}</span>
+                  </div>
+                )}
                 {headerEntries.length > 0 && (
                   <div className={styles.headerBadgeList}>
                     {headerEntries.map(([key, value]) => (

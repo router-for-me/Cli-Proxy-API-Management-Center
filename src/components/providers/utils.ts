@@ -138,6 +138,7 @@ export const getOpenAIProviderStats = (
 export const buildApiKeyEntry = (input?: Partial<ApiKeyEntry>): ApiKeyEntry => ({
   apiKey: input?.apiKey ?? '',
   proxyUrl: input?.proxyUrl ?? '',
+  remark: input?.remark ?? '',
   headers: input?.headers ?? {},
 });
 

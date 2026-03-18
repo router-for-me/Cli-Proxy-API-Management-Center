@@ -135,6 +135,12 @@ export function ClaudeSection({
                     <span className={styles.fieldValue}>{item.proxyUrl}</span>
                   </div>
                 )}
+                {item.remark && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.remark')}:</span>
+                    <span className={styles.fieldValue}>{item.remark}</span>
+                  </div>
+                )}
                 {item.cloak && (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('ai_providers.claude_cloak_mode_label')}:</span>

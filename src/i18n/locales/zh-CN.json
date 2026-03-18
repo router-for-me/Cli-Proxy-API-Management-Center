@@ -34,6 +34,8 @@
     "base_url": "地址",
     "prefix": "前缀",
     "proxy_url": "代理",
+    "remark": "备注",
+    "remark_placeholder": "输入备注（可选）",
     "priority": "优先级",
     "alias": "别名",
     "failure": "失败",

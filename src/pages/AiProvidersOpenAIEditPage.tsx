@@ -420,6 +420,7 @@ export function AiProvidersOpenAIEditPage() {
             <div className={styles.keyTableColStatus}>{t('common.status')}</div>
             <div className={styles.keyTableColKey}>{t('common.api_key')}</div>
             <div className={styles.keyTableColProxy}>{t('common.proxy_url')}</div>
+            <div className={styles.keyTableColProxy}>{t('common.remark')}</div>
             <div className={styles.keyTableColAction}>{t('common.action')}</div>
           </div>
 
@@ -462,6 +463,18 @@ export function AiProvidersOpenAIEditPage() {
                     disabled={saving || disableControls || isTestingKeys}
                     className={`input ${styles.keyTableInput}`}
                     placeholder={t('ai_providers.openai_proxy_placeholder')}
+                  />
+                </div>
+
+                {/* 备注输入框 */}
+                <div className={styles.keyTableColProxy}>
+                  <input
+                    type="text"
+                    value={entry.remark ?? ''}
+                    onChange={(e) => updateEntry(index, 'remark', e.target.value)}
+                    disabled={saving || disableControls || isTestingKeys}
+                    className={`input ${styles.keyTableInput}`}
+                    placeholder={t('common.remark_placeholder')}
                   />
                 </div>
 

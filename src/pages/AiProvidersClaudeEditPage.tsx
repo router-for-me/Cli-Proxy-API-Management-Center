@@ -345,6 +345,13 @@ export function AiProvidersClaudeEditPage() {
               onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
               disabled={saving || disableControls || isTesting}
             />
+            <Input
+              label={t('common.remark')}
+              placeholder={t('common.remark_placeholder')}
+              value={form.remark ?? ''}
+              onChange={(e) => setForm((prev) => ({ ...prev, remark: e.target.value }))}
+              disabled={saving || disableControls || isTesting}
+            />
             <HeaderInputList
               entries={form.headers}
               onChange={(entries) => setForm((prev) => ({ ...prev, headers: entries }))}

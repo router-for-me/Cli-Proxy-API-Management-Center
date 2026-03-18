@@ -34,6 +34,8 @@
     "base_url": "Address",
     "prefix": "Prefix",
     "proxy_url": "Proxy",
+    "remark": "Remark",
+    "remark_placeholder": "Enter a remark (optional)",
     "priority": "Priority",
     "alias": "Alias",
     "failure": "Failure",

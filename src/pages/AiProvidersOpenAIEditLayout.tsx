@@ -92,14 +92,16 @@ const normalizeApiKeyEntries = (entries: ApiKeyEntry[]) =>
     Array<{
       apiKey: string;
       proxyUrl: string;
+      remark: string;
       headers: Array<{ key: string; value: string }>;
     }>
   >((acc, entry) => {
     const apiKey = String(entry?.apiKey ?? '').trim();
     const proxyUrl = String(entry?.proxyUrl ?? '').trim();
+    const remark = String(entry?.remark ?? '').trim();
     const headers = normalizeKeyHeaders(entry?.headers);
-    if (!apiKey && !proxyUrl && headers.length === 0) return acc;
-    acc.push({ apiKey, proxyUrl, headers });
+    if (!apiKey && !proxyUrl && !remark && headers.length === 0) return acc;
+    acc.push({ apiKey, proxyUrl, remark, headers });
     return acc;
   }, []);
 

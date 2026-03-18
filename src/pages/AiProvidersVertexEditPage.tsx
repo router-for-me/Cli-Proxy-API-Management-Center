@@ -25,6 +25,7 @@ const buildEmptyForm = (): VertexFormState => ({
   prefix: '',
   baseUrl: '',
   proxyUrl: '',
+  remark: '',
   headers: [],
   models: [],
   excludedModels: [],
@@ -55,6 +56,7 @@ const buildVertexSignature = (form: VertexFormState) =>
     prefix: String(form.prefix ?? '').trim(),
     baseUrl: String(form.baseUrl ?? '').trim(),
     proxyUrl: String(form.proxyUrl ?? '').trim(),
+    remark: String(form.remark ?? '').trim(),
     headers: normalizeHeaderEntries(form.headers),
     models: normalizeModelEntries(form.modelEntries),
     excludedModels: parseExcludedModels(form.excludedText ?? ''),
@@ -205,6 +207,7 @@ export function AiProvidersVertexEditPage() {
         prefix: form.prefix?.trim() || undefined,
         baseUrl,
         proxyUrl: form.proxyUrl?.trim() || undefined,
+        remark: form.remark?.trim() || undefined,
         headers: buildHeaderObject(form.headers),
         models: form.modelEntries
           .map((entry) => {
@@ -319,6 +322,13 @@ export function AiProvidersVertexEditPage() {
               placeholder={t('ai_providers.vertex_add_modal_proxy_placeholder')}
               value={form.proxyUrl ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
+              disabled={disableControls || saving}
+            />
+            <Input
+              label={t('common.remark')}
+              placeholder={t('common.remark_placeholder')}
+              value={form.remark ?? ''}
+              onChange={(e) => setForm((prev) => ({ ...prev, remark: e.target.value }))}
               disabled={disableControls || saving}
             />
             <HeaderInputList

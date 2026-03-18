@@ -44,6 +44,7 @@ const buildEmptyForm = (): ProviderFormState => ({
   prefix: '',
   baseUrl: '',
   proxyUrl: '',
+  remark: '',
   headers: [],
   models: [],
   excludedModels: [],
@@ -97,6 +98,7 @@ const buildClaudeSignature = (form: ProviderFormState) =>
     prefix: String(form.prefix ?? '').trim(),
     baseUrl: String(form.baseUrl ?? '').trim(),
     proxyUrl: String(form.proxyUrl ?? '').trim(),
+    remark: String(form.remark ?? '').trim(),
     headers: normalizeHeaderEntries(form.headers),
     models: normalizeClaudeModelEntries(form.modelEntries),
     excludedModels: parseExcludedModels(form.excludedText ?? ''),
@@ -357,6 +359,7 @@ export function AiProvidersClaudeEditLayout() {
         prefix: form.prefix?.trim() || undefined,
         baseUrl: (form.baseUrl ?? '').trim() || undefined,
         proxyUrl: form.proxyUrl?.trim() || undefined,
+        remark: form.remark?.trim() || undefined,
         headers: buildHeaderObject(form.headers),
         models: form.modelEntries
           .map((entry) => {

@@ -135,6 +135,12 @@ export function CodexSection({
                     <span className={styles.fieldValue}>{item.proxyUrl}</span>
                   </div>
                 )}
+                {item.remark && (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('common.remark')}:</span>
+                    <span className={styles.fieldValue}>{item.remark}</span>
+                  </div>
+                )}
                 {item.websockets !== undefined && (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('ai_providers.codex_websockets_label')}:</span>
