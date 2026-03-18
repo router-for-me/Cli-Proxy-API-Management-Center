@@ -97,7 +97,7 @@ export function CodexSection({
               onChange={(value) => void onToggle(index, value)}
             />
           )}
-          renderContent={(item) => {
+          renderContent={(item, index) => {
             const stats = getStatsBySource(item.apiKey, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});
             const configDisabled = hasDisableAllModelsRule(item.excludedModels);
@@ -106,7 +106,7 @@ export function CodexSection({
 
             return (
               <Fragment>
-                <div className="item-title">{t('ai_providers.codex_item_title')}</div>
+                <div className="item-title">{t('ai_providers.codex_item_title')} #{index + 1}</div>
                 <div className={styles.fieldRow}>
                   <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
                   <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>

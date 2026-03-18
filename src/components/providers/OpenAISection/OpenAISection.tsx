@@ -93,7 +93,7 @@ export function OpenAISection({
           onEdit={onEdit}
           onDelete={onDelete}
           actionsDisabled={actionsDisabled}
-          renderContent={(item) => {
+          renderContent={(item, index) => {
             const stats = getOpenAIProviderStats(item.apiKeyEntries, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});
             const apiKeyEntries = item.apiKeyEntries || [];
@@ -101,7 +101,7 @@ export function OpenAISection({
 
             return (
               <Fragment>
-                <div className="item-title">{item.name}</div>
+                <div className="item-title">{item.name} #{index + 1}</div>
                 {item.priority !== undefined && (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('common.priority')}:</span>
