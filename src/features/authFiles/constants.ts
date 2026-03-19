@@ -160,6 +160,19 @@ export const parseDisableCoolingValue = (value: unknown): boolean | undefined =>
   return undefined;
 };
 
+export const readCodexAuthFileWebsockets = (value: Record<string, unknown>): boolean =>
+  parseDisableCoolingValue(value.websockets) ?? false;
+
+export const applyCodexAuthFileWebsockets = (
+  value: Record<string, unknown>,
+  websockets: boolean
+): Record<string, unknown> => {
+  const next = { ...value };
+  delete next.websocket;
+  next.websockets = websockets;
+  return next;
+};
+
 export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   const raw = file['runtime_only'] ?? file.runtimeOnly;
   if (typeof raw === 'boolean') return raw;
