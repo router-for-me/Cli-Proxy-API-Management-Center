@@ -28,6 +28,7 @@ import {
   RequestEventsDetailsCard,
   TokenBreakdownChart,
   CostTrendChart,
+  LatencyTrendChart,
   ServiceHealthCard,
   useUsageData,
   useSparklines,
@@ -342,6 +343,15 @@ export function UsagePage() {
 
       {/* Token Breakdown Chart */}
       <TokenBreakdownChart
+        usage={filteredUsage}
+        loading={loading}
+        isDark={isDark}
+        isMobile={isMobile}
+        hourWindowHours={hourWindowHours}
+      />
+
+      {/* Latency Trend Chart */}
+      <LatencyTrendChart
         usage={filteredUsage}
         loading={loading}
         isDark={isDark}

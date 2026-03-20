@@ -12,6 +12,7 @@ import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver
 import {
   collectUsageDetails,
   extractTotalTokens,
+  formatLatencyMs,
   normalizeAuthIndex
 } from '@/utils/usage';
 import { downloadBlob } from '@/utils/download';
@@ -31,6 +32,8 @@ type RequestEventRow = {
   sourceType: string;
   authIndex: string;
   failed: boolean;
+  latencyMs: number | null;
+  latencyLabel: string;
   inputTokens: number;
   outputTokens: number;
   reasoningTokens: number;
@@ -135,6 +138,7 @@ export function RequestEventsDetailsCard({
         const source = sourceInfo.displayName;
         const sourceType = sourceInfo.type;
         const model = String(detail.__modelName ?? '').trim() || '-';
+        const latencyMs = typeof detail.latencyMs === 'number' ? detail.latencyMs : null;
         const inputTokens = Math.max(toNumber(detail.tokens?.input_tokens), 0);
         const outputTokens = Math.max(toNumber(detail.tokens?.output_tokens), 0);
         const reasoningTokens = Math.max(toNumber(detail.tokens?.reasoning_tokens), 0);
@@ -158,6 +162,8 @@ export function RequestEventsDetailsCard({
           sourceType,
           authIndex,
           failed: detail.failed === true,
+          latencyMs,
+          latencyLabel: formatLatencyMs(latencyMs),
           inputTokens,
           outputTokens,
           reasoningTokens,
@@ -258,6 +264,7 @@ export function RequestEventsDetailsCard({
       'source_raw',
       'auth_index',
       'result',
+      'latency_ms',
       'input_tokens',
       'output_tokens',
       'reasoning_tokens',
@@ -273,6 +280,7 @@ export function RequestEventsDetailsCard({
         row.sourceRaw,
         row.authIndex,
         row.failed ? 'failed' : 'success',
+        row.latencyMs ?? '',
         row.inputTokens,
         row.outputTokens,
         row.reasoningTokens,
@@ -301,6 +309,7 @@ export function RequestEventsDetailsCard({
       source_raw: row.sourceRaw,
       auth_index: row.authIndex,
       failed: row.failed,
+      latency_ms: row.latencyMs,
       tokens: {
         input_tokens: row.inputTokens,
         output_tokens: row.outputTokens,
@@ -427,6 +436,7 @@ export function RequestEventsDetailsCard({
                   <th>{t('usage_stats.request_events_source')}</th>
                   <th>{t('usage_stats.request_events_auth_index')}</th>
                   <th>{t('usage_stats.request_events_result')}</th>
+                  <th>{t('usage_stats.request_events_latency')}</th>
                   <th>{t('usage_stats.input_tokens')}</th>
                   <th>{t('usage_stats.output_tokens')}</th>
                   <th>{t('usage_stats.reasoning_tokens')}</th>
@@ -456,6 +466,9 @@ export function RequestEventsDetailsCard({
                       >
                         {row.failed ? t('stats.failure') : t('stats.success')}
                       </span>
+                    </td>
+                    <td className={styles.requestEventsLatency} title={row.latencyLabel}>
+                      {row.latencyLabel}
                     </td>
                     <td>{row.inputTokens.toLocaleString()}</td>
                     <td>{row.outputTokens.toLocaleString()}</td>

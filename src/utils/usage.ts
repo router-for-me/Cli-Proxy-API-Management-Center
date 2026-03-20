@@ -39,6 +39,7 @@ export interface UsageDetail {
   timestamp: string;
   source: string;
   auth_index: number;
+  latencyMs?: number | null;
   tokens: {
     input_tokens: number;
     output_tokens: number;
@@ -87,6 +88,14 @@ const getApisRecord = (usageData: unknown): Record<string, unknown> | null => {
   const usageRecord = isRecord(usageData) ? usageData : null;
   const apisRaw = usageRecord ? usageRecord.apis : null;
   return isRecord(apisRaw) ? apisRaw : null;
+};
+
+const normalizeLatencyMs = (value: unknown): number | null => {
+  const latency = Number(value);
+  if (!Number.isFinite(latency) || latency < 0) {
+    return null;
+  }
+  return latency;
 };
 
 interface UsageSummary {
@@ -441,6 +450,20 @@ export function formatUsd(value: number): string {
   return `$${parts}`;
 }
 
+export function formatLatencyMs(value: number | null | undefined): string {
+  const latency = Number(value);
+  if (!Number.isFinite(latency) || latency < 0) {
+    return '-';
+  }
+  if (latency < 1000) {
+    return `${Math.round(latency).toLocaleString()} ms`;
+  }
+
+  const seconds = latency / 1000;
+  const fixed = seconds < 10 ? seconds.toFixed(2) : seconds.toFixed(1);
+  return `${fixed.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1')} s`;
+}
+
 const usageDetailsCache = new WeakMap<object, UsageDetail[]>();
 const usageDetailsWithEndpointCache = new WeakMap<object, UsageDetailWithEndpoint[]>();
 
@@ -495,6 +518,7 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
           timestamp,
           source: normalizeSource(detailRaw.source),
           auth_index: detailRaw.auth_index as unknown as number,
+          latencyMs: normalizeLatencyMs(detailRaw.latency_ms),
           tokens: tokensRaw as unknown as UsageDetail['tokens'],
           failed: detailRaw.failed === true,
           __modelName: modelName,
@@ -566,6 +590,7 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
           timestamp,
           source: normalizeSource(detailRaw.source),
           auth_index: detailRaw.auth_index as unknown as number,
+          latencyMs: normalizeLatencyMs(detailRaw.latency_ms),
           tokens: tokensRaw as unknown as UsageDetail['tokens'],
           failed: detailRaw.failed === true,
           __modelName: modelName,
@@ -603,6 +628,11 @@ export function extractTotalTokens(detail: unknown): number {
   );
 
   return inputTokens + outputTokens + reasoningTokens + cachedTokens;
+}
+
+export function extractLatencyMs(detail: unknown): number | null {
+  const record = isRecord(detail) ? detail : null;
+  return normalizeLatencyMs(record?.latencyMs ?? record?.latency_ms);
 }
 
 /**
@@ -1717,6 +1747,109 @@ export function buildHourlyCostSeries(
   });
 
   return { labels, data, hasData };
+}
+
+export interface LatencySeries {
+  labels: string[];
+  data: Array<number | null>;
+  hasData: boolean;
+}
+
+/**
+ * 按小时构建平均延迟时间序列
+ */
+export function buildHourlyLatencySeries(
+  usageData: unknown,
+  hourWindow: number = 24
+): LatencySeries {
+  const hourMs = 60 * 60 * 1000;
+  const resolvedHourWindow =
+    Number.isFinite(hourWindow) && hourWindow > 0
+      ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
+      : 24;
+  const now = new Date();
+  const currentHour = new Date(now);
+  currentHour.setMinutes(0, 0, 0);
+
+  const earliestBucket = new Date(currentHour);
+  earliestBucket.setHours(earliestBucket.getHours() - (resolvedHourWindow - 1));
+  const earliestTime = earliestBucket.getTime();
+
+  const labels: string[] = [];
+  for (let i = 0; i < resolvedHourWindow; i++) {
+    labels.push(formatHourLabel(new Date(earliestTime + i * hourMs)));
+  }
+
+  const latencySums = new Array(labels.length).fill(0);
+  const latencyCounts = new Array(labels.length).fill(0);
+  const details = collectUsageDetails(usageData);
+  let hasData = false;
+
+  details.forEach((detail) => {
+    const latencyMs = extractLatencyMs(detail);
+    if (latencyMs === null) return;
+
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
+    const normalized = new Date(timestamp);
+    normalized.setMinutes(0, 0, 0);
+    const bucketStart = normalized.getTime();
+    const lastBucketTime = earliestTime + (labels.length - 1) * hourMs;
+    if (bucketStart < earliestTime || bucketStart > lastBucketTime) return;
+    const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
+    if (bucketIndex < 0 || bucketIndex >= labels.length) return;
+
+    latencySums[bucketIndex] += latencyMs;
+    latencyCounts[bucketIndex] += 1;
+    hasData = true;
+  });
+
+  return {
+    labels,
+    data: latencySums.map((sum, index) =>
+      latencyCounts[index] > 0 ? Number((sum / latencyCounts[index]).toFixed(2)) : null
+    ),
+    hasData
+  };
+}
+
+/**
+ * 按天构建平均延迟时间序列
+ */
+export function buildDailyLatencySeries(usageData: unknown): LatencySeries {
+  const details = collectUsageDetails(usageData);
+  const dayMap: Record<string, { sum: number; count: number }> = {};
+  let hasData = false;
+
+  details.forEach((detail) => {
+    const latencyMs = extractLatencyMs(detail);
+    if (latencyMs === null) return;
+
+    const timestamp =
+      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
+    const dayLabel = formatDayLabel(new Date(timestamp));
+    if (!dayLabel) return;
+
+    if (!dayMap[dayLabel]) {
+      dayMap[dayLabel] = { sum: 0, count: 0 };
+    }
+
+    dayMap[dayLabel].sum += latencyMs;
+    dayMap[dayLabel].count += 1;
+    hasData = true;
+  });
+
+  const labels = Object.keys(dayMap).sort();
+  return {
+    labels,
+    data: labels.map((label) => {
+      const bucket = dayMap[label];
+      return bucket.count > 0 ? Number((bucket.sum / bucket.count).toFixed(2)) : null;
+    }),
+    hasData
+  };
 }
 
 /**
