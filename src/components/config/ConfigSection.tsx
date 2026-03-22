@@ -1,22 +1,34 @@
-import type { PropsWithChildren, ReactNode } from 'react';
-import { Card } from '@/components/ui/Card';
+import { forwardRef, type HTMLAttributes, type PropsWithChildren, type ReactNode } from 'react';
+import styles from './ConfigSection.module.scss';
 
-interface ConfigSectionProps {
+interface ConfigSectionProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   title: ReactNode;
   description?: ReactNode;
-  className?: string;
+  indexLabel?: ReactNode;
+  icon?: ReactNode;
 }
 
-export function ConfigSection({ title, description, className, children }: PropsWithChildren<ConfigSectionProps>) {
-  return (
-    <Card title={title} className={className}>
-      {description && (
-        <p style={{ margin: '-4px 0 16px 0', color: 'var(--text-secondary)', fontSize: 13 }}>
-          {description}
-        </p>
-      )}
-      {children}
-    </Card>
-  );
-}
+export const ConfigSection = forwardRef<HTMLElement, PropsWithChildren<ConfigSectionProps>>(
+  function ConfigSection(
+    { title, description, indexLabel, icon, className, children, ...rest },
+    ref
+  ) {
+    const sectionClassName = [styles.section, className].filter(Boolean).join(' ');
 
+    return (
+      <section ref={ref} className={sectionClassName} {...rest}>
+        <header className={styles.header}>
+          <div className={styles.titleRow}>
+            {indexLabel ? <span className={styles.indexBadge}>{indexLabel}</span> : null}
+            {icon ? <span className={styles.iconBadge}>{icon}</span> : null}
+          </div>
+          <div className={styles.headingGroup}>
+            <h2 className={styles.title}>{title}</h2>
+            {description ? <p className={styles.description}>{description}</p> : null}
+          </div>
+        </header>
+        <div className={styles.content}>{children}</div>
+      </section>
+    );
+  }
+);
