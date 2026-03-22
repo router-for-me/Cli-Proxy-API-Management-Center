@@ -48,7 +48,7 @@
 }
 
 .expandableTextarea {
-  resize: vertical;
+  resize: none;
   min-height: 60px;
   overflow: hidden;
   line-height: 1.5;
@@ -76,7 +76,7 @@
   }
 }
 
-.expandableInputWrapper:has(.expandableTextarea) .expandableToggle {
+.expandableInputExpanded .expandableToggle {
   top: 8px;
   transform: none;
   right: 14px;

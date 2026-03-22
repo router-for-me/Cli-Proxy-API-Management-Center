@@ -23,6 +23,9 @@ import {
 import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
 
+/** Minimum character count before the expand/collapse toggle appears. */
+const EXPAND_THRESHOLD = 30;
+
 /** Auto-expanding textarea that collapses back to a single-line input on demand. */
 function ExpandableInput({
   value,
@@ -39,12 +42,14 @@ function ExpandableInput({
   className?: string;
   onChange: (nextValue: string) => void;
 }) {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [prevValue, setPrevValue] = useState(value);
 
-  // 外部重置 value 时（如重新加载配置），自动收起
-  // React 官方推荐模式：在渲染阶段通过 state 同步 prop
+  // Collapse when the value is replaced externally (e.g. config reload).
+  // This is the React-recommended pattern for adjusting state when a prop
+  // changes — see https://react.dev/learn/you-might-not-need-an-effect
   if (value !== prevValue) {
     setPrevValue(value);
     if (!collapsed) {
@@ -82,7 +87,7 @@ function ExpandableInput({
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
         />
-        {value.length > 30 && (
+        {value.length > EXPAND_THRESHOLD && (
           <button
             type="button"
             className={styles.expandableToggle}
@@ -95,8 +100,8 @@ function ExpandableInput({
                 }
               });
             }}
-            title="展开"
-            aria-label="展开输入框"
+            title={t('common.expand')}
+            aria-label={t('common.expand')}
           >
             ▼
           </button>
@@ -106,7 +111,7 @@ function ExpandableInput({
   }
 
   return (
-    <div className={styles.expandableInputWrapper}>
+    <div className={`${styles.expandableInputWrapper} ${styles.expandableInputExpanded}`}>
       <textarea
         ref={textareaRef}
         className={`input ${styles.expandableTextarea} ${className ?? ''}`}
@@ -121,8 +126,8 @@ function ExpandableInput({
         type="button"
         className={styles.expandableToggle}
         onClick={() => setCollapsed(true)}
-        title="收起"
-        aria-label="收起输入框"
+        title={t('common.collapse')}
+        aria-label={t('common.collapse')}
       >
         ▲
       </button>
@@ -617,12 +622,11 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                   </>
                 ) : (
                   <>
-                    <input
-                      className="input"
+                    <ExpandableInput
                       placeholder={t('config_management.visual.payload_rules.model_name')}
-                      aria-label={t('config_management.visual.payload_rules.model_name')}
+                      ariaLabel={t('config_management.visual.payload_rules.model_name')}
                       value={model.name}
-                      onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
+                      onChange={(nextValue) => updateModel(ruleIndex, modelIndex, { name: nextValue })}
                       disabled={disabled}
                     />
                     <Select
