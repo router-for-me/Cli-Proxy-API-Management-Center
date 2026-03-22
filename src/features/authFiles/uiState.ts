@@ -9,6 +9,8 @@ export type AuthFilesUiState = {
   search?: string;
   page?: number;
   pageSize?: number;
+  regularPageSize?: number;
+  compactPageSize?: number;
   sortMode?: AuthFilesSortMode;
 };
 

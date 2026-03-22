@@ -63,6 +63,8 @@ const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
 const easePower2In = (progress: number) => progress ** 3;
 const BATCH_BAR_BASE_TRANSFORM = 'translateX(-50%)';
 const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
+const DEFAULT_REGULAR_PAGE_SIZE = 9;
+const DEFAULT_COMPACT_PAGE_SIZE = 12;
 
 export function AuthFilesPage() {
   const { t } = useTranslation();
@@ -78,7 +80,10 @@ export function AuthFilesPage() {
   const [compactMode, setCompactMode] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(9);
+  const [pageSizeByMode, setPageSizeByMode] = useState({
+    regular: DEFAULT_REGULAR_PAGE_SIZE,
+    compact: DEFAULT_COMPACT_PAGE_SIZE,
+  });
   const [pageSizeInput, setPageSizeInput] = useState('9');
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
@@ -168,6 +173,7 @@ export function AuthFilesPage() {
   )
     ? (normalizedFilter as QuotaProviderType)
     : null;
+  const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
 
   useEffect(() => {
     const persisted = readAuthFilesUiState();
@@ -188,21 +194,53 @@ export function AuthFilesPage() {
     if (typeof persisted.page === 'number' && Number.isFinite(persisted.page)) {
       setPage(Math.max(1, Math.round(persisted.page)));
     }
-    if (typeof persisted.pageSize === 'number' && Number.isFinite(persisted.pageSize)) {
-      setPageSize(clampCardPageSize(persisted.pageSize));
-    }
+    const legacyPageSize =
+      typeof persisted.pageSize === 'number' && Number.isFinite(persisted.pageSize)
+        ? clampCardPageSize(persisted.pageSize)
+        : null;
+    const regularPageSize =
+      typeof persisted.regularPageSize === 'number' && Number.isFinite(persisted.regularPageSize)
+        ? clampCardPageSize(persisted.regularPageSize)
+        : legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE;
+    const compactPageSize =
+      typeof persisted.compactPageSize === 'number' && Number.isFinite(persisted.compactPageSize)
+        ? clampCardPageSize(persisted.compactPageSize)
+        : legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE;
+    setPageSizeByMode({
+      regular: regularPageSize,
+      compact: compactPageSize,
+    });
     if (isAuthFilesSortMode(persisted.sortMode)) {
       setSortMode(persisted.sortMode);
     }
   }, []);
 
   useEffect(() => {
-    writeAuthFilesUiState({ filter, problemOnly, compactMode, search, page, pageSize, sortMode });
-  }, [filter, problemOnly, compactMode, search, page, pageSize, sortMode]);
+    writeAuthFilesUiState({
+      filter,
+      problemOnly,
+      compactMode,
+      search,
+      page,
+      pageSize,
+      regularPageSize: pageSizeByMode.regular,
+      compactPageSize: pageSizeByMode.compact,
+      sortMode,
+    });
+  }, [filter, problemOnly, compactMode, search, page, pageSize, pageSizeByMode, sortMode]);
 
   useEffect(() => {
     setPageSizeInput(String(pageSize));
   }, [pageSize]);
+
+  const setCurrentModePageSize = useCallback(
+    (next: number) => {
+      setPageSizeByMode((current) =>
+        compactMode ? { ...current, compact: next } : { ...current, regular: next }
+      );
+    },
+    [compactMode]
+  );
 
   const commitPageSizeInput = (rawValue: string) => {
     const trimmed = rawValue.trim();
@@ -218,7 +256,7 @@ export function AuthFilesPage() {
     }
 
     const next = clampCardPageSize(value);
-    setPageSize(next);
+    setCurrentModePageSize(next);
     setPageSizeInput(String(next));
     setPage(1);
   };
@@ -236,7 +274,7 @@ export function AuthFilesPage() {
     const rounded = Math.round(parsed);
     if (rounded < MIN_CARD_PAGE_SIZE || rounded > MAX_CARD_PAGE_SIZE) return;
 
-    setPageSize(rounded);
+    setCurrentModePageSize(rounded);
     setPage(1);
   };
 
