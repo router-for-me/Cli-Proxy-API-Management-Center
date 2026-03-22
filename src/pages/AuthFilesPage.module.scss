@@ -1350,11 +1350,22 @@
 }
 
 .statusPanelCompact .statusBar {
+  flex-wrap: wrap;
   gap: 8px;
+  row-gap: 6px;
+}
+
+.statusPanelCompact .statusBlocks {
+  gap: 2px;
+}
+
+.statusPanelCompact .statusBlockWrapper {
+  min-width: 5px;
 }
 
 .statusPanelCompact .statusRate {
-  padding: 5px 8px;
+  margin-left: auto;
+  padding: 5px 7px;
   font-size: 11px;
 }
 

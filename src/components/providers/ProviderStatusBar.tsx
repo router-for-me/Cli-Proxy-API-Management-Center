@@ -32,6 +32,11 @@ function formatTime(timestamp: number): string {
   return `${h}:${m}`;
 }
 
+function formatSuccessRate(rate: number): string {
+  const rounded = rate.toFixed(1);
+  return `${rounded.endsWith('.0') ? rounded.slice(0, -2) : rounded}%`;
+}
+
 type StylesModule = Record<string, string>;
 
 interface ProviderStatusBarProps {
@@ -138,7 +143,7 @@ export function ProviderStatusBar({ statusData, styles: stylesProp }: ProviderSt
         })}
       </div>
       <span className={`${s.statusRate} ${rateClass}`}>
-        {hasData ? `${statusData.successRate.toFixed(1)}%` : '--'}
+        {hasData ? formatSuccessRate(statusData.successRate) : '--'}
       </span>
     </div>
   );
