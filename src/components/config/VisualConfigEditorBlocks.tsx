@@ -1,4 +1,4 @@
-import { memo, useId, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -22,6 +22,113 @@ import {
 } from '@/hooks/useVisualConfig';
 import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
+
+/** Auto-expanding textarea that collapses back to a single-line input on demand. */
+function ExpandableInput({
+  value,
+  placeholder,
+  ariaLabel,
+  disabled,
+  className,
+  onChange,
+}: {
+  value: string;
+  placeholder?: string;
+  ariaLabel?: string;
+  disabled?: boolean;
+  className?: string;
+  onChange: (nextValue: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [prevValue, setPrevValue] = useState(value);
+
+  // 外部重置 value 时（如重新加载配置），自动收起
+  // React 官方推荐模式：在渲染阶段通过 state 同步 prop
+  if (value !== prevValue) {
+    setPrevValue(value);
+    if (!collapsed) {
+      setCollapsed(true);
+    }
+  }
+
+  const autoResize = useCallback((el: HTMLTextAreaElement) => {
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPrevValue(e.target.value);
+    onChange(e.target.value);
+    if (!collapsed) {
+      autoResize(e.target);
+    }
+  };
+
+  useEffect(() => {
+    if (!collapsed && textareaRef.current) {
+      autoResize(textareaRef.current);
+    }
+  }, [collapsed, value, autoResize]);
+
+  if (collapsed) {
+    return (
+      <div className={styles.expandableInputWrapper}>
+        <input
+          className={`input ${className ?? ''}`}
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+        />
+        {value.length > 30 && (
+          <button
+            type="button"
+            className={styles.expandableToggle}
+            onClick={() => {
+              setCollapsed(false);
+              requestAnimationFrame(() => {
+                if (textareaRef.current) {
+                  autoResize(textareaRef.current);
+                  textareaRef.current.focus();
+                }
+              });
+            }}
+            title="展开"
+            aria-label="展开输入框"
+          >
+            ▼
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.expandableInputWrapper}>
+      <textarea
+        ref={textareaRef}
+        className={`input ${styles.expandableTextarea} ${className ?? ''}`}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        value={value}
+        onChange={handleChange}
+        disabled={disabled}
+        rows={2}
+      />
+      <button
+        type="button"
+        className={styles.expandableToggle}
+        onClick={() => setCollapsed(true)}
+        title="收起"
+        aria-label="收起输入框"
+      >
+        ▲
+      </button>
+    </div>
+  );
+}
 
 function getValidationMessage(
   t: ReturnType<typeof useTranslation>['t'],
@@ -282,14 +389,12 @@ const StringListEditor = memo(function StringListEditor({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {items.map((item, index) => (
         <div key={renderItemIds[index] ?? `item-${index}`} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input
-            className="input"
+          <ExpandableInput
             placeholder={placeholder}
-            aria-label={inputAriaLabel ?? placeholder}
+            ariaLabel={inputAriaLabel ?? placeholder}
             value={item}
-            onChange={(e) => updateItem(index, e.target.value)}
+            onChange={(nextValue) => updateItem(index, nextValue)}
             disabled={disabled}
-            style={{ flex: 1 }}
           />
           <Button variant="ghost" size="sm" onClick={() => removeItem(index)} disabled={disabled}>
             {t('config_management.visual.common.delete')}
@@ -441,12 +546,11 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
     }
 
     return (
-      <input
-        className="input"
+      <ExpandableInput
         placeholder={getValuePlaceholder(param.valueType)}
-        aria-label={t('config_management.visual.payload_rules.param_value')}
+        ariaLabel={t('config_management.visual.payload_rules.param_value')}
         value={param.value}
-        onChange={(e) => updateParam(ruleIndex, paramIndex, { value: e.target.value })}
+        onChange={(nextValue) => updateParam(ruleIndex, paramIndex, { value: nextValue })}
         disabled={disabled}
       />
     );
@@ -503,12 +607,11 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                         })
                       }
                     />
-                    <input
-                      className="input"
+                    <ExpandableInput
                       placeholder={t('config_management.visual.payload_rules.model_name')}
-                      aria-label={t('config_management.visual.payload_rules.model_name')}
+                      ariaLabel={t('config_management.visual.payload_rules.model_name')}
                       value={model.name}
-                      onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
+                      onChange={(nextValue) => updateModel(ruleIndex, modelIndex, { name: nextValue })}
                       disabled={disabled}
                     />
                   </>
@@ -561,12 +664,11 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
               return (
                 <div key={param.id} className={styles.payloadRuleParamGroup}>
                   <div className={styles.payloadRuleParamRow}>
-                    <input
-                      className="input"
+                    <ExpandableInput
                       placeholder={t('config_management.visual.payload_rules.json_path')}
-                      aria-label={t('config_management.visual.payload_rules.json_path')}
+                      ariaLabel={t('config_management.visual.payload_rules.json_path')}
                       value={param.path}
-                      onChange={(e) => updateParam(ruleIndex, paramIndex, { path: e.target.value })}
+                      onChange={(nextValue) => updateParam(ruleIndex, paramIndex, { path: nextValue })}
                       disabled={disabled}
                     />
                     <Select
@@ -710,12 +812,11 @@ export const PayloadFilterRulesEditor = memo(function PayloadFilterRulesEditor({
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('config_management.visual.payload_rules.models')}</div>
             {rule.models.map((model, modelIndex) => (
               <div key={model.id} className={styles.payloadFilterModelRow}>
-                <input
-                  className="input"
+                <ExpandableInput
                   placeholder={t('config_management.visual.payload_rules.model_name')}
-                  aria-label={t('config_management.visual.payload_rules.model_name')}
+                  ariaLabel={t('config_management.visual.payload_rules.model_name')}
                   value={model.name}
-                  onChange={(e) => updateModel(ruleIndex, modelIndex, { name: e.target.value })}
+                  onChange={(nextValue) => updateModel(ruleIndex, modelIndex, { name: nextValue })}
                   disabled={disabled}
                 />
                 <Select
