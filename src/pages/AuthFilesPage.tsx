@@ -99,6 +99,7 @@ export function AuthFilesPage() {
     deleting,
     deletingAll,
     statusUpdating,
+    batchStatusUpdating,
     fileInputRef,
     loadFiles,
     handleUploadClick,
@@ -356,6 +357,15 @@ export function AuthFilesPage() {
     [sorted]
   );
   const selectedNames = useMemo(() => Array.from(selectedFiles), [selectedFiles]);
+  const selectedHasStatusUpdating = useMemo(
+    () => selectedNames.some((name) => statusUpdating[name] === true),
+    [selectedNames, statusUpdating]
+  );
+  const batchStatusButtonsDisabled =
+    disableControls ||
+    selectedNames.length === 0 ||
+    batchStatusUpdating ||
+    selectedHasStatusUpdating;
 
   const copyTextWithNotification = useCallback(
     async (text: string) => {
@@ -887,7 +897,7 @@ export function AuthFilesPage() {
                   <Button
                     size="sm"
                     onClick={() => batchSetStatus(selectedNames, true)}
-                    disabled={disableControls || selectedNames.length === 0}
+                    disabled={batchStatusButtonsDisabled}
                   >
                     {t('auth_files.batch_enable')}
                   </Button>
@@ -895,7 +905,7 @@ export function AuthFilesPage() {
                     variant="secondary"
                     size="sm"
                     onClick={() => batchSetStatus(selectedNames, false)}
-                    disabled={disableControls || selectedNames.length === 0}
+                    disabled={batchStatusButtonsDisabled}
                   >
                     {t('auth_files.batch_disable')}
                   </Button>
