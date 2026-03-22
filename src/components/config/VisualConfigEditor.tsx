@@ -112,8 +112,16 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
     (payloadDefaultRules: PayloadRule[]) => onChange({ payloadDefaultRules }),
     [onChange]
   );
+  const handlePayloadDefaultRawRulesChange = useCallback(
+    (payloadDefaultRawRules: PayloadRule[]) => onChange({ payloadDefaultRawRules }),
+    [onChange]
+  );
   const handlePayloadOverrideRulesChange = useCallback(
     (payloadOverrideRules: PayloadRule[]) => onChange({ payloadOverrideRules }),
+    [onChange]
+  );
+  const handlePayloadOverrideRawRulesChange = useCallback(
+    (payloadOverrideRawRules: PayloadRule[]) => onChange({ payloadOverrideRawRules }),
     [onChange]
   );
   const handlePayloadFilterRulesChange = useCallback(
@@ -472,6 +480,19 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
           </div>
 
           <div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>{t('config_management.visual.sections.payload.default_raw_rules')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
+              {t('config_management.visual.sections.payload.default_raw_rules_desc')}
+            </div>
+            <PayloadRulesEditor
+              value={values.payloadDefaultRawRules}
+              disabled={disabled}
+              rawJsonValues
+              onChange={handlePayloadDefaultRawRulesChange}
+            />
+          </div>
+
+          <div>
             <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>{t('config_management.visual.sections.payload.override_rules')}</div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
               {t('config_management.visual.sections.payload.override_rules_desc')}
@@ -481,6 +502,20 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
               disabled={disabled}
               protocolFirst
               onChange={handlePayloadOverrideRulesChange}
+            />
+          </div>
+
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>{t('config_management.visual.sections.payload.override_raw_rules')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
+              {t('config_management.visual.sections.payload.override_raw_rules_desc')}
+            </div>
+            <PayloadRulesEditor
+              value={values.payloadOverrideRawRules}
+              disabled={disabled}
+              protocolFirst
+              rawJsonValues
+              onChange={handlePayloadOverrideRawRulesChange}
             />
           </div>
 

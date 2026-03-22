@@ -148,7 +148,8 @@ function docHas(doc: YamlDocument, path: YamlPath): boolean {
 function ensureMapInDoc(doc: YamlDocument, path: YamlPath): void {
   const existing = doc.getIn(path, true);
   if (isMap(existing)) return;
-  doc.setIn(path, {});
+  // Use a YAML node here; plain objects are not treated as collections by subsequent `setIn`.
+  doc.setIn(path, doc.createNode({}));
 }
 
 function deleteIfMapEmpty(doc: YamlDocument, path: YamlPath): void {
@@ -290,6 +291,17 @@ function parsePayloadParamValue(raw: unknown): { valueType: PayloadParamValueTyp
   return { valueType: 'string', value: String(raw ?? '') };
 }
 
+function parseRawPayloadParamValue(raw: unknown): string {
+  if (typeof raw === 'string') return raw;
+
+  try {
+    const json = JSON.stringify(raw, null, 2);
+    return json ?? '';
+  } catch {
+    return String(raw ?? '');
+  }
+}
+
 const PAYLOAD_PROTOCOL_VALUES = [
   'openai',
   'openai-response',
@@ -373,6 +385,41 @@ function parsePayloadFilterRules(rules: unknown): PayloadFilterRule[] {
   });
 }
 
+function parseRawPayloadRules(rules: unknown): PayloadRule[] {
+  if (!Array.isArray(rules)) return [];
+
+  return rules.map((rule, index) => {
+    const record = asRecord(rule) ?? {};
+
+    const modelsRaw = record.models;
+    const models = Array.isArray(modelsRaw)
+      ? modelsRaw.map((model, modelIndex) => {
+          const modelRecord = asRecord(model);
+          const nameRaw =
+            typeof model === 'string' ? model : (modelRecord?.name ?? modelRecord?.id ?? '');
+          const name = typeof nameRaw === 'string' ? nameRaw : String(nameRaw ?? '');
+          return {
+            id: `raw-model-${index}-${modelIndex}`,
+            name,
+            protocol: parsePayloadProtocol(modelRecord?.protocol),
+          };
+        })
+      : [];
+
+    const paramsRecord = asRecord(record.params);
+    const params = paramsRecord
+      ? Object.entries(paramsRecord).map(([path, value], pIndex) => ({
+          id: `raw-param-${index}-${pIndex}`,
+          path,
+          valueType: 'json' as const,
+          value: parseRawPayloadParamValue(value),
+        }))
+      : [];
+
+    return { id: `payload-raw-rule-${index}`, models, params };
+  });
+}
+
 function serializePayloadRulesForYaml(rules: PayloadRule[]): Array<Record<string, unknown>> {
   return rules
     .map((rule) => {
@@ -430,6 +477,28 @@ function serializePayloadFilterRulesForYaml(
     .filter((rule) => rule.models.length > 0);
 }
 
+function serializeRawPayloadRulesForYaml(rules: PayloadRule[]): Array<Record<string, unknown>> {
+  return rules
+    .map((rule) => {
+      const models = (rule.models || [])
+        .filter((m) => m.name?.trim())
+        .map((m) => {
+          const obj: Record<string, unknown> = { name: m.name.trim() };
+          if (m.protocol) obj.protocol = m.protocol;
+          return obj;
+        });
+
+      const params: Record<string, unknown> = {};
+      for (const param of rule.params || []) {
+        if (!param.path?.trim()) continue;
+        params[param.path.trim()] = param.value;
+      }
+
+      return { models, params };
+    })
+    .filter((rule) => rule.models.length > 0);
+}
+
 export function useVisualConfig() {
   const [visualValues, setVisualValuesState] = useState<VisualConfigValues>({
     ...DEFAULT_VISUAL_VALUES,
@@ -448,8 +517,15 @@ export function useVisualConfig() {
   const visualHasPayloadValidationErrors = useMemo(
     () =>
       hasPayloadParamValidationErrors(visualValues.payloadDefaultRules) ||
-      hasPayloadParamValidationErrors(visualValues.payloadOverrideRules),
-    [visualValues.payloadDefaultRules, visualValues.payloadOverrideRules]
+      hasPayloadParamValidationErrors(visualValues.payloadDefaultRawRules) ||
+      hasPayloadParamValidationErrors(visualValues.payloadOverrideRules) ||
+      hasPayloadParamValidationErrors(visualValues.payloadOverrideRawRules),
+    [
+      visualValues.payloadDefaultRules,
+      visualValues.payloadDefaultRawRules,
+      visualValues.payloadOverrideRules,
+      visualValues.payloadOverrideRawRules,
+    ]
   );
 
   const visualDirty = useMemo(() => {
@@ -516,7 +592,9 @@ export function useVisualConfig() {
           routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
 
         payloadDefaultRules: parsePayloadRules(payload?.default),
+        payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
         payloadOverrideRules: parsePayloadRules(payload?.override),
+        payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
         payloadFilterRules: parsePayloadFilterRules(payload?.filter),
 
         streaming: {
@@ -686,7 +764,9 @@ export function useVisualConfig() {
         if (
           docHas(doc, ['payload']) ||
           values.payloadDefaultRules.length > 0 ||
+          values.payloadDefaultRawRules.length > 0 ||
           values.payloadOverrideRules.length > 0 ||
+          values.payloadOverrideRawRules.length > 0 ||
           values.payloadFilterRules.length > 0
         ) {
           ensureMapInDoc(doc, ['payload']);
@@ -698,6 +778,14 @@ export function useVisualConfig() {
           } else if (docHas(doc, ['payload', 'default'])) {
             doc.deleteIn(['payload', 'default']);
           }
+          if (values.payloadDefaultRawRules.length > 0) {
+            doc.setIn(
+              ['payload', 'default-raw'],
+              serializeRawPayloadRulesForYaml(values.payloadDefaultRawRules)
+            );
+          } else if (docHas(doc, ['payload', 'default-raw'])) {
+            doc.deleteIn(['payload', 'default-raw']);
+          }
           if (values.payloadOverrideRules.length > 0) {
             doc.setIn(
               ['payload', 'override'],
@@ -705,6 +793,14 @@ export function useVisualConfig() {
             );
           } else if (docHas(doc, ['payload', 'override'])) {
             doc.deleteIn(['payload', 'override']);
+          }
+          if (values.payloadOverrideRawRules.length > 0) {
+            doc.setIn(
+              ['payload', 'override-raw'],
+              serializeRawPayloadRulesForYaml(values.payloadOverrideRawRules)
+            );
+          } else if (docHas(doc, ['payload', 'override-raw'])) {
+            doc.deleteIn(['payload', 'override-raw']);
           }
           if (values.payloadFilterRules.length > 0) {
             doc.setIn(

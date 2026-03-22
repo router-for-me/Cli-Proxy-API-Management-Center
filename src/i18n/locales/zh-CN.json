@@ -1242,11 +1242,15 @@
         },
         "payload": {
           "title": "Payload 配置",
-          "description": "默认值、覆盖规则与过滤规则",
+          "description": "默认值、原始 JSON 规则、覆盖规则与过滤规则",
           "default_rules": "默认规则",
           "default_rules_desc": "当请求中未指定参数时，使用这些默认值",
+          "default_raw_rules": "默认 Raw 规则",
+          "default_raw_rules_desc": "当请求中未指定参数时，按原始 JSON 片段写入这些值，例如 true、123、\"high\" 或 {\"type\":\"object\"}",
           "override_rules": "覆盖规则",
           "override_rules_desc": "强制覆盖请求中的参数值",
+          "override_raw_rules": "覆盖 Raw 规则",
+          "override_raw_rules_desc": "始终按原始 JSON 片段覆盖参数值，适合 response_format、schema 等复杂字段",
           "filter_rules": "过滤规则",
           "filter_rules_desc": "通过 JSON Path 预过滤上游请求体，自动剔除不合规/冗余参数（Request Sanitization）"
         }
@@ -1295,6 +1299,7 @@
         "value_number": "数字值 (如 0.7)",
         "value_boolean": "true 或 false",
         "value_json": "JSON 值",
+        "value_raw_json": "原始 JSON 片段，如 true、123、\"high\" 或 {\"type\":\"object\"}",
         "value_default": "值",
         "boolean_true": "true",
         "boolean_false": "false"

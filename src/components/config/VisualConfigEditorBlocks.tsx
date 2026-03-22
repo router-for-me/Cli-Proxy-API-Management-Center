@@ -309,11 +309,13 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
   value,
   disabled,
   protocolFirst = false,
+  rawJsonValues = false,
   onChange,
 }: {
   value: PayloadRule[];
   disabled?: boolean;
   protocolFirst?: boolean;
+  rawJsonValues?: boolean;
   onChange: (next: PayloadRule[]) => void;
 }) {
   const { t } = useTranslation();
@@ -371,7 +373,7 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
     const nextParam: PayloadParamEntry = {
       id: makeClientId(),
       path: '',
-      valueType: 'string',
+      valueType: rawJsonValues ? 'json' : 'string',
       value: '',
     };
     updateRule(ruleIndex, { params: [...rule.params, nextParam] });
@@ -405,7 +407,9 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
   };
 
   const getParamErrorMessage = (param: PayloadParamEntry) => {
-    const errorCode = getPayloadParamValidationError(param);
+    const errorCode = getPayloadParamValidationError(
+      rawJsonValues ? { ...param, valueType: 'json' } : param
+    );
     return getValidationMessage(t, errorCode);
   };
 
@@ -414,6 +418,19 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
     paramIndex: number,
     param: PayloadParamEntry
   ) => {
+    if (rawJsonValues) {
+      return (
+        <textarea
+          className={`input ${styles.payloadJsonInput}`}
+          placeholder={t('config_management.visual.payload_rules.value_raw_json')}
+          aria-label={t('config_management.visual.payload_rules.param_value')}
+          value={param.value}
+          onChange={(e) => updateParam(ruleIndex, paramIndex, { value: e.target.value, valueType: 'json' })}
+          disabled={disabled}
+        />
+      );
+    }
+
     if (param.valueType === 'boolean') {
       return (
         <Select
@@ -569,23 +586,25 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                       onChange={(e) => updateParam(ruleIndex, paramIndex, { path: e.target.value })}
                       disabled={disabled}
                     />
-                    <Select
-                      value={param.valueType}
-                      options={payloadValueTypeOptions}
-                      disabled={disabled}
-                      ariaLabel={t('config_management.visual.payload_rules.param_type')}
-                      onChange={(nextValue) =>
-                        updateParam(ruleIndex, paramIndex, {
-                          valueType: nextValue as PayloadParamValueType,
-                          value:
-                            nextValue === 'boolean'
-                              ? 'true'
-                              : nextValue === 'json' && param.value.trim() === ''
-                                ? '{}'
-                                : param.value,
-                        })
-                      }
-                    />
+                    {rawJsonValues ? null : (
+                      <Select
+                        value={param.valueType}
+                        options={payloadValueTypeOptions}
+                        disabled={disabled}
+                        ariaLabel={t('config_management.visual.payload_rules.param_type')}
+                        onChange={(nextValue) =>
+                          updateParam(ruleIndex, paramIndex, {
+                            valueType: nextValue as PayloadParamValueType,
+                            value:
+                              nextValue === 'boolean'
+                                ? 'true'
+                                : nextValue === 'json' && param.value.trim() === ''
+                                  ? '{}'
+                                  : param.value,
+                          })
+                        }
+                      />
+                    )}
                     {renderParamValueEditor(ruleIndex, paramIndex, param)}
                     <Button
                       variant="ghost"

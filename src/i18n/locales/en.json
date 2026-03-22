@@ -1242,11 +1242,15 @@
         },
         "payload": {
           "title": "Payload Configuration",
-          "description": "Default values, override rules, and filter rules",
+          "description": "Default values, raw JSON rules, override rules, and filter rules",
           "default_rules": "Default Rules",
           "default_rules_desc": "Use these default values when parameters are not specified in the request",
+          "default_raw_rules": "Default Raw Rules",
+          "default_raw_rules_desc": "When parameters are missing, write these values as raw JSON fragments such as true, 123, \"high\", or {\"type\":\"object\"}",
           "override_rules": "Override Rules",
           "override_rules_desc": "Force override parameter values in the request",
+          "override_raw_rules": "Override Raw Rules",
+          "override_raw_rules_desc": "Always overwrite parameter values as raw JSON fragments, useful for response_format, schemas, and other complex fields",
           "filter_rules": "Filter Rules",
           "filter_rules_desc": "Pre-filter upstream request body via JSON Path, automatically remove non-compliant/redundant parameters (Request Sanitization)"
         }
@@ -1295,6 +1299,7 @@
         "value_number": "Number value (e.g., 0.7)",
         "value_boolean": "true or false",
         "value_json": "JSON value",
+        "value_raw_json": "Raw JSON fragment, e.g. true, 123, \"high\", or {\"type\":\"object\"}",
         "value_default": "Value",
         "boolean_true": "true",
         "boolean_false": "false"

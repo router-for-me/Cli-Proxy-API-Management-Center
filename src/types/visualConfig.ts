@@ -76,7 +76,9 @@ export type VisualConfigValues = {
   routingStrategy: 'round-robin' | 'fill-first';
   wsAuth: boolean;
   payloadDefaultRules: PayloadRule[];
+  payloadDefaultRawRules: PayloadRule[];
   payloadOverrideRules: PayloadRule[];
+  payloadOverrideRawRules: PayloadRule[];
   payloadFilterRules: PayloadFilterRule[];
   streaming: StreamingConfig;
 };
@@ -112,7 +114,9 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   routingStrategy: 'round-robin',
   wsAuth: false,
   payloadDefaultRules: [],
+  payloadDefaultRawRules: [],
   payloadOverrideRules: [],
+  payloadOverrideRawRules: [],
   payloadFilterRules: [],
   streaming: {
     keepaliveSeconds: '',
