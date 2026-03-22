@@ -31,6 +31,30 @@ function getValidationMessage(
   return t(`config_management.visual.validation.${errorCode}`);
 }
 
+function buildProtocolOptions(
+  t: ReturnType<typeof useTranslation>['t'],
+  rules: Array<{ models: PayloadModelEntry[] }>
+) {
+  const options: Array<{ value: string; label: string }> = VISUAL_CONFIG_PROTOCOL_OPTIONS.map(
+    (option) => ({
+      value: option.value,
+      label: t(option.labelKey, { defaultValue: option.defaultLabel }),
+    })
+  );
+  const seen = new Set<string>(options.map((option) => option.value));
+
+  for (const rule of rules) {
+    for (const model of rule.models) {
+      const protocol = model.protocol;
+      if (!protocol || !protocol.trim() || seen.has(protocol)) continue;
+      seen.add(protocol);
+      options.push({ value: protocol, label: protocol });
+    }
+  }
+
+  return options;
+}
+
 export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   value,
   disabled,
@@ -319,15 +343,8 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
   onChange: (next: PayloadRule[]) => void;
 }) {
   const { t } = useTranslation();
-  const rules = value.length ? value : [];
-  const protocolOptions = useMemo(
-    () =>
-      VISUAL_CONFIG_PROTOCOL_OPTIONS.map((option) => ({
-        value: option.value,
-        label: t(option.labelKey, { defaultValue: option.defaultLabel }),
-      })),
-    [t]
-  );
+  const rules = value;
+  const protocolOptions = useMemo(() => buildProtocolOptions(t, rules), [rules, t]);
   const payloadValueTypeOptions = useMemo(
     () =>
       VISUAL_CONFIG_PAYLOAD_VALUE_TYPE_OPTIONS.map((option) => ({
@@ -662,15 +679,8 @@ export const PayloadFilterRulesEditor = memo(function PayloadFilterRulesEditor({
   onChange: (next: PayloadFilterRule[]) => void;
 }) {
   const { t } = useTranslation();
-  const rules = value.length ? value : [];
-  const protocolOptions = useMemo(
-    () =>
-      VISUAL_CONFIG_PROTOCOL_OPTIONS.map((option) => ({
-        value: option.value,
-        label: t(option.labelKey, { defaultValue: option.defaultLabel }),
-      })),
-    [t]
-  );
+  const rules = value;
+  const protocolOptions = useMemo(() => buildProtocolOptions(t, rules), [rules, t]);
 
   const addRule = () => onChange([...rules, { id: makeClientId(), models: [], params: [] }]);
   const removeRule = (ruleIndex: number) => onChange(rules.filter((_, i) => i !== ruleIndex));

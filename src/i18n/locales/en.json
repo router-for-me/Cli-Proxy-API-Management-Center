@@ -1161,6 +1161,7 @@
       "source": "Source File Editor"
     },
     "visual": {
+      "notice": "Visual mode only covers common supported fields. Other config.yaml fields still need to be reviewed and edited in source mode.",
       "sections": {
         "server": {
           "title": "Server Configuration",
@@ -1211,6 +1212,8 @@
           "description": "Proxy, retry, and routing settings",
           "proxy_url": "Proxy URL",
           "request_retry": "Request Retry Count",
+          "max_retry_credentials": "Max Retry Credentials",
+          "max_retry_credentials_hint": "Leave empty to keep it unset. Set to 0 to preserve legacy behavior and try all available credentials.",
           "max_retry_interval": "Max Retry Interval (seconds)",
           "routing_strategy": "Routing Strategy",
           "routing_strategy_hint": "Select credential selection strategy",

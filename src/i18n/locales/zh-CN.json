@@ -1161,6 +1161,7 @@
       "source": "源文件编辑"
     },
     "visual": {
+      "notice": "可视化模式目前只覆盖常用且已支持的字段，不代表已经覆盖 `config.yaml` 的全部配置项；其他字段仍需在源码模式查看或编辑。",
       "sections": {
         "server": {
           "title": "服务器配置",
@@ -1211,6 +1212,8 @@
           "description": "代理、重试和路由设置",
           "proxy_url": "代理 URL",
           "request_retry": "请求重试次数",
+          "max_retry_credentials": "最大重试凭据数",
+          "max_retry_credentials_hint": "留空表示不设置；设为 0 表示保留 legacy 行为，并尝试所有可用凭据。",
           "max_retry_interval": "最大重试间隔 (秒)",
           "routing_strategy": "路由策略",
           "routing_strategy_hint": "选择凭据选择策略",

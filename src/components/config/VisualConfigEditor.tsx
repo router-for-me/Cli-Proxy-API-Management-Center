@@ -99,6 +99,7 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
   const portError = getValidationMessage(t, validationErrors?.port);
   const logsMaxSizeError = getValidationMessage(t, validationErrors?.logsMaxTotalSizeMb);
   const requestRetryError = getValidationMessage(t, validationErrors?.requestRetry);
+  const maxRetryCredentialsError = getValidationMessage(t, validationErrors?.maxRetryCredentials);
   const maxRetryIntervalError = getValidationMessage(t, validationErrors?.maxRetryInterval);
   const keepaliveError = getValidationMessage(t, validationErrors?.['streaming.keepaliveSeconds']);
   const bootstrapRetriesError = getValidationMessage(t, validationErrors?.['streaming.bootstrapRetries']);
@@ -131,6 +132,20 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div
+        style={{
+          padding: '12px 14px',
+          borderRadius: 12,
+          border: '1px solid var(--border-color)',
+          background: 'var(--bg-secondary)',
+          color: 'var(--text-secondary)',
+          fontSize: 13,
+          lineHeight: 1.5,
+        }}
+      >
+        {t('config_management.visual.notice')}
+      </div>
+
       <ConfigSection title={t('config_management.visual.sections.server.title')} description={t('config_management.visual.sections.server.description')}>
         <SectionGrid>
           <Input
@@ -304,6 +319,16 @@ export function VisualConfigEditor({ values, validationErrors, disabled = false,
               onChange={(e) => onChange({ requestRetry: e.target.value })}
               disabled={disabled}
               error={requestRetryError}
+            />
+            <Input
+              label={t('config_management.visual.sections.network.max_retry_credentials')}
+              type="number"
+              placeholder="0"
+              value={values.maxRetryCredentials}
+              onChange={(e) => onChange({ maxRetryCredentials: e.target.value })}
+              disabled={disabled}
+              hint={t('config_management.visual.sections.network.max_retry_credentials_hint')}
+              error={maxRetryCredentialsError}
             />
             <Input
               label={t('config_management.visual.sections.network.max_retry_interval')}
