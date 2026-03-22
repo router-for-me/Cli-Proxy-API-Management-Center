@@ -160,6 +160,45 @@
   color: var(--text-primary);
 }
 
+.filterAllIconWrap {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--primary-color) 20%, var(--border-color));
+  background:
+    radial-gradient(
+      circle at 30% 28%,
+      color-mix(in srgb, var(--primary-color) 22%, #ffffff),
+      transparent 58%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--bg-secondary) 94%, var(--primary-color) 8%),
+      color-mix(in srgb, var(--bg-primary) 92%, var(--primary-color) 5%)
+    );
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 54%, transparent),
+    0 10px 22px -18px color-mix(in srgb, var(--primary-color) 50%, transparent);
+}
+
+.filterAllIconWrap::after {
+  content: '';
+  position: absolute;
+  inset: auto 7px 7px auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+  filter: blur(1px);
+  opacity: 0.9;
+}
+
+.filterAllIcon {
+  position: relative;
+  z-index: 1;
+  display: block;
+  color: color-mix(in srgb, var(--primary-color) 70%, var(--text-primary));
+}
+
 .filterRailHeroText {
   display: flex;
   flex-direction: column;
@@ -189,9 +228,8 @@
 }
 
 .filterRailCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
   min-width: 38px;
   height: 30px;
   padding: 0 10px;
@@ -201,6 +239,8 @@
   font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-align: center;
 }
 
 .filterRailMode {
@@ -333,9 +373,8 @@
 }
 
 .filterTagCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
   min-width: 34px;
   height: 28px;
   padding: 0 10px;
@@ -346,6 +385,8 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
+  line-height: 1;
+  text-align: center;
 }
 
 .filterTagActive .filterTagCount {
@@ -411,6 +452,23 @@
   }
 }
 
+.filterToggleGroup {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  min-height: 40px;
+}
+
+.filterToggleCard {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 2px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+}
+
 .filterToggle {
   display: flex;
   align-items: center;
@@ -466,6 +524,18 @@
 
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fileGridCompact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  @include tablet {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   @include mobile {
@@ -840,6 +910,108 @@
   }
 }
 
+.fileCardCompact {
+  padding: 14px;
+  border-radius: 14px;
+
+  .fileCardMain {
+    gap: 10px;
+  }
+
+  .cardHeader {
+    gap: 10px;
+  }
+
+  .cardSelection {
+    margin-top: 7px;
+  }
+
+  .providerAvatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .providerAvatarImage {
+    width: 18px;
+    height: 18px;
+  }
+
+  .providerAvatarFallback {
+    font-size: 16px;
+  }
+
+  .cardHeaderContent {
+    gap: 4px;
+  }
+
+  .cardBadgeRow {
+    gap: 6px;
+  }
+
+  .typeBadge,
+  .stateBadge {
+    padding: 4px 8px;
+  }
+
+  .fileName {
+    font-size: 14px;
+    line-height: 1.35;
+    -webkit-line-clamp: 1;
+  }
+
+  .healthStatusMessage {
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+
+  .quotaSection {
+    display: none;
+  }
+
+  .cardActions {
+    gap: 8px;
+    padding-top: 0;
+  }
+
+  .cardActionsMain {
+    width: 100%;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .primaryActionButton:global(.btn.btn-sm) {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  .cardUtilityActions {
+    gap: 4px;
+    padding: 3px;
+    border-radius: 10px;
+  }
+
+  .iconButton:global(.btn.btn-sm) {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 9px;
+  }
+
+  .statusToggle {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 8px;
+  }
+
+  .statusToggleLabel {
+    font-size: 11px;
+  }
+}
+
 .fileCardLayout {
   display: flex;
   align-items: stretch;
@@ -976,6 +1148,32 @@
   }
 }
 
+.cardMetaCompact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cardMetaCompact .metaItem {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  flex: 0 1 auto;
+}
+
+.cardMetaCompact .metaLabel {
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.cardMetaCompact .metaValue {
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .metaItem {
   display: flex;
   flex-direction: column;
@@ -1066,6 +1264,12 @@
   background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
 }
 
+.cardInsightsCompact {
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+
 .cardStats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1074,6 +1278,26 @@
   @include mobile {
     grid-template-columns: 1fr;
   }
+}
+
+.cardStatsCompact {
+  gap: 8px;
+}
+
+.cardStatsCompact .statPill {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.cardStatsCompact .statLabel {
+  font-size: 11px;
+}
+
+.cardStatsCompact .statValue {
+  font-size: 18px;
 }
 
 .statPill {
@@ -1115,6 +1339,23 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.statusPanelCompact {
+  gap: 6px;
+}
+
+.statusPanelCompact .statusPanelLabel {
+  display: none;
+}
+
+.statusPanelCompact .statusBar {
+  gap: 8px;
+}
+
+.statusPanelCompact .statusRate {
+  padding: 5px 8px;
+  font-size: 11px;
 }
 
 .statusPanelLabel {
@@ -1394,6 +1635,42 @@
   padding-inline: 12px;
 }
 
+.modelsActionButton:global(.btn.btn-sm) {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary-color) 15%, var(--bg-secondary)),
+    color-mix(in srgb, var(--primary-color) 7%, var(--bg-primary))
+  );
+  border-color: color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
+}
+
+.modelsActionButton:global(.btn.btn-sm):hover {
+  border-color: color-mix(in srgb, var(--primary-color) 38%, var(--border-color));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary-color) 18%, var(--bg-secondary)),
+    color-mix(in srgb, var(--primary-color) 9%, var(--bg-primary))
+  );
+}
+
+.modelsActionButton:global(.btn.btn-sm) > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.modelsActionIconWrap {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary-color) 16%, transparent);
+}
+
 .actionButtonLabel {
   @include text-ellipsis;
 }
@@ -1460,6 +1737,20 @@
   .statusToggle {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .fileCardCompact {
+    .cardActionsMain {
+      flex-wrap: wrap;
+    }
+
+    .primaryActionButton:global(.btn.btn-sm) {
+      flex: 1 1 auto;
+    }
+
+    .cardUtilityActions {
+      margin-left: auto;
+    }
   }
 }
 

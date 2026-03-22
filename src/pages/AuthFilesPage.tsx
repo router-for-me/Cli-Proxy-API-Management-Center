@@ -20,6 +20,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { IconFilterAll } from '@/components/ui/icons';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -74,6 +75,7 @@ export function AuthFilesPage() {
 
   const [filter, setFilter] = useState<'all' | string>('all');
   const [problemOnly, setProblemOnly] = useState(false);
+  const [compactMode, setCompactMode] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
@@ -107,7 +109,9 @@ export function AuthFilesPage() {
     handleStatusToggle,
     toggleSelect,
     selectAllVisible,
+    invertVisibleSelection,
     deselectAll,
+    batchDownload,
     batchSetStatus,
     batchDelete,
   } = useAuthFilesData({ refreshKeyStats });
@@ -174,6 +178,9 @@ export function AuthFilesPage() {
     if (typeof persisted.problemOnly === 'boolean') {
       setProblemOnly(persisted.problemOnly);
     }
+    if (typeof persisted.compactMode === 'boolean') {
+      setCompactMode(persisted.compactMode);
+    }
     if (typeof persisted.search === 'string') {
       setSearch(persisted.search);
     }
@@ -189,8 +196,8 @@ export function AuthFilesPage() {
   }, []);
 
   useEffect(() => {
-    writeAuthFilesUiState({ filter, problemOnly, search, page, pageSize, sortMode });
-  }, [filter, problemOnly, search, page, pageSize, sortMode]);
+    writeAuthFilesUiState({ filter, problemOnly, compactMode, search, page, pageSize, sortMode });
+  }, [filter, problemOnly, compactMode, search, page, pageSize, sortMode]);
 
   useEffect(() => {
     setPageSizeInput(String(pageSize));
@@ -344,6 +351,10 @@ export function AuthFilesPage() {
     () => pageItems.filter((file) => !isRuntimeOnlyAuthFile(file)),
     [pageItems]
   );
+  const selectableFilteredItems = useMemo(
+    () => sorted.filter((file) => !isRuntimeOnlyAuthFile(file)),
+    [sorted]
+  );
   const selectedNames = useMemo(() => Array.from(selectedFiles), [selectedFiles]);
 
   const copyTextWithNotification = useCallback(
@@ -487,15 +498,21 @@ export function AuthFilesPage() {
         </span>
         <div className={styles.filterRailHero}>
           <div className={styles.filterRailHeroTitle}>
-            <div className={styles.filterRailHeroIcon}>
-              {activeFilterIcon ? (
-                <img src={activeFilterIcon} alt="" className={styles.filterRailHeroIconImage} />
-              ) : (
-                <span className={styles.filterRailHeroIconFallback}>
-                  {activeFilterLabel.slice(0, 1).toUpperCase()}
-                </span>
-              )}
-            </div>
+            {filter === 'all' ? (
+              <span className={`${styles.filterRailHeroIcon} ${styles.filterAllIconWrap}`}>
+                <IconFilterAll className={styles.filterAllIcon} size={22} />
+              </span>
+            ) : (
+              <div className={styles.filterRailHeroIcon}>
+                {activeFilterIcon ? (
+                  <img src={activeFilterIcon} alt="" className={styles.filterRailHeroIconImage} />
+                ) : (
+                  <span className={styles.filterRailHeroIconFallback}>
+                    {activeFilterLabel.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+              </div>
+            )}
             <div className={styles.filterRailHeroText}>
               <span className={styles.filterRailTitle}>{activeFilterLabel}</span>
               <span className={styles.filterRailDescription}>{t('auth_files.title_section')}</span>
@@ -535,15 +552,21 @@ export function AuthFilesPage() {
               }}
             >
               <span className={styles.filterTagLabel}>
-                <span className={styles.filterTagIconWrap}>
-                  {iconSrc ? (
-                    <img src={iconSrc} alt="" className={styles.filterTagIcon} />
-                  ) : (
-                    <span className={styles.filterTagIconFallback}>
-                      {getTypeLabel(t, type).slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
-                </span>
+                {type === 'all' ? (
+                  <span className={`${styles.filterTagIconWrap} ${styles.filterAllIconWrap}`}>
+                    <IconFilterAll className={styles.filterAllIcon} size={18} />
+                  </span>
+                ) : (
+                  <span className={styles.filterTagIconWrap}>
+                    {iconSrc ? (
+                      <img src={iconSrc} alt="" className={styles.filterTagIcon} />
+                    ) : (
+                      <span className={styles.filterTagIconFallback}>
+                        {getTypeLabel(t, type).slice(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                  </span>
+                )}
                 <span className={styles.filterTagText}>{getTypeLabel(t, type)}</span>
               </span>
               <span className={styles.filterTagCount}>{typeCounts[type] ?? 0}</span>
@@ -667,21 +690,35 @@ export function AuthFilesPage() {
                   />
                 </div>
                 <div className={`${styles.filterItem} ${styles.filterToggleItem}`}>
-                  <label>{t('auth_files.problem_filter_label')}</label>
-                  <div className={styles.filterToggle}>
-                    <ToggleSwitch
-                      checked={problemOnly}
-                      onChange={(value) => {
-                        setProblemOnly(value);
-                        setPage(1);
-                      }}
-                      ariaLabel={t('auth_files.problem_filter_only')}
-                      label={
-                        <span className={styles.filterToggleLabel}>
-                          {t('auth_files.problem_filter_only')}
-                        </span>
-                      }
-                    />
+                  <label>{t('auth_files.display_options_label')}</label>
+                  <div className={styles.filterToggleGroup}>
+                    <div className={styles.filterToggleCard}>
+                      <ToggleSwitch
+                        checked={problemOnly}
+                        onChange={(value) => {
+                          setProblemOnly(value);
+                          setPage(1);
+                        }}
+                        ariaLabel={t('auth_files.problem_filter_only')}
+                        label={
+                          <span className={styles.filterToggleLabel}>
+                            {t('auth_files.problem_filter_only')}
+                          </span>
+                        }
+                      />
+                    </div>
+                    <div className={styles.filterToggleCard}>
+                      <ToggleSwitch
+                        checked={compactMode}
+                        onChange={(value) => setCompactMode(value)}
+                        ariaLabel={t('auth_files.compact_mode_label')}
+                        label={
+                          <span className={styles.filterToggleLabel}>
+                            {t('auth_files.compact_mode_label')}
+                          </span>
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -696,12 +733,13 @@ export function AuthFilesPage() {
               />
             ) : (
               <div
-                className={`${styles.fileGrid} ${quotaFilterType ? styles.fileGridQuotaManaged : ''}`}
+                className={`${styles.fileGrid} ${quotaFilterType ? styles.fileGridQuotaManaged : ''} ${compactMode ? styles.fileGridCompact : ''}`}
               >
                 {pageItems.map((file) => (
                   <AuthFileCard
                     key={file.name}
                     file={file}
+                    compact={compactMode}
                     selected={selectedFiles.has(file.name)}
                     resolvedTheme={resolvedTheme}
                     disableControls={disableControls}
@@ -815,13 +853,37 @@ export function AuthFilesPage() {
                     onClick={() => selectAllVisible(pageItems)}
                     disabled={selectablePageItems.length === 0}
                   >
-                    {t('auth_files.batch_select_all')}
+                    {t('auth_files.batch_select_page')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => selectAllVisible(sorted)}
+                    disabled={selectableFilteredItems.length === 0}
+                  >
+                    {t('auth_files.batch_select_filtered')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => invertVisibleSelection(pageItems)}
+                    disabled={selectablePageItems.length === 0}
+                  >
+                    {t('auth_files.batch_invert_page')}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={deselectAll}>
                     {t('auth_files.batch_deselect')}
                   </Button>
                 </div>
                 <div className={styles.batchActionRight}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void batchDownload(selectedNames)}
+                    disabled={disableControls || selectedNames.length === 0}
+                  >
+                    {t('auth_files.batch_download')}
+                  </Button>
                   <Button
                     size="sm"
                     onClick={() => batchSetStatus(selectedNames, true)}

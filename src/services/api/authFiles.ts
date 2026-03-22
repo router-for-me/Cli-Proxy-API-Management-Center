@@ -8,6 +8,7 @@ import type { OAuthModelAliasEntry } from '@/types';
 
 type StatusError = { status?: number };
 type AuthFileStatusResponse = { status: string; disabled: boolean };
+type AuthFileEntry = AuthFilesResponse['files'][number];
 
 export const AUTH_FILE_INVALID_JSON_OBJECT_ERROR = 'AUTH_FILE_INVALID_JSON_OBJECT';
 
@@ -15,6 +16,122 @@ const getStatusCode = (err: unknown): number | undefined => {
   if (!err || typeof err !== 'object') return undefined;
   if ('status' in err) return (err as StatusError).status;
   return undefined;
+};
+
+const readTextField = (entry: AuthFileEntry, key: string): string => {
+  const value = entry[key];
+  return typeof value === 'string' ? value.trim() : '';
+};
+
+const readDateField = (entry: AuthFileEntry): number => {
+  const candidates = [entry['modtime'], entry.modified, entry['updated_at'], entry['last_refresh']];
+
+  for (const value of candidates) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value < 1e12 ? value * 1000 : value;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) continue;
+      const asNumber = Number(trimmed);
+      if (Number.isFinite(asNumber)) {
+        return asNumber < 1e12 ? asNumber * 1000 : asNumber;
+      }
+      const parsed = Date.parse(trimmed);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return 0;
+};
+
+const isRuntimeOnlyEntry = (entry: AuthFileEntry): boolean => {
+  const value = entry['runtime_only'] ?? entry.runtimeOnly;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value.trim().toLowerCase() === 'true';
+  return false;
+};
+
+const hasMeaningfulValue = (value: unknown): boolean => {
+  if (value == null) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+};
+
+const countMeaningfulFields = (entry: AuthFileEntry): number =>
+  Object.values(entry).reduce<number>(
+    (count, value) => count + (hasMeaningfulValue(value) ? 1 : 0),
+    0
+  );
+
+const authFilePriorityScore = (entry: AuthFileEntry): number => {
+  let score = 0;
+  if (readTextField(entry, 'source').toLowerCase() === 'file') score += 32;
+  if (readTextField(entry, 'path')) score += 16;
+  if (!isRuntimeOnlyEntry(entry)) score += 8;
+  if (entry.disabled !== true) score += 4;
+  if (readDateField(entry) > 0) score += 2;
+  return score;
+};
+
+const compareAuthFileEntries = (left: AuthFileEntry, right: AuthFileEntry): number => {
+  const scoreDiff = authFilePriorityScore(right) - authFilePriorityScore(left);
+  if (scoreDiff !== 0) return scoreDiff;
+
+  const dateDiff = readDateField(right) - readDateField(left);
+  if (dateDiff !== 0) return dateDiff;
+
+  const fieldDiff = countMeaningfulFields(right) - countMeaningfulFields(left);
+  if (fieldDiff !== 0) return fieldDiff;
+
+  return 0;
+};
+
+const mergeAuthFileEntries = (entries: AuthFileEntry[]): AuthFileEntry => {
+  const [primary, ...rest] = [...entries].sort(compareAuthFileEntries);
+  const merged: AuthFileEntry = { ...primary };
+
+  rest.forEach((entry) => {
+    Object.entries(entry).forEach(([key, value]) => {
+      if (!hasMeaningfulValue(merged[key]) && hasMeaningfulValue(value)) {
+        merged[key] = value;
+      }
+    });
+  });
+
+  return merged;
+};
+
+const dedupeAuthFilesResponse = (payload: AuthFilesResponse): AuthFilesResponse => {
+  const files = Array.isArray(payload?.files) ? payload.files : [];
+  const grouped = new Map<string, AuthFileEntry[]>();
+
+  files.forEach((entry) => {
+    const name = readTextField(entry, 'name');
+    const key = name || JSON.stringify(entry);
+    const bucket = grouped.get(key);
+    if (bucket) {
+      bucket.push(entry);
+      return;
+    }
+    grouped.set(key, [entry]);
+  });
+
+  const normalizedFiles = Array.from(grouped.values()).map(mergeAuthFileEntries);
+  normalizedFiles.sort((left, right) =>
+    readTextField(left, 'name').localeCompare(readTextField(right, 'name'), undefined, {
+      sensitivity: 'accent',
+    })
+  );
+
+  return {
+    ...payload,
+    files: normalizedFiles,
+    total: normalizedFiles.length,
+  };
 };
 
 const parseAuthFileJsonObject = (rawText: string): Record<string, unknown> => {
@@ -130,7 +247,7 @@ const normalizeOauthModelAlias = (payload: unknown): Record<string, OAuthModelAl
 const OAUTH_MODEL_ALIAS_ENDPOINT = '/oauth-model-alias';
 
 export const authFilesApi = {
-  list: () => apiClient.get<AuthFilesResponse>('/auth-files'),
+  list: async () => dedupeAuthFilesResponse(await apiClient.get<AuthFilesResponse>('/auth-files')),
 
   setStatus: (name: string, disabled: boolean) =>
     apiClient.patch<AuthFileStatusResponse>('/auth-files/status', { name, disabled }),

@@ -4,11 +4,10 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
-  IconBot,
   IconDownload,
   IconInfo,
+  IconModelCluster,
   IconSettings,
-  IconShield,
   IconTrash2,
 } from '@/components/ui/icons';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
@@ -37,6 +36,7 @@ const HEALTHY_STATUS_MESSAGES = new Set(['ok', 'healthy', 'ready', 'success', 'a
 
 export type AuthFileCardProps = {
   file: AuthFileItem;
+  compact: boolean;
   selected: boolean;
   resolvedTheme: ResolvedTheme;
   disableControls: boolean;
@@ -63,6 +63,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const { t } = useTranslation();
   const {
     file,
+    compact,
     selected,
     resolvedTheme,
     disableControls,
@@ -90,7 +91,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const quotaType =
     quotaFilterType && resolveQuotaType(file) === quotaFilterType ? quotaFilterType : null;
 
-  const showQuotaLayout = Boolean(quotaType) && !isRuntimeOnly;
+  const showQuotaLayout = Boolean(quotaType) && !isRuntimeOnly && !compact;
 
   const providerCardClass =
     quotaType === 'antigravity'
@@ -134,7 +135,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
 
   return (
     <div
-      className={`${styles.fileCard} ${providerCardClass} ${selected ? styles.fileCardSelected : ''} ${file.disabled ? styles.fileCardDisabled : ''}`}
+      className={`${styles.fileCard} ${compact ? styles.fileCardCompact : ''} ${providerCardClass} ${selected ? styles.fileCardSelected : ''} ${file.disabled ? styles.fileCardDisabled : ''}`}
     >
       <div className={styles.fileCardLayout}>
         <div className={styles.fileCardMain}>
@@ -180,8 +181,10 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 </span>
                 <span className={`${styles.stateBadge} ${stateBadgeClass}`}>{stateLabel}</span>
               </div>
-              <span className={styles.fileName}>{file.name}</span>
-              {noteValue && (
+              <span className={styles.fileName} title={file.name}>
+                {file.name}
+              </span>
+              {!compact && noteValue && (
                 <div className={styles.noteText} title={noteValue}>
                   <span className={styles.noteLabel}>{t('auth_files.note_display')}</span>
                   <span className={styles.noteValue}>{noteValue}</span>
@@ -190,7 +193,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
             </div>
           </div>
 
-          <div className={styles.cardMeta}>
+          <div className={`${styles.cardMeta} ${compact ? styles.cardMetaCompact : ''}`}>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>{t('auth_files.file_size')}</span>
               <span className={styles.metaValue}>
@@ -218,8 +221,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
             </div>
           )}
 
-          <div className={styles.cardInsights}>
-            <div className={styles.cardStats}>
+          <div className={`${styles.cardInsights} ${compact ? styles.cardInsightsCompact : ''}`}>
+            <div className={`${styles.cardStats} ${compact ? styles.cardStatsCompact : ''}`}>
               <div className={`${styles.statPill} ${styles.statSuccess}`}>
                 <span className={styles.statLabel}>{t('stats.success')}</span>
                 <span className={styles.statValue}>{fileStats.success}</span>
@@ -230,9 +233,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
               </div>
             </div>
 
-            <div className={styles.statusPanel}>
+            <div className={`${styles.statusPanel} ${compact ? styles.statusPanelCompact : ''}`}>
               <div className={styles.statusPanelLabel}>
-                <IconShield size={14} />
                 <span>{t('auth_files.health_status_label')}</span>
               </div>
               <ProviderStatusBar statusData={statusData} styles={styles} />
@@ -254,12 +256,14 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   variant="secondary"
                   size="sm"
                   onClick={() => onShowModels(file)}
-                  className={styles.primaryActionButton}
+                  className={`${styles.primaryActionButton} ${styles.modelsActionButton}`}
                   title={t('auth_files.models_button', { defaultValue: '模型' })}
                   disabled={disableControls}
                 >
                   <>
-                    <IconBot className={styles.actionIcon} size={16} />
+                    <span className={styles.modelsActionIconWrap}>
+                      <IconModelCluster className={styles.actionIcon} size={16} />
+                    </span>
                     <span className={styles.actionButtonLabel}>
                       {t('auth_files.models_button', { defaultValue: '模型' })}
                     </span>

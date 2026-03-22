@@ -40,7 +40,9 @@ export type UseAuthFilesDataResult = {
   handleStatusToggle: (item: AuthFileItem, enabled: boolean) => Promise<void>;
   toggleSelect: (name: string) => void;
   selectAllVisible: (visibleFiles: AuthFileItem[]) => void;
+  invertVisibleSelection: (visibleFiles: AuthFileItem[]) => void;
   deselectAll: () => void;
+  batchDownload: (names: string[]) => Promise<void>;
   batchSetStatus: (names: string[], enabled: boolean) => Promise<void>;
   batchDelete: (names: string[]) => void;
 };
@@ -81,7 +83,31 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     const nextSelected = visibleFiles
       .filter((file) => !isRuntimeOnlyAuthFile(file))
       .map((file) => file.name);
-    setSelectedFiles(new Set(nextSelected));
+    if (nextSelected.length === 0) return;
+    setSelectedFiles((prev) => {
+      const next = new Set(prev);
+      nextSelected.forEach((name) => next.add(name));
+      return next;
+    });
+  }, []);
+
+  const invertVisibleSelection = useCallback((visibleFiles: AuthFileItem[]) => {
+    const visibleNames = visibleFiles
+      .filter((file) => !isRuntimeOnlyAuthFile(file))
+      .map((file) => file.name);
+    if (visibleNames.length === 0) return;
+
+    setSelectedFiles((prev) => {
+      const next = new Set(prev);
+      visibleNames.forEach((name) => {
+        if (next.has(name)) {
+          next.delete(name);
+        } else {
+          next.add(name);
+        }
+      });
+      return next;
+    });
   }, []);
 
   const deselectAll = useCallback(() => {
@@ -220,7 +246,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
           } finally {
             setDeleting(null);
           }
-        }
+        },
       });
     },
     [showConfirmation, showNotification, t]
@@ -348,7 +374,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
           } finally {
             setDeletingAll(false);
           }
-        }
+        },
       });
     },
     [deselectAll, files, showConfirmation, showNotification, t]
@@ -470,6 +496,43 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     [deselectAll, showNotification, t]
   );
 
+  const batchDownload = useCallback(
+    async (names: string[]) => {
+      const uniqueNames = Array.from(new Set(names));
+      if (uniqueNames.length === 0) return;
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const name of uniqueNames) {
+        try {
+          const response = await apiClient.getRaw(
+            `/auth-files/download?name=${encodeURIComponent(name)}`,
+            { responseType: 'blob' }
+          );
+          const blob = new Blob([response.data]);
+          downloadBlob({ filename: name, blob });
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+
+      if (failCount === 0) {
+        showNotification(
+          t('auth_files.batch_download_success', { count: successCount }),
+          'success'
+        );
+      } else {
+        showNotification(
+          t('auth_files.batch_download_partial', { success: successCount, failed: failCount }),
+          'warning'
+        );
+      }
+    },
+    [showNotification, t]
+  );
+
   const batchDelete = useCallback(
     (names: string[]) => {
       const uniqueNames = Array.from(new Set(names));
@@ -516,18 +579,21 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
           });
 
           if (failCount === 0) {
-            showNotification(`${t('auth_files.delete_all_success')} (${deleted.length})`, 'success');
+            showNotification(
+              `${t('auth_files.delete_all_success')} (${deleted.length})`,
+              'success'
+            );
           } else {
             showNotification(
               t('auth_files.delete_filtered_partial', {
                 success: deleted.length,
                 failed: failCount,
-                type: t('auth_files.filter_all')
+                type: t('auth_files.filter_all'),
               }),
               'warning'
             );
           }
-        }
+        },
       });
     },
     [showConfirmation, showNotification, t]
@@ -553,8 +619,10 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     handleStatusToggle,
     toggleSelect,
     selectAllVisible,
+    invertVisibleSelection,
     deselectAll,
+    batchDownload,
     batchSetStatus,
-    batchDelete
+    batchDelete,
   };
 }
