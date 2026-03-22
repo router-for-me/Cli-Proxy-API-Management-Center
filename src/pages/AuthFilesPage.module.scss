@@ -173,34 +173,13 @@
 
 .filterAllIconWrap {
   position: relative;
-  overflow: hidden;
   border-color: color-mix(in srgb, var(--primary-color) 20%, var(--border-color));
-  background:
-    radial-gradient(
-      circle at 30% 28%,
-      color-mix(in srgb, var(--primary-color) 22%, #ffffff),
-      transparent 58%
-    ),
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--bg-secondary) 94%, var(--primary-color) 8%),
-      color-mix(in srgb, var(--bg-primary) 92%, var(--primary-color) 5%)
-    );
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #fff 54%, transparent),
-    0 10px 22px -18px color-mix(in srgb, var(--primary-color) 50%, transparent);
-}
-
-.filterAllIconWrap::after {
-  content: '';
-  position: absolute;
-  inset: auto 7px 7px auto;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--primary-color) 18%, transparent);
-  filter: blur(1px);
-  opacity: 0.9;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--bg-secondary) 94%, var(--primary-color) 8%),
+    color-mix(in srgb, var(--bg-primary) 92%, var(--primary-color) 5%)
+  );
+  box-shadow: 0 10px 22px -18px color-mix(in srgb, var(--primary-color) 50%, transparent);
 }
 
 .filterAllIcon {
