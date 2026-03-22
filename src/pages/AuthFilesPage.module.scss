@@ -33,6 +33,17 @@
   display: flex;
   gap: $spacing-sm;
   flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+
+  :global(.btn) {
+    min-width: 0;
+  }
+
+  @include mobile {
+    width: 100%;
+  }
 }
 
 .titleWrapper {
@@ -270,14 +281,9 @@
   gap: 8px;
 
   @include mobile {
-    flex-direction: row;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
+    flex-direction: column;
+    overflow: visible;
+    padding-bottom: 0;
   }
 }
 
@@ -311,9 +317,9 @@
   }
 
   @include mobile {
-    width: auto;
-    min-width: max-content;
-    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
 
     &:hover {
       transform: translateY(-1px);
@@ -1734,6 +1740,7 @@
 
   .cardActionsMain {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .primaryActionButton:global(.btn.btn-sm) {
@@ -1771,6 +1778,7 @@
   justify-content: center;
   align-items: center;
   gap: $spacing-md;
+  flex-wrap: wrap;
   margin-top: $spacing-lg;
   padding-top: $spacing-md;
   border-top: 1px solid var(--border-color);
@@ -1783,6 +1791,8 @@
   transform: translateX(-50%);
   z-index: 50;
   width: min(960px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
   will-change: transform, opacity;
 }
 
@@ -1822,6 +1832,7 @@
 @include mobile {
   .batchActionContainer {
     width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
     bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
@@ -1977,16 +1988,41 @@
   display: flex;
   gap: $spacing-sm;
   align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .viewModeSwitch {
   display: inline-flex;
   align-items: center;
   gap: $spacing-xs;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
   padding: 2px;
   border-radius: $radius-md;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
+
+  :global(.btn.btn-sm) {
+    min-width: 0;
+  }
+}
+
+@include mobile {
+  .cardExtraButtons {
+    width: 100%;
+  }
+
+  .viewModeSwitch {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .viewModeSwitch :global(.btn.btn-sm) {
+    flex: 1 1 0;
+  }
 }
 
 // OAuth 模型映射表单
