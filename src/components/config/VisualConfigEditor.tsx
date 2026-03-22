@@ -351,51 +351,47 @@ export function VisualConfigEditor({
   return (
     <div className={styles.visualEditor}>
       <div className={styles.overview}>
-        <div className={styles.overviewGrid}>
-          <div className={styles.overviewLead}>
-            <div className={styles.overviewMeta}>
-              <span className={styles.overviewPill}>
-                {t('config_management.tabs.visual', { defaultValue: '可视化编辑' })}
+        <div className={styles.overviewHeader}>
+          <div className={styles.overviewMeta}>
+            <span className={styles.overviewPill}>
+              {t('config_management.visual.quick_jump', { defaultValue: '快速跳转' })}
+            </span>
+            {hasValidationIssues ? (
+              <span className={`${styles.overviewPill} ${styles.overviewPillWarning}`}>
+                {t('config_management.visual.validation.validation_blocked')}
               </span>
-              {hasValidationIssues ? (
-                <span className={`${styles.overviewPill} ${styles.overviewPillWarning}`}>
-                  {t('config_management.visual.validation.validation_blocked')}
+            ) : null}
+          </div>
+        </div>
+
+        <div className={styles.overviewFocusList}>
+          {focusSections.map((section) => {
+            const Icon = section.icon;
+
+            return (
+              <button
+                key={section.id}
+                type="button"
+                className={`${styles.overviewFocusLink} ${
+                  activeSectionId === section.id ? styles.overviewFocusLinkActive : ''
+                }`}
+                onClick={() => handleSectionJump(section.id)}
+              >
+                <span className={styles.focusIcon}>
+                  <Icon size={16} />
                 </span>
-              ) : null}
-            </div>
-            <h2 className={styles.overviewTitle}>{t('config_management.editor_title')}</h2>
-            <p className={styles.overviewNotice}>{t('config_management.visual.notice')}</p>
-          </div>
-
-          <div className={styles.overviewFocusList}>
-            {focusSections.map((section) => {
-              const Icon = section.icon;
-
-              return (
-                <button
-                  key={section.id}
-                  type="button"
-                  className={`${styles.overviewFocusLink} ${
-                    activeSectionId === section.id ? styles.overviewFocusLinkActive : ''
-                  }`}
-                  onClick={() => handleSectionJump(section.id)}
-                >
-                  <span className={styles.focusIcon}>
-                    <Icon size={16} />
+                <span className={styles.focusCopy}>
+                  <span className={styles.focusTitle}>{section.title}</span>
+                  <span className={styles.focusDescription}>{section.description}</span>
+                </span>
+                {section.errorCount > 0 ? (
+                  <span className={styles.navBadge} aria-hidden="true">
+                    {section.errorCount}
                   </span>
-                  <span className={styles.focusCopy}>
-                    <span className={styles.focusTitle}>{section.title}</span>
-                    <span className={styles.focusDescription}>{section.description}</span>
-                  </span>
-                  {section.errorCount > 0 ? (
-                    <span className={styles.navBadge} aria-hidden="true">
-                      {section.errorCount}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </div>
 

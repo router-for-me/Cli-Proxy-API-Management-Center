@@ -1161,7 +1161,8 @@
       "source": "Source File Editor"
     },
     "visual": {
-      "notice": "Visual mode only covers common supported fields. Other config.yaml fields still need to be reviewed and edited in source mode.",
+      "notice": "Visual mode covers common fields. Review or edit unsupported config.yaml entries in source mode.",
+      "quick_jump": "Quick Jump",
       "sections": {
         "server": {
           "title": "Server Configuration",

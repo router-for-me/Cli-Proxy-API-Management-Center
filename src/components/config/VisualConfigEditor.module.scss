@@ -75,6 +75,9 @@
 .overview {
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   border-radius: 30px;
   border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
   background:
@@ -106,22 +109,12 @@
   }
 }
 
-.overviewGrid {
+.overviewHeader {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
-  gap: 28px;
-
-  @include mobile {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
-  }
-}
-
-.overviewLead {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -152,28 +145,19 @@
   background: var(--warning-bg);
 }
 
-.overviewTitle {
-  margin: 0;
-  max-width: 18ch;
-  color: var(--text-primary);
-  font-size: clamp(28px, 4vw, 44px);
-  line-height: 0.98;
-  letter-spacing: -0.03em;
-}
-
-.overviewNotice {
-  margin: 0;
-  max-width: 52ch;
-  color: var(--text-secondary);
-  font-size: 15px;
-  line-height: 1.7;
-}
-
 .overviewFocusList {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 10px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .overviewFocusLink {
