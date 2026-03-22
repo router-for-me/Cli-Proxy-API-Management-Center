@@ -232,20 +232,74 @@
 }
 
 .sidebar {
-  position: sticky;
-  top: 88px;
+  position: relative;
   align-self: start;
 
   @media (max-width: 1024px) {
     position: static;
   }
+
+  @include mobile {
+    display: none;
+  }
+}
+
+.sidebarPlaceholder {
+  min-height: 1px;
 }
 
 .sidebarRail {
+  max-height: calc(100vh - var(--header-height, 64px) - 36px);
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px;
   border-radius: 26px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 76%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 24px 56px -34px rgba(0, 0, 0, 0.42);
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.floatingSidebarContainer {
+  position: fixed;
+  left: var(--visual-config-floating-left, 16px);
+  top: var(--visual-config-floating-top, 120px);
+  width: var(--visual-config-floating-width, 280px);
+  max-height: var(--visual-config-floating-max-height, calc(100vh - 136px));
+  z-index: 45;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+
+  @media (max-width: 1024px) {
+    display: none;
+  }
+}
+
+.floatingSidebarRail {
+  max-height: inherit;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+  border-radius: 26px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 76%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 24px 56px -34px rgba(0, 0, 0, 0.42);
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .navList {
