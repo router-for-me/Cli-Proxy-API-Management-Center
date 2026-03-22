@@ -8,18 +8,18 @@ import type {
   TypeColorSet,
 } from '@/types';
 
-// Theme colors for type badges
+// Theme colors for type badges — 与 authFiles/constants.ts 保持同步
 export const TYPE_COLORS: Record<string, TypeColorSet> = {
   qwen: {
-    light: { bg: '#e8f5e9', text: '#2e7d32' },
-    dark: { bg: '#1b5e20', text: '#81c784' },
+    light: { bg: '#ede5fd', text: '#5530c7' },
+    dark: { bg: '#36208a', text: '#b5a3f0' },
   },
   gemini: {
     light: { bg: '#e3f2fd', text: '#1565c0' },
     dark: { bg: '#0d47a1', text: '#64b5f6' },
   },
   'gemini-cli': {
-    light: { bg: '#e7efff', text: '#1e4fa3' },
+    light: { bg: '#e0e8ff', text: '#1e4fa3' },
     dark: { bg: '#1c3f73', text: '#a8c7ff' },
   },
   aistudio: {
@@ -27,24 +27,28 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     dark: { bg: '#373c42', text: '#cfd3db' },
   },
   claude: {
-    light: { bg: '#fce4ec', text: '#c2185b' },
-    dark: { bg: '#880e4f', text: '#f48fb1' },
+    light: { bg: '#fbece4', text: '#c05621' },
+    dark: { bg: '#5e2c14', text: '#e8a882' },
   },
   codex: {
-    light: { bg: '#fff3e0', text: '#ef6c00' },
-    dark: { bg: '#e65100', text: '#ffb74d' },
+    light: { bg: '#eae7ff', text: '#3538d4' },
+    dark: { bg: '#262395', text: '#b5b0ff' },
   },
   kimi: {
-    light: { bg: '#fff4e5', text: '#ad6800' },
-    dark: { bg: '#7c4a03', text: '#ffd591' },
+    light: { bg: '#dce8ff', text: '#0560cf' },
+    dark: { bg: '#003880', text: '#70b5ff' },
   },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
     dark: { bg: '#004d40', text: '#80deea' },
   },
   iflow: {
-    light: { bg: '#f3e5f5', text: '#7b1fa2' },
-    dark: { bg: '#4a148c', text: '#ce93d8' },
+    light: { bg: '#f5e3fc', text: '#9025c8' },
+    dark: { bg: '#521490', text: '#d49cf5' },
+  },
+  vertex: {
+    light: { bg: '#e4edfd', text: '#2b5fbc' },
+    dark: { bg: '#1a3d80', text: '#89b3f7' },
   },
   empty: {
     light: { bg: '#f5f5f5', text: '#616161' },

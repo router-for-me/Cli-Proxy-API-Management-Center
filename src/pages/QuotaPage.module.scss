@@ -151,10 +151,11 @@
   align-items: center;
 }
 
+// 卡片渐变背景 — 基于 TYPE_COLORS light.bg 转 rgba
 .claudeCard {
   background-image: linear-gradient(180deg,
-      rgba(252, 228, 236, 0.18),
-      rgba(252, 228, 236, 0));
+      rgba(251, 236, 228, 0.18),
+      rgba(251, 236, 228, 0));
 }
 
 .antigravityCard {
@@ -165,20 +166,20 @@
 
 .codexCard {
   background-image: linear-gradient(180deg,
-      rgba(255, 243, 224, 0.18),
-      rgba(255, 243, 224, 0));
+      rgba(234, 231, 255, 0.18),
+      rgba(234, 231, 255, 0));
 }
 
 .geminiCliCard {
   background-image: linear-gradient(180deg,
-      rgba(231, 239, 255, 0.2),
-      rgba(231, 239, 255, 0));
+      rgba(224, 232, 255, 0.2),
+      rgba(224, 232, 255, 0));
 }
 
 .kimiCard {
   background-image: linear-gradient(180deg,
-      rgba(255, 244, 229, 0.2),
-      rgba(255, 244, 229, 0));
+      rgba(220, 232, 255, 0.2),
+      rgba(220, 232, 255, 0));
 }
 
 .quotaSection {
