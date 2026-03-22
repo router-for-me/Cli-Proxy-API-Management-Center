@@ -1449,10 +1449,10 @@
   },
   "theme": {
     "switch": "Theme",
-    "light": "Light",
+    "light": "Wool Paper",
     "white": "Pure White",
     "dark": "Dark",
-    "switch_to_light": "Switch to light mode",
+    "switch_to_light": "Switch to wool paper mode",
     "switch_to_dark": "Switch to dark mode",
     "auto": "Follow system"
   },
