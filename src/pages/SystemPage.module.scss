@@ -105,6 +105,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: $spacing-sm;
+  min-height: 40px;
 }
 
 .tileAction {
