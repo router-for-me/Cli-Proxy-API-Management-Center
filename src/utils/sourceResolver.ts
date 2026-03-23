@@ -3,6 +3,8 @@ import type { CredentialInfo, SourceInfo } from '@/types/sourceInfo';
 import { buildCandidateUsageSourceIds, normalizeAuthIndex } from '@/utils/usage';
 
 export interface SourceInfoMapInput {
+  apiKeys?: string[];
+  apiKeyNames?: Record<string, string>;
   geminiApiKeys?: GeminiKeyConfig[];
   claudeApiKeys?: ProviderKeyConfig[];
   codexApiKeys?: ProviderKeyConfig[];
@@ -13,13 +15,24 @@ export interface SourceInfoMapInput {
 export function buildSourceInfoMap(input: SourceInfoMapInput): Map<string, SourceInfo> {
   const map = new Map<string, SourceInfo>();
 
-  const registerSource = (sourceId: string, displayName: string, type: string) => {
-    if (!sourceId || !displayName || map.has(sourceId)) return;
+  const registerSource = (
+    sourceId: string,
+    displayName: string,
+    type: string,
+    overwrite: boolean = false
+  ) => {
+    if (!sourceId || !displayName) return;
+    if (!overwrite && map.has(sourceId)) return;
     map.set(sourceId, { displayName, type });
   };
 
-  const registerCandidates = (displayName: string, type: string, candidates: string[]) => {
-    candidates.forEach((sourceId) => registerSource(sourceId, displayName, type));
+  const registerCandidates = (
+    displayName: string,
+    type: string,
+    candidates: string[],
+    overwrite: boolean = false
+  ) => {
+    candidates.forEach((sourceId) => registerSource(sourceId, displayName, type, overwrite));
   };
 
   const providers: Array<{
@@ -53,6 +66,29 @@ export function buildSourceInfoMap(input: SourceInfoMapInput): Map<string, Sourc
       buildCandidateUsageSourceIds({ apiKey: entry.apiKey }).forEach((id) => candidates.add(id));
     });
     registerCandidates(displayName, 'openai', Array.from(candidates));
+  });
+
+  const normalizedApiKeyNames = Object.entries(input.apiKeyNames || {}).reduce<Record<string, string>>(
+    (acc, [key, value]) => {
+      const normalizedKey = String(key ?? '').trim();
+      const normalizedValue = String(value ?? '').trim();
+      if (!normalizedKey || !normalizedValue) return acc;
+      acc[normalizedKey] = normalizedValue;
+      return acc;
+    },
+    {}
+  );
+
+  (input.apiKeys || []).forEach((apiKey, index) => {
+    const normalizedKey = String(apiKey ?? '').trim();
+    if (!normalizedKey) return;
+    const displayName = normalizedApiKeyNames[normalizedKey] || `Key #${index + 1}`;
+    registerCandidates(
+      displayName,
+      'config-api-key',
+      buildCandidateUsageSourceIds({ apiKey: normalizedKey }),
+      true
+    );
   });
 
   return map;

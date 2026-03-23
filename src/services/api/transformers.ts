@@ -94,6 +94,24 @@ const normalizePrefix = (value: unknown): string | undefined => {
   return trimmed ? trimmed : undefined;
 };
 
+const normalizeApiKeyNames = (
+  value: unknown,
+  allowedKeys?: Set<string>
+): Record<string, string> | undefined => {
+  if (!isRecord(value)) return undefined;
+
+  const normalized: Record<string, string> = {};
+  Object.entries(value).forEach(([key, name]) => {
+    const normalizedKey = String(key ?? '').trim();
+    const normalizedName = String(name ?? '').trim();
+    if (!normalizedKey || !normalizedName) return;
+    if (allowedKeys && !allowedKeys.has(normalizedKey)) return;
+    normalized[normalizedKey] = normalizedName;
+  });
+
+  return Object.keys(normalized).length ? normalized : undefined;
+};
+
 const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   if (entry === undefined || entry === null) return null;
   const record = isRecord(entry) ? entry : null;
@@ -396,6 +414,11 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   const apiKeysRaw = raw['api-keys'] ?? raw.apiKeys;
   if (Array.isArray(apiKeysRaw)) {
     config.apiKeys = apiKeysRaw.map((key) => String(key)).filter((key) => key.trim() !== '');
+  }
+  const apiKeySet = config.apiKeys?.length ? new Set(config.apiKeys) : undefined;
+  const apiKeyNames = normalizeApiKeyNames(raw['api-key-names'] ?? raw.apiKeyNames, apiKeySet);
+  if (apiKeyNames) {
+    config.apiKeyNames = apiKeyNames;
   }
 
   const geminiList = raw['gemini-api-key'] ?? raw.geminiApiKey ?? raw.geminiApiKeys;

@@ -7,6 +7,7 @@ import {
   formatCompactNumber,
   normalizeAuthIndex
 } from '@/utils/usage';
+import { buildSourceInfoMap } from '@/utils/sourceResolver';
 import { authFilesApi } from '@/services/api/authFiles';
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
@@ -17,6 +18,8 @@ import styles from '@/pages/UsagePage.module.scss';
 export interface CredentialStatsCardProps {
   usage: UsagePayload | null;
   loading: boolean;
+  apiKeys?: string[];
+  apiKeyNames?: Record<string, string>;
   geminiKeys: GeminiKeyConfig[];
   claudeConfigs: ProviderKeyConfig[];
   codexConfigs: ProviderKeyConfig[];
@@ -42,6 +45,8 @@ interface CredentialBucket {
 export function CredentialStatsCard({
   usage,
   loading,
+  apiKeys,
+  apiKeyNames,
   geminiKeys,
   claudeConfigs,
   codexConfigs,
@@ -50,6 +55,19 @@ export function CredentialStatsCard({
 }: CredentialStatsCardProps) {
   const { t } = useTranslation();
   const [authFileMap, setAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
+  const sourceInfoMap = useMemo(
+    () =>
+      buildSourceInfoMap({
+        apiKeys,
+        apiKeyNames,
+        geminiApiKeys: geminiKeys,
+        claudeApiKeys: claudeConfigs,
+        codexApiKeys: codexConfigs,
+        vertexApiKeys: vertexConfigs,
+        openaiCompatibility: openaiProviders,
+      }),
+    [apiKeyNames, apiKeys, claudeConfigs, codexConfigs, geminiKeys, openaiProviders, vertexConfigs]
+  );
 
   // Fetch auth files for auth_index-based matching
   useEffect(() => {
@@ -133,6 +151,17 @@ export function CredentialStatsCard({
       target.successRate = target.total > 0 ? (target.success / target.total) * 100 : 100;
     };
 
+    const normalizedApiKeyNames = Object.entries(apiKeyNames || {}).reduce<Record<string, string>>(
+      (acc, [key, value]) => {
+        const normalizedKey = String(key ?? '').trim();
+        const normalizedValue = String(value ?? '').trim();
+        if (!normalizedKey || !normalizedValue) return acc;
+        acc[normalizedKey] = normalizedValue;
+        return acc;
+      },
+      {}
+    );
+
     // Aggregate all candidate source IDs for one provider config into a single row
     const addConfigRow = (
       apiKey: string,
@@ -212,14 +241,29 @@ export function CredentialStatsCard({
     });
 
     // Remaining unmatched bySource entries — resolve name from auth files if possible
+    (apiKeys || []).forEach((apiKey, index) => {
+      const normalizedKey = String(apiKey ?? '').trim();
+      if (!normalizedKey) return;
+      const displayName = normalizedApiKeyNames[normalizedKey] || `Key #${index + 1}`;
+      addConfigRow(
+        normalizedKey,
+        undefined,
+        displayName,
+        'config-api-key',
+        `config-api-key:${index}`
+      );
+    });
+
     Object.entries(bySource).forEach(([key, bucket]) => {
       if (consumedSourceIds.has(key)) return;
       const total = bucket.success + bucket.failure;
       const authFile = sourceToAuthFile.get(key);
+      const sourceInfo = sourceInfoMap.get(key);
       const row = {
         key,
-        displayName: authFile?.name || (key.startsWith('t:') ? key.slice(2) : key),
-        type: authFile?.type || '',
+        displayName:
+          authFile?.name || sourceInfo?.displayName || (key.startsWith('t:') ? key.slice(2) : key),
+        type: authFile?.type || sourceInfo?.type || '',
         success: bucket.success,
         failure: bucket.failure,
         total,
@@ -267,7 +311,18 @@ export function CredentialStatsCard({
     });
 
     return result.sort((a, b) => b.total - a.total);
-  }, [usage, geminiKeys, claudeConfigs, codexConfigs, vertexConfigs, openaiProviders, authFileMap]);
+  }, [
+    usage,
+    apiKeys,
+    apiKeyNames,
+    geminiKeys,
+    claudeConfigs,
+    codexConfigs,
+    vertexConfigs,
+    openaiProviders,
+    authFileMap,
+    sourceInfoMap,
+  ]);
 
   return (
     <Card title={t('usage_stats.credential_stats')} className={styles.detailsFixedCard}>

@@ -38,8 +38,10 @@ import {
   getApiStats,
   getModelStats,
   filterUsageByTimeRange,
+  normalizeUsageSourceId,
   type UsageTimeRange
 } from '@/utils/usage';
+import { buildSourceInfoMap } from '@/utils/sourceResolver';
 import styles from './UsagePage.module.scss';
 
 // Register Chart.js components
@@ -212,9 +214,27 @@ export function UsagePage() {
 
   // Derived data
   const modelNames = useMemo(() => getModelNamesFromUsage(usage), [usage]);
+  const sourceInfoMap = useMemo(
+    () =>
+      buildSourceInfoMap({
+        apiKeys: config?.apiKeys || [],
+        apiKeyNames: config?.apiKeyNames || {},
+        geminiApiKeys: config?.geminiApiKeys || [],
+        claudeApiKeys: config?.claudeApiKeys || [],
+        codexApiKeys: config?.codexApiKeys || [],
+        vertexApiKeys: config?.vertexApiKeys || [],
+        openaiCompatibility: config?.openaiCompatibility || [],
+      }),
+    [config]
+  );
   const apiStats = useMemo(
-    () => getApiStats(filteredUsage, modelPrices),
-    [filteredUsage, modelPrices]
+    () =>
+      getApiStats(filteredUsage, modelPrices).map((stat) => {
+        const sourceInfo = sourceInfoMap.get(normalizeUsageSourceId(stat.endpoint));
+        if (!sourceInfo?.displayName) return stat;
+        return { ...stat, endpoint: sourceInfo.displayName };
+      }),
+    [filteredUsage, modelPrices, sourceInfoMap]
   );
   const modelStats = useMemo(
     () => getModelStats(filteredUsage, modelPrices),
@@ -368,6 +388,8 @@ export function UsagePage() {
       <RequestEventsDetailsCard
         usage={filteredUsage}
         loading={loading}
+        apiKeys={config?.apiKeys || []}
+        apiKeyNames={config?.apiKeyNames || {}}
         geminiKeys={config?.geminiApiKeys || []}
         claudeConfigs={config?.claudeApiKeys || []}
         codexConfigs={config?.codexApiKeys || []}
@@ -379,6 +401,8 @@ export function UsagePage() {
       <CredentialStatsCard
         usage={filteredUsage}
         loading={loading}
+        apiKeys={config?.apiKeys || []}
+        apiKeyNames={config?.apiKeyNames || {}}
         geminiKeys={config?.geminiApiKeys || []}
         claudeConfigs={config?.claudeApiKeys || []}
         codexConfigs={config?.codexApiKeys || []}
