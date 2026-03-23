@@ -335,6 +335,10 @@ export function buildCandidateUsageSourceIds(input: { apiKey?: string; prefix?: 
 
   const apiKey = input.apiKey?.trim();
   if (apiKey) {
+    const normalized = normalizeUsageSourceId(apiKey);
+    if (normalized) {
+      result.push(normalized);
+    }
     result.push(`${USAGE_SOURCE_PREFIX_KEY}${fnv1a64Hex(apiKey)}`);
     result.push(`${USAGE_SOURCE_PREFIX_MASKED}${maskApiKey(apiKey)}`);
   }
