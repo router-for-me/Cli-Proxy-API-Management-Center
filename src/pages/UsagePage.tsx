@@ -230,9 +230,23 @@ export function UsagePage() {
   const apiStats = useMemo(
     () =>
       getApiStats(filteredUsage, modelPrices).map((stat) => {
-        const sourceInfo = sourceInfoMap.get(normalizeUsageSourceId(stat.endpoint));
-        if (!sourceInfo?.displayName) return stat;
-        return { ...stat, endpoint: sourceInfo.displayName };
+        const endpoint = String(stat.endpoint ?? '').trim();
+        if (!endpoint) return stat;
+
+        const directMatched = sourceInfoMap.get(endpoint);
+        if (directMatched?.displayName) {
+          return { ...stat, endpoint: directMatched.displayName };
+        }
+
+        const normalizedEndpoint = normalizeUsageSourceId(endpoint);
+        if (normalizedEndpoint && normalizedEndpoint !== endpoint) {
+          const normalizedMatched = sourceInfoMap.get(normalizedEndpoint);
+          if (normalizedMatched?.displayName) {
+            return { ...stat, endpoint: normalizedMatched.displayName };
+          }
+        }
+
+        return stat;
       }),
     [filteredUsage, modelPrices, sourceInfoMap]
   );
