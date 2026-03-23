@@ -57,12 +57,16 @@ function buildProtocolOptions(
 
 export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   value,
+  names,
   disabled,
   onChange,
+  onNamesChange,
 }: {
   value: string;
+  names?: Record<string, string>;
   disabled?: boolean;
   onChange: (nextValue: string) => void;
+  onNamesChange?: (nextNames: Record<string, string>) => void;
 }) {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
@@ -90,7 +94,18 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const [modalOpen, setModalOpen] = useState(false);
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
+  const [nameInputValue, setNameInputValue] = useState('');
   const [formError, setFormError] = useState('');
+  const normalizedNames = useMemo(() => {
+    if (!names || typeof names !== 'object') return {};
+    return Object.entries(names).reduce<Record<string, string>>((acc, [key, value]) => {
+      const normalizedKey = String(key ?? '').trim();
+      const normalizedValue = String(value ?? '').trim();
+      if (!normalizedKey || !normalizedValue) return acc;
+      acc[normalizedKey] = normalizedValue;
+      return acc;
+    }, {});
+  }, [names]);
 
   function generateSecureApiKey(): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -102,14 +117,17 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const openAddModal = () => {
     setEditingApiKeyId(null);
     setInputValue('');
+    setNameInputValue('');
     setFormError('');
     setModalOpen(true);
   };
 
   const openEditModal = (apiKeyId: string) => {
     const editingIndex = renderApiKeyIds.findIndex((id) => id === apiKeyId);
+    const editingKey = apiKeys[editingIndex] ?? '';
     setEditingApiKeyId(apiKeyId);
-    setInputValue(apiKeys[editingIndex] ?? '');
+    setInputValue(editingKey);
+    setNameInputValue(normalizedNames[editingKey] ?? '');
     setFormError('');
     setModalOpen(true);
   };
@@ -117,6 +135,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const closeModal = () => {
     setModalOpen(false);
     setInputValue('');
+    setNameInputValue('');
     setEditingApiKeyId(null);
     setFormError('');
   };
@@ -128,17 +147,29 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const handleDelete = (apiKeyId: string) => {
     const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
     if (index < 0) return;
+    const removedKey = apiKeys[index];
+    const nextKeys = apiKeys.filter((_, i) => i !== index);
+    const keySet = new Set(nextKeys);
+    const nextNames = Object.entries(normalizedNames).reduce<Record<string, string>>((acc, [key, value]) => {
+      if (keySet.has(key)) acc[key] = value;
+      return acc;
+    }, {});
+    if (removedKey && !keySet.has(removedKey)) {
+      delete nextNames[removedKey];
+    }
     setApiKeyIds(renderApiKeyIds.filter((id) => id !== apiKeyId));
-    updateApiKeys(apiKeys.filter((_, i) => i !== index));
+    updateApiKeys(nextKeys);
+    onNamesChange?.(nextNames);
   };
 
   const handleSave = () => {
-    const trimmed = inputValue.trim();
-    if (!trimmed) {
+    const trimmedApiKey = inputValue.trim();
+    const trimmedName = nameInputValue.trim();
+    if (!trimmedApiKey) {
       setFormError(t('config_management.visual.api_keys.error_empty'));
       return;
     }
-    if (!isValidApiKeyCharset(trimmed)) {
+    if (!isValidApiKeyCharset(trimmedApiKey)) {
       setFormError(t('config_management.visual.api_keys.error_invalid'));
       return;
     }
@@ -146,14 +177,31 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     const editingIndex = editingApiKeyId
       ? renderApiKeyIds.findIndex((id) => id === editingApiKeyId)
       : -1;
+    const previousApiKey = editingIndex >= 0 ? apiKeys[editingIndex] : '';
     const nextKeys =
       editingApiKeyId === null
-        ? [...apiKeys, trimmed]
-        : apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
+        ? [...apiKeys, trimmedApiKey]
+        : apiKeys.map((key, idx) => (idx === editingIndex ? trimmedApiKey : key));
+
+    const keySet = new Set(nextKeys);
+    const nextNames = Object.entries(normalizedNames).reduce<Record<string, string>>((acc, [key, value]) => {
+      if (keySet.has(key)) acc[key] = value;
+      return acc;
+    }, {});
+    if (previousApiKey && !keySet.has(previousApiKey)) {
+      delete nextNames[previousApiKey];
+    }
+    if (trimmedName) {
+      nextNames[trimmedApiKey] = trimmedName;
+    } else {
+      delete nextNames[trimmedApiKey];
+    }
+
     if (editingApiKeyId === null) {
       setApiKeyIds([...renderApiKeyIds, makeClientId()]);
     }
     updateApiKeys(nextKeys);
+    onNamesChange?.(nextNames);
     closeModal();
   };
 
@@ -188,7 +236,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
               <div className="item-meta">
                 <div className="pill">#{index + 1}</div>
                 <div className="item-title">
-                  {t('config_management.visual.api_keys.input_label')}
+                  {normalizedNames[key] || t('config_management.visual.api_keys.input_label')}
                 </div>
                 <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
               </div>
@@ -246,6 +294,17 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
           </>
         }
       >
+        <div className="form-group">
+          <label>{t('common.alias')}</label>
+          <input
+            className="input"
+            placeholder={t('common.alias')}
+            value={nameInputValue}
+            onChange={(e) => setNameInputValue(e.target.value)}
+            disabled={disabled}
+          />
+        </div>
+
         <div className="form-group">
           <label htmlFor={apiKeyInputId}>
             {t('config_management.visual.api_keys.input_label')}

@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { parse as parseYaml } from 'yaml';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,6 +18,7 @@ import { Select } from '@/components/ui/Select';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useThemeStore, useConfigStore } from '@/stores';
+import { configFileApi } from '@/services/api/configFile';
 import {
   StatCards,
   UsageChart,
@@ -38,8 +40,10 @@ import {
   getApiStats,
   getModelStats,
   filterUsageByTimeRange,
+  normalizeUsageSourceId,
   type UsageTimeRange
 } from '@/utils/usage';
+import { buildSourceInfoMap } from '@/utils/sourceResolver';
 import styles from './UsagePage.module.scss';
 
 // Register Chart.js components
@@ -115,6 +119,28 @@ const loadTimeRange = (): UsageTimeRange => {
   }
 };
 
+const parseApiKeyNamesFromYaml = (yamlContent: string): Record<string, string> => {
+  try {
+    const parsed = parseYaml(yamlContent);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const source = (parsed as Record<string, unknown>)['api-key-names'];
+    if (!source || typeof source !== 'object' || Array.isArray(source)) return {};
+
+    return Object.entries(source as Record<string, unknown>).reduce<Record<string, string>>(
+      (acc, [key, value]) => {
+        const normalizedKey = String(key ?? '').trim();
+        const normalizedValue = String(value ?? '').trim();
+        if (!normalizedKey || !normalizedValue) return acc;
+        acc[normalizedKey] = normalizedValue;
+        return acc;
+      },
+      {}
+    );
+  } catch {
+    return {};
+  }
+};
+
 export function UsagePage() {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -144,6 +170,21 @@ export function UsagePage() {
   // Chart lines state
   const [chartLines, setChartLines] = useState<string[]>(loadChartLines);
   const [timeRange, setTimeRange] = useState<UsageTimeRange>(loadTimeRange);
+  const [yamlApiKeyNames, setYamlApiKeyNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    configFileApi
+      .fetchConfigYaml()
+      .then((yamlContent) => {
+        if (cancelled) return;
+        setYamlApiKeyNames(parseApiKeyNamesFromYaml(yamlContent));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const timeRangeOptions = useMemo(
     () =>
@@ -212,9 +253,45 @@ export function UsagePage() {
 
   // Derived data
   const modelNames = useMemo(() => getModelNamesFromUsage(usage), [usage]);
+  const effectiveApiKeyNames = useMemo(() => {
+    const namesFromConfig = config?.apiKeyNames || {};
+    return Object.keys(namesFromConfig).length > 0 ? namesFromConfig : yamlApiKeyNames;
+  }, [config?.apiKeyNames, yamlApiKeyNames]);
+  const sourceInfoMap = useMemo(
+    () =>
+      buildSourceInfoMap({
+        apiKeys: config?.apiKeys || [],
+        apiKeyNames: effectiveApiKeyNames,
+        geminiApiKeys: config?.geminiApiKeys || [],
+        claudeApiKeys: config?.claudeApiKeys || [],
+        codexApiKeys: config?.codexApiKeys || [],
+        vertexApiKeys: config?.vertexApiKeys || [],
+        openaiCompatibility: config?.openaiCompatibility || [],
+      }),
+    [config, effectiveApiKeyNames]
+  );
   const apiStats = useMemo(
-    () => getApiStats(filteredUsage, modelPrices),
-    [filteredUsage, modelPrices]
+    () =>
+      getApiStats(filteredUsage, modelPrices).map((stat) => {
+        const endpoint = String(stat.endpoint ?? '').trim();
+        if (!endpoint) return stat;
+
+        const directMatched = sourceInfoMap.get(endpoint);
+        if (directMatched?.displayName) {
+          return { ...stat, endpoint: directMatched.displayName };
+        }
+
+        const normalizedEndpoint = normalizeUsageSourceId(endpoint);
+        if (normalizedEndpoint && normalizedEndpoint !== endpoint) {
+          const normalizedMatched = sourceInfoMap.get(normalizedEndpoint);
+          if (normalizedMatched?.displayName) {
+            return { ...stat, endpoint: normalizedMatched.displayName };
+          }
+        }
+
+        return stat;
+      }),
+    [filteredUsage, modelPrices, sourceInfoMap]
   );
   const modelStats = useMemo(
     () => getModelStats(filteredUsage, modelPrices),
@@ -368,6 +445,8 @@ export function UsagePage() {
       <RequestEventsDetailsCard
         usage={filteredUsage}
         loading={loading}
+        apiKeys={config?.apiKeys || []}
+        apiKeyNames={effectiveApiKeyNames}
         geminiKeys={config?.geminiApiKeys || []}
         claudeConfigs={config?.claudeApiKeys || []}
         codexConfigs={config?.codexApiKeys || []}
@@ -379,6 +458,8 @@ export function UsagePage() {
       <CredentialStatsCard
         usage={filteredUsage}
         loading={loading}
+        apiKeys={config?.apiKeys || []}
+        apiKeyNames={effectiveApiKeyNames}
         geminiKeys={config?.geminiApiKeys || []}
         claudeConfigs={config?.claudeApiKeys || []}
         codexConfigs={config?.codexApiKeys || []}

@@ -24,6 +24,7 @@ export interface Config {
   forceModelPrefix?: boolean;
   routingStrategy?: string;
   apiKeys?: string[];
+  apiKeyNames?: Record<string, string>;
   ampcode?: AmpcodeConfig;
   geminiApiKeys?: GeminiKeyConfig[];
   codexApiKeys?: ProviderKeyConfig[];
@@ -47,6 +48,7 @@ export type RawConfigSection =
   | 'force-model-prefix'
   | 'routing/strategy'
   | 'api-keys'
+  | 'api-key-names'
   | 'ampcode'
   | 'gemini-api-key'
   | 'codex-api-key'
