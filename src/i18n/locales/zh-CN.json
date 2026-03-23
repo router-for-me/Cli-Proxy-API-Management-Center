@@ -41,6 +41,8 @@
     "quota_update_required": "请更新 CPA 版本或检查更新",
     "quota_check_credential": "请检查凭证状态",
     "copy": "复制",
+    "expand": "展开",
+    "collapse": "收起",
     "status": "状态",
     "action": "操作",
     "custom_headers_label": "自定义请求头",
