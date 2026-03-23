@@ -64,6 +64,21 @@ function resolveApiKeysText(parsed: Record<string, unknown>): string {
   return parseApiKeysText(configApiKeyProvider['api-keys']);
 }
 
+function parseApiKeyNames(raw: unknown, allowedKeys?: Set<string>): Record<string, string> {
+  const source = asRecord(raw);
+  if (!source) return {};
+
+  const normalized: Record<string, string> = {};
+  Object.entries(source).forEach(([key, value]) => {
+    const normalizedKey = String(key ?? '').trim();
+    const normalizedValue = String(value ?? '').trim();
+    if (!normalizedKey || !normalizedValue) return;
+    if (allowedKeys && !allowedKeys.has(normalizedKey)) return;
+    normalized[normalizedKey] = normalizedValue;
+  });
+  return normalized;
+}
+
 type YamlDocument = ReturnType<typeof parseDocument>;
 type YamlPath = string[];
 
@@ -472,6 +487,13 @@ export function useVisualConfig() {
       const routing = asRecord(parsed.routing);
       const payload = asRecord(parsed.payload);
       const streaming = asRecord(parsed.streaming);
+      const apiKeysText = resolveApiKeysText(parsed);
+      const apiKeySet = new Set(
+        apiKeysText
+          .split('\n')
+          .map((key) => key.trim())
+          .filter(Boolean)
+      );
 
       const newValues: VisualConfigValues = {
         host: typeof parsed.host === 'string' ? parsed.host : '',
@@ -493,7 +515,8 @@ export function useVisualConfig() {
             : '',
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
-        apiKeysText: resolveApiKeysText(parsed),
+        apiKeysText,
+        apiKeyNames: parseApiKeyNames(parsed['api-key-names'], apiKeySet),
 
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
@@ -597,6 +620,22 @@ export function useVisualConfig() {
           doc.setIn(['api-keys'], apiKeys);
         } else if (docHas(doc, ['api-keys'])) {
           doc.deleteIn(['api-keys']);
+        }
+        const apiKeySet = new Set(apiKeys);
+        const apiKeyNames = Object.entries(values.apiKeyNames ?? {}).reduce<Record<string, string>>(
+          (acc, [key, value]) => {
+            const normalizedKey = String(key ?? '').trim();
+            const normalizedValue = String(value ?? '').trim();
+            if (!normalizedKey || !normalizedValue || !apiKeySet.has(normalizedKey)) return acc;
+            acc[normalizedKey] = normalizedValue;
+            return acc;
+          },
+          {}
+        );
+        if (Object.keys(apiKeyNames).length > 0) {
+          doc.setIn(['api-key-names'], apiKeyNames);
+        } else if (docHas(doc, ['api-key-names'])) {
+          doc.deleteIn(['api-key-names']);
         }
         deleteLegacyApiKeysProvider(doc);
 
