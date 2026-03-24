@@ -65,6 +65,16 @@ const BATCH_BAR_BASE_TRANSFORM = 'translateX(-50%)';
 const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
+const buildAuthFileSearchRegex = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return { regex: null, error: false };
+
+  try {
+    return { regex: new RegExp(trimmed, 'i'), error: false };
+  } catch {
+    return { regex: null, error: true };
+  }
+};
 
 export function AuthFilesPage() {
   const { t } = useTranslation();
@@ -79,6 +89,7 @@ export function AuthFilesPage() {
   const [problemOnly, setProblemOnly] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [search, setSearch] = useState('');
+  const [regexSearchMode, setRegexSearchMode] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSizeByMode, setPageSizeByMode] = useState({
     regular: DEFAULT_REGULAR_PAGE_SIZE,
@@ -191,6 +202,9 @@ export function AuthFilesPage() {
     if (typeof persisted.search === 'string') {
       setSearch(persisted.search);
     }
+    if (typeof persisted.regexSearchMode === 'boolean') {
+      setRegexSearchMode(persisted.regexSearchMode);
+    }
     if (typeof persisted.page === 'number' && Number.isFinite(persisted.page)) {
       setPage(Math.max(1, Math.round(persisted.page)));
     }
@@ -221,13 +235,14 @@ export function AuthFilesPage() {
       problemOnly,
       compactMode,
       search,
+      regexSearchMode,
       page,
       pageSize,
       regularPageSize: pageSizeByMode.regular,
       compactPageSize: pageSizeByMode.compact,
       sortMode,
     });
-  }, [filter, problemOnly, compactMode, search, page, pageSize, pageSizeByMode, sortMode]);
+  }, [filter, problemOnly, compactMode, search, regexSearchMode, page, pageSize, pageSizeByMode, sortMode]);
 
   useEffect(() => {
     setPageSizeInput(String(pageSize));
@@ -346,19 +361,30 @@ export function AuthFilesPage() {
     filter === 'all' ? t('auth_files.filter_all') : getTypeLabel(t, String(filter));
   const activeFilterCount = typeCounts[String(filter)] ?? 0;
   const activeFilterIcon = getAuthFileIcon(String(filter), resolvedTheme);
+  const trimmedSearch = search.trim();
+  const regexSearchState = useMemo(
+    () => (regexSearchMode ? buildAuthFileSearchRegex(search) : { regex: null, error: false }),
+    [regexSearchMode, search]
+  );
+  const searchPlaceholder = regexSearchMode
+    ? t('auth_files.search_regex_placeholder')
+    : t('auth_files.search_placeholder');
 
   const filtered = useMemo(() => {
+    const term = trimmedSearch.toLowerCase();
     return filesMatchingProblemFilter.filter((item) => {
       const matchType = filter === 'all' || item.type === filter;
-      const term = search.trim().toLowerCase();
+      const searchableValues = [item.name, String(item.type || ''), String(item.provider || '')];
       const matchSearch =
         !term ||
-        item.name.toLowerCase().includes(term) ||
-        (item.type || '').toString().toLowerCase().includes(term) ||
-        (item.provider || '').toString().toLowerCase().includes(term);
+        (regexSearchMode
+          ? regexSearchState.regex
+            ? searchableValues.some((value) => regexSearchState.regex.test(value))
+            : false
+          : searchableValues.some((value) => value.toLowerCase().includes(term)));
       return matchType && matchSearch;
     });
-  }, [filesMatchingProblemFilter, filter, search]);
+  }, [filesMatchingProblemFilter, filter, trimmedSearch, regexSearchMode, regexSearchState.regex]);
 
   const sorted = useMemo(() => {
     const copy = [...filtered];
@@ -705,8 +731,13 @@ export function AuthFilesPage() {
                       setSearch(e.target.value);
                       setPage(1);
                     }}
-                    placeholder={t('auth_files.search_placeholder')}
+                    placeholder={searchPlaceholder}
                   />
+                  {regexSearchMode && trimmedSearch && regexSearchState.error && (
+                    <span className={styles.filterErrorText}>
+                      {t('auth_files.search_regex_invalid')}
+                    </span>
+                  )}
                 </div>
                 <div className={styles.filterItem}>
                   <label>{t('auth_files.page_size_label')}</label>
@@ -763,6 +794,21 @@ export function AuthFilesPage() {
                         label={
                           <span className={styles.filterToggleLabel}>
                             {t('auth_files.compact_mode_label')}
+                          </span>
+                        }
+                      />
+                    </div>
+                    <div className={styles.filterToggleCard}>
+                      <ToggleSwitch
+                        checked={regexSearchMode}
+                        onChange={(value) => {
+                          setRegexSearchMode(value);
+                          setPage(1);
+                        }}
+                        ariaLabel={t('auth_files.regex_search_mode_label')}
+                        label={
+                          <span className={styles.filterToggleLabel}>
+                            {t('auth_files.regex_search_mode_label')}
                           </span>
                         }
                       />
