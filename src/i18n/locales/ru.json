@@ -495,6 +495,8 @@
     "search_placeholder": "Фильтр по имени, типу или провайдеру",
     "problem_filter_label": "Фильтр проблем",
     "problem_filter_only": "Показывать только проблемные учётные данные",
+    "display_options_label": "Параметры отображения",
+    "compact_mode_label": "Компактный режим",
     "sort_label": "Сортировка",
     "sort_default": "По умолчанию",
     "sort_az": "A-Z Имя",
@@ -549,12 +551,19 @@
     "batch_delete_confirm": "Удалить {{count}} файлов?",
     "batch_selected": "{{count}} выбрано",
     "batch_select_all": "Выбрать все",
+    "batch_select_page": "Выбрать страницу",
+    "batch_select_filtered": "Выбрать по фильтру",
+    "batch_invert_page": "Инвертировать страницу",
     "batch_deselect": "Отменить",
+    "batch_download": "Скачать выбранные",
+    "batch_download_success": "Запущена загрузка {{count}} файлов",
+    "batch_download_partial": "Загрузка завершена: успешно {{success}}, ошибок {{failed}}",
     "batch_enable": "Включить",
     "batch_disable": "Отключить",
-    "prefix_proxy_button": "Редактировать поля файла авторизации",
-    "auth_field_editor_title": "Редактировать поля файла авторизации - {{name}}",
+    "prefix_proxy_button": "Просмотр / редактирование файла авторизации",
+    "auth_field_editor_title": "Просмотр / редактирование файла авторизации - {{name}}",
     "prefix_proxy_loading": "Загрузка файла авторизации...",
+    "prefix_proxy_info_label": "Информация о файле авторизации (info)",
     "prefix_proxy_source_label": "JSON файла авторизации (предпросмотр)",
     "prefix_label": "Префикс (prefix)",
     "proxy_url_label": "URL прокси (proxy_url)",
@@ -1159,6 +1168,8 @@
       "source": "Редактор файла"
     },
     "visual": {
+      "notice": "Визуальный режим охватывает основные поля. Остальные параметры config.yaml по-прежнему нужно проверять или редактировать в режиме исходника.",
+      "quick_jump": "Быстрый переход",
       "sections": {
         "server": {
           "title": "Настройки сервера",
@@ -1211,6 +1222,8 @@
           "description": "Параметры прокси, повторов и маршрутизации",
           "proxy_url": "URL прокси",
           "request_retry": "Количество повторов запросов",
+          "max_retry_credentials": "Максимум учётных данных для повторов",
+          "max_retry_credentials_hint": "Оставьте пустым, чтобы не задавать поле. Значение 0 сохраняет legacy-поведение и позволяет перебрать все доступные учётные данные.",
           "max_retry_interval": "Максимальный интервал повтора (сек)",
           "routing_strategy": "Стратегия маршрутизации",
           "routing_strategy_hint": "Выберите стратегию подбора учётных данных",
@@ -1242,11 +1255,15 @@
         },
         "payload": {
           "title": "Настройки полезной нагрузки",
-          "description": "Значения по умолчанию, правила переопределения и фильтрации",
+          "description": "Значения по умолчанию, raw JSON-правила, правила переопределения и фильтрации",
           "default_rules": "Правила по умолчанию",
           "default_rules_desc": "Использовать эти значения, если параметр не указан в запросе",
+          "default_raw_rules": "Raw-правила по умолчанию",
+          "default_raw_rules_desc": "Если параметр отсутствует, записывать эти значения как raw JSON-фрагменты, например true, 123, \"high\" или {\"type\":\"object\"}",
           "override_rules": "Правила переопределения",
           "override_rules_desc": "Принудительно задавать значения параметров в запросе",
+          "override_raw_rules": "Raw-правила переопределения",
+          "override_raw_rules_desc": "Всегда перезаписывать значения как raw JSON-фрагменты; полезно для response_format, схем и других сложных полей",
           "filter_rules": "Правила фильтрации",
           "filter_rules_desc": "Предварительно фильтровать тело исходящего запроса через JSON Path, автоматически удалять несоответствующие или лишние параметры (санитизация запроса)"
         }
@@ -1295,6 +1312,7 @@
         "value_number": "Числовое значение (например, 0.7)",
         "value_boolean": "true или false",
         "value_json": "Значение JSON",
+        "value_raw_json": "Raw JSON-фрагмент, например true, 123, \"high\" или {\"type\":\"object\"}",
         "value_default": "Значение",
         "boolean_true": "true",
         "boolean_false": "false"
@@ -1441,10 +1459,10 @@
   },
   "theme": {
     "switch": "Тема",
-    "light": "Светлая",
+    "light": "Шерстяная бумага",
     "white": "Чисто-белая",
     "dark": "Тёмная",
-    "switch_to_light": "Переключиться на светлую тему",
+    "switch_to_light": "Переключиться на тему «Шерстяная бумага»",
     "switch_to_dark": "Переключиться на тёмную тему",
     "auto": "Следовать системе"
   },

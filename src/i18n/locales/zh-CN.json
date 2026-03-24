@@ -495,6 +495,8 @@
     "search_placeholder": "输入名称、类型或提供方关键字",
     "problem_filter_label": "问题筛选",
     "problem_filter_only": "仅显示有问题凭证",
+    "display_options_label": "显示选项",
+    "compact_mode_label": "简略模式",
     "sort_label": "排序",
     "sort_default": "默认",
     "sort_az": "A-Z 名称",
@@ -549,12 +551,19 @@
     "batch_delete_confirm": "确定要删除 {{count}} 个文件吗？",
     "batch_selected": "已选 {{count}} 项",
     "batch_select_all": "全选",
+    "batch_select_page": "全选当前页",
+    "batch_select_filtered": "全选筛选结果",
+    "batch_invert_page": "反选当前页",
     "batch_deselect": "取消选择",
+    "batch_download": "下载选中",
+    "batch_download_success": "已开始下载 {{count}} 个文件",
+    "batch_download_partial": "下载完成：成功 {{success}} 个，失败 {{failed}} 个",
     "batch_enable": "启用",
     "batch_disable": "禁用",
-    "prefix_proxy_button": "编辑认证文件字段",
-    "auth_field_editor_title": "编辑认证文件字段 - {{name}}",
+    "prefix_proxy_button": "认证文件详情 / 编辑",
+    "auth_field_editor_title": "认证文件详情 / 编辑 - {{name}}",
     "prefix_proxy_loading": "正在加载认证文件...",
+    "prefix_proxy_info_label": "认证文件信息（info）",
     "prefix_proxy_source_label": "认证文件 JSON（预览）",
     "prefix_label": "前缀（prefix）",
     "proxy_url_label": "代理 URL（proxy_url）",
@@ -1156,6 +1165,8 @@
       "source": "源文件编辑"
     },
     "visual": {
+      "notice": "可视化模式覆盖常用字段，未覆盖的配置仍需在源文件模式中查看或编辑。",
+      "quick_jump": "快速跳转",
       "sections": {
         "server": {
           "title": "服务器配置",
@@ -1206,6 +1217,8 @@
           "description": "代理、重试和路由设置",
           "proxy_url": "代理 URL",
           "request_retry": "请求重试次数",
+          "max_retry_credentials": "最大重试凭据数",
+          "max_retry_credentials_hint": "留空表示不设置；设为 0 表示保留 legacy 行为，并尝试所有可用凭据。",
           "max_retry_interval": "最大重试间隔 (秒)",
           "routing_strategy": "路由策略",
           "routing_strategy_hint": "选择凭据选择策略",
@@ -1237,11 +1250,15 @@
         },
         "payload": {
           "title": "Payload 配置",
-          "description": "默认值、覆盖规则与过滤规则",
+          "description": "默认值、原始 JSON 规则、覆盖规则与过滤规则",
           "default_rules": "默认规则",
           "default_rules_desc": "当请求中未指定参数时，使用这些默认值",
+          "default_raw_rules": "默认 Raw 规则",
+          "default_raw_rules_desc": "当请求中未指定参数时，按原始 JSON 片段写入这些值，例如 true、123、\"high\" 或 {\"type\":\"object\"}",
           "override_rules": "覆盖规则",
           "override_rules_desc": "强制覆盖请求中的参数值",
+          "override_raw_rules": "覆盖 Raw 规则",
+          "override_raw_rules_desc": "始终按原始 JSON 片段覆盖参数值，适合 response_format、schema 等复杂字段",
           "filter_rules": "过滤规则",
           "filter_rules_desc": "通过 JSON Path 预过滤上游请求体，自动剔除不合规/冗余参数（Request Sanitization）"
         }
@@ -1290,6 +1307,7 @@
         "value_number": "数字值 (如 0.7)",
         "value_boolean": "true 或 false",
         "value_json": "JSON 值",
+        "value_raw_json": "原始 JSON 片段，如 true、123、\"high\" 或 {\"type\":\"object\"}",
         "value_default": "值",
         "boolean_true": "true",
         "boolean_false": "false"
@@ -1436,10 +1454,10 @@
   },
   "theme": {
     "switch": "主题",
-    "light": "亮色",
+    "light": "羊毛纸",
     "white": "纯白",
     "dark": "暗色",
-    "switch_to_light": "切换到亮色模式",
+    "switch_to_light": "切换到羊毛纸模式",
     "switch_to_dark": "切换到暗色模式",
     "auto": "跟随系统"
   },

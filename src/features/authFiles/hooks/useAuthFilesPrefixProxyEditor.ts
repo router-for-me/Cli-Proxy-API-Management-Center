@@ -6,10 +6,12 @@ import { useNotificationStore } from '@/stores';
 import { formatFileSize } from '@/utils/format';
 import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
 import {
+  applyCodexAuthFileWebsockets,
   normalizeExcludedModels,
   parseDisableCoolingValue,
   parseExcludedModelsText,
   parsePriorityValue,
+  readCodexAuthFileWebsockets,
 } from '@/features/authFiles/constants';
 
 export type PrefixProxyEditorField =
@@ -18,13 +20,14 @@ export type PrefixProxyEditorField =
   | 'priority'
   | 'excludedModelsText'
   | 'disableCooling'
-  | 'websocket'
+  | 'websockets'
   | 'note';
 
 export type PrefixProxyEditorFieldValue = string | boolean;
 
 export type PrefixProxyEditorState = {
   fileName: string;
+  fileInfoText: string;
   isCodexFile: boolean;
   loading: boolean;
   saving: boolean;
@@ -37,7 +40,7 @@ export type PrefixProxyEditorState = {
   priority: string;
   excludedModelsText: string;
   disableCooling: string;
-  websocket: boolean;
+  websockets: boolean;
   note: string;
   noteTouched: boolean;
 };
@@ -52,7 +55,7 @@ export type UseAuthFilesPrefixProxyEditorResult = {
   prefixProxyEditor: PrefixProxyEditorState | null;
   prefixProxyUpdatedText: string;
   prefixProxyDirty: boolean;
-  openPrefixProxyEditor: (file: Pick<AuthFileItem, 'name' | 'type' | 'provider'>) => Promise<void>;
+  openPrefixProxyEditor: (file: AuthFileItem) => Promise<void>;
   closePrefixProxyEditor: () => void;
   handlePrefixProxyChange: (
     field: PrefixProxyEditorField,
@@ -92,10 +95,6 @@ const buildPrefixProxyUpdatedText = (editor: PrefixProxyEditorState | null): str
     delete next.disable_cooling;
   }
 
-  if (editor.isCodexFile) {
-    next.websocket = editor.websocket;
-  }
-
   if (editor.noteTouched) {
     const noteValue = editor.note.trim();
     if (noteValue) {
@@ -105,7 +104,9 @@ const buildPrefixProxyUpdatedText = (editor: PrefixProxyEditorState | null): str
     }
   }
 
-  return JSON.stringify(next);
+  return JSON.stringify(
+    editor.isCodexFile ? applyCodexAuthFileWebsockets(next, editor.websockets) : next
+  );
 };
 
 export function useAuthFilesPrefixProxyEditor(
@@ -127,7 +128,7 @@ export function useAuthFilesPrefixProxyEditor(
     setPrefixProxyEditor(null);
   };
 
-  const openPrefixProxyEditor = async (file: Pick<AuthFileItem, 'name' | 'type' | 'provider'>) => {
+  const openPrefixProxyEditor = async (file: AuthFileItem) => {
     const name = file.name;
     const normalizedType = String(file.type ?? '')
       .trim()
@@ -145,6 +146,7 @@ export function useAuthFilesPrefixProxyEditor(
 
     setPrefixProxyEditor({
       fileName: name,
+      fileInfoText: JSON.stringify(file, null, 2),
       isCodexFile,
       loading: true,
       saving: false,
@@ -157,7 +159,7 @@ export function useAuthFilesPrefixProxyEditor(
       priority: '',
       excludedModelsText: '',
       disableCooling: '',
-      websocket: false,
+      websockets: false,
       note: '',
       noteTouched: false,
     });
@@ -199,8 +201,9 @@ export function useAuthFilesPrefixProxyEditor(
 
       const json = { ...(parsed as Record<string, unknown>) };
       if (isCodexFile) {
-        const websocketValue = parseDisableCoolingValue(json.websocket);
-        json.websocket = websocketValue ?? false;
+        const normalizedWebsockets = readCodexAuthFileWebsockets(json);
+        delete json.websocket;
+        json.websockets = normalizedWebsockets;
       }
       const originalText = JSON.stringify(json);
       const prefix = typeof json.prefix === 'string' ? json.prefix : '';
@@ -208,7 +211,7 @@ export function useAuthFilesPrefixProxyEditor(
       const priority = parsePriorityValue(json.priority);
       const excludedModels = normalizeExcludedModels(json.excluded_models);
       const disableCoolingValue = parseDisableCoolingValue(json.disable_cooling);
-      const websocketValue = parseDisableCoolingValue(json.websocket);
+      const websocketsValue = readCodexAuthFileWebsockets(json);
       const note = typeof json.note === 'string' ? json.note : '';
 
       setPrefixProxyEditor((prev) => {
@@ -225,7 +228,7 @@ export function useAuthFilesPrefixProxyEditor(
           excludedModelsText: excludedModels.join('\n'),
           disableCooling:
             disableCoolingValue === undefined ? '' : disableCoolingValue ? 'true' : 'false',
-          websocket: websocketValue ?? false,
+          websockets: websocketsValue,
           note,
           noteTouched: false,
           error: null,
@@ -253,7 +256,7 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'excludedModelsText') return { ...prev, excludedModelsText: String(value) };
       if (field === 'disableCooling') return { ...prev, disableCooling: String(value) };
       if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
-      return { ...prev, websocket: Boolean(value) };
+      return { ...prev, websockets: Boolean(value) };
     });
   };
 

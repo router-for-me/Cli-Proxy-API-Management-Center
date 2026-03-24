@@ -495,6 +495,8 @@
     "search_placeholder": "Filter by name, type, or provider",
     "problem_filter_label": "Problem Filter",
     "problem_filter_only": "Only show problematic credentials",
+    "display_options_label": "Display options",
+    "compact_mode_label": "Compact mode",
     "sort_label": "Sort",
     "sort_default": "Default",
     "sort_az": "A-Z Name",
@@ -549,12 +551,19 @@
     "batch_delete_confirm": "Are you sure you want to delete {{count}} files?",
     "batch_selected": "{{count}} selected",
     "batch_select_all": "Select All",
+    "batch_select_page": "Select page",
+    "batch_select_filtered": "Select filtered",
+    "batch_invert_page": "Invert page",
     "batch_deselect": "Deselect",
+    "batch_download": "Download selected",
+    "batch_download_success": "Started downloading {{count}} files",
+    "batch_download_partial": "Download finished: {{success}} succeeded, {{failed}} failed",
     "batch_enable": "Enable",
     "batch_disable": "Disable",
-    "prefix_proxy_button": "Edit Auth Fields",
-    "auth_field_editor_title": "Edit Auth Fields - {{name}}",
+    "prefix_proxy_button": "Auth File Details / Edit",
+    "auth_field_editor_title": "Auth File Details / Edit - {{name}}",
     "prefix_proxy_loading": "Loading auth file...",
+    "prefix_proxy_info_label": "Auth file info (info)",
     "prefix_proxy_source_label": "Auth file JSON (preview)",
     "prefix_label": "Prefix (prefix)",
     "proxy_url_label": "Proxy URL (proxy_url)",
@@ -1156,6 +1165,8 @@
       "source": "Source File Editor"
     },
     "visual": {
+      "notice": "Visual mode covers common fields. Review or edit unsupported config.yaml entries in source mode.",
+      "quick_jump": "Quick Jump",
       "sections": {
         "server": {
           "title": "Server Configuration",
@@ -1206,6 +1217,8 @@
           "description": "Proxy, retry, and routing settings",
           "proxy_url": "Proxy URL",
           "request_retry": "Request Retry Count",
+          "max_retry_credentials": "Max Retry Credentials",
+          "max_retry_credentials_hint": "Leave empty to keep it unset. Set to 0 to preserve legacy behavior and try all available credentials.",
           "max_retry_interval": "Max Retry Interval (seconds)",
           "routing_strategy": "Routing Strategy",
           "routing_strategy_hint": "Select credential selection strategy",
@@ -1237,11 +1250,15 @@
         },
         "payload": {
           "title": "Payload Configuration",
-          "description": "Default values, override rules, and filter rules",
+          "description": "Default values, raw JSON rules, override rules, and filter rules",
           "default_rules": "Default Rules",
           "default_rules_desc": "Use these default values when parameters are not specified in the request",
+          "default_raw_rules": "Default Raw Rules",
+          "default_raw_rules_desc": "When parameters are missing, write these values as raw JSON fragments such as true, 123, \"high\", or {\"type\":\"object\"}",
           "override_rules": "Override Rules",
           "override_rules_desc": "Force override parameter values in the request",
+          "override_raw_rules": "Override Raw Rules",
+          "override_raw_rules_desc": "Always overwrite parameter values as raw JSON fragments, useful for response_format, schemas, and other complex fields",
           "filter_rules": "Filter Rules",
           "filter_rules_desc": "Pre-filter upstream request body via JSON Path, automatically remove non-compliant/redundant parameters (Request Sanitization)"
         }
@@ -1290,6 +1307,7 @@
         "value_number": "Number value (e.g., 0.7)",
         "value_boolean": "true or false",
         "value_json": "JSON value",
+        "value_raw_json": "Raw JSON fragment, e.g. true, 123, \"high\", or {\"type\":\"object\"}",
         "value_default": "Value",
         "boolean_true": "true",
         "boolean_false": "false"
@@ -1436,10 +1454,10 @@
   },
   "theme": {
     "switch": "Theme",
-    "light": "Light",
+    "light": "Wool Paper",
     "white": "Pure White",
     "dark": "Dark",
-    "switch_to_light": "Switch to light mode",
+    "switch_to_light": "Switch to wool paper mode",
     "switch_to_dark": "Switch to dark mode",
     "auto": "Follow system"
   },

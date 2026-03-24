@@ -66,6 +66,36 @@ export function IconBot({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconModelCluster({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <rect x="3" y="5" width="6" height="6" rx="1.5" />
+      <rect x="15" y="5" width="6" height="6" rx="1.5" />
+      <rect x="9" y="13" width="6" height="6" rx="1.5" />
+      <path d="M9 8h6" />
+      <path d="M12 11v2" />
+      <path d="M7.5 11v2" />
+      <path d="M16.5 11v2" />
+    </svg>
+  );
+}
+
+export function IconFilterAll({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <rect x="3.5" y="3.5" width="5" height="5" rx="1.4" />
+      <rect x="15.5" y="3.5" width="5" height="5" rx="1.4" />
+      <rect x="3.5" y="15.5" width="5" height="5" rx="1.4" />
+      <rect x="15.5" y="15.5" width="5" height="5" rx="1.4" />
+      <path d="M8.5 8.5 10.75 10.75" />
+      <path d="M15.5 8.5 13.25 10.75" />
+      <path d="M8.5 15.5 10.75 13.25" />
+      <path d="M15.5 15.5 13.25 13.25" />
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function IconFileText({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>
@@ -404,7 +434,15 @@ export function IconSidebarUsage({ size = 20, ...props }: IconProps) {
     <svg {...sidebarSvgProps} width={size} height={size} {...props}>
       <path d="M3.5 20h17" />
       <rect x="5" y="13" width="3.5" height="7" rx="0.5" />
-      <rect x="10.25" y="7" width="3.5" height="13" rx="0.5" fill="currentColor" fillOpacity="0.12" />
+      <rect
+        x="10.25"
+        y="7"
+        width="3.5"
+        height="13"
+        rx="0.5"
+        fill="currentColor"
+        fillOpacity="0.12"
+      />
       <rect x="15.5" y="10" width="3.5" height="10" rx="0.5" />
     </svg>
   );

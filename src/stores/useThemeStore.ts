@@ -9,6 +9,7 @@ import type { Theme } from '@/types';
 import { STORAGE_KEY_THEME } from '@/utils/constants';
 
 type ResolvedTheme = 'light' | 'dark';
+type AppliedTheme = ResolvedTheme | 'white';
 
 interface ThemeState {
   theme: Theme;
@@ -25,9 +26,17 @@ const getSystemTheme = (): ResolvedTheme => {
   return 'light';
 };
 
-const resolveTheme = (theme: Theme): ResolvedTheme | 'white' => {
+const resolveAutoTheme = (): AppliedTheme => {
+  return getSystemTheme() === 'dark' ? 'dark' : 'white';
+};
+
+const normalizeResolvedTheme = (theme: AppliedTheme): ResolvedTheme => {
+  return theme === 'dark' ? 'dark' : 'light';
+};
+
+const resolveTheme = (theme: Theme): AppliedTheme => {
   if (theme === 'auto') {
-    return getSystemTheme();
+    return resolveAutoTheme();
   }
   if (theme === 'white') {
     return 'white';
@@ -35,7 +44,7 @@ const resolveTheme = (theme: Theme): ResolvedTheme | 'white' => {
   return theme;
 };
 
-const applyTheme = (resolved: ResolvedTheme | 'white') => {
+const applyTheme = (resolved: AppliedTheme) => {
   if (resolved === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
     return;
@@ -60,7 +69,7 @@ export const useThemeStore = create<ThemeState>()(
         applyTheme(resolved);
         set({
           theme,
-          resolvedTheme: resolved === 'white' ? 'light' : resolved,
+          resolvedTheme: normalizeResolvedTheme(resolved),
         });
       },
 
@@ -87,9 +96,9 @@ export const useThemeStore = create<ThemeState>()(
         const listener = () => {
           const { theme: currentTheme } = get();
           if (currentTheme === 'auto') {
-            const resolved = getSystemTheme();
+            const resolved = resolveAutoTheme();
             applyTheme(resolved);
-            set({ resolvedTheme: resolved });
+            set({ resolvedTheme: normalizeResolvedTheme(resolved) });
           }
         };
 

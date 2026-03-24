@@ -6,10 +6,15 @@ import { yaml } from '@codemirror/lang-yaml';
 import { search, searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { keymap } from '@codemirror/view';
 import { parse as parseYaml, parseDocument } from 'yaml';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { IconCheck, IconChevronDown, IconChevronUp, IconRefreshCw, IconSearch } from '@/components/ui/icons';
+import {
+  IconCheck,
+  IconChevronDown,
+  IconChevronUp,
+  IconRefreshCw,
+  IconSearch,
+} from '@/components/ui/icons';
 import { VisualConfigEditor } from '@/components/config/VisualConfigEditor';
 import { DiffModal } from '@/components/config/DiffModal';
 import { useVisualConfig } from '@/hooks/useVisualConfig';
@@ -44,7 +49,7 @@ export function ConfigPage() {
     visualHasPayloadValidationErrors,
     loadVisualValuesFromYaml,
     applyVisualChangesToYaml,
-    setVisualValues
+    setVisualValues,
   } = useVisualConfig();
 
   const [activeTab, setActiveTab] = useState<ConfigEditorTab>(() => {
@@ -64,11 +69,12 @@ export function ConfigPage() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
+  const [searchResults, setSearchResults] = useState<{ current: number; total: number }>({
+    current: 0,
+    total: 0,
+  });
   const [lastSearchedQuery, setLastSearchedQuery] = useState('');
   const editorRef = useRef<ReactCodeMirrorRef>(null);
-  const floatingControlsRef = useRef<HTMLDivElement>(null);
-  const editorWrapperRef = useRef<HTMLDivElement>(null);
   const floatingActionsRef = useRef<HTMLDivElement>(null);
 
   const disableControls = connectionStatus !== 'connected';
@@ -154,7 +160,9 @@ export function ConfigPage() {
         if (latestDocument.errors.length > 0) {
           showNotification(
             t('config_management.visual_mode_latest_yaml_invalid', {
-              message: latestDocument.errors[0]?.message ?? t('config_management.visual_mode_save_blocked')
+              message:
+                latestDocument.errors[0]?.message ??
+                t('config_management.visual_mode_save_blocked'),
             }),
             'error'
           );
@@ -174,7 +182,9 @@ export function ConfigPage() {
         try {
           const doc = parseDocument(latestServerYaml);
           diffOriginal = doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
-        } catch { /* keep raw on parse failure */ }
+        } catch {
+          /* keep raw on parse failure */
+        }
       }
 
       if (diffOriginal === nextMergedYaml) {
@@ -203,32 +213,43 @@ export function ConfigPage() {
     setDirty(true);
   }, []);
 
-  const handleTabChange = useCallback((tab: ConfigEditorTab) => {
-    if (tab === activeTab) return;
+  const handleTabChange = useCallback(
+    (tab: ConfigEditorTab) => {
+      if (tab === activeTab) return;
 
-    if (tab === 'source') {
-      // Only rewrite YAML when there are pending visual changes; otherwise preserve raw YAML + comments.
-      if (visualDirty) {
-        const nextContent = applyVisualChangesToYaml(content);
-        if (nextContent !== content) {
-          setContent(nextContent);
-          setDirty(true);
+      if (tab === 'source') {
+        // Only rewrite YAML when there are pending visual changes; otherwise preserve raw YAML + comments.
+        if (visualDirty) {
+          const nextContent = applyVisualChangesToYaml(content);
+          if (nextContent !== content) {
+            setContent(nextContent);
+            setDirty(true);
+          }
+        }
+      } else {
+        const result = loadVisualValuesFromYaml(content);
+        if (!result.ok) {
+          showNotification(
+            t('config_management.visual_mode_unavailable_detail', { message: result.error }),
+            'error'
+          );
+          return;
         }
       }
-    } else {
-      const result = loadVisualValuesFromYaml(content);
-      if (!result.ok) {
-        showNotification(
-          t('config_management.visual_mode_unavailable_detail', { message: result.error }),
-          'error'
-        );
-        return;
-      }
-    }
 
-    setActiveTab(tab);
-    localStorage.setItem('config-management:tab', tab);
-  }, [activeTab, applyVisualChangesToYaml, content, loadVisualValuesFromYaml, showNotification, t, visualDirty]);
+      setActiveTab(tab);
+      localStorage.setItem('config-management:tab', tab);
+    },
+    [
+      activeTab,
+      applyVisualChangesToYaml,
+      content,
+      loadVisualValuesFromYaml,
+      showNotification,
+      t,
+      visualDirty,
+    ]
+  );
 
   // Search functionality
   const performSearch = useCallback((query: string, direction: 'next' | 'prev' = 'next') => {
@@ -290,7 +311,7 @@ export function ConfigPage() {
     // Scroll to and select the match
     view.dispatch({
       selection: { anchor: matchPos, head: matchPos + query.length },
-      scrollIntoView: true
+      scrollIntoView: true,
     });
     view.focus();
   }, []);
@@ -306,18 +327,24 @@ export function ConfigPage() {
     }
   }, []);
 
-  const executeSearch = useCallback((direction: 'next' | 'prev' = 'next') => {
-    if (!searchQuery) return;
-    setLastSearchedQuery(searchQuery);
-    performSearch(searchQuery, direction);
-  }, [searchQuery, performSearch]);
+  const executeSearch = useCallback(
+    (direction: 'next' | 'prev' = 'next') => {
+      if (!searchQuery) return;
+      setLastSearchedQuery(searchQuery);
+      performSearch(searchQuery, direction);
+    },
+    [searchQuery, performSearch]
+  );
 
-  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      executeSearch(e.shiftKey ? 'prev' : 'next');
-    }
-  }, [executeSearch]);
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        executeSearch(e.shiftKey ? 'prev' : 'next');
+      }
+    },
+    [executeSearch]
+  );
 
   const handlePrevMatch = useCallback(() => {
     if (!lastSearchedQuery) return;
@@ -328,31 +355,6 @@ export function ConfigPage() {
     if (!lastSearchedQuery) return;
     performSearch(lastSearchedQuery, 'next');
   }, [lastSearchedQuery, performSearch]);
-
-  // Keep floating controls from covering editor content by syncing its height to a CSS variable.
-  useLayoutEffect(() => {
-    if (activeTab !== 'source') return;
-
-    const controlsEl = floatingControlsRef.current;
-    const wrapperEl = editorWrapperRef.current;
-    if (!controlsEl || !wrapperEl) return;
-
-    const updatePadding = () => {
-      const height = controlsEl.getBoundingClientRect().height;
-      wrapperEl.style.setProperty('--floating-controls-height', `${height}px`);
-    };
-
-    updatePadding();
-    window.addEventListener('resize', updatePadding);
-
-    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updatePadding);
-    ro?.observe(controlsEl);
-
-    return () => {
-      ro?.disconnect();
-      window.removeEventListener('resize', updatePadding);
-    };
-  }, [activeTab]);
 
   // Keep bottom floating actions from covering page content by syncing its height to a CSS variable.
   useLayoutEffect(() => {
@@ -380,12 +382,10 @@ export function ConfigPage() {
   }, []);
 
   // CodeMirror extensions
-  const extensions = useMemo(() => [
-    yaml(),
-    search(),
-    highlightSelectionMatches(),
-    keymap.of(searchKeymap)
-  ], []);
+  const extensions = useMemo(
+    () => [yaml(), search(), highlightSelectionMatches(), keymap.of(searchKeymap)],
+    []
+  );
 
   // Status text
   const getStatusText = () => {
@@ -393,20 +393,12 @@ export function ConfigPage() {
     if (loading) return t('config_management.status_loading');
     if (error) return t('config_management.status_load_failed');
     if (hasVisualModeError) return t('config_management.visual_mode_unavailable');
-    if (hasVisualValidationErrors) return t('config_management.visual.validation.validation_blocked');
+    if (hasVisualValidationErrors)
+      return t('config_management.visual.validation.validation_blocked');
     if (saving) return t('config_management.status_saving');
     if (isDirty) return t('config_management.status_dirty');
     return t('config_management.status_loaded');
   };
-
-  const isLoadedStatus =
-    !disableControls &&
-    !loading &&
-    !error &&
-    !saving &&
-    !isDirty &&
-    !hasVisualModeError &&
-    !hasVisualValidationErrors;
 
   const getStatusClass = () => {
     if (error || hasVisualModeError || hasVisualValidationErrors) return styles.error;
@@ -436,7 +428,7 @@ export function ConfigPage() {
   const floatingActions = (
     <div className={styles.floatingActionContainer} ref={floatingActionsRef}>
       <div className={styles.floatingActionList}>
-        <div className={`${styles.floatingStatus} ${styles.status} ${getStatusClass()}`}>{getStatusText()}</div>
+        <div className={`${styles.floatingStatus} ${getStatusClass()}`}>{getStatusText()}</div>
         <button
           type="button"
           className={styles.floatingActionButton}
@@ -470,31 +462,48 @@ export function ConfigPage() {
     </div>
   );
 
+  const pageEyebrow =
+    activeTab === 'visual'
+      ? t('config_management.tabs.visual', { defaultValue: '可视化编辑' })
+      : t('config_management.tabs.source', { defaultValue: '源文件编辑' });
+  const pageDescription =
+    activeTab === 'visual'
+      ? t('config_management.visual.notice')
+      : t('config_management.description');
+
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('config_management.title')}</h1>
-      <p className={styles.description}>{t('config_management.description')}</p>
+      <div className={styles.pageHeader}>
+        <div className={styles.pageHeaderCopy}>
+          <span className={styles.pageEyebrow}>{pageEyebrow}</span>
+          <h1 className={styles.pageTitle}>{t('config_management.title')}</h1>
+          <p className={styles.description}>{pageDescription}</p>
+        </div>
 
-      <div className={styles.tabBar}>
-        <button
-          type="button"
-          className={`${styles.tabItem} ${activeTab === 'visual' ? styles.tabActive : ''}`}
-          onClick={() => handleTabChange('visual')}
-          disabled={saving || loading}
-        >
-          {t('config_management.tabs.visual', { defaultValue: '可视化编辑' })}
-        </button>
-        <button
-          type="button"
-          className={`${styles.tabItem} ${activeTab === 'source' ? styles.tabActive : ''}`}
-          onClick={() => handleTabChange('source')}
-          disabled={saving || loading}
-        >
-          {t('config_management.tabs.source', { defaultValue: '源代码编辑' })}
-        </button>
+        <div className={styles.pageMeta}>
+          <div className={`${styles.statusBadge} ${getStatusClass()}`}>{getStatusText()}</div>
+          <div className={styles.tabBar}>
+            <button
+              type="button"
+              className={`${styles.tabItem} ${activeTab === 'visual' ? styles.tabActive : ''}`}
+              onClick={() => handleTabChange('visual')}
+              disabled={saving || loading}
+            >
+              {t('config_management.tabs.visual', { defaultValue: '可视化编辑' })}
+            </button>
+            <button
+              type="button"
+              className={`${styles.tabItem} ${activeTab === 'source' ? styles.tabActive : ''}`}
+              onClick={() => handleTabChange('source')}
+              disabled={saving || loading}
+            >
+              {t('config_management.tabs.source', { defaultValue: '源代码编辑' })}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <Card className={styles.configCard}>
+      <div className={styles.workspaceShell}>
         <div className={styles.content}>
           {error && <div className="error-box">{error}</div>}
           {!error && visualParseError && (
@@ -507,20 +516,20 @@ export function ConfigPage() {
             <VisualConfigEditor
               values={visualValues}
               validationErrors={visualValidationErrors}
+              hasPayloadValidationErrors={visualHasPayloadValidationErrors}
               disabled={disableControls || loading}
               onChange={setVisualValues}
             />
           ) : (
-            <div className={styles.editorWrapper} ref={editorWrapperRef}>
-              {/* Floating search controls */}
-              <div className={styles.floatingControls} ref={floatingControlsRef}>
+            <div className={styles.sourceWorkspace}>
+              <div className={styles.sourceToolbar}>
                 <div className={styles.searchInputWrapper}>
                   <Input
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     onKeyDown={handleSearchKeyDown}
                     placeholder={t('config_management.search_placeholder', {
-                      defaultValue: '搜索配置内容...'
+                      defaultValue: '搜索配置内容...',
                     })}
                     disabled={disableControls || loading}
                     className={styles.searchInput}
@@ -530,7 +539,9 @@ export function ConfigPage() {
                           <span className={styles.searchCount}>
                             {searchResults.total > 0
                               ? `${searchResults.current} / ${searchResults.total}`
-                              : t('config_management.search_no_results', { defaultValue: '无结果' })}
+                              : t('config_management.search_no_results', {
+                                  defaultValue: '无结果',
+                                })}
                           </span>
                         )}
                         <button
@@ -546,12 +557,15 @@ export function ConfigPage() {
                     }
                   />
                 </div>
+
                 <div className={styles.searchActions}>
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={handlePrevMatch}
-                    disabled={!searchQuery || lastSearchedQuery !== searchQuery || searchResults.total === 0}
+                    disabled={
+                      !searchQuery || lastSearchedQuery !== searchQuery || searchResults.total === 0
+                    }
                     title={t('config_management.search_prev', { defaultValue: '上一个' })}
                   >
                     <IconChevronUp size={16} />
@@ -560,57 +574,53 @@ export function ConfigPage() {
                     variant="secondary"
                     size="sm"
                     onClick={handleNextMatch}
-                    disabled={!searchQuery || lastSearchedQuery !== searchQuery || searchResults.total === 0}
+                    disabled={
+                      !searchQuery || lastSearchedQuery !== searchQuery || searchResults.total === 0
+                    }
                     title={t('config_management.search_next', { defaultValue: '下一个' })}
                   >
                     <IconChevronDown size={16} />
                   </Button>
                 </div>
               </div>
-              <CodeMirror
-                ref={editorRef}
-                value={content}
-                onChange={handleChange}
-                extensions={extensions}
-                theme={resolvedTheme}
-                editable={!disableControls && !loading}
-                placeholder={t('config_management.editor_placeholder')}
-                height="100%"
-                style={{ height: '100%' }}
-                basicSetup={{
-                  lineNumbers: true,
-                  highlightActiveLineGutter: true,
-                  highlightActiveLine: true,
-                  foldGutter: true,
-                  dropCursor: true,
-                  allowMultipleSelections: true,
-                  indentOnInput: true,
-                  bracketMatching: true,
-                  closeBrackets: true,
-                  autocompletion: false,
-                  rectangularSelection: true,
-                  crosshairCursor: false,
-                  highlightSelectionMatches: true,
-                  closeBracketsKeymap: true,
-                  searchKeymap: true,
-                  foldKeymap: true,
-                  completionKeymap: false,
-                  lintKeymap: true
-                }}
-              />
+
+              <div className={styles.editorWrapper}>
+                <CodeMirror
+                  ref={editorRef}
+                  value={content}
+                  onChange={handleChange}
+                  extensions={extensions}
+                  theme={resolvedTheme}
+                  editable={!disableControls && !loading}
+                  placeholder={t('config_management.editor_placeholder')}
+                  height="100%"
+                  style={{ height: '100%' }}
+                  basicSetup={{
+                    lineNumbers: true,
+                    highlightActiveLineGutter: true,
+                    highlightActiveLine: true,
+                    foldGutter: true,
+                    dropCursor: true,
+                    allowMultipleSelections: true,
+                    indentOnInput: true,
+                    bracketMatching: true,
+                    closeBrackets: true,
+                    autocompletion: false,
+                    rectangularSelection: true,
+                    crosshairCursor: false,
+                    highlightSelectionMatches: true,
+                    closeBracketsKeymap: true,
+                    searchKeymap: true,
+                    foldKeymap: true,
+                    completionKeymap: false,
+                    lintKeymap: true,
+                  }}
+                />
+              </div>
             </div>
           )}
-
-          {/* Controls */}
-          <div className={styles.controls}>
-            {!isLoadedStatus && (
-              <span className={`${styles.status} ${getStatusClass()}`}>
-                {getStatusText()}
-              </span>
-            )}
-          </div>
         </div>
-      </Card>
+      </div>
 
       {typeof document !== 'undefined' ? createPortal(floatingActions, document.body) : null}
       <DiffModal

@@ -355,7 +355,9 @@ export function SystemPage() {
               className={`${styles.infoTile} ${styles.tapTile}`}
               onClick={handleInfoVersionTap}
             >
-              <div className={styles.tileLabel}>{t('footer.version')}</div>
+              <div className={styles.tileHeader}>
+                <div className={styles.tileLabel}>{t('footer.version')}</div>
+              </div>
               <div className={styles.tileValue}>{appVersion}</div>
             </button>
 

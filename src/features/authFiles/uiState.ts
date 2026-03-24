@@ -5,9 +5,12 @@ export type AuthFilesSortMode = (typeof AUTH_FILES_SORT_MODES)[number];
 export type AuthFilesUiState = {
   filter?: string;
   problemOnly?: boolean;
+  compactMode?: boolean;
   search?: string;
   page?: number;
   pageSize?: number;
+  regularPageSize?: number;
+  compactPageSize?: number;
   sortMode?: AuthFilesSortMode;
 };
 

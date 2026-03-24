@@ -17,13 +17,24 @@ export type AuthFilesPrefixProxyEditorModalProps = {
   updatedText: string;
   dirty: boolean;
   onClose: () => void;
+  onCopyText: (text: string) => void | Promise<void>;
   onSave: () => void;
   onChange: (field: PrefixProxyEditorField, value: PrefixProxyEditorFieldValue) => void;
 };
 
 export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEditorModalProps) {
   const { t } = useTranslation();
-  const { disableControls, editor, updatedText, dirty, onClose, onSave, onChange } = props;
+  const { disableControls, editor, updatedText, dirty, onClose, onCopyText, onSave, onChange } =
+    props;
+  const formatJsonText = (text: string) => {
+    if (!text) return '';
+    try {
+      return JSON.stringify(JSON.parse(text), null, 2);
+    } catch {
+      return text;
+    }
+  };
+  const previewText = formatJsonText(updatedText);
 
   return (
     <Modal
@@ -39,7 +50,17 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={editor?.saving === true}>
-            {t('common.cancel')}
+            {dirty ? t('common.cancel') : t('common.close')}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (!updatedText) return;
+              void onCopyText(updatedText);
+            }}
+            disabled={editor?.saving === true || !updatedText}
+          >
+            {t('common.copy')}
           </Button>
           <Button
             onClick={onSave}
@@ -63,13 +84,24 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
               {editor.error && <div className={styles.prefixProxyError}>{editor.error}</div>}
               <div className={styles.prefixProxyJsonWrapper}>
                 <label className={styles.prefixProxyLabel}>
+                  {t('auth_files.prefix_proxy_info_label')}
+                </label>
+                <textarea
+                  className={styles.prefixProxyTextarea}
+                  rows={8}
+                  readOnly
+                  value={editor.fileInfoText}
+                />
+              </div>
+              <div className={styles.prefixProxyJsonWrapper}>
+                <label className={styles.prefixProxyLabel}>
                   {t('auth_files.prefix_proxy_source_label')}
                 </label>
                 <textarea
                   className={styles.prefixProxyTextarea}
                   rows={10}
                   readOnly
-                  value={updatedText}
+                  value={previewText}
                 />
               </div>
               <div className={styles.prefixProxyFields}>
@@ -126,10 +158,10 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                   <div className="form-group">
                     <label>{t('ai_providers.codex_websockets_label')}</label>
                     <ToggleSwitch
-                      checked={Boolean(editor.websocket)}
+                      checked={Boolean(editor.websockets)}
                       disabled={disableControls || editor.saving || !editor.json}
                       ariaLabel={t('ai_providers.codex_websockets_label')}
-                      onChange={(value) => onChange('websocket', value)}
+                      onChange={(value) => onChange('websockets', value)}
                     />
                     <div className="hint">{t('ai_providers.codex_websockets_hint')}</div>
                   </div>

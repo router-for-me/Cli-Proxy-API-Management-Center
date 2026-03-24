@@ -31,6 +31,30 @@ function getValidationMessage(
   return t(`config_management.visual.validation.${errorCode}`);
 }
 
+function buildProtocolOptions(
+  t: ReturnType<typeof useTranslation>['t'],
+  rules: Array<{ models: PayloadModelEntry[] }>
+) {
+  const options: Array<{ value: string; label: string }> = VISUAL_CONFIG_PROTOCOL_OPTIONS.map(
+    (option) => ({
+      value: option.value,
+      label: t(option.labelKey, { defaultValue: option.defaultLabel }),
+    })
+  );
+  const seen = new Set<string>(options.map((option) => option.value));
+
+  for (const rule of rules) {
+    for (const model of rule.models) {
+      const protocol = model.protocol;
+      if (!protocol || !protocol.trim() || seen.has(protocol)) continue;
+      seen.add(protocol);
+      options.push({ value: protocol, label: protocol });
+    }
+  }
+
+  return options;
+}
+
 export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   value,
   disabled,
@@ -54,7 +78,10 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const renderApiKeyIds = useMemo(() => {
     if (apiKeyIds.length === apiKeys.length) return apiKeyIds;
     if (apiKeyIds.length > apiKeys.length) return apiKeyIds.slice(0, apiKeys.length);
-    return [...apiKeyIds, ...Array.from({ length: apiKeys.length - apiKeyIds.length }, () => makeClientId())];
+    return [
+      ...apiKeyIds,
+      ...Array.from({ length: apiKeys.length - apiKeyIds.length }, () => makeClientId()),
+    ];
   }, [apiKeyIds, apiKeys.length]);
 
   const apiKeyInputId = useId();
@@ -116,7 +143,9 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       return;
     }
 
-    const editingIndex = editingApiKeyId ? renderApiKeyIds.findIndex((id) => id === editingApiKeyId) : -1;
+    const editingIndex = editingApiKeyId
+      ? renderApiKeyIds.findIndex((id) => id === editingApiKeyId)
+      : -1;
     const nextKeys =
       editingApiKeyId === null
         ? [...apiKeys, trimmed]
@@ -143,7 +172,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
 
   return (
     <div className="form-group" style={{ marginBottom: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <div className={styles.blockHeaderRow}>
         <label style={{ margin: 0 }}>{t('config_management.visual.api_keys.label')}</label>
         <Button size="sm" onClick={openAddModal} disabled={disabled}>
           {t('config_management.visual.api_keys.add')}
@@ -151,28 +180,25 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       </div>
 
       {apiKeys.length === 0 ? (
-        <div
-          style={{
-            border: '1px dashed var(--border-color)',
-            borderRadius: 12,
-            padding: 16,
-            color: 'var(--text-secondary)',
-            textAlign: 'center',
-          }}
-        >
-          {t('config_management.visual.api_keys.empty')}
-        </div>
+        <div className={styles.emptyState}>{t('config_management.visual.api_keys.empty')}</div>
       ) : (
         <div className="item-list" style={{ marginTop: 4 }}>
           {apiKeys.map((key, index) => (
             <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
               <div className="item-meta">
                 <div className="pill">#{index + 1}</div>
-                <div className="item-title">{t('config_management.visual.api_keys.input_label')}</div>
+                <div className="item-title">
+                  {t('config_management.visual.api_keys.input_label')}
+                </div>
                 <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
               </div>
               <div className="item-actions">
-                <Button variant="secondary" size="sm" onClick={() => handleCopy(key)} disabled={disabled}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleCopy(key)}
+                  disabled={disabled}
+                >
                   {t('common.copy')}
                 </Button>
                 <Button
@@ -202,20 +228,28 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       <Modal
         open={modalOpen}
         onClose={closeModal}
-        title={editingApiKeyId !== null ? t('config_management.visual.api_keys.edit_title') : t('config_management.visual.api_keys.add_title')}
+        title={
+          editingApiKeyId !== null
+            ? t('config_management.visual.api_keys.edit_title')
+            : t('config_management.visual.api_keys.add_title')
+        }
         footer={
           <>
             <Button variant="secondary" onClick={closeModal} disabled={disabled}>
               {t('config_management.visual.common.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={disabled}>
-              {editingApiKeyId !== null ? t('config_management.visual.common.update') : t('config_management.visual.common.add')}
+              {editingApiKeyId !== null
+                ? t('config_management.visual.common.update')
+                : t('config_management.visual.common.add')}
             </Button>
           </>
         }
       >
         <div className="form-group">
-          <label htmlFor={apiKeyInputId}>{t('config_management.visual.api_keys.input_label')}</label>
+          <label htmlFor={apiKeyInputId}>
+            {t('config_management.visual.api_keys.input_label')}
+          </label>
           <div className={styles.apiKeyModalInputRow}>
             <input
               id={apiKeyInputId}
@@ -237,8 +271,14 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
               {t('config_management.visual.api_keys.generate')}
             </Button>
           </div>
-          <div id={apiKeyHintId} className="hint">{t('config_management.visual.api_keys.input_hint')}</div>
-          {formError && <div id={apiKeyErrorId} className="error-box">{formError}</div>}
+          <div id={apiKeyHintId} className="hint">
+            {t('config_management.visual.api_keys.input_hint')}
+          </div>
+          {formError && (
+            <div id={apiKeyErrorId} className="error-box">
+              {formError}
+            </div>
+          )}
         </div>
       </Modal>
     </div>
@@ -264,7 +304,10 @@ const StringListEditor = memo(function StringListEditor({
   const renderItemIds = useMemo(() => {
     if (itemIds.length === items.length) return itemIds;
     if (itemIds.length > items.length) return itemIds.slice(0, items.length);
-    return [...itemIds, ...Array.from({ length: items.length - itemIds.length }, () => makeClientId())];
+    return [
+      ...itemIds,
+      ...Array.from({ length: items.length - itemIds.length }, () => makeClientId()),
+    ];
   }, [itemIds, items.length]);
 
   const updateItem = (index: number, nextValue: string) =>
@@ -279,9 +322,9 @@ const StringListEditor = memo(function StringListEditor({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div className={styles.stringList}>
       {items.map((item, index) => (
-        <div key={renderItemIds[index] ?? `item-${index}`} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div key={renderItemIds[index] ?? `item-${index}`} className={styles.stringListRow}>
           <input
             className="input"
             placeholder={placeholder}
@@ -296,7 +339,7 @@ const StringListEditor = memo(function StringListEditor({
           </Button>
         </div>
       ))}
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div className={styles.actionRow}>
         <Button variant="secondary" size="sm" onClick={addItem} disabled={disabled}>
           {t('config_management.visual.common.add')}
         </Button>
@@ -309,23 +352,18 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
   value,
   disabled,
   protocolFirst = false,
+  rawJsonValues = false,
   onChange,
 }: {
   value: PayloadRule[];
   disabled?: boolean;
   protocolFirst?: boolean;
+  rawJsonValues?: boolean;
   onChange: (next: PayloadRule[]) => void;
 }) {
   const { t } = useTranslation();
-  const rules = value.length ? value : [];
-  const protocolOptions = useMemo(
-    () =>
-      VISUAL_CONFIG_PROTOCOL_OPTIONS.map((option) => ({
-        value: option.value,
-        label: t(option.labelKey, { defaultValue: option.defaultLabel }),
-      })),
-    [t]
-  );
+  const rules = value;
+  const protocolOptions = useMemo(() => buildProtocolOptions(t, rules), [rules, t]);
   const payloadValueTypeOptions = useMemo(
     () =>
       VISUAL_CONFIG_PAYLOAD_VALUE_TYPE_OPTIONS.map((option) => ({
@@ -359,7 +397,11 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
     updateRule(ruleIndex, { models: rule.models.filter((_, i) => i !== modelIndex) });
   };
 
-  const updateModel = (ruleIndex: number, modelIndex: number, patch: Partial<PayloadModelEntry>) => {
+  const updateModel = (
+    ruleIndex: number,
+    modelIndex: number,
+    patch: Partial<PayloadModelEntry>
+  ) => {
     const rule = rules[ruleIndex];
     updateRule(ruleIndex, {
       models: rule.models.map((m, i) => (i === modelIndex ? { ...m, ...patch } : m)),
@@ -371,7 +413,7 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
     const nextParam: PayloadParamEntry = {
       id: makeClientId(),
       path: '',
-      valueType: 'string',
+      valueType: rawJsonValues ? 'json' : 'string',
       value: '',
     };
     updateRule(ruleIndex, { params: [...rule.params, nextParam] });
@@ -382,7 +424,11 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
     updateRule(ruleIndex, { params: rule.params.filter((_, i) => i !== paramIndex) });
   };
 
-  const updateParam = (ruleIndex: number, paramIndex: number, patch: Partial<PayloadParamEntry>) => {
+  const updateParam = (
+    ruleIndex: number,
+    paramIndex: number,
+    patch: Partial<PayloadParamEntry>
+  ) => {
     const rule = rules[ruleIndex];
     updateRule(ruleIndex, {
       params: rule.params.map((p, i) => (i === paramIndex ? { ...p, ...patch } : p)),
@@ -405,7 +451,9 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
   };
 
   const getParamErrorMessage = (param: PayloadParamEntry) => {
-    const errorCode = getPayloadParamValidationError(param);
+    const errorCode = getPayloadParamValidationError(
+      rawJsonValues ? { ...param, valueType: 'json' } : param
+    );
     return getValidationMessage(t, errorCode);
   };
 
@@ -414,10 +462,29 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
     paramIndex: number,
     param: PayloadParamEntry
   ) => {
+    if (rawJsonValues) {
+      return (
+        <textarea
+          className={`input ${styles.payloadJsonInput}`}
+          placeholder={t('config_management.visual.payload_rules.value_raw_json')}
+          aria-label={t('config_management.visual.payload_rules.param_value')}
+          value={param.value}
+          onChange={(e) =>
+            updateParam(ruleIndex, paramIndex, { value: e.target.value, valueType: 'json' })
+          }
+          disabled={disabled}
+        />
+      );
+    }
+
     if (param.valueType === 'boolean') {
       return (
         <Select
-          value={param.value.toLowerCase() === 'true' || param.value.toLowerCase() === 'false' ? param.value.toLowerCase() : ''}
+          value={
+            param.value.toLowerCase() === 'true' || param.value.toLowerCase() === 'false'
+              ? param.value.toLowerCase()
+              : ''
+          }
           options={booleanValueOptions}
           placeholder={t('config_management.visual.payload_rules.value_boolean')}
           disabled={disabled}
@@ -453,40 +520,34 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className={styles.blockStack}>
       {rules.map((rule, ruleIndex) => (
-        <div
-          key={rule.id}
-          style={{
-            border: '1px solid var(--border-color)',
-            borderRadius: 12,
-            padding: 12,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{t('config_management.visual.payload_rules.rule')} {ruleIndex + 1}</div>
-            <Button variant="ghost" size="sm" onClick={() => removeRule(ruleIndex)} disabled={disabled}>
+        <div key={rule.id} className={styles.ruleCard}>
+          <div className={styles.ruleCardHeader}>
+            <div className={styles.ruleCardTitle}>
+              {t('config_management.visual.payload_rules.rule')} {ruleIndex + 1}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => removeRule(ruleIndex)}
+              disabled={disabled}
+            >
               {t('config_management.visual.common.delete')}
             </Button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('config_management.visual.payload_rules.models')}</div>
+          <div className={styles.blockStack}>
+            <div className={styles.blockLabel}>
+              {t('config_management.visual.payload_rules.models')}
+            </div>
             {(rule.models.length ? rule.models : []).map((model, modelIndex) => (
               <div
                 key={model.id}
-                className={[styles.payloadRuleModelRow, protocolFirst ? styles.payloadRuleModelRowProtocolFirst : '']
+                className={[
+                  styles.payloadRuleModelRow,
+                  protocolFirst ? styles.payloadRuleModelRowProtocolFirst : '',
+                ]
                   .filter(Boolean)
                   .join(' ')}
               >
@@ -546,15 +607,22 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                 </Button>
               </div>
             ))}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button variant="secondary" size="sm" onClick={() => addModel(ruleIndex)} disabled={disabled}>
+            <div className={styles.actionRow}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => addModel(ruleIndex)}
+                disabled={disabled}
+              >
                 {t('config_management.visual.payload_rules.add_model')}
               </Button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('config_management.visual.payload_rules.params')}</div>
+          <div className={styles.blockStack}>
+            <div className={styles.blockLabel}>
+              {t('config_management.visual.payload_rules.params')}
+            </div>
             {(rule.params.length ? rule.params : []).map((param, paramIndex) => {
               const paramError = getParamErrorMessage(param);
 
@@ -569,23 +637,25 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                       onChange={(e) => updateParam(ruleIndex, paramIndex, { path: e.target.value })}
                       disabled={disabled}
                     />
-                    <Select
-                      value={param.valueType}
-                      options={payloadValueTypeOptions}
-                      disabled={disabled}
-                      ariaLabel={t('config_management.visual.payload_rules.param_type')}
-                      onChange={(nextValue) =>
-                        updateParam(ruleIndex, paramIndex, {
-                          valueType: nextValue as PayloadParamValueType,
-                          value:
-                            nextValue === 'boolean'
-                              ? 'true'
-                              : nextValue === 'json' && param.value.trim() === ''
-                                ? '{}'
-                                : param.value,
-                        })
-                      }
-                    />
+                    {rawJsonValues ? null : (
+                      <Select
+                        value={param.valueType}
+                        options={payloadValueTypeOptions}
+                        disabled={disabled}
+                        ariaLabel={t('config_management.visual.payload_rules.param_type')}
+                        onChange={(nextValue) =>
+                          updateParam(ruleIndex, paramIndex, {
+                            valueType: nextValue as PayloadParamValueType,
+                            value:
+                              nextValue === 'boolean'
+                                ? 'true'
+                                : nextValue === 'json' && param.value.trim() === ''
+                                  ? '{}'
+                                  : param.value,
+                          })
+                        }
+                      />
+                    )}
                     {renderParamValueEditor(ruleIndex, paramIndex, param)}
                     <Button
                       variant="ghost"
@@ -597,12 +667,19 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                       {t('config_management.visual.common.delete')}
                     </Button>
                   </div>
-                  {paramError && <div className={`error-box ${styles.payloadParamError}`}>{paramError}</div>}
+                  {paramError && (
+                    <div className={`error-box ${styles.payloadParamError}`}>{paramError}</div>
+                  )}
                 </div>
               );
             })}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button variant="secondary" size="sm" onClick={() => addParam(ruleIndex)} disabled={disabled}>
+            <div className={styles.actionRow}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => addParam(ruleIndex)}
+                disabled={disabled}
+              >
                 {t('config_management.visual.payload_rules.add_param')}
               </Button>
             </div>
@@ -611,20 +688,12 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
       ))}
 
       {rules.length === 0 && (
-        <div
-          style={{
-            border: '1px dashed var(--border-color)',
-            borderRadius: 12,
-            padding: 16,
-            color: 'var(--text-secondary)',
-            textAlign: 'center',
-          }}
-        >
+        <div className={styles.emptyState}>
           {t('config_management.visual.payload_rules.no_rules')}
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div className={styles.actionRow}>
         <Button variant="secondary" size="sm" onClick={addRule} disabled={disabled}>
           {t('config_management.visual.payload_rules.add_rule')}
         </Button>
@@ -643,15 +712,8 @@ export const PayloadFilterRulesEditor = memo(function PayloadFilterRulesEditor({
   onChange: (next: PayloadFilterRule[]) => void;
 }) {
   const { t } = useTranslation();
-  const rules = value.length ? value : [];
-  const protocolOptions = useMemo(
-    () =>
-      VISUAL_CONFIG_PROTOCOL_OPTIONS.map((option) => ({
-        value: option.value,
-        label: t(option.labelKey, { defaultValue: option.defaultLabel }),
-      })),
-    [t]
-  );
+  const rules = value;
+  const protocolOptions = useMemo(() => buildProtocolOptions(t, rules), [rules, t]);
 
   const addRule = () => onChange([...rules, { id: makeClientId(), models: [], params: [] }]);
   const removeRule = (ruleIndex: number) => onChange(rules.filter((_, i) => i !== ruleIndex));
@@ -670,7 +732,11 @@ export const PayloadFilterRulesEditor = memo(function PayloadFilterRulesEditor({
     updateRule(ruleIndex, { models: rule.models.filter((_, i) => i !== modelIndex) });
   };
 
-  const updateModel = (ruleIndex: number, modelIndex: number, patch: Partial<PayloadModelEntry>) => {
+  const updateModel = (
+    ruleIndex: number,
+    modelIndex: number,
+    patch: Partial<PayloadModelEntry>
+  ) => {
     const rule = rules[ruleIndex];
     updateRule(ruleIndex, {
       models: rule.models.map((m, i) => (i === modelIndex ? { ...m, ...patch } : m)),
@@ -678,36 +744,27 @@ export const PayloadFilterRulesEditor = memo(function PayloadFilterRulesEditor({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className={styles.blockStack}>
       {rules.map((rule, ruleIndex) => (
-        <div
-          key={rule.id}
-          style={{
-            border: '1px solid var(--border-color)',
-            borderRadius: 12,
-            padding: 12,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{t('config_management.visual.payload_rules.rule')} {ruleIndex + 1}</div>
-            <Button variant="ghost" size="sm" onClick={() => removeRule(ruleIndex)} disabled={disabled}>
+        <div key={rule.id} className={styles.ruleCard}>
+          <div className={styles.ruleCardHeader}>
+            <div className={styles.ruleCardTitle}>
+              {t('config_management.visual.payload_rules.rule')} {ruleIndex + 1}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => removeRule(ruleIndex)}
+              disabled={disabled}
+            >
               {t('config_management.visual.common.delete')}
             </Button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('config_management.visual.payload_rules.models')}</div>
+          <div className={styles.blockStack}>
+            <div className={styles.blockLabel}>
+              {t('config_management.visual.payload_rules.models')}
+            </div>
             {rule.models.map((model, modelIndex) => (
               <div key={model.id} className={styles.payloadFilterModelRow}>
                 <input
@@ -740,15 +797,22 @@ export const PayloadFilterRulesEditor = memo(function PayloadFilterRulesEditor({
                 </Button>
               </div>
             ))}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button variant="secondary" size="sm" onClick={() => addModel(ruleIndex)} disabled={disabled}>
+            <div className={styles.actionRow}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => addModel(ruleIndex)}
+                disabled={disabled}
+              >
                 {t('config_management.visual.payload_rules.add_model')}
               </Button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>{t('config_management.visual.payload_rules.remove_params')}</div>
+          <div className={styles.blockStack}>
+            <div className={styles.blockLabel}>
+              {t('config_management.visual.payload_rules.remove_params')}
+            </div>
             <StringListEditor
               value={rule.params}
               disabled={disabled}
@@ -761,20 +825,12 @@ export const PayloadFilterRulesEditor = memo(function PayloadFilterRulesEditor({
       ))}
 
       {rules.length === 0 && (
-        <div
-          style={{
-            border: '1px dashed var(--border-color)',
-            borderRadius: 12,
-            padding: 16,
-            color: 'var(--text-secondary)',
-            textAlign: 'center',
-          }}
-        >
+        <div className={styles.emptyState}>
           {t('config_management.visual.payload_rules.no_rules')}
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div className={styles.actionRow}>
         <Button variant="secondary" size="sm" onClick={addRule} disabled={disabled}>
           {t('config_management.visual.payload_rules.add_rule')}
         </Button>

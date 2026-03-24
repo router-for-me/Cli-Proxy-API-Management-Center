@@ -151,10 +151,11 @@
   align-items: center;
 }
 
+// 卡片渐变背景 — 基于 TYPE_COLORS light.bg 转 rgba
 .claudeCard {
   background-image: linear-gradient(180deg,
-      rgba(252, 228, 236, 0.18),
-      rgba(252, 228, 236, 0));
+      rgba(251, 236, 228, 0.18),
+      rgba(251, 236, 228, 0));
 }
 
 .antigravityCard {
@@ -165,20 +166,20 @@
 
 .codexCard {
   background-image: linear-gradient(180deg,
-      rgba(255, 243, 224, 0.18),
-      rgba(255, 243, 224, 0));
+      rgba(234, 231, 255, 0.18),
+      rgba(234, 231, 255, 0));
 }
 
 .geminiCliCard {
   background-image: linear-gradient(180deg,
-      rgba(231, 239, 255, 0.2),
-      rgba(231, 239, 255, 0));
+      rgba(224, 232, 255, 0.2),
+      rgba(224, 232, 255, 0));
 }
 
 .kimiCard {
   background-image: linear-gradient(180deg,
-      rgba(255, 244, 229, 0.2),
-      rgba(255, 244, 229, 0));
+      rgba(220, 232, 255, 0.2),
+      rgba(220, 232, 255, 0));
 }
 
 .quotaSection {
@@ -319,41 +320,161 @@
 }
 
 .premiumPlanValue {
+  position: relative;
   display: inline-flex;
   align-items: center;
   font-weight: 700;
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #fdf3d7, #f0d060);
-  border: 1px solid #e0b830;
-  box-shadow: 0 1px 4px rgba(200, 160, 0, 0.18);
-  color: #7a5c00;
+  overflow: visible;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      circle at 18% 24%,
+      rgba(255, 255, 255, 0.96) 0%,
+      rgba(255, 255, 255, 0.72) 18%,
+      rgba(255, 255, 255, 0) 42%
+    ),
+    linear-gradient(135deg, #fff9e3 0%, #ffe07f 52%, #e0aa14 100%);
+  border: 1px solid rgba(217, 165, 22, 0.72);
+  box-shadow:
+    0 1px 3px rgba(133, 92, 0, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.22) inset,
+    0 0 16px rgba(255, 214, 98, 0.28);
+  color: #6b4b00;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
   text-transform: capitalize;
 
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -6px -9px;
+    border-radius: inherit;
+    background: radial-gradient(
+      circle at 18% 22%,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 237, 158, 0.58) 32%,
+      rgba(255, 215, 91, 0) 72%
+    );
+    filter: blur(9px);
+    opacity: 0.75;
+    pointer-events: none;
+    z-index: -1;
+  }
+
   @media (dynamic-range: high) {
-    background: linear-gradient(135deg,
-      color(display-p3 0.99 0.95 0.82),
-      color(display-p3 0.97 0.82 0.28));
-    border-color: color(display-p3 0.90 0.73 0.12);
-    box-shadow: 0 1px 8px color(display-p3 1.0 0.84 0.0 / 0.25);
-    color: color(display-p3 0.50 0.38 0.0);
+    background:
+      radial-gradient(
+        circle at 18% 24%,
+        color(display-p3 1 0.99 0.94) 0%,
+        color(display-p3 1 0.97 0.82 / 0.82) 18%,
+        color(display-p3 1 0.95 0.7 / 0) 42%
+      ),
+      linear-gradient(
+        135deg,
+        color(display-p3 1 0.98 0.88),
+        color(display-p3 0.99 0.86 0.34),
+        color(display-p3 0.92 0.68 0.05)
+      );
+    border-color: color(display-p3 0.9 0.73 0.12 / 0.85);
+    box-shadow:
+      0 1px 4px color(display-p3 0.45 0.28 0 / 0.22),
+      0 0 0 1px color(display-p3 1 0.98 0.86 / 0.3) inset,
+      0 0 18px color(display-p3 1 0.89 0.2 / 0.36);
+    color: color(display-p3 0.43 0.3 0);
+  }
+
+  @supports (color: #{'color(rec2100-linear 1 1 1)'}) {
+    @media (dynamic-range: high) {
+      dynamic-range-limit: no-limit;
+      box-shadow:
+        0 1px 4px color(display-p3 0.45 0.28 0 / 0.22),
+        0 0 0 1px color(display-p3 1 0.98 0.86 / 0.3) inset,
+        0 0 14px color(display-p3 1 0.89 0.2 / 0.36),
+        0 0 30px #{'color(rec2100-linear 3.6 2.9 0.7 / 0.48)'};
+
+      &::before {
+        background: radial-gradient(
+          circle at 18% 22%,
+          #{'color(rec2100-linear 6.5 6.2 5.4 / 0.92)'} 0%,
+          #{'color(rec2100-linear 2.4 2 0.6 / 0.62)'} 34%,
+          #{'color(rec2100-linear 1 0.85 0.12 / 0)'} 76%
+        );
+        opacity: 0.92;
+      }
+    }
   }
 }
 
 :global([data-theme='dark']) .premiumPlanValue {
-  background: linear-gradient(135deg, #3d3210, #5a4a18);
-  border-color: #8b7030;
-  box-shadow: 0 1px 8px rgba(180, 140, 0, 0.2);
-  color: #e8c84c;
+  background:
+    radial-gradient(
+      circle at 18% 24%,
+      rgba(255, 229, 138, 0.32) 0%,
+      rgba(255, 214, 98, 0.18) 18%,
+      rgba(255, 214, 98, 0) 44%
+    ),
+    linear-gradient(135deg, #4f3d0b 0%, #6e5510 48%, #8f6d10 100%);
+  border-color: rgba(226, 180, 50, 0.7);
+  box-shadow:
+    0 1px 6px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 220, 120, 0.16) inset,
+    0 0 18px rgba(255, 196, 44, 0.22);
+  color: #fff0a8;
+  text-shadow: 0 0 10px rgba(255, 212, 79, 0.22);
+
+  &::before {
+    background: radial-gradient(
+      circle at 18% 24%,
+      rgba(255, 229, 138, 0.42) 0%,
+      rgba(255, 197, 66, 0.28) 34%,
+      rgba(255, 187, 0, 0) 74%
+    );
+    opacity: 0.8;
+  }
 
   @media (dynamic-range: high) {
-    background: linear-gradient(135deg,
-      color(display-p3 0.24 0.20 0.06),
-      color(display-p3 0.38 0.30 0.08));
-    border-color: color(display-p3 0.58 0.46 0.15);
-    box-shadow: 0 1px 12px color(display-p3 0.80 0.65 0.0 / 0.2);
-    color: color(display-p3 0.95 0.82 0.25);
+    background:
+      radial-gradient(
+        circle at 18% 24%,
+        color(display-p3 1 0.89 0.38 / 0.38) 0%,
+        color(display-p3 1 0.82 0.2 / 0.2) 18%,
+        color(display-p3 1 0.82 0.2 / 0) 44%
+      ),
+      linear-gradient(
+        135deg,
+        color(display-p3 0.33 0.25 0.04),
+        color(display-p3 0.48 0.36 0.08),
+        color(display-p3 0.62 0.46 0.09)
+      );
+    border-color: color(display-p3 0.78 0.6 0.16 / 0.78);
+    box-shadow:
+      0 1px 8px color(display-p3 0 0 0 / 0.32),
+      0 0 0 1px color(display-p3 0.95 0.8 0.24 / 0.18) inset,
+      0 0 20px color(display-p3 1 0.76 0.1 / 0.28);
+    color: color(display-p3 1 0.93 0.58);
+  }
+
+  @supports (color: #{'color(rec2100-linear 1 1 1)'}) {
+    @media (dynamic-range: high) {
+      dynamic-range-limit: no-limit;
+      box-shadow:
+        0 1px 8px color(display-p3 0 0 0 / 0.32),
+        0 0 0 1px color(display-p3 0.95 0.8 0.24 / 0.18) inset,
+        0 0 16px color(display-p3 1 0.76 0.1 / 0.28),
+        0 0 28px #{'color(rec2100-linear 4.8 3.5 0.45 / 0.4)'};
+
+      &::before {
+        background: radial-gradient(
+          circle at 18% 24%,
+          #{'color(rec2100-linear 5.6 4.1 0.75 / 0.64)'} 0%,
+          #{'color(rec2100-linear 2.2 1.5 0.2 / 0.34)'} 34%,
+          #{'color(rec2100-linear 1.2 0.9 0.06 / 0)'} 74%
+        );
+        opacity: 0.95;
+      }
+    }
   }
 }
 
