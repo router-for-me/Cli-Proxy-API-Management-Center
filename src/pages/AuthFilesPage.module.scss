@@ -80,96 +80,31 @@
 
 // 筛选区域
 .filterSection {
-  display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
   margin-bottom: $spacing-lg;
-
-  @include tablet {
-    grid-template-columns: 220px minmax(0, 1fr);
-  }
-
-  @include mobile {
-    grid-template-columns: 1fr;
-    gap: $spacing-md;
-  }
 }
 
 .filterRail {
-  position: sticky;
-  top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 16px;
-  border-radius: 18px;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 94%, transparent), transparent),
     color-mix(in srgb, var(--bg-primary) 90%, transparent);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, #fff 52%, transparent),
-    0 18px 32px -30px rgba(0, 0, 0, 0.35);
-  align-self: start;
+    0 12px 24px -22px rgba(0, 0, 0, 0.25);
 
   @include mobile {
-    position: static;
-    padding: 14px;
+    padding: 12px;
   }
 }
 
-.filterRailHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.filterRailEyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-tertiary);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.filterRailHero {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.filterRailHeroTitle {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.filterRailHeroIcon {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
-}
-
-.filterRailHeroIconImage {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-}
-
-.filterRailHeroIconFallback {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--text-primary);
-}
 
 .filterAllIconWrap {
   position: relative;
@@ -189,63 +124,6 @@
   color: color-mix(in srgb, var(--primary-color) 70%, var(--text-primary));
 }
 
-.filterRailHeroText {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.filterRailTitle {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
-  @include text-ellipsis;
-}
-
-.filterRailDescription {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.35;
-}
-
-.filterRailMeta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.filterRailCount {
-  display: inline-grid;
-  place-items: center;
-  min-width: 38px;
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--primary-color) 16%, transparent);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  text-align: center;
-}
-
-.filterRailMode {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--warning-border);
-  background: var(--warning-bg);
-  color: var(--warning-text);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.2;
-}
 
 .filterContent {
   display: flex;
@@ -256,24 +134,17 @@
 
 .filterTags {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 8px;
-
-  @include mobile {
-    flex-direction: column;
-    overflow: visible;
-    padding-bottom: 0;
-  }
 }
 
 .filterTag {
   display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 14px;
+  gap: 8px;
+  padding: 7px 12px 7px 8px;
+  border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
@@ -281,28 +152,18 @@
   background: color-mix(in srgb, var(--filter-surface) 56%, var(--bg-secondary));
   color: var(--text-primary);
   cursor: pointer;
+  white-space: nowrap;
   transition:
     transform $transition-fast,
     border-color $transition-fast,
     background-color $transition-fast,
     box-shadow $transition-fast;
-  text-align: left;
 
   &:hover {
-    transform: translateX(2px);
+    transform: translateY(-1px);
     border-color: color-mix(in srgb, var(--filter-color) 52%, var(--border-color));
     background: color-mix(in srgb, var(--filter-surface) 72%, var(--bg-secondary));
-    box-shadow: 0 14px 24px -24px color-mix(in srgb, var(--filter-color) 65%, transparent);
-  }
-
-  @include mobile {
-    width: 100%;
-    min-width: 0;
-    flex: 1 1 auto;
-
-    &:hover {
-      transform: translateY(-1px);
-    }
+    box-shadow: 0 8px 18px -14px color-mix(in srgb, var(--filter-color) 65%, transparent);
   }
 }
 
@@ -313,9 +174,11 @@
     color-mix(in srgb, var(--filter-surface) 74%, var(--bg-primary)),
     color-mix(in srgb, var(--filter-surface) 44%, var(--bg-secondary))
   );
-  box-shadow:
-    inset 3px 0 0 var(--filter-color),
-    0 16px 30px -26px color-mix(in srgb, var(--filter-color) 58%, transparent);
+  box-shadow: 0 8px 20px -16px color-mix(in srgb, var(--filter-color) 58%, transparent);
+
+  &:hover {
+    transform: translateY(0);
+  }
 }
 
 .filterTagLabel {
@@ -326,20 +189,20 @@
 }
 
 .filterTagIconWrap {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 9px;
   border: 1px solid color-mix(in srgb, var(--filter-color) 16%, var(--border-color));
   background: color-mix(in srgb, var(--filter-surface) 74%, var(--bg-primary));
 }
 
 .filterTagIcon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   flex: 0 0 auto;
   object-fit: contain;
 }
@@ -360,13 +223,13 @@
 .filterTagCount {
   display: inline-grid;
   place-items: center;
-  min-width: 34px;
-  height: 28px;
-  padding: 0 10px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--filter-color) 14%, transparent);
   color: var(--filter-color);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
