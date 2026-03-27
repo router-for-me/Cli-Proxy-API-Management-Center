@@ -196,6 +196,7 @@ export function VisualConfigEditor({
   const sidebarAnchorRef = useRef<HTMLElement | null>(null);
   const floatingSidebarRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = useRef<Partial<Record<VisualSectionId, HTMLElement | null>>>({});
+  const mobileNavScrollerRef = useRef<HTMLDivElement | null>(null);
   const mobileNavButtonRefs = useRef<Partial<Record<VisualSectionId, HTMLButtonElement | null>>>(
     {}
   );
@@ -360,9 +361,22 @@ export function VisualConfigEditor({
 
   useEffect(() => {
     if (!isMobile) return;
-    mobileNavButtonRefs.current[activeSectionId]?.scrollIntoView({
-      block: 'nearest',
-      inline: 'center',
+    const scroller = mobileNavScrollerRef.current;
+    const button = mobileNavButtonRefs.current[activeSectionId];
+    if (!scroller || !button) return;
+
+    const scrollerRect = scroller.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    const centeredLeft =
+      scroller.scrollLeft +
+      (buttonRect.left - scrollerRect.left) -
+      (scroller.clientWidth - buttonRect.width) / 2;
+    const maxScrollLeft = Math.max(scroller.scrollWidth - scroller.clientWidth, 0);
+    const targetLeft = Math.min(Math.max(centeredLeft, 0), maxScrollLeft);
+
+    scroller.scrollTo({
+      left: targetLeft,
+      behavior: 'smooth',
     });
   }, [activeSectionId, isMobile]);
 
@@ -546,6 +560,7 @@ export function VisualConfigEditor({
         {isMobile ? (
           <div className={styles.mobileSectionNav}>
             <div
+              ref={mobileNavScrollerRef}
               className={styles.mobileSectionNavScroller}
               aria-label={t('config_management.visual.quick_jump', { defaultValue: '快速跳转' })}
             >
