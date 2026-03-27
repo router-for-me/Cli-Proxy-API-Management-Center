@@ -67,11 +67,7 @@
 }
 
 .dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 1000;
+  position: fixed;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
@@ -83,6 +79,7 @@
   max-height: 240px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .option {
