@@ -6,6 +6,7 @@ import { yaml } from '@codemirror/lang-yaml';
 import { search, searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { keymap } from '@codemirror/view';
 import { parse as parseYaml, parseDocument } from 'yaml';
+import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
@@ -36,6 +37,8 @@ function readCommercialModeFromYaml(yamlContent: string): boolean {
 
 export function ConfigPage() {
   const { t } = useTranslation();
+  const pageTransitionLayer = usePageTransitionLayer();
+  const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
   const showNotification = useNotificationStore((state) => state.showNotification);
   const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
@@ -79,6 +82,7 @@ export function ConfigPage() {
 
   const disableControls = connectionStatus !== 'connected';
   const isDirty = dirty || visualDirty;
+  const shouldRenderFloatingActions = isCurrentLayer;
   const hasVisualModeError = !!visualParseError;
   const hasVisualValidationErrors =
     activeTab === 'visual' &&
@@ -358,7 +362,7 @@ export function ConfigPage() {
 
   // Keep bottom floating actions from covering page content by syncing its height to a CSS variable.
   useLayoutEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !shouldRenderFloatingActions) return;
 
     const actionsEl = floatingActionsRef.current;
     if (!actionsEl) return;
@@ -379,7 +383,7 @@ export function ConfigPage() {
       window.removeEventListener('resize', updatePadding);
       document.documentElement.style.removeProperty('--config-action-bar-height');
     };
-  }, []);
+  }, [shouldRenderFloatingActions]);
 
   // CodeMirror extensions
   const extensions = useMemo(
@@ -622,7 +626,9 @@ export function ConfigPage() {
         </div>
       </div>
 
-      {typeof document !== 'undefined' ? createPortal(floatingActions, document.body) : null}
+      {shouldRenderFloatingActions && typeof document !== 'undefined'
+        ? createPortal(floatingActions, document.body)
+        : null}
       <DiffModal
         open={diffModalOpen}
         original={serverYaml}

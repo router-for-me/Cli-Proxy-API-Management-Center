@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
@@ -177,8 +178,11 @@ export function VisualConfigEditor({
   onChange,
 }: VisualConfigEditorProps) {
   const { t } = useTranslation();
+  const pageTransitionLayer = usePageTransitionLayer();
+  const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isFloatingSidebar = useMediaQuery('(min-width: 1025px)');
+  const shouldRenderFloatingSidebar = !isMobile && isFloatingSidebar && isCurrentLayer;
   const routingStrategyLabelId = useId();
   const routingStrategyHintId = `${routingStrategyLabelId}-hint`;
   const keepaliveInputId = useId();
@@ -371,7 +375,7 @@ export function VisualConfigEditor({
       floatingElement.style.removeProperty('pointer-events');
     };
 
-    if (isMobile || !isFloatingSidebar || !anchorElement || !workspaceElement) {
+    if (!shouldRenderFloatingSidebar || !anchorElement || !workspaceElement) {
       clearFloatingStyles();
       return undefined;
     }
@@ -441,7 +445,7 @@ export function VisualConfigEditor({
       contentScroller?.removeEventListener('scroll', requestPositionUpdate);
       clearFloatingStyles();
     };
-  }, [isFloatingSidebar, isMobile]);
+  }, [shouldRenderFloatingSidebar]);
 
   const navContent = (
     <div className={styles.navList}>
@@ -1042,7 +1046,7 @@ export function VisualConfigEditor({
         </div>
       </div>
 
-      {!isMobile && isFloatingSidebar && typeof document !== 'undefined'
+      {shouldRenderFloatingSidebar && typeof document !== 'undefined'
         ? createPortal(
             <div ref={floatingSidebarRef} className={styles.floatingSidebarContainer}>
               <div className={styles.floatingSidebarRail}>{navContent}</div>
