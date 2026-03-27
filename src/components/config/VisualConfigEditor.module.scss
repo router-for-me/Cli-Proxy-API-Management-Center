@@ -72,6 +72,61 @@
   }
 }
 
+.expandableInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+}
+
+.expandableInputWrapper > .expandableTextarea,
+.expandableInputWrapper > :global(.input) {
+  flex: 1;
+  min-width: 0;
+  padding-right: 28px;
+}
+
+.expandableTextarea {
+  resize: none;
+  min-height: 60px;
+  overflow: hidden;
+  line-height: 1.5;
+  padding-right: 32px;
+}
+
+.expandableToggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px;
+  color: var(--text-secondary, #999);
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  z-index: 1;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.35;
+  }
+}
+
+.expandableInputExpanded .expandableToggle {
+  top: 8px;
+  transform: none;
+  right: 14px;
+}
+
 .overview {
   position: relative;
   overflow: hidden;
