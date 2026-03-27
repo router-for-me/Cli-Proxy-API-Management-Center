@@ -12,7 +12,7 @@ import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useNotificationStore } from '@/stores';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import type { ApiKeyEntry } from '@/types';
-import { buildHeaderObject } from '@/utils/headers';
+import { buildHeaderObject, hasHeader } from '@/utils/headers';
 import { buildApiKeyEntry, buildOpenAIChatCompletionsEndpoint } from '@/components/providers/utils';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
@@ -213,7 +213,7 @@ export function AiProvidersOpenAIEditPage() {
         'Content-Type': 'application/json',
         ...customHeaders,
       };
-      if (!headers.Authorization && !headers['authorization']) {
+      if (!hasHeader(headers, 'authorization')) {
         headers.Authorization = `Bearer ${keyEntry.apiKey.trim()}`;
       }
 

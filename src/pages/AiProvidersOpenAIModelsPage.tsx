@@ -9,7 +9,7 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { modelsApi } from '@/services/api';
 import type { ModelInfo } from '@/utils/models';
-import { buildHeaderObject } from '@/utils/headers';
+import { buildHeaderObject, hasHeader } from '@/utils/headers';
 import { buildOpenAIModelsEndpoint } from '@/components/providers/utils';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import styles from './AiProvidersPage.module.scss';
@@ -68,7 +68,7 @@ export function AiProvidersOpenAIModelsPage() {
       try {
         const headerObject = buildHeaderObject(form.headers);
         const firstKey = form.apiKeyEntries.find((entry) => entry.apiKey?.trim())?.apiKey?.trim();
-        const hasAuthHeader = Boolean(headerObject.Authorization || headerObject['authorization']);
+        const hasAuthHeader = hasHeader(headerObject, 'authorization');
         const list = await modelsApi.fetchModelsViaApiCall(
           trimmedBaseUrl,
           hasAuthHeader ? undefined : firstKey,
