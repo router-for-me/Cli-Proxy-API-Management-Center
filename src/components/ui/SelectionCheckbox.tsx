@@ -44,7 +44,7 @@ export function SelectionCheckbox({
         disabled={disabled}
       />
       <span className={boxClassName}>{checked ? <IconCheck size={12} /> : null}</span>
-      {label ? <span className={textClassName}>{label}</span> : null}
+      {label ? <div className={textClassName}>{label}</div> : null}
     </label>
   );
 }

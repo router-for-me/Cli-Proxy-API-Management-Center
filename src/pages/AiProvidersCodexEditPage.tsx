@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { ModelInputList } from '@/components/ui/ModelInputList';
 import { Modal } from '@/components/ui/Modal';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
@@ -66,7 +67,9 @@ const buildCodexSignature = (form: ProviderFormState) =>
   JSON.stringify({
     apiKey: String(form.apiKey ?? '').trim(),
     priority:
-      form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
+      form.priority !== undefined && Number.isFinite(form.priority)
+        ? Math.trunc(form.priority)
+        : null,
     prefix: String(form.prefix ?? '').trim(),
     baseUrl: String(form.baseUrl ?? '').trim(),
     websockets: Boolean(form.websockets),
@@ -95,7 +98,9 @@ export function AiProvidersCodexEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<ProviderFormState>(() => buildEmptyForm());
-  const [baselineSignature, setBaselineSignature] = useState(() => buildCodexSignature(buildEmptyForm()));
+  const [baselineSignature, setBaselineSignature] = useState(() =>
+    buildCodexSignature(buildEmptyForm())
+  );
 
   const [modelDiscoveryOpen, setModelDiscoveryOpen] = useState(false);
   const [modelDiscoveryEndpoint, setModelDiscoveryEndpoint] = useState('');
@@ -119,7 +124,9 @@ export function AiProvidersCodexEditPage() {
   const invalidIndex = editIndex !== null && !initialData;
 
   const title =
-    editIndex !== null ? t('ai_providers.codex_edit_modal_title') : t('ai_providers.codex_add_modal_title');
+    editIndex !== null
+      ? t('ai_providers.codex_edit_modal_title')
+      : t('ai_providers.codex_add_modal_title');
 
   const handleBack = useCallback(() => {
     const state = location.state as LocationState;
@@ -216,6 +223,16 @@ export function AiProvidersCodexEditPage() {
       return name.includes(filter) || alias.includes(filter) || description.includes(filter);
     });
   }, [discoveredModels, modelDiscoverySearch]);
+  const visibleDiscoveredModelNames = useMemo(
+    () => discoveredModelsFiltered.map((model) => model.name),
+    [discoveredModelsFiltered]
+  );
+  const allVisibleDiscoveredSelected = useMemo(
+    () =>
+      visibleDiscoveredModelNames.length > 0 &&
+      visibleDiscoveredModelNames.every((name) => modelDiscoverySelected.has(name)),
+    [modelDiscoverySelected, visibleDiscoveredModelNames]
+  );
 
   const mergeDiscoveredModels = useCallback(
     (selectedModels: ModelInfo[]) => {
@@ -247,7 +264,10 @@ export function AiProvidersCodexEditPage() {
       });
 
       if (addedCount > 0) {
-        showNotification(t('ai_providers.codex_models_fetch_added', { count: addedCount }), 'success');
+        showNotification(
+          t('ai_providers.codex_models_fetch_added', { count: addedCount }),
+          'success'
+        );
       }
     },
     [setForm, showNotification, t]
@@ -320,6 +340,22 @@ export function AiProvidersCodexEditPage() {
     void fetchCodexModelDiscovery();
   }, [fetchCodexModelDiscovery, form.apiKey, form.baseUrl, form.headers, modelDiscoveryOpen]);
 
+  useEffect(() => {
+    const availableNames = new Set(discoveredModels.map((model) => model.name));
+    setModelDiscoverySelected((prev) => {
+      let changed = false;
+      const next = new Set<string>();
+      prev.forEach((name) => {
+        if (availableNames.has(name)) {
+          next.add(name);
+        } else {
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [discoveredModels]);
+
   const toggleModelDiscoverySelection = (name: string) => {
     setModelDiscoverySelected((prev) => {
       const next = new Set(prev);
@@ -332,8 +368,22 @@ export function AiProvidersCodexEditPage() {
     });
   };
 
+  const handleSelectVisibleDiscoveredModels = useCallback(() => {
+    setModelDiscoverySelected((prev) => {
+      const next = new Set(prev);
+      visibleDiscoveredModelNames.forEach((name) => next.add(name));
+      return next;
+    });
+  }, [visibleDiscoveredModelNames]);
+
+  const handleClearDiscoveredModelSelection = useCallback(() => {
+    setModelDiscoverySelected(new Set());
+  }, []);
+
   const handleApplyDiscoveredModels = () => {
-    const selectedModels = discoveredModels.filter((model) => modelDiscoverySelected.has(model.name));
+    const selectedModels = discoveredModels.filter((model) =>
+      modelDiscoverySelected.has(model.name)
+    );
     if (selectedModels.length) {
       mergeDiscoveredModels(selectedModels);
     }
@@ -374,7 +424,9 @@ export function AiProvidersCodexEditPage() {
       updateConfigValue('codex-api-key', nextList);
       clearCache('codex-api-key');
       showNotification(
-        editIndex !== null ? t('notification.codex_config_updated') : t('notification.codex_config_added'),
+        editIndex !== null
+          ? t('notification.codex_config_updated')
+          : t('notification.codex_config_added'),
         'success'
       );
       allowNextNavigation();
@@ -407,7 +459,8 @@ export function AiProvidersCodexEditPage() {
     !invalidIndexParam &&
     !invalidIndex &&
     Boolean((form.baseUrl ?? '').trim());
-  const canApplyModelDiscovery = !disableControls && !saving && !modelDiscoveryFetching;
+  const canApplyModelDiscovery =
+    !disableControls && !saving && !modelDiscoveryFetching && modelDiscoverySelected.size > 0;
 
   return (
     <SecondaryScreenShell
@@ -514,7 +567,9 @@ export function AiProvidersCodexEditPage() {
 
             <div className={styles.modelConfigSection}>
               <div className={styles.modelConfigHeader}>
-                <label className={styles.modelConfigTitle}>{t('ai_providers.codex_models_label')}</label>
+                <label className={styles.modelConfigTitle}>
+                  {t('ai_providers.codex_models_label')}
+                </label>
                 <div className={styles.modelConfigToolbar}>
                   <Button
                     variant="secondary"
@@ -595,7 +650,9 @@ export function AiProvidersCodexEditPage() {
               }
             >
               <div className={styles.openaiModelsContent}>
-                <div className={styles.sectionHint}>{t('ai_providers.codex_models_fetch_hint')}</div>
+                <div className={styles.sectionHint}>
+                  {t('ai_providers.codex_models_fetch_hint')}
+                </div>
                 <div className={styles.openaiModelsEndpointSection}>
                   <label className={styles.openaiModelsEndpointLabel}>
                     {t('ai_providers.codex_models_fetch_url_label')}
@@ -624,41 +681,86 @@ export function AiProvidersCodexEditPage() {
                   onChange={(e) => setModelDiscoverySearch(e.target.value)}
                   disabled={modelDiscoveryFetching}
                 />
+                {discoveredModels.length > 0 && (
+                  <div className={styles.modelDiscoveryToolbar}>
+                    <div className={styles.modelDiscoveryToolbarActions}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleSelectVisibleDiscoveredModels}
+                        disabled={
+                          disableControls ||
+                          saving ||
+                          modelDiscoveryFetching ||
+                          discoveredModelsFiltered.length === 0 ||
+                          allVisibleDiscoveredSelected
+                        }
+                      >
+                        {t('ai_providers.model_discovery_select_visible')}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearDiscoveredModelSelection}
+                        disabled={
+                          disableControls ||
+                          saving ||
+                          modelDiscoveryFetching ||
+                          modelDiscoverySelected.size === 0
+                        }
+                      >
+                        {t('ai_providers.model_discovery_clear_selection')}
+                      </Button>
+                    </div>
+                    <div className={styles.modelDiscoverySelectionSummary}>
+                      {t('ai_providers.model_discovery_selected_count', {
+                        count: modelDiscoverySelected.size,
+                      })}
+                    </div>
+                  </div>
+                )}
                 {modelDiscoveryError && <div className="error-box">{modelDiscoveryError}</div>}
                 {modelDiscoveryFetching ? (
-                  <div className={styles.sectionHint}>{t('ai_providers.codex_models_fetch_loading')}</div>
+                  <div className={styles.sectionHint}>
+                    {t('ai_providers.codex_models_fetch_loading')}
+                  </div>
                 ) : discoveredModels.length === 0 ? (
-                  <div className={styles.sectionHint}>{t('ai_providers.codex_models_fetch_empty')}</div>
+                  <div className={styles.sectionHint}>
+                    {t('ai_providers.codex_models_fetch_empty')}
+                  </div>
                 ) : discoveredModelsFiltered.length === 0 ? (
-                  <div className={styles.sectionHint}>{t('ai_providers.codex_models_search_empty')}</div>
+                  <div className={styles.sectionHint}>
+                    {t('ai_providers.codex_models_search_empty')}
+                  </div>
                 ) : (
                   <div className={styles.modelDiscoveryList}>
                     {discoveredModelsFiltered.map((model) => {
                       const checked = modelDiscoverySelected.has(model.name);
                       return (
-                        <label
+                        <SelectionCheckbox
                           key={model.name}
+                          checked={checked}
+                          onChange={() => toggleModelDiscoverySelection(model.name)}
+                          disabled={disableControls || saving || modelDiscoveryFetching}
+                          ariaLabel={model.name}
                           className={`${styles.modelDiscoveryRow} ${
                             checked ? styles.modelDiscoveryRowSelected : ''
                           }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleModelDiscoverySelection(model.name)}
-                          />
-                          <div className={styles.modelDiscoveryMeta}>
-                            <div className={styles.modelDiscoveryName}>
-                              {model.name}
-                              {model.alias && (
-                                <span className={styles.modelDiscoveryAlias}>{model.alias}</span>
+                          labelClassName={styles.modelDiscoverySelectionLabel}
+                          label={
+                            <div className={styles.modelDiscoveryMeta}>
+                              <div className={styles.modelDiscoveryName}>
+                                {model.name}
+                                {model.alias && (
+                                  <span className={styles.modelDiscoveryAlias}>{model.alias}</span>
+                                )}
+                              </div>
+                              {model.description && (
+                                <div className={styles.modelDiscoveryDesc}>{model.description}</div>
                               )}
                             </div>
-                            {model.description && (
-                              <div className={styles.modelDiscoveryDesc}>{model.description}</div>
-                            )}
-                          </div>
-                        </label>
+                          }
+                        />
                       );
                     })}
                   </div>
