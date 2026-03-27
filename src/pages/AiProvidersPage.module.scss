@@ -327,15 +327,18 @@
 }
 
 .modelDiscoveryRow {
-  display: flex;
+  display: inline-flex;
   align-items: flex-start;
   gap: 8px;
+  width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-primary);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 
   input[type='checkbox'] {
     margin-top: 2px;
@@ -346,6 +349,11 @@
     border-color: var(--primary-color);
     background: var(--bg-secondary);
   }
+}
+
+.modelDiscoverySelectionLabel {
+  flex: 1;
+  min-width: 0;
 }
 
 .modelDiscoveryRowSelected {
@@ -373,6 +381,27 @@
 .modelDiscoveryDesc {
   font-size: 12px;
   color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.modelDiscoveryToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.modelDiscoveryToolbarActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+}
+
+.modelDiscoverySelectionSummary {
+  font-size: 12px;
+  color: var(--text-tertiary);
   line-height: 1.4;
 }
 
@@ -417,7 +446,9 @@
   width: 100%;
   height: 8px;
   border-radius: 2px;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
 
   .statusBlockWrapper:hover &,
   .statusBlockWrapper.statusBlockActive & {

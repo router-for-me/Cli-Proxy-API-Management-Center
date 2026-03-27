@@ -267,7 +267,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       // 同时清除完整配置缓存
       newCache.delete('__full__');
 
-      set({ cache: newCache });
+      // Section-level invalidation usually follows an optimistic write path. Invalidate any in-flight
+      // full fetch so stale responses can't overwrite newer local changes.
+      configRequestToken += 1;
+      inFlightConfigRequest = null;
+
+      set({ cache: newCache, loading: false, error: null });
       return;
     } else {
       newCache.clear();

@@ -53,6 +53,7 @@
   @include mobile {
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
+    gap: 16px;
   }
 }
 
@@ -191,6 +192,11 @@
   border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
   background: color-mix(in srgb, var(--bg-primary) 74%, transparent);
   box-shadow: var(--shadow);
+
+  @include mobile {
+    padding: 16px;
+    border-radius: 28px;
+  }
 }
 
 .content {
@@ -434,6 +440,7 @@
 .floatingStatus {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
@@ -447,6 +454,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.floatingStatusCompact {
+  max-width: 112px;
+  padding: 0 8px;
+  font-size: 10px;
 }
 
 .floatingActionButton {
@@ -503,12 +516,27 @@
   }
 
   .floatingStatus {
-    display: none;
+    max-width: min(180px, 40vw);
+    font-size: 10px;
+    padding: 0 8px;
   }
 
   .floatingActionButton {
     width: 38px;
     height: 38px;
     flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .floatingStatus {
+    max-width: min(132px, 38vw);
+  }
+}
+
+@media (max-width: 380px) {
+  .pageHeader,
+  .workspaceShell {
+    padding: 14px;
   }
 }

@@ -1,6 +1,8 @@
 /**
- * 加密工具函数
+ * 本地存储混淆工具函数（可逆）
  * 从原项目 src/utils/secure-storage.js 迁移
+ *
+ * IMPORTANT: 这不是安全边界。浏览器端长期持久化的密钥仍应视为可被读取。
  */
 
 const ENC_PREFIX = 'enc::v1::';
@@ -26,7 +28,7 @@ function getKeyBytes(): Uint8Array {
     const ua = navigator.userAgent;
     cachedKeyBytes = encodeText(`${SECRET_SALT}|${host}|${ua}`);
   } catch (error) {
-    console.warn('Encryption fallback to simple key:', error);
+    console.warn('Obfuscation fallback to simple key:', error);
     cachedKeyBytes = encodeText(SECRET_SALT);
   }
 
@@ -61,7 +63,7 @@ function fromBase64(base64: string): Uint8Array {
 /**
  * 加密数据
  */
-export function encryptData(value: string): string {
+export function obfuscateData(value: string): string {
   if (!value) return value;
 
   try {
@@ -69,7 +71,7 @@ export function encryptData(value: string): string {
     const encrypted = xorBytes(encodeText(value), keyBytes);
     return `${ENC_PREFIX}${toBase64(encrypted)}`;
   } catch (error) {
-    console.warn('Encryption failed, fallback to plaintext:', error);
+    console.warn('Obfuscation failed, fallback to plaintext:', error);
     return value;
   }
 }
@@ -77,7 +79,7 @@ export function encryptData(value: string): string {
 /**
  * 解密数据
  */
-export function decryptData(payload: string): string {
+export function deobfuscateData(payload: string): string {
   if (!payload || !payload.startsWith(ENC_PREFIX)) {
     return payload;
   }
@@ -88,7 +90,7 @@ export function decryptData(payload: string): string {
     const decrypted = xorBytes(encrypted, getKeyBytes());
     return decodeText(decrypted);
   } catch (error) {
-    console.warn('Decryption failed, return as-is:', error);
+    console.warn('Deobfuscation failed, return as-is:', error);
     return payload;
   }
 }
@@ -96,6 +98,11 @@ export function decryptData(payload: string): string {
 /**
  * 检查是否已加密
  */
-export function isEncrypted(value: string): boolean {
+export function isObfuscated(value: string): boolean {
   return value?.startsWith(ENC_PREFIX) || false;
 }
+
+// Backward-compatible aliases (this module was historically named "encryption").
+export const encryptData = obfuscateData;
+export const decryptData = deobfuscateData;
+export const isEncrypted = isObfuscated;

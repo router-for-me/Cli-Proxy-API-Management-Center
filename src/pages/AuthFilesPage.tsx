@@ -53,7 +53,9 @@ import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFi
 import {
   isAuthFilesSortMode,
   readAuthFilesUiState,
+  readPersistedAuthFilesCompactMode,
   writeAuthFilesUiState,
+  writePersistedAuthFilesCompactMode,
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
@@ -88,6 +90,7 @@ export function AuthFilesPage() {
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
   const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
+  const [uiStateHydrated, setUiStateHydrated] = useState(false);
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
   const batchActionAnimationRef = useRef<AnimationPlaybackControlsWithThen | null>(null);
   const previousSelectionCountRef = useRef(0);
@@ -176,46 +179,58 @@ export function AuthFilesPage() {
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
 
   useEffect(() => {
-    const persisted = readAuthFilesUiState();
-    if (!persisted) return;
+    const persistedCompactMode = readPersistedAuthFilesCompactMode();
+    if (typeof persistedCompactMode === 'boolean') {
+      setCompactMode(persistedCompactMode);
+    }
 
-    if (typeof persisted.filter === 'string' && persisted.filter.trim()) {
-      setFilter(persisted.filter);
+    const persisted = readAuthFilesUiState();
+    if (persisted) {
+      if (typeof persisted.filter === 'string' && persisted.filter.trim()) {
+        setFilter(persisted.filter);
+      }
+      if (typeof persisted.problemOnly === 'boolean') {
+        setProblemOnly(persisted.problemOnly);
+      }
+      if (
+        typeof persistedCompactMode !== 'boolean' &&
+        typeof persisted.compactMode === 'boolean'
+      ) {
+        setCompactMode(persisted.compactMode);
+      }
+      if (typeof persisted.search === 'string') {
+        setSearch(persisted.search);
+      }
+      if (typeof persisted.page === 'number' && Number.isFinite(persisted.page)) {
+        setPage(Math.max(1, Math.round(persisted.page)));
+      }
+      const legacyPageSize =
+        typeof persisted.pageSize === 'number' && Number.isFinite(persisted.pageSize)
+          ? clampCardPageSize(persisted.pageSize)
+          : null;
+      const regularPageSize =
+        typeof persisted.regularPageSize === 'number' && Number.isFinite(persisted.regularPageSize)
+          ? clampCardPageSize(persisted.regularPageSize)
+          : legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE;
+      const compactPageSize =
+        typeof persisted.compactPageSize === 'number' && Number.isFinite(persisted.compactPageSize)
+          ? clampCardPageSize(persisted.compactPageSize)
+          : legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE;
+      setPageSizeByMode({
+        regular: regularPageSize,
+        compact: compactPageSize,
+      });
+      if (isAuthFilesSortMode(persisted.sortMode)) {
+        setSortMode(persisted.sortMode);
+      }
     }
-    if (typeof persisted.problemOnly === 'boolean') {
-      setProblemOnly(persisted.problemOnly);
-    }
-    if (typeof persisted.compactMode === 'boolean') {
-      setCompactMode(persisted.compactMode);
-    }
-    if (typeof persisted.search === 'string') {
-      setSearch(persisted.search);
-    }
-    if (typeof persisted.page === 'number' && Number.isFinite(persisted.page)) {
-      setPage(Math.max(1, Math.round(persisted.page)));
-    }
-    const legacyPageSize =
-      typeof persisted.pageSize === 'number' && Number.isFinite(persisted.pageSize)
-        ? clampCardPageSize(persisted.pageSize)
-        : null;
-    const regularPageSize =
-      typeof persisted.regularPageSize === 'number' && Number.isFinite(persisted.regularPageSize)
-        ? clampCardPageSize(persisted.regularPageSize)
-        : legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE;
-    const compactPageSize =
-      typeof persisted.compactPageSize === 'number' && Number.isFinite(persisted.compactPageSize)
-        ? clampCardPageSize(persisted.compactPageSize)
-        : legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE;
-    setPageSizeByMode({
-      regular: regularPageSize,
-      compact: compactPageSize,
-    });
-    if (isAuthFilesSortMode(persisted.sortMode)) {
-      setSortMode(persisted.sortMode);
-    }
+
+    setUiStateHydrated(true);
   }, []);
 
   useEffect(() => {
+    if (!uiStateHydrated) return;
+
     writeAuthFilesUiState({
       filter,
       problemOnly,
@@ -227,7 +242,18 @@ export function AuthFilesPage() {
       compactPageSize: pageSizeByMode.compact,
       sortMode,
     });
-  }, [filter, problemOnly, compactMode, search, page, pageSize, pageSizeByMode, sortMode]);
+    writePersistedAuthFilesCompactMode(compactMode);
+  }, [
+    compactMode,
+    filter,
+    page,
+    pageSize,
+    pageSizeByMode,
+    problemOnly,
+    search,
+    sortMode,
+    uiStateHydrated,
+  ]);
 
   useEffect(() => {
     setPageSizeInput(String(pageSize));

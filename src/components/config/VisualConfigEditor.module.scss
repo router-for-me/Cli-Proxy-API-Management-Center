@@ -229,6 +229,90 @@
   @media (max-width: 1024px) {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  @include mobile {
+    gap: 16px;
+  }
+}
+
+.mobileSectionNav {
+  display: none;
+
+  @include mobile {
+    position: sticky;
+    top: calc(var(--header-height, 64px) + 12px);
+    z-index: 4;
+    display: block;
+    margin-bottom: 4px;
+  }
+}
+
+.mobileSectionNavScroller {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.mobileSectionNavButton {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: max-content;
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  box-shadow: 0 18px 36px -30px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+}
+
+.mobileSectionNavButtonActive {
+  border-color: color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
+  background: color-mix(in srgb, var(--bg-primary) 96%, transparent);
+}
+
+.mobileSectionNavIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mobileSectionNavLabel {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mobileSectionNavBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-text);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .sidebar {
@@ -447,6 +531,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
+
+  @include mobile {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .sectionStack {
@@ -729,9 +817,19 @@
 }
 
 @include mobile {
+  .overview {
+    gap: 14px;
+    padding: 18px;
+    border-radius: 24px;
+  }
+
+  .overviewFocusLink {
+    padding: 12px 14px;
+  }
+
   .sections {
     border-radius: 26px;
-    padding: 18px;
+    padding: 16px;
   }
 
   .subsection {
@@ -739,7 +837,41 @@
     border-radius: 20px;
   }
 
+  .toggleRow {
+    padding: 14px 16px;
+  }
+
+  .blockHeaderRow,
+  .ruleCardHeader {
+    align-items: stretch;
+  }
+
+  .blockHeaderRow :global(.btn),
+  .ruleCardHeader :global(.btn),
+  .actionRow :global(.btn),
+  .stringListRow :global(.btn) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .actionRow {
+    justify-content: stretch;
+  }
+
   .stringListRow {
     align-items: stretch;
+  }
+}
+
+@media (max-width: 380px) {
+  .overview,
+  .sections {
+    padding: 14px;
+  }
+
+  .subsection,
+  .ruleCard,
+  .toggleRow {
+    padding: 14px;
   }
 }

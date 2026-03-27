@@ -90,7 +90,7 @@ export const modelsApi = {
     }
 
     const resolvedHeaders = { ...headers };
-    if (apiKey) {
+    if (apiKey && !hasHeader(resolvedHeaders, 'authorization')) {
       resolvedHeaders.Authorization = `Bearer ${apiKey}`;
     }
 
@@ -116,8 +116,7 @@ export const modelsApi = {
     }
 
     const resolvedHeaders = { ...headers };
-    const hasAuthHeader = Boolean(resolvedHeaders.Authorization || resolvedHeaders.authorization);
-    if (apiKey && !hasAuthHeader) {
+    if (apiKey && !hasHeader(resolvedHeaders, 'authorization')) {
       resolvedHeaders.Authorization = `Bearer ${apiKey}`;
     }
 
@@ -149,8 +148,7 @@ export const modelsApi = {
     }
 
     const resolvedHeaders = { ...headers };
-    const hasAuthHeader = Boolean(resolvedHeaders.Authorization || resolvedHeaders.authorization);
-    if (apiKey && !hasAuthHeader) {
+    if (apiKey && !hasHeader(resolvedHeaders, 'authorization')) {
       resolvedHeaders.Authorization = `Bearer ${apiKey}`;
     }
 

@@ -7,10 +7,11 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AuthState, LoginCredentials, ConnectionStatus } from '@/types';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
-import { secureStorage } from '@/services/storage/secureStorage';
+import { obfuscatedStorage } from '@/services/storage/secureStorage';
 import { apiClient } from '@/services/api/client';
 import { useConfigStore } from './useConfigStore';
 import { useUsageStatsStore } from './useUsageStatsStore';
+import { useModelsStore } from './useModelsStore';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 
 interface AuthStoreState extends AuthState {
@@ -46,13 +47,13 @@ export const useAuthStore = create<AuthStoreState>()(
         if (restoreSessionPromise) return restoreSessionPromise;
 
         restoreSessionPromise = (async () => {
-          secureStorage.migratePlaintextKeys(['apiBase', 'apiUrl', 'managementKey']);
+          obfuscatedStorage.migratePlaintextKeys(['apiBase', 'apiUrl', 'managementKey']);
 
           const wasLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
           const legacyBase =
-            secureStorage.getItem<string>('apiBase') ||
-            secureStorage.getItem<string>('apiUrl', { encrypt: true });
-          const legacyKey = secureStorage.getItem<string>('managementKey');
+            obfuscatedStorage.getItem<string>('apiBase') ||
+            obfuscatedStorage.getItem<string>('apiUrl', { encrypt: true });
+          const legacyKey = obfuscatedStorage.getItem<string>('managementKey');
 
           const { apiBase, managementKey, rememberPassword } = get();
           const resolvedBase = normalizeApiBase(apiBase || legacyBase || detectApiBaseFromLocation());
@@ -94,6 +95,7 @@ export const useAuthStore = create<AuthStoreState>()(
 
         try {
           set({ connectionStatus: 'connecting' });
+          useModelsStore.getState().clearCache();
 
           // 配置 API 客户端
           apiClient.setConfig({
@@ -138,6 +140,7 @@ export const useAuthStore = create<AuthStoreState>()(
         restoreSessionPromise = null;
         useConfigStore.getState().clearCache();
         useUsageStatsStore.getState().clearUsageStats();
+        useModelsStore.getState().clearCache();
         set({
           isAuthenticated: false,
           apiBase: '',
@@ -197,14 +200,14 @@ export const useAuthStore = create<AuthStoreState>()(
       name: STORAGE_KEY_AUTH,
       storage: createJSONStorage(() => ({
         getItem: (name) => {
-          const data = secureStorage.getItem<AuthStoreState>(name);
+          const data = obfuscatedStorage.getItem<AuthStoreState>(name);
           return data ? JSON.stringify(data) : null;
         },
         setItem: (name, value) => {
-          secureStorage.setItem(name, JSON.parse(value));
+          obfuscatedStorage.setItem(name, JSON.parse(value));
         },
         removeItem: (name) => {
-          secureStorage.removeItem(name);
+          obfuscatedStorage.removeItem(name);
         }
       })),
       partialize: (state) => ({
