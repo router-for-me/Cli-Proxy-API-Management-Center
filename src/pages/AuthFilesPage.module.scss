@@ -541,7 +541,7 @@
 }
 
 .quotaBarFillMedium {
-  background-color: var(--warning-color);
+  background-color: var(--quota-medium-color, #e0aa14);
 }
 
 .quotaBarFillLow {
