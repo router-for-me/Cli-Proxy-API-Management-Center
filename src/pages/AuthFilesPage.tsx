@@ -342,11 +342,6 @@ export function AuthFilesPage() {
     return counts;
   }, [filesMatchingProblemFilter]);
 
-  const activeFilterLabel =
-    filter === 'all' ? t('auth_files.filter_all') : getTypeLabel(t, String(filter));
-  const activeFilterCount = typeCounts[String(filter)] ?? 0;
-  const activeFilterIcon = getAuthFileIcon(String(filter), resolvedTheme);
-
   const filtered = useMemo(() => {
     return filesMatchingProblemFilter.filter((item) => {
       const matchType = filter === 'all' || item.type === filter;
@@ -539,42 +534,7 @@ export function AuthFilesPage() {
   );
 
   const renderFilterTags = () => (
-    <aside className={styles.filterRail}>
-      <div className={styles.filterRailHeader}>
-        <span className={styles.filterRailEyebrow}>
-          {t('nav.ai_providers', { defaultValue: 'Providers' })}
-        </span>
-        <div className={styles.filterRailHero}>
-          <div className={styles.filterRailHeroTitle}>
-            {filter === 'all' ? (
-              <span className={`${styles.filterRailHeroIcon} ${styles.filterAllIconWrap}`}>
-                <IconFilterAll className={styles.filterAllIcon} size={22} />
-              </span>
-            ) : (
-              <div className={styles.filterRailHeroIcon}>
-                {activeFilterIcon ? (
-                  <img src={activeFilterIcon} alt="" className={styles.filterRailHeroIconImage} />
-                ) : (
-                  <span className={styles.filterRailHeroIconFallback}>
-                    {activeFilterLabel.slice(0, 1).toUpperCase()}
-                  </span>
-                )}
-              </div>
-            )}
-            <div className={styles.filterRailHeroText}>
-              <span className={styles.filterRailTitle}>{activeFilterLabel}</span>
-              <span className={styles.filterRailDescription}>{t('auth_files.title_section')}</span>
-            </div>
-          </div>
-          <div className={styles.filterRailMeta}>
-            <span className={styles.filterRailCount}>{activeFilterCount}</span>
-            {problemOnly && (
-              <span className={styles.filterRailMode}>{t('auth_files.problem_filter_only')}</span>
-            )}
-          </div>
-        </div>
-      </div>
-
+    <div className={styles.filterRail}>
       <div className={styles.filterTags}>
         {existingTypes.map((type) => {
           const isActive = filter === type;
@@ -602,7 +562,7 @@ export function AuthFilesPage() {
               <span className={styles.filterTagLabel}>
                 {type === 'all' ? (
                   <span className={`${styles.filterTagIconWrap} ${styles.filterAllIconWrap}`}>
-                    <IconFilterAll className={styles.filterAllIcon} size={18} />
+                    <IconFilterAll className={styles.filterAllIcon} size={16} />
                   </span>
                 ) : (
                   <span className={styles.filterTagIconWrap}>
@@ -622,7 +582,7 @@ export function AuthFilesPage() {
           );
         })}
       </div>
-    </aside>
+    </div>
   );
 
   const titleNode = (
