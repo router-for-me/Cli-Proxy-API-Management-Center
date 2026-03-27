@@ -7,7 +7,6 @@ export type AuthFilesUiState = {
   problemOnly?: boolean;
   compactMode?: boolean;
   search?: string;
-  regexSearchMode?: boolean;
   page?: number;
   pageSize?: number;
   regularPageSize?: number;
