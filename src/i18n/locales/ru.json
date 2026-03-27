@@ -140,7 +140,17 @@
     "edit_settings": "Изменить настройки",
     "routing_strategy": "Стратегия маршрутизации",
     "available_models": "Доступные модели",
-    "available_models_desc": "Всего моделей от всех провайдеров"
+    "available_models_desc": "Всего моделей от всех провайдеров",
+    "welcome_back": "С возвращением",
+    "greeting_morning": "Доброе утро",
+    "greeting_afternoon": "Добрый день",
+    "greeting_evening": "Добрый вечер",
+    "greeting_night": "Доброй ночи",
+    "caring_morning": "Новый день — начнём продуктивно.",
+    "caring_afternoon": "Уверенный прогресс — отличная работа.",
+    "caring_evening": "День подходит к концу — финальный рывок.",
+    "caring_night": "Поздняя работа? Не забудьте отдохнуть.",
+    "system_overview": "Обзор системы"
   },
   "basic_settings": {
     "title": "Основные настройки",
