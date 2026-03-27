@@ -196,6 +196,9 @@ export function VisualConfigEditor({
   const sidebarAnchorRef = useRef<HTMLElement | null>(null);
   const floatingSidebarRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = useRef<Partial<Record<VisualSectionId, HTMLElement | null>>>({});
+  const mobileNavButtonRefs = useRef<Partial<Record<VisualSectionId, HTMLButtonElement | null>>>(
+    {}
+  );
 
   const isKeepaliveDisabled =
     values.streaming.keepaliveSeconds === '' || values.streaming.keepaliveSeconds === '0';
@@ -354,6 +357,14 @@ export function VisualConfigEditor({
 
     return () => observer.disconnect();
   }, [sections]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    mobileNavButtonRefs.current[activeSectionId]?.scrollIntoView({
+      block: 'nearest',
+      inline: 'center',
+    });
+  }, [activeSectionId, isMobile]);
 
   const handleSectionJump = useCallback((sectionId: VisualSectionId) => {
     setActiveSectionId(sectionId);
@@ -532,6 +543,39 @@ export function VisualConfigEditor({
       </div>
 
       <div ref={workspaceRef} className={styles.workspace}>
+        {isMobile ? (
+          <div className={styles.mobileSectionNav}>
+            <div
+              className={styles.mobileSectionNavScroller}
+              aria-label={t('config_management.visual.quick_jump', { defaultValue: '快速跳转' })}
+            >
+              {sections.map((section, index) => (
+                <button
+                  key={section.id}
+                  ref={(node) => {
+                    mobileNavButtonRefs.current[section.id] = node;
+                  }}
+                  type="button"
+                  className={`${styles.mobileSectionNavButton} ${
+                    activeSectionId === section.id ? styles.mobileSectionNavButtonActive : ''
+                  }`}
+                  onClick={() => handleSectionJump(section.id)}
+                >
+                  <span className={styles.mobileSectionNavIndex}>
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span className={styles.mobileSectionNavLabel}>{section.title}</span>
+                  {section.errorCount > 0 ? (
+                    <span className={styles.mobileSectionNavBadge} aria-hidden="true">
+                      {section.errorCount}
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <aside ref={sidebarAnchorRef} className={styles.sidebar}>
           {isFloatingSidebar ? (
             <div className={styles.sidebarPlaceholder} aria-hidden="true" />

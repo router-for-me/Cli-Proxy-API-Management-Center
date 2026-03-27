@@ -231,6 +231,86 @@
   }
 }
 
+.mobileSectionNav {
+  display: none;
+
+  @include mobile {
+    position: sticky;
+    top: calc(var(--header-height, 64px) + 12px);
+    z-index: 4;
+    display: block;
+    margin-bottom: 4px;
+  }
+}
+
+.mobileSectionNavScroller {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.mobileSectionNavButton {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: max-content;
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  box-shadow: 0 18px 36px -30px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+}
+
+.mobileSectionNavButtonActive {
+  border-color: color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
+  background: color-mix(in srgb, var(--bg-primary) 96%, transparent);
+}
+
+.mobileSectionNavIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mobileSectionNavLabel {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mobileSectionNavBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .sidebar {
   position: relative;
   align-self: start;
