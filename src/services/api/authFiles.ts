@@ -9,6 +9,31 @@ import type { OAuthModelAliasEntry } from '@/types';
 type StatusError = { status?: number };
 type AuthFileStatusResponse = { status: string; disabled: boolean };
 type AuthFileEntry = AuthFilesResponse['files'][number];
+type AuthFileBatchFailure = { name: string; error: string };
+type AuthFileBatchUploadResponse = {
+  status?: string;
+  uploaded?: number;
+  files?: unknown;
+  failed?: unknown;
+};
+type AuthFileBatchDeleteResponse = {
+  status?: string;
+  deleted?: number;
+  files?: unknown;
+  failed?: unknown;
+};
+type AuthFileBatchUploadResult = {
+  status: string;
+  uploaded: number;
+  files: string[];
+  failed: AuthFileBatchFailure[];
+};
+type AuthFileBatchDeleteResult = {
+  status: string;
+  deleted: number;
+  files: string[];
+  failed: AuthFileBatchFailure[];
+};
 
 export const AUTH_FILE_INVALID_JSON_OBJECT_ERROR = 'AUTH_FILE_INVALID_JSON_OBJECT';
 
@@ -16,6 +41,129 @@ const getStatusCode = (err: unknown): number | undefined => {
   if (!err || typeof err !== 'object') return undefined;
   if ('status' in err) return (err as StatusError).status;
   return undefined;
+};
+
+const normalizeRequestedAuthFileNames = (names: string[]): string[] => {
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+
+  names.forEach((name) => {
+    const trimmed = String(name ?? '').trim();
+    if (!trimmed || seen.has(trimmed)) return;
+    seen.add(trimmed);
+    normalized.push(trimmed);
+  });
+
+  return normalized;
+};
+
+const normalizeBatchFileNames = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return normalizeRequestedAuthFileNames(value.map((item) => String(item ?? '')));
+};
+
+const normalizeBatchFailures = (value: unknown): AuthFileBatchFailure[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value.reduce<AuthFileBatchFailure[]>((result, item) => {
+    if (!item || typeof item !== 'object') return result;
+    const entry = item as Record<string, unknown>;
+    const name = String(entry.name ?? '').trim();
+    const error =
+      typeof entry.error === 'string'
+        ? entry.error.trim()
+        : typeof entry.message === 'string'
+          ? entry.message.trim()
+          : '';
+
+    if (!name && !error) return result;
+    result.push({ name, error: error || 'Unknown error' });
+    return result;
+  }, []);
+};
+
+const deriveSuccessfulFileNames = (requestedNames: string[], failed: AuthFileBatchFailure[]): string[] => {
+  const failedNames = new Set(
+    failed
+      .map((entry) => entry.name.trim())
+      .filter(Boolean)
+  );
+
+  if (failedNames.size === 0) {
+    return [...requestedNames];
+  }
+
+  return requestedNames.filter((name) => !failedNames.has(name));
+};
+
+const normalizeBatchUploadResponse = (
+  payload: AuthFileBatchUploadResponse | undefined,
+  requestedNames: string[]
+): AuthFileBatchUploadResult => {
+  const failed = normalizeBatchFailures(payload?.failed);
+  const uploadedFilesFromPayload = normalizeBatchFileNames(payload?.files);
+  const uploaded =
+    typeof payload?.uploaded === 'number'
+      ? payload.uploaded
+      : uploadedFilesFromPayload.length > 0
+        ? uploadedFilesFromPayload.length
+        : requestedNames.length === 1 && failed.length === 0
+          ? 1
+          : 0;
+
+  let uploadedFiles = uploadedFilesFromPayload;
+  if (uploadedFiles.length === 0 && uploaded > 0) {
+    if (failed.length === 0 && uploaded === requestedNames.length) {
+      uploadedFiles = [...requestedNames];
+    } else {
+      const derivedNames = deriveSuccessfulFileNames(requestedNames, failed);
+      if (derivedNames.length === uploaded) {
+        uploadedFiles = derivedNames;
+      }
+    }
+  }
+
+  return {
+    status: typeof payload?.status === 'string' ? payload.status : failed.length > 0 ? 'partial' : 'ok',
+    uploaded,
+    files: uploadedFiles,
+    failed,
+  };
+};
+
+const normalizeBatchDeleteResponse = (
+  payload: AuthFileBatchDeleteResponse | undefined,
+  requestedNames: string[]
+): AuthFileBatchDeleteResult => {
+  const failed = normalizeBatchFailures(payload?.failed);
+  const deletedFilesFromPayload = normalizeBatchFileNames(payload?.files);
+  const deleted =
+    typeof payload?.deleted === 'number'
+      ? payload.deleted
+      : deletedFilesFromPayload.length > 0
+        ? deletedFilesFromPayload.length
+        : requestedNames.length === 1 && failed.length === 0
+          ? 1
+          : 0;
+
+  let deletedFiles = deletedFilesFromPayload;
+  if (deletedFiles.length === 0 && deleted > 0) {
+    if (failed.length === 0 && deleted === requestedNames.length) {
+      deletedFiles = [...requestedNames];
+    } else {
+      const derivedNames = deriveSuccessfulFileNames(requestedNames, failed);
+      if (derivedNames.length === deleted) {
+        deletedFiles = derivedNames;
+      }
+    }
+  }
+
+  return {
+    status: typeof payload?.status === 'string' ? payload.status : failed.length > 0 ? 'partial' : 'ok',
+    deleted,
+    files: deletedFiles,
+    failed,
+  };
 };
 
 const readTextField = (entry: AuthFileEntry, key: string): string => {
@@ -252,13 +400,35 @@ export const authFilesApi = {
   setStatus: (name: string, disabled: boolean) =>
     apiClient.patch<AuthFileStatusResponse>('/auth-files/status', { name, disabled }),
 
-  upload: (file: File) => {
+  uploadFiles: async (files: File[]): Promise<AuthFileBatchUploadResult> => {
+    const requestedNames = files.map((file) => file.name);
+    if (requestedNames.length === 0) {
+      return { status: 'ok', uploaded: 0, files: [], failed: [] };
+    }
+
     const formData = new FormData();
-    formData.append('file', file, file.name);
-    return apiClient.postForm('/auth-files', formData);
+    files.forEach((file) => {
+      formData.append('file', file, file.name);
+    });
+    const payload = await apiClient.postForm<AuthFileBatchUploadResponse>('/auth-files', formData);
+    return normalizeBatchUploadResponse(payload, requestedNames);
   },
 
-  deleteFile: (name: string) => apiClient.delete(`/auth-files?name=${encodeURIComponent(name)}`),
+  upload: (file: File) => authFilesApi.uploadFiles([file]),
+
+  deleteFiles: async (names: string[]): Promise<AuthFileBatchDeleteResult> => {
+    const requestedNames = normalizeRequestedAuthFileNames(names);
+    if (requestedNames.length === 0) {
+      return { status: 'ok', deleted: 0, files: [], failed: [] };
+    }
+
+    const payload = await apiClient.delete<AuthFileBatchDeleteResponse>('/auth-files', {
+      data: { names: requestedNames },
+    });
+    return normalizeBatchDeleteResponse(payload, requestedNames);
+  },
+
+  deleteFile: (name: string) => authFilesApi.deleteFiles([name]),
 
   deleteAll: () => apiClient.delete('/auth-files', { params: { all: true } }),
 
