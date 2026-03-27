@@ -1347,7 +1347,8 @@
     "description": "集中查看 OAuth 额度与剩余情况",
     "refresh_files": "刷新认证文件",
     "refresh_files_and_quota": "刷新认证文件&额度",
-    "card_idle_hint": "请使用顶部“刷新认证文件&额度”按钮获取最新额度。"
+    "refresh_all_credentials": "刷新全部凭证",
+    "card_idle_hint": "请使用顶部“刷新全部凭证”按钮获取最新额度。"
   },
   "system_info": {
     "title": "管理中心信息",
