@@ -41,6 +41,8 @@
     "quota_update_required": "请更新 CPA 版本或检查更新",
     "quota_check_credential": "请检查凭证状态",
     "copy": "复制",
+    "expand": "展开",
+    "collapse": "收起",
     "status": "状态",
     "action": "操作",
     "custom_headers_label": "自定义请求头",
@@ -138,7 +140,17 @@
     "edit_settings": "编辑设置",
     "routing_strategy": "路由策略",
     "available_models": "可用模型",
-    "available_models_desc": "所有提供商的模型总数"
+    "available_models_desc": "所有提供商的模型总数",
+    "welcome_back": "欢迎回来",
+    "greeting_morning": "早上好",
+    "greeting_afternoon": "下午好",
+    "greeting_evening": "晚上好",
+    "greeting_night": "夜深了",
+    "caring_morning": "新的一天，准备大展身手吧。",
+    "caring_afternoon": "稳步推进中，继续加油。",
+    "caring_evening": "今天辛苦了，收尾工作做好哦。",
+    "caring_night": "夜深了，别忘了早些休息。",
+    "system_overview": "系统概览"
   },
   "basic_settings": {
     "title": "基础设置",
@@ -495,7 +507,7 @@
     "pagination_next": "下一页",
     "pagination_info": "第 {{current}} / {{total}} 页 · 共 {{count}} 个文件",
     "search_label": "搜索配置文件",
-    "search_placeholder": "输入名称、类型或提供方关键字",
+    "search_placeholder": "输入名称、类型或提供方关键字，支持 * 通配",
     "problem_filter_label": "问题筛选",
     "problem_filter_only": "仅显示有问题凭证",
     "display_options_label": "显示选项",
@@ -1345,7 +1357,8 @@
     "description": "集中查看 OAuth 额度与剩余情况",
     "refresh_files": "刷新认证文件",
     "refresh_files_and_quota": "刷新认证文件&额度",
-    "card_idle_hint": "请使用顶部“刷新认证文件&额度”按钮获取最新额度。"
+    "refresh_all_credentials": "刷新全部凭证",
+    "card_idle_hint": "请使用顶部“刷新全部凭证”按钮获取最新额度。"
   },
   "system_info": {
     "title": "管理中心信息",

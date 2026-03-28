@@ -68,6 +68,15 @@ const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
 
+const escapeWildcardSearchSegment = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const buildWildcardSearch = (value: string): RegExp | null => {
+  if (!value.includes('*')) return null;
+  const pattern = value.split('*').map(escapeWildcardSearchSegment).join('.*');
+  return new RegExp(pattern, 'i');
+};
+
 export function AuthFilesPage() {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
@@ -368,18 +377,25 @@ export function AuthFilesPage() {
     return counts;
   }, [filesMatchingProblemFilter]);
 
+  const normalizedSearch = search.trim();
+  const wildcardSearch = useMemo(() => buildWildcardSearch(normalizedSearch), [normalizedSearch]);
+
   const filtered = useMemo(() => {
+    const normalizedTerm = normalizedSearch.toLowerCase();
+
     return filesMatchingProblemFilter.filter((item) => {
       const matchType = filter === 'all' || item.type === filter;
-      const term = search.trim().toLowerCase();
       const matchSearch =
-        !term ||
-        item.name.toLowerCase().includes(term) ||
-        (item.type || '').toString().toLowerCase().includes(term) ||
-        (item.provider || '').toString().toLowerCase().includes(term);
+        !normalizedSearch ||
+        [item.name, item.type, item.provider].some((value) => {
+          const content = (value || '').toString();
+          return wildcardSearch
+            ? wildcardSearch.test(content)
+            : content.toLowerCase().includes(normalizedTerm);
+        });
       return matchType && matchSearch;
     });
-  }, [filesMatchingProblemFilter, filter, search]);
+  }, [filesMatchingProblemFilter, filter, normalizedSearch, wildcardSearch]);
 
   const sorted = useMemo(() => {
     const copy = [...filtered];

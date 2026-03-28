@@ -89,19 +89,14 @@
 .filterRail {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 94%, transparent), transparent),
-    color-mix(in srgb, var(--bg-primary) 90%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #fff 52%, transparent),
-    0 12px 24px -22px rgba(0, 0, 0, 0.25);
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
 
   @include mobile {
-    padding: 12px;
+    padding: 10px;
   }
 }
 
@@ -144,40 +139,34 @@
   align-items: center;
   gap: 8px;
   padding: 7px 12px 7px 8px;
-  border-radius: 999px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
-  border: 1px solid color-mix(in srgb, var(--filter-color) 18%, var(--border-color));
-  background: color-mix(in srgb, var(--filter-surface) 56%, var(--bg-secondary));
-  color: var(--text-primary);
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
   transition:
-    transform $transition-fast,
     border-color $transition-fast,
     background-color $transition-fast,
-    box-shadow $transition-fast;
+    color $transition-fast;
 
   &:hover {
-    transform: translateY(-1px);
-    border-color: color-mix(in srgb, var(--filter-color) 52%, var(--border-color));
-    background: color-mix(in srgb, var(--filter-surface) 72%, var(--bg-secondary));
-    box-shadow: 0 8px 18px -14px color-mix(in srgb, var(--filter-color) 65%, transparent);
+    border-color: color-mix(in srgb, var(--filter-color) 40%, var(--border-color));
+    background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+    color: var(--text-primary);
   }
 }
 
 .filterTagActive {
-  border-color: color-mix(in srgb, var(--filter-color) 72%, transparent);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--filter-surface) 74%, var(--bg-primary)),
-    color-mix(in srgb, var(--filter-surface) 44%, var(--bg-secondary))
-  );
-  box-shadow: 0 8px 20px -16px color-mix(in srgb, var(--filter-color) 58%, transparent);
+  border-color: color-mix(in srgb, var(--filter-color) 50%, var(--border-color));
+  background: color-mix(in srgb, var(--filter-surface) 22%, var(--bg-secondary));
+  color: var(--text-primary);
 
-  &:hover {
-    transform: translateY(0);
+  .filterTagIconWrap {
+    border-color: color-mix(in srgb, var(--filter-color) 40%, transparent);
   }
 }
 
@@ -189,15 +178,15 @@
 }
 
 .filterTagIconWrap {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
-  border: 1px solid color-mix(in srgb, var(--filter-color) 16%, var(--border-color));
-  background: color-mix(in srgb, var(--filter-surface) 74%, var(--bg-primary));
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+  background: color-mix(in srgb, var(--bg-tertiary) 60%, transparent);
 }
 
 .filterTagIcon {
@@ -223,12 +212,12 @@
 .filterTagCount {
   display: inline-grid;
   place-items: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--filter-color) 14%, transparent);
-  color: var(--filter-color);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--filter-color) 12%, transparent);
+  color: var(--text-tertiary);
   font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -238,17 +227,15 @@
 }
 
 .filterTagActive .filterTagCount {
-  background: var(--filter-color);
-  color: var(--filter-active-text, #fff);
+  background: color-mix(in srgb, var(--filter-color) 22%, transparent);
+  color: var(--filter-color);
 }
 
 .filterControlsPanel {
-  padding: 16px;
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 92%, transparent), transparent),
-    color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
 }
 
 .filterControls {
@@ -312,9 +299,9 @@
   align-items: center;
   min-height: 40px;
   padding: 0 2px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
 }
 
 .filterToggle {
@@ -336,8 +323,8 @@
 .pageSizeSelect {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
-  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  border-radius: 8px;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   font-size: 14px;
@@ -348,7 +335,7 @@
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 14%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 12%, transparent);
   }
 }
 
@@ -472,25 +459,25 @@
   }
 }
 
-// 卡片渐变背景 — 基于 TYPE_COLORS light.bg 转 rgba
+// 卡片渐变背景 — subtle tint only
 .antigravityCard {
-  background-image: linear-gradient(180deg, rgba(224, 247, 250, 0.12), rgba(224, 247, 250, 0));
+  background-image: linear-gradient(180deg, rgba(224, 247, 250, 0.06), transparent);
 }
 
 .claudeCard {
-  background-image: linear-gradient(180deg, rgba(251, 236, 228, 0.18), rgba(251, 236, 228, 0));
+  background-image: linear-gradient(180deg, rgba(251, 236, 228, 0.08), transparent);
 }
 
 .codexCard {
-  background-image: linear-gradient(180deg, rgba(234, 231, 255, 0.18), rgba(234, 231, 255, 0));
+  background-image: linear-gradient(180deg, rgba(234, 231, 255, 0.08), transparent);
 }
 
 .geminiCliCard {
-  background-image: linear-gradient(180deg, rgba(224, 232, 255, 0.2), rgba(224, 232, 255, 0));
+  background-image: linear-gradient(180deg, rgba(224, 232, 255, 0.08), transparent);
 }
 
 .kimiCard {
-  background-image: linear-gradient(180deg, rgba(220, 232, 255, 0.2), rgba(220, 232, 255, 0));
+  background-image: linear-gradient(180deg, rgba(220, 232, 255, 0.08), transparent);
 }
 
 .quotaSection {
@@ -554,7 +541,7 @@
 }
 
 .quotaBarFillMedium {
-  background-color: var(--warning-color);
+  background-color: var(--quota-medium-color, #e0aa14);
 }
 
 .quotaBarFillLow {
@@ -649,172 +636,34 @@
 }
 
 .premiumPlanValue {
-  position: relative;
   display: inline-flex;
   align-items: center;
   font-weight: 700;
   font-size: 12px;
   padding: 2px 8px;
-  border-radius: 999px;
-  overflow: visible;
-  isolation: isolate;
-  background:
-    radial-gradient(
-      circle at 18% 24%,
-      rgba(255, 255, 255, 0.96) 0%,
-      rgba(255, 255, 255, 0.72) 18%,
-      rgba(255, 255, 255, 0) 42%
-    ),
-    linear-gradient(135deg, #fff9e3 0%, #ffe07f 52%, #e0aa14 100%);
-  border: 1px solid rgba(217, 165, 22, 0.72);
-  box-shadow:
-    0 1px 3px rgba(133, 92, 0, 0.16),
-    0 0 0 1px rgba(255, 255, 255, 0.22) inset,
-    0 0 16px rgba(255, 214, 98, 0.28);
-  color: #6b4b00;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  border-radius: 6px;
+  background: rgba(217, 165, 22, 0.15);
+  border: 1px solid rgba(217, 165, 22, 0.3);
+  color: #e0aa14;
   text-transform: capitalize;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -6px -9px;
-    border-radius: inherit;
-    background: radial-gradient(
-      circle at 18% 22%,
-      rgba(255, 255, 255, 0.9) 0%,
-      rgba(255, 237, 158, 0.58) 32%,
-      rgba(255, 215, 91, 0) 72%
-    );
-    filter: blur(9px);
-    opacity: 0.75;
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  @media (dynamic-range: high) {
-    background:
-      radial-gradient(
-        circle at 18% 24%,
-        color(display-p3 1 0.99 0.94) 0%,
-        color(display-p3 1 0.97 0.82 / 0.82) 18%,
-        color(display-p3 1 0.95 0.7 / 0) 42%
-      ),
-      linear-gradient(
-        135deg,
-        color(display-p3 1 0.98 0.88),
-        color(display-p3 0.99 0.86 0.34),
-        color(display-p3 0.92 0.68 0.05)
-      );
-    border-color: color(display-p3 0.9 0.73 0.12 / 0.85);
-    box-shadow:
-      0 1px 4px color(display-p3 0.45 0.28 0 / 0.22),
-      0 0 0 1px color(display-p3 1 0.98 0.86 / 0.3) inset,
-      0 0 18px color(display-p3 1 0.89 0.2 / 0.36);
-    color: color(display-p3 0.43 0.3 0);
-  }
-
-  @supports (color: #{'color(rec2100-linear 1 1 1)'}) {
-    @media (dynamic-range: high) {
-      dynamic-range-limit: no-limit;
-      box-shadow:
-        0 1px 4px color(display-p3 0.45 0.28 0 / 0.22),
-        0 0 0 1px color(display-p3 1 0.98 0.86 / 0.3) inset,
-        0 0 14px color(display-p3 1 0.89 0.2 / 0.36),
-        0 0 30px #{'color(rec2100-linear 3.6 2.9 0.7 / 0.48)'};
-
-      &::before {
-        background: radial-gradient(
-          circle at 18% 22%,
-          #{'color(rec2100-linear 6.5 6.2 5.4 / 0.92)'} 0%,
-          #{'color(rec2100-linear 2.4 2 0.6 / 0.62)'} 34%,
-          #{'color(rec2100-linear 1 0.85 0.12 / 0)'} 76%
-        );
-        opacity: 0.92;
-      }
-    }
-  }
 }
 
 :global([data-theme='dark']) .premiumPlanValue {
-  background:
-    radial-gradient(
-      circle at 18% 24%,
-      rgba(255, 229, 138, 0.32) 0%,
-      rgba(255, 214, 98, 0.18) 18%,
-      rgba(255, 214, 98, 0) 44%
-    ),
-    linear-gradient(135deg, #4f3d0b 0%, #6e5510 48%, #8f6d10 100%);
-  border-color: rgba(226, 180, 50, 0.7);
-  box-shadow:
-    0 1px 6px rgba(0, 0, 0, 0.28),
-    0 0 0 1px rgba(255, 220, 120, 0.16) inset,
-    0 0 18px rgba(255, 196, 44, 0.22);
-  color: #fff0a8;
-  text-shadow: 0 0 10px rgba(255, 212, 79, 0.22);
-
-  &::before {
-    background: radial-gradient(
-      circle at 18% 24%,
-      rgba(255, 229, 138, 0.42) 0%,
-      rgba(255, 197, 66, 0.28) 34%,
-      rgba(255, 187, 0, 0) 74%
-    );
-    opacity: 0.8;
-  }
-
-  @media (dynamic-range: high) {
-    background:
-      radial-gradient(
-        circle at 18% 24%,
-        color(display-p3 1 0.89 0.38 / 0.38) 0%,
-        color(display-p3 1 0.82 0.2 / 0.2) 18%,
-        color(display-p3 1 0.82 0.2 / 0) 44%
-      ),
-      linear-gradient(
-        135deg,
-        color(display-p3 0.33 0.25 0.04),
-        color(display-p3 0.48 0.36 0.08),
-        color(display-p3 0.62 0.46 0.09)
-      );
-    border-color: color(display-p3 0.78 0.6 0.16 / 0.78);
-    box-shadow:
-      0 1px 8px color(display-p3 0 0 0 / 0.32),
-      0 0 0 1px color(display-p3 0.95 0.8 0.24 / 0.18) inset,
-      0 0 20px color(display-p3 1 0.76 0.1 / 0.28);
-    color: color(display-p3 1 0.93 0.58);
-  }
-
-  @supports (color: #{'color(rec2100-linear 1 1 1)'}) {
-    @media (dynamic-range: high) {
-      dynamic-range-limit: no-limit;
-      box-shadow:
-        0 1px 8px color(display-p3 0 0 0 / 0.32),
-        0 0 0 1px color(display-p3 0.95 0.8 0.24 / 0.18) inset,
-        0 0 16px color(display-p3 1 0.76 0.1 / 0.28),
-        0 0 28px #{'color(rec2100-linear 4.8 3.5 0.45 / 0.4)'};
-
-      &::before {
-        background: radial-gradient(
-          circle at 18% 24%,
-          #{'color(rec2100-linear 5.6 4.1 0.75 / 0.64)'} 0%,
-          #{'color(rec2100-linear 2.2 1.5 0.2 / 0.34)'} 34%,
-          #{'color(rec2100-linear 1.2 0.9 0.06 / 0)'} 74%
-        );
-        opacity: 0.95;
-      }
-    }
-  }
+  background: rgba(226, 180, 50, 0.12);
+  border-color: rgba(226, 180, 50, 0.28);
+  color: #ffd862;
 }
 
 // 单个认证文件卡片
 .fileCard {
   position: relative;
   overflow: hidden;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 18px;
+  background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   min-height: 100%;
@@ -824,20 +673,18 @@
     border-color $transition-fast;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: $shadow-md;
-    border-color: color-mix(in srgb, var(--primary-color) 36%, var(--border-color));
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.15);
+    border-color: color-mix(in srgb, var(--primary-color) 28%, var(--border-color));
   }
 }
 
 .fileCardSelected {
-  border-color: var(--primary-color);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--primary-color) 70%, transparent),
-    0 14px 30px -24px color-mix(in srgb, var(--primary-color) 45%, transparent);
+  border-color: color-mix(in srgb, var(--primary-color) 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-color) 30%, transparent);
 
   &:hover {
-    border-color: var(--primary-color);
+    border-color: color-mix(in srgb, var(--primary-color) 60%, transparent);
   }
 }
 
@@ -852,58 +699,59 @@
 }
 
 .fileCardCompact {
-  padding: 14px;
-  border-radius: 14px;
+  padding: 12px;
+  border-radius: 10px;
 
   .fileCardMain {
-    gap: 10px;
+    gap: 8px;
   }
 
   .cardHeader {
-    gap: 10px;
+    gap: 8px;
   }
 
   .cardSelection {
-    margin-top: 7px;
+    margin-top: 6px;
   }
 
   .providerAvatar {
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
   }
 
   .providerAvatarImage {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   .providerAvatarFallback {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .cardHeaderContent {
-    gap: 4px;
+    gap: 3px;
   }
 
   .cardBadgeRow {
-    gap: 6px;
+    gap: 4px;
   }
 
   .typeBadge,
   .stateBadge {
-    padding: 4px 8px;
+    padding: 3px 7px;
+    font-size: 10px;
   }
 
   .fileName {
-    font-size: 14px;
-    line-height: 1.35;
+    font-size: 13px;
+    line-height: 1.3;
     -webkit-line-clamp: 1;
   }
 
   .healthStatusMessage {
-    padding: 8px 10px;
-    border-radius: 10px;
+    padding: 6px 8px;
+    border-radius: 8px;
     font-size: 11px;
   }
 
@@ -912,44 +760,39 @@
   }
 
   .cardActions {
-    gap: 8px;
-    padding-top: 0;
+    gap: 6px;
+    padding-top: 6px;
   }
 
   .cardActionsMain {
-    width: 100%;
-    gap: 8px;
-    flex-wrap: nowrap;
+    gap: 4px;
   }
 
   .primaryActionButton:global(.btn.btn-sm) {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-width: 0;
-    padding-inline: 10px;
+    padding-inline: 8px;
   }
 
   .cardUtilityActions {
-    gap: 4px;
-    padding: 3px;
-    border-radius: 10px;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 6px;
   }
 
   .iconButton:global(.btn.btn-sm) {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    border-radius: 9px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 6px;
   }
 
   .statusToggle {
-    width: 100%;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 5px 8px;
+    gap: 6px;
   }
 
   .statusToggleLabel {
-    font-size: 11px;
+    font-size: 10px;
   }
 }
 
@@ -963,7 +806,7 @@
 .fileCardMain {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   flex: 1;
   min-width: 0;
 }
@@ -971,7 +814,7 @@
 .cardHeader {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
 }
 
 .cardSelection {
@@ -980,15 +823,14 @@
 }
 
 .providerAvatar {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 74%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 55%, transparent);
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
 }
 
 .providerAvatarImage {
@@ -1021,9 +863,9 @@
 .typeBadge {
   display: inline-flex;
   align-items: center;
-  padding: 5px 10px;
-  border-radius: 999px;
-  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1;
   border: 1px solid transparent;
@@ -1034,9 +876,9 @@
 .stateBadge {
   display: inline-flex;
   align-items: center;
-  padding: 5px 10px;
-  border-radius: 999px;
-  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -1068,77 +910,66 @@
 }
 
 .fileName {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   color: var(--text-primary);
   word-break: break-all;
-  line-height: 1.45;
+  line-height: 1.4;
   display: -webkit-box;
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  letter-spacing: -0.01em;
 }
 
 .cardMeta {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-
-  @include mobile {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding: 0 2px;
 }
 
 .cardMetaCompact {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.cardMetaCompact .metaItem {
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  border-radius: 999px;
-  flex: 0 1 auto;
+  gap: 3px 12px;
 }
 
 .cardMetaCompact .metaLabel {
   font-size: 10px;
-  white-space: nowrap;
 }
 
 .cardMetaCompact .metaValue {
-  font-size: 12px;
-  line-height: 1.2;
-  white-space: nowrap;
+  font-size: 11px;
 }
 
 .metaItem {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
   min-width: 0;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  padding: 0;
+  border: none;
+  background: none;
 }
 
 .metaLabel {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-tertiary);
   line-height: 1.2;
+  white-space: nowrap;
+
+  &::after {
+    content: ':';
+  }
 }
 
 .metaValue {
   min-width: 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.45;
+  color: var(--text-secondary);
+  line-height: 1.4;
   word-break: break-word;
 }
 
@@ -1180,13 +1011,13 @@
 .healthStatusMessage {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 11px;
   color: var(--warning-text);
-  background-color: var(--warning-bg);
-  border: 1px solid var(--warning-border);
-  border-radius: 12px;
-  padding: 10px 12px;
+  background-color: color-mix(in srgb, var(--warning-bg) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning-border) 60%, transparent);
+  border-radius: 8px;
+  padding: 8px 10px;
   word-break: break-word;
 }
 
@@ -1198,92 +1029,78 @@
 .cardInsights {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  gap: 8px;
+  padding: 0 2px;
 }
 
 .cardInsightsCompact {
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  gap: 6px;
 }
 
 .cardStats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-
-  @include mobile {
-    grid-template-columns: 1fr;
-  }
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .cardStatsCompact {
-  gap: 8px;
+  gap: 6px;
 }
 
 .cardStatsCompact .statPill {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
+  padding: 3px 8px;
 }
 
 .cardStatsCompact .statLabel {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .cardStatsCompact .statValue {
-  font-size: 18px;
+  font-size: 12px;
 }
 
 .statPill {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
   min-width: 0;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid transparent;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: none;
 }
 
 .statLabel {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1;
 }
 
 .statValue {
-  font-size: 22px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .statSuccess {
-  background: var(--success-badge-bg, #d1fae5);
+  background: color-mix(in srgb, var(--success-badge-bg, #d1fae5) 50%, transparent);
   color: var(--success-badge-text, #065f46);
-  border-color: var(--success-badge-border, #6ee7b7);
 }
 
 .statFailure {
-  background: var(--failure-badge-bg);
+  background: color-mix(in srgb, var(--failure-badge-bg) 50%, transparent);
   color: var(--failure-badge-text);
-  border-color: var(--failure-badge-border);
 }
 
 .statusPanel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .statusPanelCompact {
-  gap: 6px;
+  gap: 3px;
 }
 
 .statusPanelCompact .statusPanelLabel {
@@ -1313,10 +1130,12 @@
 .statusPanelLabel {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 // 状态监测栏
@@ -1345,7 +1164,7 @@
 
 .statusBlockWrapper {
   flex: 1;
-  min-width: 7px;
+  min-width: 5px;
   position: relative;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1353,7 +1172,7 @@
 
 .statusBlock {
   width: 100%;
-  height: 10px;
+  height: 6px;
   border-radius: 999px;
   transition:
     transform 0.15s ease,
@@ -1361,7 +1180,7 @@
 
   .statusBlockWrapper:hover &,
   .statusBlockWrapper.statusBlockActive & {
-    transform: scaleY(1.45);
+    transform: scaleY(1.6);
     opacity: 0.9;
   }
 }
@@ -1566,43 +1385,35 @@
 
 .cardActions {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
   margin-top: auto;
-  padding-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
 }
 
 .cardActionsMain {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 6px;
   min-width: 0;
+  flex: 1;
 }
 
 .primaryActionButton:global(.btn.btn-sm) {
-  min-width: 96px;
-  padding-inline: 12px;
+  min-width: 0;
+  padding-inline: 10px;
 }
 
 .modelsActionButton:global(.btn.btn-sm) {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--primary-color) 15%, var(--bg-secondary)),
-    color-mix(in srgb, var(--primary-color) 7%, var(--bg-primary))
-  );
-  border-color: color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--primary-color) 20%, var(--border-color));
 }
 
 .modelsActionButton:global(.btn.btn-sm):hover {
-  border-color: color-mix(in srgb, var(--primary-color) 38%, var(--border-color));
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--primary-color) 18%, var(--bg-secondary)),
-    color-mix(in srgb, var(--primary-color) 9%, var(--bg-primary))
-  );
+  border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-color) 14%, var(--bg-secondary));
 }
 
 .modelsActionButton:global(.btn.btn-sm) > span {
@@ -1630,37 +1441,33 @@
 .cardUtilityActions {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  gap: 3px;
+  padding: 2px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-tertiary) 50%, transparent);
 }
 
 .statusToggle {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   flex-shrink: 0;
-  padding: 6px 10px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  margin-left: auto;
 }
 
 .statusToggleLabel {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
 }
 
 .iconButton:global(.btn.btn-sm) {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   padding: 0;
   box-sizing: border-box;
-  border-radius: 10px;
+  border-radius: 8px;
   gap: 0;
 }
 
@@ -1670,12 +1477,12 @@
 
 @include mobile {
   .cardActions {
-    align-items: stretch;
+    flex-wrap: wrap;
   }
 
   .cardActionsMain {
-    width: 100%;
     flex-wrap: wrap;
+    width: 100%;
   }
 
   .primaryActionButton:global(.btn.btn-sm) {
@@ -1683,27 +1490,9 @@
     min-width: 0;
   }
 
-  .cardUtilityActions {
-    margin-left: auto;
-  }
-
   .statusToggle {
     width: 100%;
     justify-content: space-between;
-  }
-
-  .fileCardCompact {
-    .cardActionsMain {
-      flex-wrap: wrap;
-    }
-
-    .primaryActionButton:global(.btn.btn-sm) {
-      flex: 1 1 auto;
-    }
-
-    .cardUtilityActions {
-      margin-left: auto;
-    }
   }
 }
 

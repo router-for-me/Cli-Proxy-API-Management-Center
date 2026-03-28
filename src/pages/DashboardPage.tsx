@@ -27,6 +27,16 @@ interface ProviderStats {
   openai: number | null;
 }
 
+type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
+
+function getTimeOfDay(): TimeOfDay {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'night';
+}
+
 export function DashboardPage() {
   const { t, i18n } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
@@ -56,11 +66,24 @@ export function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
 
+  // Time-of-day state for dynamic greeting
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
   const apiKeysCache = useRef<string[]>([]);
 
   useEffect(() => {
     apiKeysCache.current = [];
   }, [apiBase, config?.apiKeys]);
+
+  // Update time every 60 seconds
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTimeOfDay(getTimeOfDay());
+      setCurrentTime(new Date());
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const normalizeApiKeyList = (input: unknown): string[] => {
     if (!Array.isArray(input)) return [];
@@ -237,113 +260,151 @@ export function DashboardPage() {
         ? styles.configBadgeFillFirst
         : styles.configBadgeUnknown;
 
+  // Derived time-based values
+  const greetingKey = `dashboard.greeting_${timeOfDay}`;
+  const caringKey = `dashboard.caring_${timeOfDay}`;
+
+  const formattedDate = currentTime.toLocaleDateString(i18n.language, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const formattedTime = currentTime.toLocaleTimeString(i18n.language, {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   return (
     <div className={styles.dashboard}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>{t('dashboard.title')}</h1>
-        <p className={styles.subtitle}>{t('dashboard.subtitle')}</p>
+      {/* Decorative background orbs */}
+      <div className={styles.backgroundOrbs} aria-hidden="true">
+        <div className={styles.orb1} />
+        <div className={styles.orb2} />
       </div>
 
-      <div className={styles.connectionCard}>
-        <div className={styles.connectionStatus}>
-          <span
-            className={`${styles.statusDot} ${
-              connectionStatus === 'connected'
-                ? styles.connected
-                : connectionStatus === 'connecting'
-                  ? styles.connecting
-                  : styles.disconnected
-            }`}
-          />
-          <span className={styles.statusText}>
-            {t(
-              connectionStatus === 'connected'
-                ? 'common.connected'
-                : connectionStatus === 'connecting'
-                  ? 'common.connecting'
-                  : 'common.disconnected'
-            )}
-          </span>
+      {/* Hero welcome section */}
+      <section className={styles.hero}>
+        <span className={styles.heroWatermark} aria-hidden="true">
+          OVERVIEW
+        </span>
+        <div className={styles.heroContent}>
+          <span className={styles.heroGreeting}>{t(greetingKey)}</span>
+          <h1 className={styles.heroTitle}>{t('dashboard.welcome_back')}</h1>
+          <p className={styles.heroCaring}>{t(caringKey)}</p>
         </div>
-        <div className={styles.connectionInfo}>
-          <span className={styles.serverUrl}>{apiBase || '-'}</span>
-          {serverVersion && (
-            <span className={styles.serverVersion}>
-              v{serverVersion.trim().replace(/^[vV]+/, '')}
+        <div className={styles.heroMeta}>
+          <div className={styles.dateTimeBlock}>
+            <span className={styles.time}>{formattedTime}</span>
+            <span className={styles.date}>{formattedDate}</span>
+          </div>
+          <div className={styles.connectionPill}>
+            <span
+              className={`${styles.statusDot} ${
+                connectionStatus === 'connected'
+                  ? styles.connected
+                  : connectionStatus === 'connecting'
+                    ? styles.connecting
+                    : styles.disconnected
+              }`}
+            />
+            <span className={styles.pillText}>
+              {serverVersion
+                ? `v${serverVersion.trim().replace(/^[vV]+/, '')}`
+                : t(
+                    connectionStatus === 'connected'
+                      ? 'common.connected'
+                      : connectionStatus === 'connecting'
+                        ? 'common.connecting'
+                        : 'common.disconnected'
+                  )}
             </span>
-          )}
+          </div>
           {serverBuildDate && (
             <span className={styles.buildDate}>
               {new Date(serverBuildDate).toLocaleDateString(i18n.language)}
             </span>
           )}
         </div>
-      </div>
+      </section>
 
-      <div className={styles.statsGrid}>
-        {quickStats.map((stat) => (
-          <Link key={stat.path} to={stat.path} className={styles.statCard}>
-            <div className={styles.statIcon}>{stat.icon}</div>
-            <div className={styles.statContent}>
-              <span className={styles.statValue}>{stat.loading ? '...' : stat.value}</span>
-              <span className={styles.statLabel}>{stat.label}</span>
-              {stat.sublabel && !stat.loading && (
-                <span className={styles.statSublabel}>{stat.sublabel}</span>
-              )}
-            </div>
-          </Link>
-        ))}
-      </div>
+      {/* Bento stats grid */}
+      <section className={styles.statsSection}>
+        <h2 className={styles.sectionHeading}>{t('dashboard.system_overview')}</h2>
+        <div className={styles.bentoGrid}>
+          {quickStats.map((stat, index) => (
+            <Link
+              key={stat.path}
+              to={stat.path}
+              className={`${styles.bentoCard} ${index === 0 ? styles.bentoLarge : ''}`}
+              style={{ animationDelay: `${index * 80}ms` }}
+            >
+              <div className={styles.bentoIcon}>{stat.icon}</div>
+              <div className={styles.bentoContent}>
+                <span className={styles.bentoValue}>
+                  {stat.loading ? '...' : stat.value}
+                </span>
+                <span className={styles.bentoLabel}>{stat.label}</span>
+                {stat.sublabel && !stat.loading && (
+                  <span className={styles.bentoSublabel}>{stat.sublabel}</span>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
 
+      {/* Config pills section */}
       {config && (
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t('dashboard.current_config')}</h2>
-          <div className={styles.configGrid}>
-            <div className={styles.configItem}>
-              <span className={styles.configLabel}>{t('basic_settings.debug_enable')}</span>
-              <span className={`${styles.configValue} ${config.debug ? styles.enabled : styles.disabled}`}>
+        <section className={styles.configSection}>
+          <h2 className={styles.sectionHeading}>{t('dashboard.current_config')}</h2>
+          <div className={styles.configPillGrid}>
+            <div className={styles.configPill}>
+              <span className={styles.configPillLabel}>{t('basic_settings.debug_enable')}</span>
+              <span className={`${styles.configPillValue} ${config.debug ? styles.on : styles.off}`}>
                 {config.debug ? t('common.yes') : t('common.no')}
               </span>
             </div>
-            <div className={styles.configItem}>
-              <span className={styles.configLabel}>{t('basic_settings.usage_statistics_enable')}</span>
-              <span className={`${styles.configValue} ${config.usageStatisticsEnabled ? styles.enabled : styles.disabled}`}>
+            <div className={styles.configPill}>
+              <span className={styles.configPillLabel}>{t('basic_settings.usage_statistics_enable')}</span>
+              <span className={`${styles.configPillValue} ${config.usageStatisticsEnabled ? styles.on : styles.off}`}>
                 {config.usageStatisticsEnabled ? t('common.yes') : t('common.no')}
               </span>
             </div>
-            <div className={styles.configItem}>
-              <span className={styles.configLabel}>{t('basic_settings.logging_to_file_enable')}</span>
-              <span className={`${styles.configValue} ${config.loggingToFile ? styles.enabled : styles.disabled}`}>
+            <div className={styles.configPill}>
+              <span className={styles.configPillLabel}>{t('basic_settings.logging_to_file_enable')}</span>
+              <span className={`${styles.configPillValue} ${config.loggingToFile ? styles.on : styles.off}`}>
                 {config.loggingToFile ? t('common.yes') : t('common.no')}
               </span>
             </div>
-            <div className={styles.configItem}>
-              <span className={styles.configLabel}>{t('basic_settings.retry_count_label')}</span>
-              <span className={styles.configValue}>{config.requestRetry ?? 0}</span>
+            <div className={styles.configPill}>
+              <span className={styles.configPillLabel}>{t('basic_settings.retry_count_label')}</span>
+              <span className={styles.configPillValue}>{config.requestRetry ?? 0}</span>
             </div>
-            <div className={styles.configItem}>
-              <span className={styles.configLabel}>{t('basic_settings.ws_auth_enable')}</span>
-              <span className={`${styles.configValue} ${config.wsAuth ? styles.enabled : styles.disabled}`}>
+            <div className={styles.configPill}>
+              <span className={styles.configPillLabel}>{t('basic_settings.ws_auth_enable')}</span>
+              <span className={`${styles.configPillValue} ${config.wsAuth ? styles.on : styles.off}`}>
                 {config.wsAuth ? t('common.yes') : t('common.no')}
               </span>
             </div>
-            <div className={styles.configItem}>
-              <span className={styles.configLabel}>{t('dashboard.routing_strategy')}</span>
+            <div className={styles.configPill}>
+              <span className={styles.configPillLabel}>{t('dashboard.routing_strategy')}</span>
               <span className={`${styles.configBadge} ${routingStrategyBadgeClass}`}>
                 {routingStrategyDisplay}
               </span>
             </div>
             {config.proxyUrl && (
-              <div className={`${styles.configItem} ${styles.configItemFull}`}>
-                <span className={styles.configLabel}>{t('basic_settings.proxy_url_label')}</span>
-                <span className={styles.configValueMono}>{config.proxyUrl}</span>
+              <div className={`${styles.configPill} ${styles.configPillWide}`}>
+                <span className={styles.configPillLabel}>{t('basic_settings.proxy_url_label')}</span>
+                <span className={styles.configPillMono}>{config.proxyUrl}</span>
               </div>
             )}
           </div>
           <Link to="/config" className={styles.viewMoreLink}>
             {t('dashboard.edit_settings')} →
           </Link>
-        </div>
+        </section>
       )}
     </div>
   );

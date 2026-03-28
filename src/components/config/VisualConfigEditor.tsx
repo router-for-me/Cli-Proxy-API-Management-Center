@@ -392,10 +392,9 @@ export function VisualConfigEditor({
     if (!floatingElement) return undefined;
 
     const clearFloatingStyles = () => {
-      floatingElement.style.removeProperty('--visual-config-floating-left');
-      floatingElement.style.removeProperty('--visual-config-floating-top');
-      floatingElement.style.removeProperty('--visual-config-floating-width');
-      floatingElement.style.removeProperty('--visual-config-floating-max-height');
+      floatingElement.style.removeProperty('transform');
+      floatingElement.style.removeProperty('width');
+      floatingElement.style.removeProperty('max-height');
       floatingElement.style.removeProperty('opacity');
       floatingElement.style.removeProperty('pointer-events');
     };
@@ -405,7 +404,8 @@ export function VisualConfigEditor({
       return undefined;
     }
 
-    const getHeaderHeight = () => {
+    /* ---- Cache header height – recomputed only on resize ---- */
+    const computeHeaderHeight = () => {
       const header = document.querySelector('.main-header') as HTMLElement | null;
       if (header) return header.getBoundingClientRect().height;
 
@@ -413,8 +413,14 @@ export function VisualConfigEditor({
       const parsed = Number.parseFloat(raw);
       return Number.isFinite(parsed) ? parsed : 64;
     };
+    let headerHeight = computeHeaderHeight();
 
-    const getContentScroller = () => document.querySelector('.content') as HTMLElement | null;
+    /* ---- Cache content scroller – resolved once ---- */
+    const contentScroller = document.querySelector('.content') as HTMLElement | null;
+
+    /* ---- Cache floating height from previous frame ---- */
+    let cachedFloatingHeight = floatingElement.getBoundingClientRect().height || 200;
+
     let frameId = 0;
 
     const updateFloatingPosition = () => {
@@ -422,10 +428,9 @@ export function VisualConfigEditor({
 
       const anchorRect = anchorElement.getBoundingClientRect();
       const workspaceRect = workspaceElement.getBoundingClientRect();
-      const floatingHeight = floatingElement.getBoundingClientRect().height;
-      const stickyTop = getHeaderHeight() + 20;
+      const stickyTop = headerHeight + 20;
       const viewportPadding = 16;
-      const maxTop = workspaceRect.bottom - floatingHeight;
+      const maxTop = workspaceRect.bottom - cachedFloatingHeight;
       const unclampedTop = Math.min(Math.max(anchorRect.top, stickyTop), maxTop);
       const top = Math.max(unclampedTop, viewportPadding);
       const left = Math.max(anchorRect.left, viewportPadding);
@@ -436,10 +441,9 @@ export function VisualConfigEditor({
       const maxHeight = Math.max(window.innerHeight - top - viewportPadding, 160);
       const isVisible = workspaceRect.bottom > stickyTop + 24 && anchorRect.top < window.innerHeight;
 
-      floatingElement.style.setProperty('--visual-config-floating-left', `${left}px`);
-      floatingElement.style.setProperty('--visual-config-floating-top', `${top}px`);
-      floatingElement.style.setProperty('--visual-config-floating-width', `${width}px`);
-      floatingElement.style.setProperty('--visual-config-floating-max-height', `${maxHeight}px`);
+      floatingElement.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      floatingElement.style.width = `${width}px`;
+      floatingElement.style.maxHeight = `${maxHeight}px`;
       floatingElement.style.opacity = isVisible ? '1' : '0';
       floatingElement.style.pointerEvents = isVisible ? 'auto' : 'none';
     };
@@ -449,10 +453,15 @@ export function VisualConfigEditor({
       frameId = requestAnimationFrame(updateFloatingPosition);
     };
 
+    const handleResize = () => {
+      headerHeight = computeHeaderHeight();
+      cachedFloatingHeight = floatingElement.getBoundingClientRect().height || cachedFloatingHeight;
+      requestPositionUpdate();
+    };
+
     requestPositionUpdate();
 
-    const contentScroller = getContentScroller();
-    window.addEventListener('resize', requestPositionUpdate);
+    window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', requestPositionUpdate, { passive: true });
     contentScroller?.addEventListener('scroll', requestPositionUpdate, { passive: true });
 
@@ -460,12 +469,11 @@ export function VisualConfigEditor({
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(requestPositionUpdate);
     resizeObserver?.observe(anchorElement);
     resizeObserver?.observe(workspaceElement);
-    resizeObserver?.observe(floatingElement);
 
     return () => {
       if (frameId) cancelAnimationFrame(frameId);
       resizeObserver?.disconnect();
-      window.removeEventListener('resize', requestPositionUpdate);
+      window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', requestPositionUpdate);
       contentScroller?.removeEventListener('scroll', requestPositionUpdate);
       clearFloatingStyles();

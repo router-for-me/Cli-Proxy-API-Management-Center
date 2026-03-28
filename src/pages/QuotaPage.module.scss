@@ -31,13 +31,21 @@
   gap: $spacing-sm;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
 
-  :global(.btn-sm) {
+  :global(.btn.btn-sm) {
     line-height: 16px;
+    min-width: 0;
   }
 
   :global(svg) {
     display: block;
+  }
+
+  @include mobile {
+    width: 100%;
+    justify-content: stretch;
   }
 }
 
@@ -146,9 +154,95 @@
 }
 
 .viewModeToggle {
-  display: flex;
+  display: inline-flex;
   gap: $spacing-xs;
   align-items: center;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+
+  @include mobile {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
+.viewModeButton:global(.btn.btn-sm) {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  box-shadow: none;
+
+  &:hover:not(:disabled) {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--bg-hover) 72%, transparent);
+    color: var(--text-primary);
+  }
+
+  > span {
+    white-space: nowrap;
+  }
+
+  @include mobile {
+    flex: 1 1 0;
+  }
+}
+
+.viewModeButtonActive:global(.btn.btn-sm) {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--primary-contrast, #fff);
+  box-shadow: 0 8px 18px -14px rgba(0, 0, 0, 0.45);
+
+  &:hover:not(:disabled) {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: var(--primary-contrast, #fff);
+  }
+}
+
+.refreshAllButton:global(.btn.btn-sm) {
+  padding-inline: 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--primary-color) 22%, var(--border-color));
+  color: var(--text-primary);
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary-color) 16%, var(--bg-secondary));
+    border-color: color-mix(in srgb, var(--primary-color) 34%, var(--border-color));
+  }
+
+  @include mobile {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+:global([data-theme='dark']) .viewModeToggle {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+:global([data-theme='dark']) .refreshAllButton:global(.btn.btn-sm) {
+  background: color-mix(in srgb, var(--primary-color) 18%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--primary-color) 32%, var(--border-color));
+}
+
+@include mobile {
+  .headerActions {
+    gap: $spacing-xs;
+  }
 }
 
 // 卡片渐变背景 — 基于 TYPE_COLORS light.bg 转 rgba
@@ -243,7 +337,7 @@
 }
 
 .quotaBarFillMedium {
-  background-color: var(--warning-color);
+  background-color: var(--quota-medium-color, #e0aa14);
 }
 
 .quotaBarFillLow {
@@ -281,6 +375,24 @@
   color: var(--text-tertiary);
   text-align: center;
   padding: $spacing-sm 0;
+}
+
+.quotaMessageAction {
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    text-decoration: none;
+  }
 }
 
 .quotaError {

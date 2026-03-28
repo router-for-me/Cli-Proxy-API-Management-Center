@@ -41,6 +41,8 @@
     "quota_update_required": "Пожалуйста, обновите CPA или проверьте наличие обновлений",
     "quota_check_credential": "Пожалуйста, проверьте статус учётных данных",
     "copy": "Копировать",
+    "expand": "Развернуть",
+    "collapse": "Свернуть",
     "status": "Статус",
     "action": "Действие",
     "custom_headers_label": "Пользовательские заголовки",
@@ -138,7 +140,17 @@
     "edit_settings": "Изменить настройки",
     "routing_strategy": "Стратегия маршрутизации",
     "available_models": "Доступные модели",
-    "available_models_desc": "Всего моделей от всех провайдеров"
+    "available_models_desc": "Всего моделей от всех провайдеров",
+    "welcome_back": "С возвращением",
+    "greeting_morning": "Доброе утро",
+    "greeting_afternoon": "Добрый день",
+    "greeting_evening": "Добрый вечер",
+    "greeting_night": "Доброй ночи",
+    "caring_morning": "Новый день — начнём продуктивно.",
+    "caring_afternoon": "Уверенный прогресс — отличная работа.",
+    "caring_evening": "День подходит к концу — финальный рывок.",
+    "caring_night": "Поздняя работа? Не забудьте отдохнуть.",
+    "system_overview": "Обзор системы"
   },
   "basic_settings": {
     "title": "Основные настройки",
@@ -495,7 +507,7 @@
     "pagination_next": "Следующая",
     "pagination_info": "Страница {{current}} / {{total}} · {{count}} файлов",
     "search_label": "Поиск конфигов",
-    "search_placeholder": "Фильтр по имени, типу или провайдеру",
+    "search_placeholder": "Фильтр по имени, типу или провайдеру, поддерживается wildcard *",
     "problem_filter_label": "Фильтр проблем",
     "problem_filter_only": "Показывать только проблемные учётные данные",
     "display_options_label": "Параметры отображения",
@@ -1350,7 +1362,8 @@
     "description": "Следите за статусом квот OAuth для учётных данных Antigravity, Codex и Gemini CLI.",
     "refresh_files": "Обновить файлы авторизации",
     "refresh_files_and_quota": "Обновить файлы и квоты",
-    "card_idle_hint": "Используйте кнопку «Обновить файлы и квоты» сверху, чтобы загрузить актуальные данные по квотам."
+    "refresh_all_credentials": "Обновить все учётные данные",
+    "card_idle_hint": "Используйте кнопку «Обновить все учётные данные» сверху, чтобы загрузить актуальные данные по квотам."
   },
   "system_info": {
     "title": "Информация о центре управления",

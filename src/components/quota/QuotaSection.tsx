@@ -8,8 +8,9 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { useQuotaStore, useThemeStore } from '@/stores';
+import { useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
+import { getStatusFromError } from '@/utils/quota';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
 import { useQuotaLoader } from './useQuotaLoader';
@@ -105,6 +106,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 }: QuotaSectionProps<TState, TData>) {
   const { t } = useTranslation();
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const showNotification = useNotificationStore((state) => state.showNotification);
   const setQuota = useQuotaStore((state) => state[config.storeSetter]) as QuotaSetter<
     Record<string, TState>
   >;
@@ -202,6 +204,39 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     });
   }, [filteredFiles, loading, setQuota]);
 
+  const refreshQuotaForFile = useCallback(
+    async (file: AuthFileItem) => {
+      if (disabled || file.disabled) return;
+      if (quota[file.name]?.status === 'loading') return;
+
+      setQuota((prev) => ({
+        ...prev,
+        [file.name]: config.buildLoadingState()
+      }));
+
+      try {
+        const data = await config.fetchQuota(file, t);
+        setQuota((prev) => ({
+          ...prev,
+          [file.name]: config.buildSuccessState(data)
+        }));
+        showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('common.unknown_error');
+        const status = getStatusFromError(err);
+        setQuota((prev) => ({
+          ...prev,
+          [file.name]: config.buildErrorState(message, status)
+        }));
+        showNotification(
+          t('auth_files.quota_refresh_failed', { name: file.name, message }),
+          'error'
+        );
+      }
+    },
+    [config, disabled, quota, setQuota, showNotification, t]
+  );
+
   const titleNode = (
     <div className={styles.titleWrapper}>
       <span>{t(`${config.i18nPrefix}.title`)}</span>
@@ -222,15 +257,21 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         <div className={styles.headerActions}>
           <div className={styles.viewModeToggle}>
             <Button
-              variant={effectiveViewMode === 'paged' ? 'primary' : 'secondary'}
+              variant="secondary"
               size="sm"
+              className={`${styles.viewModeButton} ${
+                effectiveViewMode === 'paged' ? styles.viewModeButtonActive : ''
+              }`}
               onClick={() => setViewMode('paged')}
             >
               {t('auth_files.view_mode_paged')}
             </Button>
             <Button
-              variant={effectiveViewMode === 'all' ? 'primary' : 'secondary'}
+              variant="secondary"
               size="sm"
+              className={`${styles.viewModeButton} ${
+                effectiveViewMode === 'all' ? styles.viewModeButtonActive : ''
+              }`}
               onClick={() => {
                 if (filteredFiles.length > MAX_SHOW_ALL_THRESHOLD) {
                   setShowTooManyWarning(true);
@@ -245,13 +286,15 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
           <Button
             variant="secondary"
             size="sm"
+            className={styles.refreshAllButton}
             onClick={handleRefresh}
             disabled={disabled || isRefreshing}
             loading={isRefreshing}
-            title={t('quota_management.refresh_files_and_quota')}
-            aria-label={t('quota_management.refresh_files_and_quota')}
+            title={t('quota_management.refresh_all_credentials')}
+            aria-label={t('quota_management.refresh_all_credentials')}
           >
             {!isRefreshing && <IconRefreshCw size={16} />}
+            {t('quota_management.refresh_all_credentials')}
           </Button>
         </div>
       }
@@ -274,6 +317,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                 cardIdleMessageKey={config.cardIdleMessageKey}
                 cardClassName={config.cardClassName}
                 defaultType={config.type}
+                canRefresh={!disabled && !item.disabled}
+                onRefresh={() => void refreshQuotaForFile(item)}
                 renderQuotaItems={config.renderQuotaItems}
               />
             ))}

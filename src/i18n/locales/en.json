@@ -41,6 +41,8 @@
     "quota_update_required": "Please update the CPA version or check for updates",
     "quota_check_credential": "Please check the credential status",
     "copy": "Copy",
+    "expand": "Expand",
+    "collapse": "Collapse",
     "status": "Status",
     "action": "Action",
     "custom_headers_label": "Custom Headers",
@@ -138,7 +140,17 @@
     "edit_settings": "Edit Settings",
     "routing_strategy": "Routing Strategy",
     "available_models": "Available Models",
-    "available_models_desc": "Total models from all providers"
+    "available_models_desc": "Total models from all providers",
+    "welcome_back": "Welcome Back",
+    "greeting_morning": "Good Morning",
+    "greeting_afternoon": "Good Afternoon",
+    "greeting_evening": "Good Evening",
+    "greeting_night": "Good Night",
+    "caring_morning": "A fresh start — let's make today count.",
+    "caring_afternoon": "Steady progress — you're doing great.",
+    "caring_evening": "Wrapping up nicely — almost there.",
+    "caring_night": "Burning the midnight oil? Don't forget to rest.",
+    "system_overview": "System Overview"
   },
   "basic_settings": {
     "title": "Basic Settings",
@@ -495,7 +507,7 @@
     "pagination_next": "Next",
     "pagination_info": "Page {{current}} / {{total}} · {{count}} files",
     "search_label": "Search configs",
-    "search_placeholder": "Filter by name, type, or provider",
+    "search_placeholder": "Filter by name, type, or provider. Use * as a wildcard",
     "problem_filter_label": "Problem Filter",
     "problem_filter_only": "Only show problematic credentials",
     "display_options_label": "Display options",
@@ -1345,7 +1357,8 @@
     "description": "Monitor OAuth quota status for Antigravity, Codex, and Gemini CLI credentials.",
     "refresh_files": "Refresh auth files",
     "refresh_files_and_quota": "Refresh files & quota",
-    "card_idle_hint": "Use the top \"Refresh files & quota\" button to fetch the latest quota data."
+    "refresh_all_credentials": "Refresh all credentials",
+    "card_idle_hint": "Use the top \"Refresh all credentials\" button to fetch the latest quota data."
   },
   "system_info": {
     "title": "Management Center Info",
