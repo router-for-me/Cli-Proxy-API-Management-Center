@@ -7,8 +7,6 @@ import App from './App.tsx';
 document.title = 'CLI Proxy API Management Center';
 document.documentElement.setAttribute('translate', 'no');
 document.documentElement.classList.add('notranslate');
-document.body.classList.add('notranslate');
-document.body.setAttribute('translate', 'no');
 
 const faviconEl = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
 if (faviconEl) {
