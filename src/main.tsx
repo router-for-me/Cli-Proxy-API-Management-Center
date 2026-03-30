@@ -5,6 +5,8 @@ import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import App from './App.tsx';
 
 document.title = 'CLI Proxy API Management Center';
+document.documentElement.setAttribute('translate', 'no');
+document.documentElement.classList.add('notranslate');
 
 const faviconEl = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
 if (faviconEl) {
