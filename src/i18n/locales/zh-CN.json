@@ -116,6 +116,7 @@
     "oauth": "OAuth 登录",
     "quota_management": "配额管理",
     "usage_stats": "使用统计",
+    "request_logs": "请求日志",
     "config_management": "配置面板",
     "logs": "日志查看",
     "system_info": "中心信息"
@@ -957,7 +958,9 @@
     "by_day": "按天",
     "range_filter": "时间范围",
     "range_all": "全部时间",
-    "range_7h": "最近7小时",
+    "range_3h": "最近3小时",
+    "range_6h": "最近6小时",
+    "range_12h": "最近12小时",
     "range_24h": "最近24小时",
     "range_7d": "最近7天",
     "filter_all": "全部",

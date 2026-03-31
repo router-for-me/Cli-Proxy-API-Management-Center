@@ -25,7 +25,6 @@ import {
   ModelStatsCard,
   PriceSettingsCard,
   CredentialStatsCard,
-  RequestEventsDetailsCard,
   TokenBreakdownChart,
   CostTrendChart,
   LatencyTrendChart,
@@ -58,22 +57,26 @@ ChartJS.register(
 const CHART_LINES_STORAGE_KEY = 'cli-proxy-usage-chart-lines-v1';
 const TIME_RANGE_STORAGE_KEY = 'cli-proxy-usage-time-range-v1';
 const DEFAULT_CHART_LINES = ['all'];
-const DEFAULT_TIME_RANGE: UsageTimeRange = '24h';
+const DEFAULT_TIME_RANGE: UsageTimeRange = '3h';
 const MAX_CHART_LINES = 9;
 const TIME_RANGE_OPTIONS: ReadonlyArray<{ value: UsageTimeRange; labelKey: string }> = [
   { value: 'all', labelKey: 'usage_stats.range_all' },
-  { value: '7h', labelKey: 'usage_stats.range_7h' },
+  { value: '3h', labelKey: 'usage_stats.range_3h' },
+  { value: '6h', labelKey: 'usage_stats.range_6h' },
+  { value: '12h', labelKey: 'usage_stats.range_12h' },
   { value: '24h', labelKey: 'usage_stats.range_24h' },
   { value: '7d', labelKey: 'usage_stats.range_7d' },
 ];
 const HOUR_WINDOW_BY_TIME_RANGE: Record<Exclude<UsageTimeRange, 'all'>, number> = {
-  '7h': 7,
+  '3h': 3,
+  '6h': 6,
+  '12h': 12,
   '24h': 24,
   '7d': 7 * 24
 };
 
 const isUsageTimeRange = (value: unknown): value is UsageTimeRange =>
-  value === '7h' || value === '24h' || value === '7d' || value === 'all';
+  value === '3h' || value === '6h' || value === '12h' || value === '24h' || value === '7d' || value === 'all';
 
 const normalizeChartLines = (value: unknown, maxLines = MAX_CHART_LINES): string[] => {
   if (!Array.isArray(value)) {
@@ -374,16 +377,6 @@ export function UsagePage() {
         <ApiDetailsCard apiStats={apiStats} loading={loading} hasPrices={hasPrices} />
         <ModelStatsCard modelStats={modelStats} loading={loading} hasPrices={hasPrices} />
       </div>
-
-      <RequestEventsDetailsCard
-        usage={filteredUsage}
-        loading={loading}
-        geminiKeys={config?.geminiApiKeys || []}
-        claudeConfigs={config?.claudeApiKeys || []}
-        codexConfigs={config?.codexApiKeys || []}
-        vertexConfigs={config?.vertexApiKeys || []}
-        openaiProviders={config?.openaiCompatibility || []}
-      />
 
       {/* Credential Stats */}
       <CredentialStatsCard
