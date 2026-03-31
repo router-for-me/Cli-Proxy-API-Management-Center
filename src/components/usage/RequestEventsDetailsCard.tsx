@@ -19,7 +19,8 @@ import { downloadBlob } from '@/utils/download';
 import styles from '@/pages/UsagePage.module.scss';
 
 const ALL_FILTER = '__all__';
-const MAX_RENDERED_EVENTS = 500;
+// 默认只渲染最近 150 条，避免请求事件明细一次性渲染过多。
+const MAX_RENDERED_EVENTS = 150;
 
 type RequestEventRow = {
   id: string;
