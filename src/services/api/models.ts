@@ -121,6 +121,7 @@ export const modelsApi = {
     }
 
     const result = await apiCallApi.request({
+      provider: 'codex',
       method: 'GET',
       url: endpoint,
       header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
@@ -211,6 +212,7 @@ export const modelsApi = {
 
     const request = (async () => {
       const result = await apiCallApi.request({
+        provider: 'claude',
         method: 'GET',
         url: endpoint,
         header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined

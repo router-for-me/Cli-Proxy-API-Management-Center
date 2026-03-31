@@ -7,6 +7,7 @@ import { apiClient } from './client';
 
 export interface ApiCallRequest {
   authIndex?: string;
+  provider?: string;
   method: string;
   url: string;
   header?: Record<string, string>;

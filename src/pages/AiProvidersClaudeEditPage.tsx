@@ -215,6 +215,7 @@ export function AiProvidersClaudeEditPage() {
     try {
       const result = await apiCallApi.request(
         {
+          provider: 'claude',
           method: 'POST',
           url: endpoint,
           header: headers,
