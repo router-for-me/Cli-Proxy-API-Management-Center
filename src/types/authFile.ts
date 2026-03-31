@@ -30,6 +30,7 @@ export interface AuthFileItem {
   statusMessage?: string;
   lastRefresh?: string | number;
   modified?: number;
+  user_agent?: string;
   [key: string]: unknown;
 }
 

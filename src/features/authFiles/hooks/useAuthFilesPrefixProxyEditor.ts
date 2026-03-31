@@ -20,6 +20,7 @@ export type PrefixProxyEditorField =
   | 'priority'
   | 'excludedModelsText'
   | 'disableCooling'
+  | 'userAgent'
   | 'websockets'
   | 'note';
 
@@ -40,6 +41,7 @@ export type PrefixProxyEditorState = {
   priority: string;
   excludedModelsText: string;
   disableCooling: string;
+  userAgent: string;
   websockets: boolean;
   note: string;
   noteTouched: boolean;
@@ -93,6 +95,15 @@ const buildPrefixProxyUpdatedText = (editor: PrefixProxyEditorState | null): str
     next.disable_cooling = parsedDisableCooling;
   } else if ('disable_cooling' in next) {
     delete next.disable_cooling;
+  }
+
+  const trimmedUserAgent = editor.userAgent.trim();
+  if (trimmedUserAgent) {
+    next.user_agent = trimmedUserAgent;
+    delete next['user-agent'];
+  } else {
+    delete next.user_agent;
+    delete next['user-agent'];
   }
 
   if (editor.noteTouched) {
@@ -159,6 +170,7 @@ export function useAuthFilesPrefixProxyEditor(
       priority: '',
       excludedModelsText: '',
       disableCooling: '',
+      userAgent: '',
       websockets: false,
       note: '',
       noteTouched: false,
@@ -211,6 +223,12 @@ export function useAuthFilesPrefixProxyEditor(
       const priority = parsePriorityValue(json.priority);
       const excludedModels = normalizeExcludedModels(json.excluded_models);
       const disableCoolingValue = parseDisableCoolingValue(json.disable_cooling);
+      const userAgentRaw =
+        typeof json.user_agent === 'string'
+          ? json.user_agent
+          : typeof json['user-agent'] === 'string'
+            ? json['user-agent']
+            : '';
       const websocketsValue = readCodexAuthFileWebsockets(json);
       const note = typeof json.note === 'string' ? json.note : '';
 
@@ -228,6 +246,7 @@ export function useAuthFilesPrefixProxyEditor(
           excludedModelsText: excludedModels.join('\n'),
           disableCooling:
             disableCoolingValue === undefined ? '' : disableCoolingValue ? 'true' : 'false',
+          userAgent: userAgentRaw.trim(),
           websockets: websocketsValue,
           note,
           noteTouched: false,
@@ -255,6 +274,7 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'priority') return { ...prev, priority: String(value) };
       if (field === 'excludedModelsText') return { ...prev, excludedModelsText: String(value) };
       if (field === 'disableCooling') return { ...prev, disableCooling: String(value) };
+      if (field === 'userAgent') return { ...prev, userAgent: String(value) };
       if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
       return { ...prev, websockets: Boolean(value) };
     });
