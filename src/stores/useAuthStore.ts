@@ -6,13 +6,62 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AuthState, LoginCredentials, ConnectionStatus } from '@/types';
-import { STORAGE_KEY_AUTH } from '@/utils/constants';
+import { STORAGE_KEY_AUTH, STORAGE_KEY_AUTH_SESSION } from '@/utils/constants';
 import { obfuscatedStorage } from '@/services/storage/secureStorage';
 import { apiClient } from '@/services/api/client';
 import { useConfigStore } from './useConfigStore';
 import { useUsageStatsStore } from './useUsageStatsStore';
 import { useModelsStore } from './useModelsStore';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
+import { deobfuscateData, obfuscateData, isObfuscated } from '@/utils/encryption';
+
+interface AuthSessionSnapshot {
+  apiBase: string;
+  managementKey: string;
+  rememberPassword: boolean;
+}
+
+const readSessionSnapshot = (): AuthSessionSnapshot | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const raw = window.sessionStorage.getItem(STORAGE_KEY_AUTH_SESSION);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const payload = isObfuscated(raw) ? deobfuscateData(raw) : raw;
+    const parsed = JSON.parse(payload) as Partial<AuthSessionSnapshot>;
+    if (!parsed.apiBase || !parsed.managementKey) {
+      return null;
+    }
+    return {
+      apiBase: parsed.apiBase,
+      managementKey: parsed.managementKey,
+      rememberPassword: Boolean(parsed.rememberPassword)
+    };
+  } catch {
+    return null;
+  }
+};
+
+const writeSessionSnapshot = (snapshot: AuthSessionSnapshot): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.sessionStorage.setItem(STORAGE_KEY_AUTH_SESSION, obfuscateData(JSON.stringify(snapshot)));
+};
+
+const clearSessionSnapshot = (): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.sessionStorage.removeItem(STORAGE_KEY_AUTH_SESSION);
+};
 
 interface AuthStoreState extends AuthState {
   connectionStatus: ConnectionStatus;
@@ -49,16 +98,20 @@ export const useAuthStore = create<AuthStoreState>()(
         restoreSessionPromise = (async () => {
           obfuscatedStorage.migratePlaintextKeys(['apiBase', 'apiUrl', 'managementKey']);
 
-          const wasLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+          const sessionSnapshot = readSessionSnapshot();
           const legacyBase =
             obfuscatedStorage.getItem<string>('apiBase') ||
             obfuscatedStorage.getItem<string>('apiUrl', { encrypt: true });
           const legacyKey = obfuscatedStorage.getItem<string>('managementKey');
 
           const { apiBase, managementKey, rememberPassword } = get();
-          const resolvedBase = normalizeApiBase(apiBase || legacyBase || detectApiBaseFromLocation());
-          const resolvedKey = managementKey || legacyKey || '';
-          const resolvedRememberPassword = rememberPassword || Boolean(managementKey) || Boolean(legacyKey);
+          const resolvedBase = normalizeApiBase(
+            sessionSnapshot?.apiBase || apiBase || legacyBase || detectApiBaseFromLocation()
+          );
+          const resolvedKey = sessionSnapshot?.managementKey || managementKey || legacyKey || '';
+          const resolvedRememberPassword =
+            sessionSnapshot?.rememberPassword ??
+            (rememberPassword || Boolean(managementKey) || Boolean(legacyKey));
 
           set({
             apiBase: resolvedBase,
@@ -67,7 +120,7 @@ export const useAuthStore = create<AuthStoreState>()(
           });
           apiClient.setConfig({ apiBase: resolvedBase, managementKey: resolvedKey });
 
-          if (wasLoggedIn && resolvedBase && resolvedKey) {
+          if (resolvedBase && resolvedKey) {
             try {
               await get().login({
                 apiBase: resolvedBase,
@@ -82,7 +135,9 @@ export const useAuthStore = create<AuthStoreState>()(
           }
 
           return false;
-        })();
+        })().finally(() => {
+          restoreSessionPromise = null;
+        });
 
         return restoreSessionPromise;
       },
@@ -114,6 +169,11 @@ export const useAuthStore = create<AuthStoreState>()(
             rememberPassword,
             connectionStatus: 'connected',
             connectionError: null
+          });
+          writeSessionSnapshot({
+            apiBase,
+            managementKey,
+            rememberPassword
           });
           if (rememberPassword) {
             localStorage.setItem('isLoggedIn', 'true');
@@ -150,6 +210,7 @@ export const useAuthStore = create<AuthStoreState>()(
           connectionStatus: 'disconnected',
           connectionError: null
         });
+        clearSessionSnapshot();
         localStorage.removeItem('isLoggedIn');
       },
 
