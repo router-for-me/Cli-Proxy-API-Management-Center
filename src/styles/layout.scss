@@ -10,7 +10,18 @@
   min-height: 100vh;
   height: 100vh;
   overflow: hidden;
-  background: var(--bg-secondary);
+  background:
+    radial-gradient(
+      1200px circle at top right,
+      color-mix(in srgb, var(--primary-color) 10%, transparent),
+      transparent 36%
+    ),
+    radial-gradient(
+      880px circle at bottom left,
+      color-mix(in srgb, var(--success-color) 6%, transparent),
+      transparent 30%
+    ),
+    var(--bg-secondary);
   color: var(--text-primary);
 
   @media (max-width: $breakpoint-mobile) {
@@ -27,7 +38,7 @@
   justify-content: space-between;
   gap: $spacing-md;
   padding: $spacing-md $spacing-lg;
-  background: var(--bg-primary);
+  background: color-mix(in srgb, var(--bg-primary) 96%, transparent);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;

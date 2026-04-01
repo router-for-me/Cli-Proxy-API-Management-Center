@@ -92,6 +92,7 @@ export function LatencyTrendChart({
 
   return (
     <Card
+      className={`${styles.chartCard} ${styles.secondaryChartCard}`}
       title={t('usage_stats.latency_trend')}
       extra={
         <div className={styles.periodButtons}>

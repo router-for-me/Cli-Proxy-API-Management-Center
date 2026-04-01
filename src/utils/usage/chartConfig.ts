@@ -32,12 +32,12 @@ export function buildChartOptions({
   isDark,
   isMobile
 }: ChartConfigOptions): ChartOptions<'line'> {
-  const pointRadius = isMobile && period === 'hour' ? 0 : isMobile ? 2 : 4;
-  const tickFontSize = isMobile ? 10 : 12;
-  const maxTickLabelCount = isMobile ? (period === 'hour' ? 8 : 6) : period === 'hour' ? 12 : 10;
-  const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(17, 24, 39, 0.06)';
-  const axisBorderColor = isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(17, 24, 39, 0.10)';
-  const tickColor = isDark ? 'rgba(255, 255, 255, 0.72)' : 'rgba(17, 24, 39, 0.72)';
+  const pointRadius = isMobile ? 0 : period === 'hour' ? 2 : 2.5;
+  const tickFontSize = isMobile ? 10 : 11;
+  const maxTickLabelCount = isMobile ? (period === 'hour' ? 7 : 5) : period === 'hour' ? 10 : 8;
+  const yGridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(17, 24, 39, 0.08)';
+  const xGridColor = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(17, 24, 39, 0.04)';
+  const tickColor = isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(17, 24, 39, 0.7)';
   const tooltipBg = isDark ? 'rgba(17, 24, 39, 0.92)' : 'rgba(255, 255, 255, 0.98)';
   const tooltipTitle = isDark ? '#ffffff' : '#111827';
   const tooltipBody = isDark ? 'rgba(255, 255, 255, 0.86)' : '#374151';
@@ -50,6 +50,14 @@ export function buildChartOptions({
       mode: 'index',
       intersect: false
     },
+    layout: {
+      padding: {
+        top: 8,
+        right: 10,
+        bottom: 0,
+        left: 4
+      }
+    },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -58,7 +66,10 @@ export function buildChartOptions({
         bodyColor: tooltipBody,
         borderColor: tooltipBorder,
         borderWidth: 1,
-        padding: 10,
+        cornerRadius: 14,
+        padding: 12,
+        caretPadding: 10,
+        boxPadding: 4,
         displayColors: true,
         usePointStyle: true
       }
@@ -66,16 +77,16 @@ export function buildChartOptions({
     scales: {
       x: {
         grid: {
-          color: gridColor,
-          drawTicks: false
+          color: xGridColor,
+          drawTicks: false,
+          tickLength: 0
         },
-        border: {
-          color: axisBorderColor
-        },
+        border: { display: false },
         ticks: {
           color: tickColor,
-          font: { size: tickFontSize },
-          maxRotation: isMobile ? 0 : 45,
+          font: { size: tickFontSize, weight: 600 },
+          padding: 8,
+          maxRotation: 0,
           minRotation: 0,
           autoSkip: true,
           maxTicksLimit: maxTickLabelCount,
@@ -106,26 +117,32 @@ export function buildChartOptions({
       y: {
         beginAtZero: true,
         grid: {
-          color: gridColor
+          color: yGridColor,
+          drawTicks: false,
+          tickLength: 0
         },
-        border: {
-          color: axisBorderColor
-        },
+        border: { display: false },
         ticks: {
           color: tickColor,
-          font: { size: tickFontSize }
+          font: { size: tickFontSize, weight: 600 },
+          padding: 10
         }
       }
     },
     elements: {
       line: {
         tension: 0.35,
-        borderWidth: isMobile ? 1.5 : 2
+        borderWidth: isMobile ? 2 : 2.4,
+        borderCapStyle: 'round',
+        borderJoinStyle: 'round',
+        cubicInterpolationMode: 'monotone'
       },
       point: {
         borderWidth: 2,
         radius: pointRadius,
-        hoverRadius: 4
+        hoverRadius: 5,
+        hoverBorderWidth: 2.5,
+        hitRadius: 16
       }
     }
   };

@@ -1,0 +1,49 @@
+@use '@/styles/variables.scss' as *;
+
+.wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: $spacing-xl 0;
+}
+
+.fullScreen {
+  min-height: 100vh;
+  padding: $spacing-xl;
+}
+
+.panel {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 12px 16px;
+  border-radius: $radius-full;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--bg-primary) 96%, white 4%),
+      color-mix(in srgb, var(--bg-secondary) 96%, white 4%)
+    );
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+  border-color: rgba($primary-color, 0.24);
+  border-top-color: var(--primary-color);
+  box-shadow: 0 0 0 1px rgba($primary-color, 0.04);
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+}
+
+:global([data-theme='dark']) {
+  .panel {
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.32);
+  }
+}

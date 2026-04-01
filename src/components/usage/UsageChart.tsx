@@ -29,9 +29,11 @@ export function UsageChart({
   emptyText
 }: UsageChartProps) {
   const { t } = useTranslation();
+  const showLegend = chartData.datasets.length > 1;
 
   return (
     <Card
+      className={styles.chartCard}
       title={title}
       extra={
         <div className={styles.periodButtons}>
@@ -56,18 +58,20 @@ export function UsageChart({
         <div className={styles.hint}>{t('common.loading')}</div>
       ) : chartData.labels.length > 0 ? (
         <div className={styles.chartWrapper}>
-          <div className={styles.chartLegend} aria-label="Chart legend">
-            {chartData.datasets.map((dataset, index) => (
-              <div
-                key={`${dataset.label}-${index}`}
-                className={styles.legendItem}
-                title={dataset.label}
-              >
-                <span className={styles.legendDot} style={{ backgroundColor: dataset.borderColor }} />
-                <span className={styles.legendLabel}>{dataset.label}</span>
-              </div>
-            ))}
-          </div>
+          {showLegend && (
+            <div className={styles.chartLegend} aria-label="Chart legend">
+              {chartData.datasets.map((dataset, index) => (
+                <div
+                  key={`${dataset.label}-${index}`}
+                  className={styles.legendItem}
+                  title={dataset.label}
+                >
+                  <span className={styles.legendDot} style={{ backgroundColor: dataset.borderColor }} />
+                  <span className={styles.legendLabel}>{dataset.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <div className={styles.chartArea}>
             <div className={styles.chartScroller}>
               <div

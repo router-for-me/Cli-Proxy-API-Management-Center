@@ -95,6 +95,7 @@ export function CostTrendChart({
 
   return (
     <Card
+      className={`${styles.chartCard} ${styles.secondaryChartCard}`}
       title={t('usage_stats.cost_trend')}
       extra={
         <div className={styles.periodButtons}>

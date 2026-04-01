@@ -1,11 +1,32 @@
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect, type ComponentType } from 'react';
 import { Outlet, RouterProvider, createHashRouter } from 'react-router-dom';
-import { LoginPage } from '@/pages/LoginPage';
 import { NotificationContainer } from '@/components/common/NotificationContainer';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
-import { MainLayout } from '@/components/layout/MainLayout';
+import { PageLoadFallback } from '@/components/common/PageLoadFallback';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { useLanguageStore, useThemeStore } from '@/stores';
+
+function lazyNamed<TModule extends Record<string, unknown>>(
+  loader: () => Promise<TModule>,
+  exportName: keyof TModule
+) {
+  return lazy(async () => {
+    const module = await loader();
+    return { default: module[exportName] as ComponentType };
+  });
+}
+
+const LazyLoginPage = lazyNamed(() => import('@/pages/LoginPage'), 'LoginPage');
+const LazyMainLayout = lazyNamed(() => import('@/components/layout/MainLayout'), 'MainLayout');
+const fullScreenFallback = <PageLoadFallback fullScreen />;
+
+function renderLazyPage(Component: ComponentType) {
+  return (
+    <Suspense fallback={fullScreenFallback}>
+      <Component />
+    </Suspense>
+  );
+}
 
 function RootShell() {
   return (
@@ -21,12 +42,12 @@ const router = createHashRouter([
   {
     element: <RootShell />,
     children: [
-      { path: '/login', element: <LoginPage /> },
+      { path: '/login', element: renderLazyPage(LazyLoginPage) },
       {
         path: '/*',
         element: (
           <ProtectedRoute>
-            <MainLayout />
+            {renderLazyPage(LazyMainLayout)}
           </ProtectedRoute>
         ),
       },

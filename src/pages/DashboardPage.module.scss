@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
-  max-width: 1000px;
+  max-width: 1080px;
   margin: 0 auto;
   position: relative;
 }
@@ -20,6 +20,7 @@
   pointer-events: none;
   z-index: 0;
   overflow: hidden;
+  contain: paint;
 }
 
 .orb1 {
@@ -72,16 +73,53 @@
   gap: $spacing-lg;
   padding: $spacing-2xl $spacing-xl;
   border-radius: $radius-lg;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--bg-primary) 92%, transparent),
-    color-mix(in srgb, var(--bg-secondary) 80%, transparent)
-  );
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--bg-primary) 96%, white 4%),
+      color-mix(in srgb, var(--bg-secondary) 96%, transparent)
+    ),
+    var(--bg-primary);
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.1);
   animation: heroEnter 0.6s ease-out both;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    background:
+      linear-gradient(
+        130deg,
+        color-mix(in srgb, var(--primary-color) 10%, transparent),
+        transparent 42%,
+        color-mix(in srgb, var(--success-color) 7%, transparent)
+      );
+    opacity: 0.95;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    width: 360px;
+    height: 360px;
+    right: -120px;
+    bottom: -200px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--primary-color) 14%, transparent),
+      transparent 72%
+    );
+    z-index: 0;
+    pointer-events: none;
+  }
 
   @media (max-width: $breakpoint-mobile) {
     flex-direction: column;
@@ -212,11 +250,10 @@
   gap: 6px;
   padding: 5px 12px;
   border-radius: $radius-full;
-  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 96%, var(--primary-color) 4%);
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   font-size: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .statusDot {
@@ -261,6 +298,8 @@
 .statsSection {
   position: relative;
   z-index: 1;
+  content-visibility: auto;
+  contain-intrinsic-size: 360px;
 }
 
 .sectionHeading {
@@ -292,10 +331,18 @@
   flex-direction: column;
   gap: $spacing-md;
   padding: $spacing-lg;
-  background: var(--bg-primary);
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-primary) 96%, white 4%),
+      var(--bg-primary)
+    );
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
   text-decoration: none;
+  contain: paint;
   transition:
     border-color $transition-fast,
     box-shadow $transition-fast,
@@ -392,6 +439,18 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
+  padding: $spacing-lg;
+  border-radius: $radius-lg;
+  border: 1px solid var(--border-color);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-primary) 96%, white 4%),
+      var(--bg-primary)
+    );
+  box-shadow: var(--shadow);
+  content-visibility: auto;
+  contain-intrinsic-size: 240px;
   animation: cardEnter 0.4s ease-out 0.5s both;
 }
 
@@ -489,7 +548,7 @@
   font-size: 13px;
   color: var(--primary-color);
   text-decoration: none;
-  margin-top: $spacing-xs;
+  margin-top: 0;
   transition: color $transition-fast;
 
   &:hover {
@@ -540,5 +599,25 @@
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero,
+  .heroWatermark,
+  .heroGreeting,
+  .heroTitle,
+  .heroCaring,
+  .heroMeta,
+  .bentoCard,
+  .configSection,
+  .orb1,
+  .orb2,
+  .statusDot.connecting {
+    animation: none !important;
+  }
+
+  .bentoCard:hover {
+    transform: none;
   }
 }

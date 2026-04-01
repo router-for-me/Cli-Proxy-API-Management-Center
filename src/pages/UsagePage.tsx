@@ -1,4 +1,11 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import {
+  startTransition,
+  useState,
+  useMemo,
+  useCallback,
+  useDeferredValue,
+  useEffect
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
@@ -12,8 +19,10 @@ import {
   Filler
 } from 'chart.js';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Select } from '@/components/ui/Select';
+import { DeferredRender } from '@/components/common/DeferredRender';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useThemeStore, useConfigStore } from '@/stores';
@@ -25,10 +34,8 @@ import {
   ModelStatsCard,
   PriceSettingsCard,
   CredentialStatsCard,
-  TokenBreakdownChart,
   CostTrendChart,
   LatencyTrendChart,
-  ServiceHealthCard,
   useUsageData,
   useSparklines,
   useChartData
@@ -58,7 +65,7 @@ const CHART_LINES_STORAGE_KEY = 'cli-proxy-usage-chart-lines-v1';
 const TIME_RANGE_STORAGE_KEY = 'cli-proxy-usage-time-range-v1';
 const DEFAULT_CHART_LINES = ['all'];
 const DEFAULT_TIME_RANGE: UsageTimeRange = '3h';
-const MAX_CHART_LINES = 9;
+const MAX_CHART_LINES = 5;
 const TIME_RANGE_OPTIONS: ReadonlyArray<{ value: UsageTimeRange; labelKey: string }> = [
   { value: 'all', labelKey: 'usage_stats.range_all' },
   { value: '3h', labelKey: 'usage_stats.range_3h' },
@@ -119,6 +126,24 @@ const loadTimeRange = (): UsageTimeRange => {
   }
 };
 
+function DeferredUsageCard({ title, caption }: { title: string; caption: string }) {
+  return (
+    <Card title={title} className={styles.deferredCard}>
+      <div className={styles.deferredChartShell} aria-hidden="true">
+        <div className={styles.deferredLegendRow}>
+          <span className={styles.deferredLegendPill} />
+          <span className={styles.deferredLegendPill} />
+          <span className={`${styles.deferredLegendPill} ${styles.deferredLegendPillWide}`} />
+        </div>
+        <div className={styles.deferredChartPlaceholder}>
+          <span className={styles.deferredChartGlow} />
+        </div>
+      </div>
+      <p className={styles.deferredCaption}>{caption}</p>
+    </Card>
+  );
+}
+
 export function UsagePage() {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -148,6 +173,7 @@ export function UsagePage() {
   // Chart lines state
   const [chartLines, setChartLines] = useState<string[]>(loadChartLines);
   const [timeRange, setTimeRange] = useState<UsageTimeRange>(loadTimeRange);
+  const deferredTimeRange = useDeferredValue(timeRange);
 
   const timeRangeOptions = useMemo(
     () =>
@@ -159,14 +185,24 @@ export function UsagePage() {
   );
 
   const filteredUsage = useMemo(
-    () => (usage ? filterUsageByTimeRange(usage, timeRange) : null),
-    [usage, timeRange]
+    () => (usage ? filterUsageByTimeRange(usage, deferredTimeRange) : null),
+    [usage, deferredTimeRange]
   );
+  const deferredFilteredUsage = useDeferredValue(filteredUsage);
+  const deferredChartLines = useDeferredValue(chartLines);
   const hourWindowHours =
-    timeRange === 'all' ? undefined : HOUR_WINDOW_BY_TIME_RANGE[timeRange];
+    deferredTimeRange === 'all' ? undefined : HOUR_WINDOW_BY_TIME_RANGE[deferredTimeRange];
 
   const handleChartLinesChange = useCallback((lines: string[]) => {
-    setChartLines(normalizeChartLines(lines));
+    startTransition(() => {
+      setChartLines(normalizeChartLines(lines));
+    });
+  }, []);
+
+  const handleTimeRangeChange = useCallback((value: string) => {
+    startTransition(() => {
+      setTimeRange(value as UsageTimeRange);
+    });
   }, []);
 
   useEffect(() => {
@@ -200,7 +236,7 @@ export function UsagePage() {
     rpmSparkline,
     tpmSparkline,
     costSparkline
-  } = useSparklines({ usage: filteredUsage, loading, nowMs });
+  } = useSparklines({ usage: deferredFilteredUsage, loading, nowMs });
 
   // Chart data hook
   const {
@@ -212,19 +248,26 @@ export function UsagePage() {
     tokensChartData,
     requestsChartOptions,
     tokensChartOptions
-  } = useChartData({ usage: filteredUsage, chartLines, isDark, isMobile, hourWindowHours });
+  } = useChartData({
+    usage: deferredFilteredUsage,
+    chartLines: deferredChartLines,
+    isDark,
+    isMobile,
+    hourWindowHours
+  });
 
   // Derived data
   const modelNames = useMemo(() => getModelNamesFromUsage(usage), [usage]);
   const apiStats = useMemo(
-    () => getApiStats(filteredUsage, modelPrices),
-    [filteredUsage, modelPrices]
+    () => getApiStats(deferredFilteredUsage, modelPrices),
+    [deferredFilteredUsage, modelPrices]
   );
   const modelStats = useMemo(
-    () => getModelStats(filteredUsage, modelPrices),
-    [filteredUsage, modelPrices]
+    () => getModelStats(deferredFilteredUsage, modelPrices),
+    [deferredFilteredUsage, modelPrices]
   );
   const hasPrices = Object.keys(modelPrices).length > 0;
+  const deferredChartCaption = t('usage_stats.render_on_demand');
 
   return (
     <div className={styles.container}>
@@ -245,7 +288,7 @@ export function UsagePage() {
             <Select
               value={timeRange}
               options={timeRangeOptions}
-              onChange={(value) => setTimeRange(value as UsageTimeRange)}
+              onChange={handleTimeRangeChange}
               className={styles.timeRangeSelectControl}
               ariaLabel={t('usage_stats.range_filter')}
               fullWidth={false}
@@ -296,7 +339,7 @@ export function UsagePage() {
 
       {/* Stats Overview Cards */}
       <StatCards
-        usage={filteredUsage}
+        usage={deferredFilteredUsage}
         loading={loading}
         modelPrices={modelPrices}
         nowMs={nowMs}
@@ -310,15 +353,14 @@ export function UsagePage() {
       />
 
       {/* Chart Line Selection */}
-      <ChartLineSelector
-        chartLines={chartLines}
-        modelNames={modelNames}
-        maxLines={MAX_CHART_LINES}
-        onChange={handleChartLinesChange}
-      />
-
-      {/* Service Health */}
-      <ServiceHealthCard usage={usage} loading={loading} />
+      {modelNames.length > 1 && (
+        <ChartLineSelector
+          chartLines={chartLines}
+          modelNames={modelNames}
+          maxLines={MAX_CHART_LINES}
+          onChange={handleChartLinesChange}
+        />
+      )}
 
       {/* Charts Grid */}
       <div className={styles.chartsGrid}>
@@ -344,33 +386,48 @@ export function UsagePage() {
         />
       </div>
 
-      {/* Token Breakdown Chart */}
-      <TokenBreakdownChart
-        usage={filteredUsage}
-        loading={loading}
-        isDark={isDark}
-        isMobile={isMobile}
-        hourWindowHours={hourWindowHours}
-      />
+      <div className={styles.secondaryChartsGrid}>
+        {/* Latency Trend Chart */}
+        <DeferredRender
+          className={styles.deferredBlock}
+          minHeight={380}
+          placeholder={
+            <DeferredUsageCard
+              title={t('usage_stats.latency_trend')}
+              caption={deferredChartCaption}
+            />
+          }
+        >
+          <LatencyTrendChart
+            usage={deferredFilteredUsage}
+            loading={loading}
+            isDark={isDark}
+            isMobile={isMobile}
+            hourWindowHours={hourWindowHours}
+          />
+        </DeferredRender>
 
-      {/* Latency Trend Chart */}
-      <LatencyTrendChart
-        usage={filteredUsage}
-        loading={loading}
-        isDark={isDark}
-        isMobile={isMobile}
-        hourWindowHours={hourWindowHours}
-      />
-
-      {/* Cost Trend Chart */}
-      <CostTrendChart
-        usage={filteredUsage}
-        loading={loading}
-        isDark={isDark}
-        isMobile={isMobile}
-        modelPrices={modelPrices}
-        hourWindowHours={hourWindowHours}
-      />
+        {/* Cost Trend Chart */}
+        <DeferredRender
+          className={styles.deferredBlock}
+          minHeight={380}
+          placeholder={
+            <DeferredUsageCard
+              title={t('usage_stats.cost_trend')}
+              caption={deferredChartCaption}
+            />
+          }
+        >
+          <CostTrendChart
+            usage={deferredFilteredUsage}
+            loading={loading}
+            isDark={isDark}
+            isMobile={isMobile}
+            modelPrices={modelPrices}
+            hourWindowHours={hourWindowHours}
+          />
+        </DeferredRender>
+      </div>
 
       {/* Details Grid */}
       <div className={styles.detailsGrid}>
@@ -380,7 +437,7 @@ export function UsagePage() {
 
       {/* Credential Stats */}
       <CredentialStatsCard
-        usage={filteredUsage}
+        usage={deferredFilteredUsage}
         loading={loading}
         geminiKeys={config?.geminiApiKeys || []}
         claudeConfigs={config?.claudeApiKeys || []}

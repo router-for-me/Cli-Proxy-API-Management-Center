@@ -53,6 +53,7 @@ export function ChartLineSelector({
 
   return (
     <Card
+      className={styles.chartLineCard}
       title={t('usage_stats.chart_line_actions_label')}
       extra={
         <div className={styles.chartLineHeader}>
@@ -82,7 +83,12 @@ export function ChartLineSelector({
               onChange={(value) => handleChange(index, value)}
             />
             {chartLines.length > 1 && (
-              <Button variant="danger" size="sm" onClick={() => handleRemove(index)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={styles.chartLineRemoveButton}
+                onClick={() => handleRemove(index)}
+              >
                 {t('usage_stats.chart_line_delete')}
               </Button>
             )}
