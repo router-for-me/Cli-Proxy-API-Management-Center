@@ -39,6 +39,7 @@ export type ClaudeEditOutletContext = {
 };
 
 const buildEmptyForm = (): ProviderFormState => ({
+  name: '',
   apiKey: '',
   priority: undefined,
   prefix: '',
@@ -91,6 +92,7 @@ const normalizeCloakConfig = (cloak: ProviderFormState['cloak']) => {
 
 const buildClaudeSignature = (form: ProviderFormState) =>
   JSON.stringify({
+    name: String(form.name ?? '').trim(),
     apiKey: String(form.apiKey ?? '').trim(),
     priority:
       form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
@@ -352,6 +354,7 @@ export function AiProvidersClaudeEditLayout() {
     setSaving(true);
     try {
       const payload: ProviderKeyConfig = {
+        name: form.name?.trim() || undefined,
         apiKey: form.apiKey.trim(),
         priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
         prefix: form.prefix?.trim() || undefined,

@@ -25,6 +25,7 @@ import styles from './AiProvidersPage.module.scss';
 type LocationState = { fromAiProviders?: boolean } | null;
 
 const buildEmptyForm = (): GeminiFormState => ({
+  name: '',
   apiKey: '',
   priority: undefined,
   prefix: '',
@@ -62,6 +63,7 @@ const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) 
 
 const buildGeminiSignature = (form: GeminiFormState) =>
   JSON.stringify({
+    name: String(form.name ?? '').trim(),
     apiKey: String(form.apiKey ?? '').trim(),
     priority:
       form.priority !== undefined && Number.isFinite(form.priority)
@@ -407,6 +409,7 @@ export function AiProvidersGeminiEditPage() {
       }));
 
       const payload: GeminiKeyConfig = {
+        name: form.name?.trim() || undefined,
         apiKey: form.apiKey.trim(),
         priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
         prefix: form.prefix?.trim() || undefined,
@@ -499,6 +502,13 @@ export function AiProvidersGeminiEditPage() {
           <div className="hint">{t('common.invalid_provider_index')}</div>
         ) : (
           <>
+            <Input
+              label={t('ai_providers.provider_name_label')}
+              placeholder={t('ai_providers.provider_name_placeholder')}
+              value={form.name ?? ''}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              disabled={disableControls || saving}
+            />
             <Input
               label={t('ai_providers.gemini_add_modal_key_label')}
               placeholder={t('ai_providers.gemini_add_modal_key_placeholder')}

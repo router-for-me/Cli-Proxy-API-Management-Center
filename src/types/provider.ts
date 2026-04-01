@@ -23,6 +23,7 @@ export interface CloakConfig {
 }
 
 export interface GeminiKeyConfig {
+  name?: string;
   apiKey: string;
   priority?: number;
   prefix?: string;
@@ -34,6 +35,7 @@ export interface GeminiKeyConfig {
 }
 
 export interface ProviderKeyConfig {
+  name?: string;
   apiKey: string;
   priority?: number;
   prefix?: string;

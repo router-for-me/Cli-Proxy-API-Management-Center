@@ -304,6 +304,13 @@ export function AiProvidersClaudeEditPage() {
         ) : (
           <div className={styles.openaiEditForm}>
             <Input
+              label={t('ai_providers.provider_name_label')}
+              placeholder={t('ai_providers.provider_name_placeholder')}
+              value={form.name ?? ''}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              disabled={saving || disableControls || isTesting}
+            />
+            <Input
               label={t('ai_providers.claude_add_modal_key_label')}
               value={form.apiKey}
               onChange={(e) => setForm((prev) => ({ ...prev, apiKey: e.target.value }))}

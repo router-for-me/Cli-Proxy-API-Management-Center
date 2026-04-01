@@ -21,6 +21,7 @@ import layoutStyles from './AiProvidersEditLayout.module.scss';
 type LocationState = { fromAiProviders?: boolean } | null;
 
 const buildEmptyForm = (): VertexFormState => ({
+  name: '',
   apiKey: '',
   prefix: '',
   baseUrl: '',
@@ -49,6 +50,7 @@ const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) 
 
 const buildVertexSignature = (form: VertexFormState) =>
   JSON.stringify({
+    name: String(form.name ?? '').trim(),
     apiKey: String(form.apiKey ?? '').trim(),
     priority:
       form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
@@ -197,6 +199,7 @@ export function AiProvidersVertexEditPage() {
     setError('');
     try {
       const payload: ProviderKeyConfig = {
+        name: form.name?.trim() || undefined,
         apiKey: form.apiKey.trim(),
         priority:
           form.priority !== undefined && Number.isFinite(form.priority)
@@ -292,6 +295,13 @@ export function AiProvidersVertexEditPage() {
           <div className="hint">{t('common.invalid_provider_index')}</div>
         ) : (
           <>
+            <Input
+              label={t('ai_providers.provider_name_label')}
+              placeholder={t('ai_providers.provider_name_placeholder')}
+              value={form.name ?? ''}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              disabled={disableControls || saving}
+            />
             <Input
               label={t('ai_providers.vertex_add_modal_key_label')}
               placeholder={t('ai_providers.vertex_add_modal_key_placeholder')}

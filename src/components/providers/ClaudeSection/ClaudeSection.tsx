@@ -89,24 +89,39 @@ export function ClaudeSection({
           onDelete={onDelete}
           actionsDisabled={actionsDisabled}
           getRowDisabled={(item) => hasDisableAllModelsRule(item.excludedModels)}
+          containerClassName={styles.providerCardList}
+          rowClassName={styles.providerCard}
+          metaClassName={styles.providerCardMeta}
+          actionsClassName={styles.providerCardActions}
           renderExtraActions={(item, index) => (
-            <ToggleSwitch
-              label={t('ai_providers.config_toggle_label')}
-              checked={!hasDisableAllModelsRule(item.excludedModels)}
-              disabled={toggleDisabled}
-              onChange={(value) => void onToggle(index, value)}
-            />
+            <div className={styles.providerToggleWrap}>
+              <ToggleSwitch
+                label={t('ai_providers.config_toggle_label')}
+                checked={!hasDisableAllModelsRule(item.excludedModels)}
+                disabled={toggleDisabled}
+                onChange={(value) => void onToggle(index, value)}
+              />
+            </div>
           )}
-          renderContent={(item) => {
+          renderContent={(item, index) => {
             const stats = getStatsBySource(item.apiKey, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});
             const configDisabled = hasDisableAllModelsRule(item.excludedModels);
             const excludedModels = item.excludedModels ?? [];
             const statusData = statusBarCache.get(item.apiKey) || calculateStatusBarData([]);
+            const displayName = item.name?.trim() || item.prefix?.trim() || `${t('ai_providers.claude_item_title')} #${index + 1}`;
 
             return (
               <Fragment>
-                <div className="item-title">{t('ai_providers.claude_item_title')}</div>
+                <div className={styles.providerCardHeader}>
+                  <div className={styles.providerCardTitleGroup}>
+                    <div className={styles.providerCardBadgeRow}>
+                      {item.name?.trim() ? <span className={styles.providerNameBadge}>{item.name.trim()}</span> : null}
+                    </div>
+                    <div className={styles.providerCardTitle}>{displayName}</div>
+                    <div className={styles.providerCardSubtitle}>{t('ai_providers.claude_item_title')}</div>
+                  </div>
+                </div>
                 <div className={styles.fieldRow}>
                   <span className={styles.fieldLabel}>{t('common.api_key')}:</span>
                   <span className={styles.fieldValue}>{maskApiKey(item.apiKey)}</span>

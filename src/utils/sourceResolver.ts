@@ -23,7 +23,7 @@ export function buildSourceInfoMap(input: SourceInfoMapInput): Map<string, Sourc
   };
 
   const providers: Array<{
-    items: Array<{ apiKey?: string; prefix?: string }>;
+    items: Array<{ apiKey?: string; prefix?: string; name?: string }>;
     type: string;
     label: string;
   }> = [
@@ -35,7 +35,7 @@ export function buildSourceInfoMap(input: SourceInfoMapInput): Map<string, Sourc
 
   providers.forEach(({ items, type, label }) => {
     items.forEach((item, index) => {
-      const displayName = item.prefix?.trim() || `${label} #${index + 1}`;
+      const displayName = item.name?.trim() || item.prefix?.trim() || `${label} #${index + 1}`;
       registerCandidates(
         displayName,
         type,
@@ -46,7 +46,7 @@ export function buildSourceInfoMap(input: SourceInfoMapInput): Map<string, Sourc
 
   // OpenAI 特殊处理：多 apiKeyEntries
   (input.openaiCompatibility || []).forEach((provider, providerIndex) => {
-    const displayName = provider.prefix?.trim() || provider.name || `OpenAI #${providerIndex + 1}`;
+    const displayName = provider.name?.trim() || provider.prefix?.trim() || `OpenAI #${providerIndex + 1}`;
     const candidates = new Set<string>();
     buildCandidateUsageSourceIds({ prefix: provider.prefix }).forEach((id) => candidates.add(id));
     (provider.apiKeyEntries || []).forEach((entry) => {

@@ -16,6 +16,10 @@ interface ProviderListProps<T> {
   actionsDisabled?: boolean;
   getRowDisabled?: (item: T, index: number) => boolean;
   renderExtraActions?: (item: T, index: number) => ReactNode;
+  containerClassName?: string;
+  rowClassName?: string;
+  metaClassName?: string;
+  actionsClassName?: string;
 }
 
 export function ProviderList<T>({
@@ -31,6 +35,10 @@ export function ProviderList<T>({
   actionsDisabled = false,
   getRowDisabled,
   renderExtraActions,
+  containerClassName,
+  rowClassName,
+  metaClassName,
+  actionsClassName,
 }: ProviderListProps<T>) {
   const { t } = useTranslation();
 
@@ -43,17 +51,20 @@ export function ProviderList<T>({
   }
 
   return (
-    <div className="item-list">
+    <div className={containerClassName ? `item-list ${containerClassName}` : 'item-list'}>
       {items.map((item, index) => {
         const rowDisabled = getRowDisabled ? getRowDisabled(item, index) : false;
+        const rowClassNames = ['item-row', rowClassName].filter(Boolean).join(' ');
+        const metaClassNames = ['item-meta', metaClassName].filter(Boolean).join(' ');
+        const actionsClassNames = ['item-actions', actionsClassName].filter(Boolean).join(' ');
         return (
           <div
             key={keyField(item, index)}
-            className="item-row"
+            className={rowClassNames}
             style={rowDisabled ? { opacity: 0.6 } : undefined}
           >
-            <div className="item-meta">{renderContent(item, index)}</div>
-            <div className="item-actions">
+            <div className={metaClassNames}>{renderContent(item, index)}</div>
+            <div className={actionsClassNames}>
               <Button
                 variant="secondary"
                 size="sm"

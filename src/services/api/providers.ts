@@ -58,6 +58,7 @@ const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
 
 const serializeProviderKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  if (config.name?.trim()) payload.name = config.name.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -99,6 +100,7 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
 
 const serializeVertexKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  if (config.name?.trim()) payload.name = config.name.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -115,6 +117,7 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
 
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  if (config.name?.trim()) payload.name = config.name.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -221,5 +224,14 @@ export const providersApi = {
     apiClient.patch('/openai-compatibility', { index, value: serializeOpenAIProvider(value) }),
 
   deleteOpenAIProvider: (name: string) =>
-    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`)
+    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`),
+
+  // 通过 name 更新 OpenAI 兼容提供商（用于禁用模型）
+  patchOpenAIProviderByName: (name: string, value: Partial<OpenAIProviderConfig>) => {
+    const payload: Record<string, any> = {};
+    if (value.models !== undefined) {
+      payload.models = serializeModelAliases(value.models);
+    }
+    return apiClient.patch('/openai-compatibility', { name, value: payload });
+  },
 };

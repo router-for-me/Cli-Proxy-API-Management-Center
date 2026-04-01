@@ -20,7 +20,53 @@
   font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 $spacing-xl 0;
+  margin: 0;
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  margin-bottom: $spacing-xl;
+}
+
+.searchBox {
+  flex: 0 1 320px;
+  min-width: 200px;
+
+  @include mobile {
+    flex: 1 1 100%;
+  }
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+.searchEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl * 2;
+  text-align: center;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-primary);
+  border-radius: 12px;
+}
+
+.searchEmptyTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: $spacing-sm;
+}
+
+.searchEmptyDesc {
+  font-size: 14px;
+  color: var(--text-tertiary);
 }
 
 .content {
@@ -62,24 +108,121 @@
   }
 }
 
+.providerCardList {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+.providerCard {
+  border-radius: 14px;
+  align-items: stretch;
+  min-height: 100%;
+  padding: 14px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.providerCardMeta {
+  gap: 8px;
+  min-width: 0;
+}
+
+.providerCardActions {
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border-secondary);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.providerCardActions :global(.btn) {
+  min-width: 78px;
+  padding-inline: 10px;
+}
+
+.providerCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.providerCardTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.providerCardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.providerCardSubtitle {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.3;
+}
+
+.providerCardBadgeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 20px;
+}
+
+.providerNameBadge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(107, 150, 243, 0.24);
+  background: rgba(107, 150, 243, 0.12);
+  color: #6b96f3;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+  word-break: break-word;
+}
+
+.providerToggleWrap {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+}
+
 // 成功失败次数统计样式
 .cardStats {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-  padding-top: 4px;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 2px;
 }
 
 .statPill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.05;
   border: 1px solid transparent;
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
@@ -103,10 +246,10 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px;
-  margin-bottom: 4px;
-  font-size: 13px;
-  line-height: 1.4;
+  gap: 5px;
+  margin-bottom: 2px;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .fieldLabel {
@@ -127,8 +270,8 @@
 .headerBadgeList {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 5px;
+  margin-top: 4px;
 }
 
 .headerBadge {
@@ -137,9 +280,9 @@
   gap: 4px;
   background: var(--accent-tertiary, #f3f4f6);
   border: 1px solid var(--border-primary);
-  border-radius: 12px;
-  padding: 4px 10px;
-  font-size: 12px;
+  border-radius: 10px;
+  padding: 3px 8px;
+  font-size: 11px;
   color: var(--text-secondary);
 
   strong {
@@ -152,17 +295,17 @@
 .modelTagList {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 5px;
+  margin-top: 6px;
   align-items: center;
 }
 
 .modelCountLabel {
   display: inline-flex;
   align-items: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.35;
   color: var(--text-tertiary);
   white-space: nowrap;
   flex-shrink: 0;
@@ -176,9 +319,9 @@
   background: var(--bg-quinary, #f8f9fa);
   color: var(--text-secondary);
   border: 1px solid var(--border-secondary);
-  border-radius: 14px;
-  padding: 4px 10px;
-  font-size: 12px;
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
   transition: all 0.15s ease;
 
   &:hover {
@@ -214,56 +357,56 @@
 
 // 排除模型区块
 .excludedModelsSection {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .excludedModelsLabel {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--warning-text, #92400e);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 // API密钥条目列表（二级卡片）
 .apiKeyEntriesSection {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .apiKeyEntriesLabel {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .apiKeyEntryList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .apiKeyEntryCard {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   background: var(--bg-secondary, #f9fafb);
   border: 1px solid var(--border-secondary);
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: 7px;
+  font-size: 11px;
 }
 
 .apiKeyEntryIndex {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--primary-color);
   color: white;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -287,7 +430,7 @@
 
 .apiKeyEntryStats {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   margin-left: auto;
 }
 
@@ -295,9 +438,9 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 9px;
+  font-size: 9px;
   font-weight: 600;
 
   svg {
@@ -1041,7 +1184,7 @@
   }
 
   .statusRateLow {
-    background: rgba($error-color, 0.24);
-    color: #f1b0a6;
+    background: rgba($error-color, 0.2);
+    color: #fca5a5;
   }
 }

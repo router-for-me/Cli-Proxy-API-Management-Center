@@ -88,20 +88,33 @@ export function OpenAISection({
           items={configs}
           loading={loading}
           keyField={(_, index) => `openai-provider-${index}`}
+          containerClassName={styles.providerCardList}
+          rowClassName={styles.providerCard}
+          metaClassName={styles.providerCardMeta}
+          actionsClassName={styles.providerCardActions}
           emptyTitle={t('ai_providers.openai_empty_title')}
           emptyDescription={t('ai_providers.openai_empty_desc')}
           onEdit={onEdit}
           onDelete={onDelete}
           actionsDisabled={actionsDisabled}
-          renderContent={(item) => {
+          renderContent={(item, index) => {
             const stats = getOpenAIProviderStats(item.apiKeyEntries, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});
             const apiKeyEntries = item.apiKeyEntries || [];
             const statusData = statusBarCache.get(item.name) || calculateStatusBarData([]);
+            const displayName = item.name?.trim() || item.prefix?.trim() || `OpenAI #${index + 1}`;
 
             return (
               <Fragment>
-                <div className="item-title">{item.name}</div>
+                <div className={styles.providerCardHeader}>
+                  <div className={styles.providerCardTitleGroup}>
+                    <div className={styles.providerCardBadgeRow}>
+                      {item.name?.trim() ? <span className={styles.providerNameBadge}>{item.name.trim()}</span> : null}
+                    </div>
+                    <div className={styles.providerCardTitle}>{displayName}</div>
+                    <div className={styles.providerCardSubtitle}>{t('ai_providers.openai_title')}</div>
+                  </div>
+                </div>
                 {item.priority !== undefined && (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('common.priority')}:</span>
