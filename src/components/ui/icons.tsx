@@ -477,3 +477,15 @@ export function IconSidebarSystem({ size = 20, ...props }: IconProps) {
     </svg>
   );
 }
+
+export function IconSidebarMonitor({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...sidebarSvgProps} width={size} height={size} {...props}>
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <path d="M8 21h8" />
+      <path d="M12 17v4" />
+      <path d="M6 12l4-4 3 3 5-6" />
+      <circle cx="18" cy="5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
