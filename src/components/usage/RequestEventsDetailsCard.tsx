@@ -72,6 +72,11 @@ export function RequestEventsDetailsCard({
 }: RequestEventsDetailsCardProps) {
   const { t, i18n } = useTranslation();
 
+  const getHeaderText = (key: string, fallback: string) => {
+    const text = t(key);
+    return typeof text === 'string' && text.trim() ? text : fallback;
+  };
+
   const [modelFilter, setModelFilter] = useState(ALL_FILTER);
   const [sourceFilter, setSourceFilter] = useState(ALL_FILTER);
   const [authIndexFilter, setAuthIndexFilter] = useState(ALL_FILTER);
@@ -422,16 +427,16 @@ export function RequestEventsDetailsCard({
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>{t('usage_stats.request_events_timestamp')}</th>
-                  <th>{t('usage_stats.model_name')}</th>
-                  <th>{t('usage_stats.request_events_source')}</th>
-                  <th>{t('usage_stats.request_events_auth_index')}</th>
-                  <th>{t('usage_stats.request_events_result')}</th>
-                  <th>{t('usage_stats.input_tokens')}</th>
-                  <th>{t('usage_stats.output_tokens')}</th>
-                  <th>{t('usage_stats.reasoning_tokens')}</th>
-                  <th>{t('usage_stats.cached_tokens')}</th>
-                  <th>{t('usage_stats.total_tokens')}</th>
+                  <th>{getHeaderText('usage_stats.request_events_timestamp', '时间')}</th>
+                  <th>{getHeaderText('usage_stats.model_name', '模型名称')}</th>
+                  <th>{getHeaderText('usage_stats.request_events_source', '来源')}</th>
+                  <th>{getHeaderText('usage_stats.request_events_auth_index', '认证索引')}</th>
+                  <th>{getHeaderText('usage_stats.request_events_result', '结果')}</th>
+                  <th>{getHeaderText('usage_stats.input_tokens', '输入 Tokens')}</th>
+                  <th>{getHeaderText('usage_stats.output_tokens', '输出 Tokens')}</th>
+                  <th>{getHeaderText('usage_stats.reasoning_tokens', '思考 Tokens')}</th>
+                  <th>{getHeaderText('usage_stats.cached_tokens', '缓存 Tokens')}</th>
+                  <th>{getHeaderText('usage_stats.total_tokens', '总 Token')}</th>
                 </tr>
               </thead>
               <tbody>
