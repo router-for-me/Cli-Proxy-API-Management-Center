@@ -52,7 +52,7 @@ export const SecondaryScreenShell = forwardRef<HTMLDivElement, SecondaryScreenSh
     const titleTooltip = typeof title === 'string' ? title : undefined;
     const resolvedBackAriaLabel = backAriaLabel ?? backLabel;
     const pageTransitionLayer = usePageTransitionLayer();
-    const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
+    const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.isCurrentLayer : true;
     const shouldRenderFloatingAction = Boolean(floatingAction) && isCurrentLayer;
     const floatingActionRef = useRef<HTMLDivElement | null>(null);
 

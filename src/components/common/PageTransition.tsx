@@ -2,7 +2,11 @@ import { ReactNode, useCallback, useLayoutEffect, useRef, useState } from 'react
 import { useLocation, type Location } from 'react-router-dom';
 import { animate } from 'motion/mini';
 import type { AnimationPlaybackControlsWithThen } from 'motion-dom';
-import { PageTransitionLayerContext, type LayerStatus } from './PageTransitionLayer';
+import {
+  PAGE_TRANSITION_LAYER_CONTEXT_VALUES,
+  PageTransitionLayerContext,
+  type LayerStatus,
+} from './PageTransitionLayer';
 import './PageTransition.scss';
 
 interface PageTransitionProps {
@@ -386,7 +390,9 @@ export function PageTransition({
                     : undefined
               }
             >
-              <PageTransitionLayerContext.Provider value={{ status: layer.status }}>
+              <PageTransitionLayerContext.Provider
+                value={PAGE_TRANSITION_LAYER_CONTEXT_VALUES[layer.status]}
+              >
                 {render(layer.location)}
               </PageTransitionLayerContext.Provider>
             </div>
