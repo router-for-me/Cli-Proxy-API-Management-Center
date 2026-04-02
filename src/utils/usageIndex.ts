@@ -41,7 +41,9 @@ export function collectUsageDetailsForCandidates(
     if (!merged) {
       merged = [...firstDetails];
     }
-    details.forEach((detail) => merged.push(detail));
+    for (const detail of details) {
+      merged.push(detail);
+    }
   }
 
   return merged ?? firstDetails ?? EMPTY_USAGE_DETAILS;
