@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { isMap, parse as parseYaml, parseDocument } from 'yaml';
 import type {
   PayloadFilterRule,
@@ -195,6 +195,68 @@ function hasPayloadParamValidationErrors(rules: PayloadRule[]): boolean {
 function deepClone<T>(value: T): T {
   if (typeof structuredClone === 'function') return structuredClone(value);
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function arePayloadModelEntriesEqual(left: PayloadRule['models'], right: PayloadRule['models']): boolean {
+  if (left === right) return true;
+  if (left.length !== right.length) return false;
+  for (let i = 0; i < left.length; i += 1) {
+    const a = left[i];
+    const b = right[i];
+    if (!a || !b) return false;
+    if (a.id !== b.id || a.name !== b.name || a.protocol !== b.protocol) return false;
+  }
+  return true;
+}
+
+function arePayloadParamEntriesEqual(left: PayloadRule['params'], right: PayloadRule['params']): boolean {
+  if (left === right) return true;
+  if (left.length !== right.length) return false;
+  for (let i = 0; i < left.length; i += 1) {
+    const a = left[i];
+    const b = right[i];
+    if (!a || !b) return false;
+    if (
+      a.id !== b.id ||
+      a.path !== b.path ||
+      a.valueType !== b.valueType ||
+      a.value !== b.value
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function arePayloadRulesEqual(left: PayloadRule[], right: PayloadRule[]): boolean {
+  if (left === right) return true;
+  if (left.length !== right.length) return false;
+  for (let i = 0; i < left.length; i += 1) {
+    const a = left[i];
+    const b = right[i];
+    if (!a || !b) return false;
+    if (a.id !== b.id) return false;
+    if (!arePayloadModelEntriesEqual(a.models, b.models)) return false;
+    if (!arePayloadParamEntriesEqual(a.params, b.params)) return false;
+  }
+  return true;
+}
+
+function arePayloadFilterRulesEqual(left: PayloadFilterRule[], right: PayloadFilterRule[]): boolean {
+  if (left === right) return true;
+  if (left.length !== right.length) return false;
+  for (let i = 0; i < left.length; i += 1) {
+    const a = left[i];
+    const b = right[i];
+    if (!a || !b) return false;
+    if (a.id !== b.id) return false;
+    if (!arePayloadModelEntriesEqual(a.models, b.models)) return false;
+    if (a.params.length !== b.params.length) return false;
+    for (let j = 0; j < a.params.length; j += 1) {
+      if (a.params[j] !== b.params[j]) return false;
+    }
+  }
+  return true;
 }
 
 function parsePayloadParamValue(raw: unknown): { valueType: PayloadParamValueType; value: string } {
@@ -435,6 +497,8 @@ export function useVisualConfig() {
     ...DEFAULT_VISUAL_VALUES,
   });
   const [visualParseError, setVisualParseError] = useState<string | null>(null);
+  const dirtyFieldsRef = useRef<Set<string>>(new Set());
+  const [visualDirty, setVisualDirty] = useState(false);
   const visualValidationErrors = useMemo(
     () => getVisualConfigValidationErrors(visualValues),
     [visualValues]
@@ -452,10 +516,6 @@ export function useVisualConfig() {
       visualValues.payloadOverrideRawRules,
     ]
   );
-
-  const visualDirty = useMemo(() => {
-    return JSON.stringify(visualValues) !== JSON.stringify(baselineValues);
-  }, [baselineValues, visualValues]);
 
   const loadVisualValuesFromYaml = useCallback((yamlContent: string) => {
     try {
@@ -532,6 +592,8 @@ export function useVisualConfig() {
       setVisualValuesState(newValues);
       setBaselineValues(deepClone(newValues));
       setVisualParseError(null);
+      dirtyFieldsRef.current.clear();
+      setVisualDirty(false);
       return { ok: true as const };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Invalid YAML';
@@ -718,15 +780,181 @@ export function useVisualConfig() {
     [visualValues]
   );
 
-  const setVisualValues = useCallback((newValues: Partial<VisualConfigValues>) => {
-    setVisualValuesState((prev) => {
-      const next: VisualConfigValues = { ...prev, ...newValues } as VisualConfigValues;
-      if (newValues.streaming) {
-        next.streaming = { ...prev.streaming, ...newValues.streaming };
-      }
-      return next;
-    });
-  }, []);
+  const setVisualValues = useCallback(
+    (newValues: Partial<VisualConfigValues>) => {
+      setVisualValuesState((prev) => {
+        const next: VisualConfigValues = { ...prev, ...newValues } as VisualConfigValues;
+        if (newValues.streaming) {
+          next.streaming = { ...prev.streaming, ...newValues.streaming };
+        }
+
+        const dirtyFields = dirtyFieldsRef.current;
+        const updateDirty = (key: string, isEqual: boolean) => {
+          if (isEqual) {
+            dirtyFields.delete(key);
+          } else {
+            dirtyFields.add(key);
+          }
+        };
+
+        if (Object.prototype.hasOwnProperty.call(newValues, 'host')) {
+          updateDirty('host', next.host === baselineValues.host);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'port')) {
+          updateDirty('port', next.port === baselineValues.port);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'tlsEnable')) {
+          updateDirty('tlsEnable', next.tlsEnable === baselineValues.tlsEnable);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'tlsCert')) {
+          updateDirty('tlsCert', next.tlsCert === baselineValues.tlsCert);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'tlsKey')) {
+          updateDirty('tlsKey', next.tlsKey === baselineValues.tlsKey);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'rmAllowRemote')) {
+          updateDirty('rmAllowRemote', next.rmAllowRemote === baselineValues.rmAllowRemote);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'rmSecretKey')) {
+          updateDirty('rmSecretKey', next.rmSecretKey === baselineValues.rmSecretKey);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'rmDisableControlPanel')) {
+          updateDirty(
+            'rmDisableControlPanel',
+            next.rmDisableControlPanel === baselineValues.rmDisableControlPanel
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'rmPanelRepo')) {
+          updateDirty('rmPanelRepo', next.rmPanelRepo === baselineValues.rmPanelRepo);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'authDir')) {
+          updateDirty('authDir', next.authDir === baselineValues.authDir);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'apiKeysText')) {
+          updateDirty('apiKeysText', next.apiKeysText === baselineValues.apiKeysText);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'debug')) {
+          updateDirty('debug', next.debug === baselineValues.debug);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'commercialMode')) {
+          updateDirty('commercialMode', next.commercialMode === baselineValues.commercialMode);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'loggingToFile')) {
+          updateDirty('loggingToFile', next.loggingToFile === baselineValues.loggingToFile);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'logsMaxTotalSizeMb')) {
+          updateDirty(
+            'logsMaxTotalSizeMb',
+            next.logsMaxTotalSizeMb === baselineValues.logsMaxTotalSizeMb
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'usageStatisticsEnabled')) {
+          updateDirty(
+            'usageStatisticsEnabled',
+            next.usageStatisticsEnabled === baselineValues.usageStatisticsEnabled
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'proxyUrl')) {
+          updateDirty('proxyUrl', next.proxyUrl === baselineValues.proxyUrl);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'forceModelPrefix')) {
+          updateDirty(
+            'forceModelPrefix',
+            next.forceModelPrefix === baselineValues.forceModelPrefix
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'requestRetry')) {
+          updateDirty('requestRetry', next.requestRetry === baselineValues.requestRetry);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'maxRetryCredentials')) {
+          updateDirty(
+            'maxRetryCredentials',
+            next.maxRetryCredentials === baselineValues.maxRetryCredentials
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'maxRetryInterval')) {
+          updateDirty(
+            'maxRetryInterval',
+            next.maxRetryInterval === baselineValues.maxRetryInterval
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'wsAuth')) {
+          updateDirty('wsAuth', next.wsAuth === baselineValues.wsAuth);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'quotaSwitchProject')) {
+          updateDirty(
+            'quotaSwitchProject',
+            next.quotaSwitchProject === baselineValues.quotaSwitchProject
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'quotaSwitchPreviewModel')) {
+          updateDirty(
+            'quotaSwitchPreviewModel',
+            next.quotaSwitchPreviewModel === baselineValues.quotaSwitchPreviewModel
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'routingStrategy')) {
+          updateDirty('routingStrategy', next.routingStrategy === baselineValues.routingStrategy);
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'payloadDefaultRules')) {
+          updateDirty(
+            'payloadDefaultRules',
+            arePayloadRulesEqual(next.payloadDefaultRules, baselineValues.payloadDefaultRules)
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'payloadDefaultRawRules')) {
+          updateDirty(
+            'payloadDefaultRawRules',
+            arePayloadRulesEqual(next.payloadDefaultRawRules, baselineValues.payloadDefaultRawRules)
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'payloadOverrideRules')) {
+          updateDirty(
+            'payloadOverrideRules',
+            arePayloadRulesEqual(next.payloadOverrideRules, baselineValues.payloadOverrideRules)
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'payloadOverrideRawRules')) {
+          updateDirty(
+            'payloadOverrideRawRules',
+            arePayloadRulesEqual(next.payloadOverrideRawRules, baselineValues.payloadOverrideRawRules)
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(newValues, 'payloadFilterRules')) {
+          updateDirty(
+            'payloadFilterRules',
+            arePayloadFilterRulesEqual(next.payloadFilterRules, baselineValues.payloadFilterRules)
+          );
+        }
+        if (newValues.streaming) {
+          const streaming = newValues.streaming;
+          if (Object.prototype.hasOwnProperty.call(streaming, 'keepaliveSeconds')) {
+            updateDirty(
+              'streaming.keepaliveSeconds',
+              next.streaming.keepaliveSeconds === baselineValues.streaming.keepaliveSeconds
+            );
+          }
+          if (Object.prototype.hasOwnProperty.call(streaming, 'bootstrapRetries')) {
+            updateDirty(
+              'streaming.bootstrapRetries',
+              next.streaming.bootstrapRetries === baselineValues.streaming.bootstrapRetries
+            );
+          }
+          if (Object.prototype.hasOwnProperty.call(streaming, 'nonstreamKeepaliveInterval')) {
+            updateDirty(
+              'streaming.nonstreamKeepaliveInterval',
+              next.streaming.nonstreamKeepaliveInterval ===
+                baselineValues.streaming.nonstreamKeepaliveInterval
+            );
+          }
+        }
+
+        setVisualDirty(dirtyFields.size > 0);
+        return next;
+      });
+    },
+    [baselineValues]
+  );
 
   return {
     visualValues,
