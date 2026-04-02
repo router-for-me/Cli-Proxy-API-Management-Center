@@ -422,10 +422,11 @@
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  --glass-blur: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  border: 1px solid var(--glass-border);
   border-radius: 999px;
   box-shadow: var(--shadow-lg);
   max-width: inherit;

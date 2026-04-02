@@ -72,14 +72,15 @@
   gap: $spacing-lg;
   padding: $spacing-2xl $spacing-xl;
   border-radius: $radius-lg;
+  --glass-blur: 12px;
   background: linear-gradient(
     135deg,
     color-mix(in srgb, var(--bg-primary) 92%, transparent),
     color-mix(in srgb, var(--bg-secondary) 80%, transparent)
   );
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
   overflow: hidden;
   animation: heroEnter 0.6s ease-out both;
 
@@ -212,10 +213,11 @@
   gap: 6px;
   padding: 5px 12px;
   border-radius: $radius-full;
-  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  --glass-blur: 8px;
+  background: var(--glass-bg-secondary);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
   font-size: 12px;
 }
 

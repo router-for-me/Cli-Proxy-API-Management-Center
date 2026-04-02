@@ -395,8 +395,9 @@
   border-radius: 26px;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
   background: color-mix(in srgb, var(--bg-primary) 76%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  --glass-blur: 14px;
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
   box-shadow: 0 24px 56px -34px rgba(0, 0, 0, 0.42);
   -ms-overflow-style: none;
   scrollbar-width: none;
