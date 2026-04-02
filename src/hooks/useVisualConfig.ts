@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useReducer } from 'react';
 import { isMap, parse as parseYaml, parseDocument } from 'yaml';
 import type {
   PayloadFilterRule,
@@ -189,7 +189,9 @@ export function getPayloadParamValidationError(
 }
 
 function hasPayloadParamValidationErrors(rules: PayloadRule[]): boolean {
-  return rules.some((rule) => rule.params.some((param) => Boolean(getPayloadParamValidationError(param))));
+  return rules.some((rule) =>
+    rule.params.some((param) => Boolean(getPayloadParamValidationError(param)))
+  );
 }
 
 function deepClone<T>(value: T): T {
@@ -197,7 +199,10 @@ function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function arePayloadModelEntriesEqual(left: PayloadRule['models'], right: PayloadRule['models']): boolean {
+function arePayloadModelEntriesEqual(
+  left: PayloadRule['models'],
+  right: PayloadRule['models']
+): boolean {
   if (left === right) return true;
   if (left.length !== right.length) return false;
   for (let i = 0; i < left.length; i += 1) {
@@ -209,19 +214,17 @@ function arePayloadModelEntriesEqual(left: PayloadRule['models'], right: Payload
   return true;
 }
 
-function arePayloadParamEntriesEqual(left: PayloadRule['params'], right: PayloadRule['params']): boolean {
+function arePayloadParamEntriesEqual(
+  left: PayloadRule['params'],
+  right: PayloadRule['params']
+): boolean {
   if (left === right) return true;
   if (left.length !== right.length) return false;
   for (let i = 0; i < left.length; i += 1) {
     const a = left[i];
     const b = right[i];
     if (!a || !b) return false;
-    if (
-      a.id !== b.id ||
-      a.path !== b.path ||
-      a.valueType !== b.valueType ||
-      a.value !== b.value
-    ) {
+    if (a.id !== b.id || a.path !== b.path || a.valueType !== b.valueType || a.value !== b.value) {
       return false;
     }
   }
@@ -242,7 +245,10 @@ function arePayloadRulesEqual(left: PayloadRule[], right: PayloadRule[]): boolea
   return true;
 }
 
-function arePayloadFilterRulesEqual(left: PayloadFilterRule[], right: PayloadFilterRule[]): boolean {
+function arePayloadFilterRulesEqual(
+  left: PayloadFilterRule[],
+  right: PayloadFilterRule[]
+): boolean {
   if (left === right) return true;
   if (left.length !== right.length) return false;
   for (let i = 0; i < left.length; i += 1) {
@@ -488,17 +494,266 @@ function serializeRawPayloadRulesForYaml(rules: PayloadRule[]): Array<Record<str
     .filter((rule) => rule.models.length > 0);
 }
 
-export function useVisualConfig() {
-  const [visualValues, setVisualValuesState] = useState<VisualConfigValues>({
-    ...DEFAULT_VISUAL_VALUES,
-  });
+type VisualConfigState = {
+  visualValues: VisualConfigValues;
+  baselineValues: VisualConfigValues;
+  dirtyFields: Set<string>;
+  visualParseError: string | null;
+};
 
-  const [baselineValues, setBaselineValues] = useState<VisualConfigValues>({
-    ...DEFAULT_VISUAL_VALUES,
-  });
-  const [visualParseError, setVisualParseError] = useState<string | null>(null);
-  const dirtyFieldsRef = useRef<Set<string>>(new Set());
-  const [visualDirty, setVisualDirty] = useState(false);
+type VisualConfigAction =
+  | {
+      type: 'load_success';
+      values: VisualConfigValues;
+    }
+  | {
+      type: 'load_error';
+      error: string;
+    }
+  | {
+      type: 'set_values';
+      values: Partial<VisualConfigValues>;
+    };
+
+function createInitialVisualConfigState(): VisualConfigState {
+  const initialValues = deepClone(DEFAULT_VISUAL_VALUES);
+  return {
+    visualValues: initialValues,
+    baselineValues: deepClone(initialValues),
+    dirtyFields: new Set(),
+    visualParseError: null,
+  };
+}
+
+function mergeVisualConfigValues(
+  currentValues: VisualConfigValues,
+  patch: Partial<VisualConfigValues>
+): VisualConfigValues {
+  const nextValues: VisualConfigValues = { ...currentValues, ...patch } as VisualConfigValues;
+  if (patch.streaming) {
+    nextValues.streaming = { ...currentValues.streaming, ...patch.streaming };
+  }
+  return nextValues;
+}
+
+function getNextDirtyFields(
+  currentDirtyFields: Set<string>,
+  patch: Partial<VisualConfigValues>,
+  nextValues: VisualConfigValues,
+  baselineValues: VisualConfigValues
+): Set<string> {
+  const nextDirtyFields = new Set(currentDirtyFields);
+  const updateDirty = (key: string, isEqual: boolean) => {
+    if (isEqual) {
+      nextDirtyFields.delete(key);
+    } else {
+      nextDirtyFields.add(key);
+    }
+  };
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'host')) {
+    updateDirty('host', nextValues.host === baselineValues.host);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'port')) {
+    updateDirty('port', nextValues.port === baselineValues.port);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'tlsEnable')) {
+    updateDirty('tlsEnable', nextValues.tlsEnable === baselineValues.tlsEnable);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'tlsCert')) {
+    updateDirty('tlsCert', nextValues.tlsCert === baselineValues.tlsCert);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'tlsKey')) {
+    updateDirty('tlsKey', nextValues.tlsKey === baselineValues.tlsKey);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'rmAllowRemote')) {
+    updateDirty('rmAllowRemote', nextValues.rmAllowRemote === baselineValues.rmAllowRemote);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'rmSecretKey')) {
+    updateDirty('rmSecretKey', nextValues.rmSecretKey === baselineValues.rmSecretKey);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'rmDisableControlPanel')) {
+    updateDirty(
+      'rmDisableControlPanel',
+      nextValues.rmDisableControlPanel === baselineValues.rmDisableControlPanel
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'rmPanelRepo')) {
+    updateDirty('rmPanelRepo', nextValues.rmPanelRepo === baselineValues.rmPanelRepo);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'authDir')) {
+    updateDirty('authDir', nextValues.authDir === baselineValues.authDir);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'apiKeysText')) {
+    updateDirty('apiKeysText', nextValues.apiKeysText === baselineValues.apiKeysText);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'debug')) {
+    updateDirty('debug', nextValues.debug === baselineValues.debug);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'commercialMode')) {
+    updateDirty('commercialMode', nextValues.commercialMode === baselineValues.commercialMode);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'loggingToFile')) {
+    updateDirty('loggingToFile', nextValues.loggingToFile === baselineValues.loggingToFile);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'logsMaxTotalSizeMb')) {
+    updateDirty(
+      'logsMaxTotalSizeMb',
+      nextValues.logsMaxTotalSizeMb === baselineValues.logsMaxTotalSizeMb
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'usageStatisticsEnabled')) {
+    updateDirty(
+      'usageStatisticsEnabled',
+      nextValues.usageStatisticsEnabled === baselineValues.usageStatisticsEnabled
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'proxyUrl')) {
+    updateDirty('proxyUrl', nextValues.proxyUrl === baselineValues.proxyUrl);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'forceModelPrefix')) {
+    updateDirty(
+      'forceModelPrefix',
+      nextValues.forceModelPrefix === baselineValues.forceModelPrefix
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'requestRetry')) {
+    updateDirty('requestRetry', nextValues.requestRetry === baselineValues.requestRetry);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'maxRetryCredentials')) {
+    updateDirty(
+      'maxRetryCredentials',
+      nextValues.maxRetryCredentials === baselineValues.maxRetryCredentials
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'maxRetryInterval')) {
+    updateDirty(
+      'maxRetryInterval',
+      nextValues.maxRetryInterval === baselineValues.maxRetryInterval
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'wsAuth')) {
+    updateDirty('wsAuth', nextValues.wsAuth === baselineValues.wsAuth);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'quotaSwitchProject')) {
+    updateDirty(
+      'quotaSwitchProject',
+      nextValues.quotaSwitchProject === baselineValues.quotaSwitchProject
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'quotaSwitchPreviewModel')) {
+    updateDirty(
+      'quotaSwitchPreviewModel',
+      nextValues.quotaSwitchPreviewModel === baselineValues.quotaSwitchPreviewModel
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'routingStrategy')) {
+    updateDirty('routingStrategy', nextValues.routingStrategy === baselineValues.routingStrategy);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'payloadDefaultRules')) {
+    updateDirty(
+      'payloadDefaultRules',
+      arePayloadRulesEqual(nextValues.payloadDefaultRules, baselineValues.payloadDefaultRules)
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'payloadDefaultRawRules')) {
+    updateDirty(
+      'payloadDefaultRawRules',
+      arePayloadRulesEqual(nextValues.payloadDefaultRawRules, baselineValues.payloadDefaultRawRules)
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'payloadOverrideRules')) {
+    updateDirty(
+      'payloadOverrideRules',
+      arePayloadRulesEqual(nextValues.payloadOverrideRules, baselineValues.payloadOverrideRules)
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'payloadOverrideRawRules')) {
+    updateDirty(
+      'payloadOverrideRawRules',
+      arePayloadRulesEqual(
+        nextValues.payloadOverrideRawRules,
+        baselineValues.payloadOverrideRawRules
+      )
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'payloadFilterRules')) {
+    updateDirty(
+      'payloadFilterRules',
+      arePayloadFilterRulesEqual(nextValues.payloadFilterRules, baselineValues.payloadFilterRules)
+    );
+  }
+  if (patch.streaming) {
+    const streamingPatch = patch.streaming;
+    if (Object.prototype.hasOwnProperty.call(streamingPatch, 'keepaliveSeconds')) {
+      updateDirty(
+        'streaming.keepaliveSeconds',
+        nextValues.streaming.keepaliveSeconds === baselineValues.streaming.keepaliveSeconds
+      );
+    }
+    if (Object.prototype.hasOwnProperty.call(streamingPatch, 'bootstrapRetries')) {
+      updateDirty(
+        'streaming.bootstrapRetries',
+        nextValues.streaming.bootstrapRetries === baselineValues.streaming.bootstrapRetries
+      );
+    }
+    if (Object.prototype.hasOwnProperty.call(streamingPatch, 'nonstreamKeepaliveInterval')) {
+      updateDirty(
+        'streaming.nonstreamKeepaliveInterval',
+        nextValues.streaming.nonstreamKeepaliveInterval ===
+          baselineValues.streaming.nonstreamKeepaliveInterval
+      );
+    }
+  }
+
+  return nextDirtyFields;
+}
+
+function visualConfigReducer(
+  state: VisualConfigState,
+  action: VisualConfigAction
+): VisualConfigState {
+  switch (action.type) {
+    case 'load_success':
+      return {
+        visualValues: action.values,
+        baselineValues: deepClone(action.values),
+        dirtyFields: new Set(),
+        visualParseError: null,
+      };
+    case 'load_error':
+      return {
+        ...state,
+        visualParseError: action.error,
+      };
+    case 'set_values': {
+      const nextValues = mergeVisualConfigValues(state.visualValues, action.values);
+      const nextDirtyFields = getNextDirtyFields(
+        state.dirtyFields,
+        action.values,
+        nextValues,
+        state.baselineValues
+      );
+
+      return {
+        ...state,
+        visualValues: nextValues,
+        dirtyFields: nextDirtyFields,
+      };
+    }
+    default:
+      return state;
+  }
+}
+
+export function useVisualConfig() {
+  const [state, dispatch] = useReducer(
+    visualConfigReducer,
+    undefined,
+    createInitialVisualConfigState
+  );
+  const { visualValues, visualParseError } = state;
+  const visualDirty = state.dirtyFields.size > 0;
   const visualValidationErrors = useMemo(
     () => getVisualConfigValidationErrors(visualValues),
     [visualValues]
@@ -543,14 +798,16 @@ export function useVisualConfig() {
 
         rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
         rmSecretKey:
-          typeof remoteManagement?.['secret-key'] === 'string' ? remoteManagement['secret-key'] : '',
+          typeof remoteManagement?.['secret-key'] === 'string'
+            ? remoteManagement['secret-key']
+            : '',
         rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
         rmPanelRepo:
           typeof remoteManagement?.['panel-github-repository'] === 'string'
             ? remoteManagement['panel-github-repository']
             : typeof remoteManagement?.['panel-repo'] === 'string'
               ? remoteManagement['panel-repo']
-            : '',
+              : '',
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
         apiKeysText: resolveApiKeysText(parsed),
@@ -569,12 +826,9 @@ export function useVisualConfig() {
         wsAuth: Boolean(parsed['ws-auth']),
 
         quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
-        quotaSwitchPreviewModel: Boolean(
-          quotaExceeded?.['switch-preview-model'] ?? true
-        ),
+        quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
 
-        routingStrategy:
-          routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
+        routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
 
         payloadDefaultRules: parsePayloadRules(payload?.default),
         payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
@@ -589,15 +843,11 @@ export function useVisualConfig() {
         },
       };
 
-      setVisualValuesState(newValues);
-      setBaselineValues(deepClone(newValues));
-      setVisualParseError(null);
-      dirtyFieldsRef.current.clear();
-      setVisualDirty(false);
+      dispatch({ type: 'load_success', values: newValues });
       return { ok: true as const };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Invalid YAML';
-      setVisualParseError(message);
+      dispatch({ type: 'load_error', error: message });
       return { ok: false as const, error: message };
     }
   }, []);
@@ -683,10 +933,7 @@ export function useVisualConfig() {
         ) {
           ensureMapInDoc(doc, ['quota-exceeded']);
           doc.setIn(['quota-exceeded', 'switch-project'], values.quotaSwitchProject);
-          doc.setIn(
-            ['quota-exceeded', 'switch-preview-model'],
-            values.quotaSwitchPreviewModel
-          );
+          doc.setIn(['quota-exceeded', 'switch-preview-model'], values.quotaSwitchPreviewModel);
           deleteIfMapEmpty(doc, ['quota-exceeded']);
         }
 
@@ -697,9 +944,13 @@ export function useVisualConfig() {
         }
 
         const keepaliveSeconds =
-          typeof values.streaming?.keepaliveSeconds === 'string' ? values.streaming.keepaliveSeconds : '';
+          typeof values.streaming?.keepaliveSeconds === 'string'
+            ? values.streaming.keepaliveSeconds
+            : '';
         const bootstrapRetries =
-          typeof values.streaming?.bootstrapRetries === 'string' ? values.streaming.bootstrapRetries : '';
+          typeof values.streaming?.bootstrapRetries === 'string'
+            ? values.streaming.bootstrapRetries
+            : '';
         const nonstreamKeepaliveInterval =
           typeof values.streaming?.nonstreamKeepaliveInterval === 'string'
             ? values.streaming.nonstreamKeepaliveInterval
@@ -714,11 +965,7 @@ export function useVisualConfig() {
           deleteIfMapEmpty(doc, ['streaming']);
         }
 
-        setIntFromStringInDoc(
-          doc,
-          ['nonstream-keepalive-interval'],
-          nonstreamKeepaliveInterval
-        );
+        setIntFromStringInDoc(doc, ['nonstream-keepalive-interval'], nonstreamKeepaliveInterval);
 
         if (
           docHas(doc, ['payload']) ||
@@ -780,181 +1027,9 @@ export function useVisualConfig() {
     [visualValues]
   );
 
-  const setVisualValues = useCallback(
-    (newValues: Partial<VisualConfigValues>) => {
-      setVisualValuesState((prev) => {
-        const next: VisualConfigValues = { ...prev, ...newValues } as VisualConfigValues;
-        if (newValues.streaming) {
-          next.streaming = { ...prev.streaming, ...newValues.streaming };
-        }
-
-        const dirtyFields = dirtyFieldsRef.current;
-        const updateDirty = (key: string, isEqual: boolean) => {
-          if (isEqual) {
-            dirtyFields.delete(key);
-          } else {
-            dirtyFields.add(key);
-          }
-        };
-
-        if (Object.prototype.hasOwnProperty.call(newValues, 'host')) {
-          updateDirty('host', next.host === baselineValues.host);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'port')) {
-          updateDirty('port', next.port === baselineValues.port);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'tlsEnable')) {
-          updateDirty('tlsEnable', next.tlsEnable === baselineValues.tlsEnable);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'tlsCert')) {
-          updateDirty('tlsCert', next.tlsCert === baselineValues.tlsCert);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'tlsKey')) {
-          updateDirty('tlsKey', next.tlsKey === baselineValues.tlsKey);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'rmAllowRemote')) {
-          updateDirty('rmAllowRemote', next.rmAllowRemote === baselineValues.rmAllowRemote);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'rmSecretKey')) {
-          updateDirty('rmSecretKey', next.rmSecretKey === baselineValues.rmSecretKey);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'rmDisableControlPanel')) {
-          updateDirty(
-            'rmDisableControlPanel',
-            next.rmDisableControlPanel === baselineValues.rmDisableControlPanel
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'rmPanelRepo')) {
-          updateDirty('rmPanelRepo', next.rmPanelRepo === baselineValues.rmPanelRepo);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'authDir')) {
-          updateDirty('authDir', next.authDir === baselineValues.authDir);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'apiKeysText')) {
-          updateDirty('apiKeysText', next.apiKeysText === baselineValues.apiKeysText);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'debug')) {
-          updateDirty('debug', next.debug === baselineValues.debug);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'commercialMode')) {
-          updateDirty('commercialMode', next.commercialMode === baselineValues.commercialMode);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'loggingToFile')) {
-          updateDirty('loggingToFile', next.loggingToFile === baselineValues.loggingToFile);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'logsMaxTotalSizeMb')) {
-          updateDirty(
-            'logsMaxTotalSizeMb',
-            next.logsMaxTotalSizeMb === baselineValues.logsMaxTotalSizeMb
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'usageStatisticsEnabled')) {
-          updateDirty(
-            'usageStatisticsEnabled',
-            next.usageStatisticsEnabled === baselineValues.usageStatisticsEnabled
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'proxyUrl')) {
-          updateDirty('proxyUrl', next.proxyUrl === baselineValues.proxyUrl);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'forceModelPrefix')) {
-          updateDirty(
-            'forceModelPrefix',
-            next.forceModelPrefix === baselineValues.forceModelPrefix
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'requestRetry')) {
-          updateDirty('requestRetry', next.requestRetry === baselineValues.requestRetry);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'maxRetryCredentials')) {
-          updateDirty(
-            'maxRetryCredentials',
-            next.maxRetryCredentials === baselineValues.maxRetryCredentials
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'maxRetryInterval')) {
-          updateDirty(
-            'maxRetryInterval',
-            next.maxRetryInterval === baselineValues.maxRetryInterval
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'wsAuth')) {
-          updateDirty('wsAuth', next.wsAuth === baselineValues.wsAuth);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'quotaSwitchProject')) {
-          updateDirty(
-            'quotaSwitchProject',
-            next.quotaSwitchProject === baselineValues.quotaSwitchProject
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'quotaSwitchPreviewModel')) {
-          updateDirty(
-            'quotaSwitchPreviewModel',
-            next.quotaSwitchPreviewModel === baselineValues.quotaSwitchPreviewModel
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'routingStrategy')) {
-          updateDirty('routingStrategy', next.routingStrategy === baselineValues.routingStrategy);
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'payloadDefaultRules')) {
-          updateDirty(
-            'payloadDefaultRules',
-            arePayloadRulesEqual(next.payloadDefaultRules, baselineValues.payloadDefaultRules)
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'payloadDefaultRawRules')) {
-          updateDirty(
-            'payloadDefaultRawRules',
-            arePayloadRulesEqual(next.payloadDefaultRawRules, baselineValues.payloadDefaultRawRules)
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'payloadOverrideRules')) {
-          updateDirty(
-            'payloadOverrideRules',
-            arePayloadRulesEqual(next.payloadOverrideRules, baselineValues.payloadOverrideRules)
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'payloadOverrideRawRules')) {
-          updateDirty(
-            'payloadOverrideRawRules',
-            arePayloadRulesEqual(next.payloadOverrideRawRules, baselineValues.payloadOverrideRawRules)
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(newValues, 'payloadFilterRules')) {
-          updateDirty(
-            'payloadFilterRules',
-            arePayloadFilterRulesEqual(next.payloadFilterRules, baselineValues.payloadFilterRules)
-          );
-        }
-        if (newValues.streaming) {
-          const streaming = newValues.streaming;
-          if (Object.prototype.hasOwnProperty.call(streaming, 'keepaliveSeconds')) {
-            updateDirty(
-              'streaming.keepaliveSeconds',
-              next.streaming.keepaliveSeconds === baselineValues.streaming.keepaliveSeconds
-            );
-          }
-          if (Object.prototype.hasOwnProperty.call(streaming, 'bootstrapRetries')) {
-            updateDirty(
-              'streaming.bootstrapRetries',
-              next.streaming.bootstrapRetries === baselineValues.streaming.bootstrapRetries
-            );
-          }
-          if (Object.prototype.hasOwnProperty.call(streaming, 'nonstreamKeepaliveInterval')) {
-            updateDirty(
-              'streaming.nonstreamKeepaliveInterval',
-              next.streaming.nonstreamKeepaliveInterval ===
-                baselineValues.streaming.nonstreamKeepaliveInterval
-            );
-          }
-        }
-
-        setVisualDirty(dirtyFields.size > 0);
-        return next;
-      });
-    },
-    [baselineValues]
-  );
+  const setVisualValues = useCallback((newValues: Partial<VisualConfigValues>) => {
+    dispatch({ type: 'set_values', values: newValues });
+  }, []);
 
   return {
     visualValues,
