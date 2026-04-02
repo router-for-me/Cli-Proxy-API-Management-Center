@@ -2,7 +2,12 @@ import { useCallback } from 'react';
 import { useInterval } from '@/hooks/useInterval';
 import { USAGE_STATS_STALE_TIME_MS, useUsageStatsStore } from '@/stores';
 
-export const useProviderStats = () => {
+export type UseProviderStatsOptions = {
+  enabled?: boolean;
+};
+
+export const useProviderStats = (options: UseProviderStatsOptions = {}) => {
+  const enabled = options.enabled ?? true;
   const keyStats = useUsageStatsStore((state) => state.keyStats);
   const usageDetails = useUsageStatsStore((state) => state.usageDetails);
   const isLoading = useUsageStatsStore((state) => state.loading);
@@ -20,7 +25,7 @@ export const useProviderStats = () => {
 
   useInterval(() => {
     void refreshKeyStats().catch(() => {});
-  }, 240_000);
+  }, enabled ? 240_000 : null);
 
   return { keyStats, usageDetails, loadKeyStats, refreshKeyStats, isLoading };
 };
