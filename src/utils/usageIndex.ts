@@ -24,12 +24,10 @@ export function indexUsageDetailsBySource(usageDetails: UsageDetail[]): UsageDet
 
 export function collectUsageDetailsForCandidates(
   usageDetailsBySource: UsageDetailsBySource,
-  candidates: readonly string[]
+  candidates: Iterable<string>
 ): UsageDetail[] {
-  if (!candidates.length) return EMPTY_USAGE_DETAILS;
-
   let firstDetails: UsageDetail[] | null = null;
-  let hasMultiple = false;
+  let merged: UsageDetail[] | null = null;
 
   for (const candidate of candidates) {
     const details = usageDetailsBySource.get(candidate);
@@ -40,22 +38,11 @@ export function collectUsageDetailsForCandidates(
       continue;
     }
 
-    hasMultiple = true;
-    break;
-  }
-
-  if (!hasMultiple) {
-    return firstDetails ?? EMPTY_USAGE_DETAILS;
-  }
-
-  const merged: UsageDetail[] = [];
-  for (const candidate of candidates) {
-    const details = usageDetailsBySource.get(candidate);
-    if (!details || details.length === 0) continue;
-
+    if (!merged) {
+      merged = [...firstDetails];
+    }
     details.forEach((detail) => merged.push(detail));
   }
 
-  return merged;
+  return merged ?? firstDetails ?? EMPTY_USAGE_DETAILS;
 }
-

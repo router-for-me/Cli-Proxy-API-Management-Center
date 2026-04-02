@@ -57,7 +57,7 @@ export function OpenAISection({
       });
 
       const filteredDetails = sourceIds.size
-        ? collectUsageDetailsForCandidates(usageDetailsBySource, Array.from(sourceIds))
+        ? collectUsageDetailsForCandidates(usageDetailsBySource, sourceIds)
         : [];
       cache.set(provider.name, calculateStatusBarData(filteredDetails));
     });
