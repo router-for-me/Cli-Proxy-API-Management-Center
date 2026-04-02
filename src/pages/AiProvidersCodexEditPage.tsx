@@ -16,6 +16,7 @@ import { modelsApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
+import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import type { ProviderFormState } from '@/components/providers';
@@ -63,21 +64,30 @@ const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) 
     return acc;
   }, []);
 
-const buildCodexSignature = (form: ProviderFormState) =>
-  JSON.stringify({
-    apiKey: String(form.apiKey ?? '').trim(),
-    priority:
-      form.priority !== undefined && Number.isFinite(form.priority)
-        ? Math.trunc(form.priority)
-        : null,
-    prefix: String(form.prefix ?? '').trim(),
-    baseUrl: String(form.baseUrl ?? '').trim(),
-    websockets: Boolean(form.websockets),
-    proxyUrl: String(form.proxyUrl ?? '').trim(),
-    headers: normalizeHeaderEntries(form.headers),
-    models: normalizeModelEntries(form.modelEntries),
-    excludedModels: parseExcludedModels(form.excludedText ?? ''),
-  });
+type CodexFormBaseline = {
+  apiKey: string;
+  priority: number | null;
+  prefix: string;
+  baseUrl: string;
+  websockets: boolean;
+  proxyUrl: string;
+  headers: ReturnType<typeof normalizeHeaderEntries>;
+  models: ReturnType<typeof normalizeModelEntries>;
+  excludedModels: string[];
+};
+
+const buildCodexBaseline = (form: ProviderFormState): CodexFormBaseline => ({
+  apiKey: String(form.apiKey ?? '').trim(),
+  priority:
+    form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
+  prefix: String(form.prefix ?? '').trim(),
+  baseUrl: String(form.baseUrl ?? '').trim(),
+  websockets: Boolean(form.websockets),
+  proxyUrl: String(form.proxyUrl ?? '').trim(),
+  headers: normalizeHeaderEntries(form.headers),
+  models: normalizeModelEntries(form.modelEntries),
+  excludedModels: parseExcludedModels(form.excludedText ?? ''),
+});
 
 export function AiProvidersCodexEditPage() {
   const { t } = useTranslation();
@@ -98,9 +108,7 @@ export function AiProvidersCodexEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<ProviderFormState>(() => buildEmptyForm());
-  const [baselineSignature, setBaselineSignature] = useState(() =>
-    buildCodexSignature(buildEmptyForm())
-  );
+  const [baseline, setBaseline] = useState(() => buildCodexBaseline(buildEmptyForm()));
 
   const [modelDiscoveryOpen, setModelDiscoveryOpen] = useState(false);
   const [modelDiscoveryEndpoint, setModelDiscoveryEndpoint] = useState('');
@@ -186,16 +194,50 @@ export function AiProvidersCodexEditPage() {
         excludedText: excludedModelsToText(initialData.excludedModels),
       };
       setForm(nextForm);
-      setBaselineSignature(buildCodexSignature(nextForm));
+      setBaseline(buildCodexBaseline(nextForm));
       return;
     }
     const nextForm = buildEmptyForm();
     setForm(nextForm);
-    setBaselineSignature(buildCodexSignature(nextForm));
+    setBaseline(buildCodexBaseline(nextForm));
   }, [initialData, loading]);
 
-  const currentSignature = useMemo(() => buildCodexSignature(form), [form]);
-  const isDirty = baselineSignature !== currentSignature;
+  const normalizedHeaders = useMemo(() => normalizeHeaderEntries(form.headers), [form.headers]);
+  const normalizedModels = useMemo(
+    () => normalizeModelEntries(form.modelEntries),
+    [form.modelEntries]
+  );
+  const normalizedExcludedModels = useMemo(
+    () => parseExcludedModels(form.excludedText ?? ''),
+    [form.excludedText]
+  );
+  const normalizedPriority = useMemo(() => {
+    return form.priority !== undefined && Number.isFinite(form.priority)
+      ? Math.trunc(form.priority)
+      : null;
+  }, [form.priority]);
+  const isHeadersDirty = useMemo(
+    () => !areKeyValueEntriesEqual(baseline.headers, normalizedHeaders),
+    [baseline.headers, normalizedHeaders]
+  );
+  const isModelsDirty = useMemo(
+    () => !areModelEntriesEqual(baseline.models, normalizedModels),
+    [baseline.models, normalizedModels]
+  );
+  const isExcludedModelsDirty = useMemo(
+    () => !areStringArraysEqual(baseline.excludedModels, normalizedExcludedModels),
+    [baseline.excludedModels, normalizedExcludedModels]
+  );
+  const isDirty =
+    baseline.apiKey !== form.apiKey.trim() ||
+    baseline.priority !== normalizedPriority ||
+    baseline.prefix !== String(form.prefix ?? '').trim() ||
+    baseline.baseUrl !== String(form.baseUrl ?? '').trim() ||
+    baseline.websockets !== Boolean(form.websockets) ||
+    baseline.proxyUrl !== String(form.proxyUrl ?? '').trim() ||
+    isHeadersDirty ||
+    isModelsDirty ||
+    isExcludedModelsDirty;
   const canGuard = !loading && !saving && !invalidIndexParam && !invalidIndex;
 
   const { allowNextNavigation } = useUnsavedChangesGuard({
@@ -430,7 +472,7 @@ export function AiProvidersCodexEditPage() {
         'success'
       );
       allowNextNavigation();
-      setBaselineSignature(buildCodexSignature(form));
+      setBaseline(buildCodexBaseline(form));
       handleBack();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';

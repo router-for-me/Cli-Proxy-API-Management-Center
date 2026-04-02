@@ -13,6 +13,7 @@ import { ampcodeApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { AmpcodeConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
+import { areStringArraysEqual } from '@/utils/compare';
 import {
   buildAmpcodeFormState,
   entriesToAmpcodeMappings,
@@ -38,20 +39,52 @@ const normalizeMappingEntries = (entries: Array<{ name: string; alias: string }>
     return acc;
   }, []);
 
-const normalizeUpstreamApiKeyEntries = (form: AmpcodeFormState) =>
-  entriesToAmpcodeUpstreamApiKeys(form.upstreamApiKeyEntries).map((entry) => ({
-    upstreamApiKey: entry.upstreamApiKey,
-    apiKeys: entry.apiKeys,
-  }));
+type AmpcodeFormBaseline = {
+  upstreamUrl: string;
+  upstreamApiKey: string;
+  forceModelMappings: boolean;
+  upstreamApiKeys: ReturnType<typeof entriesToAmpcodeUpstreamApiKeys>;
+  modelMappings: ReturnType<typeof normalizeMappingEntries>;
+};
 
-const buildAmpcodeSignature = (form: AmpcodeFormState) =>
-  JSON.stringify({
-    upstreamUrl: String(form.upstreamUrl ?? '').trim(),
-    upstreamApiKey: String(form.upstreamApiKey ?? '').trim(),
-    forceModelMappings: Boolean(form.forceModelMappings),
-    upstreamApiKeys: normalizeUpstreamApiKeyEntries(form),
-    modelMappings: normalizeMappingEntries(form.mappingEntries),
-  });
+const buildAmpcodeBaseline = (form: AmpcodeFormState): AmpcodeFormBaseline => ({
+  upstreamUrl: String(form.upstreamUrl ?? '').trim(),
+  upstreamApiKey: String(form.upstreamApiKey ?? '').trim(),
+  forceModelMappings: Boolean(form.forceModelMappings),
+  upstreamApiKeys: entriesToAmpcodeUpstreamApiKeys(form.upstreamApiKeyEntries),
+  modelMappings: normalizeMappingEntries(form.mappingEntries),
+});
+
+const areUpstreamApiKeysEqual = (
+  a: readonly { upstreamApiKey: string; apiKeys: readonly string[] }[],
+  b: readonly { upstreamApiKey: string; apiKeys: readonly string[] }[]
+) => {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const left = a[i];
+    const right = b[i];
+    if (!left || !right) return false;
+    if (left.upstreamApiKey !== right.upstreamApiKey) return false;
+    if (!areStringArraysEqual(left.apiKeys, right.apiKeys)) return false;
+  }
+  return true;
+};
+
+const areModelMappingsEqual = (
+  a: readonly { from: string; to: string }[],
+  b: readonly { from: string; to: string }[]
+) => {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const left = a[i];
+    const right = b[i];
+    if (!left || !right) return false;
+    if (left.from !== right.from || left.to !== right.to) return false;
+  }
+  return true;
+};
 
 export function AiProvidersAmpcodeEditPage() {
   const { t } = useTranslation();
@@ -72,9 +105,7 @@ export function AiProvidersAmpcodeEditPage() {
   const [upstreamApiKeysDirty, setUpstreamApiKeysDirty] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [baselineSignature, setBaselineSignature] = useState(() =>
-    buildAmpcodeSignature(buildAmpcodeFormState(null))
-  );
+  const [baseline, setBaseline] = useState(() => buildAmpcodeBaseline(buildAmpcodeFormState(null)));
   const initializedRef = useRef(false);
   const mountedRef = useRef(false);
 
@@ -119,7 +150,7 @@ export function AiProvidersAmpcodeEditPage() {
     setError('');
     const initialForm = buildAmpcodeFormState(useConfigStore.getState().config?.ampcode ?? null);
     setForm(initialForm);
-    setBaselineSignature(buildAmpcodeSignature(initialForm));
+    setBaseline(buildAmpcodeBaseline(initialForm));
 
     void (async () => {
       try {
@@ -131,7 +162,7 @@ export function AiProvidersAmpcodeEditPage() {
         clearCache('ampcode');
         const nextForm = buildAmpcodeFormState(ampcode);
         setForm(nextForm);
-        setBaselineSignature(buildAmpcodeSignature(nextForm));
+        setBaseline(buildAmpcodeBaseline(nextForm));
       } catch (err: unknown) {
         if (!mountedRef.current) return;
         setError(getErrorMessage(err) || t('notification.refresh_failed'));
@@ -143,8 +174,28 @@ export function AiProvidersAmpcodeEditPage() {
     })();
   }, [clearCache, t, updateConfigValue]);
 
-  const currentSignature = useMemo(() => buildAmpcodeSignature(form), [form]);
-  const isDirty = baselineSignature !== currentSignature;
+  const normalizedUpstreamApiKeys = useMemo(
+    () => entriesToAmpcodeUpstreamApiKeys(form.upstreamApiKeyEntries),
+    [form.upstreamApiKeyEntries]
+  );
+  const normalizedModelMappings = useMemo(
+    () => normalizeMappingEntries(form.mappingEntries),
+    [form.mappingEntries]
+  );
+  const isUpstreamApiKeysDirty = useMemo(
+    () => !areUpstreamApiKeysEqual(baseline.upstreamApiKeys, normalizedUpstreamApiKeys),
+    [baseline.upstreamApiKeys, normalizedUpstreamApiKeys]
+  );
+  const isModelMappingsDirtyNormalized = useMemo(
+    () => !areModelMappingsEqual(baseline.modelMappings, normalizedModelMappings),
+    [baseline.modelMappings, normalizedModelMappings]
+  );
+  const isDirty =
+    baseline.upstreamUrl !== form.upstreamUrl.trim() ||
+    baseline.upstreamApiKey !== form.upstreamApiKey.trim() ||
+    baseline.forceModelMappings !== Boolean(form.forceModelMappings) ||
+    isUpstreamApiKeysDirty ||
+    isModelMappingsDirtyNormalized;
   const canGuard = !loading && !saving;
 
   const { allowNextNavigation } = useUnsavedChangesGuard({
@@ -263,7 +314,7 @@ export function AiProvidersAmpcodeEditPage() {
       clearCache('ampcode');
       showNotification(t('notification.ampcode_updated'), 'success');
       allowNextNavigation();
-      setBaselineSignature(buildAmpcodeSignature(form));
+      setBaseline(buildAmpcodeBaseline(form));
       handleBack();
     } catch (err: unknown) {
       const message = getErrorMessage(err);
