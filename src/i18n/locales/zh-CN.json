@@ -558,6 +558,8 @@
     "models_unsupported_desc": "请更新 CLI Proxy API 到最新版本后重试",
     "models_excluded_badge": "已禁用",
     "models_excluded_hint": "此 OAuth 模型已被禁用",
+    "websockets_enabled_badge": "ws",
+    "websockets_disabled_badge": "ws",
     "status_toggle_label": "启用",
     "status_enabled_success": "已启用 \"{{name}}\"",
     "status_disabled_success": "已停用 \"{{name}}\"",

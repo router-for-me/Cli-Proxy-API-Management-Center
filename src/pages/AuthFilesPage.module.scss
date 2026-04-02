@@ -738,7 +738,8 @@
   }
 
   .typeBadge,
-  .stateBadge {
+  .stateBadge,
+  .featureBadge {
     padding: 3px 7px;
     font-size: 10px;
   }
@@ -907,6 +908,34 @@
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--bg-tertiary) 82%, transparent);
   border: 1px dashed color-mix(in srgb, var(--border-primary) 90%, transparent);
+}
+
+.featureBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+
+.featureBadgeEnabled {
+  color: #0f5f42;
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+  border-color: color-mix(in srgb, #22c55e 42%, transparent);
+}
+
+.featureBadgeDisabled {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-tertiary) 86%, transparent);
+  border-color: color-mix(in srgb, var(--border-color) 92%, transparent);
 }
 
 .fileName {

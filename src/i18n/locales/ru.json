@@ -558,6 +558,8 @@
     "models_unsupported_desc": "Обновите CLI Proxy API до последней версии и повторите попытку",
     "models_excluded_badge": "Отключена",
     "models_excluded_hint": "Эта OAuth-модель отключена",
+    "websockets_enabled_badge": "ws",
+    "websockets_disabled_badge": "ws",
     "status_toggle_label": "Включено",
     "status_enabled_success": "\"{{name}}\" включён",
     "status_disabled_success": "\"{{name}}\" отключён",

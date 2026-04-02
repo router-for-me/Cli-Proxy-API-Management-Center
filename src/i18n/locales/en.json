@@ -558,6 +558,8 @@
     "models_unsupported_desc": "Please update CLI Proxy API to the latest version and try again",
     "models_excluded_badge": "Disabled",
     "models_excluded_hint": "This OAuth model is disabled",
+    "websockets_enabled_badge": "ws",
+    "websockets_disabled_badge": "ws",
     "status_toggle_label": "Enabled",
     "status_enabled_success": "\"{{name}}\" enabled",
     "status_disabled_success": "\"{{name}}\" disabled",

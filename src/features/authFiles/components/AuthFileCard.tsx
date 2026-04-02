@@ -24,6 +24,7 @@ import {
   getTypeLabel,
   isRuntimeOnlyAuthFile,
   parsePriorityValue,
+  readAuthFileWebsockets,
   resolveAuthFileStats,
   type QuotaProviderType,
   type ResolvedTheme,
@@ -87,6 +88,13 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const typeColor = getTypeColor(file.type || 'unknown', resolvedTheme);
   const typeLabel = getTypeLabel(t, file.type || 'unknown');
   const providerIcon = getAuthFileIcon(file.type || 'unknown', resolvedTheme);
+  const websocketsEnabled = readAuthFileWebsockets(file);
+  const websocketsBadgeLabel =
+    websocketsEnabled === null
+      ? null
+      : websocketsEnabled
+        ? t('auth_files.websockets_enabled_badge')
+        : t('auth_files.websockets_disabled_badge');
 
   const quotaType =
     quotaFilterType && resolveQuotaType(file) === quotaFilterType ? quotaFilterType : null;
@@ -180,6 +188,16 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   {typeLabel}
                 </span>
                 <span className={`${styles.stateBadge} ${stateBadgeClass}`}>{stateLabel}</span>
+                {websocketsBadgeLabel && (
+                  <span
+                    className={`${styles.featureBadge} ${
+                      websocketsEnabled ? styles.featureBadgeEnabled : styles.featureBadgeDisabled
+                    }`}
+                    title={t('ai_providers.codex_websockets_hint')}
+                  >
+                    {websocketsBadgeLabel}
+                  </span>
+                )}
               </div>
               <span className={styles.fileName} title={file.name}>
                 {file.name}

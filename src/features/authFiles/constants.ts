@@ -215,6 +215,14 @@ export const parseDisableCoolingValue = (value: unknown): boolean | undefined =>
 export const readCodexAuthFileWebsockets = (value: Record<string, unknown>): boolean =>
   parseDisableCoolingValue(value.websockets) ?? false;
 
+export const readAuthFileWebsockets = (file: AuthFileItem): boolean | null => {
+  const providerKey = normalizeProviderKey(String(file.type ?? file.provider ?? ''));
+  if (providerKey !== 'codex') return null;
+
+  const rawValue = file.websockets ?? file['websockets'] ?? file.websocket ?? file['websocket'];
+  return parseDisableCoolingValue(rawValue) ?? false;
+};
+
 export const applyCodexAuthFileWebsockets = (
   value: Record<string, unknown>,
   websockets: boolean
