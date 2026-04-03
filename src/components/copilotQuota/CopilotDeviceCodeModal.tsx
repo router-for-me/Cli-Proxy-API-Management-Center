@@ -27,6 +27,7 @@ export function CopilotDeviceCodeModal({ open, onClose, onSuccess }: CopilotDevi
   const expiresAtRef = useRef<number>(0);
   const deviceCodeRef = useRef('');
   const intervalSecsRef = useRef(5);
+  const initStartedRef = useRef(false);
 
   const clearPolling = useCallback(() => {
     if (pollIntervalRef.current !== null) {
@@ -37,6 +38,7 @@ export function CopilotDeviceCodeModal({ open, onClose, onSuccess }: CopilotDevi
 
   const resetState = useCallback(() => {
     clearPolling();
+    initStartedRef.current = false;
     setAuthState('idle');
     setUserCode('');
     setVerificationUri('');
@@ -89,8 +91,9 @@ export function CopilotDeviceCodeModal({ open, onClose, onSuccess }: CopilotDevi
   }, [clearPolling, onSuccess, t]);
 
   useEffect(() => {
-    if (!open || authState !== 'idle') return;
+    if (!open || initStartedRef.current) return;
 
+    initStartedRef.current = true;
     let cancelled = false;
 
     const initAuth = async () => {
@@ -116,7 +119,7 @@ export function CopilotDeviceCodeModal({ open, onClose, onSuccess }: CopilotDevi
     return () => {
       cancelled = true;
     };
-  }, [open, authState, t]);
+  }, [open, t]);
 
   useEffect(() => {
     if (authState === 'code_shown') {
@@ -129,6 +132,7 @@ export function CopilotDeviceCodeModal({ open, onClose, onSuccess }: CopilotDevi
       clearPolling();
       // Delay state reset so close animation plays
       const timer = setTimeout(() => {
+        initStartedRef.current = false;
         setAuthState('idle');
       }, 400);
       return () => clearTimeout(timer);
