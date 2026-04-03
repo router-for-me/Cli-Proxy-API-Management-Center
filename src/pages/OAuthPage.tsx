@@ -17,6 +17,8 @@ import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
 import iconIflow from '@/assets/icons/iflow.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
+import iconCopilot from '@/assets/icons/copilot.svg';
+import { CopilotDeviceCodeModal } from '@/components/copilotQuota/CopilotDeviceCodeModal';
 
 interface ProviderState {
   url?: string;
@@ -100,6 +102,7 @@ export function OAuthPage() {
     location: '',
     loading: false
   });
+  const [copilotModalOpen, setCopilotModalOpen] = useState(false);
   const timers = useRef<Record<string, number>>({});
   const vertexFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -452,6 +455,35 @@ export function OAuthPage() {
             </div>
           );
         })}
+
+        {/* GitHub Copilot Device Code Auth */}
+        <div>
+          <Card
+            title={
+              <span className={styles.cardTitle}>
+                <img src={iconCopilot} alt="" className={styles.cardTitleIcon} />
+                {t('auth_login.copilot_oauth_title')}
+              </span>
+            }
+            extra={
+              <Button onClick={() => setCopilotModalOpen(true)}>
+                {t('common.login')}
+              </Button>
+            }
+          >
+            <div className={styles.cardContent}>
+              <div className={styles.cardHint}>{t('auth_login.copilot_oauth_hint')}</div>
+            </div>
+          </Card>
+          <CopilotDeviceCodeModal
+            open={copilotModalOpen}
+            onClose={() => setCopilotModalOpen(false)}
+            onSuccess={(email) => {
+              setCopilotModalOpen(false);
+              showNotification(t('auth_login.copilot_oauth_status_success'), 'success');
+            }}
+          />
+        </div>
 
         {/* Vertex JSON 登录 */}
         <Card
