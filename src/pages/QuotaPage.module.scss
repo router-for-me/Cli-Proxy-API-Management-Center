@@ -276,6 +276,22 @@
       rgba(220, 232, 255, 0));
 }
 
+.copilotCard {
+  background-image: linear-gradient(180deg,
+      rgba(36, 41, 46, 0.08),
+      rgba(36, 41, 46, 0));
+}
+
+.copilotGrid {
+  display: grid;
+  gap: $spacing-md;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
 .quotaSection {
   display: flex;
   flex-direction: column;

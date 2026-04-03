@@ -1,0 +1,84 @@
+@use '../../styles/variables' as *;
+
+.deviceCodeModalContent {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-sm 0;
+}
+
+.deviceCodeInstructions {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.deviceCode {
+  font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-align: center;
+  padding: $spacing-lg;
+  background-color: var(--bg-secondary);
+  border: 2px dashed var(--border-color);
+  border-radius: $radius-lg;
+  color: var(--text-primary);
+  user-select: all;
+  margin: $spacing-md 0;
+}
+
+.deviceCodeActions {
+  display: flex;
+  gap: $spacing-sm;
+  justify-content: center;
+  margin: $spacing-md 0;
+}
+
+.deviceCodeStatus {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: $spacing-sm 0;
+}
+
+.deviceCodeStatusSuccess {
+  color: var(--success-color, #22c55e);
+  font-weight: 600;
+}
+
+.deviceCodeStatusError {
+  color: var(--danger-color);
+}
+
+.copilotCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding-top: $spacing-sm;
+  margin-top: $spacing-xs;
+  border-top: 1px dashed var(--border-color);
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.copilotCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs $spacing-sm;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.copilotPlan {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.copilotSectionHeader {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+}

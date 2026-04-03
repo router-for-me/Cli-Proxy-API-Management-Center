@@ -15,6 +15,7 @@ import {
   GEMINI_CLI_CONFIG,
   KIMI_CONFIG
 } from '@/components/quota';
+import { CopilotQuotaSection } from '@/components/copilotQuota';
 import type { AuthFileItem } from '@/types';
 import styles from './QuotaPage.module.scss';
 
@@ -71,12 +72,7 @@ export function QuotaPage() {
 
       {error && <div className={styles.errorBox}>{error}</div>}
 
-      <QuotaSection
-        config={CLAUDE_CONFIG}
-        files={files}
-        loading={loading}
-        disabled={disableControls}
-      />
+      <CopilotQuotaSection disabled={disableControls} />
       <QuotaSection
         config={ANTIGRAVITY_CONFIG}
         files={files}
@@ -84,13 +80,19 @@ export function QuotaPage() {
         disabled={disableControls}
       />
       <QuotaSection
-        config={CODEX_CONFIG}
+        config={GEMINI_CLI_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}
       />
       <QuotaSection
-        config={GEMINI_CLI_CONFIG}
+        config={CLAUDE_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
+      <QuotaSection
+        config={CODEX_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}
