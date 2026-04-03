@@ -113,6 +113,7 @@
 .antigravityGrid,
 .claudeGrid,
 .codexGrid,
+.copilotGrid,
 .geminiCliGrid,
 .kimiGrid {
   display: grid;
@@ -127,6 +128,7 @@
 .antigravityControls,
 .claudeControls,
 .codexControls,
+.copilotControls,
 .geminiCliControls,
 .kimiControls {
   display: flex;
@@ -139,6 +141,7 @@
 .antigravityControl,
 .claudeControl,
 .codexControl,
+.copilotControl,
 .geminiCliControl,
 .kimiControl {
   display: flex;
@@ -256,6 +259,12 @@
   background-image: linear-gradient(180deg,
       rgba(224, 247, 250, 0.12),
       rgba(224, 247, 250, 0));
+}
+
+.copilotCard {
+  background-image: linear-gradient(180deg,
+      rgba(232, 240, 254, 0.2),
+      rgba(232, 240, 254, 0));
 }
 
 .codexCard {
@@ -413,7 +422,8 @@
   padding: $spacing-xs $spacing-sm;
 }
 
-.codexPlan {
+.codexPlan,
+.copilotPlan {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -421,11 +431,13 @@
   color: var(--text-secondary);
 }
 
-.codexPlanLabel {
+.codexPlanLabel,
+.copilotPlanLabel {
   color: var(--text-tertiary);
 }
 
-.codexPlanValue {
+.codexPlanValue,
+.copilotPlanValue {
   font-weight: 600;
   color: var(--text-primary);
   text-transform: capitalize;

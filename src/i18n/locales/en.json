@@ -704,6 +704,24 @@
     "limit_index": "Limit #{{index}}",
     "reset_hint": "resets in {{hint}}"
   },
+  "copilot_quota": {
+    "title": "GitHub Copilot Quota",
+    "empty_title": "No GitHub Copilot Auth Files",
+    "empty_desc": "Log in with GitHub Copilot to view remaining premium request quota.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_data": "No quota data available",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "premium_requests": "Premium Requests",
+    "chat": "Chat",
+    "completions": "Completions",
+    "plan_label": "Plan:",
+    "reset_label": "Resets:",
+    "unlimited": "Unlimited"
+  },
   "vertex_import": {
     "title": "Vertex JSON Login",
     "description": "Upload a Google service account JSON to store it as auth-dir/vertex-<project>.json using the same rules as the CLI vertex-import helper.",
