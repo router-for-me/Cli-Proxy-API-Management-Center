@@ -14,6 +14,13 @@
     padding-top: 0;
   }
 
+  @include tablet {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding: 22px 0;
+    scroll-margin-top: 88px;
+  }
+
   @include mobile {
     grid-template-columns: minmax(0, 1fr);
     gap: 18px;
@@ -29,6 +36,10 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+
+  @include tablet {
+    position: static;
+  }
 
   @include mobile {
     position: static;
@@ -94,6 +105,10 @@
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.7;
+
+  @include tablet {
+    max-width: none;
+  }
 
   @include mobile {
     max-width: none;

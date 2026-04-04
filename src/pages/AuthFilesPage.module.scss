@@ -4,7 +4,7 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
   padding-bottom: calc(
     var(--auth-files-action-bar-height, 0px) + 16px + env(safe-area-inset-bottom)
   );
@@ -17,10 +17,14 @@
 }
 
 .pageTitle {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+
+  @include mobile {
+    font-size: 22px;
+  }
 }
 
 .description {
@@ -82,21 +86,21 @@
 .filterSection {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
-  margin-bottom: $spacing-lg;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
 }
 
 .filterRail {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
   background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
 
   @include mobile {
-    padding: 10px;
+    padding: 8px;
   }
 }
 
@@ -232,7 +236,7 @@
 }
 
 .filterControlsPanel {
-  padding: 14px;
+  padding: 12px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
   background: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
@@ -240,8 +244,8 @@
 
 .filterControls {
   display: grid;
-  grid-template-columns: minmax(240px, 1.4fr) repeat(2, minmax(120px, 0.72fr)) minmax(220px, auto);
-  gap: $spacing-md;
+  grid-template-columns: minmax(200px, 1.4fr) repeat(2, minmax(100px, 0.7fr)) minmax(180px, auto);
+  gap: $spacing-sm $spacing-md;
   align-items: flex-end;
 
   // 修复 Input 组件在 filterItem 中的嵌套样式
@@ -250,12 +254,12 @@
   }
 
   :global(.input) {
-    height: 40px;
+    height: 36px;
     box-sizing: border-box;
   }
 
   @include tablet {
-    grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(140px, 0.8fr));
+    grid-template-columns: minmax(180px, 1fr) repeat(2, minmax(100px, 0.7fr));
   }
 
   @include mobile {
@@ -281,23 +285,20 @@
 
 .filterToggleItem {
   min-width: 0;
-
-  @include tablet {
-    grid-column: 1 / -1;
-  }
+  grid-column: 1 / -1;
 }
 
 .filterToggleGroup {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  min-height: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 36px;
 }
 
 .filterToggleCard {
   display: flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 36px;
   padding: 0 2px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
@@ -307,7 +308,7 @@
 .filterToggle {
   display: flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 36px;
   padding-inline: 2px;
 }
 
@@ -322,14 +323,14 @@
 
 .pageSizeSelect {
   width: 100%;
-  padding: 8px 12px;
+  padding: 6px 12px;
   border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
   border-radius: 8px;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   font-size: 14px;
   cursor: text;
-  height: 40px;
+  height: 36px;
   box-sizing: border-box;
 
   &:focus {
@@ -343,15 +344,15 @@
 .fileGrid {
   display: grid;
   gap: $spacing-md;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
 }
 
 .fileGridQuotaManaged {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
 }
 
 .fileGridCompact {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
 }
 
 .antigravityGrid {

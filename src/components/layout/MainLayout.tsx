@@ -221,7 +221,12 @@ export function MainLayout() {
   const setLanguage = useLanguageStore((state) => state.setLanguage);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const stored = localStorage.getItem('sidebar-collapsed');
+    if (stored !== null) return stored === 'true';
+    // Auto-collapse on narrower viewports
+    return window.innerWidth <= 1280;
+  });
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [brandExpanded, setBrandExpanded] = useState(true);
@@ -360,6 +365,14 @@ export function MainLayout() {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [themeMenuOpen]);
+
+  const toggleSidebarCollapsed = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('sidebar-collapsed', String(next));
+      return next;
+    });
+  }, []);
 
   const handleBrandClick = useCallback(() => {
     if (!brandExpanded) {
@@ -513,7 +526,7 @@ export function MainLayout() {
         <div className="left">
           <button
             className="sidebar-toggle-header"
-            onClick={() => setSidebarCollapsed((prev) => !prev)}
+            onClick={toggleSidebarCollapsed}
             title={
               sidebarCollapsed
                 ? t('sidebar.expand', { defaultValue: '展开' })
@@ -708,6 +721,22 @@ export function MainLayout() {
               </NavLink>
             ))}
           </div>
+          <button
+            className="sidebar-collapse-btn"
+            onClick={toggleSidebarCollapsed}
+            title={
+              sidebarCollapsed
+                ? t('sidebar.expand', { defaultValue: '展开' })
+                : t('sidebar.collapse', { defaultValue: '收起' })
+            }
+          >
+            {sidebarCollapsed ? headerIcons.chevronRight : headerIcons.chevronLeft}
+            {!sidebarCollapsed && (
+              <span className="sidebar-collapse-label">
+                {t('sidebar.collapse', { defaultValue: '收起' })}
+              </span>
+            )}
+          </button>
         </aside>
 
         <div className={`content${isLogsPage ? ' content-logs' : ''}`} ref={contentRef}>

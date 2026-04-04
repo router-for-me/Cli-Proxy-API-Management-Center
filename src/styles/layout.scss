@@ -466,7 +466,7 @@
 }
 
 .sidebar {
-  width: 240px;
+  width: 260px;
   background: var(--bg-primary);
   border-right: 1px solid var(--border-color);
   padding: $spacing-md;
@@ -475,6 +475,7 @@
   gap: $spacing-lg;
   transition:
     width $transition-normal,
+    padding $transition-normal,
     transform $transition-normal;
   overflow-y: auto;
   flex-shrink: 0;
@@ -503,6 +504,7 @@
     border: 1px solid transparent;
     color: var(--text-primary);
     font-weight: 600;
+    font-size: 14px;
     display: flex;
     align-items: center;
     gap: $spacing-sm;
@@ -539,6 +541,13 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      transition: opacity $transition-fast;
+    }
+
+    .sidebar-collapse-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     &:hover {
@@ -564,6 +573,40 @@
     }
   }
 
+  .sidebar-collapse-btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+    border-radius: $radius-md;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background $transition-fast,
+      color $transition-fast;
+    flex-shrink: 0;
+
+    &:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+
+  &.collapsed .sidebar-collapse-btn {
+    justify-content: center;
+    padding: 10px;
+    border-color: transparent;
+  }
+
   @media (max-width: $breakpoint-mobile) {
     position: fixed;
     z-index: $z-dropdown;
@@ -575,6 +618,10 @@
 
     &.open {
       transform: translateX(0);
+    }
+
+    .sidebar-collapse-btn {
+      display: none;
     }
   }
 }
@@ -604,7 +651,7 @@
   padding: $spacing-lg;
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
   overflow-x: hidden;
 
   &.main-content-logs {
