@@ -143,7 +143,7 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                   <textarea
                     className="input"
                     value={editor.headersText}
-                    placeholder='{"X-Custom-Header": "value"}'
+                    placeholder={t('auth_files.headers_placeholder')}
                     rows={4}
                     disabled={disableControls || editor.saving || !editor.json}
                     onChange={(e) => onChange('headersText', e.target.value)}

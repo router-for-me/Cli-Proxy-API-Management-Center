@@ -599,6 +599,7 @@
     "note_display": "Note",
     "headers_label": "Custom Headers (headers)",
     "headers_placeholder": "{\n  \"Header-Name\": \"value\"\n}",
+    "headers_hint": "Enter custom HTTP headers as a JSON object, e.g., {\"X-My-Header\": \"value\"}",
     "prefix_proxy_invalid_json": "This auth file is not a JSON object, so fields cannot be edited.",
     "prefix_proxy_saved_success": "Updated auth file \"{{name}}\" successfully",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
