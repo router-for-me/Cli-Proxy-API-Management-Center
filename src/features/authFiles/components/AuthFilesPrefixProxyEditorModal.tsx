@@ -138,6 +138,18 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                   />
                   <div className="hint">{t('auth_files.excluded_models_hint')}</div>
                 </div>
+                <div className="form-group">
+                  <label>{t('auth_files.headers_label')}</label>
+                  <textarea
+                    className="input"
+                    value={editor.headersText}
+                    placeholder='{"X-Custom-Header": "value"}'
+                    rows={4}
+                    disabled={disableControls || editor.saving || !editor.json}
+                    onChange={(e) => onChange('headersText', e.target.value)}
+                  />
+                  <div className="hint">{t('auth_files.headers_hint')}</div>
+                </div>
                 <Input
                   label={t('auth_files.disable_cooling_label')}
                   value={editor.disableCooling}

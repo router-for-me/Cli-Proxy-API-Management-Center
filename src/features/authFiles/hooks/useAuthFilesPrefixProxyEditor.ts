@@ -21,7 +21,8 @@ export type PrefixProxyEditorField =
   | 'excludedModelsText'
   | 'disableCooling'
   | 'websockets'
-  | 'note';
+  | 'note'
+  | 'headersText';
 
 export type PrefixProxyEditorFieldValue = string | boolean;
 
@@ -43,6 +44,7 @@ export type PrefixProxyEditorState = {
   websockets: boolean;
   note: string;
   noteTouched: boolean;
+  headersText: string;
 };
 
 export type UseAuthFilesPrefixProxyEditorOptions = {
@@ -104,6 +106,16 @@ const buildPrefixProxyUpdatedText = (editor: PrefixProxyEditorState | null): str
     }
   }
 
+  if (editor.headersText.trim()) {
+    try {
+      next.headers = JSON.parse(editor.headersText);
+    } catch {
+      // ignore or handle error
+    }
+  } else {
+    delete next.headers;
+  }
+
   return JSON.stringify(
     editor.isCodexFile ? applyCodexAuthFileWebsockets(next, editor.websockets) : next
   );
@@ -162,6 +174,7 @@ export function useAuthFilesPrefixProxyEditor(
       websockets: false,
       note: '',
       noteTouched: false,
+      headersText: '',
     });
 
     try {
@@ -213,6 +226,11 @@ export function useAuthFilesPrefixProxyEditor(
       const disableCoolingValue = parseDisableCoolingValue(json.disable_cooling);
       const websocketsValue = readCodexAuthFileWebsockets(json);
       const note = typeof json.note === 'string' ? json.note : '';
+      const headers = json.headers;
+      let headersText = '';
+      if (headers && typeof headers === 'object') {
+        headersText = JSON.stringify(headers, null, 2);
+      }
 
       setPrefixProxyEditor((prev) => {
         if (!prev || prev.fileName !== name) return prev;
@@ -231,6 +249,7 @@ export function useAuthFilesPrefixProxyEditor(
           websockets: websocketsValue,
           note,
           noteTouched: false,
+          headersText,
           error: null,
         };
       });
@@ -256,6 +275,7 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'excludedModelsText') return { ...prev, excludedModelsText: String(value) };
       if (field === 'disableCooling') return { ...prev, disableCooling: String(value) };
       if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
+      if (field === 'headersText') return { ...prev, headersText: String(value) };
       return { ...prev, websockets: Boolean(value) };
     });
   };
