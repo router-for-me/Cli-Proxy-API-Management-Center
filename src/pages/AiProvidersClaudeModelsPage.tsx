@@ -66,7 +66,8 @@ export function AiProvidersClaudeModelsPage() {
       const list = await modelsApi.fetchClaudeModelsViaApiCall(
         form.baseUrl ?? '',
         form.apiKey.trim() || undefined,
-        headerObject
+        headerObject,
+        form.proxyUrl?.trim() || undefined
       );
       setModels(list);
     } catch (err: unknown) {
@@ -89,7 +90,7 @@ export function AiProvidersClaudeModelsPage() {
     } finally {
       setFetching(false);
     }
-  }, [form.apiKey, form.baseUrl, form.headers, t]);
+  }, [form.apiKey, form.baseUrl, form.headers, form.proxyUrl, t]);
 
   useEffect(() => {
     if (initialLoading) return;
@@ -119,12 +120,19 @@ export function AiProvidersClaudeModelsPage() {
       .sort(([a], [b]) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .map(([key, value]) => `${key}:${value}`)
       .join('|');
-    const signature = `${nextEndpoint}||${form.apiKey.trim()}||${headerSignature}`;
+    const signature = `${nextEndpoint}||${form.apiKey.trim()}||${String(form.proxyUrl ?? '').trim()}||${headerSignature}`;
     if (autoFetchSignatureRef.current === signature) return;
     autoFetchSignatureRef.current = signature;
 
     void fetchClaudeModelDiscovery();
-  }, [fetchClaudeModelDiscovery, form.apiKey, form.baseUrl, form.headers, initialLoading]);
+  }, [
+    fetchClaudeModelDiscovery,
+    form.apiKey,
+    form.baseUrl,
+    form.headers,
+    form.proxyUrl,
+    initialLoading,
+  ]);
 
   useEffect(() => {
     const availableNames = new Set(models.map((model) => model.name));

@@ -15,7 +15,11 @@ import { modelsApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { GeminiKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
-import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
+import {
+  areKeyValueEntriesEqual,
+  areModelEntriesEqual,
+  areStringArraysEqual,
+} from '@/utils/compare';
 import type { ModelInfo } from '@/utils/models';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
@@ -75,7 +79,9 @@ type GeminiFormBaseline = {
 const buildGeminiBaseline = (form: GeminiFormState): GeminiFormBaseline => ({
   apiKey: String(form.apiKey ?? '').trim(),
   priority:
-    form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
+    form.priority !== undefined && Number.isFinite(form.priority)
+      ? Math.trunc(form.priority)
+      : null,
   prefix: String(form.prefix ?? '').trim(),
   baseUrl: String(form.baseUrl ?? '').trim(),
   proxyUrl: String(form.proxyUrl ?? '').trim(),
@@ -269,7 +275,8 @@ export function AiProvidersGeminiEditPage() {
       const list = await modelsApi.fetchGeminiModelsViaApiCall(
         form.baseUrl ?? '',
         form.apiKey.trim() || undefined,
-        headerObject
+        headerObject,
+        form.proxyUrl?.trim() || undefined
       );
       if (modelDiscoveryRequestIdRef.current !== requestId) return;
       setDiscoveredModels(list);
@@ -295,7 +302,7 @@ export function AiProvidersGeminiEditPage() {
         setModelDiscoveryFetching(false);
       }
     }
-  }, [form.apiKey, form.baseUrl, form.headers, t]);
+  }, [form.apiKey, form.baseUrl, form.headers, form.proxyUrl, t]);
 
   useEffect(() => {
     if (!modelDiscoveryOpen) {
@@ -328,12 +335,19 @@ export function AiProvidersGeminiEditPage() {
       .sort(([a], [b]) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .map(([key, value]) => `${key}:${value}`)
       .join('|');
-    const signature = `${nextEndpoint}||${form.apiKey.trim()}||${headerSignature}`;
+    const signature = `${nextEndpoint}||${form.apiKey.trim()}||${String(form.proxyUrl ?? '').trim()}||${headerSignature}`;
     if (autoFetchSignatureRef.current === signature) return;
     autoFetchSignatureRef.current = signature;
 
     void fetchGeminiModelDiscovery();
-  }, [fetchGeminiModelDiscovery, form.apiKey, form.baseUrl, form.headers, modelDiscoveryOpen]);
+  }, [
+    fetchGeminiModelDiscovery,
+    form.apiKey,
+    form.baseUrl,
+    form.headers,
+    form.proxyUrl,
+    modelDiscoveryOpen,
+  ]);
 
   useEffect(() => {
     const availableNames = new Set(discoveredModels.map((model) => model.name));

@@ -16,12 +16,12 @@ const GEMINI_MODELS_IN_FLIGHT = new Map<string, Promise<ReturnType<typeof normal
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
-const buildRequestSignature = (url: string, headers: Record<string, string>) => {
+const buildRequestSignature = (url: string, headers: Record<string, string>, proxyUrl?: string) => {
   const headerSignature = Object.entries(headers)
     .sort(([a], [b]) => a.toLowerCase().localeCompare(b.toLowerCase()))
     .map(([key, value]) => `${key}:${value}`)
     .join('|');
-  return `${url}||${headerSignature}`;
+  return `${url}||${String(proxyUrl ?? '').trim()}||${headerSignature}`;
 };
 
 const buildModelsEndpoint = (baseUrl: string): string => {
@@ -95,7 +95,7 @@ export const modelsApi = {
     }
 
     const response = await axios.get(endpoint, {
-      headers: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+      headers: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
     });
     const payload = response.data?.data ?? response.data?.models ?? response.data;
     return normalizeModelList(payload, { dedupe: true });
@@ -108,7 +108,8 @@ export const modelsApi = {
   async fetchV1ModelsViaApiCall(
     baseUrl: string,
     apiKey?: string,
-    headers: Record<string, string> = {}
+    headers: Record<string, string> = {},
+    proxyUrl?: string
   ) {
     const endpoint = buildV1ModelsEndpoint(baseUrl);
     if (!endpoint) {
@@ -116,6 +117,7 @@ export const modelsApi = {
     }
 
     const resolvedHeaders = { ...headers };
+    const resolvedProxyUrl = String(proxyUrl ?? '').trim() || undefined;
     if (apiKey && !hasHeader(resolvedHeaders, 'authorization')) {
       resolvedHeaders.Authorization = `Bearer ${apiKey}`;
     }
@@ -123,7 +125,8 @@ export const modelsApi = {
     const result = await apiCallApi.request({
       method: 'GET',
       url: endpoint,
-      header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+      header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
+      proxyUrl: resolvedProxyUrl,
     });
 
     if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -140,7 +143,8 @@ export const modelsApi = {
   async fetchModelsViaApiCall(
     baseUrl: string,
     apiKey?: string,
-    headers: Record<string, string> = {}
+    headers: Record<string, string> = {},
+    proxyUrl?: string
   ) {
     const endpoint = buildModelsEndpoint(baseUrl);
     if (!endpoint) {
@@ -148,6 +152,7 @@ export const modelsApi = {
     }
 
     const resolvedHeaders = { ...headers };
+    const resolvedProxyUrl = String(proxyUrl ?? '').trim() || undefined;
     if (apiKey && !hasHeader(resolvedHeaders, 'authorization')) {
       resolvedHeaders.Authorization = `Bearer ${apiKey}`;
     }
@@ -155,7 +160,8 @@ export const modelsApi = {
     const result = await apiCallApi.request({
       method: 'GET',
       url: endpoint,
-      header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+      header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
+      proxyUrl: resolvedProxyUrl,
     });
 
     if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -185,7 +191,8 @@ export const modelsApi = {
   async fetchClaudeModelsViaApiCall(
     baseUrl: string,
     apiKey?: string,
-    headers: Record<string, string> = {}
+    headers: Record<string, string> = {},
+    proxyUrl?: string
   ) {
     const endpoint = buildClaudeModelsEndpoint(baseUrl);
     if (!endpoint) {
@@ -193,6 +200,7 @@ export const modelsApi = {
     }
 
     const resolvedHeaders = { ...headers };
+    const resolvedProxyUrl = String(proxyUrl ?? '').trim() || undefined;
     let resolvedApiKey = String(apiKey ?? '').trim();
     if (!resolvedApiKey && !hasHeader(resolvedHeaders, 'x-api-key')) {
       resolvedApiKey = resolveBearerTokenFromAuthorization(resolvedHeaders);
@@ -205,7 +213,7 @@ export const modelsApi = {
       resolvedHeaders['anthropic-version'] = DEFAULT_ANTHROPIC_VERSION;
     }
 
-    const signature = buildRequestSignature(endpoint, resolvedHeaders);
+    const signature = buildRequestSignature(endpoint, resolvedHeaders, resolvedProxyUrl);
     const existing = CLAUDE_MODELS_IN_FLIGHT.get(signature);
     if (existing) return existing;
 
@@ -213,7 +221,8 @@ export const modelsApi = {
       const result = await apiCallApi.request({
         method: 'GET',
         url: endpoint,
-        header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+        header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
+        proxyUrl: resolvedProxyUrl,
       });
 
       if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -239,7 +248,8 @@ export const modelsApi = {
   async fetchGeminiModelsViaApiCall(
     baseUrl: string,
     apiKey?: string,
-    headers: Record<string, string> = {}
+    headers: Record<string, string> = {},
+    proxyUrl?: string
   ) {
     const endpoint = buildGeminiModelsEndpoint(baseUrl);
     if (!endpoint) {
@@ -247,12 +257,13 @@ export const modelsApi = {
     }
 
     const resolvedHeaders = { ...headers };
+    const resolvedProxyUrl = String(proxyUrl ?? '').trim() || undefined;
     const resolvedApiKey = String(apiKey ?? '').trim();
     if (resolvedApiKey && !hasHeader(resolvedHeaders, 'x-goog-api-key')) {
       resolvedHeaders['x-goog-api-key'] = resolvedApiKey;
     }
 
-    const signature = buildRequestSignature(endpoint, resolvedHeaders);
+    const signature = buildRequestSignature(endpoint, resolvedHeaders, resolvedProxyUrl);
     const existing = GEMINI_MODELS_IN_FLIGHT.get(signature);
     if (existing) return existing;
 
@@ -270,7 +281,8 @@ export const modelsApi = {
         const result = await apiCallApi.request({
           method: 'GET',
           url: url.toString(),
-          header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+          header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
+          proxyUrl: resolvedProxyUrl,
         });
 
         if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -292,7 +304,9 @@ export const modelsApi = {
         });
 
         const nextToken =
-          isRecord(payload) && typeof payload.nextPageToken === 'string' ? payload.nextPageToken : '';
+          isRecord(payload) && typeof payload.nextPageToken === 'string'
+            ? payload.nextPageToken
+            : '';
         if (!nextToken) {
           break;
         }

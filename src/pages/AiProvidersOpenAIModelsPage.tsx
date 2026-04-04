@@ -67,18 +67,29 @@ export function AiProvidersOpenAIModelsPage() {
       setError('');
       try {
         const headerObject = buildHeaderObject(form.headers);
-        const firstKey = form.apiKeyEntries.find((entry) => entry.apiKey?.trim())?.apiKey?.trim();
+        const firstKeyEntry = form.apiKeyEntries.find((entry) => entry.apiKey?.trim());
+        const firstKey = firstKeyEntry?.apiKey?.trim();
+        const proxyUrl = firstKeyEntry?.proxyUrl?.trim() || undefined;
         const hasAuthHeader = hasHeader(headerObject, 'authorization');
         const list = await modelsApi.fetchModelsViaApiCall(
           trimmedBaseUrl,
           hasAuthHeader ? undefined : firstKey,
-          headerObject
+          headerObject,
+          proxyUrl
         );
         setModels(list);
       } catch (err: unknown) {
         if (allowFallback) {
           try {
-            const list = await modelsApi.fetchModelsViaApiCall(trimmedBaseUrl);
+            const proxyUrl =
+              form.apiKeyEntries.find((entry) => entry.apiKey?.trim())?.proxyUrl?.trim() ||
+              undefined;
+            const list = await modelsApi.fetchModelsViaApiCall(
+              trimmedBaseUrl,
+              undefined,
+              {},
+              proxyUrl
+            );
             setModels(list);
             return;
           } catch (fallbackErr: unknown) {
