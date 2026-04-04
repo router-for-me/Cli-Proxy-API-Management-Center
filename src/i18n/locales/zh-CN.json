@@ -1023,6 +1023,8 @@
     "request_events_source": "来源",
     "request_events_auth_index": "认证索引",
     "request_events_result": "结果",
+    "time": "耗时",
+    "avg_time": "平均耗时",
     "request_events_empty_title": "暂无请求事件",
     "request_events_empty_desc": "当前时间范围内暂无可用的请求明细数据。",
     "request_events_no_result_title": "没有匹配结果",
