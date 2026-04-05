@@ -124,6 +124,10 @@ textarea {
   border-radius: $radius-lg;
   box-shadow: var(--shadow);
   padding: $spacing-lg;
+
+  @media (max-width: $breakpoint-mobile) {
+    padding: $spacing-md;
+  }
 }
 
 .card-header {
