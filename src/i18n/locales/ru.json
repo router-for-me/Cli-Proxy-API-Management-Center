@@ -707,6 +707,24 @@
     "limit_index": "Лимит #{{index}}",
     "reset_hint": "сброс через {{hint}}"
   },
+  "copilot_quota": {
+    "title": "Квота GitHub Copilot",
+    "empty_title": "Нет аутентификации GitHub Copilot",
+    "empty_desc": "Войдите через GitHub Copilot, чтобы увидеть оставшуюся квоту премиум-запросов.",
+    "idle": "Нажмите для обновления квоты",
+    "loading": "Загрузка квоты...",
+    "load_failed": "Не удалось загрузить квоту: {{message}}",
+    "missing_auth_index": "В файле аутентификации отсутствует auth_index",
+    "empty_data": "Нет данных о квоте",
+    "refresh_button": "Обновить квоту",
+    "fetch_all": "Получить все",
+    "premium_requests": "Премиум-запросы",
+    "chat": "Чат",
+    "completions": "Автодополнение",
+    "plan_label": "План:",
+    "reset_label": "Сброс:",
+    "unlimited": "Безлимитно"
+  },
   "vertex_import": {
     "title": "Вход с Vertex JSON",
     "description": "Загрузите JSON ключа сервисного аккаунта Google, чтобы сохранить его как auth-dir/vertex-<project>.json по тем же правилам, что и помощник CLI vertex-import.",

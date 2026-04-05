@@ -97,6 +97,19 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#e4edfd', text: '#2b5fbc' },
     dark: { bg: '#1a3d80', text: '#89b3f7' },
   },
+  // GitHub Copilot logo: GitHub 蓝 #1A73E8
+  copilot: {
+    light: { bg: '#e8f0fe', text: '#1a73e8' },
+    dark: { bg: '#1a3b5c', text: '#8ab4f8' },
+  },
+  'github-copilot': {
+    light: { bg: '#e8f0fe', text: '#1a73e8' },
+    dark: { bg: '#1a3b5c', text: '#8ab4f8' },
+  },
+  github: {
+    light: { bg: '#e8f0fe', text: '#1a73e8' },
+    dark: { bg: '#1a3b5c', text: '#8ab4f8' },
+  },
   empty: {
     light: { bg: '#f5f5f5', text: '#616161' },
     dark: { bg: '#424242', text: '#bdbdbd' },
