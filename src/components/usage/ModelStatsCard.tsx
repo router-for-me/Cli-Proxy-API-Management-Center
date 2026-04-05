@@ -1,17 +1,15 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
-import { formatCompactNumber, formatUsd } from '@/utils/usage';
+import {
+  formatCompactNumber,
+  formatDurationMs,
+  formatUsd,
+  type ModelStatsSummary,
+} from '@/utils/usage';
 import styles from '@/pages/UsagePage.module.scss';
 
-export interface ModelStat {
-  model: string;
-  requests: number;
-  successCount: number;
-  failureCount: number;
-  tokens: number;
-  cost: number;
-}
+export type ModelStat = ModelStatsSummary;
 
 export interface ModelStatsCardProps {
   modelStats: ModelStat[];
@@ -19,7 +17,14 @@ export interface ModelStatsCardProps {
   hasPrices: boolean;
 }
 
-type SortKey = 'model' | 'requests' | 'tokens' | 'cost' | 'successRate';
+type SortKey =
+  | 'model'
+  | 'requests'
+  | 'tokens'
+  | 'cost'
+  | 'successRate'
+  | 'averageLatencyMs'
+  | 'totalLatencyMs';
 type SortDir = 'asc' | 'desc';
 
 interface ModelStatWithRate extends ModelStat {
@@ -48,7 +53,15 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
     const dir = sortDir === 'asc' ? 1 : -1;
     list.sort((a, b) => {
       if (sortKey === 'model') return dir * a.model.localeCompare(b.model);
-      return dir * ((a[sortKey] as number) - (b[sortKey] as number));
+      const left = a[sortKey];
+      const right = b[sortKey];
+      const leftValid = typeof left === 'number' && Number.isFinite(left);
+      const rightValid = typeof right === 'number' && Number.isFinite(right);
+
+      if (!leftValid && !rightValid) return 0;
+      if (!leftValid) return 1;
+      if (!rightValid) return -1;
+      return dir * (left - right);
     });
     return list;
   }, [modelStats, sortKey, sortDir]);
@@ -95,6 +108,27 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
                       {t('usage_stats.tokens_count')}{arrow('tokens')}
                     </button>
                   </th>
+                  <th
+                    className={styles.sortableHeader}
+                    aria-sort={ariaSort('averageLatencyMs')}
+                  >
+                    <button
+                      type="button"
+                      className={styles.sortHeaderButton}
+                      onClick={() => handleSort('averageLatencyMs')}
+                    >
+                      {t('usage_stats.avg_time')}{arrow('averageLatencyMs')}
+                    </button>
+                  </th>
+                  <th className={styles.sortableHeader} aria-sort={ariaSort('totalLatencyMs')}>
+                    <button
+                      type="button"
+                      className={styles.sortHeaderButton}
+                      onClick={() => handleSort('totalLatencyMs')}
+                    >
+                      {t('usage_stats.total_time')}{arrow('totalLatencyMs')}
+                    </button>
+                  </th>
                   <th className={styles.sortableHeader} aria-sort={ariaSort('successRate')}>
                     <button
                       type="button"
@@ -131,6 +165,10 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
                       </span>
                     </td>
                     <td>{formatCompactNumber(stat.tokens)}</td>
+                    <td className={styles.durationCell}>
+                      {formatDurationMs(stat.averageLatencyMs)}
+                    </td>
+                    <td className={styles.durationCell}>{formatDurationMs(stat.totalLatencyMs)}</td>
                     <td>
                       <span
                         className={

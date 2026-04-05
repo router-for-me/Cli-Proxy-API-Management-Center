@@ -1025,6 +1025,7 @@
     "request_events_result": "结果",
     "time": "耗时",
     "avg_time": "平均耗时",
+    "total_time": "总耗时",
     "request_events_empty_title": "暂无请求事件",
     "request_events_empty_desc": "当前时间范围内暂无可用的请求明细数据。",
     "request_events_no_result_title": "没有匹配结果",

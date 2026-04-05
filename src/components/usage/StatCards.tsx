@@ -9,6 +9,7 @@ import {
   IconTrendingUp,
 } from '@/components/ui/icons';
 import {
+  calculateLatencyStatsFromDetails,
   formatCompactNumber,
   formatDurationMs,
   formatPerMinuteValue,
@@ -59,18 +60,18 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines }: St
       tokenBreakdown: { cachedTokens: 0, reasoningTokens: 0 },
       rateStats: { rpm: 0, tpm: 0, windowMinutes: 30, requestCount: 0, tokenCount: 0 },
       totalCost: 0,
-      latencyStats: { averageMs: null as number | null, sampleCount: 0 },
+      latencyStats: { averageMs: null as number | null, totalMs: null as number | null, sampleCount: 0 },
     };
 
     if (!usage) return empty;
     const details = collectUsageDetails(usage);
     if (!details.length) return empty;
 
+    const latencyStats = calculateLatencyStatsFromDetails(details);
+
     let cachedTokens = 0;
     let reasoningTokens = 0;
     let totalCost = 0;
-    let latencyTotalMs = 0;
-    let latencySampleCount = 0;
 
     const now = nowMs;
     const windowMinutes = 30;
@@ -87,14 +88,6 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines }: St
       );
       if (typeof tokens.reasoning_tokens === 'number') {
         reasoningTokens += tokens.reasoning_tokens;
-      }
-      if (
-        typeof detail.latency_ms === 'number' &&
-        Number.isFinite(detail.latency_ms) &&
-        detail.latency_ms >= 0
-      ) {
-        latencyTotalMs += detail.latency_ms;
-        latencySampleCount += 1;
       }
 
       const timestamp = detail.__timestampMs ?? 0;
@@ -124,10 +117,7 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines }: St
         tokenCount,
       },
       totalCost,
-      latencyStats: {
-        averageMs: latencySampleCount > 0 ? latencyTotalMs / latencySampleCount : null,
-        sampleCount: latencySampleCount,
-      },
+      latencyStats,
     };
   }, [hasPrices, modelPrices, nowMs, usage]);
 

@@ -10,6 +10,7 @@ import type { AuthFileItem } from '@/types/authFile';
 import type { CredentialInfo } from '@/types/sourceInfo';
 import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver';
 import {
+  extractLatencyMs,
   collectUsageDetails,
   extractTotalTokens,
   formatDurationMs,
@@ -153,12 +154,7 @@ export function RequestEventsDetailsCard({
           toNumber(detail.tokens?.total_tokens),
           extractTotalTokens(detail)
         );
-        const latencyMs =
-          typeof detail.latency_ms === 'number' &&
-          Number.isFinite(detail.latency_ms) &&
-          detail.latency_ms >= 0
-            ? detail.latency_ms
-            : null;
+        const latencyMs = extractLatencyMs(detail);
 
         return {
           id: `${timestamp}-${model}-${sourceRaw || source}-${authIndex}-${index}`,
@@ -480,7 +476,9 @@ export function RequestEventsDetailsCard({
                         {row.failed ? t('stats.failure') : t('stats.success')}
                       </span>
                     </td>
-                    {hasLatencyData && <td>{formatDurationMs(row.latencyMs)}</td>}
+                    {hasLatencyData && (
+                      <td className={styles.durationCell}>{formatDurationMs(row.latencyMs)}</td>
+                    )}
                     <td>{row.inputTokens.toLocaleString()}</td>
                     <td>{row.outputTokens.toLocaleString()}</td>
                     <td>{row.reasoningTokens.toLocaleString()}</td>

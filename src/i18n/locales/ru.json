@@ -1028,6 +1028,7 @@
     "request_events_result": "Результат",
     "time": "Время",
     "avg_time": "Среднее время",
+    "total_time": "Общее время",
     "request_events_empty_title": "События запросов отсутствуют",
     "request_events_empty_desc": "Нет деталей запросов для выбранного диапазона времени.",
     "request_events_no_result_title": "Совпадений не найдено",

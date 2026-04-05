@@ -29,6 +29,18 @@ export interface RateStats {
   tokenCount: number;
 }
 
+export interface LatencyStats {
+  averageMs: number | null;
+  totalMs: number | null;
+  sampleCount: number;
+}
+
+export interface DurationFormatOptions {
+  maxUnits?: number;
+  invalidText?: string;
+  secondDecimals?: number | 'auto';
+}
+
 export interface ModelPrice {
   prompt: number;
   completion: number;
@@ -71,6 +83,18 @@ export interface ApiStats {
     string,
     { requests: number; successCount: number; failureCount: number; tokens: number }
   >;
+}
+
+export interface ModelStatsSummary {
+  model: string;
+  requests: number;
+  successCount: number;
+  failureCount: number;
+  tokens: number;
+  cost: number;
+  averageLatencyMs: number | null;
+  totalLatencyMs: number | null;
+  latencySampleCount: number;
 }
 
 export type UsageTimeRange = '7h' | '24h' | '7d' | 'all';
@@ -638,6 +662,13 @@ export function extractTotalTokens(detail: unknown): number {
 export function extractLatencyMs(detail: unknown): number | null {
   const record = isRecord(detail) ? detail : null;
   const rawValue = record?.latency_ms;
+  if (
+    rawValue === null ||
+    rawValue === undefined ||
+    (typeof rawValue === 'string' && rawValue.trim() === '')
+  ) {
+    return null;
+  }
   const parsed = Number(rawValue);
   if (!Number.isFinite(parsed) || parsed < 0) {
     return null;
@@ -645,27 +676,135 @@ export function extractLatencyMs(detail: unknown): number | null {
   return parsed;
 }
 
+interface LatencyAccumulator {
+  totalMs: number;
+  sampleCount: number;
+}
+
+const createLatencyAccumulator = (): LatencyAccumulator => ({
+  totalMs: 0,
+  sampleCount: 0,
+});
+
+const addLatencySample = (
+  accumulator: LatencyAccumulator,
+  latencyMs: number | null | undefined
+): void => {
+  if (latencyMs === null || latencyMs === undefined) {
+    return;
+  }
+  const parsed = Number(latencyMs);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return;
+  }
+  accumulator.totalMs += parsed;
+  accumulator.sampleCount += 1;
+};
+
+const finalizeLatencyStats = (accumulator: LatencyAccumulator): LatencyStats => ({
+  averageMs:
+    accumulator.sampleCount > 0 ? accumulator.totalMs / accumulator.sampleCount : null,
+  totalMs: accumulator.sampleCount > 0 ? accumulator.totalMs : null,
+  sampleCount: accumulator.sampleCount,
+});
+
+const trimTrailingZeros = (value: string): string => value.replace(/\.?0+$/, '');
+
+const normalizeDurationMaxUnits = (value: number | undefined): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 2;
+  }
+  return Math.min(Math.floor(parsed), 4);
+};
+
+const resolveSecondDecimalPlaces = (
+  seconds: number,
+  secondDecimals: number | 'auto' | undefined
+): number => {
+  if (secondDecimals === 'auto' || secondDecimals === undefined) {
+    return seconds < 10 ? 2 : 1;
+  }
+
+  const parsed = Math.floor(Number(secondDecimals));
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return seconds < 10 ? 2 : 1;
+  }
+  return Math.min(parsed, 3);
+};
+
 /**
  * 格式化耗时显示
  */
-export function formatDurationMs(value: number | null | undefined): string {
+export function formatDurationMs(
+  value: number | null | undefined,
+  options: DurationFormatOptions = {}
+): string {
+  const invalidText = options.invalidText ?? '--';
+  if (value === null || value === undefined) {
+    return invalidText;
+  }
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    return '--';
+    return invalidText;
   }
 
   if (parsed < 1000) {
-    return `${Math.round(parsed)} ms`;
+    return `${Math.round(parsed)}ms`;
   }
 
   const seconds = parsed / 1000;
-  if (seconds < 10) {
-    return `${seconds.toFixed(2).replace(/\.?0+$/, '')} s`;
+  if (seconds < 60) {
+    const secondDecimalPlaces = resolveSecondDecimalPlaces(seconds, options.secondDecimals);
+    return `${trimTrailingZeros(seconds.toFixed(secondDecimalPlaces))}s`;
   }
-  if (seconds < 100) {
-    return `${seconds.toFixed(1).replace(/\.?0+$/, '')} s`;
+
+  const totalSeconds = Math.floor(seconds);
+  let remainingSeconds = totalSeconds;
+  const days = Math.floor(remainingSeconds / 86_400);
+  remainingSeconds -= days * 86_400;
+  const hours = Math.floor(remainingSeconds / 3_600);
+  remainingSeconds -= hours * 3_600;
+  const minutes = Math.floor(remainingSeconds / 60);
+  remainingSeconds -= minutes * 60;
+
+  const parts = [
+    { label: 'd', value: days },
+    { label: 'h', value: hours },
+    { label: 'm', value: minutes },
+    { label: 's', value: remainingSeconds },
+  ].filter((part) => part.value > 0);
+
+  if (!parts.length) {
+    return '0s';
   }
-  return `${Math.round(seconds)} s`;
+
+  return parts
+    .slice(0, normalizeDurationMaxUnits(options.maxUnits))
+    .map((part, index) => {
+      const shouldPad = index > 0 && (part.label === 'm' || part.label === 's');
+      const unitValue = shouldPad ? String(part.value).padStart(2, '0') : String(part.value);
+      return `${unitValue}${part.label}`;
+    })
+    .join(' ');
+}
+
+/**
+ * 从明细列表计算耗时统计
+ */
+export function calculateLatencyStatsFromDetails(details: Iterable<unknown>): LatencyStats {
+  const accumulator = createLatencyAccumulator();
+  for (const detail of details) {
+    addLatencySample(accumulator, extractLatencyMs(detail));
+  }
+  return finalizeLatencyStats(accumulator);
+}
+
+/**
+ * 计算耗时统计
+ */
+export function calculateLatencyStats(usageData: unknown): LatencyStats {
+  return calculateLatencyStatsFromDetails(collectUsageDetails(usageData));
 }
 
 /**
@@ -968,20 +1107,20 @@ export function getApiStats(
 export function getModelStats(
   usageData: unknown,
   modelPrices: Record<string, ModelPrice>
-): Array<{
-  model: string;
-  requests: number;
-  successCount: number;
-  failureCount: number;
-  tokens: number;
-  cost: number;
-}> {
+): ModelStatsSummary[] {
   const apis = getApisRecord(usageData);
   if (!apis) return [];
 
   const modelMap = new Map<
     string,
-    { requests: number; successCount: number; failureCount: number; tokens: number; cost: number }
+    {
+      requests: number;
+      successCount: number;
+      failureCount: number;
+      tokens: number;
+      cost: number;
+      latency: LatencyAccumulator;
+    }
   >();
 
   Object.values(apis).forEach((apiData) => {
@@ -998,6 +1137,7 @@ export function getModelStats(
         failureCount: 0,
         tokens: 0,
         cost: 0,
+        latency: createLatencyAccumulator(),
       };
       existing.requests += Number(modelData.total_requests) || 0;
       existing.tokens += Number(modelData.total_tokens) || 0;
@@ -1013,9 +1153,10 @@ export function getModelStats(
         existing.failureCount += Number(modelData.failure_count) || 0;
       }
 
-      if (details.length > 0 && (!hasExplicitCounts || price)) {
+      if (details.length > 0) {
         details.forEach((detail) => {
           const detailRecord = isRecord(detail) ? detail : null;
+          const latencyMs = extractLatencyMs(detailRecord);
           if (!hasExplicitCounts) {
             if (detailRecord?.failed === true) {
               existing.failureCount += 1;
@@ -1023,6 +1164,8 @@ export function getModelStats(
               existing.successCount += 1;
             }
           }
+
+          addLatencySample(existing.latency, latencyMs);
 
           if (price && detailRecord) {
             existing.cost += calculateCost(
@@ -1037,7 +1180,20 @@ export function getModelStats(
   });
 
   return Array.from(modelMap.entries())
-    .map(([model, stats]) => ({ model, ...stats }))
+    .map(([model, stats]) => {
+      const latencyStats = finalizeLatencyStats(stats.latency);
+      return {
+        model,
+        requests: stats.requests,
+        successCount: stats.successCount,
+        failureCount: stats.failureCount,
+        tokens: stats.tokens,
+        cost: stats.cost,
+        averageLatencyMs: latencyStats.averageMs,
+        totalLatencyMs: latencyStats.totalMs,
+        latencySampleCount: latencyStats.sampleCount,
+      };
+    })
     .sort((a, b) => b.requests - a.requests);
 }
 
