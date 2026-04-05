@@ -36,6 +36,7 @@ import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api
 import { apiClient } from '@/services/api/client';
 import { useQuotaStore } from '@/stores';
 import {
+  COPILOT_QUOTA_ENDPOINT,
   ANTIGRAVITY_QUOTA_URLS,
   ANTIGRAVITY_REQUEST_HEADERS,
   CLAUDE_PROFILE_URL,
@@ -1371,7 +1372,7 @@ const fetchCopilotQuota = async (
   let response: CopilotUsageResponse;
   try {
     response = await apiClient.get<CopilotUsageResponse>(
-      `/copilot-quota?auth_index=${encodeURIComponent(authIndex)}`
+      `${COPILOT_QUOTA_ENDPOINT}?auth_index=${encodeURIComponent(authIndex)}`
     );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : t('common.unknown_error');

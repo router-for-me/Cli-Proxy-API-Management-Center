@@ -204,6 +204,11 @@ export const CODEX_REQUEST_HEADERS = {
   'User-Agent': 'codex_cli_rs/0.76.0 (Debian 13.0.0; x86_64) WindowsTerminal',
 };
 
+// Copilot API configuration
+// Note: Copilot uses a dedicated backend endpoint (not the generic /api-call proxy)
+// because the backend handles the GitHub token → Copilot JWT exchange internally.
+export const COPILOT_QUOTA_ENDPOINT = '/copilot-quota';
+
 // Kimi API configuration
 export const KIMI_USAGE_URL = 'https://api.kimi.com/coding/v1/usages';
 

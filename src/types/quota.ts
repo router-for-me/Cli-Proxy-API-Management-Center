@@ -310,20 +310,20 @@ export interface KimiQuotaState {
 // GitHub Copilot quota types
 
 export interface CopilotQuotaDetail {
-  entitlement: number;
-  overage_count: number;
-  overage_permitted: boolean;
-  percent_remaining: number;
-  quota_id: string;
-  quota_remaining: number;
-  remaining: number;
-  unlimited: boolean;
+  entitlement?: number;
+  overage_count?: number;
+  overage_permitted?: boolean;
+  percent_remaining?: number;
+  quota_id?: string;
+  quota_remaining?: number;
+  remaining?: number;
+  unlimited?: boolean;
 }
 
 export interface CopilotQuotaSnapshots {
-  chat: CopilotQuotaDetail;
-  completions: CopilotQuotaDetail;
-  premium_interactions: CopilotQuotaDetail;
+  chat?: CopilotQuotaDetail;
+  completions?: CopilotQuotaDetail;
+  premium_interactions?: CopilotQuotaDetail;
 }
 
 export interface CopilotUsageResponse {
