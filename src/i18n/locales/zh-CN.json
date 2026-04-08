@@ -1306,8 +1306,12 @@
         "input_label": "API 密钥",
         "input_placeholder": "粘贴你的 API 密钥",
         "input_hint": "此处仅修改本地配置文件内容，不会自动同步到 API 密钥管理接口",
+        "rate_limit_label": "每秒请求数",
+        "rate_limit_hint": "每个 API 密钥的本地请求速率限制，默认每秒 5 个请求。",
+        "rate_limit_value": "{{count}} 次/秒",
         "error_empty": "请输入 API 密钥",
-        "error_invalid": "API 密钥包含无效字符"
+        "error_invalid": "API 密钥包含无效字符",
+        "error_invalid_rps": "每秒请求数必须是大于 0 的整数"
       },
       "payload_rules": {
         "rule": "规则",

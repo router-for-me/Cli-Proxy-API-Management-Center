@@ -222,8 +222,8 @@ export function VisualConfigEditor({
     validationErrors?.['streaming.nonstreamKeepaliveInterval']
   );
 
-  const handleApiKeysTextChange = useCallback(
-    (apiKeysText: string) => onChange({ apiKeysText }),
+  const handleApiKeysChange = useCallback(
+    (apiKeys: VisualConfigValues['apiKeys']) => onChange({ apiKeys }),
     [onChange]
   );
   const handlePayloadDefaultRulesChange = useCallback(
@@ -439,7 +439,8 @@ export function VisualConfigEditor({
         220
       );
       const maxHeight = Math.max(window.innerHeight - top - viewportPadding, 160);
-      const isVisible = workspaceRect.bottom > stickyTop + 24 && anchorRect.top < window.innerHeight;
+      const isVisible =
+        workspaceRect.bottom > stickyTop + 24 && anchorRect.top < window.innerHeight;
 
       floatingElement.style.transform = `translate3d(${left}px, ${top}px, 0)`;
       floatingElement.style.width = `${width}px`;
@@ -747,9 +748,9 @@ export function VisualConfigEditor({
               />
               <div className={styles.subsection}>
                 <ApiKeysCardEditor
-                  value={values.apiKeysText}
+                  value={values.apiKeys}
                   disabled={disabled}
-                  onChange={handleApiKeysTextChange}
+                  onChange={handleApiKeysChange}
                 />
               </div>
             </SectionStack>

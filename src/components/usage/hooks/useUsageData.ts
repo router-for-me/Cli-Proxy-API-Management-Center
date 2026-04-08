@@ -56,7 +56,7 @@ export function useUsageData(): UseUsageDataReturn {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const data = await usageApi.exportUsage();
+      const data = await usageApi.exportUsage(usageSnapshot);
       const exportedAt =
         typeof data?.exported_at === 'string' ? new Date(data.exported_at) : new Date();
       const safeTimestamp = Number.isNaN(exportedAt.getTime())

@@ -51,6 +51,12 @@ export interface StreamingConfig {
   nonstreamKeepaliveInterval: string;
 }
 
+export interface VisualApiKeyEntry {
+  id: string;
+  apiKey: string;
+  requestsPerSecond: string;
+}
+
 export type VisualConfigValues = {
   host: string;
   port: string;
@@ -62,7 +68,7 @@ export type VisualConfigValues = {
   rmDisableControlPanel: boolean;
   rmPanelRepo: string;
   authDir: string;
-  apiKeysText: string;
+  apiKeys: VisualApiKeyEntry[];
   debug: boolean;
   commercialMode: boolean;
   loggingToFile: boolean;
@@ -101,7 +107,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   rmDisableControlPanel: false,
   rmPanelRepo: '',
   authDir: '',
-  apiKeysText: '',
+  apiKeys: [],
   debug: false,
   commercialMode: false,
   loggingToFile: false,

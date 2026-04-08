@@ -7,6 +7,22 @@ import { computeKeyStats, KeyStats } from '@/utils/usage';
 
 const USAGE_TIMEOUT_MS = 60 * 1000;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const extractUsageSnapshot = (value: unknown): Record<string, unknown> | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const nestedUsage = value.usage;
+  if (isRecord(nestedUsage)) {
+    return nestedUsage;
+  }
+
+  return value;
+};
+
 export interface UsageExportPayload {
   version?: number;
   exported_at?: string;
@@ -31,7 +47,42 @@ export const usageApi = {
   /**
    * 导出使用统计快照
    */
-  exportUsage: () => apiClient.get<UsageExportPayload>('/usage/export', { timeout: USAGE_TIMEOUT_MS }),
+  exportUsage: async (fallbackUsage?: unknown): Promise<UsageExportPayload> => {
+    const [exportResult, usageResult] = await Promise.allSettled([
+      apiClient.get<UsageExportPayload>('/usage/export', { timeout: USAGE_TIMEOUT_MS }),
+      apiClient.get<Record<string, unknown>>('/usage', { timeout: USAGE_TIMEOUT_MS })
+    ]);
+
+    const exportPayload =
+      exportResult.status === 'fulfilled' && isRecord(exportResult.value)
+        ? exportResult.value
+        : {};
+
+    const fullUsage =
+      (usageResult.status === 'fulfilled' ? extractUsageSnapshot(usageResult.value) : null) ??
+      extractUsageSnapshot(fallbackUsage) ??
+      extractUsageSnapshot(exportPayload.usage);
+
+    if (!fullUsage) {
+      if (usageResult.status === 'rejected') {
+        throw usageResult.reason;
+      }
+      if (exportResult.status === 'rejected') {
+        throw exportResult.reason;
+      }
+      throw new Error('Usage export payload is empty');
+    }
+
+    return {
+      ...exportPayload,
+      version: typeof exportPayload.version === 'number' ? exportPayload.version : 1,
+      exported_at:
+        typeof exportPayload.exported_at === 'string'
+          ? exportPayload.exported_at
+          : new Date().toISOString(),
+      usage: fullUsage
+    };
+  },
 
   /**
    * 导入使用统计快照

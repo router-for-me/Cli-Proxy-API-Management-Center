@@ -13,6 +13,7 @@ import type {
   PayloadParamValidationErrorCode,
   PayloadParamValueType,
   PayloadRule,
+  VisualApiKeyEntry,
 } from '@/types/visualConfig';
 import { makeClientId } from '@/types/visualConfig';
 import {
@@ -163,36 +164,22 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   disabled,
   onChange,
 }: {
-  value: string;
+  value: VisualApiKeyEntry[];
   disabled?: boolean;
-  onChange: (nextValue: string) => void;
+  onChange: (nextValue: VisualApiKeyEntry[]) => void;
 }) {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
-  const apiKeys = useMemo(
-    () =>
-      value
-        .split('\n')
-        .map((key) => key.trim())
-        .filter(Boolean),
-    [value]
-  );
-  const [apiKeyIds, setApiKeyIds] = useState(() => apiKeys.map(() => makeClientId()));
-  const renderApiKeyIds = useMemo(() => {
-    if (apiKeyIds.length === apiKeys.length) return apiKeyIds;
-    if (apiKeyIds.length > apiKeys.length) return apiKeyIds.slice(0, apiKeys.length);
-    return [
-      ...apiKeyIds,
-      ...Array.from({ length: apiKeys.length - apiKeyIds.length }, () => makeClientId()),
-    ];
-  }, [apiKeyIds, apiKeys.length]);
+  const apiKeys = useMemo(() => value ?? [], [value]);
 
   const apiKeyInputId = useId();
+  const apiKeyRpsInputId = useId();
   const apiKeyHintId = `${apiKeyInputId}-hint`;
   const apiKeyErrorId = `${apiKeyInputId}-error`;
   const [modalOpen, setModalOpen] = useState(false);
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
+  const [requestsPerSecond, setRequestsPerSecond] = useState('5');
   const [formError, setFormError] = useState('');
 
   function generateSecureApiKey(): string {
@@ -205,14 +192,16 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const openAddModal = () => {
     setEditingApiKeyId(null);
     setInputValue('');
+    setRequestsPerSecond('5');
     setFormError('');
     setModalOpen(true);
   };
 
   const openEditModal = (apiKeyId: string) => {
-    const editingIndex = renderApiKeyIds.findIndex((id) => id === apiKeyId);
+    const entry = apiKeys.find((item) => item.id === apiKeyId);
     setEditingApiKeyId(apiKeyId);
-    setInputValue(apiKeys[editingIndex] ?? '');
+    setInputValue(entry?.apiKey ?? '');
+    setRequestsPerSecond(entry?.requestsPerSecond ?? '5');
     setFormError('');
     setModalOpen(true);
   };
@@ -220,19 +209,13 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const closeModal = () => {
     setModalOpen(false);
     setInputValue('');
+    setRequestsPerSecond('5');
     setEditingApiKeyId(null);
     setFormError('');
   };
 
-  const updateApiKeys = (nextKeys: string[]) => {
-    onChange(nextKeys.join('\n'));
-  };
-
   const handleDelete = (apiKeyId: string) => {
-    const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
-    if (index < 0) return;
-    setApiKeyIds(renderApiKeyIds.filter((id) => id !== apiKeyId));
-    updateApiKeys(apiKeys.filter((_, i) => i !== index));
+    onChange(apiKeys.filter((entry) => entry.id !== apiKeyId));
   };
 
   const handleSave = () => {
@@ -245,18 +228,23 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       setFormError(t('config_management.visual.api_keys.error_invalid'));
       return;
     }
+    const trimmedRps = requestsPerSecond.trim();
+    const parsedRps = Number(trimmedRps);
+    if (!trimmedRps || !Number.isInteger(parsedRps) || parsedRps <= 0) {
+      setFormError(t('config_management.visual.api_keys.error_invalid_rps'));
+      return;
+    }
 
-    const editingIndex = editingApiKeyId
-      ? renderApiKeyIds.findIndex((id) => id === editingApiKeyId)
-      : -1;
+    const nextEntry: VisualApiKeyEntry = {
+      id: editingApiKeyId ?? makeClientId(),
+      apiKey: trimmed,
+      requestsPerSecond: String(parsedRps),
+    };
     const nextKeys =
       editingApiKeyId === null
-        ? [...apiKeys, trimmed]
-        : apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
-    if (editingApiKeyId === null) {
-      setApiKeyIds([...renderApiKeyIds, makeClientId()]);
-    }
-    updateApiKeys(nextKeys);
+        ? [...apiKeys, nextEntry]
+        : apiKeys.map((entry) => (entry.id === editingApiKeyId ? nextEntry : entry));
+    onChange(nextKeys);
     closeModal();
   };
 
@@ -286,20 +274,25 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
         <div className={styles.emptyState}>{t('config_management.visual.api_keys.empty')}</div>
       ) : (
         <div className="item-list" style={{ marginTop: 4 }}>
-          {apiKeys.map((key, index) => (
-            <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
+          {apiKeys.map((entry, index) => (
+            <div key={entry.id} className="item-row">
               <div className="item-meta">
                 <div className="pill">#{index + 1}</div>
                 <div className="item-title">
                   {t('config_management.visual.api_keys.input_label')}
                 </div>
-                <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
+                <div className="item-subtitle">{maskApiKey(String(entry.apiKey || ''))}</div>
+                <div className="item-subtitle">
+                  {t('config_management.visual.api_keys.rate_limit_value', {
+                    count: Number(entry.requestsPerSecond || '5'),
+                  })}
+                </div>
               </div>
               <div className="item-actions">
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => handleCopy(key)}
+                  onClick={() => handleCopy(entry.apiKey)}
                   disabled={disabled}
                 >
                   {t('common.copy')}
@@ -307,7 +300,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
+                  onClick={() => openEditModal(entry.id)}
                   disabled={disabled}
                 >
                   {t('config_management.visual.common.edit')}
@@ -315,7 +308,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
+                  onClick={() => handleDelete(entry.id)}
                   disabled={disabled}
                 >
                   {t('config_management.visual.common.delete')}
@@ -377,6 +370,20 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
           <div id={apiKeyHintId} className="hint">
             {t('config_management.visual.api_keys.input_hint')}
           </div>
+          <label htmlFor={apiKeyRpsInputId}>
+            {t('config_management.visual.api_keys.rate_limit_label')}
+          </label>
+          <input
+            id={apiKeyRpsInputId}
+            className="input"
+            type="number"
+            min={1}
+            step={1}
+            value={requestsPerSecond}
+            onChange={(e) => setRequestsPerSecond(e.target.value)}
+            disabled={disabled}
+          />
+          <div className="hint">{t('config_management.visual.api_keys.rate_limit_hint')}</div>
           {formError && (
             <div id={apiKeyErrorId} className="error-box">
               {formError}
@@ -668,7 +675,9 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                       placeholder={t('config_management.visual.payload_rules.model_name')}
                       ariaLabel={t('config_management.visual.payload_rules.model_name')}
                       value={model.name}
-                      onChange={(nextValue) => updateModel(ruleIndex, modelIndex, { name: nextValue })}
+                      onChange={(nextValue) =>
+                        updateModel(ruleIndex, modelIndex, { name: nextValue })
+                      }
                       disabled={disabled}
                     />
                   </>
@@ -678,7 +687,9 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                       placeholder={t('config_management.visual.payload_rules.model_name')}
                       ariaLabel={t('config_management.visual.payload_rules.model_name')}
                       value={model.name}
-                      onChange={(nextValue) => updateModel(ruleIndex, modelIndex, { name: nextValue })}
+                      onChange={(nextValue) =>
+                        updateModel(ruleIndex, modelIndex, { name: nextValue })
+                      }
                       disabled={disabled}
                     />
                     <Select
@@ -731,7 +742,9 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                       placeholder={t('config_management.visual.payload_rules.json_path')}
                       ariaLabel={t('config_management.visual.payload_rules.json_path')}
                       value={param.path}
-                      onChange={(nextValue) => updateParam(ruleIndex, paramIndex, { path: nextValue })}
+                      onChange={(nextValue) =>
+                        updateParam(ruleIndex, paramIndex, { path: nextValue })
+                      }
                       disabled={disabled}
                     />
                     {rawJsonValues ? null : (

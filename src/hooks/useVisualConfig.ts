@@ -5,63 +5,88 @@ import type {
   PayloadParamEntry,
   PayloadParamValueType,
   PayloadRule,
+  VisualApiKeyEntry,
   VisualConfigValues,
   VisualConfigValidationErrors,
   PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
-import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
+import { DEFAULT_VISUAL_VALUES, makeClientId } from '@/types/visualConfig';
+
+const DEFAULT_CLIENT_API_KEY_RPS = 5;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
 }
 
-function extractApiKeyValue(raw: unknown): string | null {
+function extractApiKeyEntry(raw: unknown): VisualApiKeyEntry | null {
   if (typeof raw === 'string') {
     const trimmed = raw.trim();
-    return trimmed ? trimmed : null;
+    return trimmed
+      ? {
+          id: makeClientId(),
+          apiKey: trimmed,
+          requestsPerSecond: String(DEFAULT_CLIENT_API_KEY_RPS),
+        }
+      : null;
   }
 
   const record = asRecord(raw);
   if (!record) return null;
 
   const candidates = [record['api-key'], record.apiKey, record.key, record.Key];
+  let apiKey = '';
   for (const candidate of candidates) {
-    if (typeof candidate === 'string') {
-      const trimmed = candidate.trim();
-      if (trimmed) return trimmed;
+    if (typeof candidate === 'string' && candidate.trim()) {
+      apiKey = candidate.trim();
+      break;
     }
   }
+  if (!apiKey) return null;
 
-  return null;
+  const rpsRaw =
+    record['requests-per-second'] ??
+    record.requestsPerSecond ??
+    record['requests_per_second'] ??
+    DEFAULT_CLIENT_API_KEY_RPS;
+  const parsedRps = Number(rpsRaw);
+
+  return {
+    id: makeClientId(),
+    apiKey,
+    requestsPerSecond:
+      Number.isFinite(parsedRps) && parsedRps > 0
+        ? String(Math.floor(parsedRps))
+        : String(DEFAULT_CLIENT_API_KEY_RPS),
+  };
 }
 
-function parseApiKeysText(raw: unknown): string {
-  if (!Array.isArray(raw)) return '';
+function parseApiKeys(raw: unknown): VisualApiKeyEntry[] {
+  if (!Array.isArray(raw)) return [];
 
-  const keys: string[] = [];
+  const keys: VisualApiKeyEntry[] = [];
   for (const item of raw) {
-    const key = extractApiKeyValue(item);
+    const key = extractApiKeyEntry(item);
     if (key) keys.push(key);
   }
-  return keys.join('\n');
+  return keys;
 }
 
-function resolveApiKeysText(parsed: Record<string, unknown>): string {
+function resolveApiKeys(parsed: Record<string, unknown>): VisualApiKeyEntry[] {
   if (Object.prototype.hasOwnProperty.call(parsed, 'api-keys')) {
-    return parseApiKeysText(parsed['api-keys']);
+    return parseApiKeys(parsed['api-keys']);
   }
 
   const auth = asRecord(parsed.auth);
   const providers = asRecord(auth?.providers);
   const configApiKeyProvider = asRecord(providers?.['config-api-key']);
-  if (!configApiKeyProvider) return '';
+  if (!configApiKeyProvider) return [];
 
   if (Object.prototype.hasOwnProperty.call(configApiKeyProvider, 'api-key-entries')) {
-    return parseApiKeysText(configApiKeyProvider['api-key-entries']);
+    return parseApiKeys(configApiKeyProvider['api-key-entries']);
   }
 
-  return parseApiKeysText(configApiKeyProvider['api-keys']);
+  return parseApiKeys(configApiKeyProvider['api-keys']);
 }
 
 type YamlDocument = ReturnType<typeof parseDocument>;
@@ -189,7 +214,9 @@ export function getPayloadParamValidationError(
 }
 
 function hasPayloadParamValidationErrors(rules: PayloadRule[]): boolean {
-  return rules.some((rule) => rule.params.some((param) => Boolean(getPayloadParamValidationError(param))));
+  return rules.some((rule) =>
+    rule.params.some((param) => Boolean(getPayloadParamValidationError(param)))
+  );
 }
 
 function deepClone<T>(value: T): T {
@@ -483,17 +510,19 @@ export function useVisualConfig() {
 
         rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
         rmSecretKey:
-          typeof remoteManagement?.['secret-key'] === 'string' ? remoteManagement['secret-key'] : '',
+          typeof remoteManagement?.['secret-key'] === 'string'
+            ? remoteManagement['secret-key']
+            : '',
         rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
         rmPanelRepo:
           typeof remoteManagement?.['panel-github-repository'] === 'string'
             ? remoteManagement['panel-github-repository']
             : typeof remoteManagement?.['panel-repo'] === 'string'
               ? remoteManagement['panel-repo']
-            : '',
+              : '',
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
-        apiKeysText: resolveApiKeysText(parsed),
+        apiKeys: resolveApiKeys(parsed),
 
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
@@ -509,12 +538,9 @@ export function useVisualConfig() {
         wsAuth: Boolean(parsed['ws-auth']),
 
         quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
-        quotaSwitchPreviewModel: Boolean(
-          quotaExceeded?.['switch-preview-model'] ?? true
-        ),
+        quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
 
-        routingStrategy:
-          routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
+        routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
 
         payloadDefaultRules: parsePayloadRules(payload?.default),
         payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
@@ -589,9 +615,19 @@ export function useVisualConfig() {
         }
 
         setStringInDoc(doc, ['auth-dir'], values.authDir);
-        const apiKeys = values.apiKeysText
-          .split('\n')
-          .map((key) => key.trim())
+        const apiKeys = values.apiKeys
+          .map((entry) => {
+            const trimmedKey = entry.apiKey.trim();
+            if (!trimmedKey) return null;
+            const parsedRps = Number(entry.requestsPerSecond.trim());
+            return {
+              'api-key': trimmedKey,
+              'requests-per-second':
+                Number.isFinite(parsedRps) && parsedRps > 0
+                  ? Math.floor(parsedRps)
+                  : DEFAULT_CLIENT_API_KEY_RPS,
+            };
+          })
           .filter(Boolean);
         if (apiKeys.length > 0) {
           doc.setIn(['api-keys'], apiKeys);
@@ -621,10 +657,7 @@ export function useVisualConfig() {
         ) {
           ensureMapInDoc(doc, ['quota-exceeded']);
           doc.setIn(['quota-exceeded', 'switch-project'], values.quotaSwitchProject);
-          doc.setIn(
-            ['quota-exceeded', 'switch-preview-model'],
-            values.quotaSwitchPreviewModel
-          );
+          doc.setIn(['quota-exceeded', 'switch-preview-model'], values.quotaSwitchPreviewModel);
           deleteIfMapEmpty(doc, ['quota-exceeded']);
         }
 
@@ -635,9 +668,13 @@ export function useVisualConfig() {
         }
 
         const keepaliveSeconds =
-          typeof values.streaming?.keepaliveSeconds === 'string' ? values.streaming.keepaliveSeconds : '';
+          typeof values.streaming?.keepaliveSeconds === 'string'
+            ? values.streaming.keepaliveSeconds
+            : '';
         const bootstrapRetries =
-          typeof values.streaming?.bootstrapRetries === 'string' ? values.streaming.bootstrapRetries : '';
+          typeof values.streaming?.bootstrapRetries === 'string'
+            ? values.streaming.bootstrapRetries
+            : '';
         const nonstreamKeepaliveInterval =
           typeof values.streaming?.nonstreamKeepaliveInterval === 'string'
             ? values.streaming.nonstreamKeepaliveInterval
@@ -652,11 +689,7 @@ export function useVisualConfig() {
           deleteIfMapEmpty(doc, ['streaming']);
         }
 
-        setIntFromStringInDoc(
-          doc,
-          ['nonstream-keepalive-interval'],
-          nonstreamKeepaliveInterval
-        );
+        setIntFromStringInDoc(doc, ['nonstream-keepalive-interval'], nonstreamKeepaliveInterval);
 
         if (
           docHas(doc, ['payload']) ||
