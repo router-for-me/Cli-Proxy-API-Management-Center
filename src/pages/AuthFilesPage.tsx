@@ -125,6 +125,8 @@ export function AuthFilesPage() {
     handleDeleteAll,
     handleDownload,
     handleStatusToggle,
+    handleAntigravityCreditsToggle,
+    creditsUpdating,
     toggleSelect,
     selectAllVisible,
     invertVisibleSelection,
@@ -803,6 +805,8 @@ export function AuthFilesPage() {
                     onOpenPrefixProxyEditor={openPrefixProxyEditor}
                     onDelete={handleDelete}
                     onToggleStatus={handleStatusToggle}
+                    onToggleAntigravityCredits={handleAntigravityCreditsToggle}
+                    creditsUpdating={creditsUpdating}
                     onToggleSelect={toggleSelect}
                   />
                 ))}

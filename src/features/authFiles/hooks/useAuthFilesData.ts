@@ -39,6 +39,8 @@ export type UseAuthFilesDataResult = {
   handleDeleteAll: (options: DeleteAllOptions) => void;
   handleDownload: (name: string) => Promise<void>;
   handleStatusToggle: (item: AuthFileItem, enabled: boolean) => Promise<void>;
+  handleAntigravityCreditsToggle: (item: AuthFileItem, enabled: boolean) => Promise<void>;
+  creditsUpdating: Record<string, boolean>;
   toggleSelect: (name: string) => void;
   selectAllVisible: (visibleFiles: AuthFileItem[]) => void;
   invertVisibleSelection: (visibleFiles: AuthFileItem[]) => void;
@@ -64,6 +66,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
+  const [creditsUpdating, setCreditsUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 
@@ -435,6 +438,42 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     [showNotification, t]
   );
 
+  const handleAntigravityCreditsToggle = useCallback(
+    async (item: AuthFileItem, enabled: boolean) => {
+      const name = item.name;
+      const previousValue = item.antigravity_credits === true;
+
+      setCreditsUpdating((prev) => ({ ...prev, [name]: true }));
+      setFiles((prev) =>
+        prev.map((f) => (f.name === name ? { ...f, antigravity_credits: enabled } : f))
+      );
+
+      try {
+        await authFilesApi.patchFields(name, { antigravity_credits: enabled });
+        showNotification(
+          enabled
+            ? t('auth_files.antigravity_credits_enabled_success', { name })
+            : t('auth_files.antigravity_credits_disabled_success', { name }),
+          'success'
+        );
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : '';
+        setFiles((prev) =>
+          prev.map((f) => (f.name === name ? { ...f, antigravity_credits: previousValue } : f))
+        );
+        showNotification(`${t('notification.update_failed')}: ${errorMessage}`, 'error');
+      } finally {
+        setCreditsUpdating((prev) => {
+          if (!prev[name]) return prev;
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
+      }
+    },
+    [showNotification, t]
+  );
+
   const batchSetStatus = useCallback(
     async (names: string[], enabled: boolean) => {
       if (batchStatusPendingRef.current) return;
@@ -623,6 +662,8 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     handleDeleteAll,
     handleDownload,
     handleStatusToggle,
+    handleAntigravityCreditsToggle,
+    creditsUpdating,
     toggleSelect,
     selectAllVisible,
     invertVisibleSelection,

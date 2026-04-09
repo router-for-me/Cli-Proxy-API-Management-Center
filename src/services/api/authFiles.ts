@@ -400,6 +400,9 @@ export const authFilesApi = {
   setStatus: (name: string, disabled: boolean) =>
     apiClient.patch<AuthFileStatusResponse>('/auth-files/status', { name, disabled }),
 
+  patchFields: (name: string, fields: Record<string, unknown>) =>
+    apiClient.patch<{ status: string }>('/auth-files/fields', { name, ...fields }),
+
   uploadFiles: async (files: File[]): Promise<AuthFileBatchUploadResult> => {
     const requestedNames = files.map((file) => file.name);
     if (requestedNames.length === 0) {

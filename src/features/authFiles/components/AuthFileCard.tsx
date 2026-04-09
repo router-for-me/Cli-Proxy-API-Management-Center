@@ -50,6 +50,8 @@ export type AuthFileCardProps = {
   onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
+  onToggleAntigravityCredits: (file: AuthFileItem, enabled: boolean) => void;
+  creditsUpdating: Record<string, boolean>;
   onToggleSelect: (name: string) => void;
 };
 
@@ -77,11 +79,16 @@ export function AuthFileCard(props: AuthFileCardProps) {
     onOpenPrefixProxyEditor,
     onDelete,
     onToggleStatus,
+    onToggleAntigravityCredits,
+    creditsUpdating,
     onToggleSelect,
   } = props;
 
   const fileStats = resolveAuthFileStats(file, keyStats);
   const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
+  const isAntigravityFile = (file.type || '').toLowerCase() === 'antigravity' ||
+    (file.provider || '').toLowerCase() === 'antigravity';
+  const antigravityCreditsOn = isAntigravityFile && file.antigravity_credits === true;
   const isAistudio = (file.type || '').toLowerCase() === 'aistudio';
   const showModelsButton = !isRuntimeOnly || isAistudio;
   const typeColor = getTypeColor(file.type || 'unknown', resolvedTheme);
@@ -180,6 +187,33 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   {typeLabel}
                 </span>
                 <span className={`${styles.stateBadge} ${stateBadgeClass}`}>{stateLabel}</span>
+                {isAntigravityFile && (
+                  <span
+                    className={`${styles.creditsBadge} ${antigravityCreditsOn ? styles.creditsBadgeOn : styles.creditsBadgeOff}`}
+                    title={t('auth_files.antigravity_credits_hint')}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (disableControls || creditsUpdating[file.name]) return;
+                      void onToggleAntigravityCredits(file, !antigravityCreditsOn);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (disableControls || creditsUpdating[file.name]) return;
+                        void onToggleAntigravityCredits(file, !antigravityCreditsOn);
+                      }
+                    }}
+                  >
+                    {creditsUpdating[file.name] ? (
+                      <LoadingSpinner size={10} />
+                    ) : (
+                      <>Credits {antigravityCreditsOn ? 'ON' : 'OFF'}</>
+                    )}
+                  </span>
+                )}
               </div>
               <span className={styles.fileName} title={file.name}>
                 {file.name}

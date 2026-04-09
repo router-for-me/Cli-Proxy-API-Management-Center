@@ -21,7 +21,8 @@ export type PrefixProxyEditorField =
   | 'excludedModelsText'
   | 'disableCooling'
   | 'websockets'
-  | 'note';
+  | 'note'
+  | 'antigravityCredits';
 
 export type PrefixProxyEditorFieldValue = string | boolean;
 
@@ -29,6 +30,7 @@ export type PrefixProxyEditorState = {
   fileName: string;
   fileInfoText: string;
   isCodexFile: boolean;
+  isAntigravityFile: boolean;
   loading: boolean;
   saving: boolean;
   error: string | null;
@@ -43,6 +45,7 @@ export type PrefixProxyEditorState = {
   websockets: boolean;
   note: string;
   noteTouched: boolean;
+  antigravityCredits: boolean;
 };
 
 export type UseAuthFilesPrefixProxyEditorOptions = {
@@ -104,6 +107,14 @@ const buildPrefixProxyUpdatedText = (editor: PrefixProxyEditorState | null): str
     }
   }
 
+  if (editor.isAntigravityFile) {
+    if (editor.antigravityCredits) {
+      next.antigravity_credits = true;
+    } else if ('antigravity_credits' in next) {
+      delete next.antigravity_credits;
+    }
+  }
+
   return JSON.stringify(
     editor.isCodexFile ? applyCodexAuthFileWebsockets(next, editor.websockets) : next
   );
@@ -137,6 +148,7 @@ export function useAuthFilesPrefixProxyEditor(
       .trim()
       .toLowerCase();
     const isCodexFile = normalizedType === 'codex' || normalizedProvider === 'codex';
+    const isAntigravityFile = normalizedType === 'antigravity' || normalizedProvider === 'antigravity';
 
     if (disableControls) return;
     if (prefixProxyEditor?.fileName === name) {
@@ -148,6 +160,7 @@ export function useAuthFilesPrefixProxyEditor(
       fileName: name,
       fileInfoText: JSON.stringify(file, null, 2),
       isCodexFile,
+      isAntigravityFile,
       loading: true,
       saving: false,
       error: null,
@@ -162,6 +175,7 @@ export function useAuthFilesPrefixProxyEditor(
       websockets: false,
       note: '',
       noteTouched: false,
+      antigravityCredits: false,
     });
 
     try {
@@ -213,6 +227,9 @@ export function useAuthFilesPrefixProxyEditor(
       const disableCoolingValue = parseDisableCoolingValue(json.disable_cooling);
       const websocketsValue = readCodexAuthFileWebsockets(json);
       const note = typeof json.note === 'string' ? json.note : '';
+      const antigravityCreditsValue = json.antigravity_credits === true ||
+        (typeof json.antigravity_credits === 'string' &&
+          json.antigravity_credits.trim().toLowerCase() === 'true');
 
       setPrefixProxyEditor((prev) => {
         if (!prev || prev.fileName !== name) return prev;
@@ -231,6 +248,7 @@ export function useAuthFilesPrefixProxyEditor(
           websockets: websocketsValue,
           note,
           noteTouched: false,
+          antigravityCredits: antigravityCreditsValue,
           error: null,
         };
       });
@@ -256,6 +274,7 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'excludedModelsText') return { ...prev, excludedModelsText: String(value) };
       if (field === 'disableCooling') return { ...prev, disableCooling: String(value) };
       if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
+      if (field === 'antigravityCredits') return { ...prev, antigravityCredits: Boolean(value) };
       return { ...prev, websockets: Boolean(value) };
     });
   };

@@ -166,6 +166,18 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                     <div className="hint">{t('ai_providers.codex_websockets_hint')}</div>
                   </div>
                 )}
+                {editor.isAntigravityFile && (
+                  <div className="form-group">
+                    <label>{t('auth_files.antigravity_credits_label')}</label>
+                    <ToggleSwitch
+                      checked={Boolean(editor.antigravityCredits)}
+                      disabled={disableControls || editor.saving || !editor.json}
+                      ariaLabel={t('auth_files.antigravity_credits_label')}
+                      onChange={(value) => onChange('antigravityCredits', value)}
+                    />
+                    <div className="hint">{t('auth_files.antigravity_credits_hint')}</div>
+                  </div>
+                )}
               </div>
             </>
           )}

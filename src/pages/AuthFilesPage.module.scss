@@ -739,7 +739,8 @@
   }
 
   .typeBadge,
-  .stateBadge {
+  .stateBadge,
+  .creditsBadge {
     padding: 3px 7px;
     font-size: 10px;
   }
@@ -908,6 +909,43 @@
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--bg-tertiary) 82%, transparent);
   border: 1px dashed color-mix(in srgb, var(--border-primary) 90%, transparent);
+}
+
+.creditsBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring, #3b82f6);
+    outline-offset: 1px;
+  }
+}
+
+.creditsBadgeOn {
+  color: #1a56db;
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+}
+
+.creditsBadgeOff {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-tertiary) 86%, transparent);
+  border: 1px solid var(--border-color);
 }
 
 .fileName {
