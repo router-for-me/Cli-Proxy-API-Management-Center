@@ -164,7 +164,7 @@ export function AiProvidersPage() {
       confirmText: t('common.confirm'),
       onConfirm: async () => {
         try {
-          await providersApi.deleteGeminiKey(entry.apiKey);
+          await providersApi.deleteGeminiKey(entry.apiKey, entry.baseUrl);
           const next = geminiKeys.filter((_, idx) => idx !== index);
           setGeminiKeys(next);
           updateConfigValue('gemini-api-key', next);
@@ -297,14 +297,14 @@ export function AiProvidersPage() {
       onConfirm: async () => {
         try {
           if (type === 'codex') {
-            await providersApi.deleteCodexConfig(entry.apiKey);
+            await providersApi.deleteCodexConfig(entry.apiKey, entry.baseUrl);
             const next = codexConfigs.filter((_, idx) => idx !== index);
             setCodexConfigs(next);
             updateConfigValue('codex-api-key', next);
             clearCache('codex-api-key');
             showNotification(t('notification.codex_config_deleted'), 'success');
           } else {
-            await providersApi.deleteClaudeConfig(entry.apiKey);
+            await providersApi.deleteClaudeConfig(entry.apiKey, entry.baseUrl);
             const next = claudeConfigs.filter((_, idx) => idx !== index);
             setClaudeConfigs(next);
             updateConfigValue('claude-api-key', next);
@@ -329,7 +329,7 @@ export function AiProvidersPage() {
       confirmText: t('common.confirm'),
       onConfirm: async () => {
         try {
-          await providersApi.deleteVertexConfig(entry.apiKey);
+          await providersApi.deleteVertexConfig(entry.apiKey, entry.baseUrl);
           const next = vertexConfigs.filter((_, idx) => idx !== index);
           setVertexConfigs(next);
           updateConfigValue('vertex-api-key', next);
