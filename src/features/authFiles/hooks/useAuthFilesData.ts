@@ -441,7 +441,8 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
   const handleAntigravityCreditsToggle = useCallback(
     async (item: AuthFileItem, enabled: boolean) => {
       const name = item.name;
-      const previousValue = item.antigravity_credits === true;
+      const previousValue = item.antigravity_credits === true ||
+        (typeof item.antigravity_credits === 'string' && item.antigravity_credits.trim().toLowerCase() === 'true');
 
       setCreditsUpdating((prev) => ({ ...prev, [name]: true }));
       setFiles((prev) =>

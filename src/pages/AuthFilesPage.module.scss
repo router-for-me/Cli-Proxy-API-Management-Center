@@ -937,9 +937,9 @@
 }
 
 .creditsBadgeOn {
-  color: #1a56db;
-  background: #dbeafe;
-  border: 1px solid #93c5fd;
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
 .creditsBadgeOff {

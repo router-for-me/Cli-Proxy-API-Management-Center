@@ -86,9 +86,12 @@ export function AuthFileCard(props: AuthFileCardProps) {
 
   const fileStats = resolveAuthFileStats(file, keyStats);
   const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
-  const isAntigravityFile = (file.type || '').toLowerCase() === 'antigravity' ||
-    (file.provider || '').toLowerCase() === 'antigravity';
-  const antigravityCreditsOn = isAntigravityFile && file.antigravity_credits === true;
+  const isAntigravityFile = (file.type || '').trim().toLowerCase() === 'antigravity' ||
+    (file.provider || '').trim().toLowerCase() === 'antigravity';
+  const antigravityCreditsOn = isAntigravityFile && (
+    file.antigravity_credits === true ||
+    (typeof file.antigravity_credits === 'string' && file.antigravity_credits.trim().toLowerCase() === 'true')
+  );
   const isAistudio = (file.type || '').toLowerCase() === 'aistudio';
   const showModelsButton = !isRuntimeOnly || isAistudio;
   const typeColor = getTypeColor(file.type || 'unknown', resolvedTheme);
@@ -210,7 +213,11 @@ export function AuthFileCard(props: AuthFileCardProps) {
                     {creditsUpdating[file.name] ? (
                       <LoadingSpinner size={10} />
                     ) : (
-                      <>Credits {antigravityCreditsOn ? 'ON' : 'OFF'}</>
+                      <>
+                        {antigravityCreditsOn
+                          ? t('auth_files.antigravity_credits_on')
+                          : t('auth_files.antigravity_credits_off')}
+                      </>
                     )}
                   </span>
                 )}

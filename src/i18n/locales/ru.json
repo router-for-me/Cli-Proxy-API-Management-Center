@@ -598,6 +598,8 @@
     "note_hint": "Необязательно. Используется для описания назначения или владельца учётных данных; оставьте пустым, чтобы не записывать.",
     "antigravity_credits_label": "Antigravity Credits (Google One AI)",
     "antigravity_credits_hint": "При включении каждый запрос для этих учётных данных будет всегда содержать enabledCreditTypes=[\"GOOGLE_ONE_AI\"], минуя глобальную логику повторных попыток.",
+    "antigravity_credits_on": "Credits ВКЛ",
+    "antigravity_credits_off": "Credits ВЫКЛ",
     "antigravity_credits_enabled_success": "Antigravity Credits включены для \"{{name}}\"",
     "antigravity_credits_disabled_success": "Antigravity Credits отключены для \"{{name}}\"",
     "note_display": "Заметка",
