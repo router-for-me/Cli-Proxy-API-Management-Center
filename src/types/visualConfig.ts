@@ -25,6 +25,7 @@ export type PayloadParamEntry = {
   path: string;
   valueType: PayloadParamValueType;
   value: string;
+  disabled?: boolean;
 };
 
 export type PayloadModelEntry = {
@@ -35,12 +36,14 @@ export type PayloadModelEntry = {
 
 export type PayloadRule = {
   id: string;
+  disabled?: boolean;
   models: PayloadModelEntry[];
   params: PayloadParamEntry[];
 };
 
 export type PayloadFilterRule = {
   id: string;
+  disabled?: boolean;
   models: PayloadModelEntry[];
   params: string[];
 };

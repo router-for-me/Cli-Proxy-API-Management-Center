@@ -189,8 +189,10 @@ export function getPayloadParamValidationError(
 }
 
 function hasPayloadParamValidationErrors(rules: PayloadRule[]): boolean {
-  return rules.some((rule) =>
-    rule.params.some((param) => Boolean(getPayloadParamValidationError(param)))
+  return rules.some(
+    (rule) =>
+      !rule.disabled &&
+      rule.params.some((param) => !param.disabled && Boolean(getPayloadParamValidationError(param)))
   );
 }
 
@@ -224,7 +226,13 @@ function arePayloadParamEntriesEqual(
     const a = left[i];
     const b = right[i];
     if (!a || !b) return false;
-    if (a.id !== b.id || a.path !== b.path || a.valueType !== b.valueType || a.value !== b.value) {
+    if (
+      a.id !== b.id ||
+      a.path !== b.path ||
+      a.valueType !== b.valueType ||
+      a.value !== b.value ||
+      Boolean(a.disabled) !== Boolean(b.disabled)
+    ) {
       return false;
     }
   }
@@ -238,7 +246,7 @@ function arePayloadRulesEqual(left: PayloadRule[], right: PayloadRule[]): boolea
     const a = left[i];
     const b = right[i];
     if (!a || !b) return false;
-    if (a.id !== b.id) return false;
+    if (a.id !== b.id || Boolean(a.disabled) !== Boolean(b.disabled)) return false;
     if (!arePayloadModelEntriesEqual(a.models, b.models)) return false;
     if (!arePayloadParamEntriesEqual(a.params, b.params)) return false;
   }
@@ -255,7 +263,7 @@ function arePayloadFilterRulesEqual(
     const a = left[i];
     const b = right[i];
     if (!a || !b) return false;
-    if (a.id !== b.id) return false;
+    if (a.id !== b.id || Boolean(a.disabled) !== Boolean(b.disabled)) return false;
     if (!arePayloadModelEntriesEqual(a.models, b.models)) return false;
     if (a.params.length !== b.params.length) return false;
     for (let j = 0; j < a.params.length; j += 1) {
@@ -314,7 +322,7 @@ function deleteLegacyApiKeysProvider(doc: YamlDocument): void {
   deleteIfMapEmpty(doc, ['auth']);
 }
 
-function parsePayloadRules(rules: unknown): PayloadRule[] {
+function parsePayloadRules(rules: unknown, disabled = false): PayloadRule[] {
   if (!Array.isArray(rules)) return [];
 
   return rules.map((rule, index) => {
@@ -348,11 +356,11 @@ function parsePayloadRules(rules: unknown): PayloadRule[] {
         })
       : [];
 
-    return { id: `payload-rule-${index}`, models, params };
+    return { id: `payload-rule-${index}`, disabled, models, params };
   });
 }
 
-function parsePayloadFilterRules(rules: unknown): PayloadFilterRule[] {
+function parsePayloadFilterRules(rules: unknown, disabled = false): PayloadFilterRule[] {
   if (!Array.isArray(rules)) return [];
 
   return rules.map((rule, index) => {
@@ -376,11 +384,11 @@ function parsePayloadFilterRules(rules: unknown): PayloadFilterRule[] {
     const paramsRaw = record.params;
     const params = Array.isArray(paramsRaw) ? paramsRaw.map(String) : [];
 
-    return { id: `payload-filter-rule-${index}`, models, params };
+    return { id: `payload-filter-rule-${index}`, disabled, models, params };
   });
 }
 
-function parseRawPayloadRules(rules: unknown): PayloadRule[] {
+function parseRawPayloadRules(rules: unknown, disabled = false): PayloadRule[] {
   if (!Array.isArray(rules)) return [];
 
   return rules.map((rule, index) => {
@@ -411,8 +419,313 @@ function parseRawPayloadRules(rules: unknown): PayloadRule[] {
         }))
       : [];
 
-    return { id: `payload-raw-rule-${index}`, models, params };
+    return { id: `payload-raw-rule-${index}`, disabled, models, params };
   });
+}
+
+const PAYLOAD_UI_STATE_ROOT = ['payload', 'ui-state'] as const;
+
+type PayloadUiState = {
+  disabledDefaultRules: PayloadRule[];
+  disabledDefaultRawRules: PayloadRule[];
+  disabledOverrideRules: PayloadRule[];
+  disabledOverrideRawRules: PayloadRule[];
+  disabledFilterRules: PayloadFilterRule[];
+  disabledDefaultParamRules: PayloadRule[];
+  disabledDefaultRawParamRules: PayloadRule[];
+  disabledOverrideParamRules: PayloadRule[];
+  disabledOverrideRawParamRules: PayloadRule[];
+};
+
+function splitPayloadRulesByDisabled(rules: PayloadRule[]): {
+  enabled: PayloadRule[];
+  disabled: PayloadRule[];
+} {
+  return {
+    enabled: rules.filter((rule) => !rule.disabled),
+    disabled: rules.filter((rule) => rule.disabled).map((rule) => ({ ...rule, disabled: true })),
+  };
+}
+
+function splitPayloadFilterRulesByDisabled(rules: PayloadFilterRule[]): {
+  enabled: PayloadFilterRule[];
+  disabled: PayloadFilterRule[];
+} {
+  return {
+    enabled: rules.filter((rule) => !rule.disabled),
+    disabled: rules.filter((rule) => rule.disabled).map((rule) => ({ ...rule, disabled: true })),
+  };
+}
+
+function parsePayloadUiRules(
+  rules: unknown,
+  options: { rawJsonValues?: boolean; ruleDisabled?: boolean } = {}
+): PayloadRule[] {
+  if (!Array.isArray(rules)) return [];
+
+  const { rawJsonValues = false, ruleDisabled = true } = options;
+
+  return rules.map((rule, index) => {
+    const record = asRecord(rule) ?? {};
+
+    const modelsRaw = Array.isArray(record.models) ? record.models : [];
+    const models = modelsRaw.map((model, modelIndex) => {
+      const modelRecord = asRecord(model) ?? {};
+      const nameRaw = modelRecord.name ?? modelRecord.id ?? '';
+      return {
+        id: `ui-model-${index}-${modelIndex}`,
+        name: typeof nameRaw === 'string' ? nameRaw : String(nameRaw ?? ''),
+        protocol: parsePayloadProtocol(modelRecord.protocol),
+      };
+    });
+
+    const paramsRaw = Array.isArray(record.params) ? record.params : [];
+    const params = paramsRaw.map((param, paramIndex) => {
+      const paramRecord = asRecord(param) ?? {};
+      const pathRaw = paramRecord.path ?? '';
+      const valueTypeRaw = paramRecord.valueType;
+      const valueType: PayloadParamValueType =
+        valueTypeRaw === 'number' ||
+        valueTypeRaw === 'boolean' ||
+        valueTypeRaw === 'json' ||
+        valueTypeRaw === 'string'
+          ? valueTypeRaw
+          : rawJsonValues
+            ? 'json'
+            : 'string';
+      const valueRaw = paramRecord.value ?? '';
+      return {
+        id: `ui-param-${index}-${paramIndex}`,
+        path: typeof pathRaw === 'string' ? pathRaw : String(pathRaw ?? ''),
+        valueType,
+        value: typeof valueRaw === 'string' ? valueRaw : String(valueRaw ?? ''),
+        disabled: Boolean(paramRecord.disabled),
+      };
+    });
+
+    return {
+      id: `ui-payload-rule-${index}`,
+      disabled: ruleDisabled,
+      models,
+      params,
+    };
+  });
+}
+
+function parsePayloadUiFilterRules(rules: unknown): PayloadFilterRule[] {
+  if (!Array.isArray(rules)) return [];
+
+  return rules.map((rule, index) => {
+    const record = asRecord(rule) ?? {};
+    const modelsRaw = Array.isArray(record.models) ? record.models : [];
+    const models = modelsRaw.map((model, modelIndex) => {
+      const modelRecord = asRecord(model) ?? {};
+      const nameRaw = modelRecord.name ?? modelRecord.id ?? '';
+      return {
+        id: `ui-filter-model-${index}-${modelIndex}`,
+        name: typeof nameRaw === 'string' ? nameRaw : String(nameRaw ?? ''),
+        protocol: parsePayloadProtocol(modelRecord.protocol),
+      };
+    });
+
+    const params = Array.isArray(record.params)
+      ? record.params.map((param) => (typeof param === 'string' ? param : String(param ?? '')))
+      : [];
+
+    return {
+      id: `ui-payload-filter-rule-${index}`,
+      disabled: true,
+      models,
+      params,
+    };
+  });
+}
+
+function parsePayloadUiState(payload: Record<string, unknown> | null): PayloadUiState {
+  const uiState = asRecord(payload?.['ui-state']);
+  return {
+    disabledDefaultRules: parsePayloadUiRules(uiState?.['disabled-default']),
+    disabledDefaultRawRules: parsePayloadUiRules(uiState?.['disabled-default-raw'], {
+      rawJsonValues: true,
+    }),
+    disabledOverrideRules: parsePayloadUiRules(uiState?.['disabled-override']),
+    disabledOverrideRawRules: parsePayloadUiRules(uiState?.['disabled-override-raw'], {
+      rawJsonValues: true,
+    }),
+    disabledFilterRules: parsePayloadUiFilterRules(uiState?.['disabled-filter']),
+    disabledDefaultParamRules: parsePayloadUiRules(uiState?.['disabled-default-params'], {
+      ruleDisabled: false,
+    }),
+    disabledDefaultRawParamRules: parsePayloadUiRules(uiState?.['disabled-default-raw-params'], {
+      rawJsonValues: true,
+      ruleDisabled: false,
+    }),
+    disabledOverrideParamRules: parsePayloadUiRules(uiState?.['disabled-override-params'], {
+      ruleDisabled: false,
+    }),
+    disabledOverrideRawParamRules: parsePayloadUiRules(uiState?.['disabled-override-raw-params'], {
+      rawJsonValues: true,
+      ruleDisabled: false,
+    }),
+  };
+}
+
+function getPayloadRuleModelSignature(models: PayloadRule['models']): string {
+  return models
+    .map((model) => `${model.name.trim()}::${model.protocol ?? ''}`)
+    .join('|');
+}
+
+function mergePayloadRuleParamsFromUiState(
+  enabledRule: PayloadRule,
+  uiStateRule: PayloadRule
+): PayloadParamEntry[] {
+  const enabledParamsQueue = enabledRule.params.map((param) => ({ ...param, disabled: false }));
+  const mergedParams: PayloadParamEntry[] = [];
+
+  for (const uiParam of uiStateRule.params) {
+    if (uiParam.disabled) {
+      mergedParams.push({ ...uiParam, disabled: true });
+      continue;
+    }
+
+    const nextEnabledParam = enabledParamsQueue.shift();
+    if (nextEnabledParam) {
+      mergedParams.push({ ...uiParam, ...nextEnabledParam, disabled: false });
+    }
+  }
+
+  mergedParams.push(...enabledParamsQueue);
+  return mergedParams;
+}
+
+function mergePayloadRulesWithDisabledParams(
+  enabledRules: PayloadRule[],
+  uiStateRules: PayloadRule[]
+): PayloadRule[] {
+  if (uiStateRules.length === 0) {
+    return enabledRules.map((rule) => ({
+      ...rule,
+      disabled: false,
+      params: rule.params.map((param) => ({ ...param, disabled: false })),
+    }));
+  }
+
+  const rulesBySignature = new Map<string, PayloadRule[]>();
+  for (const rule of uiStateRules) {
+    const signature = getPayloadRuleModelSignature(rule.models);
+    const bucket = rulesBySignature.get(signature);
+    if (bucket) {
+      bucket.push(rule);
+    } else {
+      rulesBySignature.set(signature, [rule]);
+    }
+  }
+
+  return enabledRules.map((rule) => {
+    const signature = getPayloadRuleModelSignature(rule.models);
+    const bucket = rulesBySignature.get(signature);
+    const matchedRule = bucket?.shift();
+
+    if (!matchedRule) {
+      return {
+        ...rule,
+        disabled: false,
+        params: rule.params.map((param) => ({ ...param, disabled: false })),
+      };
+    }
+
+    return {
+      ...rule,
+      disabled: false,
+      params: mergePayloadRuleParamsFromUiState(rule, matchedRule),
+    };
+  });
+}
+
+function mergePayloadRules(
+  enabledRules: PayloadRule[],
+  disabledRules: PayloadRule[]
+): PayloadRule[] {
+  return [
+    ...enabledRules.map((rule) => ({ ...rule, disabled: false })),
+    ...disabledRules,
+  ];
+}
+
+function mergePayloadFilterRules(
+  enabledRules: PayloadFilterRule[],
+  disabledRules: PayloadFilterRule[]
+): PayloadFilterRule[] {
+  return [
+    ...enabledRules.map((rule) => ({ ...rule, disabled: false })),
+    ...disabledRules,
+  ];
+}
+
+function serializePayloadUiRules(rules: PayloadRule[]): Array<Record<string, unknown>> {
+  return rules
+    .map((rule) => {
+      const models = rule.models
+        .filter((model) => model.name.trim())
+        .map((model) => {
+          const nextModel: Record<string, unknown> = { name: model.name.trim() };
+          if (model.protocol) nextModel.protocol = model.protocol;
+          return nextModel;
+        });
+
+      const params = rule.params
+        .filter((param) => param.path.trim())
+        .map((param) => ({
+          path: param.path.trim(),
+          valueType: param.valueType,
+          value: param.value,
+          ...(param.disabled ? { disabled: true } : {}),
+        }));
+
+      return { models, params };
+    })
+    .filter((rule) => rule.models.length > 0);
+}
+
+function serializePayloadUiFilterRules(rules: PayloadFilterRule[]): Array<Record<string, unknown>> {
+  return rules
+    .map((rule) => {
+      const models = rule.models
+        .filter((model) => model.name.trim())
+        .map((model) => {
+          const nextModel: Record<string, unknown> = { name: model.name.trim() };
+          if (model.protocol) nextModel.protocol = model.protocol;
+          return nextModel;
+        });
+
+      const params = rule.params.map((param) => String(param).trim()).filter(Boolean);
+
+      return { models, params };
+    })
+    .filter((rule) => rule.models.length > 0);
+}
+
+function splitPayloadRulesByDisabledParams(rules: PayloadRule[]): {
+  enabled: PayloadRule[];
+  disabledInUiState: PayloadRule[];
+} {
+  return {
+    enabled: rules.map((rule) => ({
+      ...rule,
+      disabled: false,
+      params: rule.params
+        .filter((param) => !param.disabled)
+        .map((param) => ({ ...param, disabled: false })),
+    })),
+    disabledInUiState: rules
+      .filter((rule) => rule.params.some((param) => param.disabled))
+      .map((rule) => ({
+        ...rule,
+        disabled: false,
+        params: rule.params.map((param) => ({ ...param, disabled: Boolean(param.disabled) })),
+      })),
+  };
 }
 
 function serializePayloadRulesForYaml(rules: PayloadRule[]): Array<Record<string, unknown>> {
@@ -428,7 +741,7 @@ function serializePayloadRulesForYaml(rules: PayloadRule[]): Array<Record<string
 
       const params: Record<string, unknown> = {};
       for (const param of rule.params || []) {
-        if (!param.path?.trim()) continue;
+        if (!param.path?.trim() || param.disabled) continue;
         let value: unknown = param.value;
         if (param.valueType === 'number') {
           const num = Number(param.value);
@@ -485,7 +798,7 @@ function serializeRawPayloadRulesForYaml(rules: PayloadRule[]): Array<Record<str
 
       const params: Record<string, unknown> = {};
       for (const param of rule.params || []) {
-        if (!param.path?.trim()) continue;
+        if (!param.path?.trim() || param.disabled) continue;
         params[param.path.trim()] = param.value;
       }
 
@@ -786,6 +1099,7 @@ export function useVisualConfig() {
       const quotaExceeded = asRecord(parsed['quota-exceeded']);
       const routing = asRecord(parsed.routing);
       const payload = asRecord(parsed.payload);
+      const payloadUiState = parsePayloadUiState(payload);
       const streaming = asRecord(parsed.streaming);
 
       const newValues: VisualConfigValues = {
@@ -830,11 +1144,38 @@ export function useVisualConfig() {
 
         routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
 
-        payloadDefaultRules: parsePayloadRules(payload?.default),
-        payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
-        payloadOverrideRules: parsePayloadRules(payload?.override),
-        payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
-        payloadFilterRules: parsePayloadFilterRules(payload?.filter),
+        payloadDefaultRules: mergePayloadRules(
+          mergePayloadRulesWithDisabledParams(
+            parsePayloadRules(payload?.default),
+            payloadUiState.disabledDefaultParamRules
+          ),
+          payloadUiState.disabledDefaultRules
+        ),
+        payloadDefaultRawRules: mergePayloadRules(
+          mergePayloadRulesWithDisabledParams(
+            parseRawPayloadRules(payload?.['default-raw']),
+            payloadUiState.disabledDefaultRawParamRules
+          ),
+          payloadUiState.disabledDefaultRawRules
+        ),
+        payloadOverrideRules: mergePayloadRules(
+          mergePayloadRulesWithDisabledParams(
+            parsePayloadRules(payload?.override),
+            payloadUiState.disabledOverrideParamRules
+          ),
+          payloadUiState.disabledOverrideRules
+        ),
+        payloadOverrideRawRules: mergePayloadRules(
+          mergePayloadRulesWithDisabledParams(
+            parseRawPayloadRules(payload?.['override-raw']),
+            payloadUiState.disabledOverrideRawParamRules
+          ),
+          payloadUiState.disabledOverrideRawRules
+        ),
+        payloadFilterRules: mergePayloadFilterRules(
+          parsePayloadFilterRules(payload?.filter),
+          payloadUiState.disabledFilterRules
+        ),
 
         streaming: {
           keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
@@ -967,6 +1308,30 @@ export function useVisualConfig() {
 
         setIntFromStringInDoc(doc, ['nonstream-keepalive-interval'], nonstreamKeepaliveInterval);
 
+        const payloadDefaultSplit = splitPayloadRulesByDisabled(values.payloadDefaultRules);
+        const payloadDefaultRawSplit = splitPayloadRulesByDisabled(values.payloadDefaultRawRules);
+        const payloadOverrideSplit = splitPayloadRulesByDisabled(values.payloadOverrideRules);
+        const payloadOverrideRawSplit = splitPayloadRulesByDisabled(values.payloadOverrideRawRules);
+        const payloadFilterSplit = splitPayloadFilterRulesByDisabled(values.payloadFilterRules);
+        const payloadDefaultParamSplit = splitPayloadRulesByDisabledParams(payloadDefaultSplit.enabled);
+        const payloadDefaultRawParamSplit = splitPayloadRulesByDisabledParams(
+          payloadDefaultRawSplit.enabled
+        );
+        const payloadOverrideParamSplit = splitPayloadRulesByDisabledParams(payloadOverrideSplit.enabled);
+        const payloadOverrideRawParamSplit = splitPayloadRulesByDisabledParams(
+          payloadOverrideRawSplit.enabled
+        );
+        const hasDisabledPayloadRules =
+          payloadDefaultSplit.disabled.length > 0 ||
+          payloadDefaultRawSplit.disabled.length > 0 ||
+          payloadOverrideSplit.disabled.length > 0 ||
+          payloadOverrideRawSplit.disabled.length > 0 ||
+          payloadFilterSplit.disabled.length > 0 ||
+          payloadDefaultParamSplit.disabledInUiState.length > 0 ||
+          payloadDefaultRawParamSplit.disabledInUiState.length > 0 ||
+          payloadOverrideParamSplit.disabledInUiState.length > 0 ||
+          payloadOverrideRawParamSplit.disabledInUiState.length > 0;
+
         if (
           docHas(doc, ['payload']) ||
           values.payloadDefaultRules.length > 0 ||
@@ -976,46 +1341,126 @@ export function useVisualConfig() {
           values.payloadFilterRules.length > 0
         ) {
           ensureMapInDoc(doc, ['payload']);
-          if (values.payloadDefaultRules.length > 0) {
+          if (payloadDefaultParamSplit.enabled.length > 0) {
             doc.setIn(
               ['payload', 'default'],
-              serializePayloadRulesForYaml(values.payloadDefaultRules)
+              serializePayloadRulesForYaml(payloadDefaultParamSplit.enabled)
             );
           } else if (docHas(doc, ['payload', 'default'])) {
             doc.deleteIn(['payload', 'default']);
           }
-          if (values.payloadDefaultRawRules.length > 0) {
+          if (payloadDefaultRawParamSplit.enabled.length > 0) {
             doc.setIn(
               ['payload', 'default-raw'],
-              serializeRawPayloadRulesForYaml(values.payloadDefaultRawRules)
+              serializeRawPayloadRulesForYaml(payloadDefaultRawParamSplit.enabled)
             );
           } else if (docHas(doc, ['payload', 'default-raw'])) {
             doc.deleteIn(['payload', 'default-raw']);
           }
-          if (values.payloadOverrideRules.length > 0) {
+          if (payloadOverrideParamSplit.enabled.length > 0) {
             doc.setIn(
               ['payload', 'override'],
-              serializePayloadRulesForYaml(values.payloadOverrideRules)
+              serializePayloadRulesForYaml(payloadOverrideParamSplit.enabled)
             );
           } else if (docHas(doc, ['payload', 'override'])) {
             doc.deleteIn(['payload', 'override']);
           }
-          if (values.payloadOverrideRawRules.length > 0) {
+          if (payloadOverrideRawParamSplit.enabled.length > 0) {
             doc.setIn(
               ['payload', 'override-raw'],
-              serializeRawPayloadRulesForYaml(values.payloadOverrideRawRules)
+              serializeRawPayloadRulesForYaml(payloadOverrideRawParamSplit.enabled)
             );
           } else if (docHas(doc, ['payload', 'override-raw'])) {
             doc.deleteIn(['payload', 'override-raw']);
           }
-          if (values.payloadFilterRules.length > 0) {
+          if (payloadFilterSplit.enabled.length > 0) {
             doc.setIn(
               ['payload', 'filter'],
-              serializePayloadFilterRulesForYaml(values.payloadFilterRules)
+              serializePayloadFilterRulesForYaml(payloadFilterSplit.enabled)
             );
           } else if (docHas(doc, ['payload', 'filter'])) {
             doc.deleteIn(['payload', 'filter']);
           }
+
+          if (hasDisabledPayloadRules) {
+            ensureMapInDoc(doc, [...PAYLOAD_UI_STATE_ROOT]);
+            if (payloadDefaultSplit.disabled.length > 0) {
+              doc.setIn(
+                [...PAYLOAD_UI_STATE_ROOT, 'disabled-default'],
+                serializePayloadUiRules(payloadDefaultSplit.disabled)
+              );
+            } else if (docHas(doc, [...PAYLOAD_UI_STATE_ROOT, 'disabled-default'])) {
+              doc.deleteIn([...PAYLOAD_UI_STATE_ROOT, 'disabled-default']);
+            }
+            if (payloadDefaultRawSplit.disabled.length > 0) {
+              doc.setIn(
+                [...PAYLOAD_UI_STATE_ROOT, 'disabled-default-raw'],
+                serializePayloadUiRules(payloadDefaultRawSplit.disabled)
+              );
+            } else if (docHas(doc, [...PAYLOAD_UI_STATE_ROOT, 'disabled-default-raw'])) {
+              doc.deleteIn([...PAYLOAD_UI_STATE_ROOT, 'disabled-default-raw']);
+            }
+            if (payloadOverrideSplit.disabled.length > 0) {
+              doc.setIn(
+                [...PAYLOAD_UI_STATE_ROOT, 'disabled-override'],
+                serializePayloadUiRules(payloadOverrideSplit.disabled)
+              );
+            } else if (docHas(doc, [...PAYLOAD_UI_STATE_ROOT, 'disabled-override'])) {
+              doc.deleteIn([...PAYLOAD_UI_STATE_ROOT, 'disabled-override']);
+            }
+            if (payloadOverrideRawSplit.disabled.length > 0) {
+              doc.setIn(
+                [...PAYLOAD_UI_STATE_ROOT, 'disabled-override-raw'],
+                serializePayloadUiRules(payloadOverrideRawSplit.disabled)
+              );
+            } else if (docHas(doc, [...PAYLOAD_UI_STATE_ROOT, 'disabled-override-raw'])) {
+              doc.deleteIn([...PAYLOAD_UI_STATE_ROOT, 'disabled-override-raw']);
+            }
+            if (payloadFilterSplit.disabled.length > 0) {
+              doc.setIn(
+                [...PAYLOAD_UI_STATE_ROOT, 'disabled-filter'],
+                serializePayloadUiFilterRules(payloadFilterSplit.disabled)
+              );
+            } else if (docHas(doc, [...PAYLOAD_UI_STATE_ROOT, 'disabled-filter'])) {
+              doc.deleteIn([...PAYLOAD_UI_STATE_ROOT, 'disabled-filter']);
+            }
+            if (payloadDefaultParamSplit.disabledInUiState.length > 0) {
+              doc.setIn(
+                [...PAYLOAD_UI_STATE_ROOT, 'disabled-default-params'],
+                serializePayloadUiRules(payloadDefaultParamSplit.disabledInUiState)
+              );
+            } else if (docHas(doc, [...PAYLOAD_UI_STATE_ROOT, 'disabled-default-params'])) {
+              doc.deleteIn([...PAYLOAD_UI_STATE_ROOT, 'disabled-default-params']);
+            }
+            if (payloadDefaultRawParamSplit.disabledInUiState.length > 0) {
+              doc.setIn(
+                [...PAYLOAD_UI_STATE_ROOT, 'disabled-default-raw-params'],
+                serializePayloadUiRules(payloadDefaultRawParamSplit.disabledInUiState)
+              );
+            } else if (docHas(doc, [...PAYLOAD_UI_STATE_ROOT, 'disabled-default-raw-params'])) {
+              doc.deleteIn([...PAYLOAD_UI_STATE_ROOT, 'disabled-default-raw-params']);
+            }
+            if (payloadOverrideParamSplit.disabledInUiState.length > 0) {
+              doc.setIn(
+                [...PAYLOAD_UI_STATE_ROOT, 'disabled-override-params'],
+                serializePayloadUiRules(payloadOverrideParamSplit.disabledInUiState)
+              );
+            } else if (docHas(doc, [...PAYLOAD_UI_STATE_ROOT, 'disabled-override-params'])) {
+              doc.deleteIn([...PAYLOAD_UI_STATE_ROOT, 'disabled-override-params']);
+            }
+            if (payloadOverrideRawParamSplit.disabledInUiState.length > 0) {
+              doc.setIn(
+                [...PAYLOAD_UI_STATE_ROOT, 'disabled-override-raw-params'],
+                serializePayloadUiRules(payloadOverrideRawParamSplit.disabledInUiState)
+              );
+            } else if (docHas(doc, [...PAYLOAD_UI_STATE_ROOT, 'disabled-override-raw-params'])) {
+              doc.deleteIn([...PAYLOAD_UI_STATE_ROOT, 'disabled-override-raw-params']);
+            }
+            deleteIfMapEmpty(doc, [...PAYLOAD_UI_STATE_ROOT]);
+          } else if (docHas(doc, [...PAYLOAD_UI_STATE_ROOT])) {
+            doc.deleteIn([...PAYLOAD_UI_STATE_ROOT]);
+          }
+
           deleteIfMapEmpty(doc, ['payload']);
         }
 
