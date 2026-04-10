@@ -59,6 +59,7 @@ import {
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
+import { triggerAuthFilesQuotaRefresh } from '@/features/authFiles/quotaRefreshEvents';
 import styles from './AuthFilesPage.module.scss';
 
 const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
@@ -323,12 +324,6 @@ export function AuthFilesPage() {
     [loadFiles, sortMode]
   );
 
-  const handleHeaderRefresh = useCallback(async () => {
-    await Promise.all([loadFiles(), refreshKeyStats(), loadExcluded(), loadModelAlias()]);
-  }, [loadFiles, refreshKeyStats, loadExcluded, loadModelAlias]);
-
-  useHeaderRefresh(handleHeaderRefresh);
-
   useEffect(() => {
     if (!isCurrentLayer) return;
     loadFiles();
@@ -423,6 +418,16 @@ export function AuthFilesPage() {
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
   const pageItems = sorted.slice(start, start + pageSize);
+  const visibleQuotaFileNames = useMemo(() => {
+    if (!quotaFilterType || compactMode) return [];
+
+    return pageItems
+      .filter((file) => !isRuntimeOnlyAuthFile(file))
+      .filter(
+        (file) => normalizeProviderKey(String(file.provider ?? file.type ?? '')) === quotaFilterType
+      )
+      .map((file) => file.name);
+  }, [compactMode, pageItems, quotaFilterType]);
   const selectablePageItems = useMemo(
     () => pageItems.filter((file) => !isRuntimeOnlyAuthFile(file)),
     [pageItems]
@@ -431,6 +436,28 @@ export function AuthFilesPage() {
     () => sorted.filter((file) => !isRuntimeOnlyAuthFile(file)),
     [sorted]
   );
+  const handleHeaderRefresh = useCallback(async () => {
+    await Promise.all([loadFiles(), refreshKeyStats(), loadExcluded(), loadModelAlias()]);
+
+    if (quotaFilterType && visibleQuotaFileNames.length > 0 && !compactMode) {
+      triggerAuthFilesQuotaRefresh({
+        quotaType: quotaFilterType,
+        fileNames: visibleQuotaFileNames,
+        reason: 'header-refresh',
+      });
+    }
+  }, [
+    compactMode,
+    loadFiles,
+    loadExcluded,
+    loadModelAlias,
+    quotaFilterType,
+    refreshKeyStats,
+    visibleQuotaFileNames,
+  ]);
+
+  useHeaderRefresh(handleHeaderRefresh);
+
   const selectedNames = useMemo(() => Array.from(selectedFiles), [selectedFiles]);
   const selectedHasStatusUpdating = useMemo(
     () => selectedNames.some((name) => statusUpdating[name] === true),

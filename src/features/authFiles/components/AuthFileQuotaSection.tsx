@@ -1,4 +1,4 @@
-import { useCallback, type ReactNode } from 'react';
+import { useCallback, useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
@@ -16,6 +16,7 @@ import {
   resolveQuotaErrorMessage,
   type QuotaProviderType
 } from '@/features/authFiles/constants';
+import { subscribeAuthFilesQuotaRefresh } from '@/features/authFiles/quotaRefreshEvents';
 import { QuotaProgressBar } from '@/features/authFiles/components/QuotaProgressBar';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
@@ -56,11 +57,12 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     return state.setGeminiCliQuota as unknown as (updater: unknown) => void;
   });
 
-  const refreshQuotaForFile = useCallback(async () => {
+  const refreshQuotaForFile = useCallback(async (options?: { silent?: boolean }) => {
     if (disableControls) return;
     if (isRuntimeOnlyAuthFile(file)) return;
     if (file.disabled) return;
     if (quota?.status === 'loading') return;
+    const silent = options?.silent === true;
 
     const config = getQuotaConfig(quotaType) as unknown as {
       i18nPrefix: string;
@@ -82,7 +84,9 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         ...prev,
         [file.name]: config.buildSuccessState(data)
       }));
-      showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
+      if (!silent) {
+        showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.unknown_error');
       const status = getStatusFromError(err);
@@ -90,9 +94,21 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         ...prev,
         [file.name]: config.buildErrorState(message, status)
       }));
-      showNotification(t('auth_files.quota_refresh_failed', { name: file.name, message }), 'error');
+      if (!silent) {
+        showNotification(t('auth_files.quota_refresh_failed', { name: file.name, message }), 'error');
+      }
     }
   }, [disableControls, file, quota?.status, quotaType, showNotification, t, updateQuotaState]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeAuthFilesQuotaRefresh((detail) => {
+      if (detail.quotaType !== quotaType) return;
+      if (!detail.fileNames.includes(file.name)) return;
+      void refreshQuotaForFile({ silent: true });
+    });
+
+    return unsubscribe;
+  }, [file.name, quotaType, refreshQuotaForFile]);
 
   const config = getQuotaConfig(quotaType) as unknown as {
     i18nPrefix: string;
