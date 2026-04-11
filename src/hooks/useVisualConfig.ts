@@ -647,6 +647,12 @@ function getNextDirtyFields(
       nextValues.quotaSwitchPreviewModel === baselineValues.quotaSwitchPreviewModel
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'quotaAntigravityCredits')) {
+    updateDirty(
+      'quotaAntigravityCredits',
+      nextValues.quotaAntigravityCredits === baselineValues.quotaAntigravityCredits
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'routingStrategy')) {
     updateDirty('routingStrategy', nextValues.routingStrategy === baselineValues.routingStrategy);
   }
@@ -827,6 +833,7 @@ export function useVisualConfig() {
 
         quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
         quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
+        quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? true),
 
         routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
 
@@ -929,11 +936,16 @@ export function useVisualConfig() {
         if (
           docHas(doc, ['quota-exceeded']) ||
           !values.quotaSwitchProject ||
-          !values.quotaSwitchPreviewModel
+          !values.quotaSwitchPreviewModel ||
+          !values.quotaAntigravityCredits
         ) {
           ensureMapInDoc(doc, ['quota-exceeded']);
           doc.setIn(['quota-exceeded', 'switch-project'], values.quotaSwitchProject);
           doc.setIn(['quota-exceeded', 'switch-preview-model'], values.quotaSwitchPreviewModel);
+          doc.setIn(
+            ['quota-exceeded', 'antigravity-credits'],
+            values.quotaAntigravityCredits
+          );
           deleteIfMapEmpty(doc, ['quota-exceeded']);
         }
 

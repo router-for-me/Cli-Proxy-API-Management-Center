@@ -1270,7 +1270,9 @@
           "switch_project": "切换项目",
           "switch_project_desc": "配额耗尽时自动切换到其他项目",
           "switch_preview_model": "切换预览模型",
-          "switch_preview_model_desc": "配额耗尽时切换到预览版本模型"
+          "switch_preview_model_desc": "配额耗尽时切换到预览版本模型",
+          "antigravity_credits": "Antigravity Credits 重试",
+          "antigravity_credits_desc": "Antigravity 返回 quota_exhausted 429 时，使用 enabledCreditTypes=[\"GOOGLE_ONE_AI\"] 重试一次"
         },
         "streaming": {
           "title": "流式传输配置",
