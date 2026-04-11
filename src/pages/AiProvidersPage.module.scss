@@ -62,6 +62,45 @@
   }
 }
 
+.providerConfigList {
+  display: grid;
+  gap: $spacing-md;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  @media (max-width: 1680px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @media (max-width: 1280px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.providerConfigItem {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  height: 100%;
+  gap: $spacing-sm;
+
+  :global(.item-meta) {
+    min-width: 0;
+    width: 100%;
+    flex: 1;
+  }
+
+  :global(.item-actions) {
+    width: 100%;
+    margin-top: auto;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
 // 成功失败次数统计样式
 .cardStats {
   display: flex;

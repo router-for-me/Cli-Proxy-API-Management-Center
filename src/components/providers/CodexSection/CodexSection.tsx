@@ -86,6 +86,8 @@ export function CodexSection({
         <ProviderList<ProviderKeyConfig>
           items={configs}
           loading={loading}
+          listClassName={styles.providerConfigList}
+          rowClassName={styles.providerConfigItem}
           keyField={(item) => item.apiKey}
           emptyTitle={t('ai_providers.codex_empty_title')}
           emptyDescription={t('ai_providers.codex_empty_desc')}

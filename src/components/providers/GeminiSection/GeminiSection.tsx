@@ -86,6 +86,8 @@ export function GeminiSection({
         <ProviderList<GeminiKeyConfig>
           items={configs}
           loading={loading}
+          listClassName={styles.providerConfigList}
+          rowClassName={styles.providerConfigItem}
           keyField={(item) => item.apiKey}
           emptyTitle={t('ai_providers.gemini_empty_title')}
           emptyDescription={t('ai_providers.gemini_empty_desc')}

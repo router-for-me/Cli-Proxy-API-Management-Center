@@ -16,6 +16,8 @@ interface ProviderListProps<T> {
   actionsDisabled?: boolean;
   getRowDisabled?: (item: T, index: number) => boolean;
   renderExtraActions?: (item: T, index: number) => ReactNode;
+  listClassName?: string;
+  rowClassName?: string;
 }
 
 export function ProviderList<T>({
@@ -31,6 +33,8 @@ export function ProviderList<T>({
   actionsDisabled = false,
   getRowDisabled,
   renderExtraActions,
+  listClassName,
+  rowClassName,
 }: ProviderListProps<T>) {
   const { t } = useTranslation();
 
@@ -42,14 +46,17 @@ export function ProviderList<T>({
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
   }
 
+  const listClasses = ['item-list', listClassName].filter(Boolean).join(' ');
+
   return (
-    <div className="item-list">
+    <div className={listClasses}>
       {items.map((item, index) => {
         const rowDisabled = getRowDisabled ? getRowDisabled(item, index) : false;
+        const rowClasses = ['item-row', rowClassName].filter(Boolean).join(' ');
         return (
           <div
             key={keyField(item, index)}
-            className="item-row"
+            className={rowClasses}
             style={rowDisabled ? { opacity: 0.6 } : undefined}
           >
             <div className="item-meta">{renderContent(item, index)}</div>

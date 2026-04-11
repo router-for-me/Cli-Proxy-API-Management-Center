@@ -86,6 +86,8 @@ export function VertexSection({
         <ProviderList<ProviderKeyConfig>
           items={configs}
           loading={loading}
+          listClassName={styles.providerConfigList}
+          rowClassName={styles.providerConfigItem}
           keyField={(item) => item.apiKey}
           emptyTitle={t('ai_providers.vertex_empty_title')}
           emptyDescription={t('ai_providers.vertex_empty_desc')}
