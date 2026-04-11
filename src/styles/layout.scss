@@ -51,6 +51,8 @@
     right: 0;
     padding: $spacing-sm $spacing-md;
     gap: $spacing-sm;
+    padding-left: max(#{$spacing-md}, env(safe-area-inset-left));
+    padding-right: max(#{$spacing-md}, env(safe-area-inset-right));
   }
 
   .left {
@@ -395,7 +397,7 @@
     }
 
     @media (max-width: $breakpoint-mobile) {
-      gap: 2px;
+      gap: 6px;
     }
   }
 
@@ -578,6 +580,7 @@
   @media (max-width: $breakpoint-mobile) {
     position: fixed;
     z-index: $z-dropdown;
+    width: min(86vw, 280px);
     left: 0;
     top: var(--header-height);
     bottom: 0;
@@ -631,7 +634,9 @@
   }
 
   @media (max-width: $breakpoint-mobile) {
-    padding: $spacing-md;
+    padding: $spacing-md max(#{$spacing-sm}, env(safe-area-inset-right))
+      calc(#{$spacing-md} + env(safe-area-inset-bottom))
+      max(#{$spacing-sm}, env(safe-area-inset-left));
   }
 }
 

@@ -16,6 +16,11 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+
+  @include mobile {
+    align-items: stretch;
+    gap: 12px;
+  }
 }
 
 .headerActions {
@@ -23,12 +28,30 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+
+  @include mobile {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+
+    :global(.btn) {
+      width: 100%;
+      min-width: 0;
+      justify-content: center;
+    }
+  }
 }
 
 .lastRefreshed {
   font-size: 11px;
   color: var(--text-tertiary);
   white-space: nowrap;
+
+  @include mobile {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
 }
 
 .timeRangeGroup {
@@ -36,6 +59,12 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+
+  @include mobile {
+    grid-column: 1 / -1;
+    width: 100%;
+    align-items: center;
+  }
 }
 
 .timeRangeLabel {
@@ -46,6 +75,11 @@
 
 .timeRangeSelectControl {
   min-width: 164px;
+
+  @include mobile {
+    min-width: 0;
+    flex: 1;
+  }
 }
 
 .deferredBlock {
@@ -155,6 +189,11 @@
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+
+  @include mobile {
+    font-size: 24px;
+    line-height: 1.2;
+  }
 }
 
 .secondaryChartsGrid {
@@ -616,7 +655,8 @@
   overflow: hidden;
 
   @include mobile {
-    height: 420px;
+    height: auto;
+    max-height: none;
   }
 }
 
@@ -626,6 +666,11 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+
+  @include mobile {
+    overflow: visible;
+    max-height: none;
+  }
 }
 
 .detailsNote {
@@ -636,11 +681,15 @@
 
 // Table (80%比例)
 .tableWrapper {
-  overflow-x: auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
 }
 
 .table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   font-size: 12px;
 
@@ -673,6 +722,16 @@
 
   tbody tr:hover {
     background-color: var(--bg-tertiary);
+  }
+
+  @include mobile {
+    min-width: 860px;
+    font-size: 11px;
+
+    th,
+    td {
+      padding: 8px 9px;
+    }
   }
 }
 
@@ -993,6 +1052,18 @@
     background: transparent;
     color: var(--text-secondary);
   }
+
+  @include mobile {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+
+    :global(.btn) {
+      width: 100%;
+      min-width: 0;
+    }
+  }
 }
 
 .chartsGrid {
@@ -1060,6 +1131,20 @@
   align-items: center;
   gap: $spacing-xs;
   flex-wrap: wrap;
+
+  @include mobile {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+
+    :global(.btn) {
+      width: 100%;
+      min-width: 0;
+      justify-content: center;
+      padding-inline: 8px;
+    }
+  }
 }
 
 .requestEventsToolbar {
@@ -1068,6 +1153,12 @@
   flex-wrap: wrap;
   align-items: flex-end;
   margin-bottom: $spacing-sm;
+
+  @include mobile {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 }
 
 .requestEventsFilterItem {
@@ -1075,6 +1166,11 @@
   flex-direction: column;
   gap: 4px;
   min-width: 180px;
+
+  @include mobile {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .requestEventsFilterLabel {
@@ -1085,6 +1181,11 @@
 
 .requestEventsSelect {
   min-width: 180px;
+
+  @include mobile {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .requestEventsMeta {
@@ -1107,11 +1208,24 @@
   max-height: 460px;
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
+  -webkit-overflow-scrolling: touch;
+
+  .table {
+    min-width: 980px;
+  }
+
+  @include mobile {
+    max-height: 420px;
+  }
 }
 
 .requestEventsTimestamp {
   white-space: nowrap;
   min-width: 160px;
+
+  @include mobile {
+    min-width: 132px;
+  }
 }
 
 .requestEventsLatency {
@@ -1132,6 +1246,10 @@
   font-size: 11px;
   max-width: 180px;
   word-break: break-all;
+
+  @include mobile {
+    max-width: 150px;
+  }
 }
 
 @keyframes deferredShimmer {
@@ -1198,6 +1316,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chartLineItem {
