@@ -670,7 +670,8 @@
     "plan_plus": "Plus",
     "plan_team": "Team",
     "plan_free": "Free",
-    "plan_pro": "Pro"
+    "plan_pro": "Pro 20x",
+    "plan_prolite": "Pro 5x"
   },
   "gemini_cli_quota": {
     "title": "Gemini CLI 额度",
