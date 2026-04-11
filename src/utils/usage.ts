@@ -376,6 +376,10 @@ export function buildCandidateUsageSourceIds(input: {
 
   const apiKey = input.apiKey?.trim();
   if (apiKey) {
+    // Include the normalised form first so that "non-standard" keys (e.g. short tokens,
+    // keys containing '/' etc.) that are classified as text by normalizeUsageSourceId()
+    // can still match usage details.
+    result.push(normalizeUsageSourceId(apiKey));
     result.push(`${USAGE_SOURCE_PREFIX_KEY}${fnv1a64Hex(apiKey)}`);
     result.push(`${USAGE_SOURCE_PREFIX_MASKED}${maskApiKey(apiKey)}`);
   }
