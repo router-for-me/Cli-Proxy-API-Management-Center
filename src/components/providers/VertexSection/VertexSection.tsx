@@ -10,8 +10,11 @@ import {
   buildCandidateUsageSourceIds,
   calculateStatusBarData,
   type KeyStats,
-  type UsageDetail,
 } from '@/utils/usage';
+import {
+  collectUsageDetailsForCandidates,
+  type UsageDetailsBySource,
+} from '@/utils/usageIndex';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
 import { ProviderStatusBar } from '../ProviderStatusBar';
@@ -20,7 +23,7 @@ import { getStatsBySource, hasDisableAllModelsRule } from '../utils';
 interface VertexSectionProps {
   configs: ProviderKeyConfig[];
   keyStats: KeyStats;
-  usageDetails: UsageDetail[];
+  usageDetailsBySource: UsageDetailsBySource;
   loading: boolean;
   disableControls: boolean;
   isSwitching: boolean;
@@ -33,7 +36,7 @@ interface VertexSectionProps {
 export function VertexSection({
   configs,
   keyStats,
-  usageDetails,
+  usageDetailsBySource,
   loading,
   disableControls,
   isSwitching,
@@ -56,13 +59,14 @@ export function VertexSection({
         prefix: config.prefix,
       });
       if (!candidates.length) return;
-      const candidateSet = new Set(candidates);
-      const filteredDetails = usageDetails.filter((detail) => candidateSet.has(detail.source));
-      cache.set(config.apiKey, calculateStatusBarData(filteredDetails));
+      cache.set(
+        config.apiKey,
+        calculateStatusBarData(collectUsageDetailsForCandidates(usageDetailsBySource, candidates))
+      );
     });
 
     return cache;
-  }, [configs, usageDetails]);
+  }, [configs, usageDetailsBySource]);
 
   return (
     <>

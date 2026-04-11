@@ -196,9 +196,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  --glass-blur: 6px;
+  background: var(--glass-bg-secondary);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
 }
 
 .loadingOverlayContent {
@@ -245,8 +246,7 @@
   padding: 18px;
   background:
     radial-gradient(120% 140% at 12% 0%, var(--accent-soft) 0%, rgba(0, 0, 0, 0) 62%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0)),
-    var(--bg-primary);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0)), var(--bg-primary);
   border-radius: $radius-lg;
   border: 1px solid var(--border-color);
   display: flex;
@@ -254,7 +254,10 @@
   gap: 10px;
   min-height: 176px;
   box-shadow: var(--shadow-lg);
-  transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
+  transition:
+    transform $transition-fast,
+    box-shadow $transition-fast,
+    border-color $transition-fast;
   overflow: hidden;
 
   &::before {
@@ -467,7 +470,10 @@
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
     background: var(--bg-tertiary);
@@ -622,6 +628,12 @@
   overscroll-behavior: contain;
 }
 
+.detailsNote {
+  padding: 0 4px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 // Table (80%比例)
 .tableWrapper {
   overflow-x: auto;
@@ -632,7 +644,8 @@
   border-collapse: collapse;
   font-size: 12px;
 
-  th, td {
+  th,
+  td {
     padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
@@ -710,6 +723,11 @@
 
 .requestBreakdown {
   color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.durationCell {
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -1326,7 +1344,9 @@
   width: 100%;
   height: 100%;
   border-radius: 2px;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
 
   .healthBlockWrapper:hover &,
   .healthBlockWrapper.healthBlockActive & {

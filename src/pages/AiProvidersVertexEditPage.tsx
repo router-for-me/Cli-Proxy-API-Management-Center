@@ -15,6 +15,7 @@ import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
+import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
 import type { VertexFormState } from '@/components/providers';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
@@ -47,18 +48,28 @@ const normalizeModelEntries = (entries: Array<{ name: string; alias: string }>) 
     return acc;
   }, []);
 
-const buildVertexSignature = (form: VertexFormState) =>
-  JSON.stringify({
-    apiKey: String(form.apiKey ?? '').trim(),
-    priority:
-      form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
-    prefix: String(form.prefix ?? '').trim(),
-    baseUrl: String(form.baseUrl ?? '').trim(),
-    proxyUrl: String(form.proxyUrl ?? '').trim(),
-    headers: normalizeHeaderEntries(form.headers),
-    models: normalizeModelEntries(form.modelEntries),
-    excludedModels: parseExcludedModels(form.excludedText ?? ''),
-  });
+type VertexFormBaseline = {
+  apiKey: string;
+  priority: number | null;
+  prefix: string;
+  baseUrl: string;
+  proxyUrl: string;
+  headers: ReturnType<typeof normalizeHeaderEntries>;
+  models: ReturnType<typeof normalizeModelEntries>;
+  excludedModels: string[];
+};
+
+const buildVertexBaseline = (form: VertexFormState): VertexFormBaseline => ({
+  apiKey: String(form.apiKey ?? '').trim(),
+  priority:
+    form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
+  prefix: String(form.prefix ?? '').trim(),
+  baseUrl: String(form.baseUrl ?? '').trim(),
+  proxyUrl: String(form.proxyUrl ?? '').trim(),
+  headers: normalizeHeaderEntries(form.headers),
+  models: normalizeModelEntries(form.modelEntries),
+  excludedModels: parseExcludedModels(form.excludedText ?? ''),
+});
 
 export function AiProvidersVertexEditPage() {
   const { t } = useTranslation();
@@ -79,7 +90,7 @@ export function AiProvidersVertexEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<VertexFormState>(() => buildEmptyForm());
-  const [baselineSignature, setBaselineSignature] = useState(() => buildVertexSignature(buildEmptyForm()));
+  const [baseline, setBaseline] = useState(() => buildVertexBaseline(buildEmptyForm()));
 
   const hasIndexParam = typeof params.index === 'string';
   const editIndex = useMemo(() => parseIndexParam(params.index), [params.index]);
@@ -160,18 +171,51 @@ export function AiProvidersVertexEditPage() {
         excludedText: excludedModelsToText(initialData.excludedModels),
       };
       setForm(nextForm);
-      setBaselineSignature(buildVertexSignature(nextForm));
+      setBaseline(buildVertexBaseline(nextForm));
       return;
     }
     const nextForm = buildEmptyForm();
     setForm(nextForm);
-    setBaselineSignature(buildVertexSignature(nextForm));
+    setBaseline(buildVertexBaseline(nextForm));
   }, [initialData, loading]);
 
   const canSave = !disableControls && !saving && !loading && !invalidIndexParam && !invalidIndex;
 
-  const currentSignature = useMemo(() => buildVertexSignature(form), [form]);
-  const isDirty = baselineSignature !== currentSignature;
+  const normalizedHeaders = useMemo(() => normalizeHeaderEntries(form.headers), [form.headers]);
+  const normalizedModels = useMemo(
+    () => normalizeModelEntries(form.modelEntries),
+    [form.modelEntries]
+  );
+  const normalizedExcludedModels = useMemo(
+    () => parseExcludedModels(form.excludedText ?? ''),
+    [form.excludedText]
+  );
+  const normalizedPriority = useMemo(() => {
+    return form.priority !== undefined && Number.isFinite(form.priority)
+      ? Math.trunc(form.priority)
+      : null;
+  }, [form.priority]);
+  const isHeadersDirty = useMemo(
+    () => !areKeyValueEntriesEqual(baseline.headers, normalizedHeaders),
+    [baseline.headers, normalizedHeaders]
+  );
+  const isModelsDirty = useMemo(
+    () => !areModelEntriesEqual(baseline.models, normalizedModels),
+    [baseline.models, normalizedModels]
+  );
+  const isExcludedModelsDirty = useMemo(
+    () => !areStringArraysEqual(baseline.excludedModels, normalizedExcludedModels),
+    [baseline.excludedModels, normalizedExcludedModels]
+  );
+  const isDirty =
+    baseline.apiKey !== form.apiKey.trim() ||
+    baseline.priority !== normalizedPriority ||
+    baseline.prefix !== String(form.prefix ?? '').trim() ||
+    baseline.baseUrl !== String(form.baseUrl ?? '').trim() ||
+    baseline.proxyUrl !== String(form.proxyUrl ?? '').trim() ||
+    isHeadersDirty ||
+    isModelsDirty ||
+    isExcludedModelsDirty;
   const canGuard = !loading && !saving && !invalidIndexParam && !invalidIndex;
 
   const { allowNextNavigation } = useUnsavedChangesGuard({
@@ -230,7 +274,7 @@ export function AiProvidersVertexEditPage() {
         'success'
       );
       allowNextNavigation();
-      setBaselineSignature(buildVertexSignature(form));
+      setBaseline(buildVertexBaseline(form));
       handleBack();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export type HeaderRefreshHandler = () => void | Promise<void>;
 
@@ -9,9 +9,19 @@ export const triggerHeaderRefresh = async () => {
   await activeHeaderRefreshHandler();
 };
 
-export const useHeaderRefresh = (handler?: HeaderRefreshHandler | null) => {
+export const useHeaderRefresh = (handler?: HeaderRefreshHandler | null, enabled = true) => {
+  const lastHandlerRef = useRef<HeaderRefreshHandler | null>(null);
+
   useEffect(() => {
-    if (!handler) return;
+    const previousHandler = lastHandlerRef.current;
+    lastHandlerRef.current = handler ?? null;
+
+    if (!enabled || !handler) {
+      if (previousHandler && activeHeaderRefreshHandler === previousHandler) {
+        activeHeaderRefreshHandler = null;
+      }
+      return;
+    }
 
     activeHeaderRefreshHandler = handler;
 
@@ -20,5 +30,5 @@ export const useHeaderRefresh = (handler?: HeaderRefreshHandler | null) => {
         activeHeaderRefreshHandler = null;
       }
     };
-  }, [handler]);
+  }, [enabled, handler]);
 };

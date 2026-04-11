@@ -17,10 +17,11 @@
   flex-direction: row;
   gap: 6px;
   padding: 10px 12px;
-  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  --glass-blur: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  border: 1px solid var(--glass-border);
   border-radius: 999px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   overflow-x: auto;
@@ -104,8 +105,6 @@
 // 暗色主题适配
 :global([data-theme='dark']) {
   .navList {
-    background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
-    border-color: color-mix(in srgb, var(--border-color) 55%, transparent);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   }
 

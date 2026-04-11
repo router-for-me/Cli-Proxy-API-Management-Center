@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
-import { yaml } from '@codemirror/lang-yaml';
-import { search, searchKeymap, highlightSelectionMatches } from '@codemirror/search';
-import { keymap } from '@codemirror/view';
+import type { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { parse as parseYaml, parseDocument } from 'yaml';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +23,8 @@ import styles from './ConfigPage.module.scss';
 
 type ConfigEditorTab = 'visual' | 'source';
 
+const LazyConfigSourceEditor = lazy(() => import('@/components/config/ConfigSourceEditor'));
+
 function readCommercialModeFromYaml(yamlContent: string): boolean {
   try {
     const parsed = parseYaml(yamlContent);
@@ -39,7 +38,7 @@ function readCommercialModeFromYaml(yamlContent: string): boolean {
 export function ConfigPage() {
   const { t } = useTranslation();
   const pageTransitionLayer = usePageTransitionLayer();
-  const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
+  const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.isCurrentLayer : true;
   const showNotification = useNotificationStore((state) => state.showNotification);
   const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
@@ -79,7 +78,7 @@ export function ConfigPage() {
     total: 0,
   });
   const [lastSearchedQuery, setLastSearchedQuery] = useState('');
-  const editorRef = useRef<ReactCodeMirrorRef>(null);
+  const editorRef = useRef<ReactCodeMirrorRef | null>(null);
   const floatingActionsRef = useRef<HTMLDivElement>(null);
 
   const disableControls = connectionStatus !== 'connected';
@@ -405,12 +404,6 @@ export function ConfigPage() {
     };
   }, [shouldRenderFloatingActions]);
 
-  // CodeMirror extensions
-  const extensions = useMemo(
-    () => [yaml(), search(), highlightSelectionMatches(), keymap.of(searchKeymap)],
-    []
-  );
-
   // Status text
   const getStatusText = () => {
     if (disableControls) return t('config_management.status_disconnected');
@@ -630,37 +623,16 @@ export function ConfigPage() {
               </div>
 
               <div className={styles.editorWrapper}>
-                <CodeMirror
-                  ref={editorRef}
-                  value={content}
-                  onChange={handleChange}
-                  extensions={extensions}
-                  theme={resolvedTheme}
-                  editable={!disableControls && !loading}
-                  placeholder={t('config_management.editor_placeholder')}
-                  height="100%"
-                  style={{ height: '100%' }}
-                  basicSetup={{
-                    lineNumbers: true,
-                    highlightActiveLineGutter: true,
-                    highlightActiveLine: true,
-                    foldGutter: true,
-                    dropCursor: true,
-                    allowMultipleSelections: true,
-                    indentOnInput: true,
-                    bracketMatching: true,
-                    closeBrackets: true,
-                    autocompletion: false,
-                    rectangularSelection: true,
-                    crosshairCursor: false,
-                    highlightSelectionMatches: true,
-                    closeBracketsKeymap: true,
-                    searchKeymap: true,
-                    foldKeymap: true,
-                    completionKeymap: false,
-                    lintKeymap: true,
-                  }}
-                />
+                <Suspense fallback={null}>
+                  <LazyConfigSourceEditor
+                    editorRef={editorRef}
+                    value={content}
+                    onChange={handleChange}
+                    theme={resolvedTheme}
+                    editable={!disableControls && !loading}
+                    placeholder={t('config_management.editor_placeholder')}
+                  />
+                </Suspense>
               </div>
             </div>
           )}

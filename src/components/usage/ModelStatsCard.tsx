@@ -1,17 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
-import { formatCompactNumber, formatUsd } from '@/utils/usage';
+import {
+  LATENCY_SOURCE_FIELD,
+  formatCompactNumber,
+  formatDurationMs,
+  formatUsd,
+  type ModelStatsSummary,
+} from '@/utils/usage';
 import styles from '@/pages/UsagePage.module.scss';
 
-export interface ModelStat {
-  model: string;
-  requests: number;
-  successCount: number;
-  failureCount: number;
-  tokens: number;
-  cost: number;
-}
+export type ModelStat = ModelStatsSummary;
 
 export interface ModelStatsCardProps {
   modelStats: ModelStat[];
@@ -19,7 +18,14 @@ export interface ModelStatsCardProps {
   hasPrices: boolean;
 }
 
-type SortKey = 'model' | 'requests' | 'tokens' | 'cost' | 'successRate';
+type SortKey =
+  | 'model'
+  | 'requests'
+  | 'tokens'
+  | 'cost'
+  | 'successRate'
+  | 'averageLatencyMs'
+  | 'totalLatencyMs';
 type SortDir = 'asc' | 'desc';
 
 interface ModelStatWithRate extends ModelStat {
@@ -30,6 +36,10 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
   const { t } = useTranslation();
   const [sortKey, setSortKey] = useState<SortKey>('requests');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const latencyHint = t('usage_stats.latency_unit_hint', {
+    field: LATENCY_SOURCE_FIELD,
+    unit: t('usage_stats.duration_unit_ms'),
+  });
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -48,109 +58,159 @@ export function ModelStatsCard({ modelStats, loading, hasPrices }: ModelStatsCar
     const dir = sortDir === 'asc' ? 1 : -1;
     list.sort((a, b) => {
       if (sortKey === 'model') return dir * a.model.localeCompare(b.model);
-      return dir * ((a[sortKey] as number) - (b[sortKey] as number));
+      const left = a[sortKey];
+      const right = b[sortKey];
+      const leftValid = typeof left === 'number' && Number.isFinite(left);
+      const rightValid = typeof right === 'number' && Number.isFinite(right);
+
+      if (!leftValid && !rightValid) return 0;
+      if (!leftValid) return 1;
+      if (!rightValid) return -1;
+      return dir * (left - right);
     });
     return list;
   }, [modelStats, sortKey, sortDir]);
 
-  const arrow = (key: SortKey) =>
-    sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+  const arrow = (key: SortKey) => (sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '');
   const ariaSort = (key: SortKey): 'none' | 'ascending' | 'descending' =>
     sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
+  const hasLatencyData = sorted.some((stat) => stat.latencySampleCount > 0);
 
   return (
     <Card title={t('usage_stats.models')} className={styles.detailsFixedCard}>
       {loading ? (
         <div className={styles.hint}>{t('common.loading')}</div>
       ) : sorted.length > 0 ? (
-        <div className={styles.detailsScroll}>
-          <div className={styles.tableWrapper}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.sortableHeader} aria-sort={ariaSort('model')}>
-                    <button
-                      type="button"
-                      className={styles.sortHeaderButton}
-                      onClick={() => handleSort('model')}
-                    >
-                      {t('usage_stats.model_name')}{arrow('model')}
-                    </button>
-                  </th>
-                  <th className={styles.sortableHeader} aria-sort={ariaSort('requests')}>
-                    <button
-                      type="button"
-                      className={styles.sortHeaderButton}
-                      onClick={() => handleSort('requests')}
-                    >
-                      {t('usage_stats.requests_count')}{arrow('requests')}
-                    </button>
-                  </th>
-                  <th className={styles.sortableHeader} aria-sort={ariaSort('tokens')}>
-                    <button
-                      type="button"
-                      className={styles.sortHeaderButton}
-                      onClick={() => handleSort('tokens')}
-                    >
-                      {t('usage_stats.tokens_count')}{arrow('tokens')}
-                    </button>
-                  </th>
-                  <th className={styles.sortableHeader} aria-sort={ariaSort('successRate')}>
-                    <button
-                      type="button"
-                      className={styles.sortHeaderButton}
-                      onClick={() => handleSort('successRate')}
-                    >
-                      {t('usage_stats.success_rate')}{arrow('successRate')}
-                    </button>
-                  </th>
-                  {hasPrices && (
-                    <th className={styles.sortableHeader} aria-sort={ariaSort('cost')}>
+        <>
+          {hasLatencyData && <div className={styles.detailsNote}>{latencyHint}</div>}
+          <div className={styles.detailsScroll}>
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th className={styles.sortableHeader} aria-sort={ariaSort('model')}>
                       <button
                         type="button"
                         className={styles.sortHeaderButton}
-                        onClick={() => handleSort('cost')}
+                        onClick={() => handleSort('model')}
                       >
-                        {t('usage_stats.total_cost')}{arrow('cost')}
+                        {t('usage_stats.model_name')}
+                        {arrow('model')}
                       </button>
                     </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((stat) => (
-                  <tr key={stat.model}>
-                    <td className={styles.modelCell}>{stat.model}</td>
-                    <td>
-                      <span className={styles.requestCountCell}>
-                        <span>{stat.requests.toLocaleString()}</span>
-                        <span className={styles.requestBreakdown}>
-                          (<span className={styles.statSuccess}>{stat.successCount.toLocaleString()}</span>{' '}
-                          <span className={styles.statFailure}>{stat.failureCount.toLocaleString()}</span>)
-                        </span>
-                      </span>
-                    </td>
-                    <td>{formatCompactNumber(stat.tokens)}</td>
-                    <td>
-                      <span
-                        className={
-                          stat.successRate >= 95
-                            ? styles.statSuccess
-                            : stat.successRate >= 80
-                              ? styles.statNeutral
-                              : styles.statFailure
-                        }
+                    <th className={styles.sortableHeader} aria-sort={ariaSort('requests')}>
+                      <button
+                        type="button"
+                        className={styles.sortHeaderButton}
+                        onClick={() => handleSort('requests')}
                       >
-                        {stat.successRate.toFixed(1)}%
-                      </span>
-                    </td>
-                    {hasPrices && <td>{stat.cost > 0 ? formatUsd(stat.cost) : '--'}</td>}
+                        {t('usage_stats.requests_count')}
+                        {arrow('requests')}
+                      </button>
+                    </th>
+                    <th className={styles.sortableHeader} aria-sort={ariaSort('tokens')}>
+                      <button
+                        type="button"
+                        className={styles.sortHeaderButton}
+                        onClick={() => handleSort('tokens')}
+                      >
+                        {t('usage_stats.tokens_count')}
+                        {arrow('tokens')}
+                      </button>
+                    </th>
+                    <th className={styles.sortableHeader} aria-sort={ariaSort('averageLatencyMs')}>
+                      <button
+                        type="button"
+                        className={styles.sortHeaderButton}
+                        onClick={() => handleSort('averageLatencyMs')}
+                        title={latencyHint}
+                      >
+                        {t('usage_stats.avg_time')}
+                        {arrow('averageLatencyMs')}
+                      </button>
+                    </th>
+                    <th className={styles.sortableHeader} aria-sort={ariaSort('totalLatencyMs')}>
+                      <button
+                        type="button"
+                        className={styles.sortHeaderButton}
+                        onClick={() => handleSort('totalLatencyMs')}
+                        title={latencyHint}
+                      >
+                        {t('usage_stats.total_time')}
+                        {arrow('totalLatencyMs')}
+                      </button>
+                    </th>
+                    <th className={styles.sortableHeader} aria-sort={ariaSort('successRate')}>
+                      <button
+                        type="button"
+                        className={styles.sortHeaderButton}
+                        onClick={() => handleSort('successRate')}
+                      >
+                        {t('usage_stats.success_rate')}
+                        {arrow('successRate')}
+                      </button>
+                    </th>
+                    {hasPrices && (
+                      <th className={styles.sortableHeader} aria-sort={ariaSort('cost')}>
+                        <button
+                          type="button"
+                          className={styles.sortHeaderButton}
+                          onClick={() => handleSort('cost')}
+                        >
+                          {t('usage_stats.total_cost')}
+                          {arrow('cost')}
+                        </button>
+                      </th>
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {sorted.map((stat) => (
+                    <tr key={stat.model}>
+                      <td className={styles.modelCell}>{stat.model}</td>
+                      <td>
+                        <span className={styles.requestCountCell}>
+                          <span>{stat.requests.toLocaleString()}</span>
+                          <span className={styles.requestBreakdown}>
+                            (
+                            <span className={styles.statSuccess}>
+                              {stat.successCount.toLocaleString()}
+                            </span>{' '}
+                            <span className={styles.statFailure}>
+                              {stat.failureCount.toLocaleString()}
+                            </span>
+                            )
+                          </span>
+                        </span>
+                      </td>
+                      <td>{formatCompactNumber(stat.tokens)}</td>
+                      <td className={styles.durationCell}>
+                        {formatDurationMs(stat.averageLatencyMs)}
+                      </td>
+                      <td className={styles.durationCell}>
+                        {formatDurationMs(stat.totalLatencyMs)}
+                      </td>
+                      <td>
+                        <span
+                          className={
+                            stat.successRate >= 95
+                              ? styles.statSuccess
+                              : stat.successRate >= 80
+                                ? styles.statNeutral
+                                : styles.statFailure
+                          }
+                        >
+                          {stat.successRate.toFixed(1)}%
+                        </span>
+                      </td>
+                      {hasPrices && <td>{stat.cost > 0 ? formatUsd(stat.cost) : '--'}</td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className={styles.hint}>{t('usage_stats.no_data')}</div>
       )}

@@ -11,8 +11,8 @@ import {
   buildCandidateUsageSourceIds,
   calculateStatusBarData,
   type KeyStats,
-  type UsageDetail,
 } from '@/utils/usage';
+import { collectUsageDetailsForCandidates, type UsageDetailsBySource } from '@/utils/usageIndex';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
 import { ProviderStatusBar } from '../ProviderStatusBar';
@@ -21,7 +21,7 @@ import { getOpenAIProviderStats, getStatsBySource } from '../utils';
 interface OpenAISectionProps {
   configs: OpenAIProviderConfig[];
   keyStats: KeyStats;
-  usageDetails: UsageDetail[];
+  usageDetailsBySource: UsageDetailsBySource;
   loading: boolean;
   disableControls: boolean;
   isSwitching: boolean;
@@ -34,7 +34,7 @@ interface OpenAISectionProps {
 export function OpenAISection({
   configs,
   keyStats,
-  usageDetails,
+  usageDetailsBySource,
   loading,
   disableControls,
   isSwitching,
@@ -57,13 +57,13 @@ export function OpenAISection({
       });
 
       const filteredDetails = sourceIds.size
-        ? usageDetails.filter((detail) => sourceIds.has(detail.source))
+        ? collectUsageDetailsForCandidates(usageDetailsBySource, sourceIds)
         : [];
       cache.set(provider.name, calculateStatusBarData(filteredDetails));
     });
 
     return cache;
-  }, [configs, usageDetails]);
+  }, [configs, usageDetailsBySource]);
 
   return (
     <>

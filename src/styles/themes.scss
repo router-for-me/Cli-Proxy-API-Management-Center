@@ -58,6 +58,14 @@
 
   --radius-md: 8px;
   --accent-tertiary: var(--bg-tertiary);
+
+  // Glass effect (blurred surfaces)
+  --glass-blur: 12px;
+  --glass-backdrop-filter: blur(var(--glass-blur));
+  --glass-filter: blur(var(--glass-blur));
+  --glass-bg: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  --glass-bg-secondary: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  --glass-border: color-mix(in srgb, var(--border-color) 60%, transparent);
 }
 
 // 纯白主题
@@ -173,4 +181,16 @@
 
   --radius-md: 8px;
   --accent-tertiary: var(--bg-tertiary);
+
+  --glass-border: color-mix(in srgb, var(--border-color) 55%, transparent);
+}
+
+@media (max-width: 768px), (prefers-reduced-motion: reduce), (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-backdrop-filter: none;
+    --glass-filter: none;
+    --glass-bg: var(--bg-primary);
+    --glass-bg-secondary: var(--bg-secondary);
+    --glass-border: var(--border-color);
+  }
 }

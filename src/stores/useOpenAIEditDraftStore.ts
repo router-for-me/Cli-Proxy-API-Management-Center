@@ -20,9 +20,24 @@ export type KeyTestStatus = {
   message: string;
 };
 
+export type OpenAIEditBaseline = {
+  name: string;
+  priority: number | null;
+  prefix: string;
+  baseUrl: string;
+  headers: Array<{ key: string; value: string }>;
+  apiKeyEntries: Array<{
+    apiKey: string;
+    proxyUrl: string;
+    headers: Array<{ key: string; value: string }>;
+  }>;
+  models: Array<{ name: string; alias: string }>;
+  testModel: string;
+};
+
 export type OpenAIEditDraft = {
   initialized: boolean;
-  baselineSignature: string;
+  baseline: OpenAIEditBaseline | null;
   form: OpenAIFormState;
   testModel: string;
   testStatus: OpenAITestStatus;
@@ -37,7 +52,7 @@ interface OpenAIEditDraftState {
   releaseDraft: (key: string) => void;
   ensureDraft: (key: string) => void;
   initDraft: (key: string, draft: Omit<OpenAIEditDraft, 'initialized'>) => void;
-  setDraftBaselineSignature: (key: string, signature: string) => void;
+  setDraftBaseline: (key: string, baseline: OpenAIEditBaseline) => void;
   setDraftForm: (key: string, action: SetStateAction<OpenAIFormState>) => void;
   setDraftTestModel: (key: string, action: SetStateAction<string>) => void;
   setDraftTestStatus: (key: string, action: SetStateAction<OpenAITestStatus>) => void;
@@ -62,7 +77,7 @@ const buildEmptyForm = (): OpenAIFormState => ({
 
 const buildEmptyDraft = (): OpenAIEditDraft => ({
   initialized: false,
-  baselineSignature: '',
+  baseline: null,
   form: buildEmptyForm(),
   testModel: '',
   testStatus: 'idle',
@@ -123,14 +138,14 @@ export const useOpenAIEditDraftStore = create<OpenAIEditDraftState>((set, get) =
     }));
   },
 
-  setDraftBaselineSignature: (key, signature) => {
+  setDraftBaseline: (key, baseline) => {
     if (!key) return;
     set((state) => {
       const existing = state.drafts[key] ?? buildEmptyDraft();
       return {
         drafts: {
           ...state.drafts,
-          [key]: { ...existing, initialized: true, baselineSignature: signature },
+          [key]: { ...existing, initialized: true, baseline },
         },
       };
     });

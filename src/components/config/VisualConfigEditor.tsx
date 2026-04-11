@@ -179,7 +179,7 @@ export function VisualConfigEditor({
 }: VisualConfigEditorProps) {
   const { t } = useTranslation();
   const pageTransitionLayer = usePageTransitionLayer();
-  const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
+  const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.isCurrentLayer : true;
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isFloatingSidebar = useMediaQuery('(min-width: 1025px)');
   const shouldRenderFloatingSidebar = !isMobile && isFloatingSidebar && isCurrentLayer;
@@ -334,6 +334,7 @@ export function VisualConfigEditor({
   );
 
   useEffect(() => {
+    if (!isCurrentLayer) return undefined;
     if (typeof IntersectionObserver === 'undefined') return undefined;
 
     const observer = new IntersectionObserver(
@@ -357,10 +358,10 @@ export function VisualConfigEditor({
     }
 
     return () => observer.disconnect();
-  }, [sections]);
+  }, [isCurrentLayer, sections]);
 
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isCurrentLayer || !isMobile) return;
     const scroller = mobileNavScrollerRef.current;
     const button = mobileNavButtonRefs.current[activeSectionId];
     if (!scroller || !button) return;
@@ -378,7 +379,7 @@ export function VisualConfigEditor({
       left: targetLeft,
       behavior: 'smooth',
     });
-  }, [activeSectionId, isMobile]);
+  }, [activeSectionId, isCurrentLayer, isMobile]);
 
   const handleSectionJump = useCallback((sectionId: VisualSectionId) => {
     setActiveSectionId(sectionId);

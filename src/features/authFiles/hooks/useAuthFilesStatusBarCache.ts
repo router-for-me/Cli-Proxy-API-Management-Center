@@ -8,17 +8,32 @@ export function useAuthFilesStatusBarCache(files: AuthFileItem[], usageDetails: 
   return useMemo(() => {
     const cache = new Map<string, AuthFileStatusBarData>();
 
+    const usageDetailsByAuthIndex = new Map<string, UsageDetail[]>();
+    usageDetails.forEach((detail) => {
+      const authIndexKey = normalizeAuthIndex(detail.auth_index);
+      if (!authIndexKey) return;
+
+      const list = usageDetailsByAuthIndex.get(authIndexKey);
+      if (list) {
+        list.push(detail);
+      } else {
+        usageDetailsByAuthIndex.set(authIndexKey, [detail]);
+      }
+    });
+
+    const uniqueAuthIndexKeys = new Set<string>();
     files.forEach((file) => {
       const rawAuthIndex = file['auth_index'] ?? file.authIndex;
       const authIndexKey = normalizeAuthIndex(rawAuthIndex);
+      if (!authIndexKey) return;
+      uniqueAuthIndexKeys.add(authIndexKey);
+    });
 
-      if (authIndexKey) {
-        const filteredDetails = usageDetails.filter((detail) => {
-          const detailAuthIndex = normalizeAuthIndex(detail.auth_index);
-          return detailAuthIndex !== null && detailAuthIndex === authIndexKey;
-        });
-        cache.set(authIndexKey, calculateStatusBarData(filteredDetails));
-      }
+    uniqueAuthIndexKeys.forEach((authIndexKey) => {
+      cache.set(
+        authIndexKey,
+        calculateStatusBarData(usageDetailsByAuthIndex.get(authIndexKey) ?? [])
+      );
     });
 
     return cache;

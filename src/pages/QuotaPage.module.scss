@@ -469,7 +469,8 @@
       rgba(255, 237, 158, 0.58) 32%,
       rgba(255, 215, 91, 0) 72%
     );
-    filter: blur(9px);
+    --glass-blur: 9px;
+    filter: var(--glass-filter);
     opacity: 0.75;
     pointer-events: none;
     z-index: -1;

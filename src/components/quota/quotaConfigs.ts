@@ -733,6 +733,7 @@ const renderAntigravityItems = (
 };
 
 const PREMIUM_GEMINI_CLI_TIER_IDS = new Set(['g1-ultra-tier']);
+const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
 
 const renderCodexItems = (
   quota: CodexQuotaState,
@@ -748,6 +749,9 @@ const renderCodexItems = (
     const normalized = normalizePlanType(pt);
     if (!normalized) return null;
     if (normalized === 'pro') return t('codex_quota.plan_pro');
+    if (PREMIUM_CODEX_PLAN_TYPES.has(normalized) && normalized !== 'pro') {
+      return t('codex_quota.plan_prolite');
+    }
     if (normalized === 'plus') return t('codex_quota.plan_plus');
     if (normalized === 'team') return t('codex_quota.plan_team');
     if (normalized === 'free') return t('codex_quota.plan_free');
@@ -755,7 +759,7 @@ const renderCodexItems = (
   };
 
   const planLabel = getPlanLabel(planType);
-  const isPremiumPlan = normalizePlanType(planType) === 'pro';
+  const isPremiumPlan = PREMIUM_CODEX_PLAN_TYPES.has(normalizePlanType(planType) ?? '');
   const nodes: ReactNode[] = [];
 
   if (planLabel) {
