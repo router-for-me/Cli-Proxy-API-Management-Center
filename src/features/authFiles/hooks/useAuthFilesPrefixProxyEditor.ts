@@ -14,6 +14,12 @@ import {
   readCodexAuthFileWebsockets,
 } from '@/features/authFiles/constants';
 
+type AuthFileHeaders = Record<string, string>;
+type AuthFileHeadersErrorKey =
+  | 'auth_files.headers_invalid_json'
+  | 'auth_files.headers_invalid_object'
+  | 'auth_files.headers_invalid_value';
+
 export type PrefixProxyEditorField =
   | 'prefix'
   | 'proxyUrl'
@@ -45,6 +51,8 @@ export type PrefixProxyEditorState = {
   note: string;
   noteTouched: boolean;
   headersText: string;
+  headersTouched: boolean;
+  headersError: string | null;
 };
 
 export type UseAuthFilesPrefixProxyEditorOptions = {
@@ -66,7 +74,45 @@ export type UseAuthFilesPrefixProxyEditorResult = {
   handlePrefixProxySave: () => Promise<void>;
 };
 
-const buildPrefixProxyUpdatedText = (editor: PrefixProxyEditorState | null): string => {
+const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const validateHeadersValue = (value: unknown): AuthFileHeadersErrorKey | null => {
+  if (!isRecordObject(value)) {
+    return 'auth_files.headers_invalid_object';
+  }
+  return Object.values(value).every((item) => typeof item === 'string')
+    ? null
+    : 'auth_files.headers_invalid_value';
+};
+
+const parseHeadersText = (
+  text: string
+): { value: AuthFileHeaders | null; errorKey: AuthFileHeadersErrorKey | null } => {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { value: null, errorKey: null };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text) as unknown;
+  } catch {
+    return { value: null, errorKey: 'auth_files.headers_invalid_json' };
+  }
+
+  const errorKey = validateHeadersValue(parsed);
+  if (errorKey) {
+    return { value: null, errorKey };
+  }
+
+  return { value: parsed as AuthFileHeaders, errorKey: null };
+};
+
+const buildPrefixProxyUpdatedText = (
+  editor: PrefixProxyEditorState | null,
+  resolveHeadersError: (key: AuthFileHeadersErrorKey) => string
+): string => {
   if (!editor?.json) return editor?.rawText ?? '';
   const next: Record<string, unknown> = { ...editor.json };
   if ('prefix' in next || editor.prefix.trim()) {
@@ -106,19 +152,16 @@ const buildPrefixProxyUpdatedText = (editor: PrefixProxyEditorState | null): str
     }
   }
 
-  if (editor.headersText.trim()) {
-    let parsedHeaders;
-    try {
-      parsedHeaders = JSON.parse(editor.headersText);
-    } catch {
-      throw new Error('Invalid JSON format for Custom Headers. Must be an object.');
+  if (editor.headersTouched) {
+    const { value: parsedHeaders, errorKey } = parseHeadersText(editor.headersText);
+    if (errorKey) {
+      throw new Error(resolveHeadersError(errorKey));
     }
-    if (!parsedHeaders || typeof parsedHeaders !== 'object' || Array.isArray(parsedHeaders)) {
-      throw new Error('Invalid JSON format for Custom Headers. Must be an object.');
+    if (parsedHeaders) {
+      next.headers = parsedHeaders;
+    } else {
+      delete next.headers;
     }
-    next.headers = parsedHeaders;
-  } else {
-    delete next.headers;
   }
 
   return JSON.stringify(
@@ -135,12 +178,13 @@ export function useAuthFilesPrefixProxyEditor(
 
   const [prefixProxyEditor, setPrefixProxyEditor] = useState<PrefixProxyEditorState | null>(null);
 
-  let prefixProxyUpdatedText = '';
-  try {
-    prefixProxyUpdatedText = buildPrefixProxyUpdatedText(prefixProxyEditor);
-  } catch {
-    // Catch JSON parsing errors during render so the UI doesn't crash.
-  }
+  const hasBlockingValidationError = Boolean(
+    prefixProxyEditor?.headersTouched && prefixProxyEditor.headersError
+  );
+  const prefixProxyUpdatedText =
+    prefixProxyEditor?.json && !hasBlockingValidationError
+      ? buildPrefixProxyUpdatedText(prefixProxyEditor, (key) => t(key))
+      : '';
 
   const prefixProxyDirty =
     Boolean(prefixProxyEditor?.json) &&
@@ -186,6 +230,8 @@ export function useAuthFilesPrefixProxyEditor(
       note: '',
       noteTouched: false,
       headersText: '',
+      headersTouched: false,
+      headersError: null,
     });
 
     try {
@@ -239,8 +285,11 @@ export function useAuthFilesPrefixProxyEditor(
       const note = typeof json.note === 'string' ? json.note : '';
       const headers = json.headers;
       let headersText = '';
-      if (headers && typeof headers === 'object') {
+      let headersError: string | null = null;
+      if (headers !== undefined) {
         headersText = JSON.stringify(headers, null, 2);
+        const { errorKey } = parseHeadersText(headersText);
+        headersError = errorKey ? t(errorKey) : null;
       }
 
       setPrefixProxyEditor((prev) => {
@@ -261,6 +310,8 @@ export function useAuthFilesPrefixProxyEditor(
           note,
           noteTouched: false,
           headersText,
+          headersTouched: false,
+          headersError,
           error: null,
         };
       });
@@ -286,7 +337,16 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'excludedModelsText') return { ...prev, excludedModelsText: String(value) };
       if (field === 'disableCooling') return { ...prev, disableCooling: String(value) };
       if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
-      if (field === 'headersText') return { ...prev, headersText: String(value) };
+      if (field === 'headersText') {
+        const headersText = String(value);
+        const { errorKey } = parseHeadersText(headersText);
+        return {
+          ...prev,
+          headersText,
+          headersTouched: true,
+          headersError: errorKey ? t(errorKey) : null,
+        };
+      }
       return { ...prev, websockets: Boolean(value) };
     });
   };
@@ -298,7 +358,7 @@ export function useAuthFilesPrefixProxyEditor(
     const name = prefixProxyEditor.fileName;
     let payload = '';
     try {
-      payload = buildPrefixProxyUpdatedText(prefixProxyEditor);
+      payload = buildPrefixProxyUpdatedText(prefixProxyEditor, (key) => t(key));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Invalid format';
       showNotification(errorMessage, 'error');
