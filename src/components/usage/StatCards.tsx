@@ -9,12 +9,13 @@ import {
   IconTrendingUp,
 } from '@/components/ui/icons';
 import {
+  LATENCY_SOURCE_FIELD,
   calculateLatencyStatsFromDetails,
+  calculateCost,
   formatCompactNumber,
   formatDurationMs,
   formatPerMinuteValue,
   formatUsd,
-  calculateCost,
   collectUsageDetails,
   extractTotalTokens,
   type ModelPrice,
@@ -52,6 +53,10 @@ export interface StatCardsProps {
 
 export function StatCards({ usage, loading, modelPrices, nowMs, sparklines }: StatCardsProps) {
   const { t } = useTranslation();
+  const latencyHint = t('usage_stats.latency_unit_hint', {
+    field: LATENCY_SOURCE_FIELD,
+    unit: t('usage_stats.duration_unit_ms'),
+  });
 
   const hasPrices = Object.keys(modelPrices).length > 0;
 
@@ -60,7 +65,11 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines }: St
       tokenBreakdown: { cachedTokens: 0, reasoningTokens: 0 },
       rateStats: { rpm: 0, tpm: 0, windowMinutes: 30, requestCount: 0, tokenCount: 0 },
       totalCost: 0,
-      latencyStats: { averageMs: null as number | null, totalMs: null as number | null, sampleCount: 0 },
+      latencyStats: {
+        averageMs: null as number | null,
+        totalMs: null as number | null,
+        sampleCount: 0,
+      },
     };
 
     if (!usage) return empty;
@@ -141,7 +150,7 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines }: St
             {t('usage_stats.failed_requests')}: {loading ? '-' : (usage?.failure_count ?? 0)}
           </span>
           {latencyStats.sampleCount > 0 && (
-            <span className={styles.statMetaItem}>
+            <span className={styles.statMetaItem} title={latencyHint}>
               {t('usage_stats.avg_time')}:{' '}
               {loading ? '-' : formatDurationMs(latencyStats.averageMs)}
             </span>

@@ -4,7 +4,24 @@
  */
 
 import type { ScriptableContext } from 'chart.js';
+import type { LatencyAccumulator, LatencyStats } from './usage/latency';
+import {
+  addLatencySample,
+  calculateLatencyStatsFromDetails,
+  createLatencyAccumulator,
+  extractLatencyMs,
+  finalizeLatencyStats,
+} from './usage/latency';
 import { maskApiKey } from './format';
+
+export type { DurationFormatOptions, LatencyStats } from './usage/latency';
+export {
+  LATENCY_SOURCE_FIELD,
+  LATENCY_SOURCE_UNIT,
+  calculateLatencyStatsFromDetails,
+  extractLatencyMs,
+  formatDurationMs,
+} from './usage/latency';
 
 export interface KeyStatBucket {
   success: number;
@@ -27,18 +44,6 @@ export interface RateStats {
   windowMinutes: number;
   requestCount: number;
   tokenCount: number;
-}
-
-export interface LatencyStats {
-  averageMs: number | null;
-  totalMs: number | null;
-  sampleCount: number;
-}
-
-export interface DurationFormatOptions {
-  maxUnits?: number;
-  invalidText?: string;
-  secondDecimals?: number | 'auto';
 }
 
 export interface ModelPrice {
@@ -654,150 +659,6 @@ export function extractTotalTokens(detail: unknown): number {
   );
 
   return inputTokens + outputTokens + reasoningTokens + cachedTokens;
-}
-
-/**
- * 从单条明细提取耗时（毫秒）
- */
-export function extractLatencyMs(detail: unknown): number | null {
-  const record = isRecord(detail) ? detail : null;
-  const rawValue = record?.latency_ms;
-  if (
-    rawValue === null ||
-    rawValue === undefined ||
-    (typeof rawValue === 'string' && rawValue.trim() === '')
-  ) {
-    return null;
-  }
-  const parsed = Number(rawValue);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return null;
-  }
-  return parsed;
-}
-
-interface LatencyAccumulator {
-  totalMs: number;
-  sampleCount: number;
-}
-
-const createLatencyAccumulator = (): LatencyAccumulator => ({
-  totalMs: 0,
-  sampleCount: 0,
-});
-
-const addLatencySample = (
-  accumulator: LatencyAccumulator,
-  latencyMs: number | null | undefined
-): void => {
-  if (latencyMs === null || latencyMs === undefined) {
-    return;
-  }
-  const parsed = Number(latencyMs);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return;
-  }
-  accumulator.totalMs += parsed;
-  accumulator.sampleCount += 1;
-};
-
-const finalizeLatencyStats = (accumulator: LatencyAccumulator): LatencyStats => ({
-  averageMs:
-    accumulator.sampleCount > 0 ? accumulator.totalMs / accumulator.sampleCount : null,
-  totalMs: accumulator.sampleCount > 0 ? accumulator.totalMs : null,
-  sampleCount: accumulator.sampleCount,
-});
-
-const trimTrailingZeros = (value: string): string => value.replace(/\.?0+$/, '');
-
-const normalizeDurationMaxUnits = (value: number | undefined): number => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return 2;
-  }
-  return Math.min(Math.floor(parsed), 4);
-};
-
-const resolveSecondDecimalPlaces = (
-  seconds: number,
-  secondDecimals: number | 'auto' | undefined
-): number => {
-  if (secondDecimals === 'auto' || secondDecimals === undefined) {
-    return seconds < 10 ? 2 : 1;
-  }
-
-  const parsed = Math.floor(Number(secondDecimals));
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return seconds < 10 ? 2 : 1;
-  }
-  return Math.min(parsed, 3);
-};
-
-/**
- * 格式化耗时显示
- */
-export function formatDurationMs(
-  value: number | null | undefined,
-  options: DurationFormatOptions = {}
-): string {
-  const invalidText = options.invalidText ?? '--';
-  if (value === null || value === undefined) {
-    return invalidText;
-  }
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return invalidText;
-  }
-
-  if (parsed < 1000) {
-    return `${Math.round(parsed)}ms`;
-  }
-
-  const seconds = parsed / 1000;
-  if (seconds < 60) {
-    const secondDecimalPlaces = resolveSecondDecimalPlaces(seconds, options.secondDecimals);
-    return `${trimTrailingZeros(seconds.toFixed(secondDecimalPlaces))}s`;
-  }
-
-  const totalSeconds = Math.floor(seconds);
-  let remainingSeconds = totalSeconds;
-  const days = Math.floor(remainingSeconds / 86_400);
-  remainingSeconds -= days * 86_400;
-  const hours = Math.floor(remainingSeconds / 3_600);
-  remainingSeconds -= hours * 3_600;
-  const minutes = Math.floor(remainingSeconds / 60);
-  remainingSeconds -= minutes * 60;
-
-  const parts = [
-    { label: 'd', value: days },
-    { label: 'h', value: hours },
-    { label: 'm', value: minutes },
-    { label: 's', value: remainingSeconds },
-  ].filter((part) => part.value > 0);
-
-  if (!parts.length) {
-    return '0s';
-  }
-
-  return parts
-    .slice(0, normalizeDurationMaxUnits(options.maxUnits))
-    .map((part, index) => {
-      const shouldPad = index > 0 && (part.label === 'm' || part.label === 's');
-      const unitValue = shouldPad ? String(part.value).padStart(2, '0') : String(part.value);
-      return `${unitValue}${part.label}`;
-    })
-    .join(' ');
-}
-
-/**
- * 从明细列表计算耗时统计
- */
-export function calculateLatencyStatsFromDetails(details: Iterable<unknown>): LatencyStats {
-  const accumulator = createLatencyAccumulator();
-  for (const detail of details) {
-    addLatencySample(accumulator, extractLatencyMs(detail));
-  }
-  return finalizeLatencyStats(accumulator);
 }
 
 /**
