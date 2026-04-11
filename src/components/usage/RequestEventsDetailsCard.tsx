@@ -10,9 +10,11 @@ import type { AuthFileItem } from '@/types/authFile';
 import type { CredentialInfo } from '@/types/sourceInfo';
 import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver';
 import {
+  extractLatencyMs,
   collectUsageDetails,
   extractTotalTokens,
-  normalizeAuthIndex
+  formatDurationMs,
+  normalizeAuthIndex,
 } from '@/utils/usage';
 import { downloadBlob } from '@/utils/download';
 import styles from '@/pages/UsagePage.module.scss';
@@ -31,6 +33,7 @@ type RequestEventRow = {
   sourceType: string;
   authIndex: string;
   failed: boolean;
+  latencyMs: number | null;
   inputTokens: number;
   outputTokens: number;
   reasoningTokens: number;
@@ -68,7 +71,7 @@ export function RequestEventsDetailsCard({
   claudeConfigs,
   codexConfigs,
   vertexConfigs,
-  openaiProviders
+  openaiProviders,
 }: RequestEventsDetailsCardProps) {
   const { t, i18n } = useTranslation();
 
@@ -91,7 +94,7 @@ export function RequestEventsDetailsCard({
           if (!key) return;
           map.set(key, {
             name: file.name || key,
-            type: (file.type || file.provider || '').toString()
+            type: (file.type || file.provider || '').toString(),
           });
         });
         setAuthFileMap(map);
@@ -131,7 +134,12 @@ export function RequestEventsDetailsCard({
           authIndexRaw === null || authIndexRaw === undefined || authIndexRaw === ''
             ? '-'
             : String(authIndexRaw);
-        const sourceInfo = resolveSourceDisplay(sourceRaw, authIndexRaw, sourceInfoMap, authFileMap);
+        const sourceInfo = resolveSourceDisplay(
+          sourceRaw,
+          authIndexRaw,
+          sourceInfoMap,
+          authFileMap
+        );
         const source = sourceInfo.displayName;
         const sourceType = sourceInfo.type;
         const model = String(detail.__modelName ?? '').trim() || '-';
@@ -146,6 +154,7 @@ export function RequestEventsDetailsCard({
           toNumber(detail.tokens?.total_tokens),
           extractTotalTokens(detail)
         );
+        const latencyMs = extractLatencyMs(detail);
 
         return {
           id: `${timestamp}-${model}-${sourceRaw || source}-${authIndex}-${index}`,
@@ -158,23 +167,26 @@ export function RequestEventsDetailsCard({
           sourceType,
           authIndex,
           failed: detail.failed === true,
+          latencyMs,
           inputTokens,
           outputTokens,
           reasoningTokens,
           cachedTokens,
-          totalTokens
+          totalTokens,
         };
       })
       .sort((a, b) => b.timestampMs - a.timestampMs);
   }, [authFileMap, i18n.language, sourceInfoMap, usage]);
+
+  const hasLatencyData = useMemo(() => rows.some((row) => row.latencyMs !== null), [rows]);
 
   const modelOptions = useMemo(
     () => [
       { value: ALL_FILTER, label: t('usage_stats.filter_all') },
       ...Array.from(new Set(rows.map((row) => row.model))).map((model) => ({
         value: model,
-        label: model
-      }))
+        label: model,
+      })),
     ],
     [rows, t]
   );
@@ -184,8 +196,8 @@ export function RequestEventsDetailsCard({
       { value: ALL_FILTER, label: t('usage_stats.filter_all') },
       ...Array.from(new Set(rows.map((row) => row.source))).map((source) => ({
         value: source,
-        label: source
-      }))
+        label: source,
+      })),
     ],
     [rows, t]
   );
@@ -195,8 +207,8 @@ export function RequestEventsDetailsCard({
       { value: ALL_FILTER, label: t('usage_stats.filter_all') },
       ...Array.from(new Set(rows.map((row) => row.authIndex))).map((authIndex) => ({
         value: authIndex,
-        label: authIndex
-      }))
+        label: authIndex,
+      })),
     ],
     [rows, t]
   );
@@ -223,8 +235,10 @@ export function RequestEventsDetailsCard({
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        const modelMatched = effectiveModelFilter === ALL_FILTER || row.model === effectiveModelFilter;
-        const sourceMatched = effectiveSourceFilter === ALL_FILTER || row.source === effectiveSourceFilter;
+        const modelMatched =
+          effectiveModelFilter === ALL_FILTER || row.model === effectiveModelFilter;
+        const sourceMatched =
+          effectiveSourceFilter === ALL_FILTER || row.source === effectiveSourceFilter;
         const authIndexMatched =
           effectiveAuthIndexFilter === ALL_FILTER || row.authIndex === effectiveAuthIndexFilter;
         return modelMatched && sourceMatched && authIndexMatched;
@@ -232,10 +246,7 @@ export function RequestEventsDetailsCard({
     [effectiveAuthIndexFilter, effectiveModelFilter, effectiveSourceFilter, rows]
   );
 
-  const renderedRows = useMemo(
-    () => filteredRows.slice(0, MAX_RENDERED_EVENTS),
-    [filteredRows]
-  );
+  const renderedRows = useMemo(() => filteredRows.slice(0, MAX_RENDERED_EVENTS), [filteredRows]);
 
   const hasActiveFilters =
     effectiveModelFilter !== ALL_FILTER ||
@@ -258,11 +269,12 @@ export function RequestEventsDetailsCard({
       'source_raw',
       'auth_index',
       'result',
+      ...(hasLatencyData ? ['latency_ms'] : []),
       'input_tokens',
       'output_tokens',
       'reasoning_tokens',
       'cached_tokens',
-      'total_tokens'
+      'total_tokens',
     ];
 
     const csvRows = filteredRows.map((row) =>
@@ -273,11 +285,12 @@ export function RequestEventsDetailsCard({
         row.sourceRaw,
         row.authIndex,
         row.failed ? 'failed' : 'success',
+        ...(hasLatencyData ? [row.latencyMs ?? ''] : []),
         row.inputTokens,
         row.outputTokens,
         row.reasoningTokens,
         row.cachedTokens,
-        row.totalTokens
+        row.totalTokens,
       ]
         .map((value) => encodeCsv(value))
         .join(',')
@@ -287,7 +300,7 @@ export function RequestEventsDetailsCard({
     const fileTime = new Date().toISOString().replace(/[:.]/g, '-');
     downloadBlob({
       filename: `usage-events-${fileTime}.csv`,
-      blob: new Blob([content], { type: 'text/csv;charset=utf-8' })
+      blob: new Blob([content], { type: 'text/csv;charset=utf-8' }),
     });
   };
 
@@ -301,20 +314,21 @@ export function RequestEventsDetailsCard({
       source_raw: row.sourceRaw,
       auth_index: row.authIndex,
       failed: row.failed,
+      ...(hasLatencyData && row.latencyMs !== null ? { latency_ms: row.latencyMs } : {}),
       tokens: {
         input_tokens: row.inputTokens,
         output_tokens: row.outputTokens,
         reasoning_tokens: row.reasoningTokens,
         cached_tokens: row.cachedTokens,
-        total_tokens: row.totalTokens
-      }
+        total_tokens: row.totalTokens,
+      },
     }));
 
     const content = JSON.stringify(payload, null, 2);
     const fileTime = new Date().toISOString().replace(/[:.]/g, '-');
     downloadBlob({
       filename: `usage-events-${fileTime}.json`,
-      blob: new Blob([content], { type: 'application/json;charset=utf-8' })
+      blob: new Blob([content], { type: 'application/json;charset=utf-8' }),
     });
   };
 
@@ -412,7 +426,7 @@ export function RequestEventsDetailsCard({
               <span className={styles.requestEventsLimitHint}>
                 {t('usage_stats.request_events_limit_hint', {
                   shown: MAX_RENDERED_EVENTS,
-                  total: filteredRows.length
+                  total: filteredRows.length,
                 })}
               </span>
             )}
@@ -427,6 +441,7 @@ export function RequestEventsDetailsCard({
                   <th>{t('usage_stats.request_events_source')}</th>
                   <th>{t('usage_stats.request_events_auth_index')}</th>
                   <th>{t('usage_stats.request_events_result')}</th>
+                  {hasLatencyData && <th>{t('usage_stats.time')}</th>}
                   <th>{t('usage_stats.input_tokens')}</th>
                   <th>{t('usage_stats.output_tokens')}</th>
                   <th>{t('usage_stats.reasoning_tokens')}</th>
@@ -452,11 +467,18 @@ export function RequestEventsDetailsCard({
                     </td>
                     <td>
                       <span
-                        className={row.failed ? styles.requestEventsResultFailed : styles.requestEventsResultSuccess}
+                        className={
+                          row.failed
+                            ? styles.requestEventsResultFailed
+                            : styles.requestEventsResultSuccess
+                        }
                       >
                         {row.failed ? t('stats.failure') : t('stats.success')}
                       </span>
                     </td>
+                    {hasLatencyData && (
+                      <td className={styles.durationCell}>{formatDurationMs(row.latencyMs)}</td>
+                    )}
                     <td>{row.inputTokens.toLocaleString()}</td>
                     <td>{row.outputTokens.toLocaleString()}</td>
                     <td>{row.reasoningTokens.toLocaleString()}</td>

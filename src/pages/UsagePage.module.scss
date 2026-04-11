@@ -596,6 +596,11 @@
   white-space: nowrap;
 }
 
+.durationCell {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 // Pricing Section (80%比例)
 .pricingSection {
   display: flex;
