@@ -45,15 +45,26 @@ export function LatencyTrendChart({
   const { t } = useTranslation();
   const [period, setPeriod] = useState<'hour' | 'day'>('hour');
 
-  const { chartData, chartOptions, hasData } = useMemo(() => {
+  const { chartData, chartOptions, hasData, summary } = useMemo(() => {
     if (!usage) {
-      return { chartData: { labels: [], datasets: [] }, chartOptions: {}, hasData: false };
+      return {
+        chartData: { labels: [], datasets: [] },
+        chartOptions: {},
+        hasData: false,
+        summary: { latest: 0, peak: 0, average: 0 }
+      };
     }
 
     const series =
       period === 'hour'
         ? buildHourlyLatencySeries(usage, hourWindowHours)
         : buildDailyLatencySeries(usage);
+    const values = series.data.filter((value) => Number.isFinite(value) && value >= 0);
+    const latest = values.length ? values[values.length - 1] : 0;
+    const peak = values.length ? Math.max(...values) : 0;
+    const average = values.length
+      ? values.reduce((sum, value) => sum + value, 0) / values.length
+      : 0;
 
     const data = {
       labels: series.labels,
@@ -87,8 +98,19 @@ export function LatencyTrendChart({
       }
     };
 
-    return { chartData: data, chartOptions: options, hasData: series.hasData };
+    return {
+      chartData: data,
+      chartOptions: options,
+      hasData: series.hasData,
+      summary: { latest, peak, average }
+    };
   }, [hourWindowHours, isDark, isMobile, period, t, usage]);
+
+  const summaryItems = [
+    { label: t('usage_stats.chart_latest'), value: formatLatencyMs(summary.latest) },
+    { label: t('usage_stats.chart_peak'), value: formatLatencyMs(summary.peak) },
+    { label: t('usage_stats.avg_latency'), value: formatLatencyMs(summary.average) }
+  ];
 
   return (
     <Card
@@ -119,6 +141,14 @@ export function LatencyTrendChart({
         <div className={styles.hint}>{t('usage_stats.latency_no_data')}</div>
       ) : (
         <div className={styles.chartWrapper}>
+          <div className={styles.chartSummaryRow}>
+            {summaryItems.map((item) => (
+              <div key={item.label} className={styles.chartSummaryPill}>
+                <span className={styles.chartSummaryLabel}>{item.label}</span>
+                <span className={styles.chartSummaryValue}>{item.value}</span>
+              </div>
+            ))}
+          </div>
           <div className={styles.chartArea}>
             <div className={styles.chartScroller}>
               <div

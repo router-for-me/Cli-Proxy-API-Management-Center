@@ -44,6 +44,7 @@ export function RequestLogsPage() {
     loading,
     error,
     lastRefreshedAt,
+    modelPrices,
     loadUsage
   } = useUsageData();
 
@@ -122,6 +123,7 @@ export function RequestLogsPage() {
       <RequestEventsDetailsCard
         usage={filteredUsage}
         loading={loading}
+        modelPrices={modelPrices}
         geminiKeys={config?.geminiApiKeys || []}
         claudeConfigs={config?.claudeApiKeys || []}
         codexConfigs={config?.codexApiKeys || []}

@@ -30,6 +30,14 @@ export function UsageChart({
 }: UsageChartProps) {
   const { t } = useTranslation();
   const showLegend = chartData.datasets.length > 1;
+  const summaryItems = [
+    { label: t('usage_stats.chart_series'), value: chartData.datasets.length.toString() },
+    { label: t('usage_stats.chart_points'), value: chartData.labels.length.toString() },
+    {
+      label: t('usage_stats.chart_view'),
+      value: period === 'hour' ? t('usage_stats.by_hour') : t('usage_stats.by_day')
+    }
+  ];
 
   return (
     <Card
@@ -58,6 +66,14 @@ export function UsageChart({
         <div className={styles.hint}>{t('common.loading')}</div>
       ) : chartData.labels.length > 0 ? (
         <div className={styles.chartWrapper}>
+          <div className={styles.chartSummaryRow}>
+            {summaryItems.map((item) => (
+              <div key={item.label} className={styles.chartSummaryPill}>
+                <span className={styles.chartSummaryLabel}>{item.label}</span>
+                <span className={styles.chartSummaryValue}>{item.value}</span>
+              </div>
+            ))}
+          </div>
           {showLegend && (
             <div className={styles.chartLegend} aria-label="Chart legend">
               {chartData.datasets.map((dataset, index) => (

@@ -954,6 +954,41 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+.chartSummaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chartSummaryPill {
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: $radius-full;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.chartSummaryLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.chartSummaryValue {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .chartLegend {
   display: flex;
   flex-wrap: wrap;
@@ -976,10 +1011,12 @@
   gap: 6px;
   min-width: 0;
   max-width: 240px;
-  padding: 5px 10px;
+  padding: 7px 11px;
   border-radius: $radius-full;
   border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--bg-primary) 92%, transparent);
   font-size: 11px;
   color: var(--text-secondary);
 
@@ -1002,10 +1039,20 @@
 }
 
 .chartArea {
+  position: relative;
   height: 300px;
+  padding: 12px 14px 10px;
+  border-radius: $radius-lg;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background:
+    radial-gradient(circle at top left, rgba($primary-color, 0.06), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--bg-primary) 90%, var(--bg-secondary) 10%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
   @include mobile {
     height: 280px;
+    padding: 10px 10px 8px;
   }
 }
 
@@ -1096,6 +1143,11 @@
   :global(.card-header) {
     margin-bottom: 18px;
     align-items: center;
+
+    @include mobile {
+      align-items: flex-start;
+      gap: 10px;
+    }
   }
 
   :global(.title) {
@@ -1105,6 +1157,8 @@
 }
 
 .secondaryChartCard {
+  min-height: 380px;
+
   :global(.title) {
     font-size: 16px;
   }

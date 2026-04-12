@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import {
   collectUsageDetails,
   buildCandidateUsageSourceIds,
+  extractTotalTokens,
   formatCompactNumber,
   normalizeAuthIndex
 } from '@/utils/usage';
@@ -31,12 +32,14 @@ interface CredentialRow {
   success: number;
   failure: number;
   total: number;
+  totalTokens: number;
   successRate: number;
 }
 
 interface CredentialBucket {
   success: number;
   failure: number;
+  totalTokens: number;
 }
 
 export function CredentialStatsCard({
@@ -94,25 +97,28 @@ export function CredentialStatsCard({
       const authIdx = normalizeAuthIndex(detail.auth_index);
       const source = detail.source;
       const isFailed = detail.failed === true;
+      const totalTokens = extractTotalTokens(detail);
 
       if (!source) {
         if (!authIdx) return;
-        const fallback = fallbackByAuthIndex.get(authIdx) ?? { success: 0, failure: 0 };
+        const fallback = fallbackByAuthIndex.get(authIdx) ?? { success: 0, failure: 0, totalTokens: 0 };
         if (isFailed) {
           fallback.failure += 1;
         } else {
           fallback.success += 1;
         }
+        fallback.totalTokens += totalTokens;
         fallbackByAuthIndex.set(authIdx, fallback);
         return;
       }
 
-      const bucket = bySource[source] ?? { success: 0, failure: 0 };
+      const bucket = bySource[source] ?? { success: 0, failure: 0, totalTokens: 0 };
       if (isFailed) {
         bucket.failure += 1;
       } else {
         bucket.success += 1;
       }
+      bucket.totalTokens += totalTokens;
       bySource[source] = bucket;
 
       if (authIdx && !sourceToAuthIndex.has(source)) {
@@ -130,6 +136,7 @@ export function CredentialStatsCard({
       target.success += bucket.success;
       target.failure += bucket.failure;
       target.total = target.success + target.failure;
+      target.totalTokens += bucket.totalTokens;
       target.successRate = target.total > 0 ? (target.success / target.total) * 100 : 100;
     };
 
@@ -144,11 +151,13 @@ export function CredentialStatsCard({
       const candidates = buildCandidateUsageSourceIds({ apiKey, prefix });
       let success = 0;
       let failure = 0;
+      let totalTokens = 0;
       candidates.forEach((id) => {
         const bucket = bySource[id];
         if (bucket) {
           success += bucket.success;
           failure += bucket.failure;
+          totalTokens += bucket.totalTokens;
           consumedSourceIds.add(id);
         }
       });
@@ -161,6 +170,7 @@ export function CredentialStatsCard({
           success,
           failure,
           total,
+          totalTokens,
           successRate: (success / total) * 100,
         });
       }
@@ -188,11 +198,13 @@ export function CredentialStatsCard({
 
       let success = 0;
       let failure = 0;
+      let totalTokens = 0;
       candidates.forEach((id) => {
         const bucket = bySource[id];
         if (bucket) {
           success += bucket.success;
           failure += bucket.failure;
+          totalTokens += bucket.totalTokens;
           consumedSourceIds.add(id);
         }
       });
@@ -206,6 +218,7 @@ export function CredentialStatsCard({
           success,
           failure,
           total,
+          totalTokens,
           successRate: (success / total) * 100,
         });
       }
@@ -223,6 +236,7 @@ export function CredentialStatsCard({
         success: bucket.success,
         failure: bucket.failure,
         total,
+        totalTokens: bucket.totalTokens,
         successRate: total > 0 ? (bucket.success / total) * 100 : 100,
       };
       const rowIndex = result.push(row) - 1;
@@ -261,12 +275,13 @@ export function CredentialStatsCard({
         success: bucket.success,
         failure: bucket.failure,
         total,
+        totalTokens: bucket.totalTokens,
         successRate: (bucket.success / total) * 100
       }) - 1;
       authIndexToRowIndex.set(authIdx, rowIndex);
     });
 
-    return result.sort((a, b) => b.total - a.total);
+    return result.sort((a, b) => b.totalTokens - a.totalTokens || b.total - a.total);
   }, [usage, geminiKeys, claudeConfigs, codexConfigs, vertexConfigs, openaiProviders, authFileMap]);
 
   return (
@@ -281,6 +296,7 @@ export function CredentialStatsCard({
               <tr>
                 <th>{t('usage_stats.credential_name')}</th>
                 <th>{t('usage_stats.requests_count')}</th>
+                <th>{t('usage_stats.total_tokens')}</th>
                 <th>{t('usage_stats.success_rate')}</th>
               </tr>
             </thead>
@@ -302,6 +318,7 @@ export function CredentialStatsCard({
                       </span>
                     </span>
                   </td>
+                  <td>{formatCompactNumber(row.totalTokens)}</td>
                   <td>
                     <span
                       className={

@@ -10,11 +10,14 @@ import type { AuthFileItem } from '@/types/authFile';
 import type { CredentialInfo } from '@/types/sourceInfo';
 import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver';
 import {
+  calculateCost,
   collectUsageDetails,
   extractLatencyMs,
   extractTotalTokens,
+  formatUsd,
   formatDurationMs,
   LATENCY_SOURCE_FIELD,
+  type ModelPrice,
   normalizeAuthIndex,
 } from '@/utils/usage';
 import { downloadBlob } from '@/utils/download';
@@ -34,17 +37,20 @@ type RequestEventRow = {
   sourceType: string;
   authIndex: string;
   failed: boolean;
+  modelReasoningEffort: string;
   latencyMs: number | null;
   inputTokens: number;
   outputTokens: number;
   reasoningTokens: number;
   cachedTokens: number;
   totalTokens: number;
+  totalCost: number;
 };
 
 export interface RequestEventsDetailsCardProps {
   usage: unknown;
   loading: boolean;
+  modelPrices: Record<string, ModelPrice>;
   geminiKeys: GeminiKeyConfig[];
   claudeConfigs: ProviderKeyConfig[];
   codexConfigs: ProviderKeyConfig[];
@@ -68,6 +74,7 @@ const encodeCsv = (value: string | number): string => {
 export function RequestEventsDetailsCard({
   usage,
   loading,
+  modelPrices,
   geminiKeys,
   claudeConfigs,
   codexConfigs,
@@ -148,6 +155,10 @@ export function RequestEventsDetailsCard({
         const source = sourceInfo.displayName;
         const sourceType = sourceInfo.type;
         const model = String(detail.__modelName ?? '').trim() || '-';
+        const modelReasoningEffort =
+          typeof detail.model_reasoning_effort === 'string' && detail.model_reasoning_effort.trim()
+            ? detail.model_reasoning_effort.trim()
+            : '-';
         const inputTokens = Math.max(toNumber(detail.tokens?.input_tokens), 0);
         const outputTokens = Math.max(toNumber(detail.tokens?.output_tokens), 0);
         const reasoningTokens = Math.max(toNumber(detail.tokens?.reasoning_tokens), 0);
@@ -160,6 +171,7 @@ export function RequestEventsDetailsCard({
           extractTotalTokens(detail)
         );
         const latencyMs = extractLatencyMs(detail);
+        const totalCost = calculateCost(detail, modelPrices);
 
         return {
           id: `${timestamp}-${model}-${sourceRaw || source}-${authIndex}-${index}`,
@@ -172,16 +184,18 @@ export function RequestEventsDetailsCard({
           sourceType,
           authIndex,
           failed: detail.failed === true,
+          modelReasoningEffort,
           latencyMs,
           inputTokens,
           outputTokens,
           reasoningTokens,
           cachedTokens,
           totalTokens,
+          totalCost,
         };
       })
       .sort((a, b) => b.timestampMs - a.timestampMs);
-  }, [authFileMap, i18n.language, sourceInfoMap, usage]);
+  }, [authFileMap, i18n.language, modelPrices, sourceInfoMap, usage]);
 
   const hasLatencyData = useMemo(() => rows.some((row) => row.latencyMs !== null), [rows]);
 
@@ -274,12 +288,14 @@ export function RequestEventsDetailsCard({
       'source_raw',
       'auth_index',
       'result',
+      'model_reasoning_effort',
       ...(hasLatencyData ? ['latency_ms'] : []),
       'input_tokens',
       'output_tokens',
       'reasoning_tokens',
       'cached_tokens',
       'total_tokens',
+      'total_cost',
     ];
 
     const csvRows = filteredRows.map((row) =>
@@ -290,12 +306,14 @@ export function RequestEventsDetailsCard({
         row.sourceRaw,
         row.authIndex,
         row.failed ? 'failed' : 'success',
+        row.modelReasoningEffort,
         ...(hasLatencyData ? [row.latencyMs ?? ''] : []),
         row.inputTokens,
         row.outputTokens,
         row.reasoningTokens,
         row.cachedTokens,
         row.totalTokens,
+        row.totalCost,
       ]
         .map((value) => encodeCsv(value))
         .join(',')
@@ -319,6 +337,7 @@ export function RequestEventsDetailsCard({
       source_raw: row.sourceRaw,
       auth_index: row.authIndex,
       failed: row.failed,
+      model_reasoning_effort: row.modelReasoningEffort === '-' ? '' : row.modelReasoningEffort,
       ...(hasLatencyData && row.latencyMs !== null ? { latency_ms: row.latencyMs } : {}),
       tokens: {
         input_tokens: row.inputTokens,
@@ -327,6 +346,7 @@ export function RequestEventsDetailsCard({
         cached_tokens: row.cachedTokens,
         total_tokens: row.totalTokens,
       },
+      total_cost: row.totalCost,
     }));
 
     const content = JSON.stringify(payload, null, 2);
@@ -447,12 +467,14 @@ export function RequestEventsDetailsCard({
                   <th>{t('usage_stats.request_events_source')}</th>
                   <th>{t('usage_stats.request_events_auth_index')}</th>
                   <th>{t('usage_stats.request_events_result')}</th>
+                  <th>{t('usage_stats.request_events_reasoning_effort')}</th>
                   {hasLatencyData && <th title={latencyHint}>{t('usage_stats.time')}</th>}
                   <th>{t('usage_stats.input_tokens')}</th>
                   <th>{t('usage_stats.output_tokens')}</th>
                   <th>{t('usage_stats.reasoning_tokens')}</th>
                   <th>{t('usage_stats.cached_tokens')}</th>
                   <th>{t('usage_stats.total_tokens')}</th>
+                  <th>{t('usage_stats.total_cost')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -482,6 +504,7 @@ export function RequestEventsDetailsCard({
                         {row.failed ? t('stats.failure') : t('stats.success')}
                       </span>
                     </td>
+                    <td>{row.modelReasoningEffort}</td>
                     {hasLatencyData && (
                       <td className={styles.durationCell}>{formatDurationMs(row.latencyMs)}</td>
                     )}
@@ -490,6 +513,7 @@ export function RequestEventsDetailsCard({
                     <td>{row.reasoningTokens.toLocaleString()}</td>
                     <td>{row.cachedTokens.toLocaleString()}</td>
                     <td>{row.totalTokens.toLocaleString()}</td>
+                    <td>{row.totalCost > 0 ? formatUsd(row.totalCost) : '--'}</td>
                   </tr>
                 ))}
               </tbody>

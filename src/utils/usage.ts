@@ -56,6 +56,7 @@ export interface UsageDetail {
   timestamp: string;
   source: string;
   auth_index: number;
+  model_reasoning_effort?: string;
   latency_ms?: number;
   tokens: {
     input_tokens: number;
@@ -107,6 +108,13 @@ export type UsageTimeRange = '3h' | '6h' | '12h' | '24h' | '7d' | 'all';
 const TOKENS_PER_PRICE_UNIT = 1_000_000;
 const MODEL_PRICE_STORAGE_KEY = 'cli-proxy-model-prices-v2';
 const USAGE_ENDPOINT_METHOD_REGEX = /^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+(\S+)/i;
+const DEFAULT_MODEL_PRICES: Record<string, ModelPrice> = {
+  'gpt-5.4': {
+    prompt: 2.5,
+    completion: 15,
+    cache: 0.25,
+  },
+};
 const USAGE_TIME_RANGE_MS: Record<Exclude<UsageTimeRange, 'all'>, number> = {
   '3h': 3 * 60 * 60 * 1000,
   '6h': 6 * 60 * 60 * 1000,
@@ -564,6 +572,10 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
           timestamp,
           source: normalizeSource(detailRaw.source),
           auth_index: detailRaw.auth_index as unknown as number,
+          model_reasoning_effort:
+            typeof detailRaw.model_reasoning_effort === 'string'
+              ? detailRaw.model_reasoning_effort
+              : undefined,
           latency_ms: latencyMs ?? undefined,
           tokens: tokensRaw as unknown as UsageDetail['tokens'],
           failed: detailRaw.failed === true,
@@ -637,6 +649,10 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
           timestamp,
           source: normalizeSource(detailRaw.source),
           auth_index: detailRaw.auth_index as unknown as number,
+          model_reasoning_effort:
+            typeof detailRaw.model_reasoning_effort === 'string'
+              ? detailRaw.model_reasoning_effort
+              : undefined,
           latency_ms: latencyMs ?? undefined,
           tokens: tokensRaw as unknown as UsageDetail['tokens'],
           failed: detailRaw.failed === true,
@@ -828,17 +844,17 @@ export function calculateTotalCost(
 export function loadModelPrices(): Record<string, ModelPrice> {
   try {
     if (typeof localStorage === 'undefined') {
-      return {};
+      return { ...DEFAULT_MODEL_PRICES };
     }
     const raw = localStorage.getItem(MODEL_PRICE_STORAGE_KEY);
     if (!raw) {
-      return {};
+      return { ...DEFAULT_MODEL_PRICES };
     }
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed)) {
-      return {};
+      return { ...DEFAULT_MODEL_PRICES };
     }
-    const normalized: Record<string, ModelPrice> = {};
+    const normalized: Record<string, ModelPrice> = { ...DEFAULT_MODEL_PRICES };
     Object.entries(parsed).forEach(([model, price]: [string, unknown]) => {
       if (!model) return;
       const priceRecord = isRecord(price) ? price : null;
@@ -871,7 +887,7 @@ export function loadModelPrices(): Record<string, ModelPrice> {
     });
     return normalized;
   } catch {
-    return {};
+    return { ...DEFAULT_MODEL_PRICES };
   }
 }
 
