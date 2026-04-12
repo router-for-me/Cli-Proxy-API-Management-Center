@@ -40,6 +40,7 @@ const getBrowserLanguage = (): Language => {
   }
   const raw = navigator.languages?.[0] || navigator.language || 'zh-CN';
   const lower = raw.toLowerCase();
+  if (lower.startsWith('zh-tw') || lower.startsWith('zh-hant')) return 'zh-TW';
   if (lower.startsWith('zh')) return 'zh-CN';
   if (lower.startsWith('ru')) return 'ru';
   return 'en';
