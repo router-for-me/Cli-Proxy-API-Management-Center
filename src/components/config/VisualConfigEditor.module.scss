@@ -31,6 +31,18 @@
     border-color: var(--primary-color);
   }
 
+  :global(.input:disabled),
+  :global(textarea.input:disabled) {
+    background: color-mix(in srgb, var(--bg-secondary) 94%, var(--bg-tertiary));
+    border-color: color-mix(in srgb, var(--border-color) 90%, var(--bg-tertiary));
+    color: var(--text-tertiary);
+    box-shadow: none;
+    cursor: not-allowed;
+    user-select: none;
+    pointer-events: none;
+    opacity: 1;
+  }
+
   :global(textarea.input) {
     min-height: 120px;
   }
@@ -748,6 +760,11 @@
   background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
 }
 
+.ruleCardDisabled {
+  border-color: color-mix(in srgb, var(--warning-border) 72%, var(--border-color));
+  background: color-mix(in srgb, var(--warning-bg) 54%, var(--bg-primary));
+}
+
 .ruleCardHeader {
   display: flex;
   align-items: center;
@@ -756,11 +773,40 @@
   flex-wrap: wrap;
 }
 
+.ruleCardTitleWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.ruleCardActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .ruleCardTitle {
   color: var(--text-primary);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.ruleStateBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .blockLabel {
@@ -798,6 +844,13 @@
   flex-wrap: wrap;
 }
 
+.stringListRowDisabled {
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px dashed color-mix(in srgb, var(--warning-border) 72%, var(--border-color));
+  background: color-mix(in srgb, var(--warning-bg) 42%, var(--bg-primary));
+}
+
 .payloadRuleModelRow {
   display: grid;
   grid-template-columns: 1fr 160px auto;
@@ -811,15 +864,77 @@
 
 .payloadRuleParamRow {
   display: grid;
-  grid-template-columns: 1fr 140px 1fr auto;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  grid-template-areas:
+    'path type'
+    'value actions';
   gap: 8px;
+  align-items: start;
+}
+
+.payloadRuleParamPath {
+  grid-area: path;
+  min-width: 0;
+}
+
+.payloadRuleParamType {
+  grid-area: type;
+  width: 120px;
+}
+
+.payloadRuleParamValue {
+  grid-area: value;
+  min-width: 0;
+}
+
+.payloadRuleParamActions {
+  grid-area: actions;
+  display: flex;
+  justify-content: flex-end;
   align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.payloadRuleParamPath > :global(.input),
+.payloadRuleParamValue > :global(.input),
+.payloadRuleParamValue > :global(.wrap) {
+  width: 100%;
+  min-width: 0;
 }
 
 .payloadRuleParamGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.payloadRuleParamGroupDisabled {
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px dashed color-mix(in srgb, var(--warning-border) 72%, var(--border-color));
+  background: color-mix(in srgb, var(--warning-bg) 42%, var(--bg-primary));
+  margin-top: 2px;
+}
+
+.payloadParamStateRow {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.payloadParamStateBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .payloadJsonInput {
@@ -832,6 +947,10 @@
 
 .payloadParamError {
   margin: 0;
+}
+
+.payloadRuleParamGroup + .payloadRuleParamGroup {
+  margin-top: 2px;
 }
 
 .payloadFilterModelRow {
@@ -854,18 +973,28 @@
 @media (max-width: 900px) {
   .payloadRuleModelRow,
   .payloadRuleModelRowProtocolFirst,
-  .payloadRuleParamRow,
   .payloadFilterModelRow {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .payloadRuleParamRow {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'path'
+      'type'
+      'value'
+      'actions';
+  }
+
+  .payloadRuleParamType,
+  .payloadRuleParamActions,
+  .payloadRowActionButton {
+    width: 100%;
   }
 
   .apiKeyModalInputRow {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .payloadRowActionButton {
-    width: 100%;
   }
 }
 
@@ -902,9 +1031,14 @@
   .blockHeaderRow :global(.btn),
   .ruleCardHeader :global(.btn),
   .actionRow :global(.btn),
-  .stringListRow :global(.btn) {
+  .stringListRow :global(.btn),
+  .payloadRuleParamActions :global(.btn) {
     width: 100%;
     justify-content: center;
+  }
+
+  .payloadRuleParamActions {
+    flex-wrap: wrap;
   }
 
   .actionRow {

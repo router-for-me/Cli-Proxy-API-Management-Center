@@ -92,12 +92,23 @@ textarea {
   padding: 10px 12px;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  transition: border-color $transition-fast, box-shadow $transition-fast;
+  transition: border-color $transition-fast, box-shadow $transition-fast, background-color $transition-fast, color $transition-fast;
 
   &:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba($primary-color, 0.18);
+  }
+
+  &:disabled {
+    background-color: color-mix(in srgb, var(--bg-tertiary) 92%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--border-color) 90%, var(--bg-tertiary));
+    color: var(--text-tertiary);
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 1;
+    user-select: none;
+    pointer-events: none;
   }
 }
 
