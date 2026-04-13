@@ -23,6 +23,8 @@ export interface LatencyTrendChartProps {
 
 const LATENCY_COLOR = '#0f766e';
 const LATENCY_BG = 'rgba(15, 118, 110, 0.16)';
+const isNonNegativeNumber = (value: number | null): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0;
 
 function buildGradient(ctx: ScriptableContext<'line'>) {
   const chart = ctx.chart;
@@ -59,7 +61,7 @@ export function LatencyTrendChart({
       period === 'hour'
         ? buildHourlyLatencySeries(usage, hourWindowHours)
         : buildDailyLatencySeries(usage);
-    const values = series.data.filter((value) => Number.isFinite(value) && value >= 0);
+    const values = series.data.filter(isNonNegativeNumber);
     const latest = values.length ? values[values.length - 1] : 0;
     const peak = values.length ? Math.max(...values) : 0;
     const average = values.length

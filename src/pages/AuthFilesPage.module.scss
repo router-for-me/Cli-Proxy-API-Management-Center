@@ -489,6 +489,35 @@
   border-top: 1px dashed color-mix(in srgb, var(--border-color) 82%, transparent);
 }
 
+.quotaSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.quotaSectionTitle {
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.quotaRefreshButton:global(.btn.btn-sm) {
+  flex: 0 0 auto;
+  padding-inline: 9px;
+  white-space: nowrap;
+}
+
+.quotaRefreshButton:global(.btn.btn-sm) > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .quotaRow {
   display: flex;
   flex-direction: column;
