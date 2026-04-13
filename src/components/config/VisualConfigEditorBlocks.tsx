@@ -26,6 +26,7 @@ import { isValidApiKeyCharset } from '@/utils/validation';
 
 /** Minimum character count before the expand/collapse toggle appears. */
 const EXPAND_THRESHOLD = 30;
+const DEFAULT_API_KEY_RPS = '5';
 
 /** Auto-expanding textarea that collapses back to a single-line input on demand. */
 function ExpandableInput({
@@ -173,13 +174,11 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const apiKeys = useMemo(() => value ?? [], [value]);
 
   const apiKeyInputId = useId();
-  const apiKeyRpsInputId = useId();
   const apiKeyHintId = `${apiKeyInputId}-hint`;
   const apiKeyErrorId = `${apiKeyInputId}-error`;
   const [modalOpen, setModalOpen] = useState(false);
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
-  const [requestsPerSecond, setRequestsPerSecond] = useState('5');
   const [formError, setFormError] = useState('');
 
   function generateSecureApiKey(): string {
@@ -192,7 +191,6 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const openAddModal = () => {
     setEditingApiKeyId(null);
     setInputValue('');
-    setRequestsPerSecond('5');
     setFormError('');
     setModalOpen(true);
   };
@@ -201,7 +199,6 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     const entry = apiKeys.find((item) => item.id === apiKeyId);
     setEditingApiKeyId(apiKeyId);
     setInputValue(entry?.apiKey ?? '');
-    setRequestsPerSecond(entry?.requestsPerSecond ?? '5');
     setFormError('');
     setModalOpen(true);
   };
@@ -209,7 +206,6 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const closeModal = () => {
     setModalOpen(false);
     setInputValue('');
-    setRequestsPerSecond('5');
     setEditingApiKeyId(null);
     setFormError('');
   };
@@ -228,17 +224,14 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       setFormError(t('config_management.visual.api_keys.error_invalid'));
       return;
     }
-    const trimmedRps = requestsPerSecond.trim();
-    const parsedRps = Number(trimmedRps);
-    if (!trimmedRps || !Number.isInteger(parsedRps) || parsedRps <= 0) {
-      setFormError(t('config_management.visual.api_keys.error_invalid_rps'));
-      return;
-    }
+    const editingEntry = editingApiKeyId
+      ? apiKeys.find((entry) => entry.id === editingApiKeyId)
+      : null;
 
     const nextEntry: VisualApiKeyEntry = {
       id: editingApiKeyId ?? makeClientId(),
       apiKey: trimmed,
-      requestsPerSecond: String(parsedRps),
+      requestsPerSecond: editingEntry?.requestsPerSecond ?? DEFAULT_API_KEY_RPS,
     };
     const nextKeys =
       editingApiKeyId === null
@@ -282,11 +275,6 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
                   {t('config_management.visual.api_keys.input_label')}
                 </div>
                 <div className="item-subtitle">{maskApiKey(String(entry.apiKey || ''))}</div>
-                <div className="item-subtitle">
-                  {t('config_management.visual.api_keys.rate_limit_value', {
-                    count: Number(entry.requestsPerSecond || '5'),
-                  })}
-                </div>
               </div>
               <div className="item-actions">
                 <Button
@@ -370,20 +358,6 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
           <div id={apiKeyHintId} className="hint">
             {t('config_management.visual.api_keys.input_hint')}
           </div>
-          <label htmlFor={apiKeyRpsInputId}>
-            {t('config_management.visual.api_keys.rate_limit_label')}
-          </label>
-          <input
-            id={apiKeyRpsInputId}
-            className="input"
-            type="number"
-            min={1}
-            step={1}
-            value={requestsPerSecond}
-            onChange={(e) => setRequestsPerSecond(e.target.value)}
-            disabled={disabled}
-          />
-          <div className="hint">{t('config_management.visual.api_keys.rate_limit_hint')}</div>
           {formError && (
             <div id={apiKeyErrorId} className="error-box">
               {formError}
