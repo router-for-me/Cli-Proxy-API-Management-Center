@@ -8,8 +8,8 @@ interface ProviderListProps<T> {
   loading: boolean;
   keyField: (item: T, index: number) => string;
   renderContent: (item: T, index: number) => ReactNode;
-  onEdit: (index: number) => void;
-  onDelete: (index: number) => void;
+  onEdit: (item: T, index: number) => void;
+  onDelete: (item: T, index: number) => void;
   emptyTitle: string;
   emptyDescription: string;
   deleteLabel?: string;
@@ -57,7 +57,7 @@ export function ProviderList<T>({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => onEdit(index)}
+                onClick={() => onEdit(item, index)}
                 disabled={actionsDisabled}
               >
                 {t('common.edit')}
@@ -65,7 +65,7 @@ export function ProviderList<T>({
               <Button
                 variant="danger"
                 size="sm"
-                onClick={() => onDelete(index)}
+                onClick={() => onDelete(item, index)}
                 disabled={actionsDisabled}
               >
                 {deleteLabel || t('common.delete')}

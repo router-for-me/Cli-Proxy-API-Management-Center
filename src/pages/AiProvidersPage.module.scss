@@ -57,10 +57,248 @@
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
 
+  @media (min-width: 1400px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   @include mobile {
     grid-template-columns: 1fr;
   }
 }
+
+// 排序控件
+.sortControls {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.sortSelect {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: var(--primary-color);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-color-alpha, rgba(59, 130, 246, 0.1));
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// 排序方向按钮
+.sortDirectionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 600;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: var(--primary-color);
+    background: var(--bg-tertiary);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-color-alpha, rgba(59, 130, 246, 0.1));
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// 卡片头部操作区
+.cardHeaderActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.cardFooterActions {
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.providerToolbarFooter {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid var(--border-primary);
+}
+
+// 模型多选下拉框
+.modelMultiSelectWrapper {
+  position: relative;
+}
+
+.modelSelectedTags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 32px;
+
+  &:hover {
+    border-color: var(--primary-color);
+    background: var(--bg-tertiary);
+  }
+}
+
+.modelSelectPlaceholder {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  flex: 1;
+}
+
+.modelTag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 8px 4px 8px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 150px;
+  position: relative;
+}
+
+.modelTagName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modelTagRemove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.15);
+  color: #000;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+
+.modelSelectArrow {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-left: 4px;
+}
+
+.modelDropdownList {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 280px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: $radius-md;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.modelDropdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-tertiary);
+}
+
+.modelDropdownSelectAll,
+.modelDropdownClear {
+  padding: 4px 8px;
+  font-size: 12px;
+  background: transparent;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: var(--bg-secondary);
+  }
+}
+
+.modelDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--bg-secondary);
+  }
+
+  input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+  }
+
+  span {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 
 // 成功失败次数统计样式
 .cardStats {
@@ -1044,4 +1282,152 @@
     background: rgba($error-color, 0.24);
     color: #f1b0a6;
   }
+}
+
+// ============================================
+// Model Search Page Styles
+// ============================================
+
+.modelSearchContainer {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.modelSearchContent {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+  padding-bottom: calc(
+    var(--provider-nav-height, 60px) + 12px + env(safe-area-inset-bottom) + #{$spacing-md}
+  );
+}
+
+.modelSearchToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  margin: $spacing-sm 0;
+}
+
+.modelSearchToolbarActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+}
+
+.modelSearchSelectionSummary {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.modelSearchList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  margin-top: $spacing-md;
+}
+
+.modelSearchGroup {
+  border: 1px solid var(--border-primary);
+  border-radius: $radius-md;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.modelSearchGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-primary);
+
+  h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+}
+
+.modelSearchGroupCount {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.modelSearchGroupList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: $spacing-sm;
+}
+
+.modelSearchRow {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid transparent;
+  border-radius: $radius-sm;
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  input[type='checkbox'] {
+    margin-top: 2px;
+    cursor: pointer;
+  }
+
+  &:hover {
+    border-color: var(--primary-color);
+    background: var(--bg-secondary);
+  }
+}
+
+.modelSearchRowSelected {
+  border-color: var(--primary-color);
+  background: var(--bg-tertiary);
+}
+
+.modelSearchSelectionLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.modelSearchMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modelSearchName {
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.modelSearchAlias {
+  margin-left: 6px;
+  color: var(--text-tertiary);
+  font-style: italic;
+
+  &::before {
+    content: '→ ';
+  }
+}
+
+.modelSearchDesc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }

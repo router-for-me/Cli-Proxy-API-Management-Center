@@ -402,6 +402,11 @@
     "openai_add_button": "Добавить провайдера",
     "openai_empty_title": "Провайдеры OpenAI отсутствуют",
     "openai_empty_desc": "Нажмите кнопку выше, чтобы добавить первого провайдера",
+    "sort_by_name": "Сортировать по имени",
+    "sort_by_priority": "Сортировать по приоритету",
+    "sort_by_recent_success": "Сортировать по недавним успехам",
+    "sort_ascending": "По возрастанию",
+    "sort_descending": "По убыванию",
     "openai_add_modal_title": "Добавление совместимого с OpenAI провайдера",
     "openai_add_modal_name_label": "Имя провайдера:",
     "openai_add_modal_name_placeholder": "например: openrouter",
@@ -455,7 +460,11 @@
     "openai_test_all_hint": "Проверить состояние подключения для всех ключей",
     "openai_test_all_success": "Все {{count}} ключей прошли тест",
     "openai_test_all_failed": "Все {{count}} ключей не прошли тест",
-    "openai_test_all_partial": "Тест завершен: {{success}} прошло, {{failed}} не прошло"
+    "openai_test_all_partial": "Тест завершен: {{success}} прошло, {{failed}} не прошло",
+    "model_search_placeholder": "Фильтр по моделям...",
+    "model_search_clear": "Очистить",
+    "model_select_all": "Выбрать все",
+    "model_selected_count": "Выбрано: {{count}}"
   },
   "auth_files": {
     "title": "Управление файлами авторизации",

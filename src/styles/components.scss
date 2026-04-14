@@ -642,9 +642,17 @@ textarea {
 }
 
 .item-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: $spacing-sm;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+
+  @media (min-width: 1400px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .item-row {
@@ -653,15 +661,16 @@ textarea {
   padding: $spacing-md;
   background: var(--bg-primary);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $spacing-md;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: $spacing-sm;
+  min-height: 0;
 
   .item-meta {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    flex: 1;
   }
 
   .item-title {
@@ -679,6 +688,8 @@ textarea {
   .item-actions {
     display: flex;
     gap: $spacing-sm;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 }
 
