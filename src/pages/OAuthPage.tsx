@@ -90,10 +90,7 @@ const CALLBACK_SUPPORTED: OAuthProvider[] = [
   'codex',
   'anthropic',
   'antigravity',
-  'cursor',
   'gitlab',
-  'codebuddy',
-  'kilo',
   'gemini-cli'
 ];
 const getProviderI18nPrefix = (provider: OAuthProvider) => provider.replace('-', '_');
