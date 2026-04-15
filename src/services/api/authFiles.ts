@@ -5,6 +5,7 @@
 import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
 import type { OAuthModelAliasEntry } from '@/types';
+import { parseTimestampMs } from '@/utils/timestamp';
 
 type StatusError = { status?: number };
 type AuthFileStatusResponse = { status: string; disabled: boolean };
@@ -185,7 +186,7 @@ const readDateField = (entry: AuthFileEntry): number => {
       if (Number.isFinite(asNumber)) {
         return asNumber < 1e12 ? asNumber * 1000 : asNumber;
       }
-      const parsed = Date.parse(trimmed);
+      const parsed = parseTimestampMs(trimmed);
       if (!Number.isNaN(parsed)) {
         return parsed;
       }

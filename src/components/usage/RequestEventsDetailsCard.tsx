@@ -9,6 +9,7 @@ import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@
 import type { AuthFileItem } from '@/types/authFile';
 import type { CredentialInfo } from '@/types/sourceInfo';
 import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver';
+import { parseTimestampMs } from '@/utils/timestamp';
 import {
   collectUsageDetails,
   extractLatencyMs,
@@ -131,7 +132,7 @@ export function RequestEventsDetailsCard({
         const timestampMs =
           typeof detail.__timestampMs === 'number' && detail.__timestampMs > 0
             ? detail.__timestampMs
-            : Date.parse(timestamp);
+            : parseTimestampMs(timestamp);
         const date = Number.isNaN(timestampMs) ? null : new Date(timestampMs);
         const sourceRaw = String(detail.source ?? '').trim();
         const authIndexRaw = detail.auth_index as unknown;
