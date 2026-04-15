@@ -24,6 +24,9 @@ export function parseTimestampMs(value: unknown): number {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
   }
+  if (value instanceof Date) {
+    return value.getTime();
+  }
   if (typeof value !== 'string') {
     return Number.NaN;
   }
