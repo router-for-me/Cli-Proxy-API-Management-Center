@@ -8,6 +8,10 @@ export type OAuthProvider =
   | 'codex'
   | 'anthropic'
   | 'antigravity'
+  | 'cursor'
+  | 'gitlab'
+  | 'codebuddy'
+  | 'kilo'
   | 'gemini-cli'
   | 'kimi';
 
@@ -29,7 +33,16 @@ export interface IFlowCookieAuthResponse {
   type?: string;
 }
 
-const WEBUI_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli'];
+const WEBUI_SUPPORTED: OAuthProvider[] = [
+  'codex',
+  'anthropic',
+  'antigravity',
+  'cursor',
+  'gitlab',
+  'codebuddy',
+  'kilo',
+  'gemini-cli'
+];
 const CALLBACK_PROVIDER_MAP: Partial<Record<OAuthProvider, string>> = {
   'gemini-cli': 'gemini'
 };

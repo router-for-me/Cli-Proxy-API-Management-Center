@@ -8,6 +8,10 @@ export type OAuthProvider =
   | 'codex'
   | 'anthropic'
   | 'antigravity'
+  | 'cursor'
+  | 'gitlab'
+  | 'codebuddy'
+  | 'kilo'
   | 'gemini-cli'
   | 'kimi';
 

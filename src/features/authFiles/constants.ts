@@ -1,9 +1,13 @@
 import type { TFunction } from 'i18next';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconClaude from '@/assets/icons/claude.svg';
+import iconCodebuddy from '@/assets/icons/codebuddy.svg';
 import iconCodex from '@/assets/icons/codex.svg';
+import iconCursor from '@/assets/icons/cursor.svg';
 import iconGemini from '@/assets/icons/gemini.svg';
+import iconGitlab from '@/assets/icons/gitlab.svg';
 import iconIflow from '@/assets/icons/iflow.svg';
+import iconKilo from '@/assets/icons/kilo.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
@@ -82,6 +86,22 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#eae7ff', text: '#3538d4' },
     dark: { bg: '#262395', text: '#b5b0ff' },
   },
+  cursor: {
+    light: { bg: '#eef2f6', text: '#1f2937' },
+    dark: { bg: '#1f2937', text: '#d1d5db' },
+  },
+  gitlab: {
+    light: { bg: '#fff0e8', text: '#c2410c' },
+    dark: { bg: '#7c2d12', text: '#fdba74' },
+  },
+  codebuddy: {
+    light: { bg: '#e0f7ff', text: '#0369a1' },
+    dark: { bg: '#0c4a6e', text: '#7dd3fc' },
+  },
+  kilo: {
+    light: { bg: '#dcfce7', text: '#166534' },
+    dark: { bg: '#14532d', text: '#86efac' },
+  },
   // Antigravity logo: 多色（主色 #3789F9 蓝 + #53A89A 青绿），用青色区分
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
@@ -111,10 +131,14 @@ export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
   antigravity: iconAntigravity,
   aistudio: iconGemini,
   claude: iconClaude,
+  codebuddy: iconCodebuddy,
   codex: iconCodex,
+  cursor: iconCursor,
   gemini: iconGemini,
   'gemini-cli': iconGemini,
+  gitlab: iconGitlab,
   iflow: iconIflow,
+  kilo: iconKilo,
   kimi: { light: iconKimiLight, dark: iconKimiDark },
   qwen: iconQwen,
   vertex: iconVertex,
