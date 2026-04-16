@@ -246,6 +246,11 @@
   z-index: 1000;
 }
 
+.modelDropdownListAbove {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
 .modelDropdownHeader {
   display: flex;
   align-items: center;

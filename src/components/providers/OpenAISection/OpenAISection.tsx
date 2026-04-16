@@ -53,10 +53,16 @@ export function OpenAISection({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
   const [activeDropdown, setActiveDropdown] = useState<ToolbarPosition | null>(null);
+  const [dropdownLayout, setDropdownLayout] = useState({ openAbove: false, maxHeight: 300 });
   const topDropdownRef = useRef<HTMLDivElement>(null);
   const bottomDropdownRef = useRef<HTMLDivElement>(null);
+  const isDropdownOpen = activeDropdown !== null;
 
   useEffect(() => {
+    if (!isDropdownOpen) {
+      return;
+    }
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       const clickedTop = topDropdownRef.current?.contains(target);
@@ -68,7 +74,49 @@ export function OpenAISection({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isDropdownOpen]);
+
+  useEffect(() => {
+    if (activeDropdown === null) {
+      return;
+    }
+
+    const updateDropdownLayout = () => {
+      const wrapper = activeDropdown === 'top' ? topDropdownRef.current : bottomDropdownRef.current;
+
+      if (!wrapper) {
+        return;
+      }
+
+      const rect = wrapper.getBoundingClientRect();
+      const viewportPadding = 12;
+      const dropdownGap = 4;
+      const preferredMaxHeight = 300;
+      const minimumMaxHeight = 120;
+      const availableBelow = Math.max(0, window.innerHeight - rect.bottom - viewportPadding - dropdownGap);
+      const availableAbove = Math.max(0, rect.top - viewportPadding - dropdownGap);
+      const openAbove = availableBelow < preferredMaxHeight && availableAbove > availableBelow;
+      const availableSpace = openAbove ? availableAbove : availableBelow;
+      const maxHeight = Math.max(minimumMaxHeight, Math.min(preferredMaxHeight, availableSpace));
+
+      setDropdownLayout((prev) => {
+        if (prev.openAbove === openAbove && prev.maxHeight === maxHeight) {
+          return prev;
+        }
+
+        return { openAbove, maxHeight };
+      });
+    };
+
+    updateDropdownLayout();
+    window.addEventListener('resize', updateDropdownLayout);
+    window.addEventListener('scroll', updateDropdownLayout, true);
+
+    return () => {
+      window.removeEventListener('resize', updateDropdownLayout);
+      window.removeEventListener('scroll', updateDropdownLayout, true);
+    };
+  }, [activeDropdown]);
 
   const allModelNames = useMemo(() => {
     const modelSet = new Set<string>();
@@ -109,6 +157,15 @@ export function OpenAISection({
 
     const sorted = [...filtered];
     const direction = sortDirection === 'desc' ? -1 : 1;
+    const providerStats =
+      sortOption === 'recent-success'
+        ? new Map(
+            sorted.map((provider) => [
+              provider,
+              getOpenAIProviderStats(provider.apiKeyEntries, keyStats, provider.prefix),
+            ])
+          )
+        : null;
 
     switch (sortOption) {
       case 'name':
@@ -118,14 +175,25 @@ export function OpenAISection({
         sorted.sort((a, b) => {
           const priorityA = a.priority ?? Number.MAX_SAFE_INTEGER;
           const priorityB = b.priority ?? Number.MAX_SAFE_INTEGER;
-          return direction * (priorityA - priorityB) || a.name.localeCompare(b.name);
+          const priorityDiff = priorityA - priorityB;
+
+          if (priorityDiff !== 0) {
+            return direction * priorityDiff;
+          }
+
+          return direction * a.name.localeCompare(b.name);
         });
         break;
       case 'recent-success':
         sorted.sort((a, b) => {
-          const statsA = getOpenAIProviderStats(a.apiKeyEntries, keyStats, a.prefix);
-          const statsB = getOpenAIProviderStats(b.apiKeyEntries, keyStats, b.prefix);
-          return direction * (statsA.success - statsB.success) || a.name.localeCompare(b.name);
+          const successDiff =
+            (providerStats?.get(a)?.success ?? 0) - (providerStats?.get(b)?.success ?? 0);
+
+          if (successDiff !== 0) {
+            return direction * successDiff;
+          }
+
+          return direction * a.name.localeCompare(b.name);
         });
         break;
       default:
@@ -193,6 +261,8 @@ export function OpenAISection({
     const dropdownRef = position === 'top' ? topDropdownRef : bottomDropdownRef;
     const wrapperClassName =
       position === 'top' ? styles.cardHeaderActions : `${styles.cardHeaderActions} ${styles.cardFooterActions}`;
+    const dropdownClassName =
+      dropdownLayout.openAbove ? `${styles.modelDropdownList} ${styles.modelDropdownListAbove}` : styles.modelDropdownList;
 
     return (
       <div className={wrapperClassName}>
@@ -226,7 +296,7 @@ export function OpenAISection({
           </div>
 
           {isDropdownOpen && (
-            <div className={styles.modelDropdownList}>
+            <div className={dropdownClassName} style={{ maxHeight: `${dropdownLayout.maxHeight}px` }}>
               <div className={styles.modelDropdownHeader}>
                 <button
                   type="button"
