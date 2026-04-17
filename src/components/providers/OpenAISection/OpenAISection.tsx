@@ -178,12 +178,6 @@ export function OpenAISection({
                     ))}
                   </div>
                 ) : null}
-                {item.testModel && (
-                  <div className={styles.fieldRow}>
-                    <span className={styles.fieldLabel}>Test Model:</span>
-                    <span className={styles.fieldValue}>{item.testModel}</span>
-                  </div>
-                )}
                 <div className={styles.cardStats}>
                   <span className={`${styles.statPill} ${styles.statSuccess}`}>
                     {t('stats.success')}: {stats.success}

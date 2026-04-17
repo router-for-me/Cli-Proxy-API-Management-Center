@@ -79,6 +79,35 @@ export type UseAuthFilesPrefixProxyEditorResult = {
 const isRecordObject = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
+export const extractAuthFileAccessToken = (metadata: Record<string, unknown> | null): string => {
+  if (!metadata) return '';
+
+  const topLevelCandidates = [metadata.accessToken, metadata.access_token];
+  for (const candidate of topLevelCandidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  const tokenValue = metadata.token;
+  if (typeof tokenValue === 'string' && tokenValue.trim()) {
+    return tokenValue.trim();
+  }
+
+  if (!isRecordObject(tokenValue)) {
+    return '';
+  }
+
+  const nestedCandidates = [tokenValue.accessToken, tokenValue.access_token];
+  for (const candidate of nestedCandidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return '';
+};
+
 const validateHeadersValue = (value: unknown): AuthFileHeadersErrorKey | null => {
   if (!isRecordObject(value)) {
     return 'auth_files.headers_invalid_object';

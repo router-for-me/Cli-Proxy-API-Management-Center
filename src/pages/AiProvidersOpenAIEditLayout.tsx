@@ -5,12 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useOpenAIEditDraftStore } from '@/stores';
-import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
-import type { ApiKeyEntry, OpenAIProviderConfig } from '@/types';
+import { modelsToEntries } from '@/components/ui/modelInputListUtils';
+import type { ApiKeyEntry, ModelAlias, OpenAIProviderConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { areKeyValueEntriesEqual, areModelEntriesEqual } from '@/utils/compare';
-import { buildApiKeyEntry } from '@/components/providers/utils';
+import {
+  buildApiKeyEntry,
+  isProviderPrefixValid,
+  normalizeProviderPrefix,
+} from '@/components/providers/utils';
 import type { ModelEntry, OpenAIFormState } from '@/components/providers/types';
 import type { KeyTestStatus, OpenAIEditBaseline } from '@/stores/useOpenAIEditDraftStore';
 
@@ -47,9 +51,9 @@ const buildEmptyForm = (): OpenAIFormState => ({
   prefix: '',
   baseUrl: '',
   headers: [],
+  models: [],
   apiKeyEntries: [buildApiKeyEntry()],
   modelEntries: [{ name: '', alias: '' }],
-  testModel: undefined,
 });
 
 const parseIndexParam = (value: string | undefined) => {
@@ -104,7 +108,7 @@ const normalizeApiKeyEntries = (entries: ApiKeyEntry[]) =>
     return acc;
   }, []);
 
-const buildOpenAIBaseline = (form: OpenAIFormState, testModel: string): OpenAIEditBaseline => ({
+const buildOpenAIBaseline = (form: OpenAIFormState): OpenAIEditBaseline => ({
   name: String(form.name ?? '').trim(),
   priority:
     form.priority !== undefined && Number.isFinite(form.priority) ? Math.trunc(form.priority) : null,
@@ -113,8 +117,32 @@ const buildOpenAIBaseline = (form: OpenAIFormState, testModel: string): OpenAIEd
   headers: normalizeHeaderEntries(form.headers),
   apiKeyEntries: normalizeApiKeyEntries(form.apiKeyEntries),
   models: normalizeModelEntries(form.modelEntries),
-  testModel: String(testModel ?? '').trim(),
 });
+
+const cloneThinkingSupport = (thinking?: ModelAlias['thinking']) => {
+  if (!thinking) return undefined;
+  const next: NonNullable<ModelAlias['thinking']> = {};
+  if (thinking.min !== undefined) next.min = thinking.min;
+  if (thinking.max !== undefined) next.max = thinking.max;
+  if (thinking.zeroAllowed !== undefined) next.zeroAllowed = thinking.zeroAllowed;
+  if (thinking.dynamicAllowed !== undefined) next.dynamicAllowed = thinking.dynamicAllowed;
+  if (thinking.levels?.length) next.levels = [...thinking.levels];
+  return Object.keys(next).length ? next : undefined;
+};
+
+const buildOpenAIModelsPayload = (entries: ModelEntry[], sourceModels: ModelAlias[]) => {
+  const sourceMap = new Map(
+    (sourceModels ?? []).map((model) => [String(model.name ?? '').trim().toLowerCase(), model] as const)
+  );
+
+  return normalizeModelEntries(entries).map(({ name, alias }) => {
+    const payload: ModelAlias = { name };
+    if (alias) payload.alias = alias;
+    const thinking = cloneThinkingSupport(sourceMap.get(name.toLowerCase())?.thinking);
+    if (thinking) payload.thinking = thinking;
+    return payload;
+  });
+};
 
 const areNormalizedApiKeyEntriesEqual = (
   a: OpenAIEditBaseline['apiKeyEntries'],
@@ -290,7 +318,7 @@ export function AiProvidersOpenAIEditLayout() {
         prefix: initialData.prefix ?? '',
         baseUrl: initialData.baseUrl,
         headers: headersToEntries(initialData.headers),
-        testModel: initialData.testModel,
+        models: initialData.models ?? [],
         modelEntries,
         apiKeyEntries: initialData.apiKeyEntries?.length
           ? initialData.apiKeyEntries
@@ -298,11 +326,8 @@ export function AiProvidersOpenAIEditLayout() {
       };
 
       const available = modelEntries.map((entry) => entry.name.trim()).filter(Boolean);
-      const initialTestModel =
-        initialData.testModel && available.includes(initialData.testModel)
-          ? initialData.testModel
-          : available[0] || '';
-      const baseline = buildOpenAIBaseline(seededForm, initialTestModel);
+      const initialTestModel = available[0] || '';
+      const baseline = buildOpenAIBaseline(seededForm);
       initDraft(draftKey, {
         baseline,
         form: seededForm,
@@ -314,7 +339,7 @@ export function AiProvidersOpenAIEditLayout() {
     } else {
       const emptyForm = buildEmptyForm();
       initDraft(draftKey, {
-        baseline: buildOpenAIBaseline(emptyForm, ''),
+        baseline: buildOpenAIBaseline(emptyForm),
         form: emptyForm,
         testModel: '',
         testStatus: 'idle',
@@ -393,7 +418,6 @@ export function AiProvidersOpenAIEditLayout() {
       ? Math.trunc(form.priority)
       : null;
   }, [form.priority]);
-  const normalizedTestModel = useMemo(() => String(testModel ?? '').trim(), [testModel]);
   const isHeadersDirty = useMemo(() => {
     if (!baseline) return false;
     return !areKeyValueEntriesEqual(baseline.headers, normalizedHeaders);
@@ -413,7 +437,6 @@ export function AiProvidersOpenAIEditLayout() {
       baseline.priority !== normalizedPriority ||
       baseline.prefix !== form.prefix.trim() ||
       baseline.baseUrl !== form.baseUrl.trim() ||
-      baseline.testModel !== normalizedTestModel ||
       isHeadersDirty ||
       isApiKeyEntriesDirty ||
       isModelsDirty);
@@ -445,6 +468,13 @@ export function AiProvidersOpenAIEditLayout() {
   const handleSave = useCallback(async () => {
     const name = form.name.trim();
     const baseUrl = form.baseUrl.trim();
+    const rawPrefix = form.prefix ?? '';
+    const normalizedPrefix = normalizeProviderPrefix(rawPrefix);
+
+    if (!isProviderPrefixValid(rawPrefix)) {
+      showNotification(t('notification.prefix_invalid'), 'error');
+      return;
+    }
 
     if (!name || !baseUrl) {
       showNotification(t('notification.openai_provider_required'), 'error');
@@ -453,23 +483,23 @@ export function AiProvidersOpenAIEditLayout() {
 
     setSaving(true);
     try {
-      const payload: OpenAIProviderConfig = {
-        name,
-        prefix: form.prefix?.trim() || undefined,
-        baseUrl,
-        headers: buildHeaderObject(form.headers),
-        apiKeyEntries: form.apiKeyEntries.map((entry: ApiKeyEntry) => ({
+      const apiKeyEntries = form.apiKeyEntries
+        .map((entry: ApiKeyEntry) => ({
           apiKey: entry.apiKey.trim(),
           proxyUrl: entry.proxyUrl?.trim() || undefined,
-          headers: entry.headers,
-        })),
+        }))
+        .filter((entry) => entry.apiKey);
+      const models = buildOpenAIModelsPayload(form.modelEntries, form.models);
+      const payload: OpenAIProviderConfig = {
+        name,
+        prefix: normalizedPrefix || undefined,
+        baseUrl,
+        headers: buildHeaderObject(form.headers),
+        apiKeyEntries,
       };
       if (form.priority !== undefined && Number.isFinite(form.priority)) {
         payload.priority = Math.trunc(form.priority);
       }
-      const resolvedTestModel = testModel.trim();
-      if (resolvedTestModel) payload.testModel = resolvedTestModel;
-      const models = entriesToModels(form.modelEntries);
       if (models.length) payload.models = models;
 
       const nextList =
@@ -497,7 +527,7 @@ export function AiProvidersOpenAIEditLayout() {
         'success'
       );
       allowNextNavigation();
-      setDraftBaseline(draftKey, buildOpenAIBaseline(form, testModel));
+      setDraftBaseline(draftKey, buildOpenAIBaseline(form));
       handleBack();
     } catch (err: unknown) {
       showNotification(`${t('notification.update_failed')}: ${getErrorMessage(err)}`, 'error');
@@ -515,7 +545,6 @@ export function AiProvidersOpenAIEditLayout() {
     setDraftBaseline,
     showNotification,
     t,
-    testModel,
   ]);
 
   return (

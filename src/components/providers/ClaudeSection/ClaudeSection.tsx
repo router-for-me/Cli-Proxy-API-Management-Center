@@ -159,12 +159,28 @@ export function ClaudeSection({
                     <span className={styles.fieldValue}>{t('common.yes')}</span>
                   </div>
                 ) : null}
+                {item.cloak?.cacheUserId !== undefined ? (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('ai_providers.claude_cloak_cache_user_id_label')}:</span>
+                    <span className={styles.fieldValue}>
+                      {item.cloak.cacheUserId ? t('common.yes') : t('common.no')}
+                    </span>
+                  </div>
+                ) : null}
                 {item.cloak?.sensitiveWords?.length ? (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>
                       {t('ai_providers.claude_cloak_sensitive_words_count')}:
                     </span>
                     <span className={styles.fieldValue}>{item.cloak.sensitiveWords.length}</span>
+                  </div>
+                ) : null}
+                {item.experimentalCchSigning !== undefined ? (
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>{t('ai_providers.claude_experimental_cch_signing_label')}:</span>
+                    <span className={styles.fieldValue}>
+                      {item.experimentalCchSigning ? t('common.yes') : t('common.no')}
+                    </span>
                   </div>
                 ) : null}
                 {headerEntries.length > 0 && (

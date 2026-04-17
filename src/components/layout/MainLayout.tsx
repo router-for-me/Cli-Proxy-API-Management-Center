@@ -514,6 +514,14 @@ export function MainLayout() {
     <div className="app-shell">
       <header className="main-header" ref={headerRef}>
         <div className="left">
+          <Button
+            className="mobile-menu-btn"
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarOpen((prev) => !prev)}
+          >
+            {headerIcons.menu}
+          </Button>
           <button
             className="sidebar-toggle-header"
             onClick={() => setSidebarCollapsed((prev) => !prev)}
@@ -551,14 +559,6 @@ export function MainLayout() {
           </div>
 
           <div className="header-actions">
-            <Button
-              className="mobile-menu-btn"
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen((prev) => !prev)}
-            >
-              {headerIcons.menu}
-            </Button>
             <Button
               variant="ghost"
               size="sm"

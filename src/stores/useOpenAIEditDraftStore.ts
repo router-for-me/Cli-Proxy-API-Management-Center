@@ -32,7 +32,6 @@ export type OpenAIEditBaseline = {
     headers: Array<{ key: string; value: string }>;
   }>;
   models: Array<{ name: string; alias: string }>;
-  testModel: string;
 };
 
 export type OpenAIEditDraft = {
@@ -70,9 +69,9 @@ const buildEmptyForm = (): OpenAIFormState => ({
   prefix: '',
   baseUrl: '',
   headers: [],
+  models: [],
   apiKeyEntries: [buildApiKeyEntry()],
   modelEntries: [{ name: '', alias: '' }],
-  testModel: undefined,
 });
 
 const buildEmptyDraft = (): OpenAIEditDraft => ({

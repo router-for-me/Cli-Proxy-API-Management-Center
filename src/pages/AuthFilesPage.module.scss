@@ -344,14 +344,27 @@
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+
+  @include mobile {
+    gap: $spacing-sm;
+    grid-template-columns: 1fr;
+  }
 }
 
 .fileGridQuotaManaged {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
 }
 
 .fileGridCompact {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
 }
 
 .antigravityGrid {
@@ -707,6 +720,12 @@
     box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.15);
     border-color: color-mix(in srgb, var(--primary-color) 28%, var(--border-color));
   }
+
+  @include mobile {
+    width: 100%;
+    padding: 14px 12px;
+    border-radius: 10px;
+  }
 }
 
 .fileCardSelected {
@@ -799,12 +818,6 @@
     gap: 4px;
   }
 
-  .primaryActionButton:global(.btn.btn-sm) {
-    flex: 0 1 auto;
-    min-width: 0;
-    padding-inline: 8px;
-  }
-
   .cardUtilityActions {
     gap: 2px;
     padding: 2px;
@@ -832,6 +845,10 @@
   align-items: stretch;
   gap: $spacing-md;
   min-height: 100%;
+
+  @include mobile {
+    gap: $spacing-sm;
+  }
 }
 
 .fileCardMain {
@@ -840,12 +857,20 @@
   gap: 10px;
   flex: 1;
   min-width: 0;
+
+  @include mobile {
+    gap: 8px;
+  }
 }
 
 .cardHeader {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+
+  @include mobile {
+    gap: 8px;
+  }
 }
 
 .cardSelection {
@@ -862,12 +887,23 @@
   justify-content: center;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+
+  @include mobile {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+  }
 }
 
 .providerAvatarImage {
   width: 22px;
   height: 22px;
   object-fit: contain;
+
+  @include mobile {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .providerAvatarFallback {
@@ -882,6 +918,10 @@
   gap: 6px;
   flex: 1;
   min-width: 0;
+
+  @include mobile {
+    gap: 5px;
+  }
 }
 
 .cardBadgeRow {
@@ -889,6 +929,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+
+  @include mobile {
+    gap: 6px;
+  }
 }
 
 .typeBadge {
@@ -979,6 +1023,11 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   letter-spacing: -0.01em;
+
+  @include mobile {
+    font-size: 13px;
+    line-height: 1.35;
+  }
 }
 
 .cardMeta {
@@ -987,6 +1036,11 @@
   align-items: baseline;
   gap: 4px 14px;
   padding: 0 2px;
+
+  @include mobile {
+    gap: 4px 10px;
+    padding: 0;
+  }
 }
 
 .cardMetaCompact {
@@ -1048,6 +1102,11 @@
   gap: 6px;
   align-items: flex-start;
   min-width: 0;
+
+  @include mobile {
+    gap: 4px;
+    flex-wrap: wrap;
+  }
 }
 
 .noteLabel {
@@ -1078,6 +1137,10 @@
   border-radius: 8px;
   padding: 8px 10px;
   word-break: break-word;
+
+  @include mobile {
+    padding: 7px 9px;
+  }
 }
 
 .messageIcon {
@@ -1090,6 +1153,11 @@
   flex-direction: column;
   gap: 8px;
   padding: 0 2px;
+
+  @include mobile {
+    gap: 6px;
+    padding: 0;
+  }
 }
 
 .cardInsightsCompact {
@@ -1101,6 +1169,10 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+
+  @include mobile {
+    gap: 6px;
+  }
 }
 
 .cardStatsCompact {
@@ -1156,6 +1228,10 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+
+  @include mobile {
+    gap: 3px;
+  }
 }
 
 .statusPanelCompact {
@@ -1377,9 +1453,70 @@
 .prefixProxyEditor {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
-  max-height: 60vh;
-  overflow: auto;
+  gap: $spacing-lg;
+  max-height: none;
+  overflow: visible;
+}
+
+.prefixProxyModal {
+  border-color: color-mix(in srgb, var(--border-color) 52%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-primary) 97%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 32%, var(--bg-primary))
+  );
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.16);
+
+  :global(.modal-header) {
+    padding-right: 56px;
+    border-bottom-color: color-mix(in srgb, var(--border-color) 46%, transparent);
+    background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  }
+
+  :global(.modal-body) {
+    padding: $spacing-lg;
+    max-height: min(72vh, calc(100vh - 176px));
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-primary) 96%, transparent),
+      color-mix(in srgb, var(--bg-secondary) 20%, var(--bg-primary))
+    );
+  }
+
+  :global(.modal-footer) {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    border-top-color: color-mix(in srgb, var(--border-color) 42%, transparent);
+    background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+    backdrop-filter: blur(10px);
+  }
+
+  @supports (height: 100dvh) {
+    :global(.modal-body) {
+      max-height: min(72dvh, calc(100dvh - 176px));
+    }
+  }
+
+  @include mobile {
+    width: 100%;
+    border-radius: $radius-md;
+
+    :global(.modal-body) {
+      padding: $spacing-md;
+      max-height: calc(100vh - 148px);
+    }
+
+    @supports (height: 100dvh) {
+      :global(.modal-body) {
+        max-height: calc(100dvh - 148px);
+      }
+    }
+
+    :global(.modal-footer) {
+      padding-bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom));
+    }
+  }
 }
 
 .prefixProxyLoading {
@@ -1395,8 +1532,9 @@
 .prefixProxyError {
   padding: $spacing-sm $spacing-md;
   border-radius: $radius-md;
-  border: 1px solid var(--danger-color);
-  background-color: rgba($error-color, 0.1);
+  border: 0;
+  border-left: 3px solid var(--danger-color);
+  background-color: rgba($error-color, 0.08);
   color: var(--danger-color);
   font-size: 12px;
 }
@@ -1404,47 +1542,134 @@
 .prefixProxyJsonWrapper {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .prefixProxyLabel {
   font-size: 12px;
   color: var(--text-secondary);
   font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .prefixProxyTextarea {
   width: 100%;
   padding: $spacing-sm $spacing-md;
-  border: 1px solid var(--border-color);
+  border: 1px solid color-mix(in srgb, var(--border-color) 42%, transparent);
   border-radius: $radius-md;
-  background-color: var(--bg-secondary);
+  background-color: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
   color: var(--text-primary);
   font-size: 12px;
   font-family: monospace;
   resize: vertical;
   min-height: 120px;
   box-sizing: border-box;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
   &:focus {
     outline: none;
     border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 12%, transparent);
+  }
+
+  @include mobile {
+    min-height: 96px;
+    font-size: 11px;
   }
 }
 
 .prefixProxyFields {
   display: grid;
   grid-template-columns: 1fr;
-  gap: $spacing-sm;
+  gap: $spacing-md;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 
   :global(.form-group) {
     margin: 0;
+  }
+
+  :global(.input),
+  :global(textarea.input) {
+    border-color: color-mix(in srgb, var(--border-color) 38%, transparent);
+    background-color: color-mix(in srgb, var(--bg-secondary) 68%, transparent);
+  }
+
+  :global(.input:focus),
+  :global(textarea.input:focus) {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 12%, transparent);
+  }
+
+  :global(.hint) {
+    color: var(--text-tertiary);
+  }
+
+  @include mobile {
+    gap: $spacing-sm;
   }
 }
 
 .prefixProxyTextareaInvalid {
   border-color: var(--danger-color);
   box-shadow: 0 0 0 3px rgba($error-color, 0.12);
+}
+
+.prefixProxyTokenPanel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.prefixProxyTokenHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-sm;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.prefixProxyTokenMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.prefixProxyTokenHint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.prefixProxyTokenPanel :global(.btn.btn-secondary) {
+  border-color: color-mix(in srgb, var(--border-color) 34%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 48%, transparent);
+}
+
+.prefixProxyTokenPanel + .prefixProxyJsonWrapper,
+.prefixProxyJsonWrapper + .prefixProxyJsonWrapper,
+.prefixProxyJsonWrapper + .prefixProxyFields {
+  padding-top: $spacing-md;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 48%, transparent);
+
+  @include mobile {
+    padding-top: $spacing-sm;
+  }
 }
 
 .cardActions {
@@ -1465,11 +1690,6 @@
   flex: 1;
 }
 
-.primaryActionButton:global(.btn.btn-sm) {
-  min-width: 0;
-  padding-inline: 10px;
-}
-
 .modelsActionButton:global(.btn.btn-sm) {
   background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
   border-color: color-mix(in srgb, var(--primary-color) 20%, var(--border-color));
@@ -1480,26 +1700,12 @@
   background: color-mix(in srgb, var(--primary-color) 14%, var(--bg-secondary));
 }
 
-.modelsActionButton:global(.btn.btn-sm) > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.modelsActionIconWrap {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 auto;
+.iconButton:global(.btn.btn-sm) > span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--primary-color) 16%, transparent);
-}
-
-.actionButtonLabel {
-  @include text-ellipsis;
+  width: 100%;
+  height: 100%;
 }
 
 .cardUtilityActions {
@@ -1540,23 +1746,8 @@
 }
 
 @include mobile {
-  .cardActions {
-    flex-wrap: wrap;
-  }
-
-  .cardActionsMain {
-    flex-wrap: wrap;
-    width: 100%;
-  }
-
-  .primaryActionButton:global(.btn.btn-sm) {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
   .statusToggle {
-    width: 100%;
-    justify-content: space-between;
+    padding-left: $spacing-xs;
   }
 }
 

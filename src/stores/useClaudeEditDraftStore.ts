@@ -18,6 +18,7 @@ export type ClaudeCloakBaseline = {
   mode: string;
   strictMode: boolean;
   sensitiveWords: string[] | null;
+  cacheUserId: boolean | null;
 } | null;
 
 export type ClaudeEditBaseline = {
@@ -30,6 +31,7 @@ export type ClaudeEditBaseline = {
   models: Array<{ name: string; alias: string }>;
   excludedModels: string[];
   cloak: ClaudeCloakBaseline;
+  experimentalCchSigning: boolean | null;
 };
 
 type ClaudeEditDraft = {

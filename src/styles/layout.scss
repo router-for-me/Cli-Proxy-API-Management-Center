@@ -51,6 +51,7 @@
     right: 0;
     padding: $spacing-sm $spacing-md;
     gap: $spacing-sm;
+    justify-content: space-between;
     padding-left: max(#{$spacing-md}, env(safe-area-inset-left));
     padding-right: max(#{$spacing-md}, env(safe-area-inset-right));
   }
@@ -62,12 +63,22 @@
     min-width: 0;
     flex: 0 1 auto;
 
+    @media (max-width: $breakpoint-mobile) {
+      gap: 0;
+      min-width: auto;
+      flex: 0 0 auto;
+    }
+
     .brand-logo {
       height: 32px;
       width: 32px;
       object-fit: contain;
       flex-shrink: 0;
       border-radius: $radius-sm;
+
+      @media (max-width: $breakpoint-mobile) {
+        display: none;
+      }
     }
   }
 
@@ -80,8 +91,10 @@
     justify-content: flex-end;
 
     @media (max-width: $breakpoint-mobile) {
-      flex: 0 1 auto;
+      width: 100%;
+      flex: 1 1 auto;
       gap: $spacing-sm;
+      justify-content: flex-end;
     }
   }
 
@@ -167,31 +180,9 @@
       color: var(--primary-color);
     }
 
-    // 移动端：禁用动画，只显示缩写
+    // 移动端：隐藏品牌文案，头部只保留左侧菜单按钮
     @media (max-width: $breakpoint-mobile) {
-      cursor: default;
-      flex-shrink: 1;
-      min-width: 0;
-      margin-right: 0;
-
-      .brand-full,
-      .brand-abbr {
-        transition: none;
-      }
-
-      .brand-full {
-        display: none;
-      }
-
-      .brand-abbr {
-        transform: translateX(0);
-        opacity: 1;
-        pointer-events: auto;
-      }
-
-      &:hover {
-        color: var(--text-primary);
-      }
+      display: none;
     }
   }
 

@@ -1,4 +1,4 @@
-import type { ApiKeyEntry, GeminiKeyConfig, ProviderKeyConfig } from '@/types';
+import type { ApiKeyEntry, GeminiKeyConfig, ModelAlias, ProviderKeyConfig } from '@/types';
 import type { HeaderEntry } from '@/utils/headers';
 import type { KeyStats, UsageDetail } from '@/utils/usage';
 
@@ -13,7 +13,7 @@ export interface OpenAIFormState {
   prefix: string;
   baseUrl: string;
   headers: HeaderEntry[];
-  testModel?: string;
+  models: ModelAlias[];
   modelEntries: ModelEntry[];
   apiKeyEntries: ApiKeyEntry[];
 }

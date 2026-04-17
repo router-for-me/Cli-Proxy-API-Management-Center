@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { useNotificationStore } from '@/stores';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
@@ -40,7 +40,7 @@ export type UseAuthFilesOauthOptions = {
 export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFilesOauthResult {
   const { viewMode, files } = options;
   const { t } = useTranslation();
-  const { showNotification, showConfirmation } = useNotificationStore();
+  const { showNotification } = useNotificationStore();
 
   const [excluded, setExcluded] = useState<Record<string, string[]>>({});
   const [excludedError, setExcludedError] = useState<UnsupportedError>(null);
@@ -167,69 +167,60 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
 
   const deleteExcluded = useCallback(
     (provider: string) => {
-      const providerLabel = provider.trim() || provider;
-      showConfirmation({
-        title: t('oauth_excluded.delete_title', { defaultValue: 'Delete Exclusion' }),
-        message: t('oauth_excluded.delete_confirm', { provider: providerLabel }),
-        variant: 'danger',
-        confirmText: t('common.confirm'),
-        onConfirm: async () => {
-          const providerKey = normalizeProviderKey(provider);
-          if (!providerKey) {
-            showNotification(t('oauth_excluded.provider_required'), 'error');
-            return;
-          }
+      const runDeleteExcluded = async () => {
+        const providerKey = normalizeProviderKey(provider);
+        if (!providerKey) {
+          showNotification(t('oauth_excluded.provider_required'), 'error');
+          return;
+        }
+        try {
+          await authFilesApi.deleteOauthExcludedEntry(providerKey);
+          await loadExcluded();
+          showNotification(t('oauth_excluded.delete_success'), 'success');
+        } catch (err: unknown) {
           try {
-            await authFilesApi.deleteOauthExcludedEntry(providerKey);
+            const current = await authFilesApi.getOauthExcludedModels();
+            const next: Record<string, string[]> = {};
+            Object.entries(current).forEach(([key, models]) => {
+              if (normalizeProviderKey(key) === providerKey) return;
+              next[key] = models;
+            });
+            await authFilesApi.replaceOauthExcludedModels(next);
             await loadExcluded();
             showNotification(t('oauth_excluded.delete_success'), 'success');
-          } catch (err: unknown) {
-            try {
-              const current = await authFilesApi.getOauthExcludedModels();
-              const next: Record<string, string[]> = {};
-              Object.entries(current).forEach(([key, models]) => {
-                if (normalizeProviderKey(key) === providerKey) return;
-                next[key] = models;
-              });
-              await authFilesApi.replaceOauthExcludedModels(next);
-              await loadExcluded();
-              showNotification(t('oauth_excluded.delete_success'), 'success');
-            } catch (fallbackErr: unknown) {
-              const errorMessage =
-                fallbackErr instanceof Error
-                  ? fallbackErr.message
-                  : err instanceof Error
-                    ? err.message
-                    : '';
-              showNotification(`${t('oauth_excluded.delete_failed')}: ${errorMessage}`, 'error');
-            }
+          } catch (fallbackErr: unknown) {
+            const errorMessage =
+              fallbackErr instanceof Error
+                ? fallbackErr.message
+                : err instanceof Error
+                  ? err.message
+                  : '';
+            showNotification(`${t('oauth_excluded.delete_failed')}: ${errorMessage}`, 'error');
           }
         }
-      });
+      };
+
+      void runDeleteExcluded();
     },
-    [loadExcluded, showConfirmation, showNotification, t]
+    [loadExcluded, showNotification, t]
   );
 
   const deleteModelAlias = useCallback(
     (provider: string) => {
-      showConfirmation({
-        title: t('oauth_model_alias.delete_title', { defaultValue: 'Delete Mappings' }),
-        message: t('oauth_model_alias.delete_confirm', { provider }),
-        variant: 'danger',
-        confirmText: t('common.confirm'),
-        onConfirm: async () => {
-          try {
-            await authFilesApi.deleteOauthModelAlias(provider);
-            await loadModelAlias();
-            showNotification(t('oauth_model_alias.delete_success'), 'success');
-          } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : '';
-            showNotification(`${t('oauth_model_alias.delete_failed')}: ${errorMessage}`, 'error');
-          }
+      const runDeleteModelAlias = async () => {
+        try {
+          await authFilesApi.deleteOauthModelAlias(provider);
+          await loadModelAlias();
+          showNotification(t('oauth_model_alias.delete_success'), 'success');
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : '';
+          showNotification(`${t('oauth_model_alias.delete_failed')}: ${errorMessage}`, 'error');
         }
-      });
+      };
+
+      void runDeleteModelAlias();
     },
-    [loadModelAlias, showConfirmation, showNotification, t]
+    [loadModelAlias, showNotification, t]
   );
 
   const handleMappingUpdate = useCallback(
@@ -281,48 +272,38 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
       const aliasTrim = alias.trim();
       if (!provider || !nameTrim || !aliasTrim) return;
 
-      showConfirmation({
-        title: t('oauth_model_alias.delete_link_title', { defaultValue: 'Unlink mapping' }),
-        message: (
-          <Trans
-            i18nKey="oauth_model_alias.delete_link_confirm"
-            values={{ provider, sourceModel: nameTrim, alias: aliasTrim }}
-            components={{ code: <code /> }}
-          />
-        ),
-        variant: 'danger',
-        confirmText: t('common.confirm'),
-        onConfirm: async () => {
-          const normalizedProvider = normalizeProviderKey(provider);
-          const providerKey = Object.keys(modelAlias).find(
-            (key) => normalizeProviderKey(key) === normalizedProvider
-          );
-          const currentMappings = (providerKey ? modelAlias[providerKey] : null) ?? [];
-          const nameKey = nameTrim.toLowerCase();
-          const aliasKey = aliasTrim.toLowerCase();
-          const nextMappings = currentMappings.filter(
-            (m) =>
-              (m.name ?? '').trim().toLowerCase() !== nameKey ||
-              (m.alias ?? '').trim().toLowerCase() !== aliasKey
-          );
-          if (nextMappings.length === currentMappings.length) return;
+      const runDeleteLink = async () => {
+        const normalizedProvider = normalizeProviderKey(provider);
+        const providerKey = Object.keys(modelAlias).find(
+          (key) => normalizeProviderKey(key) === normalizedProvider
+        );
+        const currentMappings = (providerKey ? modelAlias[providerKey] : null) ?? [];
+        const nameKey = nameTrim.toLowerCase();
+        const aliasKey = aliasTrim.toLowerCase();
+        const nextMappings = currentMappings.filter(
+          (m) =>
+            (m.name ?? '').trim().toLowerCase() !== nameKey ||
+            (m.alias ?? '').trim().toLowerCase() !== aliasKey
+        );
+        if (nextMappings.length === currentMappings.length) return;
 
-          try {
-            if (nextMappings.length === 0) {
-              await authFilesApi.deleteOauthModelAlias(normalizedProvider);
-            } else {
-              await authFilesApi.saveOauthModelAlias(normalizedProvider, nextMappings);
-            }
-            await loadModelAlias();
-            showNotification(t('oauth_model_alias.save_success'), 'success');
-          } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : '';
-            showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
+        try {
+          if (nextMappings.length === 0) {
+            await authFilesApi.deleteOauthModelAlias(normalizedProvider);
+          } else {
+            await authFilesApi.saveOauthModelAlias(normalizedProvider, nextMappings);
           }
+          await loadModelAlias();
+          showNotification(t('oauth_model_alias.save_success'), 'success');
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : '';
+          showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
         }
-      });
+      };
+
+      void runDeleteLink();
     },
-    [loadModelAlias, modelAlias, showConfirmation, showNotification, t]
+    [loadModelAlias, modelAlias, showNotification, t]
   );
 
   const handleToggleFork = useCallback(
@@ -426,61 +407,51 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
 
       if (providersToUpdate.length === 0) return;
 
-      showConfirmation({
-        title: t('oauth_model_alias.delete_alias_title', { defaultValue: 'Delete Alias' }),
-        message: (
-          <Trans
-            i18nKey="oauth_model_alias.delete_alias_confirm"
-            values={{ alias: aliasTrim }}
-            components={{ code: <code /> }}
-          />
-        ),
-        variant: 'danger',
-        confirmText: t('common.confirm'),
-        onConfirm: async () => {
-          let hadFailure = false;
-          let failureMessage = '';
+      const runDeleteAlias = async () => {
+        let hadFailure = false;
+        let failureMessage = '';
 
-          try {
-            const results = await Promise.allSettled(
-              providersToUpdate.map(([provider, mappings]) => {
-                const nextMappings = mappings.filter(
-                  (m) => (m.alias ?? '').trim().toLowerCase() !== aliasKey
-                );
-                if (nextMappings.length === 0) {
-                  return authFilesApi.deleteOauthModelAlias(provider);
-                }
-                return authFilesApi.saveOauthModelAlias(provider, nextMappings);
-              })
-            );
+        try {
+          const results = await Promise.allSettled(
+            providersToUpdate.map(([provider, mappings]) => {
+              const nextMappings = mappings.filter(
+                (m) => (m.alias ?? '').trim().toLowerCase() !== aliasKey
+              );
+              if (nextMappings.length === 0) {
+                return authFilesApi.deleteOauthModelAlias(provider);
+              }
+              return authFilesApi.saveOauthModelAlias(provider, nextMappings);
+            })
+          );
 
-            const failures = results.filter(
-              (result): result is PromiseRejectedResult => result.status === 'rejected'
-            );
+          const failures = results.filter(
+            (result): result is PromiseRejectedResult => result.status === 'rejected'
+          );
 
-            if (failures.length > 0) {
-              hadFailure = true;
-              const reason = failures[0].reason;
-              failureMessage = reason instanceof Error ? reason.message : String(reason ?? '');
-            }
-          } finally {
-            await loadModelAlias();
+          if (failures.length > 0) {
+            hadFailure = true;
+            const reason = failures[0].reason;
+            failureMessage = reason instanceof Error ? reason.message : String(reason ?? '');
           }
-
-          if (hadFailure) {
-            showNotification(
-              failureMessage
-                ? `${t('oauth_model_alias.delete_failed')}: ${failureMessage}`
-                : t('oauth_model_alias.delete_failed'),
-              'error'
-            );
-          } else {
-            showNotification(t('oauth_model_alias.delete_success'), 'success');
-          }
+        } finally {
+          await loadModelAlias();
         }
-      });
+
+        if (hadFailure) {
+          showNotification(
+            failureMessage
+              ? `${t('oauth_model_alias.delete_failed')}: ${failureMessage}`
+              : t('oauth_model_alias.delete_failed'),
+            'error'
+          );
+        } else {
+          showNotification(t('oauth_model_alias.delete_success'), 'success');
+        }
+      };
+
+      void runDeleteAlias();
     },
-    [loadModelAlias, modelAlias, showConfirmation, showNotification, t]
+    [loadModelAlias, modelAlias, showNotification, t]
   );
 
   return {
@@ -501,4 +472,3 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
     handleDeleteAlias
   };
 }
-

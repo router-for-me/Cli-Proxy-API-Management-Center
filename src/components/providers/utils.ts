@@ -58,6 +58,16 @@ export const normalizeClaudeBaseUrl = (baseUrl: string): string => {
   return trimmed;
 };
 
+export const normalizeProviderPrefix = (prefix: string): string =>
+  String(prefix ?? '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '');
+
+export const isProviderPrefixValid = (prefix: string): boolean => {
+  const normalized = normalizeProviderPrefix(prefix);
+  return normalized === '' || !normalized.includes('/');
+};
+
 export const buildOpenAIModelsEndpoint = (baseUrl: string): string => {
   const trimmed = normalizeOpenAIBaseUrl(baseUrl);
   if (!trimmed) return '';

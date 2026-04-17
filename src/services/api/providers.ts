@@ -13,7 +13,8 @@ import type {
   OpenAIProviderConfig,
   ProviderKeyConfig,
   ApiKeyEntry,
-  ModelAlias
+  ModelAlias,
+  ThinkingSupport
 } from '@/types';
 
 const serializeHeaders = (headers?: Record<string, string>) => (headers && Object.keys(headers).length ? headers : undefined);
@@ -35,31 +36,50 @@ const buildProviderDeleteQuery = (apiKey: string, baseUrl?: string) => {
   return `?${params.toString()}`;
 };
 
+const serializeThinkingSupport = (thinking?: ThinkingSupport) => {
+  if (!thinking) return undefined;
+  const payload: Record<string, unknown> = {};
+  if (thinking.min !== undefined) payload.min = thinking.min;
+  if (thinking.max !== undefined) payload.max = thinking.max;
+  if (thinking.zeroAllowed !== undefined) payload.zero_allowed = thinking.zeroAllowed;
+  if (thinking.dynamicAllowed !== undefined) payload.dynamic_allowed = thinking.dynamicAllowed;
+  if (thinking.levels?.length) payload.levels = thinking.levels;
+  return Object.keys(payload).length ? payload : undefined;
+};
+
 const serializeModelAliases = (models?: ModelAlias[]) =>
   Array.isArray(models)
     ? models
         .map((model) => {
           if (!model?.name) return null;
-          const payload: Record<string, unknown> = { name: model.name };
+          const payload: Record<string, unknown> = { name: model.name.trim() };
           if (model.alias && model.alias !== model.name) {
-            payload.alias = model.alias;
-          }
-          if (model.priority !== undefined) {
-            payload.priority = model.priority;
-          }
-          if (model.testModel) {
-            payload['test-model'] = model.testModel;
+            payload.alias = model.alias.trim();
           }
           return payload;
         })
         .filter(Boolean)
     : undefined;
 
+const serializeOpenAIModelAliases = (models?: ModelAlias[]) =>
+  Array.isArray(models)
+    ? models
+        .map((model) => {
+          if (!model?.name) return null;
+          const payload: Record<string, unknown> = { name: model.name.trim() };
+          if (model.alias && model.alias !== model.name) {
+            payload.alias = model.alias.trim();
+          }
+          const thinking = serializeThinkingSupport(model.thinking);
+          if (thinking) payload.thinking = thinking;
+          return payload;
+        })
+        .filter(Boolean)
+    : undefined;
+
 const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
-  const payload: Record<string, unknown> = { 'api-key': entry.apiKey };
-  if (entry.proxyUrl) payload['proxy-url'] = entry.proxyUrl;
-  const headers = serializeHeaders(entry.headers);
-  if (headers) payload.headers = headers;
+  const payload: Record<string, unknown> = { 'api-key': entry.apiKey.trim() };
+  if (entry.proxyUrl?.trim()) payload['proxy-url'] = entry.proxyUrl.trim();
   return payload;
 };
 
@@ -82,12 +102,16 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
     const mode = config.cloak.mode?.trim();
     if (mode) cloakPayload.mode = mode;
     if (config.cloak.strictMode !== undefined) cloakPayload['strict-mode'] = config.cloak.strictMode;
+    if (config.cloak.cacheUserId !== undefined) cloakPayload['cache-user-id'] = config.cloak.cacheUserId;
     if (config.cloak.sensitiveWords && config.cloak.sensitiveWords.length) {
       cloakPayload['sensitive-words'] = config.cloak.sensitiveWords;
     }
     if (Object.keys(cloakPayload).length) {
       payload.cloak = cloakPayload;
     }
+  }
+  if (config.experimentalCchSigning !== undefined) {
+    payload['experimental-cch-signing'] = config.experimentalCchSigning;
   }
   return payload;
 };
@@ -147,10 +171,9 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
   if (provider.prefix?.trim()) payload.prefix = provider.prefix.trim();
   const headers = serializeHeaders(provider.headers);
   if (headers) payload.headers = headers;
-  const models = serializeModelAliases(provider.models);
+  const models = serializeOpenAIModelAliases(provider.models);
   if (models && models.length) payload.models = models;
   if (provider.priority !== undefined) payload.priority = provider.priority;
-  if (provider.testModel) payload['test-model'] = provider.testModel;
   return payload;
 };
 

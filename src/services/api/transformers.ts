@@ -5,6 +5,7 @@ import type {
   ModelAlias,
   OpenAIProviderConfig,
   ProviderKeyConfig,
+  ThinkingSupport,
   AmpcodeConfig,
   AmpcodeModelMapping,
   AmpcodeUpstreamApiKeyMapping,
@@ -27,6 +28,36 @@ const normalizeBoolean = (value: unknown): boolean | undefined => {
   return Boolean(value);
 };
 
+const normalizeThinkingSupport = (value: unknown): ThinkingSupport | undefined => {
+  if (!isRecord(value)) return undefined;
+
+  const result: ThinkingSupport = {};
+  const min = Number(value.min ?? value['min']);
+  const max = Number(value.max ?? value['max']);
+  const zeroAllowed = normalizeBoolean(
+    value.zeroAllowed ?? value.zero_allowed ?? value['zero-allowed'] ?? value['zero_allowed']
+  );
+  const dynamicAllowed = normalizeBoolean(
+    value.dynamicAllowed ??
+      value.dynamic_allowed ??
+      value['dynamic-allowed'] ??
+      value['dynamic_allowed']
+  );
+  const levels = Array.isArray(value.levels)
+    ? value.levels
+        .map((item) => String(item ?? '').trim())
+        .filter(Boolean)
+    : [];
+
+  if (Number.isFinite(min)) result.min = min;
+  if (Number.isFinite(max)) result.max = max;
+  if (zeroAllowed !== undefined) result.zeroAllowed = zeroAllowed;
+  if (dynamicAllowed !== undefined) result.dynamicAllowed = dynamicAllowed;
+  if (levels.length) result.levels = Array.from(new Set(levels));
+
+  return Object.keys(result).length ? result : undefined;
+};
+
 const normalizeModelAliases = (models: unknown): ModelAlias[] => {
   if (!Array.isArray(models)) return [];
   return models
@@ -41,20 +72,15 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       const name = item.name || item.id || item.model;
       if (!name) return null;
       const alias = item.alias || item.display_name || item.displayName;
-      const priority = item.priority ?? item['priority'];
-      const testModel = item['test-model'] ?? item.testModel;
-      const entry: ModelAlias = { name: String(name) };
-      if (alias && alias !== name) {
-        entry.alias = String(alias);
+      const trimmedName = String(name).trim();
+      if (!trimmedName) return null;
+      const entry: ModelAlias = { name: trimmedName };
+      if (alias && String(alias).trim() !== trimmedName) {
+        entry.alias = String(alias).trim();
       }
-      if (priority !== undefined) {
-        const parsed = Number(priority);
-        if (Number.isFinite(parsed)) {
-          entry.priority = parsed;
-        }
-      }
-      if (testModel) {
-        entry.testModel = String(testModel);
+      const thinking = normalizeThinkingSupport(item.thinking);
+      if (thinking) {
+        entry.thinking = thinking;
       }
       return entry;
     })
@@ -201,9 +227,24 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
     if (sensitiveWords.length) {
       cloak.sensitiveWords = sensitiveWords;
     }
+    const cacheUserId = normalizeBoolean(
+      cloakRaw['cache-user-id'] ?? cloakRaw.cacheUserId ?? cloakRaw.cache_user_id
+    );
+    if (cacheUserId !== undefined) {
+      cloak.cacheUserId = cacheUserId;
+    }
     if (Object.keys(cloak).length) {
       config.cloak = cloak;
     }
+  }
+
+  const experimentalCchSigning = normalizeBoolean(
+    record?.['experimental-cch-signing'] ??
+      record?.experimentalCchSigning ??
+      record?.experimental_cch_signing
+  );
+  if (experimentalCchSigning !== undefined) {
+    config.experimentalCchSigning = experimentalCchSigning;
   }
 
   return config;
@@ -266,7 +307,6 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   const headers = normalizeHeaders(provider.headers);
   const models = normalizeModelAliases(provider.models);
   const priority = provider.priority ?? provider['priority'];
-  const testModel = provider['test-model'] ?? provider.testModel;
 
   const result: OpenAIProviderConfig = {
     name: String(name),
@@ -278,8 +318,12 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   if (prefix) result.prefix = prefix;
   if (headers) result.headers = headers;
   if (models.length) result.models = models;
-  if (priority !== undefined) result.priority = Number(priority);
-  if (testModel) result.testModel = String(testModel);
+  if (priority !== undefined && priority !== null && String(priority).trim() !== '') {
+    const parsed = Number(priority);
+    if (Number.isFinite(parsed)) {
+      result.priority = parsed;
+    }
+  }
   return result;
 };
 

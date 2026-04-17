@@ -9,6 +9,7 @@ import type {
   PrefixProxyEditorFieldValue,
   PrefixProxyEditorState,
 } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
+import { extractAuthFileAccessToken } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
 export type AuthFilesPrefixProxyEditorModalProps = {
@@ -35,12 +36,14 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
     }
   };
   const previewText = formatJsonText(updatedText);
+  const accessToken = extractAuthFileAccessToken(editor?.json ?? null);
 
   return (
     <Modal
       open={Boolean(editor)}
       onClose={onClose}
       closeDisabled={editor?.saving === true}
+      className={styles.prefixProxyModal}
       width={720}
       title={
         editor?.fileName
@@ -88,6 +91,28 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
           ) : (
             <>
               {editor.error && <div className={styles.prefixProxyError}>{editor.error}</div>}
+              {accessToken && (
+                <div className={styles.prefixProxyTokenPanel}>
+                  <div className={styles.prefixProxyTokenHeader}>
+                    <div className={styles.prefixProxyTokenMeta}>
+                      <label className={styles.prefixProxyLabel}>
+                        {t('auth_files.access_token_label')}
+                      </label>
+                      <div className={styles.prefixProxyTokenHint}>
+                        {t('auth_files.access_token_hint')}
+                      </div>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => void onCopyText(accessToken)}
+                      disabled={editor.saving === true}
+                    >
+                      {t('auth_files.access_token_copy')}
+                    </Button>
+                  </div>
+                </div>
+              )}
               <div className={styles.prefixProxyJsonWrapper}>
                 <label className={styles.prefixProxyLabel}>
                   {t('auth_files.prefix_proxy_info_label')}

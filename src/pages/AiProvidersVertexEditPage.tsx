@@ -13,7 +13,12 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { ProviderKeyConfig } from '@/types';
-import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
+import {
+  excludedModelsToText,
+  isProviderPrefixValid,
+  normalizeProviderPrefix,
+  parseExcludedModels,
+} from '@/components/providers/utils';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
 import type { VertexFormState } from '@/components/providers';
@@ -234,19 +239,31 @@ export function AiProvidersVertexEditPage() {
   const handleSave = useCallback(async () => {
     if (!canSave) return;
 
+    const apiKey = form.apiKey.trim();
     const trimmedBaseUrl = (form.baseUrl ?? '').trim();
     const baseUrl = trimmedBaseUrl || undefined;
+    const rawPrefix = form.prefix ?? '';
+    const normalizedPrefix = normalizeProviderPrefix(rawPrefix);
+
+    if (!apiKey) {
+      showNotification(t('notification.vertex_key_required'), 'error');
+      return;
+    }
+    if (!isProviderPrefixValid(rawPrefix)) {
+      showNotification(t('notification.prefix_invalid'), 'error');
+      return;
+    }
 
     setSaving(true);
     setError('');
     try {
       const payload: ProviderKeyConfig = {
-        apiKey: form.apiKey.trim(),
+        apiKey,
         priority:
           form.priority !== undefined && Number.isFinite(form.priority)
             ? Math.trunc(form.priority)
             : undefined,
-        prefix: form.prefix?.trim() || undefined,
+        prefix: normalizedPrefix || undefined,
         baseUrl,
         proxyUrl: form.proxyUrl?.trim() || undefined,
         headers: buildHeaderObject(form.headers),
@@ -341,6 +358,22 @@ export function AiProvidersVertexEditPage() {
               placeholder={t('ai_providers.vertex_add_modal_key_placeholder')}
               value={form.apiKey}
               onChange={(e) => setForm((prev) => ({ ...prev, apiKey: e.target.value }))}
+              disabled={disableControls || saving}
+            />
+            <Input
+              label={t('ai_providers.priority_label')}
+              hint={t('ai_providers.priority_hint')}
+              type="number"
+              step={1}
+              value={form.priority ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const parsed = raw.trim() === '' ? undefined : Number(raw);
+                setForm((prev) => ({
+                  ...prev,
+                  priority: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
+                }));
+              }}
               disabled={disableControls || saving}
             />
             <Input

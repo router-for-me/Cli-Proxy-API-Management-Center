@@ -10,7 +10,12 @@ import type { ModelInfo } from '@/utils/models';
 import type { ModelEntry, ProviderFormState } from '@/components/providers/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
-import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
+import {
+  excludedModelsToText,
+  isProviderPrefixValid,
+  normalizeProviderPrefix,
+  parseExcludedModels,
+} from '@/components/providers/utils';
 import { modelsToEntries } from '@/components/ui/modelInputListUtils';
 import type { ClaudeEditBaseline } from '@/stores/useClaudeEditDraftStore';
 
@@ -81,6 +86,8 @@ const normalizeCloakConfig = (cloak: ProviderFormState['cloak']) => {
   if (!cloak) return null;
   const mode = String(cloak.mode ?? '').trim().toLowerCase() || 'auto';
   const strictMode = Boolean(cloak.strictMode);
+  const cacheUserId =
+    cloak.cacheUserId === undefined ? null : Boolean(cloak.cacheUserId);
   const sensitiveWords = Array.isArray(cloak.sensitiveWords)
     ? cloak.sensitiveWords.map((word) => String(word ?? '').trim()).filter(Boolean)
     : [];
@@ -88,6 +95,7 @@ const normalizeCloakConfig = (cloak: ProviderFormState['cloak']) => {
     mode,
     strictMode,
     sensitiveWords: sensitiveWords.length ? sensitiveWords : null,
+    cacheUserId,
   };
 };
 
@@ -102,12 +110,20 @@ const buildClaudeBaseline = (form: ProviderFormState): ClaudeEditBaseline => ({
   models: normalizeClaudeModelEntries(form.modelEntries),
   excludedModels: parseExcludedModels(form.excludedText ?? ''),
   cloak: normalizeCloakConfig(form.cloak),
+  experimentalCchSigning:
+    form.experimentalCchSigning === undefined ? null : Boolean(form.experimentalCchSigning),
 });
 
 const areCloakConfigsEqual = (left: ClaudeEditBaseline['cloak'], right: ClaudeEditBaseline['cloak']) => {
   if (left === right) return true;
   if (!left || !right) return false;
-  if (left.mode !== right.mode || left.strictMode !== right.strictMode) return false;
+  if (
+    left.mode !== right.mode ||
+    left.strictMode !== right.strictMode ||
+    left.cacheUserId !== right.cacheUserId
+  ) {
+    return false;
+  }
   if (left.sensitiveWords === null || right.sensitiveWords === null) {
     return left.sensitiveWords === right.sensitiveWords;
   }
@@ -285,6 +301,11 @@ export function AiProvidersClaudeEditLayout() {
     [form.excludedText]
   );
   const normalizedCloak = useMemo(() => normalizeCloakConfig(form.cloak), [form.cloak]);
+  const normalizedExperimentalCchSigning = useMemo(() => {
+    return form.experimentalCchSigning === undefined
+      ? null
+      : Boolean(form.experimentalCchSigning);
+  }, [form.experimentalCchSigning]);
   const normalizedPriority = useMemo(() => {
     return form.priority !== undefined && Number.isFinite(form.priority)
       ? Math.trunc(form.priority)
@@ -314,6 +335,7 @@ export function AiProvidersClaudeEditLayout() {
       baseline.prefix !== String(form.prefix ?? '').trim() ||
       baseline.baseUrl !== String(form.baseUrl ?? '').trim() ||
       baseline.proxyUrl !== String(form.proxyUrl ?? '').trim() ||
+      baseline.experimentalCchSigning !== normalizedExperimentalCchSigning ||
       isHeadersDirty ||
       isModelsDirty ||
       isExcludedModelsDirty ||
@@ -400,13 +422,20 @@ export function AiProvidersClaudeEditLayout() {
     const canSave =
       !disableControls && !saving && !resolvedLoading && !invalidIndexParam && !invalidIndex;
     if (!canSave) return;
+    const rawPrefix = form.prefix ?? '';
+    const normalizedPrefix = normalizeProviderPrefix(rawPrefix);
+
+    if (!isProviderPrefixValid(rawPrefix)) {
+      showNotification(t('notification.prefix_invalid'), 'error');
+      return;
+    }
 
     setSaving(true);
     try {
       const payload: ProviderKeyConfig = {
         apiKey: form.apiKey.trim(),
         priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
-        prefix: form.prefix?.trim() || undefined,
+        prefix: normalizedPrefix || undefined,
         baseUrl: (form.baseUrl ?? '').trim() || undefined,
         proxyUrl: form.proxyUrl?.trim() || undefined,
         headers: buildHeaderObject(form.headers),
@@ -420,6 +449,7 @@ export function AiProvidersClaudeEditLayout() {
           .filter(Boolean) as ProviderKeyConfig['models'],
         excludedModels: parseExcludedModels(form.excludedText),
         cloak: form.cloak,
+        experimentalCchSigning: form.experimentalCchSigning,
       };
 
       const nextList =

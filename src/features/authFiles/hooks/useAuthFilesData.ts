@@ -55,7 +55,7 @@ export type UseAuthFilesDataOptions = {
 export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFilesDataResult {
   const { refreshKeyStats } = options;
   const { t } = useTranslation();
-  const { showNotification, showConfirmation } = useNotificationStore();
+  const { showNotification } = useNotificationStore();
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -250,27 +250,23 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
   const handleDelete = useCallback(
     (name: string) => {
-      showConfirmation({
-        title: t('auth_files.delete_title', { defaultValue: 'Delete File' }),
-        message: `${t('auth_files.delete_confirm')} "${name}" ?`,
-        variant: 'danger',
-        confirmText: t('common.confirm'),
-        onConfirm: async () => {
-          setDeleting(name);
-          try {
-            const result = await authFilesApi.deleteFile(name);
-            showNotification(t('auth_files.delete_success'), 'success');
-            applyDeletedFiles(result.files.length > 0 ? result.files : [name]);
-          } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : '';
-            showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
-          } finally {
-            setDeleting(null);
-          }
-        },
-      });
+      const runDelete = async () => {
+        setDeleting(name);
+        try {
+          const result = await authFilesApi.deleteFile(name);
+          showNotification(t('auth_files.delete_success'), 'success');
+          applyDeletedFiles(result.files.length > 0 ? result.files : [name]);
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : '';
+          showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
+        } finally {
+          setDeleting(null);
+        }
+      };
+
+      void runDelete();
     },
-    [applyDeletedFiles, showConfirmation, showNotification, t]
+    [applyDeletedFiles, showNotification, t]
   );
 
   const handleDeleteAll = useCallback(
@@ -279,104 +275,90 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
       const isFiltered = filter !== 'all';
       const isProblemOnly = problemOnly === true;
       const typeLabel = isFiltered ? getTypeLabel(t, filter) : t('auth_files.filter_all');
-      const confirmMessage = isProblemOnly
-        ? isFiltered
-          ? t('auth_files.delete_problem_filtered_confirm', { type: typeLabel })
-          : t('auth_files.delete_problem_confirm')
-        : isFiltered
-          ? t('auth_files.delete_filtered_confirm', { type: typeLabel })
-          : t('auth_files.delete_all_confirm');
+      const runDeleteAll = async () => {
+        setDeletingAll(true);
+        try {
+          if (!isFiltered && !isProblemOnly) {
+            await authFilesApi.deleteAll();
+            showNotification(t('auth_files.delete_all_success'), 'success');
+            setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
+            deselectAll();
+          } else {
+            const filesToDelete = files.filter((file) => {
+              if (isRuntimeOnlyAuthFile(file)) return false;
+              if (isFiltered && file.type !== filter) return false;
+              if (isProblemOnly && !hasAuthFileStatusMessage(file)) return false;
+              return true;
+            });
 
-      showConfirmation({
-        title: t('auth_files.delete_all_title', { defaultValue: 'Delete All Files' }),
-        message: confirmMessage,
-        variant: 'danger',
-        confirmText: t('common.confirm'),
-        onConfirm: async () => {
-          setDeletingAll(true);
-          try {
-            if (!isFiltered && !isProblemOnly) {
-              await authFilesApi.deleteAll();
-              showNotification(t('auth_files.delete_all_success'), 'success');
-              setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
-              deselectAll();
-            } else {
-              const filesToDelete = files.filter((file) => {
-                if (isRuntimeOnlyAuthFile(file)) return false;
-                if (isFiltered && file.type !== filter) return false;
-                if (isProblemOnly && !hasAuthFileStatusMessage(file)) return false;
-                return true;
-              });
-
-              if (filesToDelete.length === 0) {
-                const emptyMessage = isProblemOnly
-                  ? isFiltered
-                    ? t('auth_files.delete_problem_filtered_none', { type: typeLabel })
-                    : t('auth_files.delete_problem_none')
-                  : t('auth_files.delete_filtered_none', { type: typeLabel });
-                showNotification(emptyMessage, 'info');
-                setDeletingAll(false);
-                return;
-              }
-
-              const result = await authFilesApi.deleteFiles(
-                filesToDelete.map((file) => file.name)
-              );
-              const success = result.deleted;
-              const failed = result.failed.length;
-
-              applyDeletedFiles(result.files);
-
-              if (failed === 0 && isProblemOnly) {
-                showNotification(
-                  isFiltered
-                    ? t('auth_files.delete_problem_filtered_success', {
-                        count: success,
-                        type: typeLabel,
-                      })
-                    : t('auth_files.delete_problem_success', { count: success }),
-                  'success'
-                );
-              } else if (failed === 0) {
-                showNotification(
-                  t('auth_files.delete_filtered_success', { count: success, type: typeLabel }),
-                  'success'
-                );
-              } else if (isProblemOnly) {
-                showNotification(
-                  isFiltered
-                    ? t('auth_files.delete_problem_filtered_partial', {
-                        success,
-                        failed,
-                        type: typeLabel,
-                      })
-                    : t('auth_files.delete_problem_partial', { success, failed }),
-                  'warning'
-                );
-              } else {
-                showNotification(
-                  t('auth_files.delete_filtered_partial', { success, failed, type: typeLabel }),
-                  'warning'
-                );
-              }
-
-              if (isFiltered) {
-                onResetFilterToAll();
-              }
-              if (isProblemOnly) {
-                onResetProblemOnly();
-              }
+            if (filesToDelete.length === 0) {
+              const emptyMessage = isProblemOnly
+                ? isFiltered
+                  ? t('auth_files.delete_problem_filtered_none', { type: typeLabel })
+                  : t('auth_files.delete_problem_none')
+                : t('auth_files.delete_filtered_none', { type: typeLabel });
+              showNotification(emptyMessage, 'info');
+              setDeletingAll(false);
+              return;
             }
-          } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : '';
-            showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
-          } finally {
-            setDeletingAll(false);
+
+            const result = await authFilesApi.deleteFiles(filesToDelete.map((file) => file.name));
+            const success = result.deleted;
+            const failed = result.failed.length;
+
+            applyDeletedFiles(result.files);
+
+            if (failed === 0 && isProblemOnly) {
+              showNotification(
+                isFiltered
+                  ? t('auth_files.delete_problem_filtered_success', {
+                      count: success,
+                      type: typeLabel,
+                    })
+                  : t('auth_files.delete_problem_success', { count: success }),
+                'success'
+              );
+            } else if (failed === 0) {
+              showNotification(
+                t('auth_files.delete_filtered_success', { count: success, type: typeLabel }),
+                'success'
+              );
+            } else if (isProblemOnly) {
+              showNotification(
+                isFiltered
+                  ? t('auth_files.delete_problem_filtered_partial', {
+                      success,
+                      failed,
+                      type: typeLabel,
+                    })
+                  : t('auth_files.delete_problem_partial', { success, failed }),
+                'warning'
+              );
+            } else {
+              showNotification(
+                t('auth_files.delete_filtered_partial', { success, failed, type: typeLabel }),
+                'warning'
+              );
+            }
+
+            if (isFiltered) {
+              onResetFilterToAll();
+            }
+            if (isProblemOnly) {
+              onResetProblemOnly();
+            }
           }
-        },
-      });
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : '';
+          showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
+        } finally {
+          setDeletingAll(false);
+        }
+      };
+
+      void runDeleteAll();
     },
-    [applyDeletedFiles, deselectAll, files, showConfirmation, showNotification, t]
+    [applyDeletedFiles, deselectAll, files, showNotification, t]
   );
 
   const handleDownload = useCallback(
@@ -569,39 +551,32 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
       const uniqueNames = Array.from(new Set(names));
       if (uniqueNames.length === 0) return;
 
-      showConfirmation({
-        title: t('auth_files.batch_delete_title'),
-        message: t('auth_files.batch_delete_confirm', { count: uniqueNames.length }),
-        variant: 'danger',
-        confirmText: t('common.confirm'),
-        onConfirm: async () => {
-          try {
-            const result = await authFilesApi.deleteFiles(uniqueNames);
-            applyDeletedFiles(result.files);
+      const runBatchDelete = async () => {
+        try {
+          const result = await authFilesApi.deleteFiles(uniqueNames);
+          applyDeletedFiles(result.files);
 
-            if (result.failed.length === 0) {
-              showNotification(
-                `${t('auth_files.delete_all_success')} (${result.deleted})`,
-                'success'
-              );
-            } else {
-              showNotification(
-                t('auth_files.delete_filtered_partial', {
-                  success: result.deleted,
-                  failed: result.failed.length,
-                  type: t('auth_files.filter_all'),
-                }),
-                'warning'
-              );
-            }
-          } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : '';
-            showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
+          if (result.failed.length === 0) {
+            showNotification(`${t('auth_files.delete_all_success')} (${result.deleted})`, 'success');
+          } else {
+            showNotification(
+              t('auth_files.delete_filtered_partial', {
+                success: result.deleted,
+                failed: result.failed.length,
+                type: t('auth_files.filter_all'),
+              }),
+              'warning'
+            );
           }
-        },
-      });
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : '';
+          showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
+        }
+      };
+
+      void runBatchDelete();
     },
-    [applyDeletedFiles, showConfirmation, showNotification, t]
+    [applyDeletedFiles, showNotification, t]
   );
 
   return {

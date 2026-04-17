@@ -18,7 +18,12 @@ import type { ProviderKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
-import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
+import {
+  excludedModelsToText,
+  isProviderPrefixValid,
+  normalizeProviderPrefix,
+  parseExcludedModels,
+} from '@/components/providers/utils';
 import type { ProviderFormState } from '@/components/providers';
 import type { ModelInfo } from '@/utils/models';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
@@ -437,8 +442,14 @@ export function AiProvidersCodexEditPage() {
 
     const trimmedBaseUrl = (form.baseUrl ?? '').trim();
     const baseUrl = trimmedBaseUrl || undefined;
+    const rawPrefix = form.prefix ?? '';
+    const normalizedPrefix = normalizeProviderPrefix(rawPrefix);
     if (!baseUrl) {
       showNotification(t('notification.codex_base_url_required'), 'error');
+      return;
+    }
+    if (!isProviderPrefixValid(rawPrefix)) {
+      showNotification(t('notification.prefix_invalid'), 'error');
       return;
     }
 
@@ -448,7 +459,7 @@ export function AiProvidersCodexEditPage() {
       const payload: ProviderKeyConfig = {
         apiKey: form.apiKey.trim(),
         priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
-        prefix: form.prefix?.trim() || undefined,
+        prefix: normalizedPrefix || undefined,
         baseUrl,
         websockets: Boolean(form.websockets),
         proxyUrl: form.proxyUrl?.trim() || undefined,

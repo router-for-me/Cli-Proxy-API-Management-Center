@@ -18,7 +18,12 @@ import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/u
 import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
 import type { ModelInfo } from '@/utils/models';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
-import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
+import {
+  excludedModelsToText,
+  isProviderPrefixValid,
+  normalizeProviderPrefix,
+  parseExcludedModels,
+} from '@/components/providers/utils';
 import type { GeminiFormState } from '@/components/providers';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 import styles from './AiProvidersPage.module.scss';
@@ -437,6 +442,18 @@ export function AiProvidersGeminiEditPage() {
 
   const handleSave = useCallback(async () => {
     if (!canSave) return;
+    const apiKey = form.apiKey.trim();
+    const rawPrefix = form.prefix ?? '';
+    const normalizedPrefix = normalizeProviderPrefix(rawPrefix);
+
+    if (!apiKey) {
+      showNotification(t('notification.gemini_key_required'), 'error');
+      return;
+    }
+    if (!isProviderPrefixValid(rawPrefix)) {
+      showNotification(t('notification.prefix_invalid'), 'error');
+      return;
+    }
 
     setSaving(true);
     setError('');
@@ -447,9 +464,9 @@ export function AiProvidersGeminiEditPage() {
       }));
 
       const payload: GeminiKeyConfig = {
-        apiKey: form.apiKey.trim(),
+        apiKey,
         priority: form.priority !== undefined ? Math.trunc(form.priority) : undefined,
-        prefix: form.prefix?.trim() || undefined,
+        prefix: normalizedPrefix || undefined,
         baseUrl: form.baseUrl?.trim() || undefined,
         proxyUrl: form.proxyUrl?.trim() || undefined,
         headers: buildHeaderObject(form.headers),
