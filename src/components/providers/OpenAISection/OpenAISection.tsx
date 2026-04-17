@@ -35,6 +35,11 @@ interface OpenAISectionProps {
   onDelete: (index: number) => void;
 }
 
+interface IndexedOpenAIProvider {
+  config: OpenAIProviderConfig;
+  originalIndex: number;
+}
+
 export function OpenAISection({
   configs,
   keyStats,
@@ -149,10 +154,11 @@ export function OpenAISection({
     return cache;
   }, [configs, usageDetailsBySource]);
 
-  const sortedConfigs = useMemo(() => {
-    const filtered = configs.filter((provider) => {
+  const sortedConfigs = useMemo<IndexedOpenAIProvider[]>(() => {
+    const indexed = configs.map((config, originalIndex) => ({ config, originalIndex }));
+    const filtered = indexed.filter(({ config }) => {
       if (selectedModels.size === 0) return true;
-      return provider.models?.some((model) => selectedModels.has(model.name));
+      return config.models?.some((model) => selectedModels.has(model.name));
     });
 
     const sorted = [...filtered];
@@ -160,40 +166,40 @@ export function OpenAISection({
     const providerStats =
       sortOption === 'recent-success'
         ? new Map(
-            sorted.map((provider) => [
-              provider,
-              getOpenAIProviderStats(provider.apiKeyEntries, keyStats, provider.prefix),
+            sorted.map(({ config }) => [
+              config,
+              getOpenAIProviderStats(config.apiKeyEntries, keyStats, config.prefix),
             ])
           )
         : null;
 
     switch (sortOption) {
       case 'name':
-        sorted.sort((a, b) => direction * a.name.localeCompare(b.name));
+        sorted.sort((a, b) => direction * a.config.name.localeCompare(b.config.name));
         break;
       case 'priority':
         sorted.sort((a, b) => {
-          const priorityA = a.priority ?? Number.MAX_SAFE_INTEGER;
-          const priorityB = b.priority ?? Number.MAX_SAFE_INTEGER;
+          const priorityA = a.config.priority ?? Number.MAX_SAFE_INTEGER;
+          const priorityB = b.config.priority ?? Number.MAX_SAFE_INTEGER;
           const priorityDiff = priorityA - priorityB;
 
           if (priorityDiff !== 0) {
             return direction * priorityDiff;
           }
 
-          return direction * a.name.localeCompare(b.name);
+          return direction * a.config.name.localeCompare(b.config.name);
         });
         break;
       case 'recent-success':
         sorted.sort((a, b) => {
           const successDiff =
-            (providerStats?.get(a)?.success ?? 0) - (providerStats?.get(b)?.success ?? 0);
+            (providerStats?.get(a.config)?.success ?? 0) - (providerStats?.get(b.config)?.success ?? 0);
 
           if (successDiff !== 0) {
             return direction * successDiff;
           }
 
-          return direction * a.name.localeCompare(b.name);
+          return direction * a.config.name.localeCompare(b.config.name);
         });
         break;
       default:
@@ -202,11 +208,6 @@ export function OpenAISection({
 
     return sorted;
   }, [configs, sortOption, sortDirection, keyStats, selectedModels]);
-
-  const getProviderKey = (item: OpenAIProviderConfig) => `${item.name}-${item.prefix ?? ''}-${item.baseUrl}`;
-
-  const getProviderIndex = (item: OpenAIProviderConfig) =>
-    configs.findIndex((config) => config === item);
 
   const toggleModelSelection = (modelName: string) => {
     setSelectedModels((prev) => {
@@ -351,49 +352,48 @@ export function OpenAISection({
         }
         extra={renderToolbar('top')}
       >
-        <ProviderList<OpenAIProviderConfig>
+        <ProviderList<IndexedOpenAIProvider>
           items={sortedConfigs}
           loading={loading}
-          keyField={(item) => getProviderKey(item)}
+          keyField={(item) => `openai-provider-${item.originalIndex}`}
           emptyTitle={t('ai_providers.openai_empty_title')}
           emptyDescription={t('ai_providers.openai_empty_desc')}
+          listClassName={styles.providerList}
+          rowClassName={styles.providerCard}
+          metaClassName={styles.providerMeta}
+          actionsClassName={styles.providerActions}
           onEdit={(item) => {
-            const index = getProviderIndex(item);
-            if (index >= 0) {
-              onEdit(index);
-            }
+            onEdit(item.originalIndex);
           }}
           onDelete={(item) => {
-            const index = getProviderIndex(item);
-            if (index >= 0) {
-              onDelete(index);
-            }
+            onDelete(item.originalIndex);
           }}
           actionsDisabled={actionsDisabled}
           renderContent={(item) => {
-            const stats = getOpenAIProviderStats(item.apiKeyEntries, keyStats, item.prefix);
-            const headerEntries = Object.entries(item.headers || {});
-            const apiKeyEntries = item.apiKeyEntries || [];
-            const statusData = statusBarCache.get(item.name) || calculateStatusBarData([]);
+            const provider = item.config;
+            const stats = getOpenAIProviderStats(provider.apiKeyEntries, keyStats, provider.prefix);
+            const headerEntries = Object.entries(provider.headers || {});
+            const apiKeyEntries = provider.apiKeyEntries || [];
+            const statusData = statusBarCache.get(provider.name) || calculateStatusBarData([]);
 
             return (
               <Fragment>
-                <div className="item-title">{item.name}</div>
-                {item.priority !== undefined && (
+                <div className={styles.providerTitle}>{provider.name}</div>
+                {provider.priority !== undefined && (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('common.priority')}:</span>
-                    <span className={styles.fieldValue}>{item.priority}</span>
+                    <span className={styles.fieldValue}>{provider.priority}</span>
                   </div>
                 )}
-                {item.prefix && (
+                {provider.prefix && (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>{t('common.prefix')}:</span>
-                    <span className={styles.fieldValue}>{item.prefix}</span>
+                    <span className={styles.fieldValue}>{provider.prefix}</span>
                   </div>
                 )}
                 <div className={styles.fieldRow}>
                   <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
-                  <span className={styles.fieldValue}>{item.baseUrl}</span>
+                  <span className={styles.fieldValue}>{provider.baseUrl}</span>
                 </div>
                 {headerEntries.length > 0 && (
                   <div className={styles.headerBadgeList}>
@@ -439,11 +439,11 @@ export function OpenAISection({
                 )}
                 <div className={styles.fieldRow} style={{ marginTop: '8px' }}>
                   <span className={styles.fieldLabel}>{t('ai_providers.openai_models_count')}:</span>
-                  <span className={styles.fieldValue}>{item.models?.length || 0}</span>
+                  <span className={styles.fieldValue}>{provider.models?.length || 0}</span>
                 </div>
-                {item.models?.length ? (
+                {provider.models?.length ? (
                   <div className={styles.modelTagList}>
-                    {item.models.map((model) => (
+                    {provider.models.map((model) => (
                       <span key={model.name} className={styles.modelTag}>
                         <span className={styles.modelName}>{model.name}</span>
                         {model.alias && model.alias !== model.name && (
@@ -453,10 +453,10 @@ export function OpenAISection({
                     ))}
                   </div>
                 ) : null}
-                {item.testModel && (
+                {provider.testModel && (
                   <div className={styles.fieldRow}>
                     <span className={styles.fieldLabel}>Test Model:</span>
-                    <span className={styles.fieldValue}>{item.testModel}</span>
+                    <span className={styles.fieldValue}>{provider.testModel}</span>
                   </div>
                 )}
                 <div className={styles.cardStats}>

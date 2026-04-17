@@ -642,35 +642,27 @@ textarea {
 }
 
 .item-list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: $spacing-sm;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-
-  @media (min-width: 1400px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
 }
 
 .item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
   padding: $spacing-md;
   background: var(--bg-primary);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: $spacing-sm;
-  min-height: 0;
 
   .item-meta {
     display: flex;
     flex-direction: column;
     gap: 6px;
     flex: 1;
+    min-width: 0;
   }
 
   .item-title {
@@ -687,9 +679,9 @@ textarea {
 
   .item-actions {
     display: flex;
+    align-items: center;
     gap: $spacing-sm;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    flex-shrink: 0;
   }
 }
 
