@@ -1,3 +1,5 @@
+import { parseTimestamp } from './timestamp';
+
 /**
  * 格式化工具函数
  * 从原项目 src/utils/string.js 迁移
@@ -47,7 +49,7 @@ export function formatFileSize(bytes: number): string {
  * 格式化日期时间
  */
 export function formatDateTime(date: string | Date, locale?: string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === 'string' ? parseTimestamp(date) ?? new Date(date) : date;
 
   if (isNaN(d.getTime())) {
     return 'Invalid Date';
@@ -73,7 +75,7 @@ export function formatUnixTimestamp(value: unknown, locale?: string): string {
   const asNumber = typeof value === 'number' ? value : Number(value);
   const date = (() => {
     if (!Number.isFinite(asNumber) || Number.isNaN(asNumber)) {
-      return new Date(String(value));
+      return parseTimestamp(value) ?? new Date(String(value));
     }
 
     const abs = Math.abs(asNumber);
