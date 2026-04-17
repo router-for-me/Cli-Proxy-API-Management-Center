@@ -5,7 +5,6 @@ import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
   IconDownload,
-  IconInfo,
   IconModelCluster,
   IconSettings,
   IconTrash2,
@@ -30,7 +29,10 @@ import {
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
+import type { AuthFilePlanBadgeInfo } from '@/features/authFiles/planMetadata';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
+import { AuthFilePlanBadge } from '@/features/authFiles/components/AuthFilePlanBadge';
+import { AuthFileWarningIndicator } from '@/features/authFiles/components/AuthFileWarningIndicator';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
 const HEALTHY_STATUS_MESSAGES = new Set(['ok', 'healthy', 'ready', 'success', 'available']);
@@ -44,6 +46,7 @@ export type AuthFileCardProps = {
   deleting: string | null;
   statusUpdating: Record<string, boolean>;
   quotaFilterType: QuotaProviderType | null;
+  planBadge: AuthFilePlanBadgeInfo | null;
   keyStats: KeyStats;
   statusBarCache: Map<string, AuthFileStatusBarData>;
   onShowModels: (file: AuthFileItem) => void;
@@ -71,6 +74,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     deleting,
     statusUpdating,
     quotaFilterType,
+    planBadge,
     keyStats,
     statusBarCache,
     onShowModels,
@@ -188,6 +192,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   {typeLabel}
                 </span>
                 <span className={`${styles.stateBadge} ${stateBadgeClass}`}>{stateLabel}</span>
+                {planBadge && <AuthFilePlanBadge badge={planBadge} />}
                 {websocketsBadgeLabel && (
                   <span
                     className={`${styles.featureBadge} ${
@@ -209,6 +214,9 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 </div>
               )}
             </div>
+            {rawStatusMessage && hasStatusWarning && (
+              <AuthFileWarningIndicator message={rawStatusMessage} />
+            )}
           </div>
 
           <div className={`${styles.cardMeta} ${compact ? styles.cardMetaCompact : ''}`}>
@@ -231,13 +239,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
               </div>
             )}
           </div>
-
-          {rawStatusMessage && hasStatusWarning && (
-            <div className={styles.healthStatusMessage} title={rawStatusMessage}>
-              <IconInfo className={styles.messageIcon} size={14} />
-              <span>{rawStatusMessage}</span>
-            </div>
-          )}
 
           <div className={`${styles.cardInsights} ${compact ? styles.cardInsightsCompact : ''}`}>
             <div className={`${styles.cardStats} ${compact ? styles.cardStatsCompact : ''}`}>

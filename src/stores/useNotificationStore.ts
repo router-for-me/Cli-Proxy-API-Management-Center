@@ -1,12 +1,11 @@
 /**
  * 通知状态管理
- * 替代原项目中的 showNotification 方法
+ * 当前全局关闭操作反馈弹窗与提示通知，仅保留兼容调用接口。
  */
 
 import { create } from 'zustand';
 import type { ReactNode } from 'react';
 import type { Notification, NotificationType } from '@/types';
-import { generateId } from '@/utils/helpers';
 import { NOTIFICATION_DURATION_MS } from '@/utils/constants';
 
 interface ConfirmationOptions {
@@ -43,26 +42,9 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   },
 
   showNotification: (message, type = 'info', duration = NOTIFICATION_DURATION_MS) => {
-    const id = generateId();
-    const notification: Notification = {
-      id,
-      message,
-      type,
-      duration
-    };
-
-    set((state) => ({
-      notifications: [...state.notifications, notification]
-    }));
-
-    // 自动移除通知
-    if (duration > 0) {
-      setTimeout(() => {
-        set((state) => ({
-          notifications: state.notifications.filter((n) => n.id !== id)
-        }));
-      }, duration);
-    }
+    void message;
+    void type;
+    void duration;
   },
 
   removeNotification: (id) => {
@@ -78,11 +60,17 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   showConfirmation: (options) => {
     set({
       confirmation: {
-        isOpen: true,
+        isOpen: false,
         isLoading: false,
-        options
+        options: null
       }
     });
+
+    void Promise.resolve()
+      .then(() => options.onConfirm())
+      .catch((error: unknown) => {
+        console.error('Confirmation action failed:', error);
+      });
   },
 
   hideConfirmation: () => {

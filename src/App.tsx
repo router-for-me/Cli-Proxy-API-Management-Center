@@ -1,7 +1,5 @@
 import { Suspense, lazy, useEffect, type ComponentType } from 'react';
 import { Outlet, RouterProvider, createHashRouter } from 'react-router-dom';
-import { NotificationContainer } from '@/components/common/NotificationContainer';
-import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { PageLoadFallback } from '@/components/common/PageLoadFallback';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { useLanguageStore, useThemeStore } from '@/stores';
@@ -29,13 +27,7 @@ function renderLazyPage(Component: ComponentType) {
 }
 
 function RootShell() {
-  return (
-    <>
-      <NotificationContainer />
-      <ConfirmationModal />
-      <Outlet />
-    </>
-  );
+  return <Outlet />;
 }
 
 const router = createHashRouter([

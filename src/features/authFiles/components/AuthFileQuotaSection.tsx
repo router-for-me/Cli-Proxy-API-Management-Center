@@ -115,7 +115,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         <span className={styles.quotaSectionTitle}>{t(`${config.i18nPrefix}.title`)}</span>
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
           size="sm"
           className={styles.quotaRefreshButton}
           onClick={() => void refreshQuotaForFile()}
@@ -124,8 +124,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
           title={t(`${config.i18nPrefix}.refresh_button`)}
           aria-label={t(`${config.i18nPrefix}.refresh_button`)}
         >
-          {quotaStatus !== 'loading' && <IconRefreshCw size={14} />}
-          {t(`${config.i18nPrefix}.refresh_button`)}
+          {quotaStatus !== 'loading' ? <IconRefreshCw size={14} /> : null}
         </Button>
       </div>
       {quotaStatus === 'loading' ? (

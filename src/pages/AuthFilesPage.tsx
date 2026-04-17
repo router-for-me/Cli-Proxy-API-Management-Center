@@ -51,6 +51,11 @@ import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAut
 import { useAuthFilesStats } from '@/features/authFiles/hooks/useAuthFilesStats';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import {
+  hasPremiumAuthFilePlan,
+  resolveAuthFilePlanBadge,
+  type AuthFilePlanSources,
+} from '@/features/authFiles/planMetadata';
+import {
   isAuthFilesSortMode,
   readAuthFilesUiState,
   readPersistedAuthFilesCompactMode,
@@ -58,7 +63,7 @@ import {
   writePersistedAuthFilesCompactMode,
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
-import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
+import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import styles from './AuthFilesPage.module.scss';
 
 const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
@@ -88,6 +93,8 @@ export function AuthFilesPage() {
 
   const [filter, setFilter] = useState<'all' | string>('all');
   const [problemOnly, setProblemOnly] = useState(false);
+  const [disabledOnly, setDisabledOnly] = useState(false);
+  const [premiumOnly, setPremiumOnly] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -179,6 +186,9 @@ export function AuthFilesPage() {
   });
 
   const disableControls = connectionStatus !== 'connected';
+  const claudeQuota = useQuotaStore((state) => state.claudeQuota);
+  const codexQuota = useQuotaStore((state) => state.codexQuota);
+  const geminiCliQuota = useQuotaStore((state) => state.geminiCliQuota);
   const normalizedFilter = normalizeProviderKey(String(filter));
   const quotaFilterType: QuotaProviderType | null = QUOTA_PROVIDER_TYPES.has(
     normalizedFilter as QuotaProviderType
@@ -186,6 +196,14 @@ export function AuthFilesPage() {
     ? (normalizedFilter as QuotaProviderType)
     : null;
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
+  const planSources = useMemo<AuthFilePlanSources>(
+    () => ({
+      claudeQuota,
+      codexQuota,
+      geminiCliQuota,
+    }),
+    [claudeQuota, codexQuota, geminiCliQuota]
+  );
 
   useEffect(() => {
     const persistedCompactMode = readPersistedAuthFilesCompactMode();
@@ -200,6 +218,12 @@ export function AuthFilesPage() {
       }
       if (typeof persisted.problemOnly === 'boolean') {
         setProblemOnly(persisted.problemOnly);
+      }
+      if (typeof persisted.disabledOnly === 'boolean') {
+        setDisabledOnly(persisted.disabledOnly);
+      }
+      if (typeof persisted.premiumOnly === 'boolean') {
+        setPremiumOnly(persisted.premiumOnly);
       }
       if (
         typeof persistedCompactMode !== 'boolean' &&
@@ -243,6 +267,8 @@ export function AuthFilesPage() {
     writeAuthFilesUiState({
       filter,
       problemOnly,
+      disabledOnly,
+      premiumOnly,
       compactMode,
       search,
       page,
@@ -254,10 +280,12 @@ export function AuthFilesPage() {
     writePersistedAuthFilesCompactMode(compactMode);
   }, [
     compactMode,
+    disabledOnly,
     filter,
     page,
     pageSize,
     pageSizeByMode,
+    premiumOnly,
     problemOnly,
     search,
     sortMode,
@@ -354,9 +382,33 @@ export function AuthFilesPage() {
     return Array.from(types);
   }, [files]);
 
-  const filesMatchingProblemFilter = useMemo(
-    () => (problemOnly ? files.filter(hasAuthFileStatusMessage) : files),
-    [files, problemOnly]
+  const matchesSupplementalDisplayFilters = useCallback(
+    (file: (typeof files)[number]) => {
+      if (disabledOnly && file.disabled !== true) {
+        return false;
+      }
+      if (premiumOnly && !hasPremiumAuthFilePlan(file, planSources)) {
+        return false;
+      }
+      return true;
+    },
+    [disabledOnly, planSources, premiumOnly]
+  );
+  const matchesDisplayFilters = useCallback(
+    (file: (typeof files)[number]) => {
+      if (problemOnly && !hasAuthFileStatusMessage(file)) {
+        return false;
+      }
+      if (!matchesSupplementalDisplayFilters(file)) {
+        return false;
+      }
+      return true;
+    },
+    [matchesSupplementalDisplayFilters, problemOnly]
+  );
+  const filesMatchingDisplayFilters = useMemo(
+    () => files.filter(matchesDisplayFilters),
+    [files, matchesDisplayFilters]
   );
 
   const sortOptions = useMemo(
@@ -369,13 +421,13 @@ export function AuthFilesPage() {
   );
 
   const typeCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: filesMatchingProblemFilter.length };
-    filesMatchingProblemFilter.forEach((file) => {
+    const counts: Record<string, number> = { all: filesMatchingDisplayFilters.length };
+    filesMatchingDisplayFilters.forEach((file) => {
       if (!file.type) return;
       counts[file.type] = (counts[file.type] || 0) + 1;
     });
     return counts;
-  }, [filesMatchingProblemFilter]);
+  }, [filesMatchingDisplayFilters]);
 
   const normalizedSearch = search.trim();
   const wildcardSearch = useMemo(() => buildWildcardSearch(normalizedSearch), [normalizedSearch]);
@@ -383,7 +435,7 @@ export function AuthFilesPage() {
   const filtered = useMemo(() => {
     const normalizedTerm = normalizedSearch.toLowerCase();
 
-    return filesMatchingProblemFilter.filter((item) => {
+    return filesMatchingDisplayFilters.filter((item) => {
       const matchType = filter === 'all' || item.type === filter;
       const matchSearch =
         !normalizedSearch ||
@@ -395,7 +447,15 @@ export function AuthFilesPage() {
         });
       return matchType && matchSearch;
     });
-  }, [filesMatchingProblemFilter, filter, normalizedSearch, wildcardSearch]);
+  }, [filesMatchingDisplayFilters, filter, normalizedSearch, wildcardSearch]);
+
+  const planBadgeMap = useMemo(
+    () =>
+      new Map(
+        files.map((file) => [file.name, resolveAuthFilePlanBadge(file, planSources)])
+      ),
+    [files, planSources]
+  );
 
   const sorted = useMemo(() => {
     const copy = [...filtered];
@@ -671,6 +731,8 @@ export function AuthFilesPage() {
                 handleDeleteAll({
                   filter,
                   problemOnly,
+                  matchDisplayFilter:
+                    disabledOnly || premiumOnly ? matchesSupplementalDisplayFilters : undefined,
                   onResetFilterToAll: () => setFilter('all'),
                   onResetProblemOnly: () => setProblemOnly(false),
                 })
@@ -759,6 +821,36 @@ export function AuthFilesPage() {
                     </div>
                     <div className={styles.filterToggleCard}>
                       <ToggleSwitch
+                        checked={disabledOnly}
+                        onChange={(value) => {
+                          setDisabledOnly(value);
+                          setPage(1);
+                        }}
+                        ariaLabel={t('auth_files.disabled_filter_only')}
+                        label={
+                          <span className={styles.filterToggleLabel}>
+                            {t('auth_files.disabled_filter_only')}
+                          </span>
+                        }
+                      />
+                    </div>
+                    <div className={styles.filterToggleCard}>
+                      <ToggleSwitch
+                        checked={premiumOnly}
+                        onChange={(value) => {
+                          setPremiumOnly(value);
+                          setPage(1);
+                        }}
+                        ariaLabel={t('auth_files.premium_filter_only')}
+                        label={
+                          <span className={styles.filterToggleLabel}>
+                            {t('auth_files.premium_filter_only')}
+                          </span>
+                        }
+                      />
+                    </div>
+                    <div className={styles.filterToggleCard}>
+                      <ToggleSwitch
                         checked={compactMode}
                         onChange={(value) => setCompactMode(value)}
                         ariaLabel={t('auth_files.compact_mode_label')}
@@ -796,6 +888,7 @@ export function AuthFilesPage() {
                     deleting={deleting}
                     statusUpdating={statusUpdating}
                     quotaFilterType={quotaFilterType}
+                    planBadge={planBadgeMap.get(file.name) ?? null}
                     keyStats={keyStats}
                     statusBarCache={statusBarCache}
                     onShowModels={showModels}

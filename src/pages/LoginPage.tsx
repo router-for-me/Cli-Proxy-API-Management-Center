@@ -14,9 +14,6 @@ import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import type { ApiError } from '@/types';
 import styles from './LoginPage.module.scss';
 
-/**
- * 将 API 错误转换为本地化的用户友好消息
- */
 type RedirectState = { from?: { pathname?: string } };
 
 function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): string {
@@ -32,7 +29,6 @@ function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): s
           ? error
           : '';
 
-  // 根据 HTTP 状态码判断
   if (status === 401) {
     return t('login.error_unauthorized');
   }
@@ -46,7 +42,6 @@ function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): s
     return t('login.error_server');
   }
 
-  // 根据 axios 错误码判断
   if (code === 'ECONNABORTED' || message.toLowerCase().includes('timeout')) {
     return t('login.error_timeout');
   }
@@ -57,12 +52,10 @@ function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): s
     return t('login.error_ssl');
   }
 
-  // 检查 CORS 错误
   if (message.toLowerCase().includes('cors') || message.toLowerCase().includes('cross-origin')) {
     return t('login.error_cors');
   }
 
-  // 默认错误消息
   return t('login.error_invalid');
 }
 
@@ -76,9 +69,6 @@ export function LoginPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const login = useAuthStore((state) => state.login);
   const restoreSession = useAuthStore((state) => state.restoreSession);
-  const storedBase = useAuthStore((state) => state.apiBase);
-  const storedKey = useAuthStore((state) => state.managementKey);
-  const storedRememberPassword = useAuthStore((state) => state.rememberPassword);
 
   const [apiBase, setApiBase] = useState('');
   const [managementKey, setManagementKey] = useState('');
@@ -110,31 +100,44 @@ export function LoginPage() {
   );
 
   useEffect(() => {
+    let mounted = true;
+    let redirectTimer: number | undefined;
+
     const init = async () => {
       try {
         const autoLoggedIn = await restoreSession();
+        if (!mounted) {
+          return;
+        }
+
         if (autoLoggedIn) {
           setAutoLoginSuccess(true);
-          // 延迟跳转，让用户看到成功动画
-          setTimeout(() => {
+          redirectTimer = window.setTimeout(() => {
             const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
             navigate(redirect, { replace: true });
           }, 1500);
         } else {
-          setApiBase(storedBase || detectedBase);
-          setManagementKey(storedKey || '');
-          setRememberPassword(storedRememberPassword || Boolean(storedKey));
+          const authState = useAuthStore.getState();
+          setApiBase(authState.apiBase || detectedBase);
+          setManagementKey(authState.managementKey || '');
+          setRememberPassword(authState.rememberPassword || Boolean(authState.managementKey));
         }
       } finally {
-        if (!autoLoginSuccess) {
+        if (mounted) {
           setAutoLoading(false);
         }
       }
     };
 
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void init();
+
+    return () => {
+      mounted = false;
+      if (redirectTimer) {
+        window.clearTimeout(redirectTimer);
+      }
+    };
+  }, [detectedBase, location.state, navigate, restoreSession]);
 
   const handleSubmit = useCallback(async () => {
     if (!managementKey.trim()) {
@@ -177,12 +180,10 @@ export function LoginPage() {
     return <Navigate to={redirect} replace />;
   }
 
-  // 显示启动动画（自动登录中或自动登录成功）
   const showSplash = autoLoading || autoLoginSuccess;
 
   return (
     <div className={styles.container}>
-      {/* 左侧品牌展示区 */}
       <div className={styles.brandPanel}>
         <div className={styles.brandContent}>
           <span className={styles.brandWord}>CLI</span>
@@ -191,10 +192,8 @@ export function LoginPage() {
         </div>
       </div>
 
-      {/* 右侧功能交互区 */}
       <div className={styles.formPanel}>
         {showSplash ? (
-          /* 启动动画 */
           <div className={styles.splashContent}>
             <img src={INLINE_LOGO_JPEG} alt="CPAMC" className={styles.splashLogo} />
             <h1 className={styles.splashTitle}>{t('splash.title')}</h1>
@@ -204,12 +203,8 @@ export function LoginPage() {
             </div>
           </div>
         ) : (
-          /* 登录表单 */
           <div className={styles.formContent}>
-            {/* Logo */}
             <img src={INLINE_LOGO_JPEG} alt="Logo" className={styles.logo} />
-
-            {/* 登录表单卡片 */}
             <div className={styles.loginCard}>
               <div className={styles.loginHeader}>
                 <div className={styles.titleRow}>

@@ -16,6 +16,7 @@ import {
 type DeleteAllOptions = {
   filter: string;
   problemOnly: boolean;
+  matchDisplayFilter?: (file: AuthFileItem) => boolean;
   onResetFilterToAll: () => void;
   onResetProblemOnly: () => void;
 };
@@ -272,13 +273,15 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
   const handleDeleteAll = useCallback(
     (deleteAllOptions: DeleteAllOptions) => {
       const { filter, problemOnly, onResetFilterToAll, onResetProblemOnly } = deleteAllOptions;
+      const matchDisplayFilter = deleteAllOptions.matchDisplayFilter;
       const isFiltered = filter !== 'all';
       const isProblemOnly = problemOnly === true;
+      const hasScopedDisplayFilter = typeof matchDisplayFilter === 'function';
       const typeLabel = isFiltered ? getTypeLabel(t, filter) : t('auth_files.filter_all');
       const runDeleteAll = async () => {
         setDeletingAll(true);
         try {
-          if (!isFiltered && !isProblemOnly) {
+          if (!isFiltered && !isProblemOnly && !hasScopedDisplayFilter) {
             await authFilesApi.deleteAll();
             showNotification(t('auth_files.delete_all_success'), 'success');
             setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
@@ -288,6 +291,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
               if (isRuntimeOnlyAuthFile(file)) return false;
               if (isFiltered && file.type !== filter) return false;
               if (isProblemOnly && !hasAuthFileStatusMessage(file)) return false;
+              if (matchDisplayFilter && !matchDisplayFilter(file)) return false;
               return true;
             });
 

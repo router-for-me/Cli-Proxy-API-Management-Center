@@ -515,6 +515,8 @@
     "search_placeholder": "Фильтр по имени, типу или провайдеру, поддерживается wildcard *",
     "problem_filter_label": "Фильтр проблем",
     "problem_filter_only": "Показывать только проблемные учётные данные",
+    "disabled_filter_only": "Показывать только отключённые учётные данные",
+    "premium_filter_only": "Показывать только учётные данные Plus/Pro",
     "display_options_label": "Параметры отображения",
     "compact_mode_label": "Компактный режим",
     "sort_label": "Сортировка",
