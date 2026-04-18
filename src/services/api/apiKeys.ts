@@ -5,8 +5,6 @@
 import { apiClient } from './client';
 import type { ClientApiKeyConfig } from '@/types/config';
 
-const DEFAULT_CLIENT_API_KEY_RPS = 5;
-
 const normalizeClientApiKey = (entry: unknown): ClientApiKeyConfig | null => {
   if (entry === undefined || entry === null) return null;
   const record =
@@ -20,17 +18,7 @@ const normalizeClientApiKey = (entry: unknown): ClientApiKeyConfig | null => {
     (typeof entry === 'string' ? entry : '');
   const trimmed = String(apiKey || '').trim();
   if (!trimmed) return null;
-  const rpsRaw =
-    record?.['requests-per-second'] ??
-    record?.requestsPerSecond ??
-    record?.['requests_per_second'] ??
-    DEFAULT_CLIENT_API_KEY_RPS;
-  const parsed = Number(rpsRaw);
-  return {
-    apiKey: trimmed,
-    requestsPerSecond:
-      Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_CLIENT_API_KEY_RPS,
-  };
+  return trimmed;
 };
 
 export const apiKeysApi = {
@@ -42,22 +30,12 @@ export const apiKeysApi = {
       : [];
   },
 
-  replace: (keys: ClientApiKeyConfig[]) =>
-    apiClient.put(
-      '/api-keys',
-      keys.map((entry) => ({
-        'api-key': entry.apiKey,
-        'requests-per-second': entry.requestsPerSecond,
-      }))
-    ),
+  replace: (keys: ClientApiKeyConfig[]) => apiClient.put('/api-keys', keys),
 
   update: (index: number, value: ClientApiKeyConfig) =>
     apiClient.patch('/api-keys', {
       index,
-      value: {
-        'api-key': value.apiKey,
-        'requests-per-second': value.requestsPerSecond,
-      },
+      value,
     }),
 
   delete: (index: number) => apiClient.delete(`/api-keys?index=${index}`),

@@ -124,8 +124,6 @@ const normalizePrefix = (value: unknown): string | undefined => {
   return trimmed ? trimmed : undefined;
 };
 
-const DEFAULT_CLIENT_API_KEY_RPS = 5;
-
 const normalizeClientApiKeyConfig = (entry: unknown): ClientApiKeyConfig | null => {
   if (entry === undefined || entry === null) return null;
   const record = isRecord(entry) ? entry : null;
@@ -137,19 +135,7 @@ const normalizeClientApiKeyConfig = (entry: unknown): ClientApiKeyConfig | null 
   const trimmed = String(apiKey || '').trim();
   if (!trimmed) return null;
 
-  const rpsRaw =
-    record?.['requests-per-second'] ??
-    record?.requestsPerSecond ??
-    record?.['requests_per_second'] ??
-    DEFAULT_CLIENT_API_KEY_RPS;
-  const parsed = Number(rpsRaw);
-  const requestsPerSecond =
-    Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_CLIENT_API_KEY_RPS;
-
-  return {
-    apiKey: trimmed,
-    requestsPerSecond,
-  };
+  return trimmed;
 };
 
 const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {

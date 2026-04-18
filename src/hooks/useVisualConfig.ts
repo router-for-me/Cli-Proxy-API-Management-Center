@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useReducer } from 'react';
-import { isMap, parse as parseYaml, parseDocument } from 'yaml';
+import { Scalar, isMap, parse as parseYaml, parseDocument } from 'yaml';
+import type { YAMLSeq } from 'yaml';
 import type {
   PayloadFilterRule,
   PayloadParamEntry,
@@ -11,8 +12,6 @@ import type {
   PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES, makeClientId } from '@/types/visualConfig';
-
-const DEFAULT_CLIENT_API_KEY_RPS = 5;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -26,7 +25,6 @@ function extractApiKeyEntry(raw: unknown): VisualApiKeyEntry | null {
       ? {
           id: makeClientId(),
           apiKey: trimmed,
-          requestsPerSecond: String(DEFAULT_CLIENT_API_KEY_RPS),
         }
       : null;
   }
@@ -44,20 +42,9 @@ function extractApiKeyEntry(raw: unknown): VisualApiKeyEntry | null {
   }
   if (!apiKey) return null;
 
-  const rpsRaw =
-    record['requests-per-second'] ??
-    record.requestsPerSecond ??
-    record['requests_per_second'] ??
-    DEFAULT_CLIENT_API_KEY_RPS;
-  const parsedRps = Number(rpsRaw);
-
   return {
     id: makeClientId(),
     apiKey,
-    requestsPerSecond:
-      Number.isFinite(parsedRps) && parsedRps > 0
-        ? String(Math.floor(parsedRps))
-        : String(DEFAULT_CLIENT_API_KEY_RPS),
   };
 }
 
@@ -101,6 +88,16 @@ function ensureMapInDoc(doc: YamlDocument, path: YamlPath): void {
   if (isMap(existing)) return;
   // Use a YAML node here; plain objects are not treated as collections by subsequent `setIn`.
   doc.setIn(path, doc.createNode({}));
+}
+
+function createDoubleQuotedStringSeq(doc: YamlDocument, values: string[]) {
+  const sequence = doc.createNode([]) as YAMLSeq<Scalar<string>>;
+  sequence.items = values.map((value) => {
+    const node = new Scalar(value);
+    node.type = Scalar.QUOTE_DOUBLE;
+    return node;
+  });
+  return sequence;
 }
 
 function deleteIfMapEmpty(doc: YamlDocument, path: YamlPath): void {
@@ -571,7 +568,6 @@ function areApiKeyEntriesEqual(
     const rightEntry = right[index];
     if (!rightEntry) return false;
     if (leftEntry.apiKey !== rightEntry.apiKey) return false;
-    if (leftEntry.requestsPerSecond !== rightEntry.requestsPerSecond) return false;
   }
   return true;
 }
@@ -944,19 +940,11 @@ export function useVisualConfig() {
         const apiKeys = values.apiKeys
           .map((entry) => {
             const trimmedKey = entry.apiKey.trim();
-            if (!trimmedKey) return null;
-            const parsedRps = Number(entry.requestsPerSecond.trim());
-            return {
-              'api-key': trimmedKey,
-              'requests-per-second':
-                Number.isFinite(parsedRps) && parsedRps > 0
-                  ? Math.floor(parsedRps)
-                  : DEFAULT_CLIENT_API_KEY_RPS,
-            };
+            return trimmedKey || null;
           })
-          .filter(Boolean);
+          .filter((key): key is string => Boolean(key));
         if (apiKeys.length > 0) {
-          doc.setIn(['api-keys'], apiKeys);
+          doc.setIn(['api-keys'], createDoubleQuotedStringSeq(doc, apiKeys));
         } else if (docHas(doc, ['api-keys'])) {
           doc.deleteIn(['api-keys']);
         }

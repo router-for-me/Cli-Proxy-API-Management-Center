@@ -54,7 +54,6 @@ export interface StreamingConfig {
 export interface VisualApiKeyEntry {
   id: string;
   apiKey: string;
-  requestsPerSecond: string;
 }
 
 export type VisualConfigValues = {

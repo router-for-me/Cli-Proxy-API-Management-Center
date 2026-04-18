@@ -26,7 +26,6 @@ import { isValidApiKeyCharset } from '@/utils/validation';
 
 /** Minimum character count before the expand/collapse toggle appears. */
 const EXPAND_THRESHOLD = 30;
-const DEFAULT_API_KEY_RPS = '5';
 
 /** Auto-expanding textarea that collapses back to a single-line input on demand. */
 function ExpandableInput({
@@ -224,14 +223,9 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       setFormError(t('config_management.visual.api_keys.error_invalid'));
       return;
     }
-    const editingEntry = editingApiKeyId
-      ? apiKeys.find((entry) => entry.id === editingApiKeyId)
-      : null;
-
     const nextEntry: VisualApiKeyEntry = {
       id: editingApiKeyId ?? makeClientId(),
       apiKey: trimmed,
-      requestsPerSecond: editingEntry?.requestsPerSecond ?? DEFAULT_API_KEY_RPS,
     };
     const nextKeys =
       editingApiKeyId === null
