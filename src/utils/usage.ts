@@ -56,7 +56,7 @@ export interface ModelPrice {
 export interface UsageDetail {
   timestamp: string;
   source: string;
-  auth_index: number;
+  auth_index: string | number | null;
   latency_ms?: number;
   tokens: {
     input_tokens: number;
@@ -552,7 +552,11 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
         details.push({
           timestamp,
           source: normalizeSource(detailRaw.source),
-          auth_index: detailRaw.auth_index as unknown as number,
+          auth_index:
+            (detailRaw?.auth_index ??
+              detailRaw?.authIndex ??
+              detailRaw?.AuthIndex ??
+              null) as UsageDetail['auth_index'],
           latency_ms: latencyMs ?? undefined,
           tokens: tokensRaw as unknown as UsageDetail['tokens'],
           failed: detailRaw.failed === true,
@@ -625,7 +629,11 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
         details.push({
           timestamp,
           source: normalizeSource(detailRaw.source),
-          auth_index: detailRaw.auth_index as unknown as number,
+          auth_index:
+            (detailRaw?.auth_index ??
+              detailRaw?.authIndex ??
+              detailRaw?.AuthIndex ??
+              null) as UsageDetail['auth_index'],
           latency_ms: latencyMs ?? undefined,
           tokens: tokensRaw as unknown as UsageDetail['tokens'],
           failed: detailRaw.failed === true,
@@ -1394,7 +1402,7 @@ export interface StatusBarData {
 export function calculateStatusBarData(
   usageDetails: UsageDetail[],
   sourceFilter?: string,
-  authIndexFilter?: number
+  authIndexFilter?: string | number
 ): StatusBarData {
   const BLOCK_COUNT = 20;
   const BLOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutes

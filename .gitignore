@@ -23,6 +23,7 @@ skills
 
 # Editor directories and files
 settings.local.json
+.codex
 .vscode/*
 !.vscode/extensions.json
 .idea
