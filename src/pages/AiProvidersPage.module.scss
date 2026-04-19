@@ -52,7 +52,7 @@
   }
 }
 
-.providerList {
+.openaiProviderList {
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -66,7 +66,7 @@
   }
 }
 
-.providerCard {
+.openaiProviderCard {
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
   padding: $spacing-md;
@@ -78,7 +78,7 @@
   min-height: 0;
 }
 
-.providerMeta {
+.openaiProviderMeta {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -86,14 +86,14 @@
   min-width: 0;
 }
 
-.providerActions {
+.openaiProviderActions {
   display: flex;
   gap: $spacing-sm;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
-.providerTitle {
+.openaiProviderTitle {
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -166,6 +166,7 @@
   }
 }
 
+
 // 卡片头部操作区
 .cardHeaderActions {
   display: flex;
@@ -174,16 +175,26 @@
   gap: $spacing-sm;
 }
 
-.cardFooterActions {
-  justify-content: flex-end;
-  width: 100%;
+.openaiToolbarAnchorHidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
-.providerToolbarFooter {
-  margin-top: $spacing-md;
-  padding-top: $spacing-md;
-  border-top: 1px solid var(--border-primary);
+.openaiFloatingToolbar {
+  position: fixed;
+  z-index: 20;
+  background: var(--bg-primary);
+  box-shadow: none;
+  overflow: visible;
+  padding: 0;
 }
+
+.openaiFloatingToolbar :global(.card-header) {
+  margin-bottom: 0;
+  padding: $spacing-sm $spacing-lg;
+  border-radius: 0;
+}
+
 
 // 模型多选下拉框
 .modelMultiSelectWrapper {
@@ -448,6 +459,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
   background: var(--bg-quinary, #f8f9fa);
   color: var(--text-secondary);
   border: 1px solid var(--border-secondary);
@@ -465,11 +477,13 @@
 .modelName {
   font-weight: 600;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 .modelAlias {
   color: var(--text-tertiary);
   font-style: italic;
+  overflow-wrap: anywhere;
 
   &::before {
     content: '→ ';
