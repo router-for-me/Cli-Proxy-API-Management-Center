@@ -10,14 +10,18 @@ import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
 import type { OpenAIProviderConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import {
-  buildCandidateUsageSourceIds,
   calculateStatusBarData,
   type KeyStats,
 } from '@/utils/usage';
-import { collectUsageDetailsForCandidates, type UsageDetailsBySource } from '@/utils/usageIndex';
+import { type UsageDetailsByAuthIndex, type UsageDetailsBySource } from '@/utils/usageIndex';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderStatusBar } from '../ProviderStatusBar';
-import { getOpenAIProviderStats, getStatsBySource } from '../utils';
+import {
+  collectOpenAIProviderUsageDetails,
+  getOpenAIProviderKey,
+  getOpenAIProviderStats,
+  getStatsForIdentity,
+} from '../utils';
 
 type SortOption = 'name' | 'priority' | 'recent-success';
 type SortDirection = 'asc' | 'desc';
@@ -35,6 +39,7 @@ interface OpenAISectionProps {
   configs: OpenAIProviderConfig[];
   keyStats: KeyStats;
   usageDetailsBySource: UsageDetailsBySource;
+  usageDetailsByAuthIndex: UsageDetailsByAuthIndex;
   loading: boolean;
   disableControls: boolean;
   isSwitching: boolean;
@@ -53,6 +58,7 @@ export function OpenAISection({
   configs,
   keyStats,
   usageDetailsBySource,
+  usageDetailsByAuthIndex,
   loading,
   disableControls,
   isSwitching,
@@ -77,6 +83,7 @@ export function OpenAISection({
   const sectionRef = useRef<HTMLDivElement>(null);
   const topToolbarAnchorRef = useRef<HTMLDivElement>(null);
   const topDropdownRef = useRef<HTMLDivElement>(null);
+  const floatingDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const updateFloatingToolbar = () => {
@@ -134,8 +141,9 @@ export function OpenAISection({
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       const clickedTop = topDropdownRef.current?.contains(target);
+      const clickedFloating = floatingDropdownRef.current?.contains(target);
 
-      if (!clickedTop) {
+      if (!clickedTop && !clickedFloating) {
         setIsDropdownOpen(false);
       }
     };
@@ -149,7 +157,9 @@ export function OpenAISection({
     }
 
     const updateDropdownLayout = () => {
-      const wrapper = topDropdownRef.current;
+      const wrapper = floatingToolbarStyle.visible
+        ? floatingDropdownRef.current
+        : topDropdownRef.current;
 
       if (!wrapper) {
         return;
@@ -183,7 +193,7 @@ export function OpenAISection({
       window.removeEventListener('resize', updateDropdownLayout);
       window.removeEventListener('scroll', updateDropdownLayout, true);
     };
-  }, [isDropdownOpen]);
+  }, [floatingToolbarStyle.visible, isDropdownOpen]);
 
   const allModelNames = useMemo(() => {
     const modelSet = new Set<string>();
@@ -200,21 +210,22 @@ export function OpenAISection({
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
 
-    configs.forEach((provider) => {
-      const sourceIds = new Set<string>();
-      buildCandidateUsageSourceIds({ prefix: provider.prefix }).forEach((id) => sourceIds.add(id));
-      (provider.apiKeyEntries || []).forEach((entry) => {
-        buildCandidateUsageSourceIds({ apiKey: entry.apiKey }).forEach((id) => sourceIds.add(id));
-      });
-
-      const filteredDetails = sourceIds.size
-        ? collectUsageDetailsForCandidates(usageDetailsBySource, sourceIds)
-        : [];
-      cache.set(provider.name, calculateStatusBarData(filteredDetails));
+    configs.forEach((provider, index) => {
+      const providerKey = getOpenAIProviderKey(provider, index);
+      cache.set(
+        providerKey,
+        calculateStatusBarData(
+          collectOpenAIProviderUsageDetails(
+            provider,
+            usageDetailsBySource,
+            usageDetailsByAuthIndex
+          )
+        )
+      );
     });
 
     return cache;
-  }, [configs, usageDetailsBySource]);
+  }, [configs, usageDetailsByAuthIndex, usageDetailsBySource]);
 
   const sortedConfigs = useMemo<IndexedOpenAIProvider[]>(() => {
     const indexed = configs.map((config, originalIndex) => ({ config, originalIndex }));
@@ -230,7 +241,7 @@ export function OpenAISection({
         ? new Map(
             sorted.map(({ config }) => [
               config,
-              getOpenAIProviderStats(config.apiKeyEntries, keyStats, config.prefix),
+              getOpenAIProviderStats(config, keyStats),
             ])
           )
         : null;
@@ -321,13 +332,17 @@ export function OpenAISection({
     </div>
   );
 
-  const renderToolbar = () => {
+  const renderToolbar = (isFloating = false) => {
+    const isActiveToolbar = isFloating === floatingToolbarStyle.visible;
     const dropdownClassName =
       dropdownLayout.openAbove ? `${styles.modelDropdownList} ${styles.modelDropdownListAbove}` : styles.modelDropdownList;
 
     return (
       <div className={styles.cardHeaderActions}>
-        <div className={styles.modelMultiSelectWrapper} ref={topDropdownRef}>
+        <div
+          className={styles.modelMultiSelectWrapper}
+          ref={isFloating ? floatingDropdownRef : topDropdownRef}
+        >
           <button
             type="button"
             className={styles.modelSelectedTags}
@@ -368,7 +383,7 @@ export function OpenAISection({
             <span className={styles.modelSelectArrow}>▼</span>
           </button>
 
-          {isDropdownOpen && (
+          {isActiveToolbar && isDropdownOpen && (
             <div className={dropdownClassName} style={{ maxHeight: `${dropdownLayout.maxHeight}px` }}>
               <div className={styles.modelDropdownHeader}>
                 <button
@@ -421,10 +436,10 @@ export function OpenAISection({
   );
 
   const renderProviderCard = ({ config: provider, originalIndex }: IndexedOpenAIProvider) => {
-    const stats = getOpenAIProviderStats(provider.apiKeyEntries, keyStats, provider.prefix);
+    const stats = getOpenAIProviderStats(provider, keyStats);
     const headerEntries = Object.entries(provider.headers || {});
     const apiKeyEntries = provider.apiKeyEntries || [];
-    const statusData = statusBarCache.get(provider.name) || EMPTY_STATUS_BAR;
+    const statusData = statusBarCache.get(getOpenAIProviderKey(provider, originalIndex)) || EMPTY_STATUS_BAR;
 
     return (
       <div
@@ -466,9 +481,15 @@ export function OpenAISection({
               </div>
               <div className={styles.apiKeyEntryList}>
                 {apiKeyEntries.map((entry, entryIndex) => {
-                  const entryStats = getStatsBySource(entry.apiKey, keyStats);
+                  const entryStats = getStatsForIdentity(
+                    { authIndex: entry.authIndex, apiKey: entry.apiKey },
+                    keyStats
+                  );
                   return (
-                    <div key={entryIndex} className={styles.apiKeyEntryCard}>
+                    <div
+                      key={`${entry.authIndex ?? 'none'}-${entry.apiKey}-${entryIndex}`}
+                      className={styles.apiKeyEntryCard}
+                    >
                       <span className={styles.apiKeyEntryIndex}>{entryIndex + 1}</span>
                       <span className={styles.apiKeyEntryKey}>{maskApiKey(entry.apiKey)}</span>
                       {entry.proxyUrl && <span className={styles.apiKeyEntryProxy}>{entry.proxyUrl}</span>}
@@ -540,7 +561,7 @@ export function OpenAISection({
               ref={topToolbarAnchorRef}
               className={floatingToolbarStyle.visible ? styles.openaiToolbarAnchorHidden : undefined}
             >
-              {renderToolbar()}
+              {renderToolbar(false)}
             </div>
           }
         >
@@ -568,7 +589,7 @@ export function OpenAISection({
             >
               <div className="card-header">
                 <div className="title">{renderStaticTitle()}</div>
-                {renderToolbar()}
+                {renderToolbar(true)}
               </div>
             </div>,
             document.body

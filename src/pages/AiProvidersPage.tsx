@@ -20,7 +20,7 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { ampcodeApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
-import { indexUsageDetailsBySource } from '@/utils/usageIndex';
+import { indexUsageDetailsByAuthIndex, indexUsageDetailsBySource } from '@/utils/usageIndex';
 import styles from './AiProvidersPage.module.scss';
 
 export function AiProvidersPage() {
@@ -69,6 +69,10 @@ export function AiProvidersPage() {
   });
   const usageDetailsBySource = useMemo(
     () => indexUsageDetailsBySource(usageDetails),
+    [usageDetails]
+  );
+  const usageDetailsByAuthIndex = useMemo(
+    () => indexUsageDetailsByAuthIndex(usageDetails),
     [usageDetails]
   );
 
@@ -378,6 +382,7 @@ export function AiProvidersPage() {
             configs={geminiKeys}
             keyStats={keyStats}
             usageDetailsBySource={usageDetailsBySource}
+            usageDetailsByAuthIndex={usageDetailsByAuthIndex}
             loading={loading}
             disableControls={disableControls}
             isSwitching={isSwitching}
@@ -393,6 +398,7 @@ export function AiProvidersPage() {
             configs={codexConfigs}
             keyStats={keyStats}
             usageDetailsBySource={usageDetailsBySource}
+            usageDetailsByAuthIndex={usageDetailsByAuthIndex}
             loading={loading}
             disableControls={disableControls}
             isSwitching={isSwitching}
@@ -408,6 +414,7 @@ export function AiProvidersPage() {
             configs={claudeConfigs}
             keyStats={keyStats}
             usageDetailsBySource={usageDetailsBySource}
+            usageDetailsByAuthIndex={usageDetailsByAuthIndex}
             loading={loading}
             disableControls={disableControls}
             isSwitching={isSwitching}
@@ -423,6 +430,7 @@ export function AiProvidersPage() {
             configs={vertexConfigs}
             keyStats={keyStats}
             usageDetailsBySource={usageDetailsBySource}
+            usageDetailsByAuthIndex={usageDetailsByAuthIndex}
             loading={loading}
             disableControls={disableControls}
             isSwitching={isSwitching}
@@ -448,6 +456,7 @@ export function AiProvidersPage() {
             configs={openaiProviders}
             keyStats={keyStats}
             usageDetailsBySource={usageDetailsBySource}
+            usageDetailsByAuthIndex={usageDetailsByAuthIndex}
             loading={loading}
             disableControls={disableControls}
             isSwitching={isSwitching}

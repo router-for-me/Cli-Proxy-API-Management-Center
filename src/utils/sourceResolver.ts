@@ -10,20 +10,64 @@ export interface SourceInfoMapInput {
   openaiCompatibility?: OpenAIProviderConfig[];
 }
 
-export function buildSourceInfoMap(input: SourceInfoMapInput): Map<string, SourceInfo> {
-  const map = new Map<string, SourceInfo>();
+type SourceInfoEntry = Required<Pick<SourceInfo, 'displayName' | 'type' | 'identityKey'>>;
 
-  const registerSource = (sourceId: string, displayName: string, type: string) => {
-    if (!sourceId || !displayName || map.has(sourceId)) return;
-    map.set(sourceId, { displayName, type });
-  };
+export interface SourceInfoMap {
+  byAuthIndex: Map<string, SourceInfoEntry | null>;
+  bySource: Map<string, SourceInfoEntry | null>;
+}
 
-  const registerCandidates = (displayName: string, type: string, candidates: string[]) => {
-    candidates.forEach((sourceId) => registerSource(sourceId, displayName, type));
+const buildProviderIdentityKey = (type: string, index: number) => `${type}:${index}`;
+
+const registerIdentity = (
+  map: Map<string, SourceInfoEntry | null>,
+  key: string | null | undefined,
+  entry: SourceInfoEntry
+) => {
+  if (!key) return;
+
+  const existing = map.get(key);
+  if (existing === undefined) {
+    map.set(key, entry);
+    return;
+  }
+
+  if (existing === null) {
+    return;
+  }
+
+  if (existing.identityKey === entry.identityKey) {
+    return;
+  }
+
+  map.set(key, null);
+};
+
+const formatRawSourceDisplayName = (source: string) => {
+  if (!source) return '-';
+  return source.startsWith('t:') ? source.slice(2) : source;
+};
+
+export function buildSourceInfoMap(input: SourceInfoMapInput): SourceInfoMap {
+  const byAuthIndex = new Map<string, SourceInfoEntry | null>();
+  const bySource = new Map<string, SourceInfoEntry | null>();
+
+  const registerProvider = (
+    entry: SourceInfoEntry,
+    authIndices: Array<unknown>,
+    candidates: Iterable<string>
+  ) => {
+    authIndices.forEach((authIndex) => {
+      registerIdentity(byAuthIndex, normalizeAuthIndex(authIndex), entry);
+    });
+
+    Array.from(candidates).forEach((candidate) => {
+      registerIdentity(bySource, candidate, entry);
+    });
   };
 
   const providers: Array<{
-    items: Array<{ apiKey?: string; prefix?: string }>;
+    items: Array<{ apiKey?: string; prefix?: string; authIndex?: string }>;
     type: string;
     label: string;
   }> = [
@@ -35,49 +79,91 @@ export function buildSourceInfoMap(input: SourceInfoMapInput): Map<string, Sourc
 
   providers.forEach(({ items, type, label }) => {
     items.forEach((item, index) => {
-      const displayName = item.prefix?.trim() || `${label} #${index + 1}`;
-      registerCandidates(
-        displayName,
-        type,
+      registerProvider(
+        {
+          displayName: item.prefix?.trim() || `${label} #${index + 1}`,
+          type,
+          identityKey: buildProviderIdentityKey(type, index),
+        },
+        [item.authIndex],
         buildCandidateUsageSourceIds({ apiKey: item.apiKey, prefix: item.prefix })
       );
     });
   });
 
-  // OpenAI 特殊处理：多 apiKeyEntries
   (input.openaiCompatibility || []).forEach((provider, providerIndex) => {
-    const displayName = provider.prefix?.trim() || provider.name || `OpenAI #${providerIndex + 1}`;
     const candidates = new Set<string>();
+    const authIndices: Array<unknown> = [provider.authIndex];
+
     buildCandidateUsageSourceIds({ prefix: provider.prefix }).forEach((id) => candidates.add(id));
     (provider.apiKeyEntries || []).forEach((entry) => {
+      authIndices.push(entry.authIndex);
       buildCandidateUsageSourceIds({ apiKey: entry.apiKey }).forEach((id) => candidates.add(id));
     });
-    registerCandidates(displayName, 'openai', Array.from(candidates));
+
+    registerProvider(
+      {
+        displayName: provider.prefix?.trim() || provider.name || `OpenAI #${providerIndex + 1}`,
+        type: 'openai',
+        identityKey: buildProviderIdentityKey('openai', providerIndex),
+      },
+      authIndices,
+      candidates
+    );
   });
 
-  return map;
+  return { byAuthIndex, bySource };
 }
 
 export function resolveSourceDisplay(
   sourceRaw: string,
   authIndex: unknown,
-  sourceInfoMap: Map<string, SourceInfo>,
+  sourceInfoMap: SourceInfoMap,
   authFileMap: Map<string, CredentialInfo>
 ): SourceInfo {
   const source = sourceRaw.trim();
-  const matched = sourceInfoMap.get(source);
-  if (matched) return matched;
-
   const authIndexKey = normalizeAuthIndex(authIndex);
+
   if (authIndexKey) {
+    const matchedByAuthIndex = sourceInfoMap.byAuthIndex.get(authIndexKey);
+    if (matchedByAuthIndex) {
+      return matchedByAuthIndex;
+    }
+
     const authInfo = authFileMap.get(authIndexKey);
     if (authInfo) {
-      return { displayName: authInfo.name || authIndexKey, type: authInfo.type };
+      return {
+        displayName: authInfo.name || authIndexKey,
+        type: authInfo.type,
+        identityKey: `auth:${authIndexKey}`,
+      };
     }
   }
 
+  const matchedBySource = source ? sourceInfoMap.bySource.get(source) : null;
+  if (matchedBySource) {
+    return matchedBySource;
+  }
+
+  if (source) {
+    return {
+      displayName: formatRawSourceDisplayName(source),
+      type: '',
+      identityKey: `source:${source}`,
+    };
+  }
+
+  if (authIndexKey) {
+    return {
+      displayName: authIndexKey,
+      type: '',
+      identityKey: `auth:${authIndexKey}`,
+    };
+  }
+
   return {
-    displayName: source.startsWith('t:') ? source.slice(2) : source || '-',
+    displayName: '-',
     type: '',
+    identityKey: 'source:-',
   };
 }
