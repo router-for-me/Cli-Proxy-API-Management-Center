@@ -645,7 +645,8 @@
     "plan_pro": "專業版",
     "plan_max": "Max",
     "plan_max5": "Max 5x",
-    "plan_max20": "Max 20x"
+    "plan_max20": "Max 20x",
+    "plan_team": "團隊版"
   },
   "codex_quota": {
     "title": "Codex 配額",

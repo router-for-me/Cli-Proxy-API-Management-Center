@@ -642,7 +642,8 @@
     "plan_pro": "Pro",
     "plan_max": "Max",
     "plan_max5": "Max 5x",
-    "plan_max20": "Max 20x"
+    "plan_max20": "Max 20x",
+    "plan_team": "Team"
   },
   "codex_quota": {
     "title": "Квота Codex",

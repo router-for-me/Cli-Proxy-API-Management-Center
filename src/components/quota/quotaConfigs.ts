@@ -974,6 +974,13 @@ const resolveClaudePlanType = (profile: ClaudeProfileResponse | null): string | 
   const hasClaudePro = normalizeFlagValue(profile.account?.has_claude_pro);
   if (hasClaudePro) return 'plan_pro';
 
+  const organizationType = normalizeStringValue(profile.organization?.organization_type)?.toLowerCase();
+  const subscriptionStatus = normalizeStringValue(profile.organization?.subscription_status)?.toLowerCase();
+
+  if (organizationType === 'claude_team' && subscriptionStatus === 'active') {
+    return 'plan_team';
+  }
+
   if (hasClaudeMax === false && hasClaudePro === false) return 'plan_free';
 
   return null;
