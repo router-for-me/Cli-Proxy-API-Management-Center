@@ -1230,8 +1230,10 @@
           "routing_strategy_hint": "Выберите стратегию подбора учётных данных",
           "strategy_round_robin": "По кругу",
           "strategy_fill_first": "Сначала заполнить",
+          "session_affinity_ttl": "TTL привязки сессии",
           "force_model_prefix": "Принудительный префикс модели",
           "force_model_prefix_desc": "Запросы к моделям без префикса используют только учётные данные без префикса",
+          "session_affinity": "Маршрутизация с привязкой к сессии",
           "ws_auth": "Аутентификация WebSocket",
           "ws_auth_desc": "Включить аутентификацию WebSocket (/v1/ws)"
         },

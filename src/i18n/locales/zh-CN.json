@@ -1231,8 +1231,10 @@
           "routing_strategy_hint": "选择凭据选择策略",
           "strategy_round_robin": "轮询 (Round Robin)",
           "strategy_fill_first": "填充优先 (Fill First)",
+          "session_affinity_ttl": "会话粘性 TTL",
           "force_model_prefix": "强制模型前缀",
           "force_model_prefix_desc": "未带前缀的模型请求只使用无前缀凭据",
+          "session_affinity": "会话粘性路由",
           "ws_auth": "WebSocket 认证",
           "ws_auth_desc": "启用 WebSocket 连接认证 (/v1/ws)"
         },

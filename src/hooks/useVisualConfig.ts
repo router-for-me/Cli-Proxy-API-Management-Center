@@ -656,6 +656,18 @@ function getNextDirtyFields(
   if (Object.prototype.hasOwnProperty.call(patch, 'routingStrategy')) {
     updateDirty('routingStrategy', nextValues.routingStrategy === baselineValues.routingStrategy);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'routingSessionAffinity')) {
+    updateDirty(
+      'routingSessionAffinity',
+      nextValues.routingSessionAffinity === baselineValues.routingSessionAffinity
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'routingSessionAffinityTTL')) {
+    updateDirty(
+      'routingSessionAffinityTTL',
+      nextValues.routingSessionAffinityTTL === baselineValues.routingSessionAffinityTTL
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'payloadDefaultRules')) {
     updateDirty(
       'payloadDefaultRules',
@@ -836,6 +848,19 @@ export function useVisualConfig() {
         quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? true),
 
         routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
+        routingSessionAffinity: Boolean(
+          routing?.['session-affinity'] ??
+            routing?.sessionAffinity ??
+            routing?.['sessionAffinity']
+        ),
+        routingSessionAffinityTTL:
+          typeof routing?.['session-affinity-ttl'] === 'string'
+            ? routing['session-affinity-ttl']
+            : typeof routing?.sessionAffinityTTL === 'string'
+              ? routing.sessionAffinityTTL
+              : typeof routing?.['sessionAffinityTTL'] === 'string'
+                ? routing['sessionAffinityTTL']
+                : '',
 
         payloadDefaultRules: parsePayloadRules(payload?.default),
         payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
@@ -949,9 +974,20 @@ export function useVisualConfig() {
           deleteIfMapEmpty(doc, ['quota-exceeded']);
         }
 
-        if (docHas(doc, ['routing']) || values.routingStrategy !== 'round-robin') {
+        if (
+          docHas(doc, ['routing']) ||
+          values.routingStrategy !== 'round-robin' ||
+          values.routingSessionAffinity ||
+          values.routingSessionAffinityTTL.trim()
+        ) {
           ensureMapInDoc(doc, ['routing']);
           doc.setIn(['routing', 'strategy'], values.routingStrategy);
+          setBooleanInDoc(doc, ['routing', 'session-affinity'], values.routingSessionAffinity);
+          setStringInDoc(
+            doc,
+            ['routing', 'session-affinity-ttl'],
+            values.routingSessionAffinityTTL
+          );
           deleteIfMapEmpty(doc, ['routing']);
         }
 
