@@ -11,7 +11,7 @@ const {
   serializePayloadFilterRulesForYaml,
 } = __visualConfigTestUtils;
 
-test('disabled payload param still blocks save when value is invalid', () => {
+test('disabled payload param does not block save when value is invalid', () => {
   const rules = [
     {
       id: 'rule-1',
@@ -29,10 +29,10 @@ test('disabled payload param still blocks save when value is invalid', () => {
     },
   ];
 
-  assert.equal(hasPayloadParamValidationErrors(rules), true);
+  assert.equal(hasPayloadParamValidationErrors(rules), false);
 });
 
-test('disabled payload rule still blocks save when nested value is invalid', () => {
+test('disabled payload rule does not block save when nested value is invalid', () => {
   const rules = [
     {
       id: 'rule-1',
@@ -44,6 +44,27 @@ test('disabled payload rule still blocks save when nested value is invalid', () 
           path: 'response_format',
           valueType: 'json' as const,
           value: '{"type":}',
+          disabled: false,
+        },
+      ],
+    },
+  ];
+
+  assert.equal(hasPayloadParamValidationErrors(rules), false);
+});
+
+test('enabled payload params still block save when value is invalid', () => {
+  const rules = [
+    {
+      id: 'rule-1',
+      disabled: false,
+      models: [],
+      params: [
+        {
+          id: 'param-1',
+          path: 'temperature',
+          valueType: 'boolean' as const,
+          value: 'abc',
           disabled: false,
         },
       ],

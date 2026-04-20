@@ -190,9 +190,13 @@ export function getPayloadParamValidationError(
 }
 
 function hasPayloadParamValidationErrors(rules: PayloadRule[]): boolean {
-  return rules.some((rule) =>
-    rule.params.some((param) => Boolean(getPayloadParamValidationError(param)))
-  );
+  return rules.some((rule) => {
+    if (rule.disabled) return false;
+
+    return rule.params.some(
+      (param) => !param.disabled && Boolean(getPayloadParamValidationError(param))
+    );
+  });
 }
 
 function deepClone<T>(value: T): T {
