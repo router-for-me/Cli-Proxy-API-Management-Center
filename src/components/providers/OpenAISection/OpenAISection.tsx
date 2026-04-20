@@ -325,7 +325,7 @@ export function OpenAISection({
         onClick={toggleSortDirection}
         className={styles.sortDirectionButton}
         disabled={actionsDisabled}
-        title={sortDirection === 'asc' ? t('common.sort_ascending') : t('common.sort_descending')}
+        title={sortDirection === 'asc' ? t('ai_providers.sort_ascending') : t('ai_providers.sort_descending')}
       >
         {sortDirection === 'asc' ? '↑' : '↓'}
       </button>
@@ -356,7 +356,7 @@ export function OpenAISection({
             ) : (
               <>
                 {Array.from(selectedModels).map((name) => (
-                  <span key={`top-${name}`} className={styles.modelTag}>
+                  <span key={`top-${name}`} className={styles.modelFilterTag}>
                     <span className={styles.modelTagName}>{name}</span>
                     <span
                       role="button"
@@ -416,6 +416,17 @@ export function OpenAISection({
             </div>
           )}
         </div>
+        {selectedModels.size > 0 && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={clearAllModels}
+            disabled={actionsDisabled}
+            className={styles.modelFilterClearButton}
+          >
+            {t('ai_providers.model_search_clear')}
+          </Button>
+        )}
         {renderSortControls()}
         <Button size="sm" onClick={onAdd} disabled={actionsDisabled}>
           {t('ai_providers.openai_add_button')}
@@ -567,6 +578,16 @@ export function OpenAISection({
         >
           {loading && sortedConfigs.length === 0 ? (
             <div className="hint">{t('common.loading')}</div>
+          ) : configs.length > 0 && sortedConfigs.length === 0 ? (
+              <EmptyState
+                title={t('ai_providers.openai_filtered_empty_title')}
+                description={t('ai_providers.openai_filtered_empty_desc')}
+                action={(
+                  <Button variant="secondary" size="sm" onClick={clearAllModels} disabled={actionsDisabled}>
+                    {t('ai_providers.model_search_clear')}
+                  </Button>
+                )}
+              />
           ) : sortedConfigs.length === 0 ? (
               <EmptyState
                 title={t('ai_providers.openai_empty_title')}

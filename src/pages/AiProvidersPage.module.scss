@@ -226,14 +226,14 @@
   flex: 1;
 }
 
-.modelTag {
+.modelFilterTag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 3px;
   padding: 4px 8px 4px 8px;
-  background: var(--primary-color);
-  color: white;
+  background: var(--primary-color-alpha, rgba(59, 130, 246, 0.15));
+  color: var(--primary-color);
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
@@ -317,6 +317,18 @@
 
   &:hover {
     background: var(--bg-secondary);
+  }
+}
+
+.modelFilterClearButton:global(.btn.btn-secondary) {
+  background: var(--primary-color-alpha, rgba(59, 130, 246, 0.15));
+  border-color: rgba(59, 130, 246, 0.24);
+  color: var(--primary-color);
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: rgba(59, 130, 246, 0.32);
+    color: var(--primary-color);
   }
 }
 
