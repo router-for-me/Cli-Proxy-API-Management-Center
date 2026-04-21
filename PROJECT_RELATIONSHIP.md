@@ -37,3 +37,8 @@ You should also use the companion repository:
 Recommended default:
 - required main repo: `luyuehm/CLIProxyAPI`
 - optional UI companion: `luyuehm/Cli-Proxy-API-Management-Center`
+
+
+## Repository selection
+
+See `REPO_SELECTION.md` for a scenario-based selection matrix.

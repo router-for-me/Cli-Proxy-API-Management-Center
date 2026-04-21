@@ -179,3 +179,6 @@ MIT
 所以默认答案是：
 - 必选主仓：`luyuehm/CLIProxyAPI`
 - 可选配套 UI 仓：当前仓库
+
+
+如果你不知道当前仓库是否需要一起用，请看：`REPO_SELECTION.md`。

@@ -180,3 +180,6 @@ Usually:
 So the default answer is:
 - required main repo: `luyuehm/CLIProxyAPI`
 - optional companion UI repo: this repository
+
+
+Need help choosing repositories? See `REPO_SELECTION.md`.
