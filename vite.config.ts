@@ -49,18 +49,28 @@ function getShortCommit(): string {
 }
 
 function getVersionLabel(): string {
-  const version = getVersion();
-  const shortCommit = getShortCommit();
-  if (!shortCommit || version.includes(shortCommit)) {
-    return version;
-  }
-  return `${version}+${shortCommit}`;
+  return getReleaseVersion();
 }
 
 
 function getBuildStamp(): string {
   const iso = getBuildDate();
   return iso.replace(/[-:TZ.]/g, '').slice(0, 12);
+}
+
+
+function formatDateStamp(date: string): string {
+  return date.slice(0, 10).replace(/-/g, '.');
+}
+
+function getReleaseVersion(): string {
+  if (process.env.VERSION) {
+    return process.env.VERSION;
+  }
+  const buildDate = getBuildDate();
+  const datePart = formatDateStamp(buildDate);
+  const shortCommit = getShortCommit();
+  return shortCommit ? `v${datePart}+${shortCommit}` : `v${datePart}`;
 }
 
 function getBuildDate(): string {
@@ -78,7 +88,7 @@ function writeBuildInfoPlugin() {
       const version = getVersionLabel();
       const buildDate = getBuildDate();
       const buildStamp = getBuildStamp();
-      const outDir = `dist-${version.replace(/[^a-zA-Z0-9._-]/g, '_')}-${buildStamp}`;
+      const outDir = `dist-${version.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\./g, '-')}-${buildStamp}`;
       const payload = {
         name: 'cli-proxy-webui-react',
         version,
@@ -141,7 +151,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    outDir: `dist-${getVersionLabel().replace(/[^a-zA-Z0-9._-]/g, '_')}-${getBuildStamp()}`,
+    outDir: `dist-${getVersionLabel().replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\./g, '-')}-${getBuildStamp()}`,
     emptyOutDir: true,
     assetsInlineLimit: 100000000,
     chunkSizeWarningLimit: 100000000,
