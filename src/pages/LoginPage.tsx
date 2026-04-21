@@ -213,6 +213,7 @@ export function LoginPage() {
             </div>
           </div>
         ) : (
+          <>
           /* 登录表单 */
           <div className={styles.formContent}>
             {/* Logo */}
@@ -311,6 +312,11 @@ export function LoginPage() {
               {error && <div className={styles.errorBox}>{error}</div>}
             </div>
           </div>
+          <div className={styles.loginFooter}>
+            <span>UI {appVersion}</span>
+            <span>{appBuildDate}</span>
+          </div>
+          </>
         )}
       </div>
     </div>

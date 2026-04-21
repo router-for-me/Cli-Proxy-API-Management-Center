@@ -342,3 +342,15 @@
 .buildDate {
   opacity: 0.8;
 }
+
+
+.loginFooter {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
