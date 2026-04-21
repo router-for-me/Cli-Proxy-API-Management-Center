@@ -59,6 +59,14 @@ function getBuildStamp(): string {
 }
 
 
+
+function getVersionSuffix(): string {
+  const explicit = process.env.VERSION_SUFFIX || process.env.RELEASE_SUFFIX || process.env.BETA_SUFFIX;
+  if (!explicit) return '';
+  const cleaned = explicit.trim().replace(/^[-+]+/, '');
+  return cleaned ? `-${cleaned}` : '';
+}
+
 function formatDateStamp(date: string): string {
   return date.slice(0, 10).replace(/-/g, '.');
 }
@@ -69,8 +77,8 @@ function getReleaseVersion(): string {
   }
   const buildDate = getBuildDate();
   const datePart = formatDateStamp(buildDate);
-  const shortCommit = getShortCommit();
-  return shortCommit ? `v${datePart}+${shortCommit}` : `v${datePart}`;
+  const suffix = getVersionSuffix();
+  return `v${datePart}${suffix}`;
 }
 
 function getBuildDate(): string {

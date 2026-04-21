@@ -1,10 +1,10 @@
 # Release Notes
 
 - Name: cli-proxy-webui-react
-- Version: v2026.04.21+8b5c0c0
-- Build Date: 2026-04-21T21:49:33Z
-- Build Stamp: 202604212149
-- Commit: 8b5c0c0
+- Version: v2026.04.21
+- Build Date: 2026-04-21T22:04:26Z
+- Build Stamp: 202604212204
+- Commit: f90c387
 
 ## Included metadata
 - Login page version/build date
