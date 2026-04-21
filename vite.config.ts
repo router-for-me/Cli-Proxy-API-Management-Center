@@ -86,7 +86,25 @@ function writeBuildInfoPlugin() {
         buildStamp,
         commit: getShortCommit() || null
       };
+      const releaseNotes = [
+        '# Release Notes',
+        '',
+        `- Name: ${payload.name}`,
+        `- Version: ${payload.version}`,
+        `- Build Date: ${payload.buildDate}`,
+        `- Build Stamp: ${payload.buildStamp}`,
+        `- Commit: ${payload.commit || 'unknown'}`,
+        '',
+        '## Included metadata',
+        '- Login page version/build date',
+        '- System page version/build date',
+        '- Header UI version badge',
+        '- Global footer build metadata',
+        '- BUILD_INFO.json embedded in release bundle'
+      ].join('\n') + '\n';
       fs.writeFileSync(path.resolve(__dirname, outDir, 'BUILD_INFO.json'), JSON.stringify(payload, null, 2) + '\n');
+      fs.writeFileSync(path.resolve(__dirname, outDir, 'RELEASE.md'), releaseNotes);
+      fs.writeFileSync(path.resolve(__dirname, 'RELEASE.md'), releaseNotes);
     }
   };
 }
