@@ -321,3 +321,24 @@
   border-radius: $radius-full;
   animation: splashLoading 1.2s ease-in-out infinite;
 }
+
+
+.buildMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  padding-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.buildVersion {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.buildDate {
+  opacity: 0.8;
+}

@@ -91,6 +91,10 @@ export function LoginPage() {
   const [error, setError] = useState('');
 
   const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
+  const appVersion = __APP_VERSION__ || 'dev';
+  const appBuildDate = typeof __APP_BUILD_DATE__ !== 'undefined' && __APP_BUILD_DATE__
+    ? new Date(__APP_BUILD_DATE__).toLocaleString(language)
+    : 'Unknown';
   const languageOptions = useMemo(
     () =>
       LANGUAGE_ORDER.map((lang) => ({
@@ -287,6 +291,12 @@ export function LoginPage() {
                   ariaLabel={t('login.remember_password_label')}
                   label={<span className={styles.toggleLabel}>{t('login.remember_password_label')}</span>}
                 />
+              </div>
+
+
+              <div className={styles.buildMeta}>
+                <span className={styles.buildVersion}>UI {appVersion}</span>
+                <span className={styles.buildDate}>{appBuildDate}</span>
               </div>
 
               <Button fullWidth onClick={handleSubmit} loading={loading}>

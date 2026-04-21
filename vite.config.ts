@@ -35,6 +35,28 @@ function getVersion(): string {
   return 'dev';
 }
 
+
+function getShortCommit(): string {
+  if (process.env.GIT_COMMIT_SHORT) {
+    return process.env.GIT_COMMIT_SHORT;
+  }
+
+  try {
+    return execSync('git rev-parse --short HEAD 2>/dev/null || echo ""', { encoding: 'utf8' }).trim();
+  } catch {
+    return '';
+  }
+}
+
+function getVersionLabel(): string {
+  const version = getVersion();
+  const shortCommit = getShortCommit();
+  if (!shortCommit || version.includes(shortCommit)) {
+    return version;
+  }
+  return `${version}+${shortCommit}`;
+}
+
 function getBuildDate(): string {
   if (process.env.BUILD_DATE) {
     return process.env.BUILD_DATE;
@@ -51,7 +73,7 @@ export default defineConfig({
     })
   ],
   define: {
-    __APP_VERSION__: JSON.stringify(getVersion()),
+    __APP_VERSION__: JSON.stringify(getVersionLabel()),
     __APP_BUILD_DATE__: JSON.stringify(getBuildDate())
   },
   resolve: {
