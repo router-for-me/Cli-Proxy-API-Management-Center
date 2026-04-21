@@ -364,9 +364,22 @@
     color: var(--text-primary);
   }
 
+  tbody tr td {
+    transition: background-color 420ms ease, box-shadow 420ms ease;
+  }
+
   tbody tr:last-child td {
     border-bottom: 0;
   }
+}
+
+.eventsRowHighlighted td {
+  background: color-mix(in srgb, var(--success-color, #22c55e) 14%, transparent);
+}
+
+.eventsRowHighlighted td:first-child {
+  box-shadow: inset 3px 0 0
+    color-mix(in srgb, var(--success-color, #22c55e) 82%, transparent);
 }
 
 .eventsTimestampCol,

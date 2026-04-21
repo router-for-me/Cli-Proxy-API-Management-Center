@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CODEX_CONFIG } from '@/components/quota';
 import { useUsageData } from '@/components/usage';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { authFilesApi } from '@/services/api';
+import { authFilesApi, logsApi } from '@/services/api';
+import { parseLogLine } from '@/pages/hooks/logParsing';
 import { useAuthStore, useConfigStore } from '@/stores';
 import type { AuthFileItem, CodexQuotaWindow, GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import type { CredentialInfo } from '@/types/sourceInfo';
@@ -24,6 +25,15 @@ import styles from './DashboardOverviewPage.module.scss';
 
 const OVERVIEW_TIME_RANGE = '24h' as const;
 const OVERVIEW_MAX_EVENTS = 10;
+const FAST_POLL_MS = 900;
+const BASE_POLL_MS = 1800;
+const IDLE_POLL_MS = 5000;
+const HIGHLIGHT_MS = 4200;
+const HIGHLIGHT_STAGGER_MS = 180;
+const RECENT_HIGHLIGHT_INDEX_LIMIT = 10;
+const TRACEABLE_EXACT_PATHS = new Set(['/v1/chat/completions', '/v1/messages', '/v1/responses']);
+const TRACEABLE_PREFIX_PATHS = ['/v1beta/models'];
+const EMPTY_HIGHLIGHT_IDS = new Set<string>();
 
 type CodexUsageStats = {
   requests: number;
@@ -38,6 +48,7 @@ type OverviewQuotaEntry = {
 };
 
 type OverviewRequestEventRow = {
+  id: string;
   timestamp: string;
   timestampLabel: string;
   timestampMs: number;
@@ -56,6 +67,18 @@ type OverviewRequestEventRow = {
   totalTokens: number;
 };
 
+type OverviewRequestEventBaseRow = Omit<OverviewRequestEventRow, 'id'> & {
+  eventFingerprint: string;
+};
+
+type OverviewLiveUsageRow = Pick<OverviewRequestEventRow, 'id' | 'authIndex' | 'timestampMs'>;
+
+type RequestEventIdentitySnapshot = {
+  scopeKey: string;
+  nextInstanceId: number;
+  idsByFingerprint: Map<string, string[]>;
+};
+
 interface OverviewRequestEventsCardProps {
   usage: unknown;
   loading: boolean;
@@ -65,6 +88,8 @@ interface OverviewRequestEventsCardProps {
   codexConfigs: ProviderKeyConfig[];
   vertexConfigs: ProviderKeyConfig[];
   openaiProviders: OpenAIProviderConfig[];
+  onUsageRefresh: () => Promise<void>;
+  onQuotaRefresh: (files: AuthFileItem[]) => Promise<void>;
 }
 
 const formatLocaleNumber = (value: number, locale: string) =>
@@ -197,6 +222,126 @@ const toNumber = (value: unknown): number => {
   return parsed;
 };
 
+const buildRequestEventFingerprint = (parts: Array<string | number | boolean | null>) =>
+  JSON.stringify(parts);
+
+const createRequestEventIdentitySnapshot = (scopeKey: string): RequestEventIdentitySnapshot => ({
+  scopeKey,
+  nextInstanceId: 0,
+  idsByFingerprint: new Map<string, string[]>(),
+});
+const overviewRequestEventIdentitySnapshotCache = new Map<string, RequestEventIdentitySnapshot>();
+
+const buildStableRequestEventRows = (
+  baseRows: OverviewRequestEventBaseRow[],
+  snapshot: RequestEventIdentitySnapshot,
+  scopeKey: string
+) => {
+  const activeSnapshot =
+    snapshot.scopeKey === scopeKey ? snapshot : createRequestEventIdentitySnapshot(scopeKey);
+  const previousQueues = new Map(
+    Array.from(activeSnapshot.idsByFingerprint.entries(), ([fingerprint, ids]) => [
+      fingerprint,
+      [...ids],
+    ])
+  );
+  const previousCounts = new Map(
+    Array.from(activeSnapshot.idsByFingerprint.entries(), ([fingerprint, ids]) => [
+      fingerprint,
+      ids.length,
+    ])
+  );
+  const nextCounts = new Map<string, number>();
+
+  baseRows.forEach((row) => {
+    nextCounts.set(row.eventFingerprint, (nextCounts.get(row.eventFingerprint) ?? 0) + 1);
+  });
+
+  let nextInstanceId = activeSnapshot.nextInstanceId;
+  const assignedCounts = new Map<string, number>();
+  const nextIdsByFingerprint = new Map<string, string[]>();
+
+  const rows: OverviewRequestEventRow[] = baseRows.map(({ eventFingerprint, ...row }) => {
+    const assignedCount = assignedCounts.get(eventFingerprint) ?? 0;
+    const previousCount = previousCounts.get(eventFingerprint) ?? 0;
+    const nextCount = nextCounts.get(eventFingerprint) ?? 0;
+    const leadingNewCount = Math.max(0, nextCount - previousCount);
+
+    let id: string | undefined;
+    if (assignedCount < leadingNewCount) {
+      id = `overview-event:${nextInstanceId}`;
+      nextInstanceId += 1;
+    } else {
+      id = previousQueues.get(eventFingerprint)?.shift();
+    }
+
+    if (!id) {
+      id = `overview-event:${nextInstanceId}`;
+      nextInstanceId += 1;
+    }
+
+    assignedCounts.set(eventFingerprint, assignedCount + 1);
+
+    const ids = nextIdsByFingerprint.get(eventFingerprint) ?? [];
+    ids.push(id);
+    nextIdsByFingerprint.set(eventFingerprint, ids);
+
+    return {
+      ...row,
+      id,
+    };
+  });
+
+  return {
+    rows,
+    snapshot: {
+      scopeKey,
+      nextInstanceId,
+      idsByFingerprint: nextIdsByFingerprint,
+    },
+  };
+};
+
+const normalizeTraceablePath = (value?: string) => {
+  const normalized = String(value ?? '')
+    .replace(/^"+|"+$/g, '')
+    .split('?')[0]
+    .trim()
+    .replace(/\/+$/, '');
+
+  return normalized || '';
+};
+
+const isTraceableRequestPath = (value?: string) => {
+  const normalizedPath = normalizeTraceablePath(value);
+  if (!normalizedPath) {
+    return false;
+  }
+
+  if (TRACEABLE_EXACT_PATHS.has(normalizedPath)) {
+    return true;
+  }
+
+  return TRACEABLE_PREFIX_PATHS.some((prefix) => normalizedPath.startsWith(prefix));
+};
+
+const countOverviewUsageLogSignals = (lines: string[]) =>
+  lines.reduce((count, line) => {
+    if (!line.trim()) {
+      return count;
+    }
+
+    const parsed = parseLogLine(line);
+    if (
+      isTraceableRequestPath(parsed.path) &&
+      (typeof parsed.statusCode === 'number' || Boolean(parsed.latency))
+    ) {
+      return count + 1;
+    }
+
+    return count;
+  }, 0);
+
 const getCodexAuthIndex = (file?: Partial<AuthFileItem> | null) =>
   normalizeAuthIndex(file?.['auth_index'] ?? file?.authIndex);
 
@@ -232,6 +377,279 @@ const buildCodexUsageByAuthIndex = (usage: unknown): Map<string, CodexUsageStats
   return usageMap;
 };
 
+function useOverviewLiveUsageRefresh({
+  rows,
+  filesByAuthIndex,
+  onUsageRefresh,
+  onQuotaRefresh,
+}: {
+  rows: OverviewLiveUsageRow[];
+  filesByAuthIndex: Map<string, AuthFileItem>;
+  onUsageRefresh: () => Promise<void>;
+  onQuotaRefresh: (files: AuthFileItem[]) => Promise<void>;
+}) {
+  const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const usageScopeKey = useAuthStore((state) => `${state.apiBase}::${state.managementKey}`);
+  const [highlightState, setHighlightState] = useState(() => ({
+    scopeKey: usageScopeKey,
+    expiresAtById: new Map<string, number>(),
+  }));
+
+  const lastLogTimestampRef = useRef(0);
+  const logSeededRef = useRef(false);
+  const idleRoundsRef = useRef(0);
+  const refreshInFlightRef = useRef(false);
+  const seenRowIdsRef = useRef<Set<string>>(new Set());
+  const highlightCleanupTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    lastLogTimestampRef.current = 0;
+    logSeededRef.current = false;
+    idleRoundsRef.current = 0;
+    refreshInFlightRef.current = false;
+    seenRowIdsRef.current = new Set();
+
+    if (highlightCleanupTimerRef.current !== null && typeof window !== 'undefined') {
+      window.clearTimeout(highlightCleanupTimerRef.current);
+      highlightCleanupTimerRef.current = null;
+    }
+  }, [usageScopeKey]);
+
+  useEffect(() => {
+    const nextIds = new Set(rows.map((row) => row.id));
+    const previousIds = seenRowIdsRef.current;
+
+    if (previousIds.size > 0) {
+      const insertedRows = rows.filter((row) => !previousIds.has(row.id));
+
+      if (insertedRows.length > 0) {
+        const highlightableRows = insertedRows
+          .map((row) => ({
+            row,
+            index: rows.findIndex((candidate) => candidate.id === row.id),
+          }))
+          .filter(({ index }) => index >= 0 && index < RECENT_HIGHLIGHT_INDEX_LIMIT)
+          .sort((a, b) => a.index - b.index)
+          .sort((a, b) => b.index - a.index);
+
+        if (highlightableRows.length > 0) {
+          const now = Date.now();
+          setHighlightState((current) => {
+            const nextExpiresAtById =
+              current.scopeKey === usageScopeKey
+                ? new Map(current.expiresAtById)
+                : new Map<string, number>();
+
+            highlightableRows.forEach((entry, index) => {
+              nextExpiresAtById.set(
+                entry.row.id,
+                now + HIGHLIGHT_MS + index * HIGHLIGHT_STAGGER_MS
+              );
+            });
+
+            return {
+              scopeKey: usageScopeKey,
+              expiresAtById: nextExpiresAtById,
+            };
+          });
+        }
+
+        const impactedFiles = Array.from(
+          new Map(
+            insertedRows
+              .map((row) => filesByAuthIndex.get(row.authIndex))
+              .filter((file): file is AuthFileItem => Boolean(file?.name))
+              .map((file) => [file.name, file])
+          ).values()
+        );
+
+        if (impactedFiles.length > 0) {
+          void onQuotaRefresh(impactedFiles);
+        }
+      }
+    }
+
+    seenRowIdsRef.current = nextIds;
+  }, [filesByAuthIndex, onQuotaRefresh, rows, usageScopeKey]);
+
+  useEffect(
+    () => () => {
+      if (highlightCleanupTimerRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(highlightCleanupTimerRef.current);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (highlightCleanupTimerRef.current !== null) {
+      window.clearTimeout(highlightCleanupTimerRef.current);
+      highlightCleanupTimerRef.current = null;
+    }
+
+    if (highlightState.scopeKey !== usageScopeKey || highlightState.expiresAtById.size === 0) {
+      return;
+    }
+
+    const now = Date.now();
+    const nextExpiry = Math.min(...Array.from(highlightState.expiresAtById.values()));
+    const delayMs = Math.max(0, nextExpiry - now);
+
+    highlightCleanupTimerRef.current = window.setTimeout(() => {
+      const currentTime = Date.now();
+      setHighlightState((current) => {
+        if (current.scopeKey !== usageScopeKey || current.expiresAtById.size === 0) {
+          return current;
+        }
+
+        const nextExpiresAtById = new Map(current.expiresAtById);
+        Array.from(nextExpiresAtById.entries()).forEach(([id, expiresAt]) => {
+          if (expiresAt <= currentTime) {
+            nextExpiresAtById.delete(id);
+          }
+        });
+
+        if (nextExpiresAtById.size === current.expiresAtById.size) {
+          return current;
+        }
+
+        return {
+          scopeKey: usageScopeKey,
+          expiresAtById: nextExpiresAtById,
+        };
+      });
+      highlightCleanupTimerRef.current = null;
+    }, delayMs);
+
+    return () => {
+      if (highlightCleanupTimerRef.current !== null) {
+        window.clearTimeout(highlightCleanupTimerRef.current);
+        highlightCleanupTimerRef.current = null;
+      }
+    };
+  }, [highlightState, usageScopeKey]);
+
+  useEffect(() => {
+    if (
+      connectionStatus !== 'connected' ||
+      typeof window === 'undefined' ||
+      typeof document === 'undefined'
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    let timer: number | null = null;
+
+    const clearTimer = () => {
+      if (timer !== null) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+    };
+
+    const scheduleNext = (delayMs = BASE_POLL_MS) => {
+      clearTimer();
+      if (!cancelled) {
+        timer = window.setTimeout(
+          () => {
+            void pollLogs();
+          },
+          Math.max(0, delayMs)
+        );
+      }
+    };
+
+    const pollLogs = async () => {
+      if (cancelled || document.visibilityState !== 'visible') {
+        return;
+      }
+
+      let nextDelayMs = BASE_POLL_MS;
+
+      try {
+        if (!logSeededRef.current) {
+          const seedResult = await logsApi.fetchLogs();
+          if (cancelled) {
+            return;
+          }
+
+          if (typeof seedResult?.['latest-timestamp'] === 'number') {
+            lastLogTimestampRef.current = seedResult['latest-timestamp'];
+          }
+          logSeededRef.current = true;
+          idleRoundsRef.current = 0;
+        } else {
+          const params = lastLogTimestampRef.current ? { after: lastLogTimestampRef.current } : {};
+          const logResult = await logsApi.fetchLogs(params);
+          if (cancelled) {
+            return;
+          }
+
+          if (typeof logResult?.['latest-timestamp'] === 'number') {
+            lastLogTimestampRef.current = logResult['latest-timestamp'];
+          }
+
+          const lines = Array.isArray(logResult?.lines) ? logResult.lines : [];
+          const signalCount = countOverviewUsageLogSignals(lines);
+          if (signalCount > 0) {
+            idleRoundsRef.current = 0;
+            nextDelayMs = FAST_POLL_MS;
+
+            if (!refreshInFlightRef.current) {
+              refreshInFlightRef.current = true;
+              await onUsageRefresh().catch(() => {});
+              refreshInFlightRef.current = false;
+            }
+          } else {
+            idleRoundsRef.current += 1;
+            nextDelayMs = idleRoundsRef.current >= 12 ? IDLE_POLL_MS : BASE_POLL_MS;
+          }
+        }
+      } catch {
+        nextDelayMs = IDLE_POLL_MS;
+      }
+
+      if (!cancelled && document.visibilityState === 'visible') {
+        scheduleNext(nextDelayMs);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        idleRoundsRef.current = 0;
+        scheduleNext(0);
+      } else {
+        clearTimer();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    if (document.visibilityState === 'visible') {
+      scheduleNext(0);
+    }
+
+    return () => {
+      cancelled = true;
+      clearTimer();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [connectionStatus, onUsageRefresh]);
+
+  const highlightedIds =
+    highlightState.scopeKey === usageScopeKey
+      ? new Set(highlightState.expiresAtById.keys())
+      : EMPTY_HIGHLIGHT_IDS;
+
+  return {
+    highlightedIds,
+  };
+}
+
 function OverviewRequestEventsCard({
   usage,
   loading,
@@ -241,8 +659,16 @@ function OverviewRequestEventsCard({
   codexConfigs,
   vertexConfigs,
   openaiProviders,
+  onUsageRefresh,
+  onQuotaRefresh,
 }: OverviewRequestEventsCardProps) {
   const { t, i18n } = useTranslation();
+  const authScopeKey = useAuthStore((state) => `${state.apiBase}::${state.managementKey}`);
+  const requestEventsInstanceId = useId();
+  const rowIdentityCacheKey = `${authScopeKey}::${requestEventsInstanceId}`;
+  const committedRowIdentitySnapshot =
+    overviewRequestEventIdentitySnapshotCache.get(rowIdentityCacheKey) ??
+    createRequestEventIdentitySnapshot(authScopeKey);
 
   const authFileMap = useMemo(() => {
     const nextMap = new Map<string, CredentialInfo>();
@@ -259,6 +685,16 @@ function OverviewRequestEventsCard({
     });
     return nextMap;
   }, [files]);
+  const filesByAuthIndex = useMemo(() => {
+    const nextMap = new Map<string, AuthFileItem>();
+    files.forEach((file) => {
+      const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
+      if (authIndex) {
+        nextMap.set(authIndex, file);
+      }
+    });
+    return nextMap;
+  }, [files]);
 
   const sourceInfoMap = useMemo(
     () =>
@@ -272,7 +708,7 @@ function OverviewRequestEventsCard({
     [claudeConfigs, codexConfigs, geminiKeys, openaiProviders, vertexConfigs]
   );
 
-  const rows = useMemo<OverviewRequestEventRow[]>(() => {
+  const baseRows = useMemo<OverviewRequestEventBaseRow[]>(() => {
     const details = collectUsageDetails(usage);
 
     const mappedRows = details.map((detail) => {
@@ -301,6 +737,20 @@ function OverviewRequestEventsCard({
         Math.max(toNumber(detail.tokens?.cache_tokens), 0)
       );
       const totalTokens = Math.max(toNumber(detail.tokens?.total_tokens), extractTotalTokens(detail));
+      const eventFingerprint = buildRequestEventFingerprint([
+        Number.isNaN(timestampMs) ? 0 : timestampMs,
+        timestamp || '',
+        model,
+        sourceRaw || '-',
+        authIndex,
+        detail.failed === true,
+        extractLatencyMs(detail) ?? '',
+        inputTokens,
+        outputTokens,
+        reasoningTokens,
+        cachedTokens,
+        totalTokens,
+      ]);
 
       return {
         timestamp,
@@ -319,6 +769,7 @@ function OverviewRequestEventsCard({
         reasoningTokens,
         cachedTokens,
         totalTokens,
+        eventFingerprint,
       };
     });
 
@@ -338,27 +789,27 @@ function OverviewRequestEventsCard({
       if (row.authIndex !== '-') {
         return {
           ...row,
-          source: `${row.source} 路 ${row.authIndex}`,
+          source: `${row.source} / ${row.authIndex}`,
         };
       }
 
       if (row.sourceRaw !== '-' && row.sourceRaw !== row.source) {
         return {
           ...row,
-          source: `${row.source} 路 ${row.sourceRaw}`,
+          source: `${row.source} / ${row.sourceRaw}`,
         };
       }
 
       if (row.sourceType) {
         return {
           ...row,
-          source: `${row.source} 路 ${row.sourceType}`,
+          source: `${row.source} / ${row.sourceType}`,
         };
       }
 
       return {
         ...row,
-        source: `${row.source} 路 ${row.sourceKey}`,
+        source: `${row.source} / ${row.sourceKey}`,
       };
     });
 
@@ -375,6 +826,36 @@ function OverviewRequestEventsCard({
       })
       .slice(0, OVERVIEW_MAX_EVENTS);
   }, [authFileMap, i18n.language, sourceInfoMap, usage]);
+
+  const rowIdentityDraft = useMemo(
+    () => buildStableRequestEventRows(baseRows, committedRowIdentitySnapshot, authScopeKey),
+    [authScopeKey, baseRows, committedRowIdentitySnapshot]
+  );
+
+  useEffect(() => {
+    overviewRequestEventIdentitySnapshotCache.set(rowIdentityCacheKey, rowIdentityDraft.snapshot);
+
+    return () => {
+      overviewRequestEventIdentitySnapshotCache.delete(rowIdentityCacheKey);
+    };
+  }, [rowIdentityCacheKey, rowIdentityDraft.snapshot]);
+
+  const rows = rowIdentityDraft.rows;
+  const liveRefreshRows = useMemo<OverviewLiveUsageRow[]>(
+    () =>
+      rows.map((row) => ({
+        id: row.id,
+        authIndex: row.authIndex,
+        timestampMs: row.timestampMs,
+      })),
+    [rows]
+  );
+  const { highlightedIds } = useOverviewLiveUsageRefresh({
+    rows: liveRefreshRows,
+    filesByAuthIndex,
+    onUsageRefresh,
+    onQuotaRefresh,
+  });
 
   const hasLatencyData = useMemo(() => rows.some((row) => row.latencyMs !== null), [rows]);
 
@@ -418,7 +899,10 @@ function OverviewRequestEventsCard({
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={`${row.timestampMs}:${row.model}:${row.sourceKey}:${row.authIndex}`}>
+                  <tr
+                    key={row.id}
+                    className={highlightedIds.has(row.id) ? styles.eventsRowHighlighted : undefined}
+                  >
                     <td className={styles.eventsTimestampCell} title={row.timestamp}>
                       {row.timestampLabel}
                     </td>
@@ -506,6 +990,35 @@ export function DashboardOverviewPage() {
     }
   }, [connectionStatus]);
 
+  const fetchCodexQuotaEntries = useCallback(
+    async (targetFiles: AuthFileItem[]) => {
+      const codexFiles = targetFiles.filter((file) => isCodexAuthFile(file));
+      return await Promise.all(
+        codexFiles.map(async (file) => {
+          try {
+            const data = await CODEX_CONFIG.fetchQuota(file, t);
+            return [
+              file.name,
+              {
+                planType: data.planType ?? null,
+                windows: Array.isArray(data.windows) ? data.windows : [],
+              },
+            ] as const;
+          } catch {
+            return [
+              file.name,
+              {
+                planType: null,
+                windows: [],
+              },
+            ] as const;
+          }
+        })
+      );
+    },
+    [t]
+  );
+
   const loadCodexQuota = useCallback(
     async (targetFiles: AuthFileItem[]) => {
       if (connectionStatus !== 'connected') {
@@ -530,28 +1043,7 @@ export function DashboardOverviewPage() {
       quotaRequestKeyRef.current = requestKey;
       setQuotaLoading(true);
 
-      const entries = await Promise.all(
-        codexFiles.map(async (file) => {
-          try {
-            const data = await CODEX_CONFIG.fetchQuota(file, t);
-            return [
-              file.name,
-              {
-                planType: data.planType ?? null,
-                windows: Array.isArray(data.windows) ? data.windows : [],
-              },
-            ] as const;
-          } catch {
-            return [
-              file.name,
-              {
-                planType: null,
-                windows: [],
-              },
-            ] as const;
-          }
-        })
-      );
+      const entries = await fetchCodexQuotaEntries(codexFiles);
 
       if (quotaRequestKeyRef.current !== requestKey) {
         return;
@@ -560,7 +1052,26 @@ export function DashboardOverviewPage() {
       setCodexQuotaByFile(Object.fromEntries(entries));
       setQuotaLoading(false);
     },
-    [connectionStatus, quotaScopeKey, t]
+    [connectionStatus, fetchCodexQuotaEntries, quotaScopeKey]
+  );
+
+  const refreshCodexQuotaSubset = useCallback(
+    async (targetFiles: AuthFileItem[]) => {
+      if (connectionStatus !== 'connected') {
+        return;
+      }
+
+      const entries = await fetchCodexQuotaEntries(targetFiles);
+      if (entries.length === 0) {
+        return;
+      }
+
+      setCodexQuotaByFile((current) => ({
+        ...current,
+        ...Object.fromEntries(entries),
+      }));
+    },
+    [connectionStatus, fetchCodexQuotaEntries]
   );
 
   const handleHeaderRefresh = useCallback(async () => {
@@ -843,6 +1354,8 @@ export function DashboardOverviewPage() {
           codexConfigs={appConfig?.codexApiKeys || []}
           vertexConfigs={appConfig?.vertexApiKeys || []}
           openaiProviders={appConfig?.openaiCompatibility || []}
+          onUsageRefresh={loadUsage}
+          onQuotaRefresh={refreshCodexQuotaSubset}
         />
       </div>
     </div>
