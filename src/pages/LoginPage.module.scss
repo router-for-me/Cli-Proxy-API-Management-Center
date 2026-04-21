@@ -1,323 +1,457 @@
 @use '../styles/variables.scss' as *;
 
-// 主容器 - 左右分栏布局
 .container {
   min-height: 100vh;
   display: flex;
   background: var(--bg-secondary);
+
+  @media (max-width: $breakpoint-mobile) {
+    display: block;
+  }
 }
 
-// 左侧品牌展示区
 .brandPanel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: #000000;
-  padding: $spacing-2xl;
+  flex: 1 1 52%;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
+  padding: clamp(40px, 5vw, 72px);
+  background:
+    radial-gradient(520px circle at 18% 82%, rgb(255 255 255 / 0.08), transparent 58%),
+    linear-gradient(145deg, #070707 0%, #121212 55%, #1a1a1a 100%);
 
-  // 移动端隐藏
+  &::before {
+    content: '';
+    position: absolute;
+    top: 12%;
+    right: -120px;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(255 255 255 / 0.12), transparent 68%);
+    pointer-events: none;
+  }
+
   @media (max-width: $breakpoint-mobile) {
     display: none;
   }
 }
 
-// 品牌文字容器
 .brandContent {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  width: 100%;
-  padding: 0;
-  gap: 0;
+  width: min(100%, 620px);
+  gap: 6px;
 }
 
-// 品牌大字淡入动画
-@keyframes brandFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: var(--target-opacity, 0.9);
-    transform: translateY(0);
-  }
-}
-
-// 品牌大字
-.brandWord {
-  font-size: 14vw;
-  font-weight: 900;
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: -0.02em;
-  line-height: 0.85;
+.brandKicker {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-  text-align: right;
-  padding-right: 0;
-  opacity: 0;
-  animation: brandFadeIn 0.8s ease-out forwards;
+  color: rgb(255 255 255 / 0.54);
+}
 
-  // 不同字有不同的透明度和延迟，从上到下依次显现
-  &:nth-child(1) {
-    --target-opacity: 0.95;
-    animation-delay: 0.1s;
-  }
+.brandWord {
+  font-size: clamp(72px, 10vw, 148px);
+  font-weight: 900;
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+  color: rgb(255 255 255 / 0.92);
+  text-align: right;
+  opacity: 0;
+  animation: brand-fade-in 0.7s ease-out forwards;
 
   &:nth-child(2) {
-    --target-opacity: 0.7;
-    animation-delay: 0.35s;
+    animation-delay: 0.08s;
   }
 
   &:nth-child(3) {
-    --target-opacity: 0.45;
-    animation-delay: 0.6s;
+    color: rgb(255 255 255 / 0.72);
+    animation-delay: 0.2s;
+  }
+
+  &:nth-child(4) {
+    color: rgb(255 255 255 / 0.48);
+    animation-delay: 0.32s;
   }
 }
 
-// 右侧功能交互区
+.brandCaption {
+  max-width: 360px;
+  margin: 18px 0 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: rgb(255 255 255 / 0.66);
+  text-align: right;
+}
+
 .formPanel {
-  flex: 1;
+  flex: 1 1 48%;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  padding: $spacing-2xl;
+  justify-content: center;
+  padding: clamp(36px, 5vw, 72px);
   background: var(--bg-secondary);
-  position: relative;
 
   @media (max-width: $breakpoint-mobile) {
-    padding: $spacing-lg;
     min-height: 100vh;
+    padding:
+      max(#{$spacing-md}, env(safe-area-inset-top))
+      max(#{$spacing-md}, env(safe-area-inset-right))
+      max(#{$spacing-lg}, env(safe-area-inset-bottom))
+      max(#{$spacing-md}, env(safe-area-inset-left));
   }
 }
 
-// 右侧内容容器
 .formContent {
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: $spacing-xl;
 }
 
-// Logo
-.logo {
-  width: 80px;
-  height: 80px;
-  border-radius: $radius-lg;
-  object-fit: cover;
-  box-shadow: var(--shadow-lg);
-  border: 3px solid var(--border-color);
-}
-
-// 登录表单卡片
-.loginCard {
-  width: 100%;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: $radius-lg;
-  box-shadow: var(--shadow-lg);
-  padding: $spacing-xl;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-lg;
-
-  @media (max-width: $breakpoint-mobile) {
-    padding: $spacing-lg;
-    box-shadow: none;
-    border: none;
-    background: transparent;
-  }
-}
-
-// 登录头部
-.loginHeader {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  text-align: center;
-}
-
-// 标题行
-.titleRow {
+.logoBadge {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto;
+  padding: 4px;
+  border-radius: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+}
+
+.logo {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.loginCard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  padding: clamp(24px, 3vw, 32px);
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.loginHeader,
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+}
+
+.loginHeader {
   gap: $spacing-sm;
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
   flex-wrap: wrap;
 }
 
-// 标题
+.titleBlock {
+  flex: 1;
+  min-width: 0;
+  gap: $spacing-xs;
+}
+
 .title {
-  font-size: 22px;
+  margin: 0;
+  font-size: 24px;
   font-weight: 800;
   color: var(--text-primary);
 }
 
-// 副标题
 .subtitle {
-  color: var(--text-secondary);
+  margin: 0;
   font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
 }
 
-// 语言下拉选择
 .languageSelect {
-  min-width: 108px;
+  width: 120px;
   flex: 0 0 auto;
 }
 
-// 连接信息框
 .connectionBox {
-  background: var(--bg-secondary);
-  border: 1px dashed var(--border-color);
-  border-radius: $radius-md;
-  padding: $spacing-md;
   display: flex;
   flex-direction: column;
-  gap: $spacing-xs;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: $radius-md;
+  border: 1px dashed var(--border-color);
+  background: var(--bg-secondary);
 
   .label {
+    font-size: 13px;
+    font-weight: 600;
     color: var(--text-secondary);
-    font-size: 14px;
   }
 
   .value {
+    font-family: $font-mono;
+    font-size: 15px;
     font-weight: 700;
+    line-height: 1.5;
     color: var(--text-primary);
     word-break: break-all;
   }
 
   .hint {
-    color: var(--text-secondary);
     font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-secondary);
   }
 }
 
-// 复选框行
 .toggleAdvanced {
   display: flex;
+  align-items: center;
   justify-content: flex-start;
   width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
 }
 
 .toggleLabel {
-  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
+  color: var(--text-secondary);
 }
 
-// 错误提示框
 .errorBox {
-  background: rgba($error-color, 0.1);
-  border: 1px solid rgba($error-color, 0.4);
+  padding: 12px 14px;
   border-radius: $radius-md;
-  padding: $spacing-sm $spacing-md;
+  border: 1px solid rgba($error-color, 0.36);
+  background: rgba($error-color, 0.08);
   color: $error-color;
   font-size: 14px;
+  line-height: 1.6;
 }
 
-// ========== 启动动画（右侧） ==========
-
-// 启动动画进入效果
-@keyframes splashEnter {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+.loginCard :global(.form-group) {
+  gap: 8px;
+  margin-bottom: 0;
 }
 
-// Logo 脉冲效果
-@keyframes splashLogoPulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
+.loginCard :global(.form-group label) {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
 }
 
-// 加载条动画
-@keyframes splashLoading {
-  0% {
-    transform: scaleX(0);
-    transform-origin: left;
-  }
-  50% {
-    transform: scaleX(1);
-    transform-origin: left;
-  }
-  50.01% {
-    transform-origin: right;
-  }
-  100% {
-    transform: scaleX(0);
-    transform-origin: right;
-  }
+.loginCard :global(.input) {
+  min-height: 52px;
+  padding: 14px 50px 14px 16px;
+  border-radius: 14px;
+  font-size: 16px;
 }
 
-// 启动动画内容容器
+.loginCard :global(.hint) {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-tertiary);
+}
+
+.loginCard :global(.btn-full) {
+  min-height: 52px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.loginCard :global(.btn-ghost.btn-sm) {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 8px;
+  border-radius: 10px;
+}
+
 .splashContent {
+  width: min(100%, 440px);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: $spacing-md;
-  animation: splashEnter 0.6s ease-out;
+  padding: clamp(28px, 3vw, 36px);
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-lg);
+  animation: splash-enter 0.6s ease-out;
 }
 
-// 启动动画 Logo
 .splashLogo {
+  width: 80px;
   height: 80px;
-  width: auto;
-  border-radius: $radius-lg;
-  box-shadow: $shadow-lg;
-  animation: splashLogoPulse 1.5s ease-in-out infinite;
+  border-radius: 18px;
+  object-fit: cover;
+  animation: splash-logo-pulse 1.5s ease-in-out infinite;
 }
 
-// 启动动画标题
 .splashTitle {
+  margin: 0;
   font-size: 28px;
   font-weight: 800;
+  text-align: center;
   color: var(--text-primary);
-  margin: 0;
-  letter-spacing: -0.5px;
 }
 
-// 启动动画副标题
 .splashSubtitle {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-secondary);
   margin: 0;
-  margin-top: -8px;
+  font-size: 15px;
+  line-height: 1.65;
+  text-align: center;
+  color: var(--text-secondary);
 }
 
-// 启动动画加载条容器
 .splashLoader {
-  width: 120px;
-  height: 3px;
-  background: var(--border-color);
+  width: 124px;
+  height: 4px;
+  margin-top: $spacing-sm;
   border-radius: $radius-full;
+  background: color-mix(in srgb, var(--border-color) 70%, transparent);
   overflow: hidden;
-  margin-top: $spacing-md;
 }
 
-// 启动动画加载条
 .splashLoaderBar {
   width: 100%;
   height: 100%;
-  background: var(--primary-color);
-  border-radius: $radius-full;
-  animation: splashLoading 1.2s ease-in-out infinite;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary-color) 90%, white 10%),
+    color-mix(in srgb, var(--success-color) 70%, var(--primary-color))
+  );
+  animation: splash-loading 1.2s ease-in-out infinite;
+}
+
+@media (max-width: $breakpoint-mobile) {
+  .formContent {
+    max-width: none;
+    gap: $spacing-lg;
+  }
+
+  .logoBadge {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+  }
+
+  .loginCard {
+    gap: 16px;
+    padding: $spacing-lg;
+    border-radius: 16px;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+  }
+
+  .titleRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .title {
+    font-size: clamp(24px, 7vw, 30px);
+  }
+
+  .languageSelect {
+    width: 100%;
+  }
+
+  .connectionBox {
+    padding: 12px 14px;
+  }
+
+  .toggleAdvanced {
+    padding: 9px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brandWord,
+  .splashContent,
+  .splashLogo,
+  .splashLoaderBar { animation: none; }
+}
+
+@keyframes brand-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes splash-logo-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes splash-loading {
+  0% {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  50% {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  50.01% {
+    transform-origin: right;
+  }
+
+  100% {
+    transform: scaleX(0);
+    transform-origin: right;
+  }
 }

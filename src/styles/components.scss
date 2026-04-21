@@ -11,7 +11,12 @@
   padding: 10px 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all $transition-fast;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast,
+    box-shadow $transition-fast,
+    transform $transition-fast;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
 

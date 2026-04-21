@@ -1,6 +1,15 @@
 import { Suspense, lazy, type ComponentType } from 'react';
 import { Navigate, useRoutes, type Location } from 'react-router-dom';
 import { PageLoadFallback } from '@/components/common/PageLoadFallback';
+import {
+  loadAiProvidersPage,
+  loadAuthFilesPage,
+  loadConfigPage,
+  loadDashboardPage,
+  loadRequestLogsPage,
+  loadSystemPage,
+  loadUsagePage,
+} from './routeLoaders';
 
 function lazyNamed<TModule extends Record<string, unknown>>(
   loader: () => Promise<TModule>,
@@ -20,8 +29,8 @@ function renderLazyPage(Component: ComponentType) {
   );
 }
 
-const LazyDashboardPage = lazyNamed(() => import('@/pages/DashboardPage'), 'DashboardPage');
-const LazyAiProvidersPage = lazyNamed(() => import('@/pages/AiProvidersPage'), 'AiProvidersPage');
+const LazyDashboardPage = lazyNamed(loadDashboardPage, 'DashboardPage');
+const LazyAiProvidersPage = lazyNamed(loadAiProvidersPage, 'AiProvidersPage');
 const LazyAiProvidersAmpcodeEditPage = lazyNamed(
   () => import('@/pages/AiProvidersAmpcodeEditPage'),
   'AiProvidersAmpcodeEditPage'
@@ -62,7 +71,7 @@ const LazyAiProvidersVertexEditPage = lazyNamed(
   () => import('@/pages/AiProvidersVertexEditPage'),
   'AiProvidersVertexEditPage'
 );
-const LazyAuthFilesPage = lazyNamed(() => import('@/pages/AuthFilesPage'), 'AuthFilesPage');
+const LazyAuthFilesPage = lazyNamed(loadAuthFilesPage, 'AuthFilesPage');
 const LazyAuthFilesOAuthExcludedEditPage = lazyNamed(
   () => import('@/pages/AuthFilesOAuthExcludedEditPage'),
   'AuthFilesOAuthExcludedEditPage'
@@ -73,14 +82,11 @@ const LazyAuthFilesOAuthModelAliasEditPage = lazyNamed(
 );
 const LazyOAuthPage = lazyNamed(() => import('@/pages/OAuthPage'), 'OAuthPage');
 const LazyQuotaPage = lazyNamed(() => import('@/pages/QuotaPage'), 'QuotaPage');
-const LazyRequestLogsPage = lazyNamed(
-  () => import('@/pages/RequestLogsPage'),
-  'RequestLogsPage'
-);
-const LazyUsagePage = lazyNamed(() => import('@/pages/UsagePage'), 'UsagePage');
-const LazyConfigPage = lazyNamed(() => import('@/pages/ConfigPage'), 'ConfigPage');
+const LazyRequestLogsPage = lazyNamed(loadRequestLogsPage, 'RequestLogsPage');
+const LazyUsagePage = lazyNamed(loadUsagePage, 'UsagePage');
+const LazyConfigPage = lazyNamed(loadConfigPage, 'ConfigPage');
 const LazyLogsPage = lazyNamed(() => import('@/pages/LogsPage'), 'LogsPage');
-const LazySystemPage = lazyNamed(() => import('@/pages/SystemPage'), 'SystemPage');
+const LazySystemPage = lazyNamed(loadSystemPage, 'SystemPage');
 
 const mainRoutes = [
   { path: '/', element: renderLazyPage(LazyDashboardPage) },

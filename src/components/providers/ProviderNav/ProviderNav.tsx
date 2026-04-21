@@ -2,6 +2,7 @@ import { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useStat
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useThemeStore } from '@/stores';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
@@ -36,6 +37,7 @@ export function ProviderNav() {
   const location = useLocation();
   const pageTransitionLayer = usePageTransitionLayer();
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
   const contentScrollerRef = useRef<HTMLElement | null>(null);
@@ -57,6 +59,7 @@ export function ProviderNav() {
   } | null>(null);
   const [indicatorTransitionsEnabled, setIndicatorTransitionsEnabled] = useState(false);
   const indicatorHasEnabledTransitionsRef = useRef(false);
+  const scrollUpdateFrameRef = useRef<number | null>(null);
 
   // Only show this quick-switch overlay on the AI Providers list page.
   // Note: The app uses iOS-style stacked page transitions inside `/ai-providers/*`,
@@ -93,7 +96,7 @@ export function ProviderNav() {
     return getContentScroller() ?? window;
   }, [getContentScroller]);
 
-  const handleScroll = useCallback(() => {
+  const updateActiveProvider = useCallback(() => {
     const container = getScrollContainer();
     if (!container) return;
 
@@ -126,22 +129,37 @@ export function ProviderNav() {
     setActiveProvider(currentActive);
   }, [getHeaderHeight, getScrollContainer]);
 
+  const scheduleActiveProviderUpdate = useCallback(() => {
+    if (scrollUpdateFrameRef.current !== null) {
+      return;
+    }
+
+    scrollUpdateFrameRef.current = requestAnimationFrame(() => {
+      scrollUpdateFrameRef.current = null;
+      updateActiveProvider();
+    });
+  }, [updateActiveProvider]);
+
   useEffect(() => {
     if (!shouldShow) return;
     const contentScroller = getContentScroller();
 
     // Listen to both: desktop scroll happens on `.content`; mobile uses `window`.
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    contentScroller?.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll);
-    const raf = requestAnimationFrame(handleScroll);
+    window.addEventListener('scroll', scheduleActiveProviderUpdate, { passive: true });
+    contentScroller?.addEventListener('scroll', scheduleActiveProviderUpdate, { passive: true });
+    window.addEventListener('resize', scheduleActiveProviderUpdate);
+    const raf = requestAnimationFrame(scheduleActiveProviderUpdate);
     return () => {
+      if (scrollUpdateFrameRef.current !== null) {
+        cancelAnimationFrame(scrollUpdateFrameRef.current);
+        scrollUpdateFrameRef.current = null;
+      }
       cancelAnimationFrame(raf);
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-      contentScroller?.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', scheduleActiveProviderUpdate);
+      window.removeEventListener('resize', scheduleActiveProviderUpdate);
+      contentScroller?.removeEventListener('scroll', scheduleActiveProviderUpdate);
     };
-  }, [getContentScroller, handleScroll, shouldShow]);
+  }, [getContentScroller, scheduleActiveProviderUpdate, shouldShow]);
 
   const updateIndicator = useCallback((providerId: ProviderId | null) => {
     if (!providerId) {
@@ -201,6 +219,7 @@ export function ProviderNav() {
     const container = getScrollContainer();
     const element = document.getElementById(`provider-${providerId}`);
     if (!element || !container) return;
+    const scrollBehavior = prefersReducedMotion ? 'auto' : 'smooth';
 
     setActiveProvider(providerId);
     updateIndicator(providerId);
@@ -210,7 +229,7 @@ export function ProviderNav() {
       const headerHeight = getHeaderHeight();
       const elementTop = element.getBoundingClientRect().top + window.scrollY;
       const target = Math.max(0, elementTop - headerHeight - HEADER_OFFSET);
-      window.scrollTo({ top: target, behavior: 'smooth' });
+      window.scrollTo({ top: target, behavior: scrollBehavior });
       return;
     }
 
@@ -218,7 +237,7 @@ export function ProviderNav() {
     const elementRect = element.getBoundingClientRect();
     const scrollTop = container.scrollTop + (elementRect.top - containerRect.top) - HEADER_OFFSET;
 
-    container.scrollTo({ top: scrollTop, behavior: 'smooth' });
+    container.scrollTo({ top: scrollTop, behavior: scrollBehavior });
   };
 
   useEffect(() => {

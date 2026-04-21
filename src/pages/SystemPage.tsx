@@ -15,7 +15,7 @@ import {
 import { configApi, versionApi } from '@/services/api';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
-import { STORAGE_KEY_AUTH, STORAGE_KEY_AUTH_SESSION } from '@/utils/constants';
+import { STORAGE_KEY_AUTH, STORAGE_KEY_AUTH_SESSION, STORAGE_KEY_QUOTA_CACHE } from '@/utils/constants';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconClaude from '@/assets/icons/claude.svg';
@@ -215,7 +215,14 @@ export function SystemPage() {
       onConfirm: () => {
         auth.logout();
         if (typeof localStorage === 'undefined') return;
-        const keysToRemove = [STORAGE_KEY_AUTH, 'isLoggedIn', 'apiBase', 'apiUrl', 'managementKey'];
+        const keysToRemove = [
+          STORAGE_KEY_AUTH,
+          STORAGE_KEY_QUOTA_CACHE,
+          'isLoggedIn',
+          'apiBase',
+          'apiUrl',
+          'managementKey',
+        ];
         keysToRemove.forEach((key) => localStorage.removeItem(key));
         if (typeof sessionStorage !== 'undefined') {
           sessionStorage.removeItem(STORAGE_KEY_AUTH_SESSION);

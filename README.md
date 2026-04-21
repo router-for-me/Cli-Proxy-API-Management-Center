@@ -118,7 +118,8 @@ The UI language is automatically detected from browser settings and can be manua
 
 ## Build & release notes
 
-- Vite produces a **single HTML** output (`dist/index.html`) with all assets inlined (via `vite-plugin-singlefile`).
+- `npm run build` now emits a split production bundle so route lazy-loading and browser caching actually work in production.
+- `npm run build:singlefile` still produces a **single HTML** output (`dist/index.html`) with all assets inlined (via `vite-plugin-singlefile`).
 - Tagging `vX.Y.Z` triggers `.github/workflows/release.yml` to publish `dist/management.html`.
 - The UI version shown in the footer is injected at build time (env `VERSION`, git tag, or `package.json` fallback).
 
@@ -139,7 +140,8 @@ The UI language is automatically detected from browser settings and can be manua
 
 ```bash
 npm run dev        # Vite dev server
-npm run build      # tsc + Vite build
+npm run build      # tsc + split production build
+npm run build:singlefile # tsc + single HTML build
 npm run preview    # serve dist locally
 npm run lint       # ESLint (fails on warnings)
 npm run format     # Prettier

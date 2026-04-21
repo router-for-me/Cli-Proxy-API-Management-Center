@@ -32,3 +32,5 @@ settings.local.json
 *.njsproj
 *.sln
 *.sw?
+# Added by code-review-graph
+.code-review-graph/

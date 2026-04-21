@@ -186,9 +186,11 @@ export function LoginPage() {
     <div className={styles.container}>
       <div className={styles.brandPanel}>
         <div className={styles.brandContent}>
+          <span className={styles.brandKicker}>{t('login.connection_title')}</span>
           <span className={styles.brandWord}>CLI</span>
           <span className={styles.brandWord}>PROXY</span>
           <span className={styles.brandWord}>API</span>
+          <p className={styles.brandCaption}>{t('login.subtitle')}</p>
         </div>
       </div>
 
@@ -204,11 +206,16 @@ export function LoginPage() {
           </div>
         ) : (
           <div className={styles.formContent}>
-            <img src={INLINE_LOGO_JPEG} alt="Logo" className={styles.logo} />
+            <div className={styles.logoBadge}>
+              <img src={INLINE_LOGO_JPEG} alt="Logo" className={styles.logo} />
+            </div>
             <div className={styles.loginCard}>
               <div className={styles.loginHeader}>
                 <div className={styles.titleRow}>
-                  <div className={styles.title}>{t('title.login')}</div>
+                  <div className={styles.titleBlock}>
+                    <div className={styles.title}>{t('title.login')}</div>
+                    <div className={styles.subtitle}>{t('login.subtitle')}</div>
+                  </div>
                   <Select
                     className={styles.languageSelect}
                     value={language}
@@ -218,7 +225,6 @@ export function LoginPage() {
                     ariaLabel={t('language.switch')}
                   />
                 </div>
-                <div className={styles.subtitle}>{t('login.subtitle')}</div>
               </div>
 
               <div className={styles.connectionBox}>

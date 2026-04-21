@@ -19,6 +19,7 @@ import {
 import { useConfigStore } from './useConfigStore';
 import { useUsageStatsStore } from './useUsageStatsStore';
 import { useModelsStore } from './useModelsStore';
+import { useQuotaStore } from './useQuotaStore';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 
 interface AuthStoreState extends AuthState {
@@ -124,7 +125,11 @@ export const useAuthStore = create<AuthStoreState>()(
       login: async (credentials) => {
         const apiBase = normalizeApiBase(credentials.apiBase);
         const managementKey = credentials.managementKey.trim();
-        const rememberPassword = credentials.rememberPassword ?? get().rememberPassword ?? false;
+        const previousAuth = get();
+        const rememberPassword = credentials.rememberPassword ?? previousAuth.rememberPassword ?? false;
+        const connectionChanged =
+          normalizeApiBase(previousAuth.apiBase) !== apiBase ||
+          previousAuth.managementKey !== managementKey;
 
         try {
           set({ connectionStatus: 'connecting' });
@@ -140,6 +145,10 @@ export const useAuthStore = create<AuthStoreState>()(
           await runWithAuthRecovery(() =>
             useConfigStore.getState().fetchConfig(undefined, true)
           );
+
+          if (connectionChanged) {
+            useQuotaStore.getState().clearQuotaCache();
+          }
 
           // 登录成功
           set({
@@ -181,6 +190,7 @@ export const useAuthStore = create<AuthStoreState>()(
         useConfigStore.getState().clearCache();
         useUsageStatsStore.getState().clearUsageStats();
         useModelsStore.getState().clearCache();
+        useQuotaStore.getState().clearQuotaCache();
         apiClient.setConfig({ apiBase: '', managementKey: '' });
         set({
           isAuthenticated: false,

@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, type ComponentType } from 'react';
 import { Outlet, RouterProvider, createHashRouter } from 'react-router-dom';
 import { PageLoadFallback } from '@/components/common/PageLoadFallback';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
+import { preloadPrimaryRoutes } from '@/router/routeLoaders';
 import { useLanguageStore, useThemeStore } from '@/stores';
 
 function lazyNamed<TModule extends Record<string, unknown>>(
@@ -17,6 +18,12 @@ function lazyNamed<TModule extends Record<string, unknown>>(
 const LazyLoginPage = lazyNamed(() => import('@/pages/LoginPage'), 'LoginPage');
 const LazyMainLayout = lazyNamed(() => import('@/components/layout/MainLayout'), 'MainLayout');
 const fullScreenFallback = <PageLoadFallback fullScreen />;
+const PRIMARY_ROUTE_PRELOAD_DELAY_MS = 900;
+
+type IdleCapableWindow = Window & {
+  requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
 
 function renderLazyPage(Component: ComponentType) {
   return (
@@ -28,6 +35,31 @@ function renderLazyPage(Component: ComponentType) {
 
 function RootShell() {
   return <Outlet />;
+}
+
+function schedulePrimaryRoutePreload() {
+  if (typeof window === 'undefined') {
+    return () => undefined;
+  }
+
+  const preload = () => {
+    void preloadPrimaryRoutes();
+  };
+  const idleWindow = window as IdleCapableWindow;
+
+  if (typeof idleWindow.requestIdleCallback === 'function') {
+    const idleHandle = idleWindow.requestIdleCallback(preload, {
+      timeout: PRIMARY_ROUTE_PRELOAD_DELAY_MS,
+    });
+    return () => {
+      idleWindow.cancelIdleCallback?.(idleHandle);
+    };
+  }
+
+  const timeoutId = window.setTimeout(preload, PRIMARY_ROUTE_PRELOAD_DELAY_MS);
+  return () => {
+    window.clearTimeout(timeoutId);
+  };
 }
 
 const router = createHashRouter([
@@ -65,6 +97,11 @@ function App() {
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  useEffect(() => {
+    const cancelPreload = schedulePrimaryRoutePreload();
+    return cancelPreload;
+  }, []);
 
   return <RouterProvider router={router} />;
 }

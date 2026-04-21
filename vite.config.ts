@@ -35,44 +35,96 @@ function getVersion(): string {
   return 'dev';
 }
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [
-    react(),
-    viteSingleFile({
-      removeViteModuleLoader: true
-    })
-  ],
-  define: {
-    __APP_VERSION__: JSON.stringify(getVersion())
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src')
-    }
-  },
-  css: {
-    modules: {
-      localsConvention: 'camelCase',
-      generateScopedName: '[name]__[local]___[hash:base64:5]'
-    },
-    preprocessorOptions: {
-      scss: {
-        additionalData: `@use "@/styles/variables.scss" as *;`
-      }
-    }
-  },
-  build: {
-    target: 'es2020',
-    outDir: 'dist',
-    assetsInlineLimit: 100000000,
-    chunkSizeWarningLimit: 100000000,
-    cssCodeSplit: false,
-    rollupOptions: {
-      output: {
-        inlineDynamicImports: true,
-        manualChunks: undefined
-      }
-    }
+function resolveManualChunk(id: string) {
+  if (!id.includes('node_modules')) {
+    return undefined;
   }
+
+  if (
+    id.includes('react-chartjs-2') ||
+    id.includes('chart.js')
+  ) {
+    return 'charts';
+  }
+
+  if (
+    id.includes('@uiw/react-codemirror') ||
+    id.includes('@codemirror/')
+  ) {
+    return 'editor';
+  }
+
+  if (
+    id.includes('react-router-dom') ||
+    id.includes('react-dom') ||
+    id.includes('react/') ||
+    id.includes('/react') ||
+    id.includes('i18next') ||
+    id.includes('react-i18next') ||
+    id.includes('zustand')
+  ) {
+    return 'framework';
+  }
+
+  return 'vendor';
+}
+
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => {
+  const singleFileBuild = mode === 'singlefile' || process.env.SINGLE_FILE === 'true';
+
+  return {
+    plugins: [
+      react(),
+      ...(singleFileBuild
+        ? [
+            viteSingleFile({
+              removeViteModuleLoader: true
+            }),
+          ]
+        : []),
+    ],
+    define: {
+      __APP_VERSION__: JSON.stringify(getVersion())
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src')
+      }
+    },
+    css: {
+      modules: {
+        localsConvention: 'camelCase',
+        generateScopedName: '[name]__[local]___[hash:base64:5]'
+      },
+      preprocessorOptions: {
+        scss: {
+          additionalData: `@use "@/styles/variables.scss" as *;`
+        }
+      }
+    },
+    build: {
+      target: 'es2020',
+      outDir: 'dist',
+      cssCodeSplit: !singleFileBuild,
+      ...(singleFileBuild
+        ? {
+            assetsInlineLimit: 100000000,
+            chunkSizeWarningLimit: 100000000,
+          }
+        : {
+            chunkSizeWarningLimit: 900,
+          }),
+      rollupOptions: {
+        output: singleFileBuild
+          ? {
+              inlineDynamicImports: true,
+              manualChunks: undefined
+            }
+          : {
+              manualChunks: resolveManualChunk
+            }
+      }
+    }
+  };
 });

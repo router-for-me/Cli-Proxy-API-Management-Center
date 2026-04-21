@@ -2,6 +2,7 @@ import { ReactNode, useCallback, useLayoutEffect, useRef, useState } from 'react
 import { useLocation, type Location } from 'react-router-dom';
 import { animate } from 'motion/mini';
 import type { AnimationPlaybackControlsWithThen } from 'motion-dom';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import {
   PAGE_TRANSITION_LAYER_CONTEXT_VALUES,
   PageTransitionLayerContext,
@@ -56,6 +57,7 @@ export function PageTransition({
   scrollContainerRef,
 }: PageTransitionProps) {
   const location = useLocation();
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const currentLayerRef = useRef<HTMLDivElement>(null);
   const exitingLayerRef = useRef<HTMLDivElement>(null);
   const transitionDirectionRef = useRef<TransitionDirection>('forward');
@@ -246,6 +248,11 @@ export function PageTransition({
       clearLayerStyles(exitingLayerEl);
     };
 
+    if (prefersReducedMotion) {
+      completeTransition();
+      return;
+    }
+
     if (transitionVariant === 'ios') {
       const exitToXPercent = isForward
         ? IOS_EXIT_TO_X_PERCENT_FORWARD
@@ -354,7 +361,7 @@ export function PageTransition({
       cancelled = true;
       activeAnimations.forEach((animation) => animation.stop());
     };
-  }, [isAnimating, resolveScrollContainer]);
+  }, [isAnimating, prefersReducedMotion, resolveScrollContainer]);
 
   return (
     <div className={`page-transition${isAnimating ? ' page-transition--animating' : ''}`}>

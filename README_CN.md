@@ -117,7 +117,8 @@ npm run build
 
 ## 构建与发布说明
 
-- 使用 Vite 输出 **单文件 HTML**（`dist/index.html`），资源全部内联（`vite-plugin-singlefile`）。
+- `npm run build` 默认输出拆分后的生产包，生产环境中的路由懒加载与浏览器缓存可以真正生效。
+- `npm run build:singlefile` 仍然输出 **单文件 HTML**（`dist/index.html`），资源全部内联（`vite-plugin-singlefile`）。
 - 打 `vX.Y.Z` 标签会触发 `.github/workflows/release.yml`，发布 `dist/management.html`。
 - 页脚显示的 UI 版本在构建期注入（优先使用环境变量 `VERSION`，否则使用 git tag / `package.json`）。
 
@@ -138,7 +139,8 @@ npm run build
 
 ```bash
 npm run dev        # 启动开发服务器
-npm run build      # tsc + Vite 构建
+npm run build      # tsc + 拆包生产构建
+npm run build:singlefile # tsc + 单文件构建
 npm run preview    # 本地预览 dist
 npm run lint       # ESLint（warnings 视为失败）
 npm run format     # Prettier
