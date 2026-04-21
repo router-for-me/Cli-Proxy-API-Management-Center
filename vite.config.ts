@@ -35,6 +35,13 @@ function getVersion(): string {
   return 'dev';
 }
 
+function getBuildDate(): string {
+  if (process.env.BUILD_DATE) {
+    return process.env.BUILD_DATE;
+  }
+  return new Date().toISOString();
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -44,7 +51,8 @@ export default defineConfig({
     })
   ],
   define: {
-    __APP_VERSION__: JSON.stringify(getVersion())
+    __APP_VERSION__: JSON.stringify(getVersion()),
+    __APP_BUILD_DATE__: JSON.stringify(getBuildDate())
   },
   resolve: {
     alias: {

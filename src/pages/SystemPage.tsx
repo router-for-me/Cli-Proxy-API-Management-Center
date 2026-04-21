@@ -71,6 +71,9 @@ export function SystemPage() {
   const canEditRequestLog = auth.connectionStatus === 'connected' && Boolean(config);
 
   const appVersion = __APP_VERSION__ || t('system_info.version_unknown');
+  const appBuildDate = typeof __APP_BUILD_DATE__ !== 'undefined' && __APP_BUILD_DATE__
+    ? new Date(__APP_BUILD_DATE__).toLocaleString(i18n.language)
+    : t('system_info.version_unknown');
   const apiVersion = auth.serverVersion || t('system_info.version_unknown');
   const buildTime = auth.serverBuildDate
     ? new Date(auth.serverBuildDate).toLocaleString(i18n.language)
@@ -287,6 +290,7 @@ export function SystemPage() {
           >
             <div className={styles.tileLabel}>{t('footer.version')}</div>
             <div className={styles.tileValue}>{appVersion}</div>
+            <div className={styles.tileMeta}>{appBuildDate}</div>
           </button>
 
           <div className={styles.infoTile}>
