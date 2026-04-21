@@ -10,9 +10,9 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\"",
     "type-check": "tsc --noEmit",
-    "build:release": "VERSION=${VERSION:-$(git describe --tags --always 2>/dev/null || echo dev)} BUILD_DATE=${BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)} GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT:-$(git rev-parse --short HEAD 2>/dev/null || echo local)} npm run build",
-    "build:release:zip": "npm run build:release && LATEST=$(ls -dt dist-* | head -n 1) && rm -f ${LATEST}.zip && /usr/bin/zip -qry ${LATEST}.zip ${LATEST} && echo ${LATEST}.zip",
-    "build:release:archive": "npm run build:release:zip && mkdir -p releases && LATEST_DIR=$(find . -maxdepth 1 -type d -name 'dist-*' | sed 's#^./##' | sort | tail -n 1) && LATEST_ZIP=$(find . -maxdepth 1 -type f -name 'dist-*.zip' | sed 's#^./##' | sort | tail -n 1) && cp -f ${LATEST_ZIP} releases/ && cp -f ${LATEST_DIR}/BUILD_INFO.json releases/${LATEST_DIR}.BUILD_INFO.json && cp -f RELEASE.md releases/${LATEST_DIR}.RELEASE.md && echo releases/${LATEST_ZIP}"
+    "build:release": "VERSION=${VERSION:-v$(date -u +%Y.%m.%d)+$(git rev-parse --short HEAD 2>/dev/null || echo local)} BUILD_DATE=${BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)} GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT:-$(git rev-parse --short HEAD 2>/dev/null || echo local)} npm run build",
+    "build:release:zip": "npm run build:release && LATEST=$(find . -maxdepth 1 -type d -name 'dist-*' | sed 's#^./##' | sort | tail -n 1) && rm -f ${LATEST}.zip && /usr/bin/zip -qry ${LATEST}.zip ${LATEST} && echo ${LATEST}.zip",
+    "build:release:archive": "npm run build:release:zip && mkdir -p releases && LATEST_DIR=$(find . -maxdepth 1 -type d -name 'dist-*' | sed 's#^./##' | sort | tail -n 1) && LATEST_ZIP=$(find . -maxdepth 1 -type f -name 'dist-*.zip' | sed 's#^./##' | sort | tail -n 1) && cp -f ${LATEST_ZIP} releases/ && cp -f ${LATEST_DIR}/BUILD_INFO.json releases/${LATEST_DIR}.BUILD_INFO.json && cp -f ${LATEST_DIR}/RELEASE.md releases/${LATEST_DIR}.RELEASE.md && echo releases/${LATEST_ZIP}"
   },
   "dependencies": {
     "@codemirror/lang-yaml": "^6.1.2",
