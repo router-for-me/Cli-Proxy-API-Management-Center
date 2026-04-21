@@ -109,6 +109,7 @@
   },
   "nav": {
     "dashboard": "仪表盘",
+    "dashboard_overview": "概览",
     "basic_settings": "基础设置",
     "api_keys": "API 密钥",
     "ai_providers": "AI 提供商",
@@ -150,7 +151,9 @@
     "caring_afternoon": "稳步推进中，继续加油。",
     "caring_evening": "今天辛苦了，收尾工作做好哦。",
     "caring_night": "夜深了，别忘了早些休息。",
-    "system_overview": "系统概览"
+    "system_overview": "系统概览",
+    "account_stats": "账户统计",
+    "no_codex_accounts": "暂无 Codex 账户统计"
   },
   "basic_settings": {
     "title": "基础设置",
@@ -1347,7 +1350,9 @@
     "refresh_files": "刷新认证文件",
     "refresh_files_and_quota": "刷新认证文件&额度",
     "refresh_all_credentials": "刷新全部凭证",
-    "card_idle_hint": "请使用顶部“刷新全部凭证”按钮获取最新额度。"
+    "card_idle_hint": "请使用顶部“刷新全部凭证”按钮获取最新额度。",
+    "auto_refresh": "自动刷新",
+    "auto_refresh_paused": "暂停"
   },
   "system_info": {
     "title": "管理中心信息",

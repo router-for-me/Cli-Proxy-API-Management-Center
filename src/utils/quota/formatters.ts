@@ -15,7 +15,7 @@ export function formatQuotaResetTime(value?: string): string {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false
+    hour12: false,
   });
 }
 
@@ -28,22 +28,28 @@ export function formatUnixSeconds(value: number | null): string {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false
+    hour12: false,
   });
 }
 
-export function formatCodexResetLabel(window?: CodexUsageWindow | null): string {
-  if (!window) return '-';
+export function resolveCodexResetUnixSeconds(window?: CodexUsageWindow | null): number | null {
+  if (!window) return null;
+
   const resetAt = normalizeNumberValue(window.reset_at ?? window.resetAt);
   if (resetAt !== null && resetAt > 0) {
-    return formatUnixSeconds(resetAt);
+    return resetAt;
   }
+
   const resetAfter = normalizeNumberValue(window.reset_after_seconds ?? window.resetAfterSeconds);
   if (resetAfter !== null && resetAfter > 0) {
-    const targetSeconds = Math.floor(Date.now() / 1000 + resetAfter);
-    return formatUnixSeconds(targetSeconds);
+    return Math.floor(Date.now() / 1000 + resetAfter);
   }
-  return '-';
+
+  return null;
+}
+
+export function formatCodexResetLabel(window?: CodexUsageWindow | null): string {
+  return formatUnixSeconds(resolveCodexResetUnixSeconds(window));
 }
 
 export function createStatusError(message: string, status?: number): Error & { status?: number } {

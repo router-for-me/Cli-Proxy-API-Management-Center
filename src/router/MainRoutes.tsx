@@ -1,5 +1,6 @@
 import { Navigate, useRoutes, type Location } from 'react-router-dom';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { DashboardOverviewPage } from '@/pages/DashboardOverviewPage';
 import { AiProvidersPage } from '@/pages/AiProvidersPage';
 import { AiProvidersAmpcodeEditPage } from '@/pages/AiProvidersAmpcodeEditPage';
 import { AiProvidersClaudeEditLayout } from '@/pages/AiProvidersClaudeEditLayout';
@@ -23,6 +24,7 @@ import { SystemPage } from '@/pages/SystemPage';
 
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
+  { path: '/dashboard/overview', element: <DashboardOverviewPage /> },
   { path: '/dashboard', element: <DashboardPage /> },
   { path: '/settings', element: <Navigate to="/config" replace /> },
   { path: '/api-keys', element: <Navigate to="/config" replace /> },

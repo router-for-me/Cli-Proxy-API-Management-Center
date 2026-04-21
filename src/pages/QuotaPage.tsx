@@ -13,7 +13,7 @@ import {
   CLAUDE_CONFIG,
   CODEX_CONFIG,
   GEMINI_CLI_CONFIG,
-  KIMI_CONFIG
+  KIMI_CONFIG,
 } from '@/components/quota';
 import type { AuthFileItem } from '@/types';
 import styles from './QuotaPage.module.scss';
@@ -29,27 +29,39 @@ export function QuotaPage() {
   const disableControls = connectionStatus !== 'connected';
 
   const loadConfig = useCallback(async () => {
+    if (connectionStatus !== 'connected') {
+      return;
+    }
+
     try {
       await configFileApi.fetchConfigYaml();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError((prev) => prev || errorMessage);
     }
-  }, [t]);
+  }, [connectionStatus, t]);
 
   const loadFiles = useCallback(async () => {
+    if (connectionStatus !== 'connected') {
+      setFiles([]);
+      setLoading(false);
+      setError('');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
       const data = await authFilesApi.list();
-      setFiles(data?.files || []);
+      const nextFiles = Array.isArray(data) ? data : data?.files;
+      setFiles(Array.isArray(nextFiles) ? nextFiles : []);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [connectionStatus, t]);
 
   const handleHeaderRefresh = useCallback(async () => {
     await Promise.all([loadConfig(), loadFiles()]);

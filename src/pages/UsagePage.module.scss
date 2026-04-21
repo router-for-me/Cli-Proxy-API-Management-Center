@@ -946,6 +946,27 @@
   word-break: break-all;
 }
 
+.requestEventsCompactSourceCell,
+.requestEventsCompactAuthIndex {
+  max-width: none;
+  word-break: normal;
+}
+
+.requestEventsCompactSourceContent {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.requestEventsCompactSourceText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .requestEventsResultSuccess {
   color: var(--success-badge-text, #065f46);
   background: var(--success-badge-bg, #d1fae5);

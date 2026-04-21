@@ -87,7 +87,8 @@ export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
     }
 
     const requestId = (usageRequestToken += 1);
-    set({ loading: true, error: null, scopeKey });
+    const showLoadingState = scopeChanged || state.usage === null;
+    set({ loading: showLoadingState, error: null, scopeKey });
 
     const requestPromise = (async () => {
       try {

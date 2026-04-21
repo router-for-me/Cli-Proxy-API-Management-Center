@@ -109,6 +109,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "dashboard_overview": "Overview",
     "basic_settings": "Basic Settings",
     "api_keys": "API Keys",
     "ai_providers": "AI Providers",
@@ -150,7 +151,9 @@
     "caring_afternoon": "Steady progress — you're doing great.",
     "caring_evening": "Wrapping up nicely — almost there.",
     "caring_night": "Burning the midnight oil? Don't forget to rest.",
-    "system_overview": "System Overview"
+    "system_overview": "System Overview",
+    "account_stats": "Account Stats",
+    "no_codex_accounts": "No Codex accounts available"
   },
   "basic_settings": {
     "title": "Basic Settings",
@@ -1347,7 +1350,9 @@
     "refresh_files": "Refresh auth files",
     "refresh_files_and_quota": "Refresh files & quota",
     "refresh_all_credentials": "Refresh all credentials",
-    "card_idle_hint": "Use the top \"Refresh all credentials\" button to fetch the latest quota data."
+    "card_idle_hint": "Use the top \"Refresh all credentials\" button to fetch the latest quota data.",
+    "auto_refresh": "Auto Refresh",
+    "auto_refresh_paused": "Paused"
   },
   "system_info": {
     "title": "Management Center Info",

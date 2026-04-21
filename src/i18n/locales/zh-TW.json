@@ -109,6 +109,7 @@
   },
   "nav": {
     "dashboard": "儀表板",
+    "dashboard_overview": "概覽",
     "basic_settings": "基本設定",
     "api_keys": "API 金鑰",
     "ai_providers": "AI 供應商",
@@ -150,7 +151,9 @@
     "caring_afternoon": "穩步推進中，繼續加油。",
     "caring_evening": "今天辛苦了，收尾工作做好喔。",
     "caring_night": "夜深了，別忘了早點休息。",
-    "system_overview": "系統概覽"
+    "system_overview": "系統概覽",
+    "account_stats": "帳戶統計",
+    "no_codex_accounts": "暫無 Codex 帳戶統計"
   },
   "basic_settings": {
     "title": "基本設定",
@@ -1375,7 +1378,9 @@
     "refresh_files": "重新整理驗證檔案",
     "refresh_files_and_quota": "重新整理驗證檔案&配額",
     "refresh_all_credentials": "重新整理全部憑證",
-    "card_idle_hint": "請使用頂部「重新整理全部憑證」按鈕取得最新配額。"
+    "card_idle_hint": "請使用頂部「重新整理全部憑證」按鈕取得最新配額。",
+    "auto_refresh": "自動重新整理",
+    "auto_refresh_paused": "暫停"
   },
   "system_info": {
     "title": "管理中心資訊",

@@ -48,6 +48,8 @@ const sidebarIcons: Record<string, ReactNode> = {
   system: <IconSidebarSystem size={18} />,
 };
 
+const DASHBOARD_OVERVIEW_PATH = '/dashboard/overview';
+
 // Header action icons - smaller size for header buttons
 const headerIconProps: SVGProps<SVGSVGElement> = {
   width: 16,
@@ -437,6 +439,10 @@ export function MainLayout() {
       pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
     const normalizedPath = trimmedPath === '/dashboard' ? '/' : trimmedPath;
 
+    if (normalizedPath === DASHBOARD_OVERVIEW_PATH) {
+      return 0.05;
+    }
+
     const aiProvidersIndex = navOrder.indexOf('/ai-providers');
     if (aiProvidersIndex !== -1) {
       if (normalizedPath === '/ai-providers') return aiProvidersIndex;
@@ -695,18 +701,59 @@ export function MainLayout() {
           className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
         >
           <div className="nav-section">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => setSidebarOpen(false)}
-                title={sidebarCollapsed ? item.label : undefined}
-              >
-                <span className="nav-icon">{item.icon}</span>
-                {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
-              </NavLink>
-            ))}
+            {navItems.map((item) => {
+              if (item.path !== '/') {
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                    onClick={() => setSidebarOpen(false)}
+                    title={sidebarCollapsed ? item.label : undefined}
+                  >
+                    <span className="nav-icon">{item.icon}</span>
+                    {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
+                  </NavLink>
+                );
+              }
+
+              const overviewLabel = t('nav.dashboard_overview', { defaultValue: 'Overview' });
+              const dashboardActive =
+                location.pathname === '/' || location.pathname === '/dashboard';
+
+              return (
+                <div
+                  key={`${item.path}-group`}
+                  className={`nav-item-group${sidebarCollapsed ? ' collapsed' : ''}`}
+                >
+                  <NavLink
+                    to={item.path}
+                    end
+                    className={() => `nav-item ${dashboardActive ? 'active' : ''}`}
+                    onClick={() => setSidebarOpen(false)}
+                    title={sidebarCollapsed ? item.label : undefined}
+                    style={sidebarCollapsed ? undefined : { flex: '1 1 auto', minWidth: 0 }}
+                  >
+                    <span className="nav-icon">{item.icon}</span>
+                    {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
+                  </NavLink>
+
+                  {!sidebarCollapsed && (
+                    <NavLink
+                      to={DASHBOARD_OVERVIEW_PATH}
+                      end
+                      onClick={() => setSidebarOpen(false)}
+                      title={overviewLabel}
+                      className={({ isActive }) =>
+                        `nav-item-overview-pill${isActive ? ' active' : ''}`
+                      }
+                    >
+                      {overviewLabel}
+                    </NavLink>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </aside>
 
