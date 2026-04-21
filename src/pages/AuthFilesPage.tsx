@@ -64,6 +64,7 @@ import {
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
 import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
+import type { AuthFileItem } from '@/types';
 import styles from './AuthFilesPage.module.scss';
 
 const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
@@ -80,6 +81,40 @@ const buildWildcardSearch = (value: string): RegExp | null => {
   if (!value.includes('*')) return null;
   const pattern = value.split('*').map(escapeWildcardSearchSegment).join('.*');
   return new RegExp(pattern, 'i');
+};
+
+const compareAuthFilesByStatus = (left: AuthFileItem, right: AuthFileItem): number => {
+  const leftDisabled = left.disabled === true;
+  const rightDisabled = right.disabled === true;
+
+  if (leftDisabled === rightDisabled) return 0;
+  return leftDisabled ? 1 : -1;
+};
+
+const compareAuthFilesByName = (left: AuthFileItem, right: AuthFileItem): number =>
+  left.name.localeCompare(right.name);
+
+const compareAuthFiles = (left: AuthFileItem, right: AuthFileItem, sortMode: AuthFilesSortMode) => {
+  const statusCompare = compareAuthFilesByStatus(left, right);
+  if (statusCompare !== 0) return statusCompare;
+
+  if (sortMode === 'default') {
+    const providerLeft = normalizeProviderKey(String(left.provider ?? left.type ?? 'unknown'));
+    const providerRight = normalizeProviderKey(String(right.provider ?? right.type ?? 'unknown'));
+    const providerCompare = providerLeft.localeCompare(providerRight);
+    if (providerCompare !== 0) return providerCompare;
+    return compareAuthFilesByName(left, right);
+  }
+
+  if (sortMode === 'az') {
+    return compareAuthFilesByName(left, right);
+  }
+
+  const leftPriority = parsePriorityValue(left.priority ?? left['priority']) ?? 0;
+  const rightPriority = parsePriorityValue(right.priority ?? right['priority']) ?? 0;
+  const priorityCompare = rightPriority - leftPriority;
+  if (priorityCompare !== 0) return priorityCompare;
+  return compareAuthFilesByName(left, right);
 };
 
 export function AuthFilesPage() {
@@ -459,23 +494,7 @@ export function AuthFilesPage() {
 
   const sorted = useMemo(() => {
     const copy = [...filtered];
-    if (sortMode === 'default') {
-      copy.sort((a, b) => {
-        const providerA = normalizeProviderKey(String(a.provider ?? a.type ?? 'unknown'));
-        const providerB = normalizeProviderKey(String(b.provider ?? b.type ?? 'unknown'));
-        const providerCompare = providerA.localeCompare(providerB);
-        if (providerCompare !== 0) return providerCompare;
-        return a.name.localeCompare(b.name);
-      });
-    } else if (sortMode === 'az') {
-      copy.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortMode === 'priority') {
-      copy.sort((a, b) => {
-        const pa = parsePriorityValue(a.priority ?? a['priority']) ?? 0;
-        const pb = parsePriorityValue(b.priority ?? b['priority']) ?? 0;
-        return pb - pa; // 高优先级排前面
-      });
-    }
+    copy.sort((a, b) => compareAuthFiles(a, b, sortMode));
     return copy;
   }, [filtered, sortMode]);
 
