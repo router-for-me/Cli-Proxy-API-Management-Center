@@ -113,6 +113,11 @@ export function LoginPage() {
     [setLanguage]
   );
 
+
+  useEffect(() => {
+    document.title = `CPAMC ${appVersion}`;
+  }, [appVersion]);
+
   useEffect(() => {
     const init = async () => {
       try {

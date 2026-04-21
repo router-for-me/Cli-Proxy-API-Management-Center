@@ -57,6 +57,12 @@ function getVersionLabel(): string {
   return `${version}+${shortCommit}`;
 }
 
+
+function getBuildStamp(): string {
+  const iso = getBuildDate();
+  return iso.replace(/[-:TZ.]/g, '').slice(0, 12);
+}
+
 function getBuildDate(): string {
   if (process.env.BUILD_DATE) {
     return process.env.BUILD_DATE;
@@ -74,7 +80,8 @@ export default defineConfig({
   ],
   define: {
     __APP_VERSION__: JSON.stringify(getVersionLabel()),
-    __APP_BUILD_DATE__: JSON.stringify(getBuildDate())
+    __APP_BUILD_DATE__: JSON.stringify(getBuildDate()),
+    __APP_BUILD_STAMP__: JSON.stringify(getBuildStamp())
   },
   resolve: {
     alias: {
@@ -94,7 +101,8 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    outDir: 'dist',
+    outDir: `dist-${getVersionLabel().replace(/[^a-zA-Z0-9._-]/g, '_')}-${getBuildStamp()}`,
+    emptyOutDir: true,
     assetsInlineLimit: 100000000,
     chunkSizeWarningLimit: 100000000,
     cssCodeSplit: false,
