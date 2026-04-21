@@ -73,6 +73,14 @@ export type UsageTimeRange = '7h' | '24h' | '7d' | 'all';
 
 const TOKENS_PER_PRICE_UNIT = 1_000_000;
 const MODEL_PRICE_STORAGE_KEY = 'cli-proxy-model-prices-v2';
+
+// Official OpenAI API pricing defaults fetched from https://openai.com/api/pricing/
+// Seed only models with explicit published prices; never overwrite user-saved values.
+const DEFAULT_MODEL_PRICES: Record<string, ModelPrice> = {
+  'gpt-5.4': { prompt: 2.5, completion: 15, cache: 0.25 },
+  'gpt-5.4-mini': { prompt: 0.75, completion: 4.5, cache: 0.075 },
+  'gpt-5.4-nano': { prompt: 0.2, completion: 1.25, cache: 0.02 }
+};
 const USAGE_ENDPOINT_METHOD_REGEX = /^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+(\S+)/i;
 const USAGE_TIME_RANGE_MS: Record<Exclude<UsageTimeRange, 'all'>, number> = {
   '7h': 7 * 60 * 60 * 1000,
@@ -738,11 +746,11 @@ export function calculateTotalCost(usageData: unknown, modelPrices: Record<strin
 export function loadModelPrices(): Record<string, ModelPrice> {
   try {
     if (typeof localStorage === 'undefined') {
-      return {};
+      return { ...DEFAULT_MODEL_PRICES };
     }
     const raw = localStorage.getItem(MODEL_PRICE_STORAGE_KEY);
     if (!raw) {
-      return {};
+      return { ...DEFAULT_MODEL_PRICES };
     }
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed)) {
@@ -775,9 +783,9 @@ export function loadModelPrices(): Record<string, ModelPrice> {
         cache
       };
     });
-    return normalized;
+    return { ...DEFAULT_MODEL_PRICES, ...normalized };
   } catch {
-    return {};
+    return { ...DEFAULT_MODEL_PRICES };
   }
 }
 
