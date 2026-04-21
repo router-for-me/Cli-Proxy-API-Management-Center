@@ -168,3 +168,14 @@ MIT
 
 另见：
 - `PROJECT_RELATIONSHIP.md`
+
+
+## 是否两个仓库都要用？
+
+通常建议：
+- 把 `luyuehm/CLIProxyAPI` 当作主仓（服务 + OpenClaw 自治层）
+- 只有在你还需要浏览器管理后台时，再配合当前仓库一起用
+
+所以默认答案是：
+- 必选主仓：`luyuehm/CLIProxyAPI`
+- 可选配套 UI 仓：当前仓库

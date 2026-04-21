@@ -169,3 +169,14 @@ This repository is the **Management Center UI** only.
 
 See also:
 - `PROJECT_RELATIONSHIP.md`
+
+
+## Do I need both repositories?
+
+Usually:
+- use `luyuehm/CLIProxyAPI` as the main service/OpenClaw repository
+- use this repository only if you also want the browser Management Center UI
+
+So the default answer is:
+- required main repo: `luyuehm/CLIProxyAPI`
+- optional companion UI repo: this repository

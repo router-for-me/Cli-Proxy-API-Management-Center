@@ -21,3 +21,19 @@ It does **not** provide the OpenClaw autonomy/governance layer by itself.
 ## If you need automation
 
 For heartbeat, self-heal, cron templates, OpenClaw installation, bootstrap docs, and fork sync maintenance, see the companion repository above.
+
+
+## Do you need both repositories?
+
+Not always.
+
+### If you only need the UI
+You can use this repository alone for Management API frontend development.
+
+### If you need a real deployable/operator setup
+You should also use the companion repository:
+- https://github.com/luyuehm/CLIProxyAPI
+
+Recommended default:
+- required main repo: `luyuehm/CLIProxyAPI`
+- optional UI companion: `luyuehm/Cli-Proxy-API-Management-Center`
