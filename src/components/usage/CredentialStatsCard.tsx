@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { memo, useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import {
@@ -6,7 +6,7 @@ import {
   buildCandidateUsageSourceIds,
   extractTotalTokens,
   formatCompactNumber,
-  normalizeAuthIndex
+  normalizeAuthIndex,
 } from '@/utils/usage';
 import { authFilesApi } from '@/services/api/authFiles';
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
@@ -42,7 +42,7 @@ interface CredentialBucket {
   totalTokens: number;
 }
 
-export function CredentialStatsCard({
+export const CredentialStatsCard = memo(function CredentialStatsCard({
   usage,
   loading,
   geminiKeys,
@@ -77,7 +77,9 @@ export function CredentialStatsCard({
         setAuthFileMap(map);
       })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Aggregate rows: all from bySource only (no separate byAuthIndex rows to avoid duplicates).
@@ -101,7 +103,11 @@ export function CredentialStatsCard({
 
       if (!source) {
         if (!authIdx) return;
-        const fallback = fallbackByAuthIndex.get(authIdx) ?? { success: 0, failure: 0, totalTokens: 0 };
+        const fallback = fallbackByAuthIndex.get(authIdx) ?? {
+          success: 0,
+          failure: 0,
+          totalTokens: 0,
+        };
         if (isFailed) {
           fallback.failure += 1;
         } else {
@@ -146,7 +152,7 @@ export function CredentialStatsCard({
       prefix: string | undefined,
       name: string,
       type: string,
-      rowKey: string,
+      rowKey: string
     ) => {
       const candidates = buildCandidateUsageSourceIds({ apiKey, prefix });
       let success = 0;
@@ -178,13 +184,35 @@ export function CredentialStatsCard({
 
     // Provider rows — one row per config, stats merged across all its candidate source IDs
     geminiKeys.forEach((c, i) =>
-      addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Gemini #${i + 1}`, 'gemini', `gemini:${i}`));
+      addConfigRow(
+        c.apiKey,
+        c.prefix,
+        c.prefix?.trim() || `Gemini #${i + 1}`,
+        'gemini',
+        `gemini:${i}`
+      )
+    );
     claudeConfigs.forEach((c, i) =>
-      addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Claude #${i + 1}`, 'claude', `claude:${i}`));
+      addConfigRow(
+        c.apiKey,
+        c.prefix,
+        c.prefix?.trim() || `Claude #${i + 1}`,
+        'claude',
+        `claude:${i}`
+      )
+    );
     codexConfigs.forEach((c, i) =>
-      addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Codex #${i + 1}`, 'codex', `codex:${i}`));
+      addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Codex #${i + 1}`, 'codex', `codex:${i}`)
+    );
     vertexConfigs.forEach((c, i) =>
-      addConfigRow(c.apiKey, c.prefix, c.prefix?.trim() || `Vertex #${i + 1}`, 'vertex', `vertex:${i}`));
+      addConfigRow(
+        c.apiKey,
+        c.prefix,
+        c.prefix?.trim() || `Vertex #${i + 1}`,
+        'vertex',
+        `vertex:${i}`
+      )
+    );
     // OpenAI compatibility providers — one row per provider, merged across all apiKey entries (prefix counted once).
     openaiProviders.forEach((provider, providerIndex) => {
       const prefix = provider.prefix;
@@ -268,16 +296,17 @@ export function CredentialStatsCard({
       }
 
       const total = bucket.success + bucket.failure;
-      const rowIndex = result.push({
-        key: `auth:${authIdx}`,
-        displayName: mapped?.name || authIdx,
-        type: mapped?.type || '',
-        success: bucket.success,
-        failure: bucket.failure,
-        total,
-        totalTokens: bucket.totalTokens,
-        successRate: (bucket.success / total) * 100
-      }) - 1;
+      const rowIndex =
+        result.push({
+          key: `auth:${authIdx}`,
+          displayName: mapped?.name || authIdx,
+          type: mapped?.type || '',
+          success: bucket.success,
+          failure: bucket.failure,
+          total,
+          totalTokens: bucket.totalTokens,
+          successRate: (bucket.success / total) * 100,
+        }) - 1;
       authIndexToRowIndex.set(authIdx, rowIndex);
     });
 
@@ -290,57 +319,59 @@ export function CredentialStatsCard({
         <div className={styles.hint}>{t('common.loading')}</div>
       ) : rows.length > 0 ? (
         <div className={styles.detailsScroll}>
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>{t('usage_stats.credential_name')}</th>
-                <th>{t('usage_stats.requests_count')}</th>
-                <th>{t('usage_stats.total_tokens')}</th>
-                <th>{t('usage_stats.success_rate')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.key}>
-                  <td className={styles.modelCell}>
-                    <span>{row.displayName}</span>
-                    {row.type && (
-                      <span className={styles.credentialType}>{row.type}</span>
-                    )}
-                  </td>
-                  <td>
-                    <span className={styles.requestCountCell}>
-                      <span>{formatCompactNumber(row.total)}</span>
-                      <span className={styles.requestBreakdown}>
-                        (<span className={styles.statSuccess}>{row.success.toLocaleString()}</span>{' '}
-                        <span className={styles.statFailure}>{row.failure.toLocaleString()}</span>)
-                      </span>
-                    </span>
-                  </td>
-                  <td>{formatCompactNumber(row.totalTokens)}</td>
-                  <td>
-                    <span
-                      className={
-                        row.successRate >= 95
-                          ? styles.statSuccess
-                          : row.successRate >= 80
-                            ? styles.statNeutral
-                            : styles.statFailure
-                      }
-                    >
-                      {row.successRate.toFixed(1)}%
-                    </span>
-                  </td>
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>{t('usage_stats.credential_name')}</th>
+                  <th>{t('usage_stats.requests_count')}</th>
+                  <th>{t('usage_stats.total_tokens')}</th>
+                  <th>{t('usage_stats.success_rate')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.key}>
+                    <td className={styles.modelCell}>
+                      <span>{row.displayName}</span>
+                      {row.type && <span className={styles.credentialType}>{row.type}</span>}
+                    </td>
+                    <td>
+                      <span className={styles.requestCountCell}>
+                        <span>{formatCompactNumber(row.total)}</span>
+                        <span className={styles.requestBreakdown}>
+                          (
+                          <span className={styles.statSuccess}>{row.success.toLocaleString()}</span>{' '}
+                          <span className={styles.statFailure}>{row.failure.toLocaleString()}</span>
+                          )
+                        </span>
+                      </span>
+                    </td>
+                    <td>{formatCompactNumber(row.totalTokens)}</td>
+                    <td>
+                      <span
+                        className={
+                          row.successRate >= 95
+                            ? styles.statSuccess
+                            : row.successRate >= 80
+                              ? styles.statNeutral
+                              : styles.statFailure
+                        }
+                      >
+                        {row.successRate.toFixed(1)}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <div className={styles.hint}>{t('usage_stats.no_data')}</div>
       )}
     </Card>
   );
-}
+});
+
+CredentialStatsCard.displayName = 'CredentialStatsCard';

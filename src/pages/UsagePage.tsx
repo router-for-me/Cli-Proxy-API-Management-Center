@@ -1,55 +1,45 @@
-import {
-  startTransition,
-  useState,
-  useMemo,
-  useCallback,
-  useDeferredValue,
-  useEffect
-} from 'react';
+import { useDeferredValue, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale,
+  Decimation,
+  Filler,
+  Legend,
+  LineElement,
   LinearScale,
   PointElement,
-  LineElement,
   Title,
   Tooltip,
-  Legend,
-  Filler
 } from 'chart.js';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { Select } from '@/components/ui/Select';
-import { DeferredRender } from '@/components/common/DeferredRender';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { useThemeStore, useConfigStore } from '@/stores';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useConfigStore, useThemeStore } from '@/stores';
 import {
-  StatCards,
-  UsageChart,
-  ChartLineSelector,
   ApiDetailsCard,
+  UsageAnalysisSection,
+  ChartLineSelector,
+  CredentialStatsCard,
   ModelStatsCard,
   PriceSettingsCard,
-  CredentialStatsCard,
-  CostTrendChart,
-  LatencyTrendChart,
-  useUsageData,
+  StatCards,
+  UsagePageHero,
+  UsageSectionIntro,
+  UsageChart,
+  useChartData,
   useSparklines,
-  useChartData
+  useUsageData,
+  useUsageViewState,
 } from '@/components/usage';
 import {
-  getModelNamesFromUsage,
-  getApiStats,
-  getModelStats,
   filterUsageByTimeRange,
-  type UsageTimeRange
+  getApiStats,
+  getModelNamesFromUsage,
+  getModelStats,
 } from '@/utils/usage';
 import styles from './UsagePage.module.scss';
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -58,100 +48,16 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  Decimation
 );
-
-const CHART_LINES_STORAGE_KEY = 'cli-proxy-usage-chart-lines-v1';
-const TIME_RANGE_STORAGE_KEY = 'cli-proxy-usage-time-range-v1';
-const DEFAULT_CHART_LINES = ['all'];
-const DEFAULT_TIME_RANGE: UsageTimeRange = '3h';
-const MAX_CHART_LINES = 5;
-const TIME_RANGE_OPTIONS: ReadonlyArray<{ value: UsageTimeRange; labelKey: string }> = [
-  { value: 'all', labelKey: 'usage_stats.range_all' },
-  { value: '3h', labelKey: 'usage_stats.range_3h' },
-  { value: '6h', labelKey: 'usage_stats.range_6h' },
-  { value: '12h', labelKey: 'usage_stats.range_12h' },
-  { value: '24h', labelKey: 'usage_stats.range_24h' },
-  { value: '7d', labelKey: 'usage_stats.range_7d' },
-];
-const HOUR_WINDOW_BY_TIME_RANGE: Record<Exclude<UsageTimeRange, 'all'>, number> = {
-  '3h': 3,
-  '6h': 6,
-  '12h': 12,
-  '24h': 24,
-  '7d': 7 * 24
-};
-
-const isUsageTimeRange = (value: unknown): value is UsageTimeRange =>
-  value === '3h' || value === '6h' || value === '12h' || value === '24h' || value === '7d' || value === 'all';
-
-const normalizeChartLines = (value: unknown, maxLines = MAX_CHART_LINES): string[] => {
-  if (!Array.isArray(value)) {
-    return DEFAULT_CHART_LINES;
-  }
-
-  const filtered = value
-    .filter((item): item is string => typeof item === 'string')
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, maxLines);
-
-  return filtered.length ? filtered : DEFAULT_CHART_LINES;
-};
-
-const loadChartLines = (): string[] => {
-  try {
-    if (typeof localStorage === 'undefined') {
-      return DEFAULT_CHART_LINES;
-    }
-    const raw = localStorage.getItem(CHART_LINES_STORAGE_KEY);
-    if (!raw) {
-      return DEFAULT_CHART_LINES;
-    }
-    return normalizeChartLines(JSON.parse(raw));
-  } catch {
-    return DEFAULT_CHART_LINES;
-  }
-};
-
-const loadTimeRange = (): UsageTimeRange => {
-  try {
-    if (typeof localStorage === 'undefined') {
-      return DEFAULT_TIME_RANGE;
-    }
-    const raw = localStorage.getItem(TIME_RANGE_STORAGE_KEY);
-    return isUsageTimeRange(raw) ? raw : DEFAULT_TIME_RANGE;
-  } catch {
-    return DEFAULT_TIME_RANGE;
-  }
-};
-
-function DeferredUsageCard({ title, caption }: { title: string; caption: string }) {
-  return (
-    <Card title={title} className={styles.deferredCard}>
-      <div className={styles.deferredChartShell} aria-hidden="true">
-        <div className={styles.deferredLegendRow}>
-          <span className={styles.deferredLegendPill} />
-          <span className={styles.deferredLegendPill} />
-          <span className={`${styles.deferredLegendPill} ${styles.deferredLegendPillWide}`} />
-        </div>
-        <div className={styles.deferredChartPlaceholder}>
-          <span className={styles.deferredChartGlow} />
-        </div>
-      </div>
-      <p className={styles.deferredCaption}>{caption}</p>
-    </Card>
-  );
-}
 
 export function UsagePage() {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
-  const isDark = resolvedTheme === 'dark';
+  const isDark = useThemeStore((state) => state.resolvedTheme === 'dark');
   const config = useConfigStore((state) => state.config);
 
-  // Data hook
   const {
     usage,
     loading,
@@ -165,99 +71,59 @@ export function UsagePage() {
     handleImportChange,
     importInputRef,
     exporting,
-    importing
+    importing,
   } = useUsageData();
+
+  const {
+    chartLines,
+    deferredChartLines,
+    deferredTimeRange,
+    handleChartLinesChange,
+    handleTimeRangeChange,
+    hourWindowHours,
+    preferredChartPeriod,
+    selectedRangeLabel,
+    timeRange,
+    timeRangeOptions,
+  } = useUsageViewState();
 
   useHeaderRefresh(loadUsage);
 
-  // Chart lines state
-  const [chartLines, setChartLines] = useState<string[]>(loadChartLines);
-  const [timeRange, setTimeRange] = useState<UsageTimeRange>(loadTimeRange);
-  const deferredTimeRange = useDeferredValue(timeRange);
-
-  const timeRangeOptions = useMemo(
-    () =>
-      TIME_RANGE_OPTIONS.map((opt) => ({
-        value: opt.value,
-        label: t(opt.labelKey)
-      })),
-    [t]
-  );
-
   const filteredUsage = useMemo(
     () => (usage ? filterUsageByTimeRange(usage, deferredTimeRange) : null),
-    [usage, deferredTimeRange]
+    [deferredTimeRange, usage]
   );
   const deferredFilteredUsage = useDeferredValue(filteredUsage);
-  const deferredChartLines = useDeferredValue(chartLines);
-  const hourWindowHours =
-    deferredTimeRange === 'all' ? undefined : HOUR_WINDOW_BY_TIME_RANGE[deferredTimeRange];
-
-  const handleChartLinesChange = useCallback((lines: string[]) => {
-    startTransition(() => {
-      setChartLines(normalizeChartLines(lines));
-    });
-  }, []);
-
-  const handleTimeRangeChange = useCallback((value: string) => {
-    startTransition(() => {
-      setTimeRange(value as UsageTimeRange);
-    });
-  }, []);
-
-  useEffect(() => {
-    try {
-      if (typeof localStorage === 'undefined') {
-        return;
-      }
-      localStorage.setItem(CHART_LINES_STORAGE_KEY, JSON.stringify(chartLines));
-    } catch {
-      // Ignore storage errors.
-    }
-  }, [chartLines]);
-
-  useEffect(() => {
-    try {
-      if (typeof localStorage === 'undefined') {
-        return;
-      }
-      localStorage.setItem(TIME_RANGE_STORAGE_KEY, timeRange);
-    } catch {
-      // Ignore storage errors.
-    }
-  }, [timeRange]);
 
   const nowMs = lastRefreshedAt?.getTime() ?? 0;
+  const allModelNames = useMemo(() => getModelNamesFromUsage(usage), [usage]);
+  const visibleModelNames = useMemo(
+    () => getModelNamesFromUsage(deferredFilteredUsage ?? usage),
+    [deferredFilteredUsage, usage]
+  );
 
-  // Sparklines hook
-  const {
-    requestsSparkline,
-    tokensSparkline,
-    rpmSparkline,
-    tpmSparkline,
-    costSparkline
-  } = useSparklines({ usage: deferredFilteredUsage, loading, nowMs });
+  const { requestsSparkline, tokensSparkline, rpmSparkline, tpmSparkline, costSparkline } =
+    useSparklines({ usage: deferredFilteredUsage, loading, nowMs });
 
-  // Chart data hook
   const {
     requestsPeriod,
-    setRequestsPeriod,
-    tokensPeriod,
-    setTokensPeriod,
     requestsChartData,
-    tokensChartData,
     requestsChartOptions,
-    tokensChartOptions
+    setRequestsPeriod,
+    setTokensPeriod,
+    tokensChartData,
+    tokensChartOptions,
+    tokensPeriod,
   } = useChartData({
     usage: deferredFilteredUsage,
     chartLines: deferredChartLines,
     isDark,
     isMobile,
-    hourWindowHours
+    hourWindowHours,
+    preferredPeriod: preferredChartPeriod,
+    allModelsLabel: t('usage_stats.chart_line_all'),
   });
 
-  // Derived data
-  const modelNames = useMemo(() => getModelNamesFromUsage(usage), [usage]);
   const apiStats = useMemo(
     () => getApiStats(deferredFilteredUsage, modelPrices),
     [deferredFilteredUsage, modelPrices]
@@ -266,8 +132,9 @@ export function UsagePage() {
     () => getModelStats(deferredFilteredUsage, modelPrices),
     [deferredFilteredUsage, modelPrices]
   );
+
   const hasPrices = Object.keys(modelPrices).length > 0;
-  const deferredChartCaption = t('usage_stats.render_on_demand');
+  const showComparePanel = visibleModelNames.length > 1;
 
   return (
     <div className={styles.container}>
@@ -280,178 +147,130 @@ export function UsagePage() {
         </div>
       )}
 
-      <div className={styles.header}>
-        <h1 className={styles.pageTitle}>{t('usage_stats.title')}</h1>
-        <div className={styles.headerActions}>
-          <div className={styles.timeRangeGroup}>
-            <span className={styles.timeRangeLabel}>{t('usage_stats.range_filter')}</span>
-            <Select
-              value={timeRange}
-              options={timeRangeOptions}
-              onChange={handleTimeRangeChange}
-              className={styles.timeRangeSelectControl}
-              ariaLabel={t('usage_stats.range_filter')}
-              fullWidth={false}
-            />
-          </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleExport}
-            loading={exporting}
-            disabled={loading || importing}
-          >
-            {t('usage_stats.export')}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleImport}
-            loading={importing}
-            disabled={loading || exporting}
-          >
-            {t('usage_stats.import')}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => void loadUsage().catch(() => {})}
-            disabled={loading || exporting || importing}
-          >
-            {loading ? t('common.loading') : t('usage_stats.refresh')}
-          </Button>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".json,application/json"
-            style={{ display: 'none' }}
-            onChange={handleImportChange}
-          />
-          {lastRefreshedAt && (
-            <span className={styles.lastRefreshed}>
-              {t('usage_stats.last_updated')}: {lastRefreshedAt.toLocaleTimeString()}
-            </span>
-          )}
-        </div>
-      </div>
+      <UsagePageHero
+        timeRange={timeRange}
+        timeRangeOptions={timeRangeOptions}
+        selectedRangeLabel={selectedRangeLabel}
+        visibleModelCount={visibleModelNames.length}
+        selectedSeriesCount={chartLines.length}
+        lastRefreshedAt={lastRefreshedAt}
+        loading={loading}
+        exporting={exporting}
+        importing={importing}
+        onTimeRangeChange={handleTimeRangeChange}
+        onExport={handleExport}
+        onImport={handleImport}
+        onRefresh={() => void loadUsage().catch(() => {})}
+        importInputRef={importInputRef}
+        onImportChange={handleImportChange}
+      />
 
       {error && <div className={styles.errorBox}>{error}</div>}
 
-      {/* Stats Overview Cards */}
-      <StatCards
+      <section className={styles.section}>
+        <UsageSectionIntro
+          title={t('usage_stats.overview_title')}
+          description={t('usage_stats.overview_desc')}
+        />
+        <StatCards
+          usage={deferredFilteredUsage}
+          loading={loading}
+          modelPrices={modelPrices}
+          nowMs={nowMs}
+          sparklines={{
+            requests: requestsSparkline,
+            tokens: tokensSparkline,
+            rpm: rpmSparkline,
+            tpm: tpmSparkline,
+            cost: costSparkline,
+          }}
+        />
+      </section>
+
+      <section className={styles.section}>
+        <UsageSectionIntro
+          title={t('usage_stats.trends_title')}
+          description={t('usage_stats.trends_desc')}
+        />
+        <div className={styles.trendGrid}>
+          {showComparePanel && (
+            <div className={styles.trendSidebar}>
+              <ChartLineSelector
+                chartLines={chartLines}
+                modelNames={visibleModelNames}
+                onChange={handleChartLinesChange}
+              />
+            </div>
+          )}
+
+          <div
+            className={[styles.trendCharts, !showComparePanel ? styles.trendChartsFull : '']
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <UsageChart
+              title={t('usage_stats.requests_trend')}
+              period={requestsPeriod}
+              onPeriodChange={setRequestsPeriod}
+              chartData={requestsChartData}
+              chartOptions={requestsChartOptions}
+              loading={loading}
+              isMobile={isMobile}
+              emptyText={t('usage_stats.no_data')}
+              tone="neutral"
+            />
+            <UsageChart
+              title={t('usage_stats.tokens_trend')}
+              period={tokensPeriod}
+              onPeriodChange={setTokensPeriod}
+              chartData={tokensChartData}
+              chartOptions={tokensChartOptions}
+              loading={loading}
+              isMobile={isMobile}
+              emptyText={t('usage_stats.no_data')}
+              tone="violet"
+            />
+          </div>
+        </div>
+      </section>
+
+      <UsageAnalysisSection
         usage={deferredFilteredUsage}
         loading={loading}
+        isDark={isDark}
+        isMobile={isMobile}
+        hourWindowHours={hourWindowHours}
         modelPrices={modelPrices}
-        nowMs={nowMs}
-        sparklines={{
-          requests: requestsSparkline,
-          tokens: tokensSparkline,
-          rpm: rpmSparkline,
-          tpm: tpmSparkline,
-          cost: costSparkline
-        }}
       />
 
-      {/* Chart Line Selection */}
-      {modelNames.length > 1 && (
-        <ChartLineSelector
-          chartLines={chartLines}
-          modelNames={modelNames}
-          maxLines={MAX_CHART_LINES}
-          onChange={handleChartLinesChange}
+      <section className={styles.section}>
+        <UsageSectionIntro
+          title={t('usage_stats.details_title')}
+          description={t('usage_stats.details_desc')}
         />
-      )}
+        <div className={styles.detailsGrid}>
+          <ApiDetailsCard apiStats={apiStats} loading={loading} hasPrices={hasPrices} />
+          <ModelStatsCard modelStats={modelStats} loading={loading} hasPrices={hasPrices} />
+        </div>
+      </section>
 
-      {/* Charts Grid */}
-      <div className={styles.chartsGrid}>
-        <UsageChart
-          title={t('usage_stats.requests_trend')}
-          period={requestsPeriod}
-          onPeriodChange={setRequestsPeriod}
-          chartData={requestsChartData}
-          chartOptions={requestsChartOptions}
+      <div className={styles.supportStack}>
+        <CredentialStatsCard
+          usage={deferredFilteredUsage}
           loading={loading}
-          isMobile={isMobile}
-          emptyText={t('usage_stats.no_data')}
+          geminiKeys={config?.geminiApiKeys || []}
+          claudeConfigs={config?.claudeApiKeys || []}
+          codexConfigs={config?.codexApiKeys || []}
+          vertexConfigs={config?.vertexApiKeys || []}
+          openaiProviders={config?.openaiCompatibility || []}
         />
-        <UsageChart
-          title={t('usage_stats.tokens_trend')}
-          period={tokensPeriod}
-          onPeriodChange={setTokensPeriod}
-          chartData={tokensChartData}
-          chartOptions={tokensChartOptions}
-          loading={loading}
-          isMobile={isMobile}
-          emptyText={t('usage_stats.no_data')}
+
+        <PriceSettingsCard
+          modelNames={allModelNames}
+          modelPrices={modelPrices}
+          onPricesChange={setModelPrices}
         />
       </div>
-
-      <div className={styles.secondaryChartsGrid}>
-        {/* Latency Trend Chart */}
-        <DeferredRender
-          className={styles.deferredBlock}
-          minHeight={380}
-          placeholder={
-            <DeferredUsageCard
-              title={t('usage_stats.latency_trend')}
-              caption={deferredChartCaption}
-            />
-          }
-        >
-          <LatencyTrendChart
-            usage={deferredFilteredUsage}
-            loading={loading}
-            isDark={isDark}
-            isMobile={isMobile}
-            hourWindowHours={hourWindowHours}
-          />
-        </DeferredRender>
-
-        {/* Cost Trend Chart */}
-        <DeferredRender
-          className={styles.deferredBlock}
-          minHeight={380}
-          placeholder={
-            <DeferredUsageCard
-              title={t('usage_stats.cost_trend')}
-              caption={deferredChartCaption}
-            />
-          }
-        >
-          <CostTrendChart
-            usage={deferredFilteredUsage}
-            loading={loading}
-            isDark={isDark}
-            isMobile={isMobile}
-            modelPrices={modelPrices}
-            hourWindowHours={hourWindowHours}
-          />
-        </DeferredRender>
-      </div>
-
-      {/* Details Grid */}
-      <div className={styles.detailsGrid}>
-        <ApiDetailsCard apiStats={apiStats} loading={loading} hasPrices={hasPrices} />
-        <ModelStatsCard modelStats={modelStats} loading={loading} hasPrices={hasPrices} />
-      </div>
-
-      {/* Credential Stats */}
-      <CredentialStatsCard
-        usage={deferredFilteredUsage}
-        loading={loading}
-        geminiKeys={config?.geminiApiKeys || []}
-        claudeConfigs={config?.claudeApiKeys || []}
-        codexConfigs={config?.codexApiKeys || []}
-        vertexConfigs={config?.vertexApiKeys || []}
-        openaiProviders={config?.openaiCompatibility || []}
-      />
-
-      {/* Price Settings */}
-      <PriceSettingsCard
-        modelNames={modelNames}
-        modelPrices={modelPrices}
-        onPricesChange={setModelPrices}
-      />
     </div>
   );
 }

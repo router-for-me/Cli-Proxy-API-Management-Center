@@ -13,7 +13,7 @@ export const sparklineOptions: ChartOptions<'line'> = {
   maintainAspectRatio: false,
   plugins: { legend: { display: false }, tooltip: { enabled: false } },
   scales: { x: { display: false }, y: { display: false } },
-  elements: { line: { tension: 0.45 }, point: { radius: 0 } }
+  elements: { line: { tension: 0.45 }, point: { radius: 0 } },
 };
 
 export interface ChartConfigOptions {
@@ -30,11 +30,13 @@ export function buildChartOptions({
   period,
   labels,
   isDark,
-  isMobile
+  isMobile,
 }: ChartConfigOptions): ChartOptions<'line'> {
-  const pointRadius = isMobile ? 0 : period === 'hour' ? 2 : 2.5;
+  const isDenseSeries = labels.length > (isMobile ? 36 : 72);
+  const pointRadius = isDenseSeries ? 0 : isMobile ? 0 : period === 'hour' ? 2 : 2.5;
   const tickFontSize = isMobile ? 10 : 11;
   const maxTickLabelCount = isMobile ? (period === 'hour' ? 7 : 5) : period === 'hour' ? 10 : 8;
+  const shouldDecimate = labels.length > (isMobile ? 80 : 120);
   const yGridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(17, 24, 39, 0.08)';
   const xGridColor = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(17, 24, 39, 0.04)';
   const tickColor = isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(17, 24, 39, 0.7)';
@@ -46,20 +48,32 @@ export function buildChartOptions({
   return {
     responsive: true,
     maintainAspectRatio: false,
+    normalized: true,
+    animation: isDenseSeries
+      ? false
+      : {
+          duration: 220,
+          easing: 'easeOutQuart',
+        },
     interaction: {
       mode: 'index',
-      intersect: false
+      intersect: false,
     },
     layout: {
       padding: {
         top: 8,
         right: 10,
         bottom: 0,
-        left: 4
-      }
+        left: 4,
+      },
     },
     plugins: {
       legend: { display: false },
+      decimation: {
+        enabled: shouldDecimate,
+        algorithm: 'min-max',
+        threshold: isMobile ? 80 : 120,
+      },
       tooltip: {
         backgroundColor: tooltipBg,
         titleColor: tooltipTitle,
@@ -71,21 +85,22 @@ export function buildChartOptions({
         caretPadding: 10,
         boxPadding: 4,
         displayColors: true,
-        usePointStyle: true
-      }
+        usePointStyle: true,
+      },
     },
     scales: {
       x: {
         grid: {
           color: xGridColor,
           drawTicks: false,
-          tickLength: 0
+          tickLength: 0,
         },
         border: { display: false },
         ticks: {
           color: tickColor,
           font: { size: tickFontSize, weight: 600 },
           padding: 8,
+          sampleSize: Math.max(maxTickLabelCount, 4),
           maxRotation: 0,
           minRotation: 0,
           autoSkip: true,
@@ -93,7 +108,11 @@ export function buildChartOptions({
           callback: (value) => {
             const index = typeof value === 'number' ? value : Number(value);
             const raw =
-              Number.isFinite(index) && labels[index] ? labels[index] : typeof value === 'string' ? value : '';
+              Number.isFinite(index) && labels[index]
+                ? labels[index]
+                : typeof value === 'string'
+                  ? value
+                  : '';
 
             if (period === 'hour') {
               const [md, time] = raw.split(' ');
@@ -111,23 +130,24 @@ export function buildChartOptions({
               }
             }
             return raw;
-          }
-        }
+          },
+        },
       },
       y: {
         beginAtZero: true,
+        grace: '6%',
         grid: {
           color: yGridColor,
           drawTicks: false,
-          tickLength: 0
+          tickLength: 0,
         },
         border: { display: false },
         ticks: {
           color: tickColor,
           font: { size: tickFontSize, weight: 600 },
-          padding: 10
-        }
-      }
+          padding: 10,
+        },
+      },
     },
     elements: {
       line: {
@@ -135,16 +155,16 @@ export function buildChartOptions({
         borderWidth: isMobile ? 2 : 2.4,
         borderCapStyle: 'round',
         borderJoinStyle: 'round',
-        cubicInterpolationMode: 'monotone'
+        cubicInterpolationMode: 'monotone',
       },
       point: {
         borderWidth: 2,
         radius: pointRadius,
-        hoverRadius: 5,
+        hoverRadius: isDenseSeries ? 4 : 5,
         hoverBorderWidth: 2.5,
-        hitRadius: 16
-      }
-    }
+        hitRadius: isDenseSeries ? 10 : 16,
+      },
+    },
   };
 }
 

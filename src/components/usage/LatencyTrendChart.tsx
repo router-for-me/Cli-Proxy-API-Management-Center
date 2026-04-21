@@ -1,17 +1,11 @@
-import { useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScriptableContext } from 'chart.js';
-import { Line } from 'react-chartjs-2';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import {
-  buildHourlyLatencySeries,
-  buildDailyLatencySeries,
-  formatLatencyMs
-} from '@/utils/usage';
-import { buildChartOptions, getHourChartMinWidth } from '@/utils/usage/chartConfig';
+import { buildHourlyLatencySeries, buildDailyLatencySeries, formatLatencyMs } from '@/utils/usage';
+import { buildChartOptions } from '@/utils/usage/chartConfig';
 import type { UsagePayload } from './hooks/useUsageData';
-import styles from '@/pages/UsagePage.module.scss';
+import { getAdaptiveChartPeriod } from './chartPeriod';
+import { UsageChartPanel } from './UsageChartPanel';
 
 export interface LatencyTrendChartProps {
   usage: UsagePayload | null;
@@ -37,15 +31,20 @@ function buildGradient(ctx: ScriptableContext<'line'>) {
   return gradient;
 }
 
-export function LatencyTrendChart({
+export const LatencyTrendChart = memo(function LatencyTrendChart({
   usage,
   loading,
   isDark,
   isMobile,
-  hourWindowHours
+  hourWindowHours,
 }: LatencyTrendChartProps) {
   const { t } = useTranslation();
-  const [period, setPeriod] = useState<'hour' | 'day'>('hour');
+  const preferredPeriod = getAdaptiveChartPeriod(hourWindowHours);
+  const [period, setPeriod] = useState<'hour' | 'day'>(preferredPeriod);
+
+  useEffect(() => {
+    setPeriod(preferredPeriod);
+  }, [preferredPeriod]);
 
   const { chartData, chartOptions, hasData, summary } = useMemo(() => {
     if (!usage) {
@@ -53,7 +52,7 @@ export function LatencyTrendChart({
         chartData: { labels: [], datasets: [] },
         chartOptions: {},
         hasData: false,
-        summary: { latest: 0, peak: 0, average: 0 }
+        summary: { latest: 0, peak: 0, average: 0 },
       };
     }
 
@@ -80,9 +79,9 @@ export function LatencyTrendChart({
           pointBorderColor: LATENCY_COLOR,
           fill: true,
           tension: 0.35,
-          spanGaps: false
-        }
-      ]
+          spanGaps: false,
+        },
+      ],
     };
 
     const baseOptions = buildChartOptions({ period, labels: series.labels, isDark, isMobile });
@@ -93,80 +92,44 @@ export function LatencyTrendChart({
         y: {
           ...baseOptions.scales?.y,
           ticks: {
-            ...(baseOptions.scales?.y && 'ticks' in baseOptions.scales.y ? baseOptions.scales.y.ticks : {}),
-            callback: (value: string | number) => formatLatencyMs(Number(value))
-          }
-        }
-      }
+            ...(baseOptions.scales?.y && 'ticks' in baseOptions.scales.y
+              ? baseOptions.scales.y.ticks
+              : {}),
+            callback: (value: string | number) => formatLatencyMs(Number(value)),
+          },
+        },
+      },
     };
 
     return {
       chartData: data,
       chartOptions: options,
       hasData: series.hasData,
-      summary: { latest, peak, average }
+      summary: { latest, peak, average },
     };
   }, [hourWindowHours, isDark, isMobile, period, t, usage]);
 
   const summaryItems = [
     { label: t('usage_stats.chart_latest'), value: formatLatencyMs(summary.latest) },
     { label: t('usage_stats.chart_peak'), value: formatLatencyMs(summary.peak) },
-    { label: t('usage_stats.avg_latency'), value: formatLatencyMs(summary.average) }
+    { label: t('usage_stats.avg_latency'), value: formatLatencyMs(summary.average) },
   ];
 
   return (
-    <Card
-      className={`${styles.chartCard} ${styles.secondaryChartCard}`}
+    <UsageChartPanel
       title={t('usage_stats.latency_trend')}
-      extra={
-        <div className={styles.periodButtons}>
-          <Button
-            variant={period === 'hour' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setPeriod('hour')}
-          >
-            {t('usage_stats.by_hour')}
-          </Button>
-          <Button
-            variant={period === 'day' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setPeriod('day')}
-          >
-            {t('usage_stats.by_day')}
-          </Button>
-        </div>
-      }
-    >
-      {loading ? (
-        <div className={styles.hint}>{t('common.loading')}</div>
-      ) : !hasData ? (
-        <div className={styles.hint}>{t('usage_stats.latency_no_data')}</div>
-      ) : (
-        <div className={styles.chartWrapper}>
-          <div className={styles.chartSummaryRow}>
-            {summaryItems.map((item) => (
-              <div key={item.label} className={styles.chartSummaryPill}>
-                <span className={styles.chartSummaryLabel}>{item.label}</span>
-                <span className={styles.chartSummaryValue}>{item.value}</span>
-              </div>
-            ))}
-          </div>
-          <div className={styles.chartArea}>
-            <div className={styles.chartScroller}>
-              <div
-                className={styles.chartCanvas}
-                style={
-                  period === 'hour'
-                    ? { minWidth: getHourChartMinWidth(chartData.labels.length, isMobile) }
-                    : undefined
-                }
-              >
-                <Line data={chartData} options={chartOptions} />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </Card>
+      period={period}
+      onPeriodChange={setPeriod}
+      chartData={chartData}
+      chartOptions={chartOptions}
+      loading={loading}
+      isMobile={isMobile}
+      emptyText={t('usage_stats.latency_no_data')}
+      summaryItems={summaryItems}
+      tone="success"
+      hasData={hasData}
+    />
   );
-}
+});
+
+LatencyTrendChart.displayName = 'LatencyTrendChart';

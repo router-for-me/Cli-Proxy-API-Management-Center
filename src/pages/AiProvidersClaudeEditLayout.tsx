@@ -21,8 +21,6 @@ import type { ClaudeEditBaseline } from '@/stores/useClaudeEditDraftStore';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
-type TestStatus = 'idle' | 'loading' | 'success' | 'error';
-
 export type ClaudeEditOutletContext = {
   hasIndexParam: boolean;
   editIndex: number | null;
@@ -35,10 +33,6 @@ export type ClaudeEditOutletContext = {
   setForm: Dispatch<SetStateAction<ProviderFormState>>;
   testModel: string;
   setTestModel: Dispatch<SetStateAction<string>>;
-  testStatus: TestStatus;
-  setTestStatus: Dispatch<SetStateAction<TestStatus>>;
-  testMessage: string;
-  setTestMessage: Dispatch<SetStateAction<string>>;
   availableModels: string[];
   handleBack: () => void;
   handleSave: () => Promise<void>;
@@ -134,7 +128,7 @@ export function AiProvidersClaudeEditLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { showNotification } = useNotificationStore();
+  const showNotification = useNotificationStore((state) => state.showNotification);
 
   const params = useParams<{ index?: string }>();
   const hasIndexParam = typeof params.index === 'string';
@@ -167,13 +161,9 @@ export function AiProvidersClaudeEditLayout() {
   const setDraftBaseline = useClaudeEditDraftStore((state) => state.setDraftBaseline);
   const setDraftForm = useClaudeEditDraftStore((state) => state.setDraftForm);
   const setDraftTestModel = useClaudeEditDraftStore((state) => state.setDraftTestModel);
-  const setDraftTestStatus = useClaudeEditDraftStore((state) => state.setDraftTestStatus);
-  const setDraftTestMessage = useClaudeEditDraftStore((state) => state.setDraftTestMessage);
 
   const form = draft?.form ?? buildEmptyForm();
   const testModel = draft?.testModel ?? '';
-  const testStatus = draft?.testStatus ?? 'idle';
-  const testMessage = draft?.testMessage ?? '';
 
   const setForm: Dispatch<SetStateAction<ProviderFormState>> = useCallback(
     (action) => {
@@ -187,20 +177,6 @@ export function AiProvidersClaudeEditLayout() {
       setDraftTestModel(draftKey, action);
     },
     [draftKey, setDraftTestModel]
-  );
-
-  const setTestStatus: Dispatch<SetStateAction<TestStatus>> = useCallback(
-    (action) => {
-      setDraftTestStatus(draftKey, action);
-    },
-    [draftKey, setDraftTestStatus]
-  );
-
-  const setTestMessage: Dispatch<SetStateAction<string>> = useCallback(
-    (action) => {
-      setDraftTestMessage(draftKey, action);
-    },
-    [draftKey, setDraftTestMessage]
   );
 
   const initialData = useMemo(() => {
@@ -273,8 +249,6 @@ export function AiProvidersClaudeEditLayout() {
         baseline,
         form: seededForm,
         testModel: available[0] || '',
-        testStatus: 'idle',
-        testMessage: '',
       });
       return;
     }
@@ -284,8 +258,6 @@ export function AiProvidersClaudeEditLayout() {
       baseline: buildClaudeBaseline(emptyForm),
       form: emptyForm,
       testModel: '',
-      testStatus: 'idle',
-      testMessage: '',
     });
   }, [draft?.initialized, draftKey, initDraft, initialData, loading]);
 
@@ -371,18 +343,14 @@ export function AiProvidersClaudeEditLayout() {
     if (availableModels.length === 0) {
       if (testModel) {
         setTestModel('');
-        setTestStatus('idle');
-        setTestMessage('');
       }
       return;
     }
 
     if (!testModel || !availableModels.includes(testModel)) {
       setTestModel(availableModels[0]);
-      setTestStatus('idle');
-      setTestMessage('');
     }
-  }, [availableModels, resolvedLoading, setTestMessage, setTestModel, setTestStatus, testModel]);
+  }, [availableModels, resolvedLoading, setTestModel, testModel]);
 
   const mergeDiscoveredModels = useCallback(
     (selectedModels: ModelInfo[]) => {
@@ -506,10 +474,6 @@ export function AiProvidersClaudeEditLayout() {
         setForm,
         testModel,
         setTestModel,
-        testStatus,
-        setTestStatus,
-        testMessage,
-        setTestMessage,
         availableModels,
         handleBack,
         handleSave,

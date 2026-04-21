@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -20,6 +20,7 @@ import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 const CLAUDE_TEST_TIMEOUT_MS = 30_000;
 const DEFAULT_ANTHROPIC_VERSION = '2023-06-01';
+type ConnectivityTestStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const getErrorMessage = (err: unknown) => {
   if (err instanceof Error) return err.message;
@@ -44,7 +45,7 @@ const resolveBearerTokenFromAuthorization = (headers: Record<string, string>): s
 export function AiProvidersClaudeEditPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { showNotification } = useNotificationStore();
+  const showNotification = useNotificationStore((state) => state.showNotification);
   const {
     hasIndexParam,
     invalidIndexParam,
@@ -56,10 +57,6 @@ export function AiProvidersClaudeEditPage() {
     setForm,
     testModel,
     setTestModel,
-    testStatus,
-    setTestStatus,
-    testMessage,
-    setTestMessage,
     availableModels,
     handleBack,
     handleSave,
@@ -71,6 +68,8 @@ export function AiProvidersClaudeEditPage() {
 
   const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
   const [isTesting, setIsTesting] = useState(false);
+  const [testStatus, setTestStatus] = useState<ConnectivityTestStatus>('idle');
+  const [testMessage, setTestMessage] = useState('');
   const lastCloakConfigRef = useRef<typeof form.cloak>(null);
 
   useEffect(() => {
@@ -146,8 +145,10 @@ export function AiProvidersClaudeEditPage() {
       return;
     }
     previousConnectivityConfigRef.current = connectivityConfigSignature;
-    setTestStatus('idle');
-    setTestMessage('');
+    startTransition(() => {
+      setTestStatus('idle');
+      setTestMessage('');
+    });
   }, [connectivityConfigSignature, setTestMessage, setTestStatus]);
 
   const openClaudeModelDiscovery = () => {

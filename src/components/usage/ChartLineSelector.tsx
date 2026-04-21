@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import styles from '@/pages/UsagePage.module.scss';
+import { MAX_USAGE_CHART_LINES } from './hooks/useUsageViewState';
+import styles from './UsageCharts.module.scss';
 
 export interface ChartLineSelectorProps {
   chartLines: string[];
@@ -12,20 +13,23 @@ export interface ChartLineSelectorProps {
   onChange: (lines: string[]) => void;
 }
 
-export function ChartLineSelector({
+export const ChartLineSelector = memo(function ChartLineSelector({
   chartLines,
   modelNames,
-  maxLines = 9,
-  onChange
+  maxLines = MAX_USAGE_CHART_LINES,
+  onChange,
 }: ChartLineSelectorProps) {
   const { t } = useTranslation();
+  const hasUnusedModel = modelNames.some((model) => !chartLines.includes(model));
+  const canAddLine =
+    chartLines.length < maxLines && (hasUnusedModel || !chartLines.includes('all'));
 
   const handleAdd = () => {
-    if (chartLines.length >= maxLines) return;
+    if (!canAddLine) return;
     const unusedModel = modelNames.find((m) => !chartLines.includes(m));
     if (unusedModel) {
       onChange([...chartLines, unusedModel]);
-    } else {
+    } else if (!chartLines.includes('all')) {
       onChange([...chartLines, 'all']);
     }
   };
@@ -46,7 +50,7 @@ export function ChartLineSelector({
   const options = useMemo(
     () => [
       { value: 'all', label: t('usage_stats.chart_line_all') },
-      ...modelNames.map((name) => ({ value: name, label: name }))
+      ...modelNames.map((name) => ({ value: name, label: name })),
     ],
     [modelNames, t]
   );
@@ -60,12 +64,7 @@ export function ChartLineSelector({
           <span className={styles.chartLineCount}>
             {chartLines.length}/{maxLines}
           </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleAdd}
-            disabled={chartLines.length >= maxLines}
-          >
+          <Button variant="secondary" size="sm" onClick={handleAdd} disabled={!canAddLine}>
             {t('usage_stats.chart_line_add')}
           </Button>
         </div>
@@ -95,7 +94,11 @@ export function ChartLineSelector({
           </div>
         ))}
       </div>
-      <p className={styles.chartLineHint}>{t('usage_stats.chart_line_hint')}</p>
+      <p className={styles.chartLineHint}>
+        {t('usage_stats.chart_line_hint', { count: maxLines })}
+      </p>
     </Card>
   );
-}
+});
+
+ChartLineSelector.displayName = 'ChartLineSelector';

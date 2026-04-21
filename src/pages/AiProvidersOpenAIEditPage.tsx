@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useRef, useState } from 'react';
+import { startTransition, useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
@@ -15,16 +15,40 @@ import type { ApiKeyEntry } from '@/types';
 import { buildHeaderObject, hasHeader } from '@/utils/headers';
 import { buildApiKeyEntry, buildOpenAIChatCompletionsEndpoint } from '@/components/providers/utils';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
-import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 const OPENAI_TEST_TIMEOUT_MS = 30_000;
+type ConnectivityTestStatus = 'idle' | 'loading' | 'success' | 'error';
+type KeyTestStatus = {
+  status: ConnectivityTestStatus;
+  message: string;
+};
 
 const getErrorMessage = (err: unknown) => {
   if (err instanceof Error) return err.message;
   if (typeof err === 'string') return err;
   return '';
+};
+
+const buildIdleKeyTestStatus = (): KeyTestStatus => ({ status: 'idle', message: '' });
+
+const buildIdleKeyTestStatuses = (count: number): KeyTestStatus[] =>
+  Array.from({ length: count }, buildIdleKeyTestStatus);
+
+const updateKeyTestStatuses = (
+  prev: KeyTestStatus[],
+  keyIndex: number,
+  status: KeyTestStatus,
+  count: number
+) => {
+  const nextLength = Math.max(prev.length, keyIndex + 1, count);
+  const next =
+    prev.length >= nextLength
+      ? [...prev]
+      : [...prev, ...buildIdleKeyTestStatuses(nextLength - prev.length)];
+  next[keyIndex] = status;
+  return next;
 };
 
 // Status icon components
@@ -96,7 +120,7 @@ function StatusIcon({ status }: { status: KeyTestStatus['status'] }) {
 export function AiProvidersOpenAIEditPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { showNotification } = useNotificationStore();
+  const showNotification = useNotificationStore((state) => state.showNotification);
   const {
     hasIndexParam,
     invalidIndexParam,
@@ -108,13 +132,6 @@ export function AiProvidersOpenAIEditPage() {
     setForm,
     testModel,
     setTestModel,
-    testStatus,
-    setTestStatus,
-    testMessage,
-    setTestMessage,
-    keyTestStatuses,
-    setDraftKeyTestStatus,
-    resetDraftKeyTestStatuses,
     availableModels,
     handleBack,
     handleSave,
@@ -126,6 +143,11 @@ export function AiProvidersOpenAIEditPage() {
 
   const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
   const [isTestingKeys, setIsTestingKeys] = useState(false);
+  const [testStatus, setTestStatus] = useState<ConnectivityTestStatus>('idle');
+  const [testMessage, setTestMessage] = useState('');
+  const [keyTestStatuses, setKeyTestStatuses] = useState<KeyTestStatus[]>(() =>
+    buildIdleKeyTestStatuses(form.apiKeyEntries.length)
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -140,6 +162,29 @@ export function AiProvidersOpenAIEditPage() {
   const canSave = !disableControls && !loading && !saving && !invalidIndexParam && !invalidIndex && !isTestingKeys;
   const hasConfiguredModels = form.modelEntries.some((entry) => entry.name.trim());
   const hasTestableKeys = form.apiKeyEntries.some((entry) => entry.apiKey?.trim());
+  const resetKeyTestStatuses = useCallback((count: number) => {
+    startTransition(() => {
+      setKeyTestStatuses(buildIdleKeyTestStatuses(count));
+    });
+  }, []);
+  const setKeyTestStatus = useCallback(
+    (keyIndex: number, status: KeyTestStatus) => {
+      startTransition(() => {
+        setKeyTestStatuses((prev) =>
+          updateKeyTestStatuses(prev, keyIndex, status, form.apiKeyEntries.length)
+        );
+      });
+    },
+    [form.apiKeyEntries.length]
+  );
+  const clearConnectivityFeedback = useCallback(
+    (keyCount: number) => {
+      setTestStatus('idle');
+      setTestMessage('');
+      resetKeyTestStatuses(keyCount);
+    },
+    [resetKeyTestStatuses]
+  );
   const modelSelectOptions = useMemo(() => {
     const seen = new Set<string>();
     return form.modelEntries.reduce<Array<{ value: string; label: string }>>((acc, entry) => {
@@ -170,16 +215,8 @@ export function AiProvidersOpenAIEditPage() {
       return;
     }
     previousConnectivityConfigRef.current = connectivityConfigSignature;
-    resetDraftKeyTestStatuses(form.apiKeyEntries.length);
-    setTestStatus('idle');
-    setTestMessage('');
-  }, [
-    connectivityConfigSignature,
-    form.apiKeyEntries.length,
-    resetDraftKeyTestStatuses,
-    setTestStatus,
-    setTestMessage,
-  ]);
+    clearConnectivityFeedback(form.apiKeyEntries.length);
+  }, [clearConnectivityFeedback, connectivityConfigSignature, form.apiKeyEntries.length]);
 
   // Test a single key by index
   const runSingleKeyTest = useCallback(
@@ -198,7 +235,10 @@ export function AiProvidersOpenAIEditPage() {
 
       const keyEntry = form.apiKeyEntries[keyIndex];
       if (!keyEntry?.apiKey?.trim()) {
-        setDraftKeyTestStatus(keyIndex, { status: 'error', message: t('notification.openai_test_key_required') });
+        setKeyTestStatus(keyIndex, {
+          status: 'error',
+          message: t('notification.openai_test_key_required'),
+        });
         return false;
       }
 
@@ -218,7 +258,7 @@ export function AiProvidersOpenAIEditPage() {
       }
 
       // Set loading state for this key
-      setDraftKeyTestStatus(keyIndex, { status: 'loading', message: '' });
+      setKeyTestStatus(keyIndex, { status: 'loading', message: '' });
 
       try {
         const result = await apiCallApi.request(
@@ -240,7 +280,7 @@ export function AiProvidersOpenAIEditPage() {
           throw new Error(getApiCallErrorMessage(result));
         }
 
-        setDraftKeyTestStatus(keyIndex, { status: 'success', message: '' });
+        setKeyTestStatus(keyIndex, { status: 'success', message: '' });
         return true;
       } catch (err: unknown) {
         const message = getErrorMessage(err);
@@ -252,11 +292,11 @@ export function AiProvidersOpenAIEditPage() {
         const errorMessage = isTimeout
           ? t('ai_providers.openai_test_timeout', { seconds: OPENAI_TEST_TIMEOUT_MS / 1000 })
           : message;
-        setDraftKeyTestStatus(keyIndex, { status: 'error', message: errorMessage });
+        setKeyTestStatus(keyIndex, { status: 'error', message: errorMessage });
         return false;
       }
     },
-    [form.baseUrl, form.apiKeyEntries, form.headers, testModel, availableModels, t, setDraftKeyTestStatus, showNotification]
+    [form.baseUrl, form.apiKeyEntries, form.headers, testModel, availableModels, t, setKeyTestStatus, showNotification]
   );
 
   const testSingleKey = useCallback(
@@ -317,7 +357,7 @@ export function AiProvidersOpenAIEditPage() {
     setIsTestingKeys(true);
     setTestStatus('loading');
     setTestMessage(t('ai_providers.openai_test_running'));
-    resetDraftKeyTestStatuses(form.apiKeyEntries.length);
+    resetKeyTestStatuses(form.apiKeyEntries.length);
 
     try {
       const results = await Promise.all(validKeyIndexes.map((index) => runSingleKeyTest(index)));
@@ -353,7 +393,7 @@ export function AiProvidersOpenAIEditPage() {
     t,
     setTestStatus,
     setTestMessage,
-    resetDraftKeyTestStatuses,
+    resetKeyTestStatuses,
     runSingleKeyTest,
     showNotification,
   ]);
@@ -373,7 +413,7 @@ export function AiProvidersOpenAIEditPage() {
     const updateEntry = (idx: number, field: keyof ApiKeyEntry, value: string) => {
       const next = list.map((entry, i) => (i === idx ? { ...entry, [field]: value } : entry));
       setForm((prev) => ({ ...prev, apiKeyEntries: next }));
-      setDraftKeyTestStatus(idx, { status: 'idle', message: '' });
+      setKeyTestStatus(idx, buildIdleKeyTestStatus());
       setTestStatus('idle');
       setTestMessage('');
     };
@@ -385,16 +425,12 @@ export function AiProvidersOpenAIEditPage() {
         ...prev,
         apiKeyEntries: next.length ? next : [buildApiKeyEntry()],
       }));
-      resetDraftKeyTestStatuses(nextLength);
-      setTestStatus('idle');
-      setTestMessage('');
+      clearConnectivityFeedback(nextLength);
     };
 
     const addEntry = () => {
       setForm((prev) => ({ ...prev, apiKeyEntries: [...list, buildApiKeyEntry()] }));
-      resetDraftKeyTestStatuses(list.length + 1);
-      setTestStatus('idle');
-      setTestMessage('');
+      clearConnectivityFeedback(list.length + 1);
     };
 
     return (
@@ -643,8 +679,7 @@ export function AiProvidersOpenAIEditPage() {
                     options={modelSelectOptions}
                     onChange={(value) => {
                       setTestModel(value);
-                      setTestStatus('idle');
-                      setTestMessage('');
+                      clearConnectivityFeedback(form.apiKeyEntries.length);
                     }}
                     placeholder={
                       availableModels.length

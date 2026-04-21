@@ -1,11 +1,12 @@
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ChartOptions } from 'chart.js';
-import { Line } from 'react-chartjs-2';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import type { ChartData } from '@/utils/usage';
-import { getHourChartMinWidth } from '@/utils/usage/chartConfig';
-import styles from '@/pages/UsagePage.module.scss';
+import type { ChartOptions } from 'chart.js';
+import {
+  UsageChartPanel,
+  type UsageChartSummaryItem,
+  type UsageChartTone,
+} from './UsageChartPanel';
 
 export interface UsageChartProps {
   title: string;
@@ -16,9 +17,10 @@ export interface UsageChartProps {
   loading: boolean;
   isMobile: boolean;
   emptyText: string;
+  tone?: UsageChartTone;
 }
 
-export function UsageChart({
+export const UsageChart = memo(function UsageChart({
   title,
   period,
   onPeriodChange,
@@ -26,86 +28,33 @@ export function UsageChart({
   chartOptions,
   loading,
   isMobile,
-  emptyText
+  emptyText,
+  tone = 'neutral',
 }: UsageChartProps) {
   const { t } = useTranslation();
-  const showLegend = chartData.datasets.length > 1;
-  const summaryItems = [
+  const summaryItems: UsageChartSummaryItem[] = [
     { label: t('usage_stats.chart_series'), value: chartData.datasets.length.toString() },
     { label: t('usage_stats.chart_points'), value: chartData.labels.length.toString() },
     {
       label: t('usage_stats.chart_view'),
-      value: period === 'hour' ? t('usage_stats.by_hour') : t('usage_stats.by_day')
-    }
+      value: period === 'hour' ? t('usage_stats.by_hour') : t('usage_stats.by_day'),
+    },
   ];
 
   return (
-    <Card
-      className={styles.chartCard}
+    <UsageChartPanel
       title={title}
-      extra={
-        <div className={styles.periodButtons}>
-          <Button
-            variant={period === 'hour' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => onPeriodChange('hour')}
-          >
-            {t('usage_stats.by_hour')}
-          </Button>
-          <Button
-            variant={period === 'day' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => onPeriodChange('day')}
-          >
-            {t('usage_stats.by_day')}
-          </Button>
-        </div>
-      }
-    >
-      {loading ? (
-        <div className={styles.hint}>{t('common.loading')}</div>
-      ) : chartData.labels.length > 0 ? (
-        <div className={styles.chartWrapper}>
-          <div className={styles.chartSummaryRow}>
-            {summaryItems.map((item) => (
-              <div key={item.label} className={styles.chartSummaryPill}>
-                <span className={styles.chartSummaryLabel}>{item.label}</span>
-                <span className={styles.chartSummaryValue}>{item.value}</span>
-              </div>
-            ))}
-          </div>
-          {showLegend && (
-            <div className={styles.chartLegend} aria-label="Chart legend">
-              {chartData.datasets.map((dataset, index) => (
-                <div
-                  key={`${dataset.label}-${index}`}
-                  className={styles.legendItem}
-                  title={dataset.label}
-                >
-                  <span className={styles.legendDot} style={{ backgroundColor: dataset.borderColor }} />
-                  <span className={styles.legendLabel}>{dataset.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className={styles.chartArea}>
-            <div className={styles.chartScroller}>
-              <div
-                className={styles.chartCanvas}
-                style={
-                  period === 'hour'
-                    ? { minWidth: getHourChartMinWidth(chartData.labels.length, isMobile) }
-                    : undefined
-                }
-              >
-                <Line data={chartData} options={chartOptions} />
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className={styles.hint}>{emptyText}</div>
-      )}
-    </Card>
+      period={period}
+      onPeriodChange={onPeriodChange}
+      chartData={chartData}
+      chartOptions={chartOptions}
+      loading={loading}
+      isMobile={isMobile}
+      emptyText={emptyText}
+      summaryItems={summaryItems}
+      tone={tone}
+    />
   );
-}
+});
+
+UsageChart.displayName = 'UsageChart';

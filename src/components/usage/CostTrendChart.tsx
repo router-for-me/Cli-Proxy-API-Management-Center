@@ -1,18 +1,16 @@
-import { useState, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScriptableContext } from 'chart.js';
-import { Line } from 'react-chartjs-2';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import {
   buildHourlyCostSeries,
   buildDailyCostSeries,
   formatUsd,
-  type ModelPrice
+  type ModelPrice,
 } from '@/utils/usage';
-import { buildChartOptions, getHourChartMinWidth } from '@/utils/usage/chartConfig';
+import { buildChartOptions } from '@/utils/usage/chartConfig';
 import type { UsagePayload } from './hooks/useUsageData';
-import styles from '@/pages/UsagePage.module.scss';
+import { getAdaptiveChartPeriod } from './chartPeriod';
+import { UsageChartPanel } from './UsageChartPanel';
 
 export interface CostTrendChartProps {
   usage: UsagePayload | null;
@@ -37,21 +35,31 @@ function buildGradient(ctx: ScriptableContext<'line'>) {
   return gradient;
 }
 
-export function CostTrendChart({
+export const CostTrendChart = memo(function CostTrendChart({
   usage,
   loading,
   isDark,
   isMobile,
   modelPrices,
-  hourWindowHours
+  hourWindowHours,
 }: CostTrendChartProps) {
   const { t } = useTranslation();
-  const [period, setPeriod] = useState<'hour' | 'day'>('hour');
+  const preferredPeriod = getAdaptiveChartPeriod(hourWindowHours);
+  const [period, setPeriod] = useState<'hour' | 'day'>(preferredPeriod);
   const hasPrices = Object.keys(modelPrices).length > 0;
 
-  const { chartData, chartOptions, hasData } = useMemo(() => {
+  useEffect(() => {
+    setPeriod(preferredPeriod);
+  }, [preferredPeriod]);
+
+  const { chartData, chartOptions, hasData, summaryItems } = useMemo(() => {
     if (!hasPrices || !usage) {
-      return { chartData: { labels: [], datasets: [] }, chartOptions: {}, hasData: false };
+      return {
+        chartData: { labels: [], datasets: [] },
+        chartOptions: {},
+        hasData: false,
+        summaryItems: [],
+      };
     }
 
     const series =
@@ -70,9 +78,9 @@ export function CostTrendChart({
           pointBackgroundColor: COST_COLOR,
           pointBorderColor: COST_COLOR,
           fill: true,
-          tension: 0.35
-        }
-      ]
+          tension: 0.35,
+        },
+      ],
     };
 
     const baseOptions = buildChartOptions({ period, labels: series.labels, isDark, isMobile });
@@ -83,63 +91,47 @@ export function CostTrendChart({
         y: {
           ...baseOptions.scales?.y,
           ticks: {
-            ...(baseOptions.scales?.y && 'ticks' in baseOptions.scales.y ? baseOptions.scales.y.ticks : {}),
-            callback: (value: string | number) => formatUsd(Number(value))
-          }
-        }
-      }
+            ...(baseOptions.scales?.y && 'ticks' in baseOptions.scales.y
+              ? baseOptions.scales.y.ticks
+              : {}),
+            callback: (value: string | number) => formatUsd(Number(value)),
+          },
+        },
+      },
     };
 
-    return { chartData: data, chartOptions: options, hasData: series.hasData };
+    const latest = series.data.length ? series.data[series.data.length - 1] : 0;
+    const peak = series.data.length ? Math.max(...series.data) : 0;
+
+    return {
+      chartData: data,
+      chartOptions: options,
+      hasData: series.hasData,
+      summaryItems: [
+        { label: t('usage_stats.chart_latest'), value: formatUsd(latest) },
+        { label: t('usage_stats.chart_peak'), value: formatUsd(peak) },
+        { label: t('usage_stats.chart_points'), value: series.labels.length.toString() },
+      ],
+    };
   }, [usage, period, isDark, isMobile, modelPrices, hasPrices, hourWindowHours, t]);
 
+  const emptyText = !hasPrices ? t('usage_stats.cost_need_price') : t('usage_stats.cost_no_data');
+
   return (
-    <Card
-      className={`${styles.chartCard} ${styles.secondaryChartCard}`}
+    <UsageChartPanel
       title={t('usage_stats.cost_trend')}
-      extra={
-        <div className={styles.periodButtons}>
-          <Button
-            variant={period === 'hour' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setPeriod('hour')}
-          >
-            {t('usage_stats.by_hour')}
-          </Button>
-          <Button
-            variant={period === 'day' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setPeriod('day')}
-          >
-            {t('usage_stats.by_day')}
-          </Button>
-        </div>
-      }
-    >
-      {loading ? (
-        <div className={styles.hint}>{t('common.loading')}</div>
-      ) : !hasPrices ? (
-        <div className={styles.hint}>{t('usage_stats.cost_need_price')}</div>
-      ) : !hasData ? (
-        <div className={styles.hint}>{t('usage_stats.cost_no_data')}</div>
-      ) : (
-        <div className={styles.chartWrapper}>
-          <div className={styles.chartArea}>
-            <div className={styles.chartScroller}>
-              <div
-                className={styles.chartCanvas}
-                style={
-                  period === 'hour'
-                    ? { minWidth: getHourChartMinWidth(chartData.labels.length, isMobile) }
-                    : undefined
-                }
-              >
-                <Line data={chartData} options={chartOptions} />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </Card>
+      period={period}
+      onPeriodChange={setPeriod}
+      chartData={chartData}
+      chartOptions={chartOptions}
+      loading={loading}
+      isMobile={isMobile}
+      emptyText={emptyText}
+      summaryItems={summaryItems}
+      tone="warning"
+      hasData={hasPrices && hasData}
+    />
   );
-}
+});
+
+CostTrendChart.displayName = 'CostTrendChart';

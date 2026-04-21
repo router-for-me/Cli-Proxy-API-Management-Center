@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ChartOptions } from 'chart.js';
 import { buildChartData, type ChartData } from '@/utils/usage';
 import { buildChartOptions } from '@/utils/usage/chartConfig';
@@ -10,6 +10,8 @@ export interface UseChartDataOptions {
   isDark: boolean;
   isMobile: boolean;
   hourWindowHours?: number;
+  preferredPeriod?: 'hour' | 'day';
+  allModelsLabel?: string;
 }
 
 export interface UseChartDataReturn {
@@ -23,25 +25,57 @@ export interface UseChartDataReturn {
   tokensChartOptions: ChartOptions<'line'>;
 }
 
+const relabelAllModels = (chartData: ChartData, allModelsLabel?: string): ChartData => {
+  if (!allModelsLabel) {
+    return chartData;
+  }
+
+  return {
+    ...chartData,
+    datasets: chartData.datasets.map((dataset) =>
+      dataset.label === 'All Models' ? { ...dataset, label: allModelsLabel } : dataset
+    ),
+  };
+};
+
 export function useChartData({
   usage,
   chartLines,
   isDark,
   isMobile,
-  hourWindowHours
+  hourWindowHours,
+  preferredPeriod = 'day',
+  allModelsLabel,
 }: UseChartDataOptions): UseChartDataReturn {
-  const [requestsPeriod, setRequestsPeriod] = useState<'hour' | 'day'>('day');
-  const [tokensPeriod, setTokensPeriod] = useState<'hour' | 'day'>('day');
+  const [requestsPeriod, setRequestsPeriod] = useState<'hour' | 'day'>(preferredPeriod);
+  const [tokensPeriod, setTokensPeriod] = useState<'hour' | 'day'>(preferredPeriod);
+
+  useEffect(() => {
+    setRequestsPeriod(preferredPeriod);
+    setTokensPeriod(preferredPeriod);
+  }, [preferredPeriod]);
 
   const requestsChartData = useMemo(() => {
-    if (!usage) return { labels: [], datasets: [] };
-    return buildChartData(usage, requestsPeriod, 'requests', chartLines, { hourWindowHours });
-  }, [usage, requestsPeriod, chartLines, hourWindowHours]);
+    if (!usage) {
+      return { labels: [], datasets: [] };
+    }
+
+    const chartData = buildChartData(usage, requestsPeriod, 'requests', chartLines, {
+      hourWindowHours,
+    });
+    return relabelAllModels(chartData, allModelsLabel);
+  }, [allModelsLabel, chartLines, hourWindowHours, requestsPeriod, usage]);
 
   const tokensChartData = useMemo(() => {
-    if (!usage) return { labels: [], datasets: [] };
-    return buildChartData(usage, tokensPeriod, 'tokens', chartLines, { hourWindowHours });
-  }, [usage, tokensPeriod, chartLines, hourWindowHours]);
+    if (!usage) {
+      return { labels: [], datasets: [] };
+    }
+
+    const chartData = buildChartData(usage, tokensPeriod, 'tokens', chartLines, {
+      hourWindowHours,
+    });
+    return relabelAllModels(chartData, allModelsLabel);
+  }, [allModelsLabel, chartLines, hourWindowHours, tokensPeriod, usage]);
 
   const requestsChartOptions = useMemo(
     () =>
@@ -49,7 +83,7 @@ export function useChartData({
         period: requestsPeriod,
         labels: requestsChartData.labels,
         isDark,
-        isMobile
+        isMobile,
       }),
     [requestsPeriod, requestsChartData.labels, isDark, isMobile]
   );
@@ -60,7 +94,7 @@ export function useChartData({
         period: tokensPeriod,
         labels: tokensChartData.labels,
         isDark,
-        isMobile
+        isMobile,
       }),
     [tokensPeriod, tokensChartData.labels, isDark, isMobile]
   );
@@ -73,6 +107,6 @@ export function useChartData({
     requestsChartData,
     tokensChartData,
     requestsChartOptions,
-    tokensChartOptions
+    tokensChartOptions,
   };
 }

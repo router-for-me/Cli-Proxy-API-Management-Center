@@ -3,10 +3,17 @@ export { useUsageData } from './hooks/useUsageData';
 export type { UsagePayload, UseUsageDataReturn } from './hooks/useUsageData';
 
 export { useSparklines } from './hooks/useSparklines';
-export type { SparklineData, SparklineBundle, UseSparklinesOptions, UseSparklinesReturn } from './hooks/useSparklines';
+export type {
+  SparklineData,
+  SparklineBundle,
+  UseSparklinesOptions,
+  UseSparklinesReturn,
+} from './hooks/useSparklines';
 
 export { useChartData } from './hooks/useChartData';
 export type { UseChartDataOptions, UseChartDataReturn } from './hooks/useChartData';
+
+export { useUsageViewState, MAX_USAGE_CHART_LINES } from './hooks/useUsageViewState';
 
 // Components
 export { StatCards } from './StatCards';
@@ -14,6 +21,25 @@ export type { StatCardsProps } from './StatCards';
 
 export { UsageChart } from './UsageChart';
 export type { UsageChartProps } from './UsageChart';
+
+export { UsageChartPanel } from './UsageChartPanel';
+export type {
+  UsageChartPanelProps,
+  UsageChartSummaryItem,
+  UsageChartTone,
+} from './UsageChartPanel';
+
+export { DeferredUsageCard } from './DeferredUsageCard';
+export type { DeferredUsageCardProps } from './DeferredUsageCard';
+
+export { UsageSectionIntro } from './UsageSectionIntro';
+export type { UsageSectionIntroProps } from './UsageSectionIntro';
+
+export { UsagePageHero } from './UsagePageHero';
+export type { UsagePageHeroProps } from './UsagePageHero';
+
+export { UsageAnalysisSection } from './UsageAnalysisSection';
+export type { UsageAnalysisSectionProps } from './UsageAnalysisSection';
 
 export { ChartLineSelector } from './ChartLineSelector';
 export type { ChartLineSelectorProps } from './ChartLineSelector';

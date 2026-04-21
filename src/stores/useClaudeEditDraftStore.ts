@@ -12,8 +12,6 @@ import type { SetStateAction } from 'react';
 import { create } from 'zustand';
 import type { ProviderFormState } from '@/components/providers/types';
 
-export type ClaudeTestStatus = 'idle' | 'loading' | 'success' | 'error';
-
 export type ClaudeCloakBaseline = {
   mode: string;
   strictMode: boolean;
@@ -39,8 +37,6 @@ type ClaudeEditDraft = {
   baseline: ClaudeEditBaseline | null;
   form: ProviderFormState;
   testModel: string;
-  testStatus: ClaudeTestStatus;
-  testMessage: string;
 };
 
 interface ClaudeEditDraftState {
@@ -59,11 +55,6 @@ interface ClaudeEditDraftState {
     action: SetStateAction<ProviderFormState>
   ) => void;
   setDraftTestModel: (key: string, action: SetStateAction<string>) => void;
-  setDraftTestStatus: (
-    key: string,
-    action: SetStateAction<ClaudeTestStatus>
-  ) => void;
-  setDraftTestMessage: (key: string, action: SetStateAction<string>) => void;
   clearDraft: (key: string) => void;
 }
 
@@ -87,8 +78,6 @@ const buildEmptyDraft = (): ClaudeEditDraft => ({
   baseline: null,
   form: buildEmptyForm(),
   testModel: '',
-  testStatus: 'idle',
-  testMessage: '',
 });
 
 export const useClaudeEditDraftStore = create<ClaudeEditDraftState>((set, get) => ({
@@ -180,34 +169,6 @@ export const useClaudeEditDraftStore = create<ClaudeEditDraftState>((set, get) =
         drafts: {
           ...state.drafts,
           [key]: { ...existing, initialized: true, testModel: nextValue },
-        },
-      };
-    });
-  },
-
-  setDraftTestStatus: (key, action) => {
-    if (!key) return;
-    set((state) => {
-      const existing = state.drafts[key] ?? buildEmptyDraft();
-      const nextValue = resolveAction(action, existing.testStatus);
-      return {
-        drafts: {
-          ...state.drafts,
-          [key]: { ...existing, initialized: true, testStatus: nextValue },
-        },
-      };
-    });
-  },
-
-  setDraftTestMessage: (key, action) => {
-    if (!key) return;
-    set((state) => {
-      const existing = state.drafts[key] ?? buildEmptyDraft();
-      const nextValue = resolveAction(action, existing.testMessage);
-      return {
-        drafts: {
-          ...state.drafts,
-          [key]: { ...existing, initialized: true, testMessage: nextValue },
         },
       };
     });

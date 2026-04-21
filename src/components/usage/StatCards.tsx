@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties, type ReactNode } from 'react';
+import { memo, useMemo, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Line } from 'react-chartjs-2';
 import {
@@ -51,7 +51,13 @@ export interface StatCardsProps {
   };
 }
 
-export function StatCards({ usage, loading, modelPrices, nowMs, sparklines }: StatCardsProps) {
+export const StatCards = memo(function StatCards({
+  usage,
+  loading,
+  modelPrices,
+  nowMs,
+  sparklines,
+}: StatCardsProps) {
   const { t } = useTranslation();
   const latencyHint = t('usage_stats.latency_unit_hint', {
     field: LATENCY_SOURCE_FIELD,
@@ -275,4 +281,6 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines }: St
       ))}
     </div>
   );
-}
+});
+
+StatCards.displayName = 'StatCards';

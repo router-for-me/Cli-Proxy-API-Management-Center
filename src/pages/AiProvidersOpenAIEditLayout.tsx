@@ -16,7 +16,7 @@ import {
   normalizeProviderPrefix,
 } from '@/components/providers/utils';
 import type { ModelEntry, OpenAIFormState } from '@/components/providers/types';
-import type { KeyTestStatus, OpenAIEditBaseline } from '@/stores/useOpenAIEditDraftStore';
+import type { OpenAIEditBaseline } from '@/stores/useOpenAIEditDraftStore';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
@@ -32,13 +32,6 @@ export type OpenAIEditOutletContext = {
   setForm: Dispatch<SetStateAction<OpenAIFormState>>;
   testModel: string;
   setTestModel: Dispatch<SetStateAction<string>>;
-  testStatus: 'idle' | 'loading' | 'success' | 'error';
-  setTestStatus: Dispatch<SetStateAction<'idle' | 'loading' | 'success' | 'error'>>;
-  testMessage: string;
-  setTestMessage: Dispatch<SetStateAction<string>>;
-  keyTestStatuses: KeyTestStatus[];
-  setDraftKeyTestStatus: (keyIndex: number, status: KeyTestStatus) => void;
-  resetDraftKeyTestStatuses: (count: number) => void;
   availableModels: string[];
   handleBack: () => void;
   handleSave: () => Promise<void>;
@@ -164,7 +157,7 @@ export function AiProvidersOpenAIEditLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { showNotification } = useNotificationStore();
+  const showNotification = useNotificationStore((state) => state.showNotification);
 
   const params = useParams<{ index?: string }>();
   const hasIndexParam = typeof params.index === 'string';
@@ -199,16 +192,9 @@ export function AiProvidersOpenAIEditLayout() {
   const setDraftBaseline = useOpenAIEditDraftStore((state) => state.setDraftBaseline);
   const setDraftForm = useOpenAIEditDraftStore((state) => state.setDraftForm);
   const setDraftTestModel = useOpenAIEditDraftStore((state) => state.setDraftTestModel);
-  const setDraftTestStatus = useOpenAIEditDraftStore((state) => state.setDraftTestStatus);
-  const setDraftTestMessage = useOpenAIEditDraftStore((state) => state.setDraftTestMessage);
-  const setDraftKeyTestStatus = useOpenAIEditDraftStore((state) => state.setDraftKeyTestStatus);
-  const resetDraftKeyTestStatuses = useOpenAIEditDraftStore((state) => state.resetDraftKeyTestStatuses);
 
   const form = draft?.form ?? buildEmptyForm();
   const testModel = draft?.testModel ?? '';
-  const testStatus = draft?.testStatus ?? 'idle';
-  const testMessage = draft?.testMessage ?? '';
-  const keyTestStatuses = draft?.keyTestStatuses ?? [];
 
   const setForm: Dispatch<SetStateAction<OpenAIFormState>> = useCallback(
     (action) => {
@@ -222,35 +208,6 @@ export function AiProvidersOpenAIEditLayout() {
       setDraftTestModel(draftKey, action);
     },
     [draftKey, setDraftTestModel]
-  );
-
-  const setTestStatus: Dispatch<SetStateAction<'idle' | 'loading' | 'success' | 'error'>> =
-    useCallback(
-      (action) => {
-        setDraftTestStatus(draftKey, action);
-      },
-      [draftKey, setDraftTestStatus]
-    );
-
-  const setTestMessage: Dispatch<SetStateAction<string>> = useCallback(
-    (action) => {
-      setDraftTestMessage(draftKey, action);
-    },
-    [draftKey, setDraftTestMessage]
-  );
-
-  const handleSetDraftKeyTestStatus = useCallback(
-    (keyIndex: number, status: KeyTestStatus) => {
-      setDraftKeyTestStatus(draftKey, keyIndex, status);
-    },
-    [draftKey, setDraftKeyTestStatus]
-  );
-
-  const handleResetDraftKeyTestStatuses = useCallback(
-    (count: number) => {
-      resetDraftKeyTestStatuses(draftKey, count);
-    },
-    [draftKey, resetDraftKeyTestStatuses]
   );
 
   const initialData = useMemo(() => {
@@ -332,9 +289,6 @@ export function AiProvidersOpenAIEditLayout() {
         baseline,
         form: seededForm,
         testModel: initialTestModel,
-        testStatus: 'idle',
-        testMessage: '',
-        keyTestStatuses: [],
       });
     } else {
       const emptyForm = buildEmptyForm();
@@ -342,9 +296,6 @@ export function AiProvidersOpenAIEditLayout() {
         baseline: buildOpenAIBaseline(emptyForm),
         form: emptyForm,
         testModel: '',
-        testStatus: 'idle',
-        testMessage: '',
-        keyTestStatuses: [],
       });
     }
   }, [draft?.initialized, draftKey, initDraft, initialData, loading]);
@@ -355,18 +306,14 @@ export function AiProvidersOpenAIEditLayout() {
     if (availableModels.length === 0) {
       if (testModel) {
         setTestModel('');
-        setTestStatus('idle');
-        setTestMessage('');
       }
       return;
     }
 
     if (!testModel || !availableModels.includes(testModel)) {
       setTestModel(availableModels[0]);
-      setTestStatus('idle');
-      setTestMessage('');
     }
-  }, [availableModels, loading, setTestMessage, setTestModel, setTestStatus, testModel]);
+  }, [availableModels, loading, setTestModel, testModel]);
 
   const mergeDiscoveredModels = useCallback(
     (selectedModels: ModelInfo[]) => {
@@ -561,13 +508,6 @@ export function AiProvidersOpenAIEditLayout() {
         setForm,
         testModel,
         setTestModel,
-        testStatus,
-        setTestStatus,
-        testMessage,
-        setTestMessage,
-        keyTestStatuses,
-        setDraftKeyTestStatus: handleSetDraftKeyTestStatus,
-        resetDraftKeyTestStatuses: handleResetDraftKeyTestStatuses,
         availableModels,
         handleBack,
         handleSave,

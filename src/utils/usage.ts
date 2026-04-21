@@ -519,6 +519,87 @@ export function formatLatencyMs(value: number | null | undefined): string {
 
 const usageDetailsCache = new WeakMap<object, UsageDetail[]>();
 const usageDetailsWithEndpointCache = new WeakMap<object, UsageDetailWithEndpoint[]>();
+const modelNamesCache = new WeakMap<object, string[]>();
+const apiStatsCache = new WeakMap<object, WeakMap<object, ApiStats[]>>();
+const modelStatsCache = new WeakMap<object, WeakMap<object, ModelStatsSummary[]>>();
+const dailySeriesByModelCache = new WeakMap<
+  object,
+  Map<
+    'requests' | 'tokens',
+    { labels: string[]; dataByModel: Map<string, number[]>; hasData: boolean }
+  >
+>();
+const hourlySeriesByModelCache = new WeakMap<
+  object,
+  Map<string, { labels: string[]; dataByModel: Map<string, number[]>; hasData: boolean }>
+>();
+const dailyTokenBreakdownCache = new WeakMap<object, TokenBreakdownSeries>();
+const hourlyTokenBreakdownCache = new WeakMap<object, Map<number, TokenBreakdownSeries>>();
+const dailyLatencySeriesCache = new WeakMap<object, LatencySeries>();
+const hourlyLatencySeriesCache = new WeakMap<object, Map<number, LatencySeries>>();
+const dailyCostSeriesCache = new WeakMap<object, WeakMap<object, CostSeries>>();
+const hourlyCostSeriesCache = new WeakMap<object, WeakMap<object, Map<number, CostSeries>>>();
+
+const getObjectCacheKey = (value: unknown): object | null =>
+  isRecord(value) ? (value as object) : null;
+
+const getCachedMapValue = <K, T>(
+  cache: WeakMap<object, Map<K, T>>,
+  owner: object,
+  key: K
+): T | undefined => cache.get(owner)?.get(key);
+
+const setCachedMapValue = <K, T>(
+  cache: WeakMap<object, Map<K, T>>,
+  owner: object,
+  key: K,
+  value: T
+): T => {
+  const ownerCache = cache.get(owner) ?? new Map<K, T>();
+  ownerCache.set(key, value);
+  cache.set(owner, ownerCache);
+  return value;
+};
+
+const getCachedNestedValue = <T>(
+  cache: WeakMap<object, WeakMap<object, T>>,
+  owner: object,
+  dependency: object
+): T | undefined => cache.get(owner)?.get(dependency);
+
+const setCachedNestedValue = <T>(
+  cache: WeakMap<object, WeakMap<object, T>>,
+  owner: object,
+  dependency: object,
+  value: T
+): T => {
+  const ownerCache = cache.get(owner) ?? new WeakMap<object, T>();
+  ownerCache.set(dependency, value);
+  cache.set(owner, ownerCache);
+  return value;
+};
+
+const getCachedNestedMapValue = <K, T>(
+  cache: WeakMap<object, WeakMap<object, Map<K, T>>>,
+  owner: object,
+  dependency: object,
+  key: K
+): T | undefined => cache.get(owner)?.get(dependency)?.get(key);
+
+const setCachedNestedMapValue = <K, T>(
+  cache: WeakMap<object, WeakMap<object, Map<K, T>>>,
+  owner: object,
+  dependency: object,
+  key: K,
+  value: T
+): T => {
+  const ownerCache = cache.get(owner) ?? new WeakMap<object, Map<K, T>>();
+  const dependencyCache = ownerCache.get(dependency) ?? new Map<K, T>();
+  dependencyCache.set(key, value);
+  ownerCache.set(dependency, dependencyCache);
+  cache.set(owner, ownerCache);
+  return value;
+};
 
 /**
  * 从使用数据中收集所有请求明细
@@ -771,6 +852,14 @@ export function calculateRecentPerMinuteRates(
  * 从使用数据获取模型名称列表
  */
 export function getModelNamesFromUsage(usageData: unknown): string[] {
+  const cacheKey = getObjectCacheKey(usageData);
+  if (cacheKey) {
+    const cached = modelNamesCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const apis = getApisRecord(usageData);
   if (!apis) return [];
   const names = new Set<string>();
@@ -785,7 +874,11 @@ export function getModelNamesFromUsage(usageData: unknown): string[] {
       }
     });
   });
-  return Array.from(names).sort((a, b) => a.localeCompare(b));
+  const result = Array.from(names).sort((a, b) => a.localeCompare(b));
+  if (cacheKey) {
+    modelNamesCache.set(cacheKey, result);
+  }
+  return result;
 }
 
 /**
@@ -912,6 +1005,15 @@ export function getApiStats(
   usageData: unknown,
   modelPrices: Record<string, ModelPrice>
 ): ApiStats[] {
+  const usageCacheKey = getObjectCacheKey(usageData);
+  const pricesCacheKey = getObjectCacheKey(modelPrices);
+  if (usageCacheKey && pricesCacheKey) {
+    const cached = getCachedNestedValue(apiStatsCache, usageCacheKey, pricesCacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const apis = getApisRecord(usageData);
   if (!apis) return [];
   const result: ApiStats[] = [];
@@ -991,6 +1093,9 @@ export function getApiStats(
     });
   });
 
+  if (usageCacheKey && pricesCacheKey) {
+    return setCachedNestedValue(apiStatsCache, usageCacheKey, pricesCacheKey, result);
+  }
   return result;
 }
 
@@ -1001,6 +1106,15 @@ export function getModelStats(
   usageData: unknown,
   modelPrices: Record<string, ModelPrice>
 ): ModelStatsSummary[] {
+  const usageCacheKey = getObjectCacheKey(usageData);
+  const pricesCacheKey = getObjectCacheKey(modelPrices);
+  if (usageCacheKey && pricesCacheKey) {
+    const cached = getCachedNestedValue(modelStatsCache, usageCacheKey, pricesCacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const apis = getApisRecord(usageData);
   if (!apis) return [];
 
@@ -1072,7 +1186,7 @@ export function getModelStats(
     });
   });
 
-  return Array.from(modelMap.entries())
+  const result = Array.from(modelMap.entries())
     .map(([model, stats]) => {
       const latencyStats = finalizeLatencyStats(stats.latency);
       return {
@@ -1088,6 +1202,11 @@ export function getModelStats(
       };
     })
     .sort((a, b) => b.requests - a.requests);
+
+  if (usageCacheKey && pricesCacheKey) {
+    return setCachedNestedValue(modelStatsCache, usageCacheKey, pricesCacheKey, result);
+  }
+  return result;
 }
 
 /**
@@ -1133,6 +1252,14 @@ export function buildHourlySeriesByModel(
     Number.isFinite(hourWindow) && hourWindow > 0
       ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
       : 24;
+  const cacheKey = getObjectCacheKey(usageData);
+  const seriesCacheKey = `${metric}:${resolvedHourWindow}`;
+  if (cacheKey) {
+    const cached = getCachedMapValue(hourlySeriesByModelCache, cacheKey, seriesCacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
   const now = new Date();
   const currentHour = new Date(now);
   currentHour.setMinutes(0, 0, 0);
@@ -1152,7 +1279,11 @@ export function buildHourlySeriesByModel(
   let hasData = false;
 
   if (!details.length) {
-    return { labels, dataByModel, hasData };
+    const emptyResult = { labels, dataByModel, hasData };
+    if (cacheKey) {
+      return setCachedMapValue(hourlySeriesByModelCache, cacheKey, seriesCacheKey, emptyResult);
+    }
+    return emptyResult;
   }
 
   details.forEach((detail) => {
@@ -1191,7 +1322,11 @@ export function buildHourlySeriesByModel(
     hasData = true;
   });
 
-  return { labels, dataByModel, hasData };
+  const result = { labels, dataByModel, hasData };
+  if (cacheKey) {
+    return setCachedMapValue(hourlySeriesByModelCache, cacheKey, seriesCacheKey, result);
+  }
+  return result;
 }
 
 /**
@@ -1205,13 +1340,25 @@ export function buildDailySeriesByModel(
   dataByModel: Map<string, number[]>;
   hasData: boolean;
 } {
+  const cacheKey = getObjectCacheKey(usageData);
+  if (cacheKey) {
+    const cached = getCachedMapValue(dailySeriesByModelCache, cacheKey, metric);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const details = collectUsageDetails(usageData);
   const valuesByModel = new Map<string, Map<string, number>>();
   const labelsSet = new Set<string>();
   let hasData = false;
 
   if (!details.length) {
-    return { labels: [], dataByModel: new Map(), hasData };
+    const emptyResult = { labels: [], dataByModel: new Map(), hasData };
+    if (cacheKey) {
+      return setCachedMapValue(dailySeriesByModelCache, cacheKey, metric, emptyResult);
+    }
+    return emptyResult;
   }
 
   details.forEach((detail) => {
@@ -1245,12 +1392,16 @@ export function buildDailySeriesByModel(
     dataByModel.set(modelName, series);
   });
 
-  return { labels, dataByModel, hasData };
+  const result = { labels, dataByModel, hasData };
+  if (cacheKey) {
+    return setCachedMapValue(dailySeriesByModelCache, cacheKey, metric, result);
+  }
+  return result;
 }
 
 export interface ChartDataset {
   label: string;
-  data: number[];
+  data: Array<number | null>;
   borderColor: string;
   backgroundColor:
     | string
@@ -1735,6 +1886,13 @@ export function buildHourlyTokenBreakdown(
     Number.isFinite(hourWindow) && hourWindow > 0
       ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
       : 24;
+  const cacheKey = getObjectCacheKey(usageData);
+  if (cacheKey) {
+    const cached = getCachedMapValue(hourlyTokenBreakdownCache, cacheKey, resolvedHourWindow);
+    if (cached) {
+      return cached;
+    }
+  }
   const now = new Date();
   const currentHour = new Date(now);
   currentHour.setMinutes(0, 0, 0);
@@ -1789,13 +1947,25 @@ export function buildHourlyTokenBreakdown(
     hasData = true;
   });
 
-  return { labels, dataByCategory, hasData };
+  const result = { labels, dataByCategory, hasData };
+  if (cacheKey) {
+    return setCachedMapValue(hourlyTokenBreakdownCache, cacheKey, resolvedHourWindow, result);
+  }
+  return result;
 }
 
 /**
  * 按 token 类别构建日级别的堆叠序列
  */
 export function buildDailyTokenBreakdown(usageData: unknown): TokenBreakdownSeries {
+  const cacheKey = getObjectCacheKey(usageData);
+  if (cacheKey) {
+    const cached = dailyTokenBreakdownCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const details = collectUsageDetails(usageData);
   const dayMap: Record<string, Record<TokenCategory, number>> = {};
   let hasData = false;
@@ -1838,7 +2008,11 @@ export function buildDailyTokenBreakdown(usageData: unknown): TokenBreakdownSeri
     reasoning: labels.map((l) => dayMap[l].reasoning),
   };
 
-  return { labels, dataByCategory, hasData };
+  const result = { labels, dataByCategory, hasData };
+  if (cacheKey) {
+    dailyTokenBreakdownCache.set(cacheKey, result);
+  }
+  return result;
 }
 
 export interface CostSeries {
@@ -1860,6 +2034,19 @@ export function buildHourlyCostSeries(
     Number.isFinite(hourWindow) && hourWindow > 0
       ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
       : 24;
+  const usageCacheKey = getObjectCacheKey(usageData);
+  const pricesCacheKey = getObjectCacheKey(modelPrices);
+  if (usageCacheKey && pricesCacheKey) {
+    const cached = getCachedNestedMapValue(
+      hourlyCostSeriesCache,
+      usageCacheKey,
+      pricesCacheKey,
+      resolvedHourWindow
+    );
+    if (cached) {
+      return cached;
+    }
+  }
   const now = new Date();
   const currentHour = new Date(now);
   currentHour.setMinutes(0, 0, 0);
@@ -1898,7 +2085,17 @@ export function buildHourlyCostSeries(
     }
   });
 
-  return { labels, data, hasData };
+  const result = { labels, data, hasData };
+  if (usageCacheKey && pricesCacheKey) {
+    return setCachedNestedMapValue(
+      hourlyCostSeriesCache,
+      usageCacheKey,
+      pricesCacheKey,
+      resolvedHourWindow,
+      result
+    );
+  }
+  return result;
 }
 
 export interface LatencySeries {
@@ -1919,6 +2116,13 @@ export function buildHourlyLatencySeries(
     Number.isFinite(hourWindow) && hourWindow > 0
       ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
       : 24;
+  const cacheKey = getObjectCacheKey(usageData);
+  if (cacheKey) {
+    const cached = getCachedMapValue(hourlyLatencySeriesCache, cacheKey, resolvedHourWindow);
+    if (cached) {
+      return cached;
+    }
+  }
   const now = new Date();
   const currentHour = new Date(now);
   currentHour.setMinutes(0, 0, 0);
@@ -1942,7 +2146,9 @@ export function buildHourlyLatencySeries(
     if (latencyMs === null) return;
 
     const timestamp =
-      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+      typeof detail.__timestampMs === 'number'
+        ? detail.__timestampMs
+        : Date.parse(detail.timestamp);
     if (!Number.isFinite(timestamp) || timestamp <= 0) return;
     const normalized = new Date(timestamp);
     normalized.setMinutes(0, 0, 0);
@@ -1957,19 +2163,31 @@ export function buildHourlyLatencySeries(
     hasData = true;
   });
 
-  return {
+  const result = {
     labels,
     data: latencySums.map((sum, index) =>
       latencyCounts[index] > 0 ? Number((sum / latencyCounts[index]).toFixed(2)) : null
     ),
-    hasData
+    hasData,
   };
+  if (cacheKey) {
+    return setCachedMapValue(hourlyLatencySeriesCache, cacheKey, resolvedHourWindow, result);
+  }
+  return result;
 }
 
 /**
  * 按天构建平均延迟时间序列
  */
 export function buildDailyLatencySeries(usageData: unknown): LatencySeries {
+  const cacheKey = getObjectCacheKey(usageData);
+  if (cacheKey) {
+    const cached = dailyLatencySeriesCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const details = collectUsageDetails(usageData);
   const dayMap: Record<string, { sum: number; count: number }> = {};
   let hasData = false;
@@ -1979,7 +2197,9 @@ export function buildDailyLatencySeries(usageData: unknown): LatencySeries {
     if (latencyMs === null) return;
 
     const timestamp =
-      typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+      typeof detail.__timestampMs === 'number'
+        ? detail.__timestampMs
+        : Date.parse(detail.timestamp);
     if (!Number.isFinite(timestamp) || timestamp <= 0) return;
     const dayLabel = formatDayLabel(new Date(timestamp));
     if (!dayLabel) return;
@@ -1994,14 +2214,18 @@ export function buildDailyLatencySeries(usageData: unknown): LatencySeries {
   });
 
   const labels = Object.keys(dayMap).sort();
-  return {
+  const result = {
     labels,
     data: labels.map((label) => {
       const bucket = dayMap[label];
       return bucket.count > 0 ? Number((bucket.sum / bucket.count).toFixed(2)) : null;
     }),
-    hasData
+    hasData,
   };
+  if (cacheKey) {
+    dailyLatencySeriesCache.set(cacheKey, result);
+  }
+  return result;
 }
 
 /**
@@ -2011,6 +2235,15 @@ export function buildDailyCostSeries(
   usageData: unknown,
   modelPrices: Record<string, ModelPrice>
 ): CostSeries {
+  const usageCacheKey = getObjectCacheKey(usageData);
+  const pricesCacheKey = getObjectCacheKey(modelPrices);
+  if (usageCacheKey && pricesCacheKey) {
+    const cached = getCachedNestedValue(dailyCostSeriesCache, usageCacheKey, pricesCacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const details = collectUsageDetails(usageData);
   const dayMap: Record<string, number> = {};
   let hasData = false;
@@ -2034,5 +2267,9 @@ export function buildDailyCostSeries(
   const labels = Object.keys(dayMap).sort();
   const data = labels.map((l) => dayMap[l]);
 
-  return { labels, data, hasData };
+  const result = { labels, data, hasData };
+  if (usageCacheKey && pricesCacheKey) {
+    return setCachedNestedValue(dailyCostSeriesCache, usageCacheKey, pricesCacheKey, result);
+  }
+  return result;
 }

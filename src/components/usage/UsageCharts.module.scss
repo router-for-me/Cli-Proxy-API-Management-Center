@@ -1,0 +1,447 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.panelCard {
+  --panel-accent: #8b8680;
+  --panel-halo: rgba(139, 134, 128, 0.16);
+  overflow: hidden;
+  background:
+    radial-gradient(120% 150% at 0% 0%, var(--panel-halo) 0%, rgba(0, 0, 0, 0) 56%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 96%, white 4%), var(--bg-primary));
+  border-color: color-mix(in srgb, var(--border-color) 84%, transparent);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.08);
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--panel-accent), rgba(0, 0, 0, 0));
+    opacity: 0.92;
+  }
+
+  :global(.card-header) {
+    margin-bottom: 18px;
+    align-items: flex-start;
+    gap: 12px;
+
+    @include mobile {
+      gap: 10px;
+    }
+  }
+
+  :global(.title) {
+    flex: 1 1 auto;
+  }
+}
+
+.toneNeutral {
+  --panel-accent: #8b8680;
+  --panel-halo: rgba(139, 134, 128, 0.16);
+}
+
+.toneSuccess {
+  --panel-accent: #0f766e;
+  --panel-halo: rgba(15, 118, 110, 0.16);
+}
+
+.toneWarning {
+  --panel-accent: #f59e0b;
+  --panel-halo: rgba(245, 158, 11, 0.16);
+}
+
+.toneDanger {
+  --panel-accent: #c65746;
+  --panel-halo: rgba(198, 87, 70, 0.16);
+}
+
+.toneViolet {
+  --panel-accent: #8b5cf6;
+  --panel-halo: rgba(139, 92, 246, 0.16);
+}
+
+.panelHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.panelTitle {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.panelDescription {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.panelShell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panelEmpty {
+  padding: 22px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.summaryPill {
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: $radius-full;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.summaryLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.summaryValue {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  min-width: 0;
+
+  @include mobile {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 240px;
+  padding: 7px 11px;
+  border-radius: $radius-full;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  font-size: 11px;
+  color: var(--text-secondary);
+
+  @include mobile {
+    max-width: 180px;
+  }
+}
+
+.legendDot {
+  width: 18px;
+  height: 4px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chartArea {
+  position: relative;
+  height: 300px;
+  padding: 12px 14px 10px;
+  border-radius: $radius-lg;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background:
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--panel-accent) 10%, transparent),
+      transparent 30%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--bg-primary) 90%, var(--bg-secondary) 10%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  @include mobile {
+    height: 280px;
+    padding: 10px 10px 8px;
+  }
+}
+
+.chartScroller {
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+
+  :global(canvas) {
+    touch-action: pan-x pan-y !important;
+  }
+}
+
+.chartCanvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.periodButtons {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--bg-secondary) 94%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
+
+  :global(.btn) {
+    min-width: 62px;
+    padding: 7px 10px;
+    border-radius: $radius-full;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  :global(.btn.btn-primary) {
+    background: color-mix(in srgb, var(--panel-accent) 92%, black 8%);
+  }
+
+  :global(.btn.btn-secondary) {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+
+  @include mobile {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+
+    :global(.btn) {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+}
+
+.chartLineCard {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-primary) 96%, white 4%),
+    var(--bg-primary)
+  );
+  border-color: color-mix(in srgb, var(--border-color) 85%, transparent);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.07);
+
+  :global(.card-header) {
+    margin-bottom: 18px;
+    align-items: center;
+  }
+}
+
+.chartLineHeader {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chartLineList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.chartLineItem {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-secondary) 90%, white 10%),
+    var(--bg-secondary)
+  );
+  border: 1px solid color-mix(in srgb, var(--border-color) 85%, transparent);
+  border-radius: $radius-md;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
+.chartLineLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  min-width: 64px;
+}
+
+.chartLineCount {
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--bg-secondary) 94%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 85%, transparent);
+}
+
+.chartLineHint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin: 12px 0 0 0;
+}
+
+.chartLineRemoveButton {
+  color: var(--text-tertiary);
+
+  &:hover {
+    color: var(--error-color);
+  }
+}
+
+.deferredCard {
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-primary) 96%, white 4%),
+    var(--bg-primary)
+  );
+  border-color: color-mix(in srgb, var(--border-color) 85%, transparent);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.08);
+}
+
+.deferredChartShell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.deferredLegendRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.deferredLegendPill {
+  height: 28px;
+  width: 88px;
+  border-radius: $radius-full;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-secondary) 86%, white 14%),
+    color-mix(in srgb, var(--bg-tertiary) 94%, transparent)
+  );
+  border: 1px solid var(--border-color);
+}
+
+.deferredLegendPillWide {
+  width: 132px;
+}
+
+.deferredChartPlaceholder {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+  border-radius: $radius-lg;
+  border: 1px solid var(--border-color);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-secondary) 84%, white 16%),
+      var(--bg-secondary)
+    );
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: auto 18px 22px;
+    height: 62%;
+    border-radius: $radius-md;
+    background:
+      linear-gradient(180deg, rgba($primary-color, 0.08), rgba($success-color, 0.03)),
+      linear-gradient(135deg, rgba($primary-color, 0.28), rgba($success-color, 0.18));
+    clip-path: polygon(
+      0% 86%,
+      10% 78%,
+      20% 80%,
+      30% 64%,
+      42% 70%,
+      54% 44%,
+      66% 50%,
+      78% 28%,
+      90% 34%,
+      100% 14%,
+      100% 100%,
+      0% 100%
+    );
+    opacity: 0.8;
+  }
+}
+
+.deferredChartGlow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.24), transparent);
+  transform: translateX(-100%);
+  animation: deferredShimmer 2.4s ease-in-out infinite;
+}
+
+.deferredCaption {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+@keyframes deferredShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deferredChartGlow {
+    animation: none;
+  }
+}

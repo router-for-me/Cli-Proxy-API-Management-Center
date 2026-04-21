@@ -1,7 +1,6 @@
 import { useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
 import {
   ANTIGRAVITY_CONFIG,
@@ -102,6 +101,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
   };
 
   const quotaStatus = quota?.status ?? 'idle';
+  const isQuotaRefreshing = quotaStatus === 'loading';
   const canRefreshQuota = !disableControls && !file.disabled;
   const quotaErrorMessage = resolveQuotaErrorMessage(
     t,
@@ -113,19 +113,23 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     <div className={styles.quotaSection}>
       <div className={styles.quotaSectionHeader}>
         <span className={styles.quotaSectionTitle}>{t(`${config.i18nPrefix}.title`)}</span>
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           className={styles.quotaRefreshButton}
           onClick={() => void refreshQuotaForFile()}
-          disabled={!canRefreshQuota}
-          loading={quotaStatus === 'loading'}
+          disabled={!canRefreshQuota || isQuotaRefreshing}
           title={t(`${config.i18nPrefix}.refresh_button`)}
           aria-label={t(`${config.i18nPrefix}.refresh_button`)}
+          aria-busy={isQuotaRefreshing}
         >
-          {quotaStatus !== 'loading' ? <IconRefreshCw size={14} /> : null}
-        </Button>
+          <span
+            className={`${styles.quotaRefreshIcon} ${
+              isQuotaRefreshing ? styles.quotaRefreshIconSpinning : ''
+            }`}
+          >
+            <IconRefreshCw size={14} />
+          </span>
+        </button>
       </div>
       {quotaStatus === 'loading' ? (
         <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.loading`)}</div>
