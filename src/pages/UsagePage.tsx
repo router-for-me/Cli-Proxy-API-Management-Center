@@ -373,7 +373,6 @@ export function UsagePage() {
         codexConfigs={config?.codexApiKeys || []}
         vertexConfigs={config?.vertexApiKeys || []}
         openaiProviders={config?.openaiCompatibility || []}
-        liveRefresh
       />
 
       {/* Credential Stats */}

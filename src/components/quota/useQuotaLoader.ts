@@ -50,10 +50,7 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
         setQuota((prev) => {
           const nextState = { ...prev };
           targets.forEach((file) => {
-            const currentState = nextState[file.name] as { status?: string } | undefined;
-            if (!currentState || currentState.status === 'idle') {
-              nextState[file.name] = config.buildLoadingState();
-            }
+            nextState[file.name] = config.buildLoadingState();
           });
           return nextState;
         });

@@ -53,10 +53,6 @@
   padding: 14px;
 }
 
-.eventsCard :global([class*='requestEventsTableWrapper']) {
-  max-height: none;
-}
-
 .titleGroup {
   display: flex;
   align-items: center;
@@ -328,6 +324,154 @@
   white-space: nowrap;
 }
 
+.eventsCardBody {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.eventsTableWrapper {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+}
+
+.eventsTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+
+  th,
+  td {
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  th {
+    color: var(--text-secondary);
+    font-weight: 700;
+    background: var(--bg-secondary);
+  }
+
+  td {
+    color: var(--text-primary);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+.eventsTimestampCol,
+.eventsTimestampCell {
+  width: 152px;
+  min-width: 152px;
+  max-width: 152px;
+  font-variant-numeric: tabular-nums;
+}
+
+.eventsModelCol,
+.eventsModelCell {
+  width: 88px;
+  min-width: 88px;
+  max-width: 88px;
+}
+
+.eventsSourceCol {
+  width: 320px;
+}
+
+.eventsAuthIndexCol,
+.eventsAuthIndexCell {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.eventsResultCol,
+.eventsResultCell {
+  width: 84px;
+  min-width: 84px;
+  max-width: 84px;
+}
+
+.eventsMetricCol,
+.eventsMetricCell {
+  width: 76px;
+  min-width: 76px;
+  max-width: 76px;
+  font-variant-numeric: tabular-nums;
+}
+
+.eventsModelCell {
+  font-weight: 600;
+}
+
+.eventsSourceCell,
+.eventsAuthIndexCell {
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+}
+
+.eventsSourceContent {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.eventsSourceText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eventsSourceType {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.eventsResultSuccess,
+.eventsResultFailed {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.eventsResultSuccess {
+  color: var(--success-badge-text, #065f46);
+  background: var(--success-badge-bg, #d1fae5);
+  border: 1px solid var(--success-badge-border, #6ee7b7);
+}
+
+.eventsResultFailed {
+  color: var(--failure-badge-text);
+  background: var(--failure-badge-bg);
+  border: 1px solid var(--failure-badge-border);
+}
+
 @media (max-width: 1500px) {
   .accountGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -347,11 +491,19 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     overflow: visible;
   }
+
+  .eventsTableWrapper {
+    overflow: visible;
+  }
 }
 
 @media (max-width: 900px) {
   .accountGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .eventsTableWrapper {
+    overflow: auto;
   }
 }
 

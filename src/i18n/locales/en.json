@@ -1350,9 +1350,7 @@
     "refresh_files": "Refresh auth files",
     "refresh_files_and_quota": "Refresh files & quota",
     "refresh_all_credentials": "Refresh all credentials",
-    "card_idle_hint": "Use the top \"Refresh all credentials\" button to fetch the latest quota data.",
-    "auto_refresh": "Auto Refresh",
-    "auto_refresh_paused": "Paused"
+    "card_idle_hint": "Use the top \"Refresh all credentials\" button to fetch the latest quota data."
   },
   "system_info": {
     "title": "Management Center Info",

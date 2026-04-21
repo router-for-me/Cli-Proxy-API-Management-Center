@@ -1,21 +1,71 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RequestEventsDetailsCard, useUsageData } from '@/components/usage';
+import { CODEX_CONFIG } from '@/components/quota';
+import { useUsageData } from '@/components/usage';
 import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { authFilesApi } from '@/services/api';
-import { useAuthStore, useConfigStore, useQuotaStore } from '@/stores';
-import type { AuthFileItem, CodexQuotaWindow } from '@/types';
+import { useAuthStore, useConfigStore } from '@/stores';
+import type { AuthFileItem, CodexQuotaWindow, GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import type { CredentialInfo } from '@/types/sourceInfo';
+import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver';
+import { parseTimestampMs } from '@/utils/timestamp';
 import {
-  buildCodexUsageByAuthIndex,
-  getCodexAuthIndex,
-  isCodexAuthFile,
-  refreshCodexQuotaFiles,
-} from '@/features/codexCustomization/shared';
-import { filterUsageByTimeRange, formatCompactNumber } from '@/utils/usage';
+  collectUsageDetails,
+  extractLatencyMs,
+  extractTotalTokens,
+  filterUsageByTimeRange,
+  formatCompactNumber,
+  formatDurationMs,
+  normalizeAuthIndex,
+} from '@/utils/usage';
 import styles from './DashboardOverviewPage.module.scss';
 
 const OVERVIEW_TIME_RANGE = '24h' as const;
+const OVERVIEW_MAX_EVENTS = 10;
+
+type CodexUsageStats = {
+  requests: number;
+  success: number;
+  failed: number;
+  tokens: number;
+};
+
+type OverviewQuotaEntry = {
+  planType: string | null;
+  windows: CodexQuotaWindow[];
+};
+
+type OverviewRequestEventRow = {
+  timestamp: string;
+  timestampLabel: string;
+  timestampMs: number;
+  model: string;
+  sourceKey: string;
+  sourceRaw: string;
+  source: string;
+  sourceType: string;
+  authIndex: string;
+  failed: boolean;
+  latencyMs: number | null;
+  inputTokens: number;
+  outputTokens: number;
+  reasoningTokens: number;
+  cachedTokens: number;
+  totalTokens: number;
+};
+
+interface OverviewRequestEventsCardProps {
+  usage: unknown;
+  loading: boolean;
+  files: AuthFileItem[];
+  geminiKeys: GeminiKeyConfig[];
+  claudeConfigs: ProviderKeyConfig[];
+  codexConfigs: ProviderKeyConfig[];
+  vertexConfigs: ProviderKeyConfig[];
+  openaiProviders: OpenAIProviderConfig[];
+}
 
 const formatLocaleNumber = (value: number, locale: string) =>
   new Intl.NumberFormat(locale).format(value);
@@ -128,44 +178,6 @@ const getQuotaChipLabel = (windowItem: CodexQuotaWindow) => {
   return fallback ? fallback.slice(0, 6).toUpperCase() : 'QUOTA';
 };
 
-const getQuotaResetLabel = (windowItem: CodexQuotaWindow, locale: string) => {
-  const labelKey = String(windowItem.labelKey ?? '');
-
-  if (
-    typeof windowItem.resetAtUnixSeconds === 'number' &&
-    Number.isFinite(windowItem.resetAtUnixSeconds) &&
-    windowItem.resetAtUnixSeconds > 0
-  ) {
-    const resetDate = new Date(windowItem.resetAtUnixSeconds * 1000);
-    if (!Number.isNaN(resetDate.getTime())) {
-      if (labelKey.includes('primary_window')) {
-        return new Intl.DateTimeFormat(locale, {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        }).format(resetDate);
-      }
-
-      if (labelKey.includes('secondary_window')) {
-        return new Intl.DateTimeFormat(locale, {
-          month: '2-digit',
-          day: '2-digit',
-        }).format(resetDate);
-      }
-
-      return new Intl.DateTimeFormat(locale, {
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(resetDate);
-    }
-  }
-
-  return String(windowItem.resetLabel ?? '').trim() || '--';
-};
-
 const getQuotaFillClassName = (percent: number | null) => {
   if (percent === null) {
     return styles.quotaFillEmpty;
@@ -179,18 +191,298 @@ const getQuotaFillClassName = (percent: number | null) => {
   return styles.quotaFillLow;
 };
 
+const toNumber = (value: unknown): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return parsed;
+};
+
+const getCodexAuthIndex = (file?: Partial<AuthFileItem> | null) =>
+  normalizeAuthIndex(file?.['auth_index'] ?? file?.authIndex);
+
+const isCodexAuthFile = (file?: AuthFileItem | null) => Boolean(file && CODEX_CONFIG.filterFn(file));
+
+const buildCodexUsageByAuthIndex = (usage: unknown): Map<string, CodexUsageStats> => {
+  const usageMap = new Map<string, CodexUsageStats>();
+
+  collectUsageDetails(usage).forEach((detail) => {
+    const authIndex = normalizeAuthIndex(detail.auth_index);
+    if (!authIndex) {
+      return;
+    }
+
+    const bucket = usageMap.get(authIndex) ?? {
+      requests: 0,
+      success: 0,
+      failed: 0,
+      tokens: 0,
+    };
+
+    bucket.requests += 1;
+    bucket.tokens += Math.max(Number(detail.tokens?.total_tokens) || 0, extractTotalTokens(detail));
+    if (detail.failed) {
+      bucket.failed += 1;
+    } else {
+      bucket.success += 1;
+    }
+
+    usageMap.set(authIndex, bucket);
+  });
+
+  return usageMap;
+};
+
+function OverviewRequestEventsCard({
+  usage,
+  loading,
+  files,
+  geminiKeys,
+  claudeConfigs,
+  codexConfigs,
+  vertexConfigs,
+  openaiProviders,
+}: OverviewRequestEventsCardProps) {
+  const { t, i18n } = useTranslation();
+
+  const authFileMap = useMemo(() => {
+    const nextMap = new Map<string, CredentialInfo>();
+    files.forEach((file) => {
+      const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
+      if (!authIndex) {
+        return;
+      }
+
+      nextMap.set(authIndex, {
+        name: file.name || authIndex,
+        type: (file.type || file.provider || '').toString(),
+      });
+    });
+    return nextMap;
+  }, [files]);
+
+  const sourceInfoMap = useMemo(
+    () =>
+      buildSourceInfoMap({
+        geminiApiKeys: geminiKeys,
+        claudeApiKeys: claudeConfigs,
+        codexApiKeys: codexConfigs,
+        vertexApiKeys: vertexConfigs,
+        openaiCompatibility: openaiProviders,
+      }),
+    [claudeConfigs, codexConfigs, geminiKeys, openaiProviders, vertexConfigs]
+  );
+
+  const rows = useMemo<OverviewRequestEventRow[]>(() => {
+    const details = collectUsageDetails(usage);
+
+    const mappedRows = details.map((detail) => {
+      const timestamp = detail.timestamp;
+      const timestampMs =
+        typeof detail.__timestampMs === 'number' && detail.__timestampMs > 0
+          ? detail.__timestampMs
+          : parseTimestampMs(timestamp);
+      const date = Number.isNaN(timestampMs) ? null : new Date(timestampMs);
+      const sourceRaw = String(detail.source ?? '').trim();
+      const authIndexRaw = detail.auth_index as unknown;
+      const authIndex =
+        authIndexRaw === null || authIndexRaw === undefined || authIndexRaw === ''
+          ? '-'
+          : String(authIndexRaw);
+      const sourceInfo = resolveSourceDisplay(sourceRaw, authIndexRaw, sourceInfoMap, authFileMap);
+      const source = sourceInfo.displayName;
+      const sourceKey = sourceInfo.identityKey ?? `source:${sourceRaw || source}`;
+      const sourceType = sourceInfo.type;
+      const model = String(detail.__modelName ?? '').trim() || '-';
+      const inputTokens = Math.max(toNumber(detail.tokens?.input_tokens), 0);
+      const outputTokens = Math.max(toNumber(detail.tokens?.output_tokens), 0);
+      const reasoningTokens = Math.max(toNumber(detail.tokens?.reasoning_tokens), 0);
+      const cachedTokens = Math.max(
+        Math.max(toNumber(detail.tokens?.cached_tokens), 0),
+        Math.max(toNumber(detail.tokens?.cache_tokens), 0)
+      );
+      const totalTokens = Math.max(toNumber(detail.tokens?.total_tokens), extractTotalTokens(detail));
+
+      return {
+        timestamp,
+        timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
+        timestampLabel: date ? date.toLocaleString(i18n.language) : timestamp || '-',
+        model,
+        sourceKey,
+        sourceRaw: sourceRaw || '-',
+        source,
+        sourceType,
+        authIndex,
+        failed: detail.failed === true,
+        latencyMs: extractLatencyMs(detail),
+        inputTokens,
+        outputTokens,
+        reasoningTokens,
+        cachedTokens,
+        totalTokens,
+      };
+    });
+
+    const sourceLabelKeyMap = new Map<string, Set<string>>();
+    mappedRows.forEach((row) => {
+      const keys = sourceLabelKeyMap.get(row.source) ?? new Set<string>();
+      keys.add(row.sourceKey);
+      sourceLabelKeyMap.set(row.source, keys);
+    });
+
+    const disambiguatedRows = mappedRows.map((row) => {
+      const labelKeyCount = sourceLabelKeyMap.get(row.source)?.size ?? 0;
+      if (labelKeyCount <= 1) {
+        return row;
+      }
+
+      if (row.authIndex !== '-') {
+        return {
+          ...row,
+          source: `${row.source} 路 ${row.authIndex}`,
+        };
+      }
+
+      if (row.sourceRaw !== '-' && row.sourceRaw !== row.source) {
+        return {
+          ...row,
+          source: `${row.source} 路 ${row.sourceRaw}`,
+        };
+      }
+
+      if (row.sourceType) {
+        return {
+          ...row,
+          source: `${row.source} 路 ${row.sourceType}`,
+        };
+      }
+
+      return {
+        ...row,
+        source: `${row.source} 路 ${row.sourceKey}`,
+      };
+    });
+
+    return disambiguatedRows
+      .sort((a, b) => {
+        if (b.timestampMs !== a.timestampMs) return b.timestampMs - a.timestampMs;
+        if (a.timestamp !== b.timestamp) return b.timestamp.localeCompare(a.timestamp);
+        if (a.model !== b.model) return a.model.localeCompare(b.model);
+        if (a.sourceRaw !== b.sourceRaw) return a.sourceRaw.localeCompare(b.sourceRaw);
+        if (a.authIndex !== b.authIndex) return a.authIndex.localeCompare(b.authIndex);
+        if (a.failed !== b.failed) return Number(a.failed) - Number(b.failed);
+        if (b.totalTokens !== a.totalTokens) return b.totalTokens - a.totalTokens;
+        return a.source.localeCompare(b.source);
+      })
+      .slice(0, OVERVIEW_MAX_EVENTS);
+  }, [authFileMap, i18n.language, sourceInfoMap, usage]);
+
+  const hasLatencyData = useMemo(() => rows.some((row) => row.latencyMs !== null), [rows]);
+
+  return (
+    <Card className={styles.eventsCard} title={t('usage_stats.request_events_title')}>
+      <div className={styles.eventsCardBody}>
+        {loading && rows.length === 0 ? (
+          <div className={styles.emptyState}>{t('common.loading')}</div>
+        ) : rows.length === 0 ? (
+          <EmptyState
+            title={t('usage_stats.request_events_empty_title')}
+            description={t('usage_stats.request_events_empty_desc')}
+          />
+        ) : (
+          <div className={styles.eventsTableWrapper}>
+            <table className={styles.eventsTable}>
+              <thead>
+                <tr>
+                  <th className={styles.eventsTimestampCol}>
+                    {t('usage_stats.request_events_timestamp')}
+                  </th>
+                  <th className={styles.eventsModelCol}>{t('usage_stats.model_name')}</th>
+                  <th className={styles.eventsSourceCol}>
+                    {t('usage_stats.request_events_source')}
+                  </th>
+                  <th className={styles.eventsAuthIndexCol}>
+                    {t('usage_stats.request_events_auth_index')}
+                  </th>
+                  <th className={styles.eventsResultCol}>
+                    {t('usage_stats.request_events_result')}
+                  </th>
+                  {hasLatencyData && (
+                    <th className={styles.eventsMetricCol}>{t('usage_stats.time')}</th>
+                  )}
+                  <th className={styles.eventsMetricCol}>{t('usage_stats.input_tokens')}</th>
+                  <th className={styles.eventsMetricCol}>{t('usage_stats.output_tokens')}</th>
+                  <th className={styles.eventsMetricCol}>{t('usage_stats.reasoning_tokens')}</th>
+                  <th className={styles.eventsMetricCol}>{t('usage_stats.cached_tokens')}</th>
+                  <th className={styles.eventsMetricCol}>{t('usage_stats.total_tokens')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={`${row.timestampMs}:${row.model}:${row.sourceKey}:${row.authIndex}`}>
+                    <td className={styles.eventsTimestampCell} title={row.timestamp}>
+                      {row.timestampLabel}
+                    </td>
+                    <td className={styles.eventsModelCell}>{row.model}</td>
+                    <td className={styles.eventsSourceCell} title={row.source}>
+                      <div className={styles.eventsSourceContent}>
+                        <span className={styles.eventsSourceText}>{row.source}</span>
+                        {row.sourceType && (
+                          <span className={styles.eventsSourceType}>{row.sourceType}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className={styles.eventsAuthIndexCell} title={row.authIndex}>
+                      {row.authIndex}
+                    </td>
+                    <td className={styles.eventsResultCell}>
+                      <span
+                        className={
+                          row.failed ? styles.eventsResultFailed : styles.eventsResultSuccess
+                        }
+                      >
+                        {row.failed ? t('stats.failure') : t('stats.success')}
+                      </span>
+                    </td>
+                    {hasLatencyData && (
+                      <td className={styles.eventsMetricCell}>
+                        {formatDurationMs(row.latencyMs)}
+                      </td>
+                    )}
+                    <td className={styles.eventsMetricCell}>{row.inputTokens.toLocaleString()}</td>
+                    <td className={styles.eventsMetricCell}>{row.outputTokens.toLocaleString()}</td>
+                    <td className={styles.eventsMetricCell}>
+                      {row.reasoningTokens.toLocaleString()}
+                    </td>
+                    <td className={styles.eventsMetricCell}>
+                      {row.cachedTokens.toLocaleString()}
+                    </td>
+                    <td className={styles.eventsMetricCell}>{row.totalTokens.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export function DashboardOverviewPage() {
   const { t, i18n } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const quotaScopeKey = useAuthStore((state) => `${state.apiBase}::${state.managementKey}`);
-  const config = useConfigStore((state) => state.config);
-  const codexQuota = useQuotaStore((state) => state.codexQuota);
+  const appConfig = useConfigStore((state) => state.config);
 
   const { usage, loading, error, lastRefreshedAt, loadUsage } = useUsageData();
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
   const [filesLoading, setFilesLoading] = useState(true);
+  const [quotaLoading, setQuotaLoading] = useState(false);
+  const [codexQuotaByFile, setCodexQuotaByFile] = useState<Record<string, OverviewQuotaEntry>>({});
+
   const quotaSyncSignatureRef = useRef('');
+  const quotaRequestKeyRef = useRef('');
 
   const loadOverviewFiles = useCallback(async (): Promise<AuthFileItem[]> => {
     if (connectionStatus !== 'connected') {
@@ -214,21 +506,76 @@ export function DashboardOverviewPage() {
     }
   }, [connectionStatus]);
 
+  const loadCodexQuota = useCallback(
+    async (targetFiles: AuthFileItem[]) => {
+      if (connectionStatus !== 'connected') {
+        quotaRequestKeyRef.current = '';
+        setQuotaLoading(false);
+        setCodexQuotaByFile({});
+        return;
+      }
+
+      const codexFiles = targetFiles.filter((file) => isCodexAuthFile(file));
+      if (codexFiles.length === 0) {
+        quotaRequestKeyRef.current = '';
+        setQuotaLoading(false);
+        setCodexQuotaByFile({});
+        return;
+      }
+
+      const requestKey = `${quotaScopeKey}::${codexFiles
+        .map((file) => `${file.name}:${getCodexAuthIndex(file) ?? '-'}`)
+        .join('|')}`;
+
+      quotaRequestKeyRef.current = requestKey;
+      setQuotaLoading(true);
+
+      const entries = await Promise.all(
+        codexFiles.map(async (file) => {
+          try {
+            const data = await CODEX_CONFIG.fetchQuota(file, t);
+            return [
+              file.name,
+              {
+                planType: data.planType ?? null,
+                windows: Array.isArray(data.windows) ? data.windows : [],
+              },
+            ] as const;
+          } catch {
+            return [
+              file.name,
+              {
+                planType: null,
+                windows: [],
+              },
+            ] as const;
+          }
+        })
+      );
+
+      if (quotaRequestKeyRef.current !== requestKey) {
+        return;
+      }
+
+      setCodexQuotaByFile(Object.fromEntries(entries));
+      setQuotaLoading(false);
+    },
+    [connectionStatus, quotaScopeKey, t]
+  );
+
   const handleHeaderRefresh = useCallback(async () => {
     if (connectionStatus !== 'connected') {
       setFiles([]);
       setFilesLoading(false);
+      setCodexQuotaByFile({});
+      setQuotaLoading(false);
       return;
     }
 
     const [refreshedFiles] = await Promise.all([loadOverviewFiles(), loadUsage()]);
-    const refreshedCodexFiles = refreshedFiles.filter((file) => isCodexAuthFile(file));
-
-    if (refreshedCodexFiles.length > 0) {
-      quotaSyncSignatureRef.current = '';
-      await refreshCodexQuotaFiles(refreshedCodexFiles, t, { silent: false });
-    }
-  }, [connectionStatus, loadOverviewFiles, loadUsage, t]);
+    quotaSyncSignatureRef.current = '';
+    await loadCodexQuota(refreshedFiles);
+  }, [connectionStatus, loadCodexQuota, loadOverviewFiles, loadUsage]);
 
   useHeaderRefresh(handleHeaderRefresh);
 
@@ -236,6 +583,10 @@ export function DashboardOverviewPage() {
     if (connectionStatus !== 'connected') {
       setFiles([]);
       setFilesLoading(false);
+      setCodexQuotaByFile({});
+      setQuotaLoading(false);
+      quotaSyncSignatureRef.current = '';
+      quotaRequestKeyRef.current = '';
       return;
     }
 
@@ -263,24 +614,29 @@ export function DashboardOverviewPage() {
   useEffect(() => {
     if (connectionStatus !== 'connected') {
       quotaSyncSignatureRef.current = '';
+      quotaRequestKeyRef.current = '';
       return;
     }
   }, [connectionStatus]);
 
   useEffect(() => {
-    if (
-      connectionStatus !== 'connected' ||
-      filesLoading ||
-      codexFiles.length === 0 ||
-      !codexQuotaSignature ||
-      quotaSyncSignatureRef.current === codexQuotaSignature
-    ) {
+    if (connectionStatus !== 'connected' || filesLoading) {
+      return;
+    }
+
+    if (!codexQuotaSignature || codexFiles.length === 0) {
+      setCodexQuotaByFile({});
+      setQuotaLoading(false);
+      return;
+    }
+
+    if (quotaSyncSignatureRef.current === codexQuotaSignature) {
       return;
     }
 
     quotaSyncSignatureRef.current = codexQuotaSignature;
-    void refreshCodexQuotaFiles(codexFiles, t, { silent: false });
-  }, [codexFiles, codexQuotaSignature, connectionStatus, filesLoading, t]);
+    void loadCodexQuota(codexFiles);
+  }, [codexFiles, codexQuotaSignature, connectionStatus, filesLoading, loadCodexQuota]);
 
   const totalRequests = useMemo(
     () => Array.from(usageByAuthIndex.values()).reduce((sum, item) => sum + item.requests, 0),
@@ -310,10 +666,9 @@ export function DashboardOverviewPage() {
                 failed: 0,
                 tokens: 0,
               };
-        const quotaEntry = codexQuota[file.name];
+        const quotaEntry = codexQuotaByFile[file.name];
         const quotaWindows = Array.isArray(quotaEntry?.windows) ? quotaEntry.windows : [];
-        const fallbackResetLabel =
-          !hasUsageSnapshot && filesLoading ? t('common.loading') : '--';
+        const fallbackResetLabel = quotaLoading || filesLoading ? t('common.loading') : '--';
         const successTone = getSuccessTone(usageStats.requests, usageStats.success);
 
         const windows =
@@ -325,7 +680,7 @@ export function DashboardOverviewPage() {
                   windowItem.usedPercent === null || windowItem.usedPercent === undefined
                     ? null
                     : Math.max(0, Math.min(100, 100 - Number(windowItem.usedPercent))),
-                resetLabel: getQuotaResetLabel(windowItem, i18n.language),
+                resetLabel: String(windowItem.resetLabel ?? '').trim() || fallbackResetLabel,
               }))
             : [
                 {
@@ -364,7 +719,7 @@ export function DashboardOverviewPage() {
           windows,
         };
       }),
-    [codexFiles, codexQuota, filesLoading, hasUsageSnapshot, i18n.language, t, usageByAuthIndex]
+    [codexFiles, codexQuotaByFile, filesLoading, i18n.language, quotaLoading, t, usageByAuthIndex]
   );
 
   const lastUpdatedLabel = lastRefreshedAt
@@ -407,9 +762,7 @@ export function DashboardOverviewPage() {
         >
           {accountCards.length === 0 ? (
             <div className={styles.emptyState}>
-              {!hasUsageSnapshot && filesLoading
-                ? t('common.loading')
-                : t('dashboard.no_codex_accounts')}
+              {!hasUsageSnapshot && filesLoading ? t('common.loading') : t('dashboard.no_codex_accounts')}
             </div>
           ) : (
             <div className={styles.accountGrid}>
@@ -463,9 +816,7 @@ export function DashboardOverviewPage() {
                       <div key={windowItem.id} className={styles.quotaChip}>
                         <span className={styles.quotaLabel}>{windowItem.label}</span>
                         <span className={styles.quotaPercent}>
-                          {windowItem.percent === null
-                            ? '--'
-                            : `${Math.round(windowItem.percent)}%`}
+                          {windowItem.percent === null ? '--' : `${Math.round(windowItem.percent)}%`}
                         </span>
                         <div className={styles.quotaBar}>
                           <div
@@ -483,18 +834,15 @@ export function DashboardOverviewPage() {
           )}
         </Card>
 
-        <RequestEventsDetailsCard
+        <OverviewRequestEventsCard
           usage={overviewUsage}
           loading={loading}
-          geminiKeys={config?.geminiApiKeys || []}
-          claudeConfigs={config?.claudeApiKeys || []}
-          codexConfigs={config?.codexApiKeys || []}
-          vertexConfigs={config?.vertexApiKeys || []}
-          openaiProviders={config?.openaiCompatibility || []}
-          compact
-          maxRows={10}
-          liveRefresh
-          cardClassName={styles.eventsCard}
+          files={files}
+          geminiKeys={appConfig?.geminiApiKeys || []}
+          claudeConfigs={appConfig?.claudeApiKeys || []}
+          codexConfigs={appConfig?.codexApiKeys || []}
+          vertexConfigs={appConfig?.vertexApiKeys || []}
+          openaiProviders={appConfig?.openaiCompatibility || []}
         />
       </div>
     </div>

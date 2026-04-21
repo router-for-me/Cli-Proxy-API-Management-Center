@@ -1,11 +1,10 @@
-import { type CSSProperties, useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Select';
 import { authFilesApi } from '@/services/api/authFiles';
-import { useAuthStore } from '@/stores';
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
 import type { CredentialInfo } from '@/types/sourceInfo';
@@ -20,12 +19,10 @@ import {
   normalizeAuthIndex,
 } from '@/utils/usage';
 import { downloadBlob } from '@/utils/download';
-import { useLiveUsageRefresh } from './hooks/useLiveUsageRefresh';
 import styles from '@/pages/UsagePage.module.scss';
 
 const ALL_FILTER = '__all__';
 const MAX_RENDERED_EVENTS = 500;
-const EMPTY_AUTH_FILE_MAP = new Map<string, CredentialInfo>();
 
 type RequestEventRow = {
   id: string;
@@ -47,10 +44,6 @@ type RequestEventRow = {
   totalTokens: number;
 };
 
-type RequestEventBaseRow = Omit<RequestEventRow, 'id'> & {
-  eventFingerprint: string;
-};
-
 export interface RequestEventsDetailsCardProps {
   usage: unknown;
   loading: boolean;
@@ -59,10 +52,6 @@ export interface RequestEventsDetailsCardProps {
   codexConfigs: ProviderKeyConfig[];
   vertexConfigs: ProviderKeyConfig[];
   openaiProviders: OpenAIProviderConfig[];
-  compact?: boolean;
-  maxRows?: number;
-  liveRefresh?: boolean;
-  cardClassName?: string;
 }
 
 const toNumber = (value: unknown): number => {
@@ -78,92 +67,6 @@ const encodeCsv = (value: string | number): string => {
   return `"${safeText.replace(/"/g, '""')}"`;
 };
 
-const buildRequestEventFingerprint = (parts: Array<string | number | boolean | null>) =>
-  JSON.stringify(parts);
-
-type RequestEventIdentitySnapshot = {
-  scopeKey: string;
-  nextInstanceId: number;
-  idsByFingerprint: Map<string, string[]>;
-};
-
-const createRequestEventIdentitySnapshot = (scopeKey: string): RequestEventIdentitySnapshot => ({
-  scopeKey,
-  nextInstanceId: 0,
-  idsByFingerprint: new Map<string, string[]>(),
-});
-const requestEventIdentitySnapshotCache = new Map<string, RequestEventIdentitySnapshot>();
-
-const buildStableRequestEventRows = (
-  baseRows: RequestEventBaseRow[],
-  snapshot: RequestEventIdentitySnapshot,
-  scopeKey: string
-) => {
-  const activeSnapshot =
-    snapshot.scopeKey === scopeKey ? snapshot : createRequestEventIdentitySnapshot(scopeKey);
-  const previousQueues = new Map(
-    Array.from(activeSnapshot.idsByFingerprint.entries(), ([fingerprint, ids]) => [
-      fingerprint,
-      [...ids],
-    ])
-  );
-  const previousCounts = new Map(
-    Array.from(activeSnapshot.idsByFingerprint.entries(), ([fingerprint, ids]) => [
-      fingerprint,
-      ids.length,
-    ])
-  );
-  const nextCounts = new Map<string, number>();
-
-  baseRows.forEach((row) => {
-    nextCounts.set(row.eventFingerprint, (nextCounts.get(row.eventFingerprint) ?? 0) + 1);
-  });
-
-  let nextInstanceId = activeSnapshot.nextInstanceId;
-  const assignedCounts = new Map<string, number>();
-  const nextIdsByFingerprint = new Map<string, string[]>();
-
-  const rows: RequestEventRow[] = baseRows.map(({ eventFingerprint, ...row }) => {
-    const assignedCount = assignedCounts.get(eventFingerprint) ?? 0;
-    const previousCount = previousCounts.get(eventFingerprint) ?? 0;
-    const nextCount = nextCounts.get(eventFingerprint) ?? 0;
-    const leadingNewCount = Math.max(0, nextCount - previousCount);
-
-    let id: string | undefined;
-    if (assignedCount < leadingNewCount) {
-      id = `usage-event:${nextInstanceId}`;
-      nextInstanceId += 1;
-    } else {
-      id = previousQueues.get(eventFingerprint)?.shift();
-    }
-
-    if (!id) {
-      id = `usage-event:${nextInstanceId}`;
-      nextInstanceId += 1;
-    }
-
-    assignedCounts.set(eventFingerprint, assignedCount + 1);
-
-    const ids = nextIdsByFingerprint.get(eventFingerprint) ?? [];
-    ids.push(id);
-    nextIdsByFingerprint.set(eventFingerprint, ids);
-
-    return {
-      ...row,
-      id,
-    };
-  });
-
-  return {
-    rows,
-    snapshot: {
-      scopeKey,
-      nextInstanceId,
-      idsByFingerprint: nextIdsByFingerprint,
-    },
-  };
-};
-
 export function RequestEventsDetailsCard({
   usage,
   loading,
@@ -172,30 +75,17 @@ export function RequestEventsDetailsCard({
   codexConfigs,
   vertexConfigs,
   openaiProviders,
-  compact = false,
-  maxRows = 5,
-  liveRefresh = false,
-  cardClassName,
 }: RequestEventsDetailsCardProps) {
   const { t, i18n } = useTranslation();
-  const authScopeKey = useAuthStore((state) => `${state.apiBase}::${state.managementKey}`);
-  const requestEventsInstanceId = useId();
   const latencyHint = t('usage_stats.latency_unit_hint', {
     field: LATENCY_SOURCE_FIELD,
     unit: t('usage_stats.duration_unit_ms'),
   });
-  const rowIdentityCacheKey = `${authScopeKey}::${requestEventsInstanceId}`;
-  const committedRowIdentitySnapshot =
-    requestEventIdentitySnapshotCache.get(rowIdentityCacheKey) ??
-    createRequestEventIdentitySnapshot(authScopeKey);
 
   const [modelFilter, setModelFilter] = useState(ALL_FILTER);
   const [sourceFilter, setSourceFilter] = useState(ALL_FILTER);
   const [authIndexFilter, setAuthIndexFilter] = useState(ALL_FILTER);
-  const [authFileMapState, setAuthFileMapState] = useState(() => ({
-    scopeKey: authScopeKey,
-    map: new Map<string, CredentialInfo>(),
-  }));
+  const [authFileMap, setAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
@@ -214,21 +104,13 @@ export function RequestEventsDetailsCard({
             type: (file.type || file.provider || '').toString(),
           });
         });
-        setAuthFileMapState({
-          scopeKey: authScopeKey,
-          map,
-        });
+        setAuthFileMap(map);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [authScopeKey]);
-
-  const authFileMap = useMemo(
-    () => (authFileMapState.scopeKey === authScopeKey ? authFileMapState.map : EMPTY_AUTH_FILE_MAP),
-    [authFileMapState, authScopeKey]
-  );
+  }, []);
 
   const sourceInfoMap = useMemo(
     () =>
@@ -242,83 +124,75 @@ export function RequestEventsDetailsCard({
     [claudeConfigs, codexConfigs, geminiKeys, openaiProviders, vertexConfigs]
   );
 
-  const baseRows = useMemo<RequestEventBaseRow[]>(() => {
+  const rows = useMemo<RequestEventRow[]>(() => {
     const details = collectUsageDetails(usage);
 
-    const mappedRows: RequestEventBaseRow[] = details.map((detail) => {
-      const timestamp = detail.timestamp;
-      const timestampMs =
-        typeof detail.__timestampMs === 'number' && detail.__timestampMs > 0
-          ? detail.__timestampMs
-          : parseTimestampMs(timestamp);
-      const date = Number.isNaN(timestampMs) ? null : new Date(timestampMs);
-      const sourceRaw = String(detail.source ?? '').trim();
-      const authIndexRaw = detail.auth_index as unknown;
-      const authIndex =
-        authIndexRaw === null || authIndexRaw === undefined || authIndexRaw === ''
-          ? '-'
-          : String(authIndexRaw);
-      const sourceInfo = resolveSourceDisplay(sourceRaw, authIndexRaw, sourceInfoMap, authFileMap);
-      const source = sourceInfo.displayName;
-      const sourceKey = sourceInfo.identityKey ?? `source:${sourceRaw || source}`;
-      const sourceType = sourceInfo.type;
-      const model = String(detail.__modelName ?? '').trim() || '-';
-      const inputTokens = Math.max(toNumber(detail.tokens?.input_tokens), 0);
-      const outputTokens = Math.max(toNumber(detail.tokens?.output_tokens), 0);
-      const reasoningTokens = Math.max(toNumber(detail.tokens?.reasoning_tokens), 0);
-      const cachedTokens = Math.max(
-        Math.max(toNumber(detail.tokens?.cached_tokens), 0),
-        Math.max(toNumber(detail.tokens?.cache_tokens), 0)
-      );
-      const totalTokens = Math.max(
-        toNumber(detail.tokens?.total_tokens),
-        extractTotalTokens(detail)
-      );
-      const latencyMs = extractLatencyMs(detail);
-      const eventFingerprint = buildRequestEventFingerprint([
-        Number.isNaN(timestampMs) ? 0 : timestampMs,
-        timestamp || '',
-        model,
-        sourceRaw || '-',
-        authIndex,
-        detail.failed === true,
-        latencyMs ?? '',
-        inputTokens,
-        outputTokens,
-        reasoningTokens,
-        cachedTokens,
-        totalTokens,
-      ]);
+    const baseRows = details
+      .map((detail, index) => {
+        const timestamp = detail.timestamp;
+        const timestampMs =
+          typeof detail.__timestampMs === 'number' && detail.__timestampMs > 0
+            ? detail.__timestampMs
+            : parseTimestampMs(timestamp);
+        const date = Number.isNaN(timestampMs) ? null : new Date(timestampMs);
+        const sourceRaw = String(detail.source ?? '').trim();
+        const authIndexRaw = detail.auth_index as unknown;
+        const authIndex =
+          authIndexRaw === null || authIndexRaw === undefined || authIndexRaw === ''
+            ? '-'
+            : String(authIndexRaw);
+        const sourceInfo = resolveSourceDisplay(
+          sourceRaw,
+          authIndexRaw,
+          sourceInfoMap,
+          authFileMap
+        );
+        const source = sourceInfo.displayName;
+        const sourceKey = sourceInfo.identityKey ?? `source:${sourceRaw || source}`;
+        const sourceType = sourceInfo.type;
+        const model = String(detail.__modelName ?? '').trim() || '-';
+        const inputTokens = Math.max(toNumber(detail.tokens?.input_tokens), 0);
+        const outputTokens = Math.max(toNumber(detail.tokens?.output_tokens), 0);
+        const reasoningTokens = Math.max(toNumber(detail.tokens?.reasoning_tokens), 0);
+        const cachedTokens = Math.max(
+          Math.max(toNumber(detail.tokens?.cached_tokens), 0),
+          Math.max(toNumber(detail.tokens?.cache_tokens), 0)
+        );
+        const totalTokens = Math.max(
+          toNumber(detail.tokens?.total_tokens),
+          extractTotalTokens(detail)
+        );
+        const latencyMs = extractLatencyMs(detail);
 
-      return {
-        timestamp,
-        timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
-        timestampLabel: date ? date.toLocaleString(i18n.language) : timestamp || '-',
-        model,
-        sourceKey,
-        sourceRaw: sourceRaw || '-',
-        source,
-        sourceType,
-        authIndex,
-        failed: detail.failed === true,
-        latencyMs,
-        inputTokens,
-        outputTokens,
-        reasoningTokens,
-        cachedTokens,
-        totalTokens,
-        eventFingerprint,
-      };
-    });
+        return {
+          id: `${timestamp}-${model}-${sourceKey}-${authIndex}-${index}`,
+          timestamp,
+          timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
+          timestampLabel: date ? date.toLocaleString(i18n.language) : timestamp || '-',
+          model,
+          sourceKey,
+          sourceRaw: sourceRaw || '-',
+          source,
+          sourceType,
+          authIndex,
+          failed: detail.failed === true,
+          latencyMs,
+          inputTokens,
+          outputTokens,
+          reasoningTokens,
+          cachedTokens,
+          totalTokens,
+        };
+      });
 
     const sourceLabelKeyMap = new Map<string, Set<string>>();
-    mappedRows.forEach((row) => {
+    baseRows.forEach((row) => {
       const keys = sourceLabelKeyMap.get(row.source) ?? new Set<string>();
       keys.add(row.sourceKey);
       sourceLabelKeyMap.set(row.source, keys);
     });
 
-    const buildDisambiguatedSourceLabel = (row: RequestEventBaseRow) => {
+    const buildDisambiguatedSourceLabel = (row: RequestEventRow) => {
       const labelKeyCount = sourceLabelKeyMap.get(row.source)?.size ?? 0;
       if (labelKeyCount <= 1) {
         return row.source;
@@ -339,37 +213,13 @@ export function RequestEventsDetailsCard({
       return `${row.source} · ${row.sourceKey}`;
     };
 
-    return mappedRows
+    return baseRows
       .map((row) => ({
         ...row,
         source: buildDisambiguatedSourceLabel(row),
       }))
-      .sort((a, b) => {
-        if (b.timestampMs !== a.timestampMs) return b.timestampMs - a.timestampMs;
-        if (a.timestamp !== b.timestamp) return b.timestamp.localeCompare(a.timestamp);
-        if (a.model !== b.model) return a.model.localeCompare(b.model);
-        if (a.sourceRaw !== b.sourceRaw) return a.sourceRaw.localeCompare(b.sourceRaw);
-        if (a.authIndex !== b.authIndex) return a.authIndex.localeCompare(b.authIndex);
-        if (a.failed !== b.failed) return Number(a.failed) - Number(b.failed);
-        if (b.totalTokens !== a.totalTokens) return b.totalTokens - a.totalTokens;
-        return a.eventFingerprint.localeCompare(b.eventFingerprint);
-      });
+      .sort((a, b) => b.timestampMs - a.timestampMs);
   }, [authFileMap, i18n.language, sourceInfoMap, usage]);
-
-  const rowIdentityDraft = useMemo(
-    () => buildStableRequestEventRows(baseRows, committedRowIdentitySnapshot, authScopeKey),
-    [authScopeKey, baseRows, committedRowIdentitySnapshot]
-  );
-
-  useEffect(() => {
-    requestEventIdentitySnapshotCache.set(rowIdentityCacheKey, rowIdentityDraft.snapshot);
-
-    return () => {
-      requestEventIdentitySnapshotCache.delete(rowIdentityCacheKey);
-    };
-  }, [rowIdentityCacheKey, rowIdentityDraft.snapshot]);
-
-  const rows = rowIdentityDraft.rows;
 
   const hasLatencyData = useMemo(() => rows.some((row) => row.latencyMs !== null), [rows]);
 
@@ -445,26 +295,7 @@ export function RequestEventsDetailsCard({
     [effectiveAuthIndexFilter, effectiveModelFilter, effectiveSourceFilter, rows]
   );
 
-  const renderLimit = compact ? Math.max(1, maxRows) : MAX_RENDERED_EVENTS;
-  const renderedRows = useMemo(
-    () => filteredRows.slice(0, renderLimit),
-    [filteredRows, renderLimit]
-  );
-
-  const liveRefreshRows = useMemo(
-    () =>
-      rows.map((row) => ({
-        id: row.id,
-        authIndex: row.authIndex,
-        timestampMs: row.timestampMs,
-      })),
-    [rows]
-  );
-
-  const { highlightedIds } = useLiveUsageRefresh({
-    enabled: liveRefresh,
-    rows: liveRefreshRows,
-  });
+  const renderedRows = useMemo(() => filteredRows.slice(0, MAX_RENDERED_EVENTS), [filteredRows]);
 
   const hasActiveFilters =
     effectiveModelFilter !== ALL_FILTER ||
@@ -550,128 +381,79 @@ export function RequestEventsDetailsCard({
     });
   };
 
-  const baseRowStyle: CSSProperties = {
-    backgroundColor: 'transparent',
-    boxShadow: 'inset 0 0 0 rgba(34, 197, 94, 0)',
-    transition: 'background-color 420ms ease, box-shadow 420ms ease',
-  };
-
-  const highlightedRowStyle: CSSProperties = {
-    ...baseRowStyle,
-    backgroundColor: 'rgba(34, 197, 94, 0.14)',
-    boxShadow: 'inset 3px 0 0 rgba(34, 197, 94, 0.82)',
-  };
-
-  const compactCellBaseStyle: CSSProperties | undefined = compact
-    ? {
-        padding: '5px 8px',
-        fontSize: '12px',
-        lineHeight: 1.25,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-      }
-    : undefined;
-
-  const getCompactColumnStyle = (index: number): CSSProperties | undefined => {
-    if (!compact) {
-      return undefined;
-    }
-
-    switch (index) {
-      case 0:
-        return { width: '112px', minWidth: '112px', maxWidth: '112px' };
-      case 1:
-        return { width: '84px', minWidth: '84px', maxWidth: '84px' };
-      case 2:
-        return { width: '340px', minWidth: '340px', maxWidth: '340px' };
-      case 3:
-        return { width: '120px', minWidth: '120px', maxWidth: '120px' };
-      case 4:
-        return { width: '80px', minWidth: '80px', maxWidth: '80px' };
-      default:
-        return { width: '72px', minWidth: '72px', maxWidth: '72px' };
-    }
-  };
-
   return (
     <Card
       title={t('usage_stats.request_events_title')}
-      className={cardClassName}
       extra={
-        !compact ? (
-          <div className={styles.requestEventsActions}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFilters}
-              disabled={!hasActiveFilters}
-            >
-              {t('usage_stats.clear_filters')}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleExportCsv}
-              disabled={filteredRows.length === 0}
-            >
-              {t('usage_stats.export_csv')}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleExportJson}
-              disabled={filteredRows.length === 0}
-            >
-              {t('usage_stats.export_json')}
-            </Button>
-          </div>
-        ) : undefined
+        <div className={styles.requestEventsActions}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearFilters}
+            disabled={!hasActiveFilters}
+          >
+            {t('usage_stats.clear_filters')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={filteredRows.length === 0}
+          >
+            {t('usage_stats.export_csv')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleExportJson}
+            disabled={filteredRows.length === 0}
+          >
+            {t('usage_stats.export_json')}
+          </Button>
+        </div>
       }
     >
-      {!compact && (
-        <div className={styles.requestEventsToolbar}>
-          <div className={styles.requestEventsFilterItem}>
-            <span className={styles.requestEventsFilterLabel}>
-              {t('usage_stats.request_events_filter_model')}
-            </span>
-            <Select
-              value={effectiveModelFilter}
-              options={modelOptions}
-              onChange={setModelFilter}
-              className={styles.requestEventsSelect}
-              ariaLabel={t('usage_stats.request_events_filter_model')}
-              fullWidth={false}
-            />
-          </div>
-          <div className={styles.requestEventsFilterItem}>
-            <span className={styles.requestEventsFilterLabel}>
-              {t('usage_stats.request_events_filter_source')}
-            </span>
-            <Select
-              value={effectiveSourceFilter}
-              options={sourceOptions}
-              onChange={setSourceFilter}
-              className={styles.requestEventsSelect}
-              ariaLabel={t('usage_stats.request_events_filter_source')}
-              fullWidth={false}
-            />
-          </div>
-          <div className={styles.requestEventsFilterItem}>
-            <span className={styles.requestEventsFilterLabel}>
-              {t('usage_stats.request_events_filter_auth_index')}
-            </span>
-            <Select
-              value={effectiveAuthIndexFilter}
-              options={authIndexOptions}
-              onChange={setAuthIndexFilter}
-              className={styles.requestEventsSelect}
-              ariaLabel={t('usage_stats.request_events_filter_auth_index')}
-              fullWidth={false}
-            />
-          </div>
+      <div className={styles.requestEventsToolbar}>
+        <div className={styles.requestEventsFilterItem}>
+          <span className={styles.requestEventsFilterLabel}>
+            {t('usage_stats.request_events_filter_model')}
+          </span>
+          <Select
+            value={effectiveModelFilter}
+            options={modelOptions}
+            onChange={setModelFilter}
+            className={styles.requestEventsSelect}
+            ariaLabel={t('usage_stats.request_events_filter_model')}
+            fullWidth={false}
+          />
         </div>
-      )}
+        <div className={styles.requestEventsFilterItem}>
+          <span className={styles.requestEventsFilterLabel}>
+            {t('usage_stats.request_events_filter_source')}
+          </span>
+          <Select
+            value={effectiveSourceFilter}
+            options={sourceOptions}
+            onChange={setSourceFilter}
+            className={styles.requestEventsSelect}
+            ariaLabel={t('usage_stats.request_events_filter_source')}
+            fullWidth={false}
+          />
+        </div>
+        <div className={styles.requestEventsFilterItem}>
+          <span className={styles.requestEventsFilterLabel}>
+            {t('usage_stats.request_events_filter_auth_index')}
+          </span>
+          <Select
+            value={effectiveAuthIndexFilter}
+            options={authIndexOptions}
+            onChange={setAuthIndexFilter}
+            className={styles.requestEventsSelect}
+            ariaLabel={t('usage_stats.request_events_filter_auth_index')}
+            fullWidth={false}
+          />
+        </div>
+      </div>
 
       {loading && rows.length === 0 ? (
         <div className={styles.hint}>{t('common.loading')}</div>
@@ -687,184 +469,53 @@ export function RequestEventsDetailsCard({
         />
       ) : (
         <>
-          {!compact && (
-            <div className={styles.requestEventsMeta}>
-              <span>{t('usage_stats.request_events_count', { count: filteredRows.length })}</span>
-              {hasLatencyData && (
-                <span className={styles.requestEventsLimitHint}>{latencyHint}</span>
-              )}
-              {filteredRows.length > MAX_RENDERED_EVENTS && (
-                <span className={styles.requestEventsLimitHint}>
-                  {t('usage_stats.request_events_limit_hint', {
-                    shown: MAX_RENDERED_EVENTS,
-                    total: filteredRows.length,
-                  })}
-                </span>
-              )}
-            </div>
-          )}
+          <div className={styles.requestEventsMeta}>
+            <span>{t('usage_stats.request_events_count', { count: filteredRows.length })}</span>
+            {hasLatencyData && <span className={styles.requestEventsLimitHint}>{latencyHint}</span>}
+            {filteredRows.length > MAX_RENDERED_EVENTS && (
+              <span className={styles.requestEventsLimitHint}>
+                {t('usage_stats.request_events_limit_hint', {
+                  shown: MAX_RENDERED_EVENTS,
+                  total: filteredRows.length,
+                })}
+              </span>
+            )}
+          </div>
 
-          <div
-            className={styles.requestEventsTableWrapper}
-            style={
-              compact
-                ? {
-                    overflow: 'hidden',
-                    maxHeight: 'none',
-                  }
-                : undefined
-            }
-          >
-            <table
-              className={styles.table}
-              style={
-                compact
-                  ? {
-                      width: '100%',
-                      tableLayout: 'fixed',
-                      borderCollapse: 'collapse',
-                    }
-                  : undefined
-              }
-            >
+          <div className={styles.requestEventsTableWrapper}>
+            <table className={styles.table}>
               <thead>
                 <tr>
-                  <th style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(0) }}>
-                    {t('usage_stats.request_events_timestamp')}
-                  </th>
-                  <th style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(1) }}>
-                    {t('usage_stats.model_name')}
-                  </th>
-                  <th style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(2) }}>
-                    {t('usage_stats.request_events_source')}
-                  </th>
-                  <th style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(3) }}>
-                    {t('usage_stats.request_events_auth_index')}
-                  </th>
-                  <th style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(4) }}>
-                    {t('usage_stats.request_events_result')}
-                  </th>
-                  {hasLatencyData && (
-                    <th
-                      title={latencyHint}
-                      style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(5) }}
-                    >
-                      {t('usage_stats.time')}
-                    </th>
-                  )}
-                  <th
-                    style={{
-                      ...compactCellBaseStyle,
-                      ...getCompactColumnStyle(hasLatencyData ? 6 : 5),
-                    }}
-                  >
-                    {t('usage_stats.input_tokens')}
-                  </th>
-                  <th
-                    style={{
-                      ...compactCellBaseStyle,
-                      ...getCompactColumnStyle(hasLatencyData ? 7 : 6),
-                    }}
-                  >
-                    {t('usage_stats.output_tokens')}
-                  </th>
-                  <th
-                    style={{
-                      ...compactCellBaseStyle,
-                      ...getCompactColumnStyle(hasLatencyData ? 8 : 7),
-                    }}
-                  >
-                    {t('usage_stats.reasoning_tokens')}
-                  </th>
-                  <th
-                    style={{
-                      ...compactCellBaseStyle,
-                      ...getCompactColumnStyle(hasLatencyData ? 9 : 8),
-                    }}
-                  >
-                    {t('usage_stats.cached_tokens')}
-                  </th>
-                  <th
-                    style={{
-                      ...compactCellBaseStyle,
-                      ...getCompactColumnStyle(hasLatencyData ? 10 : 9),
-                    }}
-                  >
-                    {t('usage_stats.total_tokens')}
-                  </th>
+                  <th>{t('usage_stats.request_events_timestamp')}</th>
+                  <th>{t('usage_stats.model_name')}</th>
+                  <th>{t('usage_stats.request_events_source')}</th>
+                  <th>{t('usage_stats.request_events_auth_index')}</th>
+                  <th>{t('usage_stats.request_events_result')}</th>
+                  {hasLatencyData && <th title={latencyHint}>{t('usage_stats.time')}</th>}
+                  <th>{t('usage_stats.input_tokens')}</th>
+                  <th>{t('usage_stats.output_tokens')}</th>
+                  <th>{t('usage_stats.reasoning_tokens')}</th>
+                  <th>{t('usage_stats.cached_tokens')}</th>
+                  <th>{t('usage_stats.total_tokens')}</th>
                 </tr>
               </thead>
               <tbody>
                 {renderedRows.map((row) => (
-                  <tr
-                    key={row.id}
-                    style={highlightedIds.has(row.id) ? highlightedRowStyle : baseRowStyle}
-                  >
-                    <td
-                      title={row.timestamp}
-                      className={styles.requestEventsTimestamp}
-                      style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(0) }}
-                    >
+                  <tr key={row.id}>
+                    <td title={row.timestamp} className={styles.requestEventsTimestamp}>
                       {row.timestampLabel}
                     </td>
-                    <td
-                      className={styles.modelCell}
-                      style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(1) }}
-                    >
-                      {row.model}
-                    </td>
-                    <td
-                      className={
-                        compact
-                          ? `${styles.requestEventsSourceCell} ${styles.requestEventsCompactSourceCell}`
-                          : styles.requestEventsSourceCell
-                      }
-                      title={row.source}
-                      style={
-                        compact
-                          ? {
-                              ...compactCellBaseStyle,
-                              ...getCompactColumnStyle(2),
-                              minWidth: 0,
-                            }
-                          : undefined
-                      }
-                    >
-                      {compact ? (
-                        <div className={styles.requestEventsCompactSourceContent}>
-                          <span className={styles.requestEventsCompactSourceText}>
-                            {row.source}
-                          </span>
-                          {row.sourceType && (
-                            <span
-                              className={styles.credentialType}
-                              style={{ flexShrink: 0, marginLeft: 0 }}
-                            >
-                              {row.sourceType}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <>
-                          <span>{row.source}</span>
-                          {row.sourceType && (
-                            <span className={styles.credentialType}>{row.sourceType}</span>
-                          )}
-                        </>
+                    <td className={styles.modelCell}>{row.model}</td>
+                    <td className={styles.requestEventsSourceCell} title={row.source}>
+                      <span>{row.source}</span>
+                      {row.sourceType && (
+                        <span className={styles.credentialType}>{row.sourceType}</span>
                       )}
                     </td>
-                    <td
-                      className={
-                        compact
-                          ? `${styles.requestEventsAuthIndex} ${styles.requestEventsCompactAuthIndex}`
-                          : styles.requestEventsAuthIndex
-                      }
-                      title={row.authIndex}
-                      style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(3) }}
-                    >
+                    <td className={styles.requestEventsAuthIndex} title={row.authIndex}>
                       {row.authIndex}
                     </td>
-                    <td style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(4) }}>
+                    <td>
                       <span
                         className={
                           row.failed
@@ -876,53 +527,13 @@ export function RequestEventsDetailsCard({
                       </span>
                     </td>
                     {hasLatencyData && (
-                      <td
-                        className={styles.durationCell}
-                        style={{ ...compactCellBaseStyle, ...getCompactColumnStyle(5) }}
-                      >
-                        {formatDurationMs(row.latencyMs)}
-                      </td>
+                      <td className={styles.durationCell}>{formatDurationMs(row.latencyMs)}</td>
                     )}
-                    <td
-                      style={{
-                        ...compactCellBaseStyle,
-                        ...getCompactColumnStyle(hasLatencyData ? 6 : 5),
-                      }}
-                    >
-                      {row.inputTokens.toLocaleString()}
-                    </td>
-                    <td
-                      style={{
-                        ...compactCellBaseStyle,
-                        ...getCompactColumnStyle(hasLatencyData ? 7 : 6),
-                      }}
-                    >
-                      {row.outputTokens.toLocaleString()}
-                    </td>
-                    <td
-                      style={{
-                        ...compactCellBaseStyle,
-                        ...getCompactColumnStyle(hasLatencyData ? 8 : 7),
-                      }}
-                    >
-                      {row.reasoningTokens.toLocaleString()}
-                    </td>
-                    <td
-                      style={{
-                        ...compactCellBaseStyle,
-                        ...getCompactColumnStyle(hasLatencyData ? 9 : 8),
-                      }}
-                    >
-                      {row.cachedTokens.toLocaleString()}
-                    </td>
-                    <td
-                      style={{
-                        ...compactCellBaseStyle,
-                        ...getCompactColumnStyle(hasLatencyData ? 10 : 9),
-                      }}
-                    >
-                      {row.totalTokens.toLocaleString()}
-                    </td>
+                    <td>{row.inputTokens.toLocaleString()}</td>
+                    <td>{row.outputTokens.toLocaleString()}</td>
+                    <td>{row.reasoningTokens.toLocaleString()}</td>
+                    <td>{row.cachedTokens.toLocaleString()}</td>
+                    <td>{row.totalTokens.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>

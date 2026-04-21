@@ -7,16 +7,15 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
+import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
+import { useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
-import { CODEX_QUOTA_AUTO_REFRESH_INTERVAL_SECONDS } from '@/features/codexCustomization/shared';
 import { getStatusFromError } from '@/utils/quota';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
 import { useQuotaLoader } from './useQuotaLoader';
 import type { QuotaConfig } from './quotaConfigs';
 import { useGridColumns } from './useGridColumns';
-import { useCodexQuotaAutoRefresh } from './useCodexQuotaAutoRefresh';
 import { IconRefreshCw } from '@/components/ui/icons';
 import styles from '@/pages/QuotaPage.module.scss';
 
@@ -88,7 +87,7 @@ const useQuotaPagination = <T,>(items: T[], defaultPageSize = 6): QuotaPaginatio
     goToNext,
     loading,
     loadingScope,
-    setLoading,
+    setLoading
   };
 };
 
@@ -103,29 +102,25 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   config,
   files,
   loading,
-  disabled,
+  disabled
 }: QuotaSectionProps<TState, TData>) {
   const { t } = useTranslation();
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const showNotification = useNotificationStore((state) => state.showNotification);
-  const connectionStatus = useAuthStore((state) => state.connectionStatus);
-  const quotaScopeKey = useAuthStore((state) => `${state.apiBase}::${state.managementKey}`);
   const setQuota = useQuotaStore((state) => state[config.storeSetter]) as QuotaSetter<
     Record<string, TState>
   >;
 
   /* Removed useRef */
   const [columns, gridRef] = useGridColumns(380); // Min card width 380px matches SCSS
-  const [viewMode, setViewMode] = useState<ViewMode>(() =>
-    config.type === 'codex' ? 'all' : 'paged'
-  );
+  const [viewMode, setViewMode] = useState<ViewMode>('paged');
   const [showTooManyWarning, setShowTooManyWarning] = useState(false);
 
-  const filteredFiles = useMemo(
-    () => files.filter((file) => config.filterFn(file)),
-    [files, config]
-  );
-  const showAllAllowed = config.type === 'codex' || filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
+  const filteredFiles = useMemo(() => files.filter((file) => config.filterFn(file)), [
+    files,
+    config
+  ]);
+  const showAllAllowed = filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
   const effectiveViewMode: ViewMode = viewMode === 'all' && !showAllAllowed ? 'paged' : viewMode;
 
   const {
@@ -137,7 +132,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     goToPrev,
     goToNext,
     loading: sectionLoading,
-    setLoading,
+    setLoading
   } = useQuotaPagination(filteredFiles);
 
   useEffect(() => {
@@ -168,24 +163,28 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
   const { quota, loadQuota } = useQuotaLoader(config);
 
-  const loadQuotaForTargets = useCallback(
-    async (targets: AuthFileItem[], scope: 'page' | 'all') => {
-      if (targets.length === 0) {
-        return;
-      }
+  const pendingQuotaRefreshRef = useRef(false);
+  const prevFilesLoadingRef = useRef(loading);
 
-      await loadQuota(targets, scope, setLoading);
-    },
-    [loadQuota, setLoading]
-  );
+  const handleRefresh = useCallback(() => {
+    pendingQuotaRefreshRef.current = true;
+    void triggerHeaderRefresh();
+  }, []);
 
-  const handleRefresh = useCallback(
-    async (scope: 'page' | 'all' = effectiveViewMode === 'all' ? 'all' : 'page') => {
-      const targets = scope === 'all' ? filteredFiles : pageItems;
-      await loadQuotaForTargets(targets, scope);
-    },
-    [effectiveViewMode, filteredFiles, loadQuotaForTargets, pageItems]
-  );
+  useEffect(() => {
+    const wasLoading = prevFilesLoadingRef.current;
+    prevFilesLoadingRef.current = loading;
+
+    if (!pendingQuotaRefreshRef.current) return;
+    if (loading) return;
+    if (!wasLoading) return;
+
+    pendingQuotaRefreshRef.current = false;
+    const scope = effectiveViewMode === 'all' ? 'all' : 'page';
+    const targets = effectiveViewMode === 'all' ? filteredFiles : pageItems;
+    if (targets.length === 0) return;
+    loadQuota(targets, scope, setLoading);
+  }, [loading, effectiveViewMode, filteredFiles, pageItems, loadQuota, setLoading]);
 
   useEffect(() => {
     if (loading) return;
@@ -205,51 +204,6 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     });
   }, [filteredFiles, loading, setQuota]);
 
-  const initialCodexRefreshSignature = useMemo(
-    () =>
-      `${quotaScopeKey}::${filteredFiles
-        .map((file) => `${file.name}:${file['auth_index'] ?? file.authIndex ?? '-'}`)
-        .join('|')}`,
-    [filteredFiles, quotaScopeKey]
-  );
-  const didInitialCodexRefreshRef = useRef('');
-
-  useEffect(() => {
-    if (config.type === 'codex' && connectionStatus !== 'connected') {
-      didInitialCodexRefreshRef.current = '';
-    }
-  }, [config.type, connectionStatus]);
-
-  useEffect(() => {
-    if (config.type !== 'codex' || disabled || loading || filteredFiles.length === 0) {
-      return;
-    }
-
-    if (didInitialCodexRefreshRef.current === initialCodexRefreshSignature) {
-      return;
-    }
-
-    didInitialCodexRefreshRef.current = initialCodexRefreshSignature;
-    void handleRefresh('all');
-  }, [
-    config.type,
-    disabled,
-    filteredFiles.length,
-    handleRefresh,
-    initialCodexRefreshSignature,
-    loading,
-  ]);
-
-  const codexAutoRefresh = useCodexQuotaAutoRefresh({
-    enabled: config.type === 'codex' && filteredFiles.length > 0,
-    disabled: disabled || filteredFiles.length === 0,
-    refreshing: sectionLoading,
-    triggerRefresh: async () => {
-      await handleRefresh('all');
-    },
-    intervalSeconds: CODEX_QUOTA_AUTO_REFRESH_INTERVAL_SECONDS,
-  });
-
   const refreshQuotaForFile = useCallback(
     async (file: AuthFileItem) => {
       if (disabled || file.disabled) return;
@@ -257,14 +211,14 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
       setQuota((prev) => ({
         ...prev,
-        [file.name]: config.buildLoadingState(),
+        [file.name]: config.buildLoadingState()
       }));
 
       try {
         const data = await config.fetchQuota(file, t);
         setQuota((prev) => ({
           ...prev,
-          [file.name]: config.buildSuccessState(data),
+          [file.name]: config.buildSuccessState(data)
         }));
         showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
       } catch (err: unknown) {
@@ -272,7 +226,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         const status = getStatusFromError(err);
         setQuota((prev) => ({
           ...prev,
-          [file.name]: config.buildErrorState(message, status),
+          [file.name]: config.buildErrorState(message, status)
         }));
         showNotification(
           t('auth_files.quota_refresh_failed', { name: file.name, message }),
@@ -287,23 +241,14 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     <div className={styles.titleWrapper}>
       <span>{t(`${config.i18nPrefix}.title`)}</span>
       {filteredFiles.length > 0 && (
-        <span className={styles.countBadge}>{filteredFiles.length}</span>
+        <span className={styles.countBadge}>
+          {filteredFiles.length}
+        </span>
       )}
     </div>
   );
 
   const isRefreshing = sectionLoading || loading;
-  const autoRefreshProgress =
-    codexAutoRefresh.active && codexAutoRefresh.pageVisible
-      ? ((CODEX_QUOTA_AUTO_REFRESH_INTERVAL_SECONDS - codexAutoRefresh.countdown) /
-          CODEX_QUOTA_AUTO_REFRESH_INTERVAL_SECONDS) *
-        100
-      : 0;
-  const autoRefreshLabel = isRefreshing
-    ? t('common.loading')
-    : !codexAutoRefresh.pageVisible
-      ? t('quota_management.auto_refresh_paused', { defaultValue: '暂停' })
-      : `${codexAutoRefresh.countdown}s`;
 
   return (
     <Card
@@ -342,9 +287,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             variant="secondary"
             size="sm"
             className={styles.refreshAllButton}
-            onClick={() => {
-              void handleRefresh();
-            }}
+            onClick={handleRefresh}
             disabled={disabled || isRefreshing}
             loading={isRefreshing}
             title={t('quota_management.refresh_all_credentials')}
@@ -353,56 +296,6 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             {!isRefreshing && <IconRefreshCw size={16} />}
             {t('quota_management.refresh_all_credentials')}
           </Button>
-          {config.type === 'codex' && (
-            <Button
-              variant="secondary"
-              size="sm"
-              className={styles.refreshAllButton}
-              onClick={codexAutoRefresh.toggle}
-              disabled={disabled || filteredFiles.length === 0}
-              aria-pressed={codexAutoRefresh.active}
-              title={
-                codexAutoRefresh.active
-                  ? `${t('quota_management.auto_refresh')} ${autoRefreshLabel}`
-                  : t('quota_management.auto_refresh')
-              }
-              style={{
-                borderColor: codexAutoRefresh.active
-                  ? 'color-mix(in srgb, var(--primary-color) 38%, var(--border-color))'
-                  : undefined,
-                background: codexAutoRefresh.active
-                  ? `linear-gradient(90deg, color-mix(in srgb, var(--primary-color) 16%, var(--card-bg, #fff)) ${autoRefreshProgress}%, color-mix(in srgb, var(--card-bg, #fff) 96%, transparent) ${autoRefreshProgress}%)`
-                  : undefined,
-                color: codexAutoRefresh.active ? 'var(--primary-color)' : undefined,
-                boxShadow: codexAutoRefresh.active
-                  ? '0 14px 26px -22px color-mix(in srgb, var(--primary-color) 72%, transparent)'
-                  : undefined,
-                transition:
-                  'background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease',
-              }}
-            >
-              <span>{t('quota_management.auto_refresh')}</span>
-              {codexAutoRefresh.active && (
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minWidth: '42px',
-                    minHeight: '20px',
-                    padding: '0 6px',
-                    borderRadius: '999px',
-                    background: 'color-mix(in srgb, var(--primary-color) 14%, transparent)',
-                    color: 'inherit',
-                    fontSize: '11px',
-                    lineHeight: 1,
-                  }}
-                >
-                  {autoRefreshLabel}
-                </span>
-              )}
-            </Button>
-          )}
         </div>
       }
     >
@@ -432,14 +325,19 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
           </div>
           {filteredFiles.length > pageSize && effectiveViewMode === 'paged' && (
             <div className={styles.pagination}>
-              <Button variant="secondary" size="sm" onClick={goToPrev} disabled={currentPage <= 1}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={goToPrev}
+                disabled={currentPage <= 1}
+              >
                 {t('auth_files.pagination_prev')}
               </Button>
               <div className={styles.pageInfo}>
                 {t('auth_files.pagination_info', {
                   current: currentPage,
                   total: totalPages,
-                  count: filteredFiles.length,
+                  count: filteredFiles.length
                 })}
               </div>
               <Button
