@@ -214,6 +214,9 @@ export function AuthFilesPage() {
     closePrefixProxyEditor,
     handlePrefixProxyChange,
     handlePrefixProxySave,
+    handleRefreshToken,
+    handleRefreshCallbackUrlChange,
+    handleRefreshCallbackSubmit,
   } = useAuthFilesPrefixProxyEditor({
     disableControls: connectionStatus !== 'connected',
     loadFiles,
@@ -999,6 +1002,9 @@ export function AuthFilesPage() {
         onCopyText={copyTextWithNotification}
         onSave={handlePrefixProxySave}
         onChange={handlePrefixProxyChange}
+        onRefreshToken={handleRefreshToken}
+        onRefreshCallbackUrlChange={handleRefreshCallbackUrlChange}
+        onRefreshCallbackSubmit={handleRefreshCallbackSubmit}
       />
 
       {batchActionBarVisible && typeof document !== 'undefined'

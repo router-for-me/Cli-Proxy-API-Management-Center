@@ -598,6 +598,10 @@
     "access_token_label": "访问令牌（access_token）",
     "access_token_hint": "按后端规则自动从认证文件中解析，优先读取顶层 access_token，再回退到 token.access_token。",
     "access_token_copy": "复制 access_token",
+    "refresh_token_label": "刷新 Token",
+    "refresh_token_hint": "对支持 OAuth 的认证文件，可直接在这里重新拉起授权流程；成功后会重新加载当前认证文件。",
+    "refresh_token_button": "刷新 Token",
+    "refresh_token_starting": "正在启动刷新流程...",
     "prefix_label": "前缀（prefix）",
     "proxy_url_label": "代理 URL（proxy_url）",
     "prefix_placeholder": "",
@@ -626,6 +630,7 @@
     "headers_invalid_value": "每个自定义请求头的值都必须是字符串。",
     "prefix_proxy_invalid_json": "该认证文件不是 JSON 对象，无法编辑字段。",
     "prefix_proxy_saved_success": "已更新认证文件 \"{{name}}\"",
+    "refresh_token_reload_failed": "Token 刷新完成，但重新加载认证文件失败：{{message}}",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
     "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
   },

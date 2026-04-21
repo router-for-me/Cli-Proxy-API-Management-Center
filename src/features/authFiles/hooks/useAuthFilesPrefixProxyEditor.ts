@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { authFilesApi } from '@/services/api';
-import type { AuthFileItem } from '@/types';
+import { oauthApi, type OAuthProvider } from '@/services/api/oauth';
 import { useNotificationStore } from '@/stores';
-import { formatFileSize } from '@/utils/format';
+import type { AuthFileItem } from '@/types';
 import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
+import { formatFileSize } from '@/utils/format';
+import { resolveGeminiCliProjectId } from '@/utils/quota/resolvers';
 import {
   applyCodexAuthFileWebsockets,
   normalizeExcludedModels,
@@ -19,6 +22,28 @@ type AuthFileHeadersErrorKey =
   | 'auth_files.headers_invalid_json'
   | 'auth_files.headers_invalid_object'
   | 'auth_files.headers_invalid_value';
+type RefreshConfig = {
+  provider: OAuthProvider;
+  providerI18nPrefix: string;
+};
+type RefreshCallbackStatus = 'success' | 'error' | null;
+
+const AUTH_FILE_REFRESH_CONFIG: Record<string, RefreshConfig> = {
+  anthropic: { provider: 'anthropic', providerI18nPrefix: 'anthropic' },
+  antigravity: { provider: 'antigravity', providerI18nPrefix: 'antigravity' },
+  claude: { provider: 'anthropic', providerI18nPrefix: 'anthropic' },
+  codex: { provider: 'codex', providerI18nPrefix: 'codex' },
+  'gemini-cli': { provider: 'gemini-cli', providerI18nPrefix: 'gemini_cli' },
+  kimi: { provider: 'kimi', providerI18nPrefix: 'kimi' },
+  qwen: { provider: 'qwen', providerI18nPrefix: 'qwen' },
+};
+
+const REFRESH_CALLBACK_SUPPORTED = new Set<OAuthProvider>([
+  'anthropic',
+  'antigravity',
+  'codex',
+  'gemini-cli',
+]);
 
 export type PrefixProxyEditorField =
   | 'prefix'
@@ -33,7 +58,25 @@ export type PrefixProxyEditorField =
 
 export type PrefixProxyEditorFieldValue = string | boolean;
 
+export type PrefixProxyEditorRefreshStatus = 'idle' | 'starting' | 'waiting' | 'success' | 'error';
+
+export type PrefixProxyEditorRefreshState = {
+  supported: boolean;
+  provider: OAuthProvider | null;
+  providerI18nPrefix: string;
+  projectId: string;
+  url: string;
+  authState: string;
+  status: PrefixProxyEditorRefreshStatus;
+  error: string | null;
+  callbackUrl: string;
+  callbackSubmitting: boolean;
+  callbackStatus: RefreshCallbackStatus;
+  callbackError: string | null;
+};
+
 export type PrefixProxyEditorState = {
+  file: AuthFileItem;
   fileName: string;
   fileInfoText: string;
   isCodexFile: boolean;
@@ -55,6 +98,7 @@ export type PrefixProxyEditorState = {
   headersText: string;
   headersTouched: boolean;
   headersError: string | null;
+  refresh: PrefixProxyEditorRefreshState;
 };
 
 export type UseAuthFilesPrefixProxyEditorOptions = {
@@ -74,10 +118,91 @@ export type UseAuthFilesPrefixProxyEditorResult = {
     value: PrefixProxyEditorFieldValue
   ) => void;
   handlePrefixProxySave: () => Promise<void>;
+  handleRefreshToken: () => Promise<void>;
+  handleRefreshCallbackUrlChange: (value: string) => void;
+  handleRefreshCallbackSubmit: () => Promise<void>;
 };
 
 const isRecordObject = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const getErrorStatus = (error: unknown): number | undefined => {
+  if (!isRecordObject(error)) return undefined;
+  return typeof error.status === 'number' ? error.status : undefined;
+};
+
+const getAuthLoginKey = (providerI18nPrefix: string, suffix: string) =>
+  `auth_login.${providerI18nPrefix}_${suffix}`;
+
+const normalizeRefreshKey = (value: unknown) => String(value ?? '').trim().toLowerCase();
+
+const resolveRefreshConfig = (file: AuthFileItem): RefreshConfig | null => {
+  const candidates = [file.provider, file.type];
+
+  for (const candidate of candidates) {
+    const config = AUTH_FILE_REFRESH_CONFIG[normalizeRefreshKey(candidate)];
+    if (config) return config;
+  }
+
+  return null;
+};
+
+const buildRefreshState = (
+  file: AuthFileItem,
+  previous?: PrefixProxyEditorRefreshState
+): PrefixProxyEditorRefreshState => {
+  const config = resolveRefreshConfig(file);
+  const projectId =
+    previous?.projectId ??
+    (config?.provider === 'gemini-cli' ? resolveGeminiCliProjectId(file) ?? '' : '');
+
+  return {
+    supported: Boolean(config),
+    provider: config?.provider ?? null,
+    providerI18nPrefix: config?.providerI18nPrefix ?? '',
+    projectId,
+    url: previous?.url ?? '',
+    authState: previous?.authState ?? '',
+    status: previous?.status ?? 'idle',
+    error: previous?.error ?? null,
+    callbackUrl: previous?.callbackUrl ?? '',
+    callbackSubmitting: previous?.callbackSubmitting ?? false,
+    callbackStatus: previous?.callbackStatus ?? null,
+    callbackError: previous?.callbackError ?? null,
+  };
+};
+
+const resolveIsCodexFile = (file: AuthFileItem): boolean => {
+  const normalizedType = normalizeRefreshKey(file.type);
+  const normalizedProvider = normalizeRefreshKey(file.provider);
+  return normalizedType === 'codex' || normalizedProvider === 'codex';
+};
+
+const createEditorState = (file: AuthFileItem): PrefixProxyEditorState => ({
+  file,
+  fileName: file.name,
+  fileInfoText: JSON.stringify(file, null, 2),
+  isCodexFile: resolveIsCodexFile(file),
+  loading: true,
+  saving: false,
+  error: null,
+  originalText: '',
+  rawText: '',
+  json: null,
+  prefix: '',
+  proxyUrl: '',
+  priority: '',
+  excludedModelsText: '',
+  disableCooling: '',
+  userAgent: '',
+  websockets: false,
+  note: '',
+  noteTouched: false,
+  headersText: '',
+  headersTouched: false,
+  headersError: null,
+  refresh: buildRefreshState(file),
+});
 
 export const extractAuthFileAccessToken = (metadata: Record<string, unknown> | null): string => {
   if (!metadata) return '';
@@ -93,7 +218,6 @@ export const extractAuthFileAccessToken = (metadata: Record<string, unknown> | n
   if (typeof tokenValue === 'string' && tokenValue.trim()) {
     return tokenValue.trim();
   }
-
   if (!isRecordObject(tokenValue)) {
     return '';
   }
@@ -107,6 +231,10 @@ export const extractAuthFileAccessToken = (metadata: Record<string, unknown> | n
 
   return '';
 };
+
+export const isPrefixProxyRefreshCallbackSupported = (
+  refresh: PrefixProxyEditorRefreshState
+): boolean => Boolean(refresh.provider && REFRESH_CALLBACK_SUPPORTED.has(refresh.provider));
 
 const validateHeadersValue = (value: unknown): AuthFileHeadersErrorKey | null => {
   if (!isRecordObject(value)) {
@@ -145,6 +273,7 @@ const buildPrefixProxyUpdatedText = (
   resolveHeadersError: (key: AuthFileHeadersErrorKey) => string
 ): string => {
   if (!editor?.json) return editor?.rawText ?? '';
+
   const next: Record<string, unknown> = { ...editor.json };
   if ('prefix' in next || editor.prefix.trim()) {
     next.prefix = editor.prefix;
@@ -209,14 +338,146 @@ const buildPrefixProxyUpdatedText = (
   );
 };
 
+const buildLoadedPrefixProxyEditorState = (
+  file: AuthFileItem,
+  rawText: string,
+  t: TFunction,
+  previous?: PrefixProxyEditorState | null
+): PrefixProxyEditorState => {
+  const base = createEditorState(file);
+  base.loading = false;
+  base.saving = previous?.saving ?? false;
+  base.refresh = buildRefreshState(file, previous?.refresh);
+
+  const trimmed = rawText.trim();
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(trimmed) as unknown;
+  } catch {
+    return {
+      ...base,
+      error: t('auth_files.prefix_proxy_invalid_json'),
+      rawText: trimmed,
+      originalText: trimmed,
+    };
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return {
+      ...base,
+      error: t('auth_files.prefix_proxy_invalid_json'),
+      rawText: trimmed,
+      originalText: trimmed,
+    };
+  }
+
+  const json = { ...(parsed as Record<string, unknown>) };
+  if (base.isCodexFile) {
+    const normalizedWebsockets = readCodexAuthFileWebsockets(json);
+    delete json.websocket;
+    json.websockets = normalizedWebsockets;
+  }
+
+  const originalText = JSON.stringify(json);
+  const derivedPriority = parsePriorityValue(json.priority);
+  const derivedHeaders =
+    json.headers !== undefined ? JSON.stringify(json.headers, null, 2) : '';
+  const derivedHeadersError = derivedHeaders
+    ? (() => {
+        const { errorKey } = parseHeadersText(derivedHeaders);
+        return errorKey ? t(errorKey) : null;
+      })()
+    : null;
+  const derivedState = {
+    prefix: typeof json.prefix === 'string' ? json.prefix : '',
+    proxyUrl: typeof json.proxy_url === 'string' ? json.proxy_url : '',
+    priority: derivedPriority !== undefined ? String(derivedPriority) : '',
+    excludedModelsText: normalizeExcludedModels(json.excluded_models).join('\n'),
+    disableCooling:
+      parseDisableCoolingValue(json.disable_cooling) === undefined
+        ? ''
+        : parseDisableCoolingValue(json.disable_cooling)
+          ? 'true'
+          : 'false',
+    userAgent:
+      typeof json.user_agent === 'string'
+        ? json.user_agent.trim()
+        : typeof json['user-agent'] === 'string'
+          ? json['user-agent'].trim()
+          : '',
+    websockets: readCodexAuthFileWebsockets(json),
+    note: typeof json.note === 'string' ? json.note : '',
+    noteTouched: false,
+    headersText: derivedHeaders,
+    headersTouched: false,
+    headersError: derivedHeadersError,
+  };
+
+  if (!previous || previous.fileName !== file.name) {
+    return {
+      ...base,
+      originalText,
+      rawText: originalText,
+      json,
+      ...derivedState,
+    };
+  }
+
+  return {
+    ...base,
+    originalText,
+    rawText: originalText,
+    json,
+    prefix: previous.prefix,
+    proxyUrl: previous.proxyUrl,
+    priority: previous.priority,
+    excludedModelsText: previous.excludedModelsText,
+    disableCooling: previous.disableCooling,
+    userAgent: previous.userAgent,
+    websockets: previous.websockets,
+    note: previous.note,
+    noteTouched: previous.noteTouched,
+    headersText: previous.headersText,
+    headersTouched: previous.headersTouched,
+    headersError: previous.headersTouched ? previous.headersError : derivedHeadersError,
+  };
+};
+
+const buildNotificationMessage = (prefix: string, detail: string) =>
+  detail ? `${prefix} ${detail}` : prefix;
+
 export function useAuthFilesPrefixProxyEditor(
   options: UseAuthFilesPrefixProxyEditorOptions
 ): UseAuthFilesPrefixProxyEditorResult {
   const { disableControls, loadFiles, loadKeyStats } = options;
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
-
   const [prefixProxyEditor, setPrefixProxyEditor] = useState<PrefixProxyEditorState | null>(null);
+  const prefixProxyEditorRef = useRef<PrefixProxyEditorState | null>(null);
+  const refreshTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    prefixProxyEditorRef.current = prefixProxyEditor;
+  }, [prefixProxyEditor]);
+
+  const clearRefreshPolling = useCallback(() => {
+    if (refreshTimerRef.current === null) return;
+    window.clearInterval(refreshTimerRef.current);
+    refreshTimerRef.current = null;
+  }, []);
+
+  useEffect(() => () => clearRefreshPolling(), [clearRefreshPolling]);
+
+  const setRefreshState = useCallback(
+    (fileName: string, updater: Partial<PrefixProxyEditorRefreshState>) => {
+      setPrefixProxyEditor((prev) => {
+        if (!prev || prev.fileName !== fileName) return prev;
+        return { ...prev, refresh: { ...prev.refresh, ...updater } };
+      });
+    },
+    []
+  );
 
   const hasBlockingValidationError = Boolean(
     prefixProxyEditor?.headersTouched && prefixProxyEditor.headersError
@@ -225,189 +486,84 @@ export function useAuthFilesPrefixProxyEditor(
     prefixProxyEditor?.json && !hasBlockingValidationError
       ? buildPrefixProxyUpdatedText(prefixProxyEditor, (key) => t(key))
       : '';
-
   const prefixProxyDirty =
     Boolean(prefixProxyEditor?.json) &&
     Boolean(prefixProxyEditor?.originalText) &&
     (prefixProxyUpdatedText === '' || prefixProxyUpdatedText !== prefixProxyEditor?.originalText);
 
-  const closePrefixProxyEditor = () => {
-    setPrefixProxyEditor(null);
-  };
+  const openPrefixProxyEditor = useCallback(
+    async (file: AuthFileItem) => {
+      const name = file.name;
 
-  const openPrefixProxyEditor = async (file: AuthFileItem) => {
-    const name = file.name;
-    const normalizedType = String(file.type ?? '')
-      .trim()
-      .toLowerCase();
-    const normalizedProvider = String(file.provider ?? '')
-      .trim()
-      .toLowerCase();
-    const isCodexFile = normalizedType === 'codex' || normalizedProvider === 'codex';
+      if (disableControls) return;
+      if (prefixProxyEditorRef.current?.fileName === name) {
+        clearRefreshPolling();
+        setPrefixProxyEditor(null);
+        return;
+      }
 
-    if (disableControls) return;
-    if (prefixProxyEditor?.fileName === name) {
-      setPrefixProxyEditor(null);
-      return;
-    }
+      clearRefreshPolling();
+      setPrefixProxyEditor(createEditorState(file));
 
-    setPrefixProxyEditor({
-      fileName: name,
-      fileInfoText: JSON.stringify(file, null, 2),
-      isCodexFile,
-      loading: true,
-      saving: false,
-      error: null,
-      originalText: '',
-      rawText: '',
-      json: null,
-      prefix: '',
-      proxyUrl: '',
-      priority: '',
-      excludedModelsText: '',
-      disableCooling: '',
-      userAgent: '',
-      websockets: false,
-      note: '',
-      noteTouched: false,
-      headersText: '',
-      headersTouched: false,
-      headersError: null,
-    });
-
-    try {
-      const rawText = await authFilesApi.downloadText(name);
-      const trimmed = rawText.trim();
-
-      let parsed: unknown;
       try {
-        parsed = JSON.parse(trimmed) as unknown;
-      } catch {
+        const rawText = await authFilesApi.downloadText(name);
         setPrefixProxyEditor((prev) => {
           if (!prev || prev.fileName !== name) return prev;
-          return {
-            ...prev,
-            loading: false,
-            error: t('auth_files.prefix_proxy_invalid_json'),
-            rawText: trimmed,
-            originalText: trimmed,
-          };
+          return buildLoadedPrefixProxyEditorState(file, rawText, t);
         });
-        return;
-      }
-
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : t('notification.download_failed');
         setPrefixProxyEditor((prev) => {
           if (!prev || prev.fileName !== name) return prev;
+          return { ...prev, loading: false, error: errorMessage, rawText: '' };
+        });
+        showNotification(`${t('notification.download_failed')}: ${errorMessage}`, 'error');
+      }
+    },
+    [clearRefreshPolling, disableControls, showNotification, t]
+  );
+
+  const closePrefixProxyEditor = useCallback(() => {
+    clearRefreshPolling();
+    setPrefixProxyEditor(null);
+  }, [clearRefreshPolling]);
+
+  const handlePrefixProxyChange = useCallback(
+    (field: PrefixProxyEditorField, value: PrefixProxyEditorFieldValue) => {
+      setPrefixProxyEditor((prev) => {
+        if (!prev) return prev;
+        if (field === 'prefix') return { ...prev, prefix: String(value) };
+        if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
+        if (field === 'priority') return { ...prev, priority: String(value) };
+        if (field === 'excludedModelsText') {
+          return { ...prev, excludedModelsText: String(value) };
+        }
+        if (field === 'disableCooling') return { ...prev, disableCooling: String(value) };
+        if (field === 'userAgent') return { ...prev, userAgent: String(value) };
+        if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
+        if (field === 'headersText') {
+          const headersText = String(value);
+          const { errorKey } = parseHeadersText(headersText);
           return {
             ...prev,
-            loading: false,
-            error: t('auth_files.prefix_proxy_invalid_json'),
-            rawText: trimmed,
-            originalText: trimmed,
+            headersText,
+            headersTouched: true,
+            headersError: errorKey ? t(errorKey) : null,
           };
-        });
-        return;
-      }
-
-      const json = { ...(parsed as Record<string, unknown>) };
-      if (isCodexFile) {
-        const normalizedWebsockets = readCodexAuthFileWebsockets(json);
-        delete json.websocket;
-        json.websockets = normalizedWebsockets;
-      }
-      const originalText = JSON.stringify(json);
-      const prefix = typeof json.prefix === 'string' ? json.prefix : '';
-      const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
-      const priority = parsePriorityValue(json.priority);
-      const excludedModels = normalizeExcludedModels(json.excluded_models);
-      const disableCoolingValue = parseDisableCoolingValue(json.disable_cooling);
-      const userAgentRaw =
-        typeof json.user_agent === 'string'
-          ? json.user_agent
-          : typeof json['user-agent'] === 'string'
-            ? json['user-agent']
-            : '';
-      const websocketsValue = readCodexAuthFileWebsockets(json);
-      const note = typeof json.note === 'string' ? json.note : '';
-      const headers = json.headers;
-      let headersText = '';
-      let headersError: string | null = null;
-      if (headers !== undefined) {
-        headersText = JSON.stringify(headers, null, 2);
-        const { errorKey } = parseHeadersText(headersText);
-        headersError = errorKey ? t(errorKey) : null;
-      }
-
-      setPrefixProxyEditor((prev) => {
-        if (!prev || prev.fileName !== name) return prev;
-        return {
-          ...prev,
-          loading: false,
-          originalText,
-          rawText: originalText,
-          json,
-          prefix,
-          proxyUrl,
-          priority: priority !== undefined ? String(priority) : '',
-          excludedModelsText: excludedModels.join('\n'),
-          disableCooling:
-            disableCoolingValue === undefined ? '' : disableCoolingValue ? 'true' : 'false',
-          userAgent: userAgentRaw.trim(),
-          websockets: websocketsValue,
-          note,
-          noteTouched: false,
-          headersText,
-          headersTouched: false,
-          headersError,
-          error: null,
-        };
+        }
+        return { ...prev, websockets: Boolean(value) };
       });
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : t('notification.download_failed');
-      setPrefixProxyEditor((prev) => {
-        if (!prev || prev.fileName !== name) return prev;
-        return { ...prev, loading: false, error: errorMessage, rawText: '' };
-      });
-      showNotification(`${t('notification.download_failed')}: ${errorMessage}`, 'error');
-    }
-  };
+    },
+    [t]
+  );
 
-  const handlePrefixProxyChange = (
-    field: PrefixProxyEditorField,
-    value: PrefixProxyEditorFieldValue
-  ) => {
-    setPrefixProxyEditor((prev) => {
-      if (!prev) return prev;
-      if (field === 'prefix') return { ...prev, prefix: String(value) };
-      if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
-      if (field === 'priority') return { ...prev, priority: String(value) };
-      if (field === 'excludedModelsText') return { ...prev, excludedModelsText: String(value) };
-      if (field === 'disableCooling') return { ...prev, disableCooling: String(value) };
-      if (field === 'userAgent') return { ...prev, userAgent: String(value) };
-      if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
-      if (field === 'headersText') {
-        const headersText = String(value);
-        const { errorKey } = parseHeadersText(headersText);
-        return {
-          ...prev,
-          headersText,
-          headersTouched: true,
-          headersError: errorKey ? t(errorKey) : null,
-        };
-      }
-      return { ...prev, websockets: Boolean(value) };
-    });
-  };
+  const handlePrefixProxySave = useCallback(async () => {
+    const current = prefixProxyEditorRef.current;
+    if (!current?.json || !prefixProxyDirty) return;
 
-  const handlePrefixProxySave = async () => {
-    if (!prefixProxyEditor?.json) return;
-    if (!prefixProxyDirty) return;
-
-    const name = prefixProxyEditor.fileName;
     let payload = '';
     try {
-      payload = buildPrefixProxyUpdatedText(prefixProxyEditor, (key) => t(key));
+      payload = buildPrefixProxyUpdatedText(current, (key) => t(key));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Invalid format';
       showNotification(errorMessage, 'error');
@@ -423,26 +579,254 @@ export function useAuthFilesPrefixProxyEditor(
       return;
     }
 
+    const { fileName } = current;
     setPrefixProxyEditor((prev) => {
-      if (!prev || prev.fileName !== name) return prev;
+      if (!prev || prev.fileName !== fileName) return prev;
       return { ...prev, saving: true };
     });
 
     try {
-      await authFilesApi.saveText(name, payload);
-      showNotification(t('auth_files.prefix_proxy_saved_success', { name }), 'success');
+      await authFilesApi.saveText(fileName, payload);
+      showNotification(t('auth_files.prefix_proxy_saved_success', { name: fileName }), 'success');
       await loadFiles();
       await loadKeyStats();
+      clearRefreshPolling();
       setPrefixProxyEditor(null);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '';
       showNotification(`${t('notification.upload_failed')}: ${errorMessage}`, 'error');
       setPrefixProxyEditor((prev) => {
-        if (!prev || prev.fileName !== name) return prev;
+        if (!prev || prev.fileName !== fileName) return prev;
         return { ...prev, saving: false };
       });
     }
-  };
+  }, [clearRefreshPolling, loadFiles, loadKeyStats, prefixProxyDirty, showNotification, t]);
+
+  const handleRefreshSuccess = useCallback(
+    async (fileName: string, providerI18nPrefix: string) => {
+      const current = prefixProxyEditorRef.current;
+
+      try {
+        if (current?.fileName === fileName) {
+          const rawText = await authFilesApi.downloadText(fileName);
+          setPrefixProxyEditor((prev) => {
+            if (!prev || prev.fileName !== fileName) return prev;
+            let preserveEdits = false;
+            try {
+              preserveEdits =
+                buildPrefixProxyUpdatedText(prev, (key) => t(key)) !== prev.originalText;
+            } catch {
+              preserveEdits = true;
+            }
+            const next = buildLoadedPrefixProxyEditorState(
+              prev.file,
+              rawText,
+              t,
+              preserveEdits ? prev : undefined
+            );
+            return {
+              ...next,
+              refresh: {
+                ...next.refresh,
+                status: 'success',
+                error: null,
+                callbackSubmitting: false,
+              },
+            };
+          });
+        }
+
+        void Promise.all([loadFiles(), loadKeyStats()]).catch((err: unknown) => {
+          const message = err instanceof Error ? err.message : t('notification.refresh_failed');
+          showNotification(
+            t('auth_files.refresh_token_reload_failed', { message }),
+            'error'
+          );
+        });
+        showNotification(t(getAuthLoginKey(providerI18nPrefix, 'oauth_status_success')), 'success');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('notification.download_failed');
+        setRefreshState(fileName, {
+          status: 'error',
+          error: message,
+          callbackSubmitting: false,
+        });
+        showNotification(t('auth_files.refresh_token_reload_failed', { message }), 'error');
+      }
+    },
+    [loadFiles, loadKeyStats, setRefreshState, showNotification, t]
+  );
+
+  const startRefreshPolling = useCallback(
+    (fileName: string, providerI18nPrefix: string, authState: string) => {
+      clearRefreshPolling();
+      let inFlight = false;
+
+      refreshTimerRef.current = window.setInterval(async () => {
+        if (inFlight) return;
+        inFlight = true;
+
+        try {
+          const response = await oauthApi.getAuthStatus(authState);
+          if (response.status === 'wait') {
+            return;
+          }
+
+          clearRefreshPolling();
+          if (response.status === 'ok') {
+            await handleRefreshSuccess(fileName, providerI18nPrefix);
+            return;
+          }
+
+          const detail = response.error ?? '';
+          setRefreshState(fileName, {
+            status: 'error',
+            error: detail,
+            callbackSubmitting: false,
+          });
+          showNotification(
+            buildNotificationMessage(
+              t(getAuthLoginKey(providerI18nPrefix, 'oauth_status_error')),
+              detail
+            ),
+            'error'
+          );
+        } catch (err: unknown) {
+          const detail = err instanceof Error ? err.message : t('notification.refresh_failed');
+          clearRefreshPolling();
+          setRefreshState(fileName, {
+            status: 'error',
+            error: detail,
+            callbackSubmitting: false,
+          });
+          showNotification(
+            buildNotificationMessage(
+              t(getAuthLoginKey(providerI18nPrefix, 'oauth_polling_error')),
+              detail
+            ),
+            'error'
+          );
+        } finally {
+          inFlight = false;
+        }
+      }, 3000);
+    },
+    [clearRefreshPolling, handleRefreshSuccess, setRefreshState, showNotification, t]
+  );
+
+  const handleRefreshToken = useCallback(async () => {
+    const current = prefixProxyEditorRef.current;
+    if (!current) return;
+
+    const { fileName, refresh } = current;
+    if (!refresh.supported || !refresh.provider || !refresh.providerI18nPrefix) return;
+
+    setRefreshState(fileName, {
+      status: 'starting',
+      error: null,
+      url: '',
+      authState: '',
+      callbackUrl: '',
+      callbackSubmitting: false,
+      callbackStatus: null,
+      callbackError: null,
+    });
+
+    try {
+      const options =
+        refresh.provider === 'gemini-cli' && refresh.projectId.trim()
+          ? { projectId: refresh.projectId.trim() }
+          : undefined;
+      const response = await oauthApi.startAuth(refresh.provider, options);
+      if (!response.state) {
+        throw new Error(t('auth_login.missing_state'));
+      }
+
+      setRefreshState(fileName, {
+        status: 'waiting',
+        error: null,
+        url: response.url,
+        authState: response.state,
+        callbackStatus: null,
+        callbackError: null,
+      });
+      startRefreshPolling(fileName, refresh.providerI18nPrefix, response.state);
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : t('notification.refresh_failed');
+      clearRefreshPolling();
+      setRefreshState(fileName, {
+        status: 'error',
+        error: detail,
+        callbackSubmitting: false,
+      });
+      showNotification(
+        buildNotificationMessage(
+          t(getAuthLoginKey(refresh.providerI18nPrefix, 'oauth_start_error')),
+          detail
+        ),
+        'error'
+      );
+    }
+  }, [clearRefreshPolling, setRefreshState, showNotification, startRefreshPolling, t]);
+
+  const handleRefreshCallbackUrlChange = useCallback((value: string) => {
+    setPrefixProxyEditor((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        refresh: {
+          ...prev.refresh,
+          callbackUrl: value,
+          callbackStatus: null,
+          callbackError: null,
+        },
+      };
+    });
+  }, []);
+
+  const handleRefreshCallbackSubmit = useCallback(async () => {
+    const current = prefixProxyEditorRef.current;
+    if (!current) return;
+
+    const { fileName, refresh } = current;
+    if (!isPrefixProxyRefreshCallbackSupported(refresh) || !refresh.provider) return;
+
+    const redirectUrl = refresh.callbackUrl.trim();
+    if (!redirectUrl) {
+      showNotification(t('auth_login.oauth_callback_required'), 'warning');
+      return;
+    }
+
+    setRefreshState(fileName, {
+      callbackSubmitting: true,
+      callbackStatus: null,
+      callbackError: null,
+    });
+
+    try {
+      await oauthApi.submitCallback(refresh.provider, redirectUrl);
+      setRefreshState(fileName, {
+        callbackSubmitting: false,
+        callbackStatus: 'success',
+        callbackError: null,
+      });
+      showNotification(t('auth_login.oauth_callback_success'), 'success');
+    } catch (err: unknown) {
+      const status = getErrorStatus(err);
+      const detail =
+        status === 404
+          ? t('auth_login.oauth_callback_upgrade_hint')
+          : err instanceof Error
+            ? err.message
+            : t('notification.refresh_failed');
+      setRefreshState(fileName, {
+        callbackSubmitting: false,
+        callbackStatus: 'error',
+        callbackError: detail,
+      });
+      showNotification(buildNotificationMessage(t('auth_login.oauth_callback_error'), detail), 'error');
+    }
+  }, [setRefreshState, showNotification, t]);
 
   return {
     prefixProxyEditor,
@@ -452,5 +836,8 @@ export function useAuthFilesPrefixProxyEditor(
     closePrefixProxyEditor,
     handlePrefixProxyChange,
     handlePrefixProxySave,
+    handleRefreshToken,
+    handleRefreshCallbackUrlChange,
+    handleRefreshCallbackSubmit,
   };
 }
