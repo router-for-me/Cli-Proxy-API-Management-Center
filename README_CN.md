@@ -156,3 +156,15 @@ npm run type-check # tsc --noEmit
 ## 许可证
 
 MIT
+
+
+## OpenClaw 自治配套仓
+
+如果你需要的是：**服务主仓 + OpenClaw 自愈/巡检/接管/bootstrap 能力**，请使用配套仓：
+
+- https://github.com/luyuehm/CLIProxyAPI
+
+当前仓库只负责：**Management Center 管理界面**。
+
+另见：
+- `PROJECT_RELATIONSHIP.md`

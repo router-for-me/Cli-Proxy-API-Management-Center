@@ -157,3 +157,15 @@ Issues and PRs are welcome. Please include:
 ## License
 
 MIT
+
+
+## OpenClaw autonomy companion
+
+If you want the **service fork + OpenClaw autonomy/self-heal/bootstrap layer**, use the companion repository:
+
+- https://github.com/luyuehm/CLIProxyAPI
+
+This repository is the **Management Center UI** only.
+
+See also:
+- `PROJECT_RELATIONSHIP.md`
