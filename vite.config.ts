@@ -70,10 +70,32 @@ function getBuildDate(): string {
   return new Date().toISOString();
 }
 
+
+function writeBuildInfoPlugin() {
+  return {
+    name: 'write-build-info',
+    closeBundle() {
+      const version = getVersionLabel();
+      const buildDate = getBuildDate();
+      const buildStamp = getBuildStamp();
+      const outDir = `dist-${version.replace(/[^a-zA-Z0-9._-]/g, '_')}-${buildStamp}`;
+      const payload = {
+        name: 'cli-proxy-webui-react',
+        version,
+        buildDate,
+        buildStamp,
+        commit: getShortCommit() || null
+      };
+      fs.writeFileSync(path.resolve(__dirname, outDir, 'BUILD_INFO.json'), JSON.stringify(payload, null, 2) + '\n');
+    }
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    writeBuildInfoPlugin(),
     viteSingleFile({
       removeViteModuleLoader: true
     })

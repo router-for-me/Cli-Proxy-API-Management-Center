@@ -10,7 +10,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\"",
     "type-check": "tsc --noEmit",
-    "build:release": "VERSION=${VERSION:-$(git describe --tags --always 2>/dev/null || echo dev)} BUILD_DATE=${BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)} GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT:-$(git rev-parse --short HEAD 2>/dev/null || echo local)} npm run build"
+    "build:release": "VERSION=${VERSION:-$(git describe --tags --always 2>/dev/null || echo dev)} BUILD_DATE=${BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)} GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT:-$(git rev-parse --short HEAD 2>/dev/null || echo local)} npm run build",
+    "build:release:zip": "npm run build:release && LATEST=$(ls -dt dist-* | head -n 1) && rm -f ${LATEST}.zip && /usr/bin/zip -qry ${LATEST}.zip ${LATEST} && echo ${LATEST}.zip"
   },
   "dependencies": {
     "@codemirror/lang-yaml": "^6.1.2",
