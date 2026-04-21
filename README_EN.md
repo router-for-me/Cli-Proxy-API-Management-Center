@@ -1,6 +1,6 @@
-# CLI Proxy API Management Center (CPAMC)
+# CLI Proxy API Management Center — Calonye Fork (CPAMC)
 
-> A Web management interface based on the official repository with custom modifications
+> A secondary fork of a community WebUI (`kongkongyo/Cli-Proxy-API-Management-Center`), maintained by `calonye` for personal development.
 
 **[English](README_EN.md) | [中文](README.md)**
 
@@ -8,11 +8,28 @@
 
 ## About This Project
 
-This project is a log monitoring and data visualization management interface developed based on the official [CLI Proxy API WebUI](https://github.com/router-for-me/Cli-Proxy-API-Management-Center)
+This repository is a **fork of a fork**. The hierarchy is:
 
-### Differences from Official Version
+| Tier | Repository | Role |
+| --- | --- | --- |
+| This repo | [`calonye/Cli-Proxy-API-Management-Center-fork`](https://github.com/calonye/Cli-Proxy-API-Management-Center-fork) | My dev fork (`origin`) |
+| Upstream | [`kongkongyo/Cli-Proxy-API-Management-Center`](https://github.com/kongkongyo/Cli-Proxy-API-Management-Center) | The repo I forked from |
+| Source | [`router-for-me/Cli-Proxy-API-Management-Center`](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) | Official WebUI source |
+| Backend | [`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI) | Backend daemon (not in this repo) |
 
-This version is consistent with the official version in other functions, with the main difference being the **new monitoring center**, which enhances log analysis and viewing
+### Tertiary Fork Acknowledgement
+
+This is a **tertiary fork** (fork of a fork of a fork). We gratefully acknowledge the original work by `router-for-me` and the secondary fork by `kongkongyo`. This repository strictly follows the MIT license from upstream and source. Original author attributions and LICENSE remain unchanged.
+
+### Dev Rules
+
+- [`AGENTS.md`](./AGENTS.md) — Project-level AI collaboration rules (identity / branches / commits / tooling / PR decisions)
+- [`scripts/`](./scripts/) — Automation scripts and Git hooks
+- After cloning, run `bun run setup` to install Git hooks and generate personal configuration
+
+### Differences from Upstream / Source
+
+This fork inherits upstream's enhancements (notably the **Monitoring Center** added on top of the official WebUI) and will be periodically synced from `upstream` / `source`. New features developed here may be submitted back to upstream/source as PRs on a case-by-case basis.
 
 ### Interface Preview
 
@@ -30,7 +47,7 @@ Modify following configuration in your `config.yaml`:
 
 ```yaml
 remote-management:
-  panel-github-repository: "https://github.com/kongkongyo/CLIProxyAPI-Web-Dashboard"
+  panel-github-repository: "https://github.com/calonye/Cli-Proxy-API-Management-Center-fork"
 ```
 
 After configuration, restart the CLI Proxy API service and visit `http://<host>:<api_port>/management.html` to view the management interface
@@ -261,7 +278,7 @@ When accessing from a non-local browser, you need to enable remote management on
 A: Add the following configuration to your CLI Proxy API configuration file
 ```yaml
 remote-management:
-  panel-github-repository: "https://github.com/kongkongyo/CLIProxyAPI-Web-Dashboard"
+  panel-github-repository: "https://github.com/calonye/Cli-Proxy-API-Management-Center-fork"
 ```
 
 **Q: Cannot connect to the server?**
@@ -296,9 +313,10 @@ All other features remain consistent with the official version
 
 ## Related Links
 
-- **Official Main Program**: https://github.com/router-for-me/CLIProxyAPI
-- **Official WebUI**: https://github.com/router-for-me/Cli-Proxy-API-Management-Center
-- **This Repository**: https://github.com/kongkongyo/CLIProxyAPI-Web-Dashboard
+- **Official backend**: https://github.com/router-for-me/CLIProxyAPI
+- **Source WebUI (official)**: https://github.com/router-for-me/Cli-Proxy-API-Management-Center
+- **Upstream WebUI fork**: https://github.com/kongkongyo/Cli-Proxy-API-Management-Center
+- **This fork**: https://github.com/calonye/Cli-Proxy-API-Management-Center-fork
 
 ## License
 

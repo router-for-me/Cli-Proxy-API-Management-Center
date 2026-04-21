@@ -8,12 +8,23 @@ pnpm-debug.log*
 lerna-debug.log*
 api.md
 usage.json
-CLAUDE.md
-AGENTS.md
 management-api*
 antigravity_usage.json
 codex_usage.json
 style.md
+
+# === Calonye fork 私有层 / Private overlay ===
+# 入库的: AGENTS.md（项目规范）+ scripts/（自动化脚本与 hooks）
+# 不入库的: .ai-local/（个人偏好/记忆）+ AI 工具入口生成物 + 设计文档
+.ai-local/
+CLAUDE.md
+CONTRIBUTING.md
+docs/
+.factory/
+.cursor/
+.droid/
+tmpclaude*
+.claude
 
 node_modules
 dist
@@ -32,7 +43,5 @@ settings.local.json
 *.njsproj
 *.sln
 *.sw?
-tmpclaude*
-.claude
 CLIProxyAPI
 example

@@ -1,18 +1,41 @@
-# CLI Proxy API 管理中心 (CPAMC)
+# CLI Proxy API 管理中心 - Calonye Fork (CPAMC)
 
-> 一个基于官方仓库二次创作的 Web 管理界面
+> 一个在他人二次创作（`kongkongyo/Cli-Proxy-API-Management-Center`）基础上再次 fork 的 Web 管理界面。
+> A secondary fork of a community-maintained WebUI, owned by `calonye` for personal development.
 
 **[English](README_EN.md) | [中文](README.md)**
 
 ---
 
-## 关于本项目
+## 关于本项目 / About
 
-本项目是基于官方 [CLI Proxy API WebUI](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) 进行开发的日志监控和数据可视化管理界面
+本仓库是**二级 fork**，仓库层级关系如下：
 
-### 与官方版本的区别
+| 层级 | 仓库 | 角色 |
+| --- | --- | --- |
+| 本仓库 | [`calonye/Cli-Proxy-API-Management-Center-fork`](https://github.com/calonye/Cli-Proxy-API-Management-Center-fork) | 我的开发 fork（`origin`） |
+| 上游 | [`kongkongyo/Cli-Proxy-API-Management-Center`](https://github.com/kongkongyo/Cli-Proxy-API-Management-Center) | 我 fork 的来源 |
+| 源头 | [`router-for-me/Cli-Proxy-API-Management-Center`](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) | 官方 WebUI 源头 |
+| 主程序 | [`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI) | 后端服务端（非本仓） |
 
-本版本与官方版本其他功能保持一致，主要差异在于**新增监控中心**，对日志分析和查看的增强
+### 三创声明 / Tertiary Fork Acknowledgement
+
+本仓库是**第三层 fork（三创）**。感谢源头作者 `router-for-me` 与上游作者 `kongkongyo` 的开源贡献。
+本仓库严格遵循源头与上游的开源协议（MIT），任何修改不改变原作者署名与 LICENSE 文件。
+
+> This is a **tertiary fork**. We gratefully acknowledge the original work by `router-for-me` and the secondary fork by `kongkongyo`.
+> This repository strictly follows the MIT license from upstream and source. Original author attributions and LICENSE remain unchanged.
+
+### 开发规则 / Dev Rules
+
+- [`AGENTS.md`](./AGENTS.md) — 项目级 AI 协作规范（身份 / 分支 / 提交 / 工具链 / PR 判断）
+- [`scripts/`](./scripts/) — 自动化脚本与 Git 钩子
+- 首次克隆后运行 `bun run setup` 安装 Git 钩子并生成个人化配置
+
+### 与上游/源头的区别
+
+本 fork 在上游 `kongkongyo` 基础上继续集成新功能，同时会定期从上游/源头同步最新内容。
+上游相较官方**新增监控中心**，对日志分析和查看有增强。本 fork 保留这些能力。
 
 ### 界面预览
 
@@ -30,7 +53,7 @@
 
 ```yaml
 remote-management:
-  panel-github-repository: "https://github.com/kongkongyo/Cli-Proxy-API-Management-Center"
+  panel-github-repository: "https://github.com/calonye/Cli-Proxy-API-Management-Center-fork"
 ```
 
 配置完成后，重启 CLI Proxy API 服务，访问 `http://<host>:<api_port>/management.html` 即可查看管理界面
@@ -261,7 +284,7 @@ https://example.com:8317
 A: 在 CLI Proxy API 的配置文件中添加以下配置即可
 ```yaml
 remote-management:
-  panel-github-repository: "https://github.com/kongkongyo/CLIProxyAPI-Web-Dashboard"
+  panel-github-repository: "https://github.com/calonye/Cli-Proxy-API-Management-Center-fork"
 ```
 
 **Q: 无法连接到服务器？**
@@ -294,11 +317,12 @@ A: 主要区别有两个：
 
 ---
 
-## 相关链接
+## 相关链接 / Related
 
-- **官方主程序**: https://github.com/router-for-me/CLIProxyAPI
-- **官方 WebUI**: https://github.com/router-for-me/Cli-Proxy-API-Management-Center
-- **本仓库**: https://github.com/kongkongyo/CLIProxyAPI-Web-Dashboard
+- **官方主程序 / Official backend**: https://github.com/router-for-me/CLIProxyAPI
+- **官方 WebUI / Source WebUI**: https://github.com/router-for-me/Cli-Proxy-API-Management-Center
+- **上游 WebUI / Upstream fork**: https://github.com/kongkongyo/Cli-Proxy-API-Management-Center
+- **本仓库 / This fork**: https://github.com/calonye/Cli-Proxy-API-Management-Center-fork
 
 ## 许可证
 

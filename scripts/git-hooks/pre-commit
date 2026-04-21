@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# pre-commit: 禁止在 main 分支直接 commit；可选跑 type-check
+set -euo pipefail
+
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
+if [[ "$BRANCH" == "main" ]]; then
+  echo "❌ 禁止在 main 分支直接 commit。请切到 dev 或 feature/* 分支。"
+  echo "   Committing directly to main is forbidden. Switch to dev or feature/*."
+  exit 1
+fi
+
+# 快速类型检查（若 bun 可用）
+if command -v bun >/dev/null 2>&1; then
+  echo "🔍 pre-commit: running type-check..."
+  bun run type-check || {
+    echo "❌ type-check 失败，请修复后再提交 / type-check failed, fix before committing"
+    exit 1
+  }
+fi

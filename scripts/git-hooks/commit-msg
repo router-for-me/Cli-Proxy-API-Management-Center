@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# commit-msg: 校验 Conventional Commits 双语格式
+# 格式：<type>(<scope>): <中文> [en: <english>]
+# feat/fix/refactor/perf/build/ci/test/revert/merge 必须含 [en: ...]
+set -euo pipefail
+
+MSG_FILE="$1"
+MSG="$(head -n1 "$MSG_FILE")"
+
+# 允许 merge commit（git 自动生成）
+if [[ "$MSG" =~ ^Merge ]]; then
+  exit 0
+fi
+
+# 基本格式：type(scope): 中文
+if ! echo "$MSG" | grep -qE '^(feat|fix|refactor|perf|docs|chore|ci|test|build|style|revert|merge)(\([a-zA-Z0-9_-]+\))?: .+'; then
+  echo "❌ 提交信息格式不符合 Conventional Commits"
+  echo "   格式：<type>(<scope>): <中文简述> [en: <english brief>]"
+  echo "   示例：feat(usage): 增加 TPM 实时曲线 [en: add realtime TPM curve]"
+  echo "   当前：$MSG"
+  exit 1
+fi
+
+# 提取 type
+TYPE="$(echo "$MSG" | sed -E 's/^([a-z]+).*/\1/')"
+
+# 需要英文简述的 type
+NEEDS_EN_TYPES="feat fix refactor perf build ci test revert merge"
+if echo "$NEEDS_EN_TYPES" | grep -qw "$TYPE"; then
+  if ! echo "$MSG" | grep -qF '[en: '; then
+    echo "❌ $TYPE 类型必须包含英文简述 [en: ...]"
+    echo "   示例：$TYPE(scope): 中文描述 [en: english description]"
+    echo "   当前：$MSG"
+    exit 1
+  fi
+fi
