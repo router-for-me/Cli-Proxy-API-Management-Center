@@ -22,6 +22,7 @@ interface ProviderState {
   status?: 'idle' | 'waiting' | 'success' | 'error';
   error?: string;
   polling?: boolean;
+  requesting?: boolean;
   projectId?: string;
   projectIdError?: string;
   callbackUrl?: string;
@@ -109,31 +110,32 @@ export function OAuthPage() {
     }));
   };
 
+  const stopPolling = (provider: OAuthProvider) => {
+    if (!timers.current[provider]) return;
+    window.clearInterval(timers.current[provider]);
+    delete timers.current[provider];
+  };
+
   const startPolling = (provider: OAuthProvider, state: string) => {
-    if (timers.current[provider]) {
-      clearInterval(timers.current[provider]);
-    }
+    stopPolling(provider);
     const timer = window.setInterval(async () => {
       try {
         const res = await oauthApi.getAuthStatus(state);
         if (res.status === 'ok') {
           updateProviderState(provider, { status: 'success', polling: false });
           showNotification(t(getAuthKey(provider, 'oauth_status_success')), 'success');
-          window.clearInterval(timer);
-          delete timers.current[provider];
+          stopPolling(provider);
         } else if (res.status === 'error') {
           updateProviderState(provider, { status: 'error', error: res.error, polling: false });
           showNotification(
             `${t(getAuthKey(provider, 'oauth_status_error'))} ${res.error || ''}`,
             'error'
           );
-          window.clearInterval(timer);
-          delete timers.current[provider];
+          stopPolling(provider);
         }
       } catch (err: unknown) {
         updateProviderState(provider, { status: 'error', error: getErrorMessage(err), polling: false });
-        window.clearInterval(timer);
-        delete timers.current[provider];
+        stopPolling(provider);
       }
     }, 3000);
     timers.current[provider] = timer;
@@ -151,9 +153,11 @@ export function OAuthPage() {
     if (provider === 'gemini-cli') {
       updateProviderState(provider, { projectIdError: undefined });
     }
+    stopPolling(provider);
     updateProviderState(provider, {
       status: 'waiting',
-      polling: true,
+      polling: false,
+      requesting: true,
       error: undefined,
       callbackStatus: undefined,
       callbackError: undefined,
@@ -164,13 +168,20 @@ export function OAuthPage() {
         provider,
         provider === 'gemini-cli' ? { projectId: projectId || undefined } : undefined
       );
-      updateProviderState(provider, { url: res.url, state: res.state, status: 'waiting', polling: true });
+      updateProviderState(provider, {
+        url: res.url,
+        state: res.state,
+        status: 'waiting',
+        polling: Boolean(res.state),
+        requesting: false,
+        callbackUrl: ''
+      });
       if (res.state) {
         startPolling(provider, res.state);
       }
     } catch (err: unknown) {
       const message = getErrorMessage(err);
-      updateProviderState(provider, { status: 'error', error: message, polling: false });
+      updateProviderState(provider, { status: 'error', error: message, polling: false, requesting: false });
       showNotification(
         `${t(getAuthKey(provider, 'oauth_start_error'))}${message ? ` ${message}` : ''}`,
         'error'
@@ -303,9 +314,20 @@ export function OAuthPage() {
                   </span>
                 }
                 extra={
-                  <Button onClick={() => startAuth(provider.id)} loading={state.polling}>
-                    {t('common.login')}
-                  </Button>
+                  <div className={styles.cardActions}>
+                    <Button onClick={() => startAuth(provider.id)} loading={state.requesting}>
+                      {t('common.login')}
+                    </Button>
+                    {state.url && CALLBACK_SUPPORTED.includes(provider.id) && (
+                      <Button
+                        variant="secondary"
+                        onClick={() => startAuth(provider.id)}
+                        loading={state.requesting}
+                      >
+                        {t('common.refresh')}
+                      </Button>
+                    )}
+                  </div>
                 }
               >
                 <div className={styles.cardContent}>
