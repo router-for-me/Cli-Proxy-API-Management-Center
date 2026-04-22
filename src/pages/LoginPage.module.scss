@@ -65,8 +65,9 @@
   letter-spacing: -0.04em;
   color: rgb(255 255 255 / 0.92);
   text-align: right;
-  opacity: 0;
-  animation: brand-fade-in 0.7s ease-out forwards;
+  opacity: 1;
+  transform: translateY(0);
+  animation: brand-fade-in 0.7s ease-out both;
 
   &:nth-child(2) {
     animation-delay: 0.08s;
@@ -351,33 +352,52 @@
 }
 
 @media (max-width: $breakpoint-mobile) {
+  .formPanel {
+    align-items: flex-start;
+    padding:
+      max(12px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(20px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+  }
+
   .formContent {
     max-width: none;
-    gap: $spacing-lg;
+    gap: 14px;
   }
 
   .logoBadge {
-    width: 72px;
-    height: 72px;
-    border-radius: 18px;
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    margin-top: 4px;
   }
 
   .loginCard {
-    gap: 16px;
-    padding: $spacing-lg;
-    border-radius: 16px;
-    box-shadow: none;
-    border: none;
-    background: transparent;
+    gap: 14px;
+    padding: 18px 16px;
+    border-radius: 18px;
+    box-shadow: 0 14px 32px rgb(0 0 0 / 0.08);
+    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0)),
+      color-mix(in srgb, var(--bg-primary) 96%, white 4%);
   }
 
   .titleRow {
     flex-direction: column;
     align-items: stretch;
+    gap: 10px;
   }
 
   .title {
-    font-size: clamp(24px, 7vw, 30px);
+    font-size: clamp(22px, 6.5vw, 28px);
+    line-height: 1.1;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .languageSelect {
@@ -386,10 +406,79 @@
 
   .connectionBox {
     padding: 12px 14px;
+
+    .label {
+      font-size: 12px;
+    }
+
+    .value {
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .hint {
+      font-size: 11px;
+      line-height: 1.5;
+    }
   }
 
   .toggleAdvanced {
     padding: 9px 10px;
+    border-radius: 14px;
+  }
+
+  .toggleLabel {
+    font-size: 13px;
+  }
+
+  .loginCard :global(.form-group label) {
+    font-size: 12px;
+  }
+
+  .loginCard :global(.input) {
+    min-height: 48px;
+    padding: 12px 46px 12px 14px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+
+  .loginCard :global(.btn-full) {
+    min-height: 48px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+
+  .loginCard :global(.btn-ghost.btn-sm) {
+    min-width: 34px;
+    min-height: 34px;
+    padding: 7px;
+  }
+
+  .errorBox {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .splashContent {
+    width: 100%;
+    gap: 12px;
+    padding: 24px 18px;
+    border-radius: 18px;
+  }
+
+  .splashLogo {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+  }
+
+  .splashTitle {
+    font-size: 24px;
+  }
+
+  .splashSubtitle {
+    font-size: 14px;
+    line-height: 1.55;
   }
 }
 
@@ -398,6 +487,11 @@
   .splashContent,
   .splashLogo,
   .splashLoaderBar { animation: none; }
+
+  .brandWord {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @keyframes brand-fade-in {

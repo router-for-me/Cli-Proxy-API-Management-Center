@@ -32,6 +32,7 @@
   }
 
   @include mobile {
+    grid-template-columns: 1fr;
     padding: 18px;
     gap: 16px;
   }
@@ -56,6 +57,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+
+  @include mobile {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: 8px;
+  }
 }
 
 .heroChip {
@@ -260,7 +267,10 @@
   width: 100%;
 
   @include mobile {
-    align-items: center;
+    grid-column: 1 / -1;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
   }
 }
 
@@ -397,6 +407,11 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 20px;
   align-items: start;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 .trendSidebar {
@@ -437,6 +452,11 @@
 
   > *:nth-child(3) {
     grid-column: 1 / -1;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
@@ -925,7 +945,10 @@
 
 // Table (80%比例)
 .tableWrapper {
+  width: 100%;
+  max-width: 100%;
   overflow: auto;
+  overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
@@ -1442,6 +1465,17 @@
   }
 }
 
+@include mobile {
+  .trendSidebar,
+  .trendCharts,
+  .trendChartsFull,
+  .analysisGrid > *,
+  .analysisGrid > *:nth-child(-n + 2),
+  .analysisGrid > *:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
 .requestEventsActions {
   display: inline-flex;
   align-items: center;
@@ -1451,7 +1485,7 @@
   @include mobile {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 6px;
 
     :global(.btn) {
@@ -1513,6 +1547,11 @@
   font-size: 12px;
   color: var(--text-secondary);
   flex-wrap: wrap;
+
+  @include mobile {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .requestEventsLimitHint {
@@ -1520,7 +1559,10 @@
 }
 
 .requestEventsTableWrapper {
+  width: 100%;
+  max-width: 100%;
   overflow: auto;
+  overscroll-behavior-x: contain;
   max-height: 460px;
   border: 1px solid var(--border-color);
   border-radius: $radius-md;

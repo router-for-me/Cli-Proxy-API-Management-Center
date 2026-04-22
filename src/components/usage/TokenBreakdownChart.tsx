@@ -8,7 +8,7 @@ import {
 } from '@/utils/usage';
 import { buildChartOptions } from '@/utils/usage/chartConfig';
 import type { UsagePayload } from './hooks/useUsageData';
-import { getAdaptiveChartPeriod } from './chartPeriod';
+import { getAdaptiveAnalysisChartPeriod } from './chartPeriod';
 import { UsageChartPanel } from './UsageChartPanel';
 
 const TOKEN_COLORS: Record<TokenCategory, { border: string; bg: string }> = {
@@ -36,7 +36,7 @@ export const TokenBreakdownChart = memo(function TokenBreakdownChart({
   hourWindowHours,
 }: TokenBreakdownChartProps) {
   const { t } = useTranslation();
-  const preferredPeriod = getAdaptiveChartPeriod(hourWindowHours);
+  const preferredPeriod = getAdaptiveAnalysisChartPeriod(hourWindowHours);
   const [period, setPeriod] = useState<'hour' | 'day'>(preferredPeriod);
 
   useEffect(() => {

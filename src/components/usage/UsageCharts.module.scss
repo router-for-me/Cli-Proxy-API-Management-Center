@@ -269,6 +269,10 @@
   :global(.card-header) {
     margin-bottom: 18px;
     align-items: center;
+
+    @include mobile {
+      align-items: stretch;
+    }
   }
 }
 
@@ -276,6 +280,13 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
+
+  @include mobile {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 
 .chartLineList {

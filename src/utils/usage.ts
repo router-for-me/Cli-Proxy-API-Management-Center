@@ -106,6 +106,8 @@ export interface ModelStatsSummary {
 export type UsageTimeRange = '3h' | '6h' | '12h' | '24h' | '7d' | 'all';
 
 const TOKENS_PER_PRICE_UNIT = 1_000_000;
+const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
 const MODEL_PRICE_STORAGE_KEY = 'cli-proxy-model-prices-v2';
 const USAGE_ENDPOINT_METHOD_REGEX = /^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+(\S+)/i;
 const DEFAULT_MODEL_PRICES: Record<string, ModelPrice> = {
@@ -534,11 +536,11 @@ const hourlySeriesByModelCache = new WeakMap<
   Map<string, { labels: string[]; dataByModel: Map<string, number[]>; hasData: boolean }>
 >();
 const dailyTokenBreakdownCache = new WeakMap<object, TokenBreakdownSeries>();
-const hourlyTokenBreakdownCache = new WeakMap<object, Map<number, TokenBreakdownSeries>>();
+const hourlyTokenBreakdownCache = new WeakMap<object, Map<string, TokenBreakdownSeries>>();
 const dailyLatencySeriesCache = new WeakMap<object, LatencySeries>();
-const hourlyLatencySeriesCache = new WeakMap<object, Map<number, LatencySeries>>();
+const hourlyLatencySeriesCache = new WeakMap<object, Map<string, LatencySeries>>();
 const dailyCostSeriesCache = new WeakMap<object, WeakMap<object, CostSeries>>();
-const hourlyCostSeriesCache = new WeakMap<object, WeakMap<object, Map<number, CostSeries>>>();
+const hourlyCostSeriesCache = new WeakMap<object, WeakMap<object, Map<string, CostSeries>>>();
 
 const getObjectCacheKey = (value: unknown): object | null =>
   isRecord(value) ? (value as object) : null;
@@ -1222,6 +1224,17 @@ export function formatHourLabel(date: Date): string {
   return `${month}-${day} ${hour}:00`;
 }
 
+function formatMinuteLabel(date: Date): string {
+  if (!(date instanceof Date)) {
+    return '';
+  }
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const hour = date.getHours().toString().padStart(2, '0');
+  const minute = date.getMinutes().toString().padStart(2, '0');
+  return `${month}-${day} ${hour}:${minute}`;
+}
+
 /**
  * 格式化日期标签
  */
@@ -1234,6 +1247,61 @@ export function formatDayLabel(date: Date): string {
   const day = date.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+const clampHourWindow = (hourWindow: number | undefined, fallback: number = 24) =>
+  Number.isFinite(hourWindow) && Number(hourWindow) > 0
+    ? Math.min(Math.max(Math.floor(Number(hourWindow)), 1), 24 * 31)
+    : fallback;
+
+const resolveAnalysisBucketMs = (resolvedHourWindow: number) => {
+  if (resolvedHourWindow <= 3) return 5 * MINUTE_MS;
+  if (resolvedHourWindow <= 6) return 10 * MINUTE_MS;
+  if (resolvedHourWindow <= 12) return 15 * MINUTE_MS;
+  if (resolvedHourWindow <= 24) return 30 * MINUTE_MS;
+  return HOUR_MS;
+};
+
+const formatAnalysisBucketLabel = (timestampMs: number, bucketMs: number) =>
+  bucketMs >= HOUR_MS
+    ? formatHourLabel(new Date(timestampMs))
+    : formatMinuteLabel(new Date(timestampMs));
+
+const createAnalysisTimeBuckets = (hourWindow: number | undefined) => {
+  const resolvedHourWindow = clampHourWindow(hourWindow);
+  const bucketMs = resolveAnalysisBucketMs(resolvedHourWindow);
+  const totalWindowMs = resolvedHourWindow * HOUR_MS;
+  const currentBucketTime = Math.floor(Date.now() / bucketMs) * bucketMs;
+  const bucketCount = Math.max(1, Math.ceil(totalWindowMs / bucketMs));
+  const earliestTime = currentBucketTime - (bucketCount - 1) * bucketMs;
+  const labels = Array.from({ length: bucketCount }, (_, index) =>
+    formatAnalysisBucketLabel(earliestTime + index * bucketMs, bucketMs)
+  );
+
+  return {
+    bucketMs,
+    bucketCount,
+    earliestTime,
+    lastBucketTime: earliestTime + (bucketCount - 1) * bucketMs,
+    labels,
+    seriesCacheKey: `${resolvedHourWindow}:${bucketMs}`,
+  };
+};
+
+const resolveBucketIndex = (
+  timestamp: number,
+  earliestTime: number,
+  lastBucketTime: number,
+  bucketMs: number,
+  bucketCount: number
+) => {
+  const bucketStart = Math.floor(timestamp / bucketMs) * bucketMs;
+  if (bucketStart < earliestTime || bucketStart > lastBucketTime) {
+    return -1;
+  }
+
+  const bucketIndex = Math.floor((bucketStart - earliestTime) / bucketMs);
+  return bucketIndex >= 0 && bucketIndex < bucketCount ? bucketIndex : -1;
+};
 
 /**
  * 构建小时级别的数据序列
@@ -1881,36 +1949,21 @@ export function buildHourlyTokenBreakdown(
   usageData: unknown,
   hourWindow: number = 24
 ): TokenBreakdownSeries {
-  const hourMs = 60 * 60 * 1000;
-  const resolvedHourWindow =
-    Number.isFinite(hourWindow) && hourWindow > 0
-      ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
-      : 24;
+  const { bucketMs, bucketCount, earliestTime, labels, lastBucketTime, seriesCacheKey } =
+    createAnalysisTimeBuckets(hourWindow);
   const cacheKey = getObjectCacheKey(usageData);
   if (cacheKey) {
-    const cached = getCachedMapValue(hourlyTokenBreakdownCache, cacheKey, resolvedHourWindow);
+    const cached = getCachedMapValue(hourlyTokenBreakdownCache, cacheKey, seriesCacheKey);
     if (cached) {
       return cached;
     }
   }
-  const now = new Date();
-  const currentHour = new Date(now);
-  currentHour.setMinutes(0, 0, 0);
-
-  const earliestBucket = new Date(currentHour);
-  earliestBucket.setHours(earliestBucket.getHours() - (resolvedHourWindow - 1));
-  const earliestTime = earliestBucket.getTime();
-
-  const labels: string[] = [];
-  for (let i = 0; i < resolvedHourWindow; i++) {
-    labels.push(formatHourLabel(new Date(earliestTime + i * hourMs)));
-  }
 
   const dataByCategory: Record<TokenCategory, number[]> = {
-    input: new Array(labels.length).fill(0),
-    output: new Array(labels.length).fill(0),
-    cached: new Array(labels.length).fill(0),
-    reasoning: new Array(labels.length).fill(0),
+    input: new Array(bucketCount).fill(0),
+    output: new Array(bucketCount).fill(0),
+    cached: new Array(bucketCount).fill(0),
+    reasoning: new Array(bucketCount).fill(0),
   };
 
   const details = collectUsageDetails(usageData);
@@ -1922,13 +1975,14 @@ export function buildHourlyTokenBreakdown(
         ? detail.__timestampMs
         : Date.parse(detail.timestamp);
     if (!Number.isFinite(timestamp) || timestamp <= 0) return;
-    const normalized = new Date(timestamp);
-    normalized.setMinutes(0, 0, 0);
-    const bucketStart = normalized.getTime();
-    const lastBucketTime = earliestTime + (labels.length - 1) * hourMs;
-    if (bucketStart < earliestTime || bucketStart > lastBucketTime) return;
-    const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
-    if (bucketIndex < 0 || bucketIndex >= labels.length) return;
+    const bucketIndex = resolveBucketIndex(
+      timestamp,
+      earliestTime,
+      lastBucketTime,
+      bucketMs,
+      bucketCount
+    );
+    if (bucketIndex < 0) return;
 
     const tokens = detail.tokens;
     const input = typeof tokens.input_tokens === 'number' ? Math.max(tokens.input_tokens, 0) : 0;
@@ -1949,7 +2003,7 @@ export function buildHourlyTokenBreakdown(
 
   const result = { labels, dataByCategory, hasData };
   if (cacheKey) {
-    return setCachedMapValue(hourlyTokenBreakdownCache, cacheKey, resolvedHourWindow, result);
+    return setCachedMapValue(hourlyTokenBreakdownCache, cacheKey, seriesCacheKey, result);
   }
   return result;
 }
@@ -2029,11 +2083,8 @@ export function buildHourlyCostSeries(
   modelPrices: Record<string, ModelPrice>,
   hourWindow: number = 24
 ): CostSeries {
-  const hourMs = 60 * 60 * 1000;
-  const resolvedHourWindow =
-    Number.isFinite(hourWindow) && hourWindow > 0
-      ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
-      : 24;
+  const { bucketMs, bucketCount, earliestTime, labels, lastBucketTime, seriesCacheKey } =
+    createAnalysisTimeBuckets(hourWindow);
   const usageCacheKey = getObjectCacheKey(usageData);
   const pricesCacheKey = getObjectCacheKey(modelPrices);
   if (usageCacheKey && pricesCacheKey) {
@@ -2041,26 +2092,13 @@ export function buildHourlyCostSeries(
       hourlyCostSeriesCache,
       usageCacheKey,
       pricesCacheKey,
-      resolvedHourWindow
+      seriesCacheKey
     );
     if (cached) {
       return cached;
     }
   }
-  const now = new Date();
-  const currentHour = new Date(now);
-  currentHour.setMinutes(0, 0, 0);
-
-  const earliestBucket = new Date(currentHour);
-  earliestBucket.setHours(earliestBucket.getHours() - (resolvedHourWindow - 1));
-  const earliestTime = earliestBucket.getTime();
-
-  const labels: string[] = [];
-  for (let i = 0; i < resolvedHourWindow; i++) {
-    labels.push(formatHourLabel(new Date(earliestTime + i * hourMs)));
-  }
-
-  const data = new Array(labels.length).fill(0);
+  const data = new Array(bucketCount).fill(0);
   const details = collectUsageDetails(usageData);
   let hasData = false;
 
@@ -2070,13 +2108,14 @@ export function buildHourlyCostSeries(
         ? detail.__timestampMs
         : Date.parse(detail.timestamp);
     if (!Number.isFinite(timestamp) || timestamp <= 0) return;
-    const normalized = new Date(timestamp);
-    normalized.setMinutes(0, 0, 0);
-    const bucketStart = normalized.getTime();
-    const lastBucketTime = earliestTime + (labels.length - 1) * hourMs;
-    if (bucketStart < earliestTime || bucketStart > lastBucketTime) return;
-    const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
-    if (bucketIndex < 0 || bucketIndex >= labels.length) return;
+    const bucketIndex = resolveBucketIndex(
+      timestamp,
+      earliestTime,
+      lastBucketTime,
+      bucketMs,
+      bucketCount
+    );
+    if (bucketIndex < 0) return;
 
     const cost = calculateCost(detail, modelPrices);
     if (cost > 0) {
@@ -2091,7 +2130,7 @@ export function buildHourlyCostSeries(
       hourlyCostSeriesCache,
       usageCacheKey,
       pricesCacheKey,
-      resolvedHourWindow,
+      seriesCacheKey,
       result
     );
   }
@@ -2111,33 +2150,17 @@ export function buildHourlyLatencySeries(
   usageData: unknown,
   hourWindow: number = 24
 ): LatencySeries {
-  const hourMs = 60 * 60 * 1000;
-  const resolvedHourWindow =
-    Number.isFinite(hourWindow) && hourWindow > 0
-      ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
-      : 24;
+  const { bucketMs, bucketCount, earliestTime, labels, lastBucketTime, seriesCacheKey } =
+    createAnalysisTimeBuckets(hourWindow);
   const cacheKey = getObjectCacheKey(usageData);
   if (cacheKey) {
-    const cached = getCachedMapValue(hourlyLatencySeriesCache, cacheKey, resolvedHourWindow);
+    const cached = getCachedMapValue(hourlyLatencySeriesCache, cacheKey, seriesCacheKey);
     if (cached) {
       return cached;
     }
   }
-  const now = new Date();
-  const currentHour = new Date(now);
-  currentHour.setMinutes(0, 0, 0);
-
-  const earliestBucket = new Date(currentHour);
-  earliestBucket.setHours(earliestBucket.getHours() - (resolvedHourWindow - 1));
-  const earliestTime = earliestBucket.getTime();
-
-  const labels: string[] = [];
-  for (let i = 0; i < resolvedHourWindow; i++) {
-    labels.push(formatHourLabel(new Date(earliestTime + i * hourMs)));
-  }
-
-  const latencySums = new Array(labels.length).fill(0);
-  const latencyCounts = new Array(labels.length).fill(0);
+  const latencySums = new Array(bucketCount).fill(0);
+  const latencyCounts = new Array(bucketCount).fill(0);
   const details = collectUsageDetails(usageData);
   let hasData = false;
 
@@ -2150,13 +2173,14 @@ export function buildHourlyLatencySeries(
         ? detail.__timestampMs
         : Date.parse(detail.timestamp);
     if (!Number.isFinite(timestamp) || timestamp <= 0) return;
-    const normalized = new Date(timestamp);
-    normalized.setMinutes(0, 0, 0);
-    const bucketStart = normalized.getTime();
-    const lastBucketTime = earliestTime + (labels.length - 1) * hourMs;
-    if (bucketStart < earliestTime || bucketStart > lastBucketTime) return;
-    const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
-    if (bucketIndex < 0 || bucketIndex >= labels.length) return;
+    const bucketIndex = resolveBucketIndex(
+      timestamp,
+      earliestTime,
+      lastBucketTime,
+      bucketMs,
+      bucketCount
+    );
+    if (bucketIndex < 0) return;
 
     latencySums[bucketIndex] += latencyMs;
     latencyCounts[bucketIndex] += 1;
@@ -2171,7 +2195,7 @@ export function buildHourlyLatencySeries(
     hasData,
   };
   if (cacheKey) {
-    return setCachedMapValue(hourlyLatencySeriesCache, cacheKey, resolvedHourWindow, result);
+    return setCachedMapValue(hourlyLatencySeriesCache, cacheKey, seriesCacheKey, result);
   }
   return result;
 }
