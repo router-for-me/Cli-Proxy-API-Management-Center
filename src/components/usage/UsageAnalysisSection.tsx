@@ -17,6 +17,8 @@ export interface UsageAnalysisSectionProps {
   isMobile: boolean;
   hourWindowHours?: number;
   modelPrices: Record<string, ModelPrice>;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const UsageAnalysisSection = memo(function UsageAnalysisSection({
@@ -26,6 +28,8 @@ export const UsageAnalysisSection = memo(function UsageAnalysisSection({
   isMobile,
   hourWindowHours,
   modelPrices,
+  collapsed = false,
+  onToggleCollapse,
 }: UsageAnalysisSectionProps) {
   const { t } = useTranslation();
   const deferredChartCaption = t('usage_stats.render_on_demand');
@@ -35,63 +39,83 @@ export const UsageAnalysisSection = memo(function UsageAnalysisSection({
       <UsageSectionIntro
         title={t('usage_stats.analysis_title')}
         description={t('usage_stats.analysis_desc')}
+        action={
+          onToggleCollapse ? (
+            <button
+              type="button"
+              className={styles.sectionToggle}
+              aria-expanded={!collapsed}
+              onClick={onToggleCollapse}
+            >
+              <span className={styles.sectionToggleIcon} aria-hidden="true">
+                {collapsed ? '+' : '-'}
+              </span>
+              <span>{t(collapsed ? 'common.expand' : 'common.collapse')}</span>
+            </button>
+          ) : undefined
+        }
       />
-      <div className={styles.analysisGrid}>
-        <DeferredRender
-          className={styles.deferredBlock}
-          minHeight={380}
-          placeholder={
-            <DeferredUsageCard
-              title={t('usage_stats.latency_trend')}
-              caption={deferredChartCaption}
+      {!collapsed && (
+        <div className={styles.analysisGrid}>
+          <DeferredRender
+            className={styles.deferredBlock}
+            minHeight={380}
+            placeholder={
+              <DeferredUsageCard
+                title={t('usage_stats.latency_trend')}
+                caption={deferredChartCaption}
+              />
+            }
+          >
+            <LatencyTrendChart
+              usage={usage}
+              loading={loading}
+              isDark={isDark}
+              isMobile={isMobile}
+              hourWindowHours={hourWindowHours}
             />
-          }
-        >
-          <LatencyTrendChart
-            usage={usage}
-            loading={loading}
-            isDark={isDark}
-            isMobile={isMobile}
-            hourWindowHours={hourWindowHours}
-          />
-        </DeferredRender>
+          </DeferredRender>
 
-        <DeferredRender
-          className={styles.deferredBlock}
-          minHeight={380}
-          placeholder={
-            <DeferredUsageCard title={t('usage_stats.cost_trend')} caption={deferredChartCaption} />
-          }
-        >
-          <CostTrendChart
-            usage={usage}
-            loading={loading}
-            isDark={isDark}
-            isMobile={isMobile}
-            modelPrices={modelPrices}
-            hourWindowHours={hourWindowHours}
-          />
-        </DeferredRender>
-
-        <DeferredRender
-          className={styles.deferredBlock}
-          minHeight={380}
-          placeholder={
-            <DeferredUsageCard
-              title={t('usage_stats.token_breakdown')}
-              caption={deferredChartCaption}
+          <DeferredRender
+            className={styles.deferredBlock}
+            minHeight={380}
+            placeholder={
+              <DeferredUsageCard
+                title={t('usage_stats.cost_trend')}
+                caption={deferredChartCaption}
+              />
+            }
+          >
+            <CostTrendChart
+              usage={usage}
+              loading={loading}
+              isDark={isDark}
+              isMobile={isMobile}
+              modelPrices={modelPrices}
+              hourWindowHours={hourWindowHours}
             />
-          }
-        >
-          <TokenBreakdownChart
-            usage={usage}
-            loading={loading}
-            isDark={isDark}
-            isMobile={isMobile}
-            hourWindowHours={hourWindowHours}
-          />
-        </DeferredRender>
-      </div>
+          </DeferredRender>
+
+          <DeferredRender
+            className={styles.deferredBlock}
+            minHeight={380}
+            placeholder={
+              <DeferredUsageCard
+                title={t('usage_stats.token_breakdown')}
+                caption={deferredChartCaption}
+              />
+            }
+          >
+            <TokenBreakdownChart
+              usage={usage}
+              loading={loading}
+              isDark={isDark}
+              isMobile={isMobile}
+              hourWindowHours={hourWindowHours}
+            />
+          </DeferredRender>
+        </div>
+      )}
     </section>
   );
 });

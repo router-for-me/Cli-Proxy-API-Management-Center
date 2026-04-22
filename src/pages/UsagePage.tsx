@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
@@ -54,6 +54,8 @@ ChartJS.register(
 
 export function UsagePage() {
   const { t } = useTranslation();
+  const [trendsCollapsed, setTrendsCollapsed] = useState(true);
+  const [analysisCollapsed, setAnalysisCollapsed] = useState(true);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isDark = useThemeStore((state) => state.resolvedTheme === 'dark');
   const config = useConfigStore((state) => state.config);
@@ -191,47 +193,62 @@ export function UsagePage() {
         <UsageSectionIntro
           title={t('usage_stats.trends_title')}
           description={t('usage_stats.trends_desc')}
+          action={
+            <button
+              type="button"
+              className={styles.sectionToggle}
+              aria-expanded={!trendsCollapsed}
+              onClick={() => setTrendsCollapsed((current) => !current)}
+            >
+              <span className={styles.sectionToggleIcon} aria-hidden="true">
+                {trendsCollapsed ? '+' : '-'}
+              </span>
+              <span>{t(trendsCollapsed ? 'common.expand' : 'common.collapse')}</span>
+            </button>
+          }
         />
-        <div className={styles.trendGrid}>
-          {showComparePanel && (
-            <div className={styles.trendSidebar}>
-              <ChartLineSelector
-                chartLines={chartLines}
-                modelNames={visibleModelNames}
-                onChange={handleChartLinesChange}
+        {!trendsCollapsed && (
+          <div className={styles.trendGrid}>
+            {showComparePanel && (
+              <div className={styles.trendSidebar}>
+                <ChartLineSelector
+                  chartLines={chartLines}
+                  modelNames={visibleModelNames}
+                  onChange={handleChartLinesChange}
+                />
+              </div>
+            )}
+
+            <div
+              className={[styles.trendCharts, !showComparePanel ? styles.trendChartsFull : '']
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <UsageChart
+                title={t('usage_stats.requests_trend')}
+                period={requestsPeriod}
+                onPeriodChange={setRequestsPeriod}
+                chartData={requestsChartData}
+                chartOptions={requestsChartOptions}
+                loading={loading}
+                isMobile={isMobile}
+                emptyText={t('usage_stats.no_data')}
+                tone="neutral"
+              />
+              <UsageChart
+                title={t('usage_stats.tokens_trend')}
+                period={tokensPeriod}
+                onPeriodChange={setTokensPeriod}
+                chartData={tokensChartData}
+                chartOptions={tokensChartOptions}
+                loading={loading}
+                isMobile={isMobile}
+                emptyText={t('usage_stats.no_data')}
+                tone="violet"
               />
             </div>
-          )}
-
-          <div
-            className={[styles.trendCharts, !showComparePanel ? styles.trendChartsFull : '']
-              .filter(Boolean)
-              .join(' ')}
-          >
-            <UsageChart
-              title={t('usage_stats.requests_trend')}
-              period={requestsPeriod}
-              onPeriodChange={setRequestsPeriod}
-              chartData={requestsChartData}
-              chartOptions={requestsChartOptions}
-              loading={loading}
-              isMobile={isMobile}
-              emptyText={t('usage_stats.no_data')}
-              tone="neutral"
-            />
-            <UsageChart
-              title={t('usage_stats.tokens_trend')}
-              period={tokensPeriod}
-              onPeriodChange={setTokensPeriod}
-              chartData={tokensChartData}
-              chartOptions={tokensChartOptions}
-              loading={loading}
-              isMobile={isMobile}
-              emptyText={t('usage_stats.no_data')}
-              tone="violet"
-            />
           </div>
-        </div>
+        )}
       </section>
 
       <UsageAnalysisSection
@@ -241,6 +258,8 @@ export function UsagePage() {
         isMobile={isMobile}
         hourWindowHours={hourWindowHours}
         modelPrices={modelPrices}
+        collapsed={analysisCollapsed}
+        onToggleCollapse={() => setAnalysisCollapsed((current) => !current)}
       />
 
       <section className={styles.section}>
