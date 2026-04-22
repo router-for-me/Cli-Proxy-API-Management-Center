@@ -255,8 +255,8 @@
   height: 18px;
   padding: 0;
   border: none;
-  background: rgba(0, 0, 0, 0.15);
-  color: #000;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
@@ -265,7 +265,7 @@
   flex-shrink: 0;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--bg-tertiary);
   }
 }
 

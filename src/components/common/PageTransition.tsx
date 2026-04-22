@@ -391,7 +391,10 @@ export function PageTransition({
               }
             >
               <PageTransitionLayerContext.Provider
-                value={PAGE_TRANSITION_LAYER_CONTEXT_VALUES[layer.status]}
+                value={{
+                  ...PAGE_TRANSITION_LAYER_CONTEXT_VALUES[layer.status],
+                  isAnimating,
+                }}
               >
                 {render(layer.location)}
               </PageTransitionLayerContext.Provider>
