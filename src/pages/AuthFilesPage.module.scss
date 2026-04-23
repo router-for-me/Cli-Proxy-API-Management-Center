@@ -1358,6 +1358,16 @@
   color: var(--failure-badge-text);
 }
 
+.statToken {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: color-mix(in srgb, var(--primary-color) 78%, var(--text-primary));
+}
+
+.statCost {
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+  color: color-mix(in srgb, #b45309 82%, var(--text-primary));
+}
+
 .statusPanel {
   display: flex;
   flex-direction: column;
@@ -1765,14 +1775,6 @@
   background: transparent;
 }
 
-.prefixProxyRefreshPanel {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  padding: $spacing-md 0 0;
-  border-top: 1px solid color-mix(in srgb, var(--border-color) 48%, transparent);
-}
-
 .prefixProxyTokenHeader {
   display: flex;
   align-items: flex-start;
@@ -1803,80 +1805,7 @@
   background: color-mix(in srgb, var(--bg-secondary) 48%, transparent);
 }
 
-.prefixProxyRefreshStatus {
-  padding: $spacing-xs $spacing-sm;
-  border-radius: $radius-sm;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.prefixProxyRefreshStatusWaiting {
-  color: var(--primary-color);
-  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--primary-color) 22%, transparent);
-}
-
-.prefixProxyRefreshStatusSuccess {
-  color: var(--success-color);
-  background: rgba($success-color, 0.1);
-  border: 1px solid rgba($success-color, 0.24);
-}
-
-.prefixProxyRefreshStatusError {
-  color: var(--danger-color);
-  background: rgba($error-color, 0.08);
-  border: 1px solid rgba($error-color, 0.2);
-}
-
-.prefixProxyAuthUrlBox {
-  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
-  border: 1px dashed color-mix(in srgb, var(--border-color) 52%, transparent);
-  border-radius: $radius-md;
-  padding: $spacing-md;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-xs;
-}
-
-.prefixProxyAuthUrlLabel {
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.prefixProxyAuthUrlValue {
-  color: var(--text-primary);
-  font-size: 13px;
-  line-height: 1.6;
-  word-break: break-all;
-  overflow-wrap: anywhere;
-}
-
-.prefixProxyAuthUrlActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-sm;
-  margin-top: $spacing-xs;
-}
-
-.prefixProxyCallbackSection {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.prefixProxyCallbackActions {
-  display: flex;
-  gap: $spacing-sm;
-}
-
-.prefixProxyRefreshPanel :global(.btn.btn-secondary) {
-  border-color: color-mix(in srgb, var(--border-color) 34%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 48%, transparent);
-}
-
 .prefixProxyTokenPanel + .prefixProxyJsonWrapper,
-.prefixProxyRefreshPanel + .prefixProxyJsonWrapper,
 .prefixProxyJsonWrapper + .prefixProxyJsonWrapper,
 .prefixProxyJsonWrapper + .prefixProxyFields {
   padding-top: $spacing-md;

@@ -147,7 +147,8 @@ export function AuthFilesPage() {
   const previousSelectionCountRef = useRef(0);
   const selectionCountRef = useRef(0);
 
-  const { keyStats, usageDetails, loadKeyStats, refreshKeyStats } = useAuthFilesStats();
+  const { keyStats, keyUsageStats, usageDetails, loadKeyStats, refreshKeyStats } =
+    useAuthFilesStats();
   const {
     files,
     selectedFiles,
@@ -214,9 +215,6 @@ export function AuthFilesPage() {
     closePrefixProxyEditor,
     handlePrefixProxyChange,
     handlePrefixProxySave,
-    handleRefreshToken,
-    handleRefreshCallbackUrlChange,
-    handleRefreshCallbackSubmit,
   } = useAuthFilesPrefixProxyEditor({
     disableControls: connectionStatus !== 'connected',
     loadFiles,
@@ -912,6 +910,7 @@ export function AuthFilesPage() {
                     quotaFilterType={quotaFilterType}
                     planBadge={planBadgeMap.get(file.name) ?? null}
                     keyStats={keyStats}
+                    keyUsageStats={keyUsageStats}
                     statusBarCache={statusBarCache}
                     onShowModels={showModels}
                     onDownload={handleDownload}
@@ -1002,9 +1001,6 @@ export function AuthFilesPage() {
         onCopyText={copyTextWithNotification}
         onSave={handlePrefixProxySave}
         onChange={handlePrefixProxyChange}
-        onRefreshToken={handleRefreshToken}
-        onRefreshCallbackUrlChange={handleRefreshCallbackUrlChange}
-        onRefreshCallbackSubmit={handleRefreshCallbackSubmit}
       />
 
       {batchActionBarVisible && typeof document !== 'undefined'

@@ -33,6 +33,17 @@ export interface KeyStats {
   byAuthIndex: Record<string, KeyStatBucket>;
 }
 
+export interface KeyUsageBucket extends KeyStatBucket {
+  totalTokens: number;
+  totalCost: number;
+  pricedRequests: number;
+}
+
+export interface KeyUsageStats {
+  bySource: Record<string, KeyUsageBucket>;
+  byAuthIndex: Record<string, KeyUsageBucket>;
+}
+
 export interface TokenBreakdown {
   cachedTokens: number;
   reasoningTokens: number;
@@ -487,6 +498,33 @@ export function formatCompactNumber(value: number): string {
     return `${(num / 1_000).toFixed(1)}K`;
   }
   return abs >= 1 ? num.toFixed(0) : num.toFixed(2);
+}
+
+export function formatMillionTokens(value: number): string {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return '0M';
+  }
+
+  const millionValue = num / 1_000_000;
+  const absMillionValue = Math.abs(millionValue);
+  const fractionDigits =
+    absMillionValue >= 100
+      ? 0
+      : absMillionValue >= 10
+        ? 1
+        : absMillionValue >= 1
+          ? 2
+          : absMillionValue >= 0.1
+            ? 3
+            : 4;
+
+  const formatted = millionValue
+    .toFixed(fractionDigits)
+    .replace(/\.0+$/, '')
+    .replace(/(\.\d*?[1-9])0+$/, '$1');
+
+  return `${formatted}M`;
 }
 
 /**
@@ -1928,6 +1966,61 @@ export function computeKeyStatsFromDetails(usageDetails: UsageDetail[]): KeyStat
       } else {
         bucket.success += 1;
       }
+    }
+  });
+
+  return { bySource, byAuthIndex };
+}
+
+export function computeKeyUsageStatsFromDetails(
+  usageDetails: UsageDetail[],
+  modelPrices: Record<string, ModelPrice>
+): KeyUsageStats {
+  const bySource: Record<string, KeyUsageBucket> = {};
+  const byAuthIndex: Record<string, KeyUsageBucket> = {};
+
+  const ensureBucket = (bucket: Record<string, KeyUsageBucket>, key: string) => {
+    if (!bucket[key]) {
+      bucket[key] = {
+        success: 0,
+        failure: 0,
+        totalTokens: 0,
+        totalCost: 0,
+        pricedRequests: 0,
+      };
+    }
+    return bucket[key];
+  };
+
+  const accumulate = (bucket: KeyUsageBucket, detail: UsageDetail) => {
+    const isFailed = detail.failed === true;
+    const totalTokens = extractTotalTokens(detail);
+    const totalCost = calculateCost(detail, modelPrices);
+    const hasModelPrice = Boolean(detail.__modelName && modelPrices[detail.__modelName]);
+
+    if (isFailed) {
+      bucket.failure += 1;
+    } else {
+      bucket.success += 1;
+    }
+
+    bucket.totalTokens += totalTokens;
+    bucket.totalCost += totalCost;
+    if (hasModelPrice) {
+      bucket.pricedRequests += 1;
+    }
+  };
+
+  usageDetails.forEach((detail) => {
+    const source = detail.source;
+    const authIndexKey = normalizeAuthIndex(detail.auth_index);
+
+    if (source) {
+      accumulate(ensureBucket(bySource, source), detail);
+    }
+
+    if (authIndexKey) {
+      accumulate(ensureBucket(byAuthIndex, authIndexKey), detail);
     }
   });
 

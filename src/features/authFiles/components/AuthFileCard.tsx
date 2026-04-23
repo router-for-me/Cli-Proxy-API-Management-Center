@@ -12,7 +12,14 @@ import {
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import type { AuthFileItem } from '@/types';
 import { resolveAuthProvider } from '@/utils/quota';
-import { calculateStatusBarData, normalizeAuthIndex, type KeyStats } from '@/utils/usage';
+import {
+  calculateStatusBarData,
+  formatMillionTokens,
+  formatUsd,
+  normalizeAuthIndex,
+  type KeyStats,
+  type KeyUsageStats,
+} from '@/utils/usage';
 import { formatFileSize } from '@/utils/format';
 import {
   QUOTA_PROVIDER_TYPES,
@@ -25,6 +32,7 @@ import {
   parsePriorityValue,
   readAuthFileWebsockets,
   resolveAuthFileStats,
+  resolveAuthFileUsageStats,
   type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
@@ -48,6 +56,7 @@ export type AuthFileCardProps = {
   quotaFilterType: QuotaProviderType | null;
   planBadge: AuthFilePlanBadgeInfo | null;
   keyStats: KeyStats;
+  keyUsageStats: KeyUsageStats;
   statusBarCache: Map<string, AuthFileStatusBarData>;
   onShowModels: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
@@ -76,6 +85,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     quotaFilterType,
     planBadge,
     keyStats,
+    keyUsageStats,
     statusBarCache,
     onShowModels,
     onDownload,
@@ -86,6 +96,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   } = props;
 
   const fileStats = resolveAuthFileStats(file, keyStats);
+  const fileUsageStats = resolveAuthFileUsageStats(file, keyUsageStats);
   const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
   const isAistudio = (file.type || '').toLowerCase() === 'aistudio';
   const showModelsButton = !isRuntimeOnly || isAistudio;
@@ -128,6 +139,13 @@ export function AuthFileCard(props: AuthFileCardProps) {
 
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
+  const totalRequests = fileUsageStats.success + fileUsageStats.failure;
+  const tokenDisplay = formatMillionTokens(fileUsageStats.totalTokens);
+  const canDisplayCost = totalRequests === 0 || fileUsageStats.pricedRequests > 0;
+  const costDisplay = canDisplayCost ? formatUsd(fileUsageStats.totalCost) : '--';
+  const costTitle = canDisplayCost
+    ? t('usage_stats.total_cost_hint')
+    : t('usage_stats.cost_need_price');
   const stateLabel = isRuntimeOnly
     ? t('auth_files.type_virtual') || '虚拟认证文件'
     : file.disabled
@@ -249,6 +267,17 @@ export function AuthFileCard(props: AuthFileCardProps) {
               <div className={`${styles.statPill} ${styles.statFailure}`}>
                 <span className={styles.statLabel}>{t('stats.failure')}</span>
                 <span className={styles.statValue}>{fileStats.failure}</span>
+              </div>
+              <div
+                className={`${styles.statPill} ${styles.statToken}`}
+                title={fileUsageStats.totalTokens.toLocaleString()}
+              >
+                <span className={styles.statLabel}>{t('auth_files.tokens_stat_label')}</span>
+                <span className={styles.statValue}>{tokenDisplay}</span>
+              </div>
+              <div className={`${styles.statPill} ${styles.statCost}`} title={costTitle}>
+                <span className={styles.statLabel}>{t('auth_files.cost_stat_label')}</span>
+                <span className={styles.statValue}>{costDisplay}</span>
               </div>
             </div>
 

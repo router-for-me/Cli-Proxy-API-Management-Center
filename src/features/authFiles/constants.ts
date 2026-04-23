@@ -14,6 +14,8 @@ import {
   normalizeUsageSourceId,
   type KeyStatBucket,
   type KeyStats,
+  type KeyUsageBucket,
+  type KeyUsageStats,
 } from '@/utils/usage';
 
 export type ThemeColors = { bg: string; text: string; border?: string };
@@ -240,8 +242,16 @@ export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   return false;
 }
 
-export function resolveAuthFileStats(file: AuthFileItem, stats: KeyStats): KeyStatBucket {
-  const defaultStats: KeyStatBucket = { success: 0, failure: 0 };
+type AuthFileMatchedBucket = { success: number; failure: number };
+
+const hasAuthFileMatchData = (bucket: AuthFileMatchedBucket) => bucket.success > 0 || bucket.failure > 0;
+
+const resolveAuthFileBucket = <T extends AuthFileMatchedBucket>(
+  file: AuthFileItem,
+  stats: { bySource?: Record<string, T>; byAuthIndex?: Record<string, T> },
+  defaultStats: T,
+  hasMatchData: (bucket: T) => boolean = hasAuthFileMatchData
+): T => {
   const rawFileName = file?.name || '';
 
   // 兼容 auth_index 和 authIndex 两种字段名（API 返回的是 auth_index）
@@ -257,7 +267,7 @@ export function resolveAuthFileStats(file: AuthFileItem, stats: KeyStats): KeySt
   const fileNameId = rawFileName ? normalizeUsageSourceId(rawFileName) : '';
   if (fileNameId && stats.bySource?.[fileNameId]) {
     const fromName = stats.bySource[fileNameId];
-    if (fromName.success > 0 || fromName.failure > 0) {
+    if (hasMatchData(fromName)) {
       return fromName;
     }
   }
@@ -268,16 +278,37 @@ export function resolveAuthFileStats(file: AuthFileItem, stats: KeyStats): KeySt
     if (nameWithoutExt && nameWithoutExt !== rawFileName) {
       const nameWithoutExtId = normalizeUsageSourceId(nameWithoutExt);
       const fromNameWithoutExt = nameWithoutExtId ? stats.bySource?.[nameWithoutExtId] : undefined;
-      if (
-        fromNameWithoutExt &&
-        (fromNameWithoutExt.success > 0 || fromNameWithoutExt.failure > 0)
-      ) {
+      if (fromNameWithoutExt && hasMatchData(fromNameWithoutExt)) {
         return fromNameWithoutExt;
       }
     }
   }
 
   return defaultStats;
+};
+
+export function resolveAuthFileStats(file: AuthFileItem, stats: KeyStats): KeyStatBucket {
+  return resolveAuthFileBucket(file, stats, { success: 0, failure: 0 });
+}
+
+export function resolveAuthFileUsageStats(file: AuthFileItem, stats: KeyUsageStats): KeyUsageBucket {
+  return resolveAuthFileBucket(
+    file,
+    stats,
+    {
+      success: 0,
+      failure: 0,
+      totalTokens: 0,
+      totalCost: 0,
+      pricedRequests: 0,
+    },
+    (bucket) =>
+      bucket.success > 0 ||
+      bucket.failure > 0 ||
+      bucket.totalTokens > 0 ||
+      bucket.totalCost > 0 ||
+      bucket.pricedRequests > 0
+  );
 }
 
 export const formatModified = (item: AuthFileItem): string => {

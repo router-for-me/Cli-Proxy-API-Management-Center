@@ -7,13 +7,9 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import type {
   PrefixProxyEditorField,
   PrefixProxyEditorFieldValue,
-  PrefixProxyEditorRefreshState,
   PrefixProxyEditorState,
 } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
-import {
-  extractAuthFileAccessToken,
-  isPrefixProxyRefreshCallbackSupported,
-} from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
+import { extractAuthFileAccessToken } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
 export type AuthFilesPrefixProxyEditorModalProps = {
@@ -25,9 +21,6 @@ export type AuthFilesPrefixProxyEditorModalProps = {
   onCopyText: (text: string) => void | Promise<void>;
   onSave: () => void;
   onChange: (field: PrefixProxyEditorField, value: PrefixProxyEditorFieldValue) => void;
-  onRefreshToken: () => void | Promise<void>;
-  onRefreshCallbackUrlChange: (value: string) => void;
-  onRefreshCallbackSubmit: () => void | Promise<void>;
 };
 
 export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEditorModalProps) {
@@ -41,9 +34,6 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
     onCopyText,
     onSave,
     onChange,
-    onRefreshToken,
-    onRefreshCallbackUrlChange,
-    onRefreshCallbackSubmit,
   } = props;
   const formatJsonText = (text: string) => {
     if (!text) return '';
@@ -55,40 +45,6 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
   };
   const previewText = formatJsonText(updatedText);
   const accessToken = extractAuthFileAccessToken(editor?.json ?? null);
-  const buildAuthLoginKey = (refresh: PrefixProxyEditorRefreshState, suffix: string) =>
-    `auth_login.${refresh.providerI18nPrefix}_${suffix}`;
-  const refresh = editor?.refresh ?? null;
-  const callbackSupported = refresh ? isPrefixProxyRefreshCallbackSupported(refresh) : false;
-  const refreshStatusText = (() => {
-    if (!refresh || !refresh.providerI18nPrefix) return '';
-    if (refresh.status === 'starting') {
-      return t('auth_files.refresh_token_starting');
-    }
-    if (refresh.status === 'waiting') {
-      return t(buildAuthLoginKey(refresh, 'oauth_status_waiting'));
-    }
-    if (refresh.status === 'success') {
-      return t(buildAuthLoginKey(refresh, 'oauth_status_success'));
-    }
-    if (refresh.status === 'error') {
-      return [t(buildAuthLoginKey(refresh, 'oauth_status_error')), refresh.error]
-        .filter(Boolean)
-        .join(' ');
-    }
-    return '';
-  })();
-  const refreshStatusClass =
-    refresh?.status === 'error'
-      ? styles.prefixProxyRefreshStatusError
-      : refresh?.status === 'success'
-        ? styles.prefixProxyRefreshStatusSuccess
-        : refresh?.status === 'waiting' || refresh?.status === 'starting'
-          ? styles.prefixProxyRefreshStatusWaiting
-          : '';
-  const openAuthUrl = (url: string) => {
-    if (!url) return;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
 
   return (
     <Modal
@@ -163,107 +119,6 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                       {t('auth_files.access_token_copy')}
                     </Button>
                   </div>
-                </div>
-              )}
-              {refresh?.supported && (
-                <div className={styles.prefixProxyRefreshPanel}>
-                  <div className={styles.prefixProxyTokenHeader}>
-                    <div className={styles.prefixProxyTokenMeta}>
-                      <label className={styles.prefixProxyLabel}>
-                        {t('auth_files.refresh_token_label')}
-                      </label>
-                      <div className={styles.prefixProxyTokenHint}>
-                        {t('auth_files.refresh_token_hint')}
-                      </div>
-                    </div>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => void onRefreshToken()}
-                      loading={refresh.status === 'starting'}
-                      disabled={
-                        disableControls ||
-                        editor.saving ||
-                        editor.loading ||
-                        refresh.callbackSubmitting ||
-                        refresh.status === 'waiting'
-                      }
-                    >
-                      {t('auth_files.refresh_token_button')}
-                    </Button>
-                  </div>
-                  {refreshStatusText && (
-                    <div
-                      className={`${styles.prefixProxyRefreshStatus} ${refreshStatusClass}`.trim()}
-                    >
-                      {refreshStatusText}
-                    </div>
-                  )}
-                  {refresh.url && refresh.providerI18nPrefix && (
-                    <div className={styles.prefixProxyAuthUrlBox}>
-                      <div className={styles.prefixProxyAuthUrlLabel}>
-                        {t(buildAuthLoginKey(refresh, 'oauth_url_label'))}
-                      </div>
-                      <div className={styles.prefixProxyAuthUrlValue}>{refresh.url}</div>
-                      <div className={styles.prefixProxyAuthUrlActions}>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => openAuthUrl(refresh.url)}
-                          disabled={editor.saving}
-                        >
-                          {t(buildAuthLoginKey(refresh, 'open_link'))}
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => void onCopyText(refresh.url)}
-                          disabled={editor.saving}
-                        >
-                          {t(buildAuthLoginKey(refresh, 'copy_link'))}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                  {callbackSupported && Boolean(refresh.url) && (
-                    <div className={styles.prefixProxyCallbackSection}>
-                      <Input
-                        label={t('auth_login.oauth_callback_label')}
-                        hint={t('auth_login.oauth_callback_hint')}
-                        value={refresh.callbackUrl}
-                        placeholder={t('auth_login.oauth_callback_placeholder')}
-                        disabled={disableControls || editor.saving || refresh.callbackSubmitting}
-                        onChange={(event) => onRefreshCallbackUrlChange(event.target.value)}
-                      />
-                      <div className={styles.prefixProxyCallbackActions}>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => void onRefreshCallbackSubmit()}
-                          loading={refresh.callbackSubmitting}
-                          disabled={disableControls || editor.saving}
-                        >
-                          {t('auth_login.oauth_callback_button')}
-                        </Button>
-                      </div>
-                      {refresh.callbackStatus === 'success' && refresh.status === 'waiting' && (
-                        <div
-                          className={`${styles.prefixProxyRefreshStatus} ${styles.prefixProxyRefreshStatusSuccess}`}
-                        >
-                          {t('auth_login.oauth_callback_status_success')}
-                        </div>
-                      )}
-                      {refresh.callbackStatus === 'error' && (
-                        <div
-                          className={`${styles.prefixProxyRefreshStatus} ${styles.prefixProxyRefreshStatusError}`}
-                        >
-                          {[t('auth_login.oauth_callback_status_error'), refresh.callbackError]
-                            .filter(Boolean)
-                            .join(' ')}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
               <div className={styles.prefixProxyJsonWrapper}>
