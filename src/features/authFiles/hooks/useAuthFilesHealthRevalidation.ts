@@ -20,15 +20,35 @@ type RevalidationCacheEntry = {
   success: boolean;
 };
 
-const isTransientCodexCandidate = (file: AuthFileItem): boolean => {
-  if (resolveAuthProvider(file) !== 'codex') return false;
-  if (file.disabled === true) return false;
+type RevalidationTarget = {
+  name: string;
+  authIndex: string;
+  accountId: string;
+  cacheKey: string;
+};
+
+const resolveTransientCodexTarget = (file: AuthFileItem): RevalidationTarget | null => {
+  const name = String(file.name || '').trim();
+  if (!name) return null;
+  if (resolveAuthProvider(file) !== 'codex') return null;
+  if (file.disabled === true) return null;
   const statusMessage = getAuthFileStatusMessage(file);
-  return isTransientAuthFileStatusMessage(statusMessage);
+  if (!isTransientAuthFileStatusMessage(statusMessage)) return null;
+
+  const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
+  const accountId = resolveCodexChatgptAccountId(file);
+  if (!authIndex || !accountId) return null;
+
+  return {
+    name,
+    authIndex,
+    accountId,
+    cacheKey: `${name}::${authIndex}::${accountId}`,
+  };
 };
 
 export function useAuthFilesHealthRevalidation(files: AuthFileItem[]): AuthFileItem[] {
-  const [revalidatedByName, setRevalidatedByName] = useState<Record<string, true>>({});
+  const [revalidatedByKey, setRevalidatedByKey] = useState<Record<string, true>>({});
   const cacheRef = useRef<Map<string, RevalidationCacheEntry>>(new Map());
   const inflightRef = useRef<Map<string, Promise<void>>>(new Map());
 
@@ -36,23 +56,16 @@ export function useAuthFilesHealthRevalidation(files: AuthFileItem[]): AuthFileI
     const now = Date.now();
 
     files.forEach((file) => {
-      const name = String(file.name || '').trim();
-      if (!name || !isTransientCodexCandidate(file)) {
-        return;
-      }
+      const target = resolveTransientCodexTarget(file);
+      if (!target) return;
 
-      const cached = cacheRef.current.get(name);
+      const { name, authIndex, accountId, cacheKey } = target;
+      const cached = cacheRef.current.get(cacheKey);
       if (cached && cached.expiresAt > now) {
         return;
       }
 
-      if (inflightRef.current.has(name)) {
-        return;
-      }
-
-      const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
-      const accountId = resolveCodexChatgptAccountId(file);
-      if (!authIndex || !accountId) {
+      if (inflightRef.current.has(cacheKey)) {
         return;
       }
 
@@ -75,37 +88,37 @@ export function useAuthFilesHealthRevalidation(files: AuthFileItem[]): AuthFileI
           success = false;
         }
 
-        cacheRef.current.set(name, {
+        cacheRef.current.set(cacheKey, {
           expiresAt: Date.now() + REVALIDATION_TTL_MS,
           success,
         });
 
-        setRevalidatedByName((prev) => {
+        setRevalidatedByKey((prev) => {
           if (success) {
-            return prev[name] ? prev : { ...prev, [name]: true };
+            return prev[cacheKey] ? prev : { ...prev, [cacheKey]: true };
           }
 
-          if (!prev[name]) {
+          if (!prev[cacheKey]) {
             return prev;
           }
 
           const next = { ...prev };
-          delete next[name];
+          delete next[cacheKey];
           return next;
         });
       })().finally(() => {
-        inflightRef.current.delete(name);
+        inflightRef.current.delete(cacheKey);
       });
 
-      inflightRef.current.set(name, promise);
+      inflightRef.current.set(cacheKey, promise);
     });
   }, [files]);
 
   return useMemo(
     () =>
       files.map((file) => {
-        const name = String(file.name || '').trim();
-        if (!name || !isTransientCodexCandidate(file) || !revalidatedByName[name]) {
+        const target = resolveTransientCodexTarget(file);
+        if (!target || !revalidatedByKey[target.cacheKey]) {
           return file;
         }
 
@@ -114,6 +127,6 @@ export function useAuthFilesHealthRevalidation(files: AuthFileItem[]): AuthFileI
           healthRevalidated: true,
         };
       }),
-    [files, revalidatedByName]
+    [files, revalidatedByKey]
   );
 }

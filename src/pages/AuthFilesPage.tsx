@@ -134,6 +134,11 @@ export function AuthFilesPage() {
     batchDelete,
   } = useAuthFilesData({ refreshKeyStats });
   const filesWithHealthState = useAuthFilesHealthRevalidation(files);
+  const latestHealthStateFilesRef = useRef(filesWithHealthState);
+
+  useLayoutEffect(() => {
+    latestHealthStateFilesRef.current = filesWithHealthState;
+  }, [filesWithHealthState]);
 
   const statusBarCache = useAuthFilesStatusBarCache(filesWithHealthState, usageDetails);
 
@@ -672,7 +677,7 @@ export function AuthFilesPage() {
                 handleDeleteAll({
                   filter,
                   problemOnly,
-                  sourceFiles: filesMatchingProblemFilter,
+                  sourceFilesRef: latestHealthStateFilesRef,
                   onResetFilterToAll: () => setFilter('all'),
                   onResetProblemOnly: () => setProblemOnly(false),
                 })

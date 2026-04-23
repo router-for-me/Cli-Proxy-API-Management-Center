@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type RefObject } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type RefObject,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
@@ -16,7 +24,7 @@ import {
 type DeleteAllOptions = {
   filter: string;
   problemOnly: boolean;
-  sourceFiles?: AuthFileItem[];
+  sourceFilesRef?: RefObject<AuthFileItem[]>;
   onResetFilterToAll: () => void;
   onResetProblemOnly: () => void;
 };
@@ -69,8 +77,13 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const latestFilesRef = useRef<AuthFileItem[]>(files);
   const batchStatusPendingRef = useRef(false);
   const selectionCount = selectedFiles.size;
+
+  useLayoutEffect(() => {
+    latestFilesRef.current = files;
+  }, [files]);
   const toggleSelect = useCallback((name: string) => {
     setSelectedFiles((prev) => {
       const next = new Set(prev);
@@ -268,11 +281,10 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
   const handleDeleteAll = useCallback(
     (deleteAllOptions: DeleteAllOptions) => {
-      const { filter, problemOnly, sourceFiles, onResetFilterToAll, onResetProblemOnly } =
+      const { filter, problemOnly, sourceFilesRef, onResetFilterToAll, onResetProblemOnly } =
         deleteAllOptions;
       const isFiltered = filter !== 'all';
       const isProblemOnly = problemOnly === true;
-      const candidateFiles = sourceFiles ?? files;
       const typeLabel = isFiltered ? getTypeLabel(t, filter) : t('auth_files.filter_all');
       const confirmMessage = isProblemOnly
         ? isFiltered
@@ -296,6 +308,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
               setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
               deselectAll();
             } else {
+              const candidateFiles = sourceFilesRef?.current ?? latestFilesRef.current;
               const filesToDelete = candidateFiles.filter((file) => {
                 if (isRuntimeOnlyAuthFile(file)) return false;
                 if (isFiltered && file.type !== filter) return false;
@@ -369,7 +382,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
         },
       });
     },
-    [applyDeletedFiles, deselectAll, files, showConfirmation, showNotification, t]
+    [applyDeletedFiles, deselectAll, showConfirmation, showNotification, t]
   );
 
   const handleDownload = useCallback(
