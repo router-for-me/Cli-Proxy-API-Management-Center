@@ -34,17 +34,10 @@ export function useAuthFilesHealthRevalidation(files: AuthFileItem[]): AuthFileI
 
   useEffect(() => {
     const now = Date.now();
-    const candidateNames = new Set<string>();
 
     files.forEach((file) => {
       const name = String(file.name || '').trim();
-      if (!name || !isTransientCodexCandidate(file)) return;
-      candidateNames.add(name);
-    });
-
-    files.forEach((file) => {
-      const name = String(file.name || '').trim();
-      if (!name || !candidateNames.has(name)) {
+      if (!name || !isTransientCodexCandidate(file)) {
         return;
       }
 
