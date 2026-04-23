@@ -22,6 +22,8 @@ import {
   getAuthFileStatusMessage,
   getTypeColor,
   getTypeLabel,
+  isAuthFileRevalidated,
+  isHealthyAuthFileStatusMessage,
   isRuntimeOnlyAuthFile,
   parsePriorityValue,
   resolveAuthFileStats,
@@ -31,8 +33,6 @@ import {
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import styles from '@/pages/AuthFilesPage.module.scss';
-
-const HEALTHY_STATUS_MESSAGES = new Set(['ok', 'healthy', 'ready', 'success', 'available']);
 
 export type AuthFileCardProps = {
   file: AuthFileItem;
@@ -110,9 +110,24 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const authIndexKey = normalizeAuthIndex(rawAuthIndex);
   const statusData =
     (authIndexKey && statusBarCache.get(authIndexKey)) || calculateStatusBarData([]);
+  const isRevalidated = isAuthFileRevalidated(file);
   const rawStatusMessage = getAuthFileStatusMessage(file);
+  const displayStatusMessage = isRevalidated
+    ? t('auth_files.health_status_revalidated_message', {
+        defaultValue:
+          'Last request was canceled, but this auth was revalidated: models and quota are reachable.',
+      })
+    : rawStatusMessage;
+  const statusMessageTitle = isRevalidated
+    ? t('auth_files.health_status_revalidated_title', {
+        defaultValue: 'Original status: {{message}}',
+        message: rawStatusMessage || '-',
+      })
+    : rawStatusMessage;
   const hasStatusWarning =
-    Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(rawStatusMessage.toLowerCase());
+    Boolean(rawStatusMessage) &&
+    !isRevalidated &&
+    !isHealthyAuthFileStatusMessage(rawStatusMessage);
 
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
@@ -120,18 +135,22 @@ export function AuthFileCard(props: AuthFileCardProps) {
     ? t('auth_files.type_virtual') || '虚拟认证文件'
     : file.disabled
       ? t('auth_files.health_status_disabled')
-      : hasStatusWarning
-        ? t('auth_files.health_status_warning')
-        : rawStatusMessage
-          ? t('auth_files.health_status_healthy')
-          : t('auth_files.status_toggle_label');
+      : isRevalidated
+        ? t('auth_files.health_status_revalidated', { defaultValue: 'Revalidated' })
+        : hasStatusWarning
+          ? t('auth_files.health_status_warning')
+          : rawStatusMessage
+            ? t('auth_files.health_status_healthy')
+            : t('auth_files.status_toggle_label');
   const stateBadgeClass = isRuntimeOnly
     ? styles.stateBadgeVirtual
     : file.disabled
       ? styles.stateBadgeDisabled
-      : hasStatusWarning
-        ? styles.stateBadgeWarning
-        : styles.stateBadgeActive;
+      : isRevalidated
+        ? styles.stateBadgeRevalidated
+        : hasStatusWarning
+          ? styles.stateBadgeWarning
+          : styles.stateBadgeActive;
 
   return (
     <div
@@ -214,10 +233,13 @@ export function AuthFileCard(props: AuthFileCardProps) {
             )}
           </div>
 
-          {rawStatusMessage && hasStatusWarning && (
-            <div className={styles.healthStatusMessage} title={rawStatusMessage}>
+          {displayStatusMessage && (hasStatusWarning || isRevalidated) && (
+            <div
+              className={`${styles.healthStatusMessage} ${isRevalidated ? styles.healthStatusMessageRevalidated : ''}`}
+              title={statusMessageTitle}
+            >
               <IconInfo className={styles.messageIcon} size={14} />
-              <span>{rawStatusMessage}</span>
+              <span>{displayStatusMessage}</span>
             </div>
           )}
 

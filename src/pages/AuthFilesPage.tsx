@@ -45,6 +45,7 @@ import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
 import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelAliasCard';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
+import { useAuthFilesHealthRevalidation } from '@/features/authFiles/hooks/useAuthFilesHealthRevalidation';
 import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
@@ -68,8 +69,7 @@ const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
 
-const escapeWildcardSearchSegment = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildWildcardSearch = (value: string): RegExp | null => {
   if (!value.includes('*')) return null;
@@ -133,8 +133,9 @@ export function AuthFilesPage() {
     batchSetStatus,
     batchDelete,
   } = useAuthFilesData({ refreshKeyStats });
+  const filesWithHealthState = useAuthFilesHealthRevalidation(files);
 
-  const statusBarCache = useAuthFilesStatusBarCache(files, usageDetails);
+  const statusBarCache = useAuthFilesStatusBarCache(filesWithHealthState, usageDetails);
 
   const {
     excluded,
@@ -201,10 +202,7 @@ export function AuthFilesPage() {
       if (typeof persisted.problemOnly === 'boolean') {
         setProblemOnly(persisted.problemOnly);
       }
-      if (
-        typeof persistedCompactMode !== 'boolean' &&
-        typeof persisted.compactMode === 'boolean'
-      ) {
+      if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
         setCompactMode(persisted.compactMode);
       }
       if (typeof persisted.search === 'string') {
@@ -220,11 +218,11 @@ export function AuthFilesPage() {
       const regularPageSize =
         typeof persisted.regularPageSize === 'number' && Number.isFinite(persisted.regularPageSize)
           ? clampCardPageSize(persisted.regularPageSize)
-          : legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE);
       const compactPageSize =
         typeof persisted.compactPageSize === 'number' && Number.isFinite(persisted.compactPageSize)
           ? clampCardPageSize(persisted.compactPageSize)
-          : legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE);
       setPageSizeByMode({
         regular: regularPageSize,
         compact: compactPageSize,
@@ -346,17 +344,18 @@ export function AuthFilesPage() {
 
   const existingTypes = useMemo(() => {
     const types = new Set<string>(['all']);
-    files.forEach((file) => {
+    filesWithHealthState.forEach((file) => {
       if (file.type) {
         types.add(file.type);
       }
     });
     return Array.from(types);
-  }, [files]);
+  }, [filesWithHealthState]);
 
   const filesMatchingProblemFilter = useMemo(
-    () => (problemOnly ? files.filter(hasAuthFileStatusMessage) : files),
-    [files, problemOnly]
+    () =>
+      problemOnly ? filesWithHealthState.filter(hasAuthFileStatusMessage) : filesWithHealthState,
+    [filesWithHealthState, problemOnly]
   );
 
   const sortOptions = useMemo(
@@ -630,7 +629,9 @@ export function AuthFilesPage() {
   const titleNode = (
     <div className={styles.titleWrapper}>
       <span>{t('auth_files.title_section')}</span>
-      {files.length > 0 && <span className={styles.countBadge}>{files.length}</span>}
+      {filesWithHealthState.length > 0 && (
+        <span className={styles.countBadge}>{filesWithHealthState.length}</span>
+      )}
     </div>
   );
 
@@ -671,6 +672,7 @@ export function AuthFilesPage() {
                 handleDeleteAll({
                   filter,
                   problemOnly,
+                  sourceFiles: filesMatchingProblemFilter,
                   onResetFilterToAll: () => setFilter('all'),
                   onResetProblemOnly: () => setProblemOnly(false),
                 })

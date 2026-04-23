@@ -100,7 +100,6 @@
   }
 }
 
-
 .filterAllIconWrap {
   position: relative;
   border-color: color-mix(in srgb, var(--primary-color) 20%, var(--border-color));
@@ -118,7 +117,6 @@
   display: block;
   color: color-mix(in srgb, var(--primary-color) 70%, var(--text-primary));
 }
-
 
 .filterContent {
   display: flex;
@@ -898,6 +896,12 @@
   border: 1px solid var(--warning-border);
 }
 
+.stateBadgeRevalidated {
+  color: var(--success-badge-text, #065f46);
+  background: color-mix(in srgb, var(--success-badge-bg, #d1fae5) 80%, transparent);
+  border: 1px solid var(--success-badge-border, #6ee7b7);
+}
+
 .stateBadgeDisabled {
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--bg-tertiary) 86%, transparent);
@@ -1020,6 +1024,12 @@
   border-radius: 8px;
   padding: 8px 10px;
   word-break: break-word;
+}
+
+.healthStatusMessageRevalidated {
+  color: var(--success-badge-text, #065f46);
+  background-color: color-mix(in srgb, var(--success-badge-bg, #d1fae5) 52%, transparent);
+  border-color: color-mix(in srgb, var(--success-badge-border, #6ee7b7) 72%, transparent);
 }
 
 .messageIcon {

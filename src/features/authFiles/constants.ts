@@ -136,6 +136,23 @@ export const resolveQuotaErrorMessage = (
 
 export const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
 
+const HEALTHY_AUTH_FILE_STATUS_MESSAGES = new Set([
+  'ok',
+  'healthy',
+  'ready',
+  'success',
+  'available',
+]);
+
+const TRANSIENT_AUTH_FILE_STATUS_PATTERNS = [
+  /context\s+cancel/i,
+  /\brequest\s+cancel(?:ed|led)\b/i,
+  /\boperation\s+cancel(?:ed|led)\b/i,
+  /\babort(?:ed)?\b/i,
+  /deadline exceeded/i,
+  /err_aborted/i,
+];
+
 export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
   const raw = file['status_message'] ?? file.statusMessage;
   if (typeof raw === 'string') return raw.trim();
@@ -143,8 +160,26 @@ export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
   return String(raw).trim();
 };
 
-export const hasAuthFileStatusMessage = (file: AuthFileItem): boolean =>
-  getAuthFileStatusMessage(file).length > 0;
+export const isAuthFileRevalidated = (file: AuthFileItem): boolean =>
+  file.healthRevalidated === true;
+
+export const isHealthyAuthFileStatusMessage = (value: string): boolean =>
+  HEALTHY_AUTH_FILE_STATUS_MESSAGES.has(value.trim().toLowerCase());
+
+export const isTransientAuthFileStatusMessage = (value: string): boolean => {
+  const message = value.trim();
+  return (
+    message.length > 0 &&
+    TRANSIENT_AUTH_FILE_STATUS_PATTERNS.some((pattern) => pattern.test(message))
+  );
+};
+
+export const hasAuthFileStatusMessage = (file: AuthFileItem): boolean => {
+  const message = getAuthFileStatusMessage(file);
+  if (!message) return false;
+  if (isAuthFileRevalidated(file)) return false;
+  return !isHealthyAuthFileStatusMessage(message);
+};
 
 export const getTypeLabel = (t: TFunction, type: string): string => {
   const key = `auth_files.filter_${type}`;
@@ -280,7 +315,7 @@ export const formatModified = (item: AuthFileItem): string => {
   const date =
     Number.isFinite(asNumber) && !Number.isNaN(asNumber)
       ? new Date(asNumber < 1e12 ? asNumber * 1000 : asNumber)
-      : parseTimestamp(raw) ?? new Date(String(raw));
+      : (parseTimestamp(raw) ?? new Date(String(raw)));
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString();
 };
 
