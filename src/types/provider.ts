@@ -47,6 +47,7 @@ export interface ProviderKeyConfig {
   excludedModels?: string[];
   cloak?: CloakConfig;
   authIndex?: string;
+  protocol?: 'codex' | 'openai-chat';
 }
 
 export interface OpenAIProviderConfig {

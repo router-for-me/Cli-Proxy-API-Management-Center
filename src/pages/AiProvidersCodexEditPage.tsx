@@ -33,6 +33,7 @@ const buildEmptyForm = (): ProviderFormState => ({
   baseUrl: '',
   websockets: false,
   proxyUrl: '',
+  protocol: 'codex',
   headers: [],
   models: [],
   excludedModels: [],
@@ -71,6 +72,7 @@ type CodexFormBaseline = {
   baseUrl: string;
   websockets: boolean;
   proxyUrl: string;
+  protocol: 'codex' | 'openai-chat';
   headers: ReturnType<typeof normalizeHeaderEntries>;
   models: ReturnType<typeof normalizeModelEntries>;
   excludedModels: string[];
@@ -84,6 +86,7 @@ const buildCodexBaseline = (form: ProviderFormState): CodexFormBaseline => ({
   baseUrl: String(form.baseUrl ?? '').trim(),
   websockets: Boolean(form.websockets),
   proxyUrl: String(form.proxyUrl ?? '').trim(),
+  protocol: form.protocol === 'openai-chat' ? 'openai-chat' : 'codex',
   headers: normalizeHeaderEntries(form.headers),
   models: normalizeModelEntries(form.modelEntries),
   excludedModels: parseExcludedModels(form.excludedText ?? ''),
@@ -189,6 +192,7 @@ export function AiProvidersCodexEditPage() {
       const nextForm: ProviderFormState = {
         ...initialData,
         websockets: Boolean(initialData.websockets),
+        protocol: initialData.protocol === 'openai-chat' ? 'openai-chat' : 'codex',
         headers: headersToEntries(initialData.headers),
         modelEntries: modelsToEntries(initialData.models),
         excludedText: excludedModelsToText(initialData.excludedModels),
@@ -235,6 +239,7 @@ export function AiProvidersCodexEditPage() {
     baseline.baseUrl !== String(form.baseUrl ?? '').trim() ||
     baseline.websockets !== Boolean(form.websockets) ||
     baseline.proxyUrl !== String(form.proxyUrl ?? '').trim() ||
+    baseline.protocol !== (form.protocol === 'openai-chat' ? 'openai-chat' : 'codex') ||
     isHeadersDirty ||
     isModelsDirty ||
     isExcludedModelsDirty;
@@ -452,6 +457,7 @@ export function AiProvidersCodexEditPage() {
         baseUrl,
         websockets: Boolean(form.websockets),
         proxyUrl: form.proxyUrl?.trim() || undefined,
+        protocol: form.protocol === 'openai-chat' ? 'openai-chat' : 'codex',
         headers: buildHeaderObject(form.headers),
         models: entriesToModels(form.modelEntries),
         excludedModels: parseExcludedModels(form.excludedText),
@@ -580,6 +586,25 @@ export function AiProvidersCodexEditPage() {
               onChange={(e) => setForm((prev) => ({ ...prev, baseUrl: e.target.value }))}
               disabled={disableControls || saving}
             />
+            <div className="form-group">
+              <label>{t('ai_providers.codex_protocol_label')}</label>
+              <select
+                className="input"
+                value={form.protocol ?? 'codex'}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    protocol: e.target.value as 'codex' | 'openai-chat',
+                  }))
+                }
+                disabled={disableControls || saving}
+                aria-label={t('ai_providers.codex_protocol_label')}
+              >
+                <option value="codex">{t('ai_providers.codex_protocol_codex')}</option>
+                <option value="openai-chat">{t('ai_providers.codex_protocol_openai_chat')}</option>
+              </select>
+              <div className="hint">{t('ai_providers.codex_protocol_hint')}</div>
+            </div>
             <div className="form-group">
               <label>{t('ai_providers.codex_websockets_label')}</label>
               <ToggleSwitch

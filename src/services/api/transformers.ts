@@ -162,6 +162,16 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   );
   if (authIndex) config.authIndex = authIndex;
 
+  const protocol = record?.protocol ?? record?.['protocol'];
+  if (typeof protocol === 'string' && protocol.trim()) {
+    const trimmed = protocol.trim().toLowerCase();
+    if (trimmed === 'openai-chat' || trimmed === 'openai_chat') {
+      config.protocol = 'openai-chat';
+    } else if (trimmed === 'codex') {
+      config.protocol = 'codex';
+    }
+  }
+
   const cloakRaw = record?.cloak;
   if (isRecord(cloakRaw)) {
     const cloak: CloakConfig = {};

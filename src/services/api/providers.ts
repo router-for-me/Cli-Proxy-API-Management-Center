@@ -77,6 +77,7 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
   if (config.excludedModels && config.excludedModels.length) {
     payload['excluded-models'] = config.excludedModels;
   }
+  if (config.protocol) payload.protocol = config.protocol;
   if (config.cloak) {
     const cloakPayload: Record<string, unknown> = {};
     const mode = config.cloak.mode?.trim();
