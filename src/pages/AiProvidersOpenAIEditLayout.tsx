@@ -148,6 +148,7 @@ export function AiProvidersOpenAIEditLayout() {
 
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
+  const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
   const isCacheValid = useConfigStore((state) => state.isCacheValid);
 
   const [providers, setProviders] = useState<OpenAIProviderConfig[]>(
@@ -258,15 +259,25 @@ export function AiProvidersOpenAIEditLayout() {
       setLoading(true);
     }
 
-    fetchConfig('openai-compatibility')
+    providersApi
+      .getOpenAIProviders()
       .then((value) => {
         if (cancelled) return;
-        setProviders(Array.isArray(value) ? (value as OpenAIProviderConfig[]) : []);
+        const nextProviders = value || [];
+        setProviders(nextProviders);
+        updateConfigValue('openai-compatibility', nextProviders);
       })
-      .catch((err: unknown) => {
+      .catch(async (err: unknown) => {
         if (cancelled) return;
-        const message = getErrorMessage(err) || t('notification.refresh_failed');
-        showNotification(`${t('notification.load_failed')}: ${message}`, 'error');
+        try {
+          const fallback = await fetchConfig('openai-compatibility');
+          if (cancelled) return;
+          setProviders(Array.isArray(fallback) ? (fallback as OpenAIProviderConfig[]) : []);
+        } catch {
+          if (cancelled) return;
+          const message = getErrorMessage(err) || t('notification.refresh_failed');
+          showNotification(`${t('notification.load_failed')}: ${message}`, 'error');
+        }
       })
       .finally(() => {
         if (cancelled) return;
@@ -276,7 +287,7 @@ export function AiProvidersOpenAIEditLayout() {
     return () => {
       cancelled = true;
     };
-  }, [fetchConfig, isCacheValid, showNotification, t]);
+  }, [fetchConfig, isCacheValid, showNotification, t, updateConfigValue]);
 
   useEffect(() => {
     if (loading) return;
@@ -481,15 +492,13 @@ export function AiProvidersOpenAIEditLayout() {
 
       let syncedProviders = nextList;
       try {
-        const latest = await fetchConfig('openai-compatibility', true);
-        if (Array.isArray(latest)) {
-          syncedProviders = latest as OpenAIProviderConfig[];
-        }
+        syncedProviders = await providersApi.getOpenAIProviders();
       } catch {
         // 保存成功后刷新失败时，回退到本地计算结果，避免页面数据为空或回退
       }
 
       setProviders(syncedProviders);
+      updateConfigValue('openai-compatibility', syncedProviders);
       showNotification(
         editIndex !== null
           ? t('notification.openai_provider_updated')
@@ -508,7 +517,6 @@ export function AiProvidersOpenAIEditLayout() {
     allowNextNavigation,
     draftKey,
     editIndex,
-    fetchConfig,
     form,
     handleBack,
     providers,
@@ -516,6 +524,7 @@ export function AiProvidersOpenAIEditLayout() {
     showNotification,
     t,
     testModel,
+    updateConfigValue,
   ]);
 
   return (
