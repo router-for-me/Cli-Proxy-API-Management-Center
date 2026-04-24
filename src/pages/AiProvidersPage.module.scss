@@ -210,13 +210,30 @@
   border: 1px solid var(--border-primary);
   border-radius: 6px;
   background: var(--bg-secondary);
-  cursor: pointer;
   transition: all 0.15s ease;
   min-height: 32px;
 
   &:hover {
     border-color: var(--primary-color);
     background: var(--bg-tertiary);
+  }
+}
+
+.modelSelectButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 }
 
@@ -266,6 +283,40 @@
 
   &:hover {
     background: var(--bg-tertiary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.modelSelectArrowButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .modelSelectArrow {
+    margin-left: 0;
   }
 }
 

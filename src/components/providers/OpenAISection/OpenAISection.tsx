@@ -360,45 +360,50 @@ export function OpenAISection({
           className={styles.modelMultiSelectWrapper}
           ref={isFloating ? floatingDropdownRef : topDropdownRef}
         >
-          <button
-            type="button"
-            className={styles.modelSelectedTags}
-            onClick={toggleDropdown}
-            disabled={actionsDisabled}
-          >
+          <div className={styles.modelSelectedTags}>
             {selectedModels.size === 0 ? (
-              <span className={styles.modelSelectPlaceholder}>
-                {t('ai_providers.model_search_placeholder')}
-              </span>
+              <button
+                type="button"
+                className={styles.modelSelectButton}
+                onClick={toggleDropdown}
+                disabled={actionsDisabled}
+              >
+                <span className={styles.modelSelectPlaceholder}>
+                  {t('ai_providers.model_search_placeholder')}
+                </span>
+                <span className={styles.modelSelectArrow}>▼</span>
+              </button>
             ) : (
               <>
                 {Array.from(selectedModels).map((name) => (
                   <span key={`top-${name}`} className={styles.modelFilterTag}>
                     <span className={styles.modelTagName}>{name}</span>
-                    <span
-                      role="button"
-                      tabIndex={0}
+                    <button
+                      type="button"
                       className={styles.modelTagRemove}
+                      disabled={actionsDisabled}
+                      aria-label={`${t('common.delete')} ${name}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleModelSelection(name);
                       }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          toggleModelSelection(name);
-                        }
-                      }}
                     >
                       ×
-                    </span>
+                    </button>
                   </span>
                 ))}
+                <button
+                  type="button"
+                  className={styles.modelSelectArrowButton}
+                  onClick={toggleDropdown}
+                  disabled={actionsDisabled}
+                  aria-label={t('ai_providers.model_search_placeholder')}
+                >
+                  <span className={styles.modelSelectArrow}>▼</span>
+                </button>
               </>
             )}
-            <span className={styles.modelSelectArrow}>▼</span>
-          </button>
+          </div>
 
           {isActiveToolbar && isDropdownOpen && (
             <div className={dropdownClassName} style={{ maxHeight: `${dropdownLayout.maxHeight}px` }}>
