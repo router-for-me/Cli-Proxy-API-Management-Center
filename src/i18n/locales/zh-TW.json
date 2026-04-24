@@ -463,7 +463,10 @@
     "openai_test_all_hint": "測試所有金鑰的連線狀態",
     "openai_test_all_success": "所有 {{count}} 個金鑰測試通過",
     "openai_test_all_failed": "所有 {{count}} 個金鑰測試失敗",
-    "openai_test_all_partial": "測試完成：{{success}} 個通過，{{failed}} 個失敗"
+    "openai_test_all_partial": "測試完成：{{success}} 個通過，{{failed}} 個失敗",
+    "model_search_placeholder": "依模型篩選...",
+    "model_search_clear": "清除",
+    "model_select_all": "全選"
   },
   "auth_files": {
     "title": "驗證檔案管理",
