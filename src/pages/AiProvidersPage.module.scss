@@ -1,6 +1,8 @@
 @use '../styles/variables' as *;
 @use '../styles/mixins' as *;
 
+$openai-toolbar-control-height: 36px;
+
 .container {
   width: 100%;
 }
@@ -103,69 +105,60 @@
   display: flex;
   align-items: center;
   gap: $spacing-xs;
+  height: $openai-toolbar-control-height;
 }
 
 .sortSelect {
-  padding: 6px 10px;
-  font-size: 13px;
-  font-weight: 500;
-  border: 1px solid var(--border-primary);
-  border-radius: 6px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.15s ease;
+  flex: 0 0 148px;
+  width: 148px;
 
-  &:hover {
-    border-color: var(--primary-color);
-  }
-
-  &:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px var(--primary-color-alpha, rgba(59, 130, 246, 0.1));
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  > button {
+    height: $openai-toolbar-control-height;
+    padding: 0 12px;
+    border-color: var(--border-primary);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    box-shadow: none;
+    font-size: 13px;
   }
 }
 
 // 排序方向按钮
-.sortDirectionButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  font-size: 16px;
-  font-weight: 600;
-  border: 1px solid var(--border-primary);
+.sortDirectionButton:global(.btn.btn-secondary) {
+  flex: 0 0 74px;
+  min-width: 74px;
+  height: $openai-toolbar-control-height;
+  padding: 0 10px;
+  border-color: var(--border-primary);
   border-radius: 6px;
   background: var(--bg-secondary);
   color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.15s ease;
+  gap: 6px;
 
   &:hover {
     border-color: var(--primary-color);
     background: var(--bg-tertiary);
   }
 
-  &:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px var(--primary-color-alpha, rgba(59, 130, 246, 0.1));
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
 }
 
+.sortDirectionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
 
 // 卡片头部操作区
 .cardHeaderActions {
@@ -173,6 +166,11 @@
   align-items: center;
   flex-wrap: wrap;
   gap: $spacing-sm;
+  min-height: $openai-toolbar-control-height;
+
+  :global(.btn) {
+    white-space: nowrap;
+  }
 }
 
 .openaiToolbarAnchorHidden {
@@ -195,23 +193,24 @@
   border-radius: 0;
 }
 
-
 // 模型多选下拉框
 .modelMultiSelectWrapper {
   position: relative;
 }
 
-.modelSelectedTags {
+.modelFilterControl {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px 8px;
+  width: 164px;
+  height: $openai-toolbar-control-height;
   border: 1px solid var(--border-primary);
   border-radius: 6px;
   background: var(--bg-secondary);
-  transition: all 0.15s ease;
-  min-height: 32px;
+  overflow: hidden;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    box-shadow $transition-fast;
 
   &:hover {
     border-color: var(--primary-color);
@@ -219,91 +218,98 @@
   }
 }
 
-.modelSelectButton {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
+.modelFilterControlActive {
+  border-color: color-mix(in srgb, var(--primary-color) 46%, var(--border-primary));
+  background: color-mix(in srgb, var(--primary-color) 7%, var(--bg-secondary));
 }
 
-.modelSelectPlaceholder {
-  font-size: 13px;
-  color: var(--text-tertiary);
-  flex: 1;
-}
-
-.modelFilterTag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 4px 8px 4px 8px;
-  background: var(--primary-color-alpha, rgba(59, 130, 246, 0.15));
-  color: var(--primary-color);
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  max-width: 150px;
-  position: relative;
-}
-
-.modelTagName {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.modelTagRemove {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: none;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
+.modelFilterControlDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 
   &:hover {
-    background: var(--bg-tertiary);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
+    border-color: var(--border-primary);
+    background: var(--bg-secondary);
   }
 }
 
-.modelSelectArrowButton {
+.modelFilterTrigger {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 9px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.modelFilterIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.modelFilterText {
+  font-size: 13px;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelFilterCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: $radius-full;
+  background: var(--primary-color);
+  color: var(--primary-contrast, #fff);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.modelFilterChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.modelFilterInlineClear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 100%;
   padding: 0;
   border: 0;
-  border-radius: 4px;
+  border-left: 1px solid var(--border-primary);
   background: transparent;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   cursor: pointer;
   flex-shrink: 0;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
 
   &:hover {
     background: var(--bg-tertiary);
@@ -312,31 +318,24 @@
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.6;
+    color: var(--text-tertiary);
   }
-
-  .modelSelectArrow {
-    margin-left: 0;
-  }
-}
-
-.modelSelectArrow {
-  font-size: 10px;
-  color: var(--text-tertiary);
-  margin-left: 4px;
 }
 
 .modelDropdownList {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  min-width: 280px;
+  width: 320px;
+  max-width: min(320px, calc(100vw - 32px));
   max-height: 300px;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
   border-radius: $radius-md;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
   z-index: 1000;
 }
 
@@ -350,58 +349,55 @@
   align-items: center;
   justify-content: space-between;
   gap: $spacing-xs;
-  padding: $spacing-xs $spacing-sm;
+  padding: 6px;
   border-bottom: 1px solid var(--border-primary);
   background: var(--bg-tertiary);
 }
 
-.modelDropdownSelectAll,
-.modelDropdownClear {
-  padding: 4px 8px;
-  font-size: 12px;
-  background: transparent;
-  border: none;
+.modelDropdownSelectAll:global(.btn.btn-ghost),
+.modelDropdownClear:global(.btn.btn-ghost) {
+  height: 28px;
+  padding: 0 8px;
   color: var(--primary-color);
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.15s ease;
+  font-size: 12px;
 
   &:hover {
     background: var(--bg-secondary);
   }
 }
 
-.modelFilterClearButton:global(.btn.btn-secondary) {
-  background: var(--primary-color-alpha, rgba(59, 130, 246, 0.15));
-  border-color: rgba(59, 130, 246, 0.24);
-  color: var(--primary-color);
+.openaiAddButton:global(.btn.btn-primary) {
+  height: $openai-toolbar-control-height;
+  padding: 0 12px;
+}
 
-  &:hover {
-    background: rgba(59, 130, 246, 0.22);
-    border-color: rgba(59, 130, 246, 0.32);
-    color: var(--primary-color);
-  }
+.modelDropdownItems {
+  overflow-y: auto;
+  padding: 4px;
+  min-height: 0;
 }
 
 .modelDropdownItem {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-  padding: $spacing-xs $spacing-sm;
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s ease;
 
   &:hover {
     background: var(--bg-secondary);
   }
+}
 
-  input[type="checkbox"] {
-    margin: 0;
-    cursor: pointer;
-  }
+.modelDropdownItemLabel {
+  min-width: 0;
+  flex: 1;
 
   span {
-    flex: 1;
+    display: block;
     font-size: 13px;
     color: var(--text-primary);
     white-space: nowrap;
@@ -410,6 +406,12 @@
   }
 }
 
+.modelDropdownEmpty {
+  padding: 18px 12px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
 
 // 成功失败次数统计样式
 .cardStats {

@@ -4,15 +4,20 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconCheck, IconX } from '@/components/ui/icons';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
+import { Select } from '@/components/ui/Select';
+import {
+  IconCheck,
+  IconChevronDown,
+  IconChevronUp,
+  IconSlidersHorizontal,
+  IconX,
+} from '@/components/ui/icons';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
 import type { OpenAIProviderConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
-import {
-  calculateStatusBarData,
-  type KeyStats,
-} from '@/utils/usage';
+import { calculateStatusBarData, type KeyStats } from '@/utils/usage';
 import { type UsageDetailsByAuthIndex, type UsageDetailsBySource } from '@/utils/usageIndex';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderStatusBar } from '../ProviderStatusBar';
@@ -117,7 +122,8 @@ export function OpenAISection({
       const fixedTop = Number.parseFloat(rootStyles.getPropertyValue('--header-height')) || 64;
       const toolbarHeight = anchorRect.height;
       const isMobile = window.innerWidth <= 768;
-      const shouldShow = !isMobile && anchorRect.top <= fixedTop && sectionRect.bottom > fixedTop + toolbarHeight;
+      const shouldShow =
+        !isMobile && anchorRect.top <= fixedTop && sectionRect.bottom > fixedTop + toolbarHeight;
 
       setFloatingToolbarStyle((prev) => {
         const next = {
@@ -148,7 +154,14 @@ export function OpenAISection({
       window.removeEventListener('resize', updateFloatingToolbar);
       window.removeEventListener('scroll', updateFloatingToolbar, true);
     };
-  }, [configs.length, isDropdownOpen, isTransitionAnimating, selectedModels, sortDirection, sortOption]);
+  }, [
+    configs.length,
+    isDropdownOpen,
+    isTransitionAnimating,
+    selectedModels,
+    sortDirection,
+    sortOption,
+  ]);
 
   useEffect(() => {
     if (!isDropdownOpen) {
@@ -187,7 +200,10 @@ export function OpenAISection({
       const dropdownGap = 4;
       const preferredMaxHeight = 300;
       const minimumMaxHeight = 120;
-      const availableBelow = Math.max(0, window.innerHeight - rect.bottom - viewportPadding - dropdownGap);
+      const availableBelow = Math.max(
+        0,
+        window.innerHeight - rect.bottom - viewportPadding - dropdownGap
+      );
       const availableAbove = Math.max(0, rect.top - viewportPadding - dropdownGap);
       const openAbove = availableBelow < preferredMaxHeight && availableAbove > availableBelow;
       const availableSpace = openAbove ? availableAbove : availableBelow;
@@ -223,6 +239,14 @@ export function OpenAISection({
     });
     return Array.from(modelSet).sort();
   }, [configs]);
+  const selectedModelNames = useMemo(() => Array.from(selectedModels).sort(), [selectedModels]);
+  const modelFilterActive = selectedModelNames.length > 0;
+  const modelFilterLabel = modelFilterActive
+    ? t('ai_providers.model_discovery_selected_count', { count: selectedModelNames.length })
+    : t('ai_providers.model_search_placeholder');
+  const modelFilterTitle = modelFilterActive
+    ? selectedModelNames.join(', ')
+    : t('ai_providers.model_search_placeholder');
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
@@ -232,17 +256,22 @@ export function OpenAISection({
       cache.set(
         providerKey,
         calculateStatusBarData(
-          collectOpenAIProviderUsageDetails(
-            provider,
-            usageDetailsBySource,
-            usageDetailsByAuthIndex
-          )
+          collectOpenAIProviderUsageDetails(provider, usageDetailsBySource, usageDetailsByAuthIndex)
         )
       );
     });
 
     return cache;
   }, [configs, usageDetailsByAuthIndex, usageDetailsBySource]);
+
+  const sortOptions = useMemo(
+    () => [
+      { value: 'priority', label: t('ai_providers.sort_by_priority') },
+      { value: 'name', label: t('ai_providers.sort_by_name') },
+      { value: 'recent-success', label: t('ai_providers.sort_by_recent_success') },
+    ],
+    [t]
+  );
 
   const sortedConfigs = useMemo<IndexedOpenAIProvider[]>(() => {
     const indexed = configs.map((config, originalIndex) => ({ config, originalIndex }));
@@ -255,12 +284,7 @@ export function OpenAISection({
     const direction = sortDirection === 'desc' ? -1 : 1;
     const providerStats =
       sortOption === 'recent-success'
-        ? new Map(
-          sorted.map(({ config }) => [
-            config,
-            getOpenAIProviderStats(config, keyStats),
-          ])
-        )
+        ? new Map(sorted.map(({ config }) => [config, getOpenAIProviderStats(config, keyStats)]))
         : null;
 
     switch (sortOption) {
@@ -283,7 +307,8 @@ export function OpenAISection({
       case 'recent-success':
         sorted.sort((a, b) => {
           const successDiff =
-            (providerStats?.get(a.config)?.success ?? 0) - (providerStats?.get(b.config)?.success ?? 0);
+            (providerStats?.get(a.config)?.success ?? 0) -
+            (providerStats?.get(b.config)?.success ?? 0);
 
           if (successDiff !== 0) {
             return direction * successDiff;
@@ -327,32 +352,49 @@ export function OpenAISection({
 
   const renderSortControls = () => (
     <div className={styles.sortControls}>
-      <select
+      <Select
         value={sortOption}
-        onChange={(e) => handleSortOptionChange(e.target.value as SortOption)}
+        options={sortOptions}
+        onChange={(value) => handleSortOptionChange(value as SortOption)}
         className={styles.sortSelect}
         disabled={actionsDisabled}
-      >
-        <option value="priority">{t('ai_providers.sort_by_priority')}</option>
-        <option value="name">{t('ai_providers.sort_by_name')}</option>
-        <option value="recent-success">{t('ai_providers.sort_by_recent_success')}</option>
-      </select>
-      <button
-        type="button"
+        ariaLabel={t('ai_providers.sort_by_priority')}
+        fullWidth={false}
+      />
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={toggleSortDirection}
         className={styles.sortDirectionButton}
         disabled={actionsDisabled}
-        title={sortDirection === 'asc' ? t('ai_providers.sort_ascending') : t('ai_providers.sort_descending')}
+        title={
+          sortDirection === 'asc'
+            ? t('ai_providers.sort_ascending')
+            : t('ai_providers.sort_descending')
+        }
+        aria-label={
+          sortDirection === 'asc'
+            ? t('ai_providers.sort_ascending')
+            : t('ai_providers.sort_descending')
+        }
       >
-        {sortDirection === 'asc' ? '↑' : '↓'}
-      </button>
+        <span className={styles.sortDirectionIcon}>
+          {sortDirection === 'asc' ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
+        </span>
+        <span>
+          {sortDirection === 'asc'
+            ? t('ai_providers.sort_asc_short')
+            : t('ai_providers.sort_desc_short')}
+        </span>
+      </Button>
     </div>
   );
 
   const renderToolbar = (isFloating = false) => {
     const isActiveToolbar = isFloating === shouldRenderFloatingToolbar;
-    const dropdownClassName =
-      dropdownLayout.openAbove ? `${styles.modelDropdownList} ${styles.modelDropdownListAbove}` : styles.modelDropdownList;
+    const dropdownClassName = dropdownLayout.openAbove
+      ? `${styles.modelDropdownList} ${styles.modelDropdownListAbove}`
+      : styles.modelDropdownList;
 
     return (
       <div className={styles.cardHeaderActions}>
@@ -360,97 +402,110 @@ export function OpenAISection({
           className={styles.modelMultiSelectWrapper}
           ref={isFloating ? floatingDropdownRef : topDropdownRef}
         >
-          <div className={styles.modelSelectedTags}>
-            {selectedModels.size === 0 ? (
+          <div
+            className={[
+              styles.modelFilterControl,
+              modelFilterActive ? styles.modelFilterControlActive : '',
+              actionsDisabled ? styles.modelFilterControlDisabled : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <button
+              type="button"
+              className={styles.modelFilterTrigger}
+              onClick={toggleDropdown}
+              disabled={actionsDisabled}
+              title={modelFilterTitle}
+              aria-label={modelFilterTitle}
+              aria-haspopup="true"
+              aria-expanded={isActiveToolbar && isDropdownOpen}
+            >
+              <span className={styles.modelFilterIcon} aria-hidden="true">
+                <IconSlidersHorizontal size={14} />
+              </span>
+              <span className={styles.modelFilterText}>{modelFilterLabel}</span>
+              {modelFilterActive && (
+                <span className={styles.modelFilterCount}>{selectedModelNames.length}</span>
+              )}
+              <span className={styles.modelFilterChevron} aria-hidden="true">
+                <IconChevronDown size={14} />
+              </span>
+            </button>
+            {modelFilterActive && (
               <button
                 type="button"
-                className={styles.modelSelectButton}
-                onClick={toggleDropdown}
+                className={styles.modelFilterInlineClear}
+                onClick={clearAllModels}
                 disabled={actionsDisabled}
+                aria-label={t('ai_providers.model_search_clear')}
+                title={t('ai_providers.model_search_clear')}
               >
-                <span className={styles.modelSelectPlaceholder}>
-                  {t('ai_providers.model_search_placeholder')}
-                </span>
-                <span className={styles.modelSelectArrow}>▼</span>
+                <IconX size={14} />
               </button>
-            ) : (
-              <>
-                {Array.from(selectedModels).map((name) => (
-                  <span key={`top-${name}`} className={styles.modelFilterTag}>
-                    <span className={styles.modelTagName}>{name}</span>
-                    <button
-                      type="button"
-                      className={styles.modelTagRemove}
-                      disabled={actionsDisabled}
-                      aria-label={`${t('common.delete')} ${name}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleModelSelection(name);
-                      }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-                <button
-                  type="button"
-                  className={styles.modelSelectArrowButton}
-                  onClick={toggleDropdown}
-                  disabled={actionsDisabled}
-                  aria-label={t('ai_providers.model_search_placeholder')}
-                >
-                  <span className={styles.modelSelectArrow}>▼</span>
-                </button>
-              </>
             )}
           </div>
 
           {isActiveToolbar && isDropdownOpen && (
-            <div className={dropdownClassName} style={{ maxHeight: `${dropdownLayout.maxHeight}px` }}>
+            <div
+              className={dropdownClassName}
+              style={{ maxHeight: `${dropdownLayout.maxHeight}px` }}
+            >
               <div className={styles.modelDropdownHeader}>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setSelectedModels(new Set(allModelNames))}
                   className={styles.modelDropdownSelectAll}
+                  disabled={actionsDisabled || allModelNames.length === 0}
                 >
                   {t('ai_providers.model_select_all')}
-                </button>
-                {selectedModels.size > 0 && (
-                  <button
-                    type="button"
+                </Button>
+                {modelFilterActive && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={clearAllModels}
                     className={styles.modelDropdownClear}
+                    disabled={actionsDisabled}
                   >
                     {t('ai_providers.model_search_clear')}
-                  </button>
+                  </Button>
                 )}
               </div>
-              {allModelNames.map((name) => (
-                <label key={`top-option-${name}`} className={styles.modelDropdownItem}>
-                  <input
-                    type="checkbox"
-                    checked={selectedModels.has(name)}
-                    onChange={() => toggleModelSelection(name)}
-                  />
-                  <span>{name}</span>
-                </label>
-              ))}
+              <div
+                className={styles.modelDropdownItems}
+                role="group"
+                aria-label={t('ai_providers.model_search_placeholder')}
+              >
+                {allModelNames.length === 0 ? (
+                  <div className={styles.modelDropdownEmpty}>
+                    {t('ai_providers.model_filter_empty')}
+                  </div>
+                ) : (
+                  allModelNames.map((name) => (
+                    <SelectionCheckbox
+                      key={`top-option-${name}`}
+                      checked={selectedModels.has(name)}
+                      onChange={() => toggleModelSelection(name)}
+                      disabled={actionsDisabled}
+                      className={styles.modelDropdownItem}
+                      labelClassName={styles.modelDropdownItemLabel}
+                      label={<span title={name}>{name}</span>}
+                    />
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>
-        {selectedModels.size > 0 && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={clearAllModels}
-            disabled={actionsDisabled}
-            className={styles.modelFilterClearButton}
-          >
-            {t('ai_providers.model_search_clear')}
-          </Button>
-        )}
         {renderSortControls()}
-        <Button size="sm" onClick={onAdd} disabled={actionsDisabled}>
+        <Button
+          size="sm"
+          onClick={onAdd}
+          disabled={actionsDisabled}
+          className={styles.openaiAddButton}
+        >
           {t('ai_providers.openai_add_button')}
         </Button>
       </div>
@@ -472,7 +527,8 @@ export function OpenAISection({
     const stats = getOpenAIProviderStats(provider, keyStats);
     const headerEntries = Object.entries(provider.headers || {});
     const apiKeyEntries = provider.apiKeyEntries || [];
-    const statusData = statusBarCache.get(getOpenAIProviderKey(provider, originalIndex)) || EMPTY_STATUS_BAR;
+    const statusData =
+      statusBarCache.get(getOpenAIProviderKey(provider, originalIndex)) || EMPTY_STATUS_BAR;
 
     return (
       <div
@@ -525,12 +581,18 @@ export function OpenAISection({
                     >
                       <span className={styles.apiKeyEntryIndex}>{entryIndex + 1}</span>
                       <span className={styles.apiKeyEntryKey}>{maskApiKey(entry.apiKey)}</span>
-                      {entry.proxyUrl && <span className={styles.apiKeyEntryProxy}>{entry.proxyUrl}</span>}
+                      {entry.proxyUrl && (
+                        <span className={styles.apiKeyEntryProxy}>{entry.proxyUrl}</span>
+                      )}
                       <div className={styles.apiKeyEntryStats}>
-                        <span className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatSuccess}`}>
+                        <span
+                          className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatSuccess}`}
+                        >
                           <IconCheck size={12} /> {entryStats.success}
                         </span>
-                        <span className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatFailure}`}>
+                        <span
+                          className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatFailure}`}
+                        >
                           <IconX size={12} /> {entryStats.failure}
                         </span>
                       </div>
@@ -573,10 +635,20 @@ export function OpenAISection({
           <ProviderStatusBar statusData={statusData} />
         </div>
         <div className={styles.openaiProviderActions}>
-          <Button variant="secondary" size="sm" onClick={() => onEdit(originalIndex)} disabled={actionsDisabled}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onEdit(originalIndex)}
+            disabled={actionsDisabled}
+          >
             {t('common.edit')}
           </Button>
-          <Button variant="danger" size="sm" onClick={() => onDelete(originalIndex)} disabled={actionsDisabled}>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => onDelete(originalIndex)}
+            disabled={actionsDisabled}
+          >
             {t('common.delete')}
           </Button>
         </div>
@@ -604,11 +676,16 @@ export function OpenAISection({
             <EmptyState
               title={t('ai_providers.openai_filtered_empty_title')}
               description={t('ai_providers.openai_filtered_empty_desc')}
-              action={(
-                <Button variant="secondary" size="sm" onClick={clearAllModels} disabled={actionsDisabled}>
+              action={
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={clearAllModels}
+                  disabled={actionsDisabled}
+                >
                   {t('ai_providers.model_search_clear')}
                 </Button>
-              )}
+              }
             />
           ) : sortedConfigs.length === 0 ? (
             <EmptyState
@@ -622,21 +699,21 @@ export function OpenAISection({
       </div>
       {typeof document !== 'undefined' && shouldRenderFloatingToolbar
         ? createPortal(
-          <div
-            className={`card ${styles.openaiFloatingToolbar}`}
-            style={{
-              left: `${floatingToolbarStyle.left}px`,
-              top: `${floatingToolbarStyle.top}px`,
-              width: `${floatingToolbarStyle.width}px`,
-            }}
-          >
-            <div className="card-header">
-              <div className="title">{renderStaticTitle()}</div>
-              {renderToolbar(true)}
-            </div>
-          </div>,
-          document.body
-        )
+            <div
+              className={`card ${styles.openaiFloatingToolbar}`}
+              style={{
+                left: `${floatingToolbarStyle.left}px`,
+                top: `${floatingToolbarStyle.top}px`,
+                width: `${floatingToolbarStyle.width}px`,
+              }}
+            >
+              <div className="card-header">
+                <div className="title">{renderStaticTitle()}</div>
+                {renderToolbar(true)}
+              </div>
+            </div>,
+            document.body
+          )
         : null}
     </>
   );

@@ -406,9 +406,11 @@
     "openai_filtered_empty_desc": "目前模型篩選下沒有匹配的供應商，請清除篩選後再試一次。",
     "sort_by_name": "依名稱排序",
     "sort_ascending": "升冪排序",
+    "sort_asc_short": "升冪",
     "sort_by_priority": "依優先順序排序",
     "sort_by_recent_success": "依最近成功排序",
     "sort_descending": "降冪排序",
+    "sort_desc_short": "降冪",
     "openai_test_model": "測試模型",
     "openai_add_modal_title": "新增 OpenAI 相容供應商",
     "openai_add_modal_name_label": "供應商名稱:",
@@ -466,7 +468,8 @@
     "openai_test_all_partial": "測試完成：{{success}} 個通過，{{failed}} 個失敗",
     "model_search_placeholder": "依模型篩選...",
     "model_search_clear": "清除",
-    "model_select_all": "全選"
+    "model_select_all": "全選",
+    "model_filter_empty": "暫無可篩選模型"
   },
   "auth_files": {
     "title": "驗證檔案管理",
