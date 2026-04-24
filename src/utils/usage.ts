@@ -127,6 +127,11 @@ const DEFAULT_MODEL_PRICES: Record<string, ModelPrice> = {
     completion: 15,
     cache: 0.25,
   },
+  'gpt-5.5': {
+    prompt: 5,
+    completion: 30,
+    cache: 0.25,
+  },
 };
 const USAGE_TIME_RANGE_MS: Record<Exclude<UsageTimeRange, 'all'>, number> = {
   '3h': 3 * 60 * 60 * 1000,
