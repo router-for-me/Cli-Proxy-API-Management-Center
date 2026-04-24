@@ -55,6 +55,14 @@ interface IndexedOpenAIProvider {
   originalIndex: number;
 }
 
+const getApiKeyEntryRenderKey = (
+  entry: NonNullable<OpenAIProviderConfig['apiKeyEntries']>[number],
+  entryIndex: number
+) => {
+  const authIndex = entry.authIndex == null ? '' : String(entry.authIndex).trim();
+  return authIndex ? `auth-index-${authIndex}` : `api-key-entry-${entryIndex}`;
+};
+
 export function OpenAISection({
   configs,
   keyStats,
@@ -507,7 +515,7 @@ export function OpenAISection({
                   );
                   return (
                     <div
-                      key={`${entry.authIndex ?? 'none'}-${entry.apiKey}-${entryIndex}`}
+                      key={getApiKeyEntryRenderKey(entry, entryIndex)}
                       className={styles.apiKeyEntryCard}
                     >
                       <span className={styles.apiKeyEntryIndex}>{entryIndex + 1}</span>
