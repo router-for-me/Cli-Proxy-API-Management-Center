@@ -402,6 +402,14 @@
     "openai_add_button": "添加提供商",
     "openai_empty_title": "暂无OpenAI兼容提供商",
     "openai_empty_desc": "点击上方按钮添加第一个提供商",
+    "openai_filtered_empty_title": "没有匹配的提供商",
+    "openai_filtered_empty_desc": "当前模型筛选下没有匹配的提供商，请清除筛选后重试。",
+    "sort_by_name": "按名称排序",
+    "sort_ascending": "升序排序",
+    "sort_by_priority": "按优先级排序",
+    "sort_by_recent_success": "按最近成功数排序",
+    "sort_descending": "降序排序",
+    "openai_test_model": "测试模型",
     "openai_add_modal_title": "添加OpenAI兼容提供商",
     "openai_add_modal_name_label": "提供商名称:",
     "openai_add_modal_name_placeholder": "例如: openrouter",
@@ -455,7 +463,10 @@
     "openai_test_all_hint": "测试所有密钥的连接状态",
     "openai_test_all_success": "所有 {{count}} 个密钥测试通过",
     "openai_test_all_failed": "所有 {{count}} 个密钥测试失败",
-    "openai_test_all_partial": "测试完成：{{success}} 个通过，{{failed}} 个失败"
+    "openai_test_all_partial": "测试完成：{{success}} 个通过，{{failed}} 个失败",
+    "model_search_placeholder": "按模型筛选...",
+    "model_search_clear": "清除",
+    "model_select_all": "全选"
   },
   "auth_files": {
     "title": "认证文件管理",

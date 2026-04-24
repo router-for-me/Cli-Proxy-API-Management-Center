@@ -402,6 +402,14 @@
     "openai_add_button": "Add Provider",
     "openai_empty_title": "No OpenAI Compatible Providers",
     "openai_empty_desc": "Click the button above to add the first provider",
+    "openai_filtered_empty_title": "No matching providers",
+    "openai_filtered_empty_desc": "No providers match the current model filter. Clear the filter and try again.",
+    "sort_by_name": "Sort by Name",
+    "sort_ascending": "Sort ascending",
+    "sort_by_priority": "Sort by Priority",
+    "sort_by_recent_success": "Sort by Recent Success",
+    "sort_descending": "Sort descending",
+    "openai_test_model": "Test Model",
     "openai_add_modal_title": "Add OpenAI Compatible Provider",
     "openai_add_modal_name_label": "Provider Name:",
     "openai_add_modal_name_placeholder": "e.g.: openrouter",
@@ -455,7 +463,10 @@
     "openai_test_all_hint": "Test connection status for all keys",
     "openai_test_all_success": "All {{count}} keys passed the test",
     "openai_test_all_failed": "All {{count}} keys failed the test",
-    "openai_test_all_partial": "Test completed: {{success}} passed, {{failed}} failed"
+    "openai_test_all_partial": "Test completed: {{success}} passed, {{failed}} failed",
+    "model_search_placeholder": "Filter by models...",
+    "model_search_clear": "Clear",
+    "model_select_all": "Select All"
   },
   "auth_files": {
     "title": "Auth Files Management",

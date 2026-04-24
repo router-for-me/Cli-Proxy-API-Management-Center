@@ -91,8 +91,8 @@ export function VertexSection({
           keyField={(item, index) => getProviderConfigKey(item, index)}
           emptyTitle={t('ai_providers.vertex_empty_title')}
           emptyDescription={t('ai_providers.vertex_empty_desc')}
-          onEdit={onEdit}
-          onDelete={onDelete}
+          onEdit={(_, index) => onEdit(index)}
+          onDelete={(_, index) => onDelete(index)}
           actionsDisabled={actionsDisabled}
           getRowDisabled={(item) => hasDisableAllModelsRule(item.excludedModels)}
           renderExtraActions={(item, index) => (
