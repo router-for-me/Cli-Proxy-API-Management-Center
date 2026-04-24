@@ -16,8 +16,10 @@ import {
 type DeleteAllOptions = {
   filter: string;
   problemOnly: boolean;
+  disabledOnly: boolean;
   onResetFilterToAll: () => void;
   onResetProblemOnly: () => void;
+  onResetDisabledOnly: () => void;
 };
 
 export type UseAuthFilesDataResult = {
@@ -275,17 +277,28 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
   const handleDeleteAll = useCallback(
     (deleteAllOptions: DeleteAllOptions) => {
-      const { filter, problemOnly, onResetFilterToAll, onResetProblemOnly } = deleteAllOptions;
+      const {
+        filter,
+        problemOnly,
+        disabledOnly,
+        onResetFilterToAll,
+        onResetProblemOnly,
+        onResetDisabledOnly,
+      } = deleteAllOptions;
       const isFiltered = filter !== 'all';
       const isProblemOnly = problemOnly === true;
+      const isDisabledOnly = disabledOnly === true;
       const typeLabel = isFiltered ? getTypeLabel(t, filter) : t('auth_files.filter_all');
-      const confirmMessage = isProblemOnly
-        ? isFiltered
+      let confirmMessage = t('auth_files.delete_all_confirm');
+      if (isDisabledOnly) {
+        confirmMessage = t('auth_files.delete_filtered_result_confirm');
+      } else if (isProblemOnly) {
+        confirmMessage = isFiltered
           ? t('auth_files.delete_problem_filtered_confirm', { type: typeLabel })
-          : t('auth_files.delete_problem_confirm')
-        : isFiltered
-          ? t('auth_files.delete_filtered_confirm', { type: typeLabel })
-          : t('auth_files.delete_all_confirm');
+          : t('auth_files.delete_problem_confirm');
+      } else if (isFiltered) {
+        confirmMessage = t('auth_files.delete_filtered_confirm', { type: typeLabel });
+      }
 
       showConfirmation({
         title: t('auth_files.delete_all_title', { defaultValue: 'Delete All Files' }),
@@ -295,7 +308,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
         onConfirm: async () => {
           setDeletingAll(true);
           try {
-            if (!isFiltered && !isProblemOnly) {
+            if (!isFiltered && !isProblemOnly && !isDisabledOnly) {
               await authFilesApi.deleteAll();
               showNotification(t('auth_files.delete_all_success'), 'success');
               setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
@@ -305,15 +318,19 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
                 if (isRuntimeOnlyAuthFile(file)) return false;
                 if (isFiltered && file.type !== filter) return false;
                 if (isProblemOnly && !hasAuthFileStatusMessage(file)) return false;
+                if (isDisabledOnly && file.disabled !== true) return false;
                 return true;
               });
 
               if (filesToDelete.length === 0) {
-                const emptyMessage = isProblemOnly
-                  ? isFiltered
+                let emptyMessage = t('auth_files.delete_filtered_none', { type: typeLabel });
+                if (isDisabledOnly) {
+                  emptyMessage = t('auth_files.delete_filtered_result_none');
+                } else if (isProblemOnly) {
+                  emptyMessage = isFiltered
                     ? t('auth_files.delete_problem_filtered_none', { type: typeLabel })
-                    : t('auth_files.delete_problem_none')
-                  : t('auth_files.delete_filtered_none', { type: typeLabel });
+                    : t('auth_files.delete_problem_none');
+                }
                 showNotification(emptyMessage, 'info');
                 setDeletingAll(false);
                 return;
@@ -327,7 +344,12 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
               applyDeletedFiles(result.files);
 
-              if (failed === 0 && isProblemOnly) {
+              if (failed === 0 && isDisabledOnly) {
+                showNotification(
+                  t('auth_files.delete_filtered_result_success', { count: success }),
+                  'success'
+                );
+              } else if (failed === 0 && isProblemOnly) {
                 showNotification(
                   isFiltered
                     ? t('auth_files.delete_problem_filtered_success', {
@@ -341,6 +363,11 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
                 showNotification(
                   t('auth_files.delete_filtered_success', { count: success, type: typeLabel }),
                   'success'
+                );
+              } else if (isDisabledOnly) {
+                showNotification(
+                  t('auth_files.delete_filtered_result_partial', { success, failed }),
+                  'warning'
                 );
               } else if (isProblemOnly) {
                 showNotification(
@@ -365,6 +392,9 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
               }
               if (isProblemOnly) {
                 onResetProblemOnly();
+              }
+              if (isDisabledOnly) {
+                onResetDisabledOnly();
               }
             }
           } catch (err: unknown) {
