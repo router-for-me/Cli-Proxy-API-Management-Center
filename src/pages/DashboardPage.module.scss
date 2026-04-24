@@ -20,6 +20,8 @@
   pointer-events: none;
   z-index: 0;
   overflow: hidden;
+  opacity: 0.42;
+  filter: blur(16px);
 }
 
 .orb1 {
@@ -29,7 +31,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--primary-color) 8%, transparent),
+    color-mix(in srgb, var(--primary-color) 6%, transparent),
     transparent 70%
   );
   top: -140px;
@@ -44,7 +46,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--success-color) 6%, transparent),
+    color-mix(in srgb, var(--success-color) 4%, transparent),
     transparent 70%
   );
   bottom: 18%;
@@ -97,10 +99,10 @@
   top: 50%;
   left: $spacing-xl;
   transform: translateY(-50%);
-  font-size: clamp(64px, 12vw, 120px);
+  font-size: 104px;
   font-weight: 900;
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--text-primary);
   opacity: 0.04;
@@ -110,7 +112,7 @@
   animation: watermarkEnter 0.8s ease-out 0.1s both;
 
   @media (max-width: $breakpoint-mobile) {
-    font-size: clamp(48px, 14vw, 80px);
+    font-size: 58px;
     left: $spacing-lg;
   }
 }
@@ -137,7 +139,7 @@
 .heroGreeting {
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--primary-color);
   animation: fadeSlideUp 0.5s ease-out 0.1s both;
@@ -145,12 +147,16 @@
 
 .heroTitle {
   margin: 0;
-  font-size: clamp(32px, 5vw, 48px);
+  font-size: 44px;
   font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   color: var(--text-primary);
   animation: fadeSlideUp 0.5s ease-out 0.2s both;
+
+  @media (max-width: $breakpoint-mobile) {
+    font-size: 34px;
+  }
 }
 
 .heroCaring {
@@ -269,7 +275,7 @@
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   color: var(--text-tertiary);
   margin: 0 0 $spacing-md;
 }
@@ -294,9 +300,19 @@
   flex-direction: column;
   gap: $spacing-md;
   padding: $spacing-lg;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--bg-primary) 86%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 72%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--border-color) 66%, transparent);
   border-radius: $radius-lg;
+  --glass-blur: 12px;
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  box-shadow:
+    0 18px 42px rgb(0 0 0 / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.03);
   text-decoration: none;
   transition:
     border-color $transition-fast,
@@ -305,9 +321,11 @@
   animation: cardEnter 0.4s ease-out both;
 
   &:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--border-hover) 82%, transparent);
+    box-shadow:
+      0 22px 48px rgb(0 0 0 / 0.16),
+      inset 0 1px 0 rgb(255 255 255 / 0.04);
+    transform: translateY(-2px);
   }
 }
 
@@ -317,8 +335,8 @@
   justify-content: center;
   background: linear-gradient(
     160deg,
-    color-mix(in srgb, var(--primary-color) 6%, var(--bg-primary)),
-    var(--bg-primary)
+    color-mix(in srgb, var(--primary-color) 8%, var(--bg-primary)),
+    color-mix(in srgb, var(--bg-primary) 84%, transparent)
   );
 
   .bentoValue {
@@ -408,14 +426,17 @@
   align-items: center;
   gap: $spacing-sm;
   padding: 6px 14px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 68%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 68%, transparent);
   border-radius: $radius-full;
+  --glass-blur: 10px;
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
   font-size: 13px;
   transition: border-color $transition-fast;
 
   &:hover {
-    border-color: var(--border-hover);
+    border-color: color-mix(in srgb, var(--border-hover) 82%, transparent);
   }
 }
 
