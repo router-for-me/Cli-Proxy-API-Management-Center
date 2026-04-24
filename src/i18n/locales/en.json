@@ -917,6 +917,8 @@
     "oauth_callback_status_success": "Callback URL submitted, waiting for authentication...",
     "oauth_callback_status_error": "Callback URL submission failed:",
     "missing_state": "Unable to retrieve authentication state parameter",
+    "login_another_account": "Log in another account",
+    "view_auth_files": "View auth files",
     "iflow_oauth_title": "iFlow OAuth",
     "iflow_oauth_button": "Start iFlow Login",
     "iflow_oauth_hint": "Login to iFlow service through OAuth flow, automatically obtain and save authentication files.",

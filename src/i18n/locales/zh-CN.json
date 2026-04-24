@@ -917,6 +917,8 @@
     "oauth_callback_status_success": "回调 URL 已提交，等待认证中...",
     "oauth_callback_status_error": "回调 URL 提交失败:",
     "missing_state": "无法获取认证状态参数",
+    "login_another_account": "登录另一个账号",
+    "view_auth_files": "查看认证文件",
     "iflow_oauth_title": "iFlow OAuth",
     "iflow_oauth_button": "开始 iFlow 登录",
     "iflow_oauth_hint": "通过 OAuth 流程登录 iFlow 服务，自动获取并保存认证文件。",

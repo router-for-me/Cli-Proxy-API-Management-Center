@@ -914,6 +914,8 @@
     "oauth_callback_status_success": "Callback URL отправлен, ожидаем аутентификацию...",
     "oauth_callback_status_error": "Не удалось отправить Callback URL:",
     "missing_state": "Не удалось получить параметр состояния аутентификации",
+    "login_another_account": "Войти в другой аккаунт",
+    "view_auth_files": "Открыть файлы авторизации",
     "iflow_oauth_title": "iFlow OAuth",
     "iflow_oauth_button": "Начать вход iFlow",
     "iflow_oauth_hint": "Выполните вход в сервис iFlow через OAuth и автоматически получите/сохраните файлы авторизации.",
