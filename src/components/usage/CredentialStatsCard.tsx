@@ -2,21 +2,20 @@ import { memo, useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import {
-  collectUsageDetails,
   buildCandidateUsageSourceIds,
-  extractTotalTokens,
   formatCompactNumber,
-  normalizeAuthIndex,
+  normalizeAuthIndex
 } from '@/utils/usage';
+import { normalizeAggregateCredentialKey } from '@/utils/usageAggregate';
 import { authFilesApi } from '@/services/api/authFiles';
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
 import type { CredentialInfo } from '@/types/sourceInfo';
-import type { UsagePayload } from './hooks/useUsageData';
+import type { UsageAggregateCredentialStat } from '@/types/usageAggregate';
 import styles from '@/pages/UsagePage.module.scss';
 
 export interface CredentialStatsCardProps {
-  usage: UsagePayload | null;
+  credentials: UsageAggregateCredentialStat[];
   loading: boolean;
   geminiKeys: GeminiKeyConfig[];
   claudeConfigs: ProviderKeyConfig[];
@@ -43,7 +42,7 @@ interface CredentialBucket {
 }
 
 export const CredentialStatsCard = memo(function CredentialStatsCard({
-  usage,
+  credentials,
   loading,
   geminiKeys,
   claudeConfigs,
@@ -85,8 +84,7 @@ export const CredentialStatsCard = memo(function CredentialStatsCard({
   // Aggregate rows: all from bySource only (no separate byAuthIndex rows to avoid duplicates).
   // Auth files are used purely for name resolution of unmatched source IDs.
   const rows = useMemo((): CredentialRow[] => {
-    if (!usage) return [];
-    const details = collectUsageDetails(usage);
+    if (!credentials.length) return [];
     const bySource: Record<string, CredentialBucket> = {};
     const result: CredentialRow[] = [];
     const consumedSourceIds = new Set<string>();
@@ -95,35 +93,30 @@ export const CredentialStatsCard = memo(function CredentialStatsCard({
     const sourceToAuthFile = new Map<string, CredentialInfo>();
     const fallbackByAuthIndex = new Map<string, CredentialBucket>();
 
-    details.forEach((detail) => {
-      const authIdx = normalizeAuthIndex(detail.auth_index);
-      const source = detail.source;
-      const isFailed = detail.failed === true;
-      const totalTokens = extractTotalTokens(detail);
+    credentials.forEach((credential) => {
+      const { source, authIndex } = normalizeAggregateCredentialKey(credential);
+      const authIdx = normalizeAuthIndex(authIndex);
+      const successCount = Number(credential.success_count) || 0;
+      const failureCount = Number(credential.failure_count) || 0;
+      const totalTokens = Number(credential.total_tokens) || 0;
 
       if (!source) {
         if (!authIdx) return;
         const fallback = fallbackByAuthIndex.get(authIdx) ?? {
           success: 0,
           failure: 0,
-          totalTokens: 0,
+          totalTokens: 0
         };
-        if (isFailed) {
-          fallback.failure += 1;
-        } else {
-          fallback.success += 1;
-        }
+        fallback.success += successCount;
+        fallback.failure += failureCount;
         fallback.totalTokens += totalTokens;
         fallbackByAuthIndex.set(authIdx, fallback);
         return;
       }
 
       const bucket = bySource[source] ?? { success: 0, failure: 0, totalTokens: 0 };
-      if (isFailed) {
-        bucket.failure += 1;
-      } else {
-        bucket.success += 1;
-      }
+      bucket.success += successCount;
+      bucket.failure += failureCount;
       bucket.totalTokens += totalTokens;
       bySource[source] = bucket;
 
@@ -311,7 +304,7 @@ export const CredentialStatsCard = memo(function CredentialStatsCard({
     });
 
     return result.sort((a, b) => b.totalTokens - a.totalTokens || b.total - a.total);
-  }, [usage, geminiKeys, claudeConfigs, codexConfigs, vertexConfigs, openaiProviders, authFileMap]);
+  }, [credentials, geminiKeys, claudeConfigs, codexConfigs, vertexConfigs, openaiProviders, authFileMap]);
 
   return (
     <Card title={t('usage_stats.credential_stats')} className={styles.detailsFixedCard}>

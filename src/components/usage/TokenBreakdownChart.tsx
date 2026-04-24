@@ -1,15 +1,14 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  buildHourlyTokenBreakdown,
-  buildDailyTokenBreakdown,
   formatCompactNumber,
-  type TokenCategory,
+  type TokenCategory
 } from '@/utils/usage';
+import { buildAggregateTokenBreakdown } from '@/utils/usageAggregate';
 import { buildChartOptions } from '@/utils/usage/chartConfig';
-import type { UsagePayload } from './hooks/useUsageData';
 import { getAdaptiveAnalysisChartPeriod } from './chartPeriod';
 import { UsageChartPanel } from './UsageChartPanel';
+import type { UsageAggregateWindow } from '@/types/usageAggregate';
 
 const TOKEN_COLORS: Record<TokenCategory, { border: string; bg: string }> = {
   input: { border: '#8b8680', bg: 'rgba(139, 134, 128, 0.25)' },
@@ -21,7 +20,7 @@ const TOKEN_COLORS: Record<TokenCategory, { border: string; bg: string }> = {
 const CATEGORIES: TokenCategory[] = ['input', 'output', 'cached', 'reasoning'];
 
 export interface TokenBreakdownChartProps {
-  usage: UsagePayload | null;
+  window: UsageAggregateWindow | null;
   loading: boolean;
   isDark: boolean;
   isMobile: boolean;
@@ -29,7 +28,7 @@ export interface TokenBreakdownChartProps {
 }
 
 export const TokenBreakdownChart = memo(function TokenBreakdownChart({
-  usage,
+  window,
   loading,
   isDark,
   isMobile,
@@ -44,10 +43,7 @@ export const TokenBreakdownChart = memo(function TokenBreakdownChart({
   }, [preferredPeriod]);
 
   const { chartData, chartOptions, hasData, summaryItems } = useMemo(() => {
-    const series =
-      period === 'hour'
-        ? buildHourlyTokenBreakdown(usage, hourWindowHours)
-        : buildDailyTokenBreakdown(usage);
+    const series = buildAggregateTokenBreakdown(window, period);
     const categoryLabels: Record<TokenCategory, string> = {
       input: t('usage_stats.input_tokens'),
       output: t('usage_stats.output_tokens'),
@@ -101,9 +97,9 @@ export const TokenBreakdownChart = memo(function TokenBreakdownChart({
         { label: t('usage_stats.input_tokens'), value: formatCompactNumber(totals.input) },
         { label: t('usage_stats.output_tokens'), value: formatCompactNumber(totals.output) },
         { label: t('usage_stats.cached_tokens'), value: formatCompactNumber(totals.cached) },
-      ],
+      ]
     };
-  }, [usage, period, isDark, isMobile, hourWindowHours, t]);
+  }, [isDark, isMobile, period, t, window]);
 
   return (
     <UsageChartPanel

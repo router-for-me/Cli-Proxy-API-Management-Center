@@ -18,9 +18,11 @@ export interface UsagePageHeroProps {
   lastRefreshedAt: Date | null;
   loading: boolean;
   exporting: boolean;
+  exportingDetailed: boolean;
   importing: boolean;
   onTimeRangeChange: (value: string) => void;
   onExport: () => void;
+  onExportDetailed: () => void;
   onImport: () => void;
   onRefresh: () => void;
   importInputRef: RefObject<HTMLInputElement | null>;
@@ -36,9 +38,11 @@ export const UsagePageHero = memo(function UsagePageHero({
   lastRefreshedAt,
   loading,
   exporting,
+  exportingDetailed,
   importing,
   onTimeRangeChange,
   onExport,
+  onExportDetailed,
   onImport,
   onRefresh,
   importInputRef,
@@ -92,16 +96,25 @@ export const UsagePageHero = memo(function UsagePageHero({
             size="sm"
             onClick={onExport}
             loading={exporting}
-            disabled={loading || importing}
+            disabled={loading || importing || exportingDetailed}
           >
             {t('usage_stats.export')}
           </Button>
           <Button
             variant="secondary"
             size="sm"
+            onClick={onExportDetailed}
+            loading={exportingDetailed}
+            disabled={loading || importing || exporting}
+          >
+            {t('usage_stats.export_details')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={onImport}
             loading={importing}
-            disabled={loading || exporting}
+            disabled={loading || exporting || exportingDetailed}
           >
             {t('usage_stats.import')}
           </Button>
@@ -109,7 +122,7 @@ export const UsagePageHero = memo(function UsagePageHero({
             variant="secondary"
             size="sm"
             onClick={onRefresh}
-            disabled={loading || exporting || importing}
+            disabled={loading || exporting || exportingDetailed || importing}
           >
             {loading ? t('common.loading') : t('usage_stats.refresh')}
           </Button>

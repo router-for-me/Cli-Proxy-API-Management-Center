@@ -27,6 +27,7 @@ export interface UsageExportPayload {
   version?: number;
   exported_at?: string;
   usage?: Record<string, unknown>;
+  aggregated?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
@@ -40,12 +41,24 @@ export interface UsageImportResponse {
 
 export const usageApi = {
   /**
-   * 获取使用统计原始数据
+   * 获取轻量使用统计汇总
    */
   getUsage: () => apiClient.get<Record<string, unknown>>('/usage', { timeout: USAGE_TIMEOUT_MS }),
 
   /**
-   * 导出使用统计快照
+   * 获取包含请求明细的使用统计
+   */
+  getUsageDetails: () =>
+    apiClient.get<Record<string, unknown>>('/usage/details', { timeout: USAGE_TIMEOUT_MS }),
+
+  /**
+   * 获取使用统计页面所需的聚合数据
+   */
+  getUsageAggregated: () =>
+    apiClient.get<Record<string, unknown>>('/usage/aggregated', { timeout: USAGE_TIMEOUT_MS }),
+
+  /**
+   * 导出聚合使用统计快照
    */
   exportUsage: async (fallbackUsage?: unknown): Promise<UsageExportPayload> => {
     const [exportResult, usageResult] = await Promise.allSettled([
@@ -85,6 +98,46 @@ export const usageApi = {
   },
 
   /**
+   * 导出包含全部请求明细的使用统计快照
+   */
+  exportDetailedUsage: async (fallbackUsage?: unknown): Promise<UsageExportPayload> => {
+    const [exportResult, usageResult] = await Promise.allSettled([
+      apiClient.get<UsageExportPayload>('/usage/export/details', { timeout: USAGE_TIMEOUT_MS }),
+      apiClient.get<Record<string, unknown>>('/usage/details', { timeout: USAGE_TIMEOUT_MS })
+    ]);
+
+    const exportPayload =
+      exportResult.status === 'fulfilled' && isRecord(exportResult.value)
+        ? exportResult.value
+        : {};
+
+    const fullUsage =
+      (usageResult.status === 'fulfilled' ? extractUsageSnapshot(usageResult.value) : null) ??
+      extractUsageSnapshot(fallbackUsage) ??
+      extractUsageSnapshot(exportPayload.usage);
+
+    if (!fullUsage) {
+      if (usageResult.status === 'rejected') {
+        throw usageResult.reason;
+      }
+      if (exportResult.status === 'rejected') {
+        throw exportResult.reason;
+      }
+      throw new Error('Detailed usage export payload is empty');
+    }
+
+    return {
+      ...exportPayload,
+      version: typeof exportPayload.version === 'number' ? exportPayload.version : 3,
+      exported_at:
+        typeof exportPayload.exported_at === 'string'
+          ? exportPayload.exported_at
+          : new Date().toISOString(),
+      usage: fullUsage
+    };
+  },
+
+  /**
    * 导入使用统计快照
    */
   importUsage: (payload: unknown) =>
@@ -96,7 +149,9 @@ export const usageApi = {
   async getKeyStats(usageData?: unknown): Promise<KeyStats> {
     let payload = usageData;
     if (!payload) {
-      const response = await apiClient.get<Record<string, unknown>>('/usage', { timeout: USAGE_TIMEOUT_MS });
+      const response = await apiClient.get<Record<string, unknown>>('/usage/details', {
+        timeout: USAGE_TIMEOUT_MS
+      });
       payload = response?.usage ?? response;
     }
     return computeKeyStats(payload);

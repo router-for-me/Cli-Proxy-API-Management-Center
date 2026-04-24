@@ -1,19 +1,15 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScriptableContext } from 'chart.js';
-import {
-  buildHourlyCostSeries,
-  buildDailyCostSeries,
-  formatUsd,
-  type ModelPrice,
-} from '@/utils/usage';
+import { formatUsd, type ModelPrice } from '@/utils/usage';
+import { buildAggregateCostTrend } from '@/utils/usageAggregate';
 import { buildChartOptions } from '@/utils/usage/chartConfig';
-import type { UsagePayload } from './hooks/useUsageData';
 import { getAdaptiveAnalysisChartPeriod } from './chartPeriod';
 import { UsageChartPanel } from './UsageChartPanel';
+import type { UsageAggregateWindow } from '@/types/usageAggregate';
 
 export interface CostTrendChartProps {
-  usage: UsagePayload | null;
+  window: UsageAggregateWindow | null;
   loading: boolean;
   isDark: boolean;
   isMobile: boolean;
@@ -36,7 +32,7 @@ function buildGradient(ctx: ScriptableContext<'line'>) {
 }
 
 export const CostTrendChart = memo(function CostTrendChart({
-  usage,
+  window,
   loading,
   isDark,
   isMobile,
@@ -53,19 +49,16 @@ export const CostTrendChart = memo(function CostTrendChart({
   }, [preferredPeriod]);
 
   const { chartData, chartOptions, hasData, summaryItems } = useMemo(() => {
-    if (!hasPrices || !usage) {
+    if (!hasPrices || !window) {
       return {
         chartData: { labels: [], datasets: [] },
         chartOptions: {},
         hasData: false,
-        summaryItems: [],
+        summaryItems: []
       };
     }
 
-    const series =
-      period === 'hour'
-        ? buildHourlyCostSeries(usage, modelPrices, hourWindowHours)
-        : buildDailyCostSeries(usage, modelPrices);
+    const series = buildAggregateCostTrend(window, modelPrices, period);
 
     const data = {
       labels: series.labels,
@@ -110,10 +103,10 @@ export const CostTrendChart = memo(function CostTrendChart({
       summaryItems: [
         { label: t('usage_stats.chart_latest'), value: formatUsd(latest) },
         { label: t('usage_stats.chart_peak'), value: formatUsd(peak) },
-        { label: t('usage_stats.chart_points'), value: series.labels.length.toString() },
-      ],
+        { label: t('usage_stats.chart_points'), value: series.labels.length.toString() }
+      ]
     };
-  }, [usage, period, isDark, isMobile, modelPrices, hasPrices, hourWindowHours, t]);
+  }, [window, period, isDark, isMobile, modelPrices, hasPrices, t]);
 
   const emptyText = !hasPrices ? t('usage_stats.cost_need_price') : t('usage_stats.cost_no_data');
 

@@ -7,11 +7,11 @@ import { CostTrendChart } from './CostTrendChart';
 import { LatencyTrendChart } from './LatencyTrendChart';
 import { TokenBreakdownChart } from './TokenBreakdownChart';
 import { UsageSectionIntro } from './UsageSectionIntro';
-import type { UsagePayload } from './hooks/useUsageData';
 import type { ModelPrice } from '@/utils/usage';
+import type { UsageAggregateWindow } from '@/types/usageAggregate';
 
 export interface UsageAnalysisSectionProps {
-  usage: UsagePayload | null;
+  window: UsageAggregateWindow | null;
   loading: boolean;
   isDark: boolean;
   isMobile: boolean;
@@ -22,7 +22,7 @@ export interface UsageAnalysisSectionProps {
 }
 
 export const UsageAnalysisSection = memo(function UsageAnalysisSection({
-  usage,
+  window,
   loading,
   isDark,
   isMobile,
@@ -68,7 +68,7 @@ export const UsageAnalysisSection = memo(function UsageAnalysisSection({
             }
           >
             <LatencyTrendChart
-              usage={usage}
+              window={window}
               loading={loading}
               isDark={isDark}
               isMobile={isMobile}
@@ -87,7 +87,7 @@ export const UsageAnalysisSection = memo(function UsageAnalysisSection({
             }
           >
             <CostTrendChart
-              usage={usage}
+              window={window}
               loading={loading}
               isDark={isDark}
               isMobile={isMobile}
@@ -107,7 +107,7 @@ export const UsageAnalysisSection = memo(function UsageAnalysisSection({
             }
           >
             <TokenBreakdownChart
-              usage={usage}
+              window={window}
               loading={loading}
               isDark={isDark}
               isMobile={isMobile}

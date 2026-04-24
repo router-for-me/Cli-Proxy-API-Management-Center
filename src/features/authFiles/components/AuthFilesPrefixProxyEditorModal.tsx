@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +13,15 @@ import type {
 import { extractAuthFileAccessToken } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
+const formatJsonText = (text: string) => {
+  if (!text) return '';
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2);
+  } catch {
+    return text;
+  }
+};
+
 export type AuthFilesPrefixProxyEditorModalProps = {
   disableControls: boolean;
   editor: PrefixProxyEditorState | null;
@@ -25,26 +35,10 @@ export type AuthFilesPrefixProxyEditorModalProps = {
 
 export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEditorModalProps) {
   const { t } = useTranslation();
-  const {
-    disableControls,
-    editor,
-    updatedText,
-    dirty,
-    onClose,
-    onCopyText,
-    onSave,
-    onChange,
-  } = props;
-  const formatJsonText = (text: string) => {
-    if (!text) return '';
-    try {
-      return JSON.stringify(JSON.parse(text), null, 2);
-    } catch {
-      return text;
-    }
-  };
-  const previewText = formatJsonText(updatedText);
-  const accessToken = extractAuthFileAccessToken(editor?.json ?? null);
+  const { disableControls, editor, updatedText, dirty, onClose, onCopyText, onSave, onChange } =
+    props;
+  const previewText = useMemo(() => formatJsonText(updatedText), [updatedText]);
+  const accessToken = useMemo(() => extractAuthFileAccessToken(editor?.json ?? null), [editor]);
 
   return (
     <Modal

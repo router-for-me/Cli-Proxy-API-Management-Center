@@ -27,17 +27,17 @@ import {
   UsagePageHero,
   UsageSectionIntro,
   UsageChart,
-  useChartData,
-  useSparklines,
-  useUsageData,
+  useUsageAggregateChartData,
+  useUsageAggregateData,
+  useUsageAggregateSparklines,
   useUsageViewState,
 } from '@/components/usage';
 import {
-  filterUsageByTimeRange,
-  getApiStats,
-  getModelNamesFromUsage,
-  getModelStats,
-} from '@/utils/usage';
+  getAggregateApiStats,
+  getAggregateModelNames,
+  getAggregateModelStats,
+  getAggregateWindowModelNames
+} from '@/utils/usageAggregate';
 import styles from './UsagePage.module.scss';
 
 ChartJS.register(
@@ -69,12 +69,14 @@ export function UsagePage() {
     setModelPrices,
     loadUsage,
     handleExport,
+    handleExportDetailed,
     handleImport,
     handleImportChange,
     importInputRef,
     exporting,
-    importing,
-  } = useUsageData();
+    exportingDetailed,
+    importing
+  } = useUsageAggregateData();
 
   const {
     chartLines,
@@ -91,21 +93,20 @@ export function UsagePage() {
 
   useHeaderRefresh(loadUsage);
 
-  const filteredUsage = useMemo(
-    () => (usage ? filterUsageByTimeRange(usage, deferredTimeRange) : null),
+  const selectedWindow = useMemo(
+    () => usage?.windows?.[deferredTimeRange] ?? null,
     [deferredTimeRange, usage]
   );
-  const deferredFilteredUsage = useDeferredValue(filteredUsage);
+  const deferredWindow = useDeferredValue(selectedWindow);
 
-  const nowMs = lastRefreshedAt?.getTime() ?? 0;
-  const allModelNames = useMemo(() => getModelNamesFromUsage(usage), [usage]);
+  const allModelNames = useMemo(() => getAggregateModelNames(usage), [usage]);
   const visibleModelNames = useMemo(
-    () => getModelNamesFromUsage(deferredFilteredUsage ?? usage),
-    [deferredFilteredUsage, usage]
+    () => getAggregateWindowModelNames(deferredWindow),
+    [deferredWindow]
   );
 
   const { requestsSparkline, tokensSparkline, rpmSparkline, tpmSparkline, costSparkline } =
-    useSparklines({ usage: deferredFilteredUsage, loading, nowMs });
+    useUsageAggregateSparklines({ window: deferredWindow, loading });
 
   const {
     requestsPeriod,
@@ -116,23 +117,22 @@ export function UsagePage() {
     tokensChartData,
     tokensChartOptions,
     tokensPeriod,
-  } = useChartData({
-    usage: deferredFilteredUsage,
+  } = useUsageAggregateChartData({
+    window: deferredWindow,
     chartLines: deferredChartLines,
     isDark,
     isMobile,
-    hourWindowHours,
     preferredPeriod: preferredChartPeriod,
-    allModelsLabel: t('usage_stats.chart_line_all'),
+    allModelsLabel: t('usage_stats.chart_line_all')
   });
 
   const apiStats = useMemo(
-    () => getApiStats(deferredFilteredUsage, modelPrices),
-    [deferredFilteredUsage, modelPrices]
+    () => getAggregateApiStats(deferredWindow, modelPrices),
+    [deferredWindow, modelPrices]
   );
   const modelStats = useMemo(
-    () => getModelStats(deferredFilteredUsage, modelPrices),
-    [deferredFilteredUsage, modelPrices]
+    () => getAggregateModelStats(deferredWindow, modelPrices),
+    [deferredWindow, modelPrices]
   );
 
   const hasPrices = Object.keys(modelPrices).length > 0;
@@ -158,9 +158,11 @@ export function UsagePage() {
         lastRefreshedAt={lastRefreshedAt}
         loading={loading}
         exporting={exporting}
+        exportingDetailed={exportingDetailed}
         importing={importing}
         onTimeRangeChange={handleTimeRangeChange}
         onExport={handleExport}
+        onExportDetailed={handleExportDetailed}
         onImport={handleImport}
         onRefresh={() => void loadUsage().catch(() => {})}
         importInputRef={importInputRef}
@@ -175,10 +177,9 @@ export function UsagePage() {
           description={t('usage_stats.overview_desc')}
         />
         <StatCards
-          usage={deferredFilteredUsage}
+          window={deferredWindow}
           loading={loading}
           modelPrices={modelPrices}
-          nowMs={nowMs}
           sparklines={{
             requests: requestsSparkline,
             tokens: tokensSparkline,
@@ -252,7 +253,7 @@ export function UsagePage() {
       </section>
 
       <UsageAnalysisSection
-        usage={deferredFilteredUsage}
+        window={deferredWindow}
         loading={loading}
         isDark={isDark}
         isMobile={isMobile}
@@ -275,7 +276,7 @@ export function UsagePage() {
 
       <div className={styles.supportStack}>
         <CredentialStatsCard
-          usage={deferredFilteredUsage}
+          credentials={deferredWindow?.credentials ?? []}
           loading={loading}
           geminiKeys={config?.geminiApiKeys || []}
           claudeConfigs={config?.claudeApiKeys || []}

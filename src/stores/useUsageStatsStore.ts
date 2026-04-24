@@ -54,7 +54,7 @@ export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
     const state = get();
     const scopeChanged = state.scopeKey !== scopeKey;
 
-    // 先复用同源 in-flight 请求，避免多个页面同时发起重复 /usage。
+    // 先复用同源 in-flight 请求，避免多个页面同时发起重复 usage/details。
     if (inFlightUsageRequest && inFlightUsageRequest.scopeKey === scopeKey) {
       await inFlightUsageRequest.promise;
       return;
@@ -91,7 +91,7 @@ export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
 
     const requestPromise = (async () => {
       try {
-        const usageResponse = await usageApi.getUsage();
+        const usageResponse = await usageApi.getUsageDetails();
         const rawUsage = usageResponse?.usage ?? usageResponse;
         const usage =
           rawUsage && typeof rawUsage === 'object' ? (rawUsage as UsageStatsSnapshot) : null;

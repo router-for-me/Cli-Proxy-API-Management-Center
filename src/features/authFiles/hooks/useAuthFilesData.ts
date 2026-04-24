@@ -40,6 +40,7 @@ export type UseAuthFilesDataResult = {
   handleDeleteAll: (options: DeleteAllOptions) => void;
   handleDownload: (name: string) => Promise<void>;
   handleStatusToggle: (item: AuthFileItem, enabled: boolean) => Promise<void>;
+  applyLocalFilePatch: (name: string, patch: Partial<AuthFileItem>) => void;
   toggleSelect: (name: string) => void;
   selectAllVisible: (visibleFiles: AuthFileItem[]) => void;
   invertVisibleSelection: (visibleFiles: AuthFileItem[]) => void;
@@ -143,6 +144,22 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
       });
       return changed ? next : prev;
     });
+  }, []);
+
+  const applyLocalFilePatch = useCallback((name: string, patch: Partial<AuthFileItem>) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+
+    setFiles((prev) =>
+      prev.map((file) =>
+        file.name === trimmedName
+          ? {
+              ...file,
+              ...patch,
+            }
+          : file
+      )
+    );
   }, []);
 
   useEffect(() => {
@@ -602,6 +619,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     handleDeleteAll,
     handleDownload,
     handleStatusToggle,
+    applyLocalFilePatch,
     toggleSelect,
     selectAllVisible,
     invertVisibleSelection,

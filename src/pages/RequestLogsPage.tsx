@@ -13,6 +13,7 @@ const TIME_RANGE_STORAGE_KEY = 'cli-proxy-request-logs-time-range-v1';
 const DEFAULT_TIME_RANGE: UsageTimeRange = '3h';
 const TIME_RANGE_OPTIONS: ReadonlyArray<{ value: UsageTimeRange; labelKey: string }> = [
   { value: 'all', labelKey: 'usage_stats.range_all' },
+  { value: '1h', labelKey: 'usage_stats.range_1h' },
   { value: '3h', labelKey: 'usage_stats.range_3h' },
   { value: '6h', labelKey: 'usage_stats.range_6h' },
   { value: '12h', labelKey: 'usage_stats.range_12h' },
@@ -21,7 +22,13 @@ const TIME_RANGE_OPTIONS: ReadonlyArray<{ value: UsageTimeRange; labelKey: strin
 ];
 
 const isUsageTimeRange = (value: unknown): value is UsageTimeRange =>
-  value === '3h' || value === '6h' || value === '12h' || value === '24h' || value === '7d' || value === 'all';
+  value === '1h' ||
+  value === '3h' ||
+  value === '6h' ||
+  value === '12h' ||
+  value === '24h' ||
+  value === '7d' ||
+  value === 'all';
 
 const loadTimeRange = (): UsageTimeRange => {
   try {

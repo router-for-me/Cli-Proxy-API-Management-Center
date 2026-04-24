@@ -1,14 +1,15 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScriptableContext } from 'chart.js';
-import { buildHourlyLatencySeries, buildDailyLatencySeries, formatLatencyMs } from '@/utils/usage';
+import { formatLatencyMs } from '@/utils/usage';
+import { buildAggregateLatencyTrend } from '@/utils/usageAggregate';
 import { buildChartOptions } from '@/utils/usage/chartConfig';
-import type { UsagePayload } from './hooks/useUsageData';
 import { getAdaptiveAnalysisChartPeriod } from './chartPeriod';
 import { UsageChartPanel } from './UsageChartPanel';
+import type { UsageAggregateWindow } from '@/types/usageAggregate';
 
 export interface LatencyTrendChartProps {
-  usage: UsagePayload | null;
+  window: UsageAggregateWindow | null;
   loading: boolean;
   isDark: boolean;
   isMobile: boolean;
@@ -32,7 +33,7 @@ function buildGradient(ctx: ScriptableContext<'line'>) {
 }
 
 export const LatencyTrendChart = memo(function LatencyTrendChart({
-  usage,
+  window,
   loading,
   isDark,
   isMobile,
@@ -47,19 +48,7 @@ export const LatencyTrendChart = memo(function LatencyTrendChart({
   }, [preferredPeriod]);
 
   const { chartData, chartOptions, hasData, summary } = useMemo(() => {
-    if (!usage) {
-      return {
-        chartData: { labels: [], datasets: [] },
-        chartOptions: {},
-        hasData: false,
-        summary: { latest: 0, peak: 0, average: 0 },
-      };
-    }
-
-    const series =
-      period === 'hour'
-        ? buildHourlyLatencySeries(usage, hourWindowHours)
-        : buildDailyLatencySeries(usage);
+    const series = buildAggregateLatencyTrend(window, period);
     const values = series.data.filter(isNonNegativeNumber);
     const latest = values.length ? values[values.length - 1] : 0;
     const peak = values.length ? Math.max(...values) : 0;
@@ -105,9 +94,9 @@ export const LatencyTrendChart = memo(function LatencyTrendChart({
       chartData: data,
       chartOptions: options,
       hasData: series.hasData,
-      summary: { latest, peak, average },
+      summary: { latest, peak, average }
     };
-  }, [hourWindowHours, isDark, isMobile, period, t, usage]);
+  }, [isDark, isMobile, period, t, window]);
 
   const summaryItems = [
     { label: t('usage_stats.chart_latest'), value: formatLatencyMs(summary.latest) },

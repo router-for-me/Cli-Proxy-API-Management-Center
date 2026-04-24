@@ -34,6 +34,22 @@ type AuthFileBatchDeleteResult = {
   files: string[];
   failed: AuthFileBatchFailure[];
 };
+export type PatchAuthFileFieldsPayload = {
+  name: string;
+  prefix?: string;
+  proxy_url?: string;
+  headers?: Record<string, string>;
+  priority?: string | number | null;
+  note?: string;
+  user_agent?: string;
+  excluded_models?: string[];
+  disable_cooling?: string | boolean | null;
+  websockets?: boolean;
+};
+type PatchAuthFileFieldsResponse = {
+  status?: string;
+  file?: AuthFileEntry;
+};
 
 export const AUTH_FILE_INVALID_JSON_OBJECT_ERROR = 'AUTH_FILE_INVALID_JSON_OBJECT';
 
@@ -399,6 +415,9 @@ export const authFilesApi = {
 
   setStatus: (name: string, disabled: boolean) =>
     apiClient.patch<AuthFileStatusResponse>('/auth-files/status', { name, disabled }),
+
+  patchFields: (payload: PatchAuthFileFieldsPayload) =>
+    apiClient.patch<PatchAuthFileFieldsResponse>('/auth-files/fields', payload),
 
   uploadFiles: async (files: File[]): Promise<AuthFileBatchUploadResult> => {
     const requestedNames = files.map((file) => file.name);

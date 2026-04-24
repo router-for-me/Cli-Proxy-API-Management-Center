@@ -114,7 +114,7 @@ export interface ModelStatsSummary {
   latencySampleCount: number;
 }
 
-export type UsageTimeRange = '3h' | '6h' | '12h' | '24h' | '7d' | 'all';
+export type UsageTimeRange = '1h' | '3h' | '6h' | '12h' | '24h' | '7d' | 'all';
 
 const TOKENS_PER_PRICE_UNIT = 1_000_000;
 const MINUTE_MS = 60 * 1000;
@@ -134,6 +134,7 @@ const DEFAULT_MODEL_PRICES: Record<string, ModelPrice> = {
   },
 };
 const USAGE_TIME_RANGE_MS: Record<Exclude<UsageTimeRange, 'all'>, number> = {
+  '1h': 1 * 60 * 60 * 1000,
   '3h': 3 * 60 * 60 * 1000,
   '6h': 6 * 60 * 60 * 1000,
   '12h': 12 * 60 * 60 * 1000,

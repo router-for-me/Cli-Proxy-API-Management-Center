@@ -18,6 +18,7 @@ export const MAX_USAGE_CHART_LINES = 5;
 
 const TIME_RANGE_OPTIONS: ReadonlyArray<{ value: UsageTimeRange; labelKey: string }> = [
   { value: 'all', labelKey: 'usage_stats.range_all' },
+  { value: '1h', labelKey: 'usage_stats.range_1h' },
   { value: '3h', labelKey: 'usage_stats.range_3h' },
   { value: '6h', labelKey: 'usage_stats.range_6h' },
   { value: '12h', labelKey: 'usage_stats.range_12h' },
@@ -26,6 +27,7 @@ const TIME_RANGE_OPTIONS: ReadonlyArray<{ value: UsageTimeRange; labelKey: strin
 ];
 
 const HOUR_WINDOW_BY_TIME_RANGE: Record<Exclude<UsageTimeRange, 'all'>, number> = {
+  '1h': 1,
   '3h': 3,
   '6h': 6,
   '12h': 12,
@@ -34,6 +36,7 @@ const HOUR_WINDOW_BY_TIME_RANGE: Record<Exclude<UsageTimeRange, 'all'>, number> 
 };
 
 const isUsageTimeRange = (value: unknown): value is UsageTimeRange =>
+  value === '1h' ||
   value === '3h' ||
   value === '6h' ||
   value === '12h' ||

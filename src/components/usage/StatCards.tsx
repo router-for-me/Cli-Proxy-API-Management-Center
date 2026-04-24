@@ -6,22 +6,24 @@ import {
   IconDollarSign,
   IconSatellite,
   IconTimer,
-  IconTrendingUp,
+  IconTrendingUp
 } from '@/components/ui/icons';
 import {
   LATENCY_SOURCE_FIELD,
-  calculateLatencyStatsFromDetails,
-  calculateCost,
   formatCompactNumber,
   formatDurationMs,
   formatPerMinuteValue,
   formatUsd,
-  collectUsageDetails,
-  extractTotalTokens,
-  type ModelPrice,
+  type ModelPrice
 } from '@/utils/usage';
+import {
+  calculateAggregateWindowCost,
+  getAggregateLatencySummary,
+  getAggregateRateStats,
+  getAggregateTokenBreakdown
+} from '@/utils/usageAggregate';
 import { sparklineOptions } from '@/utils/usage/chartConfig';
-import type { UsagePayload } from './hooks/useUsageData';
+import type { UsageAggregateWindow } from '@/types/usageAggregate';
 import type { SparklineBundle } from './hooks/useSparklines';
 import styles from '@/pages/UsagePage.module.scss';
 
@@ -38,10 +40,9 @@ interface StatCardData {
 }
 
 export interface StatCardsProps {
-  usage: UsagePayload | null;
+  window: UsageAggregateWindow | null;
   loading: boolean;
   modelPrices: Record<string, ModelPrice>;
-  nowMs: number;
   sparklines: {
     requests: SparklineBundle | null;
     tokens: SparklineBundle | null;
@@ -52,16 +53,15 @@ export interface StatCardsProps {
 }
 
 export const StatCards = memo(function StatCards({
-  usage,
+  window,
   loading,
   modelPrices,
-  nowMs,
-  sparklines,
+  sparklines
 }: StatCardsProps) {
   const { t } = useTranslation();
   const latencyHint = t('usage_stats.latency_unit_hint', {
     field: LATENCY_SOURCE_FIELD,
-    unit: t('usage_stats.duration_unit_ms'),
+    unit: t('usage_stats.duration_unit_ms')
   });
 
   const hasPrices = Object.keys(modelPrices).length > 0;
@@ -74,67 +74,19 @@ export const StatCards = memo(function StatCards({
       latencyStats: {
         averageMs: null as number | null,
         totalMs: null as number | null,
-        sampleCount: 0,
-      },
+        sampleCount: 0
+      }
     };
 
-    if (!usage) return empty;
-    const details = collectUsageDetails(usage);
-    if (!details.length) return empty;
+    if (!window) return empty;
 
-    const latencyStats = calculateLatencyStatsFromDetails(details);
-
-    let cachedTokens = 0;
-    let reasoningTokens = 0;
-    let totalCost = 0;
-
-    const now = nowMs;
-    const windowMinutes = 30;
-    const windowStart = now - windowMinutes * 60 * 1000;
-    let requestCount = 0;
-    let tokenCount = 0;
-    const hasValidNow = Number.isFinite(now) && now > 0;
-
-    details.forEach((detail) => {
-      const tokens = detail.tokens;
-      cachedTokens += Math.max(
-        typeof tokens.cached_tokens === 'number' ? Math.max(tokens.cached_tokens, 0) : 0,
-        typeof tokens.cache_tokens === 'number' ? Math.max(tokens.cache_tokens, 0) : 0
-      );
-      if (typeof tokens.reasoning_tokens === 'number') {
-        reasoningTokens += tokens.reasoning_tokens;
-      }
-
-      const timestamp = detail.__timestampMs ?? 0;
-      if (
-        hasValidNow &&
-        Number.isFinite(timestamp) &&
-        timestamp >= windowStart &&
-        timestamp <= now
-      ) {
-        requestCount += 1;
-        tokenCount += extractTotalTokens(detail);
-      }
-
-      if (hasPrices) {
-        totalCost += calculateCost(detail, modelPrices);
-      }
-    });
-
-    const denominator = windowMinutes > 0 ? windowMinutes : 1;
     return {
-      tokenBreakdown: { cachedTokens, reasoningTokens },
-      rateStats: {
-        rpm: requestCount / denominator,
-        tpm: tokenCount / denominator,
-        windowMinutes,
-        requestCount,
-        tokenCount,
-      },
-      totalCost,
-      latencyStats,
+      tokenBreakdown: getAggregateTokenBreakdown(window),
+      rateStats: getAggregateRateStats(window),
+      totalCost: hasPrices ? calculateAggregateWindowCost(window, modelPrices) : 0,
+      latencyStats: getAggregateLatencySummary(window)
     };
-  }, [hasPrices, modelPrices, nowMs, usage]);
+  }, [hasPrices, modelPrices, window]);
 
   const statsCards: StatCardData[] = [
     {
@@ -144,16 +96,16 @@ export const StatCards = memo(function StatCards({
       accent: '#8b8680',
       accentSoft: 'rgba(139, 134, 128, 0.18)',
       accentBorder: 'rgba(139, 134, 128, 0.35)',
-      value: loading ? '-' : (usage?.total_requests ?? 0).toLocaleString(),
+      value: loading ? '-' : (window?.total_requests ?? 0).toLocaleString(),
       meta: (
         <>
           <span className={styles.statMetaItem}>
             <span className={styles.statMetaDot} style={{ backgroundColor: '#10b981' }} />
-            {t('usage_stats.success_requests')}: {loading ? '-' : (usage?.success_count ?? 0)}
+            {t('usage_stats.success_requests')}: {loading ? '-' : (window?.success_count ?? 0)}
           </span>
           <span className={styles.statMetaItem}>
             <span className={styles.statMetaDot} style={{ backgroundColor: '#c65746' }} />
-            {t('usage_stats.failed_requests')}: {loading ? '-' : (usage?.failure_count ?? 0)}
+            {t('usage_stats.failed_requests')}: {loading ? '-' : (window?.failure_count ?? 0)}
           </span>
           {latencyStats.sampleCount > 0 && (
             <span className={styles.statMetaItem} title={latencyHint}>
@@ -172,7 +124,7 @@ export const StatCards = memo(function StatCards({
       accent: '#8b5cf6',
       accentSoft: 'rgba(139, 92, 246, 0.18)',
       accentBorder: 'rgba(139, 92, 246, 0.35)',
-      value: loading ? '-' : formatCompactNumber(usage?.total_tokens ?? 0),
+      value: loading ? '-' : formatCompactNumber(window?.total_tokens ?? 0),
       meta: (
         <>
           <span className={styles.statMetaItem}>
@@ -231,7 +183,7 @@ export const StatCards = memo(function StatCards({
         <>
           <span className={styles.statMetaItem}>
             {t('usage_stats.total_tokens')}:{' '}
-            {loading ? '-' : formatCompactNumber(usage?.total_tokens ?? 0)}
+            {loading ? '-' : formatCompactNumber(window?.total_tokens ?? 0)}
           </span>
           {!hasPrices && (
             <span className={`${styles.statMetaItem} ${styles.statSubtle}`}>

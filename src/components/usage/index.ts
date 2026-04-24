@@ -2,6 +2,9 @@
 export { useUsageData } from './hooks/useUsageData';
 export type { UsagePayload, UseUsageDataReturn } from './hooks/useUsageData';
 
+export { useUsageAggregateData } from './hooks/useUsageAggregateData';
+export type { UseUsageAggregateDataReturn } from './hooks/useUsageAggregateData';
+
 export { useSparklines } from './hooks/useSparklines';
 export type {
   SparklineData,
@@ -10,8 +13,20 @@ export type {
   UseSparklinesReturn,
 } from './hooks/useSparklines';
 
+export { useUsageAggregateSparklines } from './hooks/useUsageAggregateSparklines';
+export type {
+  UseUsageAggregateSparklinesOptions,
+  UseUsageAggregateSparklinesReturn
+} from './hooks/useUsageAggregateSparklines';
+
 export { useChartData } from './hooks/useChartData';
 export type { UseChartDataOptions, UseChartDataReturn } from './hooks/useChartData';
+
+export { useUsageAggregateChartData } from './hooks/useUsageAggregateChartData';
+export type {
+  UseUsageAggregateChartDataOptions,
+  UseUsageAggregateChartDataReturn
+} from './hooks/useUsageAggregateChartData';
 
 export { useUsageViewState, MAX_USAGE_CHART_LINES } from './hooks/useUsageViewState';
 

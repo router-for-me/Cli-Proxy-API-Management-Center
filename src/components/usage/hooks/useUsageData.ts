@@ -56,13 +56,13 @@ export function useUsageData(): UseUsageDataReturn {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const data = await usageApi.exportUsage(usageSnapshot);
+      const data = await usageApi.exportDetailedUsage(usageSnapshot);
       const exportedAt =
         typeof data?.exported_at === 'string' ? new Date(data.exported_at) : new Date();
       const safeTimestamp = Number.isNaN(exportedAt.getTime())
         ? new Date().toISOString()
         : exportedAt.toISOString();
-      const filename = `usage-export-${safeTimestamp.replace(/[:.]/g, '-')}.json`;
+      const filename = `usage-export-details-${safeTimestamp.replace(/[:.]/g, '-')}.json`;
       downloadBlob({
         filename,
         blob: new Blob([JSON.stringify(data ?? {}, null, 2)], { type: 'application/json' })
