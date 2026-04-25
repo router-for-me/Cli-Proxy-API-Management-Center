@@ -386,9 +386,7 @@
     color-mix(in srgb, var(--bg-primary) 72%, transparent);
   border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
   border-radius: 18px;
-  box-shadow:
-    0 26px 58px rgb(0 0 0 / 0.22),
-    inset 0 1px 0 rgb(255 255 255 / 0.04);
+  box-shadow: none;
   --glass-blur: 18px;
   backdrop-filter: var(--glass-backdrop-filter);
   -webkit-backdrop-filter: var(--glass-backdrop-filter);
@@ -437,7 +435,7 @@
     height: 34px;
     object-fit: contain;
     border-radius: 8px;
-    box-shadow: 0 8px 18px rgb(0 0 0 / 0.18);
+    box-shadow: none;
     flex-shrink: 0;
   }
 
@@ -677,9 +675,7 @@
       linear-gradient(180deg, rgb(255 255 255 / 0.045), rgb(255 255 255 / 0)),
       color-mix(in srgb, var(--bg-primary) 94%, #0f0e0c);
     border-color: color-mix(in srgb, var(--border-color) 88%, transparent);
-    box-shadow:
-      0 28px 62px rgb(0 0 0 / 0.34),
-      inset 0 1px 0 rgb(255 255 255 / 0.04);
+    box-shadow: none;
 
     &.open {
       transform: translateX(0);
