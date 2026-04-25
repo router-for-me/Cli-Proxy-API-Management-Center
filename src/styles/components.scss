@@ -6,33 +6,44 @@
   align-items: center;
   justify-content: center;
   gap: $spacing-sm;
+  min-height: 40px;
   border: 1px solid transparent;
   border-radius: $radius-md;
   padding: 10px 14px;
   font-weight: 600;
   cursor: pointer;
   transition:
-    background-color $transition-fast,
     border-color $transition-fast,
+    background-color $transition-fast,
     color $transition-fast,
     box-shadow $transition-fast,
     transform $transition-fast;
-  background-color: var(--bg-secondary);
+  background-color: var(--surface-raised);
   color: var(--text-primary);
+  box-shadow: var(--shadow);
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow), 0 0 0 3px var(--focus-ring);
+  }
 
   &.btn-primary {
     background-color: var(--primary-color);
     color: var(--primary-contrast, #fff);
     border-color: var(--primary-color);
+    box-shadow:
+      0 10px 24px rgba($primary-color, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
 
     &:hover {
       background-color: var(--primary-hover);
       border-color: var(--primary-hover);
+      transform: translateY(-1px);
     }
   }
 
   &.btn-secondary {
-    background-color: var(--bg-tertiary);
+    background-color: var(--surface-raised);
     border-color: var(--border-color);
     color: var(--text-primary);
 
@@ -46,10 +57,11 @@
     background: transparent;
     border-color: transparent;
     color: var(--text-secondary);
+    box-shadow: none;
 
     &:hover {
       color: var(--text-primary);
-      background: var(--bg-tertiary);
+      background: var(--surface-overlay);
     }
   }
 
@@ -68,6 +80,7 @@
   }
 
   &.btn-sm {
+    min-height: 36px;
     padding: 8px 10px;
     font-size: 14px;
   }
@@ -95,14 +108,15 @@ textarea {
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
   padding: 10px 12px;
-  background-color: var(--bg-secondary);
+  min-height: 40px;
+  background-color: var(--surface-raised);
   color: var(--text-primary);
   transition: border-color $transition-fast, box-shadow $transition-fast;
 
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba($primary-color, 0.18);
+    box-shadow: 0 0 0 3px var(--focus-ring);
   }
 }
 
@@ -124,10 +138,10 @@ textarea {
 }
 
 .card {
-  background-color: var(--bg-primary);
+  background-color: var(--surface-raised);
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
   padding: $spacing-lg;
 }
 
@@ -226,9 +240,9 @@ textarea {
 .notification {
   padding: $spacing-md;
   border-radius: $radius-md;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
   border: 1px solid var(--border-color);
-  background: var(--bg-primary);
+  background: var(--floating-surface);
   color: var(--text-primary);
   display: flex;
   justify-content: space-between;
@@ -584,14 +598,15 @@ textarea {
 }
 
 .empty-state {
-  border: 1px dashed var(--border-color);
+  border: 1px dashed color-mix(in srgb, var(--border-color) 82%, transparent);
   border-radius: $radius-lg;
   padding: $spacing-lg;
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
   display: flex;
   justify-content: space-between;
   gap: $spacing-md;
   align-items: center;
+  box-shadow: var(--shadow);
 
   .empty-content {
     display: flex;
@@ -603,10 +618,11 @@ textarea {
     width: 42px;
     height: 42px;
     border-radius: $radius-full;
-    border: 2px solid var(--border-color);
+    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
     display: grid;
     place-items: center;
     color: var(--text-secondary);
+    background: color-mix(in srgb, var(--surface-raised-strong) 90%, transparent);
 
     svg {
       display: block;
@@ -653,24 +669,36 @@ textarea {
 }
 
 .item-row {
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
+  border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
+  border-radius: 16px;
   padding: $spacing-md;
-  background: var(--bg-primary);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: $spacing-md;
   flex-wrap: wrap;
+  box-shadow: var(--shadow);
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast,
+    transform $transition-fast;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary-color) 22%, var(--border-color));
+    box-shadow: var(--shadow-soft);
+    transform: translateY(-1px);
+  }
 
   .item-meta {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   .item-title {
     font-weight: 700;
+    font-size: 15px;
     color: var(--text-primary);
   }
 
@@ -684,6 +712,7 @@ textarea {
   .item-actions {
     display: flex;
     gap: $spacing-sm;
+    flex-wrap: wrap;
   }
 }
 

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { usageApi } from '@/services/api';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { collectUsageDetails, computeKeyStatsFromDetails, type KeyStats, type UsageDetail } from '@/utils/usage';
+import { collectUsageDetails, computeKeyStats, type KeyStats, type UsageDetail } from '@/utils/usage';
 import i18n from '@/i18n';
 
 export const USAGE_STATS_STALE_TIME_MS = 240_000;
@@ -12,6 +12,24 @@ export type LoadUsageStatsOptions = {
 };
 
 type UsageStatsSnapshot = Record<string, unknown>;
+
+const AGGREGATED_USAGE_FIELD = '__aggregatedSnapshot';
+
+const attachAggregatedUsage = (
+  usage: UsageStatsSnapshot | null,
+  aggregated: Record<string, unknown> | null
+): UsageStatsSnapshot | null => {
+  if (!usage) {
+    return null;
+  }
+  if (!aggregated) {
+    return usage;
+  }
+  return {
+    ...usage,
+    [AGGREGATED_USAGE_FIELD]: aggregated
+  };
+};
 
 type UsageStatsState = {
   usage: UsageStatsSnapshot | null;
@@ -91,17 +109,28 @@ export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
 
     const requestPromise = (async () => {
       try {
-        const usageResponse = await usageApi.getUsageDetails();
+        const [usageResponse, aggregatedResponse] = await Promise.all([
+          usageApi.getUsageDetails(),
+          usageApi.getAggregatedUsage().catch(() => null)
+        ]);
         const rawUsage = usageResponse?.usage ?? usageResponse;
+        const rawAggregated = aggregatedResponse?.usage ?? aggregatedResponse;
         const usage =
-          rawUsage && typeof rawUsage === 'object' ? (rawUsage as UsageStatsSnapshot) : null;
+          rawUsage && typeof rawUsage === 'object'
+            ? attachAggregatedUsage(
+                rawUsage as UsageStatsSnapshot,
+                rawAggregated && typeof rawAggregated === 'object'
+                  ? (rawAggregated as Record<string, unknown>)
+                  : null
+              )
+            : null;
 
         if (requestId !== usageRequestToken) return;
 
         const usageDetails = collectUsageDetails(usage);
         set({
           usage,
-          keyStats: computeKeyStatsFromDetails(usageDetails),
+          keyStats: computeKeyStats(usage),
           usageDetails,
           loading: false,
           error: null,

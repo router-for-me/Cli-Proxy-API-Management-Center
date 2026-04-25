@@ -172,11 +172,206 @@ const toUsageSummaryFields = (summary: UsageSummary) => ({
   total_tokens: summary.totalTokens,
 });
 
+const AGGREGATED_USAGE_FIELD = '__aggregatedSnapshot';
+const AGGREGATED_WINDOW_FIELD = '__aggregatedWindow';
+const AGGREGATED_WINDOW_KEY_FIELD = '__aggregatedWindowKey';
+
+type AggregatedWindowKey = UsageTimeRange;
+
+interface AggregatedUsageRateRecord {
+  rpm?: number;
+  tpm?: number;
+  window_minutes?: number;
+  request_count?: number;
+  token_count?: number;
+}
+
+interface AggregatedSparklineRecord {
+  timestamps?: unknown[];
+  requests?: unknown[];
+  tokens?: unknown[];
+}
+
+interface AggregatedModelSeriesRecord {
+  timestamps?: unknown[];
+  series?: Record<string, unknown>;
+}
+
+interface AggregatedTokenBreakdownSeriesRecord {
+  timestamps?: unknown[];
+  input?: unknown[];
+  output?: unknown[];
+  cached?: unknown[];
+  reasoning?: unknown[];
+}
+
+interface AggregatedLatencySeriesRecord {
+  timestamps?: unknown[];
+  values?: unknown[];
+}
+
+interface AggregatedCostBasisSeriesRecord {
+  timestamps?: unknown[];
+  models?: Record<string, unknown>;
+}
+
+interface AggregatedUsageWindowRecord {
+  total_requests?: number;
+  success_count?: number;
+  failure_count?: number;
+  total_tokens?: number;
+  token_breakdown?: Record<string, unknown>;
+  latency?: Record<string, unknown>;
+  rate_30m?: AggregatedUsageRateRecord;
+  sparklines?: AggregatedSparklineRecord;
+  requests?: {
+    hour?: AggregatedModelSeriesRecord;
+    day?: AggregatedModelSeriesRecord;
+  };
+  tokens?: {
+    hour?: AggregatedModelSeriesRecord;
+    day?: AggregatedModelSeriesRecord;
+  };
+  token_breakdown_series?: {
+    hour?: AggregatedTokenBreakdownSeriesRecord;
+    day?: AggregatedTokenBreakdownSeriesRecord;
+  };
+  latency_series?: {
+    hour?: AggregatedLatencySeriesRecord;
+    day?: AggregatedLatencySeriesRecord;
+  };
+  cost_basis?: {
+    hour?: AggregatedCostBasisSeriesRecord;
+    day?: AggregatedCostBasisSeriesRecord;
+  };
+  apis?: unknown[];
+  models?: unknown[];
+  credentials?: unknown[];
+  model_names?: unknown[];
+}
+
+interface AggregatedUsageSnapshotRecord {
+  windows?: Record<string, unknown>;
+  model_names?: unknown[];
+}
+
+type UsageWithAggregatedView = Record<string, unknown> & {
+  [AGGREGATED_USAGE_FIELD]?: AggregatedUsageSnapshotRecord;
+  [AGGREGATED_WINDOW_FIELD]?: AggregatedUsageWindowRecord;
+  [AGGREGATED_WINDOW_KEY_FIELD]?: AggregatedWindowKey;
+};
+
+const getEmbeddedAggregatedSnapshot = (usageData: unknown): AggregatedUsageSnapshotRecord | null => {
+  const usageRecord = isRecord(usageData) ? (usageData as UsageWithAggregatedView) : null;
+  const embedded = usageRecord?.[AGGREGATED_USAGE_FIELD];
+  return isRecord(embedded) ? (embedded as AggregatedUsageSnapshotRecord) : null;
+};
+
+const getAggregatedWindowKey = (range: UsageTimeRange): AggregatedWindowKey => range;
+
+const getSelectedAggregatedWindow = (usageData: unknown): AggregatedUsageWindowRecord | null => {
+  const usageRecord = isRecord(usageData) ? (usageData as UsageWithAggregatedView) : null;
+  const directWindow = usageRecord?.[AGGREGATED_WINDOW_FIELD];
+  if (isRecord(directWindow)) {
+    return directWindow as AggregatedUsageWindowRecord;
+  }
+
+  const snapshot = getEmbeddedAggregatedSnapshot(usageData);
+  if (!snapshot || !isRecord(snapshot.windows)) {
+    return null;
+  }
+
+  const requestedKey = usageRecord?.[AGGREGATED_WINDOW_KEY_FIELD];
+  const selectedKey =
+    typeof requestedKey === 'string' && requestedKey.trim() ? requestedKey.trim() : 'all';
+  const window = snapshot.windows[selectedKey] ?? snapshot.windows.all;
+  return isRecord(window) ? (window as AggregatedUsageWindowRecord) : null;
+};
+
+const getAggregatedWindowNumber = (
+  window: AggregatedUsageWindowRecord | null,
+  key: 'total_requests' | 'success_count' | 'failure_count' | 'total_tokens'
+): number => {
+  const raw = window?.[key];
+  return typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
+};
+
+const parseAggregatedModelNames = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+};
+
+const parseTimestampArray = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value
+        .map((item) => (typeof item === 'string' ? item : item instanceof Date ? item.toISOString() : ''))
+        .filter(Boolean)
+    : [];
+
+const parseNumberArray = (value: unknown): number[] =>
+  Array.isArray(value)
+    ? value.map((item) => {
+        const num = Number(item);
+        return Number.isFinite(num) ? num : 0;
+      })
+    : [];
+
+const parseNullableNumberArray = (value: unknown): Array<number | null> =>
+  Array.isArray(value)
+    ? value.map((item) => {
+        if (item === null || item === undefined) {
+          return null;
+        }
+        const num = Number(item);
+        return Number.isFinite(num) ? num : null;
+      })
+    : [];
+
+const buildAggregatedUsageView = <T>(
+  usageData: T,
+  range: UsageTimeRange
+): T => {
+  const usageRecord = isRecord(usageData) ? (usageData as UsageWithAggregatedView) : null;
+  const aggregated = getEmbeddedAggregatedSnapshot(usageData);
+  if (!usageRecord || !aggregated || !isRecord(aggregated.windows)) {
+    return usageData;
+  }
+
+  const windowKey = getAggregatedWindowKey(range);
+  const selectedWindowRaw = aggregated.windows[windowKey] ?? aggregated.windows.all;
+  if (!isRecord(selectedWindowRaw)) {
+    return usageData;
+  }
+
+  const selectedWindow = selectedWindowRaw as AggregatedUsageWindowRecord;
+  return {
+    ...usageRecord,
+    ...toUsageSummaryFields({
+      totalRequests: getAggregatedWindowNumber(selectedWindow, 'total_requests'),
+      successCount: getAggregatedWindowNumber(selectedWindow, 'success_count'),
+      failureCount: getAggregatedWindowNumber(selectedWindow, 'failure_count'),
+      totalTokens: getAggregatedWindowNumber(selectedWindow, 'total_tokens'),
+    }),
+    [AGGREGATED_WINDOW_KEY_FIELD]: windowKey,
+    [AGGREGATED_WINDOW_FIELD]: selectedWindow,
+  } as T;
+};
+
 export function filterUsageByTimeRange<T>(
   usageData: T,
   range: UsageTimeRange,
   nowMs: number = Date.now()
 ): T {
+  if (getEmbeddedAggregatedSnapshot(usageData)) {
+    return buildAggregatedUsageView(usageData, range);
+  }
+
   if (range === 'all') {
     return usageData;
   }
@@ -565,26 +760,10 @@ export function formatLatencyMs(value: number | null | undefined): string {
 
 const usageDetailsCache = new WeakMap<object, UsageDetail[]>();
 const usageDetailsWithEndpointCache = new WeakMap<object, UsageDetailWithEndpoint[]>();
-const modelNamesCache = new WeakMap<object, string[]>();
-const apiStatsCache = new WeakMap<object, WeakMap<object, ApiStats[]>>();
-const modelStatsCache = new WeakMap<object, WeakMap<object, ModelStatsSummary[]>>();
-const dailySeriesByModelCache = new WeakMap<
-  object,
-  Map<
-    'requests' | 'tokens',
-    { labels: string[]; dataByModel: Map<string, number[]>; hasData: boolean }
-  >
->();
-const hourlySeriesByModelCache = new WeakMap<
-  object,
-  Map<string, { labels: string[]; dataByModel: Map<string, number[]>; hasData: boolean }>
->();
 const dailyTokenBreakdownCache = new WeakMap<object, TokenBreakdownSeries>();
 const hourlyTokenBreakdownCache = new WeakMap<object, Map<string, TokenBreakdownSeries>>();
-const dailyLatencySeriesCache = new WeakMap<object, LatencySeries>();
-const hourlyLatencySeriesCache = new WeakMap<object, Map<string, LatencySeries>>();
-const dailyCostSeriesCache = new WeakMap<object, WeakMap<object, CostSeries>>();
-const hourlyCostSeriesCache = new WeakMap<object, WeakMap<object, Map<string, CostSeries>>>();
+const usageDerivedCache = new WeakMap<object, Map<string, unknown>>();
+const modelPricesFingerprintCache = new WeakMap<object, string>();
 
 const getObjectCacheKey = (value: unknown): object | null =>
   isRecord(value) ? (value as object) : null;
@@ -607,44 +786,68 @@ const setCachedMapValue = <K, T>(
   return value;
 };
 
-const getCachedNestedValue = <T>(
-  cache: WeakMap<object, WeakMap<object, T>>,
-  owner: object,
-  dependency: object
-): T | undefined => cache.get(owner)?.get(dependency);
+const getUsageDerivedBucket = (usageData: unknown): Map<string, unknown> | null => {
+  if (!isRecord(usageData)) {
+    return null;
+  }
 
-const setCachedNestedValue = <T>(
-  cache: WeakMap<object, WeakMap<object, T>>,
-  owner: object,
-  dependency: object,
-  value: T
+  const cacheKey = usageData as object;
+  let bucket = usageDerivedCache.get(cacheKey);
+  if (!bucket) {
+    bucket = new Map<string, unknown>();
+    usageDerivedCache.set(cacheKey, bucket);
+  }
+  return bucket;
+};
+
+const getCachedUsageDerivedValue = <T>(
+  usageData: unknown,
+  cacheKey: string,
+  compute: () => T
 ): T => {
-  const ownerCache = cache.get(owner) ?? new WeakMap<object, T>();
-  ownerCache.set(dependency, value);
-  cache.set(owner, ownerCache);
+  const bucket = getUsageDerivedBucket(usageData);
+  if (!bucket) {
+    return compute();
+  }
+  if (bucket.has(cacheKey)) {
+    return bucket.get(cacheKey) as T;
+  }
+
+  const value = compute();
+  bucket.set(cacheKey, value);
   return value;
 };
 
-const getCachedNestedMapValue = <K, T>(
-  cache: WeakMap<object, WeakMap<object, Map<K, T>>>,
-  owner: object,
-  dependency: object,
-  key: K
-): T | undefined => cache.get(owner)?.get(dependency)?.get(key);
+const getCurrentMinuteCacheBucket = (): number => Math.floor(Date.now() / 60_000);
 
-const setCachedNestedMapValue = <K, T>(
-  cache: WeakMap<object, WeakMap<object, Map<K, T>>>,
-  owner: object,
-  dependency: object,
-  key: K,
-  value: T
-): T => {
-  const ownerCache = cache.get(owner) ?? new WeakMap<object, Map<K, T>>();
-  const dependencyCache = ownerCache.get(dependency) ?? new Map<K, T>();
-  dependencyCache.set(key, value);
-  ownerCache.set(dependency, dependencyCache);
-  cache.set(owner, ownerCache);
-  return value;
+const getCurrentHourCacheBucket = (): number => Math.floor(Date.now() / 3_600_000);
+
+const fingerprintPricePart = (value: unknown): string => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed.toString() : '0';
+};
+
+const getModelPricesFingerprint = (modelPrices: Record<string, ModelPrice>): string => {
+  if (!isRecord(modelPrices)) {
+    return '';
+  }
+
+  const cacheKey = modelPrices as object;
+  const cached = modelPricesFingerprintCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const raw = Object.entries(modelPrices)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(
+      ([modelName, price]) =>
+        `${modelName}:${fingerprintPricePart(price.prompt)}:${fingerprintPricePart(price.completion)}:${fingerprintPricePart(price.cache)}`
+    )
+    .join('|');
+  const fingerprint = raw ? fnv1a64Hex(raw) : '';
+  modelPricesFingerprintCache.set(cacheKey, fingerprint);
+  return fingerprint;
 };
 
 /**
@@ -824,33 +1027,66 @@ export function extractTotalTokens(detail: unknown): number {
  * 计算耗时统计
  */
 export function calculateLatencyStats(usageData: unknown): LatencyStats {
-  return calculateLatencyStatsFromDetails(collectUsageDetails(usageData));
+  return getCachedUsageDerivedValue(usageData, 'latencyStats', () => {
+    const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+    if (aggregatedWindow && isRecord(aggregatedWindow.latency)) {
+      const latency = aggregatedWindow.latency;
+      const count = Number(latency.count);
+      const totalMs = Number(latency.total_ms);
+      const sampleCount = Number.isFinite(count) && count > 0 ? count : 0;
+      const total = Number.isFinite(totalMs) && totalMs >= 0 ? totalMs : 0;
+      return {
+        averageMs: sampleCount > 0 ? total / sampleCount : null,
+        totalMs: sampleCount > 0 ? total : null,
+        sampleCount,
+      };
+    }
+    return calculateLatencyStatsFromDetails(collectUsageDetails(usageData));
+  });
 }
 
 /**
  * 计算 token 分类统计
  */
 export function calculateTokenBreakdown(usageData: unknown): TokenBreakdown {
-  const details = collectUsageDetails(usageData);
-  if (!details.length) {
-    return { cachedTokens: 0, reasoningTokens: 0 };
-  }
-
-  let cachedTokens = 0;
-  let reasoningTokens = 0;
-
-  details.forEach((detail) => {
-    const tokens = detail.tokens;
-    cachedTokens += Math.max(
-      typeof tokens.cached_tokens === 'number' ? Math.max(tokens.cached_tokens, 0) : 0,
-      typeof tokens.cache_tokens === 'number' ? Math.max(tokens.cache_tokens, 0) : 0
-    );
-    if (typeof tokens.reasoning_tokens === 'number') {
-      reasoningTokens += tokens.reasoning_tokens;
+  return getCachedUsageDerivedValue(usageData, 'tokenBreakdown', () => {
+    const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+    if (aggregatedWindow && isRecord(aggregatedWindow.token_breakdown)) {
+      const tokenBreakdown = aggregatedWindow.token_breakdown;
+      return {
+        cachedTokens:
+          typeof tokenBreakdown.cached_tokens === 'number' && Number.isFinite(tokenBreakdown.cached_tokens)
+            ? tokenBreakdown.cached_tokens
+            : 0,
+        reasoningTokens:
+          typeof tokenBreakdown.reasoning_tokens === 'number' &&
+          Number.isFinite(tokenBreakdown.reasoning_tokens)
+            ? tokenBreakdown.reasoning_tokens
+            : 0,
+      };
     }
-  });
 
-  return { cachedTokens, reasoningTokens };
+    const details = collectUsageDetails(usageData);
+    if (!details.length) {
+      return { cachedTokens: 0, reasoningTokens: 0 };
+    }
+
+    let cachedTokens = 0;
+    let reasoningTokens = 0;
+
+    details.forEach((detail) => {
+      const tokens = detail.tokens;
+      cachedTokens += Math.max(
+        typeof tokens.cached_tokens === 'number' ? Math.max(tokens.cached_tokens, 0) : 0,
+        typeof tokens.cache_tokens === 'number' ? Math.max(tokens.cache_tokens, 0) : 0
+      );
+      if (typeof tokens.reasoning_tokens === 'number') {
+        reasoningTokens += tokens.reasoning_tokens;
+      }
+    });
+
+    return { cachedTokens, reasoningTokens };
+  });
 }
 
 /**
@@ -860,71 +1096,111 @@ export function calculateRecentPerMinuteRates(
   windowMinutes: number = 30,
   usageData: unknown
 ): RateStats {
-  const details = collectUsageDetails(usageData);
   const effectiveWindow = Number.isFinite(windowMinutes) && windowMinutes > 0 ? windowMinutes : 30;
+  const currentMinuteBucket = getCurrentMinuteCacheBucket();
+  return getCachedUsageDerivedValue(
+    usageData,
+    `rateStats:${effectiveWindow}:${currentMinuteBucket}`,
+    () => {
+      const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+      if (
+        aggregatedWindow &&
+        isRecord(aggregatedWindow.rate_30m) &&
+        Math.round(effectiveWindow) === 30
+      ) {
+        const rate = aggregatedWindow.rate_30m;
+        return {
+          rpm: typeof rate.rpm === 'number' && Number.isFinite(rate.rpm) ? rate.rpm : 0,
+          tpm: typeof rate.tpm === 'number' && Number.isFinite(rate.tpm) ? rate.tpm : 0,
+          windowMinutes:
+            typeof rate.window_minutes === 'number' && Number.isFinite(rate.window_minutes)
+              ? rate.window_minutes
+              : 30,
+          requestCount:
+            typeof rate.request_count === 'number' && Number.isFinite(rate.request_count)
+              ? rate.request_count
+              : 0,
+          tokenCount:
+            typeof rate.token_count === 'number' && Number.isFinite(rate.token_count)
+              ? rate.token_count
+              : 0,
+        };
+      }
 
-  if (!details.length) {
-    return { rpm: 0, tpm: 0, windowMinutes: effectiveWindow, requestCount: 0, tokenCount: 0 };
-  }
+      const details = collectUsageDetails(usageData);
+      if (!details.length) {
+        return { rpm: 0, tpm: 0, windowMinutes: effectiveWindow, requestCount: 0, tokenCount: 0 };
+      }
 
-  const now = Date.now();
-  const windowStart = now - effectiveWindow * 60 * 1000;
-  let requestCount = 0;
-  let tokenCount = 0;
+      const now = Date.now();
+      const windowStart = now - effectiveWindow * 60 * 1000;
+      let requestCount = 0;
+      let tokenCount = 0;
 
-  details.forEach((detail) => {
-    const timestamp =
-      typeof detail.__timestampMs === 'number'
-        ? detail.__timestampMs
-        : Date.parse(detail.timestamp);
-    if (!Number.isFinite(timestamp) || timestamp < windowStart || timestamp > now) {
-      return;
+      details.forEach((detail) => {
+        const timestamp =
+          typeof detail.__timestampMs === 'number'
+            ? detail.__timestampMs
+            : Date.parse(detail.timestamp);
+        if (!Number.isFinite(timestamp) || timestamp < windowStart || timestamp > now) {
+          return;
+        }
+        requestCount += 1;
+        tokenCount += extractTotalTokens(detail);
+      });
+
+      const denominator = effectiveWindow > 0 ? effectiveWindow : 1;
+      return {
+        rpm: requestCount / denominator,
+        tpm: tokenCount / denominator,
+        windowMinutes: effectiveWindow,
+        requestCount,
+        tokenCount,
+      };
     }
-    requestCount += 1;
-    tokenCount += extractTotalTokens(detail);
-  });
-
-  const denominator = effectiveWindow > 0 ? effectiveWindow : 1;
-  return {
-    rpm: requestCount / denominator,
-    tpm: tokenCount / denominator,
-    windowMinutes: effectiveWindow,
-    requestCount,
-    tokenCount,
-  };
+  );
 }
 
 /**
  * 从使用数据获取模型名称列表
  */
 export function getModelNamesFromUsage(usageData: unknown): string[] {
-  const cacheKey = getObjectCacheKey(usageData);
-  if (cacheKey) {
-    const cached = modelNamesCache.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
-  }
-
-  const apis = getApisRecord(usageData);
-  if (!apis) return [];
-  const names = new Set<string>();
-  Object.values(apis).forEach((apiEntry) => {
-    if (!isRecord(apiEntry)) return;
-    const modelsRaw = apiEntry.models;
-    const models = isRecord(modelsRaw) ? modelsRaw : null;
-    if (!models) return;
-    Object.keys(models).forEach((modelName) => {
-      if (modelName) {
-        names.add(modelName);
+  return getCachedUsageDerivedValue(usageData, 'modelNames', () => {
+    const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+    if (aggregatedWindow) {
+      const namesFromWindow = parseAggregatedModelNames(aggregatedWindow.model_names);
+      if (namesFromWindow.length > 0) {
+        return namesFromWindow;
       }
+
+      if (Array.isArray(aggregatedWindow.models)) {
+        const modelNames = aggregatedWindow.models
+          .map((item) =>
+            isRecord(item) && typeof item.model === 'string' ? item.model.trim() : ''
+          )
+          .filter(Boolean);
+        if (modelNames.length > 0) {
+          return Array.from(new Set(modelNames)).sort((a, b) => a.localeCompare(b));
+        }
+      }
+    }
+
+    const apis = getApisRecord(usageData);
+    if (!apis) return [];
+    const names = new Set<string>();
+    Object.values(apis).forEach((apiEntry) => {
+      if (!isRecord(apiEntry)) return;
+      const modelsRaw = apiEntry.models;
+      const models = isRecord(modelsRaw) ? modelsRaw : null;
+      if (!models) return;
+      Object.keys(models).forEach((modelName) => {
+        if (modelName) {
+          names.add(modelName);
+        }
+      });
     });
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
   });
-  const result = Array.from(names).sort((a, b) => a.localeCompare(b));
-  if (cacheKey) {
-    modelNamesCache.set(cacheKey, result);
-  }
-  return result;
 }
 
 /**
@@ -963,6 +1239,40 @@ export function calculateCost(
   return Number.isFinite(total) && total > 0 ? total : 0;
 }
 
+function calculateCostFromTokenBreakdown(
+  modelName: string,
+  tokenBreakdown: {
+    input_tokens?: number;
+    output_tokens?: number;
+    cached_tokens?: number;
+    cache_tokens?: number;
+  },
+  modelPrices: Record<string, ModelPrice>
+): number {
+  return calculateCost(
+    {
+      timestamp: '',
+      source: '',
+      auth_index: 0,
+      tokens: {
+        input_tokens:
+          typeof tokenBreakdown.input_tokens === 'number' ? tokenBreakdown.input_tokens : 0,
+        output_tokens:
+          typeof tokenBreakdown.output_tokens === 'number' ? tokenBreakdown.output_tokens : 0,
+        reasoning_tokens: 0,
+        cached_tokens:
+          typeof tokenBreakdown.cached_tokens === 'number' ? tokenBreakdown.cached_tokens : 0,
+        cache_tokens:
+          typeof tokenBreakdown.cache_tokens === 'number' ? tokenBreakdown.cache_tokens : 0,
+        total_tokens: 0,
+      },
+      failed: false,
+      __modelName: modelName,
+    },
+    modelPrices
+  );
+}
+
 /**
  * 计算总成本
  */
@@ -970,11 +1280,36 @@ export function calculateTotalCost(
   usageData: unknown,
   modelPrices: Record<string, ModelPrice>
 ): number {
-  const details = collectUsageDetails(usageData);
-  if (!details.length || !Object.keys(modelPrices).length) {
-    return 0;
-  }
-  return details.reduce((sum, detail) => sum + calculateCost(detail, modelPrices), 0);
+  const priceFingerprint = getModelPricesFingerprint(modelPrices);
+  return getCachedUsageDerivedValue(usageData, `totalCost:${priceFingerprint}`, () => {
+    const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+    if (aggregatedWindow && Array.isArray(aggregatedWindow.models)) {
+      return aggregatedWindow.models.reduce<number>((sum, item) => {
+        if (!isRecord(item) || typeof item.model !== 'string' || !isRecord(item.token_breakdown)) {
+          return sum;
+        }
+        return (
+          sum +
+          calculateCostFromTokenBreakdown(
+            item.model,
+            item.token_breakdown as {
+              input_tokens?: number;
+              output_tokens?: number;
+              cached_tokens?: number;
+              cache_tokens?: number;
+            },
+            modelPrices
+          )
+        );
+      }, 0);
+    }
+
+    const details = collectUsageDetails(usageData);
+    if (!details.length || !Object.keys(modelPrices).length) {
+      return 0;
+    }
+    return details.reduce((sum, detail) => sum + calculateCost(detail, modelPrices), 0);
+  });
 }
 
 /**
@@ -1051,98 +1386,165 @@ export function getApiStats(
   usageData: unknown,
   modelPrices: Record<string, ModelPrice>
 ): ApiStats[] {
-  const usageCacheKey = getObjectCacheKey(usageData);
-  const pricesCacheKey = getObjectCacheKey(modelPrices);
-  if (usageCacheKey && pricesCacheKey) {
-    const cached = getCachedNestedValue(apiStatsCache, usageCacheKey, pricesCacheKey);
-    if (cached) {
-      return cached;
+  const priceFingerprint = getModelPricesFingerprint(modelPrices);
+  return getCachedUsageDerivedValue(usageData, `apiStats:${priceFingerprint}`, () => {
+    const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+    if (aggregatedWindow && Array.isArray(aggregatedWindow.apis)) {
+      return aggregatedWindow.apis
+        .map((item) => {
+          if (!isRecord(item) || typeof item.endpoint !== 'string') {
+            return null;
+          }
+
+          const models: Record<
+            string,
+            { requests: number; successCount: number; failureCount: number; tokens: number }
+          > = {};
+          let totalCost = 0;
+
+          if (isRecord(item.models)) {
+            Object.entries(item.models).forEach(([modelName, stats]) => {
+              if (!isRecord(stats)) {
+                return;
+              }
+              models[modelName] = {
+                requests:
+                  typeof stats.requests === 'number' && Number.isFinite(stats.requests)
+                    ? stats.requests
+                    : 0,
+                successCount:
+                  typeof stats.success_count === 'number' && Number.isFinite(stats.success_count)
+                    ? stats.success_count
+                    : 0,
+                failureCount:
+                  typeof stats.failure_count === 'number' && Number.isFinite(stats.failure_count)
+                    ? stats.failure_count
+                    : 0,
+                tokens:
+                  typeof stats.tokens === 'number' && Number.isFinite(stats.tokens) ? stats.tokens : 0,
+              };
+
+              if (isRecord(stats.token_breakdown)) {
+                totalCost += calculateCostFromTokenBreakdown(
+                  modelName,
+                  stats.token_breakdown as {
+                    input_tokens?: number;
+                    output_tokens?: number;
+                    cached_tokens?: number;
+                    cache_tokens?: number;
+                  },
+                  modelPrices
+                );
+              }
+            });
+          }
+
+          return {
+            endpoint: maskUsageSensitiveValue(item.endpoint) || item.endpoint,
+            totalRequests:
+              typeof item.total_requests === 'number' && Number.isFinite(item.total_requests)
+                ? item.total_requests
+                : 0,
+            successCount:
+              typeof item.success_count === 'number' && Number.isFinite(item.success_count)
+                ? item.success_count
+                : 0,
+            failureCount:
+              typeof item.failure_count === 'number' && Number.isFinite(item.failure_count)
+                ? item.failure_count
+                : 0,
+            totalTokens:
+              typeof item.total_tokens === 'number' && Number.isFinite(item.total_tokens)
+                ? item.total_tokens
+                : 0,
+            totalCost,
+            models,
+          };
+        })
+        .filter((item): item is ApiStats => item !== null);
     }
-  }
 
-  const apis = getApisRecord(usageData);
-  if (!apis) return [];
-  const result: ApiStats[] = [];
+    const apis = getApisRecord(usageData);
+    if (!apis) return [];
+    const result: ApiStats[] = [];
 
-  Object.entries(apis).forEach(([endpoint, apiData]) => {
-    if (!isRecord(apiData)) return;
-    const models: Record<
-      string,
-      { requests: number; successCount: number; failureCount: number; tokens: number }
-    > = {};
-    let derivedSuccessCount = 0;
-    let derivedFailureCount = 0;
-    let totalCost = 0;
+    Object.entries(apis).forEach(([endpoint, apiData]) => {
+      if (!isRecord(apiData)) return;
+      const models: Record<
+        string,
+        { requests: number; successCount: number; failureCount: number; tokens: number }
+      > = {};
+      let derivedSuccessCount = 0;
+      let derivedFailureCount = 0;
+      let totalCost = 0;
 
-    const modelsData = isRecord(apiData.models) ? apiData.models : {};
-    Object.entries(modelsData).forEach(([modelName, modelData]) => {
-      if (!isRecord(modelData)) return;
-      const details = Array.isArray(modelData.details) ? modelData.details : [];
-      const hasExplicitCounts =
-        typeof modelData.success_count === 'number' || typeof modelData.failure_count === 'number';
+      const modelsData = isRecord(apiData.models) ? apiData.models : {};
+      Object.entries(modelsData).forEach(([modelName, modelData]) => {
+        if (!isRecord(modelData)) return;
+        const details = Array.isArray(modelData.details) ? modelData.details : [];
+        const hasExplicitCounts =
+          typeof modelData.success_count === 'number' || typeof modelData.failure_count === 'number';
 
-      let successCount = 0;
-      let failureCount = 0;
-      if (hasExplicitCounts) {
-        successCount += Number(modelData.success_count) || 0;
-        failureCount += Number(modelData.failure_count) || 0;
-      }
+        let successCount = 0;
+        let failureCount = 0;
+        if (hasExplicitCounts) {
+          successCount += Number(modelData.success_count) || 0;
+          failureCount += Number(modelData.failure_count) || 0;
+        }
 
-      const price = modelPrices[modelName];
-      if (details.length > 0 && (!hasExplicitCounts || price)) {
-        details.forEach((detail) => {
-          const detailRecord = isRecord(detail) ? detail : null;
-          if (!hasExplicitCounts) {
-            if (detailRecord?.failed === true) {
-              failureCount += 1;
-            } else {
-              successCount += 1;
+        const price = modelPrices[modelName];
+        if (details.length > 0 && (!hasExplicitCounts || price)) {
+          details.forEach((detail) => {
+            const detailRecord = isRecord(detail) ? detail : null;
+            if (!hasExplicitCounts) {
+              if (detailRecord?.failed === true) {
+                failureCount += 1;
+              } else {
+                successCount += 1;
+              }
             }
-          }
 
-          if (price && detailRecord) {
-            totalCost += calculateCost(
-              { ...(detailRecord as unknown as UsageDetail), __modelName: modelName },
-              modelPrices
-            );
-          }
-        });
-      }
+            if (price && detailRecord) {
+              totalCost += calculateCost(
+                { ...(detailRecord as unknown as UsageDetail), __modelName: modelName },
+                modelPrices
+              );
+            }
+          });
+        }
 
-      models[modelName] = {
-        requests: Number(modelData.total_requests) || 0,
+        models[modelName] = {
+          requests: Number(modelData.total_requests) || 0,
+          successCount,
+          failureCount,
+          tokens: Number(modelData.total_tokens) || 0,
+        };
+        derivedSuccessCount += successCount;
+        derivedFailureCount += failureCount;
+      });
+
+      const hasApiExplicitCounts =
+        typeof apiData.success_count === 'number' || typeof apiData.failure_count === 'number';
+      const successCount = hasApiExplicitCounts
+        ? Number(apiData.success_count) || 0
+        : derivedSuccessCount;
+      const failureCount = hasApiExplicitCounts
+        ? Number(apiData.failure_count) || 0
+        : derivedFailureCount;
+
+      result.push({
+        endpoint: maskUsageSensitiveValue(endpoint) || endpoint,
+        totalRequests: Number(apiData.total_requests) || 0,
         successCount,
         failureCount,
-        tokens: Number(modelData.total_tokens) || 0,
-      };
-      derivedSuccessCount += successCount;
-      derivedFailureCount += failureCount;
+        totalTokens: Number(apiData.total_tokens) || 0,
+        totalCost,
+        models,
+      });
     });
 
-    const hasApiExplicitCounts =
-      typeof apiData.success_count === 'number' || typeof apiData.failure_count === 'number';
-    const successCount = hasApiExplicitCounts
-      ? Number(apiData.success_count) || 0
-      : derivedSuccessCount;
-    const failureCount = hasApiExplicitCounts
-      ? Number(apiData.failure_count) || 0
-      : derivedFailureCount;
-
-    result.push({
-      endpoint: maskUsageSensitiveValue(endpoint) || endpoint,
-      totalRequests: Number(apiData.total_requests) || 0,
-      successCount,
-      failureCount,
-      totalTokens: Number(apiData.total_tokens) || 0,
-      totalCost,
-      models,
-    });
+    return result;
   });
-
-  if (usageCacheKey && pricesCacheKey) {
-    return setCachedNestedValue(apiStatsCache, usageCacheKey, pricesCacheKey, result);
-  }
-  return result;
 }
 
 /**
@@ -1152,107 +1554,148 @@ export function getModelStats(
   usageData: unknown,
   modelPrices: Record<string, ModelPrice>
 ): ModelStatsSummary[] {
-  const usageCacheKey = getObjectCacheKey(usageData);
-  const pricesCacheKey = getObjectCacheKey(modelPrices);
-  if (usageCacheKey && pricesCacheKey) {
-    const cached = getCachedNestedValue(modelStatsCache, usageCacheKey, pricesCacheKey);
-    if (cached) {
-      return cached;
+  const priceFingerprint = getModelPricesFingerprint(modelPrices);
+  return getCachedUsageDerivedValue(usageData, `modelStats:${priceFingerprint}`, () => {
+    const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+    if (aggregatedWindow && Array.isArray(aggregatedWindow.models)) {
+      return aggregatedWindow.models
+        .map((item) => {
+          if (!isRecord(item) || typeof item.model !== 'string') {
+            return null;
+          }
+
+          const latency = isRecord(item.latency) ? item.latency : null;
+          const latencyCount =
+            latency && typeof latency.count === 'number' && Number.isFinite(latency.count)
+              ? latency.count
+              : 0;
+          const latencyTotalMs =
+            latency && typeof latency.total_ms === 'number' && Number.isFinite(latency.total_ms)
+              ? latency.total_ms
+              : 0;
+
+          return {
+            model: item.model,
+            requests:
+              typeof item.requests === 'number' && Number.isFinite(item.requests) ? item.requests : 0,
+            successCount:
+              typeof item.success_count === 'number' && Number.isFinite(item.success_count)
+                ? item.success_count
+                : 0,
+            failureCount:
+              typeof item.failure_count === 'number' && Number.isFinite(item.failure_count)
+                ? item.failure_count
+                : 0,
+            tokens:
+              typeof item.tokens === 'number' && Number.isFinite(item.tokens) ? item.tokens : 0,
+            cost: isRecord(item.token_breakdown)
+              ? calculateCostFromTokenBreakdown(
+                  item.model,
+                  item.token_breakdown as {
+                    input_tokens?: number;
+                    output_tokens?: number;
+                    cached_tokens?: number;
+                    cache_tokens?: number;
+                  },
+                  modelPrices
+                )
+              : 0,
+            averageLatencyMs: latencyCount > 0 ? latencyTotalMs / latencyCount : null,
+            totalLatencyMs: latencyCount > 0 ? latencyTotalMs : null,
+            latencySampleCount: latencyCount,
+          };
+        })
+        .filter((item): item is ModelStatsSummary => item !== null)
+        .sort((a, b) => b.requests - a.requests);
     }
-  }
 
-  const apis = getApisRecord(usageData);
-  if (!apis) return [];
+    const apis = getApisRecord(usageData);
+    if (!apis) return [];
 
-  const modelMap = new Map<
-    string,
-    {
-      requests: number;
-      successCount: number;
-      failureCount: number;
-      tokens: number;
-      cost: number;
-      latency: LatencyAccumulator;
-    }
-  >();
-
-  Object.values(apis).forEach((apiData) => {
-    if (!isRecord(apiData)) return;
-    const modelsRaw = apiData.models;
-    const models = isRecord(modelsRaw) ? modelsRaw : null;
-    if (!models) return;
-
-    Object.entries(models).forEach(([modelName, modelData]) => {
-      if (!isRecord(modelData)) return;
-      const existing = modelMap.get(modelName) || {
-        requests: 0,
-        successCount: 0,
-        failureCount: 0,
-        tokens: 0,
-        cost: 0,
-        latency: createLatencyAccumulator(),
-      };
-      existing.requests += Number(modelData.total_requests) || 0;
-      existing.tokens += Number(modelData.total_tokens) || 0;
-
-      const details = Array.isArray(modelData.details) ? modelData.details : [];
-
-      const price = modelPrices[modelName];
-
-      const hasExplicitCounts =
-        typeof modelData.success_count === 'number' || typeof modelData.failure_count === 'number';
-      if (hasExplicitCounts) {
-        existing.successCount += Number(modelData.success_count) || 0;
-        existing.failureCount += Number(modelData.failure_count) || 0;
+    const modelMap = new Map<
+      string,
+      {
+        requests: number;
+        successCount: number;
+        failureCount: number;
+        tokens: number;
+        cost: number;
+        latency: LatencyAccumulator;
       }
+    >();
 
-      if (details.length > 0) {
-        details.forEach((detail) => {
-          const detailRecord = isRecord(detail) ? detail : null;
-          const latencyMs = extractLatencyMs(detailRecord);
-          if (!hasExplicitCounts) {
-            if (detailRecord?.failed === true) {
-              existing.failureCount += 1;
-            } else {
-              existing.successCount += 1;
+    Object.values(apis).forEach((apiData) => {
+      if (!isRecord(apiData)) return;
+      const modelsRaw = apiData.models;
+      const models = isRecord(modelsRaw) ? modelsRaw : null;
+      if (!models) return;
+
+      Object.entries(models).forEach(([modelName, modelData]) => {
+        if (!isRecord(modelData)) return;
+        const existing = modelMap.get(modelName) || {
+          requests: 0,
+          successCount: 0,
+          failureCount: 0,
+          tokens: 0,
+          cost: 0,
+          latency: createLatencyAccumulator(),
+        };
+        existing.requests += Number(modelData.total_requests) || 0;
+        existing.tokens += Number(modelData.total_tokens) || 0;
+
+        const details = Array.isArray(modelData.details) ? modelData.details : [];
+        const price = modelPrices[modelName];
+        const hasExplicitCounts =
+          typeof modelData.success_count === 'number' || typeof modelData.failure_count === 'number';
+
+        if (hasExplicitCounts) {
+          existing.successCount += Number(modelData.success_count) || 0;
+          existing.failureCount += Number(modelData.failure_count) || 0;
+        }
+
+        if (details.length > 0) {
+          details.forEach((detail) => {
+            const detailRecord = isRecord(detail) ? detail : null;
+            const latencyMs = extractLatencyMs(detailRecord);
+            if (!hasExplicitCounts) {
+              if (detailRecord?.failed === true) {
+                existing.failureCount += 1;
+              } else {
+                existing.successCount += 1;
+              }
             }
-          }
 
-          addLatencySample(existing.latency, latencyMs);
+            addLatencySample(existing.latency, latencyMs);
 
-          if (price && detailRecord) {
-            existing.cost += calculateCost(
-              { ...(detailRecord as unknown as UsageDetail), __modelName: modelName },
-              modelPrices
-            );
-          }
-        });
-      }
-      modelMap.set(modelName, existing);
+            if (price && detailRecord) {
+              existing.cost += calculateCost(
+                { ...(detailRecord as unknown as UsageDetail), __modelName: modelName },
+                modelPrices
+              );
+            }
+          });
+        }
+        modelMap.set(modelName, existing);
+      });
     });
+
+    return Array.from(modelMap.entries())
+      .map(([model, stats]) => {
+        const latencyStats = finalizeLatencyStats(stats.latency);
+        return {
+          model,
+          requests: stats.requests,
+          successCount: stats.successCount,
+          failureCount: stats.failureCount,
+          tokens: stats.tokens,
+          cost: stats.cost,
+          averageLatencyMs: latencyStats.averageMs,
+          totalLatencyMs: latencyStats.totalMs,
+          latencySampleCount: latencyStats.sampleCount,
+        };
+      })
+      .sort((a, b) => b.requests - a.requests);
   });
-
-  const result = Array.from(modelMap.entries())
-    .map(([model, stats]) => {
-      const latencyStats = finalizeLatencyStats(stats.latency);
-      return {
-        model,
-        requests: stats.requests,
-        successCount: stats.successCount,
-        failureCount: stats.failureCount,
-        tokens: stats.tokens,
-        cost: stats.cost,
-        averageLatencyMs: latencyStats.averageMs,
-        totalLatencyMs: latencyStats.totalMs,
-        latencySampleCount: latencyStats.sampleCount,
-      };
-    })
-    .sort((a, b) => b.requests - a.requests);
-
-  if (usageCacheKey && pricesCacheKey) {
-    return setCachedNestedValue(modelStatsCache, usageCacheKey, pricesCacheKey, result);
-  }
-  return result;
 }
 
 /**
@@ -1359,86 +1802,104 @@ export function buildHourlySeriesByModel(
   dataByModel: Map<string, number[]>;
   hasData: boolean;
 } {
-  const hourMs = 60 * 60 * 1000;
-  const resolvedHourWindow =
-    Number.isFinite(hourWindow) && hourWindow > 0
-      ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
-      : 24;
-  const cacheKey = getObjectCacheKey(usageData);
-  const seriesCacheKey = `${metric}:${resolvedHourWindow}`;
-  if (cacheKey) {
-    const cached = getCachedMapValue(hourlySeriesByModelCache, cacheKey, seriesCacheKey);
-    if (cached) {
-      return cached;
+  const currentHourBucket = getCurrentHourCacheBucket();
+  return getCachedUsageDerivedValue(
+    usageData,
+    `series:hour:${metric}:${hourWindow}:${currentHourBucket}`,
+    () => {
+      const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+      const aggregatedSeriesRoot =
+        aggregatedWindow && isRecord(metric === 'tokens' ? aggregatedWindow.tokens : aggregatedWindow.requests)
+          ? (metric === 'tokens' ? aggregatedWindow.tokens : aggregatedWindow.requests)
+          : null;
+      const aggregatedSeries =
+        aggregatedSeriesRoot && isRecord(aggregatedSeriesRoot.hour)
+          ? (aggregatedSeriesRoot.hour as AggregatedModelSeriesRecord)
+          : null;
+      if (aggregatedSeries) {
+        const timestamps = parseTimestampArray(aggregatedSeries.timestamps);
+        const labels = timestamps.map((item) => formatHourLabel(new Date(item)));
+        const dataByModel = new Map<string, number[]>();
+        let hasData = false;
+
+        if (isRecord(aggregatedSeries.series)) {
+          Object.entries(aggregatedSeries.series).forEach(([modelName, values]) => {
+            const parsedValues = parseNumberArray(values);
+            if (parsedValues.some((value) => value > 0)) {
+              hasData = true;
+            }
+            dataByModel.set(modelName, parsedValues);
+          });
+        }
+
+        return { labels, dataByModel, hasData };
+      }
+
+      const hourMs = 60 * 60 * 1000;
+      const resolvedHourWindow =
+        Number.isFinite(hourWindow) && hourWindow > 0
+          ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
+          : 24;
+      const now = new Date();
+      const currentHour = new Date(now);
+      currentHour.setMinutes(0, 0, 0);
+      const earliestBucket = new Date(currentHour);
+      earliestBucket.setHours(earliestBucket.getHours() - (resolvedHourWindow - 1));
+      const earliestTime = earliestBucket.getTime();
+
+      const labels: string[] = [];
+      for (let i = 0; i < resolvedHourWindow; i++) {
+        const bucketStart = earliestTime + i * hourMs;
+        labels.push(formatHourLabel(new Date(bucketStart)));
+      }
+
+      const details = collectUsageDetails(usageData);
+      const dataByModel = new Map<string, number[]>();
+      let hasData = false;
+
+      if (!details.length) {
+        return { labels, dataByModel, hasData };
+      }
+
+      details.forEach((detail) => {
+        const timestamp =
+          typeof detail.__timestampMs === 'number'
+            ? detail.__timestampMs
+            : Date.parse(detail.timestamp);
+        if (!Number.isFinite(timestamp) || timestamp <= 0) {
+          return;
+        }
+
+        const normalized = new Date(timestamp);
+        normalized.setMinutes(0, 0, 0);
+        const bucketStart = normalized.getTime();
+        const lastBucketTime = earliestTime + (labels.length - 1) * hourMs;
+        if (bucketStart < earliestTime || bucketStart > lastBucketTime) {
+          return;
+        }
+
+        const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
+        if (bucketIndex < 0 || bucketIndex >= labels.length) {
+          return;
+        }
+
+        const modelName = detail.__modelName || 'Unknown';
+        if (!dataByModel.has(modelName)) {
+          dataByModel.set(modelName, new Array(labels.length).fill(0));
+        }
+
+        const bucketValues = dataByModel.get(modelName)!;
+        if (metric === 'tokens') {
+          bucketValues[bucketIndex] += extractTotalTokens(detail);
+        } else {
+          bucketValues[bucketIndex] += 1;
+        }
+        hasData = true;
+      });
+
+      return { labels, dataByModel, hasData };
     }
-  }
-  const now = new Date();
-  const currentHour = new Date(now);
-  currentHour.setMinutes(0, 0, 0);
-
-  const earliestBucket = new Date(currentHour);
-  earliestBucket.setHours(earliestBucket.getHours() - (resolvedHourWindow - 1));
-  const earliestTime = earliestBucket.getTime();
-
-  const labels: string[] = [];
-  for (let i = 0; i < resolvedHourWindow; i++) {
-    const bucketStart = earliestTime + i * hourMs;
-    labels.push(formatHourLabel(new Date(bucketStart)));
-  }
-
-  const details = collectUsageDetails(usageData);
-  const dataByModel = new Map<string, number[]>();
-  let hasData = false;
-
-  if (!details.length) {
-    const emptyResult = { labels, dataByModel, hasData };
-    if (cacheKey) {
-      return setCachedMapValue(hourlySeriesByModelCache, cacheKey, seriesCacheKey, emptyResult);
-    }
-    return emptyResult;
-  }
-
-  details.forEach((detail) => {
-    const timestamp =
-      typeof detail.__timestampMs === 'number'
-        ? detail.__timestampMs
-        : Date.parse(detail.timestamp);
-    if (!Number.isFinite(timestamp) || timestamp <= 0) {
-      return;
-    }
-
-    const normalized = new Date(timestamp);
-    normalized.setMinutes(0, 0, 0);
-    const bucketStart = normalized.getTime();
-    const lastBucketTime = earliestTime + (labels.length - 1) * hourMs;
-    if (bucketStart < earliestTime || bucketStart > lastBucketTime) {
-      return;
-    }
-
-    const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
-    if (bucketIndex < 0 || bucketIndex >= labels.length) {
-      return;
-    }
-
-    const modelName = detail.__modelName || 'Unknown';
-    if (!dataByModel.has(modelName)) {
-      dataByModel.set(modelName, new Array(labels.length).fill(0));
-    }
-
-    const bucketValues = dataByModel.get(modelName)!;
-    if (metric === 'tokens') {
-      bucketValues[bucketIndex] += extractTotalTokens(detail);
-    } else {
-      bucketValues[bucketIndex] += 1;
-    }
-    hasData = true;
-  });
-
-  const result = { labels, dataByModel, hasData };
-  if (cacheKey) {
-    return setCachedMapValue(hourlySeriesByModelCache, cacheKey, seriesCacheKey, result);
-  }
-  return result;
+  );
 }
 
 /**
@@ -1452,63 +1913,77 @@ export function buildDailySeriesByModel(
   dataByModel: Map<string, number[]>;
   hasData: boolean;
 } {
-  const cacheKey = getObjectCacheKey(usageData);
-  if (cacheKey) {
-    const cached = getCachedMapValue(dailySeriesByModelCache, cacheKey, metric);
-    if (cached) {
-      return cached;
-    }
-  }
+  return getCachedUsageDerivedValue(usageData, `series:day:${metric}`, () => {
+    const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+    const aggregatedSeriesRoot =
+      aggregatedWindow && isRecord(metric === 'tokens' ? aggregatedWindow.tokens : aggregatedWindow.requests)
+        ? (metric === 'tokens' ? aggregatedWindow.tokens : aggregatedWindow.requests)
+        : null;
+    const aggregatedSeries =
+      aggregatedSeriesRoot && isRecord(aggregatedSeriesRoot.day)
+        ? (aggregatedSeriesRoot.day as AggregatedModelSeriesRecord)
+        : null;
+    if (aggregatedSeries) {
+      const timestamps = parseTimestampArray(aggregatedSeries.timestamps);
+      const labels = timestamps.map((item) => formatDayLabel(new Date(item)));
+      const dataByModel = new Map<string, number[]>();
+      let hasData = false;
 
-  const details = collectUsageDetails(usageData);
-  const valuesByModel = new Map<string, Map<string, number>>();
-  const labelsSet = new Set<string>();
-  let hasData = false;
+      if (isRecord(aggregatedSeries.series)) {
+        Object.entries(aggregatedSeries.series).forEach(([modelName, values]) => {
+          const parsedValues = parseNumberArray(values);
+          if (parsedValues.some((value) => value > 0)) {
+            hasData = true;
+          }
+          dataByModel.set(modelName, parsedValues);
+        });
+      }
 
-  if (!details.length) {
-    const emptyResult = { labels: [], dataByModel: new Map(), hasData };
-    if (cacheKey) {
-      return setCachedMapValue(dailySeriesByModelCache, cacheKey, metric, emptyResult);
-    }
-    return emptyResult;
-  }
-
-  details.forEach((detail) => {
-    const timestamp =
-      typeof detail.__timestampMs === 'number'
-        ? detail.__timestampMs
-        : Date.parse(detail.timestamp);
-    if (!Number.isFinite(timestamp) || timestamp <= 0) {
-      return;
-    }
-    const dayLabel = formatDayLabel(new Date(timestamp));
-    if (!dayLabel) {
-      return;
+      return { labels, dataByModel, hasData };
     }
 
-    const modelName = detail.__modelName || 'Unknown';
-    if (!valuesByModel.has(modelName)) {
-      valuesByModel.set(modelName, new Map());
+    const details = collectUsageDetails(usageData);
+    const valuesByModel = new Map<string, Map<string, number>>();
+    const labelsSet = new Set<string>();
+    let hasData = false;
+
+    if (!details.length) {
+      return { labels: [], dataByModel: new Map(), hasData };
     }
-    const modelDayMap = valuesByModel.get(modelName)!;
-    const increment = metric === 'tokens' ? extractTotalTokens(detail) : 1;
-    modelDayMap.set(dayLabel, (modelDayMap.get(dayLabel) || 0) + increment);
-    labelsSet.add(dayLabel);
-    hasData = true;
+
+    details.forEach((detail) => {
+      const timestamp =
+        typeof detail.__timestampMs === 'number'
+          ? detail.__timestampMs
+          : Date.parse(detail.timestamp);
+      if (!Number.isFinite(timestamp) || timestamp <= 0) {
+        return;
+      }
+      const dayLabel = formatDayLabel(new Date(timestamp));
+      if (!dayLabel) {
+        return;
+      }
+
+      const modelName = detail.__modelName || 'Unknown';
+      if (!valuesByModel.has(modelName)) {
+        valuesByModel.set(modelName, new Map());
+      }
+      const modelDayMap = valuesByModel.get(modelName)!;
+      const increment = metric === 'tokens' ? extractTotalTokens(detail) : 1;
+      modelDayMap.set(dayLabel, (modelDayMap.get(dayLabel) || 0) + increment);
+      labelsSet.add(dayLabel);
+      hasData = true;
+    });
+
+    const labels = Array.from(labelsSet).sort();
+    const dataByModel = new Map<string, number[]>();
+    valuesByModel.forEach((dayMap, modelName) => {
+      const series = labels.map((label) => dayMap.get(label) || 0);
+      dataByModel.set(modelName, series);
+    });
+
+    return { labels, dataByModel, hasData };
   });
-
-  const labels = Array.from(labelsSet).sort();
-  const dataByModel = new Map<string, number[]>();
-  valuesByModel.forEach((dayMap, modelName) => {
-    const series = labels.map((label) => dayMap.get(label) || 0);
-    dataByModel.set(modelName, series);
-  });
-
-  const result = { labels, dataByModel, hasData };
-  if (cacheKey) {
-    return setCachedMapValue(dailySeriesByModelCache, cacheKey, metric, result);
-  }
-  return result;
 }
 
 export interface ChartDataset {
@@ -1882,62 +2357,109 @@ export function computeKeyStats(
   usageData: unknown,
   masker: (val: string) => string = maskApiKey
 ): KeyStats {
-  const apis = getApisRecord(usageData);
-  if (!apis) {
-    return { bySource: {}, byAuthIndex: {} };
-  }
+  const compute = (): KeyStats => {
+    const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+    if (aggregatedWindow && Array.isArray(aggregatedWindow.credentials)) {
+      const bySource: Record<string, KeyStatBucket> = {};
+      const byAuthIndex: Record<string, KeyStatBucket> = {};
 
-  const sourceStats: Record<string, KeyStatBucket> = {};
-  const authIndexStats: Record<string, KeyStatBucket> = {};
+      aggregatedWindow.credentials.forEach((item) => {
+        if (!isRecord(item)) {
+          return;
+        }
 
-  const ensureBucket = (bucket: Record<string, KeyStatBucket>, key: string) => {
-    if (!bucket[key]) {
-      bucket[key] = { success: 0, failure: 0 };
-    }
-    return bucket[key];
-  };
-
-  Object.values(apis).forEach((apiEntry) => {
-    if (!isRecord(apiEntry)) return;
-    const modelsRaw = apiEntry.models;
-    const models = isRecord(modelsRaw) ? modelsRaw : null;
-    if (!models) return;
-
-    Object.values(models).forEach((modelEntry) => {
-      if (!isRecord(modelEntry)) return;
-      const details = Array.isArray(modelEntry.details) ? modelEntry.details : [];
-
-      details.forEach((detail) => {
-        const detailRecord = isRecord(detail) ? detail : null;
-        const source = normalizeUsageSourceId(detailRecord?.source, masker);
-        const authIndexKey = normalizeAuthIndex(detailRecord?.auth_index);
-        const isFailed = detailRecord?.failed === true;
+        const source = normalizeUsageSourceId(item.source, masker);
+        const authIndexKey = normalizeAuthIndex(item.auth_index);
+        const successCount =
+          typeof item.success_count === 'number' && Number.isFinite(item.success_count)
+            ? item.success_count
+            : 0;
+        const failureCount =
+          typeof item.failure_count === 'number' && Number.isFinite(item.failure_count)
+            ? item.failure_count
+            : 0;
 
         if (source) {
-          const bucket = ensureBucket(sourceStats, source);
-          if (isFailed) {
-            bucket.failure += 1;
-          } else {
-            bucket.success += 1;
-          }
+          const bucket = bySource[source] ?? { success: 0, failure: 0 };
+          bucket.success += successCount;
+          bucket.failure += failureCount;
+          bySource[source] = bucket;
         }
 
         if (authIndexKey) {
-          const bucket = ensureBucket(authIndexStats, authIndexKey);
-          if (isFailed) {
-            bucket.failure += 1;
-          } else {
-            bucket.success += 1;
-          }
+          const bucket = byAuthIndex[authIndexKey] ?? { success: 0, failure: 0 };
+          bucket.success += successCount;
+          bucket.failure += failureCount;
+          byAuthIndex[authIndexKey] = bucket;
         }
       });
-    });
-  });
 
-  return {
-    bySource: sourceStats,
-    byAuthIndex: authIndexStats,
+      return { bySource, byAuthIndex };
+    }
+
+    const apis = getApisRecord(usageData);
+    if (!apis) {
+      return { bySource: {}, byAuthIndex: {} };
+    }
+
+    const sourceStats: Record<string, KeyStatBucket> = {};
+    const authIndexStats: Record<string, KeyStatBucket> = {};
+
+    const ensureBucket = (bucket: Record<string, KeyStatBucket>, key: string) => {
+      if (!bucket[key]) {
+        bucket[key] = { success: 0, failure: 0 };
+      }
+      return bucket[key];
+    };
+
+    Object.values(apis).forEach((apiEntry) => {
+      if (!isRecord(apiEntry)) return;
+      const modelsRaw = apiEntry.models;
+      const models = isRecord(modelsRaw) ? modelsRaw : null;
+      if (!models) return;
+
+      Object.values(models).forEach((modelEntry) => {
+        if (!isRecord(modelEntry)) return;
+        const details = Array.isArray(modelEntry.details) ? modelEntry.details : [];
+
+        details.forEach((detail) => {
+          const detailRecord = isRecord(detail) ? detail : null;
+          const source = normalizeUsageSourceId(detailRecord?.source, masker);
+          const authIndexKey = normalizeAuthIndex(detailRecord?.auth_index);
+          const isFailed = detailRecord?.failed === true;
+
+          if (source) {
+            const bucket = ensureBucket(sourceStats, source);
+            if (isFailed) {
+              bucket.failure += 1;
+            } else {
+              bucket.success += 1;
+            }
+          }
+
+          if (authIndexKey) {
+            const bucket = ensureBucket(authIndexStats, authIndexKey);
+            if (isFailed) {
+              bucket.failure += 1;
+            } else {
+              bucket.success += 1;
+            }
+          }
+        });
+      });
+    });
+
+    return {
+      bySource: sourceStats,
+      byAuthIndex: authIndexStats,
+    };
   };
+
+  if (masker !== maskApiKey) {
+    return compute();
+  }
+
+  return getCachedUsageDerivedValue(usageData, 'keyStats', compute);
 }
 
 export function computeKeyStatsFromDetails(usageDetails: UsageDetail[]): KeyStats {
@@ -2182,58 +2704,100 @@ export function buildHourlyCostSeries(
   modelPrices: Record<string, ModelPrice>,
   hourWindow: number = 24
 ): CostSeries {
-  const { bucketMs, bucketCount, earliestTime, labels, lastBucketTime, seriesCacheKey } =
-    createAnalysisTimeBuckets(hourWindow);
-  const usageCacheKey = getObjectCacheKey(usageData);
-  const pricesCacheKey = getObjectCacheKey(modelPrices);
-  if (usageCacheKey && pricesCacheKey) {
-    const cached = getCachedNestedMapValue(
-      hourlyCostSeriesCache,
-      usageCacheKey,
-      pricesCacheKey,
-      seriesCacheKey
-    );
-    if (cached) {
-      return cached;
+  const priceFingerprint = getModelPricesFingerprint(modelPrices);
+  const currentHourBucket = getCurrentHourCacheBucket();
+  return getCachedUsageDerivedValue(
+    usageData,
+    `costSeries:hour:${hourWindow}:${priceFingerprint}:${currentHourBucket}`,
+    () => {
+      const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+      const costBasisRoot =
+        aggregatedWindow && isRecord(aggregatedWindow.cost_basis) ? aggregatedWindow.cost_basis : null;
+      const costBasis =
+        costBasisRoot && isRecord(costBasisRoot.hour)
+          ? (costBasisRoot.hour as AggregatedCostBasisSeriesRecord)
+          : null;
+      if (costBasis) {
+        const timestamps = parseTimestampArray(costBasis.timestamps);
+        const labels = timestamps.map((item) => formatHourLabel(new Date(item)));
+        const data = new Array(labels.length).fill(0);
+        let hasData = false;
+
+        if (isRecord(costBasis.models)) {
+          Object.entries(costBasis.models).forEach(([modelName, rawSeries]) => {
+            if (!isRecord(rawSeries)) {
+              return;
+            }
+            const input = parseNumberArray(rawSeries.input);
+            const output = parseNumberArray(rawSeries.output);
+            const cached = parseNumberArray(rawSeries.cached);
+            for (let idx = 0; idx < labels.length; idx += 1) {
+              const cost = calculateCostFromTokenBreakdown(
+                modelName,
+                {
+                  input_tokens: input[idx] ?? 0,
+                  output_tokens: output[idx] ?? 0,
+                  cached_tokens: cached[idx] ?? 0,
+                },
+                modelPrices
+              );
+              if (cost > 0) {
+                data[idx] += cost;
+                hasData = true;
+              }
+            }
+          });
+        }
+
+        return { labels, data, hasData };
+      }
+
+      const hourMs = 60 * 60 * 1000;
+      const resolvedHourWindow =
+        Number.isFinite(hourWindow) && hourWindow > 0
+          ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
+          : 24;
+      const now = new Date();
+      const currentHour = new Date(now);
+      currentHour.setMinutes(0, 0, 0);
+
+      const earliestBucket = new Date(currentHour);
+      earliestBucket.setHours(earliestBucket.getHours() - (resolvedHourWindow - 1));
+      const earliestTime = earliestBucket.getTime();
+
+      const labels: string[] = [];
+      for (let i = 0; i < resolvedHourWindow; i++) {
+        labels.push(formatHourLabel(new Date(earliestTime + i * hourMs)));
+      }
+
+      const data = new Array(labels.length).fill(0);
+      const details = collectUsageDetails(usageData);
+      let hasData = false;
+
+      details.forEach((detail) => {
+        const timestamp =
+          typeof detail.__timestampMs === 'number'
+            ? detail.__timestampMs
+            : Date.parse(detail.timestamp);
+        if (!Number.isFinite(timestamp) || timestamp <= 0) return;
+        const normalized = new Date(timestamp);
+        normalized.setMinutes(0, 0, 0);
+        const bucketStart = normalized.getTime();
+        const lastBucketTime = earliestTime + (labels.length - 1) * hourMs;
+        if (bucketStart < earliestTime || bucketStart > lastBucketTime) return;
+        const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
+        if (bucketIndex < 0 || bucketIndex >= labels.length) return;
+
+        const cost = calculateCost(detail, modelPrices);
+        if (cost > 0) {
+          data[bucketIndex] += cost;
+          hasData = true;
+        }
+      });
+
+      return { labels, data, hasData };
     }
-  }
-  const data = new Array(bucketCount).fill(0);
-  const details = collectUsageDetails(usageData);
-  let hasData = false;
-
-  details.forEach((detail) => {
-    const timestamp =
-      typeof detail.__timestampMs === 'number'
-        ? detail.__timestampMs
-        : Date.parse(detail.timestamp);
-    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
-    const bucketIndex = resolveBucketIndex(
-      timestamp,
-      earliestTime,
-      lastBucketTime,
-      bucketMs,
-      bucketCount
-    );
-    if (bucketIndex < 0) return;
-
-    const cost = calculateCost(detail, modelPrices);
-    if (cost > 0) {
-      data[bucketIndex] += cost;
-      hasData = true;
-    }
-  });
-
-  const result = { labels, data, hasData };
-  if (usageCacheKey && pricesCacheKey) {
-    return setCachedNestedMapValue(
-      hourlyCostSeriesCache,
-      usageCacheKey,
-      pricesCacheKey,
-      seriesCacheKey,
-      result
-    );
-  }
-  return result;
+  );
 }
 
 export interface LatencySeries {
@@ -2249,106 +2813,143 @@ export function buildHourlyLatencySeries(
   usageData: unknown,
   hourWindow: number = 24
 ): LatencySeries {
-  const { bucketMs, bucketCount, earliestTime, labels, lastBucketTime, seriesCacheKey } =
-    createAnalysisTimeBuckets(hourWindow);
-  const cacheKey = getObjectCacheKey(usageData);
-  if (cacheKey) {
-    const cached = getCachedMapValue(hourlyLatencySeriesCache, cacheKey, seriesCacheKey);
-    if (cached) {
-      return cached;
+  const currentHourBucket = getCurrentHourCacheBucket();
+  return getCachedUsageDerivedValue(
+    usageData,
+    `latencySeries:hour:${hourWindow}:${currentHourBucket}`,
+    () => {
+      const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+      const latencySeriesRoot =
+        aggregatedWindow && isRecord(aggregatedWindow.latency_series)
+          ? aggregatedWindow.latency_series
+          : null;
+      const latencySeries =
+        latencySeriesRoot && isRecord(latencySeriesRoot.hour)
+          ? (latencySeriesRoot.hour as AggregatedLatencySeriesRecord)
+          : null;
+      if (latencySeries) {
+        const timestamps = parseTimestampArray(latencySeries.timestamps);
+        const labels = timestamps.map((item) => formatHourLabel(new Date(item)));
+        const data = parseNullableNumberArray(latencySeries.values);
+        return {
+          labels,
+          data,
+          hasData: data.some((value) => typeof value === 'number' && Number.isFinite(value))
+        };
+      }
+
+      const hourMs = 60 * 60 * 1000;
+      const resolvedHourWindow =
+        Number.isFinite(hourWindow) && hourWindow > 0
+          ? Math.min(Math.max(Math.floor(hourWindow), 1), 24 * 31)
+          : 24;
+      const now = new Date();
+      const currentHour = new Date(now);
+      currentHour.setMinutes(0, 0, 0);
+
+      const earliestBucket = new Date(currentHour);
+      earliestBucket.setHours(earliestBucket.getHours() - (resolvedHourWindow - 1));
+      const earliestTime = earliestBucket.getTime();
+
+      const labels: string[] = [];
+      for (let i = 0; i < resolvedHourWindow; i++) {
+        labels.push(formatHourLabel(new Date(earliestTime + i * hourMs)));
+      }
+
+      const latencySums = new Array(labels.length).fill(0);
+      const latencyCounts = new Array(labels.length).fill(0);
+      const details = collectUsageDetails(usageData);
+      let hasData = false;
+
+      details.forEach((detail) => {
+        const latencyMs = extractLatencyMs(detail);
+        if (latencyMs === null) return;
+
+        const timestamp =
+          typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+        if (!Number.isFinite(timestamp) || timestamp <= 0) return;
+        const normalized = new Date(timestamp);
+        normalized.setMinutes(0, 0, 0);
+        const bucketStart = normalized.getTime();
+        const lastBucketTime = earliestTime + (labels.length - 1) * hourMs;
+        if (bucketStart < earliestTime || bucketStart > lastBucketTime) return;
+        const bucketIndex = Math.floor((bucketStart - earliestTime) / hourMs);
+        if (bucketIndex < 0 || bucketIndex >= labels.length) return;
+
+        latencySums[bucketIndex] += latencyMs;
+        latencyCounts[bucketIndex] += 1;
+        hasData = true;
+      });
+
+      return {
+        labels,
+        data: latencySums.map((sum, index) =>
+          latencyCounts[index] > 0 ? Number((sum / latencyCounts[index]).toFixed(2)) : null
+        ),
+        hasData
+      };
     }
-  }
-  const latencySums = new Array(bucketCount).fill(0);
-  const latencyCounts = new Array(bucketCount).fill(0);
-  const details = collectUsageDetails(usageData);
-  let hasData = false;
-
-  details.forEach((detail) => {
-    const latencyMs = extractLatencyMs(detail);
-    if (latencyMs === null) return;
-
-    const timestamp =
-      typeof detail.__timestampMs === 'number'
-        ? detail.__timestampMs
-        : Date.parse(detail.timestamp);
-    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
-    const bucketIndex = resolveBucketIndex(
-      timestamp,
-      earliestTime,
-      lastBucketTime,
-      bucketMs,
-      bucketCount
-    );
-    if (bucketIndex < 0) return;
-
-    latencySums[bucketIndex] += latencyMs;
-    latencyCounts[bucketIndex] += 1;
-    hasData = true;
-  });
-
-  const result = {
-    labels,
-    data: latencySums.map((sum, index) =>
-      latencyCounts[index] > 0 ? Number((sum / latencyCounts[index]).toFixed(2)) : null
-    ),
-    hasData,
-  };
-  if (cacheKey) {
-    return setCachedMapValue(hourlyLatencySeriesCache, cacheKey, seriesCacheKey, result);
-  }
-  return result;
+  );
 }
 
 /**
  * 按天构建平均延迟时间序列
  */
 export function buildDailyLatencySeries(usageData: unknown): LatencySeries {
-  const cacheKey = getObjectCacheKey(usageData);
-  if (cacheKey) {
-    const cached = dailyLatencySeriesCache.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
-  }
-
-  const details = collectUsageDetails(usageData);
-  const dayMap: Record<string, { sum: number; count: number }> = {};
-  let hasData = false;
-
-  details.forEach((detail) => {
-    const latencyMs = extractLatencyMs(detail);
-    if (latencyMs === null) return;
-
-    const timestamp =
-      typeof detail.__timestampMs === 'number'
-        ? detail.__timestampMs
-        : Date.parse(detail.timestamp);
-    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
-    const dayLabel = formatDayLabel(new Date(timestamp));
-    if (!dayLabel) return;
-
-    if (!dayMap[dayLabel]) {
-      dayMap[dayLabel] = { sum: 0, count: 0 };
+  return getCachedUsageDerivedValue(usageData, 'latencySeries:day', () => {
+    const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+    const latencySeriesRoot =
+      aggregatedWindow && isRecord(aggregatedWindow.latency_series)
+        ? aggregatedWindow.latency_series
+        : null;
+    const latencySeries =
+      latencySeriesRoot && isRecord(latencySeriesRoot.day)
+        ? (latencySeriesRoot.day as AggregatedLatencySeriesRecord)
+        : null;
+    if (latencySeries) {
+      const timestamps = parseTimestampArray(latencySeries.timestamps);
+      const labels = timestamps.map((item) => formatDayLabel(new Date(item)));
+      const data = parseNullableNumberArray(latencySeries.values);
+      return {
+        labels,
+        data,
+        hasData: data.some((value) => typeof value === 'number' && Number.isFinite(value))
+      };
     }
 
-    dayMap[dayLabel].sum += latencyMs;
-    dayMap[dayLabel].count += 1;
-    hasData = true;
+    const details = collectUsageDetails(usageData);
+    const dayMap: Record<string, { sum: number; count: number }> = {};
+    let hasData = false;
+
+    details.forEach((detail) => {
+      const latencyMs = extractLatencyMs(detail);
+      if (latencyMs === null) return;
+
+      const timestamp =
+        typeof detail.__timestampMs === 'number' ? detail.__timestampMs : Date.parse(detail.timestamp);
+      if (!Number.isFinite(timestamp) || timestamp <= 0) return;
+      const dayLabel = formatDayLabel(new Date(timestamp));
+      if (!dayLabel) return;
+
+      if (!dayMap[dayLabel]) {
+        dayMap[dayLabel] = { sum: 0, count: 0 };
+      }
+
+      dayMap[dayLabel].sum += latencyMs;
+      dayMap[dayLabel].count += 1;
+      hasData = true;
+    });
+
+    const labels = Object.keys(dayMap).sort();
+    return {
+      labels,
+      data: labels.map((label) => {
+        const bucket = dayMap[label];
+        return bucket.count > 0 ? Number((bucket.sum / bucket.count).toFixed(2)) : null;
+      }),
+      hasData
+    };
   });
-
-  const labels = Object.keys(dayMap).sort();
-  const result = {
-    labels,
-    data: labels.map((label) => {
-      const bucket = dayMap[label];
-      return bucket.count > 0 ? Number((bucket.sum / bucket.count).toFixed(2)) : null;
-    }),
-    hasData,
-  };
-  if (cacheKey) {
-    dailyLatencySeriesCache.set(cacheKey, result);
-  }
-  return result;
 }
 
 /**
@@ -2358,41 +2959,73 @@ export function buildDailyCostSeries(
   usageData: unknown,
   modelPrices: Record<string, ModelPrice>
 ): CostSeries {
-  const usageCacheKey = getObjectCacheKey(usageData);
-  const pricesCacheKey = getObjectCacheKey(modelPrices);
-  if (usageCacheKey && pricesCacheKey) {
-    const cached = getCachedNestedValue(dailyCostSeriesCache, usageCacheKey, pricesCacheKey);
-    if (cached) {
-      return cached;
+  const priceFingerprint = getModelPricesFingerprint(modelPrices);
+  return getCachedUsageDerivedValue(usageData, `costSeries:day:${priceFingerprint}`, () => {
+    const aggregatedWindow = getSelectedAggregatedWindow(usageData);
+    const costBasisRoot =
+      aggregatedWindow && isRecord(aggregatedWindow.cost_basis) ? aggregatedWindow.cost_basis : null;
+    const costBasis =
+      costBasisRoot && isRecord(costBasisRoot.day)
+        ? (costBasisRoot.day as AggregatedCostBasisSeriesRecord)
+        : null;
+    if (costBasis) {
+      const timestamps = parseTimestampArray(costBasis.timestamps);
+      const labels = timestamps.map((item) => formatDayLabel(new Date(item)));
+      const data = new Array(labels.length).fill(0);
+      let hasData = false;
+
+      if (isRecord(costBasis.models)) {
+        Object.entries(costBasis.models).forEach(([modelName, rawSeries]) => {
+          if (!isRecord(rawSeries)) {
+            return;
+          }
+          const input = parseNumberArray(rawSeries.input);
+          const output = parseNumberArray(rawSeries.output);
+          const cached = parseNumberArray(rawSeries.cached);
+          for (let idx = 0; idx < labels.length; idx += 1) {
+            const cost = calculateCostFromTokenBreakdown(
+              modelName,
+              {
+                input_tokens: input[idx] ?? 0,
+                output_tokens: output[idx] ?? 0,
+                cached_tokens: cached[idx] ?? 0,
+              },
+              modelPrices
+            );
+            if (cost > 0) {
+              data[idx] += cost;
+              hasData = true;
+            }
+          }
+        });
+      }
+
+      return { labels, data, hasData };
     }
-  }
 
-  const details = collectUsageDetails(usageData);
-  const dayMap: Record<string, number> = {};
-  let hasData = false;
+    const details = collectUsageDetails(usageData);
+    const dayMap: Record<string, number> = {};
+    let hasData = false;
 
-  details.forEach((detail) => {
-    const timestamp =
-      typeof detail.__timestampMs === 'number'
-        ? detail.__timestampMs
-        : Date.parse(detail.timestamp);
-    if (!Number.isFinite(timestamp) || timestamp <= 0) return;
-    const dayLabel = formatDayLabel(new Date(timestamp));
-    if (!dayLabel) return;
+    details.forEach((detail) => {
+      const timestamp =
+        typeof detail.__timestampMs === 'number'
+          ? detail.__timestampMs
+          : Date.parse(detail.timestamp);
+      if (!Number.isFinite(timestamp) || timestamp <= 0) return;
+      const dayLabel = formatDayLabel(new Date(timestamp));
+      if (!dayLabel) return;
 
-    const cost = calculateCost(detail, modelPrices);
-    if (cost > 0) {
-      dayMap[dayLabel] = (dayMap[dayLabel] || 0) + cost;
-      hasData = true;
-    }
+      const cost = calculateCost(detail, modelPrices);
+      if (cost > 0) {
+        dayMap[dayLabel] = (dayMap[dayLabel] || 0) + cost;
+        hasData = true;
+      }
+    });
+
+    const labels = Object.keys(dayMap).sort();
+    const data = labels.map((l) => dayMap[l]);
+
+    return { labels, data, hasData };
   });
-
-  const labels = Object.keys(dayMap).sort();
-  const data = labels.map((l) => dayMap[l]);
-
-  const result = { labels, data, hasData };
-  if (usageCacheKey && pricesCacheKey) {
-    return setCachedNestedValue(dailyCostSeriesCache, usageCacheKey, pricesCacheKey, result);
-  }
-  return result;
 }

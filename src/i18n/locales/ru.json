@@ -205,6 +205,10 @@
   },
   "ai_providers": {
     "title": "Конфигурация AI-провайдеров",
+    "page_eyebrow": "Маршрутизация апстримов и покрытие моделей",
+    "page_description": "Управляйте ключами, апстрим-адресами и покрытием моделей для Gemini, Codex, Claude, Vertex и OpenAI-совместимых провайдеров в одном месте.",
+    "page_meta_configured": "Настроено: {{count}}",
+    "page_meta_enabled": "Включено: {{count}}",
     "gemini_title": "API-ключи Gemini",
     "gemini_add_button": "Добавить ключ",
     "gemini_empty_title": "Ключи Gemini отсутствуют",

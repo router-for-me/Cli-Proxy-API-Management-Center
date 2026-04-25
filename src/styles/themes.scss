@@ -30,6 +30,8 @@
   --primary-hover: #7f7a74;
   --primary-active: #726d67;
   --primary-contrast: #ffffff;
+  --primary-soft: rgba(139, 134, 128, 0.14);
+  --focus-ring: rgba(139, 134, 128, 0.2);
 
   --success-color: #10b981;
   --quota-medium-color: #e0aa14;
@@ -55,9 +57,32 @@
 
   --shadow: 0 1px 2px 0 rgb(0 0 0 / 0.08);
   --shadow-lg: 0 10px 18px -3px rgb(0 0 0 / 0.1);
+  --shadow-soft: 0 18px 45px rgba(37, 31, 26, 0.08);
+  --header-shadow: 0 10px 30px rgba(37, 31, 26, 0.06);
+  --sidebar-shadow: 0 14px 36px rgba(37, 31, 26, 0.08);
 
   --radius-md: 8px;
   --accent-tertiary: var(--bg-tertiary);
+  --surface-raised: color-mix(in srgb, #ffffff 58%, var(--bg-primary));
+  --surface-raised-strong: color-mix(in srgb, #ffffff 72%, var(--bg-primary));
+  --surface-overlay: color-mix(in srgb, var(--bg-primary) 84%, transparent);
+  --surface-hero: linear-gradient(
+    140deg,
+    color-mix(in srgb, #ffffff 72%, var(--bg-primary)),
+    color-mix(in srgb, var(--bg-secondary) 92%, transparent)
+  );
+  --bg-canvas:
+    radial-gradient(
+      960px circle at top right,
+      color-mix(in srgb, var(--primary-color) 11%, transparent),
+      transparent 36%
+    ),
+    radial-gradient(
+      760px circle at bottom left,
+      color-mix(in srgb, var(--success-color) 7%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(180deg, #fcfbf8 0%, #f7f4ee 100%);
 
   // Glass effect (blurred surfaces)
   --glass-blur: 12px;
@@ -95,6 +120,8 @@
   --primary-hover: #7f7a74;
   --primary-active: #726d67;
   --primary-contrast: #ffffff;
+  --primary-soft: rgba(139, 134, 128, 0.12);
+  --focus-ring: rgba(139, 134, 128, 0.18);
 
   --success-color: #10b981;
   --quota-medium-color: #e0aa14;
@@ -120,9 +147,32 @@
 
   --shadow: 0 1px 2px 0 rgb(0 0 0 / 0.08);
   --shadow-lg: 0 10px 18px -3px rgb(0 0 0 / 0.1);
+  --shadow-soft: 0 18px 45px rgba(22, 18, 15, 0.08);
+  --header-shadow: 0 10px 30px rgba(22, 18, 15, 0.05);
+  --sidebar-shadow: 0 14px 36px rgba(22, 18, 15, 0.08);
 
   --radius-md: 8px;
   --accent-tertiary: var(--bg-tertiary);
+  --surface-raised: color-mix(in srgb, #ffffff 68%, var(--bg-primary));
+  --surface-raised-strong: color-mix(in srgb, #ffffff 84%, var(--bg-primary));
+  --surface-overlay: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  --surface-hero: linear-gradient(
+    140deg,
+    color-mix(in srgb, #ffffff 84%, var(--bg-primary)),
+    color-mix(in srgb, var(--bg-secondary) 96%, transparent)
+  );
+  --bg-canvas:
+    radial-gradient(
+      960px circle at top right,
+      color-mix(in srgb, var(--primary-color) 10%, transparent),
+      transparent 36%
+    ),
+    radial-gradient(
+      760px circle at bottom left,
+      color-mix(in srgb, var(--success-color) 6%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #f7f5f0 100%);
 }
 
 // 深色主题（#191919）
@@ -153,6 +203,8 @@
   --primary-hover: #9a948e;
   --primary-active: #a6a099;
   --primary-contrast: #ffffff;
+  --primary-soft: rgba(166, 160, 153, 0.14);
+  --focus-ring: rgba(166, 160, 153, 0.22);
 
   --success-color: #10b981;
   --quota-medium-color: #ffd862;
@@ -178,9 +230,32 @@
 
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+  --shadow-soft: 0 20px 50px rgba(0, 0, 0, 0.34);
+  --header-shadow: 0 16px 34px rgba(0, 0, 0, 0.3);
+  --sidebar-shadow: 0 18px 36px rgba(0, 0, 0, 0.34);
 
   --radius-md: 8px;
   --accent-tertiary: var(--bg-tertiary);
+  --surface-raised: color-mix(in srgb, #22201d 68%, var(--bg-primary));
+  --surface-raised-strong: color-mix(in srgb, #2a2723 82%, var(--bg-primary));
+  --surface-overlay: color-mix(in srgb, var(--bg-primary) 86%, transparent);
+  --surface-hero: linear-gradient(
+    145deg,
+    color-mix(in srgb, #25221f 82%, var(--bg-primary)),
+    color-mix(in srgb, #171513 92%, transparent)
+  );
+  --bg-canvas:
+    radial-gradient(
+      960px circle at top right,
+      color-mix(in srgb, var(--primary-color) 12%, transparent),
+      transparent 34%
+    ),
+    radial-gradient(
+      760px circle at bottom left,
+      color-mix(in srgb, var(--success-color) 7%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(180deg, #171614 0%, #12110f 100%);
 
   --glass-border: color-mix(in srgb, var(--border-color) 55%, transparent);
 }

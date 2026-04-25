@@ -38,6 +38,39 @@ export interface UseSparklinesReturn {
 export function useSparklines({ usage, loading, nowMs }: UseSparklinesOptions): UseSparklinesReturn {
   const lastHourSeries = useMemo(() => {
     if (!usage) return { labels: [], requests: [], tokens: [] };
+
+    const aggregatedWindow = (usage as Record<string, unknown>).__aggregatedWindow;
+    if (aggregatedWindow && typeof aggregatedWindow === 'object') {
+      const sparklines =
+        (aggregatedWindow as { sparklines?: Record<string, unknown> }).sparklines ?? null;
+      if (sparklines && typeof sparklines === 'object') {
+        const timestamps = Array.isArray(sparklines.timestamps)
+          ? sparklines.timestamps
+              .map((item) => (typeof item === 'string' ? item : ''))
+              .filter(Boolean)
+          : [];
+        const labels = timestamps.map((item) => {
+          const date = new Date(item);
+          const h = date.getHours().toString().padStart(2, '0');
+          const m = date.getMinutes().toString().padStart(2, '0');
+          return `${h}:${m}`;
+        });
+        const requests = Array.isArray(sparklines.requests)
+          ? sparklines.requests.map((item) => {
+              const num = Number(item);
+              return Number.isFinite(num) ? num : 0;
+            })
+          : [];
+        const tokens = Array.isArray(sparklines.tokens)
+          ? sparklines.tokens.map((item) => {
+              const num = Number(item);
+              return Number.isFinite(num) ? num : 0;
+            })
+          : [];
+        return { labels, requests, tokens };
+      }
+    }
+
     if (!Number.isFinite(nowMs) || nowMs <= 0) {
       return { labels: [], requests: [], tokens: [] };
     }

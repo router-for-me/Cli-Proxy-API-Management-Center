@@ -205,6 +205,10 @@
   },
   "ai_providers": {
     "title": "AI Providers Configuration",
+    "page_eyebrow": "Upstream routing and model coverage",
+    "page_description": "Manage keys, upstream endpoints, and model coverage for Gemini, Codex, Claude, Vertex, and OpenAI-compatible providers in one place.",
+    "page_meta_configured": "{{count}} configured",
+    "page_meta_enabled": "{{count}} enabled",
     "gemini_title": "Gemini API Keys",
     "gemini_add_button": "Add Key",
     "gemini_empty_title": "No Gemini Keys",

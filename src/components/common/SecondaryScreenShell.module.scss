@@ -3,29 +3,33 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
   min-height: 0;
 }
 
 .topBar {
   position: sticky;
-  top: 0;
+  top: 8px;
   z-index: 5;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: $spacing-md;
-  padding: $spacing-sm $spacing-md;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  min-height: 44px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--surface-overlay) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 74%, transparent);
+  border-radius: 18px;
+  min-height: 52px;
+  box-shadow: var(--shadow);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
 }
 
 .topBarTitle {
   min-width: 0;
   text-align: center;
-  font-size: 16px;
-  font-weight: 650;
+  font-size: 17px;
+  font-weight: 700;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -65,6 +69,7 @@
   justify-self: end;
   display: flex;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .loadingState {
@@ -80,6 +85,7 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+  padding-top: 4px;
 }
 
 .contentWithFloatingAction {
@@ -107,11 +113,11 @@
   padding: 10px 12px;
   border-radius: 999px;
   --glass-blur: 12px;
-  background: var(--glass-bg);
+  background: color-mix(in srgb, var(--surface-overlay) 90%, transparent);
   backdrop-filter: var(--glass-backdrop-filter);
   -webkit-backdrop-filter: var(--glass-backdrop-filter);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  box-shadow: var(--shadow-soft);
 }
 
 :global([data-theme='dark']) {

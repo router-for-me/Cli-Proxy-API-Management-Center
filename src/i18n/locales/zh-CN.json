@@ -205,6 +205,10 @@
   },
   "ai_providers": {
     "title": "AI 提供商配置",
+    "page_eyebrow": "上游路由与模型覆盖",
+    "page_description": "集中管理 Gemini、Codex、Claude、Vertex 与 OpenAI 兼容提供商的密钥、上游地址和模型覆盖状态。",
+    "page_meta_configured": "已配置 {{count}} 项",
+    "page_meta_enabled": "启用中 {{count}} 项",
     "gemini_title": "Gemini API 密钥",
     "gemini_add_button": "添加密钥",
     "gemini_empty_title": "暂无Gemini密钥",

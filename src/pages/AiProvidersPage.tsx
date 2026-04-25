@@ -12,6 +12,7 @@ import {
   useProviderStats,
 } from '@/components/providers';
 import {
+  hasDisableAllModelsRule,
   withDisableAllModelsRule,
   withoutDisableAllModelsRule,
 } from '@/components/providers/utils';
@@ -60,6 +61,18 @@ export function AiProvidersPage() {
 
   const disableControls = connectionStatus !== 'connected';
   const isSwitching = Boolean(configSwitchingKey);
+  const totalConfiguredEntries =
+    geminiKeys.length +
+    codexConfigs.length +
+    claudeConfigs.length +
+    vertexConfigs.length +
+    openaiProviders.length;
+  const enabledConfiguredEntries =
+    geminiKeys.filter((item) => !hasDisableAllModelsRule(item.excludedModels)).length +
+    codexConfigs.filter((item) => !hasDisableAllModelsRule(item.excludedModels)).length +
+    claudeConfigs.filter((item) => !hasDisableAllModelsRule(item.excludedModels)).length +
+    vertexConfigs.filter((item) => !hasDisableAllModelsRule(item.excludedModels)).length +
+    openaiProviders.length;
 
   const pageTransitionLayer = usePageTransitionLayer();
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
@@ -337,11 +350,43 @@ export function AiProvidersPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
-      <div className={styles.content}>
-        {error && <div className="error-box">{error}</div>}
+      <section className={styles.pageHeader}>
+        <div className={styles.pageHeaderCopy}>
+          <span className={styles.pageEyebrow}>{t('ai_providers.page_eyebrow')}</span>
+          <div className={styles.pageTitleBlock}>
+            <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
+            <p className={styles.pageDescription}>{t('ai_providers.page_description')}</p>
+          </div>
+        </div>
+        <div className={styles.pageMeta}>
+          <div className={styles.statusBadge}>
+            {t(
+              connectionStatus === 'connected'
+                ? 'common.connected_status'
+                : connectionStatus === 'connecting'
+                  ? 'common.connecting_status'
+                  : 'common.disconnected_status'
+            )}
+          </div>
+          <div className={styles.metaCard}>
+            <span className={styles.metaValue}>{totalConfiguredEntries}</span>
+            <span className={styles.metaLabel}>
+              {t('ai_providers.page_meta_configured', { count: totalConfiguredEntries })}
+            </span>
+          </div>
+          <div className={styles.metaCard}>
+            <span className={styles.metaValue}>{enabledConfiguredEntries}</span>
+            <span className={styles.metaLabel}>
+              {t('ai_providers.page_meta_enabled', { count: enabledConfiguredEntries })}
+            </span>
+          </div>
+        </div>
+      </section>
 
-        <div id="provider-gemini">
+      <div className={styles.content}>
+        {error && <div className={styles.errorBanner}>{error}</div>}
+
+        <div id="provider-gemini" className={styles.providerSectionAnchor}>
           <GeminiSection
             configs={geminiKeys}
             keyStats={keyStats}
@@ -356,7 +401,7 @@ export function AiProvidersPage() {
           />
         </div>
 
-        <div id="provider-codex">
+        <div id="provider-codex" className={styles.providerSectionAnchor}>
           <CodexSection
             configs={codexConfigs}
             keyStats={keyStats}
@@ -371,7 +416,7 @@ export function AiProvidersPage() {
           />
         </div>
 
-        <div id="provider-claude">
+        <div id="provider-claude" className={styles.providerSectionAnchor}>
           <ClaudeSection
             configs={claudeConfigs}
             keyStats={keyStats}
@@ -386,7 +431,7 @@ export function AiProvidersPage() {
           />
         </div>
 
-        <div id="provider-vertex">
+        <div id="provider-vertex" className={styles.providerSectionAnchor}>
           <VertexSection
             configs={vertexConfigs}
             keyStats={keyStats}
@@ -401,7 +446,7 @@ export function AiProvidersPage() {
           />
         </div>
 
-        <div id="provider-ampcode">
+        <div id="provider-ampcode" className={styles.providerSectionAnchor}>
           <AmpcodeSection
             config={config?.ampcode}
             loading={loading}
@@ -411,7 +456,7 @@ export function AiProvidersPage() {
           />
         </div>
 
-        <div id="provider-openai">
+        <div id="provider-openai" className={styles.providerSectionAnchor}>
           <OpenAISection
             configs={openaiProviders}
             keyStats={keyStats}

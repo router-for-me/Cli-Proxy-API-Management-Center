@@ -9,10 +9,44 @@
 @use './components.scss';
 @use './layout.scss';
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  background: var(--bg-secondary);
+}
+
 body {
+  min-width: 320px;
+  font-family: $font-family;
+  line-height: 1.5;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   transition: background-color $transition-normal, color $transition-normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary-color) 22%, transparent);
+  color: var(--text-primary);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 @media (prefers-reduced-motion: reduce) {

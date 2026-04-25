@@ -3,7 +3,13 @@
 .container {
   min-height: 100vh;
   display: flex;
-  background: var(--bg-secondary);
+  background:
+    radial-gradient(
+      900px circle at right top,
+      color-mix(in srgb, var(--primary-color) 10%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(180deg, var(--bg-secondary) 0%, color-mix(in srgb, var(--bg-primary) 84%, white) 100%);
 
   @media (max-width: $breakpoint-mobile) {
     display: block;
@@ -99,7 +105,20 @@
   align-items: center;
   justify-content: center;
   padding: clamp(36px, 5vw, 72px);
-  background: var(--bg-secondary);
+  background: transparent;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: auto auto 14% 12%;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--success-color) 10%, transparent);
+    filter: blur(36px);
+    pointer-events: none;
+  }
 
   @media (max-width: $breakpoint-mobile) {
     min-height: 100vh;
@@ -117,6 +136,8 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
+  position: relative;
+  z-index: 1;
 }
 
 .logoBadge {
@@ -181,6 +202,7 @@
   font-size: 24px;
   font-weight: 800;
   color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
@@ -201,13 +223,16 @@
   gap: 6px;
   padding: 14px 16px;
   border-radius: $radius-md;
-  border: 1px dashed var(--border-color);
-  background: var(--bg-secondary);
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
 
   .label {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 
   .value {

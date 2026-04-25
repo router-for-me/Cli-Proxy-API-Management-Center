@@ -287,9 +287,10 @@ export function ProviderNav() {
             >
               <img
                 src={provider.getIcon(resolvedTheme)}
-                alt={provider.label}
+                alt=""
                 className={styles.icon}
               />
+              <span className={styles.label}>{provider.label}</span>
             </button>
           );
         })}

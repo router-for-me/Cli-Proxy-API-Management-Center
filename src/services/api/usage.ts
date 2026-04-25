@@ -45,6 +45,9 @@ export const usageApi = {
    */
   getUsage: () => apiClient.get<Record<string, unknown>>('/usage', { timeout: USAGE_TIMEOUT_MS }),
 
+  getAggregatedUsage: () =>
+    apiClient.get<Record<string, unknown>>('/usage/aggregated', { timeout: USAGE_TIMEOUT_MS }),
+
   /**
    * 获取包含请求明细的使用统计
    */

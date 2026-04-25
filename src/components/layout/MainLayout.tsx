@@ -226,11 +226,9 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
-  const [brandExpanded, setBrandExpanded] = useState(true);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const languageMenuRef = useRef<HTMLDivElement | null>(null);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
-  const brandCollapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
 
   const fullBrandName = 'CLI Proxy API Management Center';
@@ -298,19 +296,6 @@ export function MainLayout() {
     };
   }, []);
 
-  // 5秒后自动收起品牌名称
-  useEffect(() => {
-    brandCollapseTimer.current = setTimeout(() => {
-      setBrandExpanded(false);
-    }, 5000);
-
-    return () => {
-      if (brandCollapseTimer.current) {
-        clearTimeout(brandCollapseTimer.current);
-      }
-    };
-  }, []);
-
   useEffect(() => {
     if (!languageMenuOpen) {
       return;
@@ -362,19 +347,6 @@ export function MainLayout() {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [themeMenuOpen]);
-
-  const handleBrandClick = useCallback(() => {
-    if (!brandExpanded) {
-      setBrandExpanded(true);
-      // 点击展开后，5秒后再次收起
-      if (brandCollapseTimer.current) {
-        clearTimeout(brandCollapseTimer.current);
-      }
-      brandCollapseTimer.current = setTimeout(() => {
-        setBrandExpanded(false);
-      }, 5000);
-    }
-  }, [brandExpanded]);
 
   const toggleLanguageMenu = useCallback(() => {
     setLanguageMenuOpen((prev) => !prev);
@@ -535,9 +507,13 @@ export function MainLayout() {
           </button>
           <img src={INLINE_LOGO_JPEG} alt="CPAMC logo" className="brand-logo" />
           <div
-            className={`brand-header ${brandExpanded ? 'expanded' : 'collapsed'}`}
-            onClick={handleBrandClick}
-            title={brandExpanded ? undefined : fullBrandName}
+            className={`brand-header ${sidebarCollapsed ? 'collapsed' : 'expanded'}`}
+            onClick={() => {
+              if (sidebarCollapsed) {
+                setSidebarCollapsed(false);
+              }
+            }}
+            title={sidebarCollapsed ? fullBrandName : undefined}
           >
             <span className="brand-full">{fullBrandName}</span>
             <span className="brand-abbr">{abbrBrandName}</span>

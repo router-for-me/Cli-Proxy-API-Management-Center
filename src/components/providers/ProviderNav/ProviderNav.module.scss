@@ -18,12 +18,12 @@
   gap: 6px;
   padding: 10px 12px;
   --glass-blur: 12px;
-  background: var(--glass-bg);
+  background: color-mix(in srgb, var(--surface-overlay) 88%, transparent);
   backdrop-filter: var(--glass-backdrop-filter);
   -webkit-backdrop-filter: var(--glass-backdrop-filter);
-  border: 1px solid var(--glass-border);
+  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
   border-radius: 999px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-soft);
   overflow-x: auto;
   scrollbar-width: none;
   max-width: inherit;
@@ -63,9 +63,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
+  gap: 8px;
+  min-width: 40px;
   height: 40px;
-  padding: 0;
+  padding: 0 14px;
   border: none;
   background: transparent;
   border-radius: 999px;
@@ -96,6 +97,13 @@
   object-fit: contain;
 }
 
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
 .active {
   // Active highlight is rendered by the sliding indicator.
   background: transparent;
@@ -105,7 +113,7 @@
 // 暗色主题适配
 :global([data-theme='dark']) {
   .navList {
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-soft);
   }
 
   .indicator {
@@ -127,11 +135,16 @@
   .navItem {
     width: 36px;
     height: 36px;
+    padding: 0;
   }
 
   .icon {
     width: 22px;
     height: 22px;
+  }
+
+  .label {
+    display: none;
   }
 }
 

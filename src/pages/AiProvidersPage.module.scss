@@ -3,24 +3,171 @@
 
 .container {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
 }
 
-.cardTitle {
+.pageHeader {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) auto;
+  gap: 24px;
+  align-items: end;
+  padding: clamp(22px, 3vw, 30px);
+  border-radius: 28px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--primary-color) 14%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--bg-primary) 94%, transparent),
+      color-mix(in srgb, var(--bg-secondary) 96%, transparent)
+    );
+  box-shadow: var(--shadow-soft);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: min(280px, 48vw);
+    height: min(280px, 48vw);
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--primary-color) 12%, transparent),
+      transparent 70%
+    );
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  @include mobile {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 16px;
+  }
+}
+
+.pageHeaderCopy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pageEyebrow {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pageTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cardTitle,
+.pageTitle {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
 }
 
-.cardTitleIcon {
-  width: 24px;
-  height: 24px;
+.pageTitle {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 800;
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
 }
 
-.pageTitle {
-  font-size: 28px;
-  font-weight: 700;
+.pageDescription {
+  margin: 0;
+  max-width: 48rem;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.pageMeta {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  @include mobile {
+    justify-content: stretch;
+  }
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
   color: var(--text-primary);
-  margin: 0 0 $spacing-xl 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+
+  @include mobile {
+    width: 100%;
+  }
+}
+
+.metaCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 140px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  box-shadow: var(--shadow);
+
+  @include mobile {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.metaValue {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.metaLabel {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.cardTitleIcon {
+  width: 26px;
+  height: 26px;
 }
 
 .content {
@@ -30,6 +177,20 @@
   padding-bottom: calc(
     var(--provider-nav-height, 60px) + 12px + env(safe-area-inset-bottom) + #{$spacing-md}
   );
+}
+
+.errorBanner {
+  background: rgba($error-color, 0.08);
+  border: 1px solid rgba($error-color, 0.26);
+  border-radius: 16px;
+  padding: 14px 16px;
+  color: $error-color;
+  line-height: 1.6;
+  box-shadow: var(--shadow);
+}
+
+.providerSectionAnchor {
+  scroll-margin-top: 28px;
 }
 
 .section {
@@ -462,7 +623,7 @@
   gap: 8px;
   margin-top: 8px;
   padding: 8px 0;
-  max-width: 280px;
+  max-width: 320px;
 }
 
 .statusBlocks {
