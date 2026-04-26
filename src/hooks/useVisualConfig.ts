@@ -3,6 +3,7 @@ import { isMap, parse as parseYaml, parseDocument } from 'yaml';
 import type {
   PayloadFilterRule,
   PayloadParamEntry,
+  PayloadFilterParamEntry,
   PayloadParamValueType,
   PayloadRule,
   VisualConfigValues,
@@ -189,9 +190,13 @@ export function getPayloadParamValidationError(
 }
 
 function hasPayloadParamValidationErrors(rules: PayloadRule[]): boolean {
-  return rules.some((rule) =>
-    rule.params.some((param) => Boolean(getPayloadParamValidationError(param)))
-  );
+  return rules.some((rule) => {
+    if (rule.disabled) return false;
+
+    return rule.params.some(
+      (param) => !param.disabled && Boolean(getPayloadParamValidationError(param))
+    );
+  });
 }
 
 function deepClone<T>(value: T): T {
@@ -224,7 +229,13 @@ function arePayloadParamEntriesEqual(
     const a = left[i];
     const b = right[i];
     if (!a || !b) return false;
-    if (a.id !== b.id || a.path !== b.path || a.valueType !== b.valueType || a.value !== b.value) {
+    if (
+      a.id !== b.id ||
+      a.path !== b.path ||
+      a.valueType !== b.valueType ||
+      a.value !== b.value ||
+      Boolean(a.disabled) !== Boolean(b.disabled)
+    ) {
       return false;
     }
   }
@@ -238,9 +249,26 @@ function arePayloadRulesEqual(left: PayloadRule[], right: PayloadRule[]): boolea
     const a = left[i];
     const b = right[i];
     if (!a || !b) return false;
-    if (a.id !== b.id) return false;
+    if (a.id !== b.id || Boolean(a.disabled) !== Boolean(b.disabled)) return false;
     if (!arePayloadModelEntriesEqual(a.models, b.models)) return false;
     if (!arePayloadParamEntriesEqual(a.params, b.params)) return false;
+  }
+  return true;
+}
+
+function arePayloadFilterParamEntriesEqual(
+  left: PayloadFilterParamEntry[],
+  right: PayloadFilterParamEntry[]
+): boolean {
+  if (left === right) return true;
+  if (left.length !== right.length) return false;
+  for (let i = 0; i < left.length; i += 1) {
+    const a = left[i];
+    const b = right[i];
+    if (!a || !b) return false;
+    if (a.id !== b.id || a.path !== b.path || Boolean(a.disabled) !== Boolean(b.disabled)) {
+      return false;
+    }
   }
   return true;
 }
@@ -255,12 +283,9 @@ function arePayloadFilterRulesEqual(
     const a = left[i];
     const b = right[i];
     if (!a || !b) return false;
-    if (a.id !== b.id) return false;
+    if (a.id !== b.id || Boolean(a.disabled) !== Boolean(b.disabled)) return false;
     if (!arePayloadModelEntriesEqual(a.models, b.models)) return false;
-    if (a.params.length !== b.params.length) return false;
-    for (let j = 0; j < a.params.length; j += 1) {
-      if (a.params[j] !== b.params[j]) return false;
-    }
+    if (!arePayloadFilterParamEntriesEqual(a.params, b.params)) return false;
   }
   return true;
 }
@@ -314,6 +339,23 @@ function deleteLegacyApiKeysProvider(doc: YamlDocument): void {
   deleteIfMapEmpty(doc, ['auth']);
 }
 
+function parseDisabledParamSet(raw: unknown): Set<string> {
+  if (!Array.isArray(raw)) return new Set<string>();
+  return new Set(
+    raw
+      .map((item) => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+      .filter(Boolean)
+  );
+}
+
+export const __visualConfigTestUtils = {
+  hasPayloadParamValidationErrors,
+  parsePayloadRules,
+  parsePayloadFilterRules,
+  serializePayloadRulesForYaml,
+  serializePayloadFilterRulesForYaml,
+};
+
 function parsePayloadRules(rules: unknown): PayloadRule[] {
   if (!Array.isArray(rules)) return [];
 
@@ -335,20 +377,28 @@ function parsePayloadRules(rules: unknown): PayloadRule[] {
         })
       : [];
 
+    const disabledParams = parseDisabledParamSet(record['disabled-params']);
     const paramsRecord = asRecord(record.params);
     const params = paramsRecord
-      ? Object.entries(paramsRecord).map(([path, value], pIndex) => {
+      ? Object.entries(paramsRecord).map((entry, pIndex) => {
+          const [path, value] = entry;
           const parsedValue = parsePayloadParamValue(value);
           return {
             id: `param-${index}-${pIndex}`,
             path,
             valueType: parsedValue.valueType,
             value: parsedValue.value,
+            disabled: disabledParams.has(path.trim()),
           };
         })
       : [];
 
-    return { id: `payload-rule-${index}`, models, params };
+    return {
+      id: `payload-rule-${index}`,
+      disabled: Boolean(record.disabled),
+      models,
+      params,
+    };
   });
 }
 
@@ -373,10 +423,25 @@ function parsePayloadFilterRules(rules: unknown): PayloadFilterRule[] {
         })
       : [];
 
+    const disabledParams = parseDisabledParamSet(record['disabled-params']);
     const paramsRaw = record.params;
-    const params = Array.isArray(paramsRaw) ? paramsRaw.map(String) : [];
+    const params = Array.isArray(paramsRaw)
+      ? paramsRaw.map((path, paramIndex) => {
+          const normalizedPath = String(path ?? '');
+          return {
+            id: `filter-param-${index}-${paramIndex}`,
+            path: normalizedPath,
+            disabled: disabledParams.has(normalizedPath.trim()),
+          };
+        })
+      : [];
 
-    return { id: `payload-filter-rule-${index}`, models, params };
+    return {
+      id: `payload-filter-rule-${index}`,
+      disabled: Boolean(record.disabled),
+      models,
+      params,
+    };
   });
 }
 
@@ -401,17 +466,27 @@ function parseRawPayloadRules(rules: unknown): PayloadRule[] {
         })
       : [];
 
+    const disabledParams = parseDisabledParamSet(record['disabled-params']);
     const paramsRecord = asRecord(record.params);
     const params = paramsRecord
-      ? Object.entries(paramsRecord).map(([path, value], pIndex) => ({
-          id: `raw-param-${index}-${pIndex}`,
-          path,
-          valueType: 'json' as const,
-          value: parseRawPayloadParamValue(value),
-        }))
+      ? Object.entries(paramsRecord).map((entry, pIndex) => {
+          const [path, value] = entry;
+          return {
+            id: `raw-param-${index}-${pIndex}`,
+            path,
+            valueType: 'json' as const,
+            value: parseRawPayloadParamValue(value),
+            disabled: disabledParams.has(path.trim()),
+          };
+        })
       : [];
 
-    return { id: `payload-raw-rule-${index}`, models, params };
+    return {
+      id: `payload-raw-rule-${index}`,
+      disabled: Boolean(record.disabled),
+      models,
+      params,
+    };
   });
 }
 
@@ -427,8 +502,13 @@ function serializePayloadRulesForYaml(rules: PayloadRule[]): Array<Record<string
         });
 
       const params: Record<string, unknown> = {};
+      const disabledParams: string[] = [];
       for (const param of rule.params || []) {
-        if (!param.path?.trim()) continue;
+        const trimmedPath = param.path?.trim();
+        if (!trimmedPath) continue;
+        if (param.disabled) {
+          disabledParams.push(trimmedPath);
+        }
         let value: unknown = param.value;
         if (param.valueType === 'number') {
           const num = Number(param.value);
@@ -442,12 +522,15 @@ function serializePayloadRulesForYaml(rules: PayloadRule[]): Array<Record<string
             value = param.value;
           }
         }
-        params[param.path.trim()] = value;
+        params[trimmedPath] = value;
       }
 
-      return { models, params };
+      const nextRule: Record<string, unknown> = { models, params };
+      if (rule.disabled) nextRule.disabled = true;
+      if (disabledParams.length > 0) nextRule['disabled-params'] = disabledParams;
+      return nextRule;
     })
-    .filter((rule) => rule.models.length > 0);
+    .filter((rule) => Array.isArray(rule.models) && rule.models.length > 0);
 }
 
 function serializePayloadFilterRulesForYaml(
@@ -463,13 +546,23 @@ function serializePayloadFilterRulesForYaml(
           return obj;
         });
 
-      const params = (Array.isArray(rule.params) ? rule.params : [])
-        .map((path) => String(path).trim())
-        .filter(Boolean);
+      const params: string[] = [];
+      const disabledParams: string[] = [];
+      for (const param of Array.isArray(rule.params) ? rule.params : []) {
+        const trimmedPath = String(param.path ?? '').trim();
+        if (!trimmedPath) continue;
+        params.push(trimmedPath);
+        if (param.disabled) {
+          disabledParams.push(trimmedPath);
+        }
+      }
 
-      return { models, params };
+      const nextRule: Record<string, unknown> = { models, params };
+      if (rule.disabled) nextRule.disabled = true;
+      if (disabledParams.length > 0) nextRule['disabled-params'] = disabledParams;
+      return nextRule;
     })
-    .filter((rule) => rule.models.length > 0);
+    .filter((rule) => Array.isArray(rule.models) && rule.models.length > 0);
 }
 
 function serializeRawPayloadRulesForYaml(rules: PayloadRule[]): Array<Record<string, unknown>> {
@@ -484,14 +577,22 @@ function serializeRawPayloadRulesForYaml(rules: PayloadRule[]): Array<Record<str
         });
 
       const params: Record<string, unknown> = {};
+      const disabledParams: string[] = [];
       for (const param of rule.params || []) {
-        if (!param.path?.trim()) continue;
-        params[param.path.trim()] = param.value;
+        const trimmedPath = param.path?.trim();
+        if (!trimmedPath) continue;
+        if (param.disabled) {
+          disabledParams.push(trimmedPath);
+        }
+        params[trimmedPath] = param.value;
       }
 
-      return { models, params };
+      const nextRule: Record<string, unknown> = { models, params };
+      if (rule.disabled) nextRule.disabled = true;
+      if (disabledParams.length > 0) nextRule['disabled-params'] = disabledParams;
+      return nextRule;
     })
-    .filter((rule) => rule.models.length > 0);
+    .filter((rule) => Array.isArray(rule.models) && rule.models.length > 0);
 }
 
 type VisualConfigState = {

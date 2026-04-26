@@ -241,6 +241,10 @@ export function ConfigPage() {
       if (tab === activeTab) return;
 
       if (tab === 'source') {
+        if (visualHasPayloadValidationErrors) {
+          showNotification(t('config_management.visual_mode_save_blocked'), 'error');
+          return;
+        }
         // Only rewrite YAML when there are pending visual changes; otherwise preserve raw YAML + comments.
         if (visualDirty) {
           const nextContent = applyVisualChangesToYaml(content);
@@ -271,6 +275,7 @@ export function ConfigPage() {
       showNotification,
       t,
       visualDirty,
+      visualHasPayloadValidationErrors,
     ]
   );
 
