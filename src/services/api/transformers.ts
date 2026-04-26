@@ -440,6 +440,13 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       .filter(Boolean) as ProviderKeyConfig[];
   }
 
+  const deepseekList = raw['deepseek-api-key'] ?? raw.deepseekApiKey ?? raw.deepseekApiKeys;
+  if (Array.isArray(deepseekList)) {
+    config.deepseekApiKeys = deepseekList
+      .map((item) => normalizeProviderKeyConfig(item))
+      .filter(Boolean) as ProviderKeyConfig[];
+  }
+
   const claudeList = raw['claude-api-key'] ?? raw.claudeApiKey ?? raw.claudeApiKeys;
   if (Array.isArray(claudeList)) {
     config.claudeApiKeys = claudeList

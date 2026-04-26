@@ -25,6 +25,7 @@ interface ProviderStats {
   codex: number | null;
   claude: number | null;
   openai: number | null;
+  deepseek: number | null;
 }
 
 type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
@@ -61,7 +62,8 @@ export function DashboardPage() {
     gemini: null,
     codex: null,
     claude: null,
-    openai: null
+    openai: null,
+    deepseek: null
   });
 
   const [loading, setLoading] = useState(true);
@@ -151,12 +153,13 @@ export function DashboardPage() {
     const fetchStats = async () => {
       setLoading(true);
       try {
-        const [keysRes, filesRes, geminiRes, codexRes, claudeRes, openaiRes] = await Promise.allSettled([
+        const [keysRes, filesRes, geminiRes, codexRes, claudeRes, deepseekRes, openaiRes] = await Promise.allSettled([
           apiKeysApi.list(),
           authFilesApi.list(),
           providersApi.getGeminiKeys(),
           providersApi.getCodexConfigs(),
           providersApi.getClaudeConfigs(),
+          providersApi.getDeepSeekConfigs(),
           providersApi.getOpenAIProviders()
         ]);
 
@@ -169,6 +172,7 @@ export function DashboardPage() {
           gemini: geminiRes.status === 'fulfilled' ? geminiRes.value.length : null,
           codex: codexRes.status === 'fulfilled' ? codexRes.value.length : null,
           claude: claudeRes.status === 'fulfilled' ? claudeRes.value.length : null,
+          deepseek: deepseekRes.status === 'fulfilled' ? deepseekRes.value.length : null,
           openai: openaiRes.status === 'fulfilled' ? openaiRes.value.length : null
         });
       } finally {
@@ -189,16 +193,19 @@ export function DashboardPage() {
     providerStats.gemini !== null &&
     providerStats.codex !== null &&
     providerStats.claude !== null &&
+    providerStats.deepseek !== null &&
     providerStats.openai !== null;
   const hasProviderStats =
     providerStats.gemini !== null ||
     providerStats.codex !== null ||
     providerStats.claude !== null ||
+    providerStats.deepseek !== null ||
     providerStats.openai !== null;
   const totalProviderKeys = providerStatsReady
     ? (providerStats.gemini ?? 0) +
       (providerStats.codex ?? 0) +
       (providerStats.claude ?? 0) +
+      (providerStats.deepseek ?? 0) +
       (providerStats.openai ?? 0)
     : 0;
 
@@ -222,6 +229,7 @@ export function DashboardPage() {
             gemini: providerStats.gemini ?? '-',
             codex: providerStats.codex ?? '-',
             claude: providerStats.claude ?? '-',
+            deepseek: providerStats.deepseek ?? '-',
             openai: providerStats.openai ?? '-'
           })
         : undefined

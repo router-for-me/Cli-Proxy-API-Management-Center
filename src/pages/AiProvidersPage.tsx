@@ -5,6 +5,7 @@ import {
   AmpcodeSection,
   ClaudeSection,
   CodexSection,
+  DeepSeekSection,
   GeminiSection,
   OpenAISection,
   VertexSection,
@@ -45,6 +46,9 @@ export function AiProvidersPage() {
   );
   const [codexConfigs, setCodexConfigs] = useState<ProviderKeyConfig[]>(
     () => config?.codexApiKeys || []
+  );
+  const [deepseekConfigs, setDeepSeekConfigs] = useState<ProviderKeyConfig[]>(
+    () => config?.deepseekApiKeys || []
   );
   const [claudeConfigs, setClaudeConfigs] = useState<ProviderKeyConfig[]>(
     () => config?.claudeApiKeys || []
@@ -89,10 +93,11 @@ export function AiProvidersPage() {
     }
     setError('');
     try {
-      const [configResult, vertexResult, ampcodeResult, openaiResult] = await Promise.allSettled([
+      const [configResult, vertexResult, ampcodeResult, deepseekResult, openaiResult] = await Promise.allSettled([
         fetchConfig(),
         providersApi.getVertexConfigs(),
         ampcodeApi.getAmpcode(),
+        providersApi.getDeepSeekConfigs(),
         providersApi.getOpenAIProviders(),
       ]);
 
@@ -103,6 +108,7 @@ export function AiProvidersPage() {
       const data = configResult.value;
       setGeminiKeys(data?.geminiApiKeys || []);
       setCodexConfigs(data?.codexApiKeys || []);
+      setDeepSeekConfigs(data?.deepseekApiKeys || []);
       setClaudeConfigs(data?.claudeApiKeys || []);
       setVertexConfigs(data?.vertexApiKeys || []);
       setOpenaiProviders(data?.openaiCompatibility || []);
@@ -116,6 +122,12 @@ export function AiProvidersPage() {
       if (ampcodeResult.status === 'fulfilled') {
         updateConfigValue('ampcode', ampcodeResult.value);
         clearCache('ampcode');
+      }
+
+      if (deepseekResult.status === 'fulfilled') {
+        setDeepSeekConfigs(deepseekResult.value || []);
+        updateConfigValue('deepseek-api-key', deepseekResult.value || []);
+        clearCache('deepseek-api-key');
       }
 
       if (openaiResult.status === 'fulfilled') {
@@ -145,12 +157,14 @@ export function AiProvidersPage() {
   useEffect(() => {
     if (config?.geminiApiKeys) setGeminiKeys(config.geminiApiKeys);
     if (config?.codexApiKeys) setCodexConfigs(config.codexApiKeys);
+    if (config?.deepseekApiKeys) setDeepSeekConfigs(config.deepseekApiKeys);
     if (config?.claudeApiKeys) setClaudeConfigs(config.claudeApiKeys);
     if (config?.vertexApiKeys) setVertexConfigs(config.vertexApiKeys);
     if (config?.openaiCompatibility) setOpenaiProviders(config.openaiCompatibility);
   }, [
     config?.geminiApiKeys,
     config?.codexApiKeys,
+    config?.deepseekApiKeys,
     config?.claudeApiKeys,
     config?.vertexApiKeys,
     config?.openaiCompatibility,
@@ -190,7 +204,7 @@ export function AiProvidersPage() {
   };
 
   const setConfigEnabled = async (
-    provider: 'gemini' | 'codex' | 'claude' | 'vertex',
+    provider: 'gemini' | 'codex' | 'deepseek' | 'claude' | 'vertex',
     index: number,
     enabled: boolean
   ) => {
@@ -233,9 +247,11 @@ export function AiProvidersPage() {
     const source =
       provider === 'codex'
         ? codexConfigs
-        : provider === 'claude'
-          ? claudeConfigs
-          : vertexConfigs;
+        : provider === 'deepseek'
+          ? deepseekConfigs
+          : provider === 'claude'
+            ? claudeConfigs
+            : vertexConfigs;
     const current = source[index];
     if (!current) return;
 
@@ -253,6 +269,10 @@ export function AiProvidersPage() {
       setCodexConfigs(nextList);
       updateConfigValue('codex-api-key', nextList);
       clearCache('codex-api-key');
+    } else if (provider === 'deepseek') {
+      setDeepSeekConfigs(nextList);
+      updateConfigValue('deepseek-api-key', nextList);
+      clearCache('deepseek-api-key');
     } else if (provider === 'claude') {
       setClaudeConfigs(nextList);
       updateConfigValue('claude-api-key', nextList);
@@ -266,6 +286,8 @@ export function AiProvidersPage() {
     try {
       if (provider === 'codex') {
         await providersApi.saveCodexConfigs(nextList);
+      } else if (provider === 'deepseek') {
+        await providersApi.saveDeepSeekConfigs(nextList);
       } else if (provider === 'claude') {
         await providersApi.saveClaudeConfigs(nextList);
       } else {
@@ -281,6 +303,10 @@ export function AiProvidersPage() {
         setCodexConfigs(previousList);
         updateConfigValue('codex-api-key', previousList);
         clearCache('codex-api-key');
+      } else if (provider === 'deepseek') {
+        setDeepSeekConfigs(previousList);
+        updateConfigValue('deepseek-api-key', previousList);
+        clearCache('deepseek-api-key');
       } else if (provider === 'claude') {
         setClaudeConfigs(previousList);
         updateConfigValue('claude-api-key', previousList);
@@ -296,12 +322,12 @@ export function AiProvidersPage() {
     }
   };
 
-  const deleteProviderEntry = async (type: 'codex' | 'claude', index: number) => {
-    const source = type === 'codex' ? codexConfigs : claudeConfigs;
+  const deleteProviderEntry = async (type: 'codex' | 'deepseek' | 'claude', index: number) => {
+    const source = type === 'codex' ? codexConfigs : type === 'deepseek' ? deepseekConfigs : claudeConfigs;
     const entry = source[index];
     if (!entry) return;
     showConfirmation({
-      title: t(`ai_providers.${type}_delete_title`, { defaultValue: `Delete ${type === 'codex' ? 'Codex' : 'Claude'} Config` }),
+      title: t(`ai_providers.${type}_delete_title`, { defaultValue: `Delete ${type === 'codex' ? 'Codex' : type === 'deepseek' ? 'DeepSeek' : 'Claude'} Config` }),
       message: t(`ai_providers.${type}_delete_confirm`),
       variant: 'danger',
       confirmText: t('common.confirm'),
@@ -314,6 +340,13 @@ export function AiProvidersPage() {
             updateConfigValue('codex-api-key', next);
             clearCache('codex-api-key');
             showNotification(t('notification.codex_config_deleted'), 'success');
+          } else if (type === 'deepseek') {
+            await providersApi.deleteDeepSeekConfig(entry.apiKey, entry.baseUrl);
+            const next = deepseekConfigs.filter((_, idx) => idx !== index);
+            setDeepSeekConfigs(next);
+            updateConfigValue('deepseek-api-key', next);
+            clearCache('deepseek-api-key');
+            showNotification(t('notification.deepseek_config_deleted'), 'success');
           } else {
             await providersApi.deleteClaudeConfig(entry.apiKey, entry.baseUrl);
             const next = claudeConfigs.filter((_, idx) => idx !== index);
@@ -413,6 +446,22 @@ export function AiProvidersPage() {
             onEdit={(index) => openEditor(`/ai-providers/codex/${index}`)}
             onDelete={(index) => void deleteProviderEntry('codex', index)}
             onToggle={(index, enabled) => void setConfigEnabled('codex', index, enabled)}
+          />
+        </div>
+
+        <div id="provider-deepseek">
+          <DeepSeekSection
+            configs={deepseekConfigs}
+            keyStats={keyStats}
+            usageDetailsBySource={usageDetailsBySource}
+            usageDetailsByAuthIndex={usageDetailsByAuthIndex}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            onAdd={() => openEditor('/ai-providers/deepseek/new')}
+            onEdit={(index) => openEditor(`/ai-providers/deepseek/${index}`)}
+            onDelete={(index) => void deleteProviderEntry('deepseek', index)}
+            onToggle={(index, enabled) => void setConfigEnabled('deepseek', index, enabled)}
           />
         </div>
 

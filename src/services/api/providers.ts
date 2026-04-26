@@ -185,6 +185,22 @@ export const providersApi = {
   deleteCodexConfig: (apiKey: string, baseUrl?: string) =>
     apiClient.delete(`/codex-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
 
+
+  async getDeepSeekConfigs(): Promise<ProviderKeyConfig[]> {
+    const data = await apiClient.get('/deepseek-api-key');
+    const list = extractArrayPayload(data, 'deepseek-api-key');
+    return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
+  },
+
+  saveDeepSeekConfigs: (configs: ProviderKeyConfig[]) =>
+    apiClient.put('/deepseek-api-key', configs.map((item) => serializeProviderKey(item))),
+
+  updateDeepSeekConfig: (index: number, value: ProviderKeyConfig) =>
+    apiClient.patch('/deepseek-api-key', { index, value: serializeProviderKey(value) }),
+
+  deleteDeepSeekConfig: (apiKey: string, baseUrl?: string) =>
+    apiClient.delete(`/deepseek-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+
   async getClaudeConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/claude-api-key');
     const list = extractArrayPayload(data, 'claude-api-key');
