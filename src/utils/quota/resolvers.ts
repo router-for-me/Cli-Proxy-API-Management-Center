@@ -85,7 +85,7 @@ const toRecord = (value: unknown): Record<string, unknown> | null => {
 };
 
 const resolveCodexAuthInfo = (value: unknown): Record<string, unknown> | null => {
-  const payload = parseIdTokenPayload(value);
+  const payload = toRecord(value) ?? parseIdTokenPayload(value);
   if (!payload) return null;
   const nested = toRecord(payload['https://api.openai.com/auth']);
   return nested ?? payload;

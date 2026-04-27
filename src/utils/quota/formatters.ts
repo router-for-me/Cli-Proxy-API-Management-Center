@@ -33,7 +33,7 @@ export function formatUnixSeconds(value: number | null): string {
 }
 
 export function formatDateTimeValue(value?: string | number | null): string {
-  if (value === undefined || value === null || value === '') return '-';
+  if (value === undefined || value === null || value === '' || value === 0 || value === '0') return '-';
   const timestamp =
     typeof value === 'number'
       ? value > 100000000000
