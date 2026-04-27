@@ -1486,7 +1486,8 @@
     "chinese": "中文",
     "chinese_tw": "Traditional Chinese (Taiwan)",
     "english": "English",
-    "russian": "Русский"
+    "russian": "Русский",
+    "vietnamese": "Tiếng Việt"
   },
   "theme": {
     "switch": "Theme",

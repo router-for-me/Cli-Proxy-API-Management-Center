@@ -44,6 +44,7 @@ const getBrowserLanguage = (): Language => {
   const lower = raw.toLowerCase();
   if (TRADITIONAL_CHINESE_PREFIXES.some((prefix) => lower.startsWith(prefix))) return 'zh-TW';
   if (lower.startsWith('zh')) return 'zh-CN';
+  if (lower.startsWith('vi')) return 'vi';
   if (lower.startsWith('ru')) return 'ru';
   return 'en';
 };

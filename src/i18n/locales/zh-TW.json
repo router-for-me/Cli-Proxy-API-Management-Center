@@ -1512,7 +1512,8 @@
     "chinese": "簡體中文",
     "chinese_tw": "繁體中文（台灣）",
     "english": "英文",
-    "russian": "俄文"
+    "russian": "俄文",
+    "vietnamese": "Tiếng Việt"
   },
   "theme": {
     "switch": "主題",
