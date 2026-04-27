@@ -318,10 +318,10 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
-  flex: 1 0 auto;
+  flex: 0 0 auto;
   min-height: 420px;
   max-height: none;
-  height: max(420px, calc(100vh - 520px));
+  height: calc(100vh - 520px);
   overflow: auto;
   resize: vertical;
   position: relative;
@@ -331,7 +331,7 @@
 
   @include tablet {
     min-height: 360px;
-    height: max(360px, calc(100vh - 500px));
+    height: calc(100vh - 500px);
     max-height: none;
   }
 
@@ -340,7 +340,6 @@
     height: 420px;
     max-height: 480px;
     flex: 0 0 auto;
-    overflow: auto;
   }
 }
 
@@ -785,12 +784,6 @@
 
   .logCard {
     padding: $spacing-md;
-  }
-
-  .logPanel {
-    min-height: 420px;
-    height: max(420px, calc(100vh - 460px));
-    max-height: none;
   }
 
   .logRow {
