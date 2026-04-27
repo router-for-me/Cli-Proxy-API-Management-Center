@@ -688,6 +688,7 @@
     "additional_primary_window": "{{name}} 5-hour limit",
     "additional_secondary_window": "{{name}} weekly limit",
     "plan_label": "Plan",
+    "expires_label": "Expires",
     "plan_plus": "Plus",
     "plan_team": "Team",
     "plan_free": "Free",

@@ -4,6 +4,7 @@
 
 import type { AuthFileItem } from '@/types';
 import {
+  normalizeNumberValue,
   normalizeStringValue,
   normalizePlanType,
   parseIdTokenPayload
@@ -73,6 +74,64 @@ export function resolveCodexPlanType(file: AuthFileItem): string | null {
   for (const candidate of candidates) {
     const planType = normalizePlanType(candidate);
     if (planType) return planType;
+  }
+
+  return null;
+}
+
+const toRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+};
+
+const resolveCodexAuthInfo = (value: unknown): Record<string, unknown> | null => {
+  const payload = toRecord(value) ?? parseIdTokenPayload(value);
+  if (!payload) return null;
+  const nested = toRecord(payload['https://api.openai.com/auth']);
+  return nested ?? payload;
+};
+
+const normalizeDateLikeValue = (value: unknown): string | number | null => {
+  const stringValue = normalizeStringValue(value);
+  if (stringValue) return stringValue;
+  const numberValue = normalizeNumberValue(value);
+  return numberValue !== null ? numberValue : null;
+};
+
+export function resolveCodexSubscriptionActiveUntil(file: AuthFileItem): string | number | null {
+  const metadata = toRecord(file.metadata);
+  const attributes = toRecord(file.attributes);
+  const idToken = resolveCodexAuthInfo(file.id_token);
+  const metadataIdToken = resolveCodexAuthInfo(metadata?.id_token);
+  const attributesIdToken = resolveCodexAuthInfo(attributes?.id_token);
+  const subscription = toRecord(file.subscription);
+  const metadataSubscription = toRecord(metadata?.subscription);
+  const attributesSubscription = toRecord(attributes?.subscription);
+
+  const candidates = [
+    file.subscription_active_until,
+    file.subscriptionActiveUntil,
+    subscription?.active_until,
+    subscription?.activeUntil,
+    idToken?.chatgpt_subscription_active_until,
+    idToken?.chatgptSubscriptionActiveUntil,
+    metadata?.subscription_active_until,
+    metadata?.subscriptionActiveUntil,
+    metadataSubscription?.active_until,
+    metadataSubscription?.activeUntil,
+    metadataIdToken?.chatgpt_subscription_active_until,
+    metadataIdToken?.chatgptSubscriptionActiveUntil,
+    attributes?.subscription_active_until,
+    attributes?.subscriptionActiveUntil,
+    attributesSubscription?.active_until,
+    attributesSubscription?.activeUntil,
+    attributesIdToken?.chatgpt_subscription_active_until,
+    attributesIdToken?.chatgptSubscriptionActiveUntil,
+  ];
+
+  for (const candidate of candidates) {
+    const value = normalizeDateLikeValue(candidate);
+    if (value !== null) return value;
   }
 
   return null;
