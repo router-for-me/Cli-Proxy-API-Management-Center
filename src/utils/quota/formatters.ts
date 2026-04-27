@@ -32,6 +32,30 @@ export function formatUnixSeconds(value: number | null): string {
   });
 }
 
+export function formatDateTimeValue(value?: string | number | null): string {
+  if (value === undefined || value === null || value === '') return '-';
+  const timestamp =
+    typeof value === 'number'
+      ? value > 100000000000
+        ? value
+        : value * 1000
+      : Number.isFinite(Number(value)) && value.trim() !== ''
+        ? Number(value) > 100000000000
+          ? Number(value)
+          : Number(value) * 1000
+        : value;
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+}
+
 export function formatCodexResetLabel(window?: CodexUsageWindow | null): string {
   if (!window) return '-';
   const resetAt = normalizeNumberValue(window.reset_at ?? window.resetAt);

@@ -685,6 +685,7 @@
     "additional_primary_window": "{{name}}: лимит на 5 часов",
     "additional_secondary_window": "{{name}}: недельный лимит",
     "plan_label": "Тариф",
+    "expires_label": "Истекает",
     "plan_plus": "Plus",
     "plan_team": "Team",
     "plan_free": "Free",

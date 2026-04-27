@@ -688,6 +688,7 @@
     "additional_primary_window": "{{name}} 5 小時限額",
     "additional_secondary_window": "{{name}} 週限額",
     "plan_label": "方案",
+    "expires_label": "到期時間",
     "plan_plus": "Plus",
     "plan_team": "Team",
     "plan_free": "Free",
