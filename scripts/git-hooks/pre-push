@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # pre-push: 阻止向 upstream/source 推送；向 origin/main push 需 YES 确认
+# AI/CI 非交互确认：ALLOW_MAIN_PUSH=YES git push origin main
 set -euo pipefail
 
 REMOTE="$1"
@@ -17,7 +18,20 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   if [[ "$remote_ref" == "refs/heads/main" ]]; then
     echo "⚠️  你正在 push 到 origin/main（稳定主干）"
     echo "   请确认所有预检已通过（type-check / lint / build）"
-    read -r -p "   输入大写 YES 以确认 push: " ans < /dev/tty
+    if [[ "${ALLOW_MAIN_PUSH:-}" == "YES" ]]; then
+      ans="YES"
+      echo "   已通过 ALLOW_MAIN_PUSH=YES 非交互确认"
+    elif [[ -e /dev/tty ]] && { : < /dev/tty; } 2>/dev/null; then
+      if ! read -r -p "   输入大写 YES 以确认 push: " ans < /dev/tty; then
+        echo "❌ 无法读取 TTY 确认输入"
+        echo "   AI/CI 如已完成预检，请使用：ALLOW_MAIN_PUSH=YES git push origin main"
+        exit 1
+      fi
+    else
+      echo "❌ 当前环境无可用 TTY，无法交互确认 push 到 main"
+      echo "   AI/CI 如已完成预检，请使用：ALLOW_MAIN_PUSH=YES git push origin main"
+      exit 1
+    fi
     if [[ "$ans" != "YES" ]]; then
       echo "❌ 已取消 push 到 main"
       exit 1

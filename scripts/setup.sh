@@ -1,24 +1,30 @@
 #!/usr/bin/env bash
 # 首次/幂等初始化 / First-time & idempotent setup
-# Usage: bun run setup [--mode=ref|inject|stealth]
+# Usage: bun run setup [--mode=ref|inject|stealth] [--yes]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 MODE="ref"
+ARG_YES=false
 for arg in "$@"; do
   case "$arg" in
     --mode=*) MODE="${arg#--mode=}" ;;
+    --yes) ARG_YES=true ;;
     -h|--help)
       cat <<EOF
-bun run setup [--mode=ref|inject|stealth]
+bun run setup [--mode=ref|inject|stealth] [--yes]
 
   ref     (默认) 生成 AI 入口文件，内容为 @import 引用 AGENTS.md + .ai-local/private-rules.md
   inject  将 AGENTS.md + private-rules.md 全文注入到各 AI 入口（冗余但无 import 依赖）
   stealth 不生成 AI 入口文件，仅初始化 .ai-local/
+  --yes   非交互模式；当前脚本幂等执行，仅用于 AI 调用语义统一
 EOF
       exit 0
+      ;;
+    *)
+      die "未知参数: $arg；可选: --mode=ref|inject|stealth --yes"
       ;;
   esac
 done
@@ -104,7 +110,7 @@ PRIV
   log_ok "已生成 .ai-local/private-rules.md 模板"
 fi
 
-log_step "生成 AI 入口文件（mode=$MODE）"
+log_step "生成 AI 入口文件（mode=${MODE}）"
 generate_ref() {
   local path="$1"; local title="$2"
   mkdir -p "$(dirname "$path")"
@@ -151,7 +157,7 @@ case "$MODE" in
     log_warn "stealth 模式：不生成 AI 入口文件"
     ;;
   *)
-    die "未知 mode=$MODE；可选值：ref / inject / stealth"
+    die "未知 mode=${MODE}；可选值：ref / inject / stealth"
     ;;
 esac
 

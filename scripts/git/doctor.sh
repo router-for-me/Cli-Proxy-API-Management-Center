@@ -8,21 +8,21 @@ ok=0; warn=0; err=0
 check() {
   local cond="$1"; local desc="$2"; local hint="${3:-}"
   if eval "$cond" >/dev/null 2>&1; then
-    log_ok "$desc"; ((ok++))
+    log_ok "$desc"; ok=$((ok + 1))
   else
     log_err "$desc"
     [[ -n "$hint" ]] && printf "       hint: %s\n" "$hint" >&2
-    ((err++))
+    err=$((err + 1))
   fi
 }
 checkw() {
   local cond="$1"; local desc="$2"; local hint="${3:-}"
   if eval "$cond" >/dev/null 2>&1; then
-    log_ok "$desc"; ((ok++))
+    log_ok "$desc"; ok=$((ok + 1))
   else
     log_warn "$desc"
     [[ -n "$hint" ]] && printf "       hint: %s\n" "$hint" >&2
-    ((warn++))
+    warn=$((warn + 1))
   fi
 }
 
@@ -61,10 +61,10 @@ checkw "[[ -f '$AI_LOCAL_DIR/private-rules.md' ]]" ".ai-local/private-rules.md �
 
 log_step "工作区状态"
 if [[ -z "$(git status --porcelain)" ]]; then
-  log_ok "工作区干净"; ((ok++))
+  log_ok "工作区干净"; ok=$((ok + 1))
 else
   log_warn "工作区有未提交改动 $(git status --porcelain | wc -l | tr -d ' ') 项"
-  ((warn++))
+  warn=$((warn + 1))
 fi
 
 printf "\n结果：%bOK=%d%b  %bWARN=%d%b  %bERR=%d%b\n" \

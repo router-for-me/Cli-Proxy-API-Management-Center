@@ -14,7 +14,7 @@
 git clone https://github.com/calonye/Cli-Proxy-API-Management-Center-fork.git
 cd Cli-Proxy-API-Management-Center-fork
 bun install
-bun run setup              # 装 remote、hooks、个人化配置
+bun run setup              # 装 remote、hooks、个人化配置（AI 可用 -- --yes）
 
 # 日常研发循环（每次开工必走）
 bun run sync               # ❶ 拉取上游最新（选择性合并或仅 fetch）
@@ -145,7 +145,7 @@ sync → feature → [编码 + commit]* → promote → (可选) release
 
 | 命令 | 行为 | 安全点 |
 | --- | --- | --- |
-| `bun run setup` | 首次初始化：建 remote、装 git 钩子、生成个人化配置、校验 bun 版本 | 幂等 |
+| `bun run setup` | 首次初始化：建 remote、装 git 钩子、生成个人化配置、校验 bun 版本 | 幂等；支持 `-- --yes` |
 | `bun run doctor` | 只读诊断：remote/钩子/版本/工作区状态 | 纯只读 |
 | `bun run sync` | 同步 upstream/source → main → dev | 脏工作区中止；冲突停 |
 | `bun run feature <topic>` | 从最新 dev 切 `feature/<topic>` | 禁止从 main 切 |
@@ -163,7 +163,7 @@ sync → feature → [编码 + commit]* → promote → (可选) release
 
 - `pre-commit`：禁止在 `main` 分支直接 commit；运行 `bun run type-check`。
 - `commit-msg`：校验 `<type>(<scope>): <中文> [en: <english>]`；feat/fix/refactor/perf/build/ci 必须双语。
-- `pre-push`：阻止向 `upstream`/`source` 推送；向 `origin/main` 推送时要求输入 `YES` 确认。
+- `pre-push`：阻止向 `upstream`/`source` 推送；向 `origin/main` 推送时要求输入 `YES` 确认。AI/CI 非交互环境可在预检通过后使用 `ALLOW_MAIN_PUSH=YES git push origin main`。
 
 ---
 
