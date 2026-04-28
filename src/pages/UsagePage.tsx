@@ -23,6 +23,7 @@ import {
   StatCards,
   UsageChart,
   ChartLineSelector,
+  CollectorStorageSettingsCard,
   ApiDetailsCard,
   ModelStatsCard,
   PriceSettingsCard,
@@ -348,6 +349,8 @@ export function UsagePage() {
 
       {/* Service Health */}
       <ServiceHealthCard usage={usage} loading={loading} />
+
+      <CollectorStorageSettingsCard />
 
       {/* Charts Grid */}
       <div className={styles.chartsGrid}>

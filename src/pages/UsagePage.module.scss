@@ -1021,6 +1021,139 @@
   margin: 10px 0 0 0;
 }
 
+.collectorStorageLayout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1fr) minmax(320px, 1.1fr);
+  gap: 16px;
+  align-items: stretch;
+
+  @include tablet {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.collectorStorageIntro,
+.collectorStorageForm,
+.collectorStoragePreview {
+  min-width: 0;
+}
+
+.collectorStorageIntro {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+
+  p {
+    margin: 0;
+  }
+
+  @include tablet {
+    grid-column: 1 / -1;
+  }
+}
+
+.collectorStorageFacts {
+  display: grid;
+  gap: 8px;
+
+  > div {
+    display: grid;
+    gap: 3px;
+    padding: 10px 12px;
+    border-radius: $radius-md;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+  }
+
+  span {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+    word-break: break-word;
+  }
+}
+
+.collectorStorageLink {
+  color: var(--primary-color);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.collectorStorageForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.collectorStorageField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+  }
+}
+
+.collectorStorageToggleRow {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+}
+
+.collectorStorageKafkaFields {
+  display: grid;
+  gap: 12px;
+}
+
+.collectorStoragePreview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.collectorStoragePreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.collectorStorageYaml {
+  width: 100%;
+  min-height: 278px;
+  resize: vertical;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
 // Service Health Card
 .healthCard {
   background: var(--bg-primary);

@@ -18,6 +18,8 @@ export type { UsageChartProps } from './UsageChart';
 export { ChartLineSelector } from './ChartLineSelector';
 export type { ChartLineSelectorProps } from './ChartLineSelector';
 
+export { CollectorStorageSettingsCard } from './CollectorStorageSettingsCard';
+
 export { ApiDetailsCard } from './ApiDetailsCard';
 export type { ApiDetailsCardProps } from './ApiDetailsCard';
 
