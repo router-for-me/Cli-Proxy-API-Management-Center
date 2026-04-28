@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { IconSettings, IconX } from '@/components/ui/icons';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { copyToClipboard } from '@/utils/clipboard';
 import {
@@ -25,6 +26,7 @@ const STORAGE_DRIVER_OPTIONS: ReadonlyArray<{ value: CollectorStorageDriver; lab
 
 export function CollectorStorageSettingsCard() {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const [rawDraft, setRawDraft] = useLocalStorage<CollectorStorageDraft>(
     STORAGE_KEY,
     DEFAULT_COLLECTOR_STORAGE_DRAFT
@@ -58,109 +60,147 @@ export function CollectorStorageSettingsCard() {
     [t]
   );
 
-  return (
-    <Card
-      title={t('usage_stats.collector_storage_title')}
-      extra={
-        <Button variant="secondary" size="sm" onClick={() => void handleCopy()}>
-          {copied ? t('common.copied') : t('usage_stats.collector_storage_copy')}
-        </Button>
-      }
+  const drawer = open ? (
+    <div
+      className={styles.collectorStorageOverlay}
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          setOpen(false);
+        }
+      }}
     >
-      <div className={styles.collectorStorageLayout}>
-        <div className={styles.collectorStorageIntro}>
-          <p>{t('usage_stats.collector_storage_desc')}</p>
-          <div className={styles.collectorStorageFacts}>
-            <div>
-              <span>{t('usage_stats.collector_storage_native_label')}</span>
-              <strong>{t('usage_stats.collector_storage_native_value')}</strong>
-            </div>
-            <div>
-              <span>{t('usage_stats.collector_storage_collector_label')}</span>
-              <strong>{t('usage_stats.collector_storage_collector_value')}</strong>
-            </div>
-            <div>
-              <span>{t('usage_stats.collector_storage_effective_label')}</span>
-              <strong>{t('usage_stats.collector_storage_effective_value')}</strong>
-            </div>
+      <section
+        className={styles.collectorStorageDrawer}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="collector-storage-drawer-title"
+      >
+        <div className={styles.collectorStorageDrawerHeader}>
+          <div>
+            <h2 id="collector-storage-drawer-title">
+              {t('usage_stats.collector_storage_title')}
+            </h2>
+            <p>{t('usage_stats.collector_storage_subtitle')}</p>
           </div>
-          <a className={styles.collectorStorageLink} href="#/call-records">
-            {t('usage_stats.collector_storage_records_link')}
-          </a>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setOpen(false)}
+            aria-label={t('common.close')}
+          >
+            <IconX size={18} />
+          </Button>
         </div>
 
-        <div className={styles.collectorStorageForm}>
-          <div className={styles.collectorStorageField}>
-            <label>{t('usage_stats.collector_storage_driver')}</label>
-            <Select
-              value={draft.driver}
-              options={driverOptions}
-              onChange={(value) => updateDraft('driver', value as CollectorStorageDriver)}
-              ariaLabel={t('usage_stats.collector_storage_driver')}
-            />
+        <div className={styles.collectorStorageDrawerBody}>
+          <div className={styles.collectorStorageIntro}>
+            <p>{t('usage_stats.collector_storage_desc')}</p>
+            <div className={styles.collectorStorageFacts}>
+              <div>
+                <span>{t('usage_stats.collector_storage_native_label')}</span>
+                <strong>{t('usage_stats.collector_storage_native_value')}</strong>
+              </div>
+              <div>
+                <span>{t('usage_stats.collector_storage_collector_label')}</span>
+                <strong>{t('usage_stats.collector_storage_collector_value')}</strong>
+              </div>
+              <div>
+                <span>{t('usage_stats.collector_storage_effective_label')}</span>
+                <strong>{t('usage_stats.collector_storage_effective_value')}</strong>
+              </div>
+            </div>
+            <a className={styles.collectorStorageLink} href="#/call-records">
+              {t('usage_stats.collector_storage_records_link')}
+            </a>
           </div>
 
-          {draft.driver === 'sqlite' ? (
-            <Input
-              label={t('usage_stats.collector_storage_sqlite_path')}
-              value={draft.sqlitePath}
-              onChange={(event) => updateDraft('sqlitePath', event.target.value)}
-              placeholder="./data/collector.db"
-            />
-          ) : (
-            <Input
-              label={t('usage_stats.collector_storage_mysql_dsn')}
-              value={draft.mysqlDsn}
-              onChange={(event) => updateDraft('mysqlDsn', event.target.value)}
-              placeholder="collector:password@tcp(127.0.0.1:3306)/collector?parseTime=true"
-            />
-          )}
-
-          <div className={styles.collectorStorageToggleRow}>
-            <ToggleSwitch
-              checked={draft.kafkaEnabled}
-              onChange={(value) => updateDraft('kafkaEnabled', value)}
-              label={t('usage_stats.collector_storage_kafka_enabled')}
-            />
-          </div>
-
-          {draft.kafkaEnabled && (
-            <div className={styles.collectorStorageKafkaFields}>
-              <Input
-                label={t('usage_stats.collector_storage_kafka_brokers')}
-                value={draft.kafkaBrokers}
-                onChange={(event) => updateDraft('kafkaBrokers', event.target.value)}
-                placeholder="127.0.0.1:9092"
-              />
-              <Input
-                label={t('usage_stats.collector_storage_kafka_call_logs_topic')}
-                value={draft.kafkaCallLogsTopic}
-                onChange={(event) => updateDraft('kafkaCallLogsTopic', event.target.value)}
-                placeholder="cli-proxy-api-call-logs"
-              />
-              <Input
-                label={t('usage_stats.collector_storage_kafka_usage_stats_topic')}
-                value={draft.kafkaUsageStatsTopic}
-                onChange={(event) => updateDraft('kafkaUsageStatsTopic', event.target.value)}
-                placeholder="cli-proxy-api-usage-stats"
+          <div className={styles.collectorStorageForm}>
+            <div className={styles.collectorStorageField}>
+              <label>{t('usage_stats.collector_storage_driver')}</label>
+              <Select
+                value={draft.driver}
+                options={driverOptions}
+                onChange={(value) => updateDraft('driver', value as CollectorStorageDriver)}
+                ariaLabel={t('usage_stats.collector_storage_driver')}
               />
             </div>
-          )}
-        </div>
 
-        <div className={styles.collectorStoragePreview}>
-          <div className={styles.collectorStoragePreviewHeader}>
-            <span>{t('usage_stats.collector_storage_yaml_title')}</span>
+            {draft.driver === 'sqlite' ? (
+              <Input
+                label={t('usage_stats.collector_storage_sqlite_path')}
+                value={draft.sqlitePath}
+                onChange={(event) => updateDraft('sqlitePath', event.target.value)}
+                placeholder="./data/collector.db"
+              />
+            ) : (
+              <Input
+                label={t('usage_stats.collector_storage_mysql_dsn')}
+                value={draft.mysqlDsn}
+                onChange={(event) => updateDraft('mysqlDsn', event.target.value)}
+                placeholder="collector:password@tcp(127.0.0.1:3306)/collector?parseTime=true"
+              />
+            )}
+
+            <div className={styles.collectorStorageToggleRow}>
+              <ToggleSwitch
+                checked={draft.kafkaEnabled}
+                onChange={(value) => updateDraft('kafkaEnabled', value)}
+                label={t('usage_stats.collector_storage_kafka_enabled')}
+              />
+            </div>
+
+            {draft.kafkaEnabled && (
+              <div className={styles.collectorStorageKafkaFields}>
+                <Input
+                  label={t('usage_stats.collector_storage_kafka_brokers')}
+                  value={draft.kafkaBrokers}
+                  onChange={(event) => updateDraft('kafkaBrokers', event.target.value)}
+                  placeholder="127.0.0.1:9092"
+                />
+                <Input
+                  label={t('usage_stats.collector_storage_kafka_call_logs_topic')}
+                  value={draft.kafkaCallLogsTopic}
+                  onChange={(event) => updateDraft('kafkaCallLogsTopic', event.target.value)}
+                  placeholder="cli-proxy-api-call-logs"
+                />
+                <Input
+                  label={t('usage_stats.collector_storage_kafka_usage_stats_topic')}
+                  value={draft.kafkaUsageStatsTopic}
+                  onChange={(event) => updateDraft('kafkaUsageStatsTopic', event.target.value)}
+                  placeholder="cli-proxy-api-usage-stats"
+                />
+              </div>
+            )}
           </div>
-          <textarea
-            className={`input ${styles.collectorStorageYaml}`}
-            value={yaml}
-            readOnly
-            spellCheck={false}
-            aria-label={t('usage_stats.collector_storage_yaml_title')}
-          />
+
+          <div className={styles.collectorStoragePreview}>
+            <div className={styles.collectorStoragePreviewHeader}>
+              <span>{t('usage_stats.collector_storage_yaml_title')}</span>
+              <Button variant="secondary" size="sm" onClick={() => void handleCopy()}>
+                {copied ? t('common.copied') : t('usage_stats.collector_storage_copy')}
+              </Button>
+            </div>
+            <textarea
+              className={`input ${styles.collectorStorageYaml}`}
+              value={yaml}
+              readOnly
+              spellCheck={false}
+              aria-label={t('usage_stats.collector_storage_yaml_title')}
+            />
+          </div>
         </div>
-      </div>
-    </Card>
+      </section>
+    </div>
+  ) : null;
+
+  return (
+    <>
+      <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+        <IconSettings size={15} />
+        {t('usage_stats.collector_storage_open')}
+      </Button>
+      {typeof document !== 'undefined' && drawer ? createPortal(drawer, document.body) : drawer}
+    </>
   );
 }

@@ -307,6 +307,7 @@ export function UsagePage() {
           >
             {loading ? t('common.loading') : t('usage_stats.refresh')}
           </Button>
+          <CollectorStorageSettingsCard />
           <input
             ref={importInputRef}
             type="file"
@@ -349,8 +350,6 @@ export function UsagePage() {
 
       {/* Service Health */}
       <ServiceHealthCard usage={usage} loading={loading} />
-
-      <CollectorStorageSettingsCard />
 
       {/* Charts Grid */}
       <div className={styles.chartsGrid}>

@@ -1021,19 +1021,60 @@
   margin: 10px 0 0 0;
 }
 
-.collectorStorageLayout {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1fr) minmax(320px, 1.1fr);
+.collectorStorageOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.46);
+}
+
+.collectorStorageDrawer {
+  width: min(620px, calc(100vw - 28px));
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-color);
+  box-shadow: -18px 0 40px rgba(0, 0, 0, 0.28);
+}
+
+.collectorStorageDrawerHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 16px;
-  align-items: stretch;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
 
-  @include tablet {
-    grid-template-columns: 1fr 1fr;
+  h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 20px;
+    font-weight: 700;
   }
 
-  @include mobile {
-    grid-template-columns: 1fr;
+  p {
+    margin: 6px 0 0 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.5;
   }
+}
+
+.collectorStorageDrawerBody {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 22px 24px;
 }
 
 .collectorStorageIntro,
@@ -1144,7 +1185,7 @@
 
 .collectorStorageYaml {
   width: 100%;
-  min-height: 278px;
+  min-height: 260px;
   resize: vertical;
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',

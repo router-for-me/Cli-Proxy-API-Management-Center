@@ -996,6 +996,8 @@
     "chart_line_delete": "删除曲线",
     "chart_line_hint": "最多同时显示 9 条模型曲线",
     "collector_storage_title": "Collector 存储与 Kafka 配置",
+    "collector_storage_subtitle": "配置内容通过右侧面板维护，不占用统计数据区域。",
+    "collector_storage_open": "存储配置",
     "collector_storage_desc": "当前使用统计数据来自 CLIProxyAPI 原生管理接口，SQLite、MySQL 和 Kafka 属于 Collector 服务端启动配置。此处保存的是本地草稿，并生成启动 Collector 时可使用的配置片段。",
     "collector_storage_native_label": "使用统计来源",
     "collector_storage_native_value": "CLIProxyAPI /v0/management/usage",
