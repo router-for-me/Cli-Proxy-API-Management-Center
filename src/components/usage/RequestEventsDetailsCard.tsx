@@ -17,6 +17,7 @@ import {
   formatDurationMs,
   LATENCY_SOURCE_FIELD,
   normalizeAuthIndex,
+  type UsageThinking,
 } from '@/utils/usage';
 import { downloadBlob } from '@/utils/download';
 import styles from '@/pages/UsagePage.module.scss';
@@ -37,6 +38,8 @@ type RequestEventRow = {
   authIndex: string;
   failed: boolean;
   latencyMs: number | null;
+  thinking: UsageThinking | null;
+  thinkingLabel: string;
   inputTokens: number;
   outputTokens: number;
   reasoningTokens: number;
@@ -58,6 +61,37 @@ const toNumber = (value: unknown): number => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
   return parsed;
+};
+
+const normalizeThinkingText = (value: unknown): string => {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+};
+
+const formatThinkingLabel = (thinking: UsageThinking | null): string => {
+  if (!thinking) return '-';
+
+  const intensity = normalizeThinkingText(thinking.intensity);
+  const level = normalizeThinkingText(thinking.level);
+  const mode = normalizeThinkingText(thinking.mode);
+  const budget =
+    typeof thinking.budget === 'number' && Number.isFinite(thinking.budget)
+      ? thinking.budget
+      : null;
+  const label = intensity || level || (budget !== null ? String(budget) : mode);
+  const budgetLabel = budget !== null ? budget.toLocaleString() : null;
+
+  if (!label) return '-';
+  if (budgetLabel !== null && label === String(budget)) {
+    return budgetLabel;
+  }
+  if (mode === 'budget' && budget !== null && budget > 0) {
+    return `${label} (${budgetLabel})`;
+  }
+  if (budget === -1 && label !== 'auto') {
+    return `${label} (-1)`;
+  }
+  return label;
 };
 
 const encodeCsv = (value: string | number): string => {
@@ -127,63 +161,61 @@ export function RequestEventsDetailsCard({
   const rows = useMemo<RequestEventRow[]>(() => {
     const details = collectUsageDetails(usage);
 
-    const baseRows = details
-      .map((detail, index) => {
-        const timestamp = detail.timestamp;
-        const timestampMs =
-          typeof detail.__timestampMs === 'number' && detail.__timestampMs > 0
-            ? detail.__timestampMs
-            : parseTimestampMs(timestamp);
-        const date = Number.isNaN(timestampMs) ? null : new Date(timestampMs);
-        const sourceRaw = String(detail.source ?? '').trim();
-        const authIndexRaw = detail.auth_index as unknown;
-        const authIndex =
-          authIndexRaw === null || authIndexRaw === undefined || authIndexRaw === ''
-            ? '-'
-            : String(authIndexRaw);
-        const sourceInfo = resolveSourceDisplay(
-          sourceRaw,
-          authIndexRaw,
-          sourceInfoMap,
-          authFileMap
-        );
-        const source = sourceInfo.displayName;
-        const sourceKey = sourceInfo.identityKey ?? `source:${sourceRaw || source}`;
-        const sourceType = sourceInfo.type;
-        const model = String(detail.__modelName ?? '').trim() || '-';
-        const inputTokens = Math.max(toNumber(detail.tokens?.input_tokens), 0);
-        const outputTokens = Math.max(toNumber(detail.tokens?.output_tokens), 0);
-        const reasoningTokens = Math.max(toNumber(detail.tokens?.reasoning_tokens), 0);
-        const cachedTokens = Math.max(
-          Math.max(toNumber(detail.tokens?.cached_tokens), 0),
-          Math.max(toNumber(detail.tokens?.cache_tokens), 0)
-        );
-        const totalTokens = Math.max(
-          toNumber(detail.tokens?.total_tokens),
-          extractTotalTokens(detail)
-        );
-        const latencyMs = extractLatencyMs(detail);
+    const baseRows = details.map((detail, index) => {
+      const timestamp = detail.timestamp;
+      const timestampMs =
+        typeof detail.__timestampMs === 'number' && detail.__timestampMs > 0
+          ? detail.__timestampMs
+          : parseTimestampMs(timestamp);
+      const date = Number.isNaN(timestampMs) ? null : new Date(timestampMs);
+      const sourceRaw = String(detail.source ?? '').trim();
+      const authIndexRaw = detail.auth_index as unknown;
+      const authIndex =
+        authIndexRaw === null || authIndexRaw === undefined || authIndexRaw === ''
+          ? '-'
+          : String(authIndexRaw);
+      const sourceInfo = resolveSourceDisplay(sourceRaw, authIndexRaw, sourceInfoMap, authFileMap);
+      const source = sourceInfo.displayName;
+      const sourceKey = sourceInfo.identityKey ?? `source:${sourceRaw || source}`;
+      const sourceType = sourceInfo.type;
+      const model = String(detail.__modelName ?? '').trim() || '-';
+      const inputTokens = Math.max(toNumber(detail.tokens?.input_tokens), 0);
+      const outputTokens = Math.max(toNumber(detail.tokens?.output_tokens), 0);
+      const reasoningTokens = Math.max(toNumber(detail.tokens?.reasoning_tokens), 0);
+      const cachedTokens = Math.max(
+        Math.max(toNumber(detail.tokens?.cached_tokens), 0),
+        Math.max(toNumber(detail.tokens?.cache_tokens), 0)
+      );
+      const totalTokens = Math.max(
+        toNumber(detail.tokens?.total_tokens),
+        extractTotalTokens(detail)
+      );
+      const latencyMs = extractLatencyMs(detail);
+      const thinking = detail.thinking ?? null;
+      const thinkingLabel = formatThinkingLabel(thinking);
 
-        return {
-          id: `${timestamp}-${model}-${sourceKey}-${authIndex}-${index}`,
-          timestamp,
-          timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
-          timestampLabel: date ? date.toLocaleString(i18n.language) : timestamp || '-',
-          model,
-          sourceKey,
-          sourceRaw: sourceRaw || '-',
-          source,
-          sourceType,
-          authIndex,
-          failed: detail.failed === true,
-          latencyMs,
-          inputTokens,
-          outputTokens,
-          reasoningTokens,
-          cachedTokens,
-          totalTokens,
-        };
-      });
+      return {
+        id: `${timestamp}-${model}-${sourceKey}-${authIndex}-${index}`,
+        timestamp,
+        timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
+        timestampLabel: date ? date.toLocaleString(i18n.language) : timestamp || '-',
+        model,
+        sourceKey,
+        sourceRaw: sourceRaw || '-',
+        source,
+        sourceType,
+        authIndex,
+        failed: detail.failed === true,
+        latencyMs,
+        thinking,
+        thinkingLabel,
+        inputTokens,
+        outputTokens,
+        reasoningTokens,
+        cachedTokens,
+        totalTokens,
+      };
+    });
 
     const sourceLabelKeyMap = new Map<string, Set<string>>();
     baseRows.forEach((row) => {
@@ -319,6 +351,10 @@ export function RequestEventsDetailsCard({
       'auth_index',
       'result',
       ...(hasLatencyData ? ['latency_ms'] : []),
+      'thinking_intensity',
+      'thinking_mode',
+      'thinking_level',
+      'thinking_budget',
       'input_tokens',
       'output_tokens',
       'reasoning_tokens',
@@ -335,6 +371,10 @@ export function RequestEventsDetailsCard({
         row.authIndex,
         row.failed ? 'failed' : 'success',
         ...(hasLatencyData ? [row.latencyMs ?? ''] : []),
+        row.thinking?.intensity ?? '',
+        row.thinking?.mode ?? '',
+        row.thinking?.level ?? '',
+        row.thinking?.budget ?? '',
         row.inputTokens,
         row.outputTokens,
         row.reasoningTokens,
@@ -364,6 +404,7 @@ export function RequestEventsDetailsCard({
       auth_index: row.authIndex,
       failed: row.failed,
       ...(hasLatencyData && row.latencyMs !== null ? { latency_ms: row.latencyMs } : {}),
+      ...(row.thinking ? { thinking: row.thinking } : {}),
       tokens: {
         input_tokens: row.inputTokens,
         output_tokens: row.outputTokens,
@@ -492,6 +533,7 @@ export function RequestEventsDetailsCard({
                   <th>{t('usage_stats.request_events_auth_index')}</th>
                   <th>{t('usage_stats.request_events_result')}</th>
                   {hasLatencyData && <th title={latencyHint}>{t('usage_stats.time')}</th>}
+                  <th>{t('usage_stats.thinking_intensity')}</th>
                   <th>{t('usage_stats.input_tokens')}</th>
                   <th>{t('usage_stats.output_tokens')}</th>
                   <th>{t('usage_stats.reasoning_tokens')}</th>
@@ -529,6 +571,34 @@ export function RequestEventsDetailsCard({
                     {hasLatencyData && (
                       <td className={styles.durationCell}>{formatDurationMs(row.latencyMs)}</td>
                     )}
+                    <td>
+                      <span
+                        className={
+                          row.thinking
+                            ? styles.requestEventsThinkingBadge
+                            : styles.requestEventsThinkingEmpty
+                        }
+                        title={
+                          row.thinking
+                            ? [
+                                row.thinking.mode
+                                  ? `${t('usage_stats.thinking_mode')}: ${row.thinking.mode}`
+                                  : '',
+                                row.thinking.level
+                                  ? `${t('usage_stats.thinking_level')}: ${row.thinking.level}`
+                                  : '',
+                                typeof row.thinking.budget === 'number'
+                                  ? `${t('usage_stats.thinking_budget')}: ${row.thinking.budget.toLocaleString()}`
+                                  : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' · ')
+                            : undefined
+                        }
+                      >
+                        {row.thinkingLabel}
+                      </span>
+                    </td>
                     <td>{row.inputTokens.toLocaleString()}</td>
                     <td>{row.outputTokens.toLocaleString()}</td>
                     <td>{row.reasoningTokens.toLocaleString()}</td>

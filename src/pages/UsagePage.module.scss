@@ -969,6 +969,31 @@
   white-space: nowrap;
 }
 
+.requestEventsThinkingBadge,
+.requestEventsThinkingEmpty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.requestEventsThinkingBadge {
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 28%, transparent);
+}
+
+.requestEventsThinkingEmpty {
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
 .chartLineHeader {
   display: inline-flex;
   align-items: center;
