@@ -45,6 +45,7 @@ export type PatchAuthFileFieldsPayload = {
   excluded_models?: string[];
   disable_cooling?: string | boolean | null;
   websockets?: boolean;
+  websocket_handshake_debug?: boolean;
 };
 type PatchAuthFileFieldsResponse = {
   status?: string;

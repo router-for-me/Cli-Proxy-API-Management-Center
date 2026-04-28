@@ -31,6 +31,8 @@ export interface AuthFileItem {
   lastRefresh?: string | number;
   modified?: number;
   user_agent?: string;
+  websockets?: boolean;
+  websocket_handshake_debug?: boolean;
   [key: string]: unknown;
 }
 

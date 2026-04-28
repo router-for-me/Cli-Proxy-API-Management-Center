@@ -30,6 +30,7 @@ import {
   getTypeLabel,
   isRuntimeOnlyAuthFile,
   parsePriorityValue,
+  readAuthFileWebsocketHandshakeDebug,
   readAuthFileWebsockets,
   resolveAuthFileStats,
   resolveAuthFileUsageStats,
@@ -56,6 +57,7 @@ export type AuthFileCardProps = {
   disableControls: boolean;
   deleting: string | null;
   statusUpdating: Record<string, boolean>;
+  handshakeDebugUpdating: Record<string, boolean>;
   quotaFilterType: QuotaProviderType | null;
   planBadge: AuthFilePlanBadgeInfo | null;
   keyStats: KeyStats;
@@ -66,6 +68,7 @@ export type AuthFileCardProps = {
   onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
+  onToggleWebsocketHandshakeDebug: (file: AuthFileItem, enabled: boolean) => void;
   onToggleSelect: (name: string) => void;
 };
 
@@ -85,6 +88,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     disableControls,
     deleting,
     statusUpdating,
+    handshakeDebugUpdating,
     quotaFilterType,
     planBadge,
     keyStats,
@@ -95,6 +99,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     onOpenPrefixProxyEditor,
     onDelete,
     onToggleStatus,
+    onToggleWebsocketHandshakeDebug,
     onToggleSelect,
   } = props;
 
@@ -107,6 +112,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const typeLabel = getTypeLabel(t, file.type || 'unknown');
   const providerIcon = getAuthFileIcon(file.type || 'unknown', resolvedTheme);
   const websocketsEnabled = readAuthFileWebsockets(file);
+  const websocketHandshakeDebugEnabled = readAuthFileWebsocketHandshakeDebug(file);
+  const showWebsocketHandshakeDebug = websocketsEnabled === true;
   const websocketsBadgeLabel =
     websocketsEnabled === null
       ? null
@@ -222,6 +229,14 @@ export function AuthFileCard(props: AuthFileCardProps) {
                     title={t('ai_providers.codex_websockets_hint')}
                   >
                     {websocketsBadgeLabel}
+                  </span>
+                )}
+                {showWebsocketHandshakeDebug && websocketHandshakeDebugEnabled && (
+                  <span
+                    className={`${styles.featureBadge} ${styles.featureBadgeWarning}`}
+                    title={t('auth_files.websocket_handshake_debug_hint')}
+                  >
+                    {t('auth_files.websocket_handshake_debug_badge')}
                   </span>
                 )}
               </div>
@@ -363,6 +378,26 @@ export function AuthFileCard(props: AuthFileCardProps) {
                       iconClassName={styles.actionIcon}
                       iconSize={16}
                     />
+                  )}
+                  {showWebsocketHandshakeDebug && (
+                    <div
+                      className={`${styles.statusToggle} ${styles.debugToggle}`}
+                      title={t('auth_files.websocket_handshake_debug_hint')}
+                    >
+                      <span className={styles.statusToggleLabel}>
+                        {t('auth_files.websocket_handshake_debug_label')}
+                      </span>
+                      <ToggleSwitch
+                        ariaLabel={t('auth_files.websocket_handshake_debug_label')}
+                        checked={websocketHandshakeDebugEnabled}
+                        disabled={
+                          disableControls ||
+                          statusUpdating[file.name] === true ||
+                          handshakeDebugUpdating[file.name] === true
+                        }
+                        onChange={(value) => onToggleWebsocketHandshakeDebug(file, value)}
+                      />
+                    </div>
                   )}
                   <div className={styles.statusToggle}>
                     <span className={styles.statusToggleLabel}>

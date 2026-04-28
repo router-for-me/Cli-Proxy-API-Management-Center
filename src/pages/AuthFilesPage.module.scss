@@ -1188,6 +1188,12 @@
   border-color: color-mix(in srgb, var(--border-color) 92%, transparent);
 }
 
+.featureBadgeWarning {
+  color: #8a3a06;
+  background: color-mix(in srgb, #f97316 16%, transparent);
+  border-color: color-mix(in srgb, #f97316 40%, transparent);
+}
+
 .fileName {
   font-size: 14px;
   font-weight: 800;
@@ -1887,6 +1893,11 @@
   gap: 6px;
 }
 
+.debugToggle {
+  padding-left: 8px;
+  border-left: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+}
+
 .statusToggleLabel {
   font-size: 11px;
   font-weight: 500;
@@ -1926,10 +1937,16 @@
 @include mobile {
   .cardStatusActions {
     gap: 6px;
+    flex-wrap: wrap;
   }
 
   .statusToggle {
     padding-left: $spacing-xs;
+  }
+
+  .debugToggle {
+    border-left: 0;
+    padding-left: 0;
   }
 }
 

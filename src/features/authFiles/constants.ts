@@ -225,6 +225,14 @@ export const readAuthFileWebsockets = (file: AuthFileItem): boolean | null => {
   return parseDisableCoolingValue(rawValue) ?? false;
 };
 
+export const readAuthFileWebsocketHandshakeDebug = (file: AuthFileItem): boolean => {
+  const providerKey = normalizeProviderKey(String(file.type ?? file.provider ?? ''));
+  if (providerKey !== 'codex') return false;
+
+  const rawValue = file.websocket_handshake_debug ?? file['websocket_handshake_debug'];
+  return parseDisableCoolingValue(rawValue) ?? false;
+};
+
 export const applyCodexAuthFileWebsockets = (
   value: Record<string, unknown>,
   websockets: boolean
