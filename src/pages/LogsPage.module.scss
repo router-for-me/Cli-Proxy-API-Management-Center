@@ -318,25 +318,28 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
-  flex: 1 1 auto;
-  min-height: 280px;
-  max-height: calc(100vh - 320px);
+  flex: 0 0 auto;
+  min-height: 420px;
+  max-height: none;
+  height: calc(100vh - 520px);
   overflow: auto;
+  resize: vertical;
   position: relative;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overscroll-behavior: contain;
 
   @include tablet {
-    min-height: 240px;
-    max-height: calc(100vh - 300px);
+    min-height: 360px;
+    height: calc(100vh - 500px);
+    max-height: none;
   }
 
   @include mobile {
     min-height: 360px;
+    height: 420px;
     max-height: 480px;
     flex: 0 0 auto;
-    overflow: auto;
   }
 }
 
@@ -783,11 +786,6 @@
     padding: $spacing-md;
   }
 
-  .logPanel {
-    min-height: 200px;
-    max-height: calc(100vh - 280px);
-  }
-
   .logRow {
     padding: 8px 10px;
     font-size: 12px;
@@ -827,8 +825,9 @@
   }
 
   .logPanel {
-    min-height: 160px;
-    max-height: calc(100vh - 220px);
+    min-height: 320px;
+    height: 320px;
+    max-height: none;
   }
 
   .logRow {
