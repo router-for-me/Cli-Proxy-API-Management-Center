@@ -1180,6 +1180,14 @@
     "reload_confirm_message": "重新載入將捨棄你目前未儲存的修改，確定繼續嗎？",
     "save": "儲存",
     "description": "透過視覺化或原始檔方式編輯 config.yaml 設定檔",
+    "codex_thinking_models": {
+      "title": "顯示 Codex thinking 後綴模型",
+      "description": "在模型清單中顯示帶有 Codex thinking 後綴的模型別名，方便區分不同的 thinking 強度。",
+      "enable_success": "已開啟顯示 Codex thinking 後綴模型",
+      "disable_success": "已關閉顯示 Codex thinking 後綴模型",
+      "load_failed": "載入 Codex thinking 後綴模型顯示開關失敗",
+      "save_failed": "儲存 Codex thinking 後綴模型顯示開關失敗"
+    },
     "status_idle": "等待操作",
     "status_loading": "載入設定中...",
     "status_loading_short": "載入中",

@@ -103,6 +103,22 @@ export const configApi = {
   updateForceModelPrefix: (enabled: boolean) => apiClient.put('/force-model-prefix', { value: enabled }),
 
   /**
+   * 获取显示 Codex thinking 后缀模型开关
+   */
+  async getShowCodexThinkingModels(): Promise<boolean> {
+    const data = await apiClient.get<Record<string, unknown>>('/show-codex-thinking-models');
+    return Boolean(
+      data?.value ?? data?.['show-codex-thinking-models'] ?? data?.showCodexThinkingModels ?? false
+    );
+  },
+
+  /**
+   * 更新显示 Codex thinking 后缀模型开关
+   */
+  updateShowCodexThinkingModels: (enabled: boolean) =>
+    apiClient.put('/show-codex-thinking-models', { value: enabled }),
+
+  /**
    * 获取路由策略
    */
   async getRoutingStrategy(): Promise<string> {

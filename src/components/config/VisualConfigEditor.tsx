@@ -68,7 +68,11 @@ interface VisualConfigEditorProps {
   validationErrors?: VisualConfigValidationErrors;
   hasPayloadValidationErrors?: boolean;
   disabled?: boolean;
+  showCodexThinkingModels: boolean;
+  showCodexThinkingModelsDisabled?: boolean;
+  showCodexThinkingModelsError?: string;
   onChange: (values: Partial<VisualConfigValues>) => void;
+  onShowCodexThinkingModelsChange: (value: boolean) => void;
 }
 
 function getValidationMessage(
@@ -175,7 +179,11 @@ export function VisualConfigEditor({
   validationErrors,
   hasPayloadValidationErrors = false,
   disabled = false,
+  showCodexThinkingModels,
+  showCodexThinkingModelsDisabled = false,
+  showCodexThinkingModelsError,
   onChange,
+  onShowCodexThinkingModelsChange,
 }: VisualConfigEditorProps) {
   const { t } = useTranslation();
   const pageTransitionLayer = usePageTransitionLayer();
@@ -746,6 +754,16 @@ export function VisualConfigEditor({
                 disabled={disabled}
                 hint={t('config_management.visual.sections.auth.auth_dir_hint')}
               />
+              <ToggleRow
+                title={t('config_management.codex_thinking_models.title')}
+                description={t('config_management.codex_thinking_models.description')}
+                checked={showCodexThinkingModels}
+                disabled={showCodexThinkingModelsDisabled}
+                onChange={onShowCodexThinkingModelsChange}
+              />
+              {showCodexThinkingModelsError ? (
+                <div className="error-box">{showCodexThinkingModelsError}</div>
+              ) : null}
               <div className={styles.subsection}>
                 <ApiKeysCardEditor
                   value={values.apiKeysText}

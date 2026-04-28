@@ -17,7 +17,14 @@ import { VisualConfigEditor } from '@/components/config/VisualConfigEditor';
 import { DiffModal } from '@/components/config/DiffModal';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useVisualConfig } from '@/hooks/useVisualConfig';
-import { useNotificationStore, useAuthStore, useThemeStore, useConfigStore } from '@/stores';
+import {
+  useNotificationStore,
+  useAuthStore,
+  useThemeStore,
+  useConfigStore,
+  useModelsStore,
+} from '@/stores';
+import { configApi } from '@/services/api/config';
 import { configFileApi } from '@/services/api/configFile';
 import styles from './ConfigPage.module.scss';
 
@@ -70,6 +77,11 @@ export function ConfigPage() {
   const [diffModalOpen, setDiffModalOpen] = useState(false);
   const [serverYaml, setServerYaml] = useState('');
   const [mergedYaml, setMergedYaml] = useState('');
+  const [showCodexThinkingModels, setShowCodexThinkingModels] = useState(false);
+  const [showCodexThinkingModelsLoading, setShowCodexThinkingModelsLoading] = useState(true);
+  const [showCodexThinkingModelsLoaded, setShowCodexThinkingModelsLoaded] = useState(false);
+  const [showCodexThinkingModelsSaving, setShowCodexThinkingModelsSaving] = useState(false);
+  const [showCodexThinkingModelsError, setShowCodexThinkingModelsError] = useState('');
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,6 +123,36 @@ export function ConfigPage() {
   useEffect(() => {
     loadConfig();
   }, [loadConfig]);
+
+  const loadShowCodexThinkingModels = useCallback(async () => {
+    if (connectionStatus !== 'connected') {
+      setShowCodexThinkingModelsLoading(false);
+      setShowCodexThinkingModelsLoaded(false);
+      return;
+    }
+
+    setShowCodexThinkingModelsLoading(true);
+    setShowCodexThinkingModelsError('');
+    try {
+      const enabled = await configApi.getShowCodexThinkingModels();
+      setShowCodexThinkingModels(enabled);
+      setShowCodexThinkingModelsLoaded(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '';
+      setShowCodexThinkingModelsLoaded(false);
+      setShowCodexThinkingModelsError(message);
+      showNotification(
+        `${t('config_management.codex_thinking_models.load_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+    } finally {
+      setShowCodexThinkingModelsLoading(false);
+    }
+  }, [connectionStatus, showNotification, t]);
+
+  useEffect(() => {
+    void loadShowCodexThinkingModels();
+  }, [loadShowCodexThinkingModels]);
 
   useEffect(() => {
     if (activeTab !== 'visual' || !visualParseError) return;
@@ -379,6 +421,39 @@ export function ConfigPage() {
     performSearch(lastSearchedQuery, 'next');
   }, [lastSearchedQuery, performSearch]);
 
+  const handleShowCodexThinkingModelsChange = useCallback(
+    async (enabled: boolean) => {
+      const previousValue = showCodexThinkingModels;
+      setShowCodexThinkingModels(enabled);
+      setShowCodexThinkingModelsSaving(true);
+      setShowCodexThinkingModelsError('');
+
+      try {
+        await configApi.updateShowCodexThinkingModels(enabled);
+        useModelsStore.getState().clearCache();
+        showNotification(
+          t(
+            enabled
+              ? 'config_management.codex_thinking_models.enable_success'
+              : 'config_management.codex_thinking_models.disable_success'
+          ),
+          'success'
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : '';
+        setShowCodexThinkingModels(previousValue);
+        setShowCodexThinkingModelsError(message);
+        showNotification(
+          `${t('config_management.codex_thinking_models.save_failed')}${message ? `: ${message}` : ''}`,
+          'error'
+        );
+      } finally {
+        setShowCodexThinkingModelsSaving(false);
+      }
+    },
+    [showCodexThinkingModels, showNotification, t]
+  );
+
   // Keep bottom floating actions from covering page content by syncing its height to a CSS variable.
   useLayoutEffect(() => {
     if (typeof window === 'undefined' || !shouldRenderFloatingActions) return;
@@ -441,7 +516,7 @@ export function ConfigPage() {
 
   const handleReload = useCallback(() => {
     if (!isDirty) {
-      void loadConfig();
+      void Promise.all([loadConfig(), loadShowCodexThinkingModels()]);
       return;
     }
 
@@ -452,10 +527,10 @@ export function ConfigPage() {
       cancelText: t('common.cancel'),
       variant: 'danger',
       onConfirm: async () => {
-        await loadConfig();
+        await Promise.all([loadConfig(), loadShowCodexThinkingModels()]);
       },
     });
-  }, [isDirty, loadConfig, showConfirmation, t]);
+  }, [isDirty, loadConfig, loadShowCodexThinkingModels, showConfirmation, t]);
 
   const floatingActions = (
     <div className={styles.floatingActionContainer} ref={floatingActionsRef}>
@@ -556,7 +631,16 @@ export function ConfigPage() {
               validationErrors={visualValidationErrors}
               hasPayloadValidationErrors={visualHasPayloadValidationErrors}
               disabled={disableControls || loading}
+              showCodexThinkingModels={showCodexThinkingModels}
+              showCodexThinkingModelsDisabled={
+                disableControls ||
+                showCodexThinkingModelsLoading ||
+                showCodexThinkingModelsSaving ||
+                !showCodexThinkingModelsLoaded
+              }
+              showCodexThinkingModelsError={showCodexThinkingModelsError}
               onChange={setVisualValues}
+              onShowCodexThinkingModelsChange={handleShowCodexThinkingModelsChange}
             />
           ) : (
             <div className={styles.sourceWorkspace}>

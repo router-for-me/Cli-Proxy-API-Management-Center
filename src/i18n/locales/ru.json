@@ -1151,6 +1151,14 @@
     "reload_confirm_message": "Перезагрузка отбросит ваши несохранённые изменения. Продолжить?",
     "save": "Сохранить",
     "description": "Редактируйте config.yaml через визуальный редактор или исходный файл",
+    "codex_thinking_models": {
+      "title": "Показывать модели с суффиксом Codex thinking",
+      "description": "Показывает в списке моделей псевдонимы с суффиксом Codex thinking, чтобы было проще различать уровни thinking.",
+      "enable_success": "Показ моделей с суффиксом Codex thinking включён",
+      "disable_success": "Показ моделей с суффиксом Codex thinking выключен",
+      "load_failed": "Не удалось загрузить настройку показа моделей с суффиксом Codex thinking",
+      "save_failed": "Не удалось сохранить настройку показа моделей с суффиксом Codex thinking"
+    },
     "status_idle": "Ожидание действия",
     "status_loading": "Загрузка конфигурации...",
     "status_loading_short": "Загрузка",

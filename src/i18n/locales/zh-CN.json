@@ -1154,6 +1154,14 @@
     "reload_confirm_message": "重新加载将丢弃你当前未保存的修改，确定继续吗？",
     "save": "保存",
     "description": "通过可视化或者源文件方式编辑 config.yaml 配置文件",
+    "codex_thinking_models": {
+      "title": "显示 Codex thinking 后缀模型",
+      "description": "在模型列表中显示带有 Codex thinking 后缀的模型别名，方便区分不同 thinking 强度。",
+      "enable_success": "已开启显示 Codex thinking 后缀模型",
+      "disable_success": "已关闭显示 Codex thinking 后缀模型",
+      "load_failed": "加载 Codex thinking 后缀模型显示开关失败",
+      "save_failed": "保存 Codex thinking 后缀模型显示开关失败"
+    },
     "status_idle": "等待操作",
     "status_loading": "加载配置中...",
     "status_loading_short": "加载中",

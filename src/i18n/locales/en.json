@@ -1154,6 +1154,14 @@
     "reload_confirm_message": "Reloading will discard your unsaved changes. Do you want to continue?",
     "save": "Save",
     "description": "Edit config.yaml via visual editor or source file",
+    "codex_thinking_models": {
+      "title": "Show Codex thinking suffix models",
+      "description": "Show model aliases with Codex thinking suffixes in the model list, making different thinking levels easier to distinguish.",
+      "enable_success": "Codex thinking suffix models are now shown",
+      "disable_success": "Codex thinking suffix models are now hidden",
+      "load_failed": "Failed to load the Codex thinking suffix models setting",
+      "save_failed": "Failed to save the Codex thinking suffix models setting"
+    },
     "status_idle": "Waiting for action",
     "status_loading": "Loading configuration...",
     "status_loading_short": "Loading",
