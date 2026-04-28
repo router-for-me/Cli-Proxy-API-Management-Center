@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useReducer } from 'react';
 import { Scalar, isMap, parse as parseYaml, parseDocument } from 'yaml';
-import type { YAMLSeq } from 'yaml';
+import type { YAMLMap, YAMLSeq } from 'yaml';
 import type {
   PayloadFilterRule,
   PayloadParamEntry,
@@ -12,10 +12,28 @@ import type {
   PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES, makeClientId } from '@/types/visualConfig';
+import { areStringArraysEqual } from '@/utils/compare';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
+}
+
+function normalizeApiKeyModelPatterns(raw: unknown): string[] {
+  const items = Array.isArray(raw) ? raw : typeof raw === 'string' ? raw.split(/[\n,]/) : [];
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+
+  items.forEach((item) => {
+    const trimmed = String(item ?? '').trim();
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    normalized.push(trimmed);
+  });
+
+  return normalized;
 }
 
 function extractApiKeyEntry(raw: unknown): VisualApiKeyEntry | null {
@@ -25,6 +43,8 @@ function extractApiKeyEntry(raw: unknown): VisualApiKeyEntry | null {
       ? {
           id: makeClientId(),
           apiKey: trimmed,
+          allowedModels: [],
+          excludedModels: [],
         }
       : null;
   }
@@ -42,9 +62,18 @@ function extractApiKeyEntry(raw: unknown): VisualApiKeyEntry | null {
   }
   if (!apiKey) return null;
 
+  const allowedModels = normalizeApiKeyModelPatterns(
+    record['allowed-models'] ?? record.allowedModels ?? record['allowed_models']
+  );
+  const excludedModels = normalizeApiKeyModelPatterns(
+    record['excluded-models'] ?? record.excludedModels ?? record['excluded_models']
+  );
+
   return {
     id: makeClientId(),
     apiKey,
+    allowedModels,
+    excludedModels,
   };
 }
 
@@ -97,6 +126,39 @@ function createDoubleQuotedStringSeq(doc: YamlDocument, values: string[]) {
     node.type = Scalar.QUOTE_DOUBLE;
     return node;
   });
+  return sequence;
+}
+
+function createDoubleQuotedStringNode(value: string) {
+  const node = new Scalar(value);
+  node.type = Scalar.QUOTE_DOUBLE;
+  return node;
+}
+
+function createClientApiKeysSeq(doc: YamlDocument, entries: VisualApiKeyEntry[]) {
+  const sequence = doc.createNode([]) as YAMLSeq;
+  sequence.items = entries
+    .map((entry) => {
+      const apiKey = entry.apiKey.trim();
+      if (!apiKey) return null;
+
+      const allowedModels = normalizeApiKeyModelPatterns(entry.allowedModels);
+      const excludedModels = normalizeApiKeyModelPatterns(entry.excludedModels);
+      if (allowedModels.length === 0 && excludedModels.length === 0) {
+        return createDoubleQuotedStringNode(apiKey);
+      }
+
+      const mapping = doc.createNode({}) as YAMLMap;
+      mapping.set('api-key', createDoubleQuotedStringNode(apiKey));
+      if (allowedModels.length > 0) {
+        mapping.set('allowed-models', createDoubleQuotedStringSeq(doc, allowedModels));
+      }
+      if (excludedModels.length > 0) {
+        mapping.set('excluded-models', createDoubleQuotedStringSeq(doc, excludedModels));
+      }
+      return mapping;
+    })
+    .filter(Boolean);
   return sequence;
 }
 
@@ -568,6 +630,8 @@ function areApiKeyEntriesEqual(
     const rightEntry = right[index];
     if (!rightEntry) return false;
     if (leftEntry.apiKey !== rightEntry.apiKey) return false;
+    if (!areStringArraysEqual(leftEntry.allowedModels, rightEntry.allowedModels)) return false;
+    if (!areStringArraysEqual(leftEntry.excludedModels, rightEntry.excludedModels)) return false;
   }
   return true;
 }
@@ -937,14 +1001,9 @@ export function useVisualConfig() {
         }
 
         setStringInDoc(doc, ['auth-dir'], values.authDir);
-        const apiKeys = values.apiKeys
-          .map((entry) => {
-            const trimmedKey = entry.apiKey.trim();
-            return trimmedKey || null;
-          })
-          .filter((key): key is string => Boolean(key));
+        const apiKeys = values.apiKeys.filter((entry) => entry.apiKey.trim());
         if (apiKeys.length > 0) {
-          doc.setIn(['api-keys'], createDoubleQuotedStringSeq(doc, apiKeys));
+          doc.setIn(['api-keys'], createClientApiKeysSeq(doc, apiKeys));
         } else if (docHas(doc, ['api-keys'])) {
           doc.deleteIn(['api-keys']);
         }

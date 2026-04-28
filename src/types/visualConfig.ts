@@ -54,6 +54,8 @@ export interface StreamingConfig {
 export interface VisualApiKeyEntry {
   id: string;
   apiKey: string;
+  allowedModels: string[];
+  excludedModels: string[];
 }
 
 export type VisualConfigValues = {

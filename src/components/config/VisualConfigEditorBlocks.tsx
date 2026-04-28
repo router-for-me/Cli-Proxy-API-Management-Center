@@ -21,6 +21,7 @@ import {
   VISUAL_CONFIG_PAYLOAD_VALUE_TYPE_OPTIONS,
   VISUAL_CONFIG_PROTOCOL_OPTIONS,
 } from '@/hooks/useVisualConfig';
+import { excludedModelsToText, parseExcludedModels, parseTextList } from '@/components/providers/utils';
 import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
 
@@ -178,6 +179,8 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const [modalOpen, setModalOpen] = useState(false);
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
+  const [allowedModelsValue, setAllowedModelsValue] = useState('');
+  const [excludedModelsValue, setExcludedModelsValue] = useState('');
   const [formError, setFormError] = useState('');
 
   function generateSecureApiKey(): string {
@@ -190,6 +193,8 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const openAddModal = () => {
     setEditingApiKeyId(null);
     setInputValue('');
+    setAllowedModelsValue('');
+    setExcludedModelsValue('');
     setFormError('');
     setModalOpen(true);
   };
@@ -198,6 +203,8 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     const entry = apiKeys.find((item) => item.id === apiKeyId);
     setEditingApiKeyId(apiKeyId);
     setInputValue(entry?.apiKey ?? '');
+    setAllowedModelsValue(excludedModelsToText(entry?.allowedModels));
+    setExcludedModelsValue(excludedModelsToText(entry?.excludedModels));
     setFormError('');
     setModalOpen(true);
   };
@@ -205,6 +212,8 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const closeModal = () => {
     setModalOpen(false);
     setInputValue('');
+    setAllowedModelsValue('');
+    setExcludedModelsValue('');
     setEditingApiKeyId(null);
     setFormError('');
   };
@@ -223,9 +232,13 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       setFormError(t('config_management.visual.api_keys.error_invalid'));
       return;
     }
+    const allowedModels = parseTextList(allowedModelsValue);
+    const excludedModels = parseExcludedModels(excludedModelsValue);
     const nextEntry: VisualApiKeyEntry = {
       id: editingApiKeyId ?? makeClientId(),
       apiKey: trimmed,
+      allowedModels,
+      excludedModels,
     };
     const nextKeys =
       editingApiKeyId === null
@@ -269,6 +282,14 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
                   {t('config_management.visual.api_keys.input_label')}
                 </div>
                 <div className="item-subtitle">{maskApiKey(String(entry.apiKey || ''))}</div>
+                {(entry.allowedModels.length > 0 || entry.excludedModels.length > 0) && (
+                  <div className="item-subtitle">
+                    {t('config_management.visual.api_keys.rules_summary', {
+                      allowed: entry.allowedModels.length,
+                      excluded: entry.excludedModels.length,
+                    })}
+                  </div>
+                )}
               </div>
               <div className="item-actions">
                 <Button
@@ -357,6 +378,30 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
               {formError}
             </div>
           )}
+        </div>
+        <div className="form-group">
+          <label>{t('config_management.visual.api_keys.allowed_models_label')}</label>
+          <textarea
+            className="input"
+            rows={4}
+            placeholder={t('config_management.visual.api_keys.allowed_models_placeholder')}
+            value={allowedModelsValue}
+            onChange={(e) => setAllowedModelsValue(e.target.value)}
+            disabled={disabled}
+          />
+          <div className="hint">{t('config_management.visual.api_keys.allowed_models_hint')}</div>
+        </div>
+        <div className="form-group">
+          <label>{t('config_management.visual.api_keys.excluded_models_label')}</label>
+          <textarea
+            className="input"
+            rows={4}
+            placeholder={t('config_management.visual.api_keys.excluded_models_placeholder')}
+            value={excludedModelsValue}
+            onChange={(e) => setExcludedModelsValue(e.target.value)}
+            disabled={disabled}
+          />
+          <div className="hint">{t('config_management.visual.api_keys.excluded_models_hint')}</div>
         </div>
       </Modal>
     </div>

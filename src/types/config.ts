@@ -6,7 +6,11 @@
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from './provider';
 import type { AmpcodeConfig } from './ampcode';
 
-export type ClientApiKeyConfig = string;
+export interface ClientApiKeyConfig {
+  apiKey: string;
+  allowedModels?: string[];
+  excludedModels?: string[];
+}
 
 export interface QuotaExceededConfig {
   switchProject?: boolean;

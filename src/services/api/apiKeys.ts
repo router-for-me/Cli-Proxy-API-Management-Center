@@ -5,6 +5,23 @@
 import { apiClient } from './client';
 import type { ClientApiKeyConfig } from '@/types/config';
 
+const normalizeModelPatterns = (value: unknown): string[] => {
+  const rawList = Array.isArray(value) ? value : typeof value === 'string' ? value.split(/[\n,]/) : [];
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+
+  rawList.forEach((item) => {
+    const trimmed = String(item ?? '').trim();
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    normalized.push(trimmed);
+  });
+
+  return normalized;
+};
+
 const normalizeClientApiKey = (entry: unknown): ClientApiKeyConfig | null => {
   if (entry === undefined || entry === null) return null;
   const record =
@@ -18,7 +35,23 @@ const normalizeClientApiKey = (entry: unknown): ClientApiKeyConfig | null => {
     (typeof entry === 'string' ? entry : '');
   const trimmed = String(apiKey || '').trim();
   if (!trimmed) return null;
-  return trimmed;
+
+  const config: ClientApiKeyConfig = { apiKey: trimmed };
+  const allowedModels = normalizeModelPatterns(
+    record?.['allowed-models'] ?? record?.allowedModels ?? record?.['allowed_models']
+  );
+  const excludedModels = normalizeModelPatterns(
+    record?.['excluded-models'] ?? record?.excludedModels ?? record?.['excluded_models']
+  );
+
+  if (allowedModels.length) {
+    config.allowedModels = allowedModels;
+  }
+  if (excludedModels.length) {
+    config.excludedModels = excludedModels;
+  }
+
+  return config;
 };
 
 export const apiKeysApi = {

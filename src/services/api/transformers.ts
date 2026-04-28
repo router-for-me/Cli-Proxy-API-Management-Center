@@ -135,7 +135,22 @@ const normalizeClientApiKeyConfig = (entry: unknown): ClientApiKeyConfig | null 
   const trimmed = String(apiKey || '').trim();
   if (!trimmed) return null;
 
-  return trimmed;
+  const config: ClientApiKeyConfig = { apiKey: trimmed };
+  const allowedModels = normalizeExcludedModels(
+    record?.['allowed-models'] ?? record?.allowedModels ?? record?.['allowed_models']
+  );
+  const excludedModels = normalizeExcludedModels(
+    record?.['excluded-models'] ?? record?.excludedModels ?? record?.['excluded_models']
+  );
+
+  if (allowedModels.length) {
+    config.allowedModels = allowedModels;
+  }
+  if (excludedModels.length) {
+    config.excludedModels = excludedModels;
+  }
+
+  return config;
 };
 
 const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
