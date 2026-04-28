@@ -34,6 +34,8 @@ npm run dev
 
 Open `http://localhost:5173`, then connect to your CLI Proxy API backend instance.
 
+For local development, use the Vite dev server URL above to test changes from this repository. The backend-served `http://<host>:<api_port>/management.html` page is the bundled/released artifact and may not include local source changes until a new build is bundled.
+
 ### Option C: Build a single HTML file
 
 ```bash
@@ -85,8 +87,27 @@ See `api.md` for the full authentication rules, server-side limits, and edge cas
 - **Quota Management**: manage quota limits and usage for Claude, Antigravity, Codex, Gemini CLI, and other providers.
 - **Usage**: requests/tokens charts (hour/day), per-API & per-model breakdown, cached/reasoning token breakdown, RPM/TPM window, optional cost estimation with locally-saved model pricing.
 - **Config**: edit `/config.yaml` in-browser with YAML highlighting + search, then save/reload.
+- **Codex thinking model aliases**: in **Config → Visual editor → Authentication**, toggle the backend `show-codex-thinking-models` setting to show Codex thinking suffix aliases such as `gpt-5.2(high)` in `/v1/models`. The toggle is saved immediately through the Management API and does not edit the YAML source buffer.
 - **Logs**: tail logs with incremental polling, auto-refresh, search, hide management traffic, clear logs; download request error log files.
 - **System**: quick links + fetch `/v1/models` (grouped view). Requires at least one proxy API key to query models.
+
+### Codex thinking suffix model toggle
+
+The Web UI exposes the server-side `show-codex-thinking-models` setting under **Config → Visual editor → Authentication**. It uses these Management API endpoints:
+
+```http
+GET /v0/management/show-codex-thinking-models
+PUT /v0/management/show-codex-thinking-models
+PATCH /v0/management/show-codex-thinking-models
+```
+
+Update requests send the standard boolean payload:
+
+```json
+{ "value": true }
+```
+
+When enabled, the backend can add display aliases like `gpt-5.2(low)`, `gpt-5.2(medium)`, `gpt-5.2(high)`, and `gpt-5.2(xhigh)` to `/v1/models`. The base model `gpt-5.2` represents default/auto behavior; `none` and `auto` suffix aliases are not shown by the backend.
 
 ## Tech Stack
 
