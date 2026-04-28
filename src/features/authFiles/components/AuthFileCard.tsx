@@ -336,16 +336,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   >
                     <IconSettings className={styles.actionIcon} size={16} />
                   </Button>
-                  {showQuotaLayout && quotaType && (
-                    <AuthFileQuotaRefreshButton
-                      file={file}
-                      quotaType={quotaType}
-                      disableControls={disableControls}
-                      className={styles.iconButton}
-                      iconClassName={styles.actionIcon}
-                      iconSize={16}
-                    />
-                  )}
                   <Button
                     variant="danger"
                     size="sm"
@@ -363,16 +353,28 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 </div>
               )}
               {!isRuntimeOnly && (
-                <div className={styles.statusToggle}>
-                  <span className={styles.statusToggleLabel}>
-                    {t('auth_files.status_toggle_label')}
-                  </span>
-                  <ToggleSwitch
-                    ariaLabel={t('auth_files.status_toggle_label')}
-                    checked={!file.disabled}
-                    disabled={disableControls || statusUpdating[file.name] === true}
-                    onChange={(value) => onToggleStatus(file, value)}
-                  />
+                <div className={styles.cardStatusActions}>
+                  {showQuotaLayout && quotaType && (
+                    <AuthFileQuotaRefreshButton
+                      file={file}
+                      quotaType={quotaType}
+                      disableControls={disableControls}
+                      className={styles.iconButton}
+                      iconClassName={styles.actionIcon}
+                      iconSize={16}
+                    />
+                  )}
+                  <div className={styles.statusToggle}>
+                    <span className={styles.statusToggleLabel}>
+                      {t('auth_files.status_toggle_label')}
+                    </span>
+                    <ToggleSwitch
+                      ariaLabel={t('auth_files.status_toggle_label')}
+                      checked={!file.disabled}
+                      disabled={disableControls || statusUpdating[file.name] === true}
+                      onChange={(value) => onToggleStatus(file, value)}
+                    />
+                  </div>
                 </div>
               )}
             </div>

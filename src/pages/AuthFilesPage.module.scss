@@ -1873,12 +1873,18 @@
   background: color-mix(in srgb, var(--bg-tertiary) 50%, transparent);
 }
 
+.cardStatusActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 .statusToggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
-  margin-left: auto;
 }
 
 .statusToggleLabel {
@@ -1918,6 +1924,10 @@
 }
 
 @include mobile {
+  .cardStatusActions {
+    gap: 6px;
+  }
+
   .statusToggle {
     padding-left: $spacing-xs;
   }
