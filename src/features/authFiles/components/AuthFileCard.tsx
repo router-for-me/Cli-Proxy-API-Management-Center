@@ -38,7 +38,10 @@ import {
 } from '@/features/authFiles/constants';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import type { AuthFilePlanBadgeInfo } from '@/features/authFiles/planMetadata';
-import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
+import {
+  AuthFileQuotaRefreshButton,
+  AuthFileQuotaSection,
+} from '@/features/authFiles/components/AuthFileQuotaSection';
 import { AuthFilePlanBadge } from '@/features/authFiles/components/AuthFilePlanBadge';
 import { AuthFileWarningIndicator } from '@/features/authFiles/components/AuthFileWarningIndicator';
 import styles from '@/pages/AuthFilesPage.module.scss';
@@ -333,6 +336,16 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   >
                     <IconSettings className={styles.actionIcon} size={16} />
                   </Button>
+                  {showQuotaLayout && quotaType && (
+                    <AuthFileQuotaRefreshButton
+                      file={file}
+                      quotaType={quotaType}
+                      disableControls={disableControls}
+                      className={styles.iconButton}
+                      iconClassName={styles.actionIcon}
+                      iconSize={16}
+                    />
+                  )}
                   <Button
                     variant="danger"
                     size="sm"

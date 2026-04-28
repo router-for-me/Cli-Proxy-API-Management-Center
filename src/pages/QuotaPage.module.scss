@@ -320,28 +320,62 @@
 }
 
 .quotaBar {
-  height: 8px;
-  background-color: var(--bg-tertiary);
+  position: relative;
+  height: 10px;
+  padding: 1px;
+  box-sizing: border-box;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-tertiary) 92%, white 8%),
+      color-mix(in srgb, var(--bg-tertiary) 72%, black 4%)
+    );
+  border: 1px solid color-mix(in srgb, var(--border-color) 34%, transparent);
   border-radius: 999px;
   overflow: hidden;
+  box-shadow:
+    inset 0 1px 1px rgba(15, 23, 42, 0.05),
+    0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .quotaBarFill {
+  position: relative;
   height: 100%;
-  background-color: var(--success-color, #22c55e);
-  transition: width 0.2s ease;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(90deg, #16a34a, #22c55e 54%, #14b8a6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 0 10px color-mix(in srgb, var(--success-color, #22c55e) 30%, transparent);
+  transition:
+    width 0.28s ease,
+    background-color 0.2s ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.32), transparent 62%);
+    pointer-events: none;
+  }
 }
 
 .quotaBarFillHigh {
-  background-color: var(--success-color, #22c55e);
+  background: linear-gradient(90deg, #16a34a, #22c55e 54%, #14b8a6);
 }
 
 .quotaBarFillMedium {
-  background-color: var(--quota-medium-color, #e0aa14);
+  background: linear-gradient(90deg, #d97706, #f59e0b 52%, #facc15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    0 0 10px rgba(245, 158, 11, 0.24);
 }
 
 .quotaBarFillLow {
-  background-color: var(--danger-color);
+  background: linear-gradient(90deg, #dc2626, #ef4444 54%, #f97316);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 0 10px rgba(239, 68, 68, 0.24);
 }
 
 .quotaMeta {
@@ -378,14 +412,33 @@
 }
 
 .quotaMessageAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  border: none;
-  background: none;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px dashed color-mix(in srgb, var(--primary-color) 42%, var(--border-color));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--bg-secondary));
+  color: color-mix(in srgb, var(--primary-color) 76%, var(--text-primary));
   cursor: pointer;
-  text-decoration: underline;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-decoration: none;
+  transition:
+    color $transition-fast,
+    background-color $transition-fast,
+    border-color $transition-fast,
+    box-shadow $transition-fast;
 
   &:hover:not(:disabled) {
     color: var(--text-primary);
+    background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
+    border-color: color-mix(in srgb, var(--primary-color) 60%, var(--border-color));
+    box-shadow: 0 8px 18px -16px color-mix(in srgb, var(--primary-color) 55%, transparent);
   }
 
   &:disabled {
