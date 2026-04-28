@@ -9,6 +9,7 @@ export * from './authFiles';
 export * from './oauth';
 export * from './usage';
 export * from './logs';
+export * from './collector';
 export * from './version';
 export * from './models';
 export * from './transformers';
