@@ -32,6 +32,18 @@ bun run type-check         # TypeScript 检查
 bun run lint               # ESLint
 ```
 
+### 记不住流程时 / Friendly Shortcuts
+
+只记这 5 个入口即可：
+
+```bash
+bun run flow                         # 打开交互菜单
+bun run start -- my-topic            # 开工：doctor → sync → feature
+bun run check                        # 检查：type-check → lint → build
+bun run save -- --type=feat --scope=x --zh="中文" --en="english"
+bun run ship                         # 合主线：promote → push main → 回 dev
+```
+
 ---
 
 ## §1 开发铁律 / Development Iron Rules
@@ -152,6 +164,11 @@ sync → feature → [编码 + commit]* → promote → (可选) release
 | `bun run commit` | 交互式 Conventional Commits（中英双语） | 禁止 main 直 commit |
 | `bun run promote` | dev → main 预检 + PR 判断 + 双重确认 | typecheck/lint/build 失败中止 |
 | `bun run release [ver]` | 打 `v*-fork.N` tag 并可选 push | 仅 main |
+| `bun run flow` | 打开流程菜单 | 适合不想记命令时 |
+| `bun run start -- <topic>` | 诊断 → 同步 upstream → 从 dev 切功能分支 | 一键开工 |
+| `bun run check` | type-check → lint（既有问题警告）→ build | 一键检查 |
+| `bun run save -- <args>` | 转发到双语 commit，并自动 `--yes` | 一键提交 |
+| `bun run ship` | promote → 非交互 push main → 回 dev | 敏感操作，需确认本意是合主线 |
 
 ### 安全约束
 

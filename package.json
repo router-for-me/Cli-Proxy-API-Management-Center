@@ -18,7 +18,12 @@
     "promote": "bash scripts/git/promote.sh",
     "release": "bash scripts/git/release.sh",
     "doctor": "bash scripts/git/doctor.sh",
-    "setup": "bash scripts/setup.sh"
+    "setup": "bash scripts/setup.sh",
+    "flow": "bash scripts/git/flow.sh",
+    "start": "bash scripts/git/flow.sh start",
+    "check": "bash scripts/git/flow.sh check",
+    "save": "bash scripts/git/flow.sh save",
+    "ship": "bash scripts/git/flow.sh ship"
   },
   "dependencies": {
     "@codemirror/lang-yaml": "^6.1.2",
