@@ -483,7 +483,7 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       for (const [key, value] of Object.entries(modelOverridesRaw)) {
         if (Array.isArray(value)) {
           const strings = value.map((l) => (typeof l === 'string' ? (l as string).trim() : '')).filter(Boolean) as string[];
-          if (strings.length > 0) modelOverrides[key] = strings;
+          modelOverrides[key] = strings;
         }
       }
     }

@@ -140,6 +140,7 @@ export function ConfigPage() {
       setShowCodexThinkingModelsLoaded(true);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
+      setShowCodexThinkingModels(false);
       setShowCodexThinkingModelsLoaded(false);
       setShowCodexThinkingModelsError(message);
       showNotification(
