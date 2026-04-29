@@ -263,7 +263,7 @@ export function OAuthPage() {
       const res = await oauthApi.startAuth(
         provider,
         provider === 'gemini-cli'
-          ? { projectId: projectId || undefined, proxyUrl }
+          ? { projectId, proxyUrl }
           : proxyUrl
             ? { proxyUrl }
             : undefined
