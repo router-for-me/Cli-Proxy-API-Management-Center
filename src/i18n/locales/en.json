@@ -1162,6 +1162,29 @@
       "load_failed": "Failed to load the Codex thinking suffix models setting",
       "save_failed": "Failed to save the Codex thinking suffix models setting"
     },
+    "codex_thinking_levels": {
+      "label": "Codex Thinking Level Display",
+      "select_title": "Select Codex Thinking Levels to Display",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "X-High",
+      "none": "None selected"
+    },
+    "codex_thinking_model_overrides": {
+      "label": "Per-Model Customization",
+      "description": "Add hidden levels back for specific models",
+      "select_title": "Customize Model Thinking Level Display",
+      "inherit_all": "Inherit global levels by default",
+      "customized_count": "{{count}} model(s) customized",
+      "model": "Model",
+      "status": "Status",
+      "inherited": "Inherited",
+      "customized": "Customized",
+      "global_levels_hint": "Global inherit: ",
+      "api_hint": "Note: Hidden levels can still be called via suffix model names",
+      "no_models": "No Codex models configured. Add models in the Codex API Keys section first."
+    },
     "status_idle": "Waiting for action",
     "status_loading": "Loading configuration...",
     "status_loading_short": "Loading",

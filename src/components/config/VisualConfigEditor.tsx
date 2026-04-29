@@ -42,6 +42,8 @@ import {
   PayloadFilterRulesEditor,
   PayloadRulesEditor,
 } from './VisualConfigEditorBlocks';
+import { ThinkingLevelSelector } from './ThinkingLevelSelector';
+import { ModelOverrideModal } from './ModelOverrideModal';
 import styles from './VisualConfigEditor.module.scss';
 
 type VisualSectionId =
@@ -71,8 +73,13 @@ interface VisualConfigEditorProps {
   showCodexThinkingModels: boolean;
   showCodexThinkingModelsDisabled?: boolean;
   showCodexThinkingModelsError?: string;
+  codexThinkingLevels: string[];
+  codexThinkingModelOverrides: Record<string, string[]>;
+  codexModelIds: string[];
   onChange: (values: Partial<VisualConfigValues>) => void;
   onShowCodexThinkingModelsChange: (value: boolean) => void;
+  onCodexThinkingLevelsChange: (levels: string[]) => void;
+  onCodexThinkingModelOverridesChange: (overrides: Record<string, string[]>) => void;
 }
 
 function getValidationMessage(
@@ -182,8 +189,13 @@ export function VisualConfigEditor({
   showCodexThinkingModels,
   showCodexThinkingModelsDisabled = false,
   showCodexThinkingModelsError,
+  codexThinkingLevels,
+  codexThinkingModelOverrides,
+  codexModelIds,
   onChange,
   onShowCodexThinkingModelsChange,
+  onCodexThinkingLevelsChange,
+  onCodexThinkingModelOverridesChange,
 }: VisualConfigEditorProps) {
   const { t } = useTranslation();
   const pageTransitionLayer = usePageTransitionLayer();
@@ -200,6 +212,8 @@ export function VisualConfigEditor({
   const nonstreamKeepaliveHintId = `${nonstreamKeepaliveInputId}-hint`;
   const nonstreamKeepaliveErrorId = `${nonstreamKeepaliveInputId}-error`;
   const [activeSectionId, setActiveSectionId] = useState<VisualSectionId>('server');
+  const [thinkingLevelOpen, setThinkingLevelOpen] = useState(false);
+  const [modelOverrideOpen, setModelOverrideOpen] = useState(false);
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const sidebarAnchorRef = useRef<HTMLElement | null>(null);
   const floatingSidebarRef = useRef<HTMLDivElement | null>(null);
@@ -761,6 +775,57 @@ export function VisualConfigEditor({
                 disabled={showCodexThinkingModelsDisabled}
                 onChange={onShowCodexThinkingModelsChange}
               />
+              {showCodexThinkingModels && (
+                <>
+                  <div className={styles.toggleRow}>
+                    <div className={styles.toggleCopy}>
+                      <div className={styles.toggleTitle}>{t('config_management.codex_thinking_levels.label')}</div>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.tagSelector}
+                      onClick={() => setThinkingLevelOpen(true)}
+                      disabled={disabled}
+                    >
+                      {codexThinkingLevels.length > 0
+                        ? codexThinkingLevels.map(l => t(`config_management.codex_thinking_levels.${l}`)).join(' / ')
+                        : t('config_management.codex_thinking_levels.none')}
+                    </button>
+                    <ThinkingLevelSelector
+                      key={thinkingLevelOpen ? `thinking-${codexThinkingLevels.join(',')}` : 'thinking-closed'}
+                      open={thinkingLevelOpen}
+                      selected={codexThinkingLevels}
+                      onClose={() => setThinkingLevelOpen(false)}
+                      onApply={onCodexThinkingLevelsChange}
+                    />
+                  </div>
+                  <div className={styles.toggleRow}>
+                    <div className={styles.toggleCopy}>
+                      <div className={styles.toggleTitle}>{t('config_management.codex_thinking_model_overrides.label')}</div>
+                      <div className={styles.toggleDescription}>{t('config_management.codex_thinking_model_overrides.description')}</div>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.tagSelector}
+                      onClick={() => setModelOverrideOpen(true)}
+                      disabled={disabled}
+                    >
+                      {Object.keys(codexThinkingModelOverrides).length > 0
+                        ? t('config_management.codex_thinking_model_overrides.customized_count', { count: Object.keys(codexThinkingModelOverrides).length })
+                        : t('config_management.codex_thinking_model_overrides.inherit_all')}
+                    </button>
+                    <ModelOverrideModal
+                      key={modelOverrideOpen ? `override-${JSON.stringify(codexThinkingModelOverrides)}` : 'override-closed'}
+                      open={modelOverrideOpen}
+                      codexModelIds={codexModelIds}
+                      globalLevels={codexThinkingLevels}
+                      overrides={codexThinkingModelOverrides}
+                      onClose={() => setModelOverrideOpen(false)}
+                      onApply={onCodexThinkingModelOverridesChange}
+                    />
+                  </div>
+                </>
+              )}
               {showCodexThinkingModelsError ? (
                 <div className="error-box">{showCodexThinkingModelsError}</div>
               ) : null}

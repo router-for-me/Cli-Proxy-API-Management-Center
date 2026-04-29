@@ -31,8 +31,14 @@ export interface Config {
   claudeApiKeys?: ProviderKeyConfig[];
   vertexApiKeys?: ProviderKeyConfig[];
   openaiCompatibility?: OpenAIProviderConfig[];
+  codexThinkingDisplay?: CodexThinkingDisplayConfig;
   oauthExcludedModels?: Record<string, string[]>;
   raw?: Record<string, unknown>;
+}
+
+export interface CodexThinkingDisplayConfig {
+  levels: string[];
+  model_overrides: Record<string, string[]>;
 }
 
 export type RawConfigSection =
@@ -54,7 +60,8 @@ export type RawConfigSection =
   | 'claude-api-key'
   | 'vertex-api-key'
   | 'openai-compatibility'
-  | 'oauth-excluded-models';
+  | 'oauth-excluded-models'
+  | 'codex-thinking-display';
 
 export interface ConfigCache {
   data: Config;

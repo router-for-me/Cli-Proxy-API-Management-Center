@@ -1188,6 +1188,29 @@
       "load_failed": "載入 Codex thinking 後綴模型顯示開關失敗",
       "save_failed": "儲存 Codex thinking 後綴模型顯示開關失敗"
     },
+    "codex_thinking_levels": {
+      "label": "Codex 思考等級顯示",
+      "select_title": "選擇要顯示的 Codex 思考等級",
+      "low": "低",
+      "medium": "正常",
+      "high": "高",
+      "xhigh": "極高",
+      "none": "未選擇"
+    },
+    "codex_thinking_model_overrides": {
+      "label": "全模型自訂",
+      "description": "針對特定模型額外顯示被全域隱藏的等級",
+      "select_title": "自訂模型思考等級顯示",
+      "inherit_all": "預設繼承全域等級",
+      "customized_count": "{{count}} 個模型已自訂",
+      "model": "模型",
+      "status": "狀態",
+      "inherited": "繼承",
+      "customized": "自訂",
+      "global_levels_hint": "繼承全域：",
+      "api_hint": "提示：即使從清單隱藏，仍可透過帶後綴的模型名稱直接呼叫對應思考等級",
+      "no_models": "暫無已設定的 Codex 模型，請先在 Codex API 金鑰中設定模型"
+    },
     "status_idle": "等待操作",
     "status_loading": "載入設定中...",
     "status_loading_short": "載入中",

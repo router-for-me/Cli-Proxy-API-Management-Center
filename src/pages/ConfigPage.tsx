@@ -51,6 +51,7 @@ export function ConfigPage() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const [codexModelIds, setCodexModelIds] = useState<string[]>([]);
 
   const {
     visualValues,
@@ -139,6 +140,7 @@ export function ConfigPage() {
       setShowCodexThinkingModelsLoaded(true);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
+      setShowCodexThinkingModels(false);
       setShowCodexThinkingModelsLoaded(false);
       setShowCodexThinkingModelsError(message);
       showNotification(
@@ -150,9 +152,20 @@ export function ConfigPage() {
     }
   }, [connectionStatus, showNotification, t]);
 
+  const loadCodexThinkingModelIds = useCallback(async () => {
+    try {
+      const ids = await configApi.getCodexThinkingModelIds();
+      setCodexModelIds(ids);
+    } catch {
+      setCodexModelIds([]);
+      console.warn('Failed to load Codex thinking model IDs');
+    }
+  }, []);
+
   useEffect(() => {
     void loadShowCodexThinkingModels();
-  }, [loadShowCodexThinkingModels]);
+    void loadCodexThinkingModelIds();
+  }, [loadShowCodexThinkingModels, loadCodexThinkingModelIds]);
 
   useEffect(() => {
     if (activeTab !== 'visual' || !visualParseError) return;
@@ -184,6 +197,7 @@ export function ConfigPage() {
       // Keep the global config store in sync so sidebar / other pages reflect YAML changes immediately.
       try {
         useConfigStore.getState().clearCache();
+        useModelsStore.getState().clearCache();
         await useConfigStore.getState().fetchConfig(undefined, true);
       } catch (refreshError: unknown) {
         const message =
@@ -421,6 +435,20 @@ export function ConfigPage() {
     performSearch(lastSearchedQuery, 'next');
   }, [lastSearchedQuery, performSearch]);
 
+  const handleCodexThinkingLevelsChange = useCallback(
+    (levels: string[]) => {
+      setVisualValues({ codexThinkingLevels: levels });
+    },
+    [setVisualValues]
+  );
+
+  const handleCodexThinkingModelOverridesChange = useCallback(
+    (overrides: Record<string, string[]>) => {
+      setVisualValues({ codexThinkingModelOverrides: overrides });
+    },
+    [setVisualValues]
+  );
+
   const handleShowCodexThinkingModelsChange = useCallback(
     async (enabled: boolean) => {
       const previousValue = showCodexThinkingModels;
@@ -516,7 +544,7 @@ export function ConfigPage() {
 
   const handleReload = useCallback(() => {
     if (!isDirty) {
-      void Promise.all([loadConfig(), loadShowCodexThinkingModels()]);
+      void Promise.all([loadConfig(), loadShowCodexThinkingModels(), loadCodexThinkingModelIds()]);
       return;
     }
 
@@ -527,10 +555,10 @@ export function ConfigPage() {
       cancelText: t('common.cancel'),
       variant: 'danger',
       onConfirm: async () => {
-        await Promise.all([loadConfig(), loadShowCodexThinkingModels()]);
+        await Promise.all([loadConfig(), loadShowCodexThinkingModels(), loadCodexThinkingModelIds()]);
       },
     });
-  }, [isDirty, loadConfig, loadShowCodexThinkingModels, showConfirmation, t]);
+  }, [isDirty, loadConfig, loadShowCodexThinkingModels, loadCodexThinkingModelIds, showConfirmation, t]);
 
   const floatingActions = (
     <div className={styles.floatingActionContainer} ref={floatingActionsRef}>
@@ -639,8 +667,13 @@ export function ConfigPage() {
                 !showCodexThinkingModelsLoaded
               }
               showCodexThinkingModelsError={showCodexThinkingModelsError}
+              codexThinkingLevels={visualValues.codexThinkingLevels}
+              codexThinkingModelOverrides={visualValues.codexThinkingModelOverrides}
+              codexModelIds={codexModelIds}
               onChange={setVisualValues}
               onShowCodexThinkingModelsChange={handleShowCodexThinkingModelsChange}
+              onCodexThinkingLevelsChange={handleCodexThinkingLevelsChange}
+              onCodexThinkingModelOverridesChange={handleCodexThinkingModelOverridesChange}
             />
           ) : (
             <div className={styles.sourceWorkspace}>

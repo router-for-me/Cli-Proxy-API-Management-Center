@@ -84,6 +84,7 @@ npm run build
 - **配额管理**：管理 Claude、Antigravity、Codex、Gemini CLI 等提供商的配额上限与使用情况。
 - **使用统计**：按小时/天图表、按 API 与按模型统计、缓存/推理 Token 拆分、RPM/TPM 时间窗、可选本地保存的模型价格用于费用估算。
 - **配置文件**：浏览器内编辑 `/config.yaml`（YAML 高亮 + 搜索），保存/重载。
+- **Codex thinking 显示过滤**：在可视化编辑器的认证配置区，开启 Codex thinking 开关后可通过弹窗选择全局显示的思考等级（低/正常/高/极高），并支持按模型自定义覆盖。修改经 YAML diff 确认后写入 `config.yaml` 的 `codex-thinking-display` 配置节。过滤仅影响 `/v1/models` 展示，不影响 API 实际调用。
 - **日志**：增量拉取日志、自动刷新、搜索、隐藏管理端流量、清空日志；下载请求错误日志文件。
 - **系统信息**：快捷链接 + 拉取 `/v1/models` 并分组展示（需要至少一个代理 API Key 才能查询模型）。
 
