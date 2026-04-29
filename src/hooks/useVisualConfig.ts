@@ -904,7 +904,7 @@ export function useVisualConfig() {
             for (const [key, value] of Object.entries(overrides)) {
               if (Array.isArray(value)) {
                 const strings = value.map((l) => (typeof l === 'string' ? l.trim() : '')).filter(Boolean);
-                if (strings.length > 0) result[key] = strings;
+                result[key] = strings;
               }
             }
             if (Object.keys(result).length > 0) return result;
