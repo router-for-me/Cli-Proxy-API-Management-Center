@@ -109,6 +109,28 @@ Update requests send the standard boolean payload:
 
 When enabled, the backend can add display aliases like `gpt-5.2(low)`, `gpt-5.2(medium)`, `gpt-5.2(high)`, and `gpt-5.2(xhigh)` to `/v1/models`. The base model `gpt-5.2` represents default/auto behavior; `none` and `auto` suffix aliases are not shown by the backend.
 
+### Codex thinking level filter & per-model overrides
+
+When the toggle is enabled, two additional configuration areas appear below it in the Visual editor:
+
+- **Thinking Level Display** — click the level tags to open a popup and select which thinking levels (low/medium/high/xhigh) should appear globally in `/v1/models`. Deselected levels are hidden from the model listing but remain callable via the API.
+- **Per-Model Customization** — click to open a modal listing all Codex models with thinking support. Each model starts in "Inherited" mode (follows the global levels). Toggle a model to "Customized" to override which thinking levels are displayed for that specific model (replacement semantics).
+
+Unlike the main toggle (instant save), the level filter and model overrides are edited visually and saved through the YAML diff confirmation flow — click the floating checkmark button, review the diff, and confirm.
+
+The configuration is written to `config.yaml` under the `codex-thinking-display` section:
+
+```yaml
+codex-thinking-display:
+  levels:
+    - high
+    - xhigh
+  model_overrides:
+    gpt-5.2-codex:
+      - low
+      - xhigh
+```
+
 ## Tech Stack
 
 - React 19 + TypeScript 5.9
