@@ -119,6 +119,15 @@ export const configApi = {
     apiClient.put('/show-codex-thinking-models', { value: enabled }),
 
   /**
+   * 获取 Codex thinking 模型 ID 列表
+   */
+  async getCodexThinkingModelIds(): Promise<string[]> {
+    const data = await apiClient.get<Record<string, unknown>>('/codex-thinking-model-ids');
+    const ids = data?.['codex-thinking-model-ids'] ?? data?.codexThinkingModelIds ?? [];
+    return Array.isArray(ids) ? ids.filter((v): v is string => typeof v === 'string') : [];
+  },
+
+  /**
    * 获取路由策略
    */
   async getRoutingStrategy(): Promise<string> {

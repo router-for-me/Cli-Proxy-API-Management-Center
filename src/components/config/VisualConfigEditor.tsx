@@ -44,7 +44,6 @@ import {
 } from './VisualConfigEditorBlocks';
 import { ThinkingLevelSelector } from './ThinkingLevelSelector';
 import { ModelOverrideModal } from './ModelOverrideModal';
-import type { ProviderKeyConfig } from '@/types/provider';
 import styles from './VisualConfigEditor.module.scss';
 
 type VisualSectionId =
@@ -76,7 +75,7 @@ interface VisualConfigEditorProps {
   showCodexThinkingModelsError?: string;
   codexThinkingLevels: string[];
   codexThinkingModelOverrides: Record<string, string[]>;
-  codexApiKeys: ProviderKeyConfig[];
+  codexModelIds: string[];
   onChange: (values: Partial<VisualConfigValues>) => void;
   onShowCodexThinkingModelsChange: (value: boolean) => void;
   onCodexThinkingLevelsChange: (levels: string[]) => void;
@@ -192,7 +191,7 @@ export function VisualConfigEditor({
   showCodexThinkingModelsError,
   codexThinkingLevels,
   codexThinkingModelOverrides,
-  codexApiKeys,
+  codexModelIds,
   onChange,
   onShowCodexThinkingModelsChange,
   onCodexThinkingLevelsChange,
@@ -818,7 +817,7 @@ export function VisualConfigEditor({
                     <ModelOverrideModal
                       key={modelOverrideOpen ? `override-${JSON.stringify(codexThinkingModelOverrides)}` : 'override-closed'}
                       open={modelOverrideOpen}
-                      codexApiKeys={codexApiKeys}
+                      codexModelIds={codexModelIds}
                       globalLevels={codexThinkingLevels}
                       overrides={codexThinkingModelOverrides}
                       onClose={() => setModelOverrideOpen(false)}

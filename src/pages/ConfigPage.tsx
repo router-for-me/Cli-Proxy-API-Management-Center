@@ -51,7 +51,7 @@ export function ConfigPage() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const codexApiKeys = useConfigStore((state) => state.config?.codexApiKeys ?? []);
+  const [codexModelIds, setCodexModelIds] = useState<string[]>([]);
 
   const {
     visualValues,
@@ -151,9 +151,19 @@ export function ConfigPage() {
     }
   }, [connectionStatus, showNotification, t]);
 
+  const loadCodexThinkingModelIds = useCallback(async () => {
+    try {
+      const ids = await configApi.getCodexThinkingModelIds();
+      setCodexModelIds(ids);
+    } catch {
+      // Non-critical; keep previous or empty list
+    }
+  }, []);
+
   useEffect(() => {
     void loadShowCodexThinkingModels();
-  }, [loadShowCodexThinkingModels]);
+    void loadCodexThinkingModelIds();
+  }, [loadShowCodexThinkingModels, loadCodexThinkingModelIds]);
 
   useEffect(() => {
     if (activeTab !== 'visual' || !visualParseError) return;
@@ -531,7 +541,7 @@ export function ConfigPage() {
 
   const handleReload = useCallback(() => {
     if (!isDirty) {
-      void Promise.all([loadConfig(), loadShowCodexThinkingModels()]);
+      void Promise.all([loadConfig(), loadShowCodexThinkingModels(), loadCodexThinkingModelIds()]);
       return;
     }
 
@@ -542,10 +552,10 @@ export function ConfigPage() {
       cancelText: t('common.cancel'),
       variant: 'danger',
       onConfirm: async () => {
-        await Promise.all([loadConfig(), loadShowCodexThinkingModels()]);
+        await Promise.all([loadConfig(), loadShowCodexThinkingModels(), loadCodexThinkingModelIds()]);
       },
     });
-  }, [isDirty, loadConfig, loadShowCodexThinkingModels, showConfirmation, t]);
+  }, [isDirty, loadConfig, loadShowCodexThinkingModels, loadCodexThinkingModelIds, showConfirmation, t]);
 
   const floatingActions = (
     <div className={styles.floatingActionContainer} ref={floatingActionsRef}>
@@ -656,7 +666,7 @@ export function ConfigPage() {
               showCodexThinkingModelsError={showCodexThinkingModelsError}
               codexThinkingLevels={visualValues.codexThinkingLevels}
               codexThinkingModelOverrides={visualValues.codexThinkingModelOverrides}
-              codexApiKeys={codexApiKeys}
+              codexModelIds={codexModelIds}
               onChange={setVisualValues}
               onShowCodexThinkingModelsChange={handleShowCodexThinkingModelsChange}
               onCodexThinkingLevelsChange={handleCodexThinkingLevelsChange}

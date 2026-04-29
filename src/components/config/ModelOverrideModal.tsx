@@ -1,21 +1,16 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { Button } from '@/components/ui/Button';
-import type { ProviderKeyConfig } from '@/types/provider';
 import styles from './ModelOverrideModal.module.scss';
 
 const LEVEL_OPTIONS = ['low', 'medium', 'high', 'xhigh'] as const;
 
-interface ModelEntry {
-  modelId: string;
-}
-
 interface ModelOverrideModalProps {
   open: boolean;
-  codexApiKeys: ProviderKeyConfig[];
+  codexModelIds: string[];
   globalLevels: string[];
   overrides: Record<string, string[]>;
   onClose: () => void;
@@ -24,29 +19,13 @@ interface ModelOverrideModalProps {
 
 export function ModelOverrideModal({
   open,
-  codexApiKeys,
+  codexModelIds,
   globalLevels,
   overrides,
   onClose,
   onApply,
 }: ModelOverrideModalProps) {
   const { t } = useTranslation();
-
-  // Extract unique model IDs from codexApiKeys
-  const allModels = useMemo(() => {
-    const seen = new Set<string>();
-    const models: ModelEntry[] = [];
-    for (const config of codexApiKeys) {
-      for (const model of config.models || []) {
-        const id = (model.alias || model.name).trim();
-        if (id && !seen.has(id)) {
-          seen.add(id);
-          models.push({ modelId: id });
-        }
-      }
-    }
-    return models;
-  }, [codexApiKeys]);
 
   // Draft state: for each model, whether it's customized, and what levels
   const [draftOverrides, setDraftOverrides] = useState<Record<string, string[]>>(overrides);
@@ -77,7 +56,7 @@ export function ModelOverrideModal({
   };
 
   const toggleModelLevel = (modelId: string, level: string) => {
-    if (!isModelCustomized(modelId)) return; // shouldn't happen, but guard
+    if (!isModelCustomized(modelId)) return;
     setDraftOverrides(prev => {
       const current = prev[modelId] || [];
       const next = current.includes(level)
@@ -108,7 +87,7 @@ export function ModelOverrideModal({
     .map(l => t(`config_management.codex_thinking_levels.${l}`))
     .join(' / ');
 
-  if (allModels.length === 0) {
+  if (codexModelIds.length === 0) {
     return (
       <Modal
         open={open}
@@ -120,7 +99,7 @@ export function ModelOverrideModal({
         }
       >
         <div className={styles.emptyHint}>
-          {t('config_management.codex_thinking_model_overrides.no_models', { defaultValue: 'No Codex models configured. Add models in the Codex API Keys section first.' })}
+          {t('config_management.codex_thinking_model_overrides.no_models')}
         </div>
       </Modal>
     );
@@ -157,17 +136,17 @@ export function ModelOverrideModal({
             </span>
           </div>
 
-          {allModels.map(model => {
-            const customized = isModelCustomized(model.modelId);
-            const levels = getModelLevels(model.modelId);
+          {codexModelIds.map(modelId => {
+            const customized = isModelCustomized(modelId);
+            const levels = getModelLevels(modelId);
 
             return (
-              <div key={model.modelId} className={styles.tableRow}>
-                <span className={styles.colModel}>{model.modelId}</span>
+              <div key={modelId} className={styles.tableRow}>
+                <span className={styles.colModel}>{modelId}</span>
                 <span className={styles.colStatus}>
                   <ToggleSwitch
                     checked={customized}
-                    onChange={() => toggleCustomize(model.modelId)}
+                    onChange={() => toggleCustomize(modelId)}
                     ariaLabel={t(
                       customized
                         ? 'config_management.codex_thinking_model_overrides.customized'
@@ -188,7 +167,7 @@ export function ModelOverrideModal({
                       <SelectionCheckbox
                         key={opt}
                         checked={checked}
-                        onChange={() => toggleModelLevel(model.modelId, opt)}
+                        onChange={() => toggleModelLevel(modelId, opt)}
                         disabled={!customized}
                         ariaLabel={t(`config_management.codex_thinking_levels.${opt}`)}
                       />
