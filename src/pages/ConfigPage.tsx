@@ -156,7 +156,7 @@ export function ConfigPage() {
       const ids = await configApi.getCodexThinkingModelIds();
       setCodexModelIds(ids);
     } catch {
-      // Non-critical; keep previous or empty list
+      console.warn('Failed to load Codex thinking model IDs');
     }
   }, []);
 

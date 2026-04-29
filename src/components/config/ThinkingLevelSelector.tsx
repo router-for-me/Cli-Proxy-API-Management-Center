@@ -30,6 +30,7 @@ export function ThinkingLevelSelector({ open, selected, onClose, onApply }: Thin
   };
 
   const handleApply = () => {
+    if (draft.length === 0) return;
     onApply(draft);
     onClose();
   };
