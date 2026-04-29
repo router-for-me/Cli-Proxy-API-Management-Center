@@ -52,7 +52,8 @@ const SECTION_KEYS: RawConfigSection[] = [
   'claude-api-key',
   'vertex-api-key',
   'openai-compatibility',
-  'oauth-excluded-models'
+  'oauth-excluded-models',
+  'codex-thinking-display'
 ];
 
 const extractSectionValue = (config: Config | null, section?: RawConfigSection) => {
@@ -96,6 +97,8 @@ const extractSectionValue = (config: Config | null, section?: RawConfigSection) 
       return config.openaiCompatibility;
     case 'oauth-excluded-models':
       return config.oauthExcludedModels;
+    case 'codex-thinking-display':
+      return config.codexThinkingDisplay;
     default:
       if (!section) return undefined;
       return config.raw?.[section];
@@ -246,6 +249,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           break;
         case 'oauth-excluded-models':
           nextConfig.oauthExcludedModels = value as Config['oauthExcludedModels'];
+          break;
+        case 'codex-thinking-display':
+          nextConfig.codexThinkingDisplay = value as Config['codexThinkingDisplay'];
           break;
         default:
           break;

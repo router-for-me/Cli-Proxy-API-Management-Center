@@ -1162,6 +1162,29 @@
       "load_failed": "加载 Codex thinking 后缀模型显示开关失败",
       "save_failed": "保存 Codex thinking 后缀模型显示开关失败"
     },
+    "codex_thinking_levels": {
+      "label": "Codex 思考等级显示",
+      "select_title": "选择要显示的 Codex 思考等级",
+      "low": "低",
+      "medium": "正常",
+      "high": "高",
+      "xhigh": "极高",
+      "none": "未选择"
+    },
+    "codex_thinking_model_overrides": {
+      "label": "全模型自定义",
+      "description": "针对特定模型额外显示被全局隐藏的等级",
+      "select_title": "自定义模型思考等级显示",
+      "inherit_all": "默认继承全局等级",
+      "customized_count": "{{count}} 个模型已自定义",
+      "model": "模型",
+      "status": "状态",
+      "inherited": "继承",
+      "customized": "自定义",
+      "global_levels_hint": "继承全局：",
+      "api_hint": "提示：即使从列表隐藏，仍可通过带后缀的模型名直接调用对应思考等级",
+      "no_models": "暂无已配置的 Codex 模型，请先在 Codex API 密钥中配置模型"
+    },
     "status_idle": "等待操作",
     "status_loading": "加载配置中...",
     "status_loading_short": "加载中",

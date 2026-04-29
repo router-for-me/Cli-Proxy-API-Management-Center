@@ -471,6 +471,27 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
     config.oauthExcludedModels = oauthExcluded;
   }
 
+  // codex-thinking-display
+  const ctd = raw['codex-thinking-display'] ?? raw.codexThinkingDisplay;
+  if (isRecord(ctd)) {
+    const levels = Array.isArray(ctd.levels)
+      ? ctd.levels.map((l: unknown) => (typeof l === 'string' ? l.trim() : '')).filter(Boolean)
+      : [];
+    const modelOverridesRaw = ctd['model-overrides'] ?? ctd.model_overrides;
+    const modelOverrides: Record<string, string[]> = {};
+    if (isRecord(modelOverridesRaw)) {
+      for (const [key, value] of Object.entries(modelOverridesRaw)) {
+        if (Array.isArray(value)) {
+          const strings = value.map((l) => (typeof l === 'string' ? (l as string).trim() : '')).filter(Boolean) as string[];
+          if (strings.length > 0) modelOverrides[key] = strings;
+        }
+      }
+    }
+    if (levels.length > 0 || Object.keys(modelOverrides).length > 0) {
+      config.codexThinkingDisplay = { levels, model_overrides: modelOverrides };
+    }
+  }
+
   return config;
 };
 

@@ -1,0 +1,90 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.globalHint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  line-height: 1.5;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 1fr 110px 180px;
+  gap: 8px;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 1fr 110px 180px;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 10px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
+}
+
+.colModel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.colStatus {
+  display: flex;
+  justify-content: center;
+}
+
+.colLevels {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.levelHeader {
+  width: 36px;
+  text-align: center;
+  font-size: 10px;
+}
+
+.apiHint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warning-bg) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning-border) 60%, transparent);
+}
+
+.emptyHint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 32px 16px;
+  line-height: 1.6;
+}

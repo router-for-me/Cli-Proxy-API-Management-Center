@@ -51,6 +51,7 @@ export function ConfigPage() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const codexApiKeys = useConfigStore((state) => state.config?.codexApiKeys ?? []);
 
   const {
     visualValues,
@@ -421,6 +422,20 @@ export function ConfigPage() {
     performSearch(lastSearchedQuery, 'next');
   }, [lastSearchedQuery, performSearch]);
 
+  const handleCodexThinkingLevelsChange = useCallback(
+    (levels: string[]) => {
+      setVisualValues({ codexThinkingLevels: levels });
+    },
+    [setVisualValues]
+  );
+
+  const handleCodexThinkingModelOverridesChange = useCallback(
+    (overrides: Record<string, string[]>) => {
+      setVisualValues({ codexThinkingModelOverrides: overrides });
+    },
+    [setVisualValues]
+  );
+
   const handleShowCodexThinkingModelsChange = useCallback(
     async (enabled: boolean) => {
       const previousValue = showCodexThinkingModels;
@@ -639,8 +654,13 @@ export function ConfigPage() {
                 !showCodexThinkingModelsLoaded
               }
               showCodexThinkingModelsError={showCodexThinkingModelsError}
+              codexThinkingLevels={visualValues.codexThinkingLevels}
+              codexThinkingModelOverrides={visualValues.codexThinkingModelOverrides}
+              codexApiKeys={codexApiKeys}
               onChange={setVisualValues}
               onShowCodexThinkingModelsChange={handleShowCodexThinkingModelsChange}
+              onCodexThinkingLevelsChange={handleCodexThinkingLevelsChange}
+              onCodexThinkingModelOverridesChange={handleCodexThinkingModelOverridesChange}
             />
           ) : (
             <div className={styles.sourceWorkspace}>

@@ -701,6 +701,19 @@ function getNextDirtyFields(
       arePayloadFilterRulesEqual(nextValues.payloadFilterRules, baselineValues.payloadFilterRules)
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'codexThinkingLevels')) {
+    const a = nextValues.codexThinkingLevels;
+    const b = baselineValues.codexThinkingLevels;
+    const equal = a.length === b.length && a.every((v, i) => v === b[i]);
+    updateDirty('codexThinkingLevels', equal);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'codexThinkingModelOverrides')) {
+    updateDirty(
+      'codexThinkingModelOverrides',
+      JSON.stringify(nextValues.codexThinkingModelOverrides) ===
+        JSON.stringify(baselineValues.codexThinkingModelOverrides)
+    );
+  }
   if (patch.streaming) {
     const streamingPatch = patch.streaming;
     if (Object.prototype.hasOwnProperty.call(streamingPatch, 'keepaliveSeconds')) {
@@ -873,6 +886,31 @@ export function useVisualConfig() {
           bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
           nonstreamKeepaliveInterval: String(parsed['nonstream-keepalive-interval'] ?? ''),
         },
+
+        codexThinkingLevels: (() => {
+          const ctd = asRecord(parsed['codex-thinking-display']);
+          const levels = ctd?.levels;
+          if (Array.isArray(levels)) {
+            const strings = levels.map((l) => (typeof l === 'string' ? l.trim() : '')).filter(Boolean);
+            if (strings.length > 0) return strings;
+          }
+          return ['low', 'medium', 'high', 'xhigh'];
+        })(),
+        codexThinkingModelOverrides: (() => {
+          const ctd = asRecord(parsed['codex-thinking-display']);
+          const overrides = ctd?.['model_overrides'];
+          if (overrides && typeof overrides === 'object' && !Array.isArray(overrides)) {
+            const result: Record<string, string[]> = {};
+            for (const [key, value] of Object.entries(overrides)) {
+              if (Array.isArray(value)) {
+                const strings = value.map((l) => (typeof l === 'string' ? l.trim() : '')).filter(Boolean);
+                if (strings.length > 0) result[key] = strings;
+              }
+            }
+            if (Object.keys(result).length > 0) return result;
+          }
+          return {};
+        })(),
       };
 
       dispatch({ type: 'load_success', values: newValues });
@@ -1014,6 +1052,35 @@ export function useVisualConfig() {
         }
 
         setIntFromStringInDoc(doc, ['nonstream-keepalive-interval'], nonstreamKeepaliveInterval);
+
+        // codex-thinking-display
+        const defaultLevels = ['low', 'medium', 'high', 'xhigh'];
+        const ctdLevelsChanged =
+          values.codexThinkingLevels.length !== defaultLevels.length ||
+          defaultLevels.some((l) => !values.codexThinkingLevels.includes(l)) ||
+          values.codexThinkingLevels.some((l) => !defaultLevels.includes(l));
+        const ctdOverridesChanged = Object.keys(values.codexThinkingModelOverrides).length > 0;
+        if (
+          docHas(doc, ['codex-thinking-display']) ||
+          ctdLevelsChanged ||
+          ctdOverridesChanged
+        ) {
+          ensureMapInDoc(doc, ['codex-thinking-display']);
+          if (ctdLevelsChanged) {
+            doc.setIn(['codex-thinking-display', 'levels'], values.codexThinkingLevels);
+          } else if (docHas(doc, ['codex-thinking-display', 'levels'])) {
+            doc.deleteIn(['codex-thinking-display', 'levels']);
+          }
+          if (ctdOverridesChanged) {
+            doc.setIn(
+              ['codex-thinking-display', 'model_overrides'],
+              values.codexThinkingModelOverrides
+            );
+          } else if (docHas(doc, ['codex-thinking-display', 'model_overrides'])) {
+            doc.deleteIn(['codex-thinking-display', 'model_overrides']);
+          }
+          deleteIfMapEmpty(doc, ['codex-thinking-display']);
+        }
 
         if (
           docHas(doc, ['payload']) ||

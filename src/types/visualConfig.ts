@@ -85,6 +85,8 @@ export type VisualConfigValues = {
   payloadOverrideRules: PayloadRule[];
   payloadOverrideRawRules: PayloadRule[];
   payloadFilterRules: PayloadFilterRule[];
+  codexThinkingLevels: string[];
+  codexThinkingModelOverrides: Record<string, string[]>;
   streaming: StreamingConfig;
 };
 
@@ -127,6 +129,8 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   payloadOverrideRules: [],
   payloadOverrideRawRules: [],
   payloadFilterRules: [],
+  codexThinkingLevels: ['low', 'medium', 'high', 'xhigh'],
+  codexThinkingModelOverrides: {},
   streaming: {
     keepaliveSeconds: '',
     bootstrapRetries: '',
