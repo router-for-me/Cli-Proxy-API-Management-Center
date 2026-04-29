@@ -57,6 +57,19 @@
   color: var(--text-tertiary);
 }
 
+.oauthProxyActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.oauthProxyActionHint {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .oauthSection {
   display: flex;
   flex-direction: column;

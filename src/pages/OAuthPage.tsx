@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useNotificationStore, useThemeStore } from '@/stores';
+import { useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
 import { oauthApi, type OAuthProvider } from '@/services/api/oauth';
 import { vertexApi, type VertexImportResponse } from '@/services/api/vertex';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -84,9 +84,12 @@ export function OAuthPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { showNotification } = useNotificationStore();
+  const config = useConfigStore((state) => state.config);
+  const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
   const [oauthProxyUrl, setOauthProxyUrl] = useState('');
+  const [globalProxyLoading, setGlobalProxyLoading] = useState(false);
   const [vertexState, setVertexState] = useState<VertexImportState>({
     fileName: '',
     location: '',
@@ -95,6 +98,9 @@ export function OAuthPage() {
   const pollingTimers = useRef<Partial<Record<OAuthProvider, number>>>({});
   const successResetTimers = useRef<Partial<Record<OAuthProvider, number>>>({});
   const vertexFileInputRef = useRef<HTMLInputElement | null>(null);
+  const globalProxyUrl = (config?.proxyUrl || '').trim();
+  const hasConfig = config !== null;
+  const globalProxyButtonDisabled = globalProxyLoading || (hasConfig && !globalProxyUrl);
 
   const clearTimers = useCallback(() => {
     Object.values(pollingTimers.current).forEach((timer) => {
@@ -112,6 +118,10 @@ export function OAuthPage() {
       clearTimers();
     };
   }, [clearTimers]);
+
+  useEffect(() => {
+    void fetchConfig(undefined, false).catch(() => undefined);
+  }, [fetchConfig]);
 
   const updateProviderState = (provider: OAuthProvider, next: Partial<ProviderState>) => {
     setStates((prev) => ({
@@ -199,6 +209,30 @@ export function OAuthPage() {
       }
     }, 3000);
     pollingTimers.current[provider] = timer;
+  };
+
+  const useGlobalProxyForOAuth = async () => {
+    let proxyUrl = globalProxyUrl;
+    if (!proxyUrl) {
+      setGlobalProxyLoading(true);
+      try {
+        const latestConfig = await fetchConfig(undefined, true);
+        proxyUrl = (latestConfig.proxyUrl || '').trim();
+      } catch (err: unknown) {
+        const message = getErrorMessage(err);
+        showNotification(message || t('auth_login.oauth_proxy_no_global'), 'error');
+        return;
+      } finally {
+        setGlobalProxyLoading(false);
+      }
+    }
+
+    if (!proxyUrl) {
+      showNotification(t('auth_login.oauth_proxy_no_global'), 'warning');
+      return;
+    }
+
+    setOauthProxyUrl(proxyUrl);
   };
 
   const startAuth = async (provider: OAuthProvider) => {
@@ -375,6 +409,22 @@ export function OAuthPage() {
               onChange={(e) => setOauthProxyUrl(e.target.value)}
               placeholder={t('auth_login.oauth_proxy_placeholder')}
             />
+            <div className={styles.oauthProxyActions}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={useGlobalProxyForOAuth}
+                loading={globalProxyLoading}
+                disabled={globalProxyButtonDisabled}
+              >
+                {t('auth_login.oauth_proxy_use_global')}
+              </Button>
+              <span className={styles.oauthProxyActionHint}>
+                {hasConfig && !globalProxyUrl
+                  ? t('auth_login.oauth_proxy_no_global')
+                  : t('auth_login.oauth_proxy_use_global_hint')}
+              </span>
+            </div>
           </div>
         </Card>
 
