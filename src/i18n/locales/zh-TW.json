@@ -853,6 +853,10 @@
     "upgrade_required_desc": "目前伺服器版本不支援 OAuth 模型別名功能，請升級到最新版本的 CPA（CLI Proxy API）後重試。"
   },
   "auth_login": {
+    "oauth_proxy_title": "OAuth 代理",
+    "oauth_proxy_label": "本次 OAuth 代理 URL（可選）",
+    "oauth_proxy_placeholder": "例如: socks5://127.0.0.1:1080 或 direct",
+    "oauth_proxy_hint": "僅影響伺服器端換 token、取得使用者資訊和儲存後的驗證檔案；瀏覽器開啟授權頁仍使用目前裝置網路。",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "開始 Codex 登入",
     "codex_oauth_hint": "透過 OAuth 流程登入 Codex 服務，自動取得並儲存驗證檔案。",

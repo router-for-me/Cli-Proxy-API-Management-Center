@@ -86,6 +86,7 @@ export function OAuthPage() {
   const { showNotification } = useNotificationStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
+  const [oauthProxyUrl, setOauthProxyUrl] = useState('');
   const [vertexState, setVertexState] = useState<VertexImportState>({
     fileName: '',
     location: '',
@@ -209,6 +210,7 @@ export function OAuthPage() {
         ? 'ALL'
         : rawProjectId
       : undefined;
+    const proxyUrl = oauthProxyUrl.trim() || undefined;
     // 项目 ID 可选：留空自动选择第一个可用项目；输入 ALL 获取全部项目
     if (provider === 'gemini-cli') {
       updateProviderState(provider, { projectIdError: undefined });
@@ -226,7 +228,11 @@ export function OAuthPage() {
     try {
       const res = await oauthApi.startAuth(
         provider,
-        provider === 'gemini-cli' ? { projectId: projectId || undefined } : undefined
+        provider === 'gemini-cli'
+          ? { projectId: projectId || undefined, proxyUrl }
+          : proxyUrl
+            ? { proxyUrl }
+            : undefined
       );
       if (!res.state) {
         const message = t('auth_login.missing_state');
@@ -360,6 +366,18 @@ export function OAuthPage() {
       <h1 className={styles.pageTitle}>{t('nav.oauth', { defaultValue: 'OAuth' })}</h1>
 
       <div className={styles.content}>
+        <Card title={t('auth_login.oauth_proxy_title')}>
+          <div className={styles.cardContent}>
+            <Input
+              label={t('auth_login.oauth_proxy_label')}
+              hint={t('auth_login.oauth_proxy_hint')}
+              value={oauthProxyUrl}
+              onChange={(e) => setOauthProxyUrl(e.target.value)}
+              placeholder={t('auth_login.oauth_proxy_placeholder')}
+            />
+          </div>
+        </Card>
+
         {PROVIDERS.map((provider) => {
           const state = states[provider.id] || {};
           const canSubmitCallback = CALLBACK_SUPPORTED.includes(provider.id) && Boolean(state.url);
