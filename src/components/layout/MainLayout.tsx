@@ -386,6 +386,7 @@ export function MainLayout() {
     { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
+    { path: '/prompt-rules', label: t('nav.prompt_rules'), icon: sidebarIcons.config },
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
     { path: '/usage', label: t('nav.usage_stats'), icon: sidebarIcons.usage },
     ...(config?.loggingToFile

@@ -1,0 +1,282 @@
+@use '../styles/variables' as *;
+@use '../styles/mixins' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+}
+
+.errorBox {
+  padding: $spacing-md;
+  background-color: rgba($error-color, 0.1);
+  border: 1px solid var(--danger-color);
+  border-radius: $radius-md;
+  color: var(--danger-color);
+  font-size: 14px;
+}
+
+.cardGrid {
+  display: grid;
+  gap: $spacing-md;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ruleCard {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+    border-color: rgba(37, 99, 235, 0.2);
+  }
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+}
+
+.chipRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.chipActionInject {
+  background-color: rgba(34, 197, 94, 0.12);
+  color: var(--success-color, #16a34a);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.chipActionStrip {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--danger-color);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.cardBody {
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cardField {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.cardFieldLabel {
+  font-weight: 600;
+  color: var(--text-tertiary);
+  min-width: 64px;
+}
+
+.cardFieldValue {
+  color: var(--text-primary);
+  font-family: $font-mono;
+  font-size: 12px;
+  word-break: break-all;
+  flex: 1;
+}
+
+.cardActions {
+  display: flex;
+  gap: $spacing-xs;
+  margin-top: $spacing-xs;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.toggleWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// Two-column header row for Name + Enabled. The right cell hosts the
+// ToggleSwitch (with its own inline label) vertically centered against the
+// taller Input cell on the left.
+.formHeaderRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: $spacing-md;
+  align-items: center;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+
+  // Suppress the wrapping form-group's margin so its own input + hint
+  // doesn't stretch the row taller than necessary on the right side.
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+// A single full-width form section: label on top, control(s) below, optional
+// hint/error beneath. Used for Target, Action, Position, Content, Pattern,
+// Marker (when given its own row), and Model Scope.
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  // The Input component still wraps in .form-group with its own margin;
+  // neutralize it here so the field's gap is the only spacing.
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+.radioGroup {
+  display: flex;
+  gap: $spacing-lg;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.radioLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: $font-mono;
+  font-size: 13px;
+  resize: vertical;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+}
+
+.fieldHint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.fieldError {
+  font-size: 12px;
+  color: var(--danger-color);
+}
+
+.modelEntries {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+// 3-column row: name input | protocol select | delete button. Uses
+// align-items: center so the controls line up despite differing heights, and
+// neutralizes the Input wrapper's bottom margin so all three rows in a single
+// model-entry stack sit on a consistent baseline.
+.modelEntry {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: $spacing-sm;
+  align-items: center;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+}
