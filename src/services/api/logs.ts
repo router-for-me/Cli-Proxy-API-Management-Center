@@ -37,12 +37,26 @@ export const logsApi = {
   downloadErrorLog: (filename: string) =>
     apiClient.getRaw(`/request-error-logs/${encodeURIComponent(filename)}`, {
       responseType: 'blob',
-      timeout: LOGS_TIMEOUT_MS
+      timeout: LOGS_TIMEOUT_MS,
     }),
 
   downloadRequestLogById: (id: string) =>
     apiClient.getRaw(`/request-log-by-id/${encodeURIComponent(id)}`, {
       responseType: 'blob',
-      timeout: LOGS_TIMEOUT_MS
+      timeout: LOGS_TIMEOUT_MS,
     }),
+
+  fetchRequestLogText: (id: string): Promise<string> =>
+    apiClient
+      .getRaw(`/request-log-by-id/${encodeURIComponent(id)}`, {
+        responseType: 'text',
+        transformResponse: [(data: unknown) => data],
+        timeout: LOGS_TIMEOUT_MS,
+      })
+      .then((response) => {
+        const data = response.data;
+        if (typeof data === 'string') return data;
+        if (data == null) return '';
+        return String(data);
+      }),
 };

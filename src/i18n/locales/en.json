@@ -1045,7 +1045,22 @@
     "request_events_limit_hint": "Showing {{shown}} of {{total}} events to keep rendering responsive.",
     "input_tokens": "Input Tokens",
     "output_tokens": "Output Tokens",
-    "last_updated": "Updated"
+    "last_updated": "Updated",
+    "event_detail": {
+      "title": "Request Detail",
+      "row_hint": "Click to view request log for {{id}}",
+      "row_unavailable": "Request log not available — request_id missing",
+      "request_id_label": "Request ID",
+      "sections_count": "{{count}} chunks",
+      "download_raw": "Download raw log",
+      "not_found_title": "Log not available",
+      "not_found_body": "No log file was written for this request. Request logging may have been disabled when this request was made, or the file has been rotated.",
+      "error_title": "Failed to load log",
+      "empty_title": "Log is empty",
+      "empty_body_hint": "The log file exists but contains no readable sections.",
+      "empty_body": "(empty)",
+      "section_truncated": "Section truncated for display ({{shown}} of {{total}} bytes shown). Use \"Download raw log\" for full content."
+    }
   },
   "stats": {
     "success": "Success",

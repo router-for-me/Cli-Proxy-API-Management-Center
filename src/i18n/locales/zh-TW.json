@@ -1071,7 +1071,22 @@
     "request_events_limit_hint": "為確保渲染效能，僅展示 {{shown}} / {{total}} 條事件。",
     "input_tokens": "輸入 Tokens",
     "output_tokens": "輸出 Tokens",
-    "last_updated": "更新於"
+    "last_updated": "更新於",
+    "event_detail": {
+      "title": "請求詳情",
+      "row_hint": "點擊檢視請求日誌 {{id}}",
+      "row_unavailable": "請求日誌不可用 — 缺少 request_id",
+      "request_id_label": "請求 ID",
+      "sections_count": "{{count}} 個分段",
+      "download_raw": "下載原始日誌",
+      "not_found_title": "日誌不可用",
+      "not_found_body": "未為該請求寫入日誌檔。請求記錄可能在該請求發生時被停用，或日誌檔已被輪替。",
+      "error_title": "載入日誌失敗",
+      "empty_title": "日誌為空",
+      "empty_body_hint": "日誌檔案存在，但沒有可讀的分段內容。",
+      "empty_body": "（空）",
+      "section_truncated": "分段已截斷顯示（共 {{total}} 位元組，僅展示 {{shown}}）。請使用「下載原始日誌」查看完整內容。"
+    }
   },
   "stats": {
     "success": "成功",

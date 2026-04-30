@@ -1045,7 +1045,22 @@
     "request_events_limit_hint": "为保证渲染性能，仅展示 {{shown}} / {{total}} 条事件。",
     "input_tokens": "输入 Tokens",
     "output_tokens": "输出 Tokens",
-    "last_updated": "更新于"
+    "last_updated": "更新于",
+    "event_detail": {
+      "title": "请求详情",
+      "row_hint": "点击查看请求日志 {{id}}",
+      "row_unavailable": "请求日志不可用 — 缺少 request_id",
+      "request_id_label": "请求 ID",
+      "sections_count": "{{count}} 个分段",
+      "download_raw": "下载原始日志",
+      "not_found_title": "日志不可用",
+      "not_found_body": "未为该请求写入日志文件。请求记录可能在该请求发生时被禁用，或日志文件已被轮转。",
+      "error_title": "加载日志失败",
+      "empty_title": "日志为空",
+      "empty_body_hint": "日志文件存在，但没有可读的分段内容。",
+      "empty_body": "（空）",
+      "section_truncated": "分段已截断显示（共 {{total}} 字节，仅展示 {{shown}}）。请使用“下载原始日志”查看完整内容。"
+    }
   },
   "stats": {
     "success": "成功",

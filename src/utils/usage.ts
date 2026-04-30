@@ -75,6 +75,7 @@ export interface UsageDetail {
   };
   thinking?: UsageThinking | null;
   failed: boolean;
+  request_id?: string;
   __modelName?: string;
   __timestampMs?: number;
 }
@@ -579,6 +580,11 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
         const timestampMs = parseTimestampMs(timestamp);
         const tokensRaw = isRecord(detailRaw.tokens) ? detailRaw.tokens : {};
         const latencyMs = extractLatencyMs(detailRaw);
+        const requestIdRaw = detailRaw.request_id ?? detailRaw.requestId;
+        const requestId =
+          typeof requestIdRaw === 'string' && requestIdRaw.trim() !== ''
+            ? requestIdRaw.trim()
+            : undefined;
         details.push({
           timestamp,
           source: normalizeSource(detailRaw.source),
@@ -590,6 +596,7 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
           tokens: tokensRaw as unknown as UsageDetail['tokens'],
           thinking: normalizeUsageThinking(detailRaw.thinking),
           failed: detailRaw.failed === true,
+          request_id: requestId,
           __modelName: modelName,
           __timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
         });
@@ -656,6 +663,11 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
         const timestampMs = parseTimestampMs(timestamp);
         const tokensRaw = isRecord(detailRaw.tokens) ? detailRaw.tokens : {};
         const latencyMs = extractLatencyMs(detailRaw);
+        const requestIdRaw = detailRaw.request_id ?? detailRaw.requestId;
+        const requestId =
+          typeof requestIdRaw === 'string' && requestIdRaw.trim() !== ''
+            ? requestIdRaw.trim()
+            : undefined;
         details.push({
           timestamp,
           source: normalizeSource(detailRaw.source),
@@ -667,6 +679,7 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
           tokens: tokensRaw as unknown as UsageDetail['tokens'],
           thinking: normalizeUsageThinking(detailRaw.thinking),
           failed: detailRaw.failed === true,
+          request_id: requestId,
           __modelName: modelName,
           __endpoint: endpoint,
           __endpointMethod: endpointMethod,

@@ -931,6 +931,20 @@
   border-radius: $radius-md;
 }
 
+.clickableRow {
+  cursor: pointer;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: var(--bg-secondary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $primary-color;
+    outline-offset: -2px;
+  }
+}
+
 .requestEventsTimestamp {
   white-space: nowrap;
   min-width: 160px;

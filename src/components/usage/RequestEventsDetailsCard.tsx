@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -21,6 +21,7 @@ import {
 } from '@/utils/usage';
 import { downloadBlob } from '@/utils/download';
 import styles from '@/pages/UsagePage.module.scss';
+import { RequestEventDetailModal } from './RequestEventDetailModal';
 
 const ALL_FILTER = '__all__';
 const MAX_RENDERED_EVENTS = 500;
@@ -45,6 +46,7 @@ type RequestEventRow = {
   reasoningTokens: number;
   cachedTokens: number;
   totalTokens: number;
+  requestId: string | undefined;
 };
 
 export interface RequestEventsDetailsCardProps {
@@ -120,6 +122,7 @@ export function RequestEventsDetailsCard({
   const [sourceFilter, setSourceFilter] = useState(ALL_FILTER);
   const [authIndexFilter, setAuthIndexFilter] = useState(ALL_FILTER);
   const [authFileMap, setAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
+  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -214,6 +217,7 @@ export function RequestEventsDetailsCard({
         reasoningTokens,
         cachedTokens,
         totalTokens,
+        requestId: detail.request_id,
       };
     });
 
@@ -542,75 +546,104 @@ export function RequestEventsDetailsCard({
                 </tr>
               </thead>
               <tbody>
-                {renderedRows.map((row) => (
-                  <tr key={row.id}>
-                    <td title={row.timestamp} className={styles.requestEventsTimestamp}>
-                      {row.timestampLabel}
-                    </td>
-                    <td className={styles.modelCell}>{row.model}</td>
-                    <td className={styles.requestEventsSourceCell} title={row.source}>
-                      <span>{row.source}</span>
-                      {row.sourceType && (
-                        <span className={styles.credentialType}>{row.sourceType}</span>
+                {renderedRows.map((row) => {
+                  const clickable = Boolean(row.requestId);
+                  const openModal = () => {
+                    if (row.requestId) setActiveRequestId(row.requestId);
+                  };
+                  const handleKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
+                    if (!clickable) return;
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      openModal();
+                    }
+                  };
+                  const rowTitle = clickable
+                    ? t('usage_stats.event_detail.row_hint', { id: row.requestId })
+                    : t('usage_stats.event_detail.row_unavailable');
+                  return (
+                    <tr
+                      key={row.id}
+                      className={clickable ? styles.clickableRow : undefined}
+                      role={clickable ? 'button' : undefined}
+                      tabIndex={clickable ? 0 : undefined}
+                      aria-label={clickable ? rowTitle : undefined}
+                      title={!clickable ? rowTitle : undefined}
+                      onClick={clickable ? openModal : undefined}
+                      onKeyDown={clickable ? handleKeyDown : undefined}
+                    >
+                      <td title={row.timestamp} className={styles.requestEventsTimestamp}>
+                        {row.timestampLabel}
+                      </td>
+                      <td className={styles.modelCell}>{row.model}</td>
+                      <td className={styles.requestEventsSourceCell} title={row.source}>
+                        <span>{row.source}</span>
+                        {row.sourceType && (
+                          <span className={styles.credentialType}>{row.sourceType}</span>
+                        )}
+                      </td>
+                      <td className={styles.requestEventsAuthIndex} title={row.authIndex}>
+                        {row.authIndex}
+                      </td>
+                      <td>
+                        <span
+                          className={
+                            row.failed
+                              ? styles.requestEventsResultFailed
+                              : styles.requestEventsResultSuccess
+                          }
+                        >
+                          {row.failed ? t('stats.failure') : t('stats.success')}
+                        </span>
+                      </td>
+                      {hasLatencyData && (
+                        <td className={styles.durationCell}>{formatDurationMs(row.latencyMs)}</td>
                       )}
-                    </td>
-                    <td className={styles.requestEventsAuthIndex} title={row.authIndex}>
-                      {row.authIndex}
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          row.failed
-                            ? styles.requestEventsResultFailed
-                            : styles.requestEventsResultSuccess
-                        }
-                      >
-                        {row.failed ? t('stats.failure') : t('stats.success')}
-                      </span>
-                    </td>
-                    {hasLatencyData && (
-                      <td className={styles.durationCell}>{formatDurationMs(row.latencyMs)}</td>
-                    )}
-                    <td>
-                      <span
-                        className={
-                          row.thinking
-                            ? styles.requestEventsThinkingBadge
-                            : styles.requestEventsThinkingEmpty
-                        }
-                        title={
-                          row.thinking
-                            ? [
-                                row.thinking.mode
-                                  ? `${t('usage_stats.thinking_mode')}: ${row.thinking.mode}`
-                                  : '',
-                                row.thinking.level
-                                  ? `${t('usage_stats.thinking_level')}: ${row.thinking.level}`
-                                  : '',
-                                typeof row.thinking.budget === 'number'
-                                  ? `${t('usage_stats.thinking_budget')}: ${row.thinking.budget.toLocaleString()}`
-                                  : '',
-                              ]
-                                .filter(Boolean)
-                                .join(' · ')
-                            : undefined
-                        }
-                      >
-                        {row.thinkingLabel}
-                      </span>
-                    </td>
-                    <td>{row.inputTokens.toLocaleString()}</td>
-                    <td>{row.outputTokens.toLocaleString()}</td>
-                    <td>{row.reasoningTokens.toLocaleString()}</td>
-                    <td>{row.cachedTokens.toLocaleString()}</td>
-                    <td>{row.totalTokens.toLocaleString()}</td>
-                  </tr>
-                ))}
+                      <td>
+                        <span
+                          className={
+                            row.thinking
+                              ? styles.requestEventsThinkingBadge
+                              : styles.requestEventsThinkingEmpty
+                          }
+                          title={
+                            row.thinking
+                              ? [
+                                  row.thinking.mode
+                                    ? `${t('usage_stats.thinking_mode')}: ${row.thinking.mode}`
+                                    : '',
+                                  row.thinking.level
+                                    ? `${t('usage_stats.thinking_level')}: ${row.thinking.level}`
+                                    : '',
+                                  typeof row.thinking.budget === 'number'
+                                    ? `${t('usage_stats.thinking_budget')}: ${row.thinking.budget.toLocaleString()}`
+                                    : '',
+                                ]
+                                  .filter(Boolean)
+                                  .join(' · ')
+                              : undefined
+                          }
+                        >
+                          {row.thinkingLabel}
+                        </span>
+                      </td>
+                      <td>{row.inputTokens.toLocaleString()}</td>
+                      <td>{row.outputTokens.toLocaleString()}</td>
+                      <td>{row.reasoningTokens.toLocaleString()}</td>
+                      <td>{row.cachedTokens.toLocaleString()}</td>
+                      <td>{row.totalTokens.toLocaleString()}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </>
       )}
+      <RequestEventDetailModal
+        requestId={activeRequestId}
+        onClose={() => setActiveRequestId(null)}
+      />
     </Card>
   );
 }
