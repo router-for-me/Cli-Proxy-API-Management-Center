@@ -41,15 +41,31 @@ const EMPTY_RULE: PromptRule = {
 interface EditorState {
   open: boolean;
   rule: PromptRule;
+  // modelUids is kept parallel to rule.models so each editor row has a stable
+  // React key across renders even after add/remove. UIDs are UI-only and never
+  // sent to the backend.
+  modelUids: string[];
   originalName: string | null; // null = creating; non-null = editing existing rule
   saving: boolean;
   error: string;
 }
 
+// Module-scoped counter avoids the secure-context requirement of
+// crypto.randomUUID(); these UIDs only need to be unique within one editor
+// session, not globally.
+let modelUidCounter = 0;
+const nextModelUid = (): string => {
+  modelUidCounter += 1;
+  return `m${modelUidCounter}`;
+};
+
 const cloneRule = (r: PromptRule): PromptRule => ({
   ...r,
   models: (r.models ?? []).map((m) => ({ ...m })),
 });
+
+const buildModelUids = (count: number): string[] =>
+  Array.from({ length: count }, () => nextModelUid());
 
 const validateRegex = (pattern: string): string => {
   if (!pattern) return '';
@@ -78,6 +94,7 @@ export function PromptRulesPage() {
   const [editor, setEditor] = useState<EditorState>({
     open: false,
     rule: cloneRule(EMPTY_RULE),
+    modelUids: [],
     originalName: null,
     saving: false,
     error: '',
@@ -108,6 +125,7 @@ export function PromptRulesPage() {
     setEditor({
       open: true,
       rule: cloneRule(EMPTY_RULE),
+      modelUids: [],
       originalName: null,
       saving: false,
       error: '',
@@ -118,6 +136,7 @@ export function PromptRulesPage() {
     setEditor({
       open: true,
       rule: cloneRule(rule),
+      modelUids: buildModelUids((rule.models ?? []).length),
       originalName: rule.name,
       saving: false,
       error: '',
@@ -143,6 +162,7 @@ export function PromptRulesPage() {
         ...prev.rule,
         models: [...(prev.rule.models ?? []), { name: '*', protocol: '' }],
       },
+      modelUids: [...prev.modelUids, nextModelUid()],
     }));
   }, []);
 
@@ -153,6 +173,7 @@ export function PromptRulesPage() {
         ...prev.rule,
         models: (prev.rule.models ?? []).filter((_, i) => i !== idx),
       },
+      modelUids: prev.modelUids.filter((_, i) => i !== idx),
     }));
   }, []);
 
@@ -219,12 +240,14 @@ export function PromptRulesPage() {
               position: editor.rule.position ?? 'append',
             }
           : { ...baseRule, pattern: editor.rule.pattern ?? '' };
-      if (editor.originalName === null) {
-        await promptRulesApi.replace([...rules, cleanRule]);
-      } else {
-        const next = rules.map((r) => (r.name === editor.originalName ? cleanRule : r));
-        await promptRulesApi.replace(next);
-      }
+      // Atomic upsert via PATCH targets a single rule by name (or appends when
+      // no match), so two operators editing different rules concurrently can't
+      // overwrite each other's saves the way a full PUT would.
+      await promptRulesApi.upsert(
+        editor.originalName === null
+          ? { value: cleanRule }
+          : { match: editor.originalName, value: cleanRule },
+      );
       showNotification(t('prompt_rules.saved'), 'success');
       closeEditor();
       await load();
@@ -528,7 +551,7 @@ export function PromptRulesPage() {
             <div className={styles.fieldHint}>{t('prompt_rules.field_models_hint')}</div>
             <div className={styles.modelEntries}>
               {(editor.rule.models ?? []).map((m, i) => (
-                <div key={i} className={styles.modelEntry}>
+                <div key={editor.modelUids[i] ?? `m_${i}`} className={styles.modelEntry}>
                   <Input
                     placeholder="*"
                     value={m.name}
@@ -537,10 +560,7 @@ export function PromptRulesPage() {
                   <Select
                     value={m.protocol ?? ''}
                     onChange={(value) => updateModelEntry(i, 'protocol', value)}
-                    options={PROMPT_RULE_SOURCE_FORMATS.map((sf) => ({
-                      value: sf.value,
-                      label: sf.label,
-                    }))}
+                    options={PROMPT_RULE_SOURCE_FORMATS}
                   />
                   <Button variant="ghost" size="sm" onClick={() => removeModelEntry(i)}>
                     {t('common.delete')}
