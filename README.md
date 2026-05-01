@@ -81,6 +81,7 @@ See `api.md` for the full authentication rules, server-side limits, and edge cas
   - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side "chat/completions" test).
   - Ampcode integration (upstream URL/key, force mappings, model mapping table).
 - **Auth Files**: upload/download/delete JSON credentials, filter/search/pagination, runtime-only indicators, view supported models per credential (when the server supports it), manage OAuth excluded models (supports `*` wildcards), configure OAuth model alias mappings.
+- **Prompt Rules**: inject standing text into outgoing system prompts or last natural-language user messages, or strip unwanted boilerplate via RE2 regex. Rules are scoped by model glob and source format, applied pre-translation, and remain idempotent across requests. Marker is optional: when set it acts as an anchor (Position is relative to the marker); when empty the rule appends/prepends at the target boundary.
 - **OAuth**: start OAuth/device flows for supported providers, poll status, optionally submit callback `redirect_url`; includes iFlow cookie import.
 - **Quota Management**: manage quota limits and usage for Claude, Antigravity, Codex, Gemini CLI, and other providers.
 - **Usage**: requests/tokens charts (hour/day), per-API & per-model breakdown, cached/reasoning token breakdown, RPM/TPM window, optional cost estimation with locally-saved model pricing.

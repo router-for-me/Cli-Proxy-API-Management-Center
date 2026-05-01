@@ -51,13 +51,6 @@ const cloneRule = (r: PromptRule): PromptRule => ({
   models: (r.models ?? []).map((m) => ({ ...m })),
 });
 
-const ruleHasMarkerInContent = (r: PromptRule): boolean => {
-  if (r.action !== 'inject') return true;
-  const content = r.content ?? '';
-  const marker = r.marker ?? '';
-  return marker.length > 0 && content.includes(marker);
-};
-
 const validateRegex = (pattern: string): string => {
   if (!pattern) return '';
   try {
@@ -170,19 +163,20 @@ export function PromptRulesPage() {
     });
   }, []);
 
-  const validateBeforeSave = (rule: PromptRule): string => {
-    if (!rule.name.trim()) return t('prompt_rules.error_name_required');
-    if (rule.action === 'inject') {
-      if (!rule.content?.trim()) return t('prompt_rules.error_content_required');
-      if (!rule.marker?.trim()) return t('prompt_rules.error_marker_required');
-      if (!ruleHasMarkerInContent(rule)) return t('prompt_rules.error_marker_in_content');
-    } else {
-      if (!rule.pattern?.trim()) return t('prompt_rules.error_pattern_required');
-      const regexErr = validateRegex(rule.pattern);
-      if (regexErr) return t('prompt_rules.error_pattern_invalid', { reason: regexErr });
-    }
-    return '';
-  };
+  const validateBeforeSave = useCallback(
+    (rule: PromptRule): string => {
+      if (!rule.name.trim()) return t('prompt_rules.error_name_required');
+      if (rule.action === 'inject') {
+        if (!rule.content?.trim()) return t('prompt_rules.error_content_required');
+      } else {
+        if (!rule.pattern?.trim()) return t('prompt_rules.error_pattern_required');
+        const regexErr = validateRegex(rule.pattern);
+        if (regexErr) return t('prompt_rules.error_pattern_invalid', { reason: regexErr });
+      }
+      return '';
+    },
+    [t],
+  );
 
   const saveRule = useCallback(async () => {
     const localErr = validateBeforeSave(editor.rule);
@@ -238,7 +232,7 @@ export function PromptRulesPage() {
       const msg = err instanceof Error ? err.message : t('prompt_rules.save_failed');
       setEditor((prev) => ({ ...prev, saving: false, error: msg }));
     }
-  }, [editor, rules, showNotification, t, closeEditor, load]);
+  }, [editor, rules, showNotification, t, closeEditor, load, validateBeforeSave]);
 
   const toggleEnabled = useCallback(
     async (rule: PromptRule, nextEnabled: boolean) => {
@@ -326,7 +320,9 @@ export function PromptRulesPage() {
                     <div className={styles.cardField}>
                       <span className={styles.cardFieldLabel}>{t('prompt_rules.field_position')}</span>
                       <span className={styles.cardFieldValue}>
-                        {t(`prompt_rules.position_${rule.position ?? 'append'}`)}
+                        {(rule.marker ?? '').length > 0
+                          ? t(`prompt_rules.position_${rule.position ?? 'append'}_marker`)
+                          : t(`prompt_rules.position_${rule.position ?? 'append'}`)}
                       </span>
                     </div>
                   </>
@@ -478,11 +474,6 @@ export function PromptRulesPage() {
                   value={editor.rule.marker ?? ''}
                   onChange={(e) => updateRuleField('marker', e.target.value)}
                   hint={t('prompt_rules.field_marker_hint')}
-                  error={
-                    editor.rule.marker && editor.rule.content && !ruleHasMarkerInContent(editor.rule)
-                      ? t('prompt_rules.error_marker_in_content')
-                      : undefined
-                  }
                 />
               </div>
 
@@ -498,7 +489,9 @@ export function PromptRulesPage() {
                         checked={editor.rule.position === p}
                         onChange={() => updateRuleField('position', p)}
                       />
-                      {t(`prompt_rules.position_${p}`)}
+                      {(editor.rule.marker ?? '').length > 0
+                        ? t(`prompt_rules.position_${p}_marker`)
+                        : t(`prompt_rules.position_${p}`)}
                     </label>
                   ))}
                 </div>
