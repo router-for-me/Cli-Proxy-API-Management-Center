@@ -8,9 +8,11 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
+import { codexPingApi } from '@/services/api';
 import { useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { getStatusFromError } from '@/utils/quota';
+import { normalizeAuthIndex } from '@/utils/authIndex';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
 import { useQuotaLoader } from './useQuotaLoader';
@@ -24,6 +26,12 @@ type QuotaUpdater<T> = T | ((prev: T) => T);
 type QuotaSetter<T> = (updater: QuotaUpdater<T>) => void;
 
 type ViewMode = 'paged' | 'all';
+type CodexPingButtonStatus = 'idle' | 'loading' | 'success';
+
+interface CodexPingButtonState {
+  status: CodexPingButtonStatus;
+  message?: string;
+}
 
 const MAX_ITEMS_PER_PAGE = 25;
 const MAX_SHOW_ALL_THRESHOLD = 30;
@@ -115,6 +123,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const [columns, gridRef] = useGridColumns(380); // Min card width 380px matches SCSS
   const [viewMode, setViewMode] = useState<ViewMode>('paged');
   const [showTooManyWarning, setShowTooManyWarning] = useState(false);
+  const [codexPingState, setCodexPingState] = useState<Record<string, CodexPingButtonState>>({});
+  const codexPingResetTimersRef = useRef<Record<string, ReturnType<typeof window.setTimeout>>>({});
 
   const filteredFiles = useMemo(() => files.filter((file) => config.filterFn(file)), [
     files,
@@ -165,6 +175,14 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
   const pendingQuotaRefreshRef = useRef(false);
   const prevFilesLoadingRef = useRef(loading);
+
+  useEffect(
+    () => () => {
+      Object.values(codexPingResetTimersRef.current).forEach((timer) => window.clearTimeout(timer));
+      codexPingResetTimersRef.current = {};
+    },
+    []
+  );
 
   const handleRefresh = useCallback(() => {
     pendingQuotaRefreshRef.current = true;
@@ -237,6 +255,66 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     [config, disabled, quota, setQuota, showNotification, t]
   );
 
+  const resetCodexPingButtonLater = useCallback((fileName: string) => {
+    const existing = codexPingResetTimersRef.current[fileName];
+    if (existing) {
+      window.clearTimeout(existing);
+    }
+    codexPingResetTimersRef.current[fileName] = window.setTimeout(() => {
+      setCodexPingState((prev) => {
+        const next = { ...prev };
+        delete next[fileName];
+        return next;
+      });
+      delete codexPingResetTimersRef.current[fileName];
+    }, 3000);
+  }, []);
+
+  const pingCodexForFile = useCallback(
+    async (file: AuthFileItem) => {
+      if (disabled || file.disabled) return;
+      if (codexPingState[file.name]?.status === 'loading') return;
+
+      const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
+      if (!authIndex) {
+        showNotification(t('codex_quota.missing_auth_index'), 'error');
+        return;
+      }
+
+      const existingTimer = codexPingResetTimersRef.current[file.name];
+      if (existingTimer) {
+        window.clearTimeout(existingTimer);
+        delete codexPingResetTimersRef.current[file.name];
+      }
+
+      setCodexPingState((prev) => ({
+        ...prev,
+        [file.name]: { status: 'loading' },
+      }));
+
+      try {
+        const result = await codexPingApi.ping(authIndex);
+        setCodexPingState((prev) => ({
+          ...prev,
+          [file.name]: {
+            status: 'success',
+            message: result.message || t('codex_quota.ping_success_default'),
+          },
+        }));
+        resetCodexPingButtonLater(file.name);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('common.unknown_error');
+        setCodexPingState((prev) => {
+          const next = { ...prev };
+          delete next[file.name];
+          return next;
+        });
+        showNotification(t('codex_quota.ping_failed', { message }), 'error');
+      }
+    },
+    [codexPingState, disabled, resetCodexPingButtonLater, showNotification, t]
+  );
+
   const titleNode = (
     <div className={styles.titleWrapper}>
       <span>{t(`${config.i18nPrefix}.title`)}</span>
@@ -307,21 +385,49 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       ) : (
         <>
           <div ref={gridRef} className={config.gridClassName}>
-            {pageItems.map((item) => (
-              <QuotaCard
-                key={item.name}
-                item={item}
-                quota={quota[item.name]}
-                resolvedTheme={resolvedTheme}
-                i18nPrefix={config.i18nPrefix}
-                cardIdleMessageKey={config.cardIdleMessageKey}
-                cardClassName={config.cardClassName}
-                defaultType={config.type}
-                canRefresh={!disabled && !item.disabled}
-                onRefresh={() => void refreshQuotaForFile(item)}
-                renderQuotaItems={config.renderQuotaItems}
-              />
-            ))}
+            {pageItems.map((item) => {
+              const itemQuota = quota[item.name];
+              const pingState = codexPingState[item.name] ?? { status: 'idle' };
+              const showCodexPingButton =
+                config.type === 'codex' && itemQuota?.status === 'success';
+              const codexPingLoading = pingState.status === 'loading';
+              const codexPingSuccess = pingState.status === 'success';
+              const codexPingLabel = codexPingSuccess
+                ? pingState.message || t('codex_quota.ping_success_default')
+                : t('codex_quota.ping_button');
+
+              return (
+                <QuotaCard
+                  key={item.name}
+                  item={item}
+                  quota={itemQuota}
+                  resolvedTheme={resolvedTheme}
+                  i18nPrefix={config.i18nPrefix}
+                  cardIdleMessageKey={config.cardIdleMessageKey}
+                  cardClassName={config.cardClassName}
+                  defaultType={config.type}
+                  canRefresh={!disabled && !item.disabled}
+                  onRefresh={() => void refreshQuotaForFile(item)}
+                  cardAction={
+                    showCodexPingButton ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className={`${styles.codexPingButton} ${
+                          codexPingSuccess ? styles.codexPingButtonSuccess : ''
+                        }`}
+                        onClick={() => void pingCodexForFile(item)}
+                        disabled={disabled || item.disabled || codexPingLoading}
+                        loading={codexPingLoading}
+                      >
+                        {codexPingLabel}
+                      </Button>
+                    ) : undefined
+                  }
+                  renderQuotaItems={config.renderQuotaItems}
+                />
+              );
+            })}
           </div>
           {filteredFiles.length > pageSize && effectiveViewMode === 'paged' && (
             <div className={styles.pagination}>

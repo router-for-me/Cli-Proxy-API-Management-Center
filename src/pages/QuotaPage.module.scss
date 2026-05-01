@@ -630,6 +630,27 @@
   color: var(--text-primary);
   word-break: break-all;
   line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+
+.codexPingButton {
+  flex-shrink: 0;
+  min-width: 72px;
+  max-width: 140px;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.codexPingButtonSuccess {
+  background-color: var(--success-color, #22c55e) !important;
+  border-color: var(--success-color, #22c55e) !important;
+  color: #ffffff !important;
 }
 
 .pagination {

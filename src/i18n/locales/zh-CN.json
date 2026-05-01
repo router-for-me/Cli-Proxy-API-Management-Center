@@ -681,7 +681,10 @@
     "plan_team": "Team",
     "plan_free": "Free",
     "plan_pro": "Pro 20x",
-    "plan_prolite": "Pro 5x"
+    "plan_prolite": "Pro 5x",
+    "ping_button": "Ping",
+    "ping_success_default": "Pong",
+    "ping_failed": "Ping 失败：{{message}}"
   },
   "gemini_cli_quota": {
     "title": "Gemini CLI 额度",
