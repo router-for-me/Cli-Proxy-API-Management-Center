@@ -478,6 +478,9 @@ export function AiProvidersOpenAIEditLayout() {
       if (form.priority !== undefined && Number.isFinite(form.priority)) {
         payload.priority = Math.trunc(form.priority);
       }
+      if (initialData?.disabled !== undefined) {
+        payload.disabled = initialData.disabled;
+      }
       const resolvedTestModel = testModel.trim();
       if (resolvedTestModel) payload.testModel = resolvedTestModel;
       const models = entriesToModels(form.modelEntries);
@@ -519,6 +522,7 @@ export function AiProvidersOpenAIEditLayout() {
     editIndex,
     form,
     handleBack,
+    initialData?.disabled,
     providers,
     setDraftBaseline,
     showNotification,

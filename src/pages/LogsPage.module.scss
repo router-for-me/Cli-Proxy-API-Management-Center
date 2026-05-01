@@ -318,10 +318,10 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
-  flex: 0 0 auto;
-  min-height: 420px;
-  max-height: none;
-  height: calc(100vh - 520px);
+  flex: 1 1 auto;
+  min-height: 280px;
+  max-height: calc(100vh - 320px);
+  height: auto;
   overflow: auto;
   resize: vertical;
   position: relative;
@@ -330,9 +330,8 @@
   overscroll-behavior: contain;
 
   @include tablet {
-    min-height: 360px;
-    height: calc(100vh - 500px);
-    max-height: none;
+    min-height: 240px;
+    max-height: calc(100vh - 300px);
   }
 
   @include mobile {
@@ -764,6 +763,15 @@
   }
 }
 
+@media (max-height: 960px) {
+  @media (min-width: 769px) {
+    .logPanel {
+      min-height: 160px;
+      max-height: calc(100vh - 300px);
+    }
+  }
+}
+
 @media (max-height: 820px) {
   .pageTitle {
     font-size: 24px;
@@ -780,6 +788,23 @@
 
   .content {
     gap: $spacing-md;
+  }
+
+  @media (min-width: 769px) {
+    .filters {
+      flex: 0 0 auto;
+      gap: $spacing-sm;
+      margin-bottom: $spacing-sm;
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 4px;
+      overscroll-behavior: contain;
+    }
+
+    .logPanel {
+      min-height: 0;
+      max-height: calc(100vh - 280px);
+    }
   }
 
   .logCard {
@@ -820,14 +845,19 @@
     gap: $spacing-sm;
   }
 
-  .logCard {
-    padding: $spacing-sm;
+  @media (min-width: 769px) {
+    .filters {
+      max-height: 180px;
+    }
+
+    .logPanel {
+      min-height: 0;
+      max-height: calc(100vh - 220px);
+    }
   }
 
-  .logPanel {
-    min-height: 320px;
-    height: 320px;
-    max-height: none;
+  .logCard {
+    padding: $spacing-sm;
   }
 
   .logRow {

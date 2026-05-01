@@ -296,6 +296,38 @@ export function AiProvidersPage() {
     }
   };
 
+  const setOpenAIProviderEnabled = async (index: number, enabled: boolean) => {
+    const current = openaiProviders[index];
+    if (!current) return;
+
+    const switchingKey = `openai:${current.name}:${index}`;
+    setConfigSwitchingKey(switchingKey);
+
+    const previousList = openaiProviders;
+    const nextItem: OpenAIProviderConfig = { ...current, disabled: !enabled };
+    const nextList = previousList.map((item, idx) => (idx === index ? nextItem : item));
+
+    setOpenaiProviders(nextList);
+    updateConfigValue('openai-compatibility', nextList);
+    clearCache('openai-compatibility');
+
+    try {
+      await providersApi.updateOpenAIProviderDisabled(index, !enabled);
+      showNotification(
+        enabled ? t('notification.config_enabled') : t('notification.config_disabled'),
+        'success'
+      );
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      setOpenaiProviders(previousList);
+      updateConfigValue('openai-compatibility', previousList);
+      clearCache('openai-compatibility');
+      showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+    } finally {
+      setConfigSwitchingKey(null);
+    }
+  };
+
   const deleteProviderEntry = async (type: 'codex' | 'claude', index: number) => {
     const source = type === 'codex' ? codexConfigs : claudeConfigs;
     const entry = source[index];
@@ -471,6 +503,7 @@ export function AiProvidersPage() {
             onAdd={() => openEditor('/ai-providers/openai/new')}
             onEdit={(index) => openEditor(`/ai-providers/openai/${index}`)}
             onDelete={deleteOpenai}
+            onToggle={(index, enabled) => void setOpenAIProviderEnabled(index, enabled)}
           />
         </div>
       </div>

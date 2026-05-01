@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { Select } from '@/components/ui/Select';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
   IconCheck,
   IconChevronDown,
@@ -53,6 +54,7 @@ interface OpenAISectionProps {
   onAdd: () => void;
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
+  onToggle: (index: number, enabled: boolean) => void;
 }
 
 interface IndexedOpenAIProvider {
@@ -80,11 +82,13 @@ export function OpenAISection({
   onAdd,
   onEdit,
   onDelete,
+  onToggle,
 }: OpenAISectionProps) {
   const { t } = useTranslation();
   const pageTransitionLayer = usePageTransitionLayer();
   const isTransitionAnimating = pageTransitionLayer?.isAnimating ?? false;
   const actionsDisabled = disableControls || loading || isSwitching;
+  const toggleDisabled = disableControls || loading || isSwitching;
   const [sortOption, setSortOption] = useState<SortOption>('priority');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
@@ -529,6 +533,7 @@ export function OpenAISection({
     const apiKeyEntries = provider.apiKeyEntries || [];
     const statusData =
       statusBarCache.get(getOpenAIProviderKey(provider, originalIndex)) || EMPTY_STATUS_BAR;
+    const providerDisabled = provider.disabled === true;
 
     return (
       <div
@@ -554,6 +559,11 @@ export function OpenAISection({
             <span className={styles.fieldLabel}>{t('common.base_url')}:</span>
             <span className={styles.fieldValue}>{provider.baseUrl}</span>
           </div>
+          {providerDisabled && (
+            <div className="status-badge warning" style={{ marginTop: 8, marginBottom: 0 }}>
+              {t('ai_providers.config_disabled_badge')}
+            </div>
+          )}
           {headerEntries.length > 0 && (
             <div className={styles.headerBadgeList}>
               {headerEntries.map(([key, value]) => (
@@ -651,6 +661,12 @@ export function OpenAISection({
           >
             {t('common.delete')}
           </Button>
+          <ToggleSwitch
+            label={t('ai_providers.config_toggle_label')}
+            checked={!providerDisabled}
+            disabled={toggleDisabled}
+            onChange={(value) => void onToggle(originalIndex, value)}
+          />
         </div>
       </div>
     );

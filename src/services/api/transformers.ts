@@ -254,6 +254,8 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
     apiKeyEntries
   };
 
+  const disabled = normalizeBoolean(provider.disabled ?? provider['disabled']);
+  if (disabled !== undefined) result.disabled = disabled;
   const prefix = normalizePrefix(provider.prefix ?? provider['prefix']);
   if (prefix) result.prefix = prefix;
   if (headers) result.headers = headers;
