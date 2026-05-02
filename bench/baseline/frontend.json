@@ -1,0 +1,13 @@
+{
+  "captured_at": "2026-05-02T17:47:31Z",
+  "branch": "refactor/upstream-bound",
+  "commit": "04ebc1695eccaa0eae3ce05df58dfab35ca6ce9c",
+  "commit_short": "04ebc16",
+  "bundle": {
+    "primary_file": "dist/index.html",
+    "raw_bytes": 2077371,
+    "gzipped_bytes": 600164,
+    "dist_assets": "index.html"
+  },
+  "perf": null
+}
