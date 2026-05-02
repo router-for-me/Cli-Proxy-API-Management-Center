@@ -11,11 +11,11 @@ document.documentElement.classList.add('notranslate');
 const faviconEl = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
 if (faviconEl) {
   faviconEl.href = LOGO_URL;
-  faviconEl.type = 'image/jpeg';
+  faviconEl.type = 'image/webp';
 } else {
   const newFavicon = document.createElement('link');
   newFavicon.rel = 'icon';
-  newFavicon.type = 'image/jpeg';
+  newFavicon.type = 'image/webp';
   newFavicon.href = LOGO_URL;
   document.head.appendChild(newFavicon);
 }

@@ -42,7 +42,9 @@ export function usePoll(
   const { pauseWhenHidden = true, runOnMount = false } = options ?? {};
 
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   useEffect(() => {
     if (intervalMs === null || intervalMs <= 0) return;
@@ -85,6 +87,10 @@ export function usePoll(
         stop();
         controller?.abort();
       } else {
+        // Fire once on resume so a long-interval poller (e.g. 240s) doesn't
+        // wait up to a full interval after the tab returns visible. Then
+        // re-arm the timer for subsequent ticks.
+        void run();
         start();
       }
     };
