@@ -9,5 +9,49 @@
     "gzipped_bytes": 600164,
     "dist_assets": "index.html"
   },
-  "perf": null
+  "perf": {
+    "captured_at": "2026-05-02T18:17:21.632Z",
+    "routes": {
+      "/#/login": {
+        "url": "/#/login",
+        "domContentLoaded": 270.6000000014901,
+        "loadEvent": 271.6000000014901,
+        "firstPaint": 180,
+        "firstContentfulPaint": 380,
+        "transferBytes": 603386,
+        "decodedBytes": 2077371,
+        "consoleErrors": 0
+      },
+      "/": {
+        "url": "/",
+        "domContentLoaded": 207,
+        "loadEvent": 208,
+        "firstPaint": 152,
+        "firstContentfulPaint": 280,
+        "transferBytes": 603386,
+        "decodedBytes": 2077371,
+        "consoleErrors": 0
+      },
+      "/#/auth-files": {
+        "url": "/#/auth-files",
+        "domContentLoaded": 199.90000000223517,
+        "loadEvent": 201,
+        "firstPaint": 148,
+        "firstContentfulPaint": 288,
+        "transferBytes": 603386,
+        "decodedBytes": 2077371,
+        "consoleErrors": 0
+      },
+      "/#/config": {
+        "url": "/#/config",
+        "domContentLoaded": 208.70000000298023,
+        "loadEvent": 210,
+        "firstPaint": 152,
+        "firstContentfulPaint": 292,
+        "transferBytes": 603386,
+        "decodedBytes": 2077371,
+        "consoleErrors": 0
+      }
+    }
+  }
 }

@@ -21,6 +21,11 @@ dist-ssr
 *.local
 skills
 
+# Playwright transient artifacts
+test-results
+playwright-report
+bench/baseline/playwright-results.json
+
 # Editor directories and files
 settings.local.json
 .codex
