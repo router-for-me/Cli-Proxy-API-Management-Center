@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useInterval } from '@/hooks/useInterval';
+import { usePoll } from '@/hooks/usePoll';
 import { apiKeyUsageApi } from '@/services/api';
 import {
   normalizeRecentRequestUsageEntry,
@@ -113,9 +113,12 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
     setUsageByProvider(enabled ? cachedUsageByProvider : EMPTY_USAGE_BY_PROVIDER);
   }, [enabled]);
 
-  useInterval(() => {
-    void refreshRecentRequests().catch(() => {});
-  }, enabled ? PROVIDER_RECENT_REQUESTS_STALE_TIME_MS : null);
+  usePoll(
+    () => {
+      void refreshRecentRequests().catch(() => {});
+    },
+    enabled ? PROVIDER_RECENT_REQUESTS_STALE_TIME_MS : null
+  );
 
   return {
     usageByProvider: enabled ? usageByProvider : EMPTY_USAGE_BY_PROVIDER,

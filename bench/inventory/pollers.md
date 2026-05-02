@@ -6,20 +6,31 @@ migration targets. UI timers stay where they are.
 
 Captured commit: 5a56733 (refactor/upstream-bound vs upstream/dev).
 
-## Network pollers (Phase B migration targets)
+## Network pollers
 
-| File:line | Cadence | What it polls | Notes |
+| File:line | Cadence | What it polls | Status |
 |---|---|---|---|
-| `src/pages/AuthFilesPage.tsx:342` | 240 s | `authFilesApi.loadFiles()` | via `useInterval`; gated on `isCurrentLayer` |
-| `src/pages/LogsPage.tsx:276` | 8 s | `logsApi.loadLogs(true)` | raw `setInterval`; gated on `autoRefresh` and `connectionStatus === 'connected'` |
-| `src/pages/OAuthPage.tsx:179` | 3 s | `oauthApi.getAuthStatus(state)` | raw `setInterval`; per-provider; cleared on success/error |
-| `src/components/providers/hooks/useProviderRecentRequests.ts:116` | `PROVIDER_RECENT_REQUESTS_STALE_TIME_MS` | `refreshRecentRequests()` | via `useInterval`; gated on `enabled` |
+| `src/pages/AuthFilesPage.tsx` | 240 s | `authFilesApi.loadFiles()` | **migrated to `usePoll`** (gated on `isCurrentLayer`) |
+| `src/pages/LogsPage.tsx` | 8 s | `logsApi.loadLogs(true)` | **migrated to `usePoll`** (gated on `autoRefresh` and `connectionStatus === 'connected'`) |
+| `src/components/providers/hooks/useProviderRecentRequests.ts` | `PROVIDER_RECENT_REQUESTS_STALE_TIME_MS` | `refreshRecentRequests()` | **migrated to `usePoll`** (gated on `enabled`) |
+| `src/pages/OAuthPage.tsx:179` | 3 s | `oauthApi.getAuthStatus(state)` | **kept on raw `setInterval`** — see note |
 
-**Phase B migration:** introduce `src/hooks/usePoll.ts` backed by
-`AbortController` + `document.visibilityState`. Each call site moves from
-`setInterval`/`useInterval` to `usePoll(callback, intervalMs, { enabled })`.
-Visibility-paused pollers stop firing on hidden tabs and cancel in-flight
-requests on unmount or interval change.
+**`usePoll` migration:** the hook at `src/hooks/usePoll.ts` is backed by
+`AbortController` + `document.visibilityState`. Visibility-paused pollers
+stop firing on hidden tabs and cancel in-flight requests on unmount or
+interval change. AuthFiles, Logs and provider-recent-requests all
+migrated; the previous `useInterval` shapes were drop-in replaceable.
+
+**Why OAuthPage stays raw:** OAuthPage starts a per-provider poller
+inside the `startPolling(provider, state)` event-handler function and
+stores the timer id in a `useRef<Record<provider, timerId>>` map so the
+success / error / unmount paths can stop only the relevant provider's
+poll. That dynamic, imperative lifecycle does not fit a top-level hook
+shape and is also intentionally **not visibility-paused** — the OAuth
+redirect flow lives in another tab, so the original tab being hidden is
+the normal case during polling. Migrating it would require a non-hook
+controller utility (`createPoll(...)` returning a `{ start, stop }`
+object) which is out of Phase B scope. Tracked as a follow-up.
 
 ## UI / animation timers (leave alone)
 

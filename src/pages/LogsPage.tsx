@@ -21,6 +21,7 @@ import {
   IconX,
 } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
+import { usePoll } from '@/hooks/usePoll';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
@@ -269,16 +270,12 @@ export function LogsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, connectionStatus, requestLogEnabled]);
 
-  useEffect(() => {
-    if (!autoRefresh || connectionStatus !== 'connected') {
-      return;
-    }
-    const id = window.setInterval(() => {
+  usePoll(
+    () => {
       loadLogs(true);
-    }, 8000);
-    return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh, connectionStatus]);
+    },
+    autoRefresh && connectionStatus === 'connected' ? 8000 : null
+  );
 
   const visibleLines = useMemo(
     () => logState.buffer.slice(logState.visibleFrom),
