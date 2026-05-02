@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
+import { LOGO_URL } from '@/assets/logo';
 import './SplashScreen.scss';
 
 interface SplashScreenProps {
@@ -27,7 +27,7 @@ export function SplashScreen({ onFinish, fadeOut = false }: SplashScreenProps) {
   return (
     <div className={`splash-screen ${fadeOut ? 'fade-out' : ''}`}>
       <div className="splash-content">
-        <img src={INLINE_LOGO_JPEG} alt="CPAMC" className="splash-logo" />
+        <img src={LOGO_URL} alt="CPAMC" className="splash-logo" />
         <h1 className="splash-title">{t('splash.title')}</h1>
         <p className="splash-subtitle">{t('splash.subtitle')}</p>
         <div className="splash-loader">
