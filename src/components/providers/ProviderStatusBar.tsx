@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { StatusBarData, StatusBlockDetail } from '@/utils/recentRequests';
 import defaultStyles from '@/pages/AiProvidersPage.module.scss';
@@ -44,7 +44,14 @@ interface ProviderStatusBarProps {
   styles?: StylesModule;
 }
 
-export function ProviderStatusBar({ statusData, styles: stylesProp }: ProviderStatusBarProps) {
+// memo: rendered once per provider card in OpenAISection's list. statusData is
+// looked up from a cached Map (same reference across parent re-renders unless
+// the underlying recent-requests poll updated), so memoization skips full
+// re-render when only sibling rows changed.
+export const ProviderStatusBar = memo(function ProviderStatusBar({
+  statusData,
+  styles: stylesProp,
+}: ProviderStatusBarProps) {
   const { t } = useTranslation();
   const s = (stylesProp || defaultStyles) as StylesModule;
   const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
@@ -147,4 +154,4 @@ export function ProviderStatusBar({ statusData, styles: stylesProp }: ProviderSt
       </span>
     </div>
   );
-}
+});
