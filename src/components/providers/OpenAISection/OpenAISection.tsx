@@ -736,13 +736,26 @@ export function OpenAISection({
   );
 }
 
-// VirtualizedProviderList renders the OpenAI provider cards through
-// @tanstack/react-virtual so the DOM cost stays O(viewport) rather than
-// O(provider count). With ~500 providers in the bench fixture, scroll
-// FPS stays at the device refresh rate; without virtualization the
-// long list pushed scroll under 30 fps in profiler runs (Codex Stage 1
-// exit review IMPORTANT FE-1, plan §Phase B "Virtualize OpenAISection
-// provider list with @tanstack/react-virtual").
+// Threshold above which the provider list switches from CSS-grid render
+// to single-column virtualised render. Real-world usage rarely exceeds
+// 20 providers; the bench's 500-row fixture exercises the virtualised
+// path. Below threshold we keep the existing multi-column grid layout
+// (Codex Stage 1 exit round 2 FE-R2-3: virtualisation must not regress
+// the prior desktop grid layout for the typical case).
+const OPENAI_VIRTUALIZATION_THRESHOLD = 50;
+
+// VirtualizedProviderList renders the OpenAI provider cards. Below
+// OPENAI_VIRTUALIZATION_THRESHOLD it renders the original CSS-grid
+// layout unchanged. Above the threshold it switches to a single-column
+// virtualised list backed by @tanstack/react-virtual so the DOM cost
+// stays O(viewport) rather than O(provider count) — plan §Phase B
+// "Virtualize OpenAISection provider list with @tanstack/react-virtual".
+//
+// Acceptable observable change above threshold: cards stack vertically
+// instead of wrapping into the auto-fill grid, and Tab focus only
+// reaches cards that are currently inside the scroll viewport (Codex
+// Stage 1 exit round 2 FE-R2-2 — keyboard nav limitation under
+// virtualisation; users scroll to bring offscreen cards into reach).
 //
 // Variable-row-height: cards differ in height based on header/key/model
 // counts, so we use the dynamic measurement path (estimateSize gives a
@@ -758,27 +771,41 @@ function VirtualizedProviderList<T>({
   renderItem: (item: T, index: number) => React.ReactNode;
 }) {
   const parentRef = useRef<HTMLDivElement | null>(null);
+  // Below threshold: render the original grid layout, no virtualization.
+  // Card memoisation already prevents re-render of unaffected cards on
+  // sibling updates; for typical sizes the layout cost is tractable.
+  const shouldVirtualize = items.length >= OPENAI_VIRTUALIZATION_THRESHOLD;
+  // Always call the hook (rules-of-hooks); just feed it 0 below threshold
+  // so it does no work.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
-    count: items.length,
+    count: shouldVirtualize ? items.length : 0,
     getScrollElement: () => parentRef.current,
-    // Initial guess; the dynamic measurement path replaces this with the
-    // actual height after first render.
     estimateSize: () => 320,
     overscan: 4,
   });
+
+  if (!shouldVirtualize) {
+    return (
+      <div className={styles.openaiProviderList}>
+        {items.map((item, idx) => renderItem(item, idx))}
+      </div>
+    );
+  }
+
   const virtualItems = virtualizer.getVirtualItems();
   return (
     <div
       ref={parentRef}
-      className={styles.openaiProviderList}
+      // The 75vh cap keeps the toolbar visible while scrolling a long
+      // provider list. Note: `contain: strict` was tried initially but
+      // its size-containment makes the auto-height parent ignore
+      // children, collapsing clientHeight to 0 (Codex Stage 1 exit round
+      // 2 FE-R2-1). Plain overflow:auto + maxHeight is sufficient.
       style={{
-        // Constrain the scrollable region; the page's own scroll
-        // container otherwise grows with every card. The 75vh cap keeps
-        // the toolbar visible while scrolling a long provider list.
         maxHeight: '75vh',
         overflowY: 'auto',
         position: 'relative',
-        contain: 'strict',
       }}
     >
       <div

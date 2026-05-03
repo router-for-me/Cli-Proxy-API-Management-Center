@@ -1,5 +1,21 @@
 import { useEffect, useRef } from 'react';
 
+// isAbortError returns true for the axios-shaped error produced when an
+// AbortController fires during an in-flight request (axios v1 sets
+// code === 'ERR_CANCELED'). The DOMException form (name === 'AbortError')
+// is also recognised for callers using fetch directly.
+//
+// Pollers wired through usePoll abort their in-flight request on
+// hidden-tab transition or unmount; that abort is expected and should
+// not surface as a "request failed" page error or console.error
+// (Codex Stage 1 exit round 2 FE-R2-5).
+export function isAbortError(err: unknown): boolean {
+  if (err == null) return false;
+  if (typeof err !== 'object') return false;
+  const e = err as { code?: unknown; name?: unknown };
+  return e.code === 'ERR_CANCELED' || e.name === 'CanceledError' || e.name === 'AbortError';
+}
+
 export interface UsePollOptions {
   /**
    * If true (default), the polling interval pauses while the document is

@@ -42,14 +42,22 @@ interface PerfRecord {
 const captures: Record<string, PerfRecord & { url: string; consoleErrors: number }> = {};
 
 test.afterAll(() => {
-  // Write fresh capture to the .latest.json file (gitignored). Reuse
-  // the committed baseline as a starting structure so consumers can
-  // diff fields side-by-side. Test runs no longer overwrite the
-  // committed baseline; promote with `npm run baseline:update`.
+  // Write fresh perf capture to the .latest.json file (gitignored).
+  // Merge — preserve any existing bundle section in latest so a prior
+  // bundle-only capture is not lost by a subsequent Playwright run
+  // (Codex Stage 1 exit round 2 FE-R2-4). The committed baseline acts
+  // as a fallback scaffold only when latest does not exist yet, so
+  // capture sections stay independent across runs.
   const latestPath = path.resolve(process.cwd(), BASELINE_FILE);
   const committedPath = path.resolve(process.cwd(), COMMITTED_BASELINE);
   let scaffold: Record<string, unknown> = {};
-  if (fs.existsSync(committedPath)) {
+  if (fs.existsSync(latestPath)) {
+    try {
+      scaffold = JSON.parse(fs.readFileSync(latestPath, 'utf8'));
+    } catch {
+      scaffold = {};
+    }
+  } else if (fs.existsSync(committedPath)) {
     try {
       scaffold = JSON.parse(fs.readFileSync(committedPath, 'utf8'));
     } catch {
@@ -132,17 +140,27 @@ test.describe('OpenAISection keyboard-nav baseline (placeholder)', () => {
   test.skip(
     'navigates by keyboard through 50 OpenAI keys',
     async () => {
-      // Virtualization itself is in via @tanstack/react-virtual (see
+      // Virtualisation is in via @tanstack/react-virtual (see
       // VirtualizedProviderList in src/components/providers/OpenAISection/
-      // OpenAISection.tsx) — the DOM-resident card count is now bounded
-      // by viewport rather than by configs.length. The remaining work
-      // here is the multi-provider browser fixture: bypassLoginViaForm
-      // currently mocks /config but does not seed a 50-provider
-      // openai-compatibility list. Until that fixture is wired, Tab/
-      // Enter step-latency and FPS-per-scroll cannot be measured in CI.
-      // Codex Stage 1 exit review FE-1: virtualization implemented;
-      // keyboard-nav FPS measurement deferred to a follow-up that adds
-      // the fixture seam. Track in bench/inventory if reopened.
+      // OpenAISection.tsx). The list switches to single-column virtualised
+      // rendering above OPENAI_VIRTUALIZATION_THRESHOLD (50 items); below
+      // that, it falls back to the original CSS grid so typical-sized
+      // installations keep their existing keyboard behaviour exactly
+      // (Codex Stage 1 exit round 2 FE-R2-3 — preserve grid layout for
+      // the typical case).
+      //
+      // Acceptable observable change above threshold: native Tab focus
+      // can only reach cards inside the scroll viewport. Users scroll
+      // to bring offscreen cards into reach; the virtualiser's overscan
+      // (4 rows) keeps focus stable across short focus motions. This is
+      // a documented trade-off (Codex Stage 1 exit round 2 FE-R2-2). A
+      // follow-up that adds focus-aware scroll-into-view is tracked in
+      // bench/inventory if reopened.
+      //
+      // The multi-provider browser fixture for FPS measurement is still
+      // missing (bypassLoginViaForm mocks /config but does not seed 50+
+      // openai-compatibility entries). Until that lands, Tab/Enter
+      // step-latency and FPS-per-scroll are not measured in CI.
     }
   );
 });

@@ -21,7 +21,7 @@ import {
   IconX,
 } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { usePoll } from '@/hooks/usePoll';
+import { isAbortError, usePoll } from '@/hooks/usePoll';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
@@ -170,6 +170,12 @@ export function LogsPage() {
         setLogState({ buffer, visibleFrom });
       }
     } catch (err: unknown) {
+      // Aborted polls are expected (hidden-tab / unmount); skip
+      // logging + error UI so they do not look like real failures
+      // (Codex Stage 1 exit round 2 FE-R2-5).
+      if (isAbortError(err)) {
+        return;
+      }
       console.error('Failed to load logs:', err);
       if (!incremental) {
         setError(getErrorMessage(err) || t('logs.load_error'));
