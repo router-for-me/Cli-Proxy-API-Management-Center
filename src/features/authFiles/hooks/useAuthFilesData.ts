@@ -34,7 +34,7 @@ export type UseAuthFilesDataResult = {
   statusUpdating: Record<string, boolean>;
   batchStatusUpdating: boolean;
   fileInputRef: RefObject<HTMLInputElement | null>;
-  loadFiles: () => Promise<void>;
+  loadFiles: (signal?: AbortSignal) => Promise<void>;
   handleUploadClick: () => void;
   handleFileChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleDelete: (name: string) => void;
@@ -158,11 +158,11 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     });
   }, [files, selectedFiles.size]);
 
-  const loadFiles = useCallback(async () => {
+  const loadFiles = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError('');
     try {
-      const data = await authFilesApi.list();
+      const data = await authFilesApi.list({ signal });
       setFiles(data?.files || []);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');

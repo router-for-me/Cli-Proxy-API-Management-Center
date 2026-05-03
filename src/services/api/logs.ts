@@ -26,8 +26,11 @@ export interface ErrorLogsResponse {
 }
 
 export const logsApi = {
-  fetchLogs: (params: LogsQuery = {}): Promise<LogsResponse> =>
-    apiClient.get('/logs', { params, timeout: LOGS_TIMEOUT_MS }),
+  fetchLogs: (
+    params: LogsQuery = {},
+    config?: { signal?: AbortSignal }
+  ): Promise<LogsResponse> =>
+    apiClient.get('/logs', { params, timeout: LOGS_TIMEOUT_MS, ...config }),
 
   clearLogs: () => apiClient.delete('/logs'),
 

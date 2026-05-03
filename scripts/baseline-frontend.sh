@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 # Capture frontend baseline metrics for refactor regression checks.
 #
-# Output: bench/baseline/frontend.json
+# Output: bench/baseline/frontend.latest.json (gitignored).
 #
-# Currently captures bundle size only. Playwright-based TTI / FPS / heap-delta
-# capture lives in scripts/baseline-frontend-perf.sh (separate concern, browser
-# install required).
+# Run `npm run baseline:update` to promote frontend.latest.json into the
+# committed baseline at bench/baseline/frontend.json. Codex Stage 1 exit
+# review FE-3: previously this script + the Playwright capture both
+# overwrote the committed baseline (resetting `perf: null`); split into
+# capture (latest) + explicit update keeps the committed baseline stable
+# across reruns.
+#
+# Currently captures bundle size only. Playwright-based TTI / FPS /
+# heap-delta capture lives in tests/e2e/baseline.spec.ts (separate
+# concern, browser install required) and writes to the same .latest.json
+# under the `perf` key.
 
 set -euo pipefail
 
@@ -43,7 +51,27 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD)
 COMMIT=$(git rev-parse HEAD)
 COMMIT_SHORT=$(git rev-parse --short HEAD)
 
-cat > bench/baseline/frontend.json <<JSON
+# Preserve any existing `perf` key from prior runs (e.g. Playwright spec
+# wrote it to .latest.json). If the file doesn't exist yet, fall back to
+# null. This keeps capture concerns independent.
+PERF_PAYLOAD="null"
+if [ -f bench/baseline/frontend.latest.json ]; then
+  if EXISTING_PERF=$(node -e '
+    const fs = require("fs");
+    try {
+      const obj = JSON.parse(fs.readFileSync("bench/baseline/frontend.latest.json", "utf8"));
+      if (obj && obj.perf != null) {
+        process.stdout.write(JSON.stringify(obj.perf));
+      } else {
+        process.stdout.write("null");
+      }
+    } catch { process.stdout.write("null"); }
+  ' 2>/dev/null); then
+    PERF_PAYLOAD="$EXISTING_PERF"
+  fi
+fi
+
+cat > bench/baseline/frontend.latest.json <<JSON
 {
   "captured_at": "$CAPTURED_AT",
   "branch": "$BRANCH",
@@ -55,9 +83,9 @@ cat > bench/baseline/frontend.json <<JSON
     "gzipped_bytes": $GZ_BYTES,
     "dist_assets": "$DIST_LIST"
   },
-  "perf": null
+  "perf": $PERF_PAYLOAD
 }
 JSON
 
-echo "Baseline written:"
-cat bench/baseline/frontend.json
+echo "Latest capture written to bench/baseline/frontend.latest.json"
+echo "Run \`npm run baseline:update\` to promote into the committed baseline."

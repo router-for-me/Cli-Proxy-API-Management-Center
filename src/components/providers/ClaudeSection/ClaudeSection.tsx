@@ -6,7 +6,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import iconClaude from '@/assets/icons/claude.svg';
 import type { ProviderKeyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
-import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
+import { EMPTY_STATUS_BAR, statusBarDataFromRecentRequests } from '@/utils/recentRequests';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
 import { ProviderStatusBar } from '../ProviderStatusBar';
@@ -107,7 +107,7 @@ export function ClaudeSection({
             const excludedModels = item.excludedModels ?? [];
             const statusData =
               statusBarCache.get(getProviderConfigKey(item, index)) ||
-              statusBarDataFromRecentRequests([]);
+              EMPTY_STATUS_BAR;
 
             return (
               <Fragment>

@@ -219,3 +219,11 @@ export function statusBarDataFromRecentRequests(buckets: RecentRequestBucket[]):
     totalFailure,
   };
 }
+
+// EMPTY_STATUS_BAR is the shared "no buckets" StatusBarData snapshot used
+// by every provider section's status fallback. Reusing this single
+// reference keeps React.memo on ProviderStatusBar effective for empty
+// rows: a fresh statusBarDataFromRecentRequests([]) per render produces
+// a new object identity and defeats memoization.
+// (Codex Stage 1 exit review FE-NIT.)
+export const EMPTY_STATUS_BAR: StatusBarData = statusBarDataFromRecentRequests([]);

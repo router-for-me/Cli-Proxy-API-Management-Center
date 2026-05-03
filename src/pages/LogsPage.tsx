@@ -108,7 +108,7 @@ export function LogsPage() {
 
   const disableControls = connectionStatus !== 'connected';
 
-  const loadLogs = async (incremental = false) => {
+  const loadLogs = async (incremental = false, signal?: AbortSignal) => {
     if (connectionStatus !== 'connected') {
       setLoading(false);
       return;
@@ -138,7 +138,7 @@ export function LogsPage() {
 
       const params =
         incremental && latestTimestampRef.current > 0 ? { after: latestTimestampRef.current } : {};
-      const data = await logsApi.fetchLogs(params);
+      const data = await logsApi.fetchLogs(params, { signal });
 
       // 更新时间戳
       if (data['latest-timestamp']) {
@@ -271,8 +271,8 @@ export function LogsPage() {
   }, [activeTab, connectionStatus, requestLogEnabled]);
 
   usePoll(
-    () => {
-      loadLogs(true);
+    (signal) => {
+      loadLogs(true, signal);
     },
     autoRefresh && connectionStatus === 'connected' ? 8000 : null
   );

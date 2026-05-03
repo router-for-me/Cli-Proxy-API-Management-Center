@@ -47,10 +47,12 @@ const normalizeApiKeyUsageResponse = (payload: ApiKeyUsageResponse): ProviderRec
   return usageByProvider;
 };
 
-const fetchProviderRecentRequests = async (): Promise<ProviderRecentRequests> => {
+const fetchProviderRecentRequests = async (
+  signal?: AbortSignal
+): Promise<ProviderRecentRequests> => {
   if (!inFlightRequest) {
     inFlightRequest = apiKeyUsageApi
-      .getUsage()
+      .getUsage({ signal })
       .then((payload) => {
         const normalized = normalizeApiKeyUsageResponse(payload);
         cachedUsageByProvider = normalized;
@@ -73,7 +75,9 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
   const [isLoading, setIsLoading] = useState(false);
 
   const loadRecentRequests = useCallback(
-    async (loadOptions: { force?: boolean } = {}) => {
+    async (
+      loadOptions: { force?: boolean; signal?: AbortSignal } = {}
+    ) => {
       if (!enabled) {
         return EMPTY_USAGE_BY_PROVIDER;
       }
@@ -89,7 +93,7 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
 
       setIsLoading(true);
       try {
-        const nextUsage = await fetchProviderRecentRequests();
+        const nextUsage = await fetchProviderRecentRequests(loadOptions.signal);
         setUsageByProvider(nextUsage);
         return nextUsage;
       } catch {
@@ -105,7 +109,7 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
   );
 
   const refreshRecentRequests = useCallback(
-    async () => loadRecentRequests({ force: true }),
+    async (signal?: AbortSignal) => loadRecentRequests({ force: true, signal }),
     [loadRecentRequests]
   );
 
@@ -114,8 +118,8 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
   }, [enabled]);
 
   usePoll(
-    () => {
-      void refreshRecentRequests().catch(() => {});
+    (signal) => {
+      void refreshRecentRequests(signal).catch(() => {});
     },
     enabled ? PROVIDER_RECENT_REQUESTS_STALE_TIME_MS : null
   );

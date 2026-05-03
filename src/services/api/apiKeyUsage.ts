@@ -4,8 +4,9 @@ import type { ApiKeyUsageResponse } from '@/utils/recentRequests';
 const API_KEY_USAGE_TIMEOUT_MS = 15 * 1000;
 
 export const apiKeyUsageApi = {
-  getUsage: () =>
+  getUsage: (config?: { signal?: AbortSignal }) =>
     apiClient.get<ApiKeyUsageResponse>('/api-key-usage', {
       timeout: API_KEY_USAGE_TIMEOUT_MS,
+      ...config,
     }),
 };

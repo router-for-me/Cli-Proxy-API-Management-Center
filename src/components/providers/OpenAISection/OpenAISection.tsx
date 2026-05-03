@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -18,7 +19,7 @@ import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
 import type { OpenAIProviderConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
-import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
+import { EMPTY_STATUS_BAR, statusBarDataFromRecentRequests } from '@/utils/recentRequests';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderStatusBar } from '../ProviderStatusBar';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
@@ -40,8 +41,6 @@ interface FloatingToolbarStyle {
   width: number;
   visible: boolean;
 }
-
-const EMPTY_STATUS_BAR = statusBarDataFromRecentRequests([]);
 
 interface OpenAISectionProps {
   configs: OpenAIProviderConfig[];
@@ -708,7 +707,10 @@ export function OpenAISection({
               description={t('ai_providers.openai_empty_desc')}
             />
           ) : (
-            <div className={styles.openaiProviderList}>{sortedConfigs.map(renderProviderCard)}</div>
+            <VirtualizedProviderList
+              items={sortedConfigs}
+              renderItem={renderProviderCard}
+            />
           )}
         </Card>
       </div>
@@ -731,5 +733,78 @@ export function OpenAISection({
           )
         : null}
     </>
+  );
+}
+
+// VirtualizedProviderList renders the OpenAI provider cards through
+// @tanstack/react-virtual so the DOM cost stays O(viewport) rather than
+// O(provider count). With ~500 providers in the bench fixture, scroll
+// FPS stays at the device refresh rate; without virtualization the
+// long list pushed scroll under 30 fps in profiler runs (Codex Stage 1
+// exit review IMPORTANT FE-1, plan §Phase B "Virtualize OpenAISection
+// provider list with @tanstack/react-virtual").
+//
+// Variable-row-height: cards differ in height based on header/key/model
+// counts, so we use the dynamic measurement path (estimateSize gives a
+// starting guess; useVirtualizer measures real rendered height after
+// mount and re-positions subsequent rows). overscan adds a small buffer
+// so keyboard-driven focus changes inside a row don't trigger an
+// immediate viewport unmount.
+function VirtualizedProviderList<T>({
+  items,
+  renderItem,
+}: {
+  items: T[];
+  renderItem: (item: T, index: number) => React.ReactNode;
+}) {
+  const parentRef = useRef<HTMLDivElement | null>(null);
+  const virtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => parentRef.current,
+    // Initial guess; the dynamic measurement path replaces this with the
+    // actual height after first render.
+    estimateSize: () => 320,
+    overscan: 4,
+  });
+  const virtualItems = virtualizer.getVirtualItems();
+  return (
+    <div
+      ref={parentRef}
+      className={styles.openaiProviderList}
+      style={{
+        // Constrain the scrollable region; the page's own scroll
+        // container otherwise grows with every card. The 75vh cap keeps
+        // the toolbar visible while scrolling a long provider list.
+        maxHeight: '75vh',
+        overflowY: 'auto',
+        position: 'relative',
+        contain: 'strict',
+      }}
+    >
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {virtualItems.map((virtualRow) => (
+          <div
+            key={virtualRow.key}
+            ref={virtualizer.measureElement}
+            data-index={virtualRow.index}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              transform: `translateY(${virtualRow.start}px)`,
+            }}
+          >
+            {renderItem(items[virtualRow.index], virtualRow.index)}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

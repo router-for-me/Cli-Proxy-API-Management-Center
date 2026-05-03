@@ -340,8 +340,8 @@ export function AuthFilesPage() {
   }, [isCurrentLayer, loadFiles, loadExcluded, loadModelAlias]);
 
   usePoll(
-    () => {
-      void loadFiles().catch(() => {});
+    (signal) => {
+      void loadFiles(signal).catch(() => {});
     },
     isCurrentLayer ? 240_000 : null
   );
