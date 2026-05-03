@@ -12,7 +12,7 @@ import type { ModelInfo } from '@/utils/models';
 import { buildHeaderObject } from '@/utils/headers';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
 import styles from './AiProvidersPage.module.scss';
-import layoutStyles from './AiProvidersEditLayout.module.scss';
+import layoutStyles from '@/components/providers/AiProvidersEditLayout.module.scss';
 
 const getErrorMessage = (err: unknown) => {
   if (err instanceof Error) return err.message;

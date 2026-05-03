@@ -13,7 +13,7 @@ import { buildHeaderObject, hasHeader } from '@/utils/headers';
 import { buildOpenAIModelsEndpoint } from '@/components/providers/utils';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import styles from './AiProvidersPage.module.scss';
-import layoutStyles from './AiProvidersEditLayout.module.scss';
+import layoutStyles from '@/components/providers/AiProvidersEditLayout.module.scss';
 
 const getErrorMessage = (err: unknown) => {
   if (err instanceof Error) return err.message;

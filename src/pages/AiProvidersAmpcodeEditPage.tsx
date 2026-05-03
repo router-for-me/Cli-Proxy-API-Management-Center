@@ -20,7 +20,7 @@ import {
   entriesToAmpcodeUpstreamApiKeys,
 } from '@/components/providers/utils';
 import type { AmpcodeFormState } from '@/components/providers';
-import layoutStyles from './AiProvidersEditLayout.module.scss';
+import layoutStyles from '@/components/providers/AiProvidersEditLayout.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 

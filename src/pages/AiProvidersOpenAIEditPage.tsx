@@ -7,8 +7,8 @@ import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { Input } from '@/components/ui/Input';
 import { ModelInputList } from '@/components/ui/ModelInputList';
 import { Select } from '@/components/ui/Select';
-import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
-import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
+import { ProviderEditorShell } from '@/components/providers/ProviderEditorShell';
+import { useProviderEditChrome } from '@/components/providers/useProviderEditChrome';
 import { useNotificationStore } from '@/stores';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import type { ApiKeyEntry } from '@/types';
@@ -17,7 +17,6 @@ import { buildApiKeyEntry, buildOpenAIChatCompletionsEndpoint } from '@/componen
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
 import styles from './AiProvidersPage.module.scss';
-import layoutStyles from './AiProvidersEditLayout.module.scss';
 
 const OPENAI_TEST_TIMEOUT_MS = 30_000;
 
@@ -124,18 +123,8 @@ export function AiProvidersOpenAIEditPage() {
     ? t('ai_providers.openai_edit_modal_title')
     : t('ai_providers.openai_add_modal_title');
 
-  const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
+  const swipeRef = useProviderEditChrome(handleBack);
   const [isTestingKeys, setIsTestingKeys] = useState(false);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        handleBack();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleBack]);
 
   const canSave = !disableControls && !loading && !saving && !invalidIndexParam && !invalidIndex && !isTestingKeys;
   const hasConfiguredModels = form.modelEntries.some((entry) => entry.name.trim());
@@ -494,38 +483,14 @@ export function AiProvidersOpenAIEditPage() {
   };
 
   return (
-    <SecondaryScreenShell
+    <ProviderEditorShell
       ref={swipeRef}
-      contentClassName={layoutStyles.content}
       title={title}
       onBack={handleBack}
-      backLabel={t('common.back')}
-      backAriaLabel={t('common.back')}
-      hideTopBarBackButton
-      hideTopBarRightAction
-      floatingAction={
-        <div className={layoutStyles.floatingActions}>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleBack}
-            className={layoutStyles.floatingBackButton}
-          >
-            {t('common.back')}
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => void handleSave()}
-            loading={saving}
-            disabled={!canSave}
-            className={layoutStyles.floatingSaveButton}
-          >
-            {t('common.save')}
-          </Button>
-        </div>
-      }
-      isLoading={loading}
-      loadingLabel={t('common.loading')}
+      onSave={handleSave}
+      canSave={canSave}
+      loading={loading}
+      saving={saving}
     >
       <Card>
         {invalidIndexParam || invalidIndex ? (
@@ -693,6 +658,6 @@ export function AiProvidersOpenAIEditPage() {
           </div>
         )}
       </Card>
-    </SecondaryScreenShell>
+    </ProviderEditorShell>
   );
 }

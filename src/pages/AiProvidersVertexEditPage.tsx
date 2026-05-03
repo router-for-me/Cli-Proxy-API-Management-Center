@@ -17,7 +17,7 @@ import { excludedModelsToText, parseExcludedModels } from '@/components/provider
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
 import type { VertexFormState } from '@/components/providers';
-import layoutStyles from './AiProvidersEditLayout.module.scss';
+import layoutStyles from '@/components/providers/AiProvidersEditLayout.module.scss';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
