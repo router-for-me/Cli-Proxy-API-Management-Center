@@ -82,6 +82,7 @@ npm run build
 - **认证文件**：上传/下载/删除 JSON 凭据，筛选/搜索/分页，标记 runtime-only；查看单个凭据可用模型（依赖后端支持）；管理 OAuth 排除模型（支持 `*` 通配符）；配置 OAuth 模型别名映射。
 - **OAuth**：对支持的提供商发起 OAuth/设备码流程，轮询状态；可选提交回调 `redirect_url`；包含 iFlow Cookie 导入。
 - **配额管理**：管理 Claude、Antigravity、Codex、Gemini CLI 等提供商的配额上限与使用情况。
+- **使用统计**：查看来自 `/v0/management/usage` 的请求总量、Token 总量、小时趋势，以及 API/模型维度统计。
 - **配置文件**：浏览器内编辑 `/config.yaml`（YAML 高亮 + 搜索），保存/重载。
 - **日志**：增量拉取日志、自动刷新、搜索、隐藏管理端流量、清空日志；下载请求错误日志文件。
 - **系统信息**：快捷链接 + 拉取 `/v1/models` 并分组展示（需要至少一个代理 API Key 才能查询模型）。
