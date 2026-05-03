@@ -78,6 +78,7 @@ cat > bench/baseline/frontend.latest.json <<JSON
   "commit": "$COMMIT",
   "commit_short": "$COMMIT_SHORT",
   "bundle": {
+    "captured_at": "$CAPTURED_AT",
     "primary_file": "$PRIMARY",
     "raw_bytes": $RAW_BYTES,
     "gzipped_bytes": $GZ_BYTES,
