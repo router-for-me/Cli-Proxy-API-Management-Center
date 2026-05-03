@@ -47,8 +47,8 @@ export interface UsePollOptions {
  *     the callback (notification, store state, etc.). This matches the
  *     existing useInterval / setInterval call-site contracts in this app.
  *
- * Replaces ad-hoc setInterval / useInterval pollers identified in
- * bench/inventory/pollers.md as network polls.
+ * Replaces ad-hoc setInterval / useInterval pollers in network-poll
+ * call sites.
  */
 export function usePoll(
   callback: (signal: AbortSignal) => void | Promise<void>,

@@ -21,13 +21,6 @@ dist-ssr
 *.local
 skills
 
-# Playwright transient artifacts
-test-results
-playwright-report
-bench/baseline/playwright-results.json
-# Latest baseline capture (Playwright + scripts/baseline-frontend.sh write
-# here; promote into bench/baseline/frontend.json via baseline:update).
-bench/baseline/frontend.latest.json
 
 # Editor directories and files
 settings.local.json
