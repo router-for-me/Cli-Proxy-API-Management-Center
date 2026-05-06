@@ -10,6 +10,7 @@ import iconCodex from '@/assets/icons/codex.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconAmp from '@/assets/icons/amp.svg';
+import iconQoder from '@/assets/icons/qoder.svg';
 import styles from './ProviderNav.module.scss';
 
 export type ProviderId = 'gemini' | 'codex' | 'claude' | 'vertex' | 'ampcode' | 'openai' | 'qoder';
@@ -27,7 +28,7 @@ const PROVIDERS: ProviderNavItem[] = [
   { id: 'vertex', label: 'Vertex', getIcon: () => iconVertex },
   { id: 'ampcode', label: 'Ampcode', getIcon: () => iconAmp },
   { id: 'openai', label: 'OpenAI', getIcon: (theme) => (theme === 'dark' ? iconOpenaiDark : iconOpenaiLight) },
-  { id: 'qoder', label: 'Qoder', getIcon: (theme) => (theme === 'dark' ? iconOpenaiDark : iconOpenaiLight) },
+  { id: 'qoder', label: 'Qoder', getIcon: () => iconQoder },
 ];
 
 const HEADER_OFFSET = 24;

@@ -250,5 +250,8 @@ export const providersApi = {
     apiClient.patch('/qoder', { index, value: { disabled } }),
 
   deleteQoderProvider: (name: string) =>
-    apiClient.delete(`/qoder?name=${encodeURIComponent(name)}`)
+    apiClient.delete(`/qoder?name=${encodeURIComponent(name)}`),
+
+  deleteQoderProviderByIndex: (index: number) =>
+    apiClient.delete(`/qoder?index=${encodeURIComponent(String(index))}`)
 };

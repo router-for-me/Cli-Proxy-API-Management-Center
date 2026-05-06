@@ -10,9 +10,7 @@ import { AiProvidersGeminiEditPage } from '@/pages/AiProvidersGeminiEditPage';
 import { AiProvidersOpenAIEditLayout } from '@/pages/AiProvidersOpenAIEditLayout';
 import { AiProvidersOpenAIEditPage } from '@/pages/AiProvidersOpenAIEditPage';
 import { AiProvidersOpenAIModelsPage } from '@/pages/AiProvidersOpenAIModelsPage';
-import { AiProvidersQoderEditLayout } from '@/pages/AiProvidersQoderEditLayout';
 import { AiProvidersQoderEditPage } from '@/pages/AiProvidersQoderEditPage';
-import { AiProvidersQoderModelsPage } from '@/pages/AiProvidersQoderModelsPage';
 import { AiProvidersVertexEditPage } from '@/pages/AiProvidersVertexEditPage';
 import { AuthFilesPage } from '@/pages/AuthFilesPage';
 import { AuthFilesOAuthExcludedEditPage } from '@/pages/AuthFilesOAuthExcludedEditPage';
@@ -66,22 +64,8 @@ const mainRoutes = [
       { path: 'models', element: <AiProvidersOpenAIModelsPage /> },
     ],
   },
-  {
-    path: '/ai-providers/qoder/new',
-    element: <AiProvidersQoderEditLayout />,
-    children: [
-      { index: true, element: <AiProvidersQoderEditPage /> },
-      { path: 'models', element: <AiProvidersQoderModelsPage /> },
-    ],
-  },
-  {
-    path: '/ai-providers/qoder/:index',
-    element: <AiProvidersQoderEditLayout />,
-    children: [
-      { index: true, element: <AiProvidersQoderEditPage /> },
-      { path: 'models', element: <AiProvidersQoderModelsPage /> },
-    ],
-  },
+  { path: '/ai-providers/qoder/new', element: <AiProvidersQoderEditPage /> },
+  { path: '/ai-providers/qoder/:index', element: <AiProvidersQoderEditPage /> },
   { path: '/ai-providers/ampcode', element: <AiProvidersAmpcodeEditPage /> },
   { path: '/ai-providers', element: <AiProvidersPage /> },
   { path: '/ai-providers/*', element: <AiProvidersPage /> },

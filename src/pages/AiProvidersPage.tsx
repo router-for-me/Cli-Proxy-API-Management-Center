@@ -7,6 +7,7 @@ import {
   CodexSection,
   GeminiSection,
   OpenAISection,
+  QoderSection,
   VertexSection,
   ProviderNav,
   useProviderRecentRequests,
@@ -454,18 +455,18 @@ export function AiProvidersPage() {
     const entry = qoderProviders[index];
     if (!entry) return;
     showConfirmation({
-      title: t('ai_providers.openai_delete_title', { defaultValue: 'Delete Qoder Provider' }),
-      message: t('ai_providers.openai_delete_confirm'),
+      title: t('ai_providers.qoder_delete_title', { defaultValue: 'Delete Qoder Key' }),
+      message: t('ai_providers.qoder_delete_confirm'),
       variant: 'danger',
       confirmText: t('common.confirm'),
       onConfirm: async () => {
         try {
-          await providersApi.deleteQoderProvider(entry.name);
+          await providersApi.deleteQoderProviderByIndex(index);
           const next = qoderProviders.filter((_, idx) => idx !== index);
           setQoderProviders(next);
           updateConfigValue('qoder', next);
           clearCache('qoder');
-          showNotification(t('notification.openai_provider_deleted'), 'success');
+          showNotification(t('notification.qoder_key_deleted'), 'success');
         } catch (err: unknown) {
           const message = getErrorMessage(err);
           showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
@@ -563,14 +564,12 @@ export function AiProvidersPage() {
         </div>
 
         <div id="provider-qoder">
-          <OpenAISection
+          <QoderSection
             configs={qoderProviders}
             usageByProvider={usageByProvider}
             loading={loading}
             disableControls={disableControls}
             isSwitching={isSwitching}
-            resolvedTheme={resolvedTheme}
-            providerLabel="Qoder"
             onAdd={() => openEditor('/ai-providers/qoder/new')}
             onEdit={(index) => openEditor(`/ai-providers/qoder/${index}`)}
             onDelete={deleteQoder}
