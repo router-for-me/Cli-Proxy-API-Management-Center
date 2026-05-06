@@ -25,10 +25,19 @@ export function resolveCodexChatgptAccountId(file: AuthFileItem): string | null 
       ? (file.attributes as Record<string, unknown>)
       : null;
 
-  const candidates = [file.id_token, metadata?.id_token, attributes?.id_token];
+  const candidates = [
+    file.account_id,
+    file.accountId,
+    file['account_id'],
+    file['accountId'],
+    metadata?.account_id,
+    metadata?.accountId,
+    attributes?.account_id,
+    attributes?.accountId
+  ];
 
   for (const candidate of candidates) {
-    const id = extractCodexChatgptAccountId(candidate);
+    const id = normalizeStringValue(candidate);
     if (id) return id;
   }
 
