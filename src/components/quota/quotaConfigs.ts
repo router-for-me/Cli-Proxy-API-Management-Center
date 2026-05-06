@@ -785,8 +785,7 @@ const renderCodexItems = (
     ...windows.map((window) => {
       const used = window.usedPercent;
       const clampedUsed = used === null ? null : Math.max(0, Math.min(100, used));
-      const remaining = clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
-      const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
+      const percentLabel = clampedUsed === null ? '--' : `${Math.round(clampedUsed)}% used`;
       const windowLabel = window.labelKey
         ? t(window.labelKey, window.labelParams as Record<string, string | number>)
         : window.label;
@@ -806,7 +805,7 @@ const renderCodexItems = (
           )
         ),
         h(QuotaProgressBar, {
-          percent: remaining,
+          percent: clampedUsed,
           highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
           mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
         })
