@@ -54,6 +54,9 @@ export function AiProvidersPage() {
   const [openaiProviders, setOpenaiProviders] = useState<OpenAIProviderConfig[]>(
     () => config?.openaiCompatibility || []
   );
+  const [qoderProviders, setQoderProviders] = useState<OpenAIProviderConfig[]>(
+    () => config?.qoder || []
+  );
 
   const [configSwitchingKey, setConfigSwitchingKey] = useState<string | null>(null);
 
@@ -80,11 +83,12 @@ export function AiProvidersPage() {
     }
     setError('');
     try {
-      const [configResult, vertexResult, ampcodeResult, openaiResult] = await Promise.allSettled([
+      const [configResult, vertexResult, ampcodeResult, openaiResult, qoderResult] = await Promise.allSettled([
         fetchConfig(),
         providersApi.getVertexConfigs(),
         ampcodeApi.getAmpcode(),
         providersApi.getOpenAIProviders(),
+        providersApi.getQoderProviders(),
       ]);
 
       if (configResult.status !== 'fulfilled') {
@@ -97,6 +101,7 @@ export function AiProvidersPage() {
       setClaudeConfigs(data?.claudeApiKeys || []);
       setVertexConfigs(data?.vertexApiKeys || []);
       setOpenaiProviders(data?.openaiCompatibility || []);
+      setQoderProviders(data?.qoder || []);
 
       if (vertexResult.status === 'fulfilled') {
         setVertexConfigs(vertexResult.value || []);
@@ -113,6 +118,12 @@ export function AiProvidersPage() {
         setOpenaiProviders(openaiResult.value || []);
         updateConfigValue('openai-compatibility', openaiResult.value || []);
         clearCache('openai-compatibility');
+      }
+
+      if (qoderResult.status === 'fulfilled') {
+        setQoderProviders(qoderResult.value || []);
+        updateConfigValue('qoder', qoderResult.value || []);
+        clearCache('qoder');
       }
     } catch (err: unknown) {
       const message = getErrorMessage(err) || t('notification.refresh_failed');
@@ -139,12 +150,14 @@ export function AiProvidersPage() {
     if (config?.claudeApiKeys) setClaudeConfigs(config.claudeApiKeys);
     if (config?.vertexApiKeys) setVertexConfigs(config.vertexApiKeys);
     if (config?.openaiCompatibility) setOpenaiProviders(config.openaiCompatibility);
+    if (config?.qoder) setQoderProviders(config.qoder);
   }, [
     config?.geminiApiKeys,
     config?.codexApiKeys,
     config?.claudeApiKeys,
     config?.vertexApiKeys,
     config?.openaiCompatibility,
+    config?.qoder,
   ]);
 
   const handleRecentRequestsRefresh = useCallback(async () => {
@@ -323,6 +336,38 @@ export function AiProvidersPage() {
     }
   };
 
+  const setQoderProviderEnabled = async (index: number, enabled: boolean) => {
+    const current = qoderProviders[index];
+    if (!current) return;
+
+    const switchingKey = `qoder:${current.name}:${index}`;
+    setConfigSwitchingKey(switchingKey);
+
+    const previousList = qoderProviders;
+    const nextItem: OpenAIProviderConfig = { ...current, disabled: !enabled };
+    const nextList = previousList.map((item, idx) => (idx === index ? nextItem : item));
+
+    setQoderProviders(nextList);
+    updateConfigValue('qoder', nextList);
+    clearCache('qoder');
+
+    try {
+      await providersApi.updateQoderProviderDisabled(index, !enabled);
+      showNotification(
+        enabled ? t('notification.config_enabled') : t('notification.config_disabled'),
+        'success'
+      );
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      setQoderProviders(previousList);
+      updateConfigValue('qoder', previousList);
+      clearCache('qoder');
+      showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+    } finally {
+      setConfigSwitchingKey(null);
+    }
+  };
+
   const deleteProviderEntry = async (type: 'codex' | 'claude', index: number) => {
     const source = type === 'codex' ? codexConfigs : claudeConfigs;
     const entry = source[index];
@@ -396,6 +441,30 @@ export function AiProvidersPage() {
           setOpenaiProviders(next);
           updateConfigValue('openai-compatibility', next);
           clearCache('openai-compatibility');
+          showNotification(t('notification.openai_provider_deleted'), 'success');
+        } catch (err: unknown) {
+          const message = getErrorMessage(err);
+          showNotification(`${t('notification.delete_failed')}: ${message}`, 'error');
+        }
+      },
+    });
+  };
+
+  const deleteQoder = async (index: number) => {
+    const entry = qoderProviders[index];
+    if (!entry) return;
+    showConfirmation({
+      title: t('ai_providers.openai_delete_title', { defaultValue: 'Delete Qoder Provider' }),
+      message: t('ai_providers.openai_delete_confirm'),
+      variant: 'danger',
+      confirmText: t('common.confirm'),
+      onConfirm: async () => {
+        try {
+          await providersApi.deleteQoderProvider(entry.name);
+          const next = qoderProviders.filter((_, idx) => idx !== index);
+          setQoderProviders(next);
+          updateConfigValue('qoder', next);
+          clearCache('qoder');
           showNotification(t('notification.openai_provider_deleted'), 'success');
         } catch (err: unknown) {
           const message = getErrorMessage(err);
@@ -485,10 +554,27 @@ export function AiProvidersPage() {
             disableControls={disableControls}
             isSwitching={isSwitching}
             resolvedTheme={resolvedTheme}
+            providerLabel="OpenAI"
             onAdd={() => openEditor('/ai-providers/openai/new')}
             onEdit={(index) => openEditor(`/ai-providers/openai/${index}`)}
             onDelete={deleteOpenai}
             onToggle={(index, enabled) => void setOpenAIProviderEnabled(index, enabled)}
+          />
+        </div>
+
+        <div id="provider-qoder">
+          <OpenAISection
+            configs={qoderProviders}
+            usageByProvider={usageByProvider}
+            loading={loading}
+            disableControls={disableControls}
+            isSwitching={isSwitching}
+            resolvedTheme={resolvedTheme}
+            providerLabel="Qoder"
+            onAdd={() => openEditor('/ai-providers/qoder/new')}
+            onEdit={(index) => openEditor(`/ai-providers/qoder/${index}`)}
+            onDelete={deleteQoder}
+            onToggle={(index, enabled) => void setQoderProviderEnabled(index, enabled)}
           />
         </div>
       </div>

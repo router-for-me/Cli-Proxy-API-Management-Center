@@ -50,6 +50,7 @@ interface OpenAISectionProps {
   disableControls: boolean;
   isSwitching: boolean;
   resolvedTheme: string;
+  providerLabel?: string;
   onAdd: () => void;
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
@@ -76,6 +77,7 @@ export function OpenAISection({
   disableControls,
   isSwitching,
   resolvedTheme,
+  providerLabel = 'OpenAI',
   onAdd,
   onEdit,
   onDelete,
@@ -103,6 +105,24 @@ export function OpenAISection({
   const floatingDropdownRef = useRef<HTMLDivElement>(null);
 
   const shouldRenderFloatingToolbar = !isTransitionAnimating && floatingToolbarStyle.visible;
+  const isOpenAIProvider = providerLabel === 'OpenAI';
+  // Provider-specific labels keep the shared OpenAI-compatible section readable for Qoder.
+  const addButtonLabel = isOpenAIProvider
+    ? t('ai_providers.openai_add_button')
+    : `Add ${providerLabel} Provider`;
+  const sectionTitle = isOpenAIProvider ? t('ai_providers.openai_title') : providerLabel;
+  const filteredEmptyTitle = isOpenAIProvider
+    ? t('ai_providers.openai_filtered_empty_title')
+    : `No matching ${providerLabel} providers`;
+  const filteredEmptyDescription = isOpenAIProvider
+    ? t('ai_providers.openai_filtered_empty_desc')
+    : `Clear the model filter to show all ${providerLabel} providers.`;
+  const emptyTitle = isOpenAIProvider
+    ? t('ai_providers.openai_empty_title')
+    : `No ${providerLabel} providers`;
+  const emptyDescription = isOpenAIProvider
+    ? t('ai_providers.openai_empty_desc')
+    : `Add a ${providerLabel} provider to configure its OpenAI-compatible endpoint.`;
 
   useEffect(() => {
     if (isTransitionAnimating) {
@@ -507,7 +527,7 @@ export function OpenAISection({
           disabled={actionsDisabled}
           className={styles.openaiAddButton}
         >
-          {t('ai_providers.openai_add_button')}
+          {addButtonLabel}
         </Button>
       </div>
     );
@@ -520,7 +540,7 @@ export function OpenAISection({
         alt=""
         className={styles.cardTitleIcon}
       />
-      {t('ai_providers.openai_title')}
+      {sectionTitle}
     </span>
   );
 
@@ -689,8 +709,8 @@ export function OpenAISection({
             <div className="hint">{t('common.loading')}</div>
           ) : configs.length > 0 && sortedConfigs.length === 0 ? (
             <EmptyState
-              title={t('ai_providers.openai_filtered_empty_title')}
-              description={t('ai_providers.openai_filtered_empty_desc')}
+              title={filteredEmptyTitle}
+              description={filteredEmptyDescription}
               action={
                 <Button
                   variant="secondary"
@@ -704,8 +724,8 @@ export function OpenAISection({
             />
           ) : sortedConfigs.length === 0 ? (
             <EmptyState
-              title={t('ai_providers.openai_empty_title')}
-              description={t('ai_providers.openai_empty_desc')}
+              title={emptyTitle}
+              description={emptyDescription}
             />
           ) : (
             <div className={styles.openaiProviderList}>{sortedConfigs.map(renderProviderCard)}</div>

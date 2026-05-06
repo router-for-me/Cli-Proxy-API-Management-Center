@@ -15,8 +15,10 @@ import type { ModelEntry, OpenAIFormState } from '@/components/providers/types';
 import type { KeyTestStatus, OpenAIEditBaseline } from '@/stores/useOpenAIEditDraftStore';
 
 type LocationState = { fromAiProviders?: boolean } | null;
+type OpenAIEditorProvider = 'openai' | 'qoder';
 
 export type OpenAIEditOutletContext = {
+  providerLabel: string;
   hasIndexParam: boolean;
   editIndex: number | null;
   invalidIndexParam: boolean;
@@ -132,7 +134,7 @@ const areNormalizedApiKeyEntriesEqual = (
   return true;
 };
 
-export function AiProvidersOpenAIEditLayout() {
+export function AiProvidersOpenAIEditLayout({ provider = 'openai' }: { provider?: OpenAIEditorProvider }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -150,20 +152,32 @@ export function AiProvidersOpenAIEditLayout() {
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
   const isCacheValid = useConfigStore((state) => state.isCacheValid);
+  const providerConfig = useMemo(() => {
+    const isQoder = provider === 'qoder';
+    return {
+      providerLabel: isQoder ? 'Qoder' : 'OpenAI',
+      draftPrefix: isQoder ? 'qoder' : 'openai',
+      routeBase: isQoder ? '/ai-providers/qoder' : '/ai-providers/openai',
+      section: isQoder ? 'qoder' as const : 'openai-compatibility' as const,
+      getProviders: isQoder ? providersApi.getQoderProviders : providersApi.getOpenAIProviders,
+      saveProviders: isQoder ? providersApi.saveQoderProviders : providersApi.saveOpenAIProviders,
+    };
+  }, [provider]);
+  const currentProviders = provider === 'qoder' ? config?.qoder : config?.openaiCompatibility;
 
   const [providers, setProviders] = useState<OpenAIProviderConfig[]>(
-    () => config?.openaiCompatibility ?? []
+    () => currentProviders ?? []
   );
   const [loading, setLoading] = useState(
-    () => !isCacheValid('openai-compatibility')
+    () => !isCacheValid(providerConfig.section)
   );
   const [saving, setSaving] = useState(false);
 
   const draftKey = useMemo(() => {
-    if (invalidIndexParam) return `openai:invalid:${params.index ?? 'unknown'}`;
-    if (editIndex === null) return 'openai:new';
-    return `openai:${editIndex}`;
-  }, [editIndex, invalidIndexParam, params.index]);
+    if (invalidIndexParam) return `${providerConfig.draftPrefix}:invalid:${params.index ?? 'unknown'}`;
+    if (editIndex === null) return `${providerConfig.draftPrefix}:new`;
+    return `${providerConfig.draftPrefix}:${editIndex}`;
+  }, [editIndex, invalidIndexParam, params.index, providerConfig.draftPrefix]);
 
   const draft = useOpenAIEditDraftStore((state) => state.drafts[draftKey]);
   const acquireDraft = useOpenAIEditDraftStore((state) => state.acquireDraft);
@@ -254,23 +268,23 @@ export function AiProvidersOpenAIEditLayout() {
 
   useEffect(() => {
     let cancelled = false;
-    const hasValidCache = isCacheValid('openai-compatibility');
+    const hasValidCache = isCacheValid(providerConfig.section);
     if (!hasValidCache) {
       setLoading(true);
     }
 
-    providersApi
-      .getOpenAIProviders()
-      .then((value) => {
+    providerConfig
+      .getProviders()
+      .then((value: OpenAIProviderConfig[]) => {
         if (cancelled) return;
         const nextProviders = value || [];
         setProviders(nextProviders);
-        updateConfigValue('openai-compatibility', nextProviders);
+        updateConfigValue(providerConfig.section, nextProviders);
       })
       .catch(async (err: unknown) => {
         if (cancelled) return;
         try {
-          const fallback = await fetchConfig('openai-compatibility');
+          const fallback = await fetchConfig(providerConfig.section);
           if (cancelled) return;
           setProviders(Array.isArray(fallback) ? (fallback as OpenAIProviderConfig[]) : []);
         } catch {
@@ -287,7 +301,7 @@ export function AiProvidersOpenAIEditLayout() {
     return () => {
       cancelled = true;
     };
-  }, [fetchConfig, isCacheValid, showNotification, t, updateConfigValue]);
+  }, [fetchConfig, isCacheValid, providerConfig, showNotification, t, updateConfigValue]);
 
   useEffect(() => {
     if (loading) return;
@@ -430,10 +444,10 @@ export function AiProvidersOpenAIEditLayout() {
       isModelsDirty);
   const editorRootPath = useMemo(() => {
     if (hasIndexParam) {
-      return `/ai-providers/openai/${params.index ?? ''}`;
+      return `${providerConfig.routeBase}/${params.index ?? ''}`;
     }
-    return '/ai-providers/openai/new';
-  }, [hasIndexParam, params.index]);
+    return `${providerConfig.routeBase}/new`;
+  }, [hasIndexParam, params.index, providerConfig.routeBase]);
   const canGuard = !resolvedLoading && !saving && !invalidIndexParam && !invalidIndex;
 
   const { allowNextNavigation } = useUnsavedChangesGuard({
@@ -491,17 +505,17 @@ export function AiProvidersOpenAIEditLayout() {
           ? providers.map((item, idx) => (idx === editIndex ? payload : item))
           : [...providers, payload];
 
-      await providersApi.saveOpenAIProviders(nextList);
+      await providerConfig.saveProviders(nextList);
 
       let syncedProviders = nextList;
       try {
-        syncedProviders = await providersApi.getOpenAIProviders();
+        syncedProviders = await providerConfig.getProviders();
       } catch {
         // 保存成功后刷新失败时，回退到本地计算结果，避免页面数据为空或回退
       }
 
       setProviders(syncedProviders);
-      updateConfigValue('openai-compatibility', syncedProviders);
+      updateConfigValue(providerConfig.section, syncedProviders);
       showNotification(
         editIndex !== null
           ? t('notification.openai_provider_updated')
@@ -524,6 +538,7 @@ export function AiProvidersOpenAIEditLayout() {
     handleBack,
     initialData?.disabled,
     providers,
+    providerConfig,
     setDraftBaseline,
     showNotification,
     t,
@@ -534,6 +549,7 @@ export function AiProvidersOpenAIEditLayout() {
   return (
     <Outlet
       context={{
+        providerLabel: providerConfig.providerLabel,
         hasIndexParam,
         editIndex,
         invalidIndexParam,

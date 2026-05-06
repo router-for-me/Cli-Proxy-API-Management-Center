@@ -460,6 +460,13 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       .filter(Boolean) as OpenAIProviderConfig[];
   }
 
+  const qoderList = raw.qoder;
+  if (Array.isArray(qoderList)) {
+    config.qoder = qoderList
+      .map((item) => normalizeOpenAIProvider(item))
+      .filter(Boolean) as OpenAIProviderConfig[];
+  }
+
   const ampcode = normalizeAmpcodeConfig(raw.ampcode);
   if (ampcode) {
     config.ampcode = ampcode;

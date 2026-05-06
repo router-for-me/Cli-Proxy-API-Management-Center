@@ -25,6 +25,7 @@ export function AiProvidersOpenAIModelsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const {
+    providerLabel,
     disableControls,
     loading: initialLoading,
     saving,
@@ -172,12 +173,16 @@ export function AiProvidersOpenAIModelsPage() {
   };
 
   const canApply = !disableControls && !saving && !fetching && selected.size > 0;
+  const title =
+    providerLabel === 'OpenAI'
+      ? t('ai_providers.openai_models_fetch_title')
+      : `${providerLabel} Model Discovery`;
 
   return (
     <SecondaryScreenShell
       ref={swipeRef}
       contentClassName={layoutStyles.content}
-      title={t('ai_providers.openai_models_fetch_title')}
+      title={title}
       onBack={handleBack}
       backLabel={t('common.back')}
       backAriaLabel={t('common.back')}

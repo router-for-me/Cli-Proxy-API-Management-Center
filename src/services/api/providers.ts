@@ -232,5 +232,23 @@ export const providersApi = {
     apiClient.patch('/openai-compatibility', { index, value: { disabled } }),
 
   deleteOpenAIProvider: (name: string) =>
-    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`)
+    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`),
+
+  async getQoderProviders(): Promise<OpenAIProviderConfig[]> {
+    const data = await apiClient.get('/qoder');
+    const list = extractArrayPayload(data, 'qoder');
+    return list.map((item) => normalizeOpenAIProvider(item)).filter(Boolean) as OpenAIProviderConfig[];
+  },
+
+  saveQoderProviders: (providers: OpenAIProviderConfig[]) =>
+    apiClient.put('/qoder', providers.map((item) => serializeOpenAIProvider(item))),
+
+  updateQoderProvider: (index: number, value: OpenAIProviderConfig) =>
+    apiClient.patch('/qoder', { index, value: serializeOpenAIProvider(value) }),
+
+  updateQoderProviderDisabled: (index: number, disabled: boolean) =>
+    apiClient.patch('/qoder', { index, value: { disabled } }),
+
+  deleteQoderProvider: (name: string) =>
+    apiClient.delete(`/qoder?name=${encodeURIComponent(name)}`)
 };

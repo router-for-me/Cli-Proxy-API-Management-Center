@@ -98,6 +98,7 @@ export function AiProvidersOpenAIEditPage() {
   const navigate = useNavigate();
   const { showNotification } = useNotificationStore();
   const {
+    providerLabel,
     hasIndexParam,
     invalidIndexParam,
     invalidIndex,
@@ -120,9 +121,13 @@ export function AiProvidersOpenAIEditPage() {
     handleSave,
   } = useOutletContext<OpenAIEditOutletContext>();
 
-  const title = hasIndexParam
-    ? t('ai_providers.openai_edit_modal_title')
-    : t('ai_providers.openai_add_modal_title');
+  const title = providerLabel === 'Qoder'
+    ? hasIndexParam
+      ? 'Edit Qoder Provider'
+      : 'Add Qoder Provider'
+    : hasIndexParam
+      ? t('ai_providers.openai_edit_modal_title')
+      : t('ai_providers.openai_add_modal_title');
 
   const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
   const [isTestingKeys, setIsTestingKeys] = useState(false);
