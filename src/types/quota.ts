@@ -236,6 +236,7 @@ export interface CodexQuotaWindow {
   labelParams?: Record<string, string | number>;
   usedPercent: number | null;
   resetLabel: string;
+  isFreshQuotaWindow: boolean;
 }
 
 export interface CodexQuotaState {

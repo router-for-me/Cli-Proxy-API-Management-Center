@@ -366,6 +366,11 @@
   color: var(--text-tertiary);
 }
 
+.quotaResetRecovered {
+  color: var(--success-badge-text, var(--success-color));
+  font-weight: 600;
+}
+
 .quotaAmount {
   color: var(--text-secondary);
 }
