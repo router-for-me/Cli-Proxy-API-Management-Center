@@ -642,6 +642,7 @@
     "refresh_button": "Обновить квоту",
     "fetch_all": "Получить все",
     "five_hour": "Лимит на 5 часов",
+    "one_day": "Дневной лимит",
     "seven_day": "Лимит на 7 дней",
     "seven_day_oauth_apps": "7 дней OAuth приложения",
     "seven_day_opus": "7 дней Opus",

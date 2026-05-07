@@ -645,6 +645,7 @@
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All",
     "five_hour": "5-hour limit",
+    "one_day": "Daily limit",
     "seven_day": "7-day limit",
     "seven_day_oauth_apps": "7-day OAuth apps",
     "seven_day_opus": "7-day Opus",

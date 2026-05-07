@@ -175,6 +175,7 @@ export const CLAUDE_REQUEST_HEADERS = {
 
 export const CLAUDE_USAGE_WINDOW_KEYS = [
   { key: 'five_hour', id: 'five-hour', labelKey: 'claude_quota.five_hour' },
+  { key: 'one_day', id: 'one-day', labelKey: 'claude_quota.one_day' },
   { key: 'seven_day', id: 'seven-day', labelKey: 'claude_quota.seven_day' },
   { key: 'seven_day_oauth_apps', id: 'seven-day-oauth-apps', labelKey: 'claude_quota.seven_day_oauth_apps' },
   { key: 'seven_day_opus', id: 'seven-day-opus', labelKey: 'claude_quota.seven_day_opus' },

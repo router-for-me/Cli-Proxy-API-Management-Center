@@ -645,6 +645,7 @@
     "refresh_button": "重新整理配額",
     "fetch_all": "取得全部",
     "five_hour": "5 小時限額",
+    "one_day": "日限額",
     "seven_day": "7 天限額",
     "seven_day_oauth_apps": "7 天 OAuth 應用",
     "seven_day_opus": "7 天 Opus",

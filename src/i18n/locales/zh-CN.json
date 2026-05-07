@@ -645,6 +645,7 @@
     "refresh_button": "刷新额度",
     "fetch_all": "获取全部",
     "five_hour": "5 小时限额",
+    "one_day": "日限额",
     "seven_day": "7 天限额",
     "seven_day_oauth_apps": "7 天 OAuth 应用",
     "seven_day_opus": "7 天 Opus",

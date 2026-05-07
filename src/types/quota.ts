@@ -145,6 +145,7 @@ export interface ClaudeExtraUsage {
 
 export interface ClaudeUsagePayload {
   five_hour?: ClaudeUsageWindow | null;
+  one_day?: ClaudeUsageWindow | null;
   seven_day?: ClaudeUsageWindow | null;
   seven_day_oauth_apps?: ClaudeUsageWindow | null;
   seven_day_opus?: ClaudeUsageWindow | null;
