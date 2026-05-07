@@ -439,6 +439,7 @@
     "openai_delete_confirm": "確定要刪除這個 OpenAI 供應商嗎？",
     "openai_keys_count": "金鑰數量",
     "openai_models_count": "模型數量",
+    "openai_refresh_all_balances": "重新整理",
     "openai_test_title": "連通性測試",
     "openai_test_hint": "使用目前設定向 /chat/completions 請求，驗證是否可用。",
     "openai_test_model_placeholder": "選擇或輸入要測試的模型",
@@ -542,6 +543,8 @@
     "filter_antigravity": "Antigravity",
     "filter_iflow": "iFlow",
     "filter_vertex": "Vertex",
+    "filter_ollama": "Ollama",
+    "filter_deepseek": "DeepSeek",
     "filter_empty": "空檔案",
     "filter_unknown": "其他",
     "type_qwen": "Qwen",
@@ -615,7 +618,8 @@
     "prefix_proxy_invalid_json": "該驗證檔案不是 JSON 物件，無法編輯欄位。",
     "prefix_proxy_saved_success": "已更新驗證檔案「{{name}}」",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "quota_refresh_action": "重新整理"
   },
   "antigravity_quota": {
     "title": "Antigravity 配額",
@@ -720,6 +724,61 @@
     "limit_window": "{{duration}} 限額",
     "limit_index": "限額 #{{index}}",
     "reset_hint": "{{hint}} 後重置"
+  },
+  "ollama_quota": {
+    "idle": "點擊此處取得 Ollama 用量",
+    "loading": "正在載入 Ollama 用量...",
+    "load_failed": "Ollama 用量取得失敗：{{message}}",
+    "empty": "暫無用量資料",
+    "missing_name": "驗證檔案缺少名稱",
+    "plan_label": "方案",
+    "session_label": "本次工作階段剩餘",
+    "weekly_label": "本週剩餘",
+    "refresh_button": "重新整理 Ollama 餘額",
+    "refresh_no_match": "找不到與此 API Key 對應的驗證檔案",
+    "refresh_success": "Ollama 餘額已更新：方案 {{plan}}，本次工作階段剩餘 {{session}}%，本週剩餘 {{weekly}}%",
+    "refresh_failed": "重新整理 Ollama 餘額失敗：{{message}}"
+  },
+  "deepseek_quota": {
+    "idle": "點擊此處取得 DeepSeek 餘額",
+    "loading": "正在載入 DeepSeek 餘額...",
+    "load_failed": "DeepSeek 餘額取得失敗：{{message}}",
+    "empty": "暫無餘額資料",
+    "missing_name": "驗證檔案缺少名稱",
+    "wallet_label": "錢包餘額",
+    "bonus_label": "贈送餘額",
+    "monthly_cost_label": "本月消費",
+    "token_estimation": "約 {{formatted}} tokens",
+    "monthly_tokens": "{{formatted}} tokens",
+    "refresh_button": "重新整理 DeepSeek 餘額",
+    "refresh_no_match": "找不到與此 API Key 對應的驗證檔案",
+    "refresh_success": "DeepSeek 餘額已更新：錢包 {{currency}} {{balance}}，贈送 {{currency}} {{bonus}}，本月消費 {{currency}} {{cost}}",
+    "refresh_failed": "重新整理 DeepSeek 餘額失敗：{{message}}"
+  },
+  "xiaomi_quota": {
+    "idle": "點擊此處取得 Xiaomi 用量",
+    "loading": "正在載入 Xiaomi 用量...",
+    "load_failed": "Xiaomi 用量取得失敗：{{message}}",
+    "empty": "暫無用量資料",
+    "month_label": "本月用量",
+    "plan_label": "方案用量",
+    "compensation_label": "補償額度",
+    "tokens_used": "{{used}} / {{limit}} tokens",
+    "refresh_button": "重新整理 Xiaomi 用量",
+    "refresh_failed": "重新整理 Xiaomi 用量失敗：{{message}}"
+  },
+  "anyrouter_quota": {
+    "idle": "點擊此處取得 Anyrouter 餘額",
+    "loading": "正在載入 Anyrouter 餘額...",
+    "load_failed": "Anyrouter 餘額取得失敗：{{message}}",
+    "empty": "暫無餘額資料",
+    "quota_label": "剩餘額度",
+    "used_label": "已用額度",
+    "request_count_label": "請求次數",
+    "aff_quota_label": "邀請獎勵",
+    "group_label": "使用者群組",
+    "refresh_button": "重新整理 Anyrouter 餘額",
+    "refresh_failed": "重新整理 Anyrouter 餘額失敗：{{message}}"
   },
   "vertex_import": {
     "title": "Vertex JSON 登入",

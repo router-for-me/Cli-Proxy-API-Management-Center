@@ -4,7 +4,11 @@
 
 import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
-import type { OAuthModelAliasEntry } from '@/types';
+import type {
+  DeepSeekBalancePayload,
+  OAuthModelAliasEntry,
+  OllamaBalancePayload,
+} from '@/types';
 import { parseTimestampMs } from '@/utils/timestamp';
 
 type StatusError = { status?: number };
@@ -503,6 +507,45 @@ export const authFilesApi = {
       await apiClient.delete(`${OAUTH_MODEL_ALIAS_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
     }
   },
+
+  // 强制刷新 ollama 余额（旁路 10 分钟缓存，直接打 ollama.com）
+  refreshOllamaBalance: (name: string) =>
+    apiClient.post<{ balance: OllamaBalancePayload }>(
+      '/auth-files/ollama-balance/refresh',
+      { name }
+    ),
+
+  // 强制刷新 deepseek 钱包余额（旁路 10 分钟缓存，直接打 platform.deepseek.com）
+  refreshDeepSeekBalance: (name: string) =>
+    apiClient.post<{ balance: DeepSeekBalancePayload }>(
+      '/auth-files/deepseek-balance/refresh',
+      { name }
+    ),
+
+  // 直接用 openai-compatibility 配置里的凭据刷新余额，不依赖 auth manager 查找。
+  // ollama: 传 cookie（必需）+ 可选的 inference api_key
+  // deepseek: 传 balance_token（必需，从 platform.deepseek.com 单独签发）+ 可选的 cookie
+  // xiaomi: 传 cookie（platform.xiaomimimo.com 浏览器会话）
+  // anyrouter: 传 cookie + new_api_user（数字账号 ID，对应 new-api-user 请求头）
+  refreshOpenAICompatBalance: (params: {
+    provider: 'ollama' | 'deepseek' | 'xiaomi' | 'anyrouter';
+    baseUrl?: string;
+    apiKey?: string;
+    cookie?: string;
+    balanceToken?: string;
+    newApiUser?: string;
+  }) =>
+    apiClient.post<{ balance: Record<string, unknown> }>(
+      '/openai-compat/balance/refresh',
+      {
+        provider: params.provider,
+        base_url: params.baseUrl ?? '',
+        api_key: params.apiKey ?? '',
+        cookie: params.cookie ?? '',
+        balance_token: params.balanceToken ?? '',
+        new_api_user: params.newApiUser ?? '',
+      }
+    ),
 
   // 获取认证凭证支持的模型
   async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {

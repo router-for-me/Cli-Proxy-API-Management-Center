@@ -113,6 +113,10 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   const authIndex = normalizeAuthIndex(
     record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
   );
+  const balanceTokenRaw =
+    record?.['balance-token'] ?? record?.balanceToken ?? record?.['balance_token'];
+  const balanceToken =
+    typeof balanceTokenRaw === 'string' ? balanceTokenRaw.trim() : '';
 
   const result: ApiKeyEntry = {
     apiKey: trimmed,
@@ -120,6 +124,7 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
     headers
   };
   if (authIndex) result.authIndex = authIndex;
+  if (balanceToken) result.balanceToken = balanceToken;
   return result;
 };
 

@@ -36,6 +36,15 @@ export interface AuthFileItem {
   failed?: unknown;
   recent_requests?: RecentRequestBucket[];
   recentRequests?: RecentRequestBucket[];
+  // openai-compatibility sub-provider routing (e.g. "deepseek", "ollama").
+  provider_key?: string;
+  compat_name?: string;
+  // Upstream connection info — needed to match this auth against
+  // GET /api-key-usage response keys ("<baseURL>|<apiKey>").
+  base_url?: string;
+  api_key?: string;
+  // Provider-specific balance snapshot already fetched by the backend.
+  balance?: Record<string, unknown>;
   [key: string]: unknown;
 }
 

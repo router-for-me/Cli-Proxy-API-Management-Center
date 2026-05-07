@@ -11,6 +11,7 @@ import {
   IconCheck,
   IconChevronDown,
   IconChevronUp,
+  IconRefreshCw,
   IconSlidersHorizontal,
   IconX,
 } from '@/components/ui/icons';
@@ -22,6 +23,11 @@ import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderStatusBar } from '../ProviderStatusBar';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
+import { OpenAICompatBalancePanel } from './OpenAICompatBalancePanel';
+import {
+  OpenAICompatRefreshProvider,
+  useOpenAICompatRefreshBus,
+} from './openAICompatRefreshBus';
 import {
   getOpenAIProviderRecentWindowStats,
   getOpenAIProviderRecentStatusData,
@@ -56,6 +62,17 @@ interface OpenAISectionProps {
   onToggle: (index: number, enabled: boolean) => void;
 }
 
+const BALANCE_PROVIDER_KINDS = new Set(['ollama', 'deepseek', 'xiaomi', 'anyrouter']);
+
+const getBalanceProviderKind = (
+  provider: OpenAIProviderConfig
+): 'ollama' | 'deepseek' | 'xiaomi' | 'anyrouter' | null => {
+  const name = (provider.name || '').trim().toLowerCase();
+  return BALANCE_PROVIDER_KINDS.has(name)
+    ? (name as 'ollama' | 'deepseek' | 'xiaomi' | 'anyrouter')
+    : null;
+};
+
 interface IndexedOpenAIProvider {
   config: OpenAIProviderConfig;
   originalIndex: number;
@@ -69,7 +86,63 @@ const getApiKeyEntryRenderKey = (
   return authIndex ? `auth-index-${authIndex}` : `api-key-entry-${entryIndex}`;
 };
 
-export function OpenAISection({
+function RefreshAllBalancesButton({ disabled }: { disabled: boolean }) {
+  const { t } = useTranslation();
+  const bus = useOpenAICompatRefreshBus();
+  const [refreshing, setRefreshing] = useState(false);
+
+  if (!bus) return null;
+
+  const handleClick = async () => {
+    if (disabled || refreshing) return;
+    setRefreshing(true);
+    try {
+      await bus.refreshAll();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const label = t('ai_providers.openai_refresh_all_balances', {
+    defaultValue: '刷新',
+  });
+
+  return (
+    <button
+      type="button"
+      className={[
+        styles.modelFilterControl,
+        styles.modelFilterTrigger,
+        disabled || refreshing ? styles.modelFilterControlDisabled : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      onClick={() => void handleClick()}
+      disabled={disabled || refreshing}
+      title={label}
+      aria-label={label}
+      style={{ padding: '0 10px', height: 32, gap: 6, width: 'auto' }}
+    >
+      <span className={styles.modelFilterIcon} aria-hidden="true">
+        <IconRefreshCw
+          size={14}
+          style={refreshing ? { animation: 'spin 0.9s linear infinite' } : undefined}
+        />
+      </span>
+      <span className={styles.modelFilterText}>{label}</span>
+    </button>
+  );
+}
+
+export function OpenAISection(props: OpenAISectionProps) {
+  return (
+    <OpenAICompatRefreshProvider>
+      <OpenAISectionInner {...props} />
+    </OpenAICompatRefreshProvider>
+  );
+}
+
+function OpenAISectionInner({
   configs,
   usageByProvider,
   loading,
@@ -287,7 +360,6 @@ export function OpenAISection({
             ])
           )
         : null;
-
     switch (sortOption) {
       case 'name':
         sorted.sort((a, b) => direction * a.config.name.localeCompare(b.config.name));
@@ -324,6 +396,14 @@ export function OpenAISection({
 
     return sorted;
   }, [configs, sortOption, sortDirection, usageByProvider, selectedModels]);
+
+  const hasBalanceProvider = useMemo(
+    () =>
+      configs.some(
+        (provider) => !provider.disabled && getBalanceProviderKind(provider) !== null
+      ),
+    [configs]
+  );
 
   const toggleModelSelection = (modelName: string) => {
     setSelectedModels((prev) => {
@@ -399,6 +479,9 @@ export function OpenAISection({
 
     return (
       <div className={styles.cardHeaderActions}>
+        {hasBalanceProvider && (
+          <RefreshAllBalancesButton disabled={actionsDisabled} />
+        )}
         <div
           className={styles.modelMultiSelectWrapper}
           ref={isFloating ? floatingDropdownRef : topDropdownRef}
@@ -531,6 +614,7 @@ export function OpenAISection({
     const statusData =
       statusBarCache.get(getOpenAIProviderKey(provider, originalIndex)) || EMPTY_STATUS_BAR;
     const providerDisabled = provider.disabled === true;
+    const balanceKind = getBalanceProviderKind(provider);
 
     return (
       <div
@@ -605,6 +689,15 @@ export function OpenAISection({
                           <IconX size={12} /> {entryStats.failure}
                         </span>
                       </div>
+                      {balanceKind && (
+                        <OpenAICompatBalancePanel
+                          provider={provider}
+                          entry={entry}
+                          entryIndex={entryIndex}
+                          kind={balanceKind}
+                          disabled={actionsDisabled}
+                        />
+                      )}
                     </div>
                   );
                 })}

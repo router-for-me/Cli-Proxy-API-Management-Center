@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/icons';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import type { AuthFileItem } from '@/types';
-import { resolveAuthProvider } from '@/utils/quota';
+import { resolveAuthProvider, resolveCanonicalProvider } from '@/utils/quota';
 import {
   normalizeRecentRequestAuthIndex,
   normalizeRecentRequestBuckets,
@@ -57,9 +57,17 @@ export type AuthFileCardProps = {
 };
 
 const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
-  const provider = resolveAuthProvider(file);
-  if (!QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) return null;
-  return provider as QuotaProviderType;
+  // Native registrations expose provider directly; openai-compatibility
+  // sub-providers (deepseek, ollama, ...) need the canonical lookup.
+  const direct = resolveAuthProvider(file);
+  if (QUOTA_PROVIDER_TYPES.has(direct as QuotaProviderType)) {
+    return direct as QuotaProviderType;
+  }
+  const canonical = resolveCanonicalProvider(file);
+  if (QUOTA_PROVIDER_TYPES.has(canonical as QuotaProviderType)) {
+    return canonical as QuotaProviderType;
+  }
+  return null;
 };
 
 export function AuthFileCard(props: AuthFileCardProps) {
@@ -110,7 +118,11 @@ export function AuthFileCard(props: AuthFileCardProps) {
             ? styles.geminiCliCard
             : quotaType === 'kimi'
               ? styles.kimiCard
-              : '';
+              : quotaType === 'ollama'
+                ? styles.ollamaCard
+                : quotaType === 'deepseek'
+                  ? styles.deepseekCard
+                  : '';
 
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndexKey = normalizeRecentRequestAuthIndex(rawAuthIndex);

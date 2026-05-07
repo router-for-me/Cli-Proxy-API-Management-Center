@@ -49,6 +49,23 @@ import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModel
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
+import { useProviderRecentRequests } from '@/components/providers';
+import { getProviderRecentUsageEntry } from '@/components/providers/utils';
+import {
+  ANTIGRAVITY_CONFIG,
+  CLAUDE_CONFIG,
+  CODEX_CONFIG,
+  DEEPSEEK_CONFIG,
+  GEMINI_CLI_CONFIG,
+  KIMI_CONFIG,
+  OLLAMA_CONFIG,
+} from '@/components/quota';
+import { useQuotaStore } from '@/stores';
+import type { RecentRequestBucket } from '@/utils/recentRequests';
+import { IconRefreshCw } from '@/components/ui/icons';
+import type { TFunction } from 'i18next';
+import type { AuthFileItem } from '@/types';
+import { resolveCanonicalProvider } from '@/utils/quota';
 import {
   isAuthFilesSortMode,
   readAuthFilesUiState,
@@ -133,7 +150,143 @@ export function AuthFilesPage() {
     batchDelete,
   } = useAuthFilesData();
 
-  const statusBarCache = useAuthFilesStatusBarCache(files);
+  const { usageByProvider, loadRecentRequests } = useProviderRecentRequests({
+    enabled: isCurrentLayer,
+  });
+
+  // Merge GET /api-key-usage data into auth files keyed by
+  // (canonical provider, baseURL, apiKey). The backend records usage with the
+  // *lowercased* provider key, so resolveCanonicalProvider has to match.
+  // For native providers (claude, codex, ...) where base_url/api_key aren't
+  // attached on the auth file object, we try fallback matching by authIndex
+  // position or provider order.
+  const filesWithUsage = useMemo(() => {
+    if (!files.length) return files;
+    if (usageByProvider.size === 0) return files;
+    // Phase 1: match files that have api_key (openai-compatibility providers).
+    const matchedCompositeKeys = new Set<string>();
+    const phase1 = files.map((file) => {
+      const provider = resolveCanonicalProvider(file);
+      if (!provider) return file;
+      const apiKey = typeof file.api_key === 'string' ? file.api_key : undefined;
+      const baseUrl = typeof file.base_url === 'string' ? file.base_url : undefined;
+      if (!apiKey) return file;
+      const usage = getProviderRecentUsageEntry(usageByProvider, provider, apiKey, baseUrl);
+      if (!usage.success && !usage.failed && usage.recentRequests.length === 0) {
+        return file;
+      }
+      const compositeKey = `${String(baseUrl ?? '').trim()}|${apiKey.trim()}`;
+      matchedCompositeKeys.add(`${provider}::${compositeKey}`);
+      return {
+        ...file,
+        success: usage.success,
+        failed: usage.failed,
+        recent_requests: usage.recentRequests,
+      };
+    });
+
+    // Phase 2: for files without api_key, try fallback matching by
+    // authIndex position or sequential order within the provider's usage map.
+    const needsFallback = phase1
+      .map((file, index) => ({ file, index }))
+      .filter(({ file }) => {
+        const provider = resolveCanonicalProvider(file);
+        if (!provider) return false;
+        const apiKey = typeof file.api_key === 'string' ? file.api_key : undefined;
+        if (apiKey) return false; // already matched in phase 1
+        // Only try fallback if the file has no usage data yet.
+        const hasData =
+          (file.success !== undefined && (file.success as number) !== 0) ||
+          (file.failed !== undefined && (file.failed as number) !== 0) ||
+          (Array.isArray(file.recent_requests) && file.recent_requests.length > 0) ||
+          (Array.isArray(file.recentRequests) && file.recentRequests.length > 0);
+        return !hasData;
+      });
+
+    if (needsFallback.length === 0) return phase1;
+
+    // Build provider -> ordered usage entries for fallback matching.
+    const providerUsageOrder = new Map<
+      string,
+      { compositeKey: string; success: number; failed: number; recentRequests: RecentRequestBucket[] }[]
+    >();
+    usageByProvider.forEach((entries, provider) => {
+      providerUsageOrder.set(
+        provider,
+        Array.from(entries.entries()).map(([compositeKey, entry]) => ({
+          compositeKey,
+          success: entry.success,
+          failed: entry.failed,
+          recentRequests: entry.recentRequests,
+        }))
+      );
+    });
+
+    const matchedProviderIndices = new Set<string>();
+    const result = [...phase1];
+
+    for (const { file, index } of needsFallback) {
+      const provider = resolveCanonicalProvider(file);
+      if (!provider) continue;
+
+      const entries = providerUsageOrder.get(provider);
+      if (!entries || entries.length === 0) continue;
+
+      // Try matching by authIndex position first.
+      const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+      const authIndex =
+        typeof rawAuthIndex === 'number'
+          ? rawAuthIndex
+          : typeof rawAuthIndex === 'string'
+            ? parseInt(rawAuthIndex, 10)
+            : NaN;
+
+      if (Number.isFinite(authIndex) && authIndex >= 0 && authIndex < entries.length) {
+        const entry = entries[authIndex];
+        const matchKey = `${provider}::${authIndex}`;
+        if (
+          !matchedProviderIndices.has(matchKey) &&
+          !matchedCompositeKeys.has(`${provider}::${entry.compositeKey}`) &&
+          (entry.success || entry.failed || entry.recentRequests.length > 0)
+        ) {
+          matchedProviderIndices.add(matchKey);
+          matchedCompositeKeys.add(`${provider}::${entry.compositeKey}`);
+          result[index] = {
+            ...result[index],
+            success: entry.success,
+            failed: entry.failed,
+            recent_requests: entry.recentRequests,
+          };
+          continue;
+        }
+      }
+
+      // Fallback: match by sequential order among same-provider files.
+      for (let j = 0; j < entries.length; j++) {
+        const entry = entries[j];
+        const matchKey = `${provider}::${j}`;
+        if (matchedProviderIndices.has(matchKey)) continue;
+        if (matchedCompositeKeys.has(`${provider}::${entry.compositeKey}`)) continue;
+        if (entry.success || entry.failed || entry.recentRequests.length > 0) {
+          matchedProviderIndices.add(matchKey);
+          matchedCompositeKeys.add(`${provider}::${entry.compositeKey}`);
+          result[index] = {
+            ...result[index],
+            success: entry.success,
+            failed: entry.failed,
+            recent_requests: entry.recentRequests,
+          };
+          break;
+        }
+      }
+    }
+
+    return result;
+  }, [files, usageByProvider]);
+
+  const statusBarCache = useAuthFilesStatusBarCache(filesWithUsage);
+
+
 
   const {
     excluded,
@@ -150,7 +303,7 @@ export function AuthFilesPage() {
     handleToggleFork,
     handleRenameAlias,
     handleDeleteAlias,
-  } = useAuthFilesOauth({ viewMode, files });
+  } = useAuthFilesOauth({ viewMode, files: filesWithUsage });
 
   const {
     modelsModalOpen,
@@ -184,6 +337,115 @@ export function AuthFilesPage() {
     ? (normalizedFilter as QuotaProviderType)
     : null;
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
+
+  // Quota config lookup for batch refresh.
+  const getQuotaConfig = (type: QuotaProviderType) => {
+    if (type === 'antigravity') return ANTIGRAVITY_CONFIG;
+    if (type === 'claude') return CLAUDE_CONFIG;
+    if (type === 'codex') return CODEX_CONFIG;
+    if (type === 'kimi') return KIMI_CONFIG;
+    if (type === 'ollama') return OLLAMA_CONFIG;
+    if (type === 'deepseek') return DEEPSEEK_CONFIG;
+    return GEMINI_CLI_CONFIG;
+  };
+
+  // Use individual stable selectors to avoid re-render loops.
+  // Zustand setter functions are stable references, so each selector
+  // returns the same function every time.
+  const setAntigravityQuota = useQuotaStore((s) => s.setAntigravityQuota);
+  const setClaudeQuota = useQuotaStore((s) => s.setClaudeQuota);
+  const setCodexQuota = useQuotaStore((s) => s.setCodexQuota);
+  const setGeminiCliQuota = useQuotaStore((s) => s.setGeminiCliQuota);
+  const setKimiQuota = useQuotaStore((s) => s.setKimiQuota);
+  const setOllamaQuota = useQuotaStore((s) => s.setOllamaQuota);
+  const setDeepSeekQuota = useQuotaStore((s) => s.setDeepSeekQuota);
+
+  const getQuotaStoreSetter = useCallback(
+    (type: QuotaProviderType) => {
+      if (type === 'antigravity') return setAntigravityQuota;
+      if (type === 'claude') return setClaudeQuota;
+      if (type === 'codex') return setCodexQuota;
+      if (type === 'kimi') return setKimiQuota;
+      if (type === 'ollama') return setOllamaQuota;
+      if (type === 'deepseek') return setDeepSeekQuota;
+      return setGeminiCliQuota;
+    },
+    [setAntigravityQuota, setClaudeQuota, setCodexQuota, setGeminiCliQuota, setKimiQuota, setOllamaQuota, setDeepSeekQuota]
+  );
+
+  // Batch refresh all quotas for the currently selected provider type.
+  const [quotaRefreshing, setQuotaRefreshing] = useState(false);
+  const refreshQuotaForProviderFiles = useCallback(async () => {
+    if (!quotaFilterType) return;
+
+    const config = getQuotaConfig(quotaFilterType) as unknown as {
+      filterFn: (file: AuthFileItem) => boolean;
+      fetchQuota: (file: AuthFileItem, t: TFunction) => Promise<unknown>;
+      buildLoadingState: () => unknown;
+      buildSuccessState: (data: unknown) => unknown;
+      buildErrorState: (message: string, status?: number) => unknown;
+    };
+
+    if (typeof config.fetchQuota !== 'function') return;
+
+    const setQuota = getQuotaStoreSetter(quotaFilterType) as (updater: unknown) => void;
+
+    const eligibleFiles = filesWithUsage.filter(
+      (file) => config.filterFn(file) && !file.disabled && !isRuntimeOnlyAuthFile(file)
+    );
+
+    if (eligibleFiles.length === 0) return;
+
+    setQuotaRefreshing(true);
+
+    // Set loading state for all eligible files.
+    (setQuota as any)((prev: any) => {
+      const next = { ...prev };
+      eligibleFiles.forEach((file) => {
+        next[file.name] = config.buildLoadingState();
+      });
+      return next;
+    });
+
+    try {
+      // Fetch quotas in parallel.
+      const results = await Promise.allSettled(
+        eligibleFiles.map(async (file) => {
+          const data = await config.fetchQuota(file, t);
+          return { name: file.name, data };
+        })
+      );
+
+      (setQuota as any)((prev: any) => {
+        const next = { ...prev };
+        results.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            next[result.value.name] = config.buildSuccessState(result.value.data);
+          }
+        });
+        return next;
+      });
+
+      const successCount = results.filter((r) => r.status === 'fulfilled').length;
+      const failCount = results.filter((r) => r.status === 'rejected').length;
+
+      if (failCount === 0) {
+        showNotification(
+          t('auth_files.quota_refresh_success', {
+            name: eligibleFiles.length > 1 ? `${eligibleFiles.length} keys` : eligibleFiles[0].name,
+          }),
+          'success'
+        );
+      } else {
+        showNotification(
+          `\u2728 ${successCount} succeeded, \u274c ${failCount} failed`,
+          'warning'
+        );
+      }
+    } finally {
+      setQuotaRefreshing(false);
+    }
+  }, [quotaFilterType, filesWithUsage, getQuotaStoreSetter, showNotification, t]);
 
   useEffect(() => {
     const persistedCompactMode = readPersistedAuthFilesCompactMode();
@@ -327,8 +589,13 @@ export function AuthFilesPage() {
   );
 
   const handleHeaderRefresh = useCallback(async () => {
-    await Promise.all([loadFiles(), loadExcluded(), loadModelAlias()]);
-  }, [loadFiles, loadExcluded, loadModelAlias]);
+    await Promise.all([
+      loadFiles(),
+      loadExcluded(),
+      loadModelAlias(),
+      loadRecentRequests({ force: true }).catch(() => undefined),
+    ]);
+  }, [loadFiles, loadExcluded, loadModelAlias, loadRecentRequests]);
 
   useHeaderRefresh(handleHeaderRefresh);
 
@@ -337,33 +604,35 @@ export function AuthFilesPage() {
     loadFiles();
     loadExcluded();
     loadModelAlias();
-  }, [isCurrentLayer, loadFiles, loadExcluded, loadModelAlias]);
+    void loadRecentRequests().catch(() => undefined);
+  }, [isCurrentLayer, loadFiles, loadExcluded, loadModelAlias, loadRecentRequests]);
 
   useInterval(
     () => {
       void loadFiles().catch(() => {});
+      void loadRecentRequests().catch(() => undefined);
     },
     isCurrentLayer ? 240_000 : null
   );
 
   const existingTypes = useMemo(() => {
     const types = new Set<string>(['all']);
-    files.forEach((file) => {
+    filesWithUsage.forEach((file) => {
       if (file.type) {
         types.add(file.type);
       }
     });
     return Array.from(types);
-  }, [files]);
+  }, [filesWithUsage]);
 
   const filesMatchingStatusFilters = useMemo(
     () =>
-      files.filter((file) => {
+      filesWithUsage.filter((file) => {
         if (problemOnly && !hasAuthFileStatusMessage(file)) return false;
         if (disabledOnly && file.disabled !== true) return false;
         return true;
       }),
-    [disabledOnly, files, problemOnly]
+    [disabledOnly, filesWithUsage, problemOnly]
   );
 
   const sortOptions = useMemo(
@@ -669,6 +938,19 @@ export function AuthFilesPage() {
             <Button variant="secondary" size="sm" onClick={handleHeaderRefresh} disabled={loading}>
               {t('common.refresh')}
             </Button>
+            {quotaFilterType && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void refreshQuotaForProviderFiles()}
+                disabled={disableControls || quotaRefreshing}
+                loading={quotaRefreshing}
+                title={t('quota_management.refresh_all_credentials')}
+              >
+                <IconRefreshCw size={14} />
+                {t('quota_management.refresh_all_credentials')}
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={handleUploadClick}

@@ -439,6 +439,7 @@
     "openai_delete_confirm": "Удалить этого провайдера OpenAI?",
     "openai_keys_count": "Количество ключей",
     "openai_models_count": "Количество моделей",
+    "openai_refresh_all_balances": "Обновить",
     "openai_test_title": "Тест подключения",
     "openai_test_hint": "Отправьте запрос /chat/completions с текущими настройками, чтобы проверить доступность.",
     "openai_test_model_placeholder": "Модель для теста",
@@ -542,6 +543,8 @@
     "filter_antigravity": "Antigravity",
     "filter_iflow": "iFlow",
     "filter_vertex": "Vertex",
+    "filter_ollama": "Ollama",
+    "filter_deepseek": "DeepSeek",
     "filter_empty": "Пусто",
     "filter_unknown": "Другое",
     "type_qwen": "Qwen",
@@ -612,7 +615,8 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "quota_refresh_action": "Обновить"
   },
   "antigravity_quota": {
     "title": "Квота Antigravity",
@@ -717,6 +721,61 @@
     "limit_window": "Лимит {{duration}}",
     "limit_index": "Лимит #{{index}}",
     "reset_hint": "сброс через {{hint}}"
+  },
+  "ollama_quota": {
+    "idle": "Нажмите, чтобы загрузить использование Ollama",
+    "loading": "Загрузка использования Ollama...",
+    "load_failed": "Не удалось загрузить использование Ollama: {{message}}",
+    "empty": "Данные по использованию отсутствуют",
+    "missing_name": "В файле авторизации отсутствует имя",
+    "plan_label": "Тариф",
+    "session_label": "Осталось в сессии",
+    "weekly_label": "Осталось за неделю",
+    "refresh_button": "Обновить баланс Ollama",
+    "refresh_no_match": "Не найден файл авторизации для этого API-ключа",
+    "refresh_success": "Баланс Ollama обновлён: тариф {{plan}}, в сессии {{session}}%, за неделю {{weekly}}%",
+    "refresh_failed": "Не удалось обновить баланс Ollama: {{message}}"
+  },
+  "deepseek_quota": {
+    "idle": "Нажмите, чтобы загрузить баланс DeepSeek",
+    "loading": "Загрузка баланса DeepSeek...",
+    "load_failed": "Не удалось загрузить баланс DeepSeek: {{message}}",
+    "empty": "Данные по балансу отсутствуют",
+    "missing_name": "В файле авторизации отсутствует имя",
+    "wallet_label": "Кошелёк",
+    "bonus_label": "Бонус",
+    "monthly_cost_label": "С начала месяца",
+    "token_estimation": "≈ {{formatted}} токенов",
+    "monthly_tokens": "{{formatted}} токенов",
+    "refresh_button": "Обновить баланс DeepSeek",
+    "refresh_no_match": "Не найден файл авторизации для этого API-ключа",
+    "refresh_success": "Баланс DeepSeek обновлён: кошелёк {{currency}} {{balance}}, бонус {{currency}} {{bonus}}, расход {{currency}} {{cost}}",
+    "refresh_failed": "Не удалось обновить баланс DeepSeek: {{message}}"
+  },
+  "xiaomi_quota": {
+    "idle": "Нажмите, чтобы загрузить статистику Xiaomi",
+    "loading": "Загрузка статистики Xiaomi...",
+    "load_failed": "Не удалось загрузить статистику Xiaomi: {{message}}",
+    "empty": "Данные отсутствуют",
+    "month_label": "Месяц",
+    "plan_label": "Тариф",
+    "compensation_label": "Компенсация",
+    "tokens_used": "{{used}} / {{limit}} токенов",
+    "refresh_button": "Обновить статистику Xiaomi",
+    "refresh_failed": "Не удалось обновить статистику Xiaomi: {{message}}"
+  },
+  "anyrouter_quota": {
+    "idle": "Нажмите, чтобы загрузить баланс Anyrouter",
+    "loading": "Загрузка баланса Anyrouter...",
+    "load_failed": "Не удалось загрузить баланс Anyrouter: {{message}}",
+    "empty": "Данные по балансу отсутствуют",
+    "quota_label": "Остаток квоты",
+    "used_label": "Использовано",
+    "request_count_label": "Запросов",
+    "aff_quota_label": "Реферальный бонус",
+    "group_label": "Группа",
+    "refresh_button": "Обновить баланс Anyrouter",
+    "refresh_failed": "Не удалось обновить баланс Anyrouter: {{message}}"
   },
   "vertex_import": {
     "title": "Вход с Vertex JSON",

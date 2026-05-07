@@ -60,6 +60,9 @@ const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
   if (entry.proxyUrl) payload['proxy-url'] = entry.proxyUrl;
   const headers = serializeHeaders(entry.headers);
   if (headers) payload.headers = headers;
+  if (entry.balanceToken && entry.balanceToken.trim()) {
+    payload['balance-token'] = entry.balanceToken.trim();
+  }
   return payload;
 };
 

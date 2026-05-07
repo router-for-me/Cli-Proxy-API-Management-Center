@@ -20,6 +20,8 @@ import type {
   CodexUsageWindow,
   CodexQuotaWindow,
   CodexUsagePayload,
+  DeepSeekBalancePayload,
+  DeepSeekQuotaState,
   GeminiCliCodeAssistPayload,
   GeminiCliCredits,
   GeminiCliParsedBucket,
@@ -28,6 +30,8 @@ import type {
   GeminiCliUserTier,
   KimiQuotaRow,
   KimiQuotaState,
+  OllamaBalancePayload,
+  OllamaQuotaState,
 } from '@/types';
 import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
 import { useQuotaStore } from '@/stores';
@@ -70,9 +74,11 @@ import {
   isAntigravityFile,
   isClaudeFile,
   isCodexFile,
+  isDeepSeekFile,
   isDisabledAuthFile,
   isGeminiCliFile,
   isKimiFile,
+  isOllamaFile,
   isRuntimeOnlyAuthFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
@@ -81,7 +87,7 @@ import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi';
+type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'ollama' | 'deepseek';
 
 const DEFAULT_ANTIGRAVITY_PROJECT_ID = 'bamboo-precept-lgxtn';
 const QUOTA_PROGRESS_HIGH_THRESHOLD = 70;
@@ -98,11 +104,15 @@ export interface QuotaStore {
   codexQuota: Record<string, CodexQuotaState>;
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
+  ollamaQuota: Record<string, OllamaQuotaState>;
+  deepseekQuota: Record<string, DeepSeekQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
+  setOllamaQuota: (updater: QuotaUpdater<Record<string, OllamaQuotaState>>) => void;
+  setDeepSeekQuota: (updater: QuotaUpdater<Record<string, DeepSeekQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -117,6 +127,10 @@ export interface QuotaConfig<TState, TData> {
   buildLoadingState: () => TState;
   buildSuccessState: (data: TData) => TState;
   buildErrorState: (message: string, status?: number) => TState;
+  // Optional: derive an initial state from the auth file itself when the
+  // backend already attached a balance/quota snapshot to the list response
+  // (see ollama/deepseek). Returning null leaves the store untouched.
+  extractInitialState?: (file: AuthFileItem) => TState | null;
   cardClassName: string;
   controlsClassName: string;
   controlClassName: string;
@@ -1352,4 +1366,400 @@ export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaRow[]> = {
   controlClassName: styles.kimiControl,
   gridClassName: styles.kimiGrid,
   renderQuotaItems: renderKimiItems,
+};
+
+// -----------------------------------------------------------------------------
+// Ollama balance — sourced from cli-proxy backend, not directly from ollama.com.
+// The list endpoint already attaches `file.balance` (10-min cache); the refresh
+// endpoint forces a fresh fetch.
+// -----------------------------------------------------------------------------
+
+const toFiniteNumberOrNull = (value: unknown): number | null => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+const toTrimmedStringOrNull = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+};
+
+const fetchOllamaBalance = async (
+  file: AuthFileItem,
+  t: TFunction
+): Promise<OllamaBalancePayload> => {
+  if (!file.name) throw new Error(t('ollama_quota.missing_name'));
+  const response = await authFilesApi.refreshOllamaBalance(file.name);
+  if (!response?.balance) throw new Error(t('ollama_quota.empty'));
+  return response.balance;
+};
+
+const ollamaStateFromPayload = (payload: OllamaBalancePayload): OllamaQuotaState => ({
+  status: 'success',
+  sessionUsagePct: toFiniteNumberOrNull(payload?.session_usage_pct),
+  weeklyUsagePct: toFiniteNumberOrNull(payload?.weekly_usage_pct),
+  sessionResetsAt: toTrimmedStringOrNull(payload?.session_resets_at),
+  weeklyResetsAt: toTrimmedStringOrNull(payload?.weekly_resets_at),
+  plan: toTrimmedStringOrNull(payload?.plan),
+  source: toTrimmedStringOrNull(payload?.source),
+  fetchedAt: toTrimmedStringOrNull(payload?.fetched_at),
+});
+
+const renderOllamaItems = (
+  quota: OllamaQuotaState,
+  t: TFunction,
+  helpers: QuotaRenderHelpers
+): ReactNode => {
+  const { styles: styleMap, QuotaProgressBar } = helpers;
+  const { createElement: h, Fragment } = React;
+  const nodes: ReactNode[] = [];
+
+  if (quota.plan) {
+    nodes.push(
+      h(
+        'div',
+        { key: 'plan', className: styleMap.codexPlan },
+        h('span', { className: styleMap.codexPlanLabel }, t('ollama_quota.plan_label')),
+        h('span', { className: styleMap.codexPlanValue }, quota.plan)
+      )
+    );
+  }
+
+  type WindowRow = {
+    id: 'session' | 'weekly';
+    labelKey: string;
+    usagePct: number | null;
+    resetAt: string | null;
+  };
+  const windows: WindowRow[] = [
+    {
+      id: 'session',
+      labelKey: 'ollama_quota.session_label',
+      usagePct: quota.sessionUsagePct,
+      resetAt: quota.sessionResetsAt,
+    },
+    {
+      id: 'weekly',
+      labelKey: 'ollama_quota.weekly_label',
+      usagePct: quota.weeklyUsagePct,
+      resetAt: quota.weeklyResetsAt,
+    },
+  ];
+
+  const hasAnyWindow = windows.some(
+    (window) => window.usagePct !== null || window.resetAt !== null
+  );
+
+  if (!hasAnyWindow) {
+    nodes.push(
+      h('div', { key: 'empty', className: styleMap.quotaMessage }, t('ollama_quota.empty'))
+    );
+    return h(Fragment, null, ...nodes);
+  }
+
+  nodes.push(
+    ...windows.map((window) => {
+      const usage = window.usagePct;
+      const remaining = usage === null ? null : Math.max(0, Math.min(100, 100 - usage));
+      const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
+      const resetLabel = formatQuotaResetTime(window.resetAt ?? undefined);
+
+      return h(
+        'div',
+        { key: window.id, className: styleMap.quotaRow },
+        h(
+          'div',
+          { className: styleMap.quotaRowHeader },
+          h('span', { className: styleMap.quotaModel }, t(window.labelKey)),
+          h(
+            'div',
+            { className: styleMap.quotaMeta },
+            h('span', { className: styleMap.quotaPercent }, percentLabel),
+            h('span', { className: styleMap.quotaReset }, resetLabel)
+          )
+        ),
+        h(QuotaProgressBar, {
+          percent: remaining,
+          highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+          mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+        })
+      );
+    })
+  );
+
+  return h(Fragment, null, ...nodes);
+};
+
+export const OLLAMA_CONFIG: QuotaConfig<OllamaQuotaState, OllamaBalancePayload> = {
+  type: 'ollama',
+  i18nPrefix: 'ollama_quota',
+  cardIdleMessageKey: 'quota_management.card_idle_hint',
+  filterFn: (file) => isOllamaFile(file) && !isDisabledAuthFile(file),
+  fetchQuota: fetchOllamaBalance,
+  storeSelector: (state) => state.ollamaQuota,
+  storeSetter: 'setOllamaQuota',
+  buildLoadingState: () => ({
+    status: 'loading',
+    sessionUsagePct: null,
+    weeklyUsagePct: null,
+    sessionResetsAt: null,
+    weeklyResetsAt: null,
+    plan: null,
+    source: null,
+    fetchedAt: null,
+  }),
+  buildSuccessState: (payload) => ollamaStateFromPayload(payload),
+  buildErrorState: (message, status) => ({
+    status: 'error',
+    sessionUsagePct: null,
+    weeklyUsagePct: null,
+    sessionResetsAt: null,
+    weeklyResetsAt: null,
+    plan: null,
+    source: null,
+    fetchedAt: null,
+    error: message,
+    errorStatus: status,
+  }),
+  extractInitialState: (file) => {
+    const balance = file?.balance;
+    if (!balance || typeof balance !== 'object') return null;
+    return ollamaStateFromPayload(balance as OllamaBalancePayload);
+  },
+  cardClassName: styles.ollamaCard,
+  controlsClassName: styles.ollamaControls,
+  controlClassName: styles.ollamaControl,
+  gridClassName: styles.ollamaGrid,
+  renderQuotaItems: renderOllamaItems,
+};
+
+// -----------------------------------------------------------------------------
+// DeepSeek wallet balance & monthly cost — also routed through the cli-proxy
+// backend (which calls platform.deepseek.com/api/v0/users/get_user_summary).
+// -----------------------------------------------------------------------------
+
+const fetchDeepSeekBalance = async (
+  file: AuthFileItem,
+  t: TFunction
+): Promise<DeepSeekBalancePayload> => {
+  if (!file.name) throw new Error(t('deepseek_quota.missing_name'));
+  const response = await authFilesApi.refreshDeepSeekBalance(file.name);
+  if (!response?.balance) throw new Error(t('deepseek_quota.empty'));
+  return response.balance;
+};
+
+const deepseekStateFromPayload = (payload: DeepSeekBalancePayload): DeepSeekQuotaState => ({
+  status: 'success',
+  currency: toTrimmedStringOrNull(payload?.currency),
+  balance: toFiniteNumberOrNull(payload?.balance),
+  tokenEstimation: toFiniteNumberOrNull(payload?.token_estimation),
+  bonusBalance: toFiniteNumberOrNull(payload?.bonus_balance),
+  bonusTokenEstimation: toFiniteNumberOrNull(payload?.bonus_token_estimation),
+  totalAvailableTokens: toFiniteNumberOrNull(payload?.total_available_tokens),
+  monthlyCost: toFiniteNumberOrNull(payload?.monthly_cost),
+  monthlyTokenUsage: toFiniteNumberOrNull(payload?.monthly_token_usage),
+  currentToken: toFiniteNumberOrNull(payload?.current_token),
+  source: toTrimmedStringOrNull(payload?.source),
+  fetchedAt: toTrimmedStringOrNull(payload?.fetched_at),
+});
+
+const formatDeepSeekAmount = (value: number, currency: string | null): string => {
+  const fixed = value.toFixed(2);
+  return currency ? `${currency} ${fixed}` : fixed;
+};
+
+const formatDeepSeekTokenCount = (value: number): string => {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
+  return String(Math.round(value));
+};
+
+const renderDeepSeekItems = (
+  quota: DeepSeekQuotaState,
+  t: TFunction,
+  helpers: QuotaRenderHelpers
+): ReactNode => {
+  const { styles: styleMap, QuotaProgressBar } = helpers;
+  const { createElement: h, Fragment } = React;
+  const nodes: ReactNode[] = [];
+  const currency = quota.currency;
+
+  // The wallet bar treats the current cycle's total CNY (paid wallet + bonus
+  // wallet + month-to-date spend) as the denominator. DeepSeek doesn't expose
+  // an explicit cap, so this proxy gives "% of cycle still in your wallet".
+  const balance = quota.balance ?? 0;
+  const bonusBalance = quota.bonusBalance ?? 0;
+  const monthlyCost = quota.monthlyCost ?? 0;
+  const remainingCNY = balance + bonusBalance;
+  const totalCNY = remainingCNY + monthlyCost;
+  const remainingPct = totalCNY > 0 ? (remainingCNY / totalCNY) * 100 : null;
+  const remainingPctLabel =
+    remainingPct === null ? '--' : `${Math.round(remainingPct)}%`;
+
+  if (
+    quota.balance !== null ||
+    quota.bonusBalance !== null ||
+    quota.monthlyCost !== null
+  ) {
+    nodes.push(
+      h(
+        'div',
+        { key: 'wallet', className: styleMap.quotaRow },
+        h(
+          'div',
+          { className: styleMap.quotaRowHeader },
+          h('span', { className: styleMap.quotaModel }, t('deepseek_quota.wallet_label')),
+          h(
+            'div',
+            { className: styleMap.quotaMeta },
+            h('span', { className: styleMap.quotaPercent }, remainingPctLabel),
+            h(
+              'span',
+              { className: styleMap.quotaAmount },
+              currency
+                ? `${currency} ${remainingCNY.toFixed(2)} / ${totalCNY.toFixed(2)}`
+                : `${remainingCNY.toFixed(2)} / ${totalCNY.toFixed(2)}`
+            )
+          )
+        ),
+        h(QuotaProgressBar, {
+          percent: remainingPct,
+          highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+          mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+        })
+      )
+    );
+  }
+
+  if (quota.bonusBalance !== null && quota.bonusBalance > 0) {
+    nodes.push(
+      h(
+        'div',
+        { key: 'bonus', className: styleMap.quotaRow },
+        h(
+          'div',
+          { className: styleMap.quotaRowHeader },
+          h('span', { className: styleMap.quotaModel }, t('deepseek_quota.bonus_label')),
+          h(
+            'div',
+            { className: styleMap.quotaMeta },
+            h(
+              'span',
+              { className: styleMap.quotaPercent },
+              formatDeepSeekAmount(quota.bonusBalance, currency)
+            ),
+            quota.bonusTokenEstimation !== null && quota.bonusTokenEstimation > 0
+              ? h(
+                  'span',
+                  { className: styleMap.quotaAmount },
+                  t('deepseek_quota.token_estimation', {
+                    count: quota.bonusTokenEstimation,
+                    formatted: formatDeepSeekTokenCount(quota.bonusTokenEstimation),
+                  })
+                )
+              : null
+          )
+        )
+      )
+    );
+  }
+
+  if (quota.monthlyCost !== null) {
+    nodes.push(
+      h(
+        'div',
+        { key: 'monthly', className: styleMap.quotaRow },
+        h(
+          'div',
+          { className: styleMap.quotaRowHeader },
+          h('span', { className: styleMap.quotaModel }, t('deepseek_quota.monthly_cost_label')),
+          h(
+            'div',
+            { className: styleMap.quotaMeta },
+            h(
+              'span',
+              { className: styleMap.quotaPercent },
+              formatDeepSeekAmount(quota.monthlyCost, currency)
+            ),
+            quota.monthlyTokenUsage !== null && quota.monthlyTokenUsage > 0
+              ? h(
+                  'span',
+                  { className: styleMap.quotaAmount },
+                  t('deepseek_quota.monthly_tokens', {
+                    count: quota.monthlyTokenUsage,
+                    formatted: formatDeepSeekTokenCount(quota.monthlyTokenUsage),
+                  })
+                )
+              : null
+          )
+        )
+      )
+    );
+  }
+
+  if (nodes.length === 0) {
+    nodes.push(
+      h('div', { key: 'empty', className: styleMap.quotaMessage }, t('deepseek_quota.empty'))
+    );
+  }
+
+  return h(Fragment, null, ...nodes);
+};
+
+export const DEEPSEEK_CONFIG: QuotaConfig<DeepSeekQuotaState, DeepSeekBalancePayload> = {
+  type: 'deepseek',
+  i18nPrefix: 'deepseek_quota',
+  cardIdleMessageKey: 'quota_management.card_idle_hint',
+  filterFn: (file) => isDeepSeekFile(file) && !isDisabledAuthFile(file),
+  fetchQuota: fetchDeepSeekBalance,
+  storeSelector: (state) => state.deepseekQuota,
+  storeSetter: 'setDeepSeekQuota',
+  buildLoadingState: () => ({
+    status: 'loading',
+    currency: null,
+    balance: null,
+    tokenEstimation: null,
+    bonusBalance: null,
+    bonusTokenEstimation: null,
+    totalAvailableTokens: null,
+    monthlyCost: null,
+    monthlyTokenUsage: null,
+    currentToken: null,
+    source: null,
+    fetchedAt: null,
+  }),
+  buildSuccessState: (payload) => deepseekStateFromPayload(payload),
+  buildErrorState: (message, status) => ({
+    status: 'error',
+    currency: null,
+    balance: null,
+    tokenEstimation: null,
+    bonusBalance: null,
+    bonusTokenEstimation: null,
+    totalAvailableTokens: null,
+    monthlyCost: null,
+    monthlyTokenUsage: null,
+    currentToken: null,
+    source: null,
+    fetchedAt: null,
+    error: message,
+    errorStatus: status,
+  }),
+  extractInitialState: (file) => {
+    const balance = file?.balance;
+    if (!balance || typeof balance !== 'object') return null;
+    return deepseekStateFromPayload(balance as DeepSeekBalancePayload);
+  },
+  cardClassName: styles.deepseekCard,
+  controlsClassName: styles.deepseekControls,
+  controlClassName: styles.deepseekControl,
+  gridClassName: styles.deepseekGrid,
+  renderQuotaItems: renderDeepSeekItems,
 };

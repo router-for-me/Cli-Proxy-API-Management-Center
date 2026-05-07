@@ -22,7 +22,14 @@ export type AuthFileModelItem = {
 };
 export type AuthFileIconAsset = string | { light: string; dark: string };
 
-export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi';
+export type QuotaProviderType =
+  | 'antigravity'
+  | 'claude'
+  | 'codex'
+  | 'gemini-cli'
+  | 'kimi'
+  | 'ollama'
+  | 'deepseek';
 
 export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'antigravity',
@@ -30,6 +37,8 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'codex',
   'gemini-cli',
   'kimi',
+  'ollama',
+  'deepseek',
 ]);
 
 export const MIN_CARD_PAGE_SIZE = 3;
@@ -91,6 +100,16 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
   vertex: {
     light: { bg: '#e4edfd', text: '#2b5fbc' },
     dark: { bg: '#1a3d80', text: '#89b3f7' },
+  },
+  // Ollama logo: 黑底骆驼，用石板灰区分（不和 codex/gemini 撞）
+  ollama: {
+    light: { bg: '#e2e8f0', text: '#334155', border: '1px solid #cbd5e1' },
+    dark: { bg: '#1e293b', text: '#cbd5e1' },
+  },
+  // DeepSeek logo: 深海蓝 #4D6BFE，偏冷色与其它蓝色拉开
+  deepseek: {
+    light: { bg: '#dee5ff', text: '#1f3bbf' },
+    dark: { bg: '#1c2c6e', text: '#9aaeff' },
   },
   empty: {
     light: { bg: '#f5f5f5', text: '#616161' },

@@ -94,13 +94,26 @@ const normalizeApiKeyEntries = (entries: ApiKeyEntry[]) =>
       apiKey: string;
       proxyUrl: string;
       headers: Array<{ key: string; value: string }>;
+      authIndex?: string;
+      balanceToken?: string;
     }>
   >((acc, entry) => {
     const apiKey = String(entry?.apiKey ?? '').trim();
     const proxyUrl = String(entry?.proxyUrl ?? '').trim();
     const headers = normalizeKeyHeaders(entry?.headers);
     if (!apiKey && !proxyUrl && headers.length === 0) return acc;
-    acc.push({ apiKey, proxyUrl, headers });
+    const result: {
+      apiKey: string;
+      proxyUrl: string;
+      headers: Array<{ key: string; value: string }>;
+      authIndex?: string;
+      balanceToken?: string;
+    } = { apiKey, proxyUrl, headers };
+    const authIndex = String(entry?.authIndex ?? '').trim();
+    if (authIndex) result.authIndex = authIndex;
+    const balanceToken = String(entry?.balanceToken ?? '').trim();
+    if (balanceToken) result.balanceToken = balanceToken;
+    acc.push(result);
     return acc;
   }, []);
 
@@ -128,6 +141,8 @@ const areNormalizedApiKeyEntriesEqual = (
     if (!left || !right) return false;
     if (left.apiKey !== right.apiKey || left.proxyUrl !== right.proxyUrl) return false;
     if (!areKeyValueEntriesEqual(left.headers, right.headers)) return false;
+    if ((left.authIndex ?? '') !== (right.authIndex ?? '')) return false;
+    if ((left.balanceToken ?? '') !== (right.balanceToken ?? '')) return false;
   }
   return true;
 };
@@ -469,11 +484,16 @@ export function AiProvidersOpenAIEditLayout() {
         prefix: form.prefix?.trim() || undefined,
         baseUrl,
         headers: buildHeaderObject(form.headers),
-        apiKeyEntries: form.apiKeyEntries.map((entry: ApiKeyEntry) => ({
-          apiKey: entry.apiKey.trim(),
-          proxyUrl: entry.proxyUrl?.trim() || undefined,
-          headers: entry.headers,
-        })),
+        apiKeyEntries: form.apiKeyEntries.map((entry: ApiKeyEntry) => {
+          const mapped: ApiKeyEntry = {
+            apiKey: entry.apiKey.trim(),
+            proxyUrl: entry.proxyUrl?.trim() || undefined,
+            headers: entry.headers,
+          };
+          if (entry.authIndex?.trim()) mapped.authIndex = entry.authIndex.trim();
+          if (entry.balanceToken?.trim()) mapped.balanceToken = entry.balanceToken.trim();
+          return mapped;
+        }),
       };
       if (form.priority !== undefined && Number.isFinite(form.priority)) {
         payload.priority = Math.trunc(form.priority);

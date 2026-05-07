@@ -275,6 +275,8 @@ export const buildApiKeyEntry = (input?: Partial<ApiKeyEntry>): ApiKeyEntry => (
   apiKey: input?.apiKey ?? '',
   proxyUrl: input?.proxyUrl ?? '',
   headers: input?.headers ?? {},
+  authIndex: input?.authIndex ?? undefined,
+  balanceToken: input?.balanceToken ?? undefined,
 });
 
 export const ampcodeMappingsToEntries = (mappings?: AmpcodeModelMapping[]): ModelEntry[] => {

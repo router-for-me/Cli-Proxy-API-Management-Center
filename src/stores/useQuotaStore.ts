@@ -3,7 +3,15 @@
  */
 
 import { create } from 'zustand';
-import type { AntigravityQuotaState, ClaudeQuotaState, CodexQuotaState, GeminiCliQuotaState, KimiQuotaState } from '@/types';
+import type {
+  AntigravityQuotaState,
+  ClaudeQuotaState,
+  CodexQuotaState,
+  DeepSeekQuotaState,
+  GeminiCliQuotaState,
+  KimiQuotaState,
+  OllamaQuotaState,
+} from '@/types';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
@@ -13,11 +21,15 @@ interface QuotaStoreState {
   codexQuota: Record<string, CodexQuotaState>;
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
+  ollamaQuota: Record<string, OllamaQuotaState>;
+  deepseekQuota: Record<string, DeepSeekQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
+  setOllamaQuota: (updater: QuotaUpdater<Record<string, OllamaQuotaState>>) => void;
+  setDeepSeekQuota: (updater: QuotaUpdater<Record<string, DeepSeekQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -34,6 +46,8 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
   codexQuota: {},
   geminiCliQuota: {},
   kimiQuota: {},
+  ollamaQuota: {},
+  deepseekQuota: {},
   setAntigravityQuota: (updater) =>
     set((state) => ({
       antigravityQuota: resolveUpdater(updater, state.antigravityQuota)
@@ -54,12 +68,22 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
     set((state) => ({
       kimiQuota: resolveUpdater(updater, state.kimiQuota)
     })),
+  setOllamaQuota: (updater) =>
+    set((state) => ({
+      ollamaQuota: resolveUpdater(updater, state.ollamaQuota)
+    })),
+  setDeepSeekQuota: (updater) =>
+    set((state) => ({
+      deepseekQuota: resolveUpdater(updater, state.deepseekQuota)
+    })),
   clearQuotaCache: () =>
     set({
       antigravityQuota: {},
       claudeQuota: {},
       codexQuota: {},
       geminiCliQuota: {},
-      kimiQuota: {}
+      kimiQuota: {},
+      ollamaQuota: {},
+      deepseekQuota: {}
     })
 }));

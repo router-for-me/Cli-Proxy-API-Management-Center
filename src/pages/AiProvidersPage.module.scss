@@ -699,6 +699,49 @@ $openai-toolbar-control-height: 36px;
   color: var(--failure-badge-text);
 }
 
+.apiKeyEntryRefreshButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  margin-left: 4px;
+  background: transparent;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--bg-secondary, #f3f4f6);
+    border-color: var(--primary-color, #2563eb);
+    color: var(--primary-color, #2563eb);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.apiKeyEntryRefreshButtonSpinning svg {
+  animation: apiKeyEntryRefreshSpin 0.8s linear infinite;
+}
+
+@keyframes apiKeyEntryRefreshSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 // OpenAI 模型发现（二级界面）
 .modelDiscoveryList {
   display: flex;

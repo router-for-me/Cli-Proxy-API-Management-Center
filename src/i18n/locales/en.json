@@ -439,6 +439,7 @@
     "openai_delete_confirm": "Are you sure you want to delete this OpenAI provider?",
     "openai_keys_count": "Keys Count",
     "openai_models_count": "Models Count",
+    "openai_refresh_all_balances": "Refresh",
     "openai_test_title": "Connection Test",
     "openai_test_hint": "Send a /chat/completions request with the current settings to verify availability.",
     "openai_test_model_placeholder": "Model to test",
@@ -542,6 +543,8 @@
     "filter_antigravity": "Antigravity",
     "filter_iflow": "iFlow",
     "filter_vertex": "Vertex",
+    "filter_ollama": "Ollama",
+    "filter_deepseek": "DeepSeek",
     "filter_empty": "Empty",
     "filter_unknown": "Other",
     "type_qwen": "Qwen",
@@ -615,7 +618,8 @@
     "prefix_proxy_invalid_json": "This auth file is not a JSON object, so fields cannot be edited.",
     "prefix_proxy_saved_success": "Updated auth file \"{{name}}\" successfully",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "quota_refresh_action": "Refresh"
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",
@@ -720,6 +724,61 @@
     "limit_window": "{{duration}} limit",
     "limit_index": "Limit #{{index}}",
     "reset_hint": "resets in {{hint}}"
+  },
+  "ollama_quota": {
+    "idle": "Click here to load Ollama usage",
+    "loading": "Loading Ollama usage...",
+    "load_failed": "Failed to load Ollama usage: {{message}}",
+    "empty": "No usage data available",
+    "missing_name": "Auth file missing name",
+    "plan_label": "Plan",
+    "session_label": "Session remaining",
+    "weekly_label": "Weekly remaining",
+    "refresh_button": "Refresh Ollama balance",
+    "refresh_no_match": "No matching auth file for this API key",
+    "refresh_success": "Ollama balance updated: plan {{plan}}, session {{session}}% left, weekly {{weekly}}% left",
+    "refresh_failed": "Failed to refresh Ollama balance: {{message}}"
+  },
+  "deepseek_quota": {
+    "idle": "Click here to load DeepSeek balance",
+    "loading": "Loading DeepSeek balance...",
+    "load_failed": "Failed to load DeepSeek balance: {{message}}",
+    "empty": "No balance data available",
+    "missing_name": "Auth file missing name",
+    "wallet_label": "Wallet",
+    "bonus_label": "Bonus",
+    "monthly_cost_label": "Month-to-date",
+    "token_estimation": "≈ {{formatted}} tokens",
+    "monthly_tokens": "{{formatted}} tokens",
+    "refresh_button": "Refresh DeepSeek balance",
+    "refresh_no_match": "No matching auth file for this API key",
+    "refresh_success": "DeepSeek balance updated: wallet {{currency}} {{balance}}, bonus {{currency}} {{bonus}}, MTD {{currency}} {{cost}}",
+    "refresh_failed": "Failed to refresh DeepSeek balance: {{message}}"
+  },
+  "xiaomi_quota": {
+    "idle": "Click here to load Xiaomi usage",
+    "loading": "Loading Xiaomi usage...",
+    "load_failed": "Failed to load Xiaomi usage: {{message}}",
+    "empty": "No usage data available",
+    "month_label": "Monthly usage",
+    "plan_label": "Plan usage",
+    "compensation_label": "Compensation",
+    "tokens_used": "{{used}} / {{limit}} tokens",
+    "refresh_button": "Refresh Xiaomi usage",
+    "refresh_failed": "Failed to refresh Xiaomi usage: {{message}}"
+  },
+  "anyrouter_quota": {
+    "idle": "Click here to load Anyrouter balance",
+    "loading": "Loading Anyrouter balance...",
+    "load_failed": "Failed to load Anyrouter balance: {{message}}",
+    "empty": "No balance data available",
+    "quota_label": "Remaining quota",
+    "used_label": "Used quota",
+    "request_count_label": "Request count",
+    "aff_quota_label": "Affiliate reward",
+    "group_label": "Group",
+    "refresh_button": "Refresh Anyrouter balance",
+    "refresh_failed": "Failed to refresh Anyrouter balance: {{message}}"
   },
   "vertex_import": {
     "title": "Vertex JSON Login",
