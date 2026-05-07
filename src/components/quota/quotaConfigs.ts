@@ -230,6 +230,7 @@ const fetchAntigravityQuota = async (
 const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): CodexQuotaWindow[] => {
   const FIVE_HOUR_SECONDS = 18000;
   const WEEK_SECONDS = 604800;
+  const FRESH_WINDOW_TOLERANCE_SECONDS = 60;
   const WINDOW_META = {
     codeFiveHour: { id: 'five-hour', labelKey: 'codex_quota.primary_window' },
     codeWeekly: { id: 'weekly', labelKey: 'codex_quota.secondary_window' },
@@ -241,6 +242,37 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
   const codeReviewLimit = payload.code_review_rate_limit ?? payload.codeReviewRateLimit ?? undefined;
   const additionalRateLimits = payload.additional_rate_limits ?? payload.additionalRateLimits ?? [];
   const windows: CodexQuotaWindow[] = [];
+  const nowSeconds = Math.floor(Date.now() / 1000);
+
+  const getResetDistanceSeconds = (window?: CodexUsageWindow | null): number | null => {
+    if (!window) return null;
+
+    const resetAfter = normalizeNumberValue(window.reset_after_seconds ?? window.resetAfterSeconds);
+    if (resetAfter !== null && resetAfter > 0) {
+      return resetAfter;
+    }
+
+    const resetAt = normalizeNumberValue(window.reset_at ?? window.resetAt);
+    if (resetAt !== null && resetAt > 0) {
+      return resetAt - nowSeconds;
+    }
+
+    return null;
+  };
+
+  const isFreshQuotaWindow = (
+    window: CodexUsageWindow,
+    usedPercentRaw: number | null,
+    windowSeconds?: number
+  ): boolean => {
+    if (usedPercentRaw === null || usedPercentRaw > 0) return false;
+    if (!windowSeconds) return false;
+
+    const resetDistanceSeconds = getResetDistanceSeconds(window);
+    if (resetDistanceSeconds === null) return false;
+
+    return Math.abs(resetDistanceSeconds - windowSeconds) <= FRESH_WINDOW_TOLERANCE_SECONDS;
+  };
 
   const addWindow = (
     id: string,
@@ -249,7 +281,8 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     labelParams: Record<string, string | number> | undefined,
     window?: CodexUsageWindow | null,
     limitReached?: boolean,
-    allowed?: boolean
+    allowed?: boolean,
+    fullyRecoveredWindowSeconds?: number
   ) => {
     if (!window) return;
     const resetLabel = formatCodexResetLabel(window);
@@ -263,6 +296,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
       labelParams,
       usedPercent,
       resetLabel,
+      isFreshQuotaWindow: isFreshQuotaWindow(window, usedPercentRaw, fullyRecoveredWindowSeconds),
     });
   };
 
@@ -317,7 +351,8 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     undefined,
     rateWindows.fiveHourWindow,
     rawLimitReached,
-    rawAllowed
+    rawAllowed,
+    FIVE_HOUR_SECONDS
   );
   addWindow(
     WINDOW_META.codeWeekly.id,
@@ -326,7 +361,8 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     undefined,
     rateWindows.weeklyWindow,
     rawLimitReached,
-    rawAllowed
+    rawAllowed,
+    WEEK_SECONDS
   );
 
   const codeReviewWindows = pickClassifiedWindows(codeReviewLimit);
@@ -789,6 +825,9 @@ const renderCodexItems = (
       const windowLabel = window.labelKey
         ? t(window.labelKey, window.labelParams as Record<string, string | number>)
         : window.label;
+      const resetClassName = window.isFreshQuotaWindow
+        ? `${styleMap.quotaReset} ${styleMap.quotaResetRecovered}`
+        : styleMap.quotaReset;
 
       return h(
         'div',
@@ -801,7 +840,7 @@ const renderCodexItems = (
             'div',
             { className: styleMap.quotaMeta },
             h('span', { className: styleMap.quotaPercent }, percentLabel),
-            h('span', { className: styleMap.quotaReset }, window.resetLabel)
+            h('span', { className: resetClassName }, window.resetLabel)
           )
         ),
         h(QuotaProgressBar, {
