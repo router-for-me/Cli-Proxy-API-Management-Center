@@ -124,7 +124,7 @@ export interface QuotaConfig<TState extends QuotaStatusState, TData> {
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
 }
 
-const hasCachedQuota = <T extends QuotaStatusState>(
+export const hasCachedQuota = <T extends QuotaStatusState>(
   value: T | undefined | null
 ): value is T & { checkedAt: number } =>
   typeof value?.checkedAt === 'number' && Number.isFinite(value.checkedAt);

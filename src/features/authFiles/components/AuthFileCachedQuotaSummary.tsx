@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import type {
   AntigravityQuotaGroup,
@@ -15,6 +17,7 @@ import { useQuotaStore } from '@/stores';
 import { formatQuotaResetTime, normalizePlanType } from '@/utils/quota';
 import type { QuotaProviderType } from '@/features/authFiles/constants';
 import { QuotaProgressBar } from '@/features/authFiles/components/QuotaProgressBar';
+import { hasCachedQuota, type QuotaStore } from '@/components/quota/quotaConfigs';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
 type CachedQuotaState =
@@ -33,11 +36,16 @@ const MAX_ROWS = 2;
 const CODEX_PRIMARY_WINDOWS = ['five-hour', 'weekly'];
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
 const PREMIUM_GEMINI_CLI_TIER_IDS = new Set(['g1-ultra-tier']);
-
-const hasCachedQuota = (
-  quota: CachedQuotaState | undefined
-): quota is CachedQuotaState & { checkedAt: number } =>
-  typeof quota?.checkedAt === 'number' && Number.isFinite(quota.checkedAt);
+const QUOTA_STORE_KEYS = {
+  antigravity: 'antigravityQuota',
+  claude: 'claudeQuota',
+  codex: 'codexQuota',
+  kimi: 'kimiQuota',
+  'gemini-cli': 'geminiCliQuota',
+} satisfies Record<QuotaProviderType, keyof Pick<
+  QuotaStore,
+  'antigravityQuota' | 'claudeQuota' | 'codexQuota' | 'geminiCliQuota' | 'kimiQuota'
+>>;
 
 const clampPercent = (value: number | null): number | null => {
   if (value === null || Number.isNaN(value)) return null;
@@ -148,7 +156,7 @@ const renderWindowRow = (
 
 const renderCodexSummary = (
   quota: CodexQuotaState,
-  t: (key: string, options?: Record<string, unknown>) => string
+  t: TFunction
 ) => {
   const plan = resolveCodexPlanLabel(quota.planType, t);
   const windows = pickCodexWindows(quota.windows ?? []);
@@ -183,7 +191,7 @@ const renderCodexSummary = (
 
 const renderClaudeSummary = (
   quota: ClaudeQuotaState,
-  t: (key: string) => string
+  t: TFunction
 ) => {
   const windows = (quota.windows ?? []).slice(0, MAX_ROWS);
 
@@ -223,7 +231,7 @@ const renderClaudeSummary = (
 
 const renderGeminiCliSummary = (
   quota: GeminiCliQuotaState,
-  t: (key: string, options?: Record<string, unknown>) => string
+  t: TFunction
 ) => {
   const buckets = (quota.buckets ?? []).slice(0, MAX_ROWS);
 
@@ -277,7 +285,7 @@ const renderGeminiCliSummary = (
 
 const renderAntigravitySummary = (
   quota: AntigravityQuotaState,
-  t: (key: string) => string
+  t: TFunction
 ) => {
   const groups = (quota.groups ?? []).slice(0, MAX_ROWS);
 
@@ -299,7 +307,7 @@ const renderAntigravitySummary = (
 
 const renderKimiSummary = (
   quota: KimiQuotaState,
-  t: (key: string, options?: Record<string, unknown>) => string
+  t: TFunction
 ) => {
   const rows = (quota.rows ?? []).slice(0, MAX_ROWS);
 
@@ -321,17 +329,25 @@ const renderKimiSummary = (
   );
 };
 
+const QUOTA_SUMMARY_RENDERERS: Record<
+  QuotaProviderType,
+  (quota: CachedQuotaState, t: TFunction) => ReactNode
+> = {
+  antigravity: (quota, t) => renderAntigravitySummary(quota as AntigravityQuotaState, t),
+  claude: (quota, t) => renderClaudeSummary(quota as ClaudeQuotaState, t),
+  codex: (quota, t) => renderCodexSummary(quota as CodexQuotaState, t),
+  kimi: (quota, t) => renderKimiSummary(quota as KimiQuotaState, t),
+  'gemini-cli': (quota, t) => renderGeminiCliSummary(quota as GeminiCliQuotaState, t),
+};
+
 export function AuthFileCachedQuotaSummary(props: AuthFileCachedQuotaSummaryProps) {
   const { fileName, quotaType } = props;
   const { t, i18n } = useTranslation();
 
-  const quota = useQuotaStore((state) => {
-    if (quotaType === 'antigravity') return state.antigravityQuota[fileName] as CachedQuotaState | undefined;
-    if (quotaType === 'claude') return state.claudeQuota[fileName] as CachedQuotaState | undefined;
-    if (quotaType === 'codex') return state.codexQuota[fileName] as CachedQuotaState | undefined;
-    if (quotaType === 'kimi') return state.kimiQuota[fileName] as CachedQuotaState | undefined;
-    return state.geminiCliQuota[fileName] as CachedQuotaState | undefined;
-  });
+  const quota = useQuotaStore(
+    (state) =>
+      (state[QUOTA_STORE_KEYS[quotaType]] as Record<string, CachedQuotaState | undefined>)[fileName]
+  );
 
   if (!hasCachedQuota(quota)) {
     return null;
@@ -345,16 +361,7 @@ export function AuthFileCachedQuotaSummary(props: AuthFileCachedQuotaSummaryProp
           {formatRelativeTime(quota.checkedAt, i18n.language)}
         </span>
       </div>
-
-      {quotaType === 'antigravity'
-        ? renderAntigravitySummary(quota as AntigravityQuotaState, t)
-        : quotaType === 'claude'
-          ? renderClaudeSummary(quota as ClaudeQuotaState, t)
-          : quotaType === 'codex'
-            ? renderCodexSummary(quota as CodexQuotaState, t)
-            : quotaType === 'kimi'
-              ? renderKimiSummary(quota as KimiQuotaState, t)
-              : renderGeminiCliSummary(quota as GeminiCliQuotaState, t)}
+      {QUOTA_SUMMARY_RENDERERS[quotaType](quota, t)}
     </div>
   );
 }
