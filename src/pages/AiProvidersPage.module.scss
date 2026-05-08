@@ -18,6 +18,32 @@ $openai-toolbar-control-height: 36px;
   height: 24px;
 }
 
+.cardTitleRefreshBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color -fast, color -fast;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 .pageTitle {
   font-size: 28px;
   font-weight: 700;
@@ -93,6 +119,9 @@ $openai-toolbar-control-height: 36px;
 }
 
 .openaiProviderTitle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -1353,6 +1382,71 @@ $openai-toolbar-control-height: 36px;
   font-size: 14px;
   min-height: 38px;
   text-align: center;
+}
+
+.keyExpandToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background-color $transition-fast, color $transition-fast;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  svg {
+    transition: transform $transition-fast;
+  }
+
+  &.expanded svg {
+    transform: rotate(90deg);
+  }
+}
+
+.keyTableExpandRow {
+  grid-column: 1 / -1;
+  padding: $spacing-sm $spacing-md $spacing-md;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-top: none;
+}
+
+.keyExpandContent {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-sm;
+  background: var(--bg-tertiary);
+  border-radius: $radius-md;
+}
+
+.keyExpandSectionLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.keyExpandSectionHint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: $spacing-xs;
 }
 
 .addKeyButton {

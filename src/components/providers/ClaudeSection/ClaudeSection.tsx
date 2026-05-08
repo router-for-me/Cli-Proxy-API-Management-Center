@@ -1,8 +1,9 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { IconRefreshCw } from '@/components/ui/icons';
 import iconClaude from '@/assets/icons/claude.svg';
 import type { ProviderKeyConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
@@ -28,6 +29,7 @@ interface ClaudeSectionProps {
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
   onToggle: (index: number, enabled: boolean) => void;
+  onRefresh?: () => Promise<void>;
 }
 
 export function ClaudeSection({
@@ -40,10 +42,22 @@ export function ClaudeSection({
   onEdit,
   onDelete,
   onToggle,
+  onRefresh,
 }: ClaudeSectionProps) {
   const { t } = useTranslation();
   const actionsDisabled = disableControls || loading || isSwitching;
   const toggleDisabled = disableControls || loading || isSwitching;
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (!onRefresh || refreshing || actionsDisabled) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof statusBarDataFromRecentRequests>>();
@@ -69,6 +83,21 @@ export function ClaudeSection({
           <span className={styles.cardTitle}>
             <img src={iconClaude} alt="" className={styles.cardTitleIcon} />
             {t('ai_providers.claude_title')}
+            {onRefresh && (
+              <button
+                type="button"
+                className={styles.cardTitleRefreshBtn}
+                onClick={() => void handleRefresh()}
+                disabled={actionsDisabled || refreshing}
+                title={t('ai_providers.refresh_provider_keys')}
+                aria-label={t('ai_providers.refresh_provider_keys')}
+              >
+                <IconRefreshCw
+                  size={14}
+                  style={refreshing ? { animation: 'spin 0.9s linear infinite' } : undefined}
+                />
+              </button>
+            )}
           </span>
         }
         extra={

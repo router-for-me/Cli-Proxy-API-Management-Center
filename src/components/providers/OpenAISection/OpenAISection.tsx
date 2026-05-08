@@ -60,6 +60,7 @@ interface OpenAISectionProps {
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
   onToggle: (index: number, enabled: boolean) => void;
+  onRefreshUsage?: () => Promise<unknown>;
 }
 
 const BALANCE_PROVIDER_KINDS = new Set(['ollama', 'deepseek', 'xiaomi', 'anyrouter']);
@@ -153,12 +154,28 @@ function OpenAISectionInner({
   onEdit,
   onDelete,
   onToggle,
+  onRefreshUsage,
 }: OpenAISectionProps) {
   const { t } = useTranslation();
   const pageTransitionLayer = usePageTransitionLayer();
   const isTransitionAnimating = pageTransitionLayer?.isAnimating ?? false;
   const actionsDisabled = disableControls || loading || isSwitching;
   const toggleDisabled = disableControls || loading || isSwitching;
+  const bus = useOpenAICompatRefreshBus();
+  const [refreshingCardKey, setRefreshingCardKey] = useState<string | null>(null);
+
+  const handleRefreshCard = async (providerName: string) => {
+    if (actionsDisabled || refreshingCardKey) return;
+    setRefreshingCardKey(providerName);
+    try {
+      await Promise.all([
+        bus?.refreshByProvider(providerName) ?? Promise.resolve(),
+        onRefreshUsage?.() ?? Promise.resolve(),
+      ]);
+    } finally {
+      setRefreshingCardKey(null);
+    }
+  };
   const [sortOption, setSortOption] = useState<SortOption>('priority');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
@@ -615,6 +632,7 @@ function OpenAISectionInner({
       statusBarCache.get(getOpenAIProviderKey(provider, originalIndex)) || EMPTY_STATUS_BAR;
     const providerDisabled = provider.disabled === true;
     const balanceKind = getBalanceProviderKind(provider);
+    const isRefreshingCard = refreshingCardKey === provider.name;
 
     return (
       <div
@@ -623,7 +641,22 @@ function OpenAISectionInner({
         style={actionsDisabled ? { opacity: 0.6 } : undefined}
       >
         <div className={styles.openaiProviderMeta}>
-          <div className={styles.openaiProviderTitle}>{provider.name}</div>
+          <div className={styles.openaiProviderTitle}>
+            {provider.name}
+            <button
+              type="button"
+              className={styles.cardTitleRefreshBtn}
+              onClick={() => void handleRefreshCard(provider.name)}
+              disabled={actionsDisabled || isRefreshingCard || refreshingCardKey !== null}
+              title={t('ai_providers.refresh_provider_keys')}
+              aria-label={t('ai_providers.refresh_provider_keys')}
+            >
+              <IconRefreshCw
+                size={14}
+                style={isRefreshingCard ? { animation: 'spin 0.9s linear infinite' } : undefined}
+              />
+            </button>
+          </div>
           {provider.priority !== undefined && (
             <div className={styles.fieldRow}>
               <span className={styles.fieldLabel}>{t('common.priority')}:</span>

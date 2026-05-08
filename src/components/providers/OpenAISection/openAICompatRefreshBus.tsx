@@ -23,6 +23,7 @@ type RefreshFn = () => Promise<void>;
 interface OpenAICompatRefreshBus {
   register: (id: string, fn: RefreshFn) => () => void;
   refreshAll: () => Promise<void>;
+  refreshByProvider: (providerName: string) => Promise<void>;
 }
 
 const Context = createContext<OpenAICompatRefreshBus | null>(null);
@@ -46,9 +47,17 @@ export function OpenAICompatRefreshProvider({ children }: { children: ReactNode 
     await Promise.all(fns.map((fn) => fn().catch(() => {})));
   }, []);
 
+  const refreshByProvider = useCallback(async (providerName: string) => {
+    const prefix = `${providerName.toLowerCase()}|`;
+    const fns = Array.from(callbacksRef.current.entries())
+      .filter(([id]) => id.startsWith(prefix))
+      .map(([, fn]) => fn);
+    await Promise.all(fns.map((fn) => fn().catch(() => {})));
+  }, []);
+
   const value = useMemo<OpenAICompatRefreshBus>(
-    () => ({ register, refreshAll }),
-    [register, refreshAll]
+    () => ({ register, refreshAll, refreshByProvider }),
+    [register, refreshAll, refreshByProvider]
   );
 
   return <Context.Provider value={value}>{children}</Context.Provider>;

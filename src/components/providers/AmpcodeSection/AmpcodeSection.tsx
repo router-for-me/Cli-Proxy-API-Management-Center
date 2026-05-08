@@ -1,10 +1,12 @@
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { IconRefreshCw } from '@/components/ui/icons';
 import iconAmp from '@/assets/icons/amp.svg';
 import type { AmpcodeConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import styles from '@/pages/AiProvidersPage.module.scss';
-import { useTranslation } from 'react-i18next';
 
 interface AmpcodeSectionProps {
   config: AmpcodeConfig | null | undefined;
@@ -12,6 +14,7 @@ interface AmpcodeSectionProps {
   disableControls: boolean;
   isSwitching: boolean;
   onEdit: () => void;
+  onRefresh?: () => Promise<void>;
 }
 
 export function AmpcodeSection({
@@ -20,9 +23,22 @@ export function AmpcodeSection({
   disableControls,
   isSwitching,
   onEdit,
+  onRefresh,
 }: AmpcodeSectionProps) {
   const { t } = useTranslation();
   const showLoadingPlaceholder = loading && !config;
+  const [refreshing, setRefreshing] = useState(false);
+  const actionsDisabled = disableControls || loading || isSwitching;
+
+  const handleRefresh = async () => {
+    if (!onRefresh || refreshing || actionsDisabled) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <>
@@ -31,13 +47,28 @@ export function AmpcodeSection({
           <span className={styles.cardTitle}>
             <img src={iconAmp} alt="" className={styles.cardTitleIcon} />
             {t('ai_providers.ampcode_title')}
+            {onRefresh && (
+              <button
+                type="button"
+                className={styles.cardTitleRefreshBtn}
+                onClick={() => void handleRefresh()}
+                disabled={actionsDisabled || refreshing}
+                title={t('ai_providers.refresh_provider_keys')}
+                aria-label={t('ai_providers.refresh_provider_keys')}
+              >
+                <IconRefreshCw
+                  size={14}
+                  style={refreshing ? { animation: 'spin 0.9s linear infinite' } : undefined}
+                />
+              </button>
+            )}
           </span>
         }
         extra={
           <Button
             size="sm"
             onClick={onEdit}
-            disabled={disableControls || loading || isSwitching}
+            disabled={actionsDisabled}
           >
             {t('common.edit')}
           </Button>
