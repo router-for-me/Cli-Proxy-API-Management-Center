@@ -191,6 +191,7 @@ export interface ClaudeQuotaState {
   planType?: string | null;
   error?: string;
   errorStatus?: number;
+  checkedAt?: number;
 }
 
 // Quota state types
@@ -207,6 +208,7 @@ export interface AntigravityQuotaState {
   groups: AntigravityQuotaGroup[];
   error?: string;
   errorStatus?: number;
+  checkedAt?: number;
 }
 
 export interface GeminiCliQuotaBucketState {
@@ -227,6 +229,7 @@ export interface GeminiCliQuotaState {
   creditBalance?: number | null;
   error?: string;
   errorStatus?: number;
+  checkedAt?: number;
 }
 
 export interface CodexQuotaWindow {
@@ -245,6 +248,7 @@ export interface CodexQuotaState {
   planType?: string | null;
   error?: string;
   errorStatus?: number;
+  checkedAt?: number;
 }
 
 // Kimi API payload types
@@ -306,4 +310,5 @@ export interface KimiQuotaState {
   rows: KimiQuotaRow[];
   error?: string;
   errorStatus?: number;
+  checkedAt?: number;
 }

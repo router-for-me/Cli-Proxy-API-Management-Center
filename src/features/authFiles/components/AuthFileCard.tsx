@@ -32,6 +32,7 @@ import {
   type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
+import { AuthFileCachedQuotaSummary } from '@/features/authFiles/components/AuthFileCachedQuotaSummary';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import styles from '@/pages/AuthFilesPage.module.scss';
@@ -94,10 +95,13 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const typeLabel = getTypeLabel(t, file.type || 'unknown');
   const providerIcon = getAuthFileIcon(file.type || 'unknown', resolvedTheme);
 
+  const resolvedQuotaType = resolveQuotaType(file);
   const quotaType =
-    quotaFilterType && resolveQuotaType(file) === quotaFilterType ? quotaFilterType : null;
+    quotaFilterType && resolvedQuotaType === quotaFilterType ? quotaFilterType : null;
 
   const showQuotaLayout = Boolean(quotaType) && !isRuntimeOnly && !compact;
+  const showCachedQuotaSummary =
+    Boolean(resolvedQuotaType) && !showQuotaLayout && !isRuntimeOnly && !compact;
 
   const providerCardClass =
     quotaType === 'antigravity'
@@ -246,6 +250,13 @@ export function AuthFileCard(props: AuthFileCardProps) {
               </div>
               <ProviderStatusBar statusData={statusData} styles={styles} />
             </div>
+
+            {showCachedQuotaSummary && resolvedQuotaType && (
+              <AuthFileCachedQuotaSummary
+                fileName={file.name}
+                quotaType={resolvedQuotaType}
+              />
+            )}
 
             {showQuotaLayout && quotaType && (
               <AuthFileQuotaSection

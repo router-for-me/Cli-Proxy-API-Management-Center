@@ -65,22 +65,22 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     const config = getQuotaConfig(quotaType) as unknown as {
       i18nPrefix: string;
       fetchQuota: (file: AuthFileItem, t: TFunction) => Promise<unknown>;
-      buildLoadingState: () => unknown;
-      buildSuccessState: (data: unknown) => unknown;
-      buildErrorState: (message: string, status?: number) => unknown;
+      buildLoadingState: (previous?: unknown) => unknown;
+      buildSuccessState: (data: unknown, previous?: unknown) => unknown;
+      buildErrorState: (message: string, status?: number, previous?: unknown) => unknown;
       renderQuotaItems: (quota: unknown, t: TFunction, helpers: unknown) => unknown;
     };
 
     updateQuotaState((prev: Record<string, unknown>) => ({
       ...prev,
-      [file.name]: config.buildLoadingState()
+      [file.name]: config.buildLoadingState(prev[file.name])
     }));
 
     try {
       const data = await config.fetchQuota(file, t);
       updateQuotaState((prev: Record<string, unknown>) => ({
         ...prev,
-        [file.name]: config.buildSuccessState(data)
+        [file.name]: config.buildSuccessState(data, prev[file.name])
       }));
       showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
     } catch (err: unknown) {
@@ -88,7 +88,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       const status = getStatusFromError(err);
       updateQuotaState((prev: Record<string, unknown>) => ({
         ...prev,
-        [file.name]: config.buildErrorState(message, status)
+        [file.name]: config.buildErrorState(message, status, prev[file.name])
       }));
       showNotification(t('auth_files.quota_refresh_failed', { name: file.name, message }), 'error');
     }

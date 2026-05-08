@@ -15,6 +15,7 @@ export interface QuotaStatusState {
   status: QuotaStatus;
   error?: string;
   errorStatus?: number;
+  checkedAt?: number;
 }
 
 export interface QuotaProgressBarProps {

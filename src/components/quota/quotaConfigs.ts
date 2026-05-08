@@ -76,7 +76,7 @@ import {
   isRuntimeOnlyAuthFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
-import type { QuotaRenderHelpers } from './QuotaCard';
+import type { QuotaRenderHelpers, QuotaStatusState } from './QuotaCard';
 import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
@@ -106,7 +106,7 @@ export interface QuotaStore {
   clearQuotaCache: () => void;
 }
 
-export interface QuotaConfig<TState, TData> {
+export interface QuotaConfig<TState extends QuotaStatusState, TData> {
   type: QuotaType;
   i18nPrefix: string;
   cardIdleMessageKey?: string;
@@ -114,15 +114,20 @@ export interface QuotaConfig<TState, TData> {
   fetchQuota: (file: AuthFileItem, t: TFunction) => Promise<TData>;
   storeSelector: (state: QuotaStore) => Record<string, TState>;
   storeSetter: keyof QuotaStore;
-  buildLoadingState: () => TState;
-  buildSuccessState: (data: TData) => TState;
-  buildErrorState: (message: string, status?: number) => TState;
+  buildLoadingState: (previous?: TState) => TState;
+  buildSuccessState: (data: TData, previous?: TState) => TState;
+  buildErrorState: (message: string, status?: number, previous?: TState) => TState;
   cardClassName: string;
   controlsClassName: string;
   controlClassName: string;
   gridClassName: string;
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
 }
+
+const hasCachedQuota = <T extends QuotaStatusState>(
+  value: T | undefined | null
+): value is T & { checkedAt: number } =>
+  typeof value?.checkedAt === 'number' && Number.isFinite(value.checkedAt);
 
 const resolveAntigravityProjectId = async (file: AuthFileItem): Promise<string> => {
   try {
@@ -1165,19 +1170,36 @@ export const CLAUDE_CONFIG: QuotaConfig<
   fetchQuota: fetchClaudeQuota,
   storeSelector: (state) => state.claudeQuota,
   storeSetter: 'setClaudeQuota',
-  buildLoadingState: () => ({ status: 'loading', windows: [] }),
+  buildLoadingState: (previous) =>
+    hasCachedQuota(previous)
+      ? {
+          ...previous,
+          status: 'loading',
+          error: undefined,
+          errorStatus: undefined,
+        }
+      : { status: 'loading', windows: [] },
   buildSuccessState: (data) => ({
     status: 'success',
     windows: data.windows,
     extraUsage: data.extraUsage,
     planType: data.planType,
+    checkedAt: Date.now(),
   }),
-  buildErrorState: (message, status) => ({
-    status: 'error',
-    windows: [],
-    error: message,
-    errorStatus: status,
-  }),
+  buildErrorState: (message, status, previous) =>
+    hasCachedQuota(previous)
+      ? {
+          ...previous,
+          status: 'error',
+          error: message,
+          errorStatus: status,
+        }
+      : {
+          status: 'error',
+          windows: [],
+          error: message,
+          errorStatus: status,
+        },
   cardClassName: styles.claudeCard,
   controlsClassName: styles.claudeControls,
   controlClassName: styles.claudeControl,
@@ -1193,14 +1215,30 @@ export const ANTIGRAVITY_CONFIG: QuotaConfig<AntigravityQuotaState, AntigravityQ
   fetchQuota: fetchAntigravityQuota,
   storeSelector: (state) => state.antigravityQuota,
   storeSetter: 'setAntigravityQuota',
-  buildLoadingState: () => ({ status: 'loading', groups: [] }),
-  buildSuccessState: (groups) => ({ status: 'success', groups }),
-  buildErrorState: (message, status) => ({
-    status: 'error',
-    groups: [],
-    error: message,
-    errorStatus: status,
-  }),
+  buildLoadingState: (previous) =>
+    hasCachedQuota(previous)
+      ? {
+          ...previous,
+          status: 'loading',
+          error: undefined,
+          errorStatus: undefined,
+        }
+      : { status: 'loading', groups: [] },
+  buildSuccessState: (groups) => ({ status: 'success', groups, checkedAt: Date.now() }),
+  buildErrorState: (message, status, previous) =>
+    hasCachedQuota(previous)
+      ? {
+          ...previous,
+          status: 'error',
+          error: message,
+          errorStatus: status,
+        }
+      : {
+          status: 'error',
+          groups: [],
+          error: message,
+          errorStatus: status,
+        },
   cardClassName: styles.antigravityCard,
   controlsClassName: styles.antigravityControls,
   controlClassName: styles.antigravityControl,
@@ -1219,18 +1257,35 @@ export const CODEX_CONFIG: QuotaConfig<
   fetchQuota: fetchCodexQuota,
   storeSelector: (state) => state.codexQuota,
   storeSetter: 'setCodexQuota',
-  buildLoadingState: () => ({ status: 'loading', windows: [] }),
+  buildLoadingState: (previous) =>
+    hasCachedQuota(previous)
+      ? {
+          ...previous,
+          status: 'loading',
+          error: undefined,
+          errorStatus: undefined,
+        }
+      : { status: 'loading', windows: [] },
   buildSuccessState: (data) => ({
     status: 'success',
     windows: data.windows,
     planType: data.planType,
+    checkedAt: Date.now(),
   }),
-  buildErrorState: (message, status) => ({
-    status: 'error',
-    windows: [],
-    error: message,
-    errorStatus: status,
-  }),
+  buildErrorState: (message, status, previous) =>
+    hasCachedQuota(previous)
+      ? {
+          ...previous,
+          status: 'error',
+          error: message,
+          errorStatus: status,
+        }
+      : {
+          status: 'error',
+          windows: [],
+          error: message,
+          errorStatus: status,
+        },
   cardClassName: styles.codexCard,
   controlsClassName: styles.codexControls,
   controlClassName: styles.codexControl,
@@ -1257,7 +1312,21 @@ export const GEMINI_CLI_CONFIG: QuotaConfig<
   fetchQuota: fetchGeminiCliQuota,
   storeSelector: (state) => state.geminiCliQuota,
   storeSetter: 'setGeminiCliQuota',
-  buildLoadingState: () => ({ status: 'loading', buckets: [], tierLabel: null, tierId: null, creditBalance: null }),
+  buildLoadingState: (previous) =>
+    hasCachedQuota(previous)
+      ? {
+          ...previous,
+          status: 'loading',
+          error: undefined,
+          errorStatus: undefined,
+        }
+      : {
+          status: 'loading',
+          buckets: [],
+          tierLabel: null,
+          tierId: null,
+          creditBalance: null,
+        },
   buildSuccessState: (data) => {
     const supplementarySnapshot = readGeminiCliSupplementarySnapshot(
       data.fileName,
@@ -1270,14 +1339,23 @@ export const GEMINI_CLI_CONFIG: QuotaConfig<
       tierLabel: supplementarySnapshot.tierLabel ?? data.tierLabel,
       tierId: supplementarySnapshot.tierId ?? data.tierId,
       creditBalance: supplementarySnapshot.creditBalance ?? data.creditBalance,
+      checkedAt: Date.now(),
     };
   },
-  buildErrorState: (message, status) => ({
-    status: 'error',
-    buckets: [],
-    error: message,
-    errorStatus: status,
-  }),
+  buildErrorState: (message, status, previous) =>
+    hasCachedQuota(previous)
+      ? {
+          ...previous,
+          status: 'error',
+          error: message,
+          errorStatus: status,
+        }
+      : {
+          status: 'error',
+          buckets: [],
+          error: message,
+          errorStatus: status,
+        },
   cardClassName: styles.geminiCliCard,
   controlsClassName: styles.geminiCliControls,
   controlClassName: styles.geminiCliControl,
@@ -1378,14 +1456,30 @@ export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaRow[]> = {
   fetchQuota: fetchKimiQuota,
   storeSelector: (state) => state.kimiQuota,
   storeSetter: 'setKimiQuota',
-  buildLoadingState: () => ({ status: 'loading', rows: [] }),
-  buildSuccessState: (rows) => ({ status: 'success', rows }),
-  buildErrorState: (message, status) => ({
-    status: 'error',
-    rows: [],
-    error: message,
-    errorStatus: status,
-  }),
+  buildLoadingState: (previous) =>
+    hasCachedQuota(previous)
+      ? {
+          ...previous,
+          status: 'loading',
+          error: undefined,
+          errorStatus: undefined,
+        }
+      : { status: 'loading', rows: [] },
+  buildSuccessState: (rows) => ({ status: 'success', rows, checkedAt: Date.now() }),
+  buildErrorState: (message, status, previous) =>
+    hasCachedQuota(previous)
+      ? {
+          ...previous,
+          status: 'error',
+          error: message,
+          errorStatus: status,
+        }
+      : {
+          status: 'error',
+          rows: [],
+          error: message,
+          errorStatus: status,
+        },
   cardClassName: styles.kimiCard,
   controlsClassName: styles.kimiControls,
   controlClassName: styles.kimiControl,

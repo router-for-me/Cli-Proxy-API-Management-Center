@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { AuthFileItem } from '@/types';
 import { useQuotaStore } from '@/stores';
 import { getStatusFromError } from '@/utils/quota';
+import type { QuotaStatusState } from './QuotaCard';
 import type { QuotaConfig } from './quotaConfigs';
 
 type QuotaScope = 'page' | 'all';
@@ -23,7 +24,9 @@ interface LoadQuotaResult<TData> {
   errorStatus?: number;
 }
 
-export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>) {
+export function useQuotaLoader<TState extends QuotaStatusState, TData>(
+  config: QuotaConfig<TState, TData>
+) {
   const { t } = useTranslation();
   const quota = useQuotaStore(config.storeSelector);
   const setQuota = useQuotaStore((state) => state[config.storeSetter]) as QuotaSetter<
@@ -50,7 +53,7 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
         setQuota((prev) => {
           const nextState = { ...prev };
           targets.forEach((file) => {
-            nextState[file.name] = config.buildLoadingState();
+            nextState[file.name] = config.buildLoadingState(prev[file.name]);
           });
           return nextState;
         });
@@ -73,12 +76,17 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
         setQuota((prev) => {
           const nextState = { ...prev };
           results.forEach((result) => {
+            const previous = prev[result.name];
             if (result.status === 'success') {
-              nextState[result.name] = config.buildSuccessState(result.data as TData);
+              nextState[result.name] = config.buildSuccessState(
+                result.data as TData,
+                previous
+              );
             } else {
               nextState[result.name] = config.buildErrorState(
                 result.error || t('common.unknown_error'),
-                result.errorStatus
+                result.errorStatus,
+                previous
               );
             }
           });

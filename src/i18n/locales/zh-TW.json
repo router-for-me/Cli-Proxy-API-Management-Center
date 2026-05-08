@@ -606,6 +606,7 @@
     "note_placeholder": "輸入備註資訊，例如：張三的帳號",
     "note_hint": "選填，用於標記憑證用途或歸屬；留空則不寫入。",
     "note_display": "備註",
+    "quota_cached_label": "上次配額快照",
     "headers_label": "自訂請求標頭（headers）",
     "headers_placeholder": "{\n  \"Header-Name\": \"value\"\n}",
     "headers_hint": "以 JSON 物件格式輸入自訂 HTTP 請求標頭，例如：{\"X-My-Header\": \"value\"}",

@@ -570,6 +570,10 @@
   color: var(--text-tertiary);
 }
 
+.quotaResetRecovered {
+  color: var(--success-color, #22c55e);
+}
+
 .quotaAmount {
   color: var(--text-secondary);
 }
@@ -1046,6 +1050,39 @@
   flex-direction: column;
   gap: 8px;
   padding: 0 2px;
+}
+
+.cachedQuotaSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 92%, transparent), transparent),
+    color-mix(in srgb, var(--bg-tertiary) 72%, transparent);
+}
+
+.cachedQuotaHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cachedQuotaLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cachedQuotaTimestamp {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
 }
 
 .cardInsightsCompact {
