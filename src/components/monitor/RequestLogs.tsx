@@ -2,7 +2,9 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card } from '@/components/ui/Card';
-import { usageApi, authFilesApi } from '@/services/api';
+import { usageApi, authFilesApi, usageSqliteApi } from '@/services/api';
+import { sqliteRecordsToUsageData } from '@/utils/sqliteAdapter';
+import { SQLITE_USAGE_DEFAULT_SINCE, SQLITE_USAGE_MAX_LIMIT } from '@/utils/constants';
 import { useDisableModel } from '@/hooks';
 import { normalizeUsageSourceId, normalizeAuthIndex } from '@/utils/usage';
 import { resolveSourceDisplay } from '@/utils/sourceResolver';
@@ -111,6 +113,7 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
   const [logData, setLogData] = useState<UsageData | null>(null);
   const [logLoading, setLogLoading] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [sqliteEnabled, setSqliteEnabled] = useState(false);
 
   // 认证文件映射（优先使用 prop，否则自行加载）
   const [localAuthFileMap, setLocalAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
@@ -172,19 +175,30 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
     loadAuthFileMap();
   }, [loadAuthFileMap]);
 
+  // 检测 SQLite 持久化是否启用
+  useEffect(() => {
+    usageSqliteApi.getEnabled().then(res => setSqliteEnabled(res.enabled)).catch(() => {});
+  }, []);
+
   // 独立获取日志数据
   const fetchLogData = useCallback(async () => {
     setLogLoading(true);
     try {
-      const response = await usageApi.getUsage();
-      const usageData = (response?.usage ?? response) as UsageData;
-      setLogData(filterDataByTimeRange(usageData, timeRange, customRange, apiFilter));
+      if (sqliteEnabled) {
+        const recordsRes = await usageSqliteApi.getRecords({ since: SQLITE_USAGE_DEFAULT_SINCE, limit: SQLITE_USAGE_MAX_LIMIT });
+        const transformed = sqliteRecordsToUsageData(recordsRes.records);
+        setLogData(filterDataByTimeRange(transformed, timeRange, customRange, apiFilter));
+      } else {
+        const response = await usageApi.getUsage();
+        const usageData = (response?.usage ?? response) as UsageData;
+        setLogData(filterDataByTimeRange(usageData, timeRange, customRange, apiFilter));
+      }
     } catch (err) {
       console.error('日志刷新失败：', err);
     } finally {
       setLogLoading(false);
     }
-  }, [timeRange, customRange, apiFilter]);
+  }, [timeRange, customRange, apiFilter, sqliteEnabled]);
 
   // 同步 fetchLogData 到 ref，确保定时器始终调用最新版本
   useEffect(() => {

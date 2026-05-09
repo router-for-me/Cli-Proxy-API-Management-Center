@@ -20,6 +20,9 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useThemeStore } from '@/stores';
 import { usageApi, providersApi, authFilesApi } from '@/services/api';
+import { useSqliteUsage } from '@/hooks/useSqliteUsage';
+import { sqliteRecordsToUsageData } from '@/utils/sqliteAdapter';
+import { SQLITE_USAGE_REFRESH_MS, SQLITE_USAGE_DEFAULT_SINCE } from '@/utils/constants';
 import { filterDataByApiFilter, filterDataByTimeRange } from '@/utils/monitor';
 import { buildSourceInfoMap } from '@/utils/sourceResolver';
 import { normalizeAuthIndex } from '@/utils/usage';
@@ -80,6 +83,15 @@ export function MonitorPage() {
   const { t } = useTranslation();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isDark = resolvedTheme === 'dark';
+
+  // SQLite 持久化数据（主数据源）
+  const {
+    records: sqliteRecords,
+    sqliteEnabled,
+    loading: sqliteLoading,
+    error: sqliteError,
+    refresh: refreshSqlite,
+  } = useSqliteUsage({ refreshInterval: SQLITE_USAGE_REFRESH_MS, since: SQLITE_USAGE_DEFAULT_SINCE });
 
   // 状态
   const [loading, setLoading] = useState(true);
@@ -232,15 +244,28 @@ export function MonitorPage() {
     }
   }, []);
 
-  // 加载数据
+  // 加载数据：SQLite 优先，fallback 到旧 API
   const loadData = useCallback(async () => {
-    setLoading(true);
     setError(null);
     // 渠道映射并行加载，但不阻塞主数据展示
     loadProviderMap();
+
+    // SQLite 已启用 → 使用持久化数据
+    if (sqliteEnabled && sqliteRecords.length > 0) {
+      setUsageData(sqliteRecordsToUsageData(sqliteRecords));
+      setLoading(false);
+      return;
+    }
+
+    // SQLite 启用但尚无数据 → 等待 SQLite 加载
+    if (sqliteEnabled && sqliteLoading) {
+      return;
+    }
+
+    // Fallback: 旧版内存队列 API
+    setLoading(true);
     try {
       const response = await usageApi.getUsage();
-      // API 返回的数据可能在 response.usage 或直接在 response 中
       const data = response?.usage ?? response;
       setUsageData(data as UsageData);
     } catch (err) {
@@ -250,15 +275,31 @@ export function MonitorPage() {
     } finally {
       setLoading(false);
     }
-  }, [t, loadProviderMap]);
+  }, [t, loadProviderMap, sqliteEnabled, sqliteRecords, sqliteLoading]);
 
-  // 初始加载
+  // SQLite 数据变化时自动更新 usageData
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (sqliteEnabled && sqliteRecords.length > 0) {
+      setUsageData(sqliteRecordsToUsageData(sqliteRecords));
+      setLoading(false);
+    }
+  }, [sqliteEnabled, sqliteRecords]);
 
-  // 响应头部刷新
-  useHeaderRefresh(loadData);
+  // 初始加载：SQLite 优先
+  useEffect(() => {
+    if (!sqliteLoading) {
+      loadData();
+    }
+  }, [sqliteLoading]);
+
+  // 响应头部刷新：SQLite 模式用 refreshSqlite，旧模式用 loadData
+  useHeaderRefresh(() => {
+    if (sqliteEnabled) {
+      refreshSqlite();
+    } else {
+      loadData();
+    }
+  });
 
   // 根据时间范围过滤数据
   const apiFilteredData = useMemo(() => {
@@ -276,12 +317,22 @@ export function MonitorPage() {
 
   // 处理 API 过滤应用（触发数据刷新）
   const handleApiFilterApply = () => {
-    loadData();
+    if (sqliteEnabled) {
+      refreshSqlite();
+    } else {
+      loadData();
+    }
   };
+
+  // 合并错误（SQLite 或旧 API）
+  const displayError = sqliteError || error;
+
+  // 合并加载状态
+  const isLoading = sqliteEnabled ? (sqliteLoading && sqliteRecords.length === 0) : loading;
 
   return (
     <div className={styles.container}>
-      {loading && !usageData && (
+      {isLoading && !usageData && (
         <div className={styles.loadingOverlay} aria-busy="true">
           <div className={styles.loadingOverlayContent}>
             <LoadingSpinner size={28} className={styles.loadingOverlaySpinner} />
@@ -297,16 +348,16 @@ export function MonitorPage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={loadData}
-            disabled={loading}
+            onClick={() => { if (sqliteEnabled) { refreshSqlite(); } else { loadData(); } }}
+            disabled={isLoading}
           >
-            {loading ? t('common.loading') : t('common.refresh')}
+            {isLoading ? t('common.loading') : t('common.refresh')}
           </Button>
         </div>
       </div>
 
       {/* 错误提示 */}
-      {error && <div className={styles.errorBox}>{error}</div>}
+      {displayError && <div className={styles.errorBox}>{displayError}</div>}
 
       {/* 时间范围和 API 过滤 */}
       <div className={styles.filters}>
@@ -340,28 +391,28 @@ export function MonitorPage() {
       </div>
 
       {/* KPI 卡片 */}
-      <KpiCards data={filteredData} loading={loading} timeRange={timeRange} />
+      <KpiCards data={filteredData} loading={isLoading} timeRange={timeRange} />
 
       {/* 图表区域 */}
       <div className={styles.chartsGrid}>
-        <ModelDistributionChart data={filteredData} loading={loading} isDark={isDark} timeRange={timeRange} />
-        <DailyTrendChart data={filteredData} loading={loading} isDark={isDark} timeRange={timeRange} />
+        <ModelDistributionChart data={filteredData} loading={isLoading} isDark={isDark} timeRange={timeRange} />
+        <DailyTrendChart data={filteredData} loading={isLoading} isDark={isDark} timeRange={timeRange} />
       </div>
 
       {/* 小时级图表 */}
-      <HourlyModelChart data={apiFilteredData} loading={loading} isDark={isDark} />
-      <HourlyTokenChart data={apiFilteredData} loading={loading} isDark={isDark} />
+      <HourlyModelChart data={apiFilteredData} loading={isLoading} isDark={isDark} />
+      <HourlyTokenChart data={apiFilteredData} loading={isLoading} isDark={isDark} />
 
       {/* 统计表格 */}
       <div className={styles.statsGrid}>
-        <ChannelStats data={filteredData} loading={loading} providerMap={providerMap} providerModels={providerModels} sourceInfoMap={sourceInfoMap} authFileMap={authFileMap} />
-        <FailureAnalysis data={filteredData} loading={loading} providerMap={providerMap} providerModels={providerModels} sourceInfoMap={sourceInfoMap} authFileMap={authFileMap} />
+        <ChannelStats data={filteredData} loading={isLoading} providerMap={providerMap} providerModels={providerModels} sourceInfoMap={sourceInfoMap} authFileMap={authFileMap} />
+        <FailureAnalysis data={filteredData} loading={isLoading} providerMap={providerMap} providerModels={providerModels} sourceInfoMap={sourceInfoMap} authFileMap={authFileMap} />
       </div>
 
       {/* 请求日志 */}
       <RequestLogs
         data={filteredData}
-        loading={loading}
+        loading={isLoading}
         providerMap={providerMap}
         providerTypeMap={providerTypeMap}
         sourceInfoMap={sourceInfoMap}

@@ -8,6 +8,7 @@ export * from './providers';
 export * from './authFiles';
 export * from './oauth';
 export * from './usage';
+export * from './usageSqlite';
 export * from './logs';
 export * from './version';
 export * from './models';
