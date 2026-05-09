@@ -58,9 +58,7 @@ ensure_remote() {
     log_ok "已添加 remote $name → $url"
   fi
 }
-ensure_remote "origin"   "https://github.com/calonye/Cli-Proxy-API-Management-Center-fork.git"
-ensure_remote "upstream" "https://github.com/kongkongyo/Cli-Proxy-API-Management-Center.git"
-ensure_remote "source"   "https://github.com/router-for-me/Cli-Proxy-API-Management-Center.git"
+ensure_remote "origin" "https://github.com/calonye/Cli-Proxy-API-Management-Center-fork.git"
 
 log_step "建立 dev 分支（若不存在）"
 if git show-ref --verify --quiet "refs/heads/dev"; then
@@ -179,10 +177,9 @@ cat <<'HELP'
 
 可用命令：
   bun run doctor       # 诊断环境
-  bun run sync         # 同步 upstream/source
   bun run feature <t>  # 新功能分支
   bun run commit       # 交互式双语提交
   bun run promote      # dev → main 预检合并
-  bun run release [v]  # 打 fork tag
+  bun run release [v]  # 打 tag 发布
 
 HELP

@@ -35,8 +35,6 @@ checkw "command -v gh"              "gh 已安装（可选）"       "brew insta
 log_step "Git 配置"
 check "git rev-parse --git-dir"     "在 git 仓库内"
 check "git remote get-url origin"   "remote origin 存在"       "bun run setup"
-check "git remote get-url upstream" "remote upstream 存在"     "bun run setup"
-check "git remote get-url source"   "remote source 存在"       "bun run setup"
 check "git show-ref --verify --quiet refs/heads/dev" "本地 dev 分支存在" "bun run setup"
 
 log_step "Git 钩子"
@@ -52,7 +50,7 @@ done
 checkw "! git check-ignore -q AGENTS.md" "AGENTS.md 入库（未被忽略）" "从 .gitignore 移除 AGENTS.md"
 
 log_step "入库文件"
-for p in AGENTS.md scripts/setup.sh scripts/lib/common.sh scripts/git/sync.sh; do
+for p in AGENTS.md scripts/setup.sh scripts/lib/common.sh; do
   check "[[ -f '$REPO_ROOT/$p' ]]" "$p 存在"
 done
 

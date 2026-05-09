@@ -34,13 +34,9 @@ mkdir -p "$LOG_DIR"
 # 远端与分支常量 / Remotes & Branches
 # -------------------------------------------------------------
 REMOTE_ORIGIN="origin"
-REMOTE_UPSTREAM="upstream"
-REMOTE_SOURCE="source"
 BRANCH_MAIN="main"
 BRANCH_DEV="dev"
 ORIGIN_URL="https://github.com/calonye/Cli-Proxy-API-Management-Center-fork.git"
-UPSTREAM_URL="https://github.com/kongkongyo/Cli-Proxy-API-Management-Center.git"
-SOURCE_URL="https://github.com/router-for-me/Cli-Proxy-API-Management-Center.git"
 
 # -------------------------------------------------------------
 # 工作区检查 / Working tree checks
@@ -92,29 +88,6 @@ confirm_strong() {
   local ans
   read -r -p "$(printf "%b!!%b %s （请输入大写 YES 以确认 / type YES to confirm）: " "$C_RED" "$C_RST" "$prompt")" ans
   [[ "$ans" == "YES" ]]
-}
-
-# -------------------------------------------------------------
-# Remote 检查与建立 / Remote ensure
-# -------------------------------------------------------------
-ensure_remote() {
-  local name="$1"; local url="$2"
-  if git remote get-url "$name" >/dev/null 2>&1; then
-    local cur; cur=$(git remote get-url "$name")
-    if [[ "$cur" != "$url" ]]; then
-      log_warn "Remote $name URL 不匹配：$cur，期望：$url"
-      confirm "是否重置 remote $name 为 $url" && git remote set-url "$name" "$url"
-    fi
-  else
-    git remote add "$name" "$url"
-    log_ok "已添加 remote $name → $url"
-  fi
-}
-
-ensure_remotes() {
-  ensure_remote "$REMOTE_ORIGIN"   "$ORIGIN_URL"
-  ensure_remote "$REMOTE_UPSTREAM" "$UPSTREAM_URL"
-  ensure_remote "$REMOTE_SOURCE"   "$SOURCE_URL"
 }
 
 # -------------------------------------------------------------

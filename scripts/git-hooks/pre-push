@@ -1,16 +1,9 @@
 #!/usr/bin/env bash
-# pre-push: 阻止向 upstream/source 推送；向 origin/main push 需 YES 确认
+# pre-push: 向 origin/main push 需 YES 确认
 # AI/CI 非交互确认：ALLOW_MAIN_PUSH=YES git push origin main
 set -euo pipefail
 
 REMOTE="$1"
-
-# 禁止 push 到 upstream 或 source
-if [[ "$REMOTE" == "upstream" || "$REMOTE" == "source" ]]; then
-  echo "❌ 禁止直接 push 到 $REMOTE。"
-  echo "   如需向上游贡献，请使用 gh pr create --repo <upstream-repo>。"
-  exit 1
-fi
 
 # 读取 stdin 获取 push 信息
 while read -r local_ref local_sha remote_ref remote_sha; do

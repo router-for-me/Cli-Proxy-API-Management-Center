@@ -38,17 +38,14 @@ git --no-pager log --oneline --decorate \
 cat >&2 <<'EOF'
 
 ------------------------------------------------------------
-[AI PR 判断提示 / AI PR Decision Prompt]
-请你（或负责本次合并的 AI）对上述改动输出：
-1. 逐条判断是通用修复（建议向 upstream 提 PR）/ fork 私有（不提 PR）。
-2. 给出理由与目标 repo（kongkongyo or router-for-me）。
-3. 等用户 Y/N 确认后再 push / gh pr create。
+[AI 判断提示 / AI Decision Prompt]
+请对上述改动输出改动清单 + 逐条判断，等用户 Y/N 确认后再 push。
 不得擅自 push 或 gh pr create。
 ------------------------------------------------------------
 EOF
 
 if [[ "$ARG_YES" != true ]]; then
-  confirm "已完成 PR 判断并获得用户确认？" n || { log_warn "请先让 AI 输出判断再重跑本脚本"; exit 1; }
+  confirm "已完成改动审查并获得用户确认？" n || { log_warn "请先让 AI 输出判断再重跑本脚本"; exit 1; }
 fi
 
 log_step "合并 dev → main"
@@ -69,5 +66,5 @@ fi
 
 echo "
 接下来可选：
-  bun run release            # 打 fork tag 并推送触发 CI release
+  bun run release            # 打 tag 并推送触发 CI release
 "

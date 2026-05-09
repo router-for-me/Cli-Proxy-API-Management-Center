@@ -1,6 +1,6 @@
-# CLI Proxy API Management Center — Calonye Fork (CPAMC)
+# CPA Dashboard - kelen
 
-> A secondary fork of a community WebUI (`kongkongyo/Cli-Proxy-API-Management-Center`), maintained by `calonye` for personal development.
+> A Web management dashboard for CLI Proxy API with usage visualization, request monitoring, multi-dimensional tracking and configuration management.
 
 **[English](README_EN.md) | [中文](README.md)**
 
@@ -8,34 +8,22 @@
 
 ## About This Project
 
-This repository is a **fork of a fork**. The hierarchy is:
+CPA Dashboard is a Web management interface for CLI Proxy API, providing comprehensive data visualization, request monitoring, and configuration management.
 
-| Tier | Repository | Role |
-| --- | --- | --- |
-| This repo | [`calonye/Cli-Proxy-API-Management-Center-fork`](https://github.com/calonye/Cli-Proxy-API-Management-Center-fork) | My dev fork (`origin`) |
-| Upstream | [`kongkongyo/Cli-Proxy-API-Management-Center`](https://github.com/kongkongyo/Cli-Proxy-API-Management-Center) | The repo I forked from |
-| Source | [`router-for-me/Cli-Proxy-API-Management-Center`](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) | Official WebUI source |
-| Backend | [`router-for-me/CLIProxyAPI`](https://github.com/router-for-me/CLIProxyAPI) | Backend daemon (not in this repo) |
-
-### Tertiary Fork Acknowledgement
-
-This is a **tertiary fork** (fork of a fork of a fork). We gratefully acknowledge the original work by `router-for-me` and the secondary fork by `kongkongyo`. This repository strictly follows the MIT license from upstream and source. Original author attributions and LICENSE remain unchanged.
+This project was originally forked from [kongkongyo/Cli-Proxy-API-Management-Center](https://github.com/kongkongyo/Cli-Proxy-API-Management-Center), which in turn was forked from the official [router-for-me/Cli-Proxy-API-Management-Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center). It has now been detached from upstream and evolves as an independent repository.
+We gratefully acknowledge the open-source contributions of `router-for-me` and `kongkongyo` (MIT License).
 
 ### Dev Rules
 
-- [`AGENTS.md`](./AGENTS.md) — Project-level AI collaboration rules (identity / branches / commits / tooling / PR decisions)
+- [`AGENTS.md`](./AGENTS.md) — Project-level AI collaboration rules (identity / branches / commits / tooling)
 - [`scripts/`](./scripts/) — Automation scripts and Git hooks
 - After cloning, run `bun run setup` to install Git hooks and generate personal configuration
-
-### Differences from Upstream / Source
-
-This fork inherits upstream's enhancements (notably the **Monitoring Center** added on top of the official WebUI) and will be periodically synced from `upstream` / `source`. New features developed here may be submitted back to upstream/source as PRs on a case-by-case basis.
 
 ### Interface Preview
 
 Management interface display
 
-![Dashboard Preview](dashboard-preview.png)
+![Dashboard Preview](assets/dashboard-preview.png)
 
 ---
 
@@ -315,8 +303,11 @@ All other features remain consistent with the official version
 
 - **Official backend**: https://github.com/router-for-me/CLIProxyAPI
 - **Source WebUI (official)**: https://github.com/router-for-me/Cli-Proxy-API-Management-Center
-- **Upstream WebUI fork**: https://github.com/kongkongyo/Cli-Proxy-API-Management-Center
-- **This fork**: https://github.com/calonye/Cli-Proxy-API-Management-Center-fork
+- **This repo**: https://github.com/calonye/Cli-Proxy-API-Management-Center-fork
+
+## Credits
+
+Based on the Web management UI of [router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), inheriting the Monitoring Center enhancements from [kongkongyo](https://github.com/kongkongyo/Cli-Proxy-API-Management-Center). Thanks for their open-source contributions (MIT License).
 
 ## License
 

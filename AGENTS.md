@@ -14,15 +14,14 @@
 git clone https://github.com/calonye/Cli-Proxy-API-Management-Center-fork.git
 cd Cli-Proxy-API-Management-Center-fork
 bun install
-bun run setup              # 装 remote、hooks、个人化配置（AI 可用 -- --yes）
+bun run setup              # 装 hooks、个人化配置（AI 可用 -- --yes）
 
 # 日常研发循环（每次开工必走）
-bun run sync               # ❶ 拉取上游最新（选择性合并或仅 fetch）
-bun run feature <topic>    # ❷ 从 dev 切功能分支
+bun run feature <topic>    # ❶ 从 dev 切功能分支
 # ... 编码 ...
-bun run commit             # ❸ 交互式双语提交（可反复）
-bun run promote            # ❹ 预检 → 合回 dev → 可选合入 main
-bun run release            # ❺ 打 fork tag 触发 CI（仅在 main 上）
+bun run commit             # ❷ 交互式双语提交（可反复）
+bun run promote            # ❸ 预检 → 合回 dev → 可选合入 main
+bun run release            # ❹ 打 tag 触发 CI（仅在 main 上）
 
 # 诊断与调试
 bun run doctor             # 环境诊断
@@ -38,7 +37,7 @@ bun run lint               # ESLint
 
 ```bash
 bun run flow                         # 打开交互菜单
-bun run start -- my-topic            # 开工：doctor → sync → feature
+bun run start -- my-topic            # 开工：doctor → feature
 bun run check                        # 检查：type-check → lint → build
 bun run save -- --type=feat --scope=x --zh="中文" --en="english"
 bun run ship                         # 合主线：promote → push main → 回 dev
@@ -68,7 +67,7 @@ bun run ship                         # 合主线：promote → push main → 回
 
 - **优先使用 `bun` > `pnpm`，不使用 `npm`**。
 - 若发现任何 `npm` 命令（代码/脚本/CI），反馈替换可行性建议与 Plan，经确认后迁移。
-- 本仓用 `bun.lock` 取代 `package-lock.json`；若 merge upstream 带入 `package-lock.json`，合并后删除。
+- 本仓用 `bun.lock` 取代 `package-lock.json`。
 
 ### 命令行工具
 
@@ -110,28 +109,21 @@ bun run ship                         # 合主线：promote → push main → 回
 
 ## §4 仓库身份与分支规则 / Identity & Branches
 
-### 三创声明
+### 仓库身份
 
-本仓库是**第三层 fork（三创）**。感谢源头作者 `router-for-me` 与上游作者 `kongkongyo` 的开源贡献。本仓库严格遵循原作者的开源协议（MIT），任何修改不改变原作者署名与 LICENSE 文件。
+本仓库是独立演进的 Web 管理面板，最初 fork 自 [kongkongyo/Cli-Proxy-API-Management-Center](https://github.com/kongkongyo/Cli-Proxy-API-Management-Center)（后者又 fork 自官方 [router-for-me/Cli-Proxy-API-Management-Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center)）。 现已剥离上游关系，作为独立仓库维护。
 
 ### Remote 拓扑
 
 | 远端 | URL | 用途 |
 | --- | --- | --- |
 | `origin` | `https://github.com/calonye/Cli-Proxy-API-Management-Center-fork.git` | 本仓 pull/push |
-| `upstream` | `https://github.com/kongkongyo/Cli-Proxy-API-Management-Center.git` | 上游仅 fetch |
-| `source` | `https://github.com/router-for-me/Cli-Proxy-API-Management-Center.git` | 源头仅 fetch |
 
 ### 分支规则
 
 - `main`：**稳定主干**，只接收通过调试的合并；**禁止**直接 commit。
 - `dev`：**日常研发分支**，允许失败/实验；所有开发从此分支切出。
 - `feature/<topic>` / `fix/<topic>` / `refactor/<topic>`：从 `dev` 切出，merge 回 `dev`。
-
-### 链接规则
-
-- 文档/代码/界面中所有指向「本项目」的链接**必须**用 `https://github.com/calonye/Cli-Proxy-API-Management-Center-fork`。
-- 引用上游/源头时必须在上下文中明确标注「上游」或「源头/官方」。
 
 ---
 
@@ -140,15 +132,14 @@ bun run ship                         # 合主线：promote → push main → 回
 ### 日常研发流程（新人 / AI 必读）
 
 ```
-sync → feature → [编码 + commit]* → promote → (可选) release
- ❶        ❷           ❸                ❹              ❺
+feature → [编码 + commit]* → promote → (可选) release
+   ❶             ❷              ❸            ❹
 ```
 
-- **❶ sync**：每次开工前必做。拉取 upstream/source 最新，选择性合并到 main，再合回 dev。
-- **❷ feature**：只能从 dev 切分支（`feature/<topic>` / `fix/<topic>`），禁止从 main 切。
-- **❸ commit**：可反复提交。每次用双语 Conventional Commits 格式。
-- **❹ promote**：自动预检（type-check / lint / build）→ 合回 dev → AI 输出 PR 判断 → 可选合入 main。
-- **❺ release**：仅在 main 上打 `v*-fork.N` tag，触发 CI 构建发布。
+- **❶ feature**：只能从 dev 切分支（`feature/<topic>` / `fix/<topic>`），禁止从 main 切。
+- **❷ commit**：可反复提交。每次用双语 Conventional Commits 格式。
+- **❸ promote**：自动预检（type-check / lint / build）→ 合回 dev → 可选合入 main。
+- **❹ release**：仅在 main 上打 tag，触发 CI 构建发布。
 - 所有脚本支持 `--yes` 等参数跳过交互确认（适配 AI 工具调用）。
 
 ### 命令速查
@@ -159,13 +150,12 @@ sync → feature → [编码 + commit]* → promote → (可选) release
 | --- | --- | --- |
 | `bun run setup` | 首次初始化：建 remote、装 git 钩子、生成个人化配置、校验 bun 版本 | 幂等；支持 `-- --yes` |
 | `bun run doctor` | 只读诊断：remote/钩子/版本/工作区状态 | 纯只读 |
-| `bun run sync` | 同步 upstream/source → main → dev | 脏工作区中止；冲突停 |
 | `bun run feature <topic>` | 从最新 dev 切 `feature/<topic>` | 禁止从 main 切 |
 | `bun run commit` | 交互式 Conventional Commits（中英双语） | 禁止 main 直 commit |
-| `bun run promote` | dev → main 预检 + PR 判断 + 双重确认 | typecheck/lint/build 失败中止 |
-| `bun run release [ver]` | 打 `v*-fork.N` tag 并可选 push | 仅 main |
+| `bun run promote` | dev → main 预检 + 双重确认 | typecheck/lint/build 失败中止 |
+| `bun run release [ver]` | 打 tag 并可选 push | 仅 main |
 | `bun run flow` | 打开流程菜单 | 适合不想记命令时 |
-| `bun run start -- <topic>` | 诊断 → 同步 upstream → 从 dev 切功能分支 | 一键开工 |
+| `bun run start -- <topic>` | 诊断 → 从 dev 切功能分支 | 一键开工 |
 | `bun run check` | type-check → lint（既有问题警告）→ build | 一键检查 |
 | `bun run save -- <args>` | 转发到双语 commit，并自动 `--yes` | 一键提交 |
 | `bun run ship` | promote → 非交互 push main → 回 dev | 敏感操作，需确认本意是合主线 |
@@ -180,11 +170,11 @@ sync → feature → [编码 + commit]* → promote → (可选) release
 
 - `pre-commit`：禁止在 `main` 分支直接 commit；运行 `bun run type-check`。
 - `commit-msg`：校验 `<type>(<scope>): <中文> [en: <english>]`；feat/fix/refactor/perf/build/ci 必须双语。
-- `pre-push`：阻止向 `upstream`/`source` 推送；向 `origin/main` 推送时要求输入 `YES` 确认。AI/CI 非交互环境可在预检通过后使用 `ALLOW_MAIN_PUSH=YES git push origin main`。
+- `pre-push`：向 `origin/main` 推送时要求输入 `YES` 确认。AI/CI 非交互环境可在预检通过后使用 `ALLOW_MAIN_PUSH=YES git push origin main`。
 
 ---
 
-## §6 提交、同步、PR 判断 / Commits / Sync / PR
+## §6 提交与发布 / Commits & Release
 
 ### Conventional Commits（双语）
 
@@ -194,24 +184,10 @@ sync → feature → [编码 + commit]* → promote → (可选) release
 
 feat/fix/refactor/perf/build/ci/test/revert/merge **必须双语**；docs/chore/style 可仅中文。
 
-### 上游同步策略
+### 发布规则
 
-1. `bun run sync` 自动 fetch upstream + source + tags。
-2. 优先从 `upstream/main` 合并；若上游长期落后于 `source`，可从 `source/main` 合并。
-3. 解决冲突后在 `main` 打 tag `v<upstream_version>-fork.<n>`。
-4. `main` 变化后自动合回 `dev`。
-
-### PR 判断规则（AI 必须主动思考）
-
-当改动从 `dev` 合入 `main` 时，AI 必须输出改动清单 + 逐条 PR 判断：
-
-| 改动类型 | 是否回馈上游？ |
-| --- | --- |
-| 通用 bug 修复 / 性能优化 / 通用新功能 | 建议向 `upstream` 提 PR |
-| fork 私有（链接/身份/个人化工作流/CI） | 不提 PR |
-| 依赖升级 | 视情况 |
-
-**AI 禁止擅自** `git push` 或 `gh pr create`；必须先输出判断并等 Y/N 确认。
+- 在 `main` 上运行 `bun run release` 打 semver tag 并触发 CI 发布。
+- **AI 禁止擅自** `git push` 或 `gh pr create`；必须先等用户 Y/N 确认。
 
 ---
 

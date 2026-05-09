@@ -9,7 +9,7 @@ usage() {
   cat <<'EOF'
 用法 / usage:
   bun run flow                 # 打开交互菜单
-  bun run start -- <topic>     # 开工：doctor → sync upstream → feature/<topic>
+  bun run start -- <topic>     # 开工：doctor → feature/<topic>
   bun run check                # 检查：type-check → lint(警告) → build
   bun run save -- <commit args># 提交：转发给 commit.sh，并自动 --yes
   bun run ship                 # 合主线：promote → push main → checkout dev
@@ -25,9 +25,8 @@ run_start() {
   local topic="${1:-}"
   [[ -n "$topic" ]] || die "缺少 topic。示例：bun run start -- fix-login"
 
-  log_step "开工：诊断 → 同步 → 切分支"
+  log_step "开工：诊断 → 切分支"
   "$SCRIPT_DIR/doctor.sh"
-  "$SCRIPT_DIR/sync.sh" --source=upstream --yes
   "$SCRIPT_DIR/feature.sh" "$topic"
 }
 
@@ -57,7 +56,7 @@ run_menu() {
   cat <<'EOF'
 
 你想做什么？
-  1) 开工：doctor → sync → feature
+  1) 开工：doctor → feature
   2) 检查：type-check → lint → build
   3) 提交：双语 commit
   4) 合主线：promote → push main → 回 dev

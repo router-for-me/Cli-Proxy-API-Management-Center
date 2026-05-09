@@ -1,7 +1,7 @@
 {
   "name": "cli-proxy-webui-react",
   "private": true,
-  "version": "1.7.36-fork.1",
+  "version": "1.7.36",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,9 +10,6 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\"",
     "type-check": "tsc --noEmit",
-    "sync": "bash scripts/git/sync.sh",
-    "sync:upstream": "git fetch upstream && git fetch --tags upstream",
-    "sync:source": "git fetch source && git fetch --tags source",
     "feature": "bash scripts/git/feature.sh",
     "commit": "bash scripts/git/commit.sh",
     "promote": "bash scripts/git/promote.sh",
