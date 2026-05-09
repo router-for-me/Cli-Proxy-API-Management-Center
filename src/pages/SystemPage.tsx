@@ -415,7 +415,7 @@ export function SystemPage() {
             </a>
 
             <a
-              href="https://github.com/calonye/Cli-Proxy-API-Management-Center-fork"
+              href="https://github.com/calonye/CPA-Dashboard-kelen"
               target="_blank"
               rel="noopener noreferrer"
               className={styles.linkCard}

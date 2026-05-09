@@ -3,10 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      # 仅匹配本 fork 的发布 tag 形如 v<upstream>-fork.<n>，避免同步 upstream tag 时误触发。
-      # Only match this fork's release tags like v<upstream>-fork.<n>,
-      # so syncing upstream tags does not accidentally trigger releases.
-      - 'v*-fork.*'
+      - 'v*'
 
 jobs:
   build-and-release:

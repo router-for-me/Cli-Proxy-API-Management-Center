@@ -5,10 +5,9 @@
 import axios from 'axios';
 import { normalizeModelList } from '@/utils/models';
 import { normalizeApiBase } from '@/utils/connection';
+import { ANTHROPIC_API_BASE, GEMINI_API_BASE, TIMEOUT_DEFAULT } from '@/utils/constants';
 import { apiCallApi, getApiCallErrorMessage } from './apiCall';
 
-const DEFAULT_CLAUDE_BASE_URL = 'https://api.anthropic.com';
-const DEFAULT_GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com';
 const DEFAULT_ANTHROPIC_VERSION = '2023-06-01';
 const CLAUDE_MODELS_IN_FLIGHT = new Map<string, Promise<ReturnType<typeof normalizeModelList>>>();
 const GEMINI_MODELS_IN_FLIGHT = new Map<string, Promise<ReturnType<typeof normalizeModelList>>>();
@@ -43,7 +42,7 @@ const buildV1ModelsEndpoint = (baseUrl: string): string => {
 
 const buildClaudeModelsEndpoint = (baseUrl: string): string => {
   const normalized = normalizeApiBase(baseUrl);
-  const fallback = normalized || DEFAULT_CLAUDE_BASE_URL;
+  const fallback = normalized || ANTHROPIC_API_BASE;
   let trimmed = fallback.replace(/\/+$/g, '');
   trimmed = trimmed.replace(/\/v1\/models$/i, '');
   trimmed = trimmed.replace(/\/v1(?:\/.*)?$/i, '');
@@ -52,7 +51,7 @@ const buildClaudeModelsEndpoint = (baseUrl: string): string => {
 
 const buildGeminiModelsEndpoint = (baseUrl: string): string => {
   const normalized = normalizeApiBase(baseUrl);
-  const fallback = normalized || DEFAULT_GEMINI_BASE_URL;
+  const fallback = normalized || GEMINI_API_BASE;
   let trimmed = fallback.replace(/\/+$/g, '');
   trimmed = trimmed.replace(/\/v1beta\/models$/i, '');
   trimmed = trimmed.replace(/\/v1beta(?:\/.*)?$/i, '');
@@ -95,7 +94,8 @@ export const modelsApi = {
     }
 
     const response = await axios.get(endpoint, {
-      headers: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+      headers: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
+      timeout: TIMEOUT_DEFAULT,
     });
     const payload = response.data?.data ?? response.data?.models ?? response.data;
     return normalizeModelList(payload, { dedupe: true });

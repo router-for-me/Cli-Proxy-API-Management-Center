@@ -1,5 +1,6 @@
 import type { AmpcodeConfig, AmpcodeModelMapping, AmpcodeUpstreamApiKeyMapping, ApiKeyEntry } from '@/types';
 import { buildCandidateUsageSourceIds, type KeyStatBucket, type KeyStats } from '@/utils/usage';
+import { ANTHROPIC_API_BASE } from '@/utils/constants';
 import type { AmpcodeFormState, AmpcodeUpstreamApiKeyEntry, ModelEntry } from './types';
 
 export const DISABLE_ALL_MODELS_RULE = '*';
@@ -48,7 +49,7 @@ export const normalizeOpenAIBaseUrl = (baseUrl: string): string => {
 export const normalizeClaudeBaseUrl = (baseUrl: string): string => {
   let trimmed = String(baseUrl || '').trim();
   if (!trimmed) {
-    return 'https://api.anthropic.com';
+    return ANTHROPIC_API_BASE;
   }
   trimmed = trimmed.replace(/\/?v0\/management\/?$/i, '');
   trimmed = trimmed.replace(/\/+$/g, '');

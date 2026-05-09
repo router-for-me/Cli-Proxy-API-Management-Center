@@ -76,5 +76,20 @@ export const API_ENDPOINTS = {
   AUTH_FILES: '/auth-files',
   OAUTH: '/oauth',
   USAGE: '/usage',
+  USAGE_SQLITE: '/usage-sqlite',
   LOGS: '/logs'
 } as const;
+
+// 超时时间分级（毫秒）
+export const TIMEOUT_DEFAULT = 30_000;
+export const TIMEOUT_HEAVY = 60_000;
+
+// SQLite 使用量查询默认值
+export const SQLITE_USAGE_DEFAULT_SINCE = '720h';   // 30 天
+export const SQLITE_USAGE_DEFAULT_LIMIT = 100;
+export const SQLITE_USAGE_MAX_LIMIT = 10_000;
+export const SQLITE_USAGE_REFRESH_MS = 30_000;
+
+// 外部 API 基地址
+export const ANTHROPIC_API_BASE = 'https://api.anthropic.com';
+export const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com';
