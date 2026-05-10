@@ -43,7 +43,7 @@ for h in pre-commit commit-msg pre-push; do
 done
 
 log_step ".gitignore 私有目录"
-for p in .ai-local/ CLAUDE.md .factory/ .cursor/ dist/ node_modules/; do
+for p in Project/ CLAUDE.md .factory/ .cursor/ dist/ node_modules/; do
   check "git check-ignore -q '$p'" "$p 已忽略"
 done
 # AGENTS.md 应该入库（NOT ignored）
@@ -54,8 +54,8 @@ for p in AGENTS.md scripts/setup.sh scripts/lib/common.sh; do
   check "[[ -f '$REPO_ROOT/$p' ]]" "$p 存在"
 done
 
-log_step ".ai-local 个人层"
-checkw "[[ -f '$AI_LOCAL_DIR/private-rules.md' ]]" ".ai-local/private-rules.md 存在" "bun run setup"
+log_step "Project 个人层"
+checkw "[[ -f '$AI_LOCAL_DIR/private-rules.md' ]]" "Project/private-rules.md 存在" "bun run setup"
 
 log_step "工作区状态"
 if [[ -z "$(git status --porcelain)" ]]; then

@@ -15,8 +15,8 @@ style.md
 
 # === Calonye fork 私有层 / Private overlay ===
 # 入库的: AGENTS.md（项目规范）+ scripts/（自动化脚本与 hooks）
-# 不入库的: .ai-local/（个人偏好/记忆）+ AI 工具入口生成物 + 设计文档
-.ai-local/
+# 不入库的: Project/（个人偏好/记忆）+ AI 工具入口生成物 + 设计文档
+Project/
 CLAUDE.md
 CONTRIBUTING.md
 docs/

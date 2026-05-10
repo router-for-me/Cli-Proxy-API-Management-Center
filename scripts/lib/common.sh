@@ -26,7 +26,7 @@ die() { log_err "$*"; exit 1; }
 # 仓库路径检测 / Repo root detection
 # -------------------------------------------------------------
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || die "当前目录不是 git 仓库 / not a git repo"
-AI_LOCAL_DIR="$REPO_ROOT/.ai-local"
+AI_LOCAL_DIR="$REPO_ROOT/Project"
 LOG_DIR="$AI_LOCAL_DIR/logs"
 mkdir -p "$LOG_DIR"
 

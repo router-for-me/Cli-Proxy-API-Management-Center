@@ -16,9 +16,9 @@ for arg in "$@"; do
       cat <<EOF
 bun run setup [--mode=ref|inject|stealth] [--yes]
 
-  ref     (默认) 生成 AI 入口文件，内容为 @import 引用 AGENTS.md + .ai-local/private-rules.md
-  inject  将 AGENTS.md + private-rules.md 全文注入到各 AI 入口（冗余但无 import 依赖）
-  stealth 不生成 AI 入口文件，仅初始化 .ai-local/
+  ref     (默认) 生成 AI 入口文件，内容为 @import 引用 AGENTS.md
+  inject  将 AGENTS.md 全文注入到各 AI 入口（冗余但无 import 依赖）
+  stealth 不生成 AI 入口文件，仅初始化 Project/
   --yes   非交互模式；当前脚本幂等执行，仅用于 AI 调用语义统一
 EOF
       exit 0
@@ -82,11 +82,11 @@ for h in pre-commit commit-msg pre-push; do
   fi
 done
 
-log_step "初始化 .ai-local/ 个人层"
-AI_LOCAL="$REPO_ROOT/.ai-local"
+log_step "初始化 Project/ 个人层"
+AI_LOCAL="$REPO_ROOT/Project"
 mkdir -p "$AI_LOCAL/memory" "$AI_LOCAL/logs" "$AI_LOCAL/templates"
 if [[ -f "$AI_LOCAL/private-rules.md" ]]; then
-  log_ok ".ai-local/private-rules.md 已存在（保留现有内容）"
+  log_ok "Project/private-rules.md 已存在（保留现有内容）"
 else
   cat > "$AI_LOCAL/private-rules.md" <<'PRIV'
 # 个人化规则叠加层 / Private Rules Overlay
@@ -101,11 +101,11 @@ else
 
 ## §0 人格与会话元规则（请自行填写）
 
-## §7 项目记忆（.ai-local/memory/*.md）
+## §7 项目记忆（Project/memory/*.md）
 
 ## §8 外部规范引用（本机绝对路径）
 PRIV
-  log_ok "已生成 .ai-local/private-rules.md 模板"
+  log_ok "已生成 Project/private-rules.md 模板"
 fi
 
 log_step "生成 AI 入口文件（mode=${MODE}）"
@@ -114,10 +114,9 @@ generate_ref() {
   mkdir -p "$(dirname "$path")"
   cat > "$path" <<EOF
 # ${title}
-# 本文件由 bun run setup 自动生成，不入库。修改请编辑 AGENTS.md（入库）或 .ai-local/private-rules.md（私有）。
+# 本文件由 bun run setup 自动生成，不入库。修改请编辑 AGENTS.md（入库）。
 
 @./AGENTS.md
-@./.ai-local/private-rules.md
 EOF
   log_ok "生成 $path (ref mode)"
 }
@@ -132,10 +131,6 @@ generate_inject() {
     echo "# === 项目级规范（来自 AGENTS.md）==="
     echo ""
     cat "$REPO_ROOT/AGENTS.md"
-    echo ""
-    echo "# === 个人化叠加层（来自 .ai-local/private-rules.md）==="
-    echo ""
-    cat "$AI_LOCAL/private-rules.md" 2>/dev/null || echo "# (private-rules.md 不存在)"
   } > "$path"
   log_ok "注入 $path (inject mode)"
 }
@@ -160,7 +155,7 @@ case "$MODE" in
 esac
 
 log_step "检查 .gitignore 覆盖范围"
-for p in .ai-local/ CLAUDE.md .factory/ .cursor/; do
+for p in Project/ CLAUDE.md .factory/ .cursor/; do
   if git check-ignore -q "$p" 2>/dev/null; then
     log_ok "$p 已忽略"
   else

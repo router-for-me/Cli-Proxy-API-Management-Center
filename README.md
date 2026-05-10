@@ -1,5 +1,7 @@
 # CPA Dashboard - kelen
 
+> 版本：1.7.36 | 更新：2026-05-10
+
 > CLI Proxy API 的 Web 管理面板，提供使用量可视化、请求监控、多维度追踪与配置管理。
 > A Web management dashboard for CLI Proxy API with usage visualization, request monitoring, multi-dimensional tracking and configuration management.
 
