@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,10 +15,13 @@ import {
   collectUsageDetailsForCandidates,
   type UsageDetailsBySource,
 } from '@/utils/usageIndex';
+import { modelsApi } from '@/services/api';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
 import { ProviderStatusBar } from '../ProviderStatusBar';
 import { getStatsBySource, hasDisableAllModelsRule } from '../utils';
+
+type InspectStatus = 'idle' | 'checking' | 'success' | 'error';
 
 interface CodexSectionProps {
   configs: ProviderKeyConfig[];
@@ -48,6 +51,37 @@ export function CodexSection({
   const { t } = useTranslation();
   const actionsDisabled = disableControls || loading || isSwitching;
   const toggleDisabled = disableControls || loading || isSwitching;
+
+  const [inspectMap, setInspectMap] = useState<Map<string, { status: InspectStatus; error?: string }>>(new Map());
+
+  const handleInspect = useCallback(async (item: ProviderKeyConfig) => {
+    const key = item.apiKey;
+    setInspectMap(prev => {
+      const next = new Map(prev);
+      next.set(key, { status: 'checking' });
+      return next;
+    });
+
+    try {
+      await modelsApi.fetchV1ModelsViaApiCall(
+        item.baseUrl || '',
+        item.apiKey || undefined,
+        item.headers || {}
+      );
+      setInspectMap(prev => {
+        const next = new Map(prev);
+        next.set(key, { status: 'success' });
+        return next;
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setInspectMap(prev => {
+        const next = new Map(prev);
+        next.set(key, { status: 'error', error: message });
+        return next;
+      });
+    }
+  }, []);
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
@@ -93,14 +127,35 @@ export function CodexSection({
           onDelete={onDelete}
           actionsDisabled={actionsDisabled}
           getRowDisabled={(item) => hasDisableAllModelsRule(item.excludedModels)}
-          renderExtraActions={(item, index) => (
-            <ToggleSwitch
-              label={t('ai_providers.config_toggle_label')}
-              checked={!hasDisableAllModelsRule(item.excludedModels)}
-              disabled={toggleDisabled}
-              onChange={(value) => void onToggle(index, value)}
-            />
-          )}
+          renderExtraActions={(item, index) => {
+            const inspectState = inspectMap.get(item.apiKey);
+            const isChecking = inspectState?.status === 'checking';
+            return (
+              <Fragment>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => void handleInspect(item)}
+                  disabled={toggleDisabled || isChecking}
+                  title={inspectState?.status === 'error' ? inspectState.error : undefined}
+                >
+                  {isChecking
+                    ? t('ai_providers.codex_inspect_checking')
+                    : inspectState?.status === 'success'
+                      ? t('ai_providers.codex_inspect_success')
+                      : inspectState?.status === 'error'
+                        ? t('ai_providers.codex_inspect_failed')
+                        : t('ai_providers.codex_inspect_button')}
+                </Button>
+                <ToggleSwitch
+                  label={t('ai_providers.config_toggle_label')}
+                  checked={!hasDisableAllModelsRule(item.excludedModels)}
+                  disabled={toggleDisabled}
+                  onChange={(value) => void onToggle(index, value)}
+                />
+              </Fragment>
+            );
+          }}
           renderContent={(item) => {
             const stats = getStatsBySource(item.apiKey, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});

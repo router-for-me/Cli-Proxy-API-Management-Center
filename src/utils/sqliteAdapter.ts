@@ -45,3 +45,49 @@ export function sqliteRecordsToUsageData(records: UsageRecord[]): UsageData {
 
   return { apis };
 }
+
+export interface UsageBucket {
+  /** Unix timestamp in ms of the bucket start (floored to bucketMinutes) */
+  ts: number;
+  requestCount: number;
+  successCount: number;
+  failedCount: number;
+  totalTokens: number;
+}
+
+/**
+ * Aggregate usage records into fixed-window time buckets (like upstream's recentRequests).
+ * Each bucket spans `bucketMinutes` minutes. Returns the most recent `maxBuckets` buckets
+ * sorted by time ascending, suitable for O(1) status bar queries.
+ */
+export function bucketUsageRecords(
+  records: UsageRecord[],
+  bucketMinutes: number = 10,
+  maxBuckets: number = 20
+): UsageBucket[] {
+  const bucketMs = bucketMinutes * 60_000;
+  const bucketMap = new Map<number, UsageBucket>();
+
+  for (const r of records) {
+    const ts = new Date(r.timestamp).getTime();
+    if (Number.isNaN(ts)) continue;
+    const bucketTs = Math.floor(ts / bucketMs) * bucketMs;
+
+    let bucket = bucketMap.get(bucketTs);
+    if (!bucket) {
+      bucket = { ts: bucketTs, requestCount: 0, successCount: 0, failedCount: 0, totalTokens: 0 };
+      bucketMap.set(bucketTs, bucket);
+    }
+
+    bucket.requestCount++;
+    if (r.failed) {
+      bucket.failedCount++;
+    } else {
+      bucket.successCount++;
+    }
+    bucket.totalTokens += r.total_tokens ?? 0;
+  }
+
+  const sorted = Array.from(bucketMap.values()).sort((a, b) => a.ts - b.ts);
+  return sorted.slice(-maxBuckets);
+}

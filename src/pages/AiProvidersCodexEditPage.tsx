@@ -120,6 +120,10 @@ export function AiProvidersCodexEditPage() {
   const autoFetchSignatureRef = useRef<string>('');
   const modelDiscoveryRequestIdRef = useRef(0);
 
+  const [testConnecting, setTestConnecting] = useState(false);
+  const [testResult, setTestResult] = useState<'idle' | 'success' | 'error'>('idle');
+  const [testError, setTestError] = useState('');
+
   const hasIndexParam = typeof params.index === 'string';
   const editIndex = useMemo(() => parseIndexParam(params.index), [params.index]);
   const invalidIndexParam = hasIndexParam && editIndex === null;
@@ -344,6 +348,32 @@ export function AiProvidersCodexEditPage() {
       }
     }
   }, [form.apiKey, form.baseUrl, form.headers, t]);
+
+  const handleTestConnection = useCallback(async () => {
+    const baseUrl = (form.baseUrl ?? '').trim();
+    if (!baseUrl) return;
+    setTestConnecting(true);
+    setTestResult('idle');
+    setTestError('');
+    try {
+      const headerObject = buildHeaderObject(form.headers);
+      const hasCustomAuthorization = Object.keys(headerObject).some(
+        (key) => key.toLowerCase() === 'authorization'
+      );
+      const apiKey = form.apiKey.trim() || undefined;
+      await modelsApi.fetchV1ModelsViaApiCall(
+        baseUrl,
+        hasCustomAuthorization ? undefined : apiKey,
+        headerObject
+      );
+      setTestResult('success');
+    } catch (err: unknown) {
+      setTestResult('error');
+      setTestError(getErrorMessage(err));
+    } finally {
+      setTestConnecting(false);
+    }
+  }, [form.apiKey, form.baseUrl, form.headers]);
 
   useEffect(() => {
     if (!modelDiscoveryOpen) {
@@ -596,6 +626,27 @@ export function AiProvidersCodexEditPage() {
               onChange={(e) => setForm((prev) => ({ ...prev, proxyUrl: e.target.value }))}
               disabled={disableControls || saving}
             />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void handleTestConnection()}
+                loading={testConnecting}
+                disabled={disableControls || saving || !(form.baseUrl ?? '').trim()}
+              >
+                {t('ai_providers.codex_test_connection')}
+              </Button>
+              {testResult === 'success' && (
+                <span style={{ color: 'var(--success-color, #22c55e)', fontSize: 13 }}>
+                  {t('ai_providers.codex_inspect_success')}
+                </span>
+              )}
+              {testResult === 'error' && (
+                <span style={{ color: 'var(--danger-color, #ef4444)', fontSize: 13 }}>
+                  {t('ai_providers.codex_inspect_failed')}{testError ? `: ${testError}` : ''}
+                </span>
+              )}
+            </div>
             <HeaderInputList
               entries={form.headers}
               onChange={(entries) => setForm((prev) => ({ ...prev, headers: entries }))}
