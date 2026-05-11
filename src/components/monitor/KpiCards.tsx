@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { UsageData } from '@/pages/MonitorPage';
+import type { UsageBucket } from '@/utils/sqliteAdapter';
 import styles from '@/pages/MonitorPage.module.scss';
 
 interface KpiCardsProps {
   data: UsageData | null;
   loading: boolean;
   timeRange: number | string;
+  buckets?: UsageBucket[];
 }
 
 // 格式化数字
@@ -23,11 +25,41 @@ function formatNumber(num: number): string {
   return num.toLocaleString();
 }
 
-export function KpiCards({ data, loading, timeRange }: KpiCardsProps) {
+export function KpiCards({ data, loading, timeRange, buckets }: KpiCardsProps) {
   const { t } = useTranslation();
 
   // 计算统计数据
   const stats = useMemo(() => {
+    // O(1) 桶聚合快速路径
+    if (buckets && buckets.length > 0) {
+      let totalRequests = 0, successRequests = 0, failedRequests = 0;
+      let totalTokens = 0, inputTokens = 0, outputTokens = 0, reasoningTokens = 0, cachedTokens = 0;
+      const minTime = buckets[0].ts;
+      const maxTime = buckets[buckets.length - 1].ts + 10 * 60_000;
+
+      for (const b of buckets) {
+        totalRequests += b.requestCount;
+        successRequests += b.successCount;
+        failedRequests += b.failedCount;
+        totalTokens += b.totalTokens;
+        inputTokens += b.inputTokens;
+        outputTokens += b.outputTokens;
+        reasoningTokens += b.reasoningTokens;
+        cachedTokens += b.cachedTokens;
+      }
+
+      const successRate = totalRequests > 0 ? (successRequests / totalRequests) * 100 : 0;
+      const timeSpanMinutes = Math.max((maxTime - minTime) / 60_000, 1);
+      const timeSpanDays = Math.max(timeSpanMinutes / (60 * 24), 1);
+      return {
+        totalRequests, successRequests, failedRequests, successRate,
+        totalTokens, inputTokens, outputTokens, reasoningTokens, cachedTokens,
+        avgTpm: Math.round(totalTokens / timeSpanMinutes),
+        avgRpm: Math.round(totalRequests / timeSpanMinutes * 10) / 10,
+        avgRpd: Math.round(totalRequests / timeSpanDays),
+      };
+    }
+
     if (!data?.apis) {
       return {
         totalRequests: 0,
@@ -111,7 +143,7 @@ export function KpiCards({ data, loading, timeRange }: KpiCardsProps) {
       avgRpm,
       avgRpd,
     };
-  }, [data]);
+  }, [data, buckets]);
 
   const timeRangeLabel = typeof timeRange === 'string'
     ? t('monitor.time.custom')

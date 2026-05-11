@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, useCallback } from 'react';
+import { Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,13 +15,11 @@ import {
   collectUsageDetailsForCandidates,
   type UsageDetailsBySource,
 } from '@/utils/usageIndex';
-import { modelsApi } from '@/services/api';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
 import { ProviderStatusBar } from '../ProviderStatusBar';
 import { getStatsBySource, hasDisableAllModelsRule } from '../utils';
-
-type InspectStatus = 'idle' | 'checking' | 'success' | 'error';
+import { useProviderInspect } from '../useProviderInspect';
 
 interface CodexSectionProps {
   configs: ProviderKeyConfig[];
@@ -51,37 +49,7 @@ export function CodexSection({
   const { t } = useTranslation();
   const actionsDisabled = disableControls || loading || isSwitching;
   const toggleDisabled = disableControls || loading || isSwitching;
-
-  const [inspectMap, setInspectMap] = useState<Map<string, { status: InspectStatus; error?: string }>>(new Map());
-
-  const handleInspect = useCallback(async (item: ProviderKeyConfig) => {
-    const key = item.apiKey;
-    setInspectMap(prev => {
-      const next = new Map(prev);
-      next.set(key, { status: 'checking' });
-      return next;
-    });
-
-    try {
-      await modelsApi.fetchV1ModelsViaApiCall(
-        item.baseUrl || '',
-        item.apiKey || undefined,
-        item.headers || {}
-      );
-      setInspectMap(prev => {
-        const next = new Map(prev);
-        next.set(key, { status: 'success' });
-        return next;
-      });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setInspectMap(prev => {
-        const next = new Map(prev);
-        next.set(key, { status: 'error', error: message });
-        return next;
-      });
-    }
-  }, []);
+  const { inspectMap, handleInspect } = useProviderInspect();
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();

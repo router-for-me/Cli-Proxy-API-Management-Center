@@ -53,6 +53,10 @@ export interface UsageBucket {
   successCount: number;
   failedCount: number;
   totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  reasoningTokens: number;
+  cachedTokens: number;
 }
 
 /**
@@ -75,7 +79,7 @@ export function bucketUsageRecords(
 
     let bucket = bucketMap.get(bucketTs);
     if (!bucket) {
-      bucket = { ts: bucketTs, requestCount: 0, successCount: 0, failedCount: 0, totalTokens: 0 };
+      bucket = { ts: bucketTs, requestCount: 0, successCount: 0, failedCount: 0, totalTokens: 0, inputTokens: 0, outputTokens: 0, reasoningTokens: 0, cachedTokens: 0 };
       bucketMap.set(bucketTs, bucket);
     }
 
@@ -86,6 +90,10 @@ export function bucketUsageRecords(
       bucket.successCount++;
     }
     bucket.totalTokens += r.total_tokens ?? 0;
+    bucket.inputTokens += r.input_tokens ?? 0;
+    bucket.outputTokens += r.output_tokens ?? 0;
+    bucket.reasoningTokens += r.reasoning_tokens ?? 0;
+    bucket.cachedTokens += r.cached_tokens ?? 0;
   }
 
   const sorted = Array.from(bucketMap.values()).sort((a, b) => a.ts - b.ts);

@@ -19,6 +19,7 @@ import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
 import { ProviderStatusBar } from '../ProviderStatusBar';
 import { getStatsBySource, hasDisableAllModelsRule } from '../utils';
+import { useProviderInspect } from '../useProviderInspect';
 
 interface VertexSectionProps {
   configs: ProviderKeyConfig[];
@@ -48,6 +49,7 @@ export function VertexSection({
   const { t } = useTranslation();
   const actionsDisabled = disableControls || loading || isSwitching;
   const toggleDisabled = disableControls || loading || isSwitching;
+  const { inspectMap, handleInspect } = useProviderInspect();
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
@@ -93,14 +95,36 @@ export function VertexSection({
           onDelete={onDelete}
           actionsDisabled={actionsDisabled}
           getRowDisabled={(item) => hasDisableAllModelsRule(item.excludedModels)}
-          renderExtraActions={(item, index) => (
-            <ToggleSwitch
-              label={t('ai_providers.config_toggle_label')}
-              checked={!hasDisableAllModelsRule(item.excludedModels)}
-              disabled={toggleDisabled}
-              onChange={(value) => void onToggle(index, value)}
-            />
-          )}
+          renderExtraActions={(item, index) => {
+            const key = item.apiKey;
+            const is = inspectMap.get(key);
+            const isChecking = is?.status === 'checking';
+            return (
+              <Fragment>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => void handleInspect(item)}
+                  disabled={toggleDisabled || isChecking}
+                  title={is?.status === 'error' ? is.error : undefined}
+                >
+                  {isChecking
+                    ? t('ai_providers.codex_inspect_checking')
+                    : is?.status === 'success'
+                      ? t('ai_providers.codex_inspect_success')
+                      : is?.status === 'error'
+                        ? t('ai_providers.codex_inspect_failed')
+                        : t('ai_providers.codex_inspect_button')}
+                </Button>
+                <ToggleSwitch
+                  label={t('ai_providers.config_toggle_label')}
+                  checked={!hasDisableAllModelsRule(item.excludedModels)}
+                  disabled={toggleDisabled}
+                  onChange={(value) => void onToggle(index, value)}
+                />
+              </Fragment>
+            );
+          }}
           renderContent={(item, index) => {
             const stats = getStatsBySource(item.apiKey, keyStats, item.prefix);
             const headerEntries = Object.entries(item.headers || {});

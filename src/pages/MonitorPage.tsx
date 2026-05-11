@@ -21,7 +21,7 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useThemeStore } from '@/stores';
 import { usageApi, providersApi, authFilesApi } from '@/services/api';
 import { useSqliteUsage } from '@/hooks/useSqliteUsage';
-import { sqliteRecordsToUsageData } from '@/utils/sqliteAdapter';
+import { sqliteRecordsToUsageData, bucketUsageRecords } from '@/utils/sqliteAdapter';
 import { SQLITE_USAGE_REFRESH_MS, SQLITE_USAGE_DEFAULT_SINCE } from '@/utils/constants';
 import { filterDataByApiFilter, filterDataByTimeRange, type DateRange } from '@/utils/monitor';
 import { TimeRangeSelector, type TimeRange } from '@/components/monitor/TimeRangeSelector';
@@ -311,6 +311,13 @@ export function MonitorPage() {
     return filterDataByTimeRange(apiFilteredData, timeRange, customRange);
   }, [apiFilteredData, timeRange, customRange]);
 
+  const usageBuckets = useMemo(() => {
+    if (sqliteEnabled && sqliteRecords.length > 0) {
+      return bucketUsageRecords(sqliteRecords, 10, 20);
+    }
+    return [];
+  }, [sqliteEnabled, sqliteRecords]);
+
   // 处理时间范围变化
   const handleTimeRangeChange = (range: TimeRange, cr?: DateRange) => {
     setTimeRange(range);
@@ -383,7 +390,7 @@ export function MonitorPage() {
       </div>
 
       {/* KPI 卡片 */}
-      <KpiCards data={filteredData} loading={isLoading} timeRange={timeRange} />
+      <KpiCards data={filteredData} loading={isLoading} timeRange={timeRange} buckets={usageBuckets} />
 
       {/* 图表区域 */}
       <div className={styles.chartsGrid}>
