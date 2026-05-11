@@ -95,6 +95,9 @@ export function KpiCards({ data, loading, timeRange, buckets, modelPrices }: Kpi
     Object.values(data.apis).forEach((apiData) => {
       Object.values(apiData.models).forEach((modelData) => {
         modelData.details.forEach((detail) => {
+          // 过滤 Token=0 且未失败的异常记录（suspiciousToken 标记）
+          if (detail.suspiciousToken) return;
+
           totalRequests++;
           if (detail.failed) {
             failedRequests++;

@@ -918,6 +918,23 @@
   padding: 40px 0;
 }
 
+.warningBox {
+  color: var(--warning-color, #f59e0b);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: $radius-md;
+  padding: 8px 12px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.refreshHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.7;
+}
+
 // 详情按钮
 .detailBtn {
   padding: 4px 10px;

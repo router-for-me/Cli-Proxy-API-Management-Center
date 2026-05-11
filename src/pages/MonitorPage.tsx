@@ -106,6 +106,7 @@ export function MonitorPage() {
   const [sourceInfoMap, setSourceInfoMap] = useState<Map<string, import('@/types/sourceInfo').SourceInfo>>(new Map());
   const [authFileMap, setAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
   const [modelPrices, setModelPrices] = useState<Record<string, ModelPrice>>({});
+  const [providerLoadFailed, setProviderLoadFailed] = useState(false);
 
   // 加载模型价格（从 localStorage）
   useEffect(() => {
@@ -246,8 +247,10 @@ export function MonitorPage() {
         }
       });
       setAuthFileMap(credMap);
+      setProviderLoadFailed(false);
     } catch (err) {
       console.warn('Monitor: Failed to load provider map:', err);
+      setProviderLoadFailed(true);
     }
   }, []);
 
@@ -344,6 +347,8 @@ export function MonitorPage() {
 
   // 合并加载状态
   const isLoading = sqliteEnabled ? (sqliteLoading && sqliteRecords.length === 0) : loading;
+  // 静默刷新：已有数据但在后台更新
+  const isSilentRefreshing = sqliteEnabled ? (sqliteLoading && sqliteRecords.length > 0) : (loading && !!usageData);
 
   return (
     <div className={styles.container}>
@@ -366,13 +371,29 @@ export function MonitorPage() {
             onClick={() => { if (sqliteEnabled) { refreshSqlite(); } else { loadData(); } }}
             disabled={isLoading}
           >
-            {isLoading ? t('common.loading') : t('common.refresh')}
+            {isSilentRefreshing ? (
+              <span className={styles.refreshHint}>{t('common.refreshing')}</span>
+            ) : isLoading ? t('common.loading') : t('common.refresh')}
           </Button>
         </div>
       </div>
 
       {/* 错误提示 */}
       {displayError && <div className={styles.errorBox}>{displayError}</div>}
+
+      {/* 提供商加载失败警告（有数据时显示，提示渠道名称可能缺失） */}
+      {providerLoadFailed && (usageData || sqliteRecords.length > 0) && (
+        <div className={styles.warningBox}>{t('monitor.provider_load_warning')}</div>
+      )}
+
+      {/* 空状态：区分"无数据"vs"加载失败" */}
+      {!isLoading && !usageData && sqliteRecords.length === 0 && (
+        <div className={styles.emptyState}>
+          {providerLoadFailed
+            ? t('monitor.provider_load_failed')
+            : t('monitor.no_data')}
+        </div>
+      )}
 
       {/* 时间范围和 API 过滤 */}
       <div className={styles.filters}>

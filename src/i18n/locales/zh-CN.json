@@ -1520,7 +1520,9 @@
     "api_filter": "API 查询",
     "api_filter_placeholder": "查询对应 API 数据",
     "apply": "查看",
-    "no_data": "暂无数据",
+    "no_data": "暂无使用数据",
+    "provider_load_warning": "渠道信息加载失败，来源名称可能显示不完整",
+    "provider_load_failed": "数据加载失败，请检查网络连接后刷新重试",
     "requests": "请求",
     "kpi": {
       "requests": "请求数",

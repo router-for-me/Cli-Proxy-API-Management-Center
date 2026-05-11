@@ -1520,7 +1520,9 @@
     "api_filter": "API Query",
     "api_filter_placeholder": "Query API data",
     "apply": "Apply",
-    "no_data": "No data available",
+    "no_data": "No usage data yet",
+    "provider_load_warning": "Provider info load failed, source names may be incomplete",
+    "provider_load_failed": "Data load failed, check network and retry",
     "requests": "Requests",
     "kpi": {
       "requests": "Requests",

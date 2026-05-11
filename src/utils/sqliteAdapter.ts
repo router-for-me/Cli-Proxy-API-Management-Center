@@ -73,6 +73,8 @@ export function bucketUsageRecords(
   const bucketMap = new Map<number, UsageBucket>();
 
   for (const r of records) {
+    // 跳过 Token=0 且未失败的异常记录
+    if (!r.failed && r.total_tokens === 0) continue;
     const ts = new Date(r.timestamp).getTime();
     if (Number.isNaN(ts)) continue;
     const bucketTs = Math.floor(ts / bucketMs) * bucketMs;
