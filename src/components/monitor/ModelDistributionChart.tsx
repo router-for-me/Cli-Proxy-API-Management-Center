@@ -8,7 +8,7 @@ interface ModelDistributionChartProps {
   data: UsageData | null;
   loading: boolean;
   isDark: boolean;
-  timeRange: number;
+  timeRange: number | string;
 }
 
 // 颜色调色板
@@ -31,9 +31,11 @@ export function ModelDistributionChart({ data, loading, isDark, timeRange }: Mod
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>('request');
 
-  const timeRangeLabel = timeRange === 1
-    ? t('monitor.today')
-    : t('monitor.last_n_days', { n: timeRange });
+  const timeRangeLabel = typeof timeRange === 'string'
+    ? t('monitor.time.custom')
+    : timeRange === 1
+      ? t('monitor.today')
+      : t('monitor.last_n_days', { n: timeRange });
 
   // 计算模型分布数据
   const distributionData = useMemo(() => {

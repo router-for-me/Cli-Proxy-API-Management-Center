@@ -40,6 +40,8 @@
     "unknown_error": "Unknown error",
     "quota_update_required": "Please update the CPA version or check for updates",
     "quota_check_credential": "Please check the credential status",
+    "quota_oauth_relogin": "Authentication expired",
+    "quota_oauth_relogin_action": "Go to credentials page to re-authenticate",
     "copy": "Copy",
     "expand": "Expand",
     "collapse": "Collapse",
@@ -632,6 +634,7 @@
     "idle": "Click here to refresh quota",
     "loading": "Loading quota...",
     "load_failed": "Failed to load quota: {{message}}",
+    "oauth_token_expired": "OAuth token expired. Please re-authenticate your Anthropic account on the OAuth page.",
     "missing_auth_index": "Auth file missing auth_index",
     "empty_windows": "No quota data available",
     "refresh_button": "Refresh Quota",
@@ -935,7 +938,8 @@
     "iflow_cookie_result_expired": "Expires At",
     "iflow_cookie_result_path": "Saved Path",
     "iflow_cookie_result_type": "Type",
-    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost."
+    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost.",
+    "goto_quota": "→ Go to Quota Management"
   },
   "usage_stats": {
     "title": "Usage Statistics",

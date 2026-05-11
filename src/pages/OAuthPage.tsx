@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -443,6 +444,11 @@ export function OAuthPage() {
                         : state.status === 'error'
                           ? `${t(getAuthKey(provider.id, 'oauth_status_error'))} ${state.error || ''}`
                           : t(getAuthKey(provider.id, 'oauth_status_waiting'))}
+                      {state.status === 'success' && (
+                        <Link to="/quota" style={{ marginLeft: 8, color: 'var(--primary-color)', textDecoration: 'underline', fontSize: 12 }}>
+                          {t('auth_login.goto_quota')}
+                        </Link>
+                      )}
                     </div>
                   )}
                 </div>

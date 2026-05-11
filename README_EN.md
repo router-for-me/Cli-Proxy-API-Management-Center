@@ -15,12 +15,6 @@ CPA Dashboard is a Web management interface for CLI Proxy API, providing compreh
 This project was originally forked from [kongkongyo/Cli-Proxy-API-Management-Center](https://github.com/kongkongyo/Cli-Proxy-API-Management-Center), which in turn was forked from the official [router-for-me/Cli-Proxy-API-Management-Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center). It has now been detached from upstream and evolves as an independent repository.
 We gratefully acknowledge the open-source contributions of `router-for-me` and `kongkongyo` (MIT License).
 
-### Dev Rules
-
-- [`AGENTS.md`](./AGENTS.md) — Project-level AI collaboration rules (identity / branches / commits / tooling)
-- [`scripts/`](./scripts/) — Automation scripts and Git hooks
-- After cloning, run `bun run setup` to install Git hooks and generate personal configuration
-
 ### Interface Preview
 
 Management interface display

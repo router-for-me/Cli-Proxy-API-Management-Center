@@ -9,7 +9,7 @@ interface DailyTrendChartProps {
   data: UsageData | null;
   loading: boolean;
   isDark: boolean;
-  timeRange: number;
+  timeRange: number | string;
 }
 
 interface DailyStat {
@@ -242,9 +242,11 @@ export function DailyTrendChart({ data, loading, isDark, timeRange }: DailyTrend
     },
   }), [isDark, t]);
 
-  const timeRangeLabel = timeRange === 1
-    ? t('monitor.today')
-    : t('monitor.last_n_days', { n: timeRange });
+  const timeRangeLabel = typeof timeRange === 'string'
+    ? t('monitor.time.custom')
+    : timeRange === 1
+      ? t('monitor.today')
+      : t('monitor.last_n_days', { n: timeRange });
 
   return (
     <div className={styles.chartCard}>

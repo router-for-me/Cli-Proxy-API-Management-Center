@@ -6,7 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-MODE="ref"
+MODE="stealth"
 ARG_YES=false
 for arg in "$@"; do
   case "$arg" in
@@ -16,9 +16,9 @@ for arg in "$@"; do
       cat <<EOF
 bun run setup [--mode=ref|inject|stealth] [--yes]
 
-  ref     (默认) 生成 AI 入口文件，内容为 @import 引用 AGENTS.md
+  ref     生成 AI 入口文件，内容为 @import 引用 AGENTS.md
   inject  将 AGENTS.md 全文注入到各 AI 入口（冗余但无 import 依赖）
-  stealth 不生成 AI 入口文件，仅初始化 Project/
+  stealth (默认) 不生成 AI 入口文件，仅初始化 Project/
   --yes   非交互模式；当前脚本幂等执行，仅用于 AI 调用语义统一
 EOF
       exit 0

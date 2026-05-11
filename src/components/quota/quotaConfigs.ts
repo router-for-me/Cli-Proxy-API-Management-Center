@@ -69,6 +69,7 @@ import {
   getStatusFromError,
   isAntigravityFile,
   isClaudeFile,
+  isClaudeOAuthFile,
   isCodexFile,
   isDisabledAuthFile,
   isGeminiCliFile,
@@ -1011,6 +1012,12 @@ const fetchClaudeQuota = async (
   const result = usageResult.value;
 
   if (result.statusCode < 200 || result.statusCode >= 300) {
+    if (result.statusCode === 401 && isClaudeOAuthFile(file)) {
+      throw createStatusError(
+        t('claude_quota.oauth_token_expired', 'OAuth token 已过期，请在 OAuth 页面重新登录 Anthropic 账号。'),
+        401
+      );
+    }
     throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
   }
 

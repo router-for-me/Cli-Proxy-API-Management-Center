@@ -404,6 +404,19 @@
   padding: $spacing-xs $spacing-sm;
 }
 
+.quotaErrorAction {
+  display: block;
+  margin-top: $spacing-xs;
+  font-size: 12px;
+  color: var(--primary-color);
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
 .quotaWarning {
   font-size: 12px;
   color: var(--warning-text);

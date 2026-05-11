@@ -23,7 +23,8 @@ import { usageApi, providersApi, authFilesApi } from '@/services/api';
 import { useSqliteUsage } from '@/hooks/useSqliteUsage';
 import { sqliteRecordsToUsageData } from '@/utils/sqliteAdapter';
 import { SQLITE_USAGE_REFRESH_MS, SQLITE_USAGE_DEFAULT_SINCE } from '@/utils/constants';
-import { filterDataByApiFilter, filterDataByTimeRange } from '@/utils/monitor';
+import { filterDataByApiFilter, filterDataByTimeRange, type DateRange } from '@/utils/monitor';
+import { TimeRangeSelector, type TimeRange } from '@/components/monitor/TimeRangeSelector';
 import { buildSourceInfoMap } from '@/utils/sourceResolver';
 import { normalizeAuthIndex } from '@/utils/usage';
 import type { CredentialInfo } from '@/types/sourceInfo';
@@ -53,8 +54,6 @@ ChartJS.register(
   Filler
 );
 
-// 时间范围选项
-type TimeRange = 1 | 7 | 14 | 30;
 
 export interface UsageDetail {
   timestamp: string;
@@ -62,6 +61,7 @@ export interface UsageDetail {
   source: string;
   auth_index: string;
   latency_ms?: number | string | null;
+  suspiciousToken?: boolean;
   tokens: {
     input_tokens: number;
     output_tokens: number;
@@ -98,6 +98,7 @@ export function MonitorPage() {
   const [error, setError] = useState<string | null>(null);
   const [usageData, setUsageData] = useState<UsageData | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>(7);
+  const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [apiFilter, setApiFilter] = useState('');
   const [providerMap, setProviderMap] = useState<Record<string, string>>({});
   const [providerModels, setProviderModels] = useState<Record<string, Set<string>>>({});
@@ -307,12 +308,13 @@ export function MonitorPage() {
   }, [usageData, apiFilter]);
 
   const filteredData = useMemo(() => {
-    return filterDataByTimeRange(apiFilteredData, timeRange);
-  }, [apiFilteredData, timeRange]);
+    return filterDataByTimeRange(apiFilteredData, timeRange, customRange);
+  }, [apiFilteredData, timeRange, customRange]);
 
   // 处理时间范围变化
-  const handleTimeRangeChange = (range: TimeRange) => {
+  const handleTimeRangeChange = (range: TimeRange, cr?: DateRange) => {
     setTimeRange(range);
+    if (cr) setCustomRange(cr);
   };
 
   // 处理 API 过滤应用（触发数据刷新）
@@ -363,17 +365,7 @@ export function MonitorPage() {
       <div className={styles.filters}>
         <div className={styles.filterGroup}>
           <span className={styles.filterLabel}>{t('monitor.time_range')}</span>
-          <div className={styles.timeButtons}>
-            {([1, 7, 14, 30] as TimeRange[]).map((range) => (
-              <button
-                key={range}
-                className={`${styles.timeButton} ${timeRange === range ? styles.active : ''}`}
-                onClick={() => handleTimeRangeChange(range)}
-              >
-                {range === 1 ? t('monitor.today') : t('monitor.last_n_days', { n: range })}
-              </button>
-            ))}
-          </div>
+          <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} customRange={customRange} />
         </div>
         <div className={styles.filterGroup}>
           <span className={styles.filterLabel}>{t('monitor.api_filter')}</span>

@@ -40,6 +40,8 @@
     "unknown_error": "未知错误",
     "quota_update_required": "请更新 CPA 版本或检查更新",
     "quota_check_credential": "请检查凭证状态",
+    "quota_oauth_relogin": "认证已过期",
+    "quota_oauth_relogin_action": "前往凭证页面重新认证",
     "copy": "复制",
     "expand": "展开",
     "collapse": "收起",
@@ -632,6 +634,7 @@
     "idle": "点击此处刷新额度",
     "loading": "正在加载额度...",
     "load_failed": "额度获取失败：{{message}}",
+    "oauth_token_expired": "OAuth token 已过期，请在 OAuth 页面重新登录 Anthropic 账号。",
     "missing_auth_index": "认证文件缺少 auth_index",
     "empty_windows": "暂无额度数据",
     "refresh_button": "刷新额度",
@@ -935,7 +938,8 @@
     "iflow_cookie_result_expired": "过期时间",
     "iflow_cookie_result_path": "保存路径",
     "iflow_cookie_result_type": "类型",
-    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问"
+    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问",
+    "goto_quota": "→ 前往额度管理查看"
   },
   "usage_stats": {
     "title": "使用统计",

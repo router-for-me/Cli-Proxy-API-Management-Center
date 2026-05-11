@@ -30,6 +30,7 @@ export function sqliteRecordsToUsageData(records: UsageRecord[]): UsageData {
       source: r.api_key,
       auth_index: r.auth_index,
       latency_ms: r.latency_ms,
+      suspiciousToken: !r.failed && r.total_tokens === 0,
       tokens: {
         input_tokens: r.input_tokens,
         output_tokens: r.output_tokens,

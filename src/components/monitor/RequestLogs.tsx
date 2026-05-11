@@ -446,8 +446,9 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
     const stats = getStats(entry);
     const rateValue = parseFloat(stats.successRate);
     const disabled = isModelDisabled(entry.source, entry.model);
-    // 将 authIndex 映射为文件名
-    const authDisplayName = entry.authIndex || '-';
+    const authKey = normalizeAuthIndex(entry.authIndex);
+    const authInfo = authKey ? authFileMap.get(authKey) : undefined;
+    const authDisplayName = authInfo?.name || entry.authIndex || '-';
 
     return (
       <>

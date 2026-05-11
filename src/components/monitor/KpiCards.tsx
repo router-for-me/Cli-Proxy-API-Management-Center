@@ -6,7 +6,7 @@ import styles from '@/pages/MonitorPage.module.scss';
 interface KpiCardsProps {
   data: UsageData | null;
   loading: boolean;
-  timeRange: number;
+  timeRange: number | string;
 }
 
 // 格式化数字
@@ -113,9 +113,11 @@ export function KpiCards({ data, loading, timeRange }: KpiCardsProps) {
     };
   }, [data]);
 
-  const timeRangeLabel = timeRange === 1
-    ? t('monitor.today')
-    : t('monitor.last_n_days', { n: timeRange });
+  const timeRangeLabel = typeof timeRange === 'string'
+    ? t('monitor.time.custom')
+    : timeRange === 1
+      ? t('monitor.today')
+      : t('monitor.last_n_days', { n: timeRange });
 
   return (
     <div className={styles.kpiGrid}>

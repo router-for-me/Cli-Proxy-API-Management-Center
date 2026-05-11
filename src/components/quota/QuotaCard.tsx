@@ -3,6 +3,7 @@
  */
 
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import type { ReactElement, ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import type { AuthFileItem, ResolvedTheme, ThemeColors } from '@/types';
@@ -141,6 +142,11 @@ export function QuotaCard<TState extends QuotaStatusState>({
             {t(`${i18nPrefix}.load_failed`, {
               message: quotaErrorMessage
             })}
+            {quota?.errorStatus === 401 && (
+              <Link to="/oauth" className={styles.quotaErrorAction}>
+                {t('common.quota_oauth_relogin_action')}
+              </Link>
+            )}
           </div>
         ) : quota ? (
           renderQuotaItems(quota, t, { styles, QuotaProgressBar })
@@ -159,5 +165,6 @@ const resolveQuotaErrorMessage = (
 ): string => {
   if (status === 404) return t('common.quota_update_required');
   if (status === 403) return t('common.quota_check_credential');
+  if (status === 401) return t('common.quota_oauth_relogin');
   return fallback;
 };
