@@ -1537,7 +1537,10 @@
       "avg_rpd": "Avg RPD",
       "tokens_per_minute": "Tokens per minute",
       "requests_per_minute": "Requests per minute",
-      "requests_per_day": "Requests per day"
+      "requests_per_day": "Requests per day",
+      "cost": "Est. Cost",
+      "estimated": "Based on model pricing",
+      "no_price": "No pricing (Settings → Price Config)"
     },
     "distribution": {
       "title": "Model Usage Distribution",
@@ -1626,6 +1629,7 @@
       "all_sources": "All Sources",
       "all_status": "All Status",
       "all_provider_types": "All Providers",
+      "all_auth": "All Credentials",
       "success": "Success",
       "failed": "Failed",
       "last_update": "Last Update",

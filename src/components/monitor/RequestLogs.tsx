@@ -87,6 +87,7 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
   const [filterSource, setFilterSource] = useState('');
   const [filterStatus, setFilterStatus] = useState<'' | 'success' | 'failed'>('');
   const [filterProviderType, setFilterProviderType] = useState('');
+  const [filterAuthIndex, setFilterAuthIndex] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(10);
   const [countdown, setCountdown] = useState(0);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -374,11 +375,12 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
   }, [logEntries]);
 
   // 获取筛选选项
-  const { apis, models, sources, providerTypes } = useMemo(() => {
+  const { apis, models, sources, providerTypes, authIndices } = useMemo(() => {
     const apiSet = new Set<string>();
     const modelSet = new Set<string>();
     const sourceSet = new Set<string>();
     const providerTypeSet = new Set<string>();
+    const authIndexSet = new Set<string>();
 
     logEntries.forEach((entry) => {
       apiSet.add(entry.apiKey);
@@ -387,6 +389,9 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
       if (entry.providerType && entry.providerType !== '--') {
         providerTypeSet.add(entry.providerType);
       }
+      if (entry.authIndex) {
+        authIndexSet.add(entry.authIndex);
+      }
     });
 
     return {
@@ -394,6 +399,7 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
       models: Array.from(modelSet).sort(),
       sources: Array.from(sourceSet).sort(),
       providerTypes: Array.from(providerTypeSet).sort(),
+      authIndices: Array.from(authIndexSet).sort(),
     };
   }, [logEntries]);
 
@@ -406,9 +412,10 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
       if (filterStatus === 'success' && entry.failed) return false;
       if (filterStatus === 'failed' && !entry.failed) return false;
       if (filterProviderType && entry.providerType !== filterProviderType) return false;
+      if (filterAuthIndex && entry.authIndex !== filterAuthIndex) return false;
       return true;
     });
-  }, [logEntries, filterApi, filterModel, filterSource, filterStatus, filterProviderType]);
+  }, [logEntries, filterApi, filterModel, filterSource, filterStatus, filterProviderType, filterAuthIndex]);
 
   // 虚拟滚动配置
   const rowVirtualizer = useVirtualizer({
@@ -559,6 +566,16 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
             <option value="">{t('monitor.logs.all_provider_types')}</option>
             {providerTypes.map((type) => (
               <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+          <select
+            className={styles.logSelect}
+            value={filterAuthIndex}
+            onChange={(e) => setFilterAuthIndex(e.target.value)}
+          >
+            <option value="">{t('monitor.logs.all_auth')}</option>
+            {authIndices.map((idx) => (
+              <option key={idx} value={idx}>{idx}</option>
             ))}
           </select>
           <select

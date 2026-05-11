@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { UsageData } from '@/pages/MonitorPage';
 import type { UsageBucket } from '@/utils/sqliteAdapter';
+import { calculateTotalCost, type ModelPrice } from '@/utils/usage';
 import styles from '@/pages/MonitorPage.module.scss';
 
 interface KpiCardsProps {
@@ -9,6 +10,7 @@ interface KpiCardsProps {
   loading: boolean;
   timeRange: number | string;
   buckets?: UsageBucket[];
+  modelPrices?: Record<string, ModelPrice>;
 }
 
 // 格式化数字
@@ -25,7 +27,7 @@ function formatNumber(num: number): string {
   return num.toLocaleString();
 }
 
-export function KpiCards({ data, loading, timeRange, buckets }: KpiCardsProps) {
+export function KpiCards({ data, loading, timeRange, buckets, modelPrices }: KpiCardsProps) {
   const { t } = useTranslation();
 
   // 计算统计数据
@@ -145,6 +147,12 @@ export function KpiCards({ data, loading, timeRange, buckets }: KpiCardsProps) {
     };
   }, [data, buckets]);
 
+  // 成本计算（独立于桶聚合，依赖 model-level 数据）
+  const cost = useMemo(() => {
+    if (!data || !modelPrices || !Object.keys(modelPrices).length) return null;
+    return calculateTotalCost(data, modelPrices);
+  }, [data, modelPrices]);
+
   const timeRangeLabel = typeof timeRange === 'string'
     ? t('monitor.time.custom')
     : timeRange === 1
@@ -229,6 +237,20 @@ export function KpiCards({ data, loading, timeRange, buckets }: KpiCardsProps) {
         </div>
         <div className={styles.kpiMeta}>
           <span>{t('monitor.kpi.requests_per_day')}</span>
+        </div>
+      </div>
+
+      {/* 预估费用 */}
+      <div className={`${styles.kpiCard} ${styles.gold}`}>
+        <div className={styles.kpiTitle}>
+          <span className={styles.kpiLabel}>{t('monitor.kpi.cost')}</span>
+          <span className={styles.kpiTag}>{timeRangeLabel}</span>
+        </div>
+        <div className={styles.kpiValue}>
+          {loading ? '--' : cost !== null ? `$${cost.toFixed(4)}` : '--'}
+        </div>
+        <div className={styles.kpiMeta}>
+          <span>{cost !== null ? t('monitor.kpi.estimated') : t('monitor.kpi.no_price')}</span>
         </div>
       </div>
     </div>

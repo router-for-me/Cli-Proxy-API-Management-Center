@@ -1537,7 +1537,10 @@
       "avg_rpd": "日均 RPD",
       "tokens_per_minute": "每分钟 Token",
       "requests_per_minute": "每分钟请求",
-      "requests_per_day": "每日请求数"
+      "requests_per_day": "每日请求数",
+      "cost": "预估费用",
+      "estimated": "基于模型定价估算",
+      "no_price": "未配置价格（设置→价格配置）"
     },
     "distribution": {
       "title": "模型用量分布",
@@ -1626,6 +1629,7 @@
       "all_sources": "全部请求渠道",
       "all_status": "全部请求状态",
       "all_provider_types": "全部请求类型",
+      "all_auth": "全部凭证",
       "success": "成功",
       "failed": "失败",
       "last_update": "最后更新",

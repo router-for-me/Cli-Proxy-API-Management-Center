@@ -26,7 +26,7 @@ import { SQLITE_USAGE_REFRESH_MS, SQLITE_USAGE_DEFAULT_SINCE } from '@/utils/con
 import { filterDataByApiFilter, filterDataByTimeRange, type DateRange } from '@/utils/monitor';
 import { TimeRangeSelector, type TimeRange } from '@/components/monitor/TimeRangeSelector';
 import { buildSourceInfoMap } from '@/utils/sourceResolver';
-import { normalizeAuthIndex } from '@/utils/usage';
+import { normalizeAuthIndex, loadModelPrices, type ModelPrice } from '@/utils/usage';
 import type { CredentialInfo } from '@/types/sourceInfo';
 import { KpiCards } from '@/components/monitor/KpiCards';
 import { ModelDistributionChart } from '@/components/monitor/ModelDistributionChart';
@@ -105,6 +105,12 @@ export function MonitorPage() {
   const [providerTypeMap, setProviderTypeMap] = useState<Record<string, string>>({});
   const [sourceInfoMap, setSourceInfoMap] = useState<Map<string, import('@/types/sourceInfo').SourceInfo>>(new Map());
   const [authFileMap, setAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
+  const [modelPrices, setModelPrices] = useState<Record<string, ModelPrice>>({});
+
+  // 加载模型价格（从 localStorage）
+  useEffect(() => {
+    setModelPrices(loadModelPrices());
+  }, []);
 
   // 加载渠道名称映射（支持所有提供商类型）
   const loadProviderMap = useCallback(async () => {
@@ -390,7 +396,7 @@ export function MonitorPage() {
       </div>
 
       {/* KPI 卡片 */}
-      <KpiCards data={filteredData} loading={isLoading} timeRange={timeRange} buckets={usageBuckets} />
+      <KpiCards data={filteredData} loading={isLoading} timeRange={timeRange} buckets={usageBuckets} modelPrices={modelPrices} />
 
       {/* 图表区域 */}
       <div className={styles.chartsGrid}>

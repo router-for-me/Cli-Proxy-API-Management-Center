@@ -252,6 +252,12 @@
     --accent-soft: rgba(6, 182, 212, 0.18);
     --accent-border: rgba(6, 182, 212, 0.35);
   }
+
+  &.gold {
+    --accent: #f59e0b;
+    --accent-soft: rgba(245, 158, 11, 0.18);
+    --accent-border: rgba(245, 158, 11, 0.35);
+  }
 }
 
 .kpiTitle {
