@@ -17,6 +17,7 @@ import styles from '@/pages/AiProvidersPage.module.scss';
 import { ProviderList } from '../ProviderList';
 import { ProviderStatusBar } from '../ProviderStatusBar';
 import { getOpenAIProviderStats, getStatsBySource } from '../utils';
+import { useProviderInspect } from '../useProviderInspect';
 
 interface OpenAISectionProps {
   configs: OpenAIProviderConfig[];
@@ -45,6 +46,7 @@ export function OpenAISection({
 }: OpenAISectionProps) {
   const { t } = useTranslation();
   const actionsDisabled = disableControls || loading || isSwitching;
+  const { inspectMap, handleInspect } = useProviderInspect();
 
   const statusBarCache = useMemo(() => {
     const cache = new Map<string, ReturnType<typeof calculateStatusBarData>>();
@@ -192,6 +194,31 @@ export function OpenAISection({
                 </div>
                 <ProviderStatusBar statusData={statusData} />
               </Fragment>
+            );
+          }}
+          renderExtraActions={(item) => {
+            const firstEntry = (item.apiKeyEntries || [])[0];
+            if (!firstEntry) return null;
+            const key = firstEntry.apiKey;
+            const is = inspectMap.get(key);
+            const isChecking = is?.status === 'checking';
+            const mergedHeaders = { ...(item.headers || {}), ...(firstEntry.headers || {}) };
+            return (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => void handleInspect({ baseUrl: item.baseUrl, apiKey: firstEntry.apiKey, headers: mergedHeaders })}
+                disabled={actionsDisabled || isChecking}
+                title={is?.status === 'error' ? is.error : undefined}
+              >
+                {isChecking
+                  ? t('ai_providers.codex_inspect_checking')
+                  : is?.status === 'success'
+                    ? t('ai_providers.codex_inspect_success')
+                    : is?.status === 'error'
+                      ? t('ai_providers.codex_inspect_failed')
+                      : t('ai_providers.codex_inspect_button')}
+              </Button>
             );
           }}
         />

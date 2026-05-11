@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import iconAmp from '@/assets/icons/amp.svg';
@@ -5,6 +6,7 @@ import type { AmpcodeConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import styles from '@/pages/AiProvidersPage.module.scss';
 import { useTranslation } from 'react-i18next';
+import { useProviderInspect } from '../useProviderInspect';
 
 interface AmpcodeSectionProps {
   config: AmpcodeConfig | null | undefined;
@@ -23,6 +25,11 @@ export function AmpcodeSection({
 }: AmpcodeSectionProps) {
   const { t } = useTranslation();
   const showLoadingPlaceholder = loading && !config;
+  const { inspectMap, handleInspect } = useProviderInspect();
+  const inspectKey = 'ampcode';
+  const is = inspectMap.get(inspectKey);
+  const isChecking = is?.status === 'checking';
+  const canInspect = !!(config?.upstreamUrl && config?.upstreamApiKey);
 
   return (
     <>
@@ -34,13 +41,30 @@ export function AmpcodeSection({
           </span>
         }
         extra={
-          <Button
-            size="sm"
-            onClick={onEdit}
-            disabled={disableControls || loading || isSwitching}
-          >
-            {t('common.edit')}
-          </Button>
+          <Fragment>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void handleInspect({ baseUrl: config?.upstreamUrl, apiKey: config?.upstreamApiKey })}
+              disabled={disableControls || loading || isSwitching || isChecking || !canInspect}
+              title={is?.status === 'error' ? is.error : undefined}
+            >
+              {isChecking
+                ? t('ai_providers.codex_inspect_checking')
+                : is?.status === 'success'
+                  ? t('ai_providers.codex_inspect_success')
+                  : is?.status === 'error'
+                    ? t('ai_providers.codex_inspect_failed')
+                    : t('ai_providers.codex_inspect_button')}
+            </Button>
+            <Button
+              size="sm"
+              onClick={onEdit}
+              disabled={disableControls || loading || isSwitching}
+            >
+              {t('common.edit')}
+            </Button>
+          </Fragment>
         }
       >
         {showLoadingPlaceholder ? (
