@@ -18,17 +18,27 @@ export function isClaudeFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'claude';
 }
 
-export function isClaudeOAuthFile(file: AuthFileItem): boolean {
-  if (!isClaudeFile(file)) return false;
+function isAccessTokenOAuth(accessToken: string): boolean {
+  return accessToken.includes('sk-ant-oat');
+}
+
+function getAccessToken(file: AuthFileItem): string {
   const metadata =
     file && typeof file.metadata === 'object' && file.metadata !== null
       ? (file.metadata as Record<string, unknown>)
       : null;
-  const accessToken =
-    metadata && typeof metadata.access_token === 'string'
-      ? metadata.access_token.trim()
-      : '';
-  return accessToken.includes('sk-ant-oat');
+  return metadata && typeof metadata.access_token === 'string'
+    ? metadata.access_token.trim()
+    : '';
+}
+
+export function isClaudeOAuthFile(file: AuthFileItem): boolean {
+  if (!isClaudeFile(file)) return false;
+  return isAccessTokenOAuth(getAccessToken(file));
+}
+
+export function isOAuthFile(file: AuthFileItem): boolean {
+  return isAccessTokenOAuth(getAccessToken(file));
 }
 
 export function isCodexFile(file: AuthFileItem): boolean {

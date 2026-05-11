@@ -69,7 +69,7 @@ import {
   getStatusFromError,
   isAntigravityFile,
   isClaudeFile,
-  isClaudeOAuthFile,
+  isOAuthFile,
   isCodexFile,
   isDisabledAuthFile,
   isGeminiCliFile,
@@ -411,14 +411,13 @@ const fetchCodexQuota = async (
 
   const planTypeFromFile = resolveCodexPlanType(file);
   const accountId = resolveCodexChatgptAccountId(file);
-  if (!accountId) {
-    throw new Error(t('codex_quota.missing_account_id'));
-  }
 
   const requestHeader: Record<string, string> = {
     ...CODEX_REQUEST_HEADERS,
-    'Chatgpt-Account-Id': accountId,
   };
+  if (accountId) {
+    requestHeader['Chatgpt-Account-Id'] = accountId;
+  }
 
   const result = await apiCallApi.request({
     authIndex,
@@ -1012,7 +1011,7 @@ const fetchClaudeQuota = async (
   const result = usageResult.value;
 
   if (result.statusCode < 200 || result.statusCode >= 300) {
-    if (result.statusCode === 401 && isClaudeOAuthFile(file)) {
+    if (result.statusCode === 401 && isOAuthFile(file)) {
       throw createStatusError(
         t('claude_quota.oauth_token_expired', 'OAuth token 已过期，请在 OAuth 页面重新登录 Anthropic 账号。'),
         401
