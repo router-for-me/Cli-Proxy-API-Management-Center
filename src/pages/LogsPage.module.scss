@@ -318,22 +318,26 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
-  flex: 1 1 auto;
-  min-height: 280px;
-  max-height: calc(100vh - 320px);
+  flex: 1 0 auto;
+  min-height: 420px;
+  max-height: none;
+  height: max(420px, calc(100vh - 520px));
   overflow: auto;
+  resize: vertical;
   position: relative;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overscroll-behavior: contain;
 
   @include tablet {
-    min-height: 240px;
-    max-height: calc(100vh - 300px);
+    min-height: 360px;
+    height: max(360px, calc(100vh - 500px));
+    max-height: none;
   }
 
   @include mobile {
     min-height: 360px;
+    height: 420px;
     max-height: 480px;
     flex: 0 0 auto;
     overflow: auto;
@@ -784,8 +788,9 @@
   }
 
   .logPanel {
-    min-height: 200px;
-    max-height: calc(100vh - 280px);
+    min-height: 420px;
+    height: max(420px, calc(100vh - 460px));
+    max-height: none;
   }
 
   .logRow {
@@ -827,8 +832,9 @@
   }
 
   .logPanel {
-    min-height: 160px;
-    max-height: calc(100vh - 220px);
+    min-height: 320px;
+    height: 320px;
+    max-height: none;
   }
 
   .logRow {
