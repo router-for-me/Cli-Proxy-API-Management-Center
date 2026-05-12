@@ -10,6 +10,7 @@ import {
   normalizeAuthIndex,
   type UsageDetailWithEndpoint
 } from '@/utils/usage';
+import { parseTimestampMs } from '@/utils/timestamp';
 import type { ParsedLogLine } from './logTypes';
 
 export type TraceCandidate = {
@@ -183,7 +184,7 @@ export function useTraceResolver(options: UseTraceResolverOptions): UseTraceReso
     if (!logPath) return [];
 
     const logTimestampMs = traceLogLine.timestamp
-      ? Date.parse(traceLogLine.timestamp)
+      ? parseTimestampMs(traceLogLine.timestamp)
       : Number.NaN;
 
     // Step 1: filter by path match

@@ -18,6 +18,7 @@ import {
   normalizeAuthIndex,
 } from '@/utils/usage';
 import { downloadBlob } from '@/utils/download';
+import { parseTimestampMs } from '@/utils/timestamp';
 import styles from '@/pages/UsagePage.module.scss';
 
 const ALL_FILTER = '__all__';
@@ -131,7 +132,7 @@ export function RequestEventsDetailsCard({
         const timestampMs =
           typeof detail.__timestampMs === 'number' && detail.__timestampMs > 0
             ? detail.__timestampMs
-            : Date.parse(timestamp);
+            : parseTimestampMs(timestamp);
         const date = Number.isNaN(timestampMs) ? null : new Date(timestampMs);
         const sourceRaw = String(detail.source ?? '').trim();
         const authIndexRaw = detail.auth_index as unknown;
