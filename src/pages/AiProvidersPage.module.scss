@@ -1072,7 +1072,7 @@
     }
 
     &::before {
-      border-top-color: var(--border-primary, #374151);
+      border-top-color: var(--border-primary, $gray-700);
     }
   }
 

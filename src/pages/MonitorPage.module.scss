@@ -182,9 +182,9 @@
 }
 
 .kpiCard {
-  --accent: #3b82f6;
-  --accent-soft: rgba(59, 130, 246, 0.18);
-  --accent-border: rgba(59, 130, 246, 0.35);
+  --accent: #{$primary-color};
+  --accent-soft: rgba($primary-color, 0.18);
+  --accent-border: rgba($primary-color, 0.35);
 
   position: relative;
   padding: 18px;
@@ -250,9 +250,9 @@
   }
 
   &.gold {
-    --accent: #f59e0b;
-    --accent-soft: rgba($warning-color,0.18);
-    --accent-border: rgba($warning-color,0.35);
+    --accent: #{$warning-color};
+    --accent-soft: rgba($warning-color, 0.18);
+    --accent-border: rgba($warning-color, 0.35);
   }
 }
 
