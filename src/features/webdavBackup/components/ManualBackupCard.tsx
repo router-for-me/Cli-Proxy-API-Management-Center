@@ -8,6 +8,7 @@ import { useWebdavStore } from '../store/useWebdavStore';
 import { useBackupActions } from '../hooks/useBackupActions';
 import { MAX_BACKUP_COUNT_OPTIONS } from '../constants';
 import type { AutoBackupInterval } from '../types';
+import styles from '../backup.module.scss';
 
 const SCOPE_ITEMS = ['localStorage', 'config', 'usage'] as const;
 
@@ -43,9 +44,8 @@ export function ManualBackupCard() {
 
   return (
     <Card title={t('backup.manual_title')} subtitle={t('backup.manual_subtitle')}>
-      <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* 备份范围 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className={`card-body ${styles.stack}`}>
+        <div className={styles.stackSm}>
           {SCOPE_ITEMS.map((key) => (
             <div key={key}>
               <ToggleSwitch
@@ -65,16 +65,14 @@ export function ManualBackupCard() {
                   }
                 }}
               />
-              <div style={{ fontSize: 12, opacity: 0.6, marginTop: 2, paddingLeft: 44 }}>
+              <div className={styles.hint}>
                 {t(`backup.scope_${key}_detail`)}
               </div>
             </div>
           ))}
 
-          {/* 分隔线 */}
-          <div style={{ borderTop: '1px solid var(--border)', margin: '-3px 0' }} />
+          <div className={styles.divider} />
 
-          {/* 自动备份 */}
           <ToggleSwitch
             label={t('backup.auto_enable')}
             checked={autoBackupEnabled}
@@ -83,25 +81,13 @@ export function ManualBackupCard() {
           />
         </div>
 
-        <div
-          style={{
-            fontSize: 12,
-            padding: '6px 12px',
-            marginTop: -4,
-            paddingLeft: 44,
-            background: 'rgba(239, 68, 68, 0.08)',
-            color: 'var(--text-primary)',
-            opacity: 0.75,
-            borderRadius: 6,
-            borderLeft: '3px solid rgba(239, 68, 68, 0.4)',
-          }}
-        >
+        <div className={styles.warningBox}>
           {t('backup.auto_browser_hint')}
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{t('backup.auto_interval')}</span>
-            <div style={{ width: 140 }}>
+        <div className={styles.rowWrap}>
+          <div className={styles.row}>
+            <span className={styles.label}>{t('backup.auto_interval')}</span>
+            <div className={styles.selectWide}>
               <Select
                 value={autoBackupInterval}
                 options={[...intervalOptions]}
@@ -109,9 +95,9 @@ export function ManualBackupCard() {
               />
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{t('backup.max_count_label')}</span>
-            <div style={{ width: 100 }}>
+          <div className={styles.row}>
+            <span className={styles.label}>{t('backup.max_count_label')}</span>
+            <div className={styles.selectNarrow}>
               <Select
                 value={String(maxBackupCount)}
                 options={maxCountOptions}
@@ -121,30 +107,17 @@ export function ManualBackupCard() {
           </div>
         </div>
         {lastBackupTime && (
-          <div style={{ fontSize: 13, opacity: 0.7 }}>
+          <div className={styles.lastBackup}>
             {t('backup.last_backup')}: {new Date(lastBackupTime).toLocaleString()}
           </div>
         )}
-        <div
-          style={{
-            fontSize: 12,
-            padding: '8px 12px',
-            background: 'var(--bg-secondary)',
-            opacity: 0.7,
-            borderRadius: 6,
-            lineHeight: 1.6,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-          }}
-        >
+        <div className={styles.infoBox}>
           <div><strong>{t('backup.auto_label_1')}</strong>{t('backup.auto_note_1')}</div>
           <div><strong>{t('backup.auto_label_2')}</strong>{t('backup.auto_note_2')}</div>
           <div><strong>{t('backup.auto_label_3')}</strong>{t('backup.auto_note_3')}</div>
         </div>
 
-        {/* 操作按钮 */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <div className={styles.actions}>
           <Button variant="secondary" onClick={exportLocal}>
             {t('backup.export_local')}
           </Button>

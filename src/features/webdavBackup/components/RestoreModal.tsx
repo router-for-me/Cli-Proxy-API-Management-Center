@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import type { BackupScope } from '../types';
+import styles from '../backup.module.scss';
 
 interface RestoreModalProps {
   open: boolean;
@@ -22,7 +23,6 @@ export function RestoreModal({ open, onClose, onRestore, loading, filename }: Re
     usage: true,
   });
 
-  // 每次打开弹窗时重置为默认值
   useEffect(() => {
     if (open) setScope({ localStorage: true, config: false, usage: true });
   }, [open]);
@@ -42,7 +42,7 @@ export function RestoreModal({ open, onClose, onRestore, loading, filename }: Re
       onClose={onClose}
       closeDisabled={loading}
       footer={
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <div className={styles.actions}>
           <Button variant="secondary" onClick={onClose} disabled={loading}>
             {t('common.cancel')}
           </Button>
@@ -57,11 +57,11 @@ export function RestoreModal({ open, onClose, onRestore, loading, filename }: Re
         </div>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontSize: 13, opacity: 0.7 }}>
+      <div className={styles.stackLg}>
+        <div className={styles.restoreMeta}>
           {t('backup.restore_from')}: <strong>{filename}</strong>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className={styles.stack}>
           {scopeItems.map((item) => (
             <div key={item.key}>
               <ToggleSwitch
@@ -70,7 +70,7 @@ export function RestoreModal({ open, onClose, onRestore, loading, filename }: Re
                 onChange={(val) => setScope((prev) => ({ ...prev, [item.key]: val }))}
                 disabled={loading}
               />
-              <div style={{ fontSize: 12, opacity: 0.6, marginTop: 2, paddingLeft: 44 }}>
+              <div className={styles.hint}>
                 {item.hint}
               </div>
             </div>

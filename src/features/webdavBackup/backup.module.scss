@@ -1,0 +1,218 @@
+@use '../../styles/variables' as *;
+
+// ── Stack (vertical flex column) ──
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stackXs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stackSm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stackLg {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// ── Row (horizontal flex) ──
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rowWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+}
+
+// ── Actions ──
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.actionsSm {
+  display: flex;
+  gap: 4px;
+}
+
+// ── Typography ──
+.hint {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 2px;
+  padding-left: 44px;
+}
+
+.label {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.sectionTitle {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.sectionHint {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.meta {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.lastBackup {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.restoreMeta {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+// ── Boxes / Containers ──
+.infoBox {
+  font-size: 12px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  opacity: 0.7;
+  border-radius: 6px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.warningBox {
+  font-size: 12px;
+  padding: 6px 12px;
+  margin-top: -4px;
+  padding-left: 44px;
+  background: rgba($error-color, 0.08);
+  color: var(--text-primary);
+  opacity: 0.75;
+  border-radius: 6px;
+  border-left: 3px solid rgba($error-color, 0.4);
+}
+
+.restoreLocalBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  gap: 12px;
+}
+
+// ── File list ──
+.fileItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color, var(--border));
+}
+
+.fileName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--accent-alpha, rgba($primary-color, 0.1));
+  color: var(--accent, $primary-color);
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+// ── Layout helpers ──
+.flexMin {
+  flex: 1;
+  min-width: 0;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.emptyHint {
+  font-size: 12px;
+  opacity: 0.5;
+  text-align: center;
+  padding: 16px;
+}
+
+.hidden {
+  display: none;
+}
+
+.divider {
+  border-top: 1px solid var(--border-color, var(--border));
+  margin: -3px 0;
+}
+
+// ── Title row (inline-flex) ──
+.titleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// ── Form grid ──
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+// ── Select widths ──
+.selectWide {
+  width: 140px;
+}
+
+.selectNarrow {
+  width: 100px;
+}
+
+// ── Connection form overrides ──
+.connForm {
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+// ── Status badge inline (no margin when used in title) ──
+.statusBadgeInline {
+  margin-bottom: 0;
+}

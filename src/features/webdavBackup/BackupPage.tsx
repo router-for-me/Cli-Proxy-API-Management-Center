@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { WebdavConnectionCard } from './components/WebdavConnectionCard';
 import { ManualBackupCard } from './components/ManualBackupCard';
 import { RestoreCard } from './components/RestoreCard';
+import styles from './backup.module.scss';
 
 export function BackupPage() {
   const { t } = useTranslation();
@@ -12,7 +13,7 @@ export function BackupPage() {
         <h1>{t('backup.page_title')}</h1>
         <p className="subtitle">{t('backup.page_subtitle')}</p>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className={styles.stackLg}>
         <WebdavConnectionCard />
         <ManualBackupCard />
         <RestoreCard />

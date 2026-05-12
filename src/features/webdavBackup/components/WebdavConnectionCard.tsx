@@ -7,6 +7,7 @@ import { useNotificationStore } from '@/stores';
 import { webdavClient } from '../client/webdavClient';
 import { useWebdavStore } from '../store/useWebdavStore';
 import { normalizeServerUrl, normalizeDavPath } from '../utils';
+import styles from '../backup.module.scss';
 
 export function WebdavConnectionCard() {
   const { t } = useTranslation();
@@ -20,7 +21,6 @@ export function WebdavConnectionCard() {
   const [localConfig, setLocalConfig] = useState(connection);
   const [testing, setTesting] = useState(false);
 
-  // 外部 store 变更时（如恢复操作更新了连接配置）同步到本地表单
   useEffect(() => {
     setLocalConfig(connection);
   }, [connection]);
@@ -83,17 +83,16 @@ export function WebdavConnectionCard() {
           : t('backup.status_idle');
 
   const titleNode = (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+    <span className={styles.titleRow}>
       {t('backup.connection_title')}
-      <span className={`status-badge ${statusBadge}`} style={{ marginBottom: 0 }}>{statusText}</span>
+      <span className={`status-badge ${statusBadge} ${styles.statusBadgeInline}`}>{statusText}</span>
     </span>
   );
 
   return (
     <Card title={titleNode}>
-      <div className="card-body webdav-conn-form" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <style>{`.webdav-conn-form .form-group { margin-bottom: 0; }`}</style>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className={`card-body ${styles.connForm} ${styles.stack}`}>
+        <div className={styles.formGrid}>
           <Input
             label={t('backup.server_url')}
             placeholder="https://dav.example.com"
@@ -118,7 +117,7 @@ export function WebdavConnectionCard() {
             onChange={(e) => handleChange('password', e.target.value)}
           />
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <div className={styles.actions}>
           <Button variant="secondary" onClick={handleTest} loading={testing}>
             {t('backup.test_connection')}
           </Button>
