@@ -101,7 +101,7 @@
 .providerList {
   display: grid;
   gap: $spacing-md;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr));
 
   @include mobile {
     grid-template-columns: 1fr;

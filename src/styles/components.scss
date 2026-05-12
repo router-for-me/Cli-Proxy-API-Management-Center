@@ -73,7 +73,7 @@
   }
 }
 
-:global([data-theme='dark']) {
+[data-theme='dark'] {
   .btn {
     color: #fff;
   }
