@@ -51,7 +51,7 @@
   &.btn-danger {
     background-color: $error-color;
     border-color: $error-color;
-    color: #fff;
+    color: var(--primary-contrast, #fff);
 
     &:hover {
       background-color: color.adjust($error-color, $lightness: -5%);
@@ -130,11 +130,9 @@ textarea {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: $spacing-sm;
-  flex-wrap: wrap;
-  margin-bottom: $spacing-md;
   gap: 12px;
   flex-wrap: wrap;
+  margin-bottom: $spacing-md;
 
   @media (max-width: 768px) {
     flex-direction: column;
