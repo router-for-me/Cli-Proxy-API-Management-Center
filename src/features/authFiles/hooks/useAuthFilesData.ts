@@ -8,6 +8,11 @@ import { formatFileSize } from '@/utils/format';
 import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
 import { downloadBlob } from '@/utils/download';
 import {
+  convertAuthJsonInput,
+  getDefaultSessionAuthFileName,
+  type AuthJsonInputType,
+} from '@/features/authFiles/sessionAuthConverter';
+import {
   getTypeLabel,
   hasAuthFileStatusMessage,
   isHealthyAuthFile,
@@ -32,14 +37,20 @@ export type UseAuthFilesDataResult = {
   loading: boolean;
   error: string;
   uploading: boolean;
+  authJsonPasteSaving: boolean;
   deleting: string | null;
   deletingAll: boolean;
   statusUpdating: Record<string, boolean>;
   batchStatusUpdating: boolean;
   fileInputRef: RefObject<HTMLInputElement | null>;
-  loadFiles: () => Promise<void>;
+  loadFiles: (options?: { throwOnError?: boolean }) => Promise<void>;
   handleUploadClick: () => void;
   handleFileChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
+  savePastedAuthJson: (
+    type: AuthJsonInputType,
+    fileName: string,
+    jsonText: string
+  ) => Promise<string>;
   handleDelete: (name: string) => void;
   handleDeleteAll: (options: DeleteAllOptions) => void;
   handleDownload: (name: string) => Promise<void>;
@@ -53,6 +64,27 @@ export type UseAuthFilesDataResult = {
   batchDelete: (names: string[]) => void;
 };
 
+type PastedAuthJsonPayload = {
+  authJson: Record<string, unknown>;
+  resolvedFileName: string;
+};
+
+export const buildPastedAuthJsonPayload = (
+  type: AuthJsonInputType,
+  fileName: string,
+  jsonText: string
+): PastedAuthJsonPayload => {
+  const authJson = convertAuthJsonInput(jsonText, type);
+  const resolvedFileName =
+    type === 'session' && fileName === 'codex-account.json'
+      ? getDefaultSessionAuthFileName(authJson)
+      : fileName;
+  return {
+    authJson,
+    resolvedFileName,
+  };
+};
+
 export function useAuthFilesData(): UseAuthFilesDataResult {
   const { t } = useTranslation();
   const { showNotification, showConfirmation } = useNotificationStore();
@@ -61,6 +93,8 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [authJsonPasteSaving, setAuthJsonPasteSaving] = useState(false);
+  const authJsonPasteSavingRef = useRef(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
@@ -161,7 +195,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     });
   }, [files, selectedFiles.size]);
 
-  const loadFiles = useCallback(async () => {
+  const loadFiles = useCallback(async (options?: { throwOnError?: boolean }) => {
     setLoading(true);
     setError('');
     try {
@@ -170,6 +204,9 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError(errorMessage);
+      if (options?.throwOnError) {
+        throw (err instanceof Error ? err : new Error(errorMessage));
+      }
     } finally {
       setLoading(false);
     }
@@ -242,6 +279,41 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
       } finally {
         setUploading(false);
         event.target.value = '';
+      }
+    },
+    [loadFiles, showNotification, t]
+  );
+
+  const savePastedAuthJson = useCallback(
+    async (type: AuthJsonInputType, fileName: string, jsonText: string) => {
+      if (authJsonPasteSavingRef.current) {
+        throw new Error(t('auth_files.paste_error_save_in_progress'));
+      }
+      authJsonPasteSavingRef.current = true;
+      setAuthJsonPasteSaving(true);
+      try {
+        const { authJson, resolvedFileName } = buildPastedAuthJsonPayload(type, fileName, jsonText);
+        try {
+          await authFilesApi.saveJsonObject(resolvedFileName, authJson);
+        } catch {
+          throw new Error(t('notification.save_failed'));
+        }
+        try {
+          await loadFiles({ throwOnError: true });
+        } catch (reloadError) {
+          const reloadMessage =
+            reloadError instanceof Error ? reloadError.message : t('notification.refresh_failed');
+          showNotification(t('auth_files.paste_success', { name: resolvedFileName }), 'success');
+          showNotification(`${t('notification.refresh_failed')}: ${reloadMessage}`, 'warning');
+          return resolvedFileName;
+        }
+        showNotification(t('auth_files.paste_success', { name: resolvedFileName }), 'success');
+        return resolvedFileName;
+      } catch (err) {
+        throw new Error(err instanceof Error ? err.message : t('notification.save_failed'));
+      } finally {
+        authJsonPasteSavingRef.current = false;
+        setAuthJsonPasteSaving(false);
       }
     },
     [loadFiles, showNotification, t]
@@ -645,6 +717,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     loading,
     error,
     uploading,
+    authJsonPasteSaving,
     deleting,
     deletingAll,
     statusUpdating,
@@ -653,6 +726,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     loadFiles,
     handleUploadClick,
     handleFileChange,
+    savePastedAuthJson,
     handleDelete,
     handleDeleteAll,
     handleDownload,

@@ -47,6 +47,7 @@ import {
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import { AuthFileCard } from '@/features/authFiles/components/AuthFileCard';
+import { AuthJsonPasteModal } from '@/features/authFiles/components/AuthJsonPasteModal';
 import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
 import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components/AuthFilesPrefixProxyEditorModal';
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
@@ -64,6 +65,7 @@ import {
   writePersistedAuthFilesCompactMode,
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
+import type { AuthJsonInputType } from '@/features/authFiles/sessionAuthConverter';
 import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import styles from './AuthFilesPage.module.scss';
 
@@ -74,8 +76,7 @@ const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
 
-const escapeWildcardSearchSegment = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildWildcardSearch = (value: string): RegExp | null => {
   if (!value.includes('*')) return null;
@@ -150,10 +151,7 @@ const stringifySearchValue = (value: unknown): string[] => {
   return [];
 };
 
-const getCodexPlanLabel = (
-  planType: string | null | undefined,
-  t: TFunction
-): string | null => {
+const getCodexPlanLabel = (planType: string | null | undefined, t: TFunction): string | null => {
   const normalized = normalizePlanType(planType);
   if (!normalized) return null;
   if (normalized === 'pro') return t('codex_quota.plan_pro');
@@ -166,15 +164,10 @@ const getCodexPlanLabel = (
   return planType || normalized;
 };
 
-const getAuthFilePlanType = (
-  file: AuthFileItem,
-  quota?: CodexQuotaState
-): string | null => resolveCodexPlanType(file) ?? quota?.planType ?? null;
+const getAuthFilePlanType = (file: AuthFileItem, quota?: CodexQuotaState): string | null =>
+  resolveCodexPlanType(file) ?? quota?.planType ?? null;
 
-const getAuthFilePlanSortRank = (
-  file: AuthFileItem,
-  quota?: CodexQuotaState
-): number | null => {
+const getAuthFilePlanSortRank = (file: AuthFileItem, quota?: CodexQuotaState): number | null => {
   const normalized = normalizePlanType(getAuthFilePlanType(file, quota));
   if (!normalized) return null;
   if (normalized === 'pro') return 50;
@@ -185,11 +178,7 @@ const getAuthFilePlanSortRank = (
   return 0;
 };
 
-const getAuthFileSearchValues = (
-  file: AuthFileItem,
-  t: TFunction,
-  quota?: CodexQuotaState
-) => {
+const getAuthFileSearchValues = (file: AuthFileItem, t: TFunction, quota?: CodexQuotaState) => {
   const planType = getAuthFilePlanType(file, quota);
   const planLabel = getCodexPlanLabel(planType, t);
   const accountId = resolveCodexChatgptAccountId(file);
@@ -244,6 +233,7 @@ export function AuthFilesPage() {
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
   const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
+  const [authJsonPasteOpen, setAuthJsonPasteOpen] = useState(false);
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
   const batchActionAnimationRef = useRef<AnimationPlaybackControlsWithThen | null>(null);
   const previousSelectionCountRef = useRef(0);
@@ -256,6 +246,7 @@ export function AuthFilesPage() {
     loading,
     error,
     uploading,
+    authJsonPasteSaving,
     deleting,
     deletingAll,
     statusUpdating,
@@ -264,6 +255,7 @@ export function AuthFilesPage() {
     loadFiles,
     handleUploadClick,
     handleFileChange,
+    savePastedAuthJson,
     handleDelete,
     handleDeleteAll,
     handleDownload,
@@ -368,11 +360,11 @@ export function AuthFilesPage() {
       const regularPageSize =
         typeof persisted.regularPageSize === 'number' && Number.isFinite(persisted.regularPageSize)
           ? clampCardPageSize(persisted.regularPageSize)
-          : legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE);
       const compactPageSize =
         typeof persisted.compactPageSize === 'number' && Number.isFinite(persisted.compactPageSize)
           ? clampCardPageSize(persisted.compactPageSize)
-          : legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE);
       setPageSizeByMode({
         regular: regularPageSize,
         compact: compactPageSize,
@@ -475,6 +467,14 @@ export function AuthFilesPage() {
       void loadFiles().catch(() => {});
     },
     [loadFiles, sortMode]
+  );
+
+  const handleSavePastedAuthJson = useCallback(
+    async (type: AuthJsonInputType, fileName: string, jsonText: string) => {
+      await savePastedAuthJson(type, fileName, jsonText);
+      setAuthJsonPasteOpen(false);
+    },
+    [savePastedAuthJson]
   );
 
   const handleHeaderRefresh = useCallback(async () => {
@@ -593,8 +593,7 @@ export function AuthFilesPage() {
         if (leftKnown || rightKnown) {
           if (!leftKnown) return 1;
           if (!rightKnown) return -1;
-          const rankDiff =
-            sortMode === 'plan-desc' ? rightRank - leftRank : leftRank - rightRank;
+          const rankDiff = sortMode === 'plan-desc' ? rightRank - leftRank : leftRank - rightRank;
           if (rankDiff !== 0) return rankDiff;
         }
 
@@ -844,6 +843,15 @@ export function AuthFilesPage() {
           <div className={styles.headerActions}>
             <Button variant="secondary" size="sm" onClick={handleHeaderRefresh} disabled={loading}>
               {t('common.refresh')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setAuthJsonPasteOpen(true)}
+              disabled={disableControls || authJsonPasteSaving}
+              loading={authJsonPasteSaving}
+            >
+              {t('auth_files.paste_button')}
             </Button>
             <Button
               size="sm"
@@ -1118,6 +1126,16 @@ export function AuthFilesPage() {
         onCopyText={copyTextWithNotification}
         onSave={handlePrefixProxySave}
         onChange={handlePrefixProxyChange}
+      />
+
+      <AuthJsonPasteModal
+        open={authJsonPasteOpen}
+        saving={authJsonPasteSaving}
+        disabled={disableControls}
+        onClose={() => {
+          if (!authJsonPasteSaving) setAuthJsonPasteOpen(false);
+        }}
+        onSave={handleSavePastedAuthJson}
       />
 
       {batchActionBarVisible && typeof document !== 'undefined'

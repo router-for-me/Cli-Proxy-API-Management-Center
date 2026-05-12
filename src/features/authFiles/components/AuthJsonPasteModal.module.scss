@@ -1,0 +1,60 @@
+@use '../../../styles/variables' as *;
+
+.authJsonPasteModal {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.prefixProxyError {
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  border: 1px solid var(--danger-color);
+  background-color: rgba($error-color, 0.1);
+  color: var(--danger-color);
+  font-size: 12px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  margin-top: $spacing-md;
+
+  label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+}
+
+.authJsonPasteTextarea {
+  width: 100%;
+  min-height: 300px;
+  box-sizing: border-box;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+}
+
+.authJsonPasteHint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
