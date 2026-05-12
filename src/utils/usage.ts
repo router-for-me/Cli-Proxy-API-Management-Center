@@ -100,7 +100,6 @@ export interface ModelStatsSummary {
   tokens: number;
   cost: number;
   averageLatencyMs: number | null;
-  totalLatencyMs: number | null;
   latencySampleCount: number;
 }
 
@@ -1063,7 +1062,6 @@ export function getModelStats(
         tokens: stats.tokens,
         cost: stats.cost,
         averageLatencyMs: latencyStats.averageMs,
-        totalLatencyMs: latencyStats.totalMs,
         latencySampleCount: latencyStats.sampleCount,
       };
     })

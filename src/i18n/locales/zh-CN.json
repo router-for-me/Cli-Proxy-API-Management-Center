@@ -1036,7 +1036,6 @@
     "request_events_result": "结果",
     "time": "延迟",
     "avg_time": "平均延迟",
-    "total_time": "总延迟",
     "latency_unit_hint": "耗时取自后端字段 {{field}}，按 {{unit}} 解释后再格式化显示。",
     "duration_unit_d": "天",
     "duration_unit_h": "时",

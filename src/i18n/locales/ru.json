@@ -1019,7 +1019,6 @@
     "request_events_result": "Результат",
     "time": "Задержка",
     "avg_time": "Средняя задержка",
-    "total_time": "Суммарная задержка",
     "latency_unit_hint": "Длительность берётся из поля бэкенда {{field}} и интерпретируется как {{unit}} перед форматированием.",
     "duration_unit_d": "д",
     "duration_unit_h": "ч",
