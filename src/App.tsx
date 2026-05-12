@@ -46,8 +46,7 @@ function App() {
 
   useEffect(() => {
     setLanguage(language);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 仅用于首屏同步 i18n 语言
+  }, [setLanguage, language]); // 仅用于首屏同步 i18n 语言
 
   useEffect(() => {
     document.documentElement.lang = language;

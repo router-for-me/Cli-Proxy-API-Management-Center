@@ -168,7 +168,7 @@ export function SystemPage() {
     }
   }, [config?.apiKeys]);
 
-  const fetchModels = async ({ forceRefresh = false }: { forceRefresh?: boolean } = {}) => {
+  const fetchModels = useCallback(async ({ forceRefresh = false }: { forceRefresh?: boolean } = {}) => {
     if (auth.connectionStatus !== 'connected') {
       setModelStatus({
         type: 'warning',
@@ -204,7 +204,7 @@ export function SystemPage() {
       const text = `${t('system_info.models_error')}${suffix}`;
       setModelStatus({ type: 'error', message: text });
     }
-  };
+  }, [auth.connectionStatus, auth.apiBase, resolveApiKeysForModels, fetchModelsFromStore, showNotification, t]);
 
   const handleClearLoginStorage = () => {
     showConfirmation({
@@ -336,8 +336,7 @@ export function SystemPage() {
 
   useEffect(() => {
     fetchModels();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.connectionStatus, auth.apiBase]);
+  }, [auth.connectionStatus, auth.apiBase, fetchModels]);
 
   return (
     <div className={styles.container}>

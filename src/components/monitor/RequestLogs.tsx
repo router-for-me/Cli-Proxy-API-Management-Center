@@ -252,8 +252,7 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
       return;
     }
     fetchLogData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeRange, customRange]);
+  }, [timeRange, customRange, fetchLogData]);
 
   // 获取倒计时显示文本
   const getCountdownText = () => {

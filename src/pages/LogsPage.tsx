@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -115,7 +115,7 @@ export function LogsPage() {
 
   const disableControls = connectionStatus !== 'connected';
 
-  const loadLogs = async (incremental = false) => {
+  const loadLogs = useCallback(async (incremental = false) => {
     if (connectionStatus !== 'connected') {
       setLoading(false);
       return;
@@ -191,7 +191,7 @@ export function LogsPage() {
         void loadLogs(false);
       }
     }
-  };
+  }, [connectionStatus]);
 
   useHeaderRefresh(() => loadLogs(false));
 
@@ -224,7 +224,7 @@ export function LogsPage() {
     showNotification(t('logs.download_success'), 'success');
   };
 
-  const loadErrorLogs = async () => {
+  const loadErrorLogs = useCallback(async () => {
     if (connectionStatus !== 'connected') {
       setLoadingErrors(false);
       return;
@@ -246,7 +246,7 @@ export function LogsPage() {
     } finally {
       setLoadingErrors(false);
     }
-  };
+  }, [connectionStatus]);
 
   const downloadErrorLog = async (name: string) => {
     try {
@@ -267,15 +267,13 @@ export function LogsPage() {
       latestTimestampRef.current = 0;
       loadLogs(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connectionStatus]);
+  }, [connectionStatus, loadLogs]);
 
   useEffect(() => {
     if (activeTab !== 'errors') return;
     if (connectionStatus !== 'connected') return;
     void loadErrorLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, connectionStatus, requestLogEnabled]);
+  }, [activeTab, connectionStatus, requestLogEnabled, loadErrorLogs]);
 
   useEffect(() => {
     if (!autoRefresh || connectionStatus !== 'connected') {
@@ -285,8 +283,7 @@ export function LogsPage() {
       loadLogs(true);
     }, 8000);
     return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh, connectionStatus]);
+  }, [autoRefresh, connectionStatus, loadLogs]);
 
   const visibleLines = useMemo(
     () => logState.buffer.slice(logState.visibleFrom),

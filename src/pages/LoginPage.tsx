@@ -109,32 +109,31 @@ export function LoginPage() {
     [setLanguage]
   );
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const autoLoggedIn = await restoreSession();
-        if (autoLoggedIn) {
-          setAutoLoginSuccess(true);
-          // 延迟跳转，让用户看到成功动画
-          setTimeout(() => {
-            const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
-            navigate(redirect, { replace: true });
-          }, 1500);
-        } else {
-          setApiBase(storedBase || detectedBase);
-          setManagementKey(storedKey || '');
-          setRememberPassword(storedRememberPassword || Boolean(storedKey));
-        }
-      } finally {
-        if (!autoLoginSuccess) {
-          setAutoLoading(false);
-        }
+  const init = useCallback(async () => {
+    try {
+      const autoLoggedIn = await restoreSession();
+      if (autoLoggedIn) {
+        setAutoLoginSuccess(true);
+        // 延迟跳转，让用户看到成功动画
+        setTimeout(() => {
+          const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
+          navigate(redirect, { replace: true });
+        }, 1500);
+      } else {
+        setApiBase(storedBase || detectedBase);
+        setManagementKey(storedKey || '');
+        setRememberPassword(storedRememberPassword || Boolean(storedKey));
       }
-    };
+    } finally {
+      if (!autoLoginSuccess) {
+        setAutoLoading(false);
+      }
+    }
+  }, [restoreSession, navigate, location, storedBase, detectedBase, storedKey, storedRememberPassword, autoLoginSuccess]);
 
+  useEffect(() => {
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [init]);
 
   const handleSubmit = useCallback(async () => {
     if (!managementKey.trim()) {
