@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { HttpMethod, ParsedLogLine, StatusGroup } from './logTypes';
 import { resolveStatusGroup } from './logTypes';
 
@@ -28,9 +29,15 @@ interface UseLogFiltersReturn {
 export function useLogFilters(options: UseLogFiltersOptions): UseLogFiltersReturn {
   const { parsedLines } = options;
 
-  const [methodFilters, setMethodFilters] = useState<HttpMethod[]>([]);
-  const [statusFilters, setStatusFilters] = useState<StatusGroup[]>([]);
-  const [pathFilters, setPathFilters] = useState<string[]>([]);
+  const [methodFilters, setMethodFilters] = useLocalStorage<HttpMethod[]>(
+    'logsPage.methodFilters',
+    []
+  );
+  const [statusFilters, setStatusFilters] = useLocalStorage<StatusGroup[]>(
+    'logsPage.statusFilters',
+    []
+  );
+  const [pathFilters, setPathFilters] = useLocalStorage<string[]>('logsPage.pathFilters', []);
 
   const methodFilterSet = useMemo(() => new Set(methodFilters), [methodFilters]);
   const statusFilterSet = useMemo(() => new Set(statusFilters), [statusFilters]);
@@ -70,14 +77,15 @@ export function useLogFilters(options: UseLogFiltersOptions): UseLogFiltersRetur
   }, [parsedLines]);
 
   useEffect(() => {
+    if (parsedLines.length === 0) return;
+
     const validPathSet = new Set(pathOptions.map((item) => item.path));
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPathFilters((prev) => {
       if (prev.length === 0) return prev;
       const next = prev.filter((path) => validPathSet.has(path));
       return next.length === prev.length ? prev : next;
     });
-  }, [pathOptions]);
+  }, [parsedLines.length, pathOptions, setPathFilters]);
 
   const toggleMethodFilter = (method: HttpMethod) => {
     setMethodFilters((prev) =>

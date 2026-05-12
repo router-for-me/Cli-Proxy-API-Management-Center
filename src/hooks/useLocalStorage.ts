@@ -2,7 +2,7 @@
  * LocalStorage Hook
  */
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export function useLocalStorage<T>(
   key: string,
@@ -18,15 +18,22 @@ export function useLocalStorage<T>(
     }
   });
 
-  const setValue = (value: T | ((val: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error);
-    }
-  };
+  const setValue = useCallback(
+    (value: T | ((val: T) => T)) => {
+      setStoredValue((currentValue) => {
+        const valueToStore = value instanceof Function ? value(currentValue) : value;
+
+        try {
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        } catch (error) {
+          console.error(`Error setting localStorage key "${key}":`, error);
+        }
+
+        return valueToStore;
+      });
+    },
+    [key]
+  );
 
   return [storedValue, setValue];
 }

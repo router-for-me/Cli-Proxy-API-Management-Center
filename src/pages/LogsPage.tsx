@@ -78,11 +78,14 @@ export function LogsPage() {
   const [logState, setLogState] = useState<LogState>({ buffer: [], visibleFrom: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useLocalStorage('logsPage.autoRefresh', false);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const [hideManagementLogs, setHideManagementLogs] = useState(true);
-  const [showRawLogs, setShowRawLogs] = useState(false);
+  const [hideManagementLogs, setHideManagementLogs] = useLocalStorage(
+    'logsPage.hideManagementLogs',
+    true
+  );
+  const [showRawLogs, setShowRawLogs] = useLocalStorage('logsPage.showRawLogs', false);
   const [structuredFiltersExpanded, setStructuredFiltersExpanded] = useLocalStorage(
     'logsPage.structuredFiltersExpanded',
     true
