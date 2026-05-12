@@ -9,7 +9,16 @@ export type OAuthProvider =
   | 'anthropic'
   | 'antigravity'
   | 'gemini-cli'
-  | 'kimi';
+  | 'kimi'
+  | 'copilot'
+  | 'windsurf'
+  | 'kiro'
+  | 'cursor'
+  | 'codebuddy'
+  | 'codebuddy-cn'
+  | 'qoder'
+  | 'trae'
+  | 'zed';
 
 // OAuth 流程状态
 export interface OAuthFlow {
