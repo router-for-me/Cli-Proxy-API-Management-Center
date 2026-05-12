@@ -6,11 +6,11 @@
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: $spacing-lg;
   position: relative;
 
   @include mobile {
-    gap: 16px;
+    gap: $spacing-md;
   }
 }
 
@@ -47,7 +47,7 @@
 
 .errorBox {
   padding: 10px;
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba($error-color, 0.1);
   border: 1px solid var(--error-color);
   border-radius: $radius-sm;
   color: var(--error-color);
@@ -61,13 +61,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(243, 244, 246, 0.75);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-
-:global([data-theme='dark']) .loadingOverlay {
-  background: rgba(25, 25, 25, 0.72);
+  background: var(--glass-bg-secondary);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
 }
 
 .loadingOverlayContent {
@@ -82,9 +78,9 @@
 }
 
 .loadingOverlaySpinner {
-  border-color: rgba(59, 130, 246, 0.25);
-  border-top-color: var(--primary-color);
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+  border-color: rgba($info-color, 0.25);
+  border-top-color: $info-color;
+  box-shadow: 0 0 10px rgba($info-color, 0.25);
 }
 
 .loadingOverlayText {
@@ -165,7 +161,7 @@
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.15);
   }
 }
 
@@ -255,8 +251,8 @@
 
   &.gold {
     --accent: #f59e0b;
-    --accent-soft: rgba(245, 158, 11, 0.18);
-    --accent-border: rgba(245, 158, 11, 0.35);
+    --accent-soft: rgba($warning-color,0.18);
+    --accent-border: rgba($warning-color,0.35);
   }
 }
 
@@ -748,7 +744,7 @@
   }
 
   &.failed {
-    background: rgba(239, 68, 68, 0.15);
+    background: rgba($error-color,0.15);
     color: var(--danger-color, #ef4444);
   }
 }
@@ -920,8 +916,8 @@
 
 .warningBox {
   color: var(--warning-color, #f59e0b);
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba($warning-color,0.1);
+  border: 1px solid rgba($warning-color,0.3);
   border-radius: $radius-md;
   padding: 8px 12px;
   font-size: 12px;
@@ -939,15 +935,15 @@
 .detailBtn {
   padding: 4px 10px;
   border-radius: $radius-md;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba($error-color,0.4);
+  background: rgba($error-color,0.1);
   color: var(--danger-color, #ef4444);
   font-size: 11px;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba($error-color,0.2);
     border-color: var(--danger-color, #ef4444);
   }
 }
@@ -956,8 +952,8 @@
 .disableBtn {
   padding: 4px 10px;
   border-radius: $radius-md;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba($error-color,0.4);
+  background: rgba($error-color,0.1);
   color: var(--danger-color, #ef4444);
   font-size: 11px;
   cursor: pointer;
@@ -965,7 +961,7 @@
   white-space: nowrap;
 
   &:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba($error-color,0.2);
     border-color: var(--danger-color, #ef4444);
   }
 }
@@ -1003,8 +999,8 @@
   padding: 2px 8px;
   margin-right: 4px;
   border-radius: $radius-md;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba($error-color,0.15);
+  border: 1px solid rgba($error-color,0.3);
   color: var(--danger-color, #ef4444);
   font-size: 11px;
 

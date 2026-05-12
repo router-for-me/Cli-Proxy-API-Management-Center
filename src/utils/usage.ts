@@ -12,6 +12,7 @@ import {
   extractLatencyMs,
   finalizeLatencyStats,
 } from './usage/latency';
+import { DEFAULT_MODEL_PRICES } from '@/data/modelPricePresets';
 import { maskApiKey } from './format';
 
 export type { DurationFormatOptions, LatencyStats } from './usage/latency';
@@ -820,19 +821,19 @@ export function calculateTotalCost(
  * 从 localStorage 加载模型价格
  */
 export function loadModelPrices(): Record<string, ModelPrice> {
+  const merged = { ...DEFAULT_MODEL_PRICES };
   try {
     if (typeof localStorage === 'undefined') {
-      return {};
+      return merged;
     }
     const raw = localStorage.getItem(MODEL_PRICE_STORAGE_KEY);
     if (!raw) {
-      return {};
+      return merged;
     }
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed)) {
-      return {};
+      return merged;
     }
-    const normalized: Record<string, ModelPrice> = {};
     Object.entries(parsed).forEach(([model, price]: [string, unknown]) => {
       if (!model) return;
       const priceRecord = isRecord(price) ? price : null;
@@ -857,15 +858,15 @@ export function loadModelPrices(): Record<string, ModelPrice> {
             ? promptRaw
             : prompt;
 
-      normalized[model] = {
+      merged[model] = {
         prompt,
         completion,
         cache,
       };
     });
-    return normalized;
+    return merged;
   } catch {
-    return {};
+    return merged;
   }
 }
 

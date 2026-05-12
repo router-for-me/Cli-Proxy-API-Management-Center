@@ -6,7 +6,7 @@
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: $spacing-lg;
   position: relative;
 }
 
@@ -611,134 +611,6 @@
 .durationCell {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-
-// Pricing Section (80%比例)
-.pricingSection {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.priceForm {
-  padding: 10px;
-  background-color: var(--bg-secondary);
-  border-radius: $radius-sm;
-  border: 1px solid var(--border-color);
-}
-
-.formRow {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-
-  @include mobile {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-
-.formField {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex: 1;
-  min-width: 120px;
-
-  label {
-    font-size: 10px;
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
-
-  // 确保 Input 组件的 form-group 包装器不影响布局
-  :global(.form-group) {
-    margin: 0;
-
-    > label {
-      display: none; // 隐藏 Input 自带的 label，使用外层的
-    }
-  }
-
-  :global(.input) {
-    height: 40px;
-    box-sizing: border-box;
-  }
-}
-
-.pricesList {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.pricesTitle {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.pricesGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.priceItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  background-color: var(--bg-secondary);
-  border-radius: $radius-sm;
-  border: 1px solid var(--border-color);
-  gap: 10px;
-
-  @include mobile {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-.priceInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  flex: 1;
-}
-
-.priceModel {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 11px;
-  word-break: break-all;
-}
-
-.priceMeta {
-  display: flex;
-  gap: 10px;
-  font-size: 10px;
-  color: var(--text-secondary);
-
-  @include mobile {
-    flex-direction: column;
-    gap: 3px;
-  }
-}
-
-.priceActions {
-  display: flex;
-  gap: 3px;
-  flex-shrink: 0;
-}
-
-.editModalBody {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
 
 // Chart Section (80%比例)

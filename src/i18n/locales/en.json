@@ -1014,6 +1014,7 @@
     "model_price_cache": "Cache price",
     "model_price_save": "Save Price",
     "model_price_empty": "No model prices set",
+    "model_price_preset": "preset",
     "model_price_model": "Model",
     "model_price_saved": "Model price saved",
     "model_price_model_required": "Please choose a model to set pricing",

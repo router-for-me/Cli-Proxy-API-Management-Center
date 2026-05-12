@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
+import { DEFAULT_MODEL_PRICES } from '@/data/modelPricePresets';
 import type { ModelPrice } from '@/utils/usage';
-import styles from '@/pages/UsagePage.module.scss';
+import styles from './PriceSettingsCard.module.scss';
 
 export interface PriceSettingsCardProps {
   modelNames: string[];
@@ -151,7 +152,12 @@ export function PriceSettingsCard({
               {Object.entries(modelPrices).map(([model, price]) => (
                 <div key={model} className={styles.priceItem}>
                   <div className={styles.priceInfo}>
-                    <span className={styles.priceModel}>{model}</span>
+                    <span className={styles.priceModel}>
+                      {model}
+                      {model in DEFAULT_MODEL_PRICES && (
+                        <span className={styles.presetTag}>{t('usage_stats.model_price_preset')}</span>
+                      )}
+                    </span>
                     <div className={styles.priceMeta}>
                       <span>
                         {t('usage_stats.model_price_prompt')}: ${price.prompt.toFixed(4)}/1M
