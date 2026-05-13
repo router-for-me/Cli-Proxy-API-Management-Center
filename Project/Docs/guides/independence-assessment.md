@@ -1,16 +1,17 @@
 # CPA-Dashboard 独立化评估
 
-> 评估时间: 2026-05-12 | 状态: 60% 就绪
+> 评估时间: 2026-05-13 | 状态: 67% 就绪
 
 ## 分支状态
 
 | 指标 | 数值 |
 |------|------|
-| dev 领先 upstream/main | 108 commits |
-| upstream/main 未合入 dev | 60 (47 有意义，13 CI/merge/deps) |
+| dev 领先 upstream/main | 116 commits |
+| upstream/main 未合入 dev | 60 |
+| 已精选上游提交 | 13 (3212f65, c43df08, 0546f43, c27707c, 7d3c570, 808f44d, 8ed837c, b4d5ffa, 1a056ec, 9f7c471, 126f7fa, 3bb4760, eb49c0d) |
 | main 分支发散 | 0（干净） |
-| dev 领先 main | 27 commits |
-| 文件变更 main vs dev | 87 files, +2190/-1269 |
+| dev 领先 main | 31 commits |
+| 文件变更 main vs dev | 91 files, +5600/-4500 |
 | 上游最新 tag | v1.10.2 |
 | 当前版本 | 1.7.36 |
 
@@ -58,3 +59,13 @@
 4. 暂不完全断联上游（上游仍在活跃开发 v1.10.2+）
 
 **预计总工作量：L（1-2 天专注冲突解决和测试）**
+
+## 进展记录
+
+### 2026-05-13
+- 精选 3 个上游提交：session affinity (3212f65)、Claude Team (c43df08)、antigravity credits (0546f43)
+- OAuth 多平台：新增 9 个 provider i18n keys (99/locale)，OAuthProvider 类型去重统一到 @/types/oauth
+- 参考仓库追踪：cockpit-tools v0.23.2、codex2api 10 commits 已同步
+- 代码质量：reset.scss body 块合并
+- 上游精选总进度：13/47 (28%)
+- 剩余可安全精选的提交已近枯竭（layout.scss/LogsPage.module.scss 均为重写文件，冲突严重）
