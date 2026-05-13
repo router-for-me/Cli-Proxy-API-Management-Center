@@ -3,13 +3,9 @@
  */
 
 import { apiClient } from './client';
+import type { OAuthProvider } from '@/types/oauth';
 
-export type OAuthProvider =
-  | 'codex'
-  | 'anthropic'
-  | 'antigravity'
-  | 'gemini-cli'
-  | 'kimi';
+export type { OAuthProvider };
 
 export interface OAuthStartResponse {
   url: string;
