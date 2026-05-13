@@ -116,6 +116,7 @@
     "oauth": "OAuth Login",
     "quota_management": "Quota Management",
     "config_management": "Config Panel",
+    "usage_statistics": "Usage Statistics",
     "logs": "Logs Viewer",
     "system_info": "Management Center Info"
   },
@@ -1076,7 +1077,9 @@
           "disable_panel_desc": "Disable the built-in web control panel",
           "secret_key": "Management Key",
           "secret_key_placeholder": "Set management key",
-          "panel_repo": "Panel Repository"
+          "panel_repo": "Panel Repository",
+          "usage_statistics_url": "Third-party Statistics Panel Address",
+          "usage_statistics_url_placeholder": "Third-party statistics panel address"
         },
         "auth": {
           "title": "Authentication Configuration",
@@ -1265,6 +1268,11 @@
     "clear_login_desc": "Clear locally saved login data and sign out.",
     "clear_login_button": "Clear login data",
     "clear_login_confirm": "Clear local login data and sign out now?"
+  },
+  "usage_statistics": {
+    "title": "Usage Statistics",
+    "empty_title": "Usage statistics not configured",
+    "empty_desc": "Enter a third-party statistics panel address in Config Panel > Remote Management first."
   },
   "notification": {
     "debug_updated": "Debug settings updated",

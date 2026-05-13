@@ -116,6 +116,7 @@
     "oauth": "OAuth 登录",
     "quota_management": "配额管理",
     "config_management": "配置面板",
+    "usage_statistics": "使用统计",
     "logs": "日志查看",
     "system_info": "中心信息"
   },
@@ -1076,7 +1077,9 @@
           "disable_panel_desc": "禁用内置的 Web 控制面板",
           "secret_key": "管理密钥",
           "secret_key_placeholder": "设置管理密钥",
-          "panel_repo": "面板仓库"
+          "panel_repo": "面板仓库",
+          "usage_statistics_url": "第三方统计面板地址",
+          "usage_statistics_url_placeholder": "第三方统计面板的地址"
         },
         "auth": {
           "title": "认证配置",
@@ -1265,6 +1268,11 @@
     "clear_login_desc": "清理本地保存的登录信息并退出登录。",
     "clear_login_button": "清理登录信息",
     "clear_login_confirm": "确认清理本地登录信息并退出登录？"
+  },
+  "usage_statistics": {
+    "title": "使用统计",
+    "empty_title": "未配置使用统计",
+    "empty_desc": "请先在配置面板的远程管理中填写第三方统计面板地址。"
   },
   "notification": {
     "debug_updated": "调试设置已更新",

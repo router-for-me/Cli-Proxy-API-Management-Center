@@ -116,6 +116,7 @@
     "oauth": "OAuth 登入",
     "quota_management": "配額管理",
     "config_management": "設定面板",
+    "usage_statistics": "使用統計",
     "logs": "記錄檢視",
     "system_info": "中心資訊"
   },
@@ -1102,7 +1103,9 @@
           "disable_panel_desc": "停用內建的 Web 控制面板",
           "secret_key": "管理金鑰",
           "secret_key_placeholder": "設定管理金鑰",
-          "panel_repo": "面板儲存庫"
+          "panel_repo": "面板儲存庫",
+          "usage_statistics_url": "第三方統計面板位址",
+          "usage_statistics_url_placeholder": "第三方統計面板的位址"
         },
         "auth": {
           "title": "驗證設定",
@@ -1291,6 +1294,11 @@
     "clear_login_desc": "清理本地儲存的登入資訊並登出。",
     "clear_login_button": "清理登入資訊",
     "clear_login_confirm": "確認清理本地登入資訊並登出？"
+  },
+  "usage_statistics": {
+    "title": "使用統計",
+    "empty_title": "尚未設定使用統計",
+    "empty_desc": "請先在設定面板的遠端管理中填寫第三方統計面板位址。"
   },
   "notification": {
     "debug_updated": "除錯設定已更新",

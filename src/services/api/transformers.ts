@@ -413,6 +413,13 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   }
   config.wsAuth = normalizeBoolean(raw['ws-auth'] ?? raw.wsAuth);
   config.forceModelPrefix = normalizeBoolean(raw['force-model-prefix'] ?? raw.forceModelPrefix);
+  const usageStatisticsUrl = raw['usage-statistics-url'] ?? raw.usageStatisticsUrl;
+  if (usageStatisticsUrl !== undefined && usageStatisticsUrl !== null) {
+    const trimmed = String(usageStatisticsUrl).trim();
+    if (trimmed) {
+      config.usageStatisticsUrl = trimmed;
+    }
+  }
   const routing = raw.routing;
   const strategyRaw = isRecord(routing)
     ? (routing.strategy ?? routing['strategy'])

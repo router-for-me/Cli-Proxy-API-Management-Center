@@ -723,6 +723,15 @@ export function VisualConfigEditor({
                   onChange={(e) => onChange({ rmPanelRepo: e.target.value })}
                   disabled={disabled}
                 />
+                <Input
+                  label={t('config_management.visual.sections.remote.usage_statistics_url')}
+                  placeholder={t(
+                    'config_management.visual.sections.remote.usage_statistics_url_placeholder'
+                  )}
+                  value={values.rmUsageStatisticsUrl ?? ''}
+                  onChange={(e) => onChange({ rmUsageStatisticsUrl: e.target.value })}
+                  disabled={disabled}
+                />
               </SectionGrid>
             </SectionStack>
           </ConfigSection>

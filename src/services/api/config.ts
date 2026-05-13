@@ -5,6 +5,29 @@
 import { apiClient } from './client';
 import type { Config } from '@/types';
 import { normalizeConfigResponse } from './transformers';
+import { parse as parseYaml } from 'yaml';
+
+function extractUsageStatisticsUrlFromYaml(content: string): string | undefined {
+  try {
+    const parsed = parseYaml(content);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined;
+    const usageStatisticsUrl = (parsed as Record<string, unknown>)['usage-statistics-url'];
+    if (usageStatisticsUrl === undefined || usageStatisticsUrl === null) return undefined;
+    const trimmed = String(usageStatisticsUrl).trim();
+    return trimmed || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function fetchUsageStatisticsUrlFromYaml(): Promise<string | undefined> {
+  const response = await apiClient.getRaw('/config.yaml', {
+    responseType: 'text',
+    headers: { Accept: 'application/yaml, text/yaml, text/plain' }
+  });
+  const data: unknown = response.data;
+  return extractUsageStatisticsUrlFromYaml(typeof data === 'string' ? data : String(data ?? ''));
+}
 
 export const configApi = {
   /**
@@ -12,7 +35,15 @@ export const configApi = {
    */
   async getConfig(): Promise<Config> {
     const raw = await apiClient.get('/config');
-    return normalizeConfigResponse(raw);
+    const config = normalizeConfigResponse(raw);
+    if (!config.usageStatisticsUrl) {
+      try {
+        config.usageStatisticsUrl = await fetchUsageStatisticsUrlFromYaml();
+      } catch {
+        // /config is the primary source; YAML fallback only enriches optional UI metadata.
+      }
+    }
+    return config;
   },
 
   /**

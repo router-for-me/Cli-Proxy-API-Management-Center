@@ -429,6 +429,17 @@ export function IconSidebarQuota({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconSidebarUsage({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...sidebarSvgProps} width={size} height={size} {...props}>
+      <path d="M3.5 20h17" />
+      <rect x="5" y="13" width="3.5" height="7" rx="0.5" />
+      <rect x="10.25" y="7" width="3.5" height="13" rx="0.5" fill="currentColor" fillOpacity="0.12" />
+      <rect x="15.5" y="10" width="3.5" height="10" rx="0.5" />
+    </svg>
+  );
+}
+
 export function IconSidebarLogs({ size = 20, ...props }: IconProps) {
   return (
     <svg {...sidebarSvgProps} width={size} height={size} {...props}>

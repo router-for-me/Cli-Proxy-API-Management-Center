@@ -593,6 +593,12 @@ function getNextDirtyFields(
   if (Object.prototype.hasOwnProperty.call(patch, 'rmPanelRepo')) {
     updateDirty('rmPanelRepo', nextValues.rmPanelRepo === baselineValues.rmPanelRepo);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'rmUsageStatisticsUrl')) {
+    updateDirty(
+      'rmUsageStatisticsUrl',
+      nextValues.rmUsageStatisticsUrl === baselineValues.rmUsageStatisticsUrl
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'authDir')) {
     updateDirty('authDir', nextValues.authDir === baselineValues.authDir);
   }
@@ -832,6 +838,10 @@ export function useVisualConfig() {
             : typeof remoteManagement?.['panel-repo'] === 'string'
               ? remoteManagement['panel-repo']
               : '',
+        rmUsageStatisticsUrl:
+          typeof parsed['usage-statistics-url'] === 'string'
+            ? parsed['usage-statistics-url']
+            : '',
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
         apiKeysText: resolveApiKeysText(parsed),
@@ -936,6 +946,8 @@ export function useVisualConfig() {
           }
           deleteIfMapEmpty(doc, ['remote-management']);
         }
+
+        setStringInDoc(doc, ['usage-statistics-url'], values.rmUsageStatisticsUrl);
 
         setStringInDoc(doc, ['auth-dir'], values.authDir);
         const apiKeys = values.apiKeysText
