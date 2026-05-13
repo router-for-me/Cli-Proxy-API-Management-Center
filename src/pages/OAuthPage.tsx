@@ -17,6 +17,7 @@ import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconIflow from '@/assets/icons/iflow.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
+import iconKiro from '@/assets/icons/kiro.svg';
 
 interface ProviderState {
   url?: string;
@@ -76,7 +77,16 @@ const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabe
   { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
   { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconAntigravity },
   { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini },
-  { id: 'kimi', titleKey: 'auth_login.kimi_oauth_title', hintKey: 'auth_login.kimi_oauth_hint', urlLabelKey: 'auth_login.kimi_oauth_url_label', icon: { light: iconKimiLight, dark: iconKimiDark } }
+  { id: 'kimi', titleKey: 'auth_login.kimi_oauth_title', hintKey: 'auth_login.kimi_oauth_hint', urlLabelKey: 'auth_login.kimi_oauth_url_label', icon: { light: iconKimiLight, dark: iconKimiDark } },
+  { id: 'copilot', titleKey: 'auth_login.copilot_oauth_title', hintKey: 'auth_login.copilot_oauth_hint', urlLabelKey: 'auth_login.copilot_oauth_url_label', icon: iconCodex },
+  { id: 'windsurf', titleKey: 'auth_login.windsurf_oauth_title', hintKey: 'auth_login.windsurf_oauth_hint', urlLabelKey: 'auth_login.windsurf_oauth_url_label', icon: iconCodex },
+  { id: 'kiro', titleKey: 'auth_login.kiro_oauth_title', hintKey: 'auth_login.kiro_oauth_hint', urlLabelKey: 'auth_login.kiro_oauth_url_label', icon: iconKiro },
+  { id: 'cursor', titleKey: 'auth_login.cursor_oauth_title', hintKey: 'auth_login.cursor_oauth_hint', urlLabelKey: 'auth_login.cursor_oauth_url_label', icon: iconCodex },
+  { id: 'codebuddy', titleKey: 'auth_login.codebuddy_oauth_title', hintKey: 'auth_login.codebuddy_oauth_hint', urlLabelKey: 'auth_login.codebuddy_oauth_url_label', icon: iconCodex },
+  { id: 'codebuddy-cn', titleKey: 'auth_login.codebuddy_cn_oauth_title', hintKey: 'auth_login.codebuddy_cn_oauth_hint', urlLabelKey: 'auth_login.codebuddy_cn_oauth_url_label', icon: iconCodex },
+  { id: 'qoder', titleKey: 'auth_login.qoder_oauth_title', hintKey: 'auth_login.qoder_oauth_hint', urlLabelKey: 'auth_login.qoder_oauth_url_label', icon: iconCodex },
+  { id: 'trae', titleKey: 'auth_login.trae_oauth_title', hintKey: 'auth_login.trae_oauth_hint', urlLabelKey: 'auth_login.trae_oauth_url_label', icon: iconCodex },
+  { id: 'zed', titleKey: 'auth_login.zed_oauth_title', hintKey: 'auth_login.zed_oauth_hint', urlLabelKey: 'auth_login.zed_oauth_url_label', icon: iconCodex },
 ];
 
 const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli'];
