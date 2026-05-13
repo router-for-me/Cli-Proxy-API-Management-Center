@@ -50,8 +50,10 @@ const t = ((key: string, options?: Record<string, unknown>) => {
     'status_bar.no_requests': 'No requests',
     'codex_quota.title': 'Codex Quota',
     'codex_quota.refresh_button': 'Refresh',
+    'codex_quota.retry_button': 'Retry',
     'codex_quota.empty_windows': 'No quota data',
     'codex_quota.idle': 'Click refresh quota',
+    'codex_quota.load_failed': 'Failed to load quota: {{message}}',
   };
   let value = copy[key] ?? key;
   Object.entries(options ?? {}).forEach(([name, replacement]) => {
@@ -341,5 +343,54 @@ describe('MonitoringCenterPage account card', () => {
     expect(html).toContain('gpt-5.5');
     expect(html).toContain('codex-auto-review');
     expect(html).not.toContain('long-tail-model');
+  });
+
+  it('renders a retry button when account quota refresh failed', () => {
+    const html = renderToStaticMarkup(
+      <AccountExpandedDetails
+        row={{
+          id: 'account@example.com',
+          account: 'account@example.com',
+          displayAccount: 'account@example.com',
+          accountMasked: 'acc***@example.com',
+          authLabels: ['alpha'],
+          authIndices: ['1'],
+          channels: ['default'],
+          totalCalls: 0,
+          successCalls: 0,
+          failureCalls: 0,
+          successRate: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          cachedTokens: 0,
+          totalTokens: 0,
+          totalCost: 0,
+          averageLatencyMs: null,
+          lastSeenAt: Date.UTC(2026, 4, 10, 12, 0, 0),
+          recentPattern: [],
+          models: [],
+        }}
+        hasPrices={false}
+        locale="en"
+        t={t}
+        summaryMetrics={[
+          { key: 'total-tokens', label: 'Total Tokens', value: '0' },
+          { key: 'input-tokens', label: 'Input Tokens', value: '0' },
+          { key: 'output-tokens', label: 'Output Tokens', value: '0' },
+          { key: 'cached-tokens', label: 'Cached Tokens', value: '0' },
+        ]}
+        quotaState={{
+          status: 'error',
+          targetKey: 'account@example.com',
+          entries: [],
+          error: 'upstream timeout',
+        }}
+        onRefreshQuota={() => {}}
+        variant="table"
+      />
+    );
+
+    expect(html).toContain('Failed to load quota: upstream timeout');
+    expect(html).toContain('Retry');
   });
 });
