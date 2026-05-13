@@ -32,7 +32,7 @@ CPA 自 v6.10.0 起不再内置用量统计。当前方案通过常驻 Usage Ser
 | 模式 | 入口地址 | 用户需要配置 | 适用场景 |
 |---|---|---|---|
 | 完整 Docker 方案 | `http://<host>:18317/management.html` | 登录时填写 CPA 地址 + Management Key | 新部署、单入口、最少浏览器/CORS 问题 |
-| CPA 控制面板方案 | `http://<cpa-host>:8317/management.html` | 在「中心信息 -> 外部用量统计服务」配置 Usage Service 地址 | 保留 CPA 自动载入面板的现有习惯 |
+| CPA 控制面板方案 | `http://<cpa-host>:8317/management.html` | 在「配置面板 -> CPA-Manager 配置」配置 Usage Service 地址 | 保留 CPA 自动载入面板的现有习惯 |
 | 前端开发方案 | Vite dev server 或 `dist/index.html` | CPA 地址，可选 Usage Service 地址 | 本地开发 |
 
 完整 Docker 方案不内置 CPA 本体。CPA 仍然作为上游服务独立运行；Docker 镜像提供 Usage Service 和内置管理面板。
@@ -42,10 +42,12 @@ CPA 自 v6.10.0 起不再内置用量统计。当前方案通过常驻 Usage Ser
 请求统计依赖 CPA 的用量队列：
 
 - CPA 必须启用 Management，因为用量队列与 `/v0/management` 使用相同的可用性条件和 Management Key。
-- 在 CPA 中启用用量发布：配置 `usage-statistics-enabled: true`，或通过 `PUT /usage-statistics-enabled` 提交 `{ "value": true }`。
+- 使用请求监控时，CPA 必须启用用量发布：配置 `usage-statistics-enabled: true`，或通过 `PUT /usage-statistics-enabled` 提交 `{ "value": true }`。CPA-Manager 初始化或保存启用请求监控时会自动打开该开关。
+- 关闭 CPAM 请求监控只会停止 Usage Service 采集器，不会自动关闭 CPA 用量发布或清空 CPA 用量队列。如果 CPA 用量发布仍开启，在队列保留时间内再次启用请求监控，可能会采集到关闭采集器期间保留的数据。
 - CPA `v6.10.8+` 推荐使用 HTTP 用量队列接口 `/v0/management/usage-queue`，可通过普通 HTTP 反代访问。
 - 旧版 CPA 使用 RESP 队列协议。Usage Service 在 `auto` 模式下，如果 HTTP 队列接口不可用，会回退到 RESP。RESP 监听在 CPA API 端口，通常是 `8317`，不能通过普通 HTTP 反代转发。
 - CPA 在内存中保留队列项的时间由 `redis-usage-queue-retention-seconds` 控制，默认 `60` 秒，最大 `3600` 秒。Usage Service 应保持常驻运行。
+- Usage Service 的 `pollIntervalMs` 必须小于等于 CPA 队列保留时间换算后的毫秒值；否则服务会拒绝保存，避免空闲轮询过慢导致队列项过期。
 - 同一个 CPA 实例只应有一个 Usage Service 消费用量队列。
 
 ## 架构
@@ -62,7 +64,7 @@ CPA 自 v6.10.0 起不再内置用量统计。当前方案通过常驻 Usage Ser
       -> SQLite /data/usage.sqlite
 ```
 
-登录页会识别当前由 Usage Service 托管。你填写 CPA 地址和 Management Key 后，Usage Service 会验证 CPA Management API，保存设置到 SQLite，按配置的采集模式启动采集器（默认 `auto`：优先 HTTP 队列，旧版回退 RESP），并从同源提供完整管理面板。
+登录页会识别当前由 Usage Service 托管。你填写 CPA 地址、Management Key，并选择是否启用请求监控。启用时还需要填写采集轮询间隔，Usage Service 会验证 CPA Management API，启用 CPA 用量统计，校验采集间隔不超过 CPA 队列保留时间，把 CPA-Manager 配置保存到 SQLite，按配置的采集模式启动采集器（默认 `auto`：优先 HTTP 队列，旧版回退 RESP），并从同源提供完整管理面板。关闭请求监控时仍会保存 CPA 连接用于反代管理接口，但不会启用 CPA 用量统计或启动采集器。
 
 ### CPA 控制面板方案
 
@@ -77,7 +79,7 @@ Usage Service
   -> SQLite /data/usage.sqlite
 ```
 
-当你希望保留 CPA 自动下载并托管面板的机制时，使用这个方案。单独部署 Usage Service，然后在「中心信息 -> 外部用量统计服务」中启用并填写地址。
+当你希望保留 CPA 自动下载并托管面板的机制时，使用这个方案。请求监控是可选能力；如果没有部署 Usage Service，面板会自动隐藏请求监控入口，直接访问监控页时会提示先部署并配置 Usage Service。需要请求监控时，单独部署 Usage Service，然后在面板的「配置面板 -> CPA-Manager 配置」中启用并填写地址。
 
 ## 快速开始：完整 Docker 方案
 
@@ -209,7 +211,7 @@ docker run -d \
 3. 在 CPA 面板进入：
 
    ```text
-   中心信息 -> 外部用量统计服务
+   配置面板 -> CPA-Manager 配置
    ```
 
 4. 启用并填写：
@@ -218,7 +220,7 @@ docker run -d \
    http://<usage-service-host>:18317
    ```
 
-5. 点击「保存并连接」。
+5. 保存 CPA-Manager 配置。
 
 面板会把当前 CPA 地址和 Management Key 发送给 Usage Service。之后监控页从 Usage Service 读取用量数据，其他管理功能仍然访问 CPA。
 
@@ -232,7 +234,7 @@ docker compose -f docker-compose.usage.yml up --build
 
 ## Usage Service 配置项
 
-大多数用户可以直接在面板中配置 CPA 地址和 Management Key。环境变量适合自动化部署。
+大多数用户可以直接在面板的「配置面板 -> CPA-Manager 配置」中配置 CPA 地址、Management Key、是否启用请求监控、采集模式和轮询间隔。CPA-Manager 配置会保存到 SQLite；环境变量更适合首次引导和无人值守部署。
 
 | 变量 | 默认值 | 说明 |
 |---|---:|---|
@@ -253,7 +255,7 @@ docker compose -f docker-compose.usage.yml up --build
 | `USAGE_RESP_TLS_SKIP_VERIFY` | `false` | RESP TLS 连接是否跳过证书校验 |
 | `PANEL_PATH` | 空 | 使用自定义 `management.html` 替代内置面板 |
 
-配置优先级为：环境变量 > `config.json` > 程序默认值。配置文件中的相对路径按配置文件所在目录解析。默认生成的配置文件内容如下：
+启动类配置的优先级为：环境变量 > `config.json` > 程序默认值。配置文件中的相对路径按配置文件所在目录解析。默认生成的配置文件内容如下：
 
 ```json
 {
@@ -262,16 +264,32 @@ docker compose -f docker-compose.usage.yml up --build
 }
 ```
 
-如果设置了 `CPA_UPSTREAM_URL` 和 `CPA_MANAGEMENT_KEY`，服务启动后会自动开始采集。否则通过面板 setup 流程配置。
+如果设置了 `CPA_UPSTREAM_URL` 和 `CPA_MANAGEMENT_KEY`，服务启动后会自动开始采集，并作为环境变量管理的连接配置展示在面板中。否则通过面板 setup 流程配置，保存到 SQLite `settings.manager_config_v1`；旧版 `settings.setup` 会继续写入，用于兼容已有数据和回滚。
+
+### CPA 与 CPA-Manager 配置边界
+
+- **CPA 配置**：`usage-statistics-enabled`、`redis-usage-queue-retention-seconds`、代理、日志、路由、认证文件等仍属于 CPA，由 `/config` / `/config.yaml` 管理。
+- **CPA-Manager 配置**：CPA 连接地址、Management Key、请求监控开关、Usage Service 采集模式、`pollIntervalMs`、`batchSize`、`queryLimit`、CPA 控制面板模式下的 Usage Service 引导地址等保存到 Usage Service SQLite。
+- 配置面板会分开展示 CPA 与 CPA-Manager 配置。保存 CPAM 配置不会写入 CPA `config.yaml`；启用请求监控时会按要求调用 CPA Management API 启用用量统计，关闭请求监控时只停止 CPAM 采集器。
+
+### 迁移指引
+
+1. 备份 Usage Service 数据目录，尤其是 `/data/usage.sqlite`。
+2. 升级后首次打开面板，进入「配置面板 -> CPA-Manager 配置」检查 CPA 地址、请求监控开关、采集模式和轮询间隔。旧数据缺少请求监控开关时按已启用处理。
+3. 如果旧版本已经通过 `/setup` 保存过 CPA 地址和 Management Key，服务会从 `settings.setup` 自动生成新的 `settings.manager_config_v1` 视图，并在下次保存时写入新结构。
+4. 如果使用环境变量 `CPA_UPSTREAM_URL` / `CPA_MANAGEMENT_KEY`，连接配置仍由环境变量管理；要改为面板持久化，请移除环境变量后重启，再在面板保存。
+5. CPA 托管面板模式下，浏览器仍需要先知道 Usage Service 地址才能读取其数据库配置；首次填写后会同步写入 SQLite，并继续保留本地缓存作为 bootstrap。
 
 ## 数据与安全说明
 
 - SQLite 数据存储在 `/data`，必须挂载到持久化 volume 或宿主机目录。
 - 完整 Docker 方案会把 CPA 地址和 Management Key 保存到 SQLite `settings` 表，用于容器重启后恢复采集。
+- 新版会优先读取 SQLite `settings.manager_config_v1`；旧 `settings.setup` 会保留为兼容数据。
 - 请保护 `/data` volume，它包含用量元数据和保存的 Management Key。
 - Usage Service 会在保存 raw JSON 快照前脱敏疑似密钥字段，但请求元数据仍可能暴露模型、接口、账号标签和 token 用量。
 - RESP 队列是弹出式消费，不要让多个 Usage Service 同时消费同一个 CPA 实例。
 - 如果 Usage Service 停机超过 CPA 队列保留时间，该时段用量无法在不修改 CPA 的情况下恢复。
+- 如果只关闭 CPAM 采集器而 CPA 用量发布仍开启，队列保留时间内重新开启采集器可能会消费停用期间仍保留的队列项。
 
 ## 运行时接口
 
@@ -280,6 +298,8 @@ docker compose -f docker-compose.usage.yml up --build
 | `GET /health` | 基础健康检查 |
 | `GET /status` | 采集器、SQLite、事件数、错误状态 |
 | `GET /usage-service/info` | 让前端识别完整 Docker 方案 |
+| `GET /usage-service/config` | 读取 CPA-Manager 持久化配置和 CPA 用量统计状态 |
+| `PUT /usage-service/config` | 保存 CPA-Manager 配置，并按需重启采集器 |
 | `POST /setup` | 保存 CPA 地址和 Management Key，并启动采集 |
 | `GET /v0/management/usage` | 面板兼容用量数据 |
 | `GET /v0/management/usage/export` | JSONL 导出用量事件 |
@@ -297,14 +317,14 @@ setup 后，`/status`、用量、模型价格和 `/v0/management/*` 反代接口
 ## 功能概览
 
 - **仪表盘**：连接状态、后端版本、快速健康概览
-- **配置管理**：可视化和源码模式编辑 CPA 配置
+- **配置管理**：可视化和源码模式编辑 CPA 配置，并单独管理 CPA-Manager 配置
 - **AI 提供商**：Gemini、Codex、Claude、Vertex、OpenAI 兼容渠道、Ampcode
 - **认证文件**：上传、下载、删除、状态、OAuth 排除模型、模型别名
 - **配额管理**：支持提供商的配额视图
 - **请求监控**：持久化用量 KPI、模型/渠道/账号拆解、模型价格、Token 费用估算、失败分析、实时表格
 - **Codex 账号巡检**：批量探测 Codex 认证池并给出清理建议
 - **日志**：增量读取和筛选文件日志
-- **中心信息**：模型列表、版本检查、本地状态工具、外部 Usage Service 配置
+- **中心信息**：模型列表、版本检查、本地状态工具
 
 ## 开发命令
 
