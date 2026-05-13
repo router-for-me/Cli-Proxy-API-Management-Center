@@ -125,7 +125,6 @@ describe('repo source integrity', () => {
 
   it('keeps changed text files free of hidden control unicode', () => {
     const changedTextFiles = listChangedTextFiles();
-    expect(changedTextFiles.length).toBeGreaterThan(0);
 
     const violations = changedTextFiles.flatMap((relativePath) => {
       const absolutePath = path.resolve(repoRoot, relativePath);
@@ -139,6 +138,10 @@ describe('repo source integrity', () => {
 
     expect(violations).toEqual([]);
   }, 15_000);
+
+  it('allows an empty changed-file list after the PR branch is merged', () => {
+    expect(listChangedTextFiles('')).toEqual([]);
+  });
 
   it('fails closed when the diff base is unavailable', () => {
     expect(() => listChangedTextFiles(undefined, 'missing-base-ref...HEAD')).toThrow(
