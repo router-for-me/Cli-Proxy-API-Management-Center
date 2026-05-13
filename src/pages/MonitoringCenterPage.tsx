@@ -84,6 +84,7 @@ import { MonitoringPanel } from '@/features/monitoring/components/MonitoringPane
 import { useUsageData } from '@/features/monitoring/hooks/useUsageData';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useInterval } from '@/hooks/useInterval';
+import { useRequestMonitoringAvailability } from '@/hooks/useRequestMonitoringAvailability';
 import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type {
@@ -1901,6 +1902,7 @@ export function MonitoringCenterPage() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const showNotification = useNotificationStore((state) => state.showNotification);
   const showConfirmation = useNotificationStore((state) => state.showConfirmation);
+  const requestMonitoringAvailability = useRequestMonitoringAvailability();
   const [timeRange, setTimeRange] = useState<MonitoringTimeRange>('today');
   const [customStartInput, setCustomStartInput] = useState(getTodayStartInputValue);
   const [customEndInput, setCustomEndInput] = useState(getCurrentInputValue);
@@ -2055,8 +2057,22 @@ export function MonitoringCenterPage() {
     connectionStatus === 'connected' && Number(autoRefreshMs) > 0 ? Number(autoRefreshMs) : null
   );
 
-  const overallLoading = usageLoading || monitoringLoading;
-  const combinedError = [usageError, monitoringError].filter(Boolean).join('；');
+  const monitoringUnavailable =
+    !requestMonitoringAvailability.checking && !requestMonitoringAvailability.available;
+  const monitoringUnavailableTitle =
+    requestMonitoringAvailability.reason === 'monitoring_disabled'
+      ? t('monitoring.request_monitoring_disabled_title')
+      : t('monitoring.request_monitoring_unavailable_title');
+  const monitoringUnavailableBody =
+    requestMonitoringAvailability.reason === 'monitoring_disabled'
+      ? t('monitoring.request_monitoring_disabled_body')
+      : requestMonitoringAvailability.reason === 'service_unavailable'
+        ? t('monitoring.request_monitoring_service_unavailable_body')
+        : t('monitoring.request_monitoring_not_configured_body');
+  const overallLoading = usageLoading || monitoringLoading || requestMonitoringAvailability.checking;
+  const combinedError = monitoringUnavailable
+    ? monitoringError
+    : [usageError, monitoringError].filter(Boolean).join('；');
   const hasPrices = Object.keys(modelPrices).length > 0;
 
   useEffect(() => {
@@ -2966,6 +2982,20 @@ export function MonitoringCenterPage() {
           </div>
         </div>
       </div>
+
+      {monitoringUnavailable ? (
+        <div className={styles.callout}>
+          <strong>{monitoringUnavailableTitle}</strong>
+          <span>{monitoringUnavailableBody}</span>
+          <Link
+            to="/config"
+            className={styles.configLink}
+            onClick={() => localStorage.setItem('config-management:tab', 'manager')}
+          >
+            {t('monitoring.open_manager_config')}
+          </Link>
+        </div>
+      ) : null}
 
       <section className={styles.actionBar} aria-label={t('common.action')}>
         <div className={styles.actionGroup}>

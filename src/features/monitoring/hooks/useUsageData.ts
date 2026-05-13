@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiClient } from '@/services/api/client';
 import {
   isUsageServiceId,
   normalizeUsageServiceBase,
@@ -46,6 +45,7 @@ export function useUsageData(): UseUsageDataReturn {
   const [error, setError] = useState('');
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const [modelPrices, setModelPricesState] = useState<Record<string, ModelPrice>>({});
+  const [usageServiceAvailable, setUsageServiceAvailable] = useState(false);
   const requestIdRef = useRef(0);
 
   const resolveUsageServiceBase = useCallback(async (): Promise<string> => {
@@ -147,10 +147,15 @@ export function useUsageData(): UseUsageDataReturn {
     setError('');
 
     try {
-      const payload =
-        usageServiceEnabled && usageServiceBase
-          ? await usageServiceApi.getUsage(usageServiceBase, managementKey)
-          : await apiClient.get<UsagePayload>('/usage');
+      const serviceBase = await resolveUsageServiceBase();
+      if (!serviceBase) {
+        setUsageServiceAvailable(false);
+        setUsage(null);
+        setLastRefreshedAt(null);
+        return;
+      }
+      setUsageServiceAvailable(true);
+      const payload = await usageServiceApi.getUsage(serviceBase, managementKey);
       if (requestIdRef.current !== requestId) return;
       setUsage(payload ?? null);
       setLastRefreshedAt(new Date());
@@ -162,7 +167,7 @@ export function useUsageData(): UseUsageDataReturn {
         setLoading(false);
       }
     }
-  }, [managementKey, usageServiceBase, usageServiceEnabled]);
+  }, [managementKey, resolveUsageServiceBase]);
 
   useEffect(() => {
     void loadModelPricesFromStorage();
@@ -193,7 +198,7 @@ export function useUsageData(): UseUsageDataReturn {
     error,
     lastRefreshedAt,
     modelPrices,
-    usageServiceAvailable: Boolean(usageServiceEnabled && usageServiceBase),
+    usageServiceAvailable,
     setModelPrices,
     syncModelPrices,
     exportUsage: exportUsageFromApi,

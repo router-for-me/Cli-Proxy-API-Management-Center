@@ -880,6 +880,16 @@
   background: color-mix(in srgb, var(--monitor-accent) 8%, var(--monitor-surface));
 }
 
+.configLink {
+  color: var(--monitor-accent);
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .summarySection {
   display: grid;
   gap: 12px;
