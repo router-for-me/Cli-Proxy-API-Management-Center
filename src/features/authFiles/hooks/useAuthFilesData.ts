@@ -10,6 +10,7 @@ import { downloadBlob } from '@/utils/download';
 import {
   getTypeLabel,
   hasAuthFileStatusMessage,
+  isHealthyAuthFile,
   isRuntimeOnlyAuthFile,
 } from '@/features/authFiles/constants';
 
@@ -17,9 +18,11 @@ type DeleteAllOptions = {
   filter: string;
   problemOnly: boolean;
   disabledOnly: boolean;
+  healthyOnly: boolean;
   onResetFilterToAll: () => void;
   onResetProblemOnly: () => void;
   onResetDisabledOnly: () => void;
+  onResetHealthyOnly: () => void;
 };
 
 export type UseAuthFilesDataResult = {
@@ -275,16 +278,19 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
         filter,
         problemOnly,
         disabledOnly,
+        healthyOnly,
         onResetFilterToAll,
         onResetProblemOnly,
         onResetDisabledOnly,
+        onResetHealthyOnly,
       } = deleteAllOptions;
       const isFiltered = filter !== 'all';
       const isProblemOnly = problemOnly === true;
       const isDisabledOnly = disabledOnly === true;
+      const isHealthyOnly = healthyOnly === true;
       const typeLabel = isFiltered ? getTypeLabel(t, filter) : t('auth_files.filter_all');
       let confirmMessage = t('auth_files.delete_all_confirm');
-      if (isDisabledOnly) {
+      if (isDisabledOnly || isHealthyOnly) {
         confirmMessage = t('auth_files.delete_filtered_result_confirm');
       } else if (isProblemOnly) {
         confirmMessage = isFiltered
@@ -302,7 +308,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
         onConfirm: async () => {
           setDeletingAll(true);
           try {
-            if (!isFiltered && !isProblemOnly && !isDisabledOnly) {
+            if (!isFiltered && !isProblemOnly && !isDisabledOnly && !isHealthyOnly) {
               await authFilesApi.deleteAll();
               showNotification(t('auth_files.delete_all_success'), 'success');
               setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
@@ -313,12 +319,13 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
                 if (isFiltered && file.type !== filter) return false;
                 if (isProblemOnly && !hasAuthFileStatusMessage(file)) return false;
                 if (isDisabledOnly && file.disabled !== true) return false;
+                if (isHealthyOnly && !isHealthyAuthFile(file)) return false;
                 return true;
               });
 
               if (filesToDelete.length === 0) {
                 let emptyMessage = t('auth_files.delete_filtered_none', { type: typeLabel });
-                if (isDisabledOnly) {
+                if (isDisabledOnly || isHealthyOnly) {
                   emptyMessage = t('auth_files.delete_filtered_result_none');
                 } else if (isProblemOnly) {
                   emptyMessage = isFiltered
@@ -338,7 +345,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
 
               applyDeletedFiles(result.files);
 
-              if (failed === 0 && isDisabledOnly) {
+              if (failed === 0 && (isDisabledOnly || isHealthyOnly)) {
                 showNotification(
                   t('auth_files.delete_filtered_result_success', { count: success }),
                   'success'
@@ -358,7 +365,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
                   t('auth_files.delete_filtered_success', { count: success, type: typeLabel }),
                   'success'
                 );
-              } else if (isDisabledOnly) {
+              } else if (isDisabledOnly || isHealthyOnly) {
                 showNotification(
                   t('auth_files.delete_filtered_result_partial', { success, failed }),
                   'warning'
@@ -389,6 +396,9 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
               }
               if (isDisabledOnly) {
                 onResetDisabledOnly();
+              }
+              if (isHealthyOnly) {
+                onResetHealthyOnly();
               }
             }
           } catch (err: unknown) {

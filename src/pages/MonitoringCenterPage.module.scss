@@ -2604,6 +2604,33 @@
   font-size: 11px;
 }
 
+.quotaRetryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  margin-top: 4px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--monitor-accent) 56%, var(--monitor-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--monitor-accent) 12%, var(--monitor-surface));
+  color: var(--monitor-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.quotaRetryButton:hover:not(:disabled) {
+  border-color: var(--monitor-accent);
+  background: color-mix(in srgb, var(--monitor-accent) 18%, var(--monitor-surface));
+}
+
+.quotaRetryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .accountModelTablePanel {
   display: grid;
   align-content: start;
@@ -2958,6 +2985,23 @@
 .emptyBlock,
 .emptyTable {
   min-height: 120px;
+}
+
+.emptyTable {
+  gap: 7px;
+  padding: 12px;
+
+  strong {
+    color: var(--monitor-ink);
+    font-size: 14px;
+  }
+
+  span {
+    max-width: 680px;
+    color: var(--monitor-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
 }
 
 .emptyBlockSmall {
