@@ -153,54 +153,6 @@
   align-items: center;
 }
 
-.usageServiceForm {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
-
-.usageServiceActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: $spacing-sm;
-  flex-wrap: wrap;
-}
-
-.usageServiceStatusGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: $spacing-sm;
-
-  > div {
-    min-width: 0;
-    padding: $spacing-sm $spacing-md;
-    border-radius: $radius-md;
-    background: var(--bg-secondary);
-  }
-
-  span,
-  strong {
-    display: block;
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
-  span {
-    margin-bottom: 4px;
-    font-size: 12px;
-    color: var(--text-secondary);
-  }
-
-  strong {
-    font-size: 14px;
-    color: var(--text-primary);
-  }
-
-  @media (max-width: 720px) {
-    grid-template-columns: 1fr;
-  }
-}
-
 .infoGrid {
   display: grid;
   gap: $spacing-sm;

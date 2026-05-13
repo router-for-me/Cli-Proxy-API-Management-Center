@@ -34,15 +34,28 @@ func main() {
 		manager.Start(ctx, collector.RuntimeConfig{
 			CPAUpstreamURL: cfg.CPAUpstreamURL,
 			ManagementKey:  cfg.ManagementKey,
+			CollectorMode:  cfg.CollectorMode,
 			Queue:          cfg.Queue,
 			PopSide:        cfg.PopSide,
+			BatchSize:      cfg.BatchSize,
+			PollInterval:   cfg.PollInterval,
+			TLSSkipVerify:  cfg.TLSSkipVerify,
 		})
+	} else if managerCfg, ok, err := db.LoadManagerConfig(ctx); err == nil && ok &&
+		managerCfg.CPAConnection.CPABaseURL != "" && managerCfg.CPAConnection.ManagementKey != "" {
+		if managerCollectorEnabled(managerCfg) {
+			manager.Start(ctx, runtimeConfigFromManagerConfig(managerCfg, cfg))
+		}
 	} else if setup, ok, err := db.LoadSetup(ctx); err == nil && ok {
 		manager.Start(ctx, collector.RuntimeConfig{
 			CPAUpstreamURL: setup.CPAUpstreamURL,
 			ManagementKey:  setup.ManagementKey,
+			CollectorMode:  cfg.CollectorMode,
 			Queue:          setup.Queue,
 			PopSide:        setup.PopSide,
+			BatchSize:      cfg.BatchSize,
+			PollInterval:   cfg.PollInterval,
+			TLSSkipVerify:  cfg.TLSSkipVerify,
 		})
 	} else if err != nil {
 		log.Printf("load setup: %v", err)
@@ -68,4 +81,36 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Printf("shutdown: %v", err)
 	}
+}
+
+func runtimeConfigFromManagerConfig(managerCfg store.ManagerConfig, base config.Config) collector.RuntimeConfig {
+	pollInterval := time.Duration(managerCfg.Collector.PollIntervalMS) * time.Millisecond
+	if pollInterval <= 0 {
+		pollInterval = base.PollInterval
+	}
+	batchSize := managerCfg.Collector.BatchSize
+	if batchSize <= 0 {
+		batchSize = base.BatchSize
+	}
+	return collector.RuntimeConfig{
+		CPAUpstreamURL: managerCfg.CPAConnection.CPABaseURL,
+		ManagementKey:  managerCfg.CPAConnection.ManagementKey,
+		CollectorMode:  valueOr(managerCfg.Collector.CollectorMode, base.CollectorMode),
+		Queue:          valueOr(managerCfg.Collector.Queue, base.Queue),
+		PopSide:        valueOr(managerCfg.Collector.PopSide, base.PopSide),
+		BatchSize:      batchSize,
+		PollInterval:   pollInterval,
+		TLSSkipVerify:  managerCfg.Collector.TLSSkipVerify,
+	}
+}
+
+func valueOr(value string, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
+func managerCollectorEnabled(managerCfg store.ManagerConfig) bool {
+	return managerCfg.Collector.Enabled == nil || *managerCfg.Collector.Enabled
 }

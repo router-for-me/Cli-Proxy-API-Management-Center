@@ -162,6 +162,228 @@
   max-width: 100%;
 }
 
+.managerConfigPanel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+}
+
+.managerConfigHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+
+  h2 {
+    margin: 0 0 6px;
+    color: var(--text-primary);
+    font-size: 18px;
+    line-height: 1.3;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+.managerSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  min-width: 0;
+  padding: $spacing-md;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+.managerSectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  min-width: 0;
+
+  > div {
+    min-width: 0;
+  }
+
+  h3 {
+    margin: 0 0 4px;
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.managerRuntimeBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 30px;
+  max-width: 100%;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 26%, var(--border-color));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-color) 9%, var(--bg-primary));
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.managerReadonlyGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $spacing-sm;
+
+  > div {
+    min-width: 0;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+    border-radius: 8px;
+    background: var(--bg-primary);
+  }
+
+  span,
+  strong {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  span {
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+}
+
+.managerDependencyNote {
+  padding: 10px 12px;
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.managerQueueNote {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warning-border) 70%, var(--border-color));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--warning-bg) 74%, var(--bg-primary));
+  color: var(--warning-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.managerConfigGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-md;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.managerField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.managerFieldLabel {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.managerSelectTrigger {
+  height: 46px !important;
+  padding: 10px 12px !important;
+  background-color: var(--bg-secondary) !important;
+  box-shadow: none !important;
+  font-size: inherit !important;
+  font-weight: 400 !important;
+}
+
+.managerMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $spacing-sm;
+
+  > div {
+    min-width: 0;
+    padding: $spacing-sm $spacing-md;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+  }
+
+  span,
+  strong {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  span {
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
 .sourceWorkspace {
   display: flex;
   flex-direction: column;

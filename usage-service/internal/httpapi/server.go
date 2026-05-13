@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -48,10 +49,29 @@ const modelPriceSyncSource = "litellm"
 var modelPriceSyncURL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
 
 type setupRequest struct {
-	CPAUpstreamURL string `json:"cpaBaseUrl"`
-	ManagementKey  string `json:"managementKey"`
-	Queue          string `json:"queue"`
-	PopSide        string `json:"popSide"`
+	CPAUpstreamURL               string `json:"cpaBaseUrl"`
+	ManagementKey                string `json:"managementKey"`
+	CollectorMode                string `json:"collectorMode"`
+	Queue                        string `json:"queue"`
+	PopSide                      string `json:"popSide"`
+	BatchSize                    int    `json:"batchSize"`
+	PollIntervalMS               int    `json:"pollIntervalMs"`
+	QueryLimit                   int    `json:"queryLimit"`
+	TLSSkipVerify                bool   `json:"tlsSkipVerify"`
+	EnsureUsageStatisticsEnabled *bool  `json:"ensureUsageStatisticsEnabled"`
+	RequestMonitoringEnabled     *bool  `json:"requestMonitoringEnabled"`
+}
+
+type managerConfigResponse struct {
+	Config   store.ManagerConfig `json:"config"`
+	Source   string              `json:"source"`
+	CPAUsage *cpaUsageConfig     `json:"cpaUsage,omitempty"`
+}
+
+type cpaUsageConfig struct {
+	UsageStatisticsEnabled          bool `json:"usageStatisticsEnabled"`
+	RedisUsageQueueRetentionSeconds int  `json:"redisUsageQueueRetentionSeconds"`
+	RetentionSourceDefault          bool `json:"retentionSourceDefault"`
 }
 
 type modelPricesRequest struct {
@@ -76,6 +96,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/health", s.withCORS(s.handleHealth))
 	mux.HandleFunc("/status", s.withCORS(s.handleStatus))
 	mux.HandleFunc("/usage-service/info", s.withCORS(s.handleInfo))
+	mux.HandleFunc("/usage-service/config", s.withCORS(s.handleManagerConfig))
 	mux.HandleFunc("/setup", s.withCORS(s.handleSetup))
 	mux.HandleFunc("/management.html", s.handlePanel)
 	mux.HandleFunc("/", s.handleRoot)
@@ -92,7 +113,8 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		s.withCORS(s.handleModelPrices)(w, r)
 		return
 	}
-	if strings.HasPrefix(r.URL.Path, "/v0/management/usage") {
+	cleanUsagePath := strings.TrimRight(r.URL.Path, "/")
+	if cleanUsagePath == "/v0/management/usage" || strings.HasPrefix(cleanUsagePath, "/v0/management/usage/") {
 		s.withCORS(s.handleUsage)(w, r)
 		return
 	}
@@ -155,6 +177,118 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) handleManagerConfig(w http.ResponseWriter, r *http.Request) {
+	if !s.authorizeIfConfigured(w, r) {
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		cfg, source, _, err := s.resolveManagerConfigWithSource(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		var cpaUsage *cpaUsageConfig
+		if cfg.CPAConnection.CPABaseURL != "" && cfg.CPAConnection.ManagementKey != "" {
+			if usageCfg, err := fetchCPAUsageConfig(
+				r.Context(),
+				cfg.CPAConnection.CPABaseURL,
+				cfg.CPAConnection.ManagementKey,
+			); err == nil {
+				cpaUsage = &usageCfg
+			}
+		}
+		writeJSON(w, http.StatusOK, managerConfigResponse{
+			Config:   cfg,
+			Source:   string(source),
+			CPAUsage: cpaUsage,
+		})
+	case http.MethodPut:
+		var req struct {
+			Config store.ManagerConfig `json:"config"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		current, source, _, err := s.resolveManagerConfigWithSource(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		next := s.mergeSubmittedManagerConfig(current, req.Config)
+		if source == setupSourceEnv && managerConfigConnectionDiffers(current, next) {
+			writeError(w, http.StatusConflict, errors.New("connection setup is managed by environment variables"))
+			return
+		}
+		if next.CPAConnection.CPABaseURL != "" || next.CPAConnection.ManagementKey != "" {
+			if next.CPAConnection.CPABaseURL == "" || next.CPAConnection.ManagementKey == "" {
+				writeError(w, http.StatusBadRequest, errors.New("cpaBaseUrl and managementKey are required"))
+				return
+			}
+			if err := validateManagementAPI(
+				r.Context(),
+				next.CPAConnection.CPABaseURL,
+				next.CPAConnection.ManagementKey,
+			); err != nil {
+				writeError(w, http.StatusBadGateway, err)
+				return
+			}
+			if managerCollectorEnabled(next) {
+				if err := validateCollectorAgainstCPA(r.Context(), next); err != nil {
+					writeError(w, http.StatusBadRequest, err)
+					return
+				}
+				if err := setCPAUsageStatisticsEnabled(
+					r.Context(),
+					next.CPAConnection.CPABaseURL,
+					next.CPAConnection.ManagementKey,
+					true,
+				); err != nil {
+					writeError(w, http.StatusBadGateway, err)
+					return
+				}
+			}
+		} else if managerCollectorEnabled(next) {
+			writeError(w, http.StatusBadRequest, errors.New("cpaBaseUrl and managementKey are required when request monitoring is enabled"))
+			return
+		}
+		if next.CPAConnection.CPABaseURL == "" || next.CPAConnection.ManagementKey == "" {
+			if err := s.store.SaveManagerConfig(r.Context(), next); err != nil {
+				writeError(w, http.StatusInternalServerError, err)
+				return
+			}
+			s.collector.Stop()
+			writeJSON(w, http.StatusOK, managerConfigResponse{
+				Config: next,
+				Source: string(setupSourceDB),
+			})
+			return
+		}
+		if err := s.store.SaveManagerConfig(r.Context(), next); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		setup := setupFromManagerConfig(next)
+		if err := s.store.SaveSetup(r.Context(), setup); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		if managerCollectorEnabled(next) {
+			s.collector.Start(context.Background(), runtimeConfigFromManagerConfig(next))
+		} else {
+			s.collector.Stop()
+		}
+		writeJSON(w, http.StatusOK, managerConfigResponse{
+			Config: next,
+			Source: string(setupSourceDB),
+		})
+	default:
+		methodNotAllowed(w)
+	}
+}
+
 func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		methodNotAllowed(w)
@@ -167,12 +301,18 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	}
 	req.CPAUpstreamURL = normalizeBaseURL(req.CPAUpstreamURL)
 	req.ManagementKey = strings.TrimSpace(req.ManagementKey)
+	req.CollectorMode = collectorMode(req.CollectorMode)
 	if req.Queue == "" {
 		req.Queue = s.cfg.Queue
 	}
 	if req.PopSide == "" {
 		req.PopSide = s.cfg.PopSide
 	}
+	req.PopSide = normalizePopSide(req.PopSide, s.cfg.PopSide)
+	req.BatchSize = positiveOrDefault(req.BatchSize, s.cfg.BatchSize, 100)
+	req.PollIntervalMS = positiveOrDefault(req.PollIntervalMS, int(s.cfg.PollInterval/time.Millisecond), 500)
+	req.QueryLimit = positiveOrDefault(req.QueryLimit, s.cfg.QueryLimit, 50000)
+	requestMonitoringEnabled := setupRequestMonitoringEnabled(req)
 	if req.CPAUpstreamURL == "" || req.ManagementKey == "" {
 		writeError(w, http.StatusBadRequest, errors.New("cpaBaseUrl and managementKey are required"))
 		return
@@ -203,6 +343,39 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	managerCfg := s.defaultManagerConfig()
+	if existingManagerCfg, _, ok, err := s.resolveManagerConfigWithSource(r.Context()); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	} else if ok {
+		managerCfg = existingManagerCfg
+	}
+	managerCfg.CPAConnection.CPABaseURL = req.CPAUpstreamURL
+	managerCfg.CPAConnection.ManagementKey = req.ManagementKey
+	managerCfg.Collector.Enabled = boolPtr(requestMonitoringEnabled)
+	managerCfg.Collector.CollectorMode = req.CollectorMode
+	managerCfg.Collector.Queue = req.Queue
+	managerCfg.Collector.PopSide = req.PopSide
+	managerCfg.Collector.BatchSize = req.BatchSize
+	managerCfg.Collector.PollIntervalMS = req.PollIntervalMS
+	managerCfg.Collector.QueryLimit = req.QueryLimit
+	managerCfg.Collector.TLSSkipVerify = req.TLSSkipVerify
+	if requestMonitoringEnabled {
+		if err := validateCollectorAgainstCPA(r.Context(), managerCfg); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+	}
+	ensureUsageStatisticsEnabled := requestMonitoringEnabled
+	if req.EnsureUsageStatisticsEnabled != nil {
+		ensureUsageStatisticsEnabled = requestMonitoringEnabled && *req.EnsureUsageStatisticsEnabled
+	}
+	if ensureUsageStatisticsEnabled {
+		if err := setCPAUsageStatisticsEnabled(r.Context(), req.CPAUpstreamURL, req.ManagementKey, true); err != nil {
+			writeError(w, http.StatusBadGateway, err)
+			return
+		}
+	}
 	setup := store.Setup{
 		CPAUpstreamURL: req.CPAUpstreamURL,
 		ManagementKey:  req.ManagementKey,
@@ -213,12 +386,15 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	s.collector.Start(context.Background(), collector.RuntimeConfig{
-		CPAUpstreamURL: setup.CPAUpstreamURL,
-		ManagementKey:  setup.ManagementKey,
-		Queue:          setup.Queue,
-		PopSide:        setup.PopSide,
-	})
+	if err := s.store.SaveManagerConfig(r.Context(), managerCfg); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if requestMonitoringEnabled {
+		s.collector.Start(context.Background(), runtimeConfigFromManagerConfig(managerCfg))
+	} else {
+		s.collector.Stop()
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "upstream": setup.CPAUpstreamURL})
 }
 
@@ -600,6 +776,11 @@ func (s *Server) resolveSetupWithSource(ctx context.Context) (store.Setup, setup
 			PopSide:        s.cfg.PopSide,
 		}, setupSourceEnv, true, nil
 	}
+	if managerCfg, _, ok, err := s.resolveManagerConfigWithSource(ctx); err != nil {
+		return store.Setup{}, setupSourceNone, false, err
+	} else if ok && managerCfg.CPAConnection.CPABaseURL != "" && managerCfg.CPAConnection.ManagementKey != "" {
+		return setupFromManagerConfig(managerCfg), setupSourceDB, true, nil
+	}
 	setup, ok, err := s.store.LoadSetup(ctx)
 	if !ok || err != nil {
 		return setup, setupSourceNone, ok, err
@@ -607,11 +788,183 @@ func (s *Server) resolveSetupWithSource(ctx context.Context) (store.Setup, setup
 	return setup, setupSourceDB, true, nil
 }
 
+func (s *Server) resolveManagerConfigWithSource(ctx context.Context) (store.ManagerConfig, setupSource, bool, error) {
+	cfg := s.defaultManagerConfig()
+	source := setupSourceNone
+	found := false
+
+	if saved, ok, err := s.store.LoadManagerConfig(ctx); err != nil {
+		return cfg, source, false, err
+	} else if ok {
+		cfg = s.mergeSubmittedManagerConfig(cfg, saved)
+		source = setupSourceDB
+		found = true
+	}
+
+	if setup, ok, err := s.store.LoadSetup(ctx); err != nil {
+		return cfg, source, false, err
+	} else if ok && cfg.CPAConnection.CPABaseURL == "" && cfg.CPAConnection.ManagementKey == "" {
+		cfg.CPAConnection.CPABaseURL = normalizeBaseURL(setup.CPAUpstreamURL)
+		cfg.CPAConnection.ManagementKey = setup.ManagementKey
+		cfg.Collector.Queue = valueOr(setup.Queue, cfg.Collector.Queue)
+		cfg.Collector.PopSide = normalizePopSide(setup.PopSide, cfg.Collector.PopSide)
+		source = setupSourceDB
+		found = true
+	}
+
+	if s.cfg.CPAUpstreamURL != "" && s.cfg.ManagementKey != "" {
+		cfg.CPAConnection.CPABaseURL = normalizeBaseURL(s.cfg.CPAUpstreamURL)
+		cfg.CPAConnection.ManagementKey = s.cfg.ManagementKey
+		cfg.Collector.CollectorMode = collectorMode(s.cfg.CollectorMode)
+		cfg.Collector.Queue = valueOr(s.cfg.Queue, cfg.Collector.Queue)
+		cfg.Collector.PopSide = normalizePopSide(s.cfg.PopSide, cfg.Collector.PopSide)
+		cfg.Collector.BatchSize = positiveOrDefault(s.cfg.BatchSize, cfg.Collector.BatchSize, 100)
+		cfg.Collector.PollIntervalMS = positiveOrDefault(int(s.cfg.PollInterval/time.Millisecond), cfg.Collector.PollIntervalMS, 500)
+		cfg.Collector.QueryLimit = positiveOrDefault(s.cfg.QueryLimit, cfg.Collector.QueryLimit, 50000)
+		cfg.Collector.TLSSkipVerify = s.cfg.TLSSkipVerify
+		source = setupSourceEnv
+		found = true
+	}
+
+	return cfg, source, found, nil
+}
+
 func setupDiffers(existing store.Setup, req setupRequest) bool {
 	return normalizeBaseURL(existing.CPAUpstreamURL) != req.CPAUpstreamURL ||
 		existing.ManagementKey != req.ManagementKey ||
 		existing.Queue != req.Queue ||
 		existing.PopSide != req.PopSide
+}
+
+func setupFromManagerConfig(cfg store.ManagerConfig) store.Setup {
+	return store.Setup{
+		CPAUpstreamURL: cfg.CPAConnection.CPABaseURL,
+		ManagementKey:  cfg.CPAConnection.ManagementKey,
+		Queue:          cfg.Collector.Queue,
+		PopSide:        cfg.Collector.PopSide,
+	}
+}
+
+func runtimeConfigFromManagerConfig(cfg store.ManagerConfig) collector.RuntimeConfig {
+	return collector.RuntimeConfig{
+		CPAUpstreamURL: cfg.CPAConnection.CPABaseURL,
+		ManagementKey:  cfg.CPAConnection.ManagementKey,
+		CollectorMode:  cfg.Collector.CollectorMode,
+		Queue:          cfg.Collector.Queue,
+		PopSide:        cfg.Collector.PopSide,
+		BatchSize:      cfg.Collector.BatchSize,
+		PollInterval:   time.Duration(cfg.Collector.PollIntervalMS) * time.Millisecond,
+		TLSSkipVerify:  cfg.Collector.TLSSkipVerify,
+	}
+}
+
+func (s *Server) defaultManagerConfig() store.ManagerConfig {
+	pollIntervalMS := int(s.cfg.PollInterval / time.Millisecond)
+	return store.ManagerConfig{
+		Collector: store.ManagerCollectorConfig{
+			Enabled:        boolPtr(true),
+			CollectorMode:  collectorMode(s.cfg.CollectorMode),
+			Queue:          valueOr(s.cfg.Queue, "usage"),
+			PopSide:        normalizePopSide(s.cfg.PopSide, "right"),
+			BatchSize:      positiveOrDefault(s.cfg.BatchSize, 100, 100),
+			PollIntervalMS: positiveOrDefault(pollIntervalMS, 500, 500),
+			QueryLimit:     positiveOrDefault(s.cfg.QueryLimit, 50000, 50000),
+			TLSSkipVerify:  s.cfg.TLSSkipVerify,
+		},
+	}
+}
+
+func (s *Server) mergeSubmittedManagerConfig(base store.ManagerConfig, submitted store.ManagerConfig) store.ManagerConfig {
+	next := base
+
+	if submitted.CPAConnection.CPABaseURL != "" || submitted.CPAConnection.ManagementKey != "" {
+		next.CPAConnection.CPABaseURL = normalizeBaseURL(submitted.CPAConnection.CPABaseURL)
+		next.CPAConnection.ManagementKey = strings.TrimSpace(submitted.CPAConnection.ManagementKey)
+	}
+
+	if submitted.Collector.Enabled != nil {
+		next.Collector.Enabled = boolPtr(*submitted.Collector.Enabled)
+	}
+	next.Collector.CollectorMode = collectorMode(valueOr(submitted.Collector.CollectorMode, next.Collector.CollectorMode))
+	next.Collector.Queue = valueOr(strings.TrimSpace(submitted.Collector.Queue), next.Collector.Queue)
+	next.Collector.PopSide = normalizePopSide(submitted.Collector.PopSide, next.Collector.PopSide)
+	next.Collector.BatchSize = positiveOrDefault(submitted.Collector.BatchSize, next.Collector.BatchSize, 100)
+	next.Collector.PollIntervalMS = positiveOrDefault(submitted.Collector.PollIntervalMS, next.Collector.PollIntervalMS, 500)
+	next.Collector.QueryLimit = positiveOrDefault(submitted.Collector.QueryLimit, next.Collector.QueryLimit, 50000)
+	next.Collector.TLSSkipVerify = submitted.Collector.TLSSkipVerify
+
+	next.ExternalUsageService.Enabled = submitted.ExternalUsageService.Enabled
+	next.ExternalUsageService.ServiceBase = normalizeBaseURL(submitted.ExternalUsageService.ServiceBase)
+	if !next.ExternalUsageService.Enabled {
+		next.ExternalUsageService.ServiceBase = ""
+	}
+
+	return next
+}
+
+func managerConfigConnectionDiffers(left store.ManagerConfig, right store.ManagerConfig) bool {
+	return normalizeBaseURL(left.CPAConnection.CPABaseURL) != normalizeBaseURL(right.CPAConnection.CPABaseURL) ||
+		left.CPAConnection.ManagementKey != right.CPAConnection.ManagementKey ||
+		managerCollectorEnabled(left) != managerCollectorEnabled(right) ||
+		left.Collector.CollectorMode != right.Collector.CollectorMode ||
+		left.Collector.Queue != right.Collector.Queue ||
+		left.Collector.PopSide != right.Collector.PopSide ||
+		left.Collector.BatchSize != right.Collector.BatchSize ||
+		left.Collector.PollIntervalMS != right.Collector.PollIntervalMS ||
+		left.Collector.TLSSkipVerify != right.Collector.TLSSkipVerify
+}
+
+func positiveOrDefault(value int, fallback int, hardDefault int) int {
+	if value > 0 {
+		return value
+	}
+	if fallback > 0 {
+		return fallback
+	}
+	return hardDefault
+}
+
+func valueOr(value string, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
+}
+
+func normalizePopSide(value string, fallback string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "left", "right":
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		if strings.ToLower(strings.TrimSpace(fallback)) == "left" {
+			return "left"
+		}
+		return "right"
+	}
+}
+
+func collectorMode(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "http", "resp":
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return "auto"
+	}
+}
+
+func boolPtr(value bool) *bool {
+	return &value
+}
+
+func managerCollectorEnabled(cfg store.ManagerConfig) bool {
+	return cfg.Collector.Enabled == nil || *cfg.Collector.Enabled
+}
+
+func setupRequestMonitoringEnabled(req setupRequest) bool {
+	if req.RequestMonitoringEnabled == nil {
+		return true
+	}
+	return *req.RequestMonitoringEnabled
 }
 
 func (s *Server) authorizeIfConfigured(w http.ResponseWriter, r *http.Request) bool {
@@ -675,6 +1028,24 @@ func (s *Server) writeCORS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 }
 
+func validateCollectorAgainstCPA(ctx context.Context, cfg store.ManagerConfig) error {
+	usageCfg, err := fetchCPAUsageConfig(ctx, cfg.CPAConnection.CPABaseURL, cfg.CPAConnection.ManagementKey)
+	if err != nil {
+		return err
+	}
+	retentionMS := usageCfg.RedisUsageQueueRetentionSeconds * 1000
+	if retentionMS <= 0 {
+		return errors.New("CPA redis-usage-queue-retention-seconds must be greater than 0")
+	}
+	if cfg.Collector.PollIntervalMS > retentionMS {
+		return fmt.Errorf(
+			"pollIntervalMs must be less than or equal to CPA redis-usage-queue-retention-seconds (%d seconds)",
+			usageCfg.RedisUsageQueueRetentionSeconds,
+		)
+	}
+	return nil
+}
+
 func validateManagementAPI(ctx context.Context, baseURL string, key string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/v0/management/config", nil)
 	if err != nil {
@@ -691,6 +1062,106 @@ func validateManagementAPI(ctx context.Context, baseURL string, key string) erro
 		return nil
 	}
 	return errors.New("management API validation failed: " + res.Status)
+}
+
+func fetchCPAUsageConfig(ctx context.Context, baseURL string, key string) (cpaUsageConfig, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, normalizeBaseURL(baseURL)+"/v0/management/config", nil)
+	if err != nil {
+		return cpaUsageConfig{}, err
+	}
+	req.Header.Set("Authorization", "Bearer "+key)
+	client := &http.Client{Timeout: 15 * time.Second}
+	res, err := client.Do(req)
+	if err != nil {
+		return cpaUsageConfig{}, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return cpaUsageConfig{}, errors.New("management API config request failed: " + res.Status)
+	}
+
+	var raw map[string]any
+	if err := json.NewDecoder(res.Body).Decode(&raw); err != nil {
+		return cpaUsageConfig{}, err
+	}
+	usageEnabled := readBoolField(raw, "usage-statistics-enabled", "usageStatisticsEnabled")
+	retention, hasRetention := readIntField(raw, "redis-usage-queue-retention-seconds", "redisUsageQueueRetentionSeconds")
+	if !hasRetention {
+		retention = 60
+	}
+	return cpaUsageConfig{
+		UsageStatisticsEnabled:          usageEnabled,
+		RedisUsageQueueRetentionSeconds: retention,
+		RetentionSourceDefault:          !hasRetention,
+	}, nil
+}
+
+func setCPAUsageStatisticsEnabled(ctx context.Context, baseURL string, key string, enabled bool) error {
+	payload := map[string]bool{"value": enabled}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPut,
+		normalizeBaseURL(baseURL)+"/v0/management/usage-statistics-enabled",
+		strings.NewReader(string(data)),
+	)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+key)
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: 15 * time.Second}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 200 && res.StatusCode < 300 {
+		return nil
+	}
+	return errors.New("enable CPA usage statistics failed: " + res.Status)
+}
+
+func readBoolField(raw map[string]any, keys ...string) bool {
+	for _, key := range keys {
+		value, ok := raw[key]
+		if !ok {
+			continue
+		}
+		switch typed := value.(type) {
+		case bool:
+			return typed
+		case string:
+			normalized := strings.ToLower(strings.TrimSpace(typed))
+			return normalized == "1" || normalized == "true" || normalized == "yes" || normalized == "on"
+		}
+	}
+	return false
+}
+
+func readIntField(raw map[string]any, keys ...string) (int, bool) {
+	for _, key := range keys {
+		value, ok := raw[key]
+		if !ok || value == nil {
+			continue
+		}
+		switch typed := value.(type) {
+		case float64:
+			return int(typed), true
+		case int:
+			return typed, true
+		case json.Number:
+			parsed, err := strconv.Atoi(typed.String())
+			return parsed, err == nil
+		case string:
+			parsed, err := strconv.Atoi(strings.TrimSpace(typed))
+			return parsed, err == nil
+		}
+	}
+	return 0, false
 }
 
 func normalizeBaseURL(raw string) string {
@@ -714,9 +1185,47 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 }
 
 func writeError(w http.ResponseWriter, status int, err error) {
-	writeJSON(w, status, map[string]any{"error": err.Error()})
+	writeJSON(w, status, map[string]any{"error": err.Error(), "code": usageServiceErrorCode(err)})
 }
 
 func methodNotAllowed(w http.ResponseWriter) {
 	writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"))
+}
+
+func usageServiceErrorCode(err error) string {
+	message := err.Error()
+	switch {
+	case strings.Contains(message, "connection setup is managed by environment variables"):
+		return "connection_env_managed"
+	case strings.Contains(message, "cpaBaseUrl and managementKey are required when request monitoring is enabled"):
+		return "cpa_connection_required_for_monitoring"
+	case strings.Contains(message, "cpaBaseUrl and managementKey are required"):
+		return "cpa_connection_required"
+	case strings.Contains(message, "setup is managed by environment variables"):
+		return "setup_env_managed"
+	case strings.Contains(message, "invalid management key for existing setup"):
+		return "invalid_existing_management_key"
+	case strings.Contains(message, "invalid management key"):
+		return "invalid_management_key"
+	case strings.Contains(message, "usage service is not configured"):
+		return "usage_service_not_configured"
+	case strings.Contains(message, "CPA redis-usage-queue-retention-seconds must be greater than 0"):
+		return "cpa_usage_retention_invalid"
+	case strings.Contains(message, "pollIntervalMs must be less than or equal"):
+		return "poll_interval_exceeds_retention"
+	case strings.Contains(message, "management API validation failed"):
+		return "management_api_validation_failed"
+	case strings.Contains(message, "management API config request failed"):
+		return "management_api_config_failed"
+	case strings.Contains(message, "enable CPA usage statistics failed"):
+		return "enable_cpa_usage_statistics_failed"
+	case strings.Contains(message, "prices are required"):
+		return "prices_required"
+	case strings.Contains(message, "model price sync failed"):
+		return "model_price_sync_failed"
+	case strings.Contains(message, "method not allowed"):
+		return "method_not_allowed"
+	default:
+		return "request_failed"
+	}
 }

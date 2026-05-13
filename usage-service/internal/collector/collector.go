@@ -34,6 +34,9 @@ type RuntimeConfig struct {
 	CollectorMode  string
 	Queue          string
 	PopSide        string
+	BatchSize      int
+	PollInterval   time.Duration
+	TLSSkipVerify  bool
 }
 
 type Manager struct {
@@ -151,7 +154,7 @@ func (m *Manager) runRESP(ctx context.Context, cfg RuntimeConfig) {
 		if ctx.Err() != nil {
 			return
 		}
-		client, err := resp.Dial(cfg.CPAUpstreamURL, m.base.TLSSkipVerify)
+		client, err := resp.Dial(cfg.CPAUpstreamURL, cfg.TLSSkipVerify)
 		if err != nil {
 			m.markError("connect", err)
 			sleep(ctx, backoff)
@@ -186,7 +189,7 @@ func (m *Manager) runRESP(ctx context.Context, cfg RuntimeConfig) {
 }
 
 func (m *Manager) consumeHTTP(ctx context.Context, cfg RuntimeConfig, client *httpqueue.Client) error {
-	ticker := time.NewTicker(m.pollInterval())
+	ticker := time.NewTicker(m.pollInterval(cfg))
 	defer ticker.Stop()
 
 	for {
@@ -198,7 +201,7 @@ func (m *Manager) consumeHTTP(ctx context.Context, cfg RuntimeConfig, client *ht
 			status.Transport = "http"
 			status.LastError = ""
 		})
-		items, err := client.Pop(ctx, m.batchSize())
+		items, err := client.Pop(ctx, m.batchSize(cfg))
 		if err != nil {
 			return err
 		}
@@ -217,14 +220,14 @@ func (m *Manager) consumeHTTP(ctx context.Context, cfg RuntimeConfig, client *ht
 }
 
 func (m *Manager) consumeRESP(ctx context.Context, cfg RuntimeConfig, client *resp.Client, queue string, popSide string) error {
-	ticker := time.NewTicker(m.pollInterval())
+	ticker := time.NewTicker(m.pollInterval(cfg))
 	defer ticker.Stop()
 
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		items, err := client.Pop(queue, popSide, m.batchSize())
+		items, err := client.Pop(queue, popSide, m.batchSize(cfg))
 		if err != nil {
 			return err
 		}
@@ -350,14 +353,20 @@ func collectorMode(value string) string {
 	}
 }
 
-func (m *Manager) batchSize() int {
+func (m *Manager) batchSize(cfg RuntimeConfig) int {
+	if cfg.BatchSize > 0 {
+		return cfg.BatchSize
+	}
 	if m.base.BatchSize <= 0 {
 		return 100
 	}
 	return m.base.BatchSize
 }
 
-func (m *Manager) pollInterval() time.Duration {
+func (m *Manager) pollInterval(cfg RuntimeConfig) time.Duration {
+	if cfg.PollInterval > 0 {
+		return cfg.PollInterval
+	}
 	if m.base.PollInterval <= 0 {
 		return 500 * time.Millisecond
 	}
