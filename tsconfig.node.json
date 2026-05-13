@@ -7,6 +7,9 @@
     "module": "ESNext",
     "types": ["node"],
     "skipLibCheck": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "./node_modules/.tmp/tsconfig.node",
 
     /* Bundler mode */
     "moduleResolution": "bundler",
