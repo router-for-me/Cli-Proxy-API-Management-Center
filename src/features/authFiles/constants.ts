@@ -140,6 +140,9 @@ export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
 export const hasAuthFileStatusMessage = (file: AuthFileItem): boolean =>
   getAuthFileStatusMessage(file).length > 0;
 
+export const isHealthyAuthFile = (file: AuthFileItem): boolean =>
+  file.disabled !== true && !hasAuthFileStatusMessage(file);
+
 export const getTypeLabel = (t: TFunction, type: string): string => {
   const key = `auth_files.filter_${type}`;
   const translated = t(key);

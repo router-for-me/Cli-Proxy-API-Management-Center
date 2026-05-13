@@ -39,8 +39,10 @@ import {
   getTypeColor,
   getTypeLabel,
   hasAuthFileStatusMessage,
+  isHealthyAuthFile,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
+  parsePriorityValue,
   type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
@@ -85,6 +87,60 @@ const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lit
 
 const compareAuthFileName = (left: { name: string }, right: { name: string }) =>
   left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' });
+
+const getAuthFileNoteValue = (file: AuthFileItem): string => {
+  const raw = file.note ?? file['note'];
+  if (raw === undefined || raw === null) return '';
+  return String(raw).trim();
+};
+
+const compareAuthFileNote = (
+  left: AuthFileItem,
+  right: AuthFileItem,
+  direction: 'asc' | 'desc'
+) => {
+  const leftNote = getAuthFileNoteValue(left);
+  const rightNote = getAuthFileNoteValue(right);
+  const leftKnown = leftNote.length > 0;
+  const rightKnown = rightNote.length > 0;
+
+  if (leftKnown || rightKnown) {
+    if (!leftKnown) return 1;
+    if (!rightKnown) return -1;
+    const diff = leftNote.localeCompare(rightNote, undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    });
+    if (diff !== 0) return direction === 'asc' ? diff : -diff;
+  }
+
+  return compareAuthFileName(left, right);
+};
+
+const compareAuthFilePriority = (
+  left: AuthFileItem,
+  right: AuthFileItem,
+  direction: 'asc' | 'desc'
+) => {
+  const leftPriority = parsePriorityValue(left.priority ?? left['priority']);
+  const rightPriority = parsePriorityValue(right.priority ?? right['priority']);
+  const leftKnown = leftPriority !== undefined;
+  const rightKnown = rightPriority !== undefined;
+
+  if (leftKnown || rightKnown) {
+    if (!leftKnown) return 1;
+    if (!rightKnown) return -1;
+    const leftValue = leftPriority ?? 0;
+    const rightValue = rightPriority ?? 0;
+    const diff =
+      direction === 'desc'
+        ? rightValue - leftValue
+        : leftValue - rightValue;
+    if (diff !== 0) return diff;
+  }
+
+  return compareAuthFileName(left, right);
+};
 
 const stringifySearchValue = (value: unknown): string[] => {
   if (value === undefined || value === null) return [];
@@ -175,6 +231,7 @@ export function AuthFilesPage() {
   const [filter, setFilter] = useState<'all' | string>('all');
   const [problemOnly, setProblemOnly] = useState(false);
   const [disabledOnly, setDisabledOnly] = useState(false);
+  const [healthyOnly, setHealthyOnly] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -289,6 +346,9 @@ export function AuthFilesPage() {
       if (typeof persisted.disabledOnly === 'boolean') {
         setDisabledOnly(persisted.disabledOnly);
       }
+      if (typeof persisted.healthyOnly === 'boolean') {
+        setHealthyOnly(persisted.healthyOnly);
+      }
       if (
         typeof persistedCompactMode !== 'boolean' &&
         typeof persisted.compactMode === 'boolean'
@@ -333,6 +393,7 @@ export function AuthFilesPage() {
       filter,
       problemOnly,
       disabledOnly,
+      healthyOnly,
       compactMode,
       search,
       page,
@@ -346,6 +407,7 @@ export function AuthFilesPage() {
     compactMode,
     disabledOnly,
     filter,
+    healthyOnly,
     page,
     pageSize,
     pageSizeByMode,
@@ -450,15 +512,20 @@ export function AuthFilesPage() {
       files.filter((file) => {
         if (problemOnly && !hasAuthFileStatusMessage(file)) return false;
         if (disabledOnly && file.disabled !== true) return false;
+        if (healthyOnly && !isHealthyAuthFile(file)) return false;
         return true;
       }),
-    [disabledOnly, files, problemOnly]
+    [disabledOnly, files, healthyOnly, problemOnly]
   );
 
   const sortOptions = useMemo(
     () => [
       { value: 'default', label: t('auth_files.sort_default') },
       { value: 'name-asc', label: t('auth_files.sort_name_asc') },
+      { value: 'note-asc', label: t('auth_files.sort_note_asc') },
+      { value: 'note-desc', label: t('auth_files.sort_note_desc') },
+      { value: 'priority-desc', label: t('auth_files.sort_priority_desc') },
+      { value: 'priority-asc', label: t('auth_files.sort_priority_asc') },
       { value: 'plan-desc', label: t('auth_files.sort_plan_desc') },
       { value: 'plan-asc', label: t('auth_files.sort_plan_asc') },
     ],
@@ -508,6 +575,14 @@ export function AuthFilesPage() {
       });
     } else if (sortMode === 'name-asc') {
       copy.sort(compareAuthFileName);
+    } else if (sortMode === 'note-asc' || sortMode === 'note-desc') {
+      copy.sort((a, b) =>
+        compareAuthFileNote(a, b, sortMode === 'note-desc' ? 'desc' : 'asc')
+      );
+    } else if (sortMode === 'priority-asc' || sortMode === 'priority-desc') {
+      copy.sort((a, b) =>
+        compareAuthFilePriority(a, b, sortMode === 'priority-desc' ? 'desc' : 'asc')
+      );
     } else if (sortMode === 'plan-asc' || sortMode === 'plan-desc') {
       copy.sort((a, b) => {
         const leftRank = getAuthFilePlanSortRank(a, codexQuota[a.name]);
@@ -743,7 +818,7 @@ export function AuthFilesPage() {
   );
 
   const deleteAllButtonLabel = (() => {
-    if (disabledOnly) {
+    if (disabledOnly || healthyOnly) {
       return t('auth_files.delete_filtered_result_button');
     }
     if (problemOnly) {
@@ -786,9 +861,11 @@ export function AuthFilesPage() {
                   filter,
                   problemOnly,
                   disabledOnly,
+                  healthyOnly,
                   onResetFilterToAll: () => setFilter('all'),
                   onResetProblemOnly: () => setProblemOnly(false),
                   onResetDisabledOnly: () => setDisabledOnly(false),
+                  onResetHealthyOnly: () => setHealthyOnly(false),
                 })
               }
               disabled={disableControls || loading || deletingAll}
@@ -864,6 +941,7 @@ export function AuthFilesPage() {
                         checked={problemOnly}
                         onChange={(value) => {
                           setProblemOnly(value);
+                          if (value) setHealthyOnly(false);
                           setPage(1);
                         }}
                         ariaLabel={t('auth_files.problem_filter_only')}
@@ -879,12 +957,32 @@ export function AuthFilesPage() {
                         checked={disabledOnly}
                         onChange={(value) => {
                           setDisabledOnly(value);
+                          if (value) setHealthyOnly(false);
                           setPage(1);
                         }}
                         ariaLabel={t('auth_files.disabled_filter_only')}
                         label={
                           <span className={styles.filterToggleLabel}>
                             {t('auth_files.disabled_filter_only')}
+                          </span>
+                        }
+                      />
+                    </div>
+                    <div className={styles.filterToggleCard}>
+                      <ToggleSwitch
+                        checked={healthyOnly}
+                        onChange={(value) => {
+                          setHealthyOnly(value);
+                          if (value) {
+                            setProblemOnly(false);
+                            setDisabledOnly(false);
+                          }
+                          setPage(1);
+                        }}
+                        ariaLabel={t('auth_files.healthy_filter_only')}
+                        label={
+                          <span className={styles.filterToggleLabel}>
+                            {t('auth_files.healthy_filter_only')}
                           </span>
                         }
                       />
