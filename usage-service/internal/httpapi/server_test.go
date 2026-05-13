@@ -267,6 +267,13 @@ func TestSetupAllowsKeyRotationForSameUpstreamWithValidNewKey(t *testing.T) {
 			_, _ = w.Write([]byte(`{}`))
 			return
 		}
+		if r.URL.Path == "/v0/management/usage-statistics-enabled" &&
+			r.Method == http.MethodPut &&
+			r.Header.Get("Authorization") == "Bearer rotated-key" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"ok":true}`))
+			return
+		}
 		http.Error(w, "forbidden", http.StatusForbidden)
 	}))
 	t.Cleanup(upstream.Close)
@@ -333,6 +340,130 @@ func TestSetupRejectsKeyRotationWhenSetupIsEnvironmentManaged(t *testing.T) {
 	}
 	if !strings.Contains(rr.Body.String(), "environment") {
 		t.Fatalf("response body = %s", rr.Body.String())
+	}
+}
+
+func TestManagerConfigRejectsPollIntervalAboveRetention(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v0/management/config" && r.Header.Get("Authorization") == "Bearer management-key" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"usage-statistics-enabled":true,"redis-usage-queue-retention-seconds":1}`))
+			return
+		}
+		http.Error(w, "forbidden", http.StatusForbidden)
+	}))
+	t.Cleanup(upstream.Close)
+
+	handler := newTestHandler(t, upstream.URL, true)
+	body := bytes.NewBufferString(`{"config":{"cpaConnection":{"cpaBaseUrl":"` + upstream.URL + `","managementKey":"management-key"},"collector":{"collectorMode":"auto","queue":"usage","popSide":"right","batchSize":100,"pollIntervalMs":2000,"queryLimit":50000},"externalUsageService":{"enabled":true,"serviceBase":"http://usage.test"}}}`)
+	req := httptest.NewRequest(http.MethodPut, "/usage-service/config", body)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("save status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "pollIntervalMs") {
+		t.Fatalf("response body = %s", rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), `"code":"poll_interval_exceeds_retention"`) {
+		t.Fatalf("response body = %s", rr.Body.String())
+	}
+}
+
+func TestManagerConfigReadsLegacySetup(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v0/management/config" && r.Header.Get("Authorization") == "Bearer management-key" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"usage-statistics-enabled":true}`))
+			return
+		}
+		http.Error(w, "forbidden", http.StatusForbidden)
+	}))
+	t.Cleanup(upstream.Close)
+
+	handler := newTestHandler(t, upstream.URL, true)
+	req := httptest.NewRequest(http.MethodGet, "/usage-service/config", nil)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("config status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), `"source":"db"`) {
+		t.Fatalf("response body = %s", rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), upstream.URL) {
+		t.Fatalf("response body = %s", rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), `"enabled":true`) {
+		t.Fatalf("response body = %s", rr.Body.String())
+	}
+}
+
+func TestSetupCanDisableRequestMonitoring(t *testing.T) {
+	configCalls := 0
+	enableCalls := 0
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v0/management/config" && r.Header.Get("Authorization") == "Bearer management-key" {
+			configCalls++
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"usage-statistics-enabled":false,"redis-usage-queue-retention-seconds":1}`))
+			return
+		}
+		if r.URL.Path == "/v0/management/usage-statistics-enabled" {
+			enableCalls++
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"ok":true}`))
+			return
+		}
+		http.Error(w, "forbidden", http.StatusForbidden)
+	}))
+	t.Cleanup(upstream.Close)
+
+	handler := newTestHandler(t, upstream.URL, false)
+	body := bytes.NewBufferString(`{"cpaBaseUrl":"` + upstream.URL + `","managementKey":"management-key","requestMonitoringEnabled":false,"ensureUsageStatisticsEnabled":false}`)
+	req := httptest.NewRequest(http.MethodPost, "/setup", body)
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("setup status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	if configCalls != 1 {
+		t.Fatalf("config calls = %d, want 1", configCalls)
+	}
+	if enableCalls != 0 {
+		t.Fatalf("enable calls = %d, want 0", enableCalls)
+	}
+
+	statusReq := httptest.NewRequest(http.MethodGet, "/status", nil)
+	statusReq.Header.Set("Authorization", "Bearer management-key")
+	statusRR := httptest.NewRecorder()
+	handler.ServeHTTP(statusRR, statusReq)
+
+	if statusRR.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", statusRR.Code, statusRR.Body.String())
+	}
+	if !strings.Contains(statusRR.Body.String(), `"collector":"stopped"`) {
+		t.Fatalf("status body = %s", statusRR.Body.String())
+	}
+
+	configReq := httptest.NewRequest(http.MethodGet, "/usage-service/config", nil)
+	configReq.Header.Set("Authorization", "Bearer management-key")
+	configRR := httptest.NewRecorder()
+	handler.ServeHTTP(configRR, configReq)
+
+	if configRR.Code != http.StatusOK {
+		t.Fatalf("config status = %d, body = %s", configRR.Code, configRR.Body.String())
+	}
+	if !strings.Contains(configRR.Body.String(), `"enabled":false`) {
+		t.Fatalf("config body = %s", configRR.Body.String())
 	}
 }
 

@@ -23,6 +23,34 @@ type Setup struct {
 	PopSide        string `json:"popSide,omitempty"`
 }
 
+type ManagerConfig struct {
+	CPAConnection        ManagerCPAConnectionConfig        `json:"cpaConnection"`
+	Collector            ManagerCollectorConfig            `json:"collector"`
+	ExternalUsageService ManagerExternalUsageServiceConfig `json:"externalUsageService"`
+	UpdatedAtMS          int64                             `json:"updatedAtMs,omitempty"`
+}
+
+type ManagerCPAConnectionConfig struct {
+	CPABaseURL    string `json:"cpaBaseUrl"`
+	ManagementKey string `json:"managementKey,omitempty"`
+}
+
+type ManagerCollectorConfig struct {
+	Enabled        *bool  `json:"enabled,omitempty"`
+	CollectorMode  string `json:"collectorMode,omitempty"`
+	Queue          string `json:"queue,omitempty"`
+	PopSide        string `json:"popSide,omitempty"`
+	BatchSize      int    `json:"batchSize,omitempty"`
+	PollIntervalMS int    `json:"pollIntervalMs,omitempty"`
+	QueryLimit     int    `json:"queryLimit,omitempty"`
+	TLSSkipVerify  bool   `json:"tlsSkipVerify,omitempty"`
+}
+
+type ManagerExternalUsageServiceConfig struct {
+	Enabled     bool   `json:"enabled"`
+	ServiceBase string `json:"serviceBase,omitempty"`
+}
+
 type InsertResult struct {
 	Inserted int `json:"inserted"`
 	Skipped  int `json:"skipped"`
@@ -47,6 +75,8 @@ type ModelPriceSyncResult struct {
 type Store struct {
 	db *sql.DB
 }
+
+const managerConfigKey = "manager_config_v1"
 
 func Open(path string) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -230,6 +260,40 @@ func (s *Store) LoadSetup(ctx context.Context) (Setup, bool, error) {
 		return Setup{}, false, err
 	}
 	return setup, true, nil
+}
+
+func (s *Store) SaveManagerConfig(ctx context.Context, cfg ManagerConfig) error {
+	cfg.UpdatedAtMS = time.Now().UnixMilli()
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.ExecContext(
+		ctx,
+		`insert into settings(key, value, updated_at_ms)
+		 values(?, ?, ?)
+		 on conflict(key) do update set value = excluded.value, updated_at_ms = excluded.updated_at_ms`,
+		managerConfigKey,
+		string(data),
+		cfg.UpdatedAtMS,
+	)
+	return err
+}
+
+func (s *Store) LoadManagerConfig(ctx context.Context) (ManagerConfig, bool, error) {
+	var raw string
+	err := s.db.QueryRowContext(ctx, `select value from settings where key = ?`, managerConfigKey).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ManagerConfig{}, false, nil
+	}
+	if err != nil {
+		return ManagerConfig{}, false, err
+	}
+	var cfg ManagerConfig
+	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
+		return ManagerConfig{}, false, err
+	}
+	return cfg, true, nil
 }
 
 func (s *Store) LoadModelPrices(ctx context.Context) (map[string]ModelPrice, error) {
