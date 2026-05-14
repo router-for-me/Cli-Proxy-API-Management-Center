@@ -15,9 +15,7 @@ import type {
   ClaudeQuotaState,
   ClaudeQuotaWindow,
   ClaudeUsagePayload,
-  CodexRateLimitInfo,
   CodexQuotaState,
-  CodexUsageWindow,
   CodexQuotaWindow,
   CodexUsagePayload,
   GeminiCliCodeAssistPayload,
@@ -29,7 +27,12 @@ import type {
   KimiQuotaRow,
   KimiQuotaState,
 } from '@/types';
-import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
+import {
+  apiCallApi,
+  authFilesApi,
+  getApiCallErrorMessage,
+  requestCodexUsageRaw,
+} from '@/services/api';
 import { useQuotaStore } from '@/stores';
 import {
   ANTIGRAVITY_QUOTA_URLS,
@@ -38,8 +41,6 @@ import {
   CLAUDE_USAGE_URL,
   CLAUDE_REQUEST_HEADERS,
   CLAUDE_USAGE_WINDOW_KEYS,
-  CODEX_USAGE_URL,
-  CODEX_REQUEST_HEADERS,
   GEMINI_CLI_QUOTA_URL,
   GEMINI_CLI_CODE_ASSIST_URL,
   GEMINI_CLI_REQUEST_HEADERS,
@@ -52,17 +53,16 @@ import {
   normalizeStringValue,
   parseAntigravityPayload,
   parseClaudeUsagePayload,
-  parseCodexUsagePayload,
   parseGeminiCliQuotaPayload,
   parseGeminiCliCodeAssistPayload,
   parseKimiUsagePayload,
   resolveCodexChatgptAccountId,
   resolveCodexPlanType,
   resolveGeminiCliProjectId,
-  formatCodexResetLabel,
   formatQuotaResetTime,
   formatKimiResetHint,
   buildAntigravityQuotaGroups,
+  buildCodexQuotaWindowInfos,
   buildGeminiCliQuotaBuckets,
   buildKimiQuotaRows,
   createStatusError,
@@ -90,7 +90,12 @@ const QUOTA_PROGRESS_MEDIUM_THRESHOLD = 30;
 const geminiCliSupplementaryRequestIds = new Map<string, number>();
 const geminiCliSupplementaryCache = new Map<
   string,
-  { requestId: number; tierLabel: string | null; tierId: string | null; creditBalance: number | null }
+  {
+    requestId: number;
+    tierLabel: string | null;
+    tierId: string | null;
+    creditBalance: number | null;
+  }
 >();
 
 export interface QuotaStore {
@@ -230,176 +235,15 @@ const fetchAntigravityQuota = async (
   throw createStatusError(lastError || t('common.unknown_error'), priorityStatus ?? lastStatus);
 };
 
-const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): CodexQuotaWindow[] => {
-  const FIVE_HOUR_SECONDS = 18000;
-  const WEEK_SECONDS = 604800;
-  const WINDOW_META = {
-    codeFiveHour: { id: 'five-hour', labelKey: 'codex_quota.primary_window' },
-    codeWeekly: { id: 'weekly', labelKey: 'codex_quota.secondary_window' },
-    codeReviewFiveHour: { id: 'code-review-five-hour', labelKey: 'codex_quota.code_review_primary_window' },
-    codeReviewWeekly: { id: 'code-review-weekly', labelKey: 'codex_quota.code_review_secondary_window' },
-  } as const;
-
-  const rateLimit = payload.rate_limit ?? payload.rateLimit ?? undefined;
-  const codeReviewLimit = payload.code_review_rate_limit ?? payload.codeReviewRateLimit ?? undefined;
-  const additionalRateLimits = payload.additional_rate_limits ?? payload.additionalRateLimits ?? [];
-  const windows: CodexQuotaWindow[] = [];
-
-  const addWindow = (
-    id: string,
-    label: string,
-    labelKey: string | undefined,
-    labelParams: Record<string, string | number> | undefined,
-    window?: CodexUsageWindow | null,
-    limitReached?: boolean,
-    allowed?: boolean
-  ) => {
-    if (!window) return;
-    const resetLabel = formatCodexResetLabel(window);
-    const usedPercentRaw = normalizeNumberValue(window.used_percent ?? window.usedPercent);
-    const isLimitReached = Boolean(limitReached) || allowed === false;
-    const usedPercent = usedPercentRaw ?? (isLimitReached && resetLabel !== '-' ? 100 : null);
-    windows.push({
-      id,
-      label,
-      labelKey,
-      labelParams,
-      usedPercent,
-      resetLabel,
-    });
-  };
-
-  const getWindowSeconds = (window?: CodexUsageWindow | null): number | null => {
-    if (!window) return null;
-    return normalizeNumberValue(window.limit_window_seconds ?? window.limitWindowSeconds);
-  };
-
-  const rawLimitReached = rateLimit?.limit_reached ?? rateLimit?.limitReached;
-  const rawAllowed = rateLimit?.allowed;
-
-  const pickClassifiedWindows = (
-    limitInfo?: CodexRateLimitInfo | null,
-    options?: { allowOrderFallback?: boolean }
-  ): { fiveHourWindow: CodexUsageWindow | null; weeklyWindow: CodexUsageWindow | null } => {
-    const allowOrderFallback = options?.allowOrderFallback ?? true;
-    const primaryWindow = limitInfo?.primary_window ?? limitInfo?.primaryWindow ?? null;
-    const secondaryWindow = limitInfo?.secondary_window ?? limitInfo?.secondaryWindow ?? null;
-    const rawWindows = [primaryWindow, secondaryWindow];
-
-    let fiveHourWindow: CodexUsageWindow | null = null;
-    let weeklyWindow: CodexUsageWindow | null = null;
-
-    for (const window of rawWindows) {
-      if (!window) continue;
-      const seconds = getWindowSeconds(window);
-      if (seconds === FIVE_HOUR_SECONDS && !fiveHourWindow) {
-        fiveHourWindow = window;
-      } else if (seconds === WEEK_SECONDS && !weeklyWindow) {
-        weeklyWindow = window;
-      }
-    }
-
-    // For legacy payloads without window duration, fallback to primary/secondary ordering.
-    if (allowOrderFallback) {
-      if (!fiveHourWindow) {
-        fiveHourWindow = primaryWindow && primaryWindow !== weeklyWindow ? primaryWindow : null;
-      }
-      if (!weeklyWindow) {
-        weeklyWindow = secondaryWindow && secondaryWindow !== fiveHourWindow ? secondaryWindow : null;
-      }
-    }
-
-    return { fiveHourWindow, weeklyWindow };
-  };
-
-  const rateWindows = pickClassifiedWindows(rateLimit);
-  addWindow(
-    WINDOW_META.codeFiveHour.id,
-    t(WINDOW_META.codeFiveHour.labelKey),
-    WINDOW_META.codeFiveHour.labelKey,
-    undefined,
-    rateWindows.fiveHourWindow,
-    rawLimitReached,
-    rawAllowed
-  );
-  addWindow(
-    WINDOW_META.codeWeekly.id,
-    t(WINDOW_META.codeWeekly.labelKey),
-    WINDOW_META.codeWeekly.labelKey,
-    undefined,
-    rateWindows.weeklyWindow,
-    rawLimitReached,
-    rawAllowed
-  );
-
-  const codeReviewWindows = pickClassifiedWindows(codeReviewLimit);
-  const codeReviewLimitReached = codeReviewLimit?.limit_reached ?? codeReviewLimit?.limitReached;
-  const codeReviewAllowed = codeReviewLimit?.allowed;
-  addWindow(
-    WINDOW_META.codeReviewFiveHour.id,
-    t(WINDOW_META.codeReviewFiveHour.labelKey),
-    WINDOW_META.codeReviewFiveHour.labelKey,
-    undefined,
-    codeReviewWindows.fiveHourWindow,
-    codeReviewLimitReached,
-    codeReviewAllowed
-  );
-  addWindow(
-    WINDOW_META.codeReviewWeekly.id,
-    t(WINDOW_META.codeReviewWeekly.labelKey),
-    WINDOW_META.codeReviewWeekly.labelKey,
-    undefined,
-    codeReviewWindows.weeklyWindow,
-    codeReviewLimitReached,
-    codeReviewAllowed
-  );
-
-  const normalizeWindowId = (raw: string) =>
-    raw
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-  if (Array.isArray(additionalRateLimits)) {
-    additionalRateLimits.forEach((limitItem, index) => {
-      const rateInfo = limitItem?.rate_limit ?? limitItem?.rateLimit ?? null;
-      if (!rateInfo) return;
-
-      const limitName =
-        normalizeStringValue(limitItem?.limit_name ?? limitItem?.limitName) ??
-        normalizeStringValue(limitItem?.metered_feature ?? limitItem?.meteredFeature) ??
-        `additional-${index + 1}`;
-
-      const idPrefix = normalizeWindowId(limitName) || `additional-${index + 1}`;
-      const additionalPrimaryWindow = rateInfo.primary_window ?? rateInfo.primaryWindow ?? null;
-      const additionalSecondaryWindow = rateInfo.secondary_window ?? rateInfo.secondaryWindow ?? null;
-      const additionalLimitReached = rateInfo.limit_reached ?? rateInfo.limitReached;
-      const additionalAllowed = rateInfo.allowed;
-
-      addWindow(
-        `${idPrefix}-five-hour-${index}`,
-        t('codex_quota.additional_primary_window', { name: limitName }),
-        'codex_quota.additional_primary_window',
-        { name: limitName },
-        additionalPrimaryWindow,
-        additionalLimitReached,
-        additionalAllowed
-      );
-      addWindow(
-        `${idPrefix}-weekly-${index}`,
-        t('codex_quota.additional_secondary_window', { name: limitName }),
-        'codex_quota.additional_secondary_window',
-        { name: limitName },
-        additionalSecondaryWindow,
-        additionalLimitReached,
-        additionalAllowed
-      );
-    });
-  }
-
-  return windows;
-};
+const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): CodexQuotaWindow[] =>
+  buildCodexQuotaWindowInfos(payload).map((window) => ({
+    id: window.id,
+    label: t(window.labelKey, window.labelParams),
+    labelKey: window.labelKey,
+    labelParams: window.labelParams,
+    usedPercent: window.usedPercent,
+    resetLabel: window.resetLabel,
+  }));
 
 const fetchCodexQuota = async (
   file: AuthFileItem,
@@ -413,26 +257,12 @@ const fetchCodexQuota = async (
 
   const planTypeFromFile = resolveCodexPlanType(file);
   const accountId = resolveCodexChatgptAccountId(file);
-
-  const requestHeader: Record<string, string> = {
-    ...CODEX_REQUEST_HEADERS,
-  };
-  if (accountId) {
-    requestHeader['Chatgpt-Account-Id'] = accountId;
-  }
-
-  const result = await apiCallApi.request({
-    authIndex,
-    method: 'GET',
-    url: CODEX_USAGE_URL,
-    header: requestHeader,
-  });
+  const { result, payload } = await requestCodexUsageRaw({ authIndex, accountId });
 
   if (result.statusCode < 200 || result.statusCode >= 300) {
     throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
   }
 
-  const payload = parseCodexUsagePayload(result.body ?? result.bodyText);
   if (!payload) {
     throw new Error(t('codex_quota.empty_windows'));
   }
@@ -459,8 +289,7 @@ const resolveGeminiCliTierLabel = (
   if (!payload) return null;
   const currentTier: GeminiCliUserTier | null | undefined =
     payload.currentTier ?? payload.current_tier;
-  const paidTier: GeminiCliUserTier | null | undefined =
-    payload.paidTier ?? payload.paid_tier;
+  const paidTier: GeminiCliUserTier | null | undefined = payload.paidTier ?? payload.paid_tier;
   const rawId = normalizeStringValue(paidTier?.id) ?? normalizeStringValue(currentTier?.id);
   if (!rawId) return null;
   const tierId = rawId.toLowerCase();
@@ -468,14 +297,11 @@ const resolveGeminiCliTierLabel = (
   return labelKey ? t(`gemini_cli_quota.${labelKey}`) : rawId;
 };
 
-const resolveGeminiCliTierId = (
-  payload: GeminiCliCodeAssistPayload | null
-): string | null => {
+const resolveGeminiCliTierId = (payload: GeminiCliCodeAssistPayload | null): string | null => {
   if (!payload) return null;
   const currentTier: GeminiCliUserTier | null | undefined =
     payload.currentTier ?? payload.current_tier;
-  const paidTier: GeminiCliUserTier | null | undefined =
-    payload.paidTier ?? payload.paid_tier;
+  const paidTier: GeminiCliUserTier | null | undefined = payload.paidTier ?? payload.paid_tier;
   const rawId = normalizeStringValue(paidTier?.id) ?? normalizeStringValue(currentTier?.id);
   return rawId ? rawId.toLowerCase() : null;
 };
@@ -484,14 +310,12 @@ const resolveGeminiCliCreditBalance = (
   payload: GeminiCliCodeAssistPayload | null
 ): number | null => {
   if (!payload) return null;
-  const paidTier: GeminiCliUserTier | null | undefined =
-    payload.paidTier ?? payload.paid_tier;
+  const paidTier: GeminiCliUserTier | null | undefined = payload.paidTier ?? payload.paid_tier;
   const currentTier: GeminiCliUserTier | null | undefined =
     payload.currentTier ?? payload.current_tier;
   const tier = paidTier ?? currentTier;
   if (!tier) return null;
-  const credits: GeminiCliCredits[] =
-    tier.availableCredits ?? tier.available_credits ?? [];
+  const credits: GeminiCliCredits[] = tier.availableCredits ?? tier.available_credits ?? [];
   let total = 0;
   let found = false;
   for (const credit of credits) {
@@ -750,10 +574,8 @@ const getCodexPlanLabel = (planType: string | null | undefined, t: TFunction): s
   return planType || normalized;
 };
 
-const getCodexEffectivePlanType = (
-  file: AuthFileItem,
-  quota?: CodexQuotaState
-): string | null => resolveCodexPlanType(file) ?? quota?.planType ?? null;
+const getCodexEffectivePlanType = (file: AuthFileItem, quota?: CodexQuotaState): string | null =>
+  resolveCodexPlanType(file) ?? quota?.planType ?? null;
 
 const getCodexPlanSortRank = (file: AuthFileItem, quota?: CodexQuotaState): number | null => {
   const normalized = normalizePlanType(getCodexEffectivePlanType(file, quota));
@@ -888,7 +710,11 @@ const renderGeminiCliItems = (
 
   if (buckets.length === 0) {
     nodes.push(
-      h('div', { key: 'empty', className: styleMap.quotaMessage }, t('gemini_cli_quota.empty_buckets'))
+      h(
+        'div',
+        { key: 'empty', className: styleMap.quotaMessage },
+        t('gemini_cli_quota.empty_buckets')
+      )
     );
     return h(Fragment, null, ...nodes);
   }
@@ -1002,8 +828,12 @@ const resolveClaudePlanType = (profile: ClaudeProfileResponse | null): string | 
   const hasClaudePro = normalizeFlagValue(profile.account?.has_claude_pro);
   if (hasClaudePro) return 'plan_pro';
 
-  const organizationType = normalizeStringValue(profile.organization?.organization_type)?.toLowerCase();
-  const subscriptionStatus = normalizeStringValue(profile.organization?.subscription_status)?.toLowerCase();
+  const organizationType = normalizeStringValue(
+    profile.organization?.organization_type
+  )?.toLowerCase();
+  const subscriptionStatus = normalizeStringValue(
+    profile.organization?.subscription_status
+  )?.toLowerCase();
 
   if (organizationType === 'claude_team' && subscriptionStatus === 'active') {
     return 'plan_team';
@@ -1017,7 +847,11 @@ const resolveClaudePlanType = (profile: ClaudeProfileResponse | null): string | 
 const fetchClaudeQuota = async (
   file: AuthFileItem,
   t: TFunction
-): Promise<{ windows: ClaudeQuotaWindow[]; extraUsage?: ClaudeExtraUsage | null; planType?: string | null }> => {
+): Promise<{
+  windows: ClaudeQuotaWindow[];
+  extraUsage?: ClaudeExtraUsage | null;
+  planType?: string | null;
+}> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
@@ -1248,7 +1082,13 @@ export const GEMINI_CLI_CONFIG: QuotaConfig<
   fetchQuota: fetchGeminiCliQuota,
   storeSelector: (state) => state.geminiCliQuota,
   storeSetter: 'setGeminiCliQuota',
-  buildLoadingState: () => ({ status: 'loading', buckets: [], tierLabel: null, tierId: null, creditBalance: null }),
+  buildLoadingState: () => ({
+    status: 'loading',
+    buckets: [],
+    tierLabel: null,
+    tierId: null,
+    creditBalance: null,
+  }),
   buildSuccessState: (data) => {
     const supplementarySnapshot = readGeminiCliSupplementarySnapshot(
       data.fileName,
@@ -1276,10 +1116,7 @@ export const GEMINI_CLI_CONFIG: QuotaConfig<
   renderQuotaItems: renderGeminiCliItems,
 };
 
-const fetchKimiQuota = async (
-  file: AuthFileItem,
-  t: TFunction
-): Promise<KimiQuotaRow[]> => {
+const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuotaRow[]> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
@@ -1330,7 +1167,7 @@ const renderKimiItems = (
     const percentLabel = remaining === null ? '--' : `${remaining}%`;
     const rowLabel = row.labelKey
       ? t(row.labelKey, (row.labelParams ?? {}) as Record<string, string | number>)
-      : row.label ?? '';
+      : (row.label ?? '');
     const resetLabel = formatKimiResetHint(t, row.resetHint);
 
     return h(
@@ -1344,12 +1181,8 @@ const renderKimiItems = (
           'div',
           { className: styleMap.quotaMeta },
           h('span', { className: styleMap.quotaPercent }, percentLabel),
-          limit > 0
-            ? h('span', { className: styleMap.quotaAmount }, `${used} / ${limit}`)
-            : null,
-          resetLabel
-            ? h('span', { className: styleMap.quotaReset }, resetLabel)
-            : null
+          limit > 0 ? h('span', { className: styleMap.quotaAmount }, `${used} / ${limit}`) : null,
+          resetLabel ? h('span', { className: styleMap.quotaReset }, resetLabel) : null
         )
       ),
       h(QuotaProgressBar, {
