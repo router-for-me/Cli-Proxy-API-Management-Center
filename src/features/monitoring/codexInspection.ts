@@ -1,13 +1,15 @@
 import type { AxiosRequestConfig } from 'axios';
 import { authFilesApi } from '@/services/api/authFiles';
-import { apiCallApi, getApiCallErrorMessage } from '@/services/api/apiCall';
-import type { AuthFileItem, Config, CodexRateLimitInfo, CodexUsageWindow } from '@/types';
+import { getApiCallErrorMessage } from '@/services/api/apiCall';
+import { requestCodexUsageRaw } from '@/services/api/codexQuota';
+import type { AuthFileItem, Config, CodexRateLimitInfo } from '@/types';
 import {
-  CODEX_REQUEST_HEADERS,
-  CODEX_USAGE_URL,
+  classifyCodexRateLimitWindows,
+  deriveCodexRateLimitUsedPercent,
   isDisabledAuthFile,
+  isCodexRateLimitReached,
+  getCodexQuotaWindowUsedPercent,
   normalizeNumberValue,
-  parseCodexUsagePayload,
   resolveAuthProvider,
   resolveCodexChatgptAccountId,
 } from '@/utils/quota';
@@ -164,8 +166,6 @@ export interface CodexInspectionSession {
 }
 
 const QUOTA_BODY_PATTERNS = ['quota exhausted', 'limit reached', 'payment_required'];
-const FIVE_HOUR_WINDOW_SECONDS = 18000;
-const WEEK_WINDOW_SECONDS = 604800;
 
 export class CodexInspectionStoppedError extends Error {
   constructor(message: string = '巡检已停止') {
@@ -297,21 +297,35 @@ const normalizeConfigurableSettings = (
   const sampleSizeValue = normalizeNumberValue(merged.sampleSize);
 
   return {
-    targetType: readString(merged.targetType).toLowerCase() || DEFAULT_CODEX_INSPECTION_SETTINGS.targetType,
-    workers: clampPositiveInteger(normalizeNumberValue(merged.workers) ?? undefined, DEFAULT_CODEX_INSPECTION_SETTINGS.workers),
+    targetType:
+      readString(merged.targetType).toLowerCase() || DEFAULT_CODEX_INSPECTION_SETTINGS.targetType,
+    workers: clampPositiveInteger(
+      normalizeNumberValue(merged.workers) ?? undefined,
+      DEFAULT_CODEX_INSPECTION_SETTINGS.workers
+    ),
     deleteWorkers: clampPositiveInteger(
       normalizeNumberValue(merged.deleteWorkers) ?? undefined,
-      clampPositiveInteger(normalizeNumberValue(merged.workers) ?? undefined, DEFAULT_CODEX_INSPECTION_SETTINGS.workers)
+      clampPositiveInteger(
+        normalizeNumberValue(merged.workers) ?? undefined,
+        DEFAULT_CODEX_INSPECTION_SETTINGS.workers
+      )
     ),
-    timeout: clampPositiveInteger(normalizeNumberValue(merged.timeout) ?? undefined, DEFAULT_CODEX_INSPECTION_SETTINGS.timeout),
+    timeout: clampPositiveInteger(
+      normalizeNumberValue(merged.timeout) ?? undefined,
+      DEFAULT_CODEX_INSPECTION_SETTINGS.timeout
+    ),
     retries:
-      retriesValue === null ? DEFAULT_CODEX_INSPECTION_SETTINGS.retries : Math.max(0, Math.floor(retriesValue)),
+      retriesValue === null
+        ? DEFAULT_CODEX_INSPECTION_SETTINGS.retries
+        : Math.max(0, Math.floor(retriesValue)),
     userAgent: readString(merged.userAgent) || DEFAULT_CODEX_INSPECTION_SETTINGS.userAgent,
     usedPercentThreshold: Number.isFinite(threshold)
       ? Math.max(0, Math.min(100, threshold))
       : DEFAULT_CODEX_INSPECTION_SETTINGS.usedPercentThreshold,
     sampleSize:
-      sampleSizeValue === null ? DEFAULT_CODEX_INSPECTION_SETTINGS.sampleSize : Math.max(0, Math.floor(sampleSizeValue)),
+      sampleSizeValue === null
+        ? DEFAULT_CODEX_INSPECTION_SETTINGS.sampleSize
+        : Math.max(0, Math.floor(sampleSizeValue)),
     autoExecuteActions: readBoolean(
       merged.autoExecuteActions,
       DEFAULT_CODEX_INSPECTION_SETTINGS.autoExecuteActions
@@ -371,7 +385,7 @@ export const clearCodexInspectionConfigurableSettings = () => {
   }
 };
 
-const pickSample = <T,>(items: T[], sampleSize: number): T[] => {
+const pickSample = <T>(items: T[], sampleSize: number): T[] => {
   if (sampleSize <= 0 || sampleSize >= items.length) return [...items];
 
   const shuffled = [...items];
@@ -382,7 +396,7 @@ const pickSample = <T,>(items: T[], sampleSize: number): T[] => {
   return shuffled.slice(0, sampleSize);
 };
 
-const withRetry = async <T,>(retries: number, task: () => Promise<T>): Promise<T> => {
+const withRetry = async <T>(retries: number, task: () => Promise<T>): Promise<T> => {
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
@@ -420,65 +434,6 @@ const runConcurrently = async <T, R>(
 
   await Promise.all(Array.from({ length: Math.min(size, items.length) }, () => worker()));
   return results;
-};
-
-const getWindowUsedPercent = (window?: CodexUsageWindow | null) =>
-  normalizeNumberValue(window?.used_percent ?? window?.usedPercent);
-
-const getWindowSeconds = (window?: CodexUsageWindow | null) =>
-  normalizeNumberValue(window?.limit_window_seconds ?? window?.limitWindowSeconds);
-
-const getLimitWindows = (rateLimit?: CodexRateLimitInfo | null) => [
-  rateLimit?.primary_window ?? rateLimit?.primaryWindow ?? null,
-  rateLimit?.secondary_window ?? rateLimit?.secondaryWindow ?? null,
-];
-
-const pickClassifiedWindows = (
-  rateLimit?: CodexRateLimitInfo | null
-): { fiveHourWindow: CodexUsageWindow | null; weeklyWindow: CodexUsageWindow | null } => {
-  const primaryWindow = rateLimit?.primary_window ?? rateLimit?.primaryWindow ?? null;
-  const secondaryWindow = rateLimit?.secondary_window ?? rateLimit?.secondaryWindow ?? null;
-  const rawWindows = [primaryWindow, secondaryWindow];
-
-  let fiveHourWindow: CodexUsageWindow | null = null;
-  let weeklyWindow: CodexUsageWindow | null = null;
-
-  rawWindows.forEach((window) => {
-    if (!window) return;
-    const seconds = getWindowSeconds(window);
-    if (seconds === FIVE_HOUR_WINDOW_SECONDS && !fiveHourWindow) {
-      fiveHourWindow = window;
-    } else if (seconds === WEEK_WINDOW_SECONDS && !weeklyWindow) {
-      weeklyWindow = window;
-    }
-  });
-
-  if (!fiveHourWindow) {
-    fiveHourWindow = primaryWindow && primaryWindow !== weeklyWindow ? primaryWindow : null;
-  }
-  if (!weeklyWindow) {
-    weeklyWindow = secondaryWindow && secondaryWindow !== fiveHourWindow ? secondaryWindow : null;
-  }
-
-  return { fiveHourWindow, weeklyWindow };
-};
-
-const deriveUsedPercent = (rateLimit?: CodexRateLimitInfo | null): number | null => {
-  const values = getLimitWindows(rateLimit)
-    .map((window) => getWindowUsedPercent(window))
-    .filter((value): value is number => value !== null);
-  if (!values.length) return null;
-  return Math.max(...values);
-};
-
-const isRateLimitReached = (rateLimit?: CodexRateLimitInfo | null) => {
-  if (!rateLimit) return false;
-  if (rateLimit.allowed === false) return true;
-  if (rateLimit.limit_reached === true || rateLimit.limitReached === true) return true;
-  return getLimitWindows(rateLimit).some((window) => {
-    const value = getWindowUsedPercent(window);
-    return value !== null && value >= 100;
-  });
 };
 
 type CodexInspectionDecision = Pick<
@@ -542,11 +497,11 @@ const resolveWindowAwareProbeAction = (
 ): CodexInspectionDecision | null => {
   if (!rateLimit) return null;
 
-  const { fiveHourWindow, weeklyWindow } = pickClassifiedWindows(rateLimit);
-  const weeklyUsedPercent = getWindowUsedPercent(weeklyWindow);
+  const { fiveHourWindow, weeklyWindow } = classifyCodexRateLimitWindows(rateLimit);
+  const weeklyUsedPercent = getCodexQuotaWindowUsedPercent(weeklyWindow);
   if (!weeklyWindow || weeklyUsedPercent === null) return null;
 
-  const fiveHourUsedPercent = getWindowUsedPercent(fiveHourWindow);
+  const fiveHourUsedPercent = getCodexQuotaWindowUsedPercent(fiveHourWindow);
   const weeklyOverThreshold = weeklyUsedPercent >= threshold;
   const fiveHourOverThreshold = fiveHourUsedPercent !== null && fiveHourUsedPercent >= threshold;
 
@@ -612,7 +567,12 @@ const resolveProbeAction = (
   isQuota: boolean,
   threshold: number
 ): CodexInspectionDecision => {
-  const windowAwareDecision = resolveWindowAwareProbeAction(account, statusCode, rateLimit, threshold);
+  const windowAwareDecision = resolveWindowAwareProbeAction(
+    account,
+    statusCode,
+    rateLimit,
+    threshold
+  );
   if (windowAwareDecision) return windowAwareDecision;
   return resolveLegacyProbeAction(account, statusCode, usedPercent, isQuota, threshold);
 };
@@ -635,24 +595,18 @@ const inspectSingleAccount = async (
     };
   }
 
-  const requestConfig: AxiosRequestConfig = settings.timeout > 0 ? { timeout: settings.timeout } : {};
-  const headers = {
-    ...CODEX_REQUEST_HEADERS,
-    'User-Agent': settings.userAgent,
-    ...(account.accountId ? { 'Chatgpt-Account-Id': account.accountId } : {}),
-  };
+  const authIndex = account.authIndex;
+  const requestConfig: AxiosRequestConfig =
+    settings.timeout > 0 ? { timeout: settings.timeout } : {};
 
   try {
-    const result = await withRetry(settings.retries, () =>
-      apiCallApi.request(
-        {
-          authIndex: account.authIndex ?? undefined,
-          method: 'GET',
-          url: CODEX_USAGE_URL,
-          header: headers,
-        },
-        requestConfig
-      )
+    const { result, payload } = await withRetry(settings.retries, () =>
+      requestCodexUsageRaw({
+        authIndex,
+        accountId: account.accountId,
+        userAgent: settings.userAgent,
+        requestConfig,
+      })
     );
 
     if (!result.hasStatusCode) {
@@ -668,14 +622,13 @@ const inspectSingleAccount = async (
       };
     }
 
-    const payload = parseCodexUsagePayload(result.body ?? result.bodyText);
     const rateLimit = payload?.rate_limit ?? payload?.rateLimit ?? null;
-    const usedPercent = deriveUsedPercent(rateLimit);
+    const usedPercent = deriveCodexRateLimitUsedPercent(rateLimit);
     const bodyText = result.bodyText.toLowerCase();
     const isQuota =
       result.statusCode === 402 ||
       QUOTA_BODY_PATTERNS.some((pattern) => bodyText.includes(pattern)) ||
-      isRateLimitReached(rateLimit) ||
+      isCodexRateLimitReached(rateLimit) ||
       (usedPercent !== null && usedPercent >= settings.usedPercentThreshold);
     const decision = resolveProbeAction(
       account,
@@ -694,7 +647,8 @@ const inspectSingleAccount = async (
           : decision.action === 'enable'
             ? 'success'
             : 'info';
-    const percentText = decision.usedPercent === null ? '--' : `${decision.usedPercent.toFixed(1)}%`;
+    const percentText =
+      decision.usedPercent === null ? '--' : `${decision.usedPercent.toFixed(1)}%`;
     onLog?.(
       successLevel,
       `${account.displayAccount} -> ${decision.action} (HTTP ${result.statusCode} · 已用 ${percentText})`
@@ -871,8 +825,23 @@ export const createCodexInspectionSession = ({
 
   const emitProgress = () => {
     const baseTime = startedAt || Date.now();
-    const summary = buildProgressSummary(files, probeSet, sampledAccounts, Array.from(resultMap.values()));
-    onProgress?.(createProgressSnapshot(sampledAccounts.length, resultMap.size, inFlight, status, baseTime, Date.now(), summary));
+    const summary = buildProgressSummary(
+      files,
+      probeSet,
+      sampledAccounts,
+      Array.from(resultMap.values())
+    );
+    onProgress?.(
+      createProgressSnapshot(
+        sampledAccounts.length,
+        resultMap.size,
+        inFlight,
+        status,
+        baseTime,
+        Date.now(),
+        summary
+      )
+    );
   };
 
   const buildRunResult = (finishedTime: number): CodexInspectionRunResult => {
@@ -934,7 +903,11 @@ export const createCodexInspectionSession = ({
       return;
     }
 
-    while (status === 'running' && inFlight < resolvedSettings.workers && cursor < sampledAccounts.length) {
+    while (
+      status === 'running' &&
+      inFlight < resolvedSettings.workers &&
+      cursor < sampledAccounts.length
+    ) {
       const account = sampledAccounts[cursor];
       cursor += 1;
       inFlight += 1;
@@ -1121,10 +1094,14 @@ const dedupeExecutionItems = (items: CodexInspectionResultItem[]) => {
       map.set(item.fileName, item);
     }
   });
-  return Array.from(map.values()).sort((left, right) => left.fileName.localeCompare(right.fileName));
+  return Array.from(map.values()).sort((left, right) =>
+    left.fileName.localeCompare(right.fileName)
+  );
 };
 
-const executeDelete = async (item: CodexInspectionResultItem): Promise<CodexInspectionExecutionOutcome> => {
+const executeDelete = async (
+  item: CodexInspectionResultItem
+): Promise<CodexInspectionExecutionOutcome> => {
   try {
     const result = await authFilesApi.deleteFileByName(item.fileName);
     const failed = result.failed[0];
@@ -1193,7 +1170,11 @@ export const executeCodexInspectionActions = async ({
 
   if (deleteItems.length > 0) {
     onLog?.('info', `开始删除 ${deleteItems.length} 个账号`);
-    const deleteOutcomes = await runConcurrently(deleteItems, settings.deleteWorkers, executeDelete);
+    const deleteOutcomes = await runConcurrently(
+      deleteItems,
+      settings.deleteWorkers,
+      executeDelete
+    );
     deleteOutcomes.forEach((outcome) => {
       onLog?.(
         outcome.success ? 'success' : 'error',
@@ -1255,8 +1236,9 @@ export const buildExecutionFailureMessage = (outcome: CodexInspectionExecutionOu
 
 export const isSuggestedAction = (item: CodexInspectionResultItem) => item.action !== 'keep';
 
-export const isCodexInspectionStoppedError = (error: unknown): error is CodexInspectionStoppedError =>
-  error instanceof CodexInspectionStoppedError;
+export const isCodexInspectionStoppedError = (
+  error: unknown
+): error is CodexInspectionStoppedError => error instanceof CodexInspectionStoppedError;
 
 export const applyCodexInspectionExecutionResult = (
   previousResult: CodexInspectionRunResult,
@@ -1290,7 +1272,12 @@ export const applyCodexInspectionExecutionResult = (
 
       return {
         ...baseItem,
-        disabled: outcome.action === 'disable' ? true : outcome.action === 'enable' ? false : baseItem.disabled,
+        disabled:
+          outcome.action === 'disable'
+            ? true
+            : outcome.action === 'enable'
+              ? false
+              : baseItem.disabled,
         action: 'keep',
         actionReason: '无需处理',
         error: '',
@@ -1330,4 +1317,11 @@ export const buildSuggestedActionCountLabel = (summary: CodexInspectionSummary) 
   summary.deleteCount + summary.disableCount + summary.enableCount;
 
 export const getProbeFailureMessage = (result: CodexInspectionResultItem) =>
-  result.error || getApiCallErrorMessage({ statusCode: result.statusCode || 0, hasStatusCode: true, header: {}, bodyText: '', body: null });
+  result.error ||
+  getApiCallErrorMessage({
+    statusCode: result.statusCode || 0,
+    hasStatusCode: true,
+    header: {},
+    bodyText: '',
+    body: null,
+  });

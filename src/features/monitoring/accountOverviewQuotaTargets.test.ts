@@ -3,9 +3,7 @@ import type { MonitoringAccountRow } from './hooks/useMonitoringData';
 import type { MonitoringAccountAuthState } from './accountOverviewState';
 import { buildMonitoringAccountQuotaTargetsByAccount } from './accountOverviewQuotaTargets';
 
-const createAccountRow = (
-  overrides: Partial<MonitoringAccountRow> = {}
-): MonitoringAccountRow => ({
+const createAccountRow = (overrides: Partial<MonitoringAccountRow> = {}): MonitoringAccountRow => ({
   id: overrides.id ?? 'account@example.com',
   account: overrides.account ?? 'account@example.com',
   displayAccount: overrides.displayAccount ?? overrides.account ?? 'account@example.com',
@@ -78,6 +76,47 @@ describe('accountOverviewQuotaTargets', () => {
     expect(result.get('account@example.com')).toMatchObject([
       { authIndex: '1', fileName: 'alpha.json', authLabel: 'Alpha' },
       { authIndex: '2', fileName: 'beta.json', authLabel: 'Beta' },
+    ]);
+  });
+
+  it('keeps Codex quota targets when the account id is unavailable', () => {
+    const authStateByRowId = new Map<string, MonitoringAccountAuthState>([
+      [
+        'account@example.com',
+        {
+          files: [
+            {
+              name: 'codex-without-account.json',
+              type: 'codex',
+              authIndex: '1',
+              label: 'Codex',
+              account: 'account@example.com',
+            },
+          ],
+          toggleableFileNames: ['codex-without-account.json'],
+          enabledState: 'enabled',
+        },
+      ],
+    ]);
+
+    const result = buildMonitoringAccountQuotaTargetsByAccount(
+      [
+        createAccountRow({
+          id: 'account@example.com',
+          account: 'account@example.com',
+          authIndices: ['1'],
+          authLabels: ['Codex'],
+        }),
+      ],
+      authStateByRowId
+    );
+
+    expect(result.get('account@example.com')).toMatchObject([
+      {
+        authIndex: '1',
+        fileName: 'codex-without-account.json',
+        accountId: null,
+      },
     ]);
   });
 });
