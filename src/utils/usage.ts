@@ -40,6 +40,13 @@ export interface TokenBreakdown {
   reasoningTokens: number;
 }
 
+export interface UsageThinking {
+  intensity?: string;
+  mode?: string;
+  level?: string;
+  budget?: number;
+}
+
 export interface RateStats {
   rpm: number;
   tpm: number;
@@ -67,6 +74,7 @@ export interface UsageDetail {
     cache_tokens?: number;
     total_tokens: number;
   };
+  thinking?: UsageThinking | null;
   failed: boolean;
   __modelName?: string;
   __timestampMs?: number;
@@ -121,6 +129,29 @@ const getApisRecord = (usageData: unknown): Record<string, unknown> | null => {
   const usageRecord = isRecord(usageData) ? usageData : null;
   const apisRaw = usageRecord ? usageRecord.apis : null;
   return isRecord(apisRaw) ? apisRaw : null;
+};
+
+const normalizeUsageThinking = (value: unknown): UsageThinking | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const intensity = typeof value.intensity === 'string' ? value.intensity.trim() : '';
+  const mode = typeof value.mode === 'string' ? value.mode.trim() : '';
+  const level = typeof value.level === 'string' ? value.level.trim() : '';
+  const budget =
+    typeof value.budget === 'number' && Number.isFinite(value.budget) ? value.budget : undefined;
+
+  if (!intensity && !mode && !level && budget === undefined) {
+    return null;
+  }
+
+  return {
+    ...(intensity ? { intensity } : {}),
+    ...(mode ? { mode } : {}),
+    ...(level ? { level } : {}),
+    ...(budget !== undefined ? { budget } : {}),
+  };
 };
 
 interface UsageSummary {

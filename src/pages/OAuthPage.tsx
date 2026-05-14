@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useNotificationStore, useThemeStore } from '@/stores';
-import { oauthApi, type OAuthProvider, type IFlowCookieAuthResponse } from '@/services/api/oauth';
+import { oauthApi, type OAuthProvider } from '@/services/api/oauth';
 import { vertexApi, type VertexImportResponse } from '@/services/api/vertex';
 import { copyToClipboard } from '@/utils/clipboard';
 import styles from './OAuthPage.module.scss';
@@ -15,7 +15,6 @@ import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
-import iconIflow from '@/assets/icons/iflow.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconKiro from '@/assets/icons/kiro.svg';
 
@@ -31,14 +30,6 @@ interface ProviderState {
   callbackSubmitting?: boolean;
   callbackStatus?: 'success' | 'error';
   callbackError?: string;
-}
-
-interface IFlowCookieState {
-  cookie: string;
-  loading: boolean;
-  result?: IFlowCookieAuthResponse;
-  error?: string;
-  errorType?: 'error' | 'warning';
 }
 
 interface VertexImportResult {
@@ -103,7 +94,6 @@ export function OAuthPage() {
   const { showNotification } = useNotificationStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
-  const [iflowCookie, setIflowCookie] = useState<IFlowCookieState>({ cookie: '', loading: false });
   const [vertexState, setVertexState] = useState<VertexImportState>({
     fileName: '',
     location: '',
@@ -549,77 +539,6 @@ export function OAuthPage() {
                     <div className={styles.keyValueItem}>
                       <span className={styles.keyValueKey}>{t('vertex_import.result_file')}</span>
                       <span className={styles.keyValueValue}>{vertexState.result.authFile}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* iFlow Cookie 登录 */}
-        <Card
-          title={
-            <span className={styles.cardTitle}>
-              <img src={iconIflow} alt="" className={styles.cardTitleIcon} />
-              {t('auth_login.iflow_cookie_title')}
-            </span>
-          }
-          extra={
-            <Button onClick={submitIflowCookie} loading={iflowCookie.loading}>
-              {t('auth_login.iflow_cookie_button')}
-            </Button>
-          }
-        >
-          <div className={styles.cardContent}>
-            <div className={styles.cardHint}>{t('auth_login.iflow_cookie_hint')}</div>
-            <div className={styles.cardHintSecondary}>
-              {t('auth_login.iflow_cookie_key_hint')}
-            </div>
-            <div className={styles.formItem}>
-              <label className={styles.formItemLabel}>{t('auth_login.iflow_cookie_label')}</label>
-              <Input
-                value={iflowCookie.cookie}
-                onChange={(e) => setIflowCookie((prev) => ({ ...prev, cookie: e.target.value }))}
-                placeholder={t('auth_login.iflow_cookie_placeholder')}
-              />
-            </div>
-            {iflowCookie.error && (
-              <div
-                className={`status-badge ${iflowCookie.errorType === 'warning' ? 'warning' : 'error'}`}
-              >
-                {iflowCookie.errorType === 'warning'
-                  ? t('auth_login.iflow_cookie_status_duplicate')
-                  : t('auth_login.iflow_cookie_status_error')}{' '}
-                {iflowCookie.error}
-              </div>
-            )}
-            {iflowCookie.result && iflowCookie.result.status === 'ok' && (
-              <div className={styles.connectionBox}>
-                <div className={styles.connectionLabel}>{t('auth_login.iflow_cookie_result_title')}</div>
-                <div className={styles.keyValueList}>
-                  {iflowCookie.result.email && (
-                    <div className={styles.keyValueItem}>
-                      <span className={styles.keyValueKey}>{t('auth_login.iflow_cookie_result_email')}</span>
-                      <span className={styles.keyValueValue}>{iflowCookie.result.email}</span>
-                    </div>
-                  )}
-                  {iflowCookie.result.expired && (
-                    <div className={styles.keyValueItem}>
-                      <span className={styles.keyValueKey}>{t('auth_login.iflow_cookie_result_expired')}</span>
-                      <span className={styles.keyValueValue}>{iflowCookie.result.expired}</span>
-                    </div>
-                  )}
-                  {iflowCookie.result.saved_path && (
-                    <div className={styles.keyValueItem}>
-                      <span className={styles.keyValueKey}>{t('auth_login.iflow_cookie_result_path')}</span>
-                      <span className={styles.keyValueValue}>{iflowCookie.result.saved_path}</span>
-                    </div>
-                  )}
-                  {iflowCookie.result.type && (
-                    <div className={styles.keyValueItem}>
-                      <span className={styles.keyValueKey}>{t('auth_login.iflow_cookie_result_type')}</span>
-                      <span className={styles.keyValueValue}>{iflowCookie.result.type}</span>
                     </div>
                   )}
                 </div>

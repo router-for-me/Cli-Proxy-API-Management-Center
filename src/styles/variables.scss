@@ -51,9 +51,12 @@ $breakpoint-tablet: 1024px;
 $breakpoint-desktop: 1280px;
 
 // Z-index
+$z-content: 20;
+$z-overlay: 50;
 $z-dropdown: 1000;
 $z-modal: 2000;
 $z-notification: 3000;
+$z-max: 9999;
 
 // 字体
 $font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
