@@ -52,6 +52,22 @@ const MANAGER_COLLECTOR_DEFAULT = {
   tlsSkipVerify: false,
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
+export function getUsageServiceBootstrapToSync({
+  serviceBase,
+  usageServiceEnabled,
+  usageServiceBase,
+}: {
+  serviceBase: string;
+  usageServiceEnabled: boolean;
+  usageServiceBase: string;
+}): string {
+  const normalized = normalizeUsageServiceBase(serviceBase);
+  if (!normalized) return '';
+  if (usageServiceEnabled && usageServiceBase === normalized) return '';
+  return normalized;
+}
+
 const LazyConfigSourceEditor = lazy(() => import('@/components/config/ConfigSourceEditor'));
 
 function readCommercialModeFromYaml(yamlContent: string): boolean {
@@ -235,6 +251,22 @@ export function ConfigPage() {
     return normalizeUsageServiceBase(preferred || '');
   }, [detectedPanelBase, managerServiceBase, panelHostedByUsageService, usageServiceBase, usageServiceEnabled]);
 
+  const syncUsageServiceBootstrap = useCallback(
+    (serviceBase: string) => {
+      const normalized = getUsageServiceBootstrapToSync({
+        serviceBase,
+        usageServiceEnabled,
+        usageServiceBase,
+      });
+      if (!normalized) return;
+      setUsageServiceConfig({
+        enabled: true,
+        serviceBase: normalized,
+      });
+    },
+    [setUsageServiceConfig, usageServiceBase, usageServiceEnabled]
+  );
+
   const applyManagerConfigResponse = useCallback(
     (response: ManagerConfigResponse, fallbackBase: string) => {
       const nextConfig = response.config;
@@ -271,6 +303,7 @@ export function ConfigPage() {
     try {
       const response = await usageServiceApi.getManagerConfig(serviceBase, managementKey);
       applyManagerConfigResponse(response, serviceBase);
+      syncUsageServiceBootstrap(serviceBase);
     } catch (error: unknown) {
       setManagerError(getUsageServiceDisplayError(error, 'config_management.manager.load_failed'));
     } finally {
@@ -281,6 +314,7 @@ export function ConfigPage() {
     getUsageServiceDisplayError,
     managementKey,
     resolveManagerServiceBase,
+    syncUsageServiceBootstrap,
   ]);
 
   const setManagerFieldDirty = useCallback(() => {
