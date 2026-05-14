@@ -85,24 +85,12 @@ import { useUsageData } from '@/features/monitoring/hooks/useUsageData';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useInterval } from '@/hooks/useInterval';
 import { useRequestMonitoringAvailability } from '@/hooks/useRequestMonitoringAvailability';
-import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
+import { authFilesApi, requestCodexUsagePayload } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
-import type {
-  AuthFileItem,
-  CodexRateLimitInfo,
-  CodexUsagePayload,
-  CodexUsageWindow,
-} from '@/types';
+import type { AuthFileItem, CodexUsagePayload } from '@/types';
 import { formatFileSize, maskSensitiveText } from '@/utils/format';
 import type { StatusBarData, StatusBlockDetail } from '@/utils/recentRequests';
-import {
-  CODEX_REQUEST_HEADERS,
-  CODEX_USAGE_URL,
-  formatCodexResetLabel,
-  normalizeNumberValue,
-  normalizePlanType,
-  parseCodexUsagePayload,
-} from '@/utils/quota';
+import { buildCodexQuotaWindowInfos, normalizePlanType } from '@/utils/quota';
 import {
   formatCompactNumber,
   formatDurationMs,
@@ -318,8 +306,6 @@ const buildRealtimeMetaText = (row: MonitoringEventRow) => {
   return maskSensitiveText(text || '-');
 };
 
-const FIVE_HOUR_SECONDS = 18000;
-const WEEK_SECONDS = 604800;
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
 
 const getCodexPlanLabel = (planType: string | null | undefined, t: TFunction): string | null => {
@@ -416,38 +402,19 @@ const buildAccountSummaryMetrics = (
   },
 ];
 
-const buildAccountQuotaWindows = (
-  payload: CodexUsagePayload,
-  t: TFunction
-): AccountQuotaWindow[] => {
-  const windows: AccountQuotaWindow[] = [];
-  const rateLimit = payload.rate_limit ?? payload.rateLimit ?? undefined;
-  const codeReviewLimit =
-    payload.code_review_rate_limit ?? payload.codeReviewRateLimit ?? undefined;
-  const additionalRateLimits = payload.additional_rate_limits ?? payload.additionalRateLimits ?? [];
-
-  const addWindow = (
-    id: string,
-    label: string,
-    window?: CodexUsageWindow | null,
-    limitReached?: boolean,
-    allowed?: boolean
-  ) => {
-    if (!window) return;
-
-    const resetLabel = formatCodexResetLabel(window);
-    const usedPercentRaw = normalizeNumberValue(window.used_percent ?? window.usedPercent);
-    const isLimitReached = Boolean(limitReached) || allowed === false;
-    const usedPercent = usedPercentRaw ?? (isLimitReached && resetLabel !== '-' ? 100 : null);
-    const clampedUsed = usedPercent === null ? null : Math.max(0, Math.min(100, usedPercent));
+const buildAccountQuotaWindows = (payload: CodexUsagePayload, t: TFunction): AccountQuotaWindow[] =>
+  buildCodexQuotaWindowInfos(payload).map((window) => {
+    const clampedUsed =
+      window.usedPercent === null ? null : Math.max(0, Math.min(100, window.usedPercent));
     const remainingPercent = clampedUsed === null ? null : Math.max(0, 100 - clampedUsed);
-
-    const totalSeconds = normalizeNumberValue(
-      window.limit_window_seconds ?? window.limitWindowSeconds
-    );
     let usageLabel: string | null = null;
-    if (totalSeconds !== null && totalSeconds > 0 && clampedUsed !== null) {
-      const totalHours = totalSeconds / 3600;
+
+    if (
+      window.limitWindowSeconds !== null &&
+      window.limitWindowSeconds > 0 &&
+      clampedUsed !== null
+    ) {
+      const totalHours = window.limitWindowSeconds / 3600;
       const usedHours = (totalHours * clampedUsed) / 100;
       const formatHours = (value: number) =>
         Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
@@ -457,145 +424,26 @@ const buildAccountQuotaWindows = (
       });
     }
 
-    windows.push({
-      id,
-      label,
+    return {
+      id: window.id,
+      label: t(window.labelKey, window.labelParams),
       remainingPercent,
-      resetLabel,
+      resetLabel: window.resetLabel,
       usageLabel,
-    });
-  };
-
-  const getWindowSeconds = (window?: CodexUsageWindow | null): number | null => {
-    if (!window) return null;
-    return normalizeNumberValue(window.limit_window_seconds ?? window.limitWindowSeconds);
-  };
-
-  const pickClassifiedWindows = (
-    limitInfo?: CodexRateLimitInfo | null
-  ): { fiveHourWindow: CodexUsageWindow | null; weeklyWindow: CodexUsageWindow | null } => {
-    const primaryWindow = limitInfo?.primary_window ?? limitInfo?.primaryWindow ?? null;
-    const secondaryWindow = limitInfo?.secondary_window ?? limitInfo?.secondaryWindow ?? null;
-    const rawWindows = [primaryWindow, secondaryWindow];
-
-    let fiveHourWindow: CodexUsageWindow | null = null;
-    let weeklyWindow: CodexUsageWindow | null = null;
-
-    rawWindows.forEach((window) => {
-      if (!window) return;
-      const seconds = getWindowSeconds(window);
-      if (seconds === FIVE_HOUR_SECONDS && !fiveHourWindow) {
-        fiveHourWindow = window;
-      } else if (seconds === WEEK_SECONDS && !weeklyWindow) {
-        weeklyWindow = window;
-      }
-    });
-
-    if (!fiveHourWindow) {
-      fiveHourWindow = primaryWindow && primaryWindow !== weeklyWindow ? primaryWindow : null;
-    }
-    if (!weeklyWindow) {
-      weeklyWindow = secondaryWindow && secondaryWindow !== fiveHourWindow ? secondaryWindow : null;
-    }
-
-    return { fiveHourWindow, weeklyWindow };
-  };
-
-  const rateLimitReached = rateLimit?.limit_reached ?? rateLimit?.limitReached;
-  const rateAllowed = rateLimit?.allowed;
-  const rateWindows = pickClassifiedWindows(rateLimit);
-  addWindow(
-    'five-hour',
-    t('codex_quota.primary_window'),
-    rateWindows.fiveHourWindow,
-    rateLimitReached,
-    rateAllowed
-  );
-  addWindow(
-    'weekly',
-    t('codex_quota.secondary_window'),
-    rateWindows.weeklyWindow,
-    rateLimitReached,
-    rateAllowed
-  );
-
-  const codeReviewLimitReached = codeReviewLimit?.limit_reached ?? codeReviewLimit?.limitReached;
-  const codeReviewAllowed = codeReviewLimit?.allowed;
-  const codeReviewWindows = pickClassifiedWindows(codeReviewLimit);
-  addWindow(
-    'code-review-five-hour',
-    t('codex_quota.code_review_primary_window'),
-    codeReviewWindows.fiveHourWindow,
-    codeReviewLimitReached,
-    codeReviewAllowed
-  );
-  addWindow(
-    'code-review-weekly',
-    t('codex_quota.code_review_secondary_window'),
-    codeReviewWindows.weeklyWindow,
-    codeReviewLimitReached,
-    codeReviewAllowed
-  );
-
-  if (Array.isArray(additionalRateLimits)) {
-    additionalRateLimits.forEach((limitItem, index) => {
-      const rateInfo = limitItem?.rate_limit ?? limitItem?.rateLimit ?? null;
-      if (!rateInfo) return;
-
-      const limitName =
-        limitItem?.limit_name ??
-        limitItem?.limitName ??
-        limitItem?.metered_feature ??
-        limitItem?.meteredFeature ??
-        `additional-${index + 1}`;
-      const limitLabel = String(limitName).trim() || `additional-${index + 1}`;
-
-      addWindow(
-        `${limitLabel}-primary-${index}`,
-        t('codex_quota.additional_primary_window', { name: limitLabel }),
-        rateInfo.primary_window ?? rateInfo.primaryWindow ?? null,
-        rateInfo.limit_reached ?? rateInfo.limitReached,
-        rateInfo.allowed
-      );
-      addWindow(
-        `${limitLabel}-secondary-${index}`,
-        t('codex_quota.additional_secondary_window', { name: limitLabel }),
-        rateInfo.secondary_window ?? rateInfo.secondaryWindow ?? null,
-        rateInfo.limit_reached ?? rateInfo.limitReached,
-        rateInfo.allowed
-      );
-    });
-  }
-
-  return windows;
-};
+    };
+  });
 
 const requestAccountQuota = async (
   target: MonitoringAccountQuotaTarget,
   t: TFunction
 ): Promise<AccountQuotaEntry> => {
-  if (!target.accountId) {
-    throw new Error(t('codex_quota.missing_account_id'));
-  }
-
-  const result = await apiCallApi.request({
-    authIndex: target.authIndex,
-    method: 'GET',
-    url: CODEX_USAGE_URL,
-    header: {
-      ...CODEX_REQUEST_HEADERS,
-      'Chatgpt-Account-Id': target.accountId,
+  const payload = await requestCodexUsagePayload(
+    {
+      authIndex: target.authIndex,
+      accountId: target.accountId,
     },
-  });
-
-  if (result.statusCode < 200 || result.statusCode >= 300) {
-    throw new Error(getApiCallErrorMessage(result));
-  }
-
-  const payload = parseCodexUsagePayload(result.body ?? result.bodyText);
-  if (!payload) {
-    throw new Error(t('codex_quota.empty_windows'));
-  }
+    { emptyMessage: t('codex_quota.empty_windows') }
+  );
 
   return {
     key: target.key,
