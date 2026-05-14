@@ -1,16 +1,16 @@
 # 参考仓库版本追踪
 
-> 基准时间: 2026-05-12 | 更新频率: 每次会话检查
+> 基准时间: 2026-05-14 | 更新频率: 每次会话检查
 
 ## 追踪仓库
 
 | 仓库 | 本地路径 | 分支 | 最新提交 | 日期 |
 |------|---------|------|---------|------|
-| cockpit-tools | cockpit-tools | main | `70942f7` release: v0.23.2 | 2026-05-13 |
-| Kiro-account-manager | Kiro-account-manager | main | `76824f9` v1.6.1 | 2026-05-12 |
-| codex2api | codex2api | main | `71d0ee5` fix(admin): allow AT-only accounts export | 2026-05-13 |
+| cockpit-tools | cockpit-tools | main | `158acf0` v0.23.3 | 2026-05-13 |
+| Kiro-account-manager | Kiro-account-manager | main | `f08ea9c` v1.6.3 | 2026-05-14 |
+| codex2api | codex2api | main | `4922b64` docs(readme): move Sponsors section to the top | 2026-05-14 |
 | sub2api | sub2api | main | `18790386` fix(deploy): 移除端口映射 | 2026-05-12 |
-| CLIProxyAPI (上游) | CLIProxyAPI | fix/claude-oauth-api-call | `0219181a` fix: add Claude OAuth token refresh | 2026-05-12 |
+| CLIProxyAPI (上游) | CLIProxyAPI | fix/claude-oauth-api-call | `722b82b1` fix(api-call): delete Authorization when injecting x-api-key | 2026-05-13 |
 | CPA-Dashboard (上游) | CPA-Dashboard-kelen | upstream/main | — | — |
 
 ## 检查命令
@@ -28,6 +28,10 @@ done
 ```
 
 ## 变更日志
+
+### 2026-05-14
+- cockpit-tools: v0.23.3 (158acf0, homebrew cask 更新), Kiro-account-manager: v1.6.2→v1.6.3 (f08ea9c, Claude Code 兼容性增强), codex2api: 44 commits since 71d0ee5 (4922b64), CLIProxyAPI: PR #3345 fix (722b82b1)
+- sub2api: 无变更
 
 ### 2026-05-13
 - cockpit-tools: v0.23.2 发布 (+7 commits)，codex2api: 账号池优化 + 用量面板 (+10 commits)

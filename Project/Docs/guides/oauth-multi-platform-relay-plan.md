@@ -1,6 +1,6 @@
 # OAuth 多平台登录中转支持 — 研究与规划
 
-> 创建时间: 2026-05-12 | 状态: 研究中
+> 创建时间: 2026-05-12 | 状态: Phase 1 完成
 
 ## 目标
 
@@ -86,9 +86,9 @@ type OAuthProvider interface {
 
 ## 实施路线
 
-### Phase 1: 容易平台 (当前)
-- [ ] GitHub Copilot — 标准 GitHub device code，copilot token 交换
-- [ ] Zed — GitHub OAuth，开源代码可参考
+### Phase 1: 容易平台 (前端准备)
+- [x] GitHub Copilot — 标准 GitHub device code，copilot token 交换
+- [x] Zed — GitHub OAuth，开源代码可参考
 
 ### Phase 2: 中等平台
 - [ ] Windsurf/Codeium — device code flow，从 cockpit-tools 移植
@@ -114,4 +114,8 @@ type OAuthProvider interface {
 
 ## 记录
 
-- 2026-05-12: 完成 4 个参考仓库克隆与深度分析，完成 9 个目标平台 OAuth 机制调研，生成规划文档
+### 2026-05-14
+- Phase 1 前端准备完成：i18n 骨架搭建 (9 provider keys)、OAuthPage 新增 9 个 provider 卡片 (d9f6cb7)、OAuthProvider 类型去重统一到 @/types/oauth、SCSS @use 变量导入修复 (4208519)
+
+### 2026-05-12
+- 完成 4 个参考仓库克隆与深度分析，完成 9 个目标平台 OAuth 机制调研，生成规划文档

@@ -6,7 +6,7 @@
 
 | 指标 | 数值 |
 |------|------|
-| dev 领先 upstream/main | 116 commits |
+| dev 领先 upstream/main | 119 commits |
 | upstream/main 未合入 dev | 60 |
 | 已精选上游提交 | 13 (3212f65, c43df08, 0546f43, c27707c, 7d3c570, 808f44d, 8ed837c, b4d5ffa, 1a056ec, 9f7c471, 126f7fa, 3bb4760, eb49c0d) |
 | main 分支发散 | 0（干净） |
@@ -61,6 +61,12 @@
 **预计总工作量：L（1-2 天专注冲突解决和测试）**
 
 ## 进展记录
+
+### 2026-05-14
+- OAuth 多平台前端准备完成：Phase 1 前端部分收尾
+  - 新增 9 个 OAuth provider 卡片到 OAuthPage (d9f6cb7)
+  - SCSS @use 变量导入修复 5 个模块 (4208519)
+- 参考仓库追踪更新：cockpit-tools v0.23.3、Kiro v1.6.3、codex2api 44 commits、CLIProxyAPI PR #3345
 
 ### 2026-05-13
 - 精选 3 个上游提交：session affinity (3212f65)、Claude Team (c43df08)、antigravity credits (0546f43)
