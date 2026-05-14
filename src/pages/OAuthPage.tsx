@@ -234,49 +234,6 @@ export function OAuthPage() {
     }
   };
 
-  const submitIflowCookie = async () => {
-    const cookie = iflowCookie.cookie.trim();
-    if (!cookie) {
-      showNotification(t('auth_login.iflow_cookie_required'), 'warning');
-      return;
-    }
-    setIflowCookie((prev) => ({
-      ...prev,
-      loading: true,
-      error: undefined,
-      errorType: undefined,
-      result: undefined
-    }));
-    try {
-      const res = await oauthApi.iflowCookieAuth(cookie);
-      if (res.status === 'ok') {
-        setIflowCookie((prev) => ({ ...prev, loading: false, result: res }));
-        showNotification(t('auth_login.iflow_cookie_status_success'), 'success');
-      } else {
-        setIflowCookie((prev) => ({
-          ...prev,
-          loading: false,
-          error: res.error,
-          errorType: 'error'
-        }));
-        showNotification(`${t('auth_login.iflow_cookie_status_error')} ${res.error || ''}`, 'error');
-      }
-    } catch (err: unknown) {
-      if (getErrorStatus(err) === 409) {
-        const message = t('auth_login.iflow_cookie_config_duplicate');
-        setIflowCookie((prev) => ({ ...prev, loading: false, error: message, errorType: 'warning' }));
-        showNotification(message, 'warning');
-        return;
-      }
-      const message = getErrorMessage(err);
-      setIflowCookie((prev) => ({ ...prev, loading: false, error: message, errorType: 'error' }));
-      showNotification(
-        `${t('auth_login.iflow_cookie_start_error')}${message ? ` ${message}` : ''}`,
-        'error'
-      );
-    }
-  };
-
   const handleVertexFilePick = () => {
     vertexFileInputRef.current?.click();
   };
