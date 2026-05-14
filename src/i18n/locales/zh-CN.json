@@ -1169,6 +1169,7 @@
   },
   "language": {
     "chinese": "中文",
+    "chinese_tw": "繁體中文（台灣）",
     "english": "English",
     "russian": "Русский",
     "switch": "语言"
@@ -1809,6 +1810,10 @@
     "request_events_no_result_desc": "请尝试调整筛选条件，或清空当前筛选。",
     "request_events_no_result_title": "没有匹配结果",
     "request_events_result": "结果",
+    "thinking_intensity": "思考强度",
+    "thinking_mode": "思考模式",
+    "thinking_level": "思考等级",
+    "thinking_budget": "思考预算",
     "request_events_source": "来源",
     "request_events_timestamp": "时间",
     "request_events_title": "请求事件明细",

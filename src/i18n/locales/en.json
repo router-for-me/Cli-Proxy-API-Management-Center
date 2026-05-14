@@ -1169,6 +1169,7 @@
   },
   "language": {
     "chinese": "中文",
+    "chinese_tw": "Traditional Chinese (Taiwan)",
     "english": "English",
     "russian": "Русский",
     "switch": "Language"
@@ -1809,6 +1810,10 @@
     "request_events_no_result_desc": "Try different filters or clear the current filters.",
     "request_events_no_result_title": "No matching events",
     "request_events_result": "Result",
+    "thinking_intensity": "Thinking",
+    "thinking_mode": "Thinking Mode",
+    "thinking_level": "Thinking Level",
+    "thinking_budget": "Thinking Budget",
     "request_events_source": "Source",
     "request_events_timestamp": "Timestamp",
     "request_events_title": "Request Events",

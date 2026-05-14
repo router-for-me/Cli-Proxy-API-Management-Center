@@ -1001,6 +1001,10 @@
     "request_events_source": "Источник",
     "request_events_auth_index": "Auth Index",
     "request_events_result": "Результат",
+    "thinking_intensity": "Рассуждение",
+    "thinking_mode": "Режим рассуждения",
+    "thinking_level": "Уровень рассуждения",
+    "thinking_budget": "Бюджет рассуждения",
     "time": "Задержка",
     "avg_time": "Средняя задержка",
     "latency_unit_hint": "Длительность берётся из поля бэкенда {{field}} и интерпретируется как {{unit}} перед форматированием.",
@@ -1461,6 +1465,7 @@
   "language": {
     "switch": "Язык",
     "chinese": "中文",
+    "chinese_tw": "Traditional Chinese (Taiwan)",
     "english": "English",
     "russian": "Русский"
   },
