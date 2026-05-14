@@ -2,7 +2,6 @@
  * Quota configuration definitions.
  */
 
-import React from 'react';
 import type { ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import type {
