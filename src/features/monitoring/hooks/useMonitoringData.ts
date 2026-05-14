@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { authFilesApi } from '@/services/api/authFiles';
 import { apiClient } from '@/services/api/client';
+import type { ApiKeyAlias } from '@/services/api/usageService';
 import type { AuthFileItem } from '@/types/authFile';
 import type { Config } from '@/types/config';
 import type { CredentialInfo } from '@/types/sourceInfo';
 import { buildSourceInfoMap, resolveSourceDisplay } from '@/utils/sourceResolver';
+import { sha256Hex } from '@/utils/apiKeyHash';
+import { maskApiKey } from '@/utils/format';
 import { buildLegacyAuthIndexAliases } from '../legacyAuthIndexAliases';
 import {
   calculateCost,
@@ -42,9 +45,9 @@ const isValidCustomTimeRange = (
 ): range is MonitoringCustomTimeRange =>
   Boolean(
     range &&
-      Number.isFinite(range.startMs) &&
-      Number.isFinite(range.endMs) &&
-      range.startMs <= range.endMs
+    Number.isFinite(range.startMs) &&
+    Number.isFinite(range.endMs) &&
+    range.startMs <= range.endMs
   );
 
 export const getRangeBounds = (
@@ -133,7 +136,13 @@ const extractHost = (baseUrl: string) => {
 };
 
 const joinUnique = (values: Iterable<string>, limit = 3) => {
-  const unique = Array.from(new Set(Array.from(values).map((value) => value.trim()).filter(Boolean)));
+  const unique = Array.from(
+    new Set(
+      Array.from(values)
+        .map((value) => value.trim())
+        .filter(Boolean)
+    )
+  );
   if (unique.length <= limit) {
     return unique.join(', ');
   }
@@ -146,8 +155,41 @@ const buildSearchText = (...parts: Array<string | number | boolean | null | unde
     .filter(Boolean)
     .join(' ');
 
-const shouldIncludeInStats = (row: Pick<MonitoringEventRow, 'failed' | 'inputTokens' | 'outputTokens'>) =>
-  row.failed || row.inputTokens > 0 || row.outputTokens > 0;
+const formatApiKeyHashLabel = (apiKeyHash: string) =>
+  apiKeyHash ? `sha256:${apiKeyHash.slice(0, 12)}` : '-';
+
+type ApiKeyDisplayInfo = {
+  label: string;
+  masked: string;
+};
+
+export const buildApiKeyDisplayMap = (
+  apiKeys: string[] = [],
+  apiKeyAliases: ApiKeyAlias[] = []
+): Map<string, ApiKeyDisplayInfo> => {
+  const map = new Map<string, ApiKeyDisplayInfo>();
+  apiKeys.forEach((apiKey) => {
+    const hash = sha256Hex(apiKey).toLowerCase();
+    if (!hash || map.has(hash)) return;
+    const masked = maskApiKey(apiKey) || formatApiKeyHashLabel(hash);
+    map.set(hash, { label: masked, masked });
+  });
+  apiKeyAliases.forEach((entry) => {
+    const hash = readString(entry.apiKeyHash).toLowerCase();
+    const alias = readString(entry.alias);
+    if (!hash || !alias) return;
+    const existing = map.get(hash);
+    map.set(hash, {
+      label: alias,
+      masked: existing?.masked || existing?.label || formatApiKeyHashLabel(hash),
+    });
+  });
+  return map;
+};
+
+const shouldIncludeInStats = (
+  row: Pick<MonitoringEventRow, 'failed' | 'inputTokens' | 'outputTokens'>
+) => row.failed || row.inputTokens > 0 || row.outputTokens > 0;
 
 const isEffectiveLabel = (value: string) => {
   const trimmed = value.trim();
@@ -318,6 +360,9 @@ export type MonitoringEventRow = {
   authIndex: string;
   authIndexMasked: string;
   authLabel: string;
+  apiKeyHash: string;
+  apiKeyLabel: string;
+  apiKeyMasked: string;
   provider: string;
   planType: string;
   channel: string;
@@ -437,9 +482,11 @@ export interface UseMonitoringDataParams {
   usage: unknown;
   config: Config | null | undefined;
   modelPrices: Record<string, ModelPrice>;
+  apiKeyAliases?: ApiKeyAlias[];
   timeRange: MonitoringTimeRange;
   customTimeRange?: MonitoringCustomTimeRange | null;
   searchQuery: string;
+  searchApiKeyHash?: string;
 }
 
 export interface UseMonitoringDataReturn {
@@ -570,11 +617,15 @@ const buildRangeFilteredRows = (
   rows: MonitoringEventRow[],
   timeRange: MonitoringTimeRange,
   customTimeRange: MonitoringCustomTimeRange | null | undefined,
-  searchQuery: string
+  searchQuery: string,
+  searchApiKeyHash?: string
 ) => {
   const nowMs = Date.now();
   const bounds = getRangeBounds(timeRange, nowMs, customTimeRange);
   const normalizedQuery = searchQuery.trim().toLowerCase();
+  const normalizedSearchApiKeyHash = String(searchApiKeyHash || '')
+    .trim()
+    .toLowerCase();
   if (!bounds) return [];
 
   return rows.filter((row) => {
@@ -582,7 +633,11 @@ const buildRangeFilteredRows = (
       return false;
     }
 
-    if (normalizedQuery && !row.searchText.includes(normalizedQuery)) {
+    if (
+      normalizedQuery &&
+      !row.searchText.includes(normalizedQuery) &&
+      !(normalizedSearchApiKeyHash && row.apiKeyHash === normalizedSearchApiKeyHash)
+    ) {
       return false;
     }
 
@@ -700,7 +755,9 @@ export const buildMonitoringSummary = (rows: MonitoringEventRow[]): MonitoringSu
   const activeDayCount = Math.max(activeDays.size, 1);
   const nowMs = Date.now();
   const windowStart = nowMs - 30 * 60 * 1000;
-  const recentRows = rows.filter((row) => row.timestampMs >= windowStart && row.timestampMs <= nowMs);
+  const recentRows = rows.filter(
+    (row) => row.timestampMs >= windowStart && row.timestampMs <= nowMs
+  );
   const recentTokens = recentRows.reduce((sum, row) => sum + row.totalTokens, 0);
 
   return {
@@ -866,7 +923,9 @@ export const buildAccountRows = (rows: MonitoringEventRow[]): MonitoringAccountR
             ...model,
             successRate: model.totalCalls > 0 ? model.successCalls / model.totalCalls : 1,
           }))
-          .sort((left, right) => right.totalCost - left.totalCost || right.totalCalls - left.totalCalls),
+          .sort(
+            (left, right) => right.totalCost - left.totalCost || right.totalCalls - left.totalCalls
+          ),
       };
     })
     .sort(
@@ -994,7 +1053,9 @@ export const buildRealtimeMonitorRows = (rows: MonitoringEventRow[]): Monitoring
         recentPattern: buildRecentPattern(item.rows),
       };
     })
-    .sort((left, right) => right.lastSeenAt - left.lastSeenAt || right.totalCalls - left.totalCalls);
+    .sort(
+      (left, right) => right.lastSeenAt - left.lastSeenAt || right.totalCalls - left.totalCalls
+    );
 };
 
 const buildStatusChips = (metadata: MonitoringMetadata): MonitoringStatusChip[] => [
@@ -1003,17 +1064,18 @@ const buildStatusChips = (metadata: MonitoringMetadata): MonitoringStatusChip[] 
     label: 'credentials',
     value: `${metadata.activeAuthFiles}/${metadata.totalAuthFiles}`,
     tone:
-      metadata.totalAuthFiles === 0
-        ? 'warn'
-        : metadata.unavailableAuthFiles > 0
-          ? 'warn'
-          : 'good',
+      metadata.totalAuthFiles === 0 ? 'warn' : metadata.unavailableAuthFiles > 0 ? 'warn' : 'good',
   },
   {
     key: 'channels',
     label: 'channels',
     value: `${metadata.enabledChannels}/${metadata.totalChannels}`,
-    tone: metadata.enabledChannels === 0 ? 'bad' : metadata.enabledChannels < metadata.totalChannels ? 'warn' : 'good',
+    tone:
+      metadata.enabledChannels === 0
+        ? 'bad'
+        : metadata.enabledChannels < metadata.totalChannels
+          ? 'warn'
+          : 'good',
   },
   {
     key: 'runtime_only',
@@ -1357,7 +1419,8 @@ const buildEventRows = (
   authFileMap: Map<string, CredentialInfo>,
   sourceInfoMap: ReturnType<typeof buildSourceInfoMap>,
   channelByAuthIndex: Map<string, MonitoringChannelMeta>,
-  modelPrices: Record<string, ModelPrice>
+  modelPrices: Record<string, ModelPrice>,
+  apiKeyDisplayMap: Map<string, ApiKeyDisplayInfo>
 ) =>
   details
     .map((detail, index) => {
@@ -1371,7 +1434,12 @@ const buildEventRows = (
 
       const authIndex = normalizeAuthIndex(detail.auth_index) ?? '-';
       const authMeta = authMetaMap.get(authIndex);
-      const sourceMeta = resolveSourceDisplay(detail.source, detail.auth_index, sourceInfoMap, authFileMap);
+      const sourceMeta = resolveSourceDisplay(
+        detail.source,
+        detail.auth_index,
+        sourceInfoMap,
+        authFileMap
+      );
       const snapshotAccount = readString(detail.account_snapshot ?? detail.accountSnapshot);
       const snapshotLabel = readString(
         detail.auth_label_snapshot ??
@@ -1387,6 +1455,10 @@ const buildEventRows = (
       const sourceMasked = maskEmailLike(sourceLabel);
       const account = authMeta?.account || snapshotAccount || sourceLabel;
       const accountMasked = maskEmailLike(account);
+      const apiKeyHash = readString(detail.api_key_hash ?? detail.apiKeyHash).toLowerCase();
+      const apiKeyDisplay = apiKeyDisplayMap.get(apiKeyHash);
+      const apiKeyLabel = apiKeyDisplay?.label || formatApiKeyHashLabel(apiKeyHash);
+      const apiKeyMasked = apiKeyDisplay?.masked || apiKeyLabel;
       const channelMeta =
         channelByAuthIndex.get(authIndex) ||
         (authMeta?.authIndex ? channelByAuthIndex.get(authMeta.authIndex) : undefined);
@@ -1402,7 +1474,10 @@ const buildEventRows = (
         Math.max(Number(detail.tokens?.cached_tokens) || 0, 0),
         Math.max(Number(detail.tokens?.cache_tokens) || 0, 0)
       );
-      const totalTokens = Math.max(Number(detail.tokens?.total_tokens) || 0, extractTotalTokens(detail));
+      const totalTokens = Math.max(
+        Number(detail.tokens?.total_tokens) || 0,
+        extractTotalTokens(detail)
+      );
       const totalCost = calculateCost(detail, modelPrices);
       const statsIncluded = detail.failed === true || inputTokens > 0 || outputTokens > 0;
       const dayKey = buildLocalDayKey(timestampMs);
@@ -1428,6 +1503,9 @@ const buildEventRows = (
         authIndex,
         authIndexMasked: maskAuthIndex(authIndex),
         authLabel: authMeta?.label || snapshotLabel || sourceMasked,
+        apiKeyHash,
+        apiKeyLabel,
+        apiKeyMasked,
         provider: authMeta?.provider || snapshotProvider || sourceMeta.type || '-',
         planType: authMeta?.planType || '-',
         channel: channelLabel,
@@ -1449,6 +1527,9 @@ const buildEventRows = (
           authMeta?.account,
           authMeta?.label,
           authIndex,
+          apiKeyHash,
+          apiKeyLabel,
+          apiKeyMasked,
           channelLabel,
           channelMeta?.host,
           endpointPath,
@@ -1509,27 +1590,32 @@ export function useMonitoringData({
   usage,
   config,
   modelPrices,
+  apiKeyAliases,
   timeRange,
   customTimeRange,
   searchQuery,
+  searchApiKeyHash,
 }: UseMonitoringDataParams): UseMonitoringDataReturn {
   const [authFiles, setAuthFiles] = useState<AuthFileItem[]>([]);
   const [channels, setChannels] = useState<MonitoringChannelMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const refreshMeta = useCallback(async (showLoading: boolean = true) => {
-    if (showLoading) {
-      setLoading(true);
-      setError('');
-    }
+  const refreshMeta = useCallback(
+    async (showLoading: boolean = true) => {
+      if (showLoading) {
+        setLoading(true);
+        setError('');
+      }
 
-    const payload = await loadMonitoringMetaPayload(config);
-    setAuthFiles(payload.authFiles);
-    setChannels(payload.channels);
-    setError(payload.error);
-    setLoading(false);
-  }, [config]);
+      const payload = await loadMonitoringMetaPayload(config);
+      setAuthFiles(payload.authFiles);
+      setChannels(payload.channels);
+      setError(payload.error);
+      setLoading(false);
+    },
+    [config]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -1597,16 +1683,35 @@ export function useMonitoringData({
     return map;
   }, [channels]);
 
+  const apiKeyDisplayMap = useMemo(() => {
+    return buildApiKeyDisplayMap(config?.apiKeys || [], apiKeyAliases || []);
+  }, [apiKeyAliases, config?.apiKeys]);
+
   const allRows = useMemo(() => {
     const details = collectUsageDetailsWithEndpoint(usage);
-    return buildEventRows(details, authMetaMap, authFileMap, sourceInfoMap, channelByAuthIndex, modelPrices).sort(
-      (left, right) => right.timestampMs - left.timestampMs
-    );
-  }, [authFileMap, authMetaMap, channelByAuthIndex, modelPrices, sourceInfoMap, usage]);
+    return buildEventRows(
+      details,
+      authMetaMap,
+      authFileMap,
+      sourceInfoMap,
+      channelByAuthIndex,
+      modelPrices,
+      apiKeyDisplayMap
+    ).sort((left, right) => right.timestampMs - left.timestampMs);
+  }, [
+    apiKeyDisplayMap,
+    authFileMap,
+    authMetaMap,
+    channelByAuthIndex,
+    modelPrices,
+    sourceInfoMap,
+    usage,
+  ]);
 
   const filteredRows = useMemo(
-    () => buildRangeFilteredRows(allRows, timeRange, customTimeRange, searchQuery),
-    [allRows, customTimeRange, searchQuery, timeRange]
+    () =>
+      buildRangeFilteredRows(allRows, timeRange, customTimeRange, searchQuery, searchApiKeyHash),
+    [allRows, customTimeRange, searchApiKeyHash, searchQuery, timeRange]
   );
   const statsRows = useMemo(() => filteredRows.filter(shouldIncludeInStats), [filteredRows]);
 

@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -70,6 +71,12 @@ type ModelPrice struct {
 type ModelPriceSyncResult struct {
 	Imported int `json:"imported"`
 	Skipped  int `json:"skipped"`
+}
+
+type APIKeyAlias struct {
+	APIKeyHash  string `json:"apiKeyHash"`
+	Alias       string `json:"alias"`
+	UpdatedAtMS int64  `json:"updatedAtMs"`
 }
 
 type Store struct {
@@ -165,6 +172,11 @@ func (s *Store) init() error {
 			raw_json text,
 			updated_at_ms integer not null,
 			synced_at_ms integer
+		)`,
+		`create table if not exists api_key_aliases (
+			api_key_hash text primary key,
+			alias text not null,
+			updated_at_ms integer not null
 		)`,
 	}
 	for _, statement := range statements {
@@ -450,6 +462,149 @@ func (s *Store) UpsertSyncedModelPrices(ctx context.Context, prices map[string]M
 		return ModelPriceSyncResult{}, err
 	}
 	return result, nil
+}
+
+func (s *Store) LoadAPIKeyAliases(ctx context.Context) ([]APIKeyAlias, error) {
+	rows, err := s.db.QueryContext(ctx, `select api_key_hash, alias, updated_at_ms
+		from api_key_aliases
+		order by alias collate nocase, api_key_hash`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	aliases := []APIKeyAlias{}
+	for rows.Next() {
+		var alias APIKeyAlias
+		if err := rows.Scan(&alias.APIKeyHash, &alias.Alias, &alias.UpdatedAtMS); err != nil {
+			return nil, err
+		}
+		aliases = append(aliases, alias)
+	}
+	return aliases, rows.Err()
+}
+
+func (s *Store) UpsertAPIKeyAliases(ctx context.Context, aliases []APIKeyAlias) error {
+	if len(aliases) == 0 {
+		return nil
+	}
+	now := time.Now().UnixMilli()
+	normalizedAliases := make([]APIKeyAlias, 0, len(aliases))
+	seenAliases := map[string]string{}
+	for _, alias := range aliases {
+		normalized, err := normalizeAPIKeyAlias(alias, now)
+		if err != nil {
+			return err
+		}
+		aliasKey := normalizeAPIKeyAliasUniqueKey(normalized.Alias)
+		if existingHash, ok := seenAliases[aliasKey]; ok && existingHash != normalized.APIKeyHash {
+			return errors.New("api key alias already exists")
+		}
+		seenAliases[aliasKey] = normalized.APIKeyHash
+		normalizedAliases = append(normalizedAliases, normalized)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	stmt, err := tx.PrepareContext(ctx, `insert into api_key_aliases (
+		api_key_hash, alias, updated_at_ms
+	) values (?, ?, ?)
+	on conflict(api_key_hash) do update set
+		alias = excluded.alias,
+		updated_at_ms = excluded.updated_at_ms`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	existingRows, err := tx.QueryContext(ctx, `select api_key_hash, alias from api_key_aliases`)
+	if err != nil {
+		return err
+	}
+	existingAliases := map[string]string{}
+	for existingRows.Next() {
+		var apiKeyHash string
+		var alias string
+		if err := existingRows.Scan(&apiKeyHash, &alias); err != nil {
+			_ = existingRows.Close()
+			return err
+		}
+		existingAliases[normalizeAPIKeyAliasUniqueKey(alias)] = apiKeyHash
+	}
+	if err := existingRows.Close(); err != nil {
+		return err
+	}
+	if err := existingRows.Err(); err != nil {
+		return err
+	}
+
+	for _, normalized := range normalizedAliases {
+		aliasKey := normalizeAPIKeyAliasUniqueKey(normalized.Alias)
+		if existingHash, ok := existingAliases[aliasKey]; ok && existingHash != normalized.APIKeyHash {
+			return errors.New("api key alias already exists")
+		}
+		if _, err := stmt.ExecContext(
+			ctx,
+			normalized.APIKeyHash,
+			normalized.Alias,
+			normalized.UpdatedAtMS,
+		); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (s *Store) DeleteAPIKeyAlias(ctx context.Context, apiKeyHash string) error {
+	hash := strings.ToLower(strings.TrimSpace(apiKeyHash))
+	if !validAPIKeyHash(hash) {
+		return errors.New("valid apiKeyHash is required")
+	}
+	_, err := s.db.ExecContext(ctx, `delete from api_key_aliases where api_key_hash = ?`, hash)
+	return err
+}
+
+func normalizeAPIKeyAlias(alias APIKeyAlias, now int64) (APIKeyAlias, error) {
+	hash := strings.ToLower(strings.TrimSpace(alias.APIKeyHash))
+	if !validAPIKeyHash(hash) {
+		return APIKeyAlias{}, errors.New("valid apiKeyHash is required")
+	}
+	label := strings.TrimSpace(alias.Alias)
+	if label == "" {
+		return APIKeyAlias{}, errors.New("alias is required")
+	}
+	if len([]rune(label)) > 120 {
+		return APIKeyAlias{}, errors.New("alias must be 120 characters or less")
+	}
+	if alias.UpdatedAtMS <= 0 {
+		alias.UpdatedAtMS = now
+	}
+	alias.APIKeyHash = hash
+	alias.Alias = label
+	return alias, nil
+}
+
+func normalizeAPIKeyAliasUniqueKey(alias string) string {
+	return strings.ToLower(strings.TrimSpace(alias))
+}
+
+func validAPIKeyHash(value string) bool {
+	if len(value) != 64 {
+		return false
+	}
+	for _, char := range value {
+		if (char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func validateModelPrice(model string, price ModelPrice) error {
