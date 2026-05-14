@@ -166,6 +166,11 @@ func (s *Store) init() error {
 			updated_at_ms integer not null,
 			synced_at_ms integer
 		)`,
+		`create table if not exists api_key_aliases (
+			api_key_hash text primary key,
+			alias text not null,
+			updated_at_ms integer not null
+		)`,
 	}
 	for _, statement := range statements {
 		if _, err := s.db.Exec(statement); err != nil {
