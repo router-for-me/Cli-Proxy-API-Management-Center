@@ -111,6 +111,7 @@ import {
   type ModelPrice,
 } from '@/utils/usage';
 import { downloadBlob } from '@/utils/download';
+import { sha256Hex } from '@/utils/apiKeyHash';
 import styles from './MonitoringCenterPage.module.scss';
 
 const TIME_RANGE_OPTIONS: Array<{ value: MonitoringTimeRange; labelKey: string }> = [
@@ -178,6 +179,7 @@ type FocusSnapshot = {
   selectedProvider: string;
   selectedModel: string;
   selectedChannel: string;
+  selectedApiKeyHash: string;
   selectedStatus: StatusFilter;
 };
 
@@ -1914,6 +1916,7 @@ export function MonitoringCenterPage() {
   const [selectedProvider, setSelectedProvider] = useState('all');
   const [selectedModel, setSelectedModel] = useState('all');
   const [selectedChannel, setSelectedChannel] = useState('all');
+  const [selectedApiKeyHash, setSelectedApiKeyHash] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all');
   const [expandedAccounts, setExpandedAccounts] = useState<Record<string, boolean>>({});
   const [focusedAccount, setFocusedAccount] = useState<string | null>(null);
@@ -1951,6 +1954,7 @@ export function MonitoringCenterPage() {
   const accountQuotaRequestIdsRef = useRef<Record<string, number>>({});
   const usageImportInputRef = useRef<HTMLInputElement | null>(null);
   const deferredSearch = useDeferredValue(searchInput);
+  const deferredSearchApiKeyHash = useMemo(() => sha256Hex(deferredSearch), [deferredSearch]);
   const accountPage =
     accountOverviewMode === 'card' ? accountPageByMode.card : accountPageByMode.table;
   const accountPageSize =
@@ -2008,8 +2012,10 @@ export function MonitoringCenterPage() {
     error: usageError,
     lastRefreshedAt,
     modelPrices,
+    apiKeyAliases,
     usageServiceAvailable,
     setModelPrices,
+    loadApiKeyAliases,
     syncModelPrices,
     exportUsage,
     importUsage,
@@ -2026,14 +2032,16 @@ export function MonitoringCenterPage() {
     usage,
     config,
     modelPrices,
+    apiKeyAliases,
     timeRange,
     customTimeRange,
     searchQuery: deferredSearch,
+    searchApiKeyHash: deferredSearchApiKeyHash,
   });
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([loadUsage(), refreshMeta(false)]);
-  }, [loadUsage, refreshMeta]);
+    await Promise.all([loadUsage(), loadApiKeyAliases(), refreshMeta(false)]);
+  }, [loadApiKeyAliases, loadUsage, refreshMeta]);
 
   const setCurrentAccountPage = useCallback(
     (page: number) => {
@@ -2069,7 +2077,8 @@ export function MonitoringCenterPage() {
       : requestMonitoringAvailability.reason === 'service_unavailable'
         ? t('monitoring.request_monitoring_service_unavailable_body')
         : t('monitoring.request_monitoring_not_configured_body');
-  const overallLoading = usageLoading || monitoringLoading || requestMonitoringAvailability.checking;
+  const overallLoading =
+    usageLoading || monitoringLoading || requestMonitoringAvailability.checking;
   const combinedError = monitoringUnavailable
     ? monitoringError
     : [usageError, monitoringError].filter(Boolean).join('；');
@@ -2139,6 +2148,21 @@ export function MonitoringCenterPage() {
     [filteredRows, t]
   );
 
+  const apiKeyOptions = useMemo(() => {
+    const optionMap = new Map<string, string>();
+    filteredRows.forEach((row) => {
+      if (!row.apiKeyHash || optionMap.has(row.apiKeyHash)) return;
+      optionMap.set(row.apiKeyHash, row.apiKeyLabel || row.apiKeyMasked || row.apiKeyHash);
+    });
+
+    return [
+      { value: 'all', label: t('monitoring.filter_all_api_keys') },
+      ...Array.from(optionMap.entries())
+        .sort((left, right) => left[1].localeCompare(right[1]))
+        .map(([value, label]) => ({ value, label })),
+    ];
+  }, [filteredRows, t]);
+
   const statusOptions = useMemo(
     () => [
       { value: 'all', label: t('monitoring.filter_all_statuses') },
@@ -2189,6 +2213,9 @@ export function MonitoringCenterPage() {
         if (selectedChannel !== 'all' && row.channel !== selectedChannel) {
           return false;
         }
+        if (selectedApiKeyHash !== 'all' && row.apiKeyHash !== selectedApiKeyHash) {
+          return false;
+        }
         if (selectedStatus === 'success' && row.failed) {
           return false;
         }
@@ -2200,6 +2227,7 @@ export function MonitoringCenterPage() {
     [
       filteredRows,
       selectedAccount,
+      selectedApiKeyHash,
       selectedChannel,
       selectedModel,
       selectedProvider,
@@ -2316,6 +2344,7 @@ export function MonitoringCenterPage() {
     selectedProvider !== 'all' ||
     selectedModel !== 'all' ||
     selectedChannel !== 'all' ||
+    selectedApiKeyHash !== 'all' ||
     selectedStatus !== 'all';
   const hasActiveDataFilter = hasSearchFilter || hasScopeFilter;
   const failedGroupCount = groupedRealtimeRows.filter((row) => row.failureCalls > 0).length;
@@ -2455,6 +2484,7 @@ export function MonitoringCenterPage() {
     setSelectedProvider(snapshot.selectedProvider);
     setSelectedModel(snapshot.selectedModel);
     setSelectedChannel(snapshot.selectedChannel);
+    setSelectedApiKeyHash(snapshot.selectedApiKeyHash);
     setSelectedStatus(snapshot.selectedStatus);
   }, []);
 
@@ -2466,6 +2496,7 @@ export function MonitoringCenterPage() {
     setSelectedProvider('all');
     setSelectedModel('all');
     setSelectedChannel('all');
+    setSelectedApiKeyHash('all');
     setSelectedStatus('all');
   }, []);
 
@@ -2625,6 +2656,7 @@ export function MonitoringCenterPage() {
           selectedProvider,
           selectedModel,
           selectedChannel,
+          selectedApiKeyHash,
           selectedStatus,
         };
       }
@@ -2637,6 +2669,7 @@ export function MonitoringCenterPage() {
       restoreFocusSnapshot,
       searchInput,
       selectedAccount,
+      selectedApiKeyHash,
       selectedChannel,
       selectedModel,
       selectedProvider,
@@ -3142,6 +3175,12 @@ export function MonitoringCenterPage() {
               ariaLabel={t('monitoring.filter_channel')}
             />
             <Select
+              value={selectedApiKeyHash}
+              options={apiKeyOptions}
+              onChange={setSelectedApiKeyHash}
+              ariaLabel={t('monitoring.filter_api_key')}
+            />
+            <Select
               value={selectedStatus}
               options={statusOptions}
               onChange={(value) => setSelectedStatus(value as StatusFilter)}
@@ -3448,9 +3487,7 @@ export function MonitoringCenterPage() {
                 })}
                 {sortedAccountRows.length === 0 ? (
                   <tr>
-                    <td colSpan={accountOverviewColumns.length}>
-                      {renderMonitoringEmptyState()}
-                    </td>
+                    <td colSpan={accountOverviewColumns.length}>{renderMonitoringEmptyState()}</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -3612,9 +3649,7 @@ export function MonitoringCenterPage() {
               ))}
               {realtimeLogRows.length === 0 ? (
                 <tr>
-                  <td colSpan={10}>
-                    {renderMonitoringEmptyState()}
-                  </td>
+                  <td colSpan={10}>{renderMonitoringEmptyState()}</td>
                 </tr>
               ) : null}
             </tbody>

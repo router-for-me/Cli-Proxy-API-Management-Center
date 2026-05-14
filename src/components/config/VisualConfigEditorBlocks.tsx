@@ -1,11 +1,27 @@
-import { memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
-import { useNotificationStore } from '@/stores';
+import {
+  isUsageServiceId,
+  normalizeUsageServiceBase,
+  usageServiceApi,
+  type ApiKeyAlias,
+} from '@/services/api/usageService';
+import { useAuthStore, useNotificationStore, useUsageServiceStore } from '@/stores';
 import styles from './VisualConfigEditor.module.scss';
 import { copyToClipboard } from '@/utils/clipboard';
+import { detectApiBaseFromLocation } from '@/utils/connection';
 import type {
   PayloadFilterRule,
   PayloadModelEntry,
@@ -21,6 +37,7 @@ import {
   VISUAL_CONFIG_PROTOCOL_OPTIONS,
 } from '@/hooks/useVisualConfig';
 import { maskApiKey } from '@/utils/format';
+import { sha256Hex } from '@/utils/apiKeyHash';
 import { isValidApiKeyCharset } from '@/utils/validation';
 
 /** Minimum character count before the expand/collapse toggle appears. */
@@ -169,6 +186,11 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
 }) {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
+  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
+  const apiBase = useAuthStore((state) => state.apiBase);
+  const managementKey = useAuthStore((state) => state.managementKey);
+  const usageServiceEnabled = useUsageServiceStore((state) => state.enabled);
+  const usageServiceBase = useUsageServiceStore((state) => state.serviceBase);
   const apiKeys = useMemo(
     () =>
       value
@@ -190,29 +212,202 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const apiKeyInputId = useId();
   const apiKeyHintId = `${apiKeyInputId}-hint`;
   const apiKeyErrorId = `${apiKeyInputId}-error`;
+  const keyAliasInputId = `${apiKeyInputId}-alias`;
+  const aliasModalInputId = useId();
+  const aliasModalErrorId = `${aliasModalInputId}-error`;
   const [modalOpen, setModalOpen] = useState(false);
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
+  const [inputAliasValue, setInputAliasValue] = useState('');
   const [formError, setFormError] = useState('');
+  const [apiKeyAliases, setApiKeyAliases] = useState<ApiKeyAlias[]>([]);
+  const [aliasesLoading, setAliasesLoading] = useState(false);
+  const [aliasesAvailable, setAliasesAvailable] = useState(false);
+  const [aliasModalOpen, setAliasModalOpen] = useState(false);
+  const [aliasEditingApiKeyId, setAliasEditingApiKeyId] = useState<string | null>(null);
+  const [aliasInputValue, setAliasInputValue] = useState('');
+  const [aliasFormError, setAliasFormError] = useState('');
+  const [aliasSaving, setAliasSaving] = useState(false);
+
+  const aliasByHash = useMemo(() => {
+    const map = new Map<string, ApiKeyAlias>();
+    apiKeyAliases.forEach((item) => {
+      const hash = String(item.apiKeyHash || '')
+        .trim()
+        .toLowerCase();
+      const alias = String(item.alias || '').trim();
+      if (!hash || !alias) return;
+      map.set(hash, { ...item, apiKeyHash: hash, alias });
+    });
+    return map;
+  }, [apiKeyAliases]);
+
+  const resolveAliasServiceBase = useCallback(async (): Promise<string> => {
+    if (usageServiceEnabled && usageServiceBase) {
+      return usageServiceBase;
+    }
+
+    const candidates = Array.from(
+      new Set(
+        [apiBase, detectApiBaseFromLocation()]
+          .map((candidate) => normalizeUsageServiceBase(candidate || ''))
+          .filter(Boolean)
+      )
+    );
+
+    for (const candidate of candidates) {
+      try {
+        const info = await usageServiceApi.getInfo(candidate);
+        if (isUsageServiceId(info.service)) {
+          return candidate;
+        }
+      } catch {
+        // The regular CPA management API does not expose Usage Service metadata.
+      }
+    }
+
+    return '';
+  }, [apiBase, usageServiceBase, usageServiceEnabled]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadAliases = async () => {
+      setAliasesLoading(true);
+      try {
+        const serviceBase = await resolveAliasServiceBase();
+        if (cancelled) return;
+        if (!serviceBase) {
+          setAliasesAvailable(false);
+          setApiKeyAliases([]);
+          return;
+        }
+        const response = await usageServiceApi.getApiKeyAliases(serviceBase, managementKey);
+        if (cancelled) return;
+        setAliasesAvailable(true);
+        setApiKeyAliases(Array.isArray(response.items) ? response.items : []);
+      } catch {
+        if (cancelled) return;
+        setAliasesAvailable(false);
+        setApiKeyAliases([]);
+      } finally {
+        if (!cancelled) {
+          setAliasesLoading(false);
+        }
+      }
+    };
+
+    void loadAliases();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [managementKey, resolveAliasServiceBase]);
 
   function generateSecureApiKey(): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const array = new Uint8Array(17);
+    const array = new Uint8Array(64);
     crypto.getRandomValues(array);
     return 'sk-' + Array.from(array, (b) => charset[b % charset.length]).join('');
   }
 
+  const getApiKeyHash = (apiKey: string) => sha256Hex(apiKey).toLowerCase();
+
+  const getAliasForApiKey = (apiKey: string) => {
+    const hash = getApiKeyHash(apiKey);
+    return hash ? (aliasByHash.get(hash)?.alias ?? '') : '';
+  };
+
+  const normalizeAliasKey = (alias: string) => alias.trim().toLowerCase();
+
+  const isDuplicateAlias = (alias: string, currentApiKeyHash: string) => {
+    const aliasKey = normalizeAliasKey(alias);
+    const currentHash = currentApiKeyHash.trim().toLowerCase();
+    if (!aliasKey) return false;
+    return apiKeyAliases.some((item) => {
+      const itemHash = String(item.apiKeyHash || '')
+        .trim()
+        .toLowerCase();
+      return itemHash !== currentHash && normalizeAliasKey(String(item.alias || '')) === aliasKey;
+    });
+  };
+
+  const validateAlias = (alias: string, currentApiKeyHash: string = '') => {
+    const trimmed = alias.trim();
+    if (!trimmed) {
+      return t('config_management.visual.api_keys.alias_error_empty');
+    }
+    if (Array.from(trimmed).length > 120) {
+      return t('config_management.visual.api_keys.alias_error_too_long');
+    }
+    if (isDuplicateAlias(trimmed, currentApiKeyHash)) {
+      return t('config_management.visual.api_keys.alias_error_duplicate');
+    }
+    return '';
+  };
+
+  const saveAliasForKey = async (apiKey: string, alias: string) => {
+    const apiKeyHash = getApiKeyHash(apiKey);
+    const trimmedAlias = alias.trim();
+    if (!apiKeyHash) {
+      throw new Error(t('config_management.visual.api_keys.error_empty'));
+    }
+    const validationError = validateAlias(trimmedAlias, apiKeyHash);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    const serviceBase = await resolveAliasServiceBase();
+    if (!serviceBase) {
+      throw new Error(t('config_management.visual.api_keys.alias_unavailable'));
+    }
+
+    const response = await usageServiceApi.saveApiKeyAliases(
+      serviceBase,
+      [{ apiKeyHash, alias: trimmedAlias }],
+      managementKey
+    );
+    setAliasesAvailable(true);
+    setApiKeyAliases(Array.isArray(response.items) ? response.items : []);
+  };
+
+  const deleteAliasForHash = async (apiKeyHash: string) => {
+    const serviceBase = await resolveAliasServiceBase();
+    if (!serviceBase) {
+      throw new Error(t('config_management.visual.api_keys.alias_unavailable'));
+    }
+
+    await usageServiceApi.deleteApiKeyAlias(serviceBase, apiKeyHash, managementKey);
+    setApiKeyAliases((previous) =>
+      previous.filter((item) => item.apiKeyHash.toLowerCase() !== apiKeyHash.toLowerCase())
+    );
+  };
+
+  const getAliasErrorMessage = (error: unknown) => {
+    if (
+      error &&
+      typeof error === 'object' &&
+      (error as { code?: unknown }).code === 'api_key_alias_duplicate'
+    ) {
+      return t('config_management.visual.api_keys.alias_error_duplicate');
+    }
+    return error instanceof Error ? error.message : String(error);
+  };
+
   const openAddModal = () => {
     setEditingApiKeyId(null);
     setInputValue('');
+    setInputAliasValue('');
     setFormError('');
     setModalOpen(true);
   };
 
   const openEditModal = (apiKeyId: string) => {
     const editingIndex = renderApiKeyIds.findIndex((id) => id === apiKeyId);
+    const editingKey = apiKeys[editingIndex] ?? '';
     setEditingApiKeyId(apiKeyId);
-    setInputValue(apiKeys[editingIndex] ?? '');
+    setInputValue(editingKey);
+    setInputAliasValue(getAliasForApiKey(editingKey));
     setFormError('');
     setModalOpen(true);
   };
@@ -220,8 +415,25 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const closeModal = () => {
     setModalOpen(false);
     setInputValue('');
+    setInputAliasValue('');
     setEditingApiKeyId(null);
     setFormError('');
+  };
+
+  const openAliasModal = (apiKeyId: string) => {
+    const editingIndex = renderApiKeyIds.findIndex((id) => id === apiKeyId);
+    const editingKey = apiKeys[editingIndex] ?? '';
+    setAliasEditingApiKeyId(apiKeyId);
+    setAliasInputValue(getAliasForApiKey(editingKey));
+    setAliasFormError('');
+    setAliasModalOpen(true);
+  };
+
+  const closeAliasModal = () => {
+    setAliasModalOpen(false);
+    setAliasEditingApiKeyId(null);
+    setAliasInputValue('');
+    setAliasFormError('');
   };
 
   const updateApiKeys = (nextKeys: string[]) => {
@@ -235,8 +447,9 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     updateApiKeys(apiKeys.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmed = inputValue.trim();
+    const trimmedAlias = inputAliasValue.trim();
     if (!trimmed) {
       setFormError(t('config_management.visual.api_keys.error_empty'));
       return;
@@ -244,6 +457,17 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     if (!isValidApiKeyCharset(trimmed)) {
       setFormError(t('config_management.visual.api_keys.error_invalid'));
       return;
+    }
+    if (trimmedAlias) {
+      const aliasError = validateAlias(trimmedAlias, getApiKeyHash(trimmed));
+      if (aliasError) {
+        setFormError(aliasError);
+        return;
+      }
+      if (!aliasesAvailable) {
+        setFormError(t('config_management.visual.api_keys.alias_unavailable'));
+        return;
+      }
     }
 
     const editingIndex = editingApiKeyId
@@ -253,11 +477,76 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       editingApiKeyId === null
         ? [...apiKeys, trimmed]
         : apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
+
+    if (trimmedAlias) {
+      try {
+        setAliasSaving(true);
+        await saveAliasForKey(trimmed, trimmedAlias);
+        showNotification(t('config_management.visual.api_keys.alias_saved'), 'success');
+      } catch (error) {
+        setFormError(getAliasErrorMessage(error));
+        setAliasSaving(false);
+        return;
+      }
+      setAliasSaving(false);
+    }
+
     if (editingApiKeyId === null) {
       setApiKeyIds([...renderApiKeyIds, makeClientId()]);
     }
     updateApiKeys(nextKeys);
     closeModal();
+  };
+
+  const handleAliasSave = async () => {
+    const editingIndex = aliasEditingApiKeyId
+      ? renderApiKeyIds.findIndex((id) => id === aliasEditingApiKeyId)
+      : -1;
+    const editingKey = apiKeys[editingIndex] ?? '';
+    const aliasError = validateAlias(aliasInputValue, getApiKeyHash(editingKey));
+    if (aliasError) {
+      setAliasFormError(aliasError);
+      return;
+    }
+
+    setAliasSaving(true);
+    try {
+      await saveAliasForKey(editingKey, aliasInputValue);
+      showNotification(t('config_management.visual.api_keys.alias_saved'), 'success');
+      closeAliasModal();
+    } catch (error) {
+      setAliasFormError(getAliasErrorMessage(error));
+    } finally {
+      setAliasSaving(false);
+    }
+  };
+
+  const handleAliasDelete = () => {
+    const editingIndex = aliasEditingApiKeyId
+      ? renderApiKeyIds.findIndex((id) => id === aliasEditingApiKeyId)
+      : -1;
+    const editingKey = apiKeys[editingIndex] ?? '';
+    const apiKeyHash = getApiKeyHash(editingKey);
+    if (!apiKeyHash || !aliasByHash.has(apiKeyHash)) return;
+
+    showConfirmation({
+      title: t('config_management.visual.api_keys.alias_delete_title'),
+      message: t('config_management.visual.api_keys.alias_delete_confirm'),
+      confirmText: t('config_management.visual.api_keys.alias_delete'),
+      variant: 'danger',
+      onConfirm: async () => {
+        setAliasSaving(true);
+        try {
+          await deleteAliasForHash(apiKeyHash);
+          showNotification(t('config_management.visual.api_keys.alias_deleted'), 'success');
+          closeAliasModal();
+        } catch (error) {
+          setAliasFormError(getAliasErrorMessage(error));
+        } finally {
+          setAliasSaving(false);
+        }
+      },
+    });
   };
 
   const handleCopy = async (apiKey: string) => {
@@ -286,47 +575,61 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
         <div className={styles.emptyState}>{t('config_management.visual.api_keys.empty')}</div>
       ) : (
         <div className="item-list" style={{ marginTop: 4 }}>
-          {apiKeys.map((key, index) => (
-            <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
-              <div className="item-meta">
-                <div className="pill">#{index + 1}</div>
-                <div className="item-title">
-                  {t('config_management.visual.api_keys.input_label')}
+          {apiKeys.map((key, index) => {
+            const apiKeyHash = getApiKeyHash(key);
+            const alias = apiKeyHash ? (aliasByHash.get(apiKeyHash)?.alias ?? '') : '';
+            return (
+              <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
+                <div className="item-meta">
+                  <div className="item-title">
+                    {alias || t('config_management.visual.api_keys.input_label')}
+                  </div>
+                  <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
                 </div>
-                <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
+                <div className="item-actions">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => openAliasModal(renderApiKeyIds[index] ?? '')}
+                    disabled={disabled || aliasesLoading || !aliasesAvailable}
+                  >
+                    {t('config_management.visual.api_keys.alias_action')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleCopy(key)}
+                    disabled={disabled}
+                  >
+                    {t('common.copy')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
+                    disabled={disabled}
+                  >
+                    {t('config_management.visual.common.edit')}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
+                    disabled={disabled}
+                  >
+                    {t('config_management.visual.common.delete')}
+                  </Button>
+                </div>
               </div>
-              <div className="item-actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleCopy(key)}
-                  disabled={disabled}
-                >
-                  {t('common.copy')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.edit')}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.delete')}
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       <div className="hint">{t('config_management.visual.api_keys.hint')}</div>
+      {!aliasesAvailable && !aliasesLoading ? (
+        <div className="hint">{t('config_management.visual.api_keys.alias_unavailable')}</div>
+      ) : null}
 
       <Modal
         open={modalOpen}
@@ -338,10 +641,10 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
         }
         footer={
           <>
-            <Button variant="secondary" onClick={closeModal} disabled={disabled}>
+            <Button variant="secondary" onClick={closeModal} disabled={disabled || aliasSaving}>
               {t('config_management.visual.common.cancel')}
             </Button>
-            <Button onClick={handleSave} disabled={disabled}>
+            <Button onClick={handleSave} disabled={disabled || aliasSaving}>
               {editingApiKeyId !== null
                 ? t('config_management.visual.common.update')
                 : t('config_management.visual.common.add')}
@@ -377,9 +680,84 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
           <div id={apiKeyHintId} className="hint">
             {t('config_management.visual.api_keys.input_hint')}
           </div>
+          <div className="form-group">
+            <label htmlFor={keyAliasInputId}>
+              {t('config_management.visual.api_keys.alias_label')}
+            </label>
+            <input
+              id={keyAliasInputId}
+              className="input"
+              placeholder={t('config_management.visual.api_keys.alias_placeholder')}
+              value={inputAliasValue}
+              onChange={(e) => setInputAliasValue(e.target.value)}
+              disabled={disabled || aliasesLoading || !aliasesAvailable}
+              maxLength={120}
+            />
+            <div className="hint">{t('config_management.visual.api_keys.alias_hint')}</div>
+          </div>
           {formError && (
             <div id={apiKeyErrorId} className="error-box">
               {formError}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        open={aliasModalOpen}
+        onClose={closeAliasModal}
+        title={t('config_management.visual.api_keys.alias_title')}
+        footer={
+          <>
+            {aliasEditingApiKeyId &&
+            aliasByHash.has(
+              getApiKeyHash(
+                apiKeys[renderApiKeyIds.findIndex((id) => id === aliasEditingApiKeyId)] ?? ''
+              )
+            ) ? (
+              <Button
+                variant="danger"
+                onClick={handleAliasDelete}
+                disabled={disabled || aliasSaving}
+              >
+                {t('config_management.visual.api_keys.alias_delete')}
+              </Button>
+            ) : null}
+            <Button
+              variant="secondary"
+              onClick={closeAliasModal}
+              disabled={disabled || aliasSaving}
+            >
+              {t('config_management.visual.common.cancel')}
+            </Button>
+            <Button onClick={handleAliasSave} disabled={disabled || aliasSaving}>
+              {t('config_management.visual.common.update')}
+            </Button>
+          </>
+        }
+      >
+        <div className="form-group">
+          <label htmlFor={aliasModalInputId}>
+            {t('config_management.visual.api_keys.alias_label')}
+          </label>
+          <input
+            id={aliasModalInputId}
+            className="input"
+            placeholder={t('config_management.visual.api_keys.alias_placeholder')}
+            value={aliasInputValue}
+            onChange={(e) => {
+              setAliasInputValue(e.target.value);
+              setAliasFormError('');
+            }}
+            disabled={disabled || aliasSaving}
+            maxLength={120}
+            aria-describedby={aliasFormError ? aliasModalErrorId : undefined}
+            aria-invalid={Boolean(aliasFormError)}
+          />
+          <div className="hint">{t('config_management.visual.api_keys.alias_hint')}</div>
+          {aliasFormError && (
+            <div id={aliasModalErrorId} className="error-box">
+              {aliasFormError}
             </div>
           )}
         </div>
@@ -668,7 +1046,9 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                       placeholder={t('config_management.visual.payload_rules.model_name')}
                       ariaLabel={t('config_management.visual.payload_rules.model_name')}
                       value={model.name}
-                      onChange={(nextValue) => updateModel(ruleIndex, modelIndex, { name: nextValue })}
+                      onChange={(nextValue) =>
+                        updateModel(ruleIndex, modelIndex, { name: nextValue })
+                      }
                       disabled={disabled}
                     />
                   </>
@@ -678,7 +1058,9 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                       placeholder={t('config_management.visual.payload_rules.model_name')}
                       ariaLabel={t('config_management.visual.payload_rules.model_name')}
                       value={model.name}
-                      onChange={(nextValue) => updateModel(ruleIndex, modelIndex, { name: nextValue })}
+                      onChange={(nextValue) =>
+                        updateModel(ruleIndex, modelIndex, { name: nextValue })
+                      }
                       disabled={disabled}
                     />
                     <Select
@@ -731,7 +1113,9 @@ export const PayloadRulesEditor = memo(function PayloadRulesEditor({
                       placeholder={t('config_management.visual.payload_rules.json_path')}
                       ariaLabel={t('config_management.visual.payload_rules.json_path')}
                       value={param.path}
-                      onChange={(nextValue) => updateParam(ruleIndex, paramIndex, { path: nextValue })}
+                      onChange={(nextValue) =>
+                        updateParam(ruleIndex, paramIndex, { path: nextValue })
+                      }
                       disabled={disabled}
                     />
                     {rawJsonValues ? null : (

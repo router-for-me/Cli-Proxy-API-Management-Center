@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildAccountRows,
+  buildApiKeyDisplayMap,
   buildMonitoringAuthMetaMap,
   type MonitoringEventRow,
 } from './useMonitoringData';
+import { sha256Hex } from '@/utils/apiKeyHash';
 import type { AuthFileItem } from '@/types';
 
 const createMonitoringEventRow = (
@@ -26,6 +28,9 @@ const createMonitoringEventRow = (
   authIndex: overrides.authIndex ?? 'auth-123456',
   authIndexMasked: overrides.authIndexMasked ?? 'auth...3456',
   authLabel: overrides.authLabel ?? 'alpha.json',
+  apiKeyHash: overrides.apiKeyHash ?? 'api-key-hash',
+  apiKeyLabel: overrides.apiKeyLabel ?? 'ak********sh',
+  apiKeyMasked: overrides.apiKeyMasked ?? 'ak********sh',
   provider: overrides.provider ?? 'codex',
   planType: overrides.planType ?? 'pro',
   channel: overrides.channel ?? 'codex',
@@ -77,5 +82,16 @@ describe('buildMonitoringAuthMetaMap', () => {
 
     expect(map.get('current-auth-index')?.account).toBe('alice@example.com');
     expect(map.get('6bf749cb7db0e15c')?.account).toBe('alice@example.com');
+  });
+});
+
+describe('buildApiKeyDisplayMap', () => {
+  it('prefers stored aliases while preserving masked configured keys', () => {
+    const apiKey = 'sk-alias-test-key';
+    const apiKeyHash = sha256Hex(apiKey);
+    const map = buildApiKeyDisplayMap([apiKey], [{ apiKeyHash, alias: 'Team A', updatedAtMs: 1 }]);
+
+    expect(map.get(apiKeyHash)?.label).toBe('Team A');
+    expect(map.get(apiKeyHash)?.masked).toMatch(/^sk/);
   });
 });

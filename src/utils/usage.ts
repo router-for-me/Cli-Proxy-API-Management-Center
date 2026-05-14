@@ -24,6 +24,8 @@ export interface UsageDetail {
   timestamp: string;
   source: string;
   auth_index: string | number | null;
+  api_key_hash?: string;
+  apiKeyHash?: string;
   account_snapshot?: string;
   accountSnapshot?: string;
   auth_label_snapshot?: string;
@@ -264,6 +266,7 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
             detailRaw.authIndex ??
             detailRaw.AuthIndex ??
             null) as UsageDetail['auth_index'],
+          api_key_hash: readDetailString(detailRaw.api_key_hash ?? detailRaw.apiKeyHash),
           account_snapshot: readDetailString(detailRaw.account_snapshot ?? detailRaw.accountSnapshot),
           auth_label_snapshot: readDetailString(
             detailRaw.auth_label_snapshot ?? detailRaw.authLabelSnapshot
@@ -329,6 +332,7 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
             detailRaw.authIndex ??
             detailRaw.AuthIndex ??
             null) as UsageDetail['auth_index'],
+          api_key_hash: readDetailString(detailRaw.api_key_hash ?? detailRaw.apiKeyHash),
           account_snapshot: readDetailString(detailRaw.account_snapshot ?? detailRaw.accountSnapshot),
           auth_label_snapshot: readDetailString(
             detailRaw.auth_label_snapshot ?? detailRaw.authLabelSnapshot

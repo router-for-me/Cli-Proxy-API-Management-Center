@@ -18,6 +18,8 @@ const USAGE_SERVICE_ERROR_CODES = new Set([
   'invalid_management_key',
   'usage_service_not_configured',
   'prices_required',
+  'api_key_aliases_required',
+  'api_key_alias_duplicate',
   'model_price_sync_failed',
   'method_not_allowed',
 ]);
@@ -121,6 +123,16 @@ export interface ModelPriceSyncResponse extends ModelPricesResponse {
   skipped: number;
 }
 
+export interface ApiKeyAlias {
+  apiKeyHash: string;
+  alias: string;
+  updatedAtMs?: number;
+}
+
+export interface ApiKeyAliasesResponse {
+  items: ApiKeyAlias[];
+}
+
 export interface UsageImportResponse {
   format?: string;
   added: number;
@@ -201,7 +213,8 @@ const readUsageServiceErrorMessage = (value: unknown): string => {
 const toUsageServiceApiError = (error: unknown): UsageServiceApiError => {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data;
-    const message = readUsageServiceErrorMessage(data) || error.message || 'Usage Service request failed';
+    const message =
+      readUsageServiceErrorMessage(data) || error.message || 'Usage Service request failed';
     const apiError = new Error(message) as UsageServiceApiError;
     apiError.name = 'UsageServiceApiError';
     apiError.status = error.response?.status;
@@ -327,10 +340,7 @@ export const usageServiceApi = {
     });
   },
 
-  getModelPrices: async (
-    base: string,
-    managementKey?: string
-  ): Promise<ModelPricesResponse> => {
+  getModelPrices: async (base: string, managementKey?: string): Promise<ModelPricesResponse> => {
     return withUsageServiceError(async () => {
       const response = await axios.get<ModelPricesResponse>(
         buildUrl(base, '/v0/management/model-prices'),
@@ -361,6 +371,56 @@ export const usageServiceApi = {
     });
   },
 
+  getApiKeyAliases: async (
+    base: string,
+    managementKey?: string
+  ): Promise<ApiKeyAliasesResponse> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.get<ApiKeyAliasesResponse>(
+        buildUrl(base, '/v0/management/api-key-aliases'),
+        {
+          timeout: USAGE_SERVICE_TIMEOUT_MS,
+          headers: authHeaders(managementKey),
+        }
+      );
+      return response.data;
+    });
+  },
+
+  saveApiKeyAliases: async (
+    base: string,
+    items: ApiKeyAlias[],
+    managementKey?: string
+  ): Promise<ApiKeyAliasesResponse> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.put<ApiKeyAliasesResponse>(
+        buildUrl(base, '/v0/management/api-key-aliases'),
+        { items },
+        {
+          timeout: USAGE_SERVICE_TIMEOUT_MS,
+          headers: authHeaders(managementKey),
+        }
+      );
+      return response.data;
+    });
+  },
+
+  deleteApiKeyAlias: async (
+    base: string,
+    apiKeyHash: string,
+    managementKey?: string
+  ): Promise<void> => {
+    await withUsageServiceError(async () => {
+      await axios.delete(
+        buildUrl(base, `/v0/management/api-key-aliases/${encodeURIComponent(apiKeyHash)}`),
+        {
+          timeout: USAGE_SERVICE_TIMEOUT_MS,
+          headers: authHeaders(managementKey),
+        }
+      );
+    });
+  },
+
   syncModelPrices: async (
     base: string,
     managementKey?: string,
@@ -379,10 +439,7 @@ export const usageServiceApi = {
     });
   },
 
-  exportUsage: async (
-    base: string,
-    managementKey?: string
-  ): Promise<UsageExportResponse> => {
+  exportUsage: async (base: string, managementKey?: string): Promise<UsageExportResponse> => {
     return withUsageServiceError(async () => {
       const response = await axios.get<Blob>(buildUrl(base, '/v0/management/usage/export'), {
         timeout: USAGE_SERVICE_TRANSFER_TIMEOUT_MS,
