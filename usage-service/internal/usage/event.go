@@ -56,6 +56,7 @@ type Detail struct {
 	Timestamp            string `json:"timestamp"`
 	Source               string `json:"source"`
 	AuthIndex            string `json:"auth_index,omitempty"`
+	APIKeyHash           string `json:"api_key_hash,omitempty"`
 	AccountSnapshot      string `json:"account_snapshot,omitempty"`
 	AuthLabelSnapshot    string `json:"auth_label_snapshot,omitempty"`
 	AuthFileSnapshot     string `json:"auth_file_snapshot,omitempty"`
@@ -200,6 +201,7 @@ func BuildPayload(events []Event) Payload {
 			Timestamp:            event.Timestamp,
 			Source:               event.Source,
 			AuthIndex:            event.AuthIndex,
+			APIKeyHash:           event.APIKeyHash,
 			AccountSnapshot:      event.AccountSnapshot,
 			AuthLabelSnapshot:    event.AuthLabelSnapshot,
 			AuthFileSnapshot:     event.AuthFileSnapshot,

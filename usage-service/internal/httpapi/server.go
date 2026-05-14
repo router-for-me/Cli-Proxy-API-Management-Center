@@ -82,6 +82,10 @@ type modelPricesSyncRequest struct {
 	Models []string `json:"models"`
 }
 
+type apiKeyAliasesRequest struct {
+	Items []store.APIKeyAlias `json:"items"`
+}
+
 func New(cfg config.Config, store *store.Store, collector *collector.Manager) *Server {
 	return &Server{
 		cfg:       cfg,
@@ -111,6 +115,10 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/model-prices") {
 		s.withCORS(s.handleModelPrices)(w, r)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/v0/management/api-key-aliases") {
+		s.withCORS(s.handleAPIKeyAliases)(w, r)
 		return
 	}
 	cleanUsagePath := strings.TrimRight(r.URL.Path, "/")
@@ -460,6 +468,53 @@ func (s *Server) handleModelPrices(w http.ResponseWriter, r *http.Request) {
 			"skipped":  result.Skipped + skipped,
 			"prices":   prices,
 		})
+	default:
+		methodNotAllowed(w)
+	}
+}
+
+func (s *Server) handleAPIKeyAliases(w http.ResponseWriter, r *http.Request) {
+	if !s.authorizeIfConfigured(w, r) {
+		return
+	}
+
+	path := strings.TrimRight(r.URL.Path, "/")
+	const basePath = "/v0/management/api-key-aliases"
+	switch {
+	case path == basePath && r.Method == http.MethodGet:
+		aliases, err := s.store.LoadAPIKeyAliases(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": aliases})
+	case path == basePath && r.Method == http.MethodPut:
+		var req apiKeyAliasesRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		if req.Items == nil {
+			writeError(w, http.StatusBadRequest, errors.New("api key aliases are required"))
+			return
+		}
+		if err := s.store.UpsertAPIKeyAliases(r.Context(), req.Items); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		aliases, err := s.store.LoadAPIKeyAliases(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": aliases})
+	case strings.HasPrefix(path, basePath+"/") && r.Method == http.MethodDelete:
+		apiKeyHash := strings.TrimPrefix(path, basePath+"/")
+		if err := s.store.DeleteAPIKeyAlias(r.Context(), apiKeyHash); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	default:
 		methodNotAllowed(w)
 	}
@@ -1221,6 +1276,10 @@ func usageServiceErrorCode(err error) string {
 		return "enable_cpa_usage_statistics_failed"
 	case strings.Contains(message, "prices are required"):
 		return "prices_required"
+	case strings.Contains(message, "api key aliases are required"):
+		return "api_key_aliases_required"
+	case strings.Contains(message, "api key alias already exists"):
+		return "api_key_alias_duplicate"
 	case strings.Contains(message, "model price sync failed"):
 		return "model_price_sync_failed"
 	case strings.Contains(message, "method not allowed"):

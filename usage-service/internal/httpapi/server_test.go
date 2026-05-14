@@ -507,6 +507,72 @@ func TestModelPricesSaveAndLoad(t *testing.T) {
 	}
 }
 
+func TestAPIKeyAliasesSaveLoadAndDelete(t *testing.T) {
+	handler := newTestHandler(t, "http://example.test", true)
+	const hash = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	body := bytes.NewBufferString(`{"items":[{"apiKeyHash":"` + hash + `","alias":"Team A"}]}`)
+	req := httptest.NewRequest(http.MethodPut, "/v0/management/api-key-aliases", body)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("save status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/v0/management/api-key-aliases", nil)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("load status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	var response struct {
+		Items []struct {
+			APIKeyHash  string `json:"apiKeyHash"`
+			Alias       string `json:"alias"`
+			UpdatedAtMS int64  `json:"updatedAtMs"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(response.Items) != 1 {
+		t.Fatalf("items = %#v", response.Items)
+	}
+	if response.Items[0].APIKeyHash != hash || response.Items[0].Alias != "Team A" || response.Items[0].UpdatedAtMS <= 0 {
+		t.Fatalf("alias = %#v", response.Items[0])
+	}
+
+	const otherHash = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+	req = httptest.NewRequest(
+		http.MethodPut,
+		"/v0/management/api-key-aliases",
+		bytes.NewBufferString(`{"items":[{"apiKeyHash":"`+otherHash+`","alias":" team a "}]}`),
+	)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("duplicate status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), `"code":"api_key_alias_duplicate"`) {
+		t.Fatalf("duplicate body = %s", rr.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodDelete, "/v0/management/api-key-aliases/"+hash, nil)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("delete status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+}
+
 func TestModelPricesSyncFromLiteLLMFormat(t *testing.T) {
 	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
