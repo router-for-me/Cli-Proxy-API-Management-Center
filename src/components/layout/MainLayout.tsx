@@ -15,6 +15,7 @@ import { MainRoutes } from '@/router/MainRoutes';
 import {
   IconSidebarAuthFiles,
   IconSidebarConfig,
+  IconSidebarCodexRuntime,
   IconSidebarDashboard,
   IconSidebarLogs,
   IconSidebarOauth,
@@ -41,6 +42,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
+  codexRuntime: <IconSidebarCodexRuntime size={18} />,
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
@@ -391,6 +393,7 @@ export function MainLayout() {
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
+    { path: '/codex-runtime', label: t('nav.codex_runtime'), icon: sidebarIcons.codexRuntime },
     ...(config?.loggingToFile
       ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
       : []),

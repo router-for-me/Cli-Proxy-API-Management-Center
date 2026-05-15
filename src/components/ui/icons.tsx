@@ -429,6 +429,20 @@ export function IconSidebarQuota({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconSidebarCodexRuntime({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...sidebarSvgProps} width={size} height={size} {...props}>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+      <path d="M7 8h6" />
+      <path d="M7 12h4" />
+      <path d="M7 16h3" />
+      <path d="m15 9 2-2 2 2" />
+      <path d="M19 7v6" />
+      <path d="m15 16 2 2 2-2" />
+    </svg>
+  );
+}
+
 export function IconSidebarLogs({ size = 20, ...props }: IconProps) {
   return (
     <svg {...sidebarSvgProps} width={size} height={size} {...props}>
