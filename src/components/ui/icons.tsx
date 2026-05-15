@@ -443,6 +443,20 @@ export function IconSidebarCodexRuntime({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconSidebarUsageStat({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...sidebarSvgProps} width={size} height={size} {...props}>
+      <path d="M4 19.5h16" />
+      <path d="M7 16V11" />
+      <path d="M12 16V7" />
+      <path d="M17 16V4.5" />
+      <circle cx="7" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="17" cy="3.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function IconSidebarLogs({ size = 20, ...props }: IconProps) {
   return (
     <svg {...sidebarSvgProps} width={size} height={size} {...props}>
