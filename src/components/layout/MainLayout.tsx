@@ -1,6 +1,6 @@
 import {
-  ReactNode,
-  SVGProps,
+  type ReactNode,
+  type SVGProps,
   useCallback,
   useEffect,
   useLayoutEffect,

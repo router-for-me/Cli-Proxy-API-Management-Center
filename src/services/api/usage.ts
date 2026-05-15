@@ -3,7 +3,7 @@
  */
 
 import { apiClient } from './client';
-import { computeKeyStats, KeyStats } from '@/utils/usage';
+import { computeKeyStats, type KeyStats } from '@/utils/usage';
 import { TIMEOUT_HEAVY } from '@/utils/constants';
 
 export interface UsageExportPayload {

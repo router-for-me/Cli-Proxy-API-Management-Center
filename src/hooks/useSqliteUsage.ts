@@ -3,7 +3,7 @@
  * 轮询 CLIProxyAPI 后端 /v0/management/usage-sqlite/* 端点
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { usageSqliteApi, UsageStats, UsageRecord, ModelStat, DailyStat } from '@/services/api/usageSqlite';
+import { usageSqliteApi, type UsageStats, type UsageRecord, type ModelStat, type DailyStat } from '@/services/api/usageSqlite';
 import { SQLITE_USAGE_DEFAULT_LIMIT, SQLITE_USAGE_DEFAULT_SINCE } from '@/utils/constants';
 
 interface UseSqliteUsageOptions {
