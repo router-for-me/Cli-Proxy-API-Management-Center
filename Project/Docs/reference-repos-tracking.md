@@ -358,7 +358,7 @@ interface AnalysisResponse {
 
 ### 决策项
 
-- [x] P1: 研究 Provider 健康检查机制——已实现 (useProviderInspect)，OpenAI/Ampcode 待适配为子项
+- [x] P1: 研究 Provider 健康检查机制——已实现 (useProviderInspect)，全体 6 Provider 统一接入
 - [ ] P2: Smart Auto-Fallback 链可视化——等 CPA 后端支持后再做
 - [ ] P3: Token 压缩指标监控——等 CPA 后端支持后，usage 统计需区分原始 vs 压缩 token
 - [ ] P3: 多模态用量维度——MonitorPage 未来可加 image/video/audio 类型 tab
@@ -381,8 +381,8 @@ interface AnalysisResponse {
 | 10 | cpa-usage-keeper | SQLite 备份 + 保留策略 | P3 | 待评估 |
 | 11 | 内部 | OAuth 401 泛化到所有 OAuth provider | P2 | ✅ 已实现 — isOAuthFile in validators.ts, used in quotaConfigs.ts:450 |
 | 12 | CPA-Manager | Codex Inspection 实时 Key 有效性检测 | P1 | ✅ 已实现——CodexSection 检测按钮 + EditPage 测试连接 |
-| 13 | upstream(b25f722) | SQLite recent_buckets 桶聚合借鉴 | P1 | ✅ 工具已实现——bucketUsageRecords() 固定窗口桶聚合，待 MonitorPage 集成 |
-| 14 | 内部 | Provider 健康检查泛化 | P2 | ✅ useProviderInspect 共享 Hook，Codex/Claude/Gemini/Vertex 已完成 |
+| 13 | upstream(b25f722) | SQLite recent_buckets 桶聚合借鉴 | P1 | ✅ 已集成——bucketUsageRecords() MonitorPage:326 已调用 |
+| 14 | 内部 | Provider 健康检查泛化 | P2 | ✅ 已实现——6 Provider 统一接入 useProviderInspect：Claude、Gemini、Vertex、Codex、OpenAI、Ampcode |
 | 15 | cpa-usage-keeper(v1.7.2) | **API Key×Model 热力图**——Analysis 页面最独特维度，CSS Grid 实现 | P0 | ✅ 已分析——详见 2. v1.7.2 Analysis 页面深度分析 |
 | 16 | cpa-usage-keeper(v1.7.2) | **粒度自动切换**——时间窗口>24h 自动 daily，<=24h 保持 hourly | P1 | ✅ 已分析——MonitorPage HourlyTokenChart/DailyTrendChart 可考虑合并+自动切换 |
 | 17 | cpa-usage-keeper(v1.7.2) | **Requests 折线叠加**——Token 图第二 Y 轴叠加 requests 折线 | P1 | ✅ 已分析——可在 HourlyTokenChart 实现双 Y 轴复合图 |
@@ -405,3 +405,4 @@ interface AnalysisResponse {
 - 2026-05-16: [文档同步] 决策 #11 isOAuthFile 确认已实现于 validators.ts，状态修正为 ✅
 - 2026-05-16: CPA-Manager Login/Setup 流程分离详细设计分析——调研并记录 5 步 Stepper 向导、分流判断层、错误分类系统，新增决策 #21（Stepper 组件），更新决策 #18 状态为 ✅ 已分析
 - 2026-05-16: cpa-usage-keeper v1.7.2 Analysis 页面深度分析——调研并产出 4 类图表设计模式、7 项交互特征、5 个架构亮点、与 MonitorPage 对比 11 项纬度、5 个可借鉴设计模式（P0-P3）。新增决策 #15（热力图 P0）、#16（粒度自动切换 P1）、#17（Requests 叠加 P1）、#18（Doughnut P2）、#19（Tab 结构 P3）、#20（增量表已分析暂不采纳）
+- 2026-05-16: [审计] 综合决策队列全量审查——修正 #2 行号、#4 合并至 #12、#8/#14 状态更新为全 Provider 覆盖、#13 从"待集成"更新为"已集成"
