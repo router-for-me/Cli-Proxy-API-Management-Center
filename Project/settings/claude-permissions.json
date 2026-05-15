@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git remote *)",
+      "Read(//Users/kelen/.Agent-self-evolution-kelen/**)",
+      "Bash(git rm *)",
+      "Bash(git mv *)",
+      "Bash(git check-ignore *)",
+      "Bash(gh api *)",
+      "Bash(gh issue *)"
+    ]
+  }
+}

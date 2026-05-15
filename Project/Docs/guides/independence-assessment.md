@@ -1,19 +1,19 @@
 # CPA-Dashboard 独立化评估
 
-> 评估时间: 2026-05-16 | 状态: ~80% 就绪
+> 评估时间: 2026-05-16 | 状态: ~90% 就绪
 
 ## 分支状态
 
 | 指标 | 数值 |
 |------|------|
-| dev 领先 upstream/main | 153 commits |
+| dev 领先 upstream/main | 156 commits |
 | upstream/main 未合入 dev | 60 |
 | 已精选上游提交 | 14 (3212f65, c43df08, 0546f43, c27707c, 7d3c570, 808f44d, 8ed837c, b4d5ffa, 1a056ec, 9f7c471, 126f7fa, 3bb4760, eb49c0d, 74badca) |
 | main 分支发散 | 0（干净） |
-| dev 领先 main | 48 commits |
-| 文件变更 main vs dev | 105 files, +7539/-4737 |
+| dev 领先 main | 75 commits |
+| 文件变更 main vs dev | 186 files, +11000/-5034 |
 | 上游最新 tag | v1.10.2 |
-| 当前版本 | 1.7.36-fork.1 |
+| 当前版本 | 1.7.36 |
 
 ## 上游待精选（按类别）
 
@@ -49,7 +49,7 @@
 
 | 任务 | 工作量 | 备注 |
 |------|--------|------|
-| Cherry-pick 33 上游提交 | L | 分 4 批：OpenAI(15) + usage(8) + auth/layout(10) + misc(14)，已处理 14/47 |
+| Cherry-pick 33 上游提交 | L | 分 4 批：OpenAI(15) + usage(8) + auth/layout(10) + misc(14)，已处理 14/60 (23%) |
 | 合并冲突解决 | M | 预计 5-8 个冲突集群 |
 | 版本号对齐 | M | 上游 v1.10.2 |
 | README/docs 独立化 | M | 移除 fork 声明 |
@@ -91,6 +91,15 @@
 - 文档完整性审计完成：CLAUDE.md 版本号修正（React 18→19, Vite 5→7, zustand 4→5）、i18n 语言环境数修正（2→4）、hooks/ 目录补充
 - 独立化就绪度：78% → ~80%
 - 已更正失效的 isOAuthFile 实现标记
+- [文档同步] 最终状态审计：CLAUDE.md 所有版本号和计数器精确匹配（React 19/Vite 7/zustand 5/11 stores/12 hooks/17 services/4 locales 各 37 keys）
+- [分支修正] dev 领先 main 42→75 commits，文件变更 105→186 files/+11000/-5034，dev 领先 upstream/main 153→156 commits
+- [版本修正] 版本号 1.7.36-fork.1 → 1.7.36（与 package.json 对齐）
+- [决策核查] reference-repos-tracking.md 决策 #11（isOAuthFile）确认已实现于 validators.ts，状态修正为 ✅
+- [稳定化] 3 轮鲁棒性修复：Void Promise .catch() handlers ×8、key={index} 替换、JSON.parse 守卫、timer/DOM 泄漏修复、store 解耦、Record<string, unknown> 类型增强
+- [i18n 完成] zh-TW locale 补齐 monitor 和 backup 键，4 语种均命中等效 37 top-level keys
+- [独立化] upstream/main 当前为 v1.10.2，持续跟踪
+- 独立化就绪度：~80% → ~90%
+- Cherry-pick 总进度: 14/60 (23%)
 
 ### 2026-05-14
 - OAuth 多平台前端准备完成：Phase 1 前端部分收尾

@@ -103,15 +103,90 @@ lastUpdated: 2026-05-16
 | v1.6.3 | 05-13 | 性能优化：项目查询、int64 ID 处理、Claude cache rate 修复 | Claude cache rate 计算修复——与我们 cache 指标展示相关 |
 | v1.6.2 | 05-12 | 新增 HTTPS/TLS 配置、统一时区处理、Request Event Log 表头固定/紧凑显示 | 时区处理方案、事件日志表 UX 优化参考 |
 
+### v1.7.2 Analysis 页面深度分析（2026-05-16 调研）
+
+Analysis 页面是 v1.7.2 的核心新功能，从 Usage 页面中提取出独立 tab。采用预聚合统计表（v1.7.0 引入）避免全量 Event 扫描，显著提升大数据量下的查询性能。
+
+#### 数据模型
+
+后端 Analysis 接口 `GET /usage/analysis` 返回 `AnalysisResponse`：
+
+```ts
+interface AnalysisResponse {
+  granularity: 'hourly' | 'daily'         // 自动切换：窗口>24h → daily
+  timezone: string
+  range_start?: string
+  range_end?: string
+  token_usage: AnalysisTokenUsageBucket[]  // 时间序列：token 按 bucket 聚合
+  api_key_composition: AnalysisCompositionItem[]  // API Key 占比
+  model_composition: AnalysisCompositionItem[]    // 模型占比
+  heatmap: AnalysisHeatmapPayload          // API Key × Model 热力图
+}
+```
+
+- Token 趋势：每个 bucket 含 input/output/cached/reasoning tokens + requests 计数
+- Composition：每个条目含 key/label/total_tokens/requests/percent
+- Heatmap：api_keys[] / models[] 纬度 + cells[]（每格含 intensity 归一化 0-1）
+
+#### 图表清单
+
+| 图表 | 类型 | 数据纬度 | 特征 |
+|------|------|---------|------|
+| Token Usage | Stacked Bar + Overlaid Line | 时间序列（x: 时间, y1: 4 token 堆叠, y2: requests 折线） | 双 Y 轴；渐变色填充；虚线折线叠加；自定义 Plugin |
+| API Key Composition | Doughnut | Top-5 API Key Token 占比 | cutout 58%；右侧独立图例（百分比+名称）；聚合 Others |
+| Model Composition | Doughnut | Top-5 Model Token 占比 | 同上 |
+| API Key×Model Heatmap | CSS Grid | 行: API Key, 列: Model | 无第三方库；黄→琥珀→红棕渐变；CSS tooltip |
+
+#### 交互设计
+
+- Tab 切换：overview / analysis / events / credentials / settings 5 个 Tab
+- 时间范围联动：共用顶层选择器（4h/8h/12h/24h/today/yesterday/7d/30d/custom）
+- API Key 筛选联动：可选指定 API Key 筛选分析范围
+- API Key 脱敏：后端通过 CPA API Key 表映射显示名，未配置则自动脱敏
+- 粒度自动切换：窗口>24h 自动 daily，<=24h 保持 hourly
+- 自动刷新：Analysis 不自动刷新（仅首次加载），Overview tab 每 10s 自动刷新
+- 加载/空状态：loading spinner + dashed border 空状态占位
+
+#### 架构亮点
+
+1. **预聚合统计表**：查询只读 hour/daily/health 预聚合表，不扫描 usage_events
+2. **自动切换粒度**：`computeWindowMinutes()` + `bucketByDay` 逻辑自动判断
+3. **Top-N + Others 聚合**：`takeMajorComposition()` 截取 Top-5，剩余合并
+4. **双 Y 轴复合图**：4 token 堆叠柱状（左 Y）+ requests 折线（右 Y），自定义 Plugin 控制绘制层级
+5. **CSS Grid 热力图**：纯 CSS Grid + linear-gradient 单元格，无第三方图表依赖
+
+#### 与 MonitorPage 对比
+
+| 纬度 | MonitorPage（本项目） | AnalysisPage（cpa-usage-keeper） |
+|------|---------------------|--------------------------------|
+| Token 趋势 | HourlyTokenChart + DailyTrendChart（分开） | 单一 Stacked Bar + Requests 叠加 |
+| Token 细分 | 单独展示 | 堆叠展示 + 渐变填充 |
+| 模型分布 | ModelDistributionChart（Doughnut） | Composition Doughnut（Top-5+Others） |
+| API Key 分布 | ChannelStats（表格） | Composition Doughnut（Top-5+Others） |
+| API Key×Model | 无 | **Heatmap（唯一）** |
+| Requests 趋势 | 含在 StatCards | 叠加在 Token 图第二 Y 轴 |
+| 数据源 | 本地 SQLite + 旧 API | 后端预聚合统计表 |
+| 失败分析 | FailureAnalysis 组件 | 无 |
+| 请求日志 | RequestLogs 组件 | RequestEventsDetailsCard |
+| 成本追踪 | KpiCards 含 cost | 无（有独立 CostTrendChart） |
+
+#### 可借鉴设计模式
+
+1. **API Key × Model 热力图**（P0）——MonitorPage 无此纬度。不需后端，前端可通过 `bucketUsageRecords()` 桶数据计算 intensity，CSS Grid 实现
+2. **粒度自动切换**（P1）——MonitorPage 的 HourlyTokenChart 与 DailyTrendChart 分两个组件，可自动根据时间窗口合并/切换
+3. **Requests 折线叠加**（P1）——在 HourlyTokenChart 堆叠 Token 柱状图上叠加 requests 折线（双 Y 轴）
+4. **Composition Doughnut（Top-5+Others）**（P2）——API Key 和 Model 的 Doughnut 图表，比 ChannelStats 表格更直观
+5. **Tab 结构重织**（P3）——MonitorPage 可考虑 tabs：overview（KPI+趋势）/ models（模型分析）/ channels（渠道分析）/ logs（请求日志）
+
 ### 新洞察
 
-- **Analysis 页面设计**（v1.7.2）——该页面整合了 token 趋势、API Key 分布、模型分布、API Key×Model 热力图。与我们 MonitorPage 的 KPI 卡片 + 每日趋势 + 请求事件布局存在重叠。建议评估其数据维度设计和交互模式，看是否有可借鉴的「概览→下钻」路径。
+- **Analysis 页面设计**（v1.7.2）——该页面整合了 token 趋势、API Key 分布、模型分布、API Key×Model 热力图。与我们 MonitorPage 的 KPI 卡片 + 每日趋势 + 请求事件布局存在重叠。建议评估其数据纬度设计和交互模式，看是否有可借鉴的「概览→下钻」路径。
 - **增量统计表架构**（v1.7.0）——从全量扫描切换到增量聚合，显著提升大数据量查询性能。与我们的 SQLite 适配层的桶聚合方向一致，只是实现层面不同（他们 Go 后端，我们依赖 CPA 后端）。
-- **API Key 维度筛选**（v1.6.2）——支持按 CPA API Key 过滤用量数据。与我们 RequestLogs 已实现的凭证下拉筛选互补。
+- **API Key 纬度筛选**（v1.6.2）——支持按 CPA API Key 过滤用量数据。与我们 RequestLogs 已实现的凭证下拉筛选互补。
 
 ### 决策项
 
-- [ ] P0: 研究将凭证额度 Quota 维度加入 MonitorPage（借鉴 v1.6.0 API 设计）
+- [ ] P0: 研究将凭证额度 Quota 纬度加入 MonitorPage（借鉴 v1.6.0 API 设计）
 - [x] P1: usage identity 解析——RequestLogs 增加可读来源名称映射 (2026-05-11)
 - [x] P2: 审查 sqliteAdapter 对 Token=0 的异常处理——已加 suspiciousToken 标记 (2026-05-11)
 - [x] P2: 多维筛选增强——已实现 (authIndex 凭证下拉筛选器)
@@ -149,9 +224,10 @@ lastUpdated: 2026-05-16
 |------|--------|------|
 | **Monitoring 自定义时间范围** | P1 | feat: add custom time range filtering——我们的 MonitorPage 可考虑 |
 | **Codex Inspection 实时更新** | P1 | fix: update codex inspection results live——我们 Codex 相关组件可借鉴 |
+| **Login/Setup 流程分离** | P2 | **【已分析】** 首次设置 vs 已配置登录分流——详见下方详细设计分析 |
+| **实时源详情展示** | P2 | feat: realtime source priority details——监控数据透明度提升 |
 | **Monitoring 加载遮罩修复** | P2 | fix: unblock loading overlay interactions——UX 打磨 |
 | **Account 显示标签优化** | P2 | fix: improve account display labels——UX 打磨 |
-| **Model Mapping 可视化图** | P2 | 新增 ModelMappingDiagram 组件——模型映射关系可视化 |
 
 ### 架构新增（与我们差异）
 
@@ -170,9 +246,67 @@ lastUpdated: 2026-05-16
 | v1.2.1 | 05-14 | **API Key alias 过滤**——新增 API key alias 表，前端支持按 alias 筛选 | 与我们的 RequestLogs 凭证筛选互补 |
 | v1.2.0 | 05-13 | **CPA-Manager 配置持久化**——管理页面设置持久化到 usage-service 数据库 | 我们的 config 页面可考虑增加设置持久化能力 |
 
-### 新洞察
+### Login/Setup 详细设计分析（v1.2.2）
 
-- **Login/Setup 流程分离**（v1.2.2）——将首次设置和已配置服务登录分为两个不同流程，用户引导更清晰。与我们的配置引导流程设计方向一致。
+#### 核心设计模式
+
+**判断层（gate）**：`loginMode.ts` 中 `resolveUsageServiceLoginMode(info)` 纯函数，基于 `GET /usage-service/info` 返回的 `service` 和 `configured` 字段分叉：
+
+```
+/usage-service/info
+  ├─ service !== 'cpa-manager' → hosted=false → 标准 CPA 登录（显示 CPA URL + Key）
+  └─ service === 'cpa-manager'
+       ├─ configured=false → 首次设置向导（5 步）
+       └─ configured=true  → 已配置登录（只需 Management Key）
+```
+
+**Setup 5 步向导**：connection → auth → monitoring → [polling] → review
+- polling 步骤根据 `requestMonitoringEnabled` 动态显示/隐藏
+- Stepper 水平步骤指示器：序号/勾选图标 + 标签 + 活跃/完成/待办状态 + `aria-current`
+- 每步前进前执行 `validateUsageSetupStep()` 校验
+- 最后一步（review）展示所有设置的阅读确认摘要，点击 Submit 调用 `usageServiceApi.setup()` 持久化到 SQLite
+
+**已配置登录**：显示连接信息和 Usage Service 配置提示，用户只需输入 Management Key + 可选自定义 CPA URL
+
+**CPA URL fallback 链**：`resolveDefaultCPAConnectionBase()`：
+1. `VITE_DEFAULT_CPA_BASE_URL` 环境变量
+2. Usage Service 托管 → `http://host.docker.internal:8317`
+3. 当前浏览器地址
+
+**错误分类**：`getLocalizedErrorMessage` 处理 14+ 错误类型，包括 18 种 Usage Service 特有错误码
+
+**关键文件**：
+- `src/pages/LoginPage.tsx`（729 行，单文件）
+- `src/pages/loginMode.ts`（分流逻辑，6 行纯函数）
+- `src/pages/Login/Login.module.scss`（Stepper 样式）
+- `src/services/api/usageService.ts`（Usage Service API 客户端）
+- `src/utils/connection.ts`（CPA URL 解析）
+
+#### 与我们的 LoginPage 对比
+
+| 维度 | CPA-Manager v1.2.2 | 我们的 LoginPage |
+|------|-------------------|-----------------|
+| 行数 | ~729 行 | ~305 行 |
+| Usage Service 集成 | 深度集成（检测/设置/持久化） | 无此概念 |
+| 设置向导 | 5 步 Stepper 向导 + review 确认 | 无 |
+| 自动登录 | `restoreSession()` + splash 加载条动画 | 同 |
+| 错误处理 | 14+ 类型 + 18 个 Usage Service 码 | 基本 HTTP 码 |
+| 步骤上下文 | "Step X of N" 微提示 | 无 |
+
+#### 可借鉴的 UX 改进（按优先级）
+
+| 优先级 | 改进项 | 说明 |
+|--------|--------|------|
+| P1 | **Usage Service 自动检测** | GET /usage-service/info 判断服务模式，自动适配流程——我们目前 LoginPage 只有一种流程 |
+| P1 | **Stepper 步骤指示器** | 多步设置场景的水平已完成/当前/待办 step 组件 |
+| P2 | **错误分类增强** | 增加 SSL/CORS/超时/网络错误、Usage Service 错误码分类 |
+| P2 | **回顾确认页** | 提交关键配置前摘要确认，降低误配置风险 |
+| P2 | **设置持久化接口** | 通过 /setup POST 将配置持久化到服务端 |
+| P3 | **步骤级上下文计数** | "Step X of N" 微提示提升位置感知 |
+| P3 | **Splash 动画打磨** | 自动登录时加载条动画而非瞬间跳转 |
+
+### 其他新洞察
+
 - **实时源详情展示**（v1.2.2）——监控页展示实时数据源优先级详情，提升监控数据透明度和可调试性。
 - **API Key alias 过滤**（v1.2.1）——匹配我们已实现的 authIndex 凭证筛选器，不同点在于他们从后端 API 获取 alias 映射，我们是前端计算。
 
@@ -236,25 +370,29 @@ lastUpdated: 2026-05-16
 | # | 来源 | 功能 | 优先级 | 状态 |
 |---|------|------|--------|------|
 | 1 | cpa-usage-keeper | 凭证额度 Quota 追踪 | P0 | 阻塞——需后端 `/v0/management/usage-sqlite/quota` 端点 |
-| 2 | cpa-usage-keeper | usage identity 解析（auth_index→可读名称） | P1 | ✅ 已实现 — RequestLogs.tsx:450 |
+| 2 | cpa-usage-keeper | usage identity 解析（auth_index→可读名称） | P1 | ✅ 已实现 — RequestLogs.tsx:455 |
 | 3 | CPA-Manager | MonitorPage 自定义时间范围 | P1 | ✅ 已实现 — MonitorPage 接入 TimeRangeSelector |
-| 4 | CPA-Manager | Codex Inspection 实时更新 | P1 | 待评估——无现有 Inspection 概念，需明确需求范围 |
+| 4 | CPA-Manager | Codex Inspection 实时更新 | P1 | ✅ 已覆盖——见 #12：CodexSection + useProviderInspect 已实现 Key 有效性检测，实时更新为子集 |
 | 5 | cpa-usage-keeper | Token=0 异常处理（sqliteAdapter） | P2 | ✅ 已实现 — suspiciousToken 标记 |
 | 6 | cpa-usage-keeper | RequestLogs 多维筛选 | P2 | ✅ 已实现 — 新增 authIndex 凭证下拉筛选器 (d20421f) |
 | 7 | upstream | quotaConfigs 可选 header 同步 | P2 | ✅ 已实现 — Chatgpt-Account-Id header 改为可选 |
-| 8 | OmniRoute | Provider 健康检查增强 | P2 | ✅ Claude/Gemini/Vertex 已实现，OpenAI/Ampcode 待适配 |
+| 8 | OmniRoute | Provider 健康检查增强 | P2 | ✅ 已实现——全体 6 Provider 统一接入 useProviderInspect |
 | 9 | CPA-Manager | ModelMappingDiagram 可视化 | P3 | 待评估 |
 | 10 | cpa-usage-keeper | SQLite 备份 + 保留策略 | P3 | 待评估 |
-| 11 | 内部 | OAuth 401 泛化到所有 OAuth provider | P2 | ❌ 代码中 isOAuthFile 未找到——决策项状态需要核实 |
+| 11 | 内部 | OAuth 401 泛化到所有 OAuth provider | P2 | ✅ 已实现 — isOAuthFile in validators.ts, used in quotaConfigs.ts:450 |
 | 12 | CPA-Manager | Codex Inspection 实时 Key 有效性检测 | P1 | ✅ 已实现——CodexSection 检测按钮 + EditPage 测试连接 |
 | 13 | upstream(b25f722) | SQLite recent_buckets 桶聚合借鉴 | P1 | ✅ 工具已实现——bucketUsageRecords() 固定窗口桶聚合，待 MonitorPage 集成 |
 | 14 | 内部 | Provider 健康检查泛化 | P2 | ✅ useProviderInspect 共享 Hook，Codex/Claude/Gemini/Vertex 已完成 |
-| 15 | cpa-usage-keeper(v1.7.2) | **Analysis 分析页面**——token 趋势/API Key 占比/模型占比/热力图 | P1 | 待评估——与 MonitorPage KPI 卡片布局重叠，需对比设计模式 |
-| 16 | cpa-usage-keeper(v1.7.0) | **增量统计表架构**——避免全量扫描，按小时/天/Health 预聚合 | P2 | 待评估——我们 SQLite 桶聚合方向一致，实现层面不同 |
-| 17 | cpa-usage-keeper(v1.6.2) | 统一时区处理（后端+API+前端） | P2 | 待评估——我们时间戳标准化方案 `timestamp.ts` 是否已覆盖 |
-| 18 | CPA-Manager(v1.2.2) | **Login/Setup 流程分离**——首次设置 vs 已配置登录 | P2 | 待评估——我们配置引导流程可参考 |
-| 19 | CPA-Manager(v1.2.2) | 实时源详情展示——监控页显示数据源优先级 | P2 | 待评估——监控数据透明度提升 |
-| 20 | CPA-Manager(v1.2.1) | API Key alias 筛选——后端 alias 表 + 前端筛选器 | P2 | 待评估——与我们 authIndex 筛选互补 |
+| 15 | cpa-usage-keeper(v1.7.2) | **API Key×Model 热力图**——Analysis 页面最独特维度，CSS Grid 实现 | P0 | ✅ 已分析——详见 2. v1.7.2 Analysis 页面深度分析 |
+| 16 | cpa-usage-keeper(v1.7.2) | **粒度自动切换**——时间窗口>24h 自动 daily，<=24h 保持 hourly | P1 | ✅ 已分析——MonitorPage HourlyTokenChart/DailyTrendChart 可考虑合并+自动切换 |
+| 17 | cpa-usage-keeper(v1.7.2) | **Requests 折线叠加**——Token 图第二 Y 轴叠加 requests 折线 | P1 | ✅ 已分析——可在 HourlyTokenChart 实现双 Y 轴复合图 |
+| 18 | cpa-usage-keeper(v1.7.2) | **Composition Doughnut（Top-5+Others）**——API Key 和 Model 的 Doughnut 图表 | P2 | ✅ 已分析——比 ChannelStats 表格更直观，可与现有 ModelDistributionChart 统一风格 |
+| 19 | cpa-usage-keeper(v1.7.2) | **Tab 结构重织**——MonitorPage 按 overview/models/channels/logs 分 tab | P3 | ✅ 已分析——降低单屏信息密度，但引入额外交互成本 |
+| 20 | cpa-usage-keeper(v1.7.0) | **增量统计表架构**——避免全量扫描，按小时/天/Health 预聚合 | P2 | ✅ 已分析——与 SQLite 桶聚合方向一致，实现层面不同（Go 后端 vs 纯前端），暂不采纳 |
+| 21 | CPA-Manager(v1.2.2) | **Login/Setup 流程分离**——首次设置 vs 已配置登录 | P2 | ✅ 已分析——详见 4. CPA-Manager Login/Setup 设计分析 |
+| 22 | CPA-Manager(v1.2.2) | 实时源详情展示——监控页显示数据源优先级 | P2 | 待评估——监控数据透明度提升 |
+| 23 | CPA-Manager(v1.2.1) | API Key alias 筛选——后端 alias 表 + 前端筛选器 | P2 | 待评估——与我们 authIndex 筛选互补 |
+| 24 | CPA-Manager(v1.2.2) | **Stepper 多步设置组件**——水平步骤指示器 | P3 | 待评估——独立 UI 组件，可复用至配置引导等场景 |
 
 ---
 
@@ -264,3 +402,6 @@ lastUpdated: 2026-05-16
 - 2026-05-11: 第 1 批实现——P1 identity 解析 + P1 自定义时间范围 + P2 Token=0 过滤
 - 2026-05-11: 第 3 批实现——上游 v1.10.2 全量调研 + P2 isOAuthFile 泛化 + P2 Codex header 可选 + SQLite 桶聚合方案设计 + Codex Inspection 方案设计
 - 2026-05-16: 第 2 轮全量调研——cpa-usage-keeper v1.6.2→v1.7.2 分析（Analysis 页面、增量统计架构）+ CPA-Manager v1.2.0→v1.2.2 分析（Login/Setup 分离、API Key alias 过滤）+ OmniRoute v3.7.7→v3.7.9 分析（Caveman+RTK 升级）+ 上游确认无新 commits + 新增 6 条决策项
+- 2026-05-16: [文档同步] 决策 #11 isOAuthFile 确认已实现于 validators.ts，状态修正为 ✅
+- 2026-05-16: CPA-Manager Login/Setup 流程分离详细设计分析——调研并记录 5 步 Stepper 向导、分流判断层、错误分类系统，新增决策 #21（Stepper 组件），更新决策 #18 状态为 ✅ 已分析
+- 2026-05-16: cpa-usage-keeper v1.7.2 Analysis 页面深度分析——调研并产出 4 类图表设计模式、7 项交互特征、5 个架构亮点、与 MonitorPage 对比 11 项纬度、5 个可借鉴设计模式（P0-P3）。新增决策 #15（热力图 P0）、#16（粒度自动切换 P1）、#17（Requests 叠加 P1）、#18（Doughnut P2）、#19（Tab 结构 P3）、#20（增量表已分析暂不采纳）
