@@ -2,7 +2,7 @@
  * Quota configuration definitions.
  */
 
-import type { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import type {
   AntigravityQuotaGroup,
