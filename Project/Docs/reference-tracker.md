@@ -6,7 +6,7 @@
 
 | 仓库 | 本地路径 | 分支 | 最新提交 | 日期 |
 |------|---------|------|---------|------|
-| cockpit-tools | cockpit-tools | main | `158acf0` v0.23.3 | 2026-05-13 |
+| cockpit-tools | cockpit-tools | main | `1bd2c9a` v0.23.4 | 2026-05-15 |
 | Kiro-account-manager | Kiro-account-manager | main | `f08ea9c` v1.6.3 | 2026-05-14 |
 | codex2api | codex2api | main | `4922b64` docs(readme): move Sponsors section to the top | 2026-05-14 |
 | sub2api | sub2api | main | `18790386` fix(deploy): 移除端口映射 | 2026-05-12 |
@@ -28,6 +28,9 @@ done
 ```
 
 ## 变更日志
+
+### 2026-05-15
+- cockpit-tools: v0.23.4 (1bd2c9a, release), Kiro-account-manager: 4 commits pending sync
 
 ### 2026-05-14
 - cockpit-tools: v0.23.3 (158acf0, homebrew cask 更新), Kiro-account-manager: v1.6.2→v1.6.3 (f08ea9c, Claude Code 兼容性增强), codex2api: 44 commits since 71d0ee5 (4922b64), CLIProxyAPI: PR #3345 fix (722b82b1)
