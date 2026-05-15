@@ -40,4 +40,11 @@ export const DEFAULT_MODEL_PRICES: Record<string, ModelPrice> = {
   // DeepSeek
   'deepseek-chat': { prompt: 0.14, completion: 0.28, cache: 0.014 },
   'deepseek-reasoner': { prompt: 0.55, completion: 2.19, cache: 0.14 },
+
+  // Xiaomi MiMo (≤256K standard context)
+  'mimo-v2.5-pro': { prompt: 1.0, completion: 3.0, cache: 0.2 },
+  'mimo-v2-pro': { prompt: 1.0, completion: 3.0, cache: 0.2 },
+  'mimo-v2.5': { prompt: 0.4, completion: 2.0, cache: 0.08 },
+  'mimo-v2-omni': { prompt: 0.4, completion: 2.0, cache: 0.08 },
+  'mimo-v2-flash': { prompt: 0.1, completion: 0.3, cache: 0.01 },
 };
