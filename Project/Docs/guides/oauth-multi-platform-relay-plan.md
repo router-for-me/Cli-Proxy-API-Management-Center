@@ -117,5 +117,33 @@ type OAuthProvider interface {
 ### 2026-05-14
 - Phase 1 前端准备完成：i18n 骨架搭建 (9 provider keys)、OAuthPage 新增 9 个 provider 卡片 (d9f6cb7)、OAuthProvider 类型去重统一到 @/types/oauth、SCSS @use 变量导入修复 (4208519)
 
+### 2026-05-15
+- Phase 1 全部完成：OAuthPage 15 个 provider 卡片、品牌 SVG 图标、i18n 三语完整、类型/常量同步
+- WorkBuddy 新增为第 15 个 provider（匹配 cockpit-tools 13 平台 + anthropic/kimi）
+- Phase 2/3 阻塞于后端 API。下方为后端所需实现的精确 API 契约。
+
+## Phase 2/3 后端 API 契约
+
+后端需在 CLIProxyAPI 的 `internal/auth/oauth/` 下为每个新 provider 实现 OAuth handler。
+
+**通用端点格式**: `GET /{provider}-auth-url?is_webui=true`
+
+各 provider 参考实现：
+
+| Provider | 参考仓库 | 参考文件 |
+|----------|---------|---------|
+| copilot | cockpit-tools | `github_copilot_oauth.rs` — GitHub device_code flow |
+| windsurf | cockpit-tools | `windsurf_oauth.rs` / `windsurf_devin_oauth.rs` — Devin auth |
+| kiro | cockpit-tools | `kiro_oauth.rs` — AmazonQ OAuth |
+| cursor | cockpit-tools | `cursor_oauth.rs` |
+| codebuddy | cockpit-tools | `codebuddy_oauth.rs` |
+| codebuddy-cn | cockpit-tools | `codebuddy_cn_oauth.rs` — 共享 CodebuddySuiteAccountBase |
+| qoder | cockpit-tools | `qoder_oauth.rs` |
+| trae | cockpit-tools | `trae_oauth.rs` — 需 app version >= 3.5.54 |
+| zed | cockpit-tools | `zed_oauth.rs` |
+| workbuddy | cockpit-tools | `workbuddy_oauth.rs` — 与 codebuddy-cn 共享 API 端点 |
+
+**前端已就绪**：`src/services/api/oauth.ts` 的 `oauthApi.startAuth(provider)` 已支持所有 15 个 provider。
+
 ### 2026-05-12
 - 完成 4 个参考仓库克隆与深度分析，完成 9 个目标平台 OAuth 机制调研，生成规划文档
