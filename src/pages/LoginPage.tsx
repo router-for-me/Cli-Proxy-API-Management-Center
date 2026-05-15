@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
@@ -109,13 +109,17 @@ export function LoginPage() {
     [setLanguage]
   );
 
+  const initTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
   const init = useCallback(async () => {
+    let didAutoLogin = false;
     try {
       const autoLoggedIn = await restoreSession();
       if (autoLoggedIn) {
+        didAutoLogin = true;
         setAutoLoginSuccess(true);
         // 延迟跳转，让用户看到成功动画
-        setTimeout(() => {
+        initTimerRef.current = setTimeout(() => {
           const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
           navigate(redirect, { replace: true });
         }, 1500);
@@ -125,14 +129,17 @@ export function LoginPage() {
         setRememberPassword(storedRememberPassword || Boolean(storedKey));
       }
     } finally {
-      if (!autoLoginSuccess) {
+      if (!didAutoLogin) {
         setAutoLoading(false);
       }
     }
-  }, [restoreSession, navigate, location, storedBase, detectedBase, storedKey, storedRememberPassword, autoLoginSuccess]);
+  }, [restoreSession, navigate, location, storedBase, detectedBase, storedKey, storedRememberPassword]);
 
   useEffect(() => {
     init();
+    return () => {
+      if (initTimerRef.current) clearTimeout(initTimerRef.current);
+    };
   }, [init]);
 
   const handleSubmit = useCallback(async () => {

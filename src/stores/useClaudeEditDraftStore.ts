@@ -10,7 +10,7 @@
 
 import type { SetStateAction } from 'react';
 import { create } from 'zustand';
-import type { ProviderFormState } from '@/components/providers/types';
+import type { ProviderFormState } from '@/types/provider-form';
 
 export type ClaudeTestStatus = 'idle' | 'loading' | 'success' | 'error';
 

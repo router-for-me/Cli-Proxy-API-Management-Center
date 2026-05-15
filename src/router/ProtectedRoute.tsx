@@ -17,12 +17,14 @@ export function ProtectedRoute({ children }: { children: ReactElement }) {
         setChecking(true);
         try {
           await checkAuth();
+        } catch {
+          // checkAuth 失败时静默处理，直接进入登录页
         } finally {
           setChecking(false);
         }
       }
     };
-    tryRestore();
+    void tryRestore();
   }, [apiBase, isAuthenticated, managementKey, checkAuth]);
 
   if (checking) {

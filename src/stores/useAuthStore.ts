@@ -204,7 +204,11 @@ export const useAuthStore = create<AuthStoreState>()(
           return data ? JSON.stringify(data) : null;
         },
         setItem: (name, value) => {
-          obfuscatedStorage.setItem(name, JSON.parse(value));
+          try {
+            obfuscatedStorage.setItem(name, JSON.parse(value));
+          } catch {
+            // 反序列化失败时跳过写入，避免存储损坏扩散
+          }
         },
         removeItem: (name) => {
           obfuscatedStorage.removeItem(name);
@@ -221,8 +225,9 @@ export const useAuthStore = create<AuthStoreState>()(
   )
 );
 
-// 监听全局未授权事件
-if (typeof window !== 'undefined') {
+// 监听全局未授权事件（模块级注册守卫防 HMR 重复累加）
+if (typeof window !== 'undefined' && !(window as unknown as Record<string, unknown>).__authListenersRegistered) {
+  (window as unknown as Record<string, unknown>).__authListenersRegistered = true;
   window.addEventListener('unauthorized', () => {
     useAuthStore.getState().logout();
   });

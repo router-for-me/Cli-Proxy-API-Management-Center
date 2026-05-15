@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -22,11 +22,6 @@ export function RestoreModal({ open, onClose, onRestore, loading, filename }: Re
     config: false,
     usage: true,
   });
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (open) setScope({ localStorage: true, config: false, usage: true });
-  }, [open]);
 
   const scopeItems: { key: keyof BackupScope; label: string; hint: string }[] = [
     { key: 'localStorage', label: t('backup.scope_preferences'), hint: t('backup.scope_preferences_hint') },

@@ -1,7 +1,7 @@
 ---
 description: CLIProxyAPI 上游仓库兼容性追踪——API 端点、版本变化、对接状态
 version: 1.0.0
-lastUpdated: 2026-05-11
+lastUpdated: 2026-05-16
 ---
 
 # CLIProxyAPI 上游追踪 / Upstream Compatibility Tracking
@@ -43,5 +43,6 @@ lastUpdated: 2026-05-11
 
 ## 更新日志
 
+- 2026-05-16: 文档审计——更新 lastUpdated
 - 2026-05-15: PR #3345 方案被上游拒绝（api_tools.go 已删除相关代码）。SQLite 端点验证通过。Home 控制面为上游新方向，暂不跟进。
 - 2026-05-11: 初始调研——Go 后端结构、API 端点清单、前端对接状态

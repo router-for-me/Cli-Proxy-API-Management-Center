@@ -1,6 +1,6 @@
 # CPA-Dashboard-kelen
 
-CLI Proxy API 管理中心的独立 fork 前端项目。React 18 + TypeScript + Vite，SCSS modules + CSS custom properties 主题系统，react-i18next 国际化，zustand 状态管理，react-router-dom Hash 路由。
+CLI Proxy API 管理中心的独立 fork 前端项目。React 19 + TypeScript 5.9 + Vite 7，SCSS modules + CSS custom properties 主题系统，react-i18next 国际化，zustand 状态管理，react-router-dom Hash 路由。
 
 ## 项目结构
 
@@ -24,6 +24,7 @@ src/
 ├── services/api/        # API 客户端层（axios, 17 个服务模块）
 ├── stores/              # zustand 全局状态（11 个 store）
 ├── stores/index.ts      # store 统一导出
+├── hooks/               # 自定义 Hook（12 个：useApi, useSqliteUsage, useLocalStorage, ...）
 ├── utils/               # 纯函数工具
 │   ├── usage.ts         # 核心：usage 数据解析（UsageDetail, collectUsageDetails, TokenBreakdown）
 │   ├── format.ts        # 格式化（数字、日期、API key 脱敏）
@@ -33,7 +34,7 @@ src/
 │   └── clipboard.ts     # 剪贴板操作
 ├── types/               # TypeScript 类型定义
 ├── data/                # 静态数据（modelPricePresets.ts 模型价格预设）
-├── i18n/locales/        # 翻译文件（en.json, zh-CN.json）
+├── i18n/locales/        # 翻译文件（en.json, zh-CN.json, zh-TW.json, ru.json）
 ├── styles/              # 全局样式
 │   ├── themes.scss      # CSS 自定义属性主题（light/dark）
 │   ├── variables.scss   # SCSS 变量（颜色、间距、圆角、阴影、z-index）
@@ -47,11 +48,11 @@ src/
 
 | 领域 | 技术 |
 |------|------|
-| 框架 | React 18 + TypeScript 5 |
-| 构建 | Vite 5 + vite-plugin-singlefile |
+| 框架 | React 19 + TypeScript 5.9 |
+| 构建 | Vite 7 + vite-plugin-singlefile |
 | 样式 | SCSS modules + CSS custom properties |
-| 路由 | react-router-dom HashRouter（ProtectedRoute 守卫） |
-| 状态 | zustand 4 |
+| 路由 | react-router-dom 7 HashRouter（ProtectedRoute 守卫） |
+| 状态 | zustand 5 |
 | 图表 | chart.js + react-chartjs-2 |
 | HTTP | axios → apiClient (services/api/client.ts) |
 | i18n | react-i18next + 本地 JSON |
@@ -68,7 +69,7 @@ src/
 - **原则**: 禁止硬编码 hex 颜色，使用 SCSS 变量或 CSS 自定义属性 + fallback
 
 ### i18n
-- 两个 locale: `en.json` 和 `zh-CN.json`，顶级键数量必须一致
+- 四个 locale: `en.json`, `zh-CN.json`, `zh-TW.json`, `ru.json`，顶级键数量必须一致（zh-TW 目前 35 v.s. 37，待补齐 `monitor` 和 `backup`）
 - `useTranslation()` 返回的 `t` 函数，使用带命名空间的键：`'usage_stats.request_events_title'`
 - 所有用户可见文字必须通过 `t()` 调用
 

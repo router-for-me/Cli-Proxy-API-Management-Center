@@ -10,8 +10,8 @@
 
 import type { SetStateAction } from 'react';
 import { create } from 'zustand';
-import type { OpenAIFormState } from '@/components/providers/types';
-import { buildApiKeyEntry } from '@/components/providers/utils';
+import type { OpenAIFormState } from '@/types/provider-form';
+import { buildApiKeyEntry } from '@/utils/providerBuilders';
 
 export type OpenAITestStatus = 'idle' | 'loading' | 'success' | 'error';
 

@@ -16,7 +16,7 @@ export function downloadBlob({ filename, blob, revokeDelayMs = 1000 }: DownloadB
 
   window.setTimeout(() => {
     window.URL.revokeObjectURL(url);
-    link.remove();
+    if (link.parentNode) link.remove();
   }, revokeDelayMs);
 }
 

@@ -1,6 +1,6 @@
 # OAuth 多平台登录中转支持 — 研究与规划
 
-> 创建时间: 2026-05-12 | 状态: Phase 1 完成
+> 创建时间: 2026-05-12 | 最后更新: 2026-05-16 | 状态: Phase 1 完成
 
 ## 目标
 
@@ -116,6 +116,9 @@ type OAuthProvider interface {
 
 ### 2026-05-14
 - Phase 1 前端准备完成：i18n 骨架搭建 (9 provider keys)、OAuthPage 新增 9 个 provider 卡片 (d9f6cb7)、OAuthProvider 类型去重统一到 @/types/oauth、SCSS @use 变量导入修复 (4208519)
+
+### 2026-05-16
+- 文档审计——更新 lastUpdated 和日期戳
 
 ### 2026-05-15
 - Phase 1 全部完成：OAuthPage 15 个 provider 卡片、品牌 SVG 图标、i18n 三语完整、类型/常量同步

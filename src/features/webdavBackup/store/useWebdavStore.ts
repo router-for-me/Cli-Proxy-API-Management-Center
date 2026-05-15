@@ -86,7 +86,11 @@ export const useWebdavStore = create<WebdavStoreState>()(
           return data ? JSON.stringify(data) : null;
         },
         setItem: (name, value) => {
-          secureStorage.setItem(name, JSON.parse(value));
+          try {
+            secureStorage.setItem(name, JSON.parse(value));
+          } catch {
+            // 反序列化失败时跳过写入，避免存储损坏扩散
+          }
         },
         removeItem: (name) => {
           secureStorage.removeItem(name);

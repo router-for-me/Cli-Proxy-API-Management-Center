@@ -1,12 +1,12 @@
 # CPA-Dashboard 独立化评估
 
-> 评估时间: 2026-05-15 | 状态: ~78% 就绪
+> 评估时间: 2026-05-16 | 状态: ~80% 就绪
 
 ## 分支状态
 
 | 指标 | 数值 |
 |------|------|
-| dev 领先 upstream/main | 129 commits |
+| dev 领先 upstream/main | 153 commits |
 | upstream/main 未合入 dev | 60 |
 | 已精选上游提交 | 14 (3212f65, c43df08, 0546f43, c27707c, 7d3c570, 808f44d, 8ed837c, b4d5ffa, 1a056ec, 9f7c471, 126f7fa, 3bb4760, eb49c0d, 74badca) |
 | main 分支发散 | 0（干净） |
@@ -86,6 +86,11 @@
 - i18n 键修复：SystemPage GitHub 链接从无效仓库纠正为 fork 地址 (calonye/Cli-Proxy-API-Management-Center-fork)
 - 独立化就绪度：75% → ~78%
 - Cherry-pick 总进度: 14/47 (30%)
+
+### 2026-05-16
+- 文档完整性审计完成：CLAUDE.md 版本号修正（React 18→19, Vite 5→7, zustand 4→5）、i18n 语言环境数修正（2→4）、hooks/ 目录补充
+- 独立化就绪度：78% → ~80%
+- 已更正失效的 isOAuthFile 实现标记
 
 ### 2026-05-14
 - OAuth 多平台前端准备完成：Phase 1 前端部分收尾

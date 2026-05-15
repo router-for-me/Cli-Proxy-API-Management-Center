@@ -38,9 +38,18 @@ export function RestoreCard() {
   }, [serverUrl, loadHistory]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    refresh();
-  }, [refresh, lastBackupTime]);
+    let cancelled = false;
+    const load = async () => {
+      if (!serverUrl) {
+        if (!cancelled) setFiles([]);
+        return;
+      }
+      const result = await loadHistory();
+      if (!cancelled) setFiles(result);
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [serverUrl, loadHistory, lastBackupTime]);
 
   const handleRestore = useCallback(
     async (scope: BackupScope) => {
