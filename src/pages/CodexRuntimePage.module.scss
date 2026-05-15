@@ -1,0 +1,316 @@
+@use '../styles/variables' as *;
+@use '../styles/mixins' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.description {
+  margin: $spacing-sm 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: $spacing-sm;
+
+  @media (max-width: 1400px) {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+}
+
+.summaryBubble {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  span {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 700;
+    word-break: break-word;
+  }
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+
+  @include mobile {
+    width: 100%;
+  }
+}
+
+.statsInfo {
+  padding: 8px 12px;
+  background-color: var(--bg-secondary);
+  border-radius: $radius-md;
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.refreshAllButton:global(.btn.btn-sm) {
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.errorBox,
+.inlineError {
+  padding: $spacing-md;
+  background-color: rgba($error-color, 0.1);
+  border: 1px solid var(--danger-color);
+  border-radius: $radius-md;
+  color: var(--danger-color);
+  font-size: 14px;
+}
+
+.grid {
+  display: grid;
+  gap: $spacing-md;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  background-image: linear-gradient(180deg, rgba(230, 246, 255, 0.2), rgba(230, 246, 255, 0));
+}
+
+.cardExhausted {
+  background-image: linear-gradient(180deg, rgba(255, 228, 230, 0.92), rgba(255, 241, 242, 0.78));
+  border-color: rgba(244, 114, 182, 0.24);
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+}
+
+.cardTopMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.statusBadge,
+.flagBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  border-color: rgba(21, 128, 61, 0.18);
+}
+
+.warn {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border-color: rgba(180, 83, 9, 0.18);
+}
+
+.info {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  border-color: rgba(29, 78, 216, 0.18);
+}
+
+.danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.18);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.kvList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.kvRow {
+  display: flex;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 90%, transparent);
+  border-radius: $radius-md;
+
+  span {
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    text-align: right;
+    word-break: break-word;
+  }
+}
+
+.kvRowProgress {
+  position: relative;
+  overflow: hidden;
+
+  span,
+  strong {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.kvRowProgressFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.progressOk .kvRowProgressFill {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.24), rgba(34, 197, 94, 0.14));
+}
+
+.progressWarn .kvRowProgressFill {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.24), rgba(245, 158, 11, 0.14));
+}
+
+.progressDanger .kvRowProgressFill {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.24), rgba(239, 68, 68, 0.14));
+}
+
+.quotaGrid,
+.scoreGrid {
+  display: grid;
+  gap: $spacing-sm;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quotaWindow,
+.scoreTile {
+  padding: $spacing-md;
+  border-radius: $radius-lg;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+}
+
+.quotaWindowTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: $spacing-sm;
+}
+
+.scoreTile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  span {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  strong {
+    font-size: 22px;
+    color: var(--text-primary);
+  }
+}
+
+.scoreAdjuster {
+  display: flex;
+  gap: $spacing-xs;
+  margin-top: $spacing-xs;
+
+  :global(.btn) {
+    min-width: 36px;
+    padding-inline: 0;
+  }
+}
+
+.manualScoreEditor {
+  display: grid;
+  gap: $spacing-sm;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
