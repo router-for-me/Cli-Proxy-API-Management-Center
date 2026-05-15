@@ -191,7 +191,7 @@ export function LogsPage() {
       logRequestInFlightRef.current = false;
       if (pendingFullReloadRef.current) {
         pendingFullReloadRef.current = false;
-        void loadLogs(false);
+        void loadLogs(false).catch((err) => console.error('Failed to reload logs:', err));
       }
     }
   }, [connectionStatus, t]);
@@ -275,7 +275,7 @@ export function LogsPage() {
   useEffect(() => {
     if (activeTab !== 'errors') return;
     if (connectionStatus !== 'connected') return;
-    void loadErrorLogs();
+    void loadErrorLogs().catch((err) => console.error('Failed to load error logs:', err));
   }, [activeTab, connectionStatus, requestLogEnabled, loadErrorLogs]);
 
   useEffect(() => {
@@ -744,7 +744,7 @@ export function LogsPage() {
                           key={`${logState.visibleFrom + index}-${line.raw}`}
                           className={rowClassNames.join(' ')}
                           onDoubleClick={() => {
-                            void copyLogLine(line.raw);
+                            void copyLogLine(line.raw).catch(() => {});
                           }}
                           onPointerDown={(event) => startLongPress(event, line.requestId)}
                           onPointerUp={cancelLongPress}
@@ -930,7 +930,7 @@ export function LogsPage() {
                 variant="secondary"
                 onClick={() => {
                   if (trace.traceLogLine?.requestId) {
-                    void downloadRequestLog(trace.traceLogLine.requestId);
+                    void downloadRequestLog(trace.traceLogLine.requestId).catch(() => {});
                   }
                 }}
                 loading={requestLogDownloading}
@@ -1099,7 +1099,7 @@ export function LogsPage() {
             <Button
               onClick={() => {
                 if (requestLogId) {
-                  void downloadRequestLog(requestLogId);
+                  void downloadRequestLog(requestLogId).catch(() => {});
                 }
               }}
               loading={requestLogDownloading}

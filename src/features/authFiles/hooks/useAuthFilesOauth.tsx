@@ -108,7 +108,7 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
       setAllProviderModels(nextModels);
     };
 
-    void loadAllModels();
+    void loadAllModels().catch((err) => console.error('Failed to load all models:', err));
 
     return () => {
       cancelled = true;

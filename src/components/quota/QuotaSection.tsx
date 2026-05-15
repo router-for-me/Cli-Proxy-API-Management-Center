@@ -168,7 +168,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
   const handleRefresh = useCallback(() => {
     pendingQuotaRefreshRef.current = true;
-    void triggerHeaderRefresh();
+    void triggerHeaderRefresh().catch((err) => console.error('Header refresh failed:', err));
   }, []);
 
   useEffect(() => {

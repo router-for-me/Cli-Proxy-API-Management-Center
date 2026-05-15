@@ -55,7 +55,7 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
             variant="secondary"
             onClick={() => {
               if (!updatedText) return;
-              void onCopyText(updatedText);
+              void Promise.resolve(onCopyText(updatedText)).catch(() => {});
             }}
             disabled={editor?.saving === true || !updatedText}
           >
