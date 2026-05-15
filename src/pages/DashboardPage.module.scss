@@ -500,6 +500,47 @@
   }
 }
 
+// ─── Error Banner ─────────────────────────────────────────
+
+.errorBox {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  background: rgba($error-color, 0.08);
+  border: 1px solid color-mix(in srgb, var(--error-color) 40%, transparent);
+  border-radius: $radius-md;
+  color: var(--error-color);
+  font-size: 13px;
+  line-height: 1.5;
+  animation: cardEnter 0.3s ease-out both;
+}
+
+.retryButton {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  border: 1px solid color-mix(in srgb, var(--error-color) 50%, transparent);
+  border-radius: $radius-sm;
+  background: rgba($error-color, 0.12);
+  color: var(--error-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background $transition-fast, border-color $transition-fast;
+
+  &:hover {
+    background: rgba($error-color, 0.2);
+    border-color: var(--error-color);
+  }
+
+  &:active {
+    background: rgba($error-color, 0.28);
+  }
+}
+
 // ─── Animations ─────────────────────────────────────────
 
 @keyframes heroEnter {

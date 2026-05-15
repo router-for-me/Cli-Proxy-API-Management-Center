@@ -778,7 +778,8 @@
     "model_alias_placeholder": "模型別名（選填）",
     "invalid_provider_index": "無效的供應商索引。",
     "unsaved_changes_title": "未儲存的變更",
-    "unsaved_changes_message": "你有未儲存的變更，離開後將遺失這些變更。確定要離開嗎？"
+    "unsaved_changes_message": "你有未儲存的變更，離開後將遺失這些變更。確定要離開嗎？",
+    "retry": "重試"
   },
   "config_management": {
     "title": "設定面板",
@@ -1030,7 +1031,8 @@
     "caring_afternoon": "穩步推進中，繼續加油。",
     "caring_evening": "今天辛苦了，收尾工作做好喔。",
     "caring_night": "夜深了，別忘了早點休息。",
-    "system_overview": "系統概覽"
+    "system_overview": "系統概覽",
+    "fetch_error": "儀表板資料載入失敗，請檢查網路連線後重試。"
   },
   "footer": {
     "api_version": "CLI Proxy API 版本",

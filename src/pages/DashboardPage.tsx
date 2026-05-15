@@ -65,6 +65,8 @@ export function DashboardPage() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
   // Time-of-day state for dynamic greeting
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay);
@@ -150,6 +152,7 @@ export function DashboardPage() {
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
+      setFetchError(false);
       try {
         const [keysRes, filesRes, geminiRes, codexRes, claudeRes, openaiRes] = await Promise.allSettled([
           apiKeysApi.list(),
@@ -171,6 +174,20 @@ export function DashboardPage() {
           claude: claudeRes.status === 'fulfilled' ? claudeRes.value.length : null,
           openai: openaiRes.status === 'fulfilled' ? openaiRes.value.length : null
         });
+
+        const allRejected =
+          keysRes.status === 'rejected' &&
+          filesRes.status === 'rejected' &&
+          geminiRes.status === 'rejected' &&
+          codexRes.status === 'rejected' &&
+          claudeRes.status === 'rejected' &&
+          openaiRes.status === 'rejected';
+
+        if (allRejected) {
+          setStats({ apiKeys: null, authFiles: null });
+          setProviderStats({ gemini: null, codex: null, claude: null, openai: null });
+          setFetchError(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -182,7 +199,7 @@ export function DashboardPage() {
     } else {
       setLoading(false);
     }
-  }, [connectionStatus, fetchModels]);
+  }, [connectionStatus, fetchModels, retryTrigger]);
 
   // Calculate total provider keys only when all provider stats are available.
   const providerStatsReady =
@@ -328,6 +345,19 @@ export function DashboardPage() {
           )}
         </div>
       </section>
+
+      {/* Error banner when all API calls fail */}
+      {fetchError && (
+        <div className={styles.errorBox}>
+          <span>{t('dashboard.fetch_error')}</span>
+          <button
+            className={styles.retryButton}
+            onClick={() => setRetryTrigger((prev) => prev + 1)}
+          >
+            {t('common.retry')}
+          </button>
+        </div>
+      )}
 
       {/* Bento stats grid */}
       <section className={styles.statsSection}>
