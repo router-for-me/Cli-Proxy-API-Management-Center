@@ -39,6 +39,7 @@ type RequestEventRow = {
   latencyMs: number | null;
   thinking: UsageThinking | null;
   thinkingLabel: string;
+  reasoningContent: string | null;
   inputTokens: number;
   outputTokens: number;
   reasoningTokens: number;
@@ -197,6 +198,7 @@ export function RequestEventsDetailsCard({
         const latencyMs = extractLatencyMs(detail);
         const thinking = detail.thinking ?? null;
         const thinkingLabel = formatThinkingLabel(thinking);
+        const reasoningContent = detail.reasoning_content?.trim() || null;
 
         return {
           id: `${timestamp}-${model}-${sourceRaw || source}-${authIndex}-${index}`,
@@ -212,6 +214,7 @@ export function RequestEventsDetailsCard({
           latencyMs,
           thinking,
           thinkingLabel,
+          reasoningContent,
           inputTokens,
           outputTokens,
           reasoningTokens,
@@ -318,6 +321,7 @@ export function RequestEventsDetailsCard({
       'thinking_mode',
       'thinking_level',
       'thinking_budget',
+      'reasoning_content',
       'input_tokens',
       'output_tokens',
       'reasoning_tokens',
@@ -338,6 +342,7 @@ export function RequestEventsDetailsCard({
         row.thinking?.mode ?? '',
         row.thinking?.level ?? '',
         row.thinking?.budget ?? '',
+        row.reasoningContent ?? '',
         row.inputTokens,
         row.outputTokens,
         row.reasoningTokens,
@@ -368,6 +373,7 @@ export function RequestEventsDetailsCard({
       failed: row.failed,
       ...(hasLatencyData && row.latencyMs !== null ? { latency_ms: row.latencyMs } : {}),
       ...(row.thinking ? { thinking: row.thinking } : {}),
+      ...(row.reasoningContent ? { reasoning_content: row.reasoningContent } : {}),
       tokens: {
         input_tokens: row.inputTokens,
         output_tokens: row.outputTokens,

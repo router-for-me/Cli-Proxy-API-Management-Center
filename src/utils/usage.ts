@@ -74,6 +74,7 @@ export interface UsageDetail {
     cache_tokens?: number;
     total_tokens: number;
   };
+  reasoning_content?: string;
   thinking?: UsageThinking | null;
   failed: boolean;
   __modelName?: string;
@@ -660,12 +661,15 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
         const timestampMs = parseTimestampMs(timestamp);
         const tokensRaw = isRecord(detailRaw.tokens) ? detailRaw.tokens : {};
         const latencyMs = extractLatencyMs(detailRaw);
+        const rc = (detailRaw as Record<string, unknown>).reasoning_content;
+        const reasoningContent = typeof rc === 'string' ? rc : undefined;
         details.push({
           timestamp,
           source: normalizeSource(detailRaw.source),
           auth_index: detailRaw.auth_index as unknown as number,
           latency_ms: latencyMs ?? undefined,
           tokens: tokensRaw as unknown as UsageDetail['tokens'],
+          reasoning_content: reasoningContent,
           thinking: normalizeUsageThinking(detailRaw.thinking),
           failed: detailRaw.failed === true,
           __modelName: modelName,
