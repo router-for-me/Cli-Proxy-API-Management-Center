@@ -82,6 +82,8 @@
 - 模型预设定价表扩展：新增 o3, o4-mini, claude-3-* (opus/sonnet/haiku), gemini-1.5-* (pro/flash)
 - 参考仓库深度调研完成：全部 5 个仓库独立架构分析（cockpit-tools 13平台OAuth, codex2api v2.1.5, sub2api v0.1.126, Kiro v1.6.5）
 - CLIProxyAPI PR #3345 结案记录：上游已选择 Home Control Center 路线，PR 存档不再推送，两套替代方案文档化
+- WorkBuddy 添加：OAuthProvider 类型 + OAUTH_CARD_IDS/OAUTH_PROVIDERS 常量同步至完整 15 providers
+- i18n 键修复：SystemPage GitHub 链接从无效仓库纠正为 fork 地址 (calonye/Cli-Proxy-API-Management-Center-fork)
 - 独立化就绪度：75% → ~78%
 - Cherry-pick 总进度: 14/47 (30%)
 
