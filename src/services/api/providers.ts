@@ -232,7 +232,7 @@ export const providersApi = {
 
   // 通过 name 更新 OpenAI 兼容提供商（用于禁用模型）
   patchOpenAIProviderByName: (name: string, value: Partial<OpenAIProviderConfig>) => {
-    const payload: Record<string, any> = {};
+    const payload: Record<string, unknown> = {};
     if (value.models !== undefined) {
       payload.models = serializeModelAliases(value.models);
     }
