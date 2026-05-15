@@ -116,6 +116,7 @@
     "oauth": "OAuth 登入",
     "quota_management": "配額管理",
     "codex_runtime": "Codex 執行狀態",
+    "usage_stat": "Usage Stat",
     "config_management": "設定面板",
     "logs": "記錄檢視",
     "system_info": "中心資訊"
@@ -249,6 +250,14 @@
     "refresh_one_failed": "重新整理 Codex 認證失敗",
     "refresh_all_success": "所有 Codex 認證已重新整理",
     "refresh_all_failed": "重新整理所有 Codex 認證失敗"
+  },
+  "usage_stat": {
+    "title": "Usage Stat",
+    "description": "由 CPA Usage Keeper 提供的持久化用量儀表板。",
+    "reload_dashboard": "重新載入用量儀表板",
+    "open_dashboard": "開啟用量儀表板",
+    "dashboard_url": "用量儀表板位址",
+    "iframe_title": "CPA Usage Keeper 儀表板"
   },
   "api_keys": {
     "title": "API 金鑰管理",

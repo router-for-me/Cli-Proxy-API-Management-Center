@@ -116,6 +116,7 @@
     "oauth": "OAuth Login",
     "quota_management": "Quota Management",
     "codex_runtime": "Codex Runtime",
+    "usage_stat": "Usage Stat",
     "config_management": "Config Panel",
     "logs": "Logs Viewer",
     "system_info": "Management Center Info"
@@ -249,6 +250,14 @@
     "refresh_one_failed": "Failed to refresh Codex auth",
     "refresh_all_success": "All Codex auths refreshed",
     "refresh_all_failed": "Failed to refresh all Codex auths"
+  },
+  "usage_stat": {
+    "title": "Usage Stat",
+    "description": "Persistent usage dashboard powered by CPA Usage Keeper.",
+    "reload_dashboard": "Reload Usage Dashboard",
+    "open_dashboard": "Open Usage Dashboard",
+    "dashboard_url": "Usage dashboard URL",
+    "iframe_title": "CPA Usage Keeper Dashboard"
   },
   "api_keys": {
     "title": "API Keys Management",

@@ -116,6 +116,7 @@
     "oauth": "OAuth вход",
     "quota_management": "Управление квотами",
     "codex_runtime": "Состояние Codex",
+    "usage_stat": "Usage Stat",
     "config_management": "Панель конфигурации",
     "logs": "Просмотр логов",
     "system_info": "Информация системы"
@@ -249,6 +250,14 @@
     "refresh_one_failed": "Не удалось обновить Codex-авторизацию",
     "refresh_all_success": "Все Codex-авторизации обновлены",
     "refresh_all_failed": "Не удалось обновить все Codex-авторизации"
+  },
+  "usage_stat": {
+    "title": "Usage Stat",
+    "description": "Постоянная панель usage на базе CPA Usage Keeper.",
+    "reload_dashboard": "Reload Usage Dashboard",
+    "open_dashboard": "Open Usage Dashboard",
+    "dashboard_url": "Usage dashboard URL",
+    "iframe_title": "CPA Usage Keeper Dashboard"
   },
   "api_keys": {
     "title": "Управление API-ключами",
