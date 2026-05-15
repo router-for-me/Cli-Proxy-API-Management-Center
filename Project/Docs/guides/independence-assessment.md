@@ -1,6 +1,6 @@
 # CPA-Dashboard 独立化评估
 
-> 评估时间: 2026-05-15 | 状态: 75% 就绪
+> 评估时间: 2026-05-15 | 状态: ~78% 就绪
 
 ## 分支状态
 
@@ -41,6 +41,9 @@
 - CLAUDE.md 项目说明文档
 - reasoning_content 字段透传支持
 - 死代码清理：SplashScreen 组件移除
+- 参考仓库深度调研：全部 5 个依赖仓库独立架构分析完成（cockpit-tools 13平台OAuth, codex2api v2.1.5, sub2api v0.1.126, Kiro v1.6.5）
+- Xiaomi MiMo 模型接入调研完成：5 个公开模型定价确认，OpenAI-compatible 接入方案（models.ts 已配置 mimo pattern）
+- CLIProxyAPI PR #3345 结案：上游路线分歧分析、两套替代方案存档
 
 ## 剩余任务
 
@@ -68,7 +71,7 @@
 ### 2026-05-15
 - ESLint 全部错误清零 — 所有 exhaustive-deps 抑制已替换为 useCallback/useMemo 方案 (9dc28ff)
 - CLAUDE.md 创建：项目说明文档初始化 (4bd8a87)
-- Xiaomi MIMO 模型接入调研完成：API 格式待确认，models.ts 预留 TODO 占位 (4bd8a87)
+- Xiaomi MiMo 模型接入调研完成：5 个公开模型确认（mimo-v2.5-pro/2.5/2-pro/2-omni/2-flash），OpenAI-compatible API endpoint 确认，定价文档验证 (4bd8a87)
 - reasoning_content 字段透传支持：API 调用详情中展示推理过程 (c5387f9)
 - SplashScreen 死代码组件移除 (3226168)
 - React 命名空间导入修复：quotaConfigs.ts 缺失 React 导入 (cfb431c)
@@ -77,6 +80,9 @@
 - Cherry-pick: upstream 74badca — iflow cookie 登录清除 (7fd6022)
 - 参考仓库更新：cockpit-tools v0.23.4、Kiro v1.6.5、codex2api fix import size limit、CLIProxyAPI PR #3345 最新 (722b82b1)
 - 模型预设定价表扩展：新增 o3, o4-mini, claude-3-* (opus/sonnet/haiku), gemini-1.5-* (pro/flash)
+- 参考仓库深度调研完成：全部 5 个仓库独立架构分析（cockpit-tools 13平台OAuth, codex2api v2.1.5, sub2api v0.1.126, Kiro v1.6.5）
+- CLIProxyAPI PR #3345 结案记录：上游已选择 Home Control Center 路线，PR 存档不再推送，两套替代方案文档化
+- 独立化就绪度：75% → ~78%
 - Cherry-pick 总进度: 14/47 (30%)
 
 ### 2026-05-14

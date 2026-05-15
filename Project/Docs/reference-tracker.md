@@ -1,6 +1,6 @@
 # 参考仓库版本追踪
 
-> 基准时间: 2026-05-14 | 更新频率: 每次会话检查
+> 基准时间: 2026-05-15 | 更新频率: 每次会话检查
 
 ## 追踪仓库
 
@@ -35,6 +35,11 @@ done
 - CLIProxyAPI: 分支从 origin/fix/claude-oauth-api-call 迁移至 fork/fix/claude-oauth-api-call, 代码无变更
 - CPA-Dashboard: TypeScript 编译修复 (quotaConfigs.ts React 导入), 代码质量审计完成
 - 参考检查脚本验证：全部 5 个仓库本地与远程一致，0 behind
+- 深度调研完成：cockpit-tools v0.23.4 — 13 平台 OAuth 架构分析（Anthropic 服务授权、Google OAuth 等 11 内置 + 2 扩展），三层 Token/Account 池设计
+- 深度调研完成：codex2api v2.1.5 — 版本号语义（major.feature.hotfix），token 池 / Cookie 池 / Account 池三层架构
+- 深度调研完成：sub2api v0.1.126 — OIDC 通用登录架构，GitHub/Google/Microsoft 认证流程
+- 深度调研完成：Kiro-account-manager v1.6.5 — 本地代理架构，AmazonQ CLI 端点变更（AI_EDITOR）
+- CLIProxyAPI PR #3345 结案：上游已选择 Home Control Center 路线，PR 存档不再推送
 
 ### 2026-05-14
 - cockpit-tools: v0.23.3 (158acf0, homebrew cask 更新), Kiro-account-manager: v1.6.2→v1.6.3 (f08ea9c, Claude Code 兼容性增强), codex2api: 44 commits since 71d0ee5 (4922b64), CLIProxyAPI: PR #3345 fix (722b82b1)
