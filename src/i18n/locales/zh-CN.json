@@ -610,7 +610,18 @@
     "zed_status_success": "认证成功！",
     "zed_status_waiting": "等待认证中...",
     "zed_title": "Zed OAuth",
-    "zed_url_label": "授权 URL："
+    "zed_url_label": "授权 URL：",
+    "workbuddy_button": "开始 WorkBuddy 登录",
+    "workbuddy_copy_link": "复制链接",
+    "workbuddy_hint": "通过 OAuth 流程登录 WorkBuddy 服务，自动获取并保存认证文件。",
+    "workbuddy_open_link": "打开链接",
+    "workbuddy_polling_error": "检查认证状态失败：",
+    "workbuddy_start_error": "启动 WorkBuddy OAuth 失败：",
+    "workbuddy_status_error": "认证失败：",
+    "workbuddy_status_success": "认证成功！",
+    "workbuddy_status_waiting": "等待认证中...",
+    "workbuddy_title": "WorkBuddy OAuth",
+    "workbuddy_url_label": "授权 URL："
   },
   "auto_login": {
     "message": "正在使用本地保存的连接信息尝试连接服务器",

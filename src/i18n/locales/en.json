@@ -610,7 +610,18 @@
     "zed_status_success": "Authentication successful!",
     "zed_status_waiting": "Waiting for authentication...",
     "zed_title": "Zed OAuth",
-    "zed_url_label": "Authorization URL:"
+    "zed_url_label": "Authorization URL:",
+    "workbuddy_button": "Start WorkBuddy Login",
+    "workbuddy_copy_link": "Copy Link",
+    "workbuddy_hint": "Login to WorkBuddy service through OAuth flow, automatically obtain and save authentication files.",
+    "workbuddy_open_link": "Open Link",
+    "workbuddy_polling_error": "Failed to check authentication status:",
+    "workbuddy_start_error": "Failed to start WorkBuddy OAuth:",
+    "workbuddy_status_error": "Authentication failed:",
+    "workbuddy_status_success": "Authentication successful!",
+    "workbuddy_status_waiting": "Waiting for authentication...",
+    "workbuddy_title": "WorkBuddy OAuth",
+    "workbuddy_url_label": "Authorization URL:"
   },
   "auto_login": {
     "message": "Attempting to connect to server using locally saved connection information",

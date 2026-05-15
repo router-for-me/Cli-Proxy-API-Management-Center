@@ -26,6 +26,7 @@ import iconCodebuddyCn from '@/assets/icons/codebuddy-cn.svg';
 import iconQoder from '@/assets/icons/qoder.svg';
 import iconTrae from '@/assets/icons/trae.svg';
 import iconZed from '@/assets/icons/zed.svg';
+import iconWorkbuddy from '@/assets/icons/workbuddy.svg';
 
 interface ProviderState {
   url?: string;
@@ -78,21 +79,32 @@ const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabe
   { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconAntigravity },
   { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini },
   { id: 'kimi', titleKey: 'auth_login.kimi_oauth_title', hintKey: 'auth_login.kimi_oauth_hint', urlLabelKey: 'auth_login.kimi_oauth_url_label', icon: { light: iconKimiLight, dark: iconKimiDark } },
-  { id: 'copilot', titleKey: 'auth_login.copilot_oauth_title', hintKey: 'auth_login.copilot_oauth_hint', urlLabelKey: 'auth_login.copilot_oauth_url_label', icon: iconCopilot },
-  { id: 'windsurf', titleKey: 'auth_login.windsurf_oauth_title', hintKey: 'auth_login.windsurf_oauth_hint', urlLabelKey: 'auth_login.windsurf_oauth_url_label', icon: iconWindsurf },
-  { id: 'kiro', titleKey: 'auth_login.kiro_oauth_title', hintKey: 'auth_login.kiro_oauth_hint', urlLabelKey: 'auth_login.kiro_oauth_url_label', icon: iconKiro },
-  { id: 'cursor', titleKey: 'auth_login.cursor_oauth_title', hintKey: 'auth_login.cursor_oauth_hint', urlLabelKey: 'auth_login.cursor_oauth_url_label', icon: { light: iconCursorLight, dark: iconCursorDark } },
-  { id: 'codebuddy', titleKey: 'auth_login.codebuddy_oauth_title', hintKey: 'auth_login.codebuddy_oauth_hint', urlLabelKey: 'auth_login.codebuddy_oauth_url_label', icon: iconCodebuddy },
-  { id: 'codebuddy-cn', titleKey: 'auth_login.codebuddy_cn_oauth_title', hintKey: 'auth_login.codebuddy_cn_oauth_hint', urlLabelKey: 'auth_login.codebuddy_cn_oauth_url_label', icon: iconCodebuddyCn },
-  { id: 'qoder', titleKey: 'auth_login.qoder_oauth_title', hintKey: 'auth_login.qoder_oauth_hint', urlLabelKey: 'auth_login.qoder_oauth_url_label', icon: iconQoder },
-  { id: 'trae', titleKey: 'auth_login.trae_oauth_title', hintKey: 'auth_login.trae_oauth_hint', urlLabelKey: 'auth_login.trae_oauth_url_label', icon: iconTrae },
-  { id: 'zed', titleKey: 'auth_login.zed_oauth_title', hintKey: 'auth_login.zed_oauth_hint', urlLabelKey: 'auth_login.zed_oauth_url_label', icon: iconZed },
+  { id: 'copilot', titleKey: 'auth_login.copilot_title', hintKey: 'auth_login.copilot_hint', urlLabelKey: 'auth_login.copilot_url_label', icon: iconCopilot },
+  { id: 'windsurf', titleKey: 'auth_login.windsurf_title', hintKey: 'auth_login.windsurf_hint', urlLabelKey: 'auth_login.windsurf_url_label', icon: iconWindsurf },
+  { id: 'kiro', titleKey: 'auth_login.kiro_title', hintKey: 'auth_login.kiro_hint', urlLabelKey: 'auth_login.kiro_url_label', icon: iconKiro },
+  { id: 'cursor', titleKey: 'auth_login.cursor_title', hintKey: 'auth_login.cursor_hint', urlLabelKey: 'auth_login.cursor_url_label', icon: { light: iconCursorLight, dark: iconCursorDark } },
+  { id: 'codebuddy', titleKey: 'auth_login.codebuddy_title', hintKey: 'auth_login.codebuddy_hint', urlLabelKey: 'auth_login.codebuddy_url_label', icon: iconCodebuddy },
+  { id: 'codebuddy-cn', titleKey: 'auth_login.codebuddy_cn_title', hintKey: 'auth_login.codebuddy_cn_hint', urlLabelKey: 'auth_login.codebuddy_cn_url_label', icon: iconCodebuddyCn },
+  { id: 'qoder', titleKey: 'auth_login.qoder_title', hintKey: 'auth_login.qoder_hint', urlLabelKey: 'auth_login.qoder_url_label', icon: iconQoder },
+  { id: 'trae', titleKey: 'auth_login.trae_title', hintKey: 'auth_login.trae_hint', urlLabelKey: 'auth_login.trae_url_label', icon: iconTrae },
+  { id: 'zed', titleKey: 'auth_login.zed_title', hintKey: 'auth_login.zed_hint', urlLabelKey: 'auth_login.zed_url_label', icon: iconZed },
+  { id: 'workbuddy', titleKey: 'auth_login.workbuddy_title', hintKey: 'auth_login.workbuddy_hint', urlLabelKey: 'auth_login.workbuddy_url_label', icon: iconWorkbuddy },
 ];
 
 const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli'];
 const getProviderI18nPrefix = (provider: OAuthProvider) => provider.replace('-', '_');
-const getAuthKey = (provider: OAuthProvider, suffix: string) =>
-  `auth_login.${getProviderI18nPrefix(provider)}_${suffix}`;
+// New providers use flat key suffix (without 'oauth_' prefix in dynamic keys)
+const NEW_PROVIDER_PREFIXES = new Set([
+  'copilot', 'windsurf', 'kiro', 'cursor', 'codebuddy', 'codebuddy_cn',
+  'qoder', 'trae', 'zed', 'workbuddy',
+]);
+const getAuthKey = (provider: OAuthProvider, suffix: string) => {
+  const prefix = getProviderI18nPrefix(provider);
+  if (NEW_PROVIDER_PREFIXES.has(prefix)) {
+    return `auth_login.${prefix}_${suffix.replace(/^oauth_/, '')}`;
+  }
+  return `auth_login.${prefix}_${suffix}`;
+};
 
 const getIcon = (icon: string | { light: string; dark: string }, theme: 'light' | 'dark') => {
   return typeof icon === 'string' ? icon : icon[theme];

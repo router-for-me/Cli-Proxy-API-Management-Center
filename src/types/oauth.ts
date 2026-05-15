@@ -18,7 +18,8 @@ export type OAuthProvider =
   | 'codebuddy-cn'
   | 'qoder'
   | 'trae'
-  | 'zed';
+  | 'zed'
+  | 'workbuddy';
 
 // OAuth 流程状态
 export interface OAuthFlow {
