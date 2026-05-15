@@ -19,6 +19,8 @@ const MODEL_CATEGORIES = [
   { id: 'grok', label: 'Grok', patterns: [/grok/i] },
   { id: 'deepseek', label: 'DeepSeek', patterns: [/deepseek/i] },
   { id: 'minimax', label: 'MiniMax', patterns: [/minimax/i, /abab/i] }
+  // TODO(Xiaomi MIMO): API 格式待确认。若为 OpenAI-compatible 无需分类；若为 Anthropic Responses 格式，需添加 { id: 'mimo', label: 'MIMO', patterns: [/mimo/i] }
+  // 详见 Project/Docs/guides/xiaomi-mimo-research.md
 ];
 
 const matchCategory = (text: string) => {
