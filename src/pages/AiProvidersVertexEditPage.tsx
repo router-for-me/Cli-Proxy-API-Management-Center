@@ -16,6 +16,7 @@ import type { ProviderKeyConfig } from '@/types';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
+import { getErrorMessage } from '@/utils/error';
 import type { VertexFormState } from '@/components/providers';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
 
@@ -147,7 +148,7 @@ export function AiProvidersVertexEditPage() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const message = err instanceof Error ? err.message : '';
+        const message = getErrorMessage(err);
         setError(message || t('notification.refresh_failed'));
       })
       .finally(() => {
@@ -277,7 +278,7 @@ export function AiProvidersVertexEditPage() {
       setBaseline(buildVertexBaseline(form));
       handleBack();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '';
+      const message = getErrorMessage(err);
       setError(message);
       showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
     } finally {

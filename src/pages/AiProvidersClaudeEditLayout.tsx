@@ -13,6 +13,7 @@ import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } f
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import { modelsToEntries } from '@/components/ui/modelInputListUtils';
 import type { ClaudeEditBaseline } from '@/stores/useClaudeEditDraftStore';
+import { getErrorMessage } from '@/utils/error';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
@@ -57,12 +58,6 @@ const parseIndexParam = (value: string | undefined) => {
   if (!value) return null;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : null;
-};
-
-const getErrorMessage = (err: unknown) => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  return '';
 };
 
 const normalizeClaudeModelEntries = (entries: Array<{ name: string; alias: string }>) =>

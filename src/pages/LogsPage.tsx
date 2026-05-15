@@ -26,6 +26,7 @@ import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
 import { copyToClipboard } from '@/utils/clipboard';
 import { downloadBlob } from '@/utils/download';
+import { getErrorMessage } from '@/utils/error';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
 import {
@@ -52,15 +53,6 @@ const MAX_BUFFER_LINES = 10000;
 const LONG_PRESS_MS = 650;
 const LONG_PRESS_MOVE_THRESHOLD = 10;
 
-const getErrorMessage = (err: unknown): string => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  if (typeof err !== 'object' || err === null) return '';
-  if (!('message' in err)) return '';
-
-  const message = (err as { message?: unknown }).message;
-  return typeof message === 'string' ? message : '';
-};
 
 type TabType = 'logs' | 'errors';
 

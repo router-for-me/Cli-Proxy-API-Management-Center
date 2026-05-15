@@ -21,14 +21,9 @@ import {
 } from '@/components/providers/utils';
 import type { AmpcodeFormState } from '@/components/providers';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
+import { getErrorMessage } from '@/utils/error';
 
 type LocationState = { fromAiProviders?: boolean } | null;
-
-const getErrorMessage = (err: unknown) => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  return '';
-};
 
 const normalizeMappingEntries = (entries: Array<{ name: string; alias: string }>) =>
   (entries ?? []).reduce<Array<{ from: string; to: string }>>((acc, entry) => {

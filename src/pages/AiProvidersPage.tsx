@@ -21,6 +21,7 @@ import { ampcodeApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import { indexUsageDetailsBySource } from '@/utils/usageIndex';
+import { getErrorMessage } from '@/utils/error';
 import styles from './AiProvidersPage.module.scss';
 
 export function AiProvidersPage() {
@@ -71,12 +72,6 @@ export function AiProvidersPage() {
     () => indexUsageDetailsBySource(usageDetails),
     [usageDetails]
   );
-
-  const getErrorMessage = (err: unknown) => {
-    if (err instanceof Error) return err.message;
-    if (typeof err === 'string') return err;
-    return '';
-  };
 
   const loadConfigs = useCallback(async () => {
     const hasValidCache = isCacheValid();

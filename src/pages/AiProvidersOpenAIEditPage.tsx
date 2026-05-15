@@ -18,14 +18,9 @@ import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
 import styles from './AiProvidersPage.module.scss';
 import layoutStyles from './AiProvidersEditLayout.module.scss';
+import { getErrorMessage } from '@/utils/error';
 
 const OPENAI_TEST_TIMEOUT_MS = 30_000;
-
-const getErrorMessage = (err: unknown) => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  return '';
-};
 
 // Status icon components
 function StatusLoadingIcon() {

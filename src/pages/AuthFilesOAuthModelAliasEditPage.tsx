@@ -13,6 +13,7 @@ import { useAuthStore, useNotificationStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
 import { generateId } from '@/utils/helpers';
+import { getErrorMessage } from '@/utils/error';
 import styles from './AuthFilesOAuthModelAliasEditPage.module.scss';
 
 type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
@@ -254,7 +255,7 @@ export function AuthFilesOAuthModelAliasEditPage() {
           return;
         }
 
-        const errorMessage = err instanceof Error ? err.message : '';
+        const errorMessage = getErrorMessage(err);
         showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
       })
       .finally(() => {
@@ -332,7 +333,7 @@ export function AuthFilesOAuthModelAliasEditPage() {
       showNotification(t('oauth_model_alias.save_success'), 'success');
       handleBack();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '';
+      const errorMessage = getErrorMessage(err);
       showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
     } finally {
       setSaving(false);
