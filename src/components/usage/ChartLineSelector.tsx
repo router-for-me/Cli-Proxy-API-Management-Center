@@ -72,7 +72,7 @@ export function ChartLineSelector({
     >
       <div className={styles.chartLineList}>
         {chartLines.map((line, index) => (
-          <div key={index} className={styles.chartLineItem}>
+          <div key={`chart-line-${line}-${index}`} className={styles.chartLineItem}>
             <span className={styles.chartLineLabel}>
               {t(`usage_stats.chart_line_label_${index + 1}`)}
             </span>

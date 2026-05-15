@@ -43,7 +43,7 @@ export function HeaderInputList({
   return (
     <div className="header-input-list">
       {currentEntries.map((entry, index) => (
-        <Fragment key={index}>
+        <Fragment key={`hdr-${entry.key}-${index}`}>
           <div className="header-input-row">
             <input
               className="input"

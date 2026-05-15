@@ -429,7 +429,7 @@ export function AiProvidersOpenAIEditPage() {
             const canTestKey = Boolean(entry.apiKey?.trim()) && hasConfiguredModels;
 
             return (
-              <div key={index} className={styles.keyTableRow}>
+              <div key={`api-key-row-${index}`} className={styles.keyTableRow}>
                 {/* 序号 */}
                 <div className={styles.keyTableColIndex}>{index + 1}</div>
 

@@ -62,7 +62,7 @@ export function ModelInputList({
   return (
     <div className={containerClassName}>
       {currentEntries.map((entry, index) => (
-        <Fragment key={index}>
+        <Fragment key={`model-${entry.name}-${index}`}>
           <div className={rowClassNames}>
             <input
               className={inputClassNames}

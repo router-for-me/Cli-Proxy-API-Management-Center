@@ -439,7 +439,7 @@ export function AiProvidersAmpcodeEditPage() {
               ? form.upstreamApiKeyEntries
               : [{ upstreamApiKey: '', clientApiKeysText: '' }]
             ).map((entry, index, entries) => (
-              <div key={index} className={layoutStyles.ampcodeUpstreamMappingCard}>
+              <div key={`upstream-key-${entry.upstreamApiKey}-${index}`} className={layoutStyles.ampcodeUpstreamMappingCard}>
                 <div className={layoutStyles.ampcodeUpstreamMappingCardTop}>
                   <span className={layoutStyles.ampcodeUpstreamMappingTitle}>
                     {t('ai_providers.ampcode_upstream_api_keys_item_title', { index: index + 1 })}
