@@ -474,8 +474,8 @@ export function CodexRuntimePage() {
 
       <div className={styles.summaryGrid}>
         <div className={styles.summaryBubble}><span>{t('codex_runtime.summary_accounts')}</span><strong>{summary.accounts}</strong></div>
-        <div className={styles.summaryBubble}><span>{t('codex_runtime.summary_current_account')}</span><strong>{summary.currentAccount}</strong></div>
-        <div className={styles.summaryBubble}><span>{t('codex_runtime.summary_recommended_account')}</span><strong>{summary.recommendedAccount}</strong></div>
+        <div className={`${styles.summaryBubble} ${styles.accountSummaryBubble}`}><span>{t('codex_runtime.summary_current_account')}</span><strong>{summary.currentAccount}</strong></div>
+        <div className={`${styles.summaryBubble} ${styles.accountSummaryBubble}`}><span>{t('codex_runtime.summary_recommended_account')}</span><strong>{summary.recommendedAccount}</strong></div>
         <div className={styles.summaryBubble}><span>{t('codex_runtime.summary_usable_5h_remaining')}</span><strong>{formatPercent(summary.usableFiveHourRemainingPercent, i18n.language)}</strong></div>
         <div className={styles.summaryBubble}><span>{t('codex_runtime.summary_fleet_weekly_remaining')}</span><strong>{formatPercent(summary.fleetUsableWeeklyRemainingPercent, i18n.language)}</strong></div>
         <div className={styles.summaryBubble}><span>{t('codex_runtime.summary_next_5h_reset')}</span><strong>{formatTimestamp(summary.nextFiveHourReset, i18n.language)}</strong></div>
