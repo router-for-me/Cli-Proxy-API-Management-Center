@@ -157,6 +157,7 @@ export function CodexRuntimePage() {
   const [scoreDrafts, setScoreDrafts] = useState<Record<string, string>>({});
 
   const disableControls = connectionStatus !== 'connected';
+  const [autoRefreshTick, setAutoRefreshTick] = useState(0);
 
   const syncDrafts = useCallback((entries: CodexStateEntry[]) => {
     const next: Record<string, string> = {};
@@ -186,6 +187,42 @@ export function CodexRuntimePage() {
   useEffect(() => {
     void loadState();
   }, [loadState]);
+
+  useEffect(() => {
+    if (loading) return;
+    const onDevice = items.find((item) => item.on_device);
+    if (!onDevice) return;
+    const timer = window.setInterval(() => {
+      setAutoRefreshTick((tick) => tick + 1);
+    }, 4000);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [items, loading]);
+
+  useEffect(() => {
+    if (autoRefreshTick === 0) return;
+    const onDevice = items.find((item) => item.on_device);
+    if (!onDevice) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await codexStateApi.list();
+        if (cancelled) return;
+        setItems((prev) => {
+          const nextById = new Map(data.map((entry) => [entry.id, entry]));
+          return prev.map((entry) => (entry.id === onDevice.id ? nextById.get(entry.id) ?? entry : entry));
+        });
+      } catch {
+        // silent background poll failure
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [autoRefreshTick, items]);
 
   const sortedItems = useMemo(() => {
     return [...items].sort((left, right) => {
