@@ -1,19 +1,19 @@
 # CPA-Dashboard 独立化评估
 
-> 评估时间: 2026-05-13 | 状态: 67% 就绪
+> 评估时间: 2026-05-15 | 状态: 75% 就绪
 
 ## 分支状态
 
 | 指标 | 数值 |
 |------|------|
-| dev 领先 upstream/main | 119 commits |
+| dev 领先 upstream/main | 129 commits |
 | upstream/main 未合入 dev | 60 |
-| 已精选上游提交 | 13 (3212f65, c43df08, 0546f43, c27707c, 7d3c570, 808f44d, 8ed837c, b4d5ffa, 1a056ec, 9f7c471, 126f7fa, 3bb4760, eb49c0d) |
+| 已精选上游提交 | 14 (3212f65, c43df08, 0546f43, c27707c, 7d3c570, 808f44d, 8ed837c, b4d5ffa, 1a056ec, 9f7c471, 126f7fa, 3bb4760, eb49c0d, 74badca) |
 | main 分支发散 | 0（干净） |
-| dev 领先 main | 31 commits |
-| 文件变更 main vs dev | 91 files, +5600/-4500 |
+| dev 领先 main | 48 commits |
+| 文件变更 main vs dev | 105 files, +7539/-4737 |
 | 上游最新 tag | v1.10.2 |
-| 当前版本 | 1.7.36 |
+| 当前版本 | 1.7.36-fork.1 |
 
 ## 上游待精选（按类别）
 
@@ -37,15 +37,18 @@
 - SQLite 适配器：双通道 MonitorPage
 - Codex Inspection：实时 key 检测
 - 身份独立：commit b26de4c 已建立独立仓库标识
-- ESLint 清理：全部 exhaustive-deps 抑制已替换
+- ESLint 清理：全部 exhaustive-deps 抑制已替换 → 零错误
+- CLAUDE.md 项目说明文档
+- reasoning_content 字段透传支持
+- 死代码清理：SplashScreen 组件移除
 
 ## 剩余任务
 
 | 任务 | 工作量 | 备注 |
 |------|--------|------|
-| Cherry-pick 47 上游提交 | L | 分 4 批：OpenAI(15) + usage(8) + auth/layout(10) + misc(14) |
+| Cherry-pick 33 上游提交 | L | 分 4 批：OpenAI(15) + usage(8) + auth/layout(10) + misc(14)，已处理 14/47 |
 | 合并冲突解决 | M | 预计 5-8 个冲突集群 |
-| 版本号对齐 | S | 上游 v1.10.2 |
+| 版本号对齐 | M | 上游 v1.10.2 |
 | README/docs 独立化 | M | 移除 fork 声明 |
 | 全流程测试 | M | OAuth、monitor、backup、SQLite 均需验证 |
 | 移除 upstream remote（可选） | S | 独立决策后执行 |
@@ -61,6 +64,16 @@
 **预计总工作量：L（1-2 天专注冲突解决和测试）**
 
 ## 进展记录
+
+### 2026-05-15
+- ESLint 全部错误清零 — 所有 exhaustive-deps 抑制已替换为 useCallback/useMemo 方案 (9dc28ff)
+- CLAUDE.md 创建：项目说明文档初始化 (4bd8a87)
+- reasoning_content 字段透传支持：API 调用详情中展示推理过程 (c5387f9)
+- SplashScreen 死代码组件移除 (3226168)
+- React 命名空间导入修复：quotaConfigs.ts 缺失 React 导入 (cfb431c)
+- Cherry-pick: upstream 74badca — iflow cookie 登录清除 (7fd6022)
+- 参考仓库更新：cockpit-tools v0.23.4、Kiro v1.6.5、codex2api fix import size limit、CLIProxyAPI PR #3345 最新 (722b82b1)
+- Cherry-pick 总进度: 14/47 (30%)
 
 ### 2026-05-14
 - OAuth 多平台前端准备完成：Phase 1 前端部分收尾

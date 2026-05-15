@@ -34,6 +34,7 @@ done
 - codex2api: 4922b64→18de86a (fix import file size limit to 20mb), sub2api: 无变更
 - CLIProxyAPI: 分支从 origin/fix/claude-oauth-api-call 迁移至 fork/fix/claude-oauth-api-call, 代码无变更
 - CPA-Dashboard: TypeScript 编译修复 (quotaConfigs.ts React 导入), 代码质量审计完成
+- 参考检查脚本验证：全部 5 个仓库本地与远程一致，0 behind
 
 ### 2026-05-14
 - cockpit-tools: v0.23.3 (158acf0, homebrew cask 更新), Kiro-account-manager: v1.6.2→v1.6.3 (f08ea9c, Claude Code 兼容性增强), codex2api: 44 commits since 71d0ee5 (4922b64), CLIProxyAPI: PR #3345 fix (722b82b1)
