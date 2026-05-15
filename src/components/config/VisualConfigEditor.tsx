@@ -869,6 +869,10 @@ export function VisualConfigEditor({
                         value: 'fill-first',
                         label: t('config_management.visual.sections.network.strategy_fill_first'),
                       },
+                      {
+                        value: 'codex-quota-score',
+                        label: t('config_management.visual.sections.network.strategy_codex_quota_score'),
+                      },
                     ]}
                     id={`${routingStrategyLabelId}-select`}
                     disabled={disabled}

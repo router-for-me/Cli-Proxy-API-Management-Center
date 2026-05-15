@@ -852,7 +852,12 @@ export function useVisualConfig() {
         quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
         quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
 
-        routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
+        routingStrategy:
+          routing?.strategy === 'fill-first'
+            ? 'fill-first'
+            : routing?.strategy === 'codex-quota-score'
+              ? 'codex-quota-score'
+              : 'round-robin',
         routingSessionAffinity: Boolean(
           routing?.['session-affinity'] ??
             routing?.sessionAffinity ??

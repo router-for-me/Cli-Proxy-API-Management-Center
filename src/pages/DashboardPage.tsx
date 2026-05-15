@@ -251,6 +251,8 @@ export function DashboardPage() {
       ? t('basic_settings.routing_strategy_round_robin')
       : routingStrategyRaw === 'fill-first'
         ? t('basic_settings.routing_strategy_fill_first')
+        : routingStrategyRaw === 'codex-quota-score'
+          ? t('basic_settings.routing_strategy_codex_quota_score')
         : routingStrategyRaw;
   const routingStrategyBadgeClass = !routingStrategyRaw
     ? styles.configBadgeUnknown
@@ -258,6 +260,8 @@ export function DashboardPage() {
       ? styles.configBadgeRoundRobin
       : routingStrategyRaw === 'fill-first'
         ? styles.configBadgeFillFirst
+        : routingStrategyRaw === 'codex-quota-score'
+          ? styles.configBadgeFillFirst
         : styles.configBadgeUnknown;
 
   // Derived time-based values
