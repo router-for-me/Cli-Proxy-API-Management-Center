@@ -194,7 +194,7 @@ export function LogsPage() {
         void loadLogs(false);
       }
     }
-  }, [connectionStatus]);
+  }, [connectionStatus, t]);
 
   useHeaderRefresh(() => loadLogs(false));
 
@@ -249,7 +249,7 @@ export function LogsPage() {
     } finally {
       setLoadingErrors(false);
     }
-  }, [connectionStatus]);
+  }, [connectionStatus, t]);
 
   const downloadErrorLog = async (name: string) => {
     try {

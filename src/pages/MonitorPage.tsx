@@ -300,7 +300,7 @@ export function MonitorPage() {
     if (!sqliteLoading) {
       loadData();
     }
-  }, [sqliteLoading]);
+  }, [sqliteLoading, loadData]);
 
   // 响应头部刷新：SQLite 模式用 refreshSqlite，旧模式用 loadData
   useHeaderRefresh(() => {
