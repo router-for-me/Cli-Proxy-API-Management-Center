@@ -16,6 +16,7 @@ import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { GeminiKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
+import { getErrorMessage } from '@/utils/error';
 import type { ModelInfo } from '@/utils/models';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
@@ -164,7 +165,7 @@ export function AiProvidersGeminiEditPage() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const message = err instanceof Error ? err.message : '';
+        const message = getErrorMessage(err);
         setError(message || t('notification.refresh_failed'));
       })
       .finally(() => {
@@ -276,7 +277,7 @@ export function AiProvidersGeminiEditPage() {
     } catch (err: unknown) {
       if (modelDiscoveryRequestIdRef.current !== requestId) return;
       setDiscoveredModels([]);
-      const message = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+      const message = getErrorMessage(err);
       const hasCustomXGoogApiKey = Object.keys(headerObject).some(
         (key) => key.toLowerCase() === 'x-goog-api-key'
       );
@@ -475,7 +476,7 @@ export function AiProvidersGeminiEditPage() {
       setBaseline(buildGeminiBaseline(form));
       handleBack();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '';
+      const message = getErrorMessage(err);
       setError(message);
       showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
     } finally {

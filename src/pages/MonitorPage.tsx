@@ -36,6 +36,7 @@ import { HourlyTokenChart } from '@/components/monitor/HourlyTokenChart';
 import { ChannelStats } from '@/components/monitor/ChannelStats';
 import { FailureAnalysis } from '@/components/monitor/FailureAnalysis';
 import { RequestLogs } from '@/components/monitor/RequestLogs';
+import { getErrorMessage } from '@/utils/error';
 import styles from './MonitorPage.module.scss';
 
 // 注册 Chart.js 组件
@@ -279,7 +280,7 @@ export function MonitorPage() {
       const data = response?.usage ?? response;
       setUsageData(data as UsageData);
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('common.unknown_error');
+      const message = getErrorMessage(err) || t('common.unknown_error');
       console.error('Monitor: Error loading data:', err);
       setError(message);
     } finally {

@@ -16,6 +16,7 @@ import { configApi, versionApi } from '@/services/api';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
+import { getErrorMessage } from '@/utils/error';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconClaude from '@/assets/icons/claude.svg';
@@ -199,7 +200,7 @@ export function SystemPage() {
           : t('system_info.models_empty'),
       });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+      const message = getErrorMessage(err);
       const suffix = message ? `: ${message}` : '';
       const text = `${t('system_info.models_error')}${suffix}`;
       setModelStatus({ type: 'error', message: text });

@@ -168,7 +168,7 @@ export function AiProvidersCodexEditPage() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const message = err instanceof Error ? err.message : '';
+        const message = getErrorMessage(err);
         setError(message || t('notification.refresh_failed'));
       })
       .finally(() => {
@@ -500,7 +500,7 @@ export function AiProvidersCodexEditPage() {
       setBaseline(buildCodexBaseline(form));
       handleBack();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '';
+      const message = getErrorMessage(err);
       setError(message);
       showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
     } finally {

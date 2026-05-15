@@ -19,6 +19,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useVisualConfig } from '@/hooks/useVisualConfig';
 import { useNotificationStore, useAuthStore, useThemeStore, useConfigStore } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
+import { getErrorMessage } from '@/utils/error';
 import styles from './ConfigPage.module.scss';
 
 type ConfigEditorTab = 'visual' | 'source';
@@ -101,7 +102,7 @@ export function ConfigPage() {
       setMergedYaml(data);
       loadVisualValuesFromYaml(data);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('notification.refresh_failed');
+      const message = getErrorMessage(err) || t('notification.refresh_failed');
       setError(message);
     } finally {
       setLoading(false);
@@ -161,7 +162,7 @@ export function ConfigPage() {
         showNotification(t('notification.commercial_mode_restart_required'), 'warning');
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '';
+      const message = getErrorMessage(err);
       showNotification(`${t('notification.save_failed')}: ${message}`, 'error');
     } finally {
       setSaving(false);
@@ -224,7 +225,7 @@ export function ConfigPage() {
       setMergedYaml(nextMergedYaml);
       setDiffModalOpen(true);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '';
+      const message = getErrorMessage(err);
       showNotification(`${t('notification.save_failed')}: ${message}`, 'error');
     } finally {
       setSaving(false);
