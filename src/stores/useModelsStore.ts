@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { modelsApi } from '@/services/api/models';
 import { CACHE_EXPIRY_MS } from '@/utils/constants';
+import { getErrorMessage } from '@/utils/error';
 import type { ModelInfo } from '@/utils/models';
 
 interface ModelsCache {
@@ -55,8 +56,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
 
       return list;
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'Failed to fetch models';
+      const message = getErrorMessage(error) || 'Failed to fetch models';
       set({
         error: message,
         loading: false,

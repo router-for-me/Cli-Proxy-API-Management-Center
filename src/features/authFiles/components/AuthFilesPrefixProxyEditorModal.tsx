@@ -8,7 +8,7 @@ import type {
   PrefixProxyEditorFieldValue,
   PrefixProxyEditorState,
 } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
-import styles from '@/pages/AuthFilesPage.module.scss';
+import styles from '@/features/authFiles/authFiles.module.scss';
 
 export type AuthFilesPrefixProxyEditorModalProps = {
   disableControls: boolean;
@@ -55,7 +55,7 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
             variant="secondary"
             onClick={() => {
               if (!updatedText) return;
-              void Promise.resolve(onCopyText(updatedText)).catch(() => {});
+              void Promise.resolve(onCopyText(updatedText)).catch((err) => { console.warn('copyText failed', err); });
             }}
             disabled={editor?.saving === true || !updatedText}
           >

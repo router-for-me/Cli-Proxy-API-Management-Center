@@ -12,6 +12,7 @@ import {
   createDisableState,
   type DisableState,
 } from '@/utils/monitor';
+import { getErrorMessage } from '@/utils/error';
 import type { SourceInfo } from '@/types/sourceInfo';
 import type { OpenAIProviderConfig } from '@/types';
 
@@ -87,7 +88,7 @@ export function useDisableModel(options: UseDisableModelOptions): UseDisableMode
       setDisableState(null);
     } catch (err) {
       console.error('禁用模型失败：', err);
-      alert(err instanceof Error ? err.message : t('monitor.logs.disable_error'));
+      alert(getErrorMessage(err) || t('monitor.logs.disable_error'));
     } finally {
       setDisabling(false);
     }

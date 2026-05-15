@@ -191,7 +191,7 @@ function StatBar({ additions, deletions }: { additions: number; deletions: numbe
     <span className={styles.statBar}>
       {Array.from({ length: STAT_BLOCKS }, (_, i) => (
         <span
-          key={i}
+          key={`block-${i}`}
           className={`${styles.statBlock} ${i < addBlocks ? styles.statBlockAdd : styles.statBlockDel}`}
         />
       ))}

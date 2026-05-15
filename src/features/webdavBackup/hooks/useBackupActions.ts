@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getErrorMessage } from '@/utils/error';
 import { useNotificationStore, useAuthStore } from '@/stores';
 import { configApi, usageApi } from '@/services/api';
 import { webdavClient } from '../client/webdavClient';
@@ -127,7 +128,7 @@ export function useBackupActions() {
       }
     } catch (err) {
       console.error('[WebDAV Backup] Backup failed:', err);
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = getErrorMessage(err) || String(err);
       showNotification(`${t('backup.backup_failed')}: ${msg}`, 'error');
     } finally {
       setIsBackingUp(false);
@@ -150,7 +151,7 @@ export function useBackupActions() {
       showNotification(t('backup.export_success'), 'success');
     } catch (err) {
       console.error('[WebDAV Backup] Export failed:', err);
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = getErrorMessage(err) || String(err);
       showNotification(`${t('backup.export_failed')}: ${msg}`, 'error');
     }
   }, [t, showNotification]);
@@ -171,7 +172,7 @@ export function useBackupActions() {
         });
     } catch (err) {
       console.error('[WebDAV Backup] List failed:', err);
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = getErrorMessage(err) || String(err);
       showNotification(`${t('backup.list_failed')}: ${msg}`, 'error');
       return [];
     } finally {
@@ -193,7 +194,7 @@ export function useBackupActions() {
         URL.revokeObjectURL(url);
       } catch (err) {
         console.error('[WebDAV Backup] Download failed:', err);
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = getErrorMessage(err) || String(err);
         showNotification(`${t('backup.download_failed')}: ${msg}`, 'error');
       }
     },
@@ -208,7 +209,7 @@ export function useBackupActions() {
         showNotification(t('backup.delete_success'), 'success');
       } catch (err) {
         console.error('[WebDAV Backup] Delete failed:', err);
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = getErrorMessage(err) || String(err);
         showNotification(`${t('backup.delete_failed')}: ${msg}`, 'error');
       }
     },
@@ -232,7 +233,7 @@ export function useBackupActions() {
         showNotification(t('backup.restore_success'), 'success');
       } catch (err) {
         console.error('[WebDAV Backup] Restore failed:', err);
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = getErrorMessage(err) || String(err);
         showNotification(`${t('backup.restore_failed')}: ${msg}`, 'error');
       } finally {
         setIsRestoring(false);
@@ -258,7 +259,7 @@ export function useBackupActions() {
         showNotification(t('backup.restore_success'), 'success');
       } catch (err) {
         console.error('[WebDAV Backup] Local restore failed:', err);
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = getErrorMessage(err) || String(err);
         showNotification(`${t('backup.restore_failed')}: ${msg}`, 'error');
       } finally {
         setIsRestoring(false);

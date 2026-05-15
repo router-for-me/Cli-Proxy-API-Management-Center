@@ -242,7 +242,7 @@ export function ServiceHealthCard({ usage, loading }: ServiceHealthCardProps) {
 
             return (
               <div
-                key={idx}
+                key={detail.startTime}
                 className={`${styles.healthBlockWrapper} ${isActive ? styles.healthBlockActive : ''}`}
                 onPointerEnter={(e) => handlePointerEnter(e, idx)}
                 onPointerLeave={handlePointerLeave}

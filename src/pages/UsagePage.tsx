@@ -268,7 +268,7 @@ export function UsagePage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => void loadUsage().catch(() => {})}
+            onClick={() => void loadUsage().catch((err) => { console.warn('loadUsage failed', err); })}
             disabled={loading || exporting || importing}
           >
             {loading ? t('common.loading') : t('usage_stats.refresh')}

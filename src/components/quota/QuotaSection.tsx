@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
+import { getErrorMessage } from '@/utils/error';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { getStatusFromError } from '@/utils/quota';
 import { QuotaCard } from './QuotaCard';
@@ -222,7 +223,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         }));
         showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : t('common.unknown_error');
+        const message = getErrorMessage(err) || t('common.unknown_error');
         const status = getStatusFromError(err);
         setQuota((prev) => ({
           ...prev,

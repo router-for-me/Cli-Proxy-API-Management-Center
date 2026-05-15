@@ -736,7 +736,7 @@ export function LogsPage() {
                           key={`${logState.visibleFrom + index}-${line.raw}`}
                           className={rowClassNames.join(' ')}
                           onDoubleClick={() => {
-                            void copyLogLine(line.raw).catch(() => {});
+                            void copyLogLine(line.raw).catch((err) => { console.warn('copyLogLine failed', err); });
                           }}
                           onPointerDown={(event) => startLongPress(event, line.requestId)}
                           onPointerUp={cancelLongPress}
@@ -922,7 +922,7 @@ export function LogsPage() {
                 variant="secondary"
                 onClick={() => {
                   if (trace.traceLogLine?.requestId) {
-                    void downloadRequestLog(trace.traceLogLine.requestId).catch(() => {});
+                    void downloadRequestLog(trace.traceLogLine.requestId).catch((err) => { console.warn('downloadRequestLog failed', err); });
                   }
                 }}
                 loading={requestLogDownloading}
@@ -990,7 +990,7 @@ export function LogsPage() {
                 variant="secondary"
                 size="sm"
                 onClick={() => {
-                  void trace.refreshTraceUsageDetails().catch(() => {});
+                  void trace.refreshTraceUsageDetails().catch((err) => { console.warn('refreshTraceUsageDetails failed', err); });
                 }}
                 loading={trace.traceLoading}
                 disabled={requestLogDownloading}
@@ -1091,7 +1091,7 @@ export function LogsPage() {
             <Button
               onClick={() => {
                 if (requestLogId) {
-                  void downloadRequestLog(requestLogId).catch(() => {});
+                  void downloadRequestLog(requestLogId).catch((err) => { console.warn('downloadRequestLog failed', err); });
                 }
               }}
               loading={requestLogDownloading}

@@ -3,6 +3,7 @@
  * 轮询 CLIProxyAPI 后端 /v0/management/usage-sqlite/* 端点
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getErrorMessage } from '@/utils/error';
 import { usageSqliteApi, type UsageStats, type UsageRecord, type ModelStat, type DailyStat } from '@/services/api/usageSqlite';
 import { SQLITE_USAGE_DEFAULT_LIMIT, SQLITE_USAGE_DEFAULT_SINCE } from '@/utils/constants';
 
@@ -68,7 +69,7 @@ export function useSqliteUsage(options: UseSqliteUsageOptions = {}): UseSqliteUs
       }
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch SQLite usage data');
+      setError(getErrorMessage(err) || 'Failed to fetch SQLite usage data');
     } finally {
       setLoading(false);
     }
@@ -81,7 +82,7 @@ export function useSqliteUsage(options: UseSqliteUsageOptions = {}): UseSqliteUs
       setRecords(prev => [...prev, ...res.records]);
       setTotalRecords(res.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load more records');
+      setError(getErrorMessage(err) || 'Failed to load more records');
     }
   }, [since, records.length]);
 

@@ -127,7 +127,7 @@ export function ProviderStatusBar({ statusData, styles: stylesProp }: ProviderSt
 
           return (
             <div
-              key={idx}
+              key={detail.startTime}
               className={`${s.statusBlockWrapper} ${isActive ? s.statusBlockActive : ''}`}
               onPointerEnter={(e) => handlePointerEnter(e, idx)}
               onPointerLeave={handlePointerLeave}

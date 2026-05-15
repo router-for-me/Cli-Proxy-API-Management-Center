@@ -318,7 +318,7 @@ export function AuthFilesPage() {
       if (!isAuthFilesSortMode(value) || value === sortMode) return;
       setSortMode(value);
       setPage(1);
-      void loadFiles().catch(() => {});
+      void loadFiles().catch((err) => { console.warn('loadFiles failed', err); });
     },
     [loadFiles, sortMode]
   );
@@ -332,14 +332,14 @@ export function AuthFilesPage() {
   useEffect(() => {
     if (!isCurrentLayer) return;
     loadFiles();
-    void loadKeyStats().catch(() => {});
+    void loadKeyStats().catch((err) => { console.warn('loadKeyStats failed', err); });
     loadExcluded();
     loadModelAlias();
   }, [isCurrentLayer, loadFiles, loadKeyStats, loadExcluded, loadModelAlias]);
 
   useInterval(
     () => {
-      void refreshKeyStats().catch(() => {});
+      void refreshKeyStats().catch((err) => { console.warn('refreshKeyStats failed', err); });
     },
     isCurrentLayer ? 240_000 : null
   );

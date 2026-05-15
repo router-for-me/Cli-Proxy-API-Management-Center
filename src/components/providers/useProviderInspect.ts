@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { modelsApi } from '@/services/api';
+import { getErrorMessage } from '@/utils/error';
 
 type InspectStatus = 'idle' | 'checking' | 'success' | 'error';
 
@@ -32,7 +33,7 @@ export function useProviderInspect() {
         return next;
       });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = getErrorMessage(err) || String(err);
       setInspectMap(prev => {
         const next = new Map(prev);
         next.set(key, { status: 'error', error: message });

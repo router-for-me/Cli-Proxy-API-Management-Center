@@ -326,9 +326,9 @@ export function ChannelStats({ data, loading, providerMap, providerModels, sourc
                       </td>
                       <td>
                         <div className={styles.statusBars}>
-                          {stat.recentRequests.map((req, i) => (
+                          {stat.recentRequests.map((req) => (
                             <div
-                              key={i}
+                              key={req.timestamp}
                               className={`${styles.statusBar} ${req.failed ? styles.failure : styles.success}`}
                             />
                           ))}
@@ -380,9 +380,9 @@ export function ChannelStats({ data, loading, providerMap, providerModels, sourc
                                       </td>
                                       <td>
                                         <div className={styles.statusBars}>
-                                          {modelStat.recentRequests.map((req, i) => (
+                                          {modelStat.recentRequests.map((req) => (
                                             <div
-                                              key={i}
+                                              key={req.timestamp}
                                               className={`${styles.statusBar} ${req.failed ? styles.failure : styles.success}`}
                                             />
                                           ))}

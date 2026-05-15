@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { USAGE_STATS_STALE_TIME_MS, useNotificationStore, useUsageStatsStore } from '@/stores';
 import { usageApi } from '@/services/api/usage';
 import { downloadBlob } from '@/utils/download';
+import { getErrorMessage } from '@/utils/error';
 import { loadModelPrices, saveModelPrices, type ModelPrice } from '@/utils/usage';
 
 export interface UsagePayload {
@@ -49,7 +50,7 @@ export function useUsageData(): UseUsageDataReturn {
   }, [loadUsageStats]);
 
   useEffect(() => {
-    void loadUsageStats({ staleTimeMs: USAGE_STATS_STALE_TIME_MS }).catch(() => {});
+    void loadUsageStats({ staleTimeMs: USAGE_STATS_STALE_TIME_MS }).catch((err) => { console.warn('loadUsageStats failed', err); });
     setModelPrices(loadModelPrices());
   }, [loadUsageStats]);
 
@@ -69,7 +70,7 @@ export function useUsageData(): UseUsageDataReturn {
       });
       showNotification(t('usage_stats.export_success'), 'success');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '';
+      const message = getErrorMessage(err);
       showNotification(
         `${t('notification.download_failed')}${message ? `: ${message}` : ''}`,
         'error'
@@ -112,14 +113,14 @@ export function useUsageData(): UseUsageDataReturn {
       try {
         await loadUsageStats({ force: true, staleTimeMs: USAGE_STATS_STALE_TIME_MS });
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : '';
+        const message = getErrorMessage(err);
         showNotification(
           `${t('notification.refresh_failed')}${message ? `: ${message}` : ''}`,
           'error'
         );
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '';
+      const message = getErrorMessage(err);
       showNotification(
         `${t('notification.upload_failed')}${message ? `: ${message}` : ''}`,
         'error'

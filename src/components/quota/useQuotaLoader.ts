@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { AuthFileItem } from '@/types';
 import { useQuotaStore } from '@/stores';
 import { getStatusFromError } from '@/utils/quota';
+import { getErrorMessage } from '@/utils/error';
 import type { QuotaConfig } from './quotaConfigs';
 
 type QuotaScope = 'page' | 'all';
@@ -61,7 +62,7 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
               const data = await config.fetchQuota(file, t);
               return { name: file.name, status: 'success', data };
             } catch (err: unknown) {
-              const message = err instanceof Error ? err.message : t('common.unknown_error');
+              const message = getErrorMessage(err) || t('common.unknown_error');
               const errorStatus = getStatusFromError(err);
               return { name: file.name, status: 'error', error: message, errorStatus };
             }

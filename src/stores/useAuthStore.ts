@@ -13,6 +13,7 @@ import { useConfigStore } from './useConfigStore';
 import { useUsageStatsStore } from './useUsageStatsStore';
 import { useModelsStore } from './useModelsStore';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
+import { getErrorMessage } from '@/utils/error';
 
 interface AuthStoreState extends AuthState {
   connectionStatus: ConnectionStatus;
@@ -121,12 +122,7 @@ export const useAuthStore = create<AuthStoreState>()(
             localStorage.removeItem('isLoggedIn');
           }
         } catch (error: unknown) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : typeof error === 'string'
-                ? error
-                : 'Connection failed';
+          const message = getErrorMessage(error) || 'Connection failed';
           set({
             connectionStatus: 'error',
             connectionError: message || 'Connection failed'

@@ -11,6 +11,7 @@ import {
   type UsageDetailWithEndpoint
 } from '@/utils/usage';
 import { parseTimestampMs } from '@/utils/timestamp';
+import { getErrorMessage } from '@/utils/error';
 import type { ParsedLogLine } from './logTypes';
 
 export type TraceCandidate = {
@@ -55,16 +56,6 @@ const extractModelFromMessage = (message?: string): string | undefined => {
 const isPathMatch = (logPath: string, detailPath: string): boolean => {
   if (!logPath || !detailPath) return false;
   return logPath === detailPath || logPath.startsWith(detailPath) || detailPath.startsWith(logPath);
-};
-
-const getErrorMessage = (err: unknown): string => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  if (typeof err !== 'object' || err === null) return '';
-  if (!('message' in err)) return '';
-
-  const message = (err as { message?: unknown }).message;
-  return typeof message === 'string' ? message : '';
 };
 
 interface UseTraceResolverOptions {

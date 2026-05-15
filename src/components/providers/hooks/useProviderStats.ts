@@ -30,7 +30,7 @@ export const useProviderStats = (options: UseProviderStatsOptions = {}) => {
   }, [loadUsageStats]);
 
   useInterval(() => {
-    void refreshKeyStats().catch(() => {});
+    void refreshKeyStats().catch((err) => { console.warn('refreshKeyStats failed', err); });
   }, enabled ? 240_000 : null);
 
   return { keyStats, usageDetails, loadKeyStats, refreshKeyStats, isLoading };

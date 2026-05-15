@@ -36,6 +36,7 @@ import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
 import { useAutoBackup } from '@/features/webdavBackup/hooks/useAutoBackup';
+import { getErrorMessage } from '@/utils/error';
 import type { Theme } from '@/types';
 
 const sidebarIcons: Record<string, ReactNode> = {
@@ -524,8 +525,7 @@ export function MainLayout() {
     const rejected = results.find((result) => result.status === 'rejected');
     if (rejected && rejected.status === 'rejected') {
       const reason = rejected.reason;
-      const message =
-        typeof reason === 'string' ? reason : reason instanceof Error ? reason.message : '';
+      const message = getErrorMessage(reason);
       showNotification(
         `${t('notification.refresh_failed')}${message ? `: ${message}` : ''}`,
         'error'

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { usageApi } from '@/services/api';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { collectUsageDetails, computeKeyStatsFromDetails, type KeyStats, type UsageDetail } from '@/utils/usage';
+import { getErrorMessage } from '@/utils/error';
 import i18n from '@/i18n';
 
 export const USAGE_STATS_STALE_TIME_MS = 240_000;
@@ -29,13 +30,6 @@ const createEmptyKeyStats = (): KeyStats => ({ bySource: {}, byAuthIndex: {} });
 
 let usageRequestToken = 0;
 let inFlightUsageRequest: { id: number; scopeKey: string; promise: Promise<void> } | null = null;
-
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error
-    ? error.message
-    : typeof error === 'string'
-      ? error
-      : i18n.t('usage_stats.loading_error');
 
 export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
   usage: null,
@@ -110,7 +104,7 @@ export const useUsageStatsStore = create<UsageStatsState>((set, get) => ({
         });
       } catch (error: unknown) {
         if (requestId !== usageRequestToken) return;
-        const message = getErrorMessage(error);
+        const message = getErrorMessage(error) || i18n.t('usage_stats.loading_error');
         set({
           loading: false,
           error: message,

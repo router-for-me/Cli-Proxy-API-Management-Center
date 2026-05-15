@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import styles from '@/pages/AuthFilesPage.module.scss';
+import styles from '@/features/authFiles/authFiles.module.scss';
 
 type UnsupportedError = 'unsupported' | null;
 

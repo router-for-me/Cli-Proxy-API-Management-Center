@@ -1,5 +1,6 @@
 import { useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getErrorMessage } from '@/utils/error';
 import type { TFunction } from 'i18next';
 import {
   ANTIGRAVITY_CONFIG,
@@ -17,7 +18,7 @@ import {
   type QuotaProviderType
 } from '@/features/authFiles/constants';
 import { QuotaProgressBar } from '@/features/authFiles/components/QuotaProgressBar';
-import styles from '@/pages/AuthFilesPage.module.scss';
+import styles from '@/features/authFiles/authFiles.module.scss';
 
 type QuotaState = { status?: string; error?: string; errorStatus?: number } | undefined;
 
@@ -84,7 +85,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       }));
       showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('common.unknown_error');
+      const message = getErrorMessage(err) || t('common.unknown_error');
       const status = getStatusFromError(err);
       updateQuotaState((prev: Record<string, unknown>) => ({
         ...prev,

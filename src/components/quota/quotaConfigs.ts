@@ -3,6 +3,7 @@
  */
 
 import React, { type ReactNode } from 'react';
+import { getErrorMessage } from '@/utils/error';
 import type { TFunction } from 'i18next';
 import type {
   AntigravityQuotaGroup,
@@ -209,7 +210,7 @@ const fetchAntigravityQuota = async (
 
       return groups;
     } catch (err: unknown) {
-      lastError = err instanceof Error ? err.message : t('common.unknown_error');
+      lastError = getErrorMessage(err) || t('common.unknown_error');
       const status = getStatusFromError(err);
       if (status) {
         lastStatus = status;

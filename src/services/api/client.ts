@@ -11,6 +11,7 @@ import {
   VERSION_HEADER_KEYS
 } from '@/utils/constants';
 import { computeApiUrl } from '@/utils/connection';
+import { getErrorMessage } from '@/utils/error';
 
 class ApiClient {
   private instance: AxiosInstance;
@@ -161,8 +162,7 @@ class ApiClient {
       return apiError;
     }
 
-    const fallbackMessage =
-      error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error occurred';
+    const fallbackMessage = getErrorMessage(error) || 'Unknown error occurred';
     const fallback = new Error(fallbackMessage) as ApiError;
     fallback.name = 'ApiError';
     return fallback;

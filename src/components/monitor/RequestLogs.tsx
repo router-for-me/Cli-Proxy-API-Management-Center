@@ -178,7 +178,7 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
 
   // 检测 SQLite 持久化是否启用
   useEffect(() => {
-    usageSqliteApi.getEnabled().then(res => setSqliteEnabled(res.enabled)).catch(() => {});
+    usageSqliteApi.getEnabled().then(res => setSqliteEnabled(res.enabled)).catch((err) => { console.warn('checkSqliteEnabled failed', err); });
   }, []);
 
   // 独立获取日志数据
@@ -485,9 +485,9 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
         </td>
         <td>
           <div className={styles.statusBars}>
-            {stats.recentRequests.map((req, idx) => (
+            {stats.recentRequests.map((req) => (
               <div
-                key={idx}
+                key={req.timestamp}
                 className={`${styles.statusBar} ${req.failed ? styles.failure : styles.success}`}
               />
             ))}
@@ -573,8 +573,8 @@ export function RequestLogs({ data, loading: parentLoading, providerMap, provide
             onChange={(e) => setFilterAuthIndex(e.target.value)}
           >
             <option value="">{t('monitor.logs.all_auth')}</option>
-            {authIndices.map((idx) => (
-              <option key={idx} value={idx}>{idx}</option>
+            {authIndices.map((authIdx) => (
+              <option key={authIdx} value={authIdx}>{authIdx}</option>
             ))}
           </select>
           <select

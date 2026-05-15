@@ -398,9 +398,9 @@ export function FailureAnalysis({ data, loading, providerMap, providerModels, so
                                         </td>
                                         <td>
                                           <div className={styles.statusBars}>
-                                            {modelStat.recentRequests.map((req, i) => (
+                                            {modelStat.recentRequests.map((req) => (
                                               <div
-                                                key={i}
+                                                key={req.timestamp}
                                                 className={`${styles.statusBar} ${req.failed ? styles.failure : styles.success}`}
                                               />
                                             ))}

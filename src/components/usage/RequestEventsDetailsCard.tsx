@@ -140,7 +140,7 @@ export function RequestEventsDetailsCard({
         });
         setAuthFileMap(map);
       })
-      .catch(() => {});
+      .catch((err) => { console.warn('loadAuthFileMap failed', err); });
     return () => {
       cancelled = true;
     };

@@ -11,6 +11,7 @@ import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection'
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
+import { getErrorMessage } from '@/utils/error';
 import type { ApiError } from '@/types';
 import styles from './LoginPage.module.scss';
 
@@ -23,14 +24,7 @@ function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): s
   const apiError = error as Partial<ApiError>;
   const status = typeof apiError.status === 'number' ? apiError.status : undefined;
   const code = typeof apiError.code === 'string' ? apiError.code : undefined;
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof apiError.message === 'string'
-        ? apiError.message
-        : typeof error === 'string'
-          ? error
-          : '';
+  const message = getErrorMessage(error);
 
   // 根据 HTTP 状态码判断
   if (status === 401) {

@@ -8,6 +8,7 @@ import type { Config } from '@/types';
 import type { RawConfigSection } from '@/types/config';
 import { configApi } from '@/services/api/config';
 import { CACHE_EXPIRY_MS } from '@/utils/constants';
+import { getErrorMessage } from '@/utils/error';
 
 interface ConfigCache {
   data: unknown;
@@ -167,8 +168,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
       return section ? extractSectionValue(data, section) : data;
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'Failed to fetch config';
+      const message = getErrorMessage(error) || 'Failed to fetch config';
       if (requestId === configRequestToken) {
         set({
           error: message || 'Failed to fetch config',

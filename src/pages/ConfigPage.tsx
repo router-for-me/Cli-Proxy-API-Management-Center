@@ -146,11 +146,7 @@ export function ConfigPage() {
         await useConfigStore.getState().fetchConfig(undefined, true);
       } catch (refreshError: unknown) {
         const message =
-          refreshError instanceof Error
-            ? refreshError.message
-            : typeof refreshError === 'string'
-              ? refreshError
-              : '';
+          getErrorMessage(refreshError) || '';
         showNotification(
           `${t('notification.refresh_failed')}${message ? `: ${message}` : ''}`,
           'error'

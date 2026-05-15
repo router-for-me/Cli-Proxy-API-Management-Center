@@ -123,7 +123,7 @@ export function AiProvidersPage() {
 
   useEffect(() => {
     if (!isCurrentLayer) return;
-    void loadKeyStats().catch(() => {});
+    void loadKeyStats().catch((err) => { console.warn('loadKeyStats failed', err); });
   }, [isCurrentLayer, loadKeyStats]);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import styles from '@/pages/AuthFilesPage.module.scss';
+import styles from '@/features/authFiles/authFiles.module.scss';
 
 export type QuotaProgressBarProps = {
   percent: number | null;

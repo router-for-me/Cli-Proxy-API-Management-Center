@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getErrorMessage } from '@/utils/error';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -46,7 +47,7 @@ export function WebdavConnectionCard() {
       showNotification(t('backup.connection_success'), 'success');
     } catch (err) {
       setConnectionStatus('error');
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = getErrorMessage(err) || String(err);
       showNotification(`${t('backup.connection_failed')}: ${msg}`, 'error');
     } finally {
       setTesting(false);

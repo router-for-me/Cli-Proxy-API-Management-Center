@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useReducer } from 'react';
 import { isMap, parse as parseYaml, parseDocument } from 'yaml';
+import { getErrorMessage } from '@/utils/error';
 import type {
   PayloadFilterRule,
   PayloadParamEntry,
@@ -890,7 +891,7 @@ export function useVisualConfig() {
       dispatch({ type: 'load_success', values: newValues });
       return { ok: true as const };
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Invalid YAML';
+      const message = getErrorMessage(error) || 'Invalid YAML';
       dispatch({ type: 'load_error', error: message });
       return { ok: false as const, error: message };
     }
