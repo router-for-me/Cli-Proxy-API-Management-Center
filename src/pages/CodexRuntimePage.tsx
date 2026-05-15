@@ -540,11 +540,6 @@ export function CodexRuntimePage() {
                       {t('codex_runtime.disabled')}
                     </span>
                   ) : null}
-                  {item.unavailable ? (
-                    <span className={`${styles.flagBadge} ${styles.warn}`}>
-                      {t('codex_runtime.unavailable')}
-                    </span>
-                  ) : null}
                 </div>
 
                 <div className={styles.section}>
