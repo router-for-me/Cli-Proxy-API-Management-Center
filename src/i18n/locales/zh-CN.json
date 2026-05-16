@@ -260,7 +260,11 @@
     "vertex_models_add_btn": "添加映射",
     "vertex_models_count": "别名数量",
     "vertex_models_label": "模型别名:",
-    "vertex_title": "Vertex API 配置"
+    "vertex_title": "Vertex API 配置",
+    "ampcode_clear_upstream_api_key_title": "清除上游 API 密钥",
+    "gemini_delete_title": "删除 Gemini 密钥",
+    "openai_delete_title": "删除 OpenAI 提供商",
+    "vertex_delete_title": "删除 Vertex 配置"
   },
   "antigravity_quota": {
     "empty_desc": "上传 Antigravity 认证文件后即可查看额度。",
@@ -440,7 +444,9 @@
     "upload_error_size": "文件大小不能超过 {{maxSize}}",
     "upload_success": "文件上传成功",
     "view_mode_all": "显示全部",
-    "view_mode_paged": "按页显示"
+    "view_mode_paged": "按页显示",
+    "delete_all_title": "删除全部文件",
+    "delete_title": "删除文件"
   },
   "auth_login": {
     "anthropic_copy_link": "复制链接",
@@ -1079,7 +1085,8 @@
         "payload_invalid_number": "请输入有效数字",
         "port_range": "请输入 1 到 65535 之间的有效端口",
         "validation_blocked": "请先修复表单校验错误再保存"
-      }
+      },
+      "validation_blocked_short": "待修复"
     },
     "visual_mode_latest_yaml_invalid": "服务端最新配置包含无效 YAML，请先切回源码模式检查后再保存可视化修改：{{message}}",
     "visual_mode_save_blocked": "请先修复 YAML 语法错误，再从可视化模式保存",
@@ -1207,7 +1214,9 @@
     "submit_button": "登录",
     "submitting": "连接中...",
     "subtitle": "请输入连接信息以访问管理界面",
-    "use_current_address": "使用当前地址"
+    "use_current_address": "使用当前地址",
+    "hide_key": "隐藏密钥",
+    "show_key": "显示密钥"
   },
   "logs": {
     "auto_refresh": "自动刷新",
@@ -1295,7 +1304,8 @@
     "trace_title": "请求追踪 (V1)",
     "trace_usage_load_error": "加载请求追踪所需 usage 明细失败",
     "upgrade_required_desc": "当前服务器版本不支持日志查看功能，请升级到最新版本的 CLI Proxy API 以使用此功能。",
-    "upgrade_required_title": "需要升级 CLI Proxy API"
+    "upgrade_required_title": "需要升级 CLI Proxy API",
+    "clear_confirm_title": "清空日志"
   },
   "monitor": {
     "api_filter": "API 查询",
@@ -1597,7 +1607,8 @@
     "title": "OAuth 模型禁用",
     "upgrade_required": "当前 CPA 版本不支持 OAuth 模型禁用，请升级 CPA 版本",
     "upgrade_required_desc": "当前服务器版本不支持获取 OAuth 模型禁用功能，请升级到最新版本的 CPA（CLI Proxy API）后重试。",
-    "upgrade_required_title": "需要升级 CPA 版本"
+    "upgrade_required_title": "需要升级 CPA 版本",
+    "delete_title": "删除禁用"
   },
   "oauth_model_alias": {
     "add": "新增别名",
@@ -1659,7 +1670,8 @@
     "upgrade_required_title": "需要升级 CPA 版本",
     "view_mode": "视图模式",
     "view_mode_diagram": "概览",
-    "view_mode_list": "管理"
+    "view_mode_list": "管理",
+    "delete_title": "删除别名映射"
   },
   "quota_management": {
     "card_idle_hint": "请使用顶部“刷新全部凭证”按钮获取最新额度。",
@@ -1677,7 +1689,9 @@
   },
   "sidebar": {
     "toggle_collapse": "收起侧边栏",
-    "toggle_expand": "展开侧边栏"
+    "toggle_expand": "展开侧边栏",
+    "collapse": "收起",
+    "expand": "展开"
   },
   "splash": {
     "subtitle": "管理中心",

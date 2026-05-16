@@ -260,7 +260,11 @@
     "codex_inspect_checking": "檢測中...",
     "codex_inspect_failed": "連線失敗",
     "codex_inspect_success": "連線成功",
-    "codex_test_connection": "測試連線"
+    "codex_test_connection": "測試連線",
+    "ampcode_clear_upstream_api_key_title": "清除上游 API 金鑰",
+    "gemini_delete_title": "刪除 Gemini 金鑰",
+    "openai_delete_title": "刪除 OpenAI 供應商",
+    "vertex_delete_title": "刪除 Vertex 設定"
   },
   "antigravity_quota": {
     "title": "Antigravity 配額",
@@ -440,7 +444,9 @@
     "quota_refresh_single": "重新整理配額",
     "quota_refresh_hint": "僅重新整理此憑證的配額",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "delete_all_title": "刪除全部檔案",
+    "delete_title": "刪除檔案"
   },
   "auth_login": {
     "codex_oauth_title": "Codex OAuth",
@@ -973,7 +979,8 @@
         "cancel": "取消",
         "update": "更新",
         "add": "新增"
-      }
+      },
+      "validation_blocked_short": "待修復"
     }
   },
   "connection": {
@@ -1096,7 +1103,9 @@
     "error_not_found": "伺服器位址無效或管理介面未啟用",
     "error_server": "伺服器內部錯誤，請稍後再試",
     "error_cors": "跨域請求被阻擋，請檢查伺服器設定",
-    "error_ssl": "SSL/TLS 憑證驗證失敗"
+    "error_ssl": "SSL/TLS 憑證驗證失敗",
+    "hide_key": "隱藏金鑰",
+    "show_key": "顯示金鑰"
   },
   "logs": {
     "title": "記錄檢視",
@@ -1184,7 +1193,8 @@
     "lines": "行",
     "removed": "已篩選",
     "upgrade_required_title": "需要升級 CLI Proxy API",
-    "upgrade_required_desc": "目前伺服器版本不支援記錄檢視功能，請升級到最新版本的 CLI Proxy API 以使用此功能。"
+    "upgrade_required_desc": "目前伺服器版本不支援記錄檢視功能，請升級到最新版本的 CLI Proxy API 以使用此功能。",
+    "clear_confirm_title": "清空記錄"
   },
   "monitor": {
     "api_filter": "API 查詢",
@@ -1486,7 +1496,8 @@
     "scope_provider": "目前範圍：{{provider}}",
     "upgrade_required": "目前 CPA 版本不支援 OAuth 模型停用，請升級 CPA 版本",
     "upgrade_required_title": "需要升級 CPA 版本",
-    "upgrade_required_desc": "目前伺服器版本不支援取得 OAuth 模型停用功能，請升級到最新版本的 CPA（CLI Proxy API）後重試。"
+    "upgrade_required_desc": "目前伺服器版本不支援取得 OAuth 模型停用功能，請升級到最新版本的 CPA（CLI Proxy API）後重試。",
+    "delete_title": "刪除停用"
   },
   "oauth_model_alias": {
     "title": "OAuth 模型別名",
@@ -1548,7 +1559,8 @@
     "provider_required": "請先填寫供應商名稱",
     "upgrade_required": "目前 CPA 版本不支援模型別名功能，請升級 CPA 版本",
     "upgrade_required_title": "需要升級 CPA 版本",
-    "upgrade_required_desc": "目前伺服器版本不支援 OAuth 模型別名功能，請升級到最新版本的 CPA（CLI Proxy API）後重試。"
+    "upgrade_required_desc": "目前伺服器版本不支援 OAuth 模型別名功能，請升級到最新版本的 CPA（CLI Proxy API）後重試。",
+    "delete_title": "刪除別名映射"
   },
   "quota_management": {
     "title": "配額管理",
@@ -1566,7 +1578,9 @@
   },
   "sidebar": {
     "toggle_expand": "展開側邊欄",
-    "toggle_collapse": "收起側邊欄"
+    "toggle_collapse": "收起側邊欄",
+    "collapse": "收起",
+    "expand": "展開"
   },
   "splash": {
     "title": "CLI Proxy API",

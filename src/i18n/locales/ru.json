@@ -98,7 +98,9 @@
     "error_not_found": "Неверный адрес сервера или интерфейс управления не включён",
     "error_server": "Внутренняя ошибка сервера, попробуйте позже",
     "error_cors": "Блокировка CORS, проверьте конфигурацию сервера",
-    "error_ssl": "Ошибка проверки SSL/TLS сертификата"
+    "error_ssl": "Ошибка проверки SSL/TLS сертификата",
+    "hide_key": "Скрыть ключ",
+    "show_key": "Показать ключ"
   },
   "header": {
     "check_connection": "Проверить подключение",
@@ -470,7 +472,11 @@
     "codex_test_connection": "Проверить подключение",
     "search_empty_desc": "Попробуйте другой запрос или очистите строку поиска",
     "search_empty_title": "Совпадений не найдено",
-    "search_placeholder": "Поиск конфигов (ключи, URL, модели...)"
+    "search_placeholder": "Поиск конфигов (ключи, URL, модели...)",
+    "ampcode_clear_upstream_api_key_title": "Очистить upstream API-ключ",
+    "gemini_delete_title": "Удалить Gemini-ключ",
+    "openai_delete_title": "Удалить OpenAI-провайдера",
+    "vertex_delete_title": "Удалить Vertex-конфиг"
   },
   "auth_files": {
     "title": "Управление файлами авторизации",
@@ -624,7 +630,9 @@
     "headers_invalid_object": "Пользовательские заголовки должны быть JSON-объектом.",
     "headers_invalid_value": "Каждое значение заголовка должно быть строкой.",
     "headers_label": "Пользовательские заголовки (headers)",
-    "headers_placeholder": "{\n  \"Header-Name\": \"value\"\n}"
+    "headers_placeholder": "{\n  \"Header-Name\": \"value\"\n}",
+    "delete_all_title": "Удалить все файлы",
+    "delete_title": "Удалить файл"
   },
   "antigravity_quota": {
     "title": "Квота Antigravity",
@@ -787,7 +795,8 @@
     "scope_provider": "Область: {{provider}}",
     "upgrade_required": "Текущая версия CPA не поддерживает отключение OAuth-моделей. Пожалуйста, обновите систему.",
     "upgrade_required_title": "Пожалуйста, обновите CLI Proxy API",
-    "upgrade_required_desc": "Текущая версия сервера не поддерживает получение отключения OAuth-моделей. Обновите CPA (CLI Proxy API) до последней версии и повторите попытку."
+    "upgrade_required_desc": "Текущая версия сервера не поддерживает получение отключения OAuth-моделей. Обновите CPA (CLI Proxy API) до последней версии и повторите попытку.",
+    "delete_title": "Удалить отключение"
   },
   "oauth_model_alias": {
     "title": "Псевдонимы моделей OAuth",
@@ -849,7 +858,8 @@
     "provider_required": "Сначала укажите провайдера",
     "upgrade_required": "Эта функция требует более новой версии CLI Proxy API (CPA). Обновите систему.",
     "upgrade_required_title": "Пожалуйста, обновите CLI Proxy API",
-    "upgrade_required_desc": "Текущая версия сервера не поддерживает API псевдонимов моделей OAuth. Обновите CLI Proxy API (CPA) до последней версии."
+    "upgrade_required_desc": "Текущая версия сервера не поддерживает API псевдонимов моделей OAuth. Обновите CLI Proxy API (CPA) до последней версии.",
+    "delete_title": "Удалить сопоставления"
   },
   "auth_login": {
     "codex_oauth_title": "Codex OAuth",
@@ -1246,7 +1256,8 @@
     "lines": "строк",
     "removed": "Отфильтровано",
     "upgrade_required_title": "Обновите CLI Proxy API",
-    "upgrade_required_desc": "Текущая версия сервера не поддерживает просмотр журналов. Обновите CLI Proxy API до последней версии, чтобы использовать эту функцию."
+    "upgrade_required_desc": "Текущая версия сервера не поддерживает просмотр журналов. Обновите CLI Proxy API до последней версии, чтобы использовать эту функцию.",
+    "clear_confirm_title": "Очистить журналы"
   },
   "config_management": {
     "title": "Панель конфигурации",
@@ -1463,7 +1474,8 @@
         "cancel": "Отменить",
         "update": "Обновить",
         "add": "Добавить"
-      }
+      },
+      "validation_blocked_short": "Исправить ошибки"
     }
   },
   "quota_management": {
@@ -1604,7 +1616,9 @@
   },
   "sidebar": {
     "toggle_expand": "Развернуть боковую панель",
-    "toggle_collapse": "Свернуть боковую панель"
+    "toggle_collapse": "Свернуть боковую панель",
+    "collapse": "Свернуть",
+    "expand": "Развернуть"
   },
   "footer": {
     "api_version": "Версия CLI Proxy API",

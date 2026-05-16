@@ -260,7 +260,11 @@
     "vertex_models_add_btn": "Add Mapping",
     "vertex_models_count": "Alias count",
     "vertex_models_label": "Model aliases:",
-    "vertex_title": "Vertex API Configuration"
+    "vertex_title": "Vertex API Configuration",
+    "ampcode_clear_upstream_api_key_title": "Clear Upstream API Key",
+    "gemini_delete_title": "Delete Gemini Key",
+    "openai_delete_title": "Delete OpenAI Provider",
+    "vertex_delete_title": "Delete Vertex Config"
   },
   "antigravity_quota": {
     "empty_desc": "Upload an Antigravity credential to view remaining quota.",
@@ -440,7 +444,9 @@
     "upload_error_size": "File size cannot exceed {{maxSize}}",
     "upload_success": "File uploaded successfully",
     "view_mode_all": "Show all",
-    "view_mode_paged": "Paged"
+    "view_mode_paged": "Paged",
+    "delete_all_title": "Delete All Files",
+    "delete_title": "Delete File"
   },
   "auth_login": {
     "anthropic_copy_link": "Copy Link",
@@ -1079,7 +1085,8 @@
         "payload_invalid_number": "Enter a valid number",
         "port_range": "Enter a valid port between 1 and 65535",
         "validation_blocked": "Fix validation errors before saving"
-      }
+      },
+      "validation_blocked_short": "Fix errors"
     },
     "visual_mode_latest_yaml_invalid": "The latest server configuration contains invalid YAML. Review it in source mode before saving visual changes: {{message}}",
     "visual_mode_save_blocked": "Cannot save from visual mode until the YAML syntax is fixed",
@@ -1207,7 +1214,9 @@
     "submit_button": "Login",
     "submitting": "Connecting...",
     "subtitle": "Please enter connection information to access the management interface",
-    "use_current_address": "Use Current URL"
+    "use_current_address": "Use Current URL",
+    "hide_key": "Hide Key",
+    "show_key": "Show Key"
   },
   "logs": {
     "auto_refresh": "Auto Refresh",
@@ -1295,7 +1304,8 @@
     "trace_title": "Request Trace (V1)",
     "trace_usage_load_error": "Failed to load usage details for tracing",
     "upgrade_required_desc": "The current server version does not support the logs viewing feature. Please upgrade to the latest version of CLI Proxy API to use this feature.",
-    "upgrade_required_title": "Please Upgrade CLI Proxy API"
+    "upgrade_required_title": "Please Upgrade CLI Proxy API",
+    "clear_confirm_title": "Clear Logs"
   },
   "monitor": {
     "api_filter": "API Query",
@@ -1597,7 +1607,8 @@
     "title": "OAuth Model Disablement",
     "upgrade_required": "Current CPA version does not support OAuth model disablement. Please upgrade.",
     "upgrade_required_desc": "The current server version does not support fetching OAuth model disablement. Please upgrade to the latest CPA (CLI Proxy API) version and try again.",
-    "upgrade_required_title": "Please upgrade CLI Proxy API"
+    "upgrade_required_title": "Please upgrade CLI Proxy API",
+    "delete_title": "Delete Exclusion"
   },
   "oauth_model_alias": {
     "add": "Add Alias",
@@ -1659,7 +1670,8 @@
     "upgrade_required_title": "Please upgrade CLI Proxy API",
     "view_mode": "View mode",
     "view_mode_diagram": "Diagram",
-    "view_mode_list": "List"
+    "view_mode_list": "List",
+    "delete_title": "Delete Mappings"
   },
   "quota_management": {
     "card_idle_hint": "Use the top \"Refresh all credentials\" button to fetch the latest quota data.",
@@ -1677,7 +1689,9 @@
   },
   "sidebar": {
     "toggle_collapse": "Collapse sidebar",
-    "toggle_expand": "Expand sidebar"
+    "toggle_expand": "Expand sidebar",
+    "collapse": "Collapse",
+    "expand": "Expand"
   },
   "splash": {
     "subtitle": "Management Center",
