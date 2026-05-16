@@ -252,7 +252,15 @@
     "openai_test_all_hint": "測試所有金鑰的連線狀態",
     "openai_test_all_success": "所有 {{count}} 個金鑰測試通過",
     "openai_test_all_failed": "所有 {{count}} 個金鑰測試失敗",
-    "openai_test_all_partial": "測試完成：{{success}} 個通過，{{failed}} 個失敗"
+    "openai_test_all_partial": "測試完成：{{success}} 個通過，{{failed}} 個失敗",
+    "search_empty_desc": "請嘗試更換關鍵字或清空搜尋框",
+    "search_empty_title": "沒有符合的設定",
+    "search_placeholder": "搜尋設定（金鑰、位址、模型等）",
+    "codex_inspect_button": "檢測",
+    "codex_inspect_checking": "檢測中...",
+    "codex_inspect_failed": "連線失敗",
+    "codex_inspect_success": "連線成功",
+    "codex_test_connection": "測試連線"
   },
   "antigravity_quota": {
     "title": "Antigravity 配額",
@@ -429,7 +437,10 @@
     "prefix_proxy_invalid_json": "該驗證檔案不是 JSON 物件，無法編輯欄位。",
     "prefix_proxy_saved_success": "已更新驗證檔案「{{name}}」",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "card_tools_title": "工具",
+    "quota_refresh_single": "重新整理配額",
+    "quota_refresh_hint": "僅重新整理此憑證的配額"
   },
   "auth_login": {
     "codex_oauth_title": "Codex OAuth",
@@ -695,7 +706,9 @@
     "plan_pro": "專業版",
     "plan_max": "Max",
     "plan_max5": "Max 5x",
-    "plan_max20": "Max 20x"
+    "plan_max20": "Max 20x",
+    "oauth_token_expired": "OAuth token 已過期，請在 OAuth 頁面重新登入 Anthropic 帳號。",
+    "plan_team": "團隊版"
   },
   "codex_quota": {
     "title": "Codex 配額",
@@ -779,7 +792,10 @@
     "invalid_provider_index": "無效的供應商索引。",
     "unsaved_changes_title": "未儲存的變更",
     "unsaved_changes_message": "你有未儲存的變更，離開後將遺失這些變更。確定要離開嗎？",
-    "retry": "重試"
+    "retry": "重試",
+    "quota_oauth_relogin": "驗證已過期",
+    "quota_oauth_relogin_action": "前往憑證頁面重新驗證",
+    "refreshing": "重新整理中..."
   },
   "config_management": {
     "title": "設定面板",
@@ -874,7 +890,9 @@
           "logging_to_file_desc": "將記錄儲存到檔案",
           "usage_statistics": "使用統計",
           "usage_statistics_desc": "收集使用統計資訊",
-          "logs_max_size": "記錄檔大小限制（MB）"
+          "logs_max_size": "記錄檔大小限制（MB）",
+          "usage_retention_days": "用量保留天數",
+          "usage_retention_hint": "0 表示不限制（不清理）"
         },
         "network": {
           "title": "網路設定",
@@ -891,7 +909,9 @@
           "force_model_prefix": "強制模型前綴",
           "force_model_prefix_desc": "未帶前綴的模型請求只使用無前綴憑證",
           "ws_auth": "WebSocket 驗證",
-          "ws_auth_desc": "啟用 WebSocket 連線驗證（/v1/ws）"
+          "ws_auth_desc": "啟用 WebSocket 連線驗證（/v1/ws）",
+          "session_affinity": "工作階段親和性路由",
+          "session_affinity_ttl": "工作階段親和性 TTL"
         },
         "quota": {
           "title": "配額回退",
@@ -1464,7 +1484,9 @@
     "claude_api_key": "Claude API 金鑰",
     "commercial_mode_restart_required": "商業模式開關已變更，請重啟服務後生效",
     "copy_failed": "複製失敗",
-    "link_copied": "已複製"
+    "link_copied": "已複製",
+    "load_failed": "載入失敗",
+    "save_failed": "儲存失敗"
   },
   "oauth_excluded": {
     "title": "OAuth 模型停用",
@@ -1758,7 +1780,12 @@
     "request_events_limit_hint": "為確保渲染效能，僅展示 {{shown}} / {{total}} 條事件。",
     "input_tokens": "輸入 Tokens",
     "output_tokens": "輸出 Tokens",
-    "last_updated": "更新於"
+    "last_updated": "更新於",
+    "model_price_preset": "預設",
+    "thinking_intensity": "思考強度",
+    "thinking_mode": "思考模式",
+    "thinking_level": "思考層級",
+    "thinking_budget": "思考預算"
   },
   "vertex_import": {
     "title": "Vertex JSON 登入",
