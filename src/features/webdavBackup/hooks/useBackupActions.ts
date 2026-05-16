@@ -285,7 +285,12 @@ export function useBackupActions() {
 function extractData(payload: BackupPayload): BackupData {
   if (typeof payload.data === 'string') {
     const decrypted = decryptFromBackup(payload.data);
-    return JSON.parse(decrypted) as BackupData;
+    try {
+      return JSON.parse(decrypted) as BackupData;
+    } catch {
+      console.warn('[WebDAV Backup] Failed to parse decrypted backup data');
+      return {};
+    }
   }
   return payload.data;
 }

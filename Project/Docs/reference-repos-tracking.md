@@ -314,8 +314,8 @@ interface AnalysisResponse {
 
 - [x] P1: MonitorPage 自定义时间范围过滤——已接入 TimeRangeSelector (2026-05-11)
 - [x] P1: Codex Inspection 实时更新——已实现，CodexSection 检测按钮 + EditPage 测试连接
-- [ ] P2: ModelMappingDiagram 方向——模型别名映射可视化
-- [ ] P3: PageTransition 动画——UX 打磨（非功能优先级低）
+- [x] P2: ModelMappingDiagram 方向——已实现 (ModelMappingDiagram.tsx + 4 子模块)
+- [x] P3: PageTransition 动画——已实现 (src/components/common/PageTransition.tsx)
 - [ ] 注意：该仓库文件结构与上游高度同源，融合需注意合并冲突
 
 ---

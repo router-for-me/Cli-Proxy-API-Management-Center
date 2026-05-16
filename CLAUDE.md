@@ -69,7 +69,7 @@ src/
 - **原则**: 禁止硬编码 hex 颜色，使用 SCSS 变量或 CSS 自定义属性 + fallback
 
 ### i18n
-- 四个 locale: `en.json`, `zh-CN.json`, `zh-TW.json`, `ru.json`，顶级键数量必须一致（zh-TW 目前 35 v.s. 37，待补齐 `monitor` 和 `backup`）
+- 四个 locale: `en.json`, `zh-CN.json`, `zh-TW.json`, `ru.json`，顶级键数量已对齐（4×37），zh-TW auth_login 段缺 111 个 IDE provider 键（CodeBuddy/Copilot/Cursor/Kiro/Qoder/Trae/Windsurf/Zed/WorkBuddy）
 - `useTranslation()` 返回的 `t` 函数，使用带命名空间的键：`'usage_stats.request_events_title'`
 - 所有用户可见文字必须通过 `t()` 调用
 
