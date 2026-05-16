@@ -207,7 +207,6 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const refreshQuotaForFile = useCallback(
     async (file: AuthFileItem) => {
       if (disabled || file.disabled) return;
-      if (quota[file.name]?.status === 'loading') return;
 
       setQuota((prev) => ({
         ...prev,
@@ -234,7 +233,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         );
       }
     },
-    [config, disabled, quota, setQuota, showNotification, t]
+    [config, disabled, setQuota, showNotification, t]
   );
 
   const titleNode = (

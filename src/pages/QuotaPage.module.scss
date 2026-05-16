@@ -630,6 +630,28 @@
   color: var(--text-primary);
   word-break: break-all;
   line-height: 1.4;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cardRefreshButton:global(.btn.btn-sm) {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 999px;
+  color: var(--text-secondary);
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+  }
 }
 
 .pagination {

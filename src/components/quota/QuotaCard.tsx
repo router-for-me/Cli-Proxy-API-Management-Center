@@ -5,6 +5,8 @@
 import { useTranslation } from 'react-i18next';
 import type { ReactElement, ReactNode } from 'react';
 import type { TFunction } from 'i18next';
+import { Button } from '@/components/ui/Button';
+import { IconRefreshCw } from '@/components/ui/icons';
 import type { AuthFileItem, ResolvedTheme, ThemeColors } from '@/types';
 import { TYPE_COLORS } from '@/utils/quota';
 import styles from '@/pages/QuotaPage.module.scss';
@@ -95,6 +97,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
     quota?.error || t('common.unknown_error')
   );
   const idleMessageKey = onRefresh ? `${i18nPrefix}.idle` : (cardIdleMessageKey ?? `${i18nPrefix}.idle`);
+  const refreshLabel = t(`${i18nPrefix}.refresh_button`);
 
   const getTypeLabel = (type: string): string => {
     const key = `auth_files.filter_${type}`;
@@ -118,6 +121,20 @@ export function QuotaCard<TState extends QuotaStatusState>({
           {getTypeLabel(displayType)}
         </span>
         <span className={styles.fileName}>{item.name}</span>
+        {onRefresh && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={styles.cardRefreshButton}
+            onClick={onRefresh}
+            disabled={!canRefresh}
+            title={refreshLabel}
+            aria-label={refreshLabel}
+          >
+            <IconRefreshCw size={15} />
+          </Button>
+        )}
       </div>
 
       <div className={styles.quotaSection}>
