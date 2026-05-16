@@ -1,0 +1,282 @@
+/**
+ * API Key × Model Heatmap — CSS Grid 布局
+ *
+ * 网格结构:
+ *   sticky 第一行为表头（空角标 | 模型列 | 汇总列标题）
+ *   sticky 第一列为行标题（API Key 名称）
+ *   中间区域为方形 cell（aspect-ratio: 1）
+ *   末列为行汇总
+ *   最后行为列汇总
+ */
+
+@use '@/styles/variables' as *;
+
+// ---------- Grid 容器 ----------
+.heatmapGrid {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px;
+  position: relative;
+
+  // 列数通过 CSS 自定义属性由组件动态设置
+  grid-template-columns:
+    180px
+    repeat(var(--heatmap-col-count, 5), minmax(28px, 1fr))
+    72px;
+}
+
+// ---------- 通用 grid item ----------
+.gridItem {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// ---------- 表头行 ----------
+.headerRow {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.headerCell {
+  composes: gridItem;
+  background: var(--bg-tertiary);
+  padding: 6px 4px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: $radius-sm;
+}
+
+// 左上角空角标
+.cornerCell {
+  composes: headerCell;
+  background: var(--bg-primary);
+}
+
+// 模型名称列标题
+.modelHeaderCell {
+  composes: headerCell;
+  cursor: help;
+  position: relative;
+
+  &::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    border-radius: $radius-sm;
+    background: var(--floating-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity $transition-fast;
+    z-index: $z-dropdown;
+    box-shadow: var(--floating-shadow);
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
+}
+
+// 汇总列标题
+.totalHeaderCell {
+  composes: headerCell;
+}
+
+// ---------- 行标题列 ----------
+.rowHeader {
+  composes: gridItem;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg-secondary);
+  padding: 0 8px;
+  justify-content: flex-start;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: $radius-sm;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.rowHeaderText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowHeaderBadge {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  padding: 0 4px;
+  border-radius: $radius-sm;
+}
+
+// 空行（所有 cell 为空）
+.rowHeaderEmpty {
+  composes: rowHeader;
+  opacity: 0.5;
+}
+
+// ---------- 数据 cell ----------
+.cell {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: opacity $transition-fast;
+
+  &:hover {
+    opacity: 0.85;
+    outline: 2px solid var(--text-primary);
+    outline-offset: -2px;
+  }
+}
+
+// 空 cell 占位
+.cellEmpty {
+  composes: cell;
+  background: var(--heatmap-level-0);
+  cursor: default;
+}
+
+// ---------- 行汇总列 ----------
+.rowTotalCell {
+  composes: gridItem;
+  padding: 0 4px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 11px;
+  white-space: nowrap;
+  text-align: right;
+  justify-content: flex-end;
+}
+
+// ---------- 汇总行 ----------
+.totalRow {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--bg-tertiary);
+}
+
+.totalRowLabel {
+  composes: gridItem;
+  composes: rowHeader;
+  background: var(--bg-tertiary);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.totalCell {
+  composes: gridItem;
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: $radius-sm;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+// ---------- 空状态 ----------
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  gap: 8px;
+}
+
+// ---------- 度量切换 ----------
+.metricToggle {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.metricBtn {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: $radius-sm;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: var(--bg-tertiary);
+  }
+}
+
+.metricBtnActive {
+  composes: metricBtn;
+  background: var(--primary-color);
+  color: var(--primary-contrast);
+  border-color: var(--primary-color);
+}
+
+// ---------- 折叠控制 ----------
+.expandButton {
+  margin-top: 8px;
+  text-align: center;
+}
+
+// ---------- 移动端 fallback ----------
+.mobileFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  text-align: center;
+}
+
+// ---------- 响应式 ----------
+@media (max-width: $breakpoint-mobile) {
+  .heatmapGrid {
+    display: none;
+  }
+
+  .mobileFallback {
+    display: flex;
+  }
+}
+
+@media (min-width: $breakpoint-mobile) {
+  .mobileFallback {
+    display: none;
+  }
+}
+
+@media (min-width: $breakpoint-mobile) and (max-width: $breakpoint-tablet) {
+  .heatmapGrid {
+    grid-template-columns:
+      150px
+      repeat(var(--heatmap-col-count, 5), minmax(24px, 1fr))
+      60px;
+  }
+}

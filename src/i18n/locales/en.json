@@ -1454,6 +1454,20 @@
       "requests": "Requests",
       "subtitle": "Requests and Token usage trend",
       "title": "Daily Usage Trend"
+    },
+    "heatmap": {
+      "title": "API Key × Model",
+      "subtitle": "Usage intensity heatmap",
+      "empty": "No cross-dimensional data",
+      "col_total": "Total",
+      "row_total": "Total",
+      "metric_tokens": "Tokens",
+      "metric_requests": "Requests",
+      "show_more_rows": "Show all rows ({{count}})",
+      "show_less_rows": "Show less",
+      "show_more_models": "Show all models ({{count}})",
+      "show_less_models": "Show less",
+      "mobile_fallback": "Heatmap is not available on mobile devices"
     }
   },
   "nav": {

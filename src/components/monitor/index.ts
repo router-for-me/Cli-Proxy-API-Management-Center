@@ -6,3 +6,5 @@ export { HourlyTokenChart } from './HourlyTokenChart';
 export { ChannelStats } from './ChannelStats';
 export { FailureAnalysis } from './FailureAnalysis';
 export { RequestLogs } from './RequestLogs';
+export { ApiKeyModelHeatmap } from './ApiKeyModelHeatmap';
+export type { HeatmapCell, HeatmapRow } from './ApiKeyModelHeatmap';

@@ -1367,6 +1367,20 @@
       "requests": "請求数",
       "subtitle": "請求数與 Token 用量趨勢",
       "title": "每日用量趨勢"
+    },
+    "heatmap": {
+      "title": "API Key × Model",
+      "subtitle": "用量強度熱力圖",
+      "empty": "暫無交叉維度數據",
+      "col_total": "合計",
+      "row_total": "合計",
+      "metric_tokens": "Token",
+      "metric_requests": "請求",
+      "show_more_rows": "顯示全部行 ({{count}})",
+      "show_less_rows": "收起",
+      "show_more_models": "顯示全部模型 ({{count}})",
+      "show_less_models": "收起",
+      "mobile_fallback": "移動端暫不支援熱力圖展示"
     }
   },
   "nav": {

@@ -66,6 +66,14 @@
   --glass-bg: color-mix(in srgb, var(--bg-primary) 82%, transparent);
   --glass-bg-secondary: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
   --glass-border: color-mix(in srgb, var(--border-color) 60%, transparent);
+
+  // Heatmap 6 级色阶 — 浅色主题
+  --heatmap-level-0: rgba(0, 0, 0, 0.04);
+  --heatmap-level-1: #fef3c7;
+  --heatmap-level-2: #fde68a;
+  --heatmap-level-3: #fbbf24;
+  --heatmap-level-4: #f97316;
+  --heatmap-level-5: #dc2626;
 }
 
 // 纯白主题
@@ -183,6 +191,14 @@
   --accent-tertiary: var(--bg-tertiary);
 
   --glass-border: color-mix(in srgb, var(--border-color) 55%, transparent);
+
+  // Heatmap 6 级色阶 — 深色主题
+  --heatmap-level-0: rgba(255, 255, 255, 0.04);
+  --heatmap-level-1: #713f12;
+  --heatmap-level-2: #a16207;
+  --heatmap-level-3: #d97706;
+  --heatmap-level-4: #ea580c;
+  --heatmap-level-5: #dc2626;
 }
 
 @media (max-width: 768px), (prefers-reduced-motion: reduce), (prefers-reduced-transparency: reduce) {

@@ -16,6 +16,7 @@ import {
   Filler
 } from 'chart.js';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useThemeStore } from '@/stores';
@@ -27,6 +28,7 @@ import { filterDataByApiFilter, filterDataByTimeRange, type DateRange } from '@/
 import { TimeRangeSelector, type TimeRange } from '@/components/monitor/TimeRangeSelector';
 import { buildSourceInfoMap } from '@/utils/sourceResolver';
 import { normalizeAuthIndex, loadModelPrices, type ModelPrice } from '@/utils/usage';
+import { collectUsageDetails } from '@/utils/usage';
 import type { CredentialInfo } from '@/types/sourceInfo';
 import { KpiCards } from '@/components/monitor/KpiCards';
 import { ModelDistributionChart } from '@/components/monitor/ModelDistributionChart';
@@ -36,6 +38,7 @@ import { HourlyTokenChart } from '@/components/monitor/HourlyTokenChart';
 import { ChannelStats } from '@/components/monitor/ChannelStats';
 import { FailureAnalysis } from '@/components/monitor/FailureAnalysis';
 import { RequestLogs } from '@/components/monitor/RequestLogs';
+import { ApiKeyModelHeatmap } from '@/components/monitor/ApiKeyModelHeatmap';
 import { getErrorMessage } from '@/utils/error';
 import styles from './MonitorPage.module.scss';
 
@@ -101,6 +104,7 @@ export function MonitorPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>(7);
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [apiFilter, setApiFilter] = useState('');
+  const [_heatmapFilter, setHeatmapFilter] = useState<{ source: string; model: string } | null>(null);
   const [providerMap, setProviderMap] = useState<Record<string, string>>({});
   const [providerModels, setProviderModels] = useState<Record<string, Set<string>>>({});
   const [providerTypeMap, setProviderTypeMap] = useState<Record<string, string>>({});
@@ -321,6 +325,9 @@ export function MonitorPage() {
     return filterDataByTimeRange(apiFilteredData, timeRange, customRange);
   }, [apiFilteredData, timeRange, customRange]);
 
+  // Usage 明细（用于热力图等组件）
+  const usageDetails = useMemo(() => collectUsageDetails(filteredData), [filteredData]);
+
   const usageBuckets = useMemo(() => {
     if (sqliteEnabled && sqliteRecords.length > 0) {
       return bucketUsageRecords(sqliteRecords, 10, 20);
@@ -435,6 +442,21 @@ export function MonitorPage() {
         <ChannelStats data={filteredData} loading={isLoading} providerMap={providerMap} providerModels={providerModels} sourceInfoMap={sourceInfoMap} authFileMap={authFileMap} />
         <FailureAnalysis data={filteredData} loading={isLoading} providerMap={providerMap} providerModels={providerModels} sourceInfoMap={sourceInfoMap} authFileMap={authFileMap} />
       </div>
+
+      {/* API Key × Model 热力图 */}
+      <Card title={t('monitor.heatmap.title')} subtitle={t('monitor.heatmap.subtitle')}>
+        <ApiKeyModelHeatmap
+          details={usageDetails}
+          providerMap={providerMap}
+          sourceInfoMap={sourceInfoMap}
+          authFileMap={authFileMap}
+          metric="tokens"
+          maxRows={20}
+          maxCols={15}
+          loading={isLoading}
+          onCellClick={(source, model) => setHeatmapFilter({ source, model })}
+        />
+      </Card>
 
       {/* 请求日志 */}
       <RequestLogs

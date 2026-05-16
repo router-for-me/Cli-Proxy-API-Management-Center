@@ -1872,6 +1872,19 @@
       "disable_error": "Ошибка отключения",
       "disable_error_no_provider": "Не удалось определить провайдера",
       "disable_error_provider_not_found": "Конфигурация провайдера не найдена: {{provider}}"
+    },
+    "heatmap": {
+      "title": "API Key × Модель",
+      "subtitle": "Тепловая карта интенсивности использования",
+      "tokens": "Токены",
+      "requests": "Запросы",
+      "empty": "Нет кросс-мерных данных",
+      "others_row": "Другие ({count})",
+      "others_col": "Другие ({count})",
+      "total_row": "Всего",
+      "show_more": "Показать ещё",
+      "show_less": "Свернуть",
+      "click_to_filter": "Нажмите для фильтрации логов"
     }
   }
 }
