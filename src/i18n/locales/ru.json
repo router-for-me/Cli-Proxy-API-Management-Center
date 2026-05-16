@@ -58,7 +58,9 @@
     "quota_oauth_relogin": "Токен OAuth истёк. Пожалуйста, войдите заново через страницу OAuth.",
     "quota_oauth_relogin_action": "Перейти к OAuth",
     "refreshing": "Обновление...",
-    "retry": "Повторить"
+    "retry": "Повторить",
+    "error_boundary_title": "Что-то пошло не так",
+    "error_boundary_description": "Произошла неожиданная ошибка. Пожалуйста, попробуйте снова."
   },
   "title": {
     "main": "Центр управления CLI Proxy API",

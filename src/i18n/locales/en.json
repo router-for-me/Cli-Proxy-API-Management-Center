@@ -864,6 +864,8 @@
     "refreshing": "Refreshing...",
     "required": "Required",
     "retry": "Retry",
+    "error_boundary_title": "Something went wrong",
+    "error_boundary_description": "An unexpected error occurred. Please try again.",
     "save": "Save",
     "status": "Status",
     "stay": "Stay",

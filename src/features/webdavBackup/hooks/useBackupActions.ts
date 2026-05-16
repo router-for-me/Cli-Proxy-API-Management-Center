@@ -119,7 +119,7 @@ export function useBackupActions() {
               }
             }
             if (deleted > 0) {
-              console.log(`[WebDAV Backup] Cleaned up ${deleted}/${toDelete.length} old backup(s)`);
+              console.info(`[WebDAV Backup] Cleaned up ${deleted}/${toDelete.length} old backup(s)`);
             }
           }
         } catch (cleanupErr) {

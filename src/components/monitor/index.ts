@@ -8,3 +8,6 @@ export { FailureAnalysis } from './FailureAnalysis';
 export { RequestLogs } from './RequestLogs';
 export { ApiKeyModelHeatmap } from './ApiKeyModelHeatmap';
 export type { HeatmapCell, HeatmapRow } from './ApiKeyModelHeatmap';
+export { TimeRangeSelector } from './TimeRangeSelector';
+export type { TimeRange } from './TimeRangeSelector';
+export { DisableModelModal } from './DisableModelModal';

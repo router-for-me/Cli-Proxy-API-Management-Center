@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '@/styles/global.scss';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import App from './App.tsx';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 document.title = 'CLI Proxy API Management Center';
 document.documentElement.setAttribute('translate', 'no');
@@ -22,6 +23,8 @@ if (faviconEl) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>
 );

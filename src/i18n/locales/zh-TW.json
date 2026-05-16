@@ -760,6 +760,8 @@
     "unsaved_changes_title": "未儲存的變更",
     "unsaved_changes_message": "你有未儲存的變更，離開後將遺失這些變更。確定要離開嗎？",
     "retry": "重試",
+    "error_boundary_title": "出了點問題",
+    "error_boundary_description": "發生意外錯誤，請重新整理或重試。",
     "quota_oauth_relogin": "驗證已過期",
     "quota_oauth_relogin_action": "前往憑證頁面重新驗證",
     "refreshing": "重新整理中..."

@@ -1,0 +1,87 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: $spacing-lg;
+  background: var(--bg-secondary);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: $spacing-md;
+  max-width: 480px;
+  width: 100%;
+  padding: $spacing-2xl;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  box-shadow: var(--shadow-lg);
+}
+
+.iconWrapper {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: $radius-full;
+  background: var(--bg-error-light);
+  color: var(--error-color);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.description {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 360px;
+}
+
+.details {
+  width: 100%;
+  margin-top: $spacing-sm;
+  text-align: left;
+
+  summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    user-select: none;
+    margin-bottom: $spacing-sm;
+  }
+}
+
+.stackTrace {
+  max-height: 240px;
+  overflow: auto;
+  font-family: $font-mono;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  padding: $spacing-sm $spacing-md;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.retryButton {
+  margin-top: $spacing-sm;
+}

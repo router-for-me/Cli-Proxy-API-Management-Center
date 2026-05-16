@@ -65,13 +65,12 @@ export default defineConfig({
   build: {
     target: 'es2020',
     outDir: 'dist',
-    assetsInlineLimit: 100000000,
-    chunkSizeWarningLimit: 100000000,
+    assetsInlineLimit: 100000000, // 内联所有资源到单文件（vite-plugin-singlefile 要求）
+    chunkSizeWarningLimit: 100000000, // 单文件构建必然超出默认 chunk 警告阈值
     cssCodeSplit: false,
     rollupOptions: {
       output: {
         inlineDynamicImports: true,
-        manualChunks: undefined
       }
     }
   }

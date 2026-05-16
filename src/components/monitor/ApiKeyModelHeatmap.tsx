@@ -78,8 +78,7 @@ export function ApiKeyModelHeatmap({
     });
   }, [rawRows, sourceInfoMap, authFileMap]);
 
-  // Step 3: 响应式折叠
-  // TODO: 在组件外部注入 window width 以精确判断断点；目前使用简单的 props 控制
+  // Step 3: 响应式折叠（maxRows/maxCols 由父组件根据断点控制，CSS 媒体查询兜底）
   const visibleRows = showAllRows ? rows : rows.slice(0, maxRows);
   const visibleModels = showAllCols ? rawModels : rawModels.slice(0, maxCols);
 
