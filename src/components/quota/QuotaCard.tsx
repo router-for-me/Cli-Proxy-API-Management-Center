@@ -98,6 +98,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
   );
   const idleMessageKey = onRefresh ? `${i18nPrefix}.idle` : (cardIdleMessageKey ?? `${i18nPrefix}.idle`);
   const refreshLabel = t(`${i18nPrefix}.refresh_button`);
+  const refreshButtonLoading = quotaStatus === 'loading';
 
   const getTypeLabel = (type: string): string => {
     const key = `auth_files.filter_${type}`;
@@ -128,11 +129,12 @@ export function QuotaCard<TState extends QuotaStatusState>({
             size="sm"
             className={styles.cardRefreshButton}
             onClick={onRefresh}
-            disabled={!canRefresh}
+            disabled={!canRefresh || refreshButtonLoading}
+            loading={refreshButtonLoading}
             title={refreshLabel}
             aria-label={refreshLabel}
           >
-            <IconRefreshCw size={15} />
+            {!refreshButtonLoading && <IconRefreshCw size={15} />}
           </Button>
         )}
       </div>
