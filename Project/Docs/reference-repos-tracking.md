@@ -377,7 +377,7 @@ interface AnalysisResponse {
 | 6 | cpa-usage-keeper | RequestLogs 多维筛选 | P2 | ✅ 已实现 — 新增 authIndex 凭证下拉筛选器 (d20421f) |
 | 7 | upstream | quotaConfigs 可选 header 同步 | P2 | ✅ 已实现 — Chatgpt-Account-Id header 改为可选 |
 | 8 | OmniRoute | Provider 健康检查增强 | P2 | ✅ 已实现——全体 6 Provider 统一接入 useProviderInspect |
-| 9 | CPA-Manager | ModelMappingDiagram 可视化 | P3 | 待评估 |
+| 9 | CPA-Manager | ModelMappingDiagram 可视化 | P3 | ✅ 已实现 — ModelMappingDiagram.tsx + 4 子模块 (columns/modals/contextMenu/types) |
 | 10 | cpa-usage-keeper | SQLite 备份 + 保留策略 | P3 | 待评估 |
 | 11 | 内部 | OAuth 401 泛化到所有 OAuth provider | P2 | ✅ 已实现 — isOAuthFile in validators.ts, used in quotaConfigs.ts:450 |
 | 12 | CPA-Manager | Codex Inspection 实时 Key 有效性检测 | P1 | ✅ 已实现——CodexSection 检测按钮 + EditPage 测试连接 |
