@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { maskApiKey, formatFileSize, formatNumber, truncateText } from './format';
+import { maskApiKey, formatFileSize, formatNumber, truncateText, formatUnixTimestamp } from './format';
 import { formatDateTime } from './format';
 
 describe('maskApiKey', () => {
@@ -94,5 +94,48 @@ describe('truncateText', () => {
 
   it('handles empty string', () => {
     expect(truncateText('', 5)).toBe('');
+  });
+});
+
+describe('formatUnixTimestamp', () => {
+  it('returns empty string for null/undefined/empty', () => {
+    expect(formatUnixTimestamp(null)).toBe('');
+    expect(formatUnixTimestamp(undefined)).toBe('');
+    expect(formatUnixTimestamp('')).toBe('');
+  });
+
+  it('parses seconds (10-digit, ~1e9)', () => {
+    const result = formatUnixTimestamp(1700000000);
+    expect(result).not.toBe('');
+    expect(result).toContain('202');
+  });
+
+  it('parses milliseconds (13-digit, ~1e12)', () => {
+    const result = formatUnixTimestamp(1700000000000);
+    expect(result).not.toBe('');
+  });
+
+  it('parses microseconds (16-digit, ~1e15)', () => {
+    const result = formatUnixTimestamp(1700000000000000);
+    expect(result).not.toBe('');
+  });
+
+  it('parses nanoseconds (19-digit, ~1e18)', () => {
+    const result = formatUnixTimestamp(1700000000000000000);
+    expect(result).not.toBe('');
+  });
+
+  it('returns empty string for NaN', () => {
+    expect(formatUnixTimestamp(NaN)).toBe('');
+  });
+
+  it('parses numeric string as number', () => {
+    const result = formatUnixTimestamp('1700000000');
+    expect(result).not.toBe('');
+  });
+
+  it('returns locale-formatted string when locale provided', () => {
+    const result = formatUnixTimestamp(1700000000000, 'en-US');
+    expect(result).not.toBe('');
   });
 });
