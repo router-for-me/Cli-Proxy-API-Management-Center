@@ -104,7 +104,6 @@ export function MonitorPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>(7);
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [apiFilter, setApiFilter] = useState('');
-  const [_heatmapFilter, setHeatmapFilter] = useState<{ source: string; model: string } | null>(null);
   const [providerMap, setProviderMap] = useState<Record<string, string>>({});
   const [providerModels, setProviderModels] = useState<Record<string, Set<string>>>({});
   const [providerTypeMap, setProviderTypeMap] = useState<Record<string, string>>({});
@@ -454,7 +453,7 @@ export function MonitorPage() {
           maxRows={20}
           maxCols={15}
           loading={isLoading}
-          onCellClick={(source, model) => setHeatmapFilter({ source, model })}
+          onCellClick={(source) => setApiFilter(source)}
         />
       </Card>
 
