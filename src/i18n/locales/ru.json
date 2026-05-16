@@ -1864,16 +1864,17 @@
     },
     "heatmap": {
       "title": "API Key × Модель",
-      "subtitle": "Тепловая карта интенсивности использования",
-      "tokens": "Токены",
-      "requests": "Запросы",
+      "subtitle": "Тепловая карта интенсивности",
       "empty": "Нет кросс-мерных данных",
-      "others_row": "Другие ({count})",
-      "others_col": "Другие ({count})",
-      "total_row": "Всего",
-      "show_more": "Показать ещё",
-      "show_less": "Свернуть",
-      "click_to_filter": "Нажмите для фильтрации логов"
+      "col_total": "Всего",
+      "row_total": "Всего",
+      "metric_tokens": "Токены",
+      "metric_requests": "Запросы",
+      "show_more_rows": "Показать все ({{count}})",
+      "show_less_rows": "Свернуть",
+      "show_more_models": "Показать все модели ({{count}})",
+      "show_less_models": "Свернуть",
+      "mobile_fallback": "Тепловая карта недоступна на мобильных устройствах"
     }
   }
 }
