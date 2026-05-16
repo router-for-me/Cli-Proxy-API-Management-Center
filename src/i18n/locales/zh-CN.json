@@ -392,6 +392,9 @@
     "prefix_proxy_invalid_json": "该认证文件不是 JSON 对象，无法编辑字段。",
     "prefix_proxy_loading": "正在加载认证文件...",
     "prefix_proxy_saved_success": "已更新认证文件 \"{{name}}\"",
+    "card_tools_title": "工具",
+    "quota_refresh_single": "刷新配额",
+    "quota_refresh_hint": "仅刷新此凭据的配额",
     "prefix_proxy_source_label": "认证文件 JSON（预览）",
     "priority_display": "优先级",
     "priority_hint": "仅支持整数；非法值会被忽略。数值越大优先级越高。",
@@ -1054,6 +1057,8 @@
           "logging_to_file": "写入日志文件",
           "logging_to_file_desc": "将日志保存到文件",
           "logs_max_size": "日志文件大小限制 (MB)",
+          "usage_retention_days": "用量保留天数",
+          "usage_retention_hint": "0 表示不限制（不清理）",
           "title": "系统配置",
           "usage_statistics": "使用统计",
           "usage_statistics_desc": "收集使用统计信息"

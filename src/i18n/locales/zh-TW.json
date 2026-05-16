@@ -436,11 +436,11 @@
     "headers_invalid_value": "每個自訂請求標頭的值都必須是字串。",
     "prefix_proxy_invalid_json": "該驗證檔案不是 JSON 物件，無法編輯欄位。",
     "prefix_proxy_saved_success": "已更新驗證檔案「{{name}}」",
-    "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
     "card_tools_title": "工具",
     "quota_refresh_single": "重新整理配額",
-    "quota_refresh_hint": "僅重新整理此憑證的配額"
+    "quota_refresh_hint": "僅重新整理此憑證的配額",
+    "quota_refresh_success": "已重新整理「{{name}}」的配額",
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
   },
   "auth_login": {
     "codex_oauth_title": "Codex OAuth",

@@ -392,6 +392,9 @@
     "prefix_proxy_invalid_json": "This auth file is not a JSON object, so fields cannot be edited.",
     "prefix_proxy_loading": "Loading auth file...",
     "prefix_proxy_saved_success": "Updated auth file \"{{name}}\" successfully",
+    "card_tools_title": "Tools",
+    "quota_refresh_single": "Refresh quota",
+    "quota_refresh_hint": "Refresh quota for this credential only",
     "prefix_proxy_source_label": "Auth file JSON (preview)",
     "priority_display": "Priority",
     "priority_hint": "Integers only. Invalid values are ignored. Larger value means higher priority.",
@@ -1054,6 +1057,8 @@
           "logging_to_file": "Log to File",
           "logging_to_file_desc": "Save logs to files",
           "logs_max_size": "Log File Size Limit (MB)",
+          "usage_retention_days": "Usage retention (days)",
+          "usage_retention_hint": "0 means unlimited (no cleanup)",
           "title": "System Configuration",
           "usage_statistics": "Usage Statistics",
           "usage_statistics_desc": "Collect usage statistics"
