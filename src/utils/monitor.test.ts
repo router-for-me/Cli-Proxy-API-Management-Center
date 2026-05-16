@@ -12,9 +12,13 @@ import {
   getHourlyRangeBounds,
   getRateClassName,
   isModelEnabled,
+  isModelDisabled,
   createDisableState,
+  filterDataByApiFilter,
+  filterDataByTimeRange,
 } from './monitor';
 import type { DateRange } from './monitor';
+import type { UsageData } from '@/pages/MonitorPage';
 
 describe('maskSecret', () => {
   it('returns dash for empty string (falsy fallback)', () => {
@@ -250,5 +254,111 @@ describe('createDisableState', () => {
   it('creates state with masked key when no provider', () => {
     const state = createDisableState('unknown-key-1234', 'm', {});
     expect(state.displayName).toContain('m');
+  });
+});
+
+describe('isModelDisabled', () => {
+  const models: Record<string, Set<string>> = {
+    'sk-admin': new Set(['gpt-4']),
+  };
+  const disabled = new Set<string>();
+
+  it('returns false when model is enabled and not disabled', () => {
+    expect(isModelDisabled('sk-admin', 'gpt-4', disabled, models)).toBe(false);
+  });
+
+  it('returns true when model is in disabledModels set', () => {
+    const d = new Set(['sk-admin|||gpt-4']);
+    expect(isModelDisabled('sk-admin', 'gpt-4', d, models)).toBe(true);
+  });
+
+  it('returns true when model is not in provider config', () => {
+    expect(isModelDisabled('sk-admin', 'unknown-model', disabled, models)).toBe(true);
+  });
+});
+
+const makeDetail = (ts: string) => ({
+  timestamp: ts,
+  failed: false,
+  source: 'src',
+  auth_index: 'idx',
+  tokens: { input_tokens: 10, output_tokens: 5, reasoning_tokens: 0, cached_tokens: 0, total_tokens: 15 },
+});
+
+const makeUsageData = (): UsageData => ({
+  apis: {
+    'sk-admin-key': {
+      models: {
+        'gpt-4': { details: [makeDetail('2024-06-10T12:00:00Z'), makeDetail('2024-06-12T12:00:00Z')] },
+        'claude-3': { details: [makeDetail('2024-06-11T12:00:00Z')] },
+      },
+    },
+    'sk-other-key': {
+      models: {
+        'gemini-pro': { details: [makeDetail('2024-06-13T12:00:00Z')] },
+      },
+    },
+  },
+});
+
+describe('filterDataByApiFilter', () => {
+  const data = makeUsageData();
+
+  it('returns null for null input', () => {
+    expect(filterDataByApiFilter(null, '')).toBeNull();
+  });
+
+  it('returns data unchanged when filter is empty', () => {
+    const result = filterDataByApiFilter(data, '');
+    expect(result?.apis).toHaveProperty('sk-admin-key');
+    expect(result?.apis).toHaveProperty('sk-other-key');
+  });
+
+  it('filters by api key substring', () => {
+    const result = filterDataByApiFilter(data, 'admin');
+    expect(result?.apis).toHaveProperty('sk-admin-key');
+    expect(result?.apis).not.toHaveProperty('sk-other-key');
+  });
+
+  it('returns empty when no match', () => {
+    const result = filterDataByApiFilter(data, 'nonexistent');
+    expect(Object.keys(result?.apis || {})).toHaveLength(0);
+  });
+});
+
+describe('filterDataByTimeRange', () => {
+  const data = makeUsageData();
+
+  it('returns null for null input', () => {
+    expect(filterDataByTimeRange(null, 7)).toBeNull();
+  });
+
+  it('filters details within time range', () => {
+    const custom: DateRange = {
+      start: new Date('2024-06-10T00:00:00Z'),
+      end: new Date('2024-06-11T23:59:59Z'),
+    };
+    const result = filterDataByTimeRange(data, 'custom', custom);
+    const models = result?.apis?.['sk-admin-key']?.models;
+    expect(models?.['gpt-4']?.details).toHaveLength(1);
+  });
+
+  it('excludes models with no details in range', () => {
+    const custom: DateRange = {
+      start: new Date('2024-06-14T00:00:00Z'),
+      end: new Date('2024-06-15T23:59:59Z'),
+    };
+    const result = filterDataByTimeRange(data, 'custom', custom);
+    expect(Object.keys(result?.apis || {})).toHaveLength(0);
+  });
+
+  it('applies apiFilter when provided', () => {
+    const custom: DateRange = {
+      start: new Date('2024-06-01T00:00:00Z'),
+      end: new Date('2024-06-30T23:59:59Z'),
+    };
+    const result = filterDataByTimeRange(data, 'custom', custom, 'other');
+    expect(result?.apis).toHaveProperty('sk-other-key');
+    expect(result?.apis).not.toHaveProperty('sk-admin-key');
   });
 });
