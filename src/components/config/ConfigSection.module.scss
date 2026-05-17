@@ -1,9 +1,9 @@
 @use '../../styles/mixins' as *;
 
 .section {
-  display: grid;
-  grid-template-columns: minmax(0, 178px) minmax(0, 1fr);
-  gap: clamp(18px, 2.2vw, 30px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2vw, 22px);
   height: clamp(520px, calc(100dvh - var(--header-height, 64px) - 250px), 780px);
   min-width: 0;
   box-sizing: border-box;
@@ -19,7 +19,6 @@
   scrollbar-width: thin;
 
   @include mobile {
-    grid-template-columns: minmax(0, 1fr);
     gap: 14px;
     height: clamp(420px, calc(100dvh - var(--header-height, 64px) - 260px), 680px);
     padding: 16px;
@@ -28,18 +27,18 @@
 }
 
 .header {
-  position: sticky;
-  top: 0;
-  align-self: start;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  z-index: 1;
-  padding-bottom: 4px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
 
   @include mobile {
-    position: static;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding-bottom: 12px;
     background: transparent;
   }
 }
@@ -95,7 +94,7 @@
 
 .description {
   margin: 0;
-  max-width: 30ch;
+  max-width: 72ch;
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.65;
@@ -109,5 +108,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
   min-width: 0;
 }
