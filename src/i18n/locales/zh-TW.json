@@ -117,7 +117,8 @@
     "quota_management": "配額管理",
     "config_management": "設定面板",
     "logs": "記錄檢視",
-    "system_info": "中心資訊"
+    "system_info": "中心資訊",
+    "usage_stats": "使用統計"
   },
   "dashboard": {
     "title": "儀表板",

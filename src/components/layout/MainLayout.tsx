@@ -44,6 +44,12 @@ const sidebarIcons: Record<string, ReactNode> = {
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
+  usage: (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3v18h18" />
+      <path d="m19 9-5 5-4-4-3 3" />
+    </svg>
+  ),
 };
 
 // Header action icons - smaller size for header buttons
@@ -391,6 +397,7 @@ export function MainLayout() {
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
+    { path: '/usage', label: t('nav.usage_stats'), icon: sidebarIcons.usage, external: true },
     ...(config?.loggingToFile
       ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
       : []),
@@ -652,18 +659,31 @@ export function MainLayout() {
           </div>
 
           <div className="nav-section">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => setSidebarOpen(false)}
-                title={showSidebarLabels ? undefined : item.label}
-              >
-                <span className="nav-icon">{item.icon}</span>
-                {showSidebarLabels && <span className="nav-label">{item.label}</span>}
-              </NavLink>
-            ))}
+            {navItems.map((item) =>
+              (item as any).external ? (
+                <a
+                  key={item.path}
+                  href="/usage/"
+                  className="nav-item"
+                  onClick={() => setSidebarOpen(false)}
+                  title={showSidebarLabels ? undefined : item.label}
+                >
+                  <span className="nav-icon">{item.icon}</span>
+                  {showSidebarLabels && <span className="nav-label">{item.label}</span>}
+                </a>
+              ) : (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                  onClick={() => setSidebarOpen(false)}
+                  title={showSidebarLabels ? undefined : item.label}
+                >
+                  <span className="nav-icon">{item.icon}</span>
+                  {showSidebarLabels && <span className="nav-label">{item.label}</span>}
+                </NavLink>
+              )
+            )}
           </div>
         </aside>
 

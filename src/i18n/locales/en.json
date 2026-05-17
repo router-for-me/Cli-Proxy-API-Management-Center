@@ -117,7 +117,8 @@
     "quota_management": "Quota Management",
     "config_management": "Config Panel",
     "logs": "Logs Viewer",
-    "system_info": "Management Center Info"
+    "system_info": "Management Center Info",
+    "usage_stats": "Usage Statistics"
   },
   "dashboard": {
     "title": "Dashboard",
