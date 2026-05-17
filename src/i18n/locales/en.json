@@ -1455,8 +1455,13 @@
     "requests": "Requests",
     "time": {
       "apply": "Apply",
+      "apply_range": "Apply date range",
       "custom": "Custom",
+      "end_date": "End date",
       "last_n_days": "{{n}} Days",
+      "last_n_days_label": "Last {{n}} days",
+      "range_selector_label": "Time range selector",
+      "start_date": "Start date",
       "to": "to",
       "today": "Today"
     },

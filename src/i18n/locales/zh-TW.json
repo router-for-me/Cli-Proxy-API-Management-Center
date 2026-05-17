@@ -1455,8 +1455,13 @@
     "requests": "請求",
     "time": {
       "apply": "套用",
+      "apply_range": "套用日期範圍",
       "custom": "自訂",
+      "end_date": "結束日期",
       "last_n_days": "{{n}} 天",
+      "last_n_days_label": "最近 {{n}} 天",
+      "range_selector_label": "時間範圍選擇器",
+      "start_date": "開始日期",
       "to": "至",
       "today": "今天"
     },

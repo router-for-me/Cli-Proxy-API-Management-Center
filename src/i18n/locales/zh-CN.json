@@ -1455,8 +1455,13 @@
     "requests": "请求",
     "time": {
       "apply": "应用",
+      "apply_range": "应用日期范围",
       "custom": "自定义",
+      "end_date": "结束日期",
       "last_n_days": "{{n}} 天",
+      "last_n_days_label": "最近 {{n}} 天",
+      "range_selector_label": "时间范围选择器",
+      "start_date": "开始日期",
       "to": "至",
       "today": "今天"
     },

@@ -58,13 +58,21 @@ export function TimeRangeSelector({ value, onChange, customRange }: TimeRangeSel
   }, [startDate, endDate, onChange]);
 
   return (
-    <div className={styles.timeRangeSelector}>
+    <div className={styles.timeRangeSelector} role="group" aria-label={t('monitor.time.range_selector_label')}>
       <div className={styles.timeButtons}>
         {([1, 7, 14, 30, 'custom'] as TimeRange[]).map((range) => (
           <button
             key={range}
             className={`${styles.timeButton} ${value === range ? styles.active : ''}`}
             onClick={() => handleTimeClick(range)}
+            aria-label={
+              range === 1
+                ? t('monitor.time.today')
+                : range === 'custom'
+                ? t('monitor.time.custom')
+                : t('monitor.time.last_n_days_label', { n: range })
+            }
+            aria-pressed={value === range}
           >
             {range === 1
               ? t('monitor.time.today')
@@ -81,6 +89,7 @@ export function TimeRangeSelector({ value, onChange, customRange }: TimeRangeSel
             className={styles.dateInput}
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
+            aria-label={t('monitor.time.start_date')}
           />
           <span className={styles.dateSeparator}>{t('monitor.time.to')}</span>
           <input
@@ -88,8 +97,9 @@ export function TimeRangeSelector({ value, onChange, customRange }: TimeRangeSel
             className={styles.dateInput}
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
+            aria-label={t('monitor.time.end_date')}
           />
-          <button className={styles.dateApplyBtn} onClick={handleApplyCustom}>
+          <button className={styles.dateApplyBtn} onClick={handleApplyCustom} aria-label={t('monitor.time.apply_range')}>
             {t('monitor.time.apply')}
           </button>
         </div>
