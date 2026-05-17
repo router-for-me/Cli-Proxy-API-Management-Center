@@ -11,7 +11,7 @@ src/
 ├── components/
 │   ├── ui/              # 通用 UI 组件 (Button, Card, Input, Select, Modal, ToggleSwitch...)
 │   ├── layout/          # MainLayout, Sidebar, Header
-│   ├── common/          # NotificationContainer, ConfirmationModal, PageTransition
+│   ├── common/          # ConfirmationModal, ErrorBoundary, NotificationContainer, PageTransition, SecondaryScreenShell
 │   ├── quota/           # Quota 展示（quotaConfigs.ts 为核心渲染逻辑）
 │   ├── usage/           # Usage 统计（TokenBreakdownChart, StatCards, RequestEventsDetailsCard）
 │   ├── monitor/         # 监控面板（KpiCards, DailyTrendChart, HourlyTokenChart）
@@ -22,23 +22,39 @@ src/
 │   ├── authFiles/        # Auth Files 功能模块（常量、表格渲染）
 │   └── webdavBackup/     # WebDAV 备份（store + hooks + 组件 + .scss 模块）
 ├── services/api/        # API 客户端层（axios, 17 个服务模块）
-├── stores/              # zustand 全局状态（11 个 store）
+├── stores/              # zustand 全局状态（12 个 store）
 ├── stores/index.ts      # store 统一导出
-├── hooks/               # 自定义 Hook（12 个：useApi, useSqliteUsage, useLocalStorage, ...）
+├── test/                # 测试（setup.ts, utils.tsx，vitest + @testing-library）
+├── hooks/               # 自定义 Hook（13 个：useApi, useDebounce, useSqliteUsage, useLocalStorage, ...）
 ├── utils/               # 纯函数工具
 │   ├── usage.ts         # 核心：usage 数据解析（UsageDetail, collectUsageDetails, TokenBreakdown）
 │   ├── format.ts        # 格式化（数字、日期、API key 脱敏）
 │   ├── timestamp.ts     # RFC3339 高精度时间戳标准化
 │   ├── sourceResolver.ts # usage source → 显示名/类型映射
 │   ├── download.ts      # Blob 下载
-│   └── clipboard.ts     # 剪贴板操作
+│   ├── clipboard.ts     # 剪贴板操作
+│   ├── error.ts         # 错误分类与本地化
+│   ├── validation.ts    # 校验工具
+│   ├── encryption.ts    # 加密工具
+│   ├── compare.ts       # 对象比较
+│   ├── heatmap.ts       # 热力图数据计算
+│   ├── sqliteAdapter.ts # SQLite 适配层
+│   ├── helpers.ts       # 通用辅助
+│   ├── connection.ts    # 连接地址解析
+│   ├── language.ts, models.ts, headers.ts, constants.ts  # 各领域常量/映射
+│   ├── quota/           # Quota 数据解析（7 个子模块：parsers, validators, builders, formatters, resolvers, constants, index）
+│   └── usage/           # 图表配置与延迟分析（chartConfig.ts, latency.ts, index）
 ├── types/               # TypeScript 类型定义
 ├── data/                # 静态数据（modelPricePresets.ts 模型价格预设）
 ├── i18n/locales/        # 翻译文件（en.json, zh-CN.json, zh-TW.json, ru.json）
 ├── styles/              # 全局样式
 │   ├── themes.scss      # CSS 自定义属性主题（light/dark）
 │   ├── variables.scss   # SCSS 变量（颜色、间距、圆角、阴影、z-index）
-│   └── components.scss  # 全局组件样式
+│   ├── components.scss  # 全局组件样式
+│   ├── global.scss      # 全局基础样式
+│   ├── layout.scss      # 布局相关
+│   ├── mixins.scss      # SCSS mixins
+│   └── reset.scss       # CSS reset
 ├── router/              # ProtectedRoute 路由守卫
 └── assets/
     └── icons/           # SVG 图标（providers）
@@ -59,6 +75,7 @@ src/
 | 代码编辑器 | @codemirror/lang-yaml + @uiw/react-codemirror |
 | 动画 | motion (framer-motion) |
 | 虚拟滚动 | @tanstack/react-virtual |
+| 测试 | vitest + @testing-library/react + jsdom |
 | 包管理 | bun（禁止 npm） |
 
 ## 关键约定
@@ -69,7 +86,7 @@ src/
 - **原则**: 禁止硬编码 hex 颜色，使用 SCSS 变量或 CSS 自定义属性 + fallback
 
 ### i18n
-- 四个 locale: `en.json`, `zh-CN.json`, `zh-TW.json`, `ru.json`，顶级键数量已对齐（4×37），zh-TW auth_login 段缺 111 个 IDE provider 键（CodeBuddy/Copilot/Cursor/Kiro/Qoder/Trae/Windsurf/Zed/WorkBuddy）
+- 四个 locale: `en.json`, `zh-CN.json`, `zh-TW.json`, `ru.json`，顶级键与 auth_login 子键数量已对齐（4×37, auth_login 均 182 键）
 - `useTranslation()` 返回的 `t` 函数，使用带命名空间的键：`'usage_stats.request_events_title'`
 - 所有用户可见文字必须通过 `t()` 调用
 
@@ -94,8 +111,12 @@ src/
 bun install          # 安装依赖
 bun run dev          # 开发服务器
 bun run build        # 生产构建
-npx tsc --noEmit     # TypeScript 类型检查
-npx eslint src/      # ESLint 检查
+bun run test         # vitest 测试
+bun run test:watch   # vitest watch 模式
+bun run format       # prettier 格式化
+bun run type-check   # tsc --noEmit 类型检查
+bun run lint         # ESLint 检查
+bun run doctor       # git 状态诊断
 ```
 
 ## 参考仓库
