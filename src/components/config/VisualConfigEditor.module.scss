@@ -602,13 +602,41 @@
 
 .payloadRuleModelRow {
   display: grid;
-  grid-template-columns: 1fr 160px auto;
+  grid-template-columns: 1fr 160px auto auto;
   gap: 8px;
   align-items: center;
 }
 
 .payloadRuleModelRowProtocolFirst {
-  grid-template-columns: 160px 1fr auto;
+  grid-template-columns: 160px 1fr auto auto;
+}
+
+.payloadModelGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payloadModelAdvanced {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-left: 10px;
+  padding-left: 12px;
+  border-left: 2px solid var(--border-color);
+}
+
+.payloadAdvancedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.payloadHeaderRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
 }
 
 .payloadRuleParamRow {
@@ -660,6 +688,7 @@
 @media (max-width: 900px) {
   .payloadRuleModelRow,
   .payloadRuleModelRowProtocolFirst,
+  .payloadHeaderRow,
   .payloadRuleParamRow,
   .payloadFilterModelRow {
     grid-template-columns: minmax(0, 1fr);
