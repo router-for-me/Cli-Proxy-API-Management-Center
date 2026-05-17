@@ -1165,8 +1165,7 @@
           "switch_project_desc": "配額耗盡時自動切換到其他專案",
           "switch_preview_model": "切換預覽模型",
           "switch_preview_model_desc": "配額耗盡時切換到預覽版本模型",
-          "antigravity_credits": "Antigravity Credits 重試",
-          "antigravity_credits_desc": "Antigravity 回傳 quota_exhausted 429 時，使用 enabledCreditTypes=[\"GOOGLE_ONE_AI\"] 重試一次"
+          "antigravity_credits": "使用Antigravity Credits"
         },
         "streaming": {
           "title": "串流傳輸設定",
