@@ -690,7 +690,21 @@
 }
 
 .fileCardDisabled {
-  opacity: 0.72;
+  background-color: color-mix(in srgb, var(--bg-primary) 78%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--border-color) 62%, transparent);
+
+  .providerAvatar,
+  .cardHeaderContent,
+  .cardMeta,
+  .healthStatusMessage,
+  .cardInsights {
+    opacity: 0.72;
+  }
+
+  .cardSelection,
+  .cardActions {
+    opacity: 1;
+  }
 
   &:hover {
     transform: none;

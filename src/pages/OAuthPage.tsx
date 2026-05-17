@@ -16,6 +16,7 @@ import iconGemini from '@/assets/icons/gemini.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
+import iconGrok from '@/assets/icons/grok.svg';
 
 interface ProviderState {
   url?: string;
@@ -67,10 +68,18 @@ const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabe
   { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
   { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconAntigravity },
   { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini },
-  { id: 'kimi', titleKey: 'auth_login.kimi_oauth_title', hintKey: 'auth_login.kimi_oauth_hint', urlLabelKey: 'auth_login.kimi_oauth_url_label', icon: { light: iconKimiLight, dark: iconKimiDark } }
+  { id: 'kimi', titleKey: 'auth_login.kimi_oauth_title', hintKey: 'auth_login.kimi_oauth_hint', urlLabelKey: 'auth_login.kimi_oauth_url_label', icon: { light: iconKimiLight, dark: iconKimiDark } },
+  { id: 'xai', titleKey: 'auth_login.xai_oauth_title', hintKey: 'auth_login.xai_oauth_hint', urlLabelKey: 'auth_login.xai_oauth_url_label', icon: iconGrok }
 ];
 
-const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli'];
+const CALLBACK_SUPPORTED: OAuthProvider[] = [
+  'codex',
+  'anthropic',
+  'antigravity',
+  'gemini-cli',
+  'xai'
+];
+const XAI_CALLBACK_URL = 'http://127.0.0.1:56121/callback';
 const SUCCESS_RESET_DELAY_MS = 5000;
 const getProviderI18nPrefix = (provider: OAuthProvider) => provider.replace('-', '_');
 const getAuthKey = (provider: OAuthProvider, suffix: string) =>
@@ -78,6 +87,77 @@ const getAuthKey = (provider: OAuthProvider, suffix: string) =>
 
 const getIcon = (icon: string | { light: string; dark: string }, theme: 'light' | 'dark') => {
   return typeof icon === 'string' ? icon : icon[theme];
+};
+
+const isAbsoluteUrl = (value: string): boolean => {
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const readQueryLikeCallbackInput = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const queryStart = trimmed.indexOf('?');
+  const hashStart = trimmed.indexOf('#');
+  const rawParams =
+    queryStart >= 0
+      ? trimmed.slice(queryStart + 1)
+      : hashStart >= 0
+        ? trimmed.slice(hashStart + 1)
+        : trimmed;
+
+  if (!/(^|[&#?])(code|state|error)=/i.test(rawParams)) return null;
+  return new URLSearchParams(rawParams.replace(/^[?#]/, ''));
+};
+
+const extractDisplayedXaiCode = (value: string): string => {
+  const trimmed = value.trim();
+  const codeMatch = trimmed.match(/\bcode\s*[:=]\s*([^\s&]+)/i);
+  return (codeMatch?.[1] ?? trimmed).trim();
+};
+
+const buildXaiCallbackUrl = (input: string, state?: string): string | null => {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (isAbsoluteUrl(trimmed)) return trimmed;
+
+  const params = readQueryLikeCallbackInput(trimmed);
+  if (params) {
+    const code = params.get('code')?.trim();
+    const error = params.get('error')?.trim();
+    const errorDescription = params.get('error_description')?.trim();
+    const callbackState = params.get('state')?.trim() || state?.trim();
+    if (!callbackState) return null;
+
+    const callbackUrl = new URL(XAI_CALLBACK_URL);
+    callbackUrl.searchParams.set('state', callbackState);
+    if (code) callbackUrl.searchParams.set('code', code);
+    if (error) callbackUrl.searchParams.set('error', error);
+    if (errorDescription) callbackUrl.searchParams.set('error_description', errorDescription);
+    return callbackUrl.toString();
+  }
+
+  const code = extractDisplayedXaiCode(trimmed);
+  const callbackState = state?.trim();
+  if (!code || !callbackState) return null;
+
+  const callbackUrl = new URL(XAI_CALLBACK_URL);
+  callbackUrl.searchParams.set('code', code);
+  callbackUrl.searchParams.set('state', callbackState);
+  return callbackUrl.toString();
+};
+
+const resolveCallbackUrl = (
+  provider: OAuthProvider,
+  input: string,
+  state?: string
+): string | null => {
+  if (provider !== 'xai') return input.trim();
+  return buildXaiCallbackUrl(input, state);
 };
 
 export function OAuthPage() {
@@ -262,9 +342,17 @@ export function OAuthPage() {
   };
 
   const submitCallback = async (provider: OAuthProvider) => {
-    const redirectUrl = (states[provider]?.callbackUrl || '').trim();
+    const callbackInput = (states[provider]?.callbackUrl || '').trim();
+    if (!callbackInput) {
+      showNotification(
+        t(provider === 'xai' ? 'auth_login.xai_callback_required' : 'auth_login.oauth_callback_required'),
+        'warning'
+      );
+      return;
+    }
+    const redirectUrl = resolveCallbackUrl(provider, callbackInput, states[provider]?.state);
     if (!redirectUrl) {
-      showNotification(t('auth_login.oauth_callback_required'), 'warning');
+      showNotification(t(provider === 'xai' ? 'auth_login.xai_callback_state_missing' : 'auth_login.missing_state'), 'warning');
       return;
     }
     updateProviderState(provider, {
@@ -434,8 +522,16 @@ export function OAuthPage() {
                   {canSubmitCallback && (
                     <div className={styles.callbackSection}>
                       <Input
-                        label={t('auth_login.oauth_callback_label')}
-                        hint={t('auth_login.oauth_callback_hint')}
+                        label={t(
+                          provider.id === 'xai'
+                            ? 'auth_login.xai_callback_label'
+                            : 'auth_login.oauth_callback_label'
+                        )}
+                        hint={t(
+                          provider.id === 'xai'
+                            ? 'auth_login.xai_callback_hint'
+                            : 'auth_login.oauth_callback_hint'
+                        )}
                         value={state.callbackUrl || ''}
                         onChange={(e) =>
                           updateProviderState(provider.id, {
@@ -444,7 +540,11 @@ export function OAuthPage() {
                             callbackError: undefined
                           })
                         }
-                        placeholder={t('auth_login.oauth_callback_placeholder')}
+                        placeholder={t(
+                          provider.id === 'xai'
+                            ? 'auth_login.xai_callback_placeholder'
+                            : 'auth_login.oauth_callback_placeholder'
+                        )}
                       />
                       <div className={styles.callbackActions}>
                         <Button
