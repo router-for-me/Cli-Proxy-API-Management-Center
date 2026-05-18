@@ -87,7 +87,7 @@ npm run build
 
 ## 技术栈
 
-- React 19 + TypeScript 5.9
+- React 19 + TypeScript 6.0
 - Vite 8（单文件构建）
 - Zustand（状态管理）
 - Axios（HTTP 客户端）

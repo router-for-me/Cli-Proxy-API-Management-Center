@@ -6,7 +6,7 @@ A single-file Web UI (React + TypeScript) for operating and troubleshooting the 
 
 **Main Project**: https://github.com/router-for-me/CLIProxyAPI  
 **Example URL**: https://remote.router-for.me/  
-**Minimum Required Version**: ≥ 7.1.0 (recommended lastest)
+**Minimum Required Version**: ≥ 7.1.0 (recommended latest)
 
 Since version 6.0.19, the Web UI ships with the main program; access it via `/management.html` on the API port once the service is running.
 
@@ -87,7 +87,7 @@ Check the CLI Proxy API server documentation/config comments for the full authen
 
 ## Tech Stack
 
-- React 19 + TypeScript 5.9
+- React 19 + TypeScript 6.0
 - Vite 8 (single-file build)
 - Zustand (state management)
 - Axios (HTTP client)
