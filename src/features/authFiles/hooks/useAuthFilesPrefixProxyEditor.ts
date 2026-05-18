@@ -103,6 +103,20 @@ const buildInvalidContentPreview = (text: string): string => {
   return `${trimmed.slice(0, INVALID_CONTENT_PREVIEW_LIMIT)}\n...`;
 };
 
+const buildInvalidAuthFileContentState = (
+  text: string,
+  resolveError: (key: AuthFileContentErrorKey) => string
+): Pick<
+  PrefixProxyEditorState,
+  'loading' | 'error' | 'rawText' | 'originalText' | 'invalidContentPreview'
+> => ({
+  loading: false,
+  error: resolveError(getAuthFileContentErrorKey(text)),
+  rawText: text,
+  originalText: text,
+  invalidContentPreview: buildInvalidContentPreview(text),
+});
+
 const getAuthFileContentErrorKey = (text: string): AuthFileContentErrorKey => {
   const head = text.trimStart().slice(0, 4096).toLowerCase();
   const looksLikeHtml =
@@ -301,7 +315,7 @@ export function useAuthFilesPrefixProxyEditor(
     prefixProxyEditor?.headersTouched && prefixProxyEditor.headersError
   );
   const prefixProxyUpdatedText =
-    prefixProxyEditor?.json && !hasBlockingValidationError
+    prefixProxyEditor && !hasBlockingValidationError
       ? buildPrefixProxyUpdatedText(prefixProxyEditor, (key) => t(key))
       : '';
 
@@ -353,32 +367,22 @@ export function useAuthFilesPrefixProxyEditor(
       try {
         parsed = JSON.parse(trimmed) as unknown;
       } catch {
-        const errorKey = getAuthFileContentErrorKey(trimmed);
         setPrefixProxyEditor((prev) => {
           if (!prev || prev.fileName !== name) return prev;
           return {
             ...prev,
-            loading: false,
-            error: t(errorKey),
-            rawText: '',
-            originalText: '',
-            invalidContentPreview: buildInvalidContentPreview(trimmed),
+            ...buildInvalidAuthFileContentState(rawText, (key) => t(key)),
           };
         });
         return;
       }
 
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        const errorKey = getAuthFileContentErrorKey(trimmed);
         setPrefixProxyEditor((prev) => {
           if (!prev || prev.fileName !== name) return prev;
           return {
             ...prev,
-            loading: false,
-            error: t(errorKey),
-            rawText: '',
-            originalText: '',
-            invalidContentPreview: buildInvalidContentPreview(trimmed),
+            ...buildInvalidAuthFileContentState(rawText, (key) => t(key)),
           };
         });
         return;
