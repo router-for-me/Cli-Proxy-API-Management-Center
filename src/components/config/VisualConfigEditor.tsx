@@ -191,7 +191,6 @@ export function VisualConfigEditor({
     values.streaming.nonstreamKeepaliveInterval === '0';
 
   const portError = getValidationMessage(t, validationErrors?.port);
-  const homePortError = getValidationMessage(t, validationErrors?.homePort);
   const logsMaxSizeError = getValidationMessage(t, validationErrors?.logsMaxTotalSizeMb);
   const errorLogsMaxFilesError = getValidationMessage(t, validationErrors?.errorLogsMaxFiles);
   const redisUsageQueueRetentionError = getValidationMessage(
@@ -269,7 +268,7 @@ export function VisualConfigEditor({
         id: 'server',
         title: t('config_management.visual.sections.server.title'),
         icon: IconSettings,
-        errorCount: countErrors(['port', 'homePort']),
+        errorCount: countErrors(['port']),
       },
       {
         id: 'auth',
@@ -536,102 +535,6 @@ export function VisualConfigEditor({
                       </SectionGrid>
                     </>
                   ) : null}
-                </SectionStack>
-              </SectionSubsection>
-
-              <SectionSubsection
-                title={t('config_management.visual.sections.home.title')}
-                description={t('config_management.visual.sections.home.description')}
-              >
-                <SectionStack>
-                  <SectionGrid>
-                    <ToggleRow
-                      title={t('config_management.visual.sections.home.enabled')}
-                      description={t('config_management.visual.sections.home.enabled_desc')}
-                      checked={values.homeEnabled}
-                      disabled={disabled}
-                      onChange={(homeEnabled) => onChange({ homeEnabled })}
-                    />
-                    <ToggleRow
-                      title={t('config_management.visual.sections.home.disable_cluster_discovery')}
-                      description={t(
-                        'config_management.visual.sections.home.disable_cluster_discovery_desc'
-                      )}
-                      checked={values.homeDisableClusterDiscovery}
-                      disabled={disabled}
-                      onChange={(homeDisableClusterDiscovery) =>
-                        onChange({ homeDisableClusterDiscovery })
-                      }
-                    />
-                  </SectionGrid>
-                  <SectionGrid>
-                    <Input
-                      label={t('config_management.visual.sections.home.host')}
-                      placeholder="127.0.0.1"
-                      value={values.homeHost}
-                      onChange={(e) => onChange({ homeHost: e.target.value })}
-                      disabled={disabled}
-                    />
-                    <Input
-                      label={t('config_management.visual.sections.home.port')}
-                      type="number"
-                      placeholder="6379"
-                      value={values.homePort}
-                      onChange={(e) => onChange({ homePort: e.target.value })}
-                      disabled={disabled}
-                      error={homePortError}
-                    />
-                    <Input
-                      label={t('config_management.visual.sections.home.password')}
-                      type="password"
-                      placeholder={t('config_management.visual.sections.home.password_placeholder')}
-                      value={values.homePassword}
-                      onChange={(e) => onChange({ homePassword: e.target.value })}
-                      disabled={disabled}
-                    />
-                  </SectionGrid>
-                  <Divider />
-                  <div className={styles.subsectionHeader}>
-                    <h3 className={styles.subsectionTitle}>
-                      {t('config_management.visual.sections.home.tls_title')}
-                    </h3>
-                    <p className={styles.subsectionDescription}>
-                      {t('config_management.visual.sections.home.tls_description')}
-                    </p>
-                  </div>
-                  <SectionGrid>
-                    <ToggleRow
-                      title={t('config_management.visual.sections.home.tls_enable')}
-                      checked={values.homeTlsEnable}
-                      disabled={disabled}
-                      onChange={(homeTlsEnable) => onChange({ homeTlsEnable })}
-                    />
-                    <ToggleRow
-                      title={t('config_management.visual.sections.home.tls_insecure')}
-                      description={t('config_management.visual.sections.home.tls_insecure_desc')}
-                      checked={values.homeTlsInsecureSkipVerify}
-                      disabled={disabled}
-                      onChange={(homeTlsInsecureSkipVerify) =>
-                        onChange({ homeTlsInsecureSkipVerify })
-                      }
-                    />
-                  </SectionGrid>
-                  <SectionGrid>
-                    <Input
-                      label={t('config_management.visual.sections.home.tls_server_name')}
-                      placeholder="home.example.com"
-                      value={values.homeTlsServerName}
-                      onChange={(e) => onChange({ homeTlsServerName: e.target.value })}
-                      disabled={disabled}
-                    />
-                    <Input
-                      label={t('config_management.visual.sections.home.tls_ca_cert')}
-                      placeholder="/path/to/ca.pem"
-                      value={values.homeTlsCaCert}
-                      onChange={(e) => onChange({ homeTlsCaCert: e.target.value })}
-                      disabled={disabled}
-                    />
-                  </SectionGrid>
                 </SectionStack>
               </SectionSubsection>
 

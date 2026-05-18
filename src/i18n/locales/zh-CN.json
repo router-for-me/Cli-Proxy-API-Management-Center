@@ -1085,25 +1085,6 @@
           "cert": "证书文件路径",
           "key": "私钥文件路径"
         },
-        "home": {
-          "title": "Home 控制平面",
-          "description": "通过 Redis 协议连接 Home 控制平面的可选设置",
-          "enabled": "启用 Home",
-          "enabled_desc": "启用到 Home 控制平面的出站连接",
-          "host": "Home 主机",
-          "port": "Home 端口",
-          "password": "Home 密码",
-          "password_placeholder": "留空表示不设置密码",
-          "disable_cluster_discovery": "禁用集群发现",
-          "disable_cluster_discovery_desc": "固定使用配置中的 Home 地址，不切换到 CLUSTER NODES 返回的地址",
-          "tls_title": "Home TLS",
-          "tls_description": "Home Redis 连接的 TLS/SNI 与证书设置",
-          "tls_enable": "启用 Home TLS",
-          "tls_server_name": "TLS Server Name",
-          "tls_ca_cert": "CA 证书路径",
-          "tls_insecure": "跳过证书校验",
-          "tls_insecure_desc": "仅用于测试自签名端点"
-        },
         "remote": {
           "title": "远程管理",
           "description": "远程访问和控制面板设置",

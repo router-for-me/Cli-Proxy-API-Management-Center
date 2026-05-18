@@ -1111,25 +1111,6 @@
           "cert": "憑證檔案路徑",
           "key": "私鑰檔案路徑"
         },
-        "home": {
-          "title": "Home 控制平面",
-          "description": "透過 Redis 協議連接 Home 控制平面的選填設定",
-          "enabled": "啟用 Home",
-          "enabled_desc": "啟用到 Home 控制平面的出站連線",
-          "host": "Home 主機",
-          "port": "Home 連接埠",
-          "password": "Home 密碼",
-          "password_placeholder": "留空表示不設定密碼",
-          "disable_cluster_discovery": "停用叢集探索",
-          "disable_cluster_discovery_desc": "固定使用設定中的 Home 位址，不切換到 CLUSTER NODES 返回的位址",
-          "tls_title": "Home TLS",
-          "tls_description": "Home Redis 連線的 TLS/SNI 與憑證設定",
-          "tls_enable": "啟用 Home TLS",
-          "tls_server_name": "TLS Server Name",
-          "tls_ca_cert": "CA 憑證路徑",
-          "tls_insecure": "跳過憑證校驗",
-          "tls_insecure_desc": "僅用於測試自簽端點"
-        },
         "remote": {
           "title": "遠端管理",
           "description": "遠端存取和控制面板設定",

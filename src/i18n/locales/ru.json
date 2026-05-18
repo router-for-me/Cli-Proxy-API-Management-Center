@@ -1082,25 +1082,6 @@
           "cert": "Путь к сертификату",
           "key": "Путь к закрытому ключу"
         },
-        "home": {
-          "title": "Панель управления Home",
-          "description": "Необязательное подключение к Home по протоколу Redis",
-          "enabled": "Включить Home",
-          "enabled_desc": "Включить исходящее подключение к панели управления Home",
-          "host": "Хост Home",
-          "port": "Порт Home",
-          "password": "Пароль Home",
-          "password_placeholder": "Оставьте пустым, если пароль не нужен",
-          "disable_cluster_discovery": "Отключить обнаружение кластера",
-          "disable_cluster_discovery_desc": "Использовать заданный адрес Home вместо записей CLUSTER NODES",
-          "tls_title": "TLS для Home",
-          "tls_description": "Настройки TLS, SNI и сертификатов для Redis-подключения Home",
-          "tls_enable": "Включить TLS для Home",
-          "tls_server_name": "TLS Server Name",
-          "tls_ca_cert": "Путь к CA-сертификату",
-          "tls_insecure": "Пропустить проверку сертификата",
-          "tls_insecure_desc": "Используйте только для тестирования самоподписанных endpoints"
-        },
         "remote": {
           "title": "Удалённое управление",
           "description": "Настройки удалённого доступа и панели управления",

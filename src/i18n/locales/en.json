@@ -1085,25 +1085,6 @@
           "cert": "Certificate File Path",
           "key": "Private Key File Path"
         },
-        "home": {
-          "title": "Home Control Plane",
-          "description": "Optional Home control plane connection over Redis protocol",
-          "enabled": "Enable Home",
-          "enabled_desc": "Enable the outbound connection to the Home control plane",
-          "host": "Home Host",
-          "port": "Home Port",
-          "password": "Home Password",
-          "password_placeholder": "Leave empty for no password",
-          "disable_cluster_discovery": "Disable Cluster Discovery",
-          "disable_cluster_discovery_desc": "Keep using the configured Home address instead of CLUSTER NODES entries",
-          "tls_title": "Home TLS",
-          "tls_description": "TLS, SNI, and certificate settings for the Home Redis connection",
-          "tls_enable": "Enable Home TLS",
-          "tls_server_name": "TLS Server Name",
-          "tls_ca_cert": "CA Certificate Path",
-          "tls_insecure": "Skip Certificate Verification",
-          "tls_insecure_desc": "Only use this for testing self-signed endpoints"
-        },
         "remote": {
           "title": "Remote Management",
           "description": "Remote access and control panel settings",

@@ -176,7 +176,6 @@ export function getVisualConfigValidationErrors(
   values: VisualConfigValues
 ): VisualConfigValidationErrors {
   return {
-    homePort: getPortError(values.homePort),
     port: getPortError(values.port),
     errorLogsMaxFiles: getNonNegativeIntegerError(values.errorLogsMaxFiles),
     logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
@@ -726,15 +725,6 @@ function getNextDirtyFields(
 
   (
     [
-      'homeEnabled',
-      'homeHost',
-      'homePort',
-      'homePassword',
-      'homeDisableClusterDiscovery',
-      'homeTlsEnable',
-      'homeTlsServerName',
-      'homeTlsCaCert',
-      'homeTlsInsecureSkipVerify',
       'rmDisableAutoUpdatePanel',
       'errorLogsMaxFiles',
       'usageStatisticsEnabled',
@@ -1001,8 +991,6 @@ export function useVisualConfig() {
       const parsedRaw: unknown = parseYaml(yamlContent) || {};
       const parsed = asRecord(parsedRaw) ?? {};
       const tls = asRecord(parsed.tls);
-      const home = asRecord(parsed.home);
-      const homeTls = asRecord(home?.tls);
       const remoteManagement = asRecord(parsed['remote-management']);
       const quotaExceeded = asRecord(parsed['quota-exceeded']);
       const routing = asRecord(parsed.routing);
@@ -1018,17 +1006,6 @@ export function useVisualConfig() {
         tlsEnable: Boolean(tls?.enable),
         tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
         tlsKey: typeof tls?.key === 'string' ? tls.key : '',
-
-        homeEnabled: Boolean(home?.enabled),
-        homeHost: typeof home?.host === 'string' ? home.host : '',
-        homePort: String(home?.port ?? ''),
-        homePassword: typeof home?.password === 'string' ? home.password : '',
-        homeDisableClusterDiscovery: Boolean(home?.['disable-cluster-discovery']),
-        homeTlsEnable: Boolean(homeTls?.enable),
-        homeTlsServerName:
-          typeof homeTls?.['server-name'] === 'string' ? homeTls['server-name'] : '',
-        homeTlsCaCert: typeof homeTls?.['ca-cert'] === 'string' ? homeTls['ca-cert'] : '',
-        homeTlsInsecureSkipVerify: Boolean(homeTls?.['insecure-skip-verify']),
 
         rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
         rmSecretKey:
@@ -1165,51 +1142,6 @@ export function useVisualConfig() {
           setStringInDoc(doc, ['tls', 'cert'], values.tlsCert);
           setStringInDoc(doc, ['tls', 'key'], values.tlsKey);
           deleteIfMapEmpty(doc, ['tls']);
-        }
-
-        if (
-          docHas(doc, ['home']) ||
-          values.homeEnabled ||
-          values.homeHost.trim() ||
-          values.homePort.trim() ||
-          values.homePassword.trim() ||
-          values.homeDisableClusterDiscovery ||
-          values.homeTlsEnable ||
-          values.homeTlsServerName.trim() ||
-          values.homeTlsCaCert.trim() ||
-          values.homeTlsInsecureSkipVerify
-        ) {
-          ensureMapInDoc(doc, ['home']);
-          setBooleanInDoc(doc, ['home', 'enabled'], values.homeEnabled);
-          setStringInDoc(doc, ['home', 'host'], values.homeHost);
-          setIntFromStringInDoc(doc, ['home', 'port'], values.homePort);
-          setStringInDoc(doc, ['home', 'password'], values.homePassword);
-          setBooleanInDoc(
-            doc,
-            ['home', 'disable-cluster-discovery'],
-            values.homeDisableClusterDiscovery
-          );
-
-          if (
-            docHas(doc, ['home', 'tls']) ||
-            values.homeTlsEnable ||
-            values.homeTlsServerName.trim() ||
-            values.homeTlsCaCert.trim() ||
-            values.homeTlsInsecureSkipVerify
-          ) {
-            ensureMapInDoc(doc, ['home', 'tls']);
-            setBooleanInDoc(doc, ['home', 'tls', 'enable'], values.homeTlsEnable);
-            setStringInDoc(doc, ['home', 'tls', 'server-name'], values.homeTlsServerName);
-            setStringInDoc(doc, ['home', 'tls', 'ca-cert'], values.homeTlsCaCert);
-            setBooleanInDoc(
-              doc,
-              ['home', 'tls', 'insecure-skip-verify'],
-              values.homeTlsInsecureSkipVerify
-            );
-            deleteIfMapEmpty(doc, ['home', 'tls']);
-          }
-
-          deleteIfMapEmpty(doc, ['home']);
         }
 
         if (
