@@ -100,7 +100,6 @@
   }
 }
 
-
 .filterAllIconWrap {
   position: relative;
   border-color: color-mix(in srgb, var(--primary-color) 20%, var(--border-color));
@@ -118,7 +117,6 @@
   display: block;
   color: color-mix(in srgb, var(--primary-color) 70%, var(--text-primary));
 }
-
 
 .filterContent {
   display: flex;
@@ -232,16 +230,31 @@
 }
 
 .filterControlsPanel {
-  padding: 14px;
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--primary-color) 8%, transparent),
+      transparent 46%
+    ),
+    color-mix(in srgb, var(--bg-secondary) 56%, transparent);
+
+  @include mobile {
+    padding: 12px;
+  }
 }
 
 .filterControls {
   display: grid;
-  grid-template-columns: minmax(240px, 1.4fr) repeat(2, minmax(120px, 0.72fr)) minmax(220px, auto);
-  gap: $spacing-md;
+  grid-template-columns:
+    minmax(260px, 1fr)
+    minmax(108px, 0.35fr)
+    minmax(148px, 0.45fr);
+  gap: 12px;
   align-items: flex-end;
 
   // 修复 Input 组件在 filterItem 中的嵌套样式
@@ -250,7 +263,7 @@
   }
 
   :global(.input) {
-    height: 40px;
+    height: 42px;
     box-sizing: border-box;
   }
 
@@ -263,6 +276,10 @@
   }
 }
 
+.filterSearchItem {
+  min-width: 0;
+}
+
 .filterItem {
   display: flex;
   flex-direction: column;
@@ -273,14 +290,14 @@
     font-size: 11px;
     color: var(--text-tertiary);
     font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    letter-spacing: 0;
     white-space: nowrap;
   }
 }
 
 .filterToggleItem {
   min-width: 0;
+  grid-column: 1 / -1;
 
   @include tablet {
     grid-column: 1 / -1;
@@ -289,19 +306,29 @@
 
 .filterToggleGroup {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  min-height: 40px;
+  min-height: 42px;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
 }
 
 .filterToggleCard {
   display: flex;
   align-items: center;
-  min-height: 40px;
-  padding: 0 2px;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 10px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 56%, transparent);
+
+  > label {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .filterToggle {
@@ -317,7 +344,17 @@
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
-  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.searchInput {
+  padding-right: 40px;
+}
+
+.searchIcon {
+  display: block;
+  color: var(--text-tertiary);
+  pointer-events: none;
 }
 
 .pageSizeSelect {
@@ -329,7 +366,7 @@
   color: var(--text-primary);
   font-size: 14px;
   cursor: text;
-  height: 40px;
+  height: 42px;
   box-sizing: border-box;
 
   &:focus {
