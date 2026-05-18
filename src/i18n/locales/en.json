@@ -591,6 +591,7 @@
     "prefix_proxy_loading": "Loading auth file...",
     "prefix_proxy_info_label": "Auth file info (info)",
     "prefix_proxy_source_label": "Auth file JSON (preview)",
+    "prefix_proxy_invalid_content_label": "Downloaded content (truncated)",
     "prefix_label": "Prefix (prefix)",
     "proxy_url_label": "Proxy URL (proxy_url)",
     "prefix_placeholder": "",
@@ -615,6 +616,7 @@
     "headers_invalid_object": "Custom headers must be a JSON object.",
     "headers_invalid_value": "Each custom header value must be a string.",
     "prefix_proxy_invalid_json": "This auth file is not a JSON object, so fields cannot be edited.",
+    "prefix_proxy_html_challenge": "Downloaded content is an HTML challenge page, not an auth JSON object. Re-authenticate or replace this auth file before editing fields.",
     "prefix_proxy_saved_success": "Updated auth file \"{{name}}\" successfully",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
     "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
