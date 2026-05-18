@@ -591,6 +591,7 @@
     "prefix_proxy_loading": "正在加载认证文件...",
     "prefix_proxy_info_label": "认证文件信息（info）",
     "prefix_proxy_source_label": "认证文件 JSON（预览）",
+    "prefix_proxy_invalid_content_label": "下载内容（已截断）",
     "prefix_label": "前缀（prefix）",
     "proxy_url_label": "代理 URL（proxy_url）",
     "prefix_placeholder": "",
@@ -615,6 +616,7 @@
     "headers_invalid_object": "自定义请求头必须是 JSON 对象。",
     "headers_invalid_value": "每个自定义请求头的值都必须是字符串。",
     "prefix_proxy_invalid_json": "该认证文件不是 JSON 对象，无法编辑字段。",
+    "prefix_proxy_html_challenge": "下载到的是 HTML 验证页面，不是认证 JSON 对象。请重新认证或替换该认证文件后再编辑字段。",
     "prefix_proxy_saved_success": "已更新认证文件 \"{{name}}\"",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
     "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"

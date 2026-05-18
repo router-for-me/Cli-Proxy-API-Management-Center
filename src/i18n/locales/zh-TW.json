@@ -591,6 +591,7 @@
     "prefix_proxy_loading": "正在載入驗證檔案...",
     "prefix_proxy_info_label": "驗證檔案資訊（info）",
     "prefix_proxy_source_label": "驗證檔案 JSON（預覽）",
+    "prefix_proxy_invalid_content_label": "下載內容（已截斷）",
     "prefix_label": "前綴（prefix）",
     "proxy_url_label": "代理 URL（proxy_url）",
     "prefix_placeholder": "",
@@ -615,6 +616,7 @@
     "headers_invalid_object": "自訂請求標頭必須是 JSON 物件。",
     "headers_invalid_value": "每個自訂請求標頭的值都必須是字串。",
     "prefix_proxy_invalid_json": "該驗證檔案不是 JSON 物件，無法編輯欄位。",
+    "prefix_proxy_html_challenge": "下載到的是 HTML 驗證頁面，不是驗證 JSON 物件。請重新驗證或替換該驗證檔案後再編輯欄位。",
     "prefix_proxy_saved_success": "已更新驗證檔案「{{name}}」",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
     "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
