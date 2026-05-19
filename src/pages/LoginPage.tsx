@@ -32,18 +32,33 @@ function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): s
           ? error
           : '';
 
+  const withHttpStatus = (summary: string) => {
+    if (!status) {
+      return summary;
+    }
+
+    const genericAxiosMessage = `Request failed with status code ${status}`;
+    const detail = message.trim();
+    const backendDetail =
+      detail && detail !== genericAxiosMessage
+        ? ` (${t('login.error_backend_detail')}: ${detail})`
+        : '';
+
+    return `HTTP ${status}: ${summary}${backendDetail}`;
+  };
+
   // 根据 HTTP 状态码判断
   if (status === 401) {
-    return t('login.error_unauthorized');
+    return withHttpStatus(t('login.error_unauthorized'));
   }
   if (status === 403) {
-    return t('login.error_forbidden');
+    return withHttpStatus(t('login.error_forbidden'));
   }
   if (status === 404) {
-    return t('login.error_not_found');
+    return withHttpStatus(t('login.error_not_found'));
   }
   if (status && status >= 500) {
-    return t('login.error_server');
+    return withHttpStatus(t('login.error_server'));
   }
 
   // 根据 axios 错误码判断
@@ -63,7 +78,7 @@ function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): s
   }
 
   // 默认错误消息
-  return t('login.error_invalid');
+  return withHttpStatus(t('login.error_invalid'));
 }
 
 export function LoginPage() {
