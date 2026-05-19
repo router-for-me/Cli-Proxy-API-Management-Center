@@ -13,6 +13,7 @@ import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } f
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
 import { modelsToEntries } from '@/components/ui/modelInputListUtils';
 import type { ClaudeEditBaseline } from '@/stores/useClaudeEditDraftStore';
+import { parseRouteIndexParam } from '@/utils/routeParams';
 
 type LocationState = { fromAiProviders?: boolean } | null;
 
@@ -52,12 +53,6 @@ const buildEmptyForm = (): ProviderFormState => ({
   modelEntries: [{ name: '', alias: '' }],
   excludedText: '',
 });
-
-const parseIndexParam = (value: string | undefined) => {
-  if (!value) return null;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : null;
-};
 
 const getErrorMessage = (err: unknown) => {
   if (err instanceof Error) return err.message;
@@ -122,7 +117,7 @@ export function AiProvidersClaudeEditLayout() {
 
   const params = useParams<{ index?: string }>();
   const hasIndexParam = typeof params.index === 'string';
-  const editIndex = useMemo(() => parseIndexParam(params.index), [params.index]);
+  const editIndex = useMemo(() => parseRouteIndexParam(params.index), [params.index]);
   const invalidIndexParam = hasIndexParam && editIndex === null;
 
   const connectionStatus = useAuthStore((state) => state.connectionStatus);

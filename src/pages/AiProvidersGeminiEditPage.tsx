@@ -16,6 +16,7 @@ import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { GeminiKeyConfig } from '@/types';
 import { buildHeaderObject, headersToEntries, normalizeHeaderEntries } from '@/utils/headers';
 import { areKeyValueEntriesEqual, areModelEntriesEqual, areStringArraysEqual } from '@/utils/compare';
+import { parseRouteIndexParam } from '@/utils/routeParams';
 import type { ModelInfo } from '@/utils/models';
 import { entriesToModels, modelsToEntries } from '@/components/ui/modelInputListUtils';
 import { excludedModelsToText, parseExcludedModels } from '@/components/providers/utils';
@@ -36,12 +37,6 @@ const buildEmptyForm = (): GeminiFormState => ({
   excludedModels: [],
   excludedText: '',
 });
-
-const parseIndexParam = (value: string | undefined) => {
-  if (!value) return null;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : null;
-};
 
 const stripGeminiModelResourceName = (value: string) => {
   return String(value ?? '')
@@ -116,7 +111,7 @@ export function AiProvidersGeminiEditPage() {
   const modelDiscoveryRequestIdRef = useRef(0);
 
   const hasIndexParam = typeof params.index === 'string';
-  const editIndex = useMemo(() => parseIndexParam(params.index), [params.index]);
+  const editIndex = useMemo(() => parseRouteIndexParam(params.index), [params.index]);
   const invalidIndexParam = hasIndexParam && editIndex === null;
 
   const initialData = useMemo(() => {
