@@ -559,6 +559,12 @@ export const authFilesApi = {
   },
 
   // 获取指定 channel 的模型定义
+  verifyXiaomiCode: async (sessionId: string, code: string) =>
+    apiClient.post<{ status: string }>('/xiaomi/verify', {
+      session_id: sessionId,
+      code,
+    }),
+
   async getModelDefinitions(channel: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
     const normalizedChannel = String(channel ?? '').trim().toLowerCase();
     if (!normalizedChannel) return [];

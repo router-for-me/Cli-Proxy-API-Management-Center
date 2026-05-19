@@ -15,6 +15,7 @@ import {
   type OpenAICompatPanelConfig,
 } from './openAICompatBalanceConfigs';
 import { useOpenAICompatRefreshBus } from './openAICompatRefreshBus';
+import { XiaomiVerificationModal } from './XiaomiVerificationModal';
 
 export type ProviderKind = 'ollama' | 'deepseek' | 'xiaomi' | 'anyrouter';
 
@@ -66,6 +67,7 @@ const buildRefreshParams = (
       return {
         provider: 'xiaomi' as const,
         baseUrl,
+        apiKey: (entry.apiKey || '').trim(),
         cookie,
       };
     case 'anyrouter':
@@ -112,7 +114,9 @@ export function OpenAICompatBalancePanel({
   const i18nPrefix = config.i18nPrefix;
 
   const [state, setState] = useState<PanelState>({ status: 'idle' });
-  // Reset to idle when underlying credentials change so we don't display stale
+  const [verificationSessionId, setVerificationSessionId] = useState<string | null>(null);
+	  const [verificationEmail, setVerificationEmail] = useState<string>('');
+  const [verificationMessage, setVerificationMessage] = useState<string>('');
   // results after the user edits the entry.
   const credSigRef = useRef<string>('');
   useEffect(() => {
@@ -137,6 +141,14 @@ export function OpenAICompatBalancePanel({
     try {
       const params = buildRefreshParams(kind, provider, entry);
       const response = await authFilesApi.refreshOpenAICompatBalance(params);
+      // 检查是否需要邮箱验证码
+      if (response && 'need_verification' in response && (response as Record<string, unknown>).need_verification) {
+        setVerificationSessionId(String((response as Record<string, unknown>).session_id || ''));
+        setVerificationMessage(String((response as Record<string, unknown>).message || ''));
+          setVerificationEmail(String((response as Record<string, unknown>).email || ''));
+        setState({ status: 'idle' });
+        return;
+      }
       if (!response?.balance) {
         throw new Error(t(`${i18nPrefix}.empty`));
       }
@@ -154,6 +166,15 @@ export function OpenAICompatBalancePanel({
     }
   }, [config, effectiveDisabled, entry, i18nPrefix, kind, provider, showNotification, t]);
 
+  const handleVerificationSuccess = useCallback(() => {
+    setVerificationSessionId(null);
+    void refresh();
+  }, [refresh]);
+
+  const handleVerificationCancel = useCallback(() => {
+    setVerificationSessionId(null);
+  }, []);
+
   // Subscribe to the section's "refresh all" bus.
   // Skip registration when the provider is disabled so refreshAll
   // only iterates over active providers.
@@ -170,6 +191,7 @@ export function OpenAICompatBalancePanel({
       : '';
 
   return (
+    <>
     <div className={authFileStyles.quotaSection} style={{ flexBasis: '100%' }}>
       {state.status === 'loading' ? (
         <div className={authFileStyles.quotaMessage}>{t(`${i18nPrefix}.loading`)}</div>
@@ -215,5 +237,16 @@ export function OpenAICompatBalancePanel({
         </>
       )}
     </div>
+    {kind === 'xiaomi' && verificationSessionId && (
+      <XiaomiVerificationModal
+        open={!!verificationSessionId}
+        sessionId={verificationSessionId}
+        email={verificationEmail}
+          message={verificationMessage}
+        onVerified={handleVerificationSuccess}
+        onCancel={handleVerificationCancel}
+      />
+    )}
+    </>
   );
 }
