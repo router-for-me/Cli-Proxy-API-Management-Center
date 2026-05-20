@@ -6,7 +6,7 @@ A single-file Web UI (React + TypeScript) for operating and troubleshooting the 
 
 **Main Project**: https://github.com/router-for-me/CLIProxyAPI  
 **Example URL**: https://remote.router-for.me/  
-**Minimum Required Version**: ≥ 6.8.0 (recommended ≥ 6.8.15)
+**Minimum Required Version**: ≥ 7.1.0 (recommended latest)
 
 Since version 6.0.19, the Web UI ships with the main program; access it via `/management.html` on the API port once the service is running.
 
@@ -28,7 +28,7 @@ The address is auto-detected from the current page URL; manual override is suppo
 ### Option B: Run the dev server
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -37,7 +37,7 @@ Open `http://localhost:5173`, then connect to your CLI Proxy API backend instanc
 ### Option C: Build a single HTML file
 
 ```bash
-npm install
+npm ci
 npm run build
 ```
 
@@ -69,45 +69,44 @@ This is different from the proxy `api-keys` you manage inside the UI (those are 
 ### Remote management
 
 If you connect from a non-localhost browser, the server must allow remote management (e.g. `allow-remote-management: true`).  
-See `api.md` for the full authentication rules, server-side limits, and edge cases.
+Check the CLI Proxy API server documentation/config comments for the full authentication rules, server-side limits, and edge cases.
 
 ## What you can manage (mapped to the UI pages)
 
 - **Dashboard**: connection status, server version/build date, quick counts, model availability snapshot.
-- **Basic Settings**: debug, proxy URL, request retry, quota fallback (switch project or preview models when limits reached), request logging, file logging, WebSocket auth.
-- **API Keys**: manage proxy `api-keys` (add/edit/delete).
+- **Config Panel**: visual editor for common `config.yaml` fields, basic settings, proxy `api-keys`, and source editing with YAML highlighting/search plus a save diff preview.
 - **AI Providers**:
   - Gemini/Codex/Claude/Vertex key entries (base URL, headers, proxy, model aliases, excluded models, prefix).
   - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side "chat/completions" test).
   - Ampcode integration (upstream URL/key, force mappings, model mapping table).
 - **Auth Files**: upload/download/delete JSON credentials, filter/search/pagination, runtime-only indicators, view supported models per credential (when the server supports it), manage OAuth excluded models (supports `*` wildcards), configure OAuth model alias mappings.
-- **OAuth**: start OAuth/device flows for supported providers, poll status, optionally submit callback `redirect_url`; includes iFlow cookie import.
+- **OAuth**: start OAuth/device flows for Codex, Anthropic/Claude, Antigravity, Gemini CLI, Kimi, and xAI/Grok; poll status; submit callback URLs or xAI/Grok displayed codes; import Vertex JSON credentials and iFlow cookies.
 - **Quota Management**: manage quota limits and usage for Claude, Antigravity, Codex, Gemini CLI, and other providers.
-- **Config**: edit `/config.yaml` in-browser with YAML highlighting + search, then save/reload.
 - **Logs**: tail logs with incremental polling, auto-refresh, search, hide management traffic, clear logs; download request error log files.
-- **System**: quick links + fetch `/v1/models` (grouped view). Requires at least one proxy API key to query models.
+- **System**: quick links, update check, request logging toggle, local login data cleanup, and fetch `/v1/models` (grouped view). Requires at least one proxy API key to query models.
 
 ## Tech Stack
 
-- React 19 + TypeScript 5.9
-- Vite 7 (single-file build)
+- React 19 + TypeScript 6.0
+- Vite 8 (single-file build)
 - Zustand (state management)
 - Axios (HTTP client)
 - react-router-dom v7 (HashRouter)
-- Chart.js (data visualization)
+- Motion (animations)
 - CodeMirror 6 (YAML editor)
 - SCSS Modules (styling)
 - i18next (internationalization)
 
 ## Internationalization
 
-Currently supports three languages:
+Currently supports four languages:
 
 - English (en)
 - Simplified Chinese (zh-CN)
+- Traditional Chinese (zh-TW)
 - Russian (ru)
 
-The UI language is automatically detected from browser settings and can be manually switched at the bottom of the page.
+The UI language is automatically detected from browser settings and can be manually switched from the login page or header language menu.
 
 ## Browser Compatibility
 
@@ -119,7 +118,7 @@ The UI language is automatically detected from browser settings and can be manua
 
 - Vite produces a **single HTML** output (`dist/index.html`) with all assets inlined (via `vite-plugin-singlefile`).
 - Tagging `vX.Y.Z` triggers `.github/workflows/release.yml` to publish `dist/management.html`.
-- The UI version shown in the footer is injected at build time (env `VERSION`, git tag, or `package.json` fallback).
+- The UI version shown on the System page is injected at build time (env `VERSION`, git tag, or `package.json` fallback).
 
 ## Security notes
 
@@ -151,7 +150,7 @@ Issues and PRs are welcome. Please include:
 
 - Reproduction steps (server version + UI version)
 - Screenshots for UI changes
-- Verification notes (`npm run lint`, `npm run type-check`)
+- Verification notes (`npm run lint`, `npm run type-check`, `npm run build`)
 
 ## License
 

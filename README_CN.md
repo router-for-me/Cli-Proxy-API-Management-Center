@@ -6,7 +6,7 @@
 
 **主项目**: https://github.com/router-for-me/CLIProxyAPI  
 **示例地址**: https://remote.router-for.me/  
-**最低版本要求**: ≥ 6.8.0（推荐 ≥ 6.8.15）
+**最低版本要求**: ≥ 7.1.0（推荐最新）
 
 从6.0.19版本开始，Web UI 随主程序一起提供；服务运行后，通过 API 端口上的"/management.html"访问它。
 
@@ -28,7 +28,7 @@
 ### 方式 B：开发调试
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -37,7 +37,7 @@ npm run dev
 ### 方式 C：构建单文件 HTML
 
 ```bash
-npm install
+npm ci
 npm run build
 ```
 
@@ -69,44 +69,44 @@ npm run build
 ### 远程管理
 
 当你从非 localhost 的浏览器访问时，服务端通常需要开启远程管理（例如 `allow-remote-management: true`）。  
+完整鉴权规则、服务端限制与边界情况请参考 CLI Proxy API 服务端文档或配置注释。
 
 ## 功能一览（按页面对应）
 
 - **仪表盘**：连接状态、服务版本/构建时间、关键数量概览、可用模型概览。
-- **基础设置**：调试开关、代理 URL、请求重试、配额回退（达到上限时切换项目或预览模型）、请求日志、文件日志、WebSocket 鉴权。
-- **API Keys**：管理代理 `api-keys`（增/改/删）。
+- **配置面板**：可视化编辑常用 `config.yaml` 字段、基础设置与代理 `api-keys`；也支持源码编辑、YAML 高亮/搜索与保存前差异预览。
 - **AI 提供商**：
   - Gemini/Codex/Claude/Vertex 配置（Base URL、Headers、代理、模型别名、排除模型、Prefix）。
   - OpenAI 兼容提供商（多 Key、Header、自助从 `/v1/models` 拉取并导入模型别名、可选浏览器侧 `chat/completions` 测试）。
   - Ampcode 集成（上游地址/密钥、强制映射、模型映射表）。
 - **认证文件**：上传/下载/删除 JSON 凭据，筛选/搜索/分页，标记 runtime-only；查看单个凭据可用模型（依赖后端支持）；管理 OAuth 排除模型（支持 `*` 通配符）；配置 OAuth 模型别名映射。
-- **OAuth**：对支持的提供商发起 OAuth/设备码流程，轮询状态；可选提交回调 `redirect_url`；包含 iFlow Cookie 导入。
+- **OAuth**：对 Codex、Anthropic/Claude、Antigravity、Gemini CLI、Kimi、xAI/Grok 发起 OAuth/设备码流程并轮询状态；支持提交回调 URL 或 xAI/Grok 页面显示的 code；包含 Vertex JSON 凭据导入与 iFlow Cookie 导入。
 - **配额管理**：管理 Claude、Antigravity、Codex、Gemini CLI 等提供商的配额上限与使用情况。
-- **配置文件**：浏览器内编辑 `/config.yaml`（YAML 高亮 + 搜索），保存/重载。
 - **日志**：增量拉取日志、自动刷新、搜索、隐藏管理端流量、清空日志；下载请求错误日志文件。
-- **系统信息**：快捷链接 + 拉取 `/v1/models` 并分组展示（需要至少一个代理 API Key 才能查询模型）。
+- **系统信息**：快捷链接、版本检查、请求日志开关、本地登录信息清理，以及拉取 `/v1/models` 并分组展示（需要至少一个代理 API Key 才能查询模型）。
 
 ## 技术栈
 
-- React 19 + TypeScript 5.9
-- Vite 7（单文件构建）
+- React 19 + TypeScript 6.0
+- Vite 8（单文件构建）
 - Zustand（状态管理）
 - Axios（HTTP 客户端）
 - react-router-dom v7（HashRouter）
-- Chart.js（数据可视化）
+- Motion（动效）
 - CodeMirror 6（YAML 编辑器）
 - SCSS Modules（样式）
 - i18next（国际化）
 
 ## 多语言支持
 
-目前支持三种语言：
+目前支持四种语言：
 
 - 英文 (en)
 - 简体中文 (zh-CN)
+- 繁体中文 (zh-TW)
 - 俄文 (ru)
 
-界面语言会根据浏览器设置自动切换，也可在页面底部手动切换。
+界面语言会根据浏览器设置自动切换，也可在登录页或顶部语言菜单手动切换。
 
 ## 浏览器兼容性
 
@@ -118,7 +118,7 @@ npm run build
 
 - 使用 Vite 输出 **单文件 HTML**（`dist/index.html`），资源全部内联（`vite-plugin-singlefile`）。
 - 打 `vX.Y.Z` 标签会触发 `.github/workflows/release.yml`，发布 `dist/management.html`。
-- 页脚显示的 UI 版本在构建期注入（优先使用环境变量 `VERSION`，否则使用 git tag / `package.json`）。
+- 系统信息页显示的 UI 版本在构建期注入（优先使用环境变量 `VERSION`，否则使用 git tag / `package.json`）。
 
 ## 安全提示
 
@@ -150,7 +150,7 @@ npm run type-check # tsc --noEmit
 
 - 复现步骤（服务端版本 + UI 版本）
 - UI 改动截图
-- 验证记录（`npm run lint`、`npm run type-check`）
+- 验证记录（`npm run lint`、`npm run type-check`、`npm run build`）
 
 ## 许可证
 

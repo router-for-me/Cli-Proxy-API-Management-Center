@@ -1,44 +1,52 @@
 @use '../../styles/mixins' as *;
-@use '../../styles/variables' as *;
 
 .section {
-  display: grid;
-  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
-  gap: 24px;
-  padding: 26px 0;
-  border-top: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
-  scroll-margin-top: 112px;
-
-  &:first-child {
-    border-top: none;
-    padding-top: 0;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2vw, 22px);
+  height: clamp(520px, calc(100dvh - var(--header-height, 64px) - 250px), 780px);
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: auto;
+  padding: clamp(20px, 2.4vw, 28px);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  scroll-margin-top: 104px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  scrollbar-width: thin;
 
   @include mobile {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
-    padding: 22px 0;
-    scroll-margin-top: 88px;
+    gap: 14px;
+    height: clamp(420px, calc(100dvh - var(--header-height, 64px) - 260px), 680px);
+    padding: 16px;
+    scroll-margin-top: 92px;
   }
 }
 
 .header {
-  position: sticky;
-  top: 104px;
-  align-self: start;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
 
   @include mobile {
-    position: static;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding-bottom: 12px;
+    background: transparent;
   }
 }
 
 .titleRow {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -46,17 +54,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 42px;
-  height: 42px;
-  padding: 0 12px;
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 92%, transparent), transparent),
-    color-mix(in srgb, var(--primary-color) 11%, var(--bg-secondary));
-  border: 1px solid color-mix(in srgb, var(--primary-color) 18%, var(--border-color));
-  color: var(--primary-hover);
-  font-size: 12px;
-  font-weight: 700;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 750;
   letter-spacing: 0.08em;
 }
 
@@ -64,11 +69,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   color: var(--text-secondary);
   flex: 0 0 auto;
 }
@@ -82,18 +85,19 @@
 
 .title {
   margin: 0;
-  font-size: clamp(20px, 2vw, 25px);
-  line-height: 1.08;
-  font-weight: 700;
   color: var(--text-primary);
+  font-size: clamp(18px, 1.6vw, 22px);
+  font-weight: 680;
+  line-height: 1.18;
+  letter-spacing: 0;
 }
 
 .description {
   margin: 0;
-  max-width: 34ch;
+  max-width: 72ch;
   color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.65;
 
   @include mobile {
     max-width: none;
@@ -104,5 +108,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
   min-width: 0;
 }
