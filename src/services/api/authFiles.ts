@@ -265,11 +265,18 @@ const mergeAuthFileEntries = (entries: AuthFileEntry[]): AuthFileEntry => {
   return merged;
 };
 
+const XIAOMI_COOKIE_FILE_PREFIX = 'xiaomi_platform_cookies_';
+
 const dedupeAuthFilesResponse = (payload: AuthFilesResponse): AuthFilesResponse => {
   const files = Array.isArray(payload?.files) ? payload.files : [];
+  // Filter out Xiaomi cookie cache files — these are internal persistence, not auth credentials.
+  const filtered = files.filter((entry) => {
+    const name = readTextField(entry, 'name');
+    return !name.startsWith(XIAOMI_COOKIE_FILE_PREFIX);
+  });
   const grouped = new Map<string, AuthFileEntry[]>();
 
-  files.forEach((entry) => {
+  filtered.forEach((entry) => {
     const name = readTextField(entry, 'name');
     const key = name || JSON.stringify(entry);
     const bucket = grouped.get(key);

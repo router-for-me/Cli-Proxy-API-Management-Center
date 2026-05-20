@@ -56,18 +56,21 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
     : undefined;
 
 const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
-  const payload: Record<string, unknown> = { 'api-key': entry.apiKey };
+  const payload: Record<string, unknown> = {};
+  if (entry.apiKey?.trim()) payload['api-key'] = entry.apiKey.trim();
   if (entry.proxyUrl) payload['proxy-url'] = entry.proxyUrl;
   const headers = serializeHeaders(entry.headers);
   if (headers) payload.headers = headers;
   if (entry.balanceToken && entry.balanceToken.trim()) {
     payload['balance-token'] = entry.balanceToken.trim();
   }
+  if (entry.authIndex?.trim()) payload['auth-index'] = entry.authIndex.trim();
   return payload;
 };
 
 const serializeProviderKey = (config: ProviderKeyConfig) => {
-  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  const payload: Record<string, unknown> = {};
+  if (config.apiKey?.trim()) payload['api-key'] = config.apiKey.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -108,7 +111,8 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
     : undefined;
 
 const serializeVertexKey = (config: ProviderKeyConfig) => {
-  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  const payload: Record<string, unknown> = {};
+  if (config.apiKey?.trim()) payload['api-key'] = config.apiKey.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -124,7 +128,8 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
 };
 
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
-  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  const payload: Record<string, unknown> = {};
+  if (config.apiKey?.trim()) payload['api-key'] = config.apiKey.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;

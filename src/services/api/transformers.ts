@@ -106,7 +106,6 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   const apiKey =
     record?.['api-key'] ?? record?.apiKey ?? record?.key ?? (typeof entry === 'string' ? entry : '');
   const trimmed = String(apiKey || '').trim();
-  if (!trimmed) return null;
 
   const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl : undefined;
   const headers = record ? normalizeHeaders(record.headers) : undefined;
@@ -117,6 +116,9 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
     record?.['balance-token'] ?? record?.balanceToken ?? record?.['balance_token'];
   const balanceToken =
     typeof balanceTokenRaw === 'string' ? balanceTokenRaw.trim() : '';
+
+  // Keep entries that have an API key OR other meaningful auth fields (headers, balanceToken)
+  if (!trimmed && !headers && !balanceToken) return null;
 
   const result: ApiKeyEntry = {
     apiKey: trimmed,
@@ -133,7 +135,12 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   const record = isRecord(item) ? item : null;
   const apiKey = record?.['api-key'] ?? record?.apiKey ?? (typeof item === 'string' ? item : '');
   const trimmed = String(apiKey || '').trim();
-  if (!trimmed) return null;
+
+  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl : undefined;
+  const headers = record ? normalizeHeaders(record.headers) : undefined;
+
+  // Keep entries that have an API key OR other meaningful auth fields (headers, proxyUrl)
+  if (!trimmed && !headers && !proxyUrl) return null;
 
   const config: ProviderKeyConfig = { apiKey: trimmed };
   const priority = record?.priority ?? record?.['priority'];
@@ -146,12 +153,10 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   const prefix = normalizePrefix(record?.prefix ?? record?.['prefix']);
   if (prefix) config.prefix = prefix;
   const baseUrl = record ? record['base-url'] ?? record.baseUrl : undefined;
-  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl : undefined;
   if (baseUrl) config.baseUrl = String(baseUrl);
   const websockets = normalizeBoolean(record?.websockets ?? record?.['websockets']);
   if (websockets !== undefined) config.websockets = websockets;
   if (proxyUrl) config.proxyUrl = String(proxyUrl);
-  const headers = normalizeHeaders(record?.headers);
   if (headers) config.headers = headers;
   const models = normalizeModelAliases(record?.models);
   if (models.length) config.models = models;
@@ -202,7 +207,12 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
     apiKey = item;
   }
   const trimmed = String(apiKey || '').trim();
-  if (!trimmed) return null;
+
+  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl ?? record['proxy_url'] : undefined;
+  const headers = record ? normalizeHeaders(record.headers) : undefined;
+
+  // Keep entries that have an API key OR other meaningful auth fields (headers, proxyUrl)
+  if (!trimmed && !headers && !proxyUrl) return null;
 
   const config: GeminiKeyConfig = { apiKey: trimmed };
   const priority = record?.priority ?? record?.['priority'];
@@ -216,11 +226,9 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   if (prefix) config.prefix = prefix;
   const baseUrl = record ? record['base-url'] ?? record.baseUrl ?? record['base_url'] : undefined;
   if (baseUrl) config.baseUrl = String(baseUrl);
-  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl ?? record['proxy_url'] : undefined;
   if (proxyUrl) config.proxyUrl = String(proxyUrl);
   const models = normalizeModelAliases(record?.models);
   if (models.length) config.models = models;
-  const headers = normalizeHeaders(record?.headers);
   if (headers) config.headers = headers;
   const excludedModels = normalizeExcludedModels(record?.['excluded-models'] ?? record?.excludedModels);
   if (excludedModels.length) config.excludedModels = excludedModels;
