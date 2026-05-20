@@ -5,14 +5,6 @@ import { parseTimestamp } from './timestamp';
  * 从原项目 src/utils/string.js 迁移
  */
 
-const resolveDefaultLocale = (): string | undefined => {
-  const fromDocument =
-    typeof document !== 'undefined' ? document.documentElement?.lang?.trim() : '';
-  if (fromDocument) return fromDocument;
-  const fromNavigator = typeof navigator !== 'undefined' ? navigator.language?.trim() : '';
-  return fromNavigator || undefined;
-};
-
 /**
  * 隐藏 API Key 中间部分，仅保留前后两位
  */
@@ -46,27 +38,6 @@ export function formatFileSize(bytes: number): string {
 }
 
 /**
- * 格式化日期时间
- */
-export function formatDateTime(date: string | Date, locale?: string): string {
-  const d = typeof date === 'string' ? parseTimestamp(date) ?? new Date(date) : date;
-
-  if (isNaN(d.getTime())) {
-    return 'Invalid Date';
-  }
-
-  const resolvedLocale = locale?.trim() || resolveDefaultLocale();
-  return d.toLocaleString(resolvedLocale, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-}
-
-/**
  * 将 Unix 时间戳（秒/毫秒/微秒/纳秒）格式化为本地时间字符串
  */
 export function formatUnixTimestamp(value: unknown, locale?: string): string {
@@ -95,22 +66,4 @@ export function formatUnixTimestamp(value: unknown, locale?: string): string {
 
   if (Number.isNaN(date.getTime())) return '';
   return locale ? date.toLocaleString(locale) : date.toLocaleString();
-}
-
-/**
- * 格式化数字（添加千位分隔符）
- */
-export function formatNumber(num: number, locale?: string): string {
-  const resolvedLocale = locale?.trim() || resolveDefaultLocale();
-  return num.toLocaleString(resolvedLocale);
-}
-
-/**
- * 截断长文本
- */
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) {
-    return text;
-  }
-  return text.slice(0, maxLength) + '...';
 }
