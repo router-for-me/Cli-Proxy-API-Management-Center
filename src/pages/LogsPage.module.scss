@@ -722,3 +722,10 @@
     height: 280px;
   }
 }
+
+.toggleRow {
+  display: flex;
+  gap: $spacing-lg;
+  flex-wrap: wrap;
+  align-items: center;
+}

@@ -24,6 +24,7 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi } from '@/services/api/logs';
+import { configApi } from '@/services/api/config';
 import { copyToClipboard } from '@/utils/clipboard';
 import { downloadBlob } from '@/utils/download';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
@@ -68,6 +69,8 @@ export function LogsPage() {
   const { showNotification, showConfirmation } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const config = useConfigStore((state) => state.config);
+  const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
+  const clearCache = useConfigStore((state) => state.clearCache);
   const requestLogEnabled = config?.requestLog ?? false;
   const successRequestLogEnabled = config?.successRequestLog ?? false;
 
@@ -290,6 +293,40 @@ export function LogsPage() {
       const message = getErrorMessage(err);
       showNotification(
         `${t('notification.download_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+    }
+  };
+
+  const toggleRequestLog = async (value: boolean) => {
+    const previous = requestLogEnabled;
+    updateConfigValue('request-log', value);
+    try {
+      await configApi.updateRequestLog(value);
+      clearCache('request-log');
+      showNotification(t('notification.request_log_updated'), 'success');
+    } catch (err: unknown) {
+      updateConfigValue('request-log', previous);
+      const message = getErrorMessage(err);
+      showNotification(
+        `${t('notification.save_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+    }
+  };
+
+  const toggleSuccessRequestLog = async (value: boolean) => {
+    const previous = successRequestLogEnabled;
+    updateConfigValue('success-request-log', value);
+    try {
+      await configApi.updateSuccessRequestLog(value);
+      clearCache('success-request-log');
+      showNotification(t('notification.save_success'), 'success');
+    } catch (err: unknown) {
+      updateConfigValue('success-request-log', previous);
+      const message = getErrorMessage(err);
+      showNotification(
+        `${t('notification.save_failed')}${message ? `: ${message}` : ''}`,
         'error'
       );
     }
@@ -966,7 +1003,22 @@ export function LogsPage() {
             <div className="stack">
               <div className="hint">{t('logs.success_logs_description')}</div>
 
-              {(!requestLogEnabled || !successRequestLogEnabled) && (
+              <div className={styles.toggleRow}>
+                <ToggleSwitch
+                  label={t('basic_settings.request_log_enable')}
+                  checked={requestLogEnabled}
+                  disabled={disableControls}
+                  onChange={toggleRequestLog}
+                />
+                <ToggleSwitch
+                  label={t('logs.success_logs_enable')}
+                  checked={successRequestLogEnabled}
+                  disabled={disableControls || !requestLogEnabled}
+                  onChange={toggleSuccessRequestLog}
+                />
+              </div>
+
+              {!requestLogEnabled && (
                 <div>
                   <div className="status-badge warning">{t('logs.success_logs_request_log_disabled')}</div>
                 </div>

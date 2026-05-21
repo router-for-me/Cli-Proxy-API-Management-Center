@@ -1048,6 +1048,7 @@
     "success_logs_modified": "Изменён",
     "success_logs_download": "Скачать",
     "success_log_download_success": "Журнал успешно скачан",
+    "success_logs_enable": "Включить журналирование успешных запросов",
     "request_log_download_title": "Скачать журнал запросов",
     "request_log_download_confirm": "Скачать журнал запросов с идентификатором {{id}}?",
     "request_log_download_success": "Журнал запросов успешно скачан",

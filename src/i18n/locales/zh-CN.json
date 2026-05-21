@@ -1051,6 +1051,7 @@
     "success_logs_modified": "最后修改",
     "success_logs_download": "下载",
     "success_log_download_success": "成功日志下载成功",
+    "success_logs_enable": "启用成功请求日志",
     "request_log_download_title": "下载报文",
     "request_log_download_confirm": "是否要下载id为{{id}}的报文？",
     "request_log_download_success": "报文下载成功",

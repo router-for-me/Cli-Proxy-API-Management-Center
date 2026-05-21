@@ -1077,6 +1077,7 @@
     "success_logs_modified": "最後修改",
     "success_logs_download": "下載",
     "success_log_download_success": "成功記錄下載成功",
+    "success_logs_enable": "啟用成功請求記錄",
     "request_log_download_title": "下載封包",
     "request_log_download_confirm": "是否要下載 id 為 {{id}} 的封包？",
     "request_log_download_success": "封包下載成功",

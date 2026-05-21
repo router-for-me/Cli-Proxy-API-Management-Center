@@ -1051,6 +1051,7 @@
     "success_logs_modified": "Last modified",
     "success_logs_download": "Download",
     "success_log_download_success": "Success log downloaded successfully",
+    "success_logs_enable": "Enable Success Request Logging",
     "request_log_download_title": "Download Request Log",
     "request_log_download_confirm": "Download request log for ID {{id}}?",
     "request_log_download_success": "Request log downloaded successfully",

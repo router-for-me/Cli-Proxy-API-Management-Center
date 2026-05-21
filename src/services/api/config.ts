@@ -58,6 +58,11 @@ export const configApi = {
   updateRequestLog: (enabled: boolean) => apiClient.put('/request-log', { value: enabled }),
 
   /**
+   * 成功请求日志开关
+   */
+  updateSuccessRequestLog: (enabled: boolean) => apiClient.put('/success-request-log', { value: enabled }),
+
+  /**
    * 写日志到文件开关
    */
   updateLoggingToFile: (enabled: boolean) => apiClient.put('/logging-to-file', { value: enabled }),
