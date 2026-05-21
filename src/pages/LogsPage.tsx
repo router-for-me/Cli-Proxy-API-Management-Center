@@ -61,7 +61,7 @@ const getErrorMessage = (err: unknown): string => {
   return typeof message === 'string' ? message : '';
 };
 
-type TabType = 'logs' | 'errors';
+type TabType = 'logs' | 'errors' | 'success';
 
 export function LogsPage() {
   const { t } = useTranslation();
@@ -69,6 +69,7 @@ export function LogsPage() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const config = useConfigStore((state) => state.config);
   const requestLogEnabled = config?.requestLog ?? false;
+  const successRequestLogEnabled = config?.successRequestLog ?? false;
 
   const [activeTab, setActiveTab] = useState<TabType>('logs');
   const [logState, setLogState] = useState<LogState>({ buffer: [], visibleFrom: 0 });
@@ -89,6 +90,9 @@ export function LogsPage() {
   const [errorLogs, setErrorLogs] = useState<ErrorLogItem[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
   const [errorLogsError, setErrorLogsError] = useState('');
+  const [successLogs, setSuccessLogs] = useState<ErrorLogItem[]>([]);
+  const [loadingSuccesses, setLoadingSuccesses] = useState(false);
+  const [successLogsError, setSuccessLogsError] = useState('');
   const [requestLogId, setRequestLogId] = useState<string | null>(null);
   const [requestLogDownloading, setRequestLogDownloading] = useState(false);
 
@@ -254,6 +258,43 @@ export function LogsPage() {
     }
   };
 
+  const loadSuccessLogs = async () => {
+    if (connectionStatus !== 'connected') {
+      setLoadingSuccesses(false);
+      return;
+    }
+
+    setLoadingSuccesses(true);
+    setSuccessLogsError('');
+    try {
+      const res = await logsApi.fetchSuccessLogs();
+      setSuccessLogs(Array.isArray(res.files) ? res.files : []);
+    } catch (err: unknown) {
+      console.error('Failed to load success logs:', err);
+      setSuccessLogs([]);
+      const message = getErrorMessage(err);
+      setSuccessLogsError(
+        message ? `${t('logs.success_logs_load_error')}: ${message}` : t('logs.success_logs_load_error')
+      );
+    } finally {
+      setLoadingSuccesses(false);
+    }
+  };
+
+  const downloadSuccessLog = async (name: string) => {
+    try {
+      const response = await logsApi.downloadSuccessLog(name);
+      downloadBlob({ filename: name, blob: new Blob([response.data], { type: 'text/plain' }) });
+      showNotification(t('logs.success_log_download_success'), 'success');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      showNotification(
+        `${t('notification.download_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+    }
+  };
+
   useEffect(() => {
     if (connectionStatus === 'connected') {
       latestTimestampRef.current = 0;
@@ -268,6 +309,13 @@ export function LogsPage() {
     void loadErrorLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, connectionStatus, requestLogEnabled]);
+
+  useEffect(() => {
+    if (activeTab !== 'success') return;
+    if (connectionStatus !== 'connected') return;
+    void loadSuccessLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, connectionStatus, requestLogEnabled, successRequestLogEnabled]);
 
   useEffect(() => {
     if (!autoRefresh || connectionStatus !== 'connected') {
@@ -468,6 +516,13 @@ export function LogsPage() {
           onClick={() => setActiveTab('errors')}
         >
           {t('logs.error_logs_modal_title')}
+        </button>
+        <button
+          type="button"
+          className={`${styles.tabItem} ${activeTab === 'success' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('success')}
+        >
+          {t('logs.success_logs_modal_title')}
         </button>
       </div>
 
@@ -883,6 +938,66 @@ export function LogsPage() {
                             disabled={disableControls}
                           >
                             {t('logs.error_logs_download')}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {activeTab === 'success' && (
+          <Card
+            extra={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={loadSuccessLogs}
+                loading={loadingSuccesses}
+                disabled={disableControls}
+              >
+                {t('common.refresh')}
+              </Button>
+            }
+          >
+            <div className="stack">
+              <div className="hint">{t('logs.success_logs_description')}</div>
+
+              {(!requestLogEnabled || !successRequestLogEnabled) && (
+                <div>
+                  <div className="status-badge warning">{t('logs.success_logs_request_log_disabled')}</div>
+                </div>
+              )}
+
+              {successLogsError && <div className="error-box">{successLogsError}</div>}
+
+              <div className={styles.errorPanel}>
+                {loadingSuccesses ? (
+                  <div className="hint">{t('common.loading')}</div>
+                ) : successLogs.length === 0 ? (
+                  <div className="hint">{t('logs.success_logs_empty')}</div>
+                ) : (
+                  <div className="item-list">
+                    {successLogs.map((item) => (
+                      <div key={item.name} className="item-row">
+                        <div className="item-meta">
+                          <div className="item-title">{item.name}</div>
+                          <div className="item-subtitle">
+                            {item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''}{' '}
+                            {item.modified ? formatUnixTimestamp(item.modified) : ''}
+                          </div>
+                        </div>
+                        <div className="item-actions">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => downloadSuccessLog(item.name)}
+                            disabled={disableControls}
+                          >
+                            {t('logs.success_logs_download')}
                           </Button>
                         </div>
                       </div>

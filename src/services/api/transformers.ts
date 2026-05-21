@@ -414,6 +414,16 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   }
 
   config.requestLog = normalizeBoolean(raw['request-log'] ?? raw.requestLog);
+  config.successRequestLog = normalizeBoolean(raw['success-request-log'] ?? raw.successRequestLog);
+  const successLogsMaxFiles = raw['success-logs-max-files'] ?? raw.successLogsMaxFiles;
+  if (typeof successLogsMaxFiles === 'number' && Number.isFinite(successLogsMaxFiles)) {
+    config.successLogsMaxFiles = successLogsMaxFiles;
+  } else if (typeof successLogsMaxFiles === 'string' && successLogsMaxFiles.trim() !== '') {
+    const parsed = Number(successLogsMaxFiles);
+    if (Number.isFinite(parsed)) {
+      config.successLogsMaxFiles = parsed;
+    }
+  }
   config.loggingToFile = normalizeBoolean(raw['logging-to-file'] ?? raw.loggingToFile);
   const logsMaxTotalSizeMb = raw['logs-max-total-size-mb'] ?? raw.logsMaxTotalSizeMb;
   if (typeof logsMaxTotalSizeMb === 'number' && Number.isFinite(logsMaxTotalSizeMb)) {
