@@ -114,7 +114,8 @@
 .claudeGrid,
 .codexGrid,
 .geminiCliGrid,
-.kimiGrid {
+.kimiGrid,
+.xaiGrid {
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -128,7 +129,8 @@
 .claudeControls,
 .codexControls,
 .geminiCliControls,
-.kimiControls {
+.kimiControls,
+.xaiControls {
   display: flex;
   gap: $spacing-md;
   flex-wrap: wrap;
@@ -140,7 +142,8 @@
 .claudeControl,
 .codexControl,
 .geminiCliControl,
-.kimiControl {
+.kimiControl,
+.xaiControl {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -247,33 +250,27 @@
 
 // 卡片渐变背景 — 基于 TYPE_COLORS light.bg 转 rgba
 .claudeCard {
-  background-image: linear-gradient(180deg,
-      rgba(251, 236, 228, 0.18),
-      rgba(251, 236, 228, 0));
+  background-image: linear-gradient(180deg, rgba(251, 236, 228, 0.18), rgba(251, 236, 228, 0));
 }
 
 .antigravityCard {
-  background-image: linear-gradient(180deg,
-      rgba(224, 247, 250, 0.12),
-      rgba(224, 247, 250, 0));
+  background-image: linear-gradient(180deg, rgba(224, 247, 250, 0.12), rgba(224, 247, 250, 0));
 }
 
 .codexCard {
-  background-image: linear-gradient(180deg,
-      rgba(234, 231, 255, 0.18),
-      rgba(234, 231, 255, 0));
+  background-image: linear-gradient(180deg, rgba(234, 231, 255, 0.18), rgba(234, 231, 255, 0));
 }
 
 .geminiCliCard {
-  background-image: linear-gradient(180deg,
-      rgba(224, 232, 255, 0.2),
-      rgba(224, 232, 255, 0));
+  background-image: linear-gradient(180deg, rgba(224, 232, 255, 0.2), rgba(224, 232, 255, 0));
 }
 
 .kimiCard {
-  background-image: linear-gradient(180deg,
-      rgba(220, 232, 255, 0.2),
-      rgba(220, 232, 255, 0));
+  background-image: linear-gradient(180deg, rgba(220, 232, 255, 0.2), rgba(220, 232, 255, 0));
+}
+
+.xaiCard {
+  background-image: linear-gradient(180deg, rgba(243, 244, 246, 0.22), rgba(243, 244, 246, 0));
 }
 
 .quotaSection {
@@ -636,7 +633,10 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-  transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
+  transition:
+    transform $transition-fast,
+    box-shadow $transition-fast,
+    border-color $transition-fast;
 
   &:hover {
     transform: translateY(-2px);

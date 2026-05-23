@@ -112,7 +112,9 @@ export function AuthFileCard(props: AuthFileCardProps) {
             ? styles.geminiCliCard
             : quotaType === 'kimi'
               ? styles.kimiCard
-              : '';
+              : quotaType === 'xai'
+                ? styles.xaiCard
+                : '';
 
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndexKey = normalizeRecentRequestAuthIndex(rawAuthIndex);
