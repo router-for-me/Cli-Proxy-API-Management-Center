@@ -28,8 +28,8 @@
 ### 方式 B：开发调试
 
 ```bash
-npm ci
-npm run dev
+bun install --frozen-lockfile
+bun run dev
 ```
 
 打开 `http://localhost:5173`，然后连接到你的 CLI Proxy API 后端实例。
@@ -37,13 +37,13 @@ npm run dev
 ### 方式 C：构建单文件 HTML
 
 ```bash
-npm ci
-npm run build
+bun install --frozen-lockfile
+bun run build
 ```
 
 - 构建产物：`dist/index.html`（资源已全部内联）。
 - 在 CLI Proxy API 的发布流程里会重命名为 `management.html`。
-- 本地预览：`npm run preview`
+- 本地预览：`bun run preview`
 
 提示：直接用 `file://` 打开 `dist/index.html` 可能遇到浏览器 CORS 限制；更稳妥的方式是用预览/静态服务器打开。
 
@@ -136,12 +136,12 @@ npm run build
 ## 开发命令
 
 ```bash
-npm run dev        # 启动开发服务器
-npm run build      # tsc + Vite 构建
-npm run preview    # 本地预览 dist
-npm run lint       # ESLint（warnings 视为失败）
-npm run format     # Prettier
-npm run type-check # tsc --noEmit
+bun run dev        # 启动开发服务器
+bun run build      # tsc + Vite 构建
+bun run preview    # 本地预览 dist
+bun run lint       # ESLint（warnings 视为失败）
+bun run format     # Prettier
+bun run type-check # tsc --noEmit
 ```
 
 ## 贡献
@@ -150,7 +150,7 @@ npm run type-check # tsc --noEmit
 
 - 复现步骤（服务端版本 + UI 版本）
 - UI 改动截图
-- 验证记录（`npm run lint`、`npm run type-check`、`npm run build`）
+- 验证记录（`bun run lint`、`bun run type-check`、`bun run build`）
 
 ## 许可证
 
