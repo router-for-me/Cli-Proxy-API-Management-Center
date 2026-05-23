@@ -1445,5 +1445,168 @@
     "build_date": "Время сборки",
     "version": "Версия интерфейса управления",
     "author": "Автор"
+  },
+  "providersPage": {
+    "header": {
+      "title": "AI Провайдеры",
+      "activeResources": "{{active}}/{{total}} активных",
+      "providerFamilies": "{{count}} семейств",
+      "updatedAt": "Обновлено {{time}}",
+      "issueCount": "{{count}} проблем"
+    },
+    "actions": {
+      "refresh": "Обновить",
+      "syncing": "Синхронизация",
+      "new": "Создать",
+      "edit": "Изменить",
+      "view": "Просмотр",
+      "delete": "Удалить",
+      "clear": "Очистить",
+      "cancel": "Отмена",
+      "save": "Сохранить",
+      "create": "Создать",
+      "back": "Назад",
+      "openModelCatalog": "Каталог моделей"
+    },
+    "categories": {
+      "title": "Провайдеры",
+      "activeCount": "{{active}}/{{total}} активных",
+      "ampcodeActive": "Подключено",
+      "ampcodeInactive": "Не настроено"
+    },
+    "providerNames": {
+      "gemini": "Gemini",
+      "codex": "Codex",
+      "claude": "Claude",
+      "vertex": "Vertex",
+      "openaiCompatibility": "OpenAI-совместимый",
+      "ampcode": "Amp CLI"
+    },
+    "table": {
+      "key": "Ключ",
+      "baseUrl": "Base URL",
+      "prefix": "Префикс",
+      "models": "Модели/Заголовки",
+      "status": "Статус",
+      "actions": "Действия",
+      "modelSummary": "{{models}} моделей · {{headers}} заголовков",
+      "openaiModelSummary": "{{models}} моделей · {{keys}} ключей · {{headers}} заголовков",
+      "ampcodeSummary": "{{mappings}} сопоставлений · {{keys}} групп ключей",
+      "websocketsTag": "WebSockets",
+      "cloakTag": "Cloak",
+      "noFallbackKey": "Резервный ключ не задан",
+      "empty": "Нет ресурсов, нажмите \"Создать\".",
+      "filterPlaceholder": "Поиск по ключам, URL, префиксам…",
+      "description": "Управление ресурсами {{route}}",
+      "providerIssue": "Проблема с провайдером"
+    },
+    "status": {
+      "active": "Активен",
+      "disabled": "Отключён",
+      "notSet": "Не задано",
+      "none": "Нет",
+      "notAvailable": "N/A",
+      "notConfigured": "Не настроено",
+      "defaultSuffix": "(по умолчанию)"
+    },
+    "detail": {
+      "title": "Подробности",
+      "empty": "Выберите ресурс для просмотра",
+      "metadataTitle": "Метаданные",
+      "fields": {
+        "identifier": "Идентификатор",
+        "baseUrl": "Base URL",
+        "proxyUrl": "Proxy URL",
+        "prefix": "Префикс",
+        "models": "Моделей",
+        "headers": "Заголовков",
+        "authIndex": "Auth Index",
+        "excludedModels": "Исключённых моделей",
+        "apiKeyEntries": "API-ключей"
+      }
+    },
+    "form": {
+      "createEyebrow": "Создать",
+      "editEyebrow": "Изменить",
+      "name": "Название",
+      "apiKey": "API-ключ",
+      "apiKeyCreatePlaceholder": "Введите API-ключ",
+      "apiKeyEditPlaceholder": "Оставьте пустым, чтобы не менять",
+      "baseUrl": "Base URL",
+      "baseUrlRequiredHint": "Обязательно для этого провайдера",
+      "proxyUrl": "Proxy URL",
+      "prefix": "Префикс",
+      "priority": "Приоритет",
+      "disabled": "Отключить эту запись",
+      "disabledHint": "Отключённые записи не используются шлюзом",
+      "websockets": "Включить WebSockets",
+      "testModel": "Тестовая модель",
+      "modelsSection": "Пользовательские модели",
+      "addModel": "Добавить модель",
+      "headersSection": "Заголовки запроса",
+      "addHeader": "Добавить заголовок",
+      "headers": "Заголовки",
+      "headersHint": "По одному в строке, формат Key: Value",
+      "excludedSection": "Исключённые модели",
+      "excludedHint": "По одной модели в строке; совпавшие модели не будут направлены",
+      "cloakSection": "Настройки Cloak",
+      "cloakMode": "Режим",
+      "cloakStrict": "Строгий режим",
+      "cloakSensitiveWords": "Стоп-слова (по одному в строке)",
+      "apiKeyEntriesSection": "API-ключи",
+      "apiKeyEntry": "Ключ #{{index}}",
+      "addApiKeyEntry": "Добавить ключ",
+      "validation": {
+        "nameRequired": "Название обязательно",
+        "apiKeyRequired": "Нужен хотя бы один API-ключ",
+        "baseUrlRequired": "Base URL обязателен"
+      }
+    },
+    "ampcode": {
+      "upstreamUrl": "Upstream URL",
+      "upstreamApiKey": "Резервный API-ключ",
+      "upstreamApiKeyHint": "Используется, когда нет совпадений",
+      "keyMappingsSection": "Сопоставление ключей",
+      "mappingRow": "Сопоставление #{{index}}",
+      "clientKeys": "Клиентские ключи",
+      "clientKeysHint": "По одному в строке; совпавшие пересылаются на ключ выше",
+      "addMapping": "Добавить сопоставление",
+      "modelMappingsSection": "Сопоставление моделей",
+      "addModelMapping": "Добавить сопоставление",
+      "behaviorSection": "Поведение",
+      "forceModelMappings": "Принудительное сопоставление",
+      "forceModelMappingsHint": "Запросы без совпадений отклоняются"
+    },
+    "delete": {
+      "title": "Удалить ресурс",
+      "confirm": "Удалить {{name}}? Действие необратимо.",
+      "ampcodeTitle": "Очистить настройки Amp CLI",
+      "ampcodeConfirm": "Удалить все настройки Amp CLI? Upstream URL, ключи и сопоставления будут удалены."
+    },
+    "toast": {
+      "created": "Создано",
+      "updated": "Обновлено",
+      "deleted": "Удалено",
+      "enabled": "Включено",
+      "disabled": "Отключено"
+    },
+    "modelCatalog": {
+      "summaryTitle": "Каталог моделей",
+      "openAction": "Открыть",
+      "notLoaded": "Не загружено",
+      "loading": "Загрузка",
+      "summaryCount": "{{count}} моделей",
+      "summaryError": "Ошибка загрузки"
+    },
+    "disconnected": {
+      "title": "Нет подключения",
+      "description": "Сначала подключитесь к прокси на странице входа.",
+      "action": "Подключиться"
+    },
+    "error": {
+      "title": "Ошибка загрузки",
+      "description": "Не удалось получить настройки провайдеров. Попробуйте позже.",
+      "retry": "Повторить"
+    }
   }
 }

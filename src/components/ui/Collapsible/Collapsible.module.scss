@@ -1,0 +1,72 @@
+@use '../../../styles/mixins' as *;
+@use '../../../styles/variables' as *;
+
+.root {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  user-select: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--accent-bg) 35%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+  }
+}
+
+.summaryLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.summaryHint {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--muted-foreground);
+  transition: transform 200ms ease;
+  flex-shrink: 0;
+
+  .root[open] & {
+    transform: rotate(180deg);
+  }
+}
+
+.content {
+  padding: 14px;
+  border-top: 1px solid var(--border-color);
+}
+
+.contentFlush {
+  padding: 0;
+  border-top: 1px solid var(--border-color);
+}

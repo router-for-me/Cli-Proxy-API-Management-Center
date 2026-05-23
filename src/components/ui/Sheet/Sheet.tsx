@@ -4,50 +4,65 @@ import {
   useId,
   useRef,
   useState,
-  type PropsWithChildren,
   type ReactNode,
+  type PropsWithChildren,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { IconX } from './icons';
-import { FOCUSABLE_SELECTOR, lockScroll, unlockScroll } from './scrollLock';
+import { IconX } from '../icons';
+import { FOCUSABLE_SELECTOR, lockScroll, unlockScroll } from '../scrollLock';
+import styles from './Sheet.module.scss';
 
-interface ModalProps {
+export type SheetSize = 'md' | 'lg' | 'xl';
+
+interface SheetProps {
   open: boolean;
-  title?: ReactNode;
   onClose: () => void;
+  size?: SheetSize;
+  eyebrow?: ReactNode;
+  title?: ReactNode;
+  description?: ReactNode;
   footer?: ReactNode;
-  width?: number | string;
-  className?: string;
   closeDisabled?: boolean;
+  className?: string;
+  ariaLabel?: string;
 }
 
-const CLOSE_ANIMATION_DURATION = 350;
+const CLOSE_ANIMATION_DURATION = 280;
+const SIZE_CLASS: Record<SheetSize, string> = {
+  md: styles.sizeMd,
+  lg: styles.sizeLg,
+  xl: styles.sizeXl,
+};
 
-export function Modal({
+export function Sheet({
   open,
-  title,
   onClose,
+  size = 'md',
+  eyebrow,
+  title,
+  description,
   footer,
-  width = 520,
-  className,
   closeDisabled = false,
+  className,
+  ariaLabel,
   children,
-}: PropsWithChildren<ModalProps>) {
+}: PropsWithChildren<SheetProps>) {
   const { t } = useTranslation();
   const titleId = useId();
+  const descId = useId();
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const modalRef = useRef<HTMLDivElement | null>(null);
-  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   const getFocusableElements = useCallback(() => {
-    if (!modalRef.current) return [] as HTMLElement[];
-    return Array.from(modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-      (element) => !element.hasAttribute('disabled') && element.tabIndex !== -1
-    );
+    if (!sheetRef.current) return [] as HTMLElement[];
+    return Array.from(
+      sheetRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+    ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex !== -1);
   }, []);
 
   const startClose = useCallback(
@@ -113,18 +128,13 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
-
     previouslyFocusedRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
-
-    const focusTimer = window.setTimeout(() => {
-      const firstFocusable = getFocusableElements()[0];
-      (firstFocusable ?? closeButtonRef.current ?? modalRef.current)?.focus();
+    const t = window.setTimeout(() => {
+      const first = getFocusableElements()[0];
+      (first ?? closeBtnRef.current ?? sheetRef.current)?.focus();
     }, 0);
-
-    return () => {
-      window.clearTimeout(focusTimer);
-    };
+    return () => window.clearTimeout(t);
   }, [getFocusableElements, open]);
 
   useEffect(() => {
@@ -135,86 +145,98 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         if (closeDisabled) return;
         event.preventDefault();
         handleClose();
         return;
       }
-
       if (event.key !== 'Tab') return;
-
-      const focusableElements = getFocusableElements();
-      if (focusableElements.length === 0) {
+      const focusables = getFocusableElements();
+      if (focusables.length === 0) {
         event.preventDefault();
-        modalRef.current?.focus();
+        sheetRef.current?.focus();
         return;
       }
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-      const activeElement = document.activeElement as HTMLElement | null;
-
+      const firstEl = focusables[0];
+      const lastEl = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
       if (event.shiftKey) {
-        if (activeElement === firstElement || activeElement === modalRef.current) {
+        if (active === firstEl || active === sheetRef.current) {
           event.preventDefault();
-          lastElement.focus();
+          lastEl.focus();
         }
         return;
       }
-
-      if (activeElement === lastElement) {
+      if (active === lastEl) {
         event.preventDefault();
-        firstElement.focus();
+        firstEl.focus();
       }
     };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
   }, [closeDisabled, getFocusableElements, handleClose, open]);
 
   if (!open && !isVisible) return null;
 
-  const overlayClass = `modal-overlay ${isClosing ? 'modal-overlay-closing' : 'modal-overlay-entering'}`;
-  const modalClass = `modal ${isClosing ? 'modal-closing' : 'modal-entering'}${className ? ` ${className}` : ''}`;
+  const stateClass = isClosing ? styles.exiting : styles.entering;
+  const overlayCls = `${styles.overlay} ${stateClass}`.trim();
+  const contentCls = [styles.content, SIZE_CLASS[size], stateClass, className]
+    .filter(Boolean)
+    .join(' ');
 
-  const modalContent = (
-    <div className={overlayClass}>
+  const content = (
+    <div
+      className={overlayCls}
+      role="presentation"
+      onMouseDown={(e) => {
+        if (closeDisabled) return;
+        if (e.target === e.currentTarget) handleClose();
+      }}
+    >
       <div
-        ref={modalRef}
-        className={modalClass}
-        style={{ width, maxWidth: '100%' }}
+        ref={sheetRef}
+        className={contentCls}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
+        aria-describedby={description ? descId : undefined}
+        aria-label={!title && ariaLabel ? ariaLabel : undefined}
         tabIndex={-1}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <button
-          ref={closeButtonRef}
+          ref={closeBtnRef}
           type="button"
-          className="modal-close-floating"
+          className={styles.closeBtn}
           onClick={closeDisabled ? undefined : handleClose}
-          aria-label={t('common.close')}
           disabled={closeDisabled}
+          aria-label={t('common.close')}
         >
-          <IconX size={20} />
+          <IconX size={18} />
         </button>
-        <div className="modal-header">
-          <div className="modal-title" id={title ? titleId : undefined}>
-            {title}
+        {(eyebrow || title || description) && (
+          <div className={styles.header}>
+            {eyebrow ? <div className={styles.eyebrow}>{eyebrow}</div> : null}
+            {title ? (
+              <h2 id={titleId} className={styles.title}>
+                {title}
+              </h2>
+            ) : null}
+            {description ? (
+              <p id={descId} className={styles.description}>
+                {description}
+              </p>
+            ) : null}
           </div>
-        </div>
-        <div className="modal-body">{children}</div>
-        {footer && <div className="modal-footer">{footer}</div>}
+        )}
+        <div className={styles.body}>{children}</div>
+        {footer ? <div className={styles.footer}>{footer}</div> : null}
       </div>
     </div>
   );
 
-  if (typeof document === 'undefined') {
-    return modalContent;
-  }
-
-  return createPortal(modalContent, document.body);
+  if (typeof document === 'undefined') return content;
+  return createPortal(content, document.body);
 }

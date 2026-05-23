@@ -1448,5 +1448,168 @@
     "build_date": "Build Time",
     "version": "Management UI Version",
     "author": "Author"
+  },
+  "providersPage": {
+    "header": {
+      "title": "AI Providers",
+      "activeResources": "{{active}}/{{total}} active resources",
+      "providerFamilies": "{{count}} provider families",
+      "updatedAt": "Updated {{time}}",
+      "issueCount": "{{count}} issues"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "syncing": "Syncing",
+      "new": "New",
+      "edit": "Edit",
+      "view": "View",
+      "delete": "Delete",
+      "clear": "Clear",
+      "cancel": "Cancel",
+      "save": "Save",
+      "create": "Create",
+      "back": "Back",
+      "openModelCatalog": "Open model catalog"
+    },
+    "categories": {
+      "title": "Providers",
+      "activeCount": "{{active}}/{{total}} active",
+      "ampcodeActive": "Connected",
+      "ampcodeInactive": "Not configured"
+    },
+    "providerNames": {
+      "gemini": "Gemini",
+      "codex": "Codex",
+      "claude": "Claude",
+      "vertex": "Vertex",
+      "openaiCompatibility": "OpenAI Compatible",
+      "ampcode": "Amp CLI"
+    },
+    "table": {
+      "key": "Key",
+      "baseUrl": "Base URL",
+      "prefix": "Prefix",
+      "models": "Models/Headers",
+      "status": "Status",
+      "actions": "Actions",
+      "modelSummary": "{{models}} models · {{headers}} headers",
+      "openaiModelSummary": "{{models}} models · {{keys}} keys · {{headers}} headers",
+      "ampcodeSummary": "{{mappings}} mappings · {{keys}} key groups",
+      "websocketsTag": "WebSockets",
+      "cloakTag": "Cloak",
+      "noFallbackKey": "No fallback key",
+      "empty": "No resources yet, click \"New\" to add.",
+      "filterPlaceholder": "Search keys, URLs, prefixes…",
+      "description": "Manage resources under {{route}}",
+      "providerIssue": "This provider has an issue"
+    },
+    "status": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "notSet": "Not set",
+      "none": "None",
+      "notAvailable": "N/A",
+      "notConfigured": "Not configured",
+      "defaultSuffix": "(default)"
+    },
+    "detail": {
+      "title": "Details",
+      "empty": "Select a resource to view details",
+      "metadataTitle": "Metadata",
+      "fields": {
+        "identifier": "Identifier",
+        "baseUrl": "Base URL",
+        "proxyUrl": "Proxy URL",
+        "prefix": "Prefix",
+        "models": "Models",
+        "headers": "Headers",
+        "authIndex": "Auth Index",
+        "excludedModels": "Excluded models",
+        "apiKeyEntries": "API key entries"
+      }
+    },
+    "form": {
+      "createEyebrow": "New",
+      "editEyebrow": "Edit",
+      "name": "Name",
+      "apiKey": "API key",
+      "apiKeyCreatePlaceholder": "Enter API key",
+      "apiKeyEditPlaceholder": "Leave empty to keep unchanged",
+      "baseUrl": "Base URL",
+      "baseUrlRequiredHint": "Required for this provider",
+      "proxyUrl": "Proxy URL",
+      "prefix": "Prefix",
+      "priority": "Priority",
+      "disabled": "Disable this entry",
+      "disabledHint": "Disabled entries won't be used by the gateway",
+      "websockets": "Enable WebSockets",
+      "testModel": "Test model",
+      "modelsSection": "Custom models",
+      "addModel": "Add model",
+      "headersSection": "Request headers",
+      "addHeader": "Add header",
+      "headers": "Headers",
+      "headersHint": "One per line, format Key: Value",
+      "excludedSection": "Excluded models",
+      "excludedHint": "One model per line; matched models won't be routed",
+      "cloakSection": "Cloak settings",
+      "cloakMode": "Mode",
+      "cloakStrict": "Strict mode",
+      "cloakSensitiveWords": "Sensitive words (one per line)",
+      "apiKeyEntriesSection": "API key entries",
+      "apiKeyEntry": "Key #{{index}}",
+      "addApiKeyEntry": "Add key entry",
+      "validation": {
+        "nameRequired": "Name is required",
+        "apiKeyRequired": "At least one API key is required",
+        "baseUrlRequired": "Base URL is required"
+      }
+    },
+    "ampcode": {
+      "upstreamUrl": "Upstream URL",
+      "upstreamApiKey": "Upstream API key (fallback)",
+      "upstreamApiKeyHint": "Used when no key mapping matches",
+      "keyMappingsSection": "Upstream key mappings",
+      "mappingRow": "Mapping #{{index}}",
+      "clientKeys": "Client keys",
+      "clientKeysHint": "One per line; matched keys forward to the upstream key above",
+      "addMapping": "Add key mapping",
+      "modelMappingsSection": "Model mappings",
+      "addModelMapping": "Add model mapping",
+      "behaviorSection": "Behavior",
+      "forceModelMappings": "Force model mappings",
+      "forceModelMappingsHint": "Requests that don't match a mapping are rejected"
+    },
+    "delete": {
+      "title": "Delete resource",
+      "confirm": "Delete {{name}}? This action cannot be undone.",
+      "ampcodeTitle": "Clear Amp CLI configuration",
+      "ampcodeConfirm": "Clear all Amp CLI configuration? Upstream URL, keys and model mappings will be removed."
+    },
+    "toast": {
+      "created": "Created",
+      "updated": "Updated",
+      "deleted": "Deleted",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "modelCatalog": {
+      "summaryTitle": "Model catalog",
+      "openAction": "Open catalog",
+      "notLoaded": "Not loaded",
+      "loading": "Loading",
+      "summaryCount": "{{count}} models",
+      "summaryError": "Failed to load"
+    },
+    "disconnected": {
+      "title": "Not connected",
+      "description": "Connect to the proxy service from the login page before managing providers.",
+      "action": "Go to connection"
+    },
+    "error": {
+      "title": "Failed to load",
+      "description": "Could not fetch provider config. Please try again.",
+      "retry": "Retry"
+    }
   }
 }
