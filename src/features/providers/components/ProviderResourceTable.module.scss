@@ -113,9 +113,9 @@
 }
 
 .statusActive {
-  border-color: var(--primary-30);
-  background: var(--primary-10);
-  color: var(--primary-color);
+  border-color: var(--success-badge-border);
+  background: var(--success-badge-bg);
+  color: var(--success-badge-text);
 }
 
 .statusDisabled {

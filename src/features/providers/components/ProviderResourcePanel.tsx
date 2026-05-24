@@ -89,9 +89,6 @@ export function ProviderResourcePanel({
                 {t(`providersPage.providerNames.${group.id}`)}
               </h2>
             </div>
-            <p className={styles.subtitle}>
-              {t('providersPage.table.description', { route: group.path })}
-            </p>
           </div>
           {group.id !== 'ampcode' ? (
             <div className={styles.searchWrap}>

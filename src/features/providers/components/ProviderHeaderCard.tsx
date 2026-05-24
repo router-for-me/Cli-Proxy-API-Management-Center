@@ -51,7 +51,7 @@ export function ProviderHeaderCard({
                 : t('providersPage.actions.refresh')
             }
           >
-            <span className={isFetching ? styles.spin : undefined}>
+            <span className={`${styles.btnIcon} ${isFetching ? styles.spin : ''}`.trim()}>
               {isFetching ? <IconLoader2 size={14} /> : <IconRefreshCw size={14} />}
             </span>
             <span>

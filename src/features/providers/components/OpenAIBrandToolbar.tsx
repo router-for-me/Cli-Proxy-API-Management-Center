@@ -88,6 +88,7 @@ export function OpenAIBrandToolbar({
           options={sortOptions}
           onChange={(value) => onSortBy(value as OpenAISortBy)}
           ariaLabel={t('providersPage.toolbar.sortBy')}
+          size="sm"
         />
         <button
           type="button"

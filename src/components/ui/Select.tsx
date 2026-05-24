@@ -28,6 +28,7 @@ interface SelectProps {
   ariaLabelledBy?: string;
   ariaDescribedBy?: string;
   fullWidth?: boolean;
+  size?: 'sm' | 'md';
   id?: string;
 }
 
@@ -87,6 +88,7 @@ export function Select({
   ariaLabelledBy,
   ariaDescribedBy,
   fullWidth = true,
+  size = 'md',
   id,
 }: SelectProps) {
   const generatedId = useId();
@@ -301,7 +303,7 @@ export function Select({
         <button
           id={selectId}
           type="button"
-          className={styles.trigger}
+          className={`${styles.trigger} ${size === 'sm' ? styles.triggerSm : ''}`.trim()}
           onClick={disabled ? undefined : () => setOpen((prev) => !prev)}
           onKeyDown={handleKeyDown}
           aria-haspopup="listbox"
