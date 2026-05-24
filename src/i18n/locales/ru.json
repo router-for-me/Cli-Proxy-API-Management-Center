@@ -1608,6 +1608,20 @@
       "timeout": "Таймаут после {{seconds}} с",
       "requestFailed": "Запрос не выполнен"
     },
+    "discovery": {
+      "openButton": "Получить с конечной точки",
+      "searchPlaceholder": "Поиск моделей",
+      "reload": "Обновить",
+      "loading": "Загрузка моделей…",
+      "empty": "Конечная точка не вернула моделей",
+      "notLoaded": "Нажмите Обновить, чтобы загрузить модели",
+      "selectAll": "Выбрать все",
+      "clearAll": "Снять выбор",
+      "selectedCount": "{{selected}} / {{total}}",
+      "alreadyAdded": "Уже добавлено",
+      "close": "Закрыть",
+      "apply": "Применить ({{count}})"
+    },
     "modelCatalog": {
       "summaryTitle": "Каталог моделей",
       "openAction": "Открыть",

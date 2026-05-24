@@ -1611,6 +1611,20 @@
       "timeout": "请求超过 {{seconds}} 秒",
       "requestFailed": "请求失败"
     },
+    "discovery": {
+      "openButton": "从端点拉取",
+      "searchPlaceholder": "搜索模型",
+      "reload": "重新加载",
+      "loading": "正在加载模型…",
+      "empty": "端点未返回任何模型",
+      "notLoaded": "点击重新加载以获取模型",
+      "selectAll": "全选",
+      "clearAll": "清空选择",
+      "selectedCount": "{{selected}} / {{total}}",
+      "alreadyAdded": "已添加",
+      "close": "关闭",
+      "apply": "应用 ({{count}})"
+    },
     "modelCatalog": {
       "summaryTitle": "模型目录",
       "openAction": "打开目录",

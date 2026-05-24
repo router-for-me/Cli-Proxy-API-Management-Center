@@ -1637,6 +1637,20 @@
       "timeout": "請求超過 {{seconds}} 秒",
       "requestFailed": "請求失敗"
     },
+    "discovery": {
+      "openButton": "從端點拉取",
+      "searchPlaceholder": "搜尋模型",
+      "reload": "重新載入",
+      "loading": "正在載入模型…",
+      "empty": "端點未回傳任何模型",
+      "notLoaded": "點擊重新載入以取得模型",
+      "selectAll": "全選",
+      "clearAll": "清空選擇",
+      "selectedCount": "{{selected}} / {{total}}",
+      "alreadyAdded": "已新增",
+      "close": "關閉",
+      "apply": "套用 ({{count}})"
+    },
     "modelCatalog": {
       "summaryTitle": "模型目錄",
       "openAction": "開啟目錄",

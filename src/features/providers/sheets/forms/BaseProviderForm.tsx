@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   IconAlertTriangle,
   IconCheckCircle2,
+  IconDownload,
   IconLoader2,
   IconPlus,
   IconX,
@@ -27,6 +28,8 @@ import {
   type ConnectivityErrorMessages,
   type ConnectivityState,
 } from './useConnectivityTest';
+import { useModelDiscovery } from './useModelDiscovery';
+import { ModelDiscoveryPanel } from './ModelDiscoveryPanel';
 import styles from './sharedForm.module.scss';
 
 export interface BaseProviderFormHandle {
@@ -202,8 +205,9 @@ export function BaseProviderForm({
   const [error, setError] = useState<string | null>(null);
 
   const fallbackApiKey = useMemo(() => {
-    if (brand !== 'claude' || mode !== 'edit' || !resource) return '';
-    return (resource.raw as ProviderKeyConfig | undefined)?.apiKey ?? '';
+    if (mode !== 'edit' || !resource) return '';
+    if (brand === 'openaiCompatibility') return '';
+    return (resource.raw as { apiKey?: string } | undefined)?.apiKey ?? '';
   }, [brand, mode, resource]);
 
   const connectivityMessages = useMemo<ConnectivityErrorMessages>(
@@ -232,6 +236,66 @@ export function BaseProviderForm({
     },
     connectivityMessages
   );
+
+  const discovery = useModelDiscovery({
+    brand,
+    baseUrl: form.baseUrl,
+    formHeaders: form.headers,
+    apiKeyEntries: form.apiKeyEntries,
+    apiKey: form.apiKey,
+    fallbackApiKey,
+  });
+  const [discoveryOpen, setDiscoveryOpen] = useState(false);
+
+  const existingModelNames = useMemo(() => {
+    const set = new Set<string>();
+    form.models.forEach((m) => {
+      const name = (m.name ?? '').trim();
+      if (name) set.add(name);
+    });
+    return set;
+  }, [form.models]);
+
+  const openDiscovery = () => {
+    setDiscoveryOpen(true);
+    if (!discovery.loading && !discovery.hasFetched) {
+      void discovery.fetch();
+    }
+  };
+
+  const closeDiscovery = () => {
+    setDiscoveryOpen(false);
+  };
+
+  const applyDiscoveredModels = (names: string[]) => {
+    if (!names.length) return;
+    setForm((prev) => {
+      const seen = new Set<string>();
+      const next: ModelEntryInput[] = [];
+      prev.models.forEach((entry) => {
+        const trimmed = (entry.name ?? '').trim();
+        if (trimmed) {
+          if (seen.has(trimmed)) return;
+          seen.add(trimmed);
+        }
+        next.push(entry);
+      });
+      // If the existing list is just an empty placeholder row, drop it.
+      const placeholderIdx = next.findIndex(
+        (it) => !(it.name ?? '').trim() && !(it.alias ?? '').trim()
+      );
+      if (placeholderIdx !== -1 && names.length > 0) {
+        next.splice(placeholderIdx, 1);
+      }
+      names.forEach((name) => {
+        const trimmed = name.trim();
+        if (!trimmed || seen.has(trimmed)) return;
+        seen.add(trimmed);
+        next.push({ name: trimmed, alias: '' });
+      });
+      return { ...prev, models: next };
+    });
+  };
 
   const updateField = <K extends keyof ProviderEntryFormInput>(
     key: K,
@@ -723,6 +787,34 @@ export function BaseProviderForm({
       {descriptor.supportsModels ? (
         <Collapsible label={t('providersPage.form.modelsSection')}>
           <div className={styles.entriesList}>
+            {discovery.available ? (
+              <div className={styles.entriesToolbar}>
+                <button
+                  type="button"
+                  className={styles.connectivityBtn}
+                  onClick={openDiscovery}
+                  disabled={mutating}
+                >
+                  <IconDownload size={14} />
+                  <span>{t('providersPage.discovery.openButton')}</span>
+                </button>
+              </div>
+            ) : null}
+            {discovery.available && discoveryOpen ? (
+              <ModelDiscoveryPanel
+                loading={discovery.loading}
+                error={discovery.error}
+                models={discovery.models}
+                hasFetched={discovery.hasFetched}
+                existingNames={existingModelNames}
+                mutating={mutating}
+                onApply={(names) => {
+                  applyDiscoveredModels(names);
+                }}
+                onReload={() => void discovery.fetch()}
+                onClose={closeDiscovery}
+              />
+            ) : null}
             {modelsList.map((entry, idx) => (
               <div
                 key={idx}

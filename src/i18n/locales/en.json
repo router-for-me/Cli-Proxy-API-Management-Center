@@ -1611,6 +1611,20 @@
       "timeout": "Timed out after {{seconds}}s",
       "requestFailed": "Request failed"
     },
+    "discovery": {
+      "openButton": "Fetch from endpoint",
+      "searchPlaceholder": "Search models",
+      "reload": "Reload",
+      "loading": "Loading models…",
+      "empty": "No models returned by the endpoint",
+      "notLoaded": "Click Reload to fetch models",
+      "selectAll": "Select all",
+      "clearAll": "Clear selection",
+      "selectedCount": "{{selected}} / {{total}}",
+      "alreadyAdded": "Already added",
+      "close": "Close",
+      "apply": "Apply ({{count}})"
+    },
     "modelCatalog": {
       "summaryTitle": "Model catalog",
       "openAction": "Open catalog",
