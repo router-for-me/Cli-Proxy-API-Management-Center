@@ -29,6 +29,7 @@ interface ProviderResourcePanelProps {
   onView: (resource: ProviderResource) => void;
   onEdit: (resource: ProviderResource) => void;
   onDelete: (resource: ProviderResource) => void;
+  onToggleDisabled?: (resource: ProviderResource, disabled: boolean) => void;
   onCreate: () => void;
 }
 
@@ -42,6 +43,7 @@ export function ProviderResourcePanel({
   onView,
   onEdit,
   onDelete,
+  onToggleDisabled,
   onCreate,
 }: ProviderResourcePanelProps) {
   const { t } = useTranslation();
@@ -128,6 +130,7 @@ export function ProviderResourcePanel({
           onView={onView}
           onEdit={onEdit}
           onDelete={onDelete}
+          onToggleDisabled={onToggleDisabled}
         />
       )}
     </section>

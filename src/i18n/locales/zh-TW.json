@@ -1495,6 +1495,8 @@
       "save": "儲存",
       "create": "建立",
       "back": "返回",
+      "enable": "啟用",
+      "disable": "停用",
       "openModelCatalog": "檢視模型目錄"
     },
     "categories": {
@@ -1620,7 +1622,8 @@
       "updated": "更新成功",
       "deleted": "刪除成功",
       "enabled": "已啟用",
-      "disabled": "已停用"
+      "disabled": "已停用",
+      "toggleFailed": "更新狀態失敗"
     },
     "modelCatalog": {
       "summaryTitle": "模型目錄",

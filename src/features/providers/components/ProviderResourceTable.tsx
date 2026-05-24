@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/Table';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import type { ProviderResource } from '../types';
 import styles from './ProviderResourceTable.module.scss';
 
@@ -25,6 +26,7 @@ interface ProviderResourceTableProps {
   onView: (resource: ProviderResource) => void;
   onEdit: (resource: ProviderResource) => void;
   onDelete: (resource: ProviderResource) => void;
+  onToggleDisabled?: (resource: ProviderResource, disabled: boolean) => void;
 }
 
 const columnWidths = ['20%', '22%', '8%', '22%', '8%', '20%'];
@@ -36,6 +38,7 @@ export function ProviderResourceTable({
   onView,
   onEdit,
   onDelete,
+  onToggleDisabled,
 }: ProviderResourceTableProps) {
   const { t } = useTranslation();
 
@@ -191,6 +194,25 @@ export function ProviderResourceTable({
               <TableCell>{renderStatus(resource)}</TableCell>
               <TableCell alignRight>
                 <div className={styles.actions}>
+                  {!isAmpcode && onToggleDisabled ? (
+                    <span
+                      className={styles.toggleWrap}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ToggleSwitch
+                        checked={!resource.disabled}
+                        disabled={disableMutations}
+                        onChange={(value) =>
+                          onToggleDisabled(resource, !value)
+                        }
+                        ariaLabel={
+                          resource.disabled
+                            ? t('providersPage.actions.enable')
+                            : t('providersPage.actions.disable')
+                        }
+                      />
+                    </span>
+                  ) : null}
                   <button
                     type="button"
                     className={styles.iconBtn}

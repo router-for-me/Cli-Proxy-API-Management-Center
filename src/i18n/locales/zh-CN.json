@@ -1469,6 +1469,8 @@
       "save": "保存",
       "create": "创建",
       "back": "返回",
+      "enable": "启用",
+      "disable": "停用",
       "openModelCatalog": "查看模型目录"
     },
     "categories": {
@@ -1594,7 +1596,8 @@
       "updated": "更新成功",
       "deleted": "删除成功",
       "enabled": "已启用",
-      "disabled": "已停用"
+      "disabled": "已停用",
+      "toggleFailed": "更新状态失败"
     },
     "modelCatalog": {
       "summaryTitle": "模型目录",

@@ -1469,6 +1469,8 @@
       "save": "Save",
       "create": "Create",
       "back": "Back",
+      "enable": "Enable",
+      "disable": "Disable",
       "openModelCatalog": "Open model catalog"
     },
     "categories": {
@@ -1594,7 +1596,8 @@
       "updated": "Updated",
       "deleted": "Deleted",
       "enabled": "Enabled",
-      "disabled": "Disabled"
+      "disabled": "Disabled",
+      "toggleFailed": "Failed to update status"
     },
     "modelCatalog": {
       "summaryTitle": "Model catalog",

@@ -119,7 +119,14 @@
 .actions {
   display: flex;
   gap: 4px;
+  align-items: center;
   justify-content: flex-end;
+}
+
+.toggleWrap {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
 }
 
 .iconBtn {

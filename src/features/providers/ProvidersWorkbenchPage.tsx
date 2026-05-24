@@ -183,6 +183,27 @@ export function ProvidersWorkbenchPage() {
     [showConfirmation, showNotification, t, workbench]
   );
 
+  const handleToggleDisabled = useCallback(
+    async (resource: ProviderResource, disabled: boolean) => {
+      try {
+        await workbench.toggleDisabled(resource, disabled);
+        showNotification(
+          disabled
+            ? t('providersPage.toast.disabled')
+            : t('providersPage.toast.enabled'),
+          'success'
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        showNotification(
+          `${t('providersPage.toast.toggleFailed')}: ${msg}`,
+          'error'
+        );
+      }
+    },
+    [showNotification, t, workbench]
+  );
+
   const handleCreated = useCallback(() => {
     showNotification(t('providersPage.toast.created'), 'success');
     closeSheet();
@@ -267,6 +288,7 @@ export function ProvidersWorkbenchPage() {
           onView={openView}
           onEdit={openEdit}
           onDelete={handleDelete}
+          onToggleDisabled={handleToggleDisabled}
           onCreate={openCreate}
         />
       </div>

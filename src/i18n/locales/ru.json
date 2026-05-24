@@ -1466,6 +1466,8 @@
       "save": "Сохранить",
       "create": "Создать",
       "back": "Назад",
+      "enable": "Включить",
+      "disable": "Отключить",
       "openModelCatalog": "Каталог моделей"
     },
     "categories": {
@@ -1591,7 +1593,8 @@
       "updated": "Обновлено",
       "deleted": "Удалено",
       "enabled": "Включено",
-      "disabled": "Отключено"
+      "disabled": "Отключено",
+      "toggleFailed": "Не удалось обновить статус"
     },
     "modelCatalog": {
       "summaryTitle": "Каталог моделей",
