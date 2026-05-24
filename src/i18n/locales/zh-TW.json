@@ -1651,6 +1651,23 @@
       "close": "關閉",
       "apply": "套用 ({{count}})"
     },
+    "toolbar": {
+      "sortBy": "排序",
+      "sort": {
+        "name": "名稱",
+        "priority": "優先級",
+        "recentSuccess": "近期成功數",
+        "directionAsc": "升序",
+        "directionDesc": "降序"
+      },
+      "filter": {
+        "allModels": "全部模型",
+        "selectedModels": "{{selected}}/{{total}} 個模型",
+        "selectAll": "全選",
+        "clear": "清空",
+        "empty": "尚無已設定模型"
+      }
+    },
     "modelCatalog": {
       "summaryTitle": "模型目錄",
       "openAction": "開啟目錄",

@@ -16,25 +16,54 @@ import {
   TableRow,
 } from '@/components/ui/Table';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
+import {
+  getOpenAIProviderRecentStatusData,
+  getProviderRecentStatusData,
+  type ProviderRecentUsageMap,
+} from '@/components/providers/utils';
+import type { OpenAIProviderConfig } from '@/types';
+import type { StatusBarData } from '@/utils/recentRequests';
 import type { ProviderResource } from '../types';
 import styles from './ProviderResourceTable.module.scss';
+import statusBarStyles from './providerStatusBar.module.scss';
 
 interface ProviderResourceTableProps {
   resources: ProviderResource[];
   selectedId?: string | null;
   disableMutations?: boolean;
+  usageByProvider?: ProviderRecentUsageMap;
   onView: (resource: ProviderResource) => void;
   onEdit: (resource: ProviderResource) => void;
   onDelete: (resource: ProviderResource) => void;
   onToggleDisabled?: (resource: ProviderResource, disabled: boolean) => void;
 }
 
-const columnWidths = ['20%', '22%', '8%', '22%', '8%', '20%'];
+const columnWidths = ['18%', '18%', '6%', '14%', '24%', '20%'];
+
+const resolveStatusBarData = (
+  resource: ProviderResource,
+  usageByProvider: ProviderRecentUsageMap
+): StatusBarData => {
+  if (resource.brand === 'openaiCompatibility') {
+    return getOpenAIProviderRecentStatusData(
+      resource.raw as OpenAIProviderConfig,
+      usageByProvider
+    );
+  }
+  return getProviderRecentStatusData(
+    usageByProvider,
+    resource.brand,
+    resource.apiKey ?? undefined,
+    resource.baseUrl ?? undefined
+  );
+};
 
 export function ProviderResourceTable({
   resources,
   selectedId,
   disableMutations,
+  usageByProvider,
   onView,
   onEdit,
   onDelete,
@@ -191,7 +220,17 @@ export function ProviderResourceTable({
                 )}
               </TableCell>
               <TableCell>{renderModelsSummary(resource)}</TableCell>
-              <TableCell>{renderStatus(resource)}</TableCell>
+              <TableCell>
+                <div className={styles.statusCell}>
+                  {renderStatus(resource)}
+                  {usageByProvider && resource.brand !== 'ampcode' ? (
+                    <ProviderStatusBar
+                      statusData={resolveStatusBarData(resource, usageByProvider)}
+                      styles={statusBarStyles}
+                    />
+                  ) : null}
+                </div>
+              </TableCell>
               <TableCell alignRight>
                 <div className={styles.actions}>
                   {!isAmpcode && onToggleDisabled ? (

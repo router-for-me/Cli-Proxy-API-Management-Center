@@ -17,12 +17,26 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.headerMain {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 
   @media (min-width: 768px) {
     flex-direction: row;
     align-items: flex-start;
     justify-content: space-between;
   }
+}
+
+.headerToolbarRow {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .titleArea {

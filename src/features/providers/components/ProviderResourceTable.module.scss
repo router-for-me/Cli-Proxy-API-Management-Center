@@ -104,6 +104,14 @@
   white-space: nowrap;
 }
 
+.statusCell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
 .statusActive {
   border-color: var(--primary-30);
   background: var(--primary-10);

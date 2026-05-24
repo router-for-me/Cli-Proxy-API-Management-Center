@@ -1622,6 +1622,23 @@
       "close": "Закрыть",
       "apply": "Применить ({{count}})"
     },
+    "toolbar": {
+      "sortBy": "Сортировка",
+      "sort": {
+        "name": "Имя",
+        "priority": "Приоритет",
+        "recentSuccess": "Недавние успехи",
+        "directionAsc": "По возрастанию",
+        "directionDesc": "По убыванию"
+      },
+      "filter": {
+        "allModels": "Все модели",
+        "selectedModels": "{{selected}}/{{total}} моделей",
+        "selectAll": "Выбрать все",
+        "clear": "Очистить",
+        "empty": "Модели ещё не настроены"
+      }
+    },
     "modelCatalog": {
       "summaryTitle": "Каталог моделей",
       "openAction": "Открыть",

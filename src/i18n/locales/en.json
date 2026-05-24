@@ -1625,6 +1625,23 @@
       "close": "Close",
       "apply": "Apply ({{count}})"
     },
+    "toolbar": {
+      "sortBy": "Sort by",
+      "sort": {
+        "name": "Name",
+        "priority": "Priority",
+        "recentSuccess": "Recent success",
+        "directionAsc": "Ascending",
+        "directionDesc": "Descending"
+      },
+      "filter": {
+        "allModels": "All models",
+        "selectedModels": "{{selected}}/{{total}} models",
+        "selectAll": "Select all",
+        "clear": "Clear",
+        "empty": "No models configured yet"
+      }
+    },
     "modelCatalog": {
       "summaryTitle": "Model catalog",
       "openAction": "Open catalog",

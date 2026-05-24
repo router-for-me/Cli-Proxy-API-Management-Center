@@ -1625,6 +1625,23 @@
       "close": "关闭",
       "apply": "应用 ({{count}})"
     },
+    "toolbar": {
+      "sortBy": "排序",
+      "sort": {
+        "name": "名称",
+        "priority": "优先级",
+        "recentSuccess": "近期成功数",
+        "directionAsc": "升序",
+        "directionDesc": "降序"
+      },
+      "filter": {
+        "allModels": "全部模型",
+        "selectedModels": "{{selected}}/{{total}} 个模型",
+        "selectAll": "全选",
+        "clear": "清空",
+        "empty": "暂无已配置模型"
+      }
+    },
     "modelCatalog": {
       "summaryTitle": "模型目录",
       "openAction": "打开目录",
