@@ -9,6 +9,7 @@ import {
   IconX,
 } from '@/components/ui/icons';
 import { Collapsible } from '@/components/ui/Collapsible';
+import { Select } from '@/components/ui/Select';
 import { hasDisableAllModelsRule } from '@/components/providers/utils';
 import type {
   GeminiKeyConfig,
@@ -271,6 +272,33 @@ export function BaseProviderForm({
     return set;
   }, [form.models]);
 
+  const testModelOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const names: string[] = [];
+    form.models.forEach((m) => {
+      const name = (m.name ?? '').trim();
+      if (!name || seen.has(name)) return;
+      seen.add(name);
+      names.push(name);
+    });
+    const firstName = names[0];
+    const autoLabel = firstName
+      ? t('providersPage.form.testModelAutoWith', { name: firstName })
+      : t('providersPage.form.testModelAutoEmpty');
+    const opts: Array<{ value: string; label: string }> = [
+      { value: '', label: autoLabel },
+    ];
+    names.forEach((n) => opts.push({ value: n, label: n }));
+    const tm = (form.testModel ?? '').trim();
+    if (tm && !seen.has(tm)) {
+      opts.push({
+        value: tm,
+        label: t('providersPage.form.testModelCustom', { name: tm }),
+      });
+    }
+    return opts;
+  }, [form.models, form.testModel, t]);
+
   const openDiscovery = () => {
     setDiscoveryOpen(true);
     if (!discovery.loading && !discovery.hasFetched) {
@@ -518,12 +546,13 @@ export function BaseProviderForm({
                 </span>
               ) : null}
             </label>
-            <input
+            <Select
               id={`${fid}-testModel`}
-              className={styles.input}
               value={form.testModel ?? ''}
-              onChange={(e) => updateField('testModel', e.target.value)}
+              options={testModelOptions}
+              onChange={(value) => updateField('testModel', value)}
               disabled={mutating}
+              ariaLabel={t('providersPage.form.testModel')}
             />
             {brand === 'claude' ? (
               <div className={styles.connectivityRow}>
