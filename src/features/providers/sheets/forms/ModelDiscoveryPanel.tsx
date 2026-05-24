@@ -16,7 +16,7 @@ interface ModelDiscoveryPanelProps {
   hasFetched: boolean;
   existingNames: Set<string>;
   mutating?: boolean;
-  onApply: (names: string[]) => void;
+  onApply: (picked: ModelInfo[]) => void;
   onReload: () => void;
   onClose: () => void;
 }
@@ -70,9 +70,11 @@ export function ModelDiscoveryPanel({
   };
 
   const handleApply = () => {
-    const names = Array.from(selected).filter((n) => !existingNames.has(n));
-    if (!names.length) return;
-    onApply(names);
+    const picked = models.filter(
+      (m) => selected.has(m.name) && !existingNames.has(m.name)
+    );
+    if (!picked.length) return;
+    onApply(picked);
     setSelected(new Set());
   };
 

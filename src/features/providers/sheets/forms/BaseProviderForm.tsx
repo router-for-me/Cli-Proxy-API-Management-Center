@@ -15,6 +15,7 @@ import type {
   OpenAIProviderConfig,
   ProviderKeyConfig,
 } from '@/types';
+import type { ModelInfo } from '@/utils/models';
 import { PROVIDER_DESCRIPTORS } from '../../descriptors';
 import type {
   ApiKeyEntryInput,
@@ -267,8 +268,8 @@ export function BaseProviderForm({
     setDiscoveryOpen(false);
   };
 
-  const applyDiscoveredModels = (names: string[]) => {
-    if (!names.length) return;
+  const applyDiscoveredModels = (incoming: ModelInfo[]) => {
+    if (!incoming.length) return;
     setForm((prev) => {
       const seen = new Set<string>();
       const next: ModelEntryInput[] = [];
@@ -284,14 +285,17 @@ export function BaseProviderForm({
       const placeholderIdx = next.findIndex(
         (it) => !(it.name ?? '').trim() && !(it.alias ?? '').trim()
       );
-      if (placeholderIdx !== -1 && names.length > 0) {
+      if (placeholderIdx !== -1) {
         next.splice(placeholderIdx, 1);
       }
-      names.forEach((name) => {
-        const trimmed = name.trim();
+      incoming.forEach((info) => {
+        const trimmed = info.name.trim();
         if (!trimmed || seen.has(trimmed)) return;
         seen.add(trimmed);
-        next.push({ name: trimmed, alias: '' });
+        next.push({
+          name: trimmed,
+          alias: (info.alias ?? '').trim(),
+        });
       });
       return { ...prev, models: next };
     });
