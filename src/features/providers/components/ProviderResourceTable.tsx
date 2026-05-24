@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   IconAlertTriangle,
@@ -26,7 +27,7 @@ interface ProviderResourceTableProps {
   onDelete: (resource: ProviderResource) => void;
 }
 
-const columnWidths = ['20%', '22%', '9%', '14%', '9%', '26%'];
+const columnWidths = ['20%', '22%', '8%', '22%', '8%', '20%'];
 
 export function ProviderResourceTable({
   resources,
@@ -38,31 +39,45 @@ export function ProviderResourceTable({
 }: ProviderResourceTableProps) {
   const { t } = useTranslation();
 
+  const renderMetric = (key: string, label: string, value: number) => (
+    <span key={key} className={styles.metric}>
+      <span className={styles.metricLabel}>{label}</span>
+      <span className={styles.metricValue}>{value}</span>
+    </span>
+  );
+
+  const renderFlagTag = (key: string, label: string) => (
+    <span key={key} className={styles.flagTag}>
+      {label}
+    </span>
+  );
+
   const renderModelsSummary = (r: ProviderResource) => {
+    const items: ReactNode[] = [];
     if (r.brand === 'openaiCompatibility') {
-      return t('providersPage.table.openaiModelSummary', {
-        models: r.modelCount,
-        keys: r.apiKeyEntryCount,
-        headers: r.headerCount,
-      });
+      items.push(
+        renderMetric('models', t('providersPage.table.metrics.models'), r.modelCount),
+        renderMetric('keys', t('providersPage.table.metrics.keys'), r.apiKeyEntryCount),
+        renderMetric('headers', t('providersPage.table.metrics.headers'), r.headerCount),
+      );
+    } else if (r.brand === 'ampcode') {
+      items.push(
+        renderMetric('mappings', t('providersPage.table.metrics.mappings'), r.modelCount),
+        renderMetric('keys', t('providersPage.table.metrics.keys'), r.apiKeyEntryCount),
+      );
+    } else {
+      items.push(
+        renderMetric('models', t('providersPage.table.metrics.models'), r.modelCount),
+        renderMetric('headers', t('providersPage.table.metrics.headers'), r.headerCount),
+      );
+      if (r.brand === 'codex' && r.flags.websockets) {
+        items.push(renderFlagTag('ws', t('providersPage.table.websocketsTag')));
+      }
+      if (r.brand === 'claude' && r.flags.cloakEnabled) {
+        items.push(renderFlagTag('cloak', t('providersPage.table.cloakTag')));
+      }
     }
-    if (r.brand === 'ampcode') {
-      return t('providersPage.table.ampcodeSummary', {
-        mappings: r.modelCount,
-        keys: r.apiKeyEntryCount,
-      });
-    }
-    let label = t('providersPage.table.modelSummary', {
-      models: r.modelCount,
-      headers: r.headerCount,
-    });
-    if (r.brand === 'codex' && r.flags.websockets) {
-      label += ` · ${t('providersPage.table.websocketsTag')}`;
-    }
-    if (r.brand === 'claude' && r.flags.cloakEnabled) {
-      label += ` · ${t('providersPage.table.cloakTag')}`;
-    }
-    return label;
+    return <div className={styles.metricsCell}>{items}</div>;
   };
 
   const renderStatus = (r: ProviderResource) => {
@@ -172,9 +187,7 @@ export function ProviderResourceTable({
                   <span className={styles.baseUrl}>{t('providersPage.status.none')}</span>
                 )}
               </TableCell>
-              <TableCell>
-                <span className={styles.modelsCell}>{renderModelsSummary(resource)}</span>
-              </TableCell>
+              <TableCell>{renderModelsSummary(resource)}</TableCell>
               <TableCell>{renderStatus(resource)}</TableCell>
               <TableCell alignRight>
                 <div className={styles.actions}>
@@ -182,18 +195,19 @@ export function ProviderResourceTable({
                     type="button"
                     className={styles.iconBtn}
                     aria-label={t('providersPage.actions.view')}
+                    title={t('providersPage.actions.view')}
                     onClick={(e) => {
                       e.stopPropagation();
                       onView(resource);
                     }}
                   >
                     <IconEye size={14} />
-                    <span>{t('providersPage.actions.view')}</span>
                   </button>
                   <button
                     type="button"
                     className={styles.iconBtn}
                     aria-label={t('providersPage.actions.edit')}
+                    title={t('providersPage.actions.edit')}
                     disabled={disableMutations}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -201,13 +215,13 @@ export function ProviderResourceTable({
                     }}
                   >
                     <IconPencil size={14} />
-                    <span>{t('providersPage.actions.edit')}</span>
                   </button>
                   {isAmpcode ? (
                     <button
                       type="button"
                       className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                       aria-label={t('providersPage.actions.clear')}
+                      title={t('providersPage.actions.clear')}
                       disabled={disableMutations || resource.flags.isPlaceholder}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -215,13 +229,13 @@ export function ProviderResourceTable({
                       }}
                     >
                       <IconTrash2 size={14} />
-                      <span>{t('providersPage.actions.clear')}</span>
                     </button>
                   ) : (
                     <button
                       type="button"
                       className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                       aria-label={t('providersPage.actions.delete')}
+                      title={t('providersPage.actions.delete')}
                       disabled={disableMutations}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -229,7 +243,6 @@ export function ProviderResourceTable({
                       }}
                     >
                       <IconTrash2 size={14} />
-                      <span>{t('providersPage.actions.delete')}</span>
                     </button>
                   )}
                 </div>

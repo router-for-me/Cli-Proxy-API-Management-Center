@@ -1492,9 +1492,12 @@
       "models": "模型/请求头",
       "status": "状态",
       "actions": "操作",
-      "modelSummary": "{{models}} 个模型 · {{headers}} 个请求头",
-      "openaiModelSummary": "{{models}} 个模型 · {{keys}} 个密钥 · {{headers}} 个请求头",
-      "ampcodeSummary": "{{mappings}} 个映射 · {{keys}} 个密钥组",
+      "metrics": {
+        "models": "模型",
+        "keys": "密钥",
+        "headers": "请求头",
+        "mappings": "映射"
+      },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "noFallbackKey": "未设置兜底密钥",

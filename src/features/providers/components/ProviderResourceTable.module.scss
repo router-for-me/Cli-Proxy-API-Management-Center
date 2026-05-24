@@ -48,10 +48,48 @@
   font-size: 11px;
 }
 
-.modelsCell {
-  font-size: 12px;
+.metricsCell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--muted-bg);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.metricLabel {
   color: var(--muted-foreground);
-  line-height: 1.5;
+}
+
+.metricValue {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.flagTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--primary-30);
+  background: var(--primary-10);
+  color: var(--primary-color);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .statusBadge {
@@ -88,18 +126,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 4px 8px;
+  width: 28px;
   height: 28px;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
   transition: background-color $transition-fast, color $transition-fast;
-  white-space: nowrap;
 
   &:hover:not(:disabled) {
     background: var(--bg-tertiary);
@@ -123,11 +158,5 @@
   &:hover:not(:disabled) {
     background: var(--destructive-10);
     color: var(--destructive-color);
-  }
-}
-
-@media (max-width: 768px) {
-  .iconBtn span:not(.icon) {
-    display: none;
   }
 }

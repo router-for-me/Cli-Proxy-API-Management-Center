@@ -1518,9 +1518,12 @@
       "models": "模型/請求標頭",
       "status": "狀態",
       "actions": "操作",
-      "modelSummary": "{{models}} 個模型 · {{headers}} 個請求標頭",
-      "openaiModelSummary": "{{models}} 個模型 · {{keys}} 個金鑰 · {{headers}} 個請求標頭",
-      "ampcodeSummary": "{{mappings}} 個映射 · {{keys}} 個金鑰群組",
+      "metrics": {
+        "models": "模型",
+        "keys": "金鑰",
+        "headers": "請求標頭",
+        "mappings": "映射"
+      },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "noFallbackKey": "未設定備援金鑰",

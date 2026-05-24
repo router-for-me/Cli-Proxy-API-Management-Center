@@ -1492,9 +1492,12 @@
       "models": "Models/Headers",
       "status": "Status",
       "actions": "Actions",
-      "modelSummary": "{{models}} models · {{headers}} headers",
-      "openaiModelSummary": "{{models}} models · {{keys}} keys · {{headers}} headers",
-      "ampcodeSummary": "{{mappings}} mappings · {{keys}} key groups",
+      "metrics": {
+        "models": "Models",
+        "keys": "Keys",
+        "headers": "Headers",
+        "mappings": "Mappings"
+      },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "noFallbackKey": "No fallback key",

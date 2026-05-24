@@ -1489,9 +1489,12 @@
       "models": "Модели/Заголовки",
       "status": "Статус",
       "actions": "Действия",
-      "modelSummary": "{{models}} моделей · {{headers}} заголовков",
-      "openaiModelSummary": "{{models}} моделей · {{keys}} ключей · {{headers}} заголовков",
-      "ampcodeSummary": "{{mappings}} сопоставлений · {{keys}} групп ключей",
+      "metrics": {
+        "models": "Модели",
+        "keys": "Ключи",
+        "headers": "Заголовки",
+        "mappings": "Сопоставления"
+      },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "noFallbackKey": "Резервный ключ не задан",
