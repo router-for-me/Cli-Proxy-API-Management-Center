@@ -44,6 +44,7 @@ export interface UseModelDiscoveryArgs {
   apiKeyEntries?: ApiKeyEntryInput[];
   apiKey?: string;
   fallbackApiKey?: string;
+  authIndex?: string;
 }
 
 export interface UseModelDiscoveryResult {
@@ -59,8 +60,15 @@ export interface UseModelDiscoveryResult {
 export function useModelDiscovery(
   args: UseModelDiscoveryArgs
 ): UseModelDiscoveryResult {
-  const { brand, baseUrl, formHeaders, apiKeyEntries, apiKey, fallbackApiKey } =
-    args;
+  const {
+    brand,
+    baseUrl,
+    formHeaders,
+    apiKeyEntries,
+    apiKey,
+    fallbackApiKey,
+    authIndex,
+  } = args;
 
   const available = isModelDiscoveryBrand(brand);
   const [loading, setLoading] = useState(false);
@@ -74,27 +82,31 @@ export function useModelDiscovery(
     setError(null);
     try {
       const baseHeaders = buildHeaderObject(formHeaders);
+      const resolvedAuthIndex = (authIndex ?? '').trim() || undefined;
       let next: ModelInfo[] = [];
       if (brand === 'gemini') {
         const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchGeminiModelsViaApiCall(
           baseUrl,
           key,
-          baseHeaders
+          baseHeaders,
+          resolvedAuthIndex
         );
       } else if (brand === 'codex') {
         const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchV1ModelsViaApiCall(
           baseUrl,
           key,
-          baseHeaders
+          baseHeaders,
+          resolvedAuthIndex
         );
       } else if (brand === 'claude') {
         const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchClaudeModelsViaApiCall(
           baseUrl,
           key,
-          baseHeaders
+          baseHeaders,
+          resolvedAuthIndex
         );
       } else if (brand === 'openaiCompatibility') {
         const firstEntry = (apiKeyEntries ?? []).find((e) =>
@@ -129,7 +141,16 @@ export function useModelDiscovery(
     } finally {
       setLoading(false);
     }
-  }, [available, apiKey, apiKeyEntries, baseUrl, brand, fallbackApiKey, formHeaders]);
+  }, [
+    available,
+    apiKey,
+    apiKeyEntries,
+    authIndex,
+    baseUrl,
+    brand,
+    fallbackApiKey,
+    formHeaders,
+  ]);
 
   const reset = useCallback(() => {
     setModels([]);

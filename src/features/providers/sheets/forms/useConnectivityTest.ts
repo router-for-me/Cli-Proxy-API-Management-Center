@@ -77,6 +77,7 @@ export interface UseConnectivityTestArgs {
   apiKeyEntries?: ApiKeyEntryInput[];
   apiKey?: string;
   fallbackApiKey?: string;
+  authIndex?: string;
 }
 
 export interface ConnectivityErrorMessages {
@@ -110,6 +111,7 @@ export function useConnectivityTest(
     apiKeyEntries,
     apiKey,
     fallbackApiKey,
+    authIndex,
   } = args;
 
   const entriesCount = apiKeyEntries?.length ?? 0;
@@ -302,8 +304,9 @@ export function useConnectivityTest(
     const headerKey = resolveBearerToken(customHeaders);
     const hasApiKeyHeader = hasHeader(customHeaders, 'x-api-key');
     const resolvedKey = explicitKey || persistedKey || headerKey;
+    const resolvedAuthIndex = (authIndex ?? '').trim() || undefined;
 
-    if (!resolvedKey && !hasApiKeyHeader) {
+    if (!resolvedKey && !hasApiKeyHeader && !resolvedAuthIndex) {
       setClaudeStatus({ state: 'error', message: messages.apiKeyRequired });
       return;
     }
@@ -324,6 +327,7 @@ export function useConnectivityTest(
     try {
       const result = await apiCallApi.request(
         {
+          authIndex: resolvedAuthIndex,
           method: 'POST',
           url: endpoint,
           header: headerObj,
@@ -358,6 +362,7 @@ export function useConnectivityTest(
     }
   }, [
     apiKey,
+    authIndex,
     baseUrl,
     brand,
     fallbackApiKey,

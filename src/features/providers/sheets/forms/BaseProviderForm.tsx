@@ -226,6 +226,13 @@ export function BaseProviderForm({
     return (resource.raw as { apiKey?: string } | undefined)?.apiKey ?? '';
   }, [brand, mode, resource]);
 
+  const fallbackAuthIndex = useMemo(() => {
+    if (mode !== 'edit' || !resource) return '';
+    return (
+      (resource.raw as { authIndex?: string } | undefined)?.authIndex ?? ''
+    );
+  }, [mode, resource]);
+
   const connectivityMessages = useMemo<ConnectivityErrorMessages>(
     () => ({
       baseUrlRequired: t('providersPage.connectivity.baseUrlRequired'),
@@ -249,6 +256,7 @@ export function BaseProviderForm({
       apiKeyEntries: form.apiKeyEntries,
       apiKey: form.apiKey,
       fallbackApiKey,
+      authIndex: fallbackAuthIndex,
     },
     connectivityMessages
   );
@@ -260,6 +268,7 @@ export function BaseProviderForm({
     apiKeyEntries: form.apiKeyEntries,
     apiKey: form.apiKey,
     fallbackApiKey,
+    authIndex: fallbackAuthIndex,
   });
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
 
