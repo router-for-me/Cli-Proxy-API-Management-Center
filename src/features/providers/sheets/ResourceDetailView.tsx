@@ -20,7 +20,7 @@ export function ResourceDetailView({ resource }: ResourceDetailViewProps) {
   ];
 
   const metadata: Array<[string, string]> = [
-    ['authIndex', resource.authIndex ?? t('providersPage.status.notAvailable')],
+    ['authIndex', resource.authIndex ?? t('providersPage.status.notSet')],
     ['excludedModels', String(resource.excludedModelCount)],
     ['apiKeyEntries', String(resource.apiKeyEntryCount)],
   ];
