@@ -1546,6 +1546,7 @@
       "disabledHint": "Отключённые записи не используются шлюзом",
       "websockets": "Включить WebSockets",
       "testModel": "Тестовая модель",
+      "testModelClaudeHint": "Используется только для проверки соединения; не сохраняется",
       "modelsSection": "Пользовательские модели",
       "addModel": "Добавить модель",
       "headersSection": "Заголовки запроса",
@@ -1595,6 +1596,17 @@
       "enabled": "Включено",
       "disabled": "Отключено",
       "toggleFailed": "Не удалось обновить статус"
+    },
+    "connectivity": {
+      "test": "Проверить",
+      "testAll": "Проверить все",
+      "success": "Доступно",
+      "baseUrlRequired": "Base URL обязателен",
+      "endpointInvalid": "Некорректный адрес",
+      "apiKeyRequired": "API-ключ обязателен",
+      "modelRequired": "Нужна тестовая модель",
+      "timeout": "Таймаут после {{seconds}} с",
+      "requestFailed": "Запрос не выполнен"
     },
     "modelCatalog": {
       "summaryTitle": "Каталог моделей",

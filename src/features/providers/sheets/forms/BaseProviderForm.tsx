@@ -1,6 +1,12 @@
 import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconPlus, IconX } from '@/components/ui/icons';
+import {
+  IconAlertTriangle,
+  IconCheckCircle2,
+  IconLoader2,
+  IconPlus,
+  IconX,
+} from '@/components/ui/icons';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { hasDisableAllModelsRule } from '@/components/providers/utils';
 import type {
@@ -16,6 +22,11 @@ import type {
   ProviderEntryFormInput,
   ProviderResource,
 } from '../../types';
+import {
+  useConnectivityTest,
+  type ConnectivityErrorMessages,
+  type ConnectivityState,
+} from './useConnectivityTest';
 import styles from './sharedForm.module.scss';
 
 export interface BaseProviderFormHandle {
@@ -70,7 +81,8 @@ function buildInitialForm(
         brand === 'claude'
           ? { mode: '', strictMode: false, sensitiveWordsText: '' }
           : undefined,
-      testModel: brand === 'openaiCompatibility' ? '' : undefined,
+      testModel:
+        brand === 'openaiCompatibility' || brand === 'claude' ? '' : undefined,
       apiKeyEntries:
         brand === 'openaiCompatibility' ? [emptyApiKeyEntry()] : undefined,
     };
@@ -144,7 +156,33 @@ function buildInitialForm(
               (cfg as ProviderKeyConfig).cloak?.sensitiveWords?.join('\n') ?? '',
           }
         : undefined,
+    testModel: brand === 'claude' ? '' : undefined,
   };
+}
+
+function ConnectivityStatusIcon({ state }: { state: ConnectivityState }) {
+  if (state === 'loading') {
+    return (
+      <span className={`${styles.statusIcon} ${styles.statusIconLoading}`}>
+        <IconLoader2 size={14} />
+      </span>
+    );
+  }
+  if (state === 'success') {
+    return (
+      <span className={`${styles.statusIcon} ${styles.statusIconSuccess}`}>
+        <IconCheckCircle2 size={14} />
+      </span>
+    );
+  }
+  if (state === 'error') {
+    return (
+      <span className={`${styles.statusIcon} ${styles.statusIconError}`}>
+        <IconAlertTriangle size={14} />
+      </span>
+    );
+  }
+  return null;
 }
 
 export function BaseProviderForm({
@@ -162,6 +200,38 @@ export function BaseProviderForm({
     buildInitialForm(brand, resource, mode)
   );
   const [error, setError] = useState<string | null>(null);
+
+  const fallbackApiKey = useMemo(() => {
+    if (brand !== 'claude' || mode !== 'edit' || !resource) return '';
+    return (resource.raw as ProviderKeyConfig | undefined)?.apiKey ?? '';
+  }, [brand, mode, resource]);
+
+  const connectivityMessages = useMemo<ConnectivityErrorMessages>(
+    () => ({
+      baseUrlRequired: t('providersPage.connectivity.baseUrlRequired'),
+      endpointInvalid: t('providersPage.connectivity.endpointInvalid'),
+      apiKeyRequired: t('providersPage.connectivity.apiKeyRequired'),
+      modelRequired: t('providersPage.connectivity.modelRequired'),
+      timeout: (seconds: number) =>
+        t('providersPage.connectivity.timeout', { seconds }),
+      requestFailed: t('providersPage.connectivity.requestFailed'),
+    }),
+    [t]
+  );
+
+  const connectivity = useConnectivityTest(
+    {
+      brand,
+      baseUrl: form.baseUrl,
+      testModel: form.testModel,
+      models: form.models,
+      formHeaders: form.headers,
+      apiKeyEntries: form.apiKeyEntries,
+      apiKey: form.apiKey,
+      fallbackApiKey,
+    },
+    connectivityMessages
+  );
 
   const updateField = <K extends keyof ProviderEntryFormInput>(
     key: K,
@@ -359,6 +429,12 @@ export function BaseProviderForm({
           <div className={styles.field}>
             <label className={styles.label} htmlFor={`${fid}-testModel`}>
               {t('providersPage.form.testModel')}
+              {brand === 'claude' ? (
+                <span className={styles.labelHint}>
+                  {' '}
+                  · {t('providersPage.form.testModelClaudeHint')}
+                </span>
+              ) : null}
             </label>
             <input
               id={`${fid}-testModel`}
@@ -367,6 +443,34 @@ export function BaseProviderForm({
               onChange={(e) => updateField('testModel', e.target.value)}
               disabled={mutating}
             />
+            {brand === 'claude' ? (
+              <div className={styles.connectivityRow}>
+                <button
+                  type="button"
+                  className={styles.connectivityBtn}
+                  disabled={mutating || connectivity.isTestingAny}
+                  onClick={() => void connectivity.runClaude()}
+                >
+                  {connectivity.claudeStatus.state === 'loading' ? (
+                    <span className={`${styles.statusIcon} ${styles.statusIconLoading}`}>
+                      <IconLoader2 size={14} />
+                    </span>
+                  ) : null}
+                  <span>{t('providersPage.connectivity.test')}</span>
+                </button>
+                <ConnectivityStatusIcon state={connectivity.claudeStatus.state} />
+                {connectivity.claudeStatus.state === 'success' ? (
+                  <span className={styles.connectivityHintSuccess}>
+                    {t('providersPage.connectivity.success')}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+            {brand === 'claude' && connectivity.claudeStatus.state === 'error' ? (
+              <div className={styles.connectivityError}>
+                {connectivity.claudeStatus.message}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -410,91 +514,133 @@ export function BaseProviderForm({
           defaultOpen
         >
           <div className={styles.entriesList}>
-            {apiKeyEntries.map((entry, idx) => (
-              <div key={idx} className={styles.entryCard}>
-                <div className={styles.entryCardHeader}>
-                  <span>
-                    {t('providersPage.form.apiKeyEntry', { index: idx + 1 })}
+            <div className={styles.entriesToolbar}>
+              <button
+                type="button"
+                className={styles.connectivityBtn}
+                disabled={mutating || connectivity.isTestingAny}
+                onClick={() => void connectivity.runOpenAIAllKeys()}
+              >
+                {connectivity.isTestingAny ? (
+                  <span className={`${styles.statusIcon} ${styles.statusIconLoading}`}>
+                    <IconLoader2 size={14} />
                   </span>
-                  <button
-                    type="button"
-                    className={styles.removeBtn}
-                    disabled={mutating || apiKeyEntries.length <= 1}
-                    onClick={() =>
-                      updateField(
-                        'apiKeyEntries',
-                        apiKeyEntries.filter((_, i) => i !== idx)
-                      )
-                    }
-                  >
-                    <IconX size={12} />
-                  </button>
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>
-                    {t('providersPage.form.apiKey')}
-                  </label>
-                  <input
-                    className={styles.input}
-                    type="password"
-                    value={entry.apiKey}
-                    onChange={(e) =>
-                      updateField(
-                        'apiKeyEntries',
-                        apiKeyEntries.map((it, i) =>
-                          i === idx ? { ...it, apiKey: e.target.value } : it
-                        )
-                      )
-                    }
-                    disabled={mutating}
-                    placeholder={t('providersPage.form.apiKeyCreatePlaceholder')}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>
-                    {t('providersPage.form.proxyUrl')}
-                  </label>
-                  <input
-                    className={styles.input}
-                    value={entry.proxyUrl}
-                    onChange={(e) =>
-                      updateField(
-                        'apiKeyEntries',
-                        apiKeyEntries.map((it, i) =>
-                          i === idx ? { ...it, proxyUrl: e.target.value } : it
-                        )
-                      )
-                    }
-                    disabled={mutating}
-                    placeholder="http://127.0.0.1:7890"
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>
-                    {t('providersPage.form.headers')}
-                    <span className={styles.labelHint}>
-                      {' '}
-                      · {t('providersPage.form.headersHint')}
+                ) : null}
+                <span>{t('providersPage.connectivity.testAll')}</span>
+              </button>
+            </div>
+            {apiKeyEntries.map((entry, idx) => {
+              const status = connectivity.openaiStatuses[idx] ?? {
+                state: 'idle' as ConnectivityState,
+                message: '',
+              };
+              return (
+                <div key={idx} className={styles.entryCard}>
+                  <div className={styles.entryCardHeader}>
+                    <span>
+                      {t('providersPage.form.apiKeyEntry', { index: idx + 1 })}
                     </span>
-                  </label>
-                  <textarea
-                    className={styles.textarea}
-                    value={entry.headersText}
-                    rows={3}
-                    onChange={(e) =>
-                      updateField(
-                        'apiKeyEntries',
-                        apiKeyEntries.map((it, i) =>
-                          i === idx ? { ...it, headersText: e.target.value } : it
+                    <div className={styles.entryCardHeaderRight}>
+                      <ConnectivityStatusIcon state={status.state} />
+                      <button
+                        type="button"
+                        className={styles.connectivityBtnGhost}
+                        disabled={mutating || status.state === 'loading'}
+                        onClick={() => void connectivity.runOpenAIKey(idx)}
+                      >
+                        {status.state === 'loading' ? (
+                          <span className={`${styles.statusIcon} ${styles.statusIconLoading}`}>
+                            <IconLoader2 size={14} />
+                          </span>
+                        ) : null}
+                        <span>{t('providersPage.connectivity.test')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.removeBtn}
+                        disabled={mutating || apiKeyEntries.length <= 1}
+                        onClick={() =>
+                          updateField(
+                            'apiKeyEntries',
+                            apiKeyEntries.filter((_, i) => i !== idx)
+                          )
+                        }
+                      >
+                        <IconX size={12} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>
+                      {t('providersPage.form.apiKey')}
+                    </label>
+                    <input
+                      className={styles.input}
+                      type="password"
+                      value={entry.apiKey}
+                      onChange={(e) =>
+                        updateField(
+                          'apiKeyEntries',
+                          apiKeyEntries.map((it, i) =>
+                            i === idx ? { ...it, apiKey: e.target.value } : it
+                          )
                         )
-                      )
-                    }
-                    disabled={mutating}
-                    placeholder="X-Custom-Header: value"
-                  />
+                      }
+                      disabled={mutating}
+                      placeholder={t('providersPage.form.apiKeyCreatePlaceholder')}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>
+                      {t('providersPage.form.proxyUrl')}
+                    </label>
+                    <input
+                      className={styles.input}
+                      value={entry.proxyUrl}
+                      onChange={(e) =>
+                        updateField(
+                          'apiKeyEntries',
+                          apiKeyEntries.map((it, i) =>
+                            i === idx ? { ...it, proxyUrl: e.target.value } : it
+                          )
+                        )
+                      }
+                      disabled={mutating}
+                      placeholder="http://127.0.0.1:7890"
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>
+                      {t('providersPage.form.headers')}
+                      <span className={styles.labelHint}>
+                        {' '}
+                        · {t('providersPage.form.headersHint')}
+                      </span>
+                    </label>
+                    <textarea
+                      className={styles.textarea}
+                      value={entry.headersText}
+                      rows={3}
+                      onChange={(e) =>
+                        updateField(
+                          'apiKeyEntries',
+                          apiKeyEntries.map((it, i) =>
+                            i === idx ? { ...it, headersText: e.target.value } : it
+                          )
+                        )
+                      }
+                      disabled={mutating}
+                      placeholder="X-Custom-Header: value"
+                    />
+                  </div>
+                  {status.state === 'error' ? (
+                    <div className={styles.connectivityError}>
+                      {status.message}
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <button
               type="button"
               className={styles.addBtn}

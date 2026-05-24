@@ -1549,6 +1549,7 @@
       "disabledHint": "停用后不会被网关使用",
       "websockets": "启用 WebSockets",
       "testModel": "测试模型",
+      "testModelClaudeHint": "仅用于连通性测试,不会被保存",
       "modelsSection": "自定义模型",
       "addModel": "添加模型",
       "headersSection": "请求头",
@@ -1598,6 +1599,17 @@
       "enabled": "已启用",
       "disabled": "已停用",
       "toggleFailed": "更新状态失败"
+    },
+    "connectivity": {
+      "test": "测试",
+      "testAll": "全部测试",
+      "success": "连通",
+      "baseUrlRequired": "服务地址必填",
+      "endpointInvalid": "服务地址不合法",
+      "apiKeyRequired": "API 密钥必填",
+      "modelRequired": "测试模型必填",
+      "timeout": "请求超过 {{seconds}} 秒",
+      "requestFailed": "请求失败"
     },
     "modelCatalog": {
       "summaryTitle": "模型目录",

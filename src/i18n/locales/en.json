@@ -1549,6 +1549,7 @@
       "disabledHint": "Disabled entries won't be used by the gateway",
       "websockets": "Enable WebSockets",
       "testModel": "Test model",
+      "testModelClaudeHint": "Used for connectivity testing only; not saved",
       "modelsSection": "Custom models",
       "addModel": "Add model",
       "headersSection": "Request headers",
@@ -1598,6 +1599,17 @@
       "enabled": "Enabled",
       "disabled": "Disabled",
       "toggleFailed": "Failed to update status"
+    },
+    "connectivity": {
+      "test": "Test",
+      "testAll": "Test all",
+      "success": "Reachable",
+      "baseUrlRequired": "Base URL is required",
+      "endpointInvalid": "Endpoint URL is invalid",
+      "apiKeyRequired": "API key is required",
+      "modelRequired": "Test model is required",
+      "timeout": "Timed out after {{seconds}}s",
+      "requestFailed": "Request failed"
     },
     "modelCatalog": {
       "summaryTitle": "Model catalog",
