@@ -320,6 +320,8 @@ export function useConnectivityTest(
     }
     if (!hasApiKeyHeader && resolvedKey) {
       headerObj['x-api-key'] = resolvedKey;
+    } else if (!hasApiKeyHeader && resolvedAuthIndex) {
+      headerObj['x-api-key'] = '$TOKEN$';
     }
 
     setClaudeStatus({ state: 'loading', message: '' });
