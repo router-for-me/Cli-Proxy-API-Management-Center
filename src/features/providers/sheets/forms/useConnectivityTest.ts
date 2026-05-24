@@ -120,14 +120,35 @@ export function useConnectivityTest(
   const [claudeStatus, setClaudeStatus] = useState<ConnectivityStatus>(IDLE);
   const [inFlight, setInFlight] = useState(0);
 
+  const entrySignatures = useMemo(
+    () =>
+      (apiKeyEntries ?? []).map(
+        (entry) =>
+          `${entry.apiKey ?? ''}||${entry.proxyUrl ?? ''}||${entry.headersText ?? ''}`
+      ),
+    [apiKeyEntries]
+  );
+
+  const lastEntrySignaturesRef = useRef<string[]>(entrySignatures);
   useEffect(() => {
-    setOpenaiStatuses((prev) => {
-      if (prev.length === entriesCount) return prev;
-      const next = prev.slice(0, entriesCount);
-      while (next.length < entriesCount) next.push(IDLE);
-      return next;
+    const prev = lastEntrySignaturesRef.current;
+    const curr = entrySignatures;
+    lastEntrySignaturesRef.current = curr;
+
+    setOpenaiStatuses((statuses) => {
+      const nextLen = curr.length;
+      let mutated = statuses.length !== nextLen;
+      const next = statuses.slice(0, nextLen);
+      while (next.length < nextLen) next.push(IDLE);
+      for (let i = 0; i < nextLen; i++) {
+        if (prev[i] !== undefined && prev[i] !== curr[i] && next[i].state !== 'idle') {
+          next[i] = IDLE;
+          mutated = true;
+        }
+      }
+      return mutated ? next : statuses;
     });
-  }, [entriesCount]);
+  }, [entrySignatures]);
 
   const signature = useMemo(() => {
     const h = formHeaders.map((it) => `${it.key}:${it.value}`).join('|');
