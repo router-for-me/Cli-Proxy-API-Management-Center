@@ -103,7 +103,22 @@ export function useModelDiscovery(
         const entryKey = (firstEntry?.apiKey ?? '').trim();
         const entryHeaders = parseHeadersText(firstEntry?.headersText ?? '');
         const headers = { ...baseHeaders, ...entryHeaders };
-        next = await modelsApi.fetchModelsViaApiCall(baseUrl, entryKey, headers);
+        try {
+          next = await modelsApi.fetchModelsViaApiCall(
+            baseUrl,
+            entryKey,
+            headers
+          );
+        } catch (firstErr) {
+          // Some OpenAI-compatible endpoints expose /models without auth, or
+          // reject the configured key for the discovery route. Retry once
+          // without any auth/headers before surfacing the original error.
+          try {
+            next = await modelsApi.fetchModelsViaApiCall(baseUrl);
+          } catch {
+            throw firstErr;
+          }
+        }
       }
       setModels(next ?? []);
       setHasFetched(true);
