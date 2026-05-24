@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   IconAlertTriangle,
@@ -44,6 +44,7 @@ interface BaseProviderFormProps {
   mutating: boolean;
   formId: string;
   onSubmit: (input: ProviderEntryFormInput) => Promise<void>;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 const emptyHeader = () => ({ key: '', value: '' });
@@ -196,6 +197,7 @@ export function BaseProviderForm({
   mutating,
   formId,
   onSubmit,
+  onDirtyChange,
 }: BaseProviderFormProps) {
   const { t } = useTranslation();
   const descriptor = PROVIDER_DESCRIPTORS[brand];
@@ -203,7 +205,19 @@ export function BaseProviderForm({
   const [form, setForm] = useState<ProviderEntryFormInput>(() =>
     buildInitialForm(brand, resource, mode)
   );
+  const [initialFormSignature] = useState<string>(() =>
+    JSON.stringify(buildInitialForm(brand, resource, mode))
+  );
   const [error, setError] = useState<string | null>(null);
+
+  const isDirty = useMemo(
+    () => JSON.stringify(form) !== initialFormSignature,
+    [form, initialFormSignature]
+  );
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   const fallbackApiKey = useMemo(() => {
     if (mode !== 'edit' || !resource) return '';

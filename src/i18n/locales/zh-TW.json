@@ -1626,6 +1626,12 @@
       "disabled": "已停用",
       "toggleFailed": "更新狀態失敗"
     },
+    "unsavedChanges": {
+      "title": "確定捨棄未儲存的變更嗎?",
+      "message": "目前表單還有尚未儲存的變更,關閉後會遺失。",
+      "discard": "捨棄變更",
+      "keepEditing": "繼續編輯"
+    },
     "connectivity": {
       "test": "測試",
       "testAll": "全部測試",

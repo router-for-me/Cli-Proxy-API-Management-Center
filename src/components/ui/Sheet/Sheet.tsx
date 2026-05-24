@@ -26,6 +26,12 @@ interface SheetProps {
   closeDisabled?: boolean;
   className?: string;
   ariaLabel?: string;
+  /**
+   * If provided, called before starting the close animation when the user
+   * triggers a close (Escape, overlay click, or close button). Return false
+   * (or a Promise that resolves to false) to keep the sheet open.
+   */
+  confirmClose?: () => boolean | Promise<boolean>;
 }
 
 const CLOSE_ANIMATION_DURATION = 280;
@@ -46,6 +52,7 @@ export function Sheet({
   closeDisabled = false,
   className,
   ariaLabel,
+  confirmClose,
   children,
 }: PropsWithChildren<SheetProps>) {
   const { t } = useTranslation();
@@ -106,9 +113,17 @@ export function Sheet({
     };
   }, [open, isVisible, startClose]);
 
-  const handleClose = useCallback(() => {
+  const handleClose = useCallback(async () => {
+    if (confirmClose) {
+      try {
+        const ok = await confirmClose();
+        if (ok === false) return;
+      } catch {
+        return;
+      }
+    }
     startClose(true);
-  }, [startClose]);
+  }, [confirmClose, startClose]);
 
   useEffect(() => {
     return () => {

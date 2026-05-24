@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { IconPlus, IconX } from '@/components/ui/icons';
@@ -52,6 +52,7 @@ interface AmpcodeFormProps {
   mutating: boolean;
   formId: string;
   onSubmit: (config: AmpcodeConfig) => Promise<void>;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 export function AmpcodeForm({
@@ -59,12 +60,25 @@ export function AmpcodeForm({
   mutating,
   formId,
   onSubmit,
+  onDirtyChange,
 }: AmpcodeFormProps) {
   const { t } = useTranslation();
   const fid = useId();
   const initialConfig = (resource?.raw as AmpcodeConfig | undefined) ?? {};
   const [form, setForm] = useState<AmpcodeFormState>(() => buildState(initialConfig));
+  const [initialFormSignature] = useState<string>(() =>
+    JSON.stringify(buildState(initialConfig))
+  );
   const [error, setError] = useState<string | null>(null);
+
+  const isDirty = useMemo(
+    () => JSON.stringify(form) !== initialFormSignature,
+    [form, initialFormSignature]
+  );
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

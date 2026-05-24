@@ -1,7 +1,8 @@
-import { useCallback, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from '@/components/ui/Sheet';
 import { IconLoader2, IconPencil } from '@/components/ui/icons';
+import { useNotificationStore } from '@/stores';
 import { PROVIDER_DESCRIPTORS } from '../descriptors';
 import type {
   ProviderBrand,
@@ -41,11 +42,48 @@ export function ProviderSheet({
   onUpdated,
 }: ProviderSheetProps) {
   const { t } = useTranslation();
+  const { showConfirmation } = useNotificationStore();
   const formId = useId();
   const [submitting, setSubmitting] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Reset dirty flag whenever the sheet is closed or the editing target
+  // (brand / resource / mode) changes — the child form will re-mount and
+  // re-report its own dirty state.
+  useEffect(() => {
+    setIsDirty(false);
+  }, [state.brand, state.mode, state.resource?.id, state.open]);
+
+  const handleDirtyChange = useCallback((dirty: boolean) => {
+    setIsDirty(dirty);
+  }, []);
 
   const descriptor = PROVIDER_DESCRIPTORS[state.brand];
   const isAmpcode = state.brand === 'ampcode';
+  const isEditingForm = state.mode === 'create' || state.mode === 'edit';
+
+  const confirmDiscardIfDirty = useCallback((): Promise<boolean> => {
+    if (!isEditingForm || !isDirty || submitting) {
+      return Promise.resolve(true);
+    }
+    return new Promise<boolean>((resolve) => {
+      showConfirmation({
+        title: t('providersPage.unsavedChanges.title'),
+        message: t('providersPage.unsavedChanges.message'),
+        variant: 'danger',
+        confirmText: t('providersPage.unsavedChanges.discard'),
+        cancelText: t('providersPage.unsavedChanges.keepEditing'),
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+  }, [isDirty, isEditingForm, showConfirmation, submitting, t]);
+
+  const handleCancelClick = useCallback(() => {
+    void confirmDiscardIfDirty().then((ok) => {
+      if (ok) onClose();
+    });
+  }, [confirmDiscardIfDirty, onClose]);
 
   const titleText =
     state.mode === 'create'
@@ -116,6 +154,7 @@ export function ProviderSheet({
           mutating={submitting || workbench.mutating}
           formId={formId}
           onSubmit={handleAmpcodeSubmit}
+          onDirtyChange={handleDirtyChange}
         />
       );
     }
@@ -128,6 +167,7 @@ export function ProviderSheet({
         mutating={submitting || workbench.mutating}
         formId={formId}
         onSubmit={state.mode === 'create' ? handleCreate : handleUpdate}
+        onDirtyChange={handleDirtyChange}
       />
     );
   };
@@ -166,7 +206,7 @@ export function ProviderSheet({
         <button
           type="button"
           className={`${styles.footerBtn} ${styles.footerBtnGhost}`}
-          onClick={onClose}
+          onClick={handleCancelClick}
           disabled={submitting}
         >
           {t('providersPage.actions.cancel')}
@@ -205,6 +245,7 @@ export function ProviderSheet({
       })}
       footer={footer}
       closeDisabled={submitting}
+      confirmClose={confirmDiscardIfDirty}
     >
       {renderBody()}
     </Sheet>

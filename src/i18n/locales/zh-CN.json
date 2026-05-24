@@ -1600,6 +1600,12 @@
       "disabled": "已停用",
       "toggleFailed": "更新状态失败"
     },
+    "unsavedChanges": {
+      "title": "确定丢弃未保存的修改吗?",
+      "message": "当前表单还有未保存的修改,关闭后会被丢弃。",
+      "discard": "丢弃修改",
+      "keepEditing": "继续编辑"
+    },
     "connectivity": {
       "test": "测试",
       "testAll": "全部测试",

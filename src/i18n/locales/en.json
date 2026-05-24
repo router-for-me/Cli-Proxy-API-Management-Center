@@ -1600,6 +1600,12 @@
       "disabled": "Disabled",
       "toggleFailed": "Failed to update status"
     },
+    "unsavedChanges": {
+      "title": "Discard unsaved changes?",
+      "message": "You have unsaved edits in this form. Closing will discard them.",
+      "discard": "Discard changes",
+      "keepEditing": "Keep editing"
+    },
     "connectivity": {
       "test": "Test",
       "testAll": "Test all",
