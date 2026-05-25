@@ -585,3 +585,106 @@
     background: var(--primary-hover);
   }
 }
+
+.apiKeyEntriesSection {
+  margin-top: 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.apiKeyEntriesLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.apiKeyEntryList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.apiKeyEntryCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.apiKeyEntryIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: var(--primary-contrast);
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.apiKeyEntryKey {
+  font-family: 'Monaco', 'Menlo', 'Consolas', 'Ubuntu Mono', monospace;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.apiKeyEntryProxy {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+
+  &::before {
+    content: '| Proxy: ';
+    color: var(--text-quaternary);
+  }
+}
+
+.apiKeyEntryStats {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.apiKeyEntryStat {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+
+  svg {
+    display: block;
+  }
+}
+
+.apiKeyEntryStatSuccess {
+  background: var(--success-badge-bg);
+  color: var(--success-badge-text);
+}
+
+.apiKeyEntryStatFailure {
+  background: var(--failure-badge-bg);
+  color: var(--failure-badge-text);
+}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useImperativeHandle, useState, type Ref 
 import { useTranslation } from 'react-i18next';
 import { Sheet } from '@/components/ui/Sheet';
 import { IconLoader2, IconPencil } from '@/components/ui/icons';
+import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { useNotificationStore } from '@/stores';
 import { PROVIDER_DESCRIPTORS } from '../descriptors';
 import type {
@@ -35,6 +36,7 @@ interface ProviderSheetProps {
   workbench: UseProviderWorkbenchResult;
   onCreated: () => void;
   onUpdated: () => void;
+  usageByProvider?: ProviderRecentUsageMap;
   ref?: Ref<ProviderSheetHandle>;
 }
 
@@ -45,6 +47,7 @@ export function ProviderSheet({
   workbench,
   onCreated,
   onUpdated,
+  usageByProvider,
   ref,
 }: ProviderSheetProps) {
   const { t } = useTranslation();
@@ -151,7 +154,7 @@ export function ProviderSheet({
       if (!state.resource) {
         return null;
       }
-      return <ResourceDetailView resource={state.resource} />;
+      return <ResourceDetailView resource={state.resource} usageByProvider={usageByProvider} />;
     }
     const formKey = `${state.brand}:${state.resource?.id ?? 'new'}:${state.mode}`;
     if (isAmpcode) {

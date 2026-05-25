@@ -118,6 +118,16 @@ export function getProviderRecentStatusData(
   );
 }
 
+export function getProviderTotalStats(
+  usageByProvider: ProviderRecentUsageMap,
+  provider: string,
+  apiKey?: string,
+  baseUrl?: string
+): { success: number; failure: number } {
+  const entry = getProviderRecentUsageEntry(usageByProvider, provider, apiKey, baseUrl);
+  return { success: entry.success, failure: entry.failed };
+}
+
 const collectOpenAIProviderRecentBuckets = (
   provider: OpenAIProviderConfig,
   usageByProvider: ProviderRecentUsageMap
@@ -138,6 +148,27 @@ export function getOpenAIProviderRecentWindowStats(
   usageByProvider: ProviderRecentUsageMap
 ): { success: number; failure: number } {
   return sumRecentRequests(collectOpenAIProviderRecentBuckets(provider, usageByProvider));
+}
+
+export function getOpenAIProviderTotalStats(
+  provider: OpenAIProviderConfig,
+  usageByProvider: ProviderRecentUsageMap
+): { success: number; failure: number } {
+  return (provider.apiKeyEntries || []).reduce(
+    (total, entry) => {
+      const usageEntry = getProviderRecentUsageEntry(
+        usageByProvider,
+        provider.name,
+        entry.apiKey,
+        provider.baseUrl
+      );
+      return {
+        success: total.success + usageEntry.success,
+        failure: total.failure + usageEntry.failed,
+      };
+    },
+    { success: 0, failure: 0 }
+  );
 }
 
 export function getOpenAIProviderRecentStatusData(

@@ -19,7 +19,9 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import {
   getOpenAIProviderRecentStatusData,
+  getOpenAIProviderTotalStats,
   getProviderRecentStatusData,
+  getProviderTotalStats,
   type ProviderRecentUsageMap,
 } from '@/components/providers/utils';
 import type { OpenAIProviderConfig } from '@/types';
@@ -52,6 +54,24 @@ const resolveStatusBarData = (
     );
   }
   return getProviderRecentStatusData(
+    usageByProvider,
+    resource.brand,
+    resource.apiKey ?? undefined,
+    resource.baseUrl ?? undefined
+  );
+};
+
+const resolveTotalStats = (
+  resource: ProviderResource,
+  usageByProvider: ProviderRecentUsageMap
+): { success: number; failure: number } => {
+  if (resource.brand === 'openaiCompatibility') {
+    return getOpenAIProviderTotalStats(
+      resource.raw as OpenAIProviderConfig,
+      usageByProvider
+    );
+  }
+  return getProviderTotalStats(
     usageByProvider,
     resource.brand,
     resource.apiKey ?? undefined,
@@ -224,10 +244,25 @@ export function ProviderResourceTable({
                 <div className={styles.statusCell}>
                   {renderStatus(resource)}
                   {usageByProvider && resource.brand !== 'ampcode' ? (
-                    <ProviderStatusBar
-                      statusData={resolveStatusBarData(resource, usageByProvider)}
-                      styles={statusBarStyles}
-                    />
+                    <>
+                      {(() => {
+                        const stats = resolveTotalStats(resource, usageByProvider);
+                        return (
+                          <div className={styles.stats}>
+                            <span className={`${styles.statPill} ${styles.statSuccess}`}>
+                              {t('stats.success')}: {stats.success}
+                            </span>
+                            <span className={`${styles.statPill} ${styles.statFailure}`}>
+                              {t('stats.failure')}: {stats.failure}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                      <ProviderStatusBar
+                        statusData={resolveStatusBarData(resource, usageByProvider)}
+                        styles={statusBarStyles}
+                      />
+                    </>
                   ) : null}
                 </div>
               </TableCell>
