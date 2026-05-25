@@ -110,8 +110,12 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
   );
 
   useEffect(() => {
-    setUsageByProvider(enabled ? cachedUsageByProvider : EMPTY_USAGE_BY_PROVIDER);
-  }, [enabled]);
+    if (!enabled) {
+      setUsageByProvider(EMPTY_USAGE_BY_PROVIDER);
+      return;
+    }
+    void loadRecentRequests().catch(() => {});
+  }, [enabled, loadRecentRequests]);
 
   useInterval(() => {
     void refreshRecentRequests().catch(() => {});
