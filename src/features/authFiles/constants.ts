@@ -222,7 +222,7 @@ export const parseDisableCoolingValue = (value: unknown): boolean | undefined =>
 };
 
 export const readCodexAuthFileWebsockets = (value: Record<string, unknown>): boolean =>
-  parseDisableCoolingValue(value.websockets) ?? false;
+  parseDisableCoolingValue(value.websockets ?? value.websocket) ?? false;
 
 export const applyCodexAuthFileWebsockets = (
   value: Record<string, unknown>,
