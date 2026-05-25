@@ -116,6 +116,7 @@
     "auth_files": "认证文件",
     "oauth": "OAuth 登录",
     "quota_management": "配额管理",
+    "usage_analytics": "用量分析",
     "config_management": "配置面板",
     "logs": "日志查看",
     "system_info": "中心信息"
@@ -1111,11 +1112,8 @@
           "allow_remote_desc": "允许从其他主机访问管理接口",
           "disable_panel": "禁用控制面板",
           "disable_panel_desc": "禁用内置的 Web 控制面板",
-          "disable_auto_update_panel": "禁用面板自动更新",
-          "disable_auto_update_panel_desc": "首次缺失时仍可下载，但不再从 GitHub 后台自动更新",
           "secret_key": "管理密钥",
-          "secret_key_placeholder": "设置管理密钥",
-          "panel_repo": "面板仓库"
+          "secret_key_placeholder": "设置管理密钥"
         },
         "auth": {
           "title": "认证配置",

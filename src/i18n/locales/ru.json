@@ -116,6 +116,7 @@
     "auth_files": "Файлы аутентификации",
     "oauth": "OAuth вход",
     "quota_management": "Управление квотами",
+    "usage_analytics": "Usage & Analytics",
     "config_management": "Панель конфигурации",
     "logs": "Просмотр логов",
     "system_info": "Информация системы"
@@ -1108,11 +1109,8 @@
           "allow_remote_desc": "Разрешить управление с других хостов",
           "disable_panel": "Отключить панель",
           "disable_panel_desc": "Отключить встроенную веб-панель управления",
-          "disable_auto_update_panel": "Отключить автообновление панели",
-          "disable_auto_update_panel_desc": "Скачивать панель при первом отсутствии, но не обновлять её автоматически с GitHub",
           "secret_key": "Ключ управления",
-          "secret_key_placeholder": "Задайте ключ управления",
-          "panel_repo": "Репозиторий панели"
+          "secret_key_placeholder": "Задайте ключ управления"
         },
         "auth": {
           "title": "Настройки аутентификации",

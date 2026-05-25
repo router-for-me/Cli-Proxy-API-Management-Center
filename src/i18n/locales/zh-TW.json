@@ -116,6 +116,7 @@
     "auth_files": "驗證檔案",
     "oauth": "OAuth 登入",
     "quota_management": "配額管理",
+    "usage_analytics": "用量分析",
     "config_management": "設定面板",
     "logs": "記錄檢視",
     "system_info": "中心資訊"
@@ -1137,11 +1138,8 @@
           "allow_remote_desc": "允許從其他主機存取管理介面",
           "disable_panel": "停用控制面板",
           "disable_panel_desc": "停用內建的 Web 控制面板",
-          "disable_auto_update_panel": "停用面板自動更新",
-          "disable_auto_update_panel_desc": "首次缺失時仍可下載，但不再從 GitHub 背景自動更新",
           "secret_key": "管理金鑰",
-          "secret_key_placeholder": "設定管理金鑰",
-          "panel_repo": "面板儲存庫"
+          "secret_key_placeholder": "設定管理金鑰"
         },
         "auth": {
           "title": "驗證設定",
