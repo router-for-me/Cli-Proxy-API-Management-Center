@@ -6,7 +6,7 @@
   --sidebar-panel-width: 256px;
   --sidebar-collapsed-width: 68px;
   --sidebar-active-width: var(--sidebar-panel-width);
-  --sidebar-gap: 32px;
+  --sidebar-gap: 0px;
   --floating-control-size: 38px;
 }
 
@@ -38,7 +38,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  left: 0;
+  left: var(--sidebar-active-width);
   z-index: $z-dropdown - 2;
   height: 141px;
   pointer-events: none;
@@ -68,6 +68,7 @@
     rgb(0 0 0 / 0.22) 72%,
     transparent 100%
   );
+  transition: left $transition-normal;
 }
 
 .main-header {
@@ -84,7 +85,7 @@
   .sidebar-toggle-floating {
     position: absolute;
     top: var(--shell-gutter);
-    left: calc(var(--shell-gutter) + var(--sidebar-active-width) + 22px);
+    left: calc(var(--sidebar-active-width) + 16px);
     width: 44px;
     height: 44px;
     padding: 0;
@@ -356,10 +357,10 @@
   position: relative;
   display: flex;
   flex: 1;
-  gap: var(--sidebar-gap);
+  gap: 0;
   min-height: 0;
   height: 100vh;
-  padding: var(--shell-gutter);
+  padding: 0;
   overflow: hidden;
 
   @supports (height: 100dvh) {
@@ -384,22 +385,18 @@
   position: relative;
   z-index: $z-dropdown - 1;
   width: var(--sidebar-panel-width);
-  height: calc(100vh - var(--shell-gutter) - var(--shell-gutter));
+  height: 100vh;
   padding: 18px 14px;
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
   flex-shrink: 0;
   overflow-y: auto;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0)),
-    color-mix(in srgb, var(--bg-primary) 72%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
-  border-radius: 18px;
+  background: var(--bg-primary);
+  border: 0;
+  border-right: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
+  border-radius: 0;
   box-shadow: none;
-  --glass-blur: 18px;
-  backdrop-filter: var(--glass-backdrop-filter);
-  -webkit-backdrop-filter: var(--glass-backdrop-filter);
   scrollbar-width: none;
   transition:
     width $transition-normal,
@@ -407,7 +404,7 @@
     padding $transition-normal;
 
   @supports (height: 100dvh) {
-    height: calc(100dvh - var(--shell-gutter) - var(--shell-gutter));
+    height: 100dvh;
   }
 
   &::-webkit-scrollbar {
@@ -443,7 +440,9 @@
     align-items: center;
     gap: 10px;
     min-height: 42px;
-    padding: 0 10px 12px;
+    padding: 4px 10px 14px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
     color: var(--text-primary);
     flex-shrink: 0;
   }
@@ -608,12 +607,12 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: calc(100vh - var(--shell-gutter) - var(--shell-gutter));
+  height: 100vh;
   overflow-y: auto;
   scrollbar-gutter: stable;
 
   @supports (height: 100dvh) {
-    height: calc(100dvh - var(--shell-gutter) - var(--shell-gutter));
+    height: 100dvh;
   }
 
   &.content-logs {
@@ -742,17 +741,17 @@
 
   .sidebar {
     position: fixed;
-    top: calc(var(--header-height) + 4px);
-    bottom: var(--shell-gutter);
-    left: var(--shell-gutter);
+    top: 0;
+    bottom: 0;
+    left: 0;
     z-index: $z-dropdown;
     width: var(--sidebar-panel-width);
     height: auto;
     transform: translateX(calc(-100% - 24px));
-    background:
-      linear-gradient(180deg, rgb(255 255 255 / 0.045), rgb(255 255 255 / 0)),
-      color-mix(in srgb, var(--bg-primary) 94%, #0f0e0c);
-    border-color: color-mix(in srgb, var(--border-color) 88%, transparent);
+    background: var(--bg-primary);
+    border: 0;
+    border-right: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
+    border-radius: 0;
     box-shadow: none;
 
     &.open {
