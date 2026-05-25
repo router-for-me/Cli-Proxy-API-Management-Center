@@ -110,9 +110,11 @@ export function useModelDiscovery(
         );
       } else if (brand === 'openaiCompatibility') {
         const firstEntry = (apiKeyEntries ?? []).find((e) =>
-          (e.apiKey ?? '').trim()
+          (e.apiKey ?? '').trim() || (e.authIndex ?? '').trim()
         );
         const entryKey = (firstEntry?.apiKey ?? '').trim();
+        const entryAuthIndex =
+          (firstEntry?.authIndex ?? '').trim() || resolvedAuthIndex;
         const entryHeaders = parseHeadersText(firstEntry?.headersText ?? '');
         const headers = { ...baseHeaders, ...entryHeaders };
         try {
@@ -120,7 +122,7 @@ export function useModelDiscovery(
             baseUrl,
             entryKey,
             headers,
-            resolvedAuthIndex
+            entryAuthIndex
           );
         } catch (firstErr) {
           // Some OpenAI-compatible endpoints expose /models without auth, or
@@ -165,9 +167,16 @@ export function useModelDiscovery(
       .map((h) => `${h.key}:${h.value}`)
       .join('|');
     const entriesSig = (apiKeyEntries ?? [])
-      .map((e) => `${e.apiKey ?? ''}::${e.headersText ?? ''}`)
+      .map((e) => `${e.apiKey ?? ''}::${e.authIndex ?? ''}::${e.headersText ?? ''}`)
       .join('|');
-    return `${baseUrl}||${apiKey ?? ''}||${fallbackApiKey ?? ''}||${authIndex ?? ''}||${headerSig}||${entriesSig}`;
+    return [
+      baseUrl,
+      apiKey ?? '',
+      fallbackApiKey ?? '',
+      authIndex ?? '',
+      headerSig,
+      entriesSig,
+    ].join('||');
   }, [apiKey, apiKeyEntries, authIndex, baseUrl, fallbackApiKey, formHeaders]);
 
   const lastSignatureRef = useRef(inputSignature);

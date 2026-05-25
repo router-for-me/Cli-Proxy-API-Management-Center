@@ -78,7 +78,8 @@ export interface ProviderSnapshot {
 }
 
 /**
- * 通用 Sheet 表单值(Gemini/Codex/Claude/Vertex/OpenAI 共用基础字段,各自启用 advanced 区)
+ * 通用 Sheet 表单值。
+ * Gemini/Codex/Claude/Vertex/OpenAI 共用基础字段,各自启用 advanced 区。
  */
 export interface ModelEntryInput {
   name: string;
@@ -91,6 +92,7 @@ export interface ApiKeyEntryInput {
   apiKey: string;
   proxyUrl: string;
   headersText: string;
+  authIndex?: string;
 }
 
 export interface CloakInput {

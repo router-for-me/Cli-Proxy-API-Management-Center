@@ -123,6 +123,7 @@ function buildInitialForm(
             apiKey: entry.apiKey,
             proxyUrl: entry.proxyUrl ?? '',
             headersText: headersObjectToText(entry.headers),
+            authIndex: entry.authIndex,
           }))
         : [emptyApiKeyEntry()],
     };

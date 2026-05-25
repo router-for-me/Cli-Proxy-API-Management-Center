@@ -126,7 +126,12 @@ export function useConnectivityTest(
     () =>
       (apiKeyEntries ?? []).map(
         (entry) =>
-          `${entry.apiKey ?? ''}||${entry.proxyUrl ?? ''}||${entry.headersText ?? ''}`
+          [
+            entry.apiKey ?? '',
+            entry.authIndex ?? '',
+            entry.proxyUrl ?? '',
+            entry.headersText ?? '',
+          ].join('||')
       ),
     [apiKeyEntries]
   );
@@ -199,7 +204,8 @@ export function useConnectivityTest(
       }
       const entry = apiKeyEntries?.[idx];
       const entryKey = (entry?.apiKey ?? '').trim();
-      const resolvedAuthIndex = (authIndex ?? '').trim() || undefined;
+      const resolvedAuthIndex =
+        (entry?.authIndex ?? '').trim() || (authIndex ?? '').trim() || undefined;
       if (!entryKey && !resolvedAuthIndex) {
         updateOpenaiStatus(idx, {
           state: 'error',

@@ -180,6 +180,7 @@ const buildOpenAIConfig = (
         headers: Object.keys(parseHeadersText(entry.headersText)).length
           ? parseHeadersText(entry.headersText)
           : undefined,
+        authIndex: entry.authIndex?.trim() || undefined,
       }))
       .filter((entry) => entry.apiKey) ?? [];
 
