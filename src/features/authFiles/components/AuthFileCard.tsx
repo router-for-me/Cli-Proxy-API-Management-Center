@@ -126,7 +126,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
   const stateLabel = isRuntimeOnly
-    ? t('auth_files.type_virtual') || '虚拟认证文件'
+    ? t('auth_files.type_virtual')
     : file.disabled
       ? t('auth_files.health_status_disabled')
       : hasStatusWarning
@@ -266,7 +266,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   size="sm"
                   onClick={() => onShowModels(file)}
                   className={`${styles.primaryActionButton} ${styles.modelsActionButton}`}
-                  title={t('auth_files.models_button', { defaultValue: '模型' })}
+                  title={t('auth_files.models_button')}
                   disabled={disableControls}
                 >
                   <>
@@ -274,7 +274,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
                       <IconModelCluster className={styles.actionIcon} size={16} />
                     </span>
                     <span className={styles.actionButtonLabel}>
-                      {t('auth_files.models_button', { defaultValue: '模型' })}
+                      {t('auth_files.models_button')}
                     </span>
                   </>
                 </Button>

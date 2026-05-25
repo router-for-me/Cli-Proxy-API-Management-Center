@@ -164,7 +164,7 @@ export function AiProvidersPage() {
     const entry = geminiKeys[index];
     if (!entry) return;
     showConfirmation({
-      title: t('ai_providers.gemini_delete_title', { defaultValue: 'Delete Gemini Key' }),
+      title: t('ai_providers.gemini_delete_title'),
       message: t('ai_providers.gemini_delete_confirm'),
       variant: 'danger',
       confirmText: t('common.confirm'),
@@ -328,7 +328,7 @@ export function AiProvidersPage() {
     const entry = source[index];
     if (!entry) return;
     showConfirmation({
-      title: t(`ai_providers.${type}_delete_title`, { defaultValue: `Delete ${type === 'codex' ? 'Codex' : 'Claude'} Config` }),
+      title: t(`ai_providers.${type}_delete_title`),
       message: t(`ai_providers.${type}_delete_confirm`),
       variant: 'danger',
       confirmText: t('common.confirm'),
@@ -361,7 +361,7 @@ export function AiProvidersPage() {
     const entry = vertexConfigs[index];
     if (!entry) return;
     showConfirmation({
-      title: t('ai_providers.vertex_delete_title', { defaultValue: 'Delete Vertex Config' }),
+      title: t('ai_providers.vertex_delete_title'),
       message: t('ai_providers.vertex_delete_confirm'),
       variant: 'danger',
       confirmText: t('common.confirm'),
@@ -385,7 +385,7 @@ export function AiProvidersPage() {
     const entry = openaiProviders[index];
     if (!entry) return;
     showConfirmation({
-      title: t('ai_providers.openai_delete_title', { defaultValue: 'Delete OpenAI Provider' }),
+      title: t('ai_providers.openai_delete_title'),
       message: t('ai_providers.openai_delete_confirm'),
       variant: 'danger',
       confirmText: t('common.confirm'),

@@ -1,5 +1,6 @@
 import { forwardRef, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { IconChevronLeft } from '@/components/ui/icons';
@@ -27,20 +28,21 @@ export const SecondaryScreenShell = forwardRef<HTMLDivElement, SecondaryScreenSh
     {
       title,
       onBack,
-      backLabel = 'Back',
+      backLabel,
       backAriaLabel,
       rightAction,
       hideTopBarBackButton = false,
       hideTopBarRightAction = false,
       floatingAction,
       isLoading = false,
-      loadingLabel = 'Loading...',
+      loadingLabel,
       className = '',
       contentClassName = '',
       children,
     },
     ref
   ) {
+    const { t } = useTranslation();
     const containerClassName = [styles.container, className].filter(Boolean).join(' ');
     const contentClasses = [
       styles.content,
@@ -50,7 +52,9 @@ export const SecondaryScreenShell = forwardRef<HTMLDivElement, SecondaryScreenSh
       .filter(Boolean)
       .join(' ');
     const titleTooltip = typeof title === 'string' ? title : undefined;
-    const resolvedBackAriaLabel = backAriaLabel ?? backLabel;
+    const resolvedBackLabel = backLabel ?? t('common.back');
+    const resolvedBackAriaLabel = backAriaLabel ?? resolvedBackLabel;
+    const resolvedLoadingLabel = loadingLabel ?? t('common.loading');
     const pageTransitionLayer = usePageTransitionLayer();
     const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.isCurrentLayer : true;
     const shouldRenderFloatingAction = Boolean(floatingAction) && isCurrentLayer;
@@ -99,7 +103,7 @@ export const SecondaryScreenShell = forwardRef<HTMLDivElement, SecondaryScreenSh
                 <span className={styles.backIcon}>
                   <IconChevronLeft size={18} />
                 </span>
-                <span className={styles.backText}>{backLabel}</span>
+                <span className={styles.backText}>{resolvedBackLabel}</span>
               </Button>
             ) : (
               <div />
@@ -113,7 +117,7 @@ export const SecondaryScreenShell = forwardRef<HTMLDivElement, SecondaryScreenSh
           {isLoading ? (
             <div className={styles.loadingState}>
               <LoadingSpinner size={16} />
-              <span>{loadingLabel}</span>
+              <span>{resolvedLoadingLabel}</span>
             </div>
           ) : (
             <div className={contentClasses}>{children}</div>

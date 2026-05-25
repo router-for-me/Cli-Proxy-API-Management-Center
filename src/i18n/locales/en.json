@@ -94,7 +94,9 @@
     "error_not_found": "Server address invalid or management API not enabled",
     "error_server": "Internal server error, please try again later",
     "error_cors": "Cross-origin request blocked, please check server configuration",
-    "error_ssl": "SSL/TLS certificate verification failed"
+    "error_ssl": "SSL/TLS certificate verification failed",
+    "show_key": "Show key",
+    "hide_key": "Hide key"
   },
   "header": {
     "check_connection": "Check Connection",
@@ -458,7 +460,13 @@
     "model_search_placeholder": "Filter by models...",
     "model_search_clear": "Clear",
     "model_select_all": "Select All",
-    "model_filter_empty": "No models to filter"
+    "model_filter_empty": "No models to filter",
+    "gemini_delete_title": "Delete Gemini Key",
+    "codex_delete_title": "Delete Codex Config",
+    "claude_delete_title": "Delete Claude Config",
+    "vertex_delete_title": "Delete Vertex Config",
+    "openai_delete_title": "Delete OpenAI Provider",
+    "ampcode_clear_upstream_api_key_title": "Clear Upstream API Key"
   },
   "auth_files": {
     "title": "Auth Files Management",
@@ -619,7 +627,9 @@
     "prefix_proxy_html_challenge": "Downloaded content is an HTML challenge page, not an auth JSON object. Re-authenticate or replace this auth file before editing fields.",
     "prefix_proxy_saved_success": "Updated auth file \"{{name}}\" successfully",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "delete_title": "Delete File",
+    "delete_all_title": "Delete All Files"
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",
@@ -781,7 +791,8 @@
     "scope_provider": "Scope: {{provider}}",
     "upgrade_required": "Current CPA version does not support OAuth model disablement. Please upgrade.",
     "upgrade_required_title": "Please upgrade CLI Proxy API",
-    "upgrade_required_desc": "The current server version does not support fetching OAuth model disablement. Please upgrade to the latest CPA (CLI Proxy API) version and try again."
+    "upgrade_required_desc": "The current server version does not support fetching OAuth model disablement. Please upgrade to the latest CPA (CLI Proxy API) version and try again.",
+    "delete_title": "Delete Exclusion"
   },
   "oauth_model_alias": {
     "title": "OAuth Model Aliases",
@@ -843,7 +854,8 @@
     "provider_required": "Please enter a provider first",
     "upgrade_required": "This feature requires a newer CLI Proxy API (CPA) version. Please upgrade.",
     "upgrade_required_title": "Please upgrade CLI Proxy API",
-    "upgrade_required_desc": "The current server does not support the OAuth model aliases API. Please upgrade to the latest CLI Proxy API (CPA) version."
+    "upgrade_required_desc": "The current server does not support the OAuth model aliases API. Please upgrade to the latest CLI Proxy API (CPA) version.",
+    "delete_title": "Delete Mappings"
   },
   "auth_login": {
     "codex_oauth_title": "Codex OAuth",
@@ -1020,7 +1032,8 @@
     "lines": "lines",
     "removed": "Filtered",
     "upgrade_required_title": "Please Upgrade CLI Proxy API",
-    "upgrade_required_desc": "The current server version does not support the logs viewing feature. Please upgrade to the latest version of CLI Proxy API to use this feature."
+    "upgrade_required_desc": "The current server version does not support the logs viewing feature. Please upgrade to the latest version of CLI Proxy API to use this feature.",
+    "clear_confirm_title": "Clear Logs"
   },
   "config_management": {
     "title": "Config Panel",
@@ -1286,7 +1299,8 @@
         "cancel": "Cancel",
         "update": "Update",
         "add": "Add"
-      }
+      },
+      "validation_blocked_short": "Fix errors"
     }
   },
   "quota_management": {
@@ -1404,14 +1418,17 @@
     "claude_api_key": "Claude API key",
     "commercial_mode_restart_required": "Commercial mode setting changed. Please restart the service for it to take effect",
     "copy_failed": "Copy failed",
-    "link_copied": "Link copied to clipboard"
+    "link_copied": "Link copied to clipboard",
+    "load_failed": "Load failed",
+    "save_failed": "Save failed"
   },
   "language": {
     "switch": "Language",
     "chinese": "中文",
     "chinese_tw": "Traditional Chinese (Taiwan)",
     "english": "English",
-    "russian": "Русский"
+    "russian": "Русский",
+    "vietnamese": "Vietnamese"
   },
   "theme": {
     "switch": "Theme",
@@ -1424,7 +1441,9 @@
   },
   "sidebar": {
     "toggle_expand": "Expand sidebar",
-    "toggle_collapse": "Collapse sidebar"
+    "toggle_collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "collapse": "Collapse sidebar"
   },
   "footer": {
     "api_version": "CLI Proxy API Version",

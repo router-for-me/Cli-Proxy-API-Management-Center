@@ -419,7 +419,7 @@ export function VisualConfigEditor({
         <div className={styles.overviewHeader}>
           <div className={styles.overviewMeta}>
             <span className={styles.overviewPill}>
-              {t('config_management.visual.quick_jump', { defaultValue: '快速跳转' })}
+              {t('config_management.visual.quick_jump')}
             </span>
             <span className={styles.overviewPill}>{activeSection?.title}</span>
             {hasValidationIssues ? (
@@ -437,7 +437,7 @@ export function VisualConfigEditor({
             <div
               ref={mobileNavScrollerRef}
               className={styles.mobileSectionNavScroller}
-              aria-label={t('config_management.visual.quick_jump', { defaultValue: '快速跳转' })}
+              aria-label={t('config_management.visual.quick_jump')}
             >
               {sections.map((section, index) => (
                 <button

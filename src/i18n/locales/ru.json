@@ -94,7 +94,9 @@
     "error_not_found": "Неверный адрес сервера или интерфейс управления не включён",
     "error_server": "Внутренняя ошибка сервера, попробуйте позже",
     "error_cors": "Блокировка CORS, проверьте конфигурацию сервера",
-    "error_ssl": "Ошибка проверки SSL/TLS сертификата"
+    "error_ssl": "Ошибка проверки SSL/TLS сертификата",
+    "show_key": "Показать ключ",
+    "hide_key": "Скрыть ключ"
   },
   "header": {
     "check_connection": "Проверить подключение",
@@ -458,7 +460,13 @@
     "model_search_placeholder": "Фильтр по моделям...",
     "model_search_clear": "Очистить",
     "model_select_all": "Выбрать все",
-    "model_filter_empty": "Нет моделей для фильтра"
+    "model_filter_empty": "Нет моделей для фильтра",
+    "gemini_delete_title": "Удалить ключ Gemini",
+    "codex_delete_title": "Удалить конфигурацию Codex",
+    "claude_delete_title": "Удалить конфигурацию Claude",
+    "vertex_delete_title": "Удалить конфигурацию Vertex",
+    "openai_delete_title": "Удалить провайдера OpenAI",
+    "ampcode_clear_upstream_api_key_title": "Очистить upstream API-ключ"
   },
   "auth_files": {
     "title": "Управление файлами авторизации",
@@ -616,7 +624,15 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "delete_title": "Удалить файл",
+    "delete_all_title": "Удалить все файлы",
+    "headers_label": "Пользовательские заголовки",
+    "headers_placeholder": "{\n  \"X-Custom-Header\": \"value\"\n}",
+    "headers_hint": "Необязательно. Укажите JSON-объект с HTTP-заголовками для запросов этого файла.",
+    "headers_invalid_json": "Введите корректный JSON для заголовков",
+    "headers_invalid_object": "Заголовки должны быть JSON-объектом",
+    "headers_invalid_value": "Имена и значения заголовков не должны быть пустыми"
   },
   "antigravity_quota": {
     "title": "Квота Antigravity",
@@ -778,7 +794,8 @@
     "scope_provider": "Область: {{provider}}",
     "upgrade_required": "Текущая версия CPA не поддерживает отключение OAuth-моделей. Пожалуйста, обновите систему.",
     "upgrade_required_title": "Пожалуйста, обновите CLI Proxy API",
-    "upgrade_required_desc": "Текущая версия сервера не поддерживает получение отключения OAuth-моделей. Обновите CPA (CLI Proxy API) до последней версии и повторите попытку."
+    "upgrade_required_desc": "Текущая версия сервера не поддерживает получение отключения OAuth-моделей. Обновите CPA (CLI Proxy API) до последней версии и повторите попытку.",
+    "delete_title": "Удалить исключение"
   },
   "oauth_model_alias": {
     "title": "Псевдонимы моделей OAuth",
@@ -840,7 +857,8 @@
     "provider_required": "Сначала укажите провайдера",
     "upgrade_required": "Эта функция требует более новой версии CLI Proxy API (CPA). Обновите систему.",
     "upgrade_required_title": "Пожалуйста, обновите CLI Proxy API",
-    "upgrade_required_desc": "Текущая версия сервера не поддерживает API псевдонимов моделей OAuth. Обновите CLI Proxy API (CPA) до последней версии."
+    "upgrade_required_desc": "Текущая версия сервера не поддерживает API псевдонимов моделей OAuth. Обновите CLI Proxy API (CPA) до последней версии.",
+    "delete_title": "Удалить сопоставления"
   },
   "auth_login": {
     "codex_oauth_title": "Codex OAuth",
@@ -1017,7 +1035,8 @@
     "lines": "строк",
     "removed": "Отфильтровано",
     "upgrade_required_title": "Обновите CLI Proxy API",
-    "upgrade_required_desc": "Текущая версия сервера не поддерживает просмотр журналов. Обновите CLI Proxy API до последней версии, чтобы использовать эту функцию."
+    "upgrade_required_desc": "Текущая версия сервера не поддерживает просмотр журналов. Обновите CLI Proxy API до последней версии, чтобы использовать эту функцию.",
+    "clear_confirm_title": "Очистить журналы"
   },
   "config_management": {
     "title": "Панель конфигурации",
@@ -1283,7 +1302,8 @@
         "cancel": "Отменить",
         "update": "Обновить",
         "add": "Добавить"
-      }
+      },
+      "validation_blocked_short": "Есть ошибки"
     }
   },
   "quota_management": {
@@ -1401,14 +1421,17 @@
     "claude_api_key": "API-ключ Claude",
     "commercial_mode_restart_required": "Режим коммерческого использования изменён. Перезапустите сервис, чтобы применить изменения",
     "copy_failed": "Не удалось скопировать",
-    "link_copied": "Ссылка скопирована в буфер обмена"
+    "link_copied": "Ссылка скопирована в буфер обмена",
+    "load_failed": "Не удалось загрузить",
+    "save_failed": "Не удалось сохранить"
   },
   "language": {
     "switch": "Язык",
     "chinese": "中文",
     "chinese_tw": "繁體中文（台灣）",
     "english": "English",
-    "russian": "Русский"
+    "russian": "Русский",
+    "vietnamese": "Вьетнамский"
   },
   "theme": {
     "switch": "Тема",
@@ -1421,7 +1444,9 @@
   },
   "sidebar": {
     "toggle_expand": "Развернуть боковую панель",
-    "toggle_collapse": "Свернуть боковую панель"
+    "toggle_collapse": "Свернуть боковую панель",
+    "expand": "Развернуть боковую панель",
+    "collapse": "Свернуть боковую панель"
   },
   "footer": {
     "api_version": "Версия CLI Proxy API",

@@ -189,7 +189,7 @@ export function LogsPage() {
 
   const clearLogs = async () => {
     showConfirmation({
-      title: t('logs.clear_confirm_title', { defaultValue: 'Clear Logs' }),
+      title: t('logs.clear_confirm_title'),
       message: t('logs.clear_confirm'),
       variant: 'danger',
       confirmText: t('common.confirm'),
@@ -368,9 +368,9 @@ export function LogsPage() {
   const copyLogLine = async (raw: string) => {
     const ok = await copyToClipboard(raw);
     if (ok) {
-      showNotification(t('logs.copy_success', { defaultValue: 'Copied to clipboard' }), 'success');
+      showNotification(t('logs.copy_success'), 'success');
     } else {
-      showNotification(t('logs.copy_failed', { defaultValue: 'Copy failed' }), 'error');
+      showNotification(t('logs.copy_failed'), 'error');
     }
   };
 
@@ -632,12 +632,10 @@ export function LogsPage() {
                 label={
                   <span
                     className={styles.switchLabel}
-                    title={t('logs.show_raw_logs_hint', {
-                      defaultValue: 'Show original log text for easier multi-line copy',
-                    })}
+                    title={t('logs.show_raw_logs_hint')}
                   >
                     <IconCode size={16} />
-                    {t('logs.show_raw_logs', { defaultValue: 'Show raw logs' })}
+                    {t('logs.show_raw_logs')}
                   </span>
                 }
               />
@@ -742,9 +740,7 @@ export function LogsPage() {
                           onPointerLeave={cancelLongPress}
                           onPointerCancel={cancelLongPress}
                           onPointerMove={handleLongPressMove}
-                          title={t('logs.double_click_copy_hint', {
-                            defaultValue: 'Double-click to copy',
-                          })}
+                          title={t('logs.double_click_copy_hint')}
                         >
                           <div className={styles.timestamp}>{line.timestamp || ''}</div>
                           <div className={styles.rowMain}>

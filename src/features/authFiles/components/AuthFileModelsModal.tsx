@@ -26,7 +26,7 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title={t('auth_files.models_title', { defaultValue: '支持的模型' }) + ` - ${fileName}`}
+      title={t('auth_files.models_title') + ` - ${fileName}`}
       footer={
         <Button variant="secondary" onClick={onClose}>
           {t('common.close')}
@@ -35,21 +35,17 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
     >
       {loading ? (
         <div className={styles.hint}>
-          {t('auth_files.models_loading', { defaultValue: '正在加载模型列表...' })}
+          {t('auth_files.models_loading')}
         </div>
       ) : error === 'unsupported' ? (
         <EmptyState
-          title={t('auth_files.models_unsupported', { defaultValue: '当前版本不支持此功能' })}
-          description={t('auth_files.models_unsupported_desc', {
-            defaultValue: '请更新 CLI Proxy API 到最新版本后重试'
-          })}
+          title={t('auth_files.models_unsupported')}
+          description={t('auth_files.models_unsupported_desc')}
         />
       ) : models.length === 0 ? (
         <EmptyState
-          title={t('auth_files.models_empty', { defaultValue: '该凭证暂无可用模型' })}
-          description={t('auth_files.models_empty_desc', {
-            defaultValue: '该认证凭证可能尚未被服务器加载或没有绑定任何模型'
-          })}
+          title={t('auth_files.models_empty')}
+          description={t('auth_files.models_empty_desc')}
         />
       ) : (
         <div className={styles.modelsList}>
@@ -64,10 +60,8 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
                 }}
                 title={
                   excludedModel
-                    ? t('auth_files.models_excluded_hint', {
-                        defaultValue: '此 OAuth 模型已被禁用'
-                      })
-                    : t('common.copy', { defaultValue: '点击复制' })
+                    ? t('auth_files.models_excluded_hint')
+                    : t('common.copy')
                 }
               >
                 <span className={styles.modelId}>{model.id}</span>
@@ -77,7 +71,7 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
                 {model.type && <span className={styles.modelType}>{model.type}</span>}
                 {excludedModel && (
                   <span className={styles.modelExcludedBadge}>
-                    {t('auth_files.models_excluded_badge', { defaultValue: '已禁用' })}
+                    {t('auth_files.models_excluded_badge')}
                   </span>
                 )}
               </div>

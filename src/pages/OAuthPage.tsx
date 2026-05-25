@@ -370,9 +370,7 @@ export function OAuthPage() {
       const message = getErrorMessage(err);
       const errorMessage =
         status === 404
-          ? t('auth_login.oauth_callback_upgrade_hint', {
-              defaultValue: 'Please update CLI Proxy API or check the connection.'
-            })
+          ? t('auth_login.oauth_callback_upgrade_hint')
           : message || undefined;
       updateProviderState(provider, {
         callbackSubmitting: false,
@@ -446,7 +444,7 @@ export function OAuthPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('nav.oauth', { defaultValue: 'OAuth' })}</h1>
+      <h1 className={styles.pageTitle}>{t('nav.oauth')}</h1>
 
       <div className={styles.content}>
         {PROVIDERS.map((provider) => {

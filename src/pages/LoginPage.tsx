@@ -267,13 +267,13 @@ export function LoginPage() {
                     onClick={() => setShowKey((prev) => !prev)}
                     aria-label={
                       showKey
-                        ? t('login.hide_key', { defaultValue: '隐藏密钥' })
-                        : t('login.show_key', { defaultValue: '显示密钥' })
+                        ? t('login.hide_key')
+                        : t('login.show_key')
                     }
                     title={
                       showKey
-                        ? t('login.hide_key', { defaultValue: '隐藏密钥' })
-                        : t('login.show_key', { defaultValue: '显示密钥' })
+                        ? t('login.hide_key')
+                        : t('login.show_key')
                     }
                   >
                     {showKey ? <IconEyeOff size={16} /> : <IconEye size={16} />}

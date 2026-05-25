@@ -213,9 +213,7 @@ export function AiProvidersAmpcodeEditPage() {
 
   const clearAmpcodeUpstreamApiKey = async () => {
     showConfirmation({
-      title: t('ai_providers.ampcode_clear_upstream_api_key_title', {
-        defaultValue: 'Clear Upstream API Key',
-      }),
+      title: t('ai_providers.ampcode_clear_upstream_api_key_title'),
       message: t('ai_providers.ampcode_clear_upstream_api_key_confirm'),
       variant: 'danger',
       confirmText: t('common.confirm'),

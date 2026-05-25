@@ -169,7 +169,7 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
     (provider: string) => {
       const providerLabel = provider.trim() || provider;
       showConfirmation({
-        title: t('oauth_excluded.delete_title', { defaultValue: 'Delete Exclusion' }),
+        title: t('oauth_excluded.delete_title'),
         message: t('oauth_excluded.delete_confirm', { provider: providerLabel }),
         variant: 'danger',
         confirmText: t('common.confirm'),
@@ -213,7 +213,7 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
   const deleteModelAlias = useCallback(
     (provider: string) => {
       showConfirmation({
-        title: t('oauth_model_alias.delete_title', { defaultValue: 'Delete Mappings' }),
+        title: t('oauth_model_alias.delete_title'),
         message: t('oauth_model_alias.delete_confirm', { provider }),
         variant: 'danger',
         confirmText: t('common.confirm'),
@@ -282,7 +282,7 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
       if (!provider || !nameTrim || !aliasTrim) return;
 
       showConfirmation({
-        title: t('oauth_model_alias.delete_link_title', { defaultValue: 'Unlink mapping' }),
+        title: t('oauth_model_alias.delete_link_title'),
         message: (
           <Trans
             i18nKey="oauth_model_alias.delete_link_confirm"
@@ -427,7 +427,7 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
       if (providersToUpdate.length === 0) return;
 
       showConfirmation({
-        title: t('oauth_model_alias.delete_alias_title', { defaultValue: 'Delete Alias' }),
+        title: t('oauth_model_alias.delete_alias_title'),
         message: (
           <Trans
             i18nKey="oauth_model_alias.delete_alias_confirm"

@@ -389,7 +389,7 @@ export function MainLayout() {
     { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
     { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
-    { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
+    { path: '/oauth', label: t('nav.oauth'), icon: sidebarIcons.oauth },
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
     ...(config?.loggingToFile
       ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
@@ -472,8 +472,8 @@ export function MainLayout() {
     showNotification(t('notification.data_refreshed'), 'success');
   };
   const mobileSidebarToggleLabel = sidebarOpen
-    ? t('sidebar.toggle_collapse', { defaultValue: 'Close navigation' })
-    : t('sidebar.toggle_expand', { defaultValue: 'Open navigation' });
+    ? t('sidebar.toggle_collapse')
+    : t('sidebar.toggle_expand');
 
   return (
     <div className={`app-shell ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
@@ -486,13 +486,13 @@ export function MainLayout() {
           onClick={() => setSidebarCollapsed((prev) => !prev)}
           title={
             sidebarCollapsed
-              ? t('sidebar.expand', { defaultValue: '展开' })
-              : t('sidebar.collapse', { defaultValue: '收起' })
+              ? t('sidebar.expand')
+              : t('sidebar.collapse')
           }
           aria-label={
             sidebarCollapsed
-              ? t('sidebar.expand', { defaultValue: '展开' })
-              : t('sidebar.collapse', { defaultValue: '收起' })
+              ? t('sidebar.expand')
+              : t('sidebar.collapse')
           }
         >
           {sidebarCollapsed ? headerIcons.chevronRight : headerIcons.chevronLeft}
