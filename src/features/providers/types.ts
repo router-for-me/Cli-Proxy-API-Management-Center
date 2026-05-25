@@ -79,7 +79,6 @@ export interface ProviderSnapshot {
 
 /**
  * 通用 Sheet 表单值(Gemini/Codex/Claude/Vertex/OpenAI 共用基础字段,各自启用 advanced 区)
- * Ampcode 独立使用 AmpcodeFormState(从 components/providers/types.ts 复用)
  */
 export interface ModelEntryInput {
   name: string;
