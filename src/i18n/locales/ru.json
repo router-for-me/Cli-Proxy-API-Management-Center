@@ -120,6 +120,22 @@
     "logs": "Просмотр логов",
     "system_info": "Информация системы"
   },
+  "nav_groups": {
+    "operate": "Работа",
+    "gateway": "Шлюз",
+    "observe": "Наблюдение",
+    "control": "Управление"
+  },
+  "nav_meta": {
+    "dashboard": "Обзор работы",
+    "ai_providers": "Маршрутизация моделей",
+    "auth_files": "Файлы и учётные данные",
+    "oauth": "Авторизация OAuth",
+    "quota_management": "API ключи и лимиты",
+    "logs": "Трассировка запросов",
+    "config_management": "Базовая конфигурация шлюза",
+    "system_info": "Состояние и диагностика"
+  },
   "dashboard": {
     "title": "Панель управления",
     "subtitle": "Добро пожаловать в Центр управления CLI Proxy API",

@@ -120,6 +120,22 @@
     "logs": "日志查看",
     "system_info": "中心信息"
   },
+  "nav_groups": {
+    "operate": "运行",
+    "gateway": "网关",
+    "observe": "观测",
+    "control": "控制"
+  },
+  "nav_meta": {
+    "dashboard": "运行总览",
+    "ai_providers": "上游模型路由",
+    "auth_files": "Auth 文件与凭证",
+    "oauth": "OAuth 授权登录",
+    "quota_management": "API Key 与限额",
+    "logs": "请求追踪与排查",
+    "config_management": "网关基础配置",
+    "system_info": "运行与诊断信息"
+  },
   "dashboard": {
     "title": "仪表盘",
     "subtitle": "欢迎使用 CLI Proxy API 管理中心",

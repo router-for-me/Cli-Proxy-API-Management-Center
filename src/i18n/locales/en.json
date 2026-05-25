@@ -120,6 +120,22 @@
     "logs": "Logs Viewer",
     "system_info": "Management Center Info"
   },
+  "nav_groups": {
+    "operate": "Operate",
+    "gateway": "Gateway",
+    "observe": "Observe",
+    "control": "Control"
+  },
+  "nav_meta": {
+    "dashboard": "Operations overview",
+    "ai_providers": "Upstream model routing",
+    "auth_files": "Auth files & credentials",
+    "oauth": "OAuth authorization",
+    "quota_management": "API keys & limits",
+    "logs": "Request tracing",
+    "config_management": "Gateway configuration",
+    "system_info": "Runtime & diagnostics"
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Welcome to CLI Proxy API Management Center",
