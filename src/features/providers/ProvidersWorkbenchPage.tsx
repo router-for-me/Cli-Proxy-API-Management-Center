@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
@@ -15,7 +15,7 @@ import type {
   OpenAISortBy,
   SortDir,
 } from './components/OpenAIBrandToolbar';
-import { ProviderSheet } from './sheets/ProviderSheet';
+import { ProviderSheet, type ProviderSheetHandle } from './sheets/ProviderSheet';
 import { useProviderWorkbench } from './useProviderWorkbench';
 import type { ProviderBrand, ProviderResource } from './types';
 import styles from './ProvidersWorkbenchPage.module.scss';
@@ -81,6 +81,7 @@ export function ProvidersWorkbenchPage() {
     mode: 'detail',
     resource: null,
   });
+  const sheetRef = useRef<ProviderSheetHandle>(null);
 
   const connected = connectionStatus === 'connected';
   const { usageByProvider, refreshRecentRequests } = useProviderRecentRequests({
@@ -372,13 +373,19 @@ export function ProvidersWorkbenchPage() {
           groups={groups}
           activeBrand={activeGroup.id}
           onSelect={(brand) => {
-            setActiveBrand(brand);
-            setFilter('');
-            setOpenaiSelectedModels(new Set());
-            // 关闭 Sheet 以避免数据错位
-            if (sheetState.open && sheetState.brand !== brand) {
-              closeSheet();
-            }
+            const isSwitching = sheetState.open && sheetState.brand !== brand;
+            const proceed = isSwitching && sheetRef.current
+              ? sheetRef.current.confirmDiscardIfDirty()
+              : Promise.resolve(true);
+            void proceed.then((ok) => {
+              if (!ok) return;
+              setActiveBrand(brand);
+              setFilter('');
+              setOpenaiSelectedModels(new Set());
+              if (isSwitching) {
+                closeSheet();
+              }
+            });
           }}
         />
         <ProviderResourcePanel
@@ -399,6 +406,7 @@ export function ProvidersWorkbenchPage() {
       </div>
 
       <ProviderSheet
+        ref={sheetRef}
         state={sheetState}
         onClose={closeSheet}
         onSwitchToEdit={() => {

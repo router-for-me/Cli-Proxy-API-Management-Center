@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useImperativeHandle, useState, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from '@/components/ui/Sheet';
 import { IconLoader2, IconPencil } from '@/components/ui/icons';
@@ -24,6 +24,10 @@ export interface ProviderSheetState {
   resource: ProviderResource | null;
 }
 
+export interface ProviderSheetHandle {
+  confirmDiscardIfDirty: () => Promise<boolean>;
+}
+
 interface ProviderSheetProps {
   state: ProviderSheetState;
   onClose: () => void;
@@ -31,6 +35,7 @@ interface ProviderSheetProps {
   workbench: UseProviderWorkbenchResult;
   onCreated: () => void;
   onUpdated: () => void;
+  ref?: Ref<ProviderSheetHandle>;
 }
 
 export function ProviderSheet({
@@ -40,6 +45,7 @@ export function ProviderSheet({
   workbench,
   onCreated,
   onUpdated,
+  ref,
 }: ProviderSheetProps) {
   const { t } = useTranslation();
   const { showConfirmation } = useNotificationStore();
@@ -78,6 +84,8 @@ export function ProviderSheet({
       });
     });
   }, [isDirty, isEditingForm, showConfirmation, submitting, t]);
+
+  useImperativeHandle(ref, () => ({ confirmDiscardIfDirty }), [confirmDiscardIfDirty]);
 
   const handleCancelClick = useCallback(() => {
     void confirmDiscardIfDirty().then((ok) => {
