@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { modelsApi } from '@/services/api';
 import { buildHeaderObject } from '@/utils/headers';
 import type { ModelInfo } from '@/utils/models';
@@ -119,7 +119,8 @@ export function useModelDiscovery(
           next = await modelsApi.fetchModelsViaApiCall(
             baseUrl,
             entryKey,
-            headers
+            headers,
+            resolvedAuthIndex
           );
         } catch (firstErr) {
           // Some OpenAI-compatible endpoints expose /models without auth, or
@@ -158,6 +159,23 @@ export function useModelDiscovery(
     setLoading(false);
     setHasFetched(false);
   }, []);
+
+  const inputSignature = useMemo(() => {
+    const headerSig = formHeaders
+      .map((h) => `${h.key}:${h.value}`)
+      .join('|');
+    const entriesSig = (apiKeyEntries ?? [])
+      .map((e) => `${e.apiKey ?? ''}::${e.headersText ?? ''}`)
+      .join('|');
+    return `${baseUrl}||${apiKey ?? ''}||${fallbackApiKey ?? ''}||${authIndex ?? ''}||${headerSig}||${entriesSig}`;
+  }, [apiKey, apiKeyEntries, authIndex, baseUrl, fallbackApiKey, formHeaders]);
+
+  const lastSignatureRef = useRef(inputSignature);
+  useEffect(() => {
+    if (lastSignatureRef.current === inputSignature) return;
+    lastSignatureRef.current = inputSignature;
+    reset();
+  }, [inputSignature, reset]);
 
   return { available, loading, error, models, hasFetched, fetch, reset };
 }

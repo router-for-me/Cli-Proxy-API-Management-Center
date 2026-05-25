@@ -199,7 +199,8 @@ export function useConnectivityTest(
       }
       const entry = apiKeyEntries?.[idx];
       const entryKey = (entry?.apiKey ?? '').trim();
-      if (!entryKey) {
+      const resolvedAuthIndex = (authIndex ?? '').trim() || undefined;
+      if (!entryKey && !resolvedAuthIndex) {
         updateOpenaiStatus(idx, {
           state: 'error',
           message: messages.apiKeyRequired,
@@ -221,7 +222,11 @@ export function useConnectivityTest(
         ...parseHeadersText(entry?.headersText ?? ''),
       };
       if (!hasHeader(headerObj, 'authorization')) {
-        headerObj.Authorization = `Bearer ${entryKey}`;
+        if (entryKey) {
+          headerObj.Authorization = `Bearer ${entryKey}`;
+        } else if (resolvedAuthIndex) {
+          headerObj.Authorization = 'Bearer $TOKEN$';
+        }
       }
 
       updateOpenaiStatus(idx, { state: 'loading', message: '' });
@@ -229,6 +234,7 @@ export function useConnectivityTest(
       try {
         const result = await apiCallApi.request(
           {
+            authIndex: resolvedAuthIndex,
             method: 'POST',
             url: endpoint,
             header: headerObj,
@@ -267,6 +273,7 @@ export function useConnectivityTest(
     },
     [
       apiKeyEntries,
+      authIndex,
       baseUrl,
       brand,
       formHeaders,
