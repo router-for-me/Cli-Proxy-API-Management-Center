@@ -91,86 +91,26 @@ const normalizeBatchFailures = (value: unknown): AuthFileBatchFailure[] => {
   }, []);
 };
 
-const deriveSuccessfulFileNames = (requestedNames: string[], failed: AuthFileBatchFailure[]): string[] => {
-  const failedNames = new Set(
-    failed
-      .map((entry) => entry.name.trim())
-      .filter(Boolean)
-  );
-
-  if (failedNames.size === 0) {
-    return [...requestedNames];
-  }
-
-  return requestedNames.filter((name) => !failedNames.has(name));
-};
-
 const normalizeBatchUploadResponse = (
-  payload: AuthFileBatchUploadResponse | undefined,
-  requestedNames: string[]
+  payload: AuthFileBatchUploadResponse | undefined
 ): AuthFileBatchUploadResult => {
   const failed = normalizeBatchFailures(payload?.failed);
-  const uploadedFilesFromPayload = normalizeBatchFileNames(payload?.files);
-  const uploaded =
-    typeof payload?.uploaded === 'number'
-      ? payload.uploaded
-      : uploadedFilesFromPayload.length > 0
-        ? uploadedFilesFromPayload.length
-        : requestedNames.length === 1 && failed.length === 0
-          ? 1
-          : 0;
-
-  let uploadedFiles = uploadedFilesFromPayload;
-  if (uploadedFiles.length === 0 && uploaded > 0) {
-    if (failed.length === 0 && uploaded === requestedNames.length) {
-      uploadedFiles = [...requestedNames];
-    } else {
-      const derivedNames = deriveSuccessfulFileNames(requestedNames, failed);
-      if (derivedNames.length === uploaded) {
-        uploadedFiles = derivedNames;
-      }
-    }
-  }
-
   return {
-    status: typeof payload?.status === 'string' ? payload.status : failed.length > 0 ? 'partial' : 'ok',
-    uploaded,
-    files: uploadedFiles,
+    status: payload?.status ?? (failed.length > 0 ? 'partial' : 'ok'),
+    uploaded: payload?.uploaded ?? 0,
+    files: normalizeBatchFileNames(payload?.files),
     failed,
   };
 };
 
 const normalizeBatchDeleteResponse = (
-  payload: AuthFileBatchDeleteResponse | undefined,
-  requestedNames: string[]
+  payload: AuthFileBatchDeleteResponse | undefined
 ): AuthFileBatchDeleteResult => {
   const failed = normalizeBatchFailures(payload?.failed);
-  const deletedFilesFromPayload = normalizeBatchFileNames(payload?.files);
-  const deleted =
-    typeof payload?.deleted === 'number'
-      ? payload.deleted
-      : deletedFilesFromPayload.length > 0
-        ? deletedFilesFromPayload.length
-        : requestedNames.length === 1 && failed.length === 0
-          ? 1
-          : 0;
-
-  let deletedFiles = deletedFilesFromPayload;
-  if (deletedFiles.length === 0 && deleted > 0) {
-    if (failed.length === 0 && deleted === requestedNames.length) {
-      deletedFiles = [...requestedNames];
-    } else {
-      const derivedNames = deriveSuccessfulFileNames(requestedNames, failed);
-      if (derivedNames.length === deleted) {
-        deletedFiles = derivedNames;
-      }
-    }
-  }
-
   return {
-    status: typeof payload?.status === 'string' ? payload.status : failed.length > 0 ? 'partial' : 'ok',
-    deleted,
-    files: deletedFiles,
+    status: payload?.status ?? (failed.length > 0 ? 'partial' : 'ok'),
+    deleted: payload?.deleted ?? 0,
+    files: normalizeBatchFileNames(payload?.files),
     failed,
   };
 };
@@ -181,7 +121,7 @@ const readTextField = (entry: AuthFileEntry, key: string): string => {
 };
 
 const readDateField = (entry: AuthFileEntry): number => {
-  const candidates = [entry['modtime'], entry.modified, entry['updated_at'], entry['last_refresh']];
+  const candidates = [entry['modtime'], entry['updated_at'], entry['last_refresh']];
 
   for (const value of candidates) {
     if (typeof value === 'number' && Number.isFinite(value)) {
@@ -204,12 +144,7 @@ const readDateField = (entry: AuthFileEntry): number => {
   return 0;
 };
 
-const isRuntimeOnlyEntry = (entry: AuthFileEntry): boolean => {
-  const value = entry['runtime_only'] ?? entry.runtimeOnly;
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'string') return value.trim().toLowerCase() === 'true';
-  return false;
-};
+const isRuntimeOnlyEntry = (entry: AuthFileEntry): boolean => entry['runtime_only'] === true;
 
 const hasMeaningfulValue = (value: unknown): boolean => {
   if (value == null) return false;
@@ -423,7 +358,7 @@ export const authFilesApi = {
       formData.append('file', file, file.name);
     });
     const payload = await apiClient.postForm<AuthFileBatchUploadResponse>('/auth-files', formData);
-    return normalizeBatchUploadResponse(payload, requestedNames);
+    return normalizeBatchUploadResponse(payload);
   },
 
   upload: (file: File) => authFilesApi.uploadFiles([file]),
@@ -437,7 +372,7 @@ export const authFilesApi = {
     const payload = await apiClient.delete<AuthFileBatchDeleteResponse>('/auth-files', {
       data: { names: requestedNames },
     });
-    return normalizeBatchDeleteResponse(payload, requestedNames);
+    return normalizeBatchDeleteResponse(payload);
   },
 
   deleteFile: (name: string) => authFilesApi.deleteFiles([name]),
