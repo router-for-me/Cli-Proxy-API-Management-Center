@@ -529,6 +529,13 @@ export const authFilesApi = {
       { name }
     ),
 
+  // 刷新 Codex OAuth token
+  refreshCodexToken: (name: string) =>
+    apiClient.post<{ status: string; email?: string; expire?: string; message?: string }>(
+      '/auth-files/codex-token/refresh',
+      { name }
+    ),
+
   // 直接用 openai-compatibility 配置里的凭据刷新余额，不依赖 auth manager 查找。
   // ollama: 传 cookie（必需）+ 可选的 inference api_key
   // deepseek: 传 balance_token（必需，从 platform.deepseek.com 单独签发）+ 可选的 cookie

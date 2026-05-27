@@ -628,7 +628,10 @@
     "prefix_proxy_saved_success": "Updated auth file \"{{name}}\" successfully",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
     "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
-    "quota_refresh_action": "Refresh"
+    "quota_refresh_action": "Refresh",
+    "refresh_token_button": "Refresh Token",
+    "refresh_token_success": "Token refreshed successfully{{details}}",
+    "refresh_token_failed": "Failed to refresh token: {{message}}"
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",
@@ -1081,6 +1084,11 @@
     "filter_method": "Method",
     "filter_status": "Status",
     "filter_path": "Path",
+    "filter_latency": "Latency",
+    "filter_latency_min": "Min latency",
+    "filter_latency_max": "Max latency",
+    "filter_latency_unit_ms": "Unit: ms",
+    "filter_latency_clear": "Clear latency",
     "filter_path_empty": "No path candidates",
     "filter_status_2xx": "2xx",
     "filter_status_3xx": "3xx",

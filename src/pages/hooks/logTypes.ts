@@ -11,6 +11,12 @@ export type LogState = {
   visibleFrom: number;
 };
 
+export type ParsedLogTiming = {
+  label: string;
+  value: string;
+  milliseconds: number;
+};
+
 export type ParsedLogLine = {
   raw: string;
   timestamp?: string;
@@ -19,6 +25,7 @@ export type ParsedLogLine = {
   requestId?: string;
   statusCode?: number;
   latency?: string;
+  timings: ParsedLogTiming[];
   ip?: string;
   method?: HttpMethod;
   path?: string;

@@ -13,18 +13,31 @@ interface UseLogFiltersReturn {
   methodFilters: HttpMethod[];
   statusFilters: StatusGroup[];
   pathFilters: string[];
+  latencyMinMs: string;
+  latencyMaxMs: string;
+  latencyMinValue?: number;
+  latencyMaxValue?: number;
   methodFilterSet: Set<HttpMethod>;
   statusFilterSet: Set<StatusGroup>;
   pathFilterSet: Set<string>;
+  hasLatencyFilter: boolean;
   hasStructuredFilters: boolean;
   methodCounts: Partial<Record<HttpMethod, number>>;
   statusCounts: Partial<Record<StatusGroup, number>>;
   pathOptions: Array<{ path: string; count: number }>;
+  setLatencyMinMs: (value: string) => void;
+  setLatencyMaxMs: (value: string) => void;
   toggleMethodFilter: (method: HttpMethod) => void;
   toggleStatusFilter: (group: StatusGroup) => void;
   togglePathFilter: (path: string) => void;
+  clearLatencyFilter: () => void;
   clearStructuredFilters: () => void;
 }
+
+const parseLatencyBoundary = (value: string): number | undefined => {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+};
 
 export function useLogFilters(options: UseLogFiltersOptions): UseLogFiltersReturn {
   const { parsedLines } = options;
@@ -38,12 +51,17 @@ export function useLogFilters(options: UseLogFiltersOptions): UseLogFiltersRetur
     []
   );
   const [pathFilters, setPathFilters] = useLocalStorage<string[]>('logsPage.pathFilters', []);
+  const [latencyMinMs, setLatencyMinMs] = useLocalStorage('logsPage.latencyMinMs', '');
+  const [latencyMaxMs, setLatencyMaxMs] = useLocalStorage('logsPage.latencyMaxMs', '');
 
   const methodFilterSet = useMemo(() => new Set(methodFilters), [methodFilters]);
   const statusFilterSet = useMemo(() => new Set(statusFilters), [statusFilters]);
   const pathFilterSet = useMemo(() => new Set(pathFilters), [pathFilters]);
+  const latencyMinValue = useMemo(() => parseLatencyBoundary(latencyMinMs), [latencyMinMs]);
+  const latencyMaxValue = useMemo(() => parseLatencyBoundary(latencyMaxMs), [latencyMaxMs]);
+  const hasLatencyFilter = latencyMinValue !== undefined || latencyMaxValue !== undefined;
   const hasStructuredFilters =
-    methodFilters.length > 0 || statusFilters.length > 0 || pathFilters.length > 0;
+    methodFilters.length > 0 || statusFilters.length > 0 || pathFilters.length > 0 || hasLatencyFilter;
 
   const methodCounts = useMemo(() => {
     const counts: Partial<Record<HttpMethod, number>> = {};
@@ -105,26 +123,40 @@ export function useLogFilters(options: UseLogFiltersOptions): UseLogFiltersRetur
     );
   };
 
+  const clearLatencyFilter = () => {
+    setLatencyMinMs('');
+    setLatencyMaxMs('');
+  };
+
   const clearStructuredFilters = () => {
     setMethodFilters([]);
     setStatusFilters([]);
     setPathFilters([]);
+    clearLatencyFilter();
   };
 
   return {
     methodFilters,
     statusFilters,
     pathFilters,
+    latencyMinMs,
+    latencyMaxMs,
+    latencyMinValue,
+    latencyMaxValue,
     methodFilterSet,
     statusFilterSet,
     pathFilterSet,
+    hasLatencyFilter,
     hasStructuredFilters,
     methodCounts,
     statusCounts,
     pathOptions,
+    setLatencyMinMs,
+    setLatencyMaxMs,
     toggleMethodFilter,
     toggleStatusFilter,
     togglePathFilter,
+    clearLatencyFilter,
     clearStructuredFilters,
   };
 }

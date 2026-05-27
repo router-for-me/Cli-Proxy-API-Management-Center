@@ -392,7 +392,10 @@ export function LogsPage() {
   const filters = useLogFilters({ parsedLines: parsedSearchLines });
   const structuredFiltersPanelId = 'logs-structured-filters';
   const structuredFilterCount =
-    filters.methodFilters.length + filters.statusFilters.length + filters.pathFilters.length;
+    filters.methodFilters.length +
+    filters.statusFilters.length +
+    filters.pathFilters.length +
+    (filters.hasLatencyFilter ? 1 : 0);
 
   const { filteredParsedLines, filteredLines, removedCount } = useMemo(() => {
     const filteredParsed = parsedSearchLines.filter((line) => {
@@ -411,6 +414,17 @@ export function LogsPage() {
         return false;
       }
 
+      if (filters.hasLatencyFilter) {
+        const hasMatchingTiming = line.timings.some((timing) => {
+          const meetsMin =
+            filters.latencyMinValue === undefined || timing.milliseconds >= filters.latencyMinValue;
+          const meetsMax =
+            filters.latencyMaxValue === undefined || timing.milliseconds <= filters.latencyMaxValue;
+          return meetsMin && meetsMax;
+        });
+        if (!hasMatchingTiming) return false;
+      }
+
       if (filters.pathFilterSet.size > 0 && (!line.path || !filters.pathFilterSet.has(line.path))) {
         return false;
       }
@@ -425,6 +439,9 @@ export function LogsPage() {
     };
   }, [
     baseLines,
+    filters.hasLatencyFilter,
+    filters.latencyMaxValue,
+    filters.latencyMinValue,
     filters.methodFilterSet,
     filters.pathFilterSet,
     filters.statusFilterSet,
@@ -696,6 +713,41 @@ export function LogsPage() {
                     </div>
                   </div>
 
+                  <div className={styles.filterChipGroup}>
+                    <span className={styles.filterChipLabel}>{t('logs.filter_latency')}</span>
+                    <div className={styles.latencyFilterInputs}>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={filters.latencyMinMs}
+                        onChange={(e) => filters.setLatencyMinMs(e.target.value)}
+                        placeholder={t('logs.filter_latency_min')}
+                        className={styles.latencyFilterInput}
+                      />
+                      <span className={styles.latencyFilterSeparator}>-</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={filters.latencyMaxMs}
+                        onChange={(e) => filters.setLatencyMaxMs(e.target.value)}
+                        placeholder={t('logs.filter_latency_max')}
+                        className={styles.latencyFilterInput}
+                      />
+                      <span className={styles.filterChipHint}>{t('logs.filter_latency_unit_ms')}</span>
+                      {filters.hasLatencyFilter && (
+                        <button
+                          type="button"
+                          className={styles.filterChip}
+                          onClick={filters.clearLatencyFilter}
+                        >
+                          {t('logs.filter_latency_clear')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   <Button
                     variant="ghost"
                     size="sm"
@@ -893,6 +945,17 @@ export function LogsPage() {
                             )}
 
                             {line.latency && <span className={styles.pill}>{line.latency}</span>}
+                            {line.timings
+                              .filter((timing) => timing.value !== line.latency)
+                              .map((timing) => (
+                                <span
+                                  key={`${timing.label}-${timing.value}`}
+                                  className={styles.pill}
+                                  title={`${timing.milliseconds.toFixed(3)}ms`}
+                                >
+                                  {timing.label} {timing.value}
+                                </span>
+                              ))}
                             {line.ip && <span className={styles.pill}>{line.ip}</span>}
 
                             {line.method && (

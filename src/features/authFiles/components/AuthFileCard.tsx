@@ -7,12 +7,14 @@ import {
   IconDownload,
   IconInfo,
   IconModelCluster,
+  IconRefreshCw,
   IconSettings,
   IconTrash2,
 } from '@/components/ui/icons';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import type { AuthFileItem } from '@/types';
 import { resolveAuthProvider, resolveCanonicalProvider } from '@/utils/quota';
+import { isCodexFile } from '@/utils/quota/validators';
 import {
   normalizeRecentRequestAuthIndex,
   normalizeRecentRequestBuckets,
@@ -49,12 +51,14 @@ export type AuthFileCardProps = {
   statusUpdating: Record<string, boolean>;
   quotaFilterType: QuotaProviderType | null;
   statusBarCache: Map<string, AuthFileStatusBarData>;
+  refreshingToken?: boolean;
   onShowModels: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
   onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
   onToggleSelect: (name: string) => void;
+  onRefreshToken?: (name: string) => void;
 };
 
 const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
@@ -83,12 +87,14 @@ export function AuthFileCard(props: AuthFileCardProps) {
     statusUpdating,
     quotaFilterType,
     statusBarCache,
+    refreshingToken,
     onShowModels,
     onDownload,
     onOpenPrefixProxyEditor,
     onDelete,
     onToggleStatus,
     onToggleSelect,
+    onRefreshToken,
   } = props;
 
   const recentBuckets = normalizeRecentRequestBuckets(file.recent_requests ?? file.recentRequests);
@@ -303,6 +309,22 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   >
                     <IconDownload className={styles.actionIcon} size={16} />
                   </Button>
+                  {isCodexFile(file) && onRefreshToken && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onRefreshToken(file.name)}
+                      className={styles.iconButton}
+                      title={t('auth_files.refresh_token_button', { defaultValue: '刷新 Token' })}
+                      disabled={disableControls || refreshingToken}
+                    >
+                      {refreshingToken ? (
+                        <LoadingSpinner size={14} />
+                      ) : (
+                        <IconRefreshCw className={styles.actionIcon} size={16} />
+                      )}
+                    </Button>
+                  )}
                   <Button
                     variant="secondary"
                     size="sm"

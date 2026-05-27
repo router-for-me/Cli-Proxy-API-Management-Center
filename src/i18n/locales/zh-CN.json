@@ -628,7 +628,10 @@
     "prefix_proxy_saved_success": "已更新认证文件 \"{{name}}\"",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
     "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
-    "quota_refresh_action": "刷新"
+    "quota_refresh_action": "刷新",
+    "refresh_token_button": "刷新 Token",
+    "refresh_token_success": "Token 刷新成功{{details}}",
+    "refresh_token_failed": "Token 刷新失败：{{message}}"
   },
   "antigravity_quota": {
     "title": "Antigravity 额度",
@@ -1081,6 +1084,11 @@
     "filter_method": "请求方法",
     "filter_status": "状态码",
     "filter_path": "路径",
+    "filter_latency": "耗时",
+    "filter_latency_min": "最小耗时",
+    "filter_latency_max": "最大耗时",
+    "filter_latency_unit_ms": "单位 ms",
+    "filter_latency_clear": "清空耗时",
     "filter_path_empty": "暂无可筛选路径",
     "filter_status_2xx": "2xx",
     "filter_status_3xx": "3xx",

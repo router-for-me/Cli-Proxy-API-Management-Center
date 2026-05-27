@@ -66,6 +66,7 @@ import { IconRefreshCw } from '@/components/ui/icons';
 import type { TFunction } from 'i18next';
 import type { AuthFileItem } from '@/types';
 import { resolveCanonicalProvider } from '@/utils/quota';
+import { authFilesApi } from '@/services/api';
 import {
   isAuthFilesSortMode,
   readAuthFilesUiState,
@@ -375,6 +376,7 @@ export function AuthFilesPage() {
 
   // Batch refresh all quotas for the currently selected provider type.
   const [quotaRefreshing, setQuotaRefreshing] = useState(false);
+  const [refreshingTokenName, setRefreshingTokenName] = useState<string | null>(null);
   const refreshQuotaForProviderFiles = useCallback(async () => {
     if (!quotaFilterType) return;
 
@@ -446,6 +448,48 @@ export function AuthFilesPage() {
       setQuotaRefreshing(false);
     }
   }, [quotaFilterType, filesWithUsage, getQuotaStoreSetter, showNotification, t]);
+
+  const handleRefreshToken = useCallback(
+    async (name: string) => {
+      if (disableControls || refreshingTokenName) return;
+
+      setRefreshingTokenName(name);
+      try {
+        const result = await authFilesApi.refreshCodexToken(name);
+        if (result.status === 'ok') {
+          const details = [result.email, result.expire].filter(Boolean).join(' · ');
+          showNotification(
+            t('auth_files.refresh_token_success', {
+              defaultValue: 'Token 刷新成功{{details}}',
+              details: details ? `: ${details}` : '',
+            }),
+            'success'
+          );
+          await loadFiles();
+        } else {
+          showNotification(
+            t('auth_files.refresh_token_failed', {
+              defaultValue: 'Token 刷新失败: {{message}}',
+              message: result.message || t('common.unknown_error'),
+            }),
+            'error'
+          );
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('common.unknown_error');
+        showNotification(
+          t('auth_files.refresh_token_failed', {
+            defaultValue: 'Token 刷新失败: {{message}}',
+            message,
+          }),
+          'error'
+        );
+      } finally {
+        setRefreshingTokenName(null);
+      }
+    },
+    [disableControls, refreshingTokenName, showNotification, t, loadFiles]
+  );
 
   useEffect(() => {
     const persistedCompactMode = readPersistedAuthFilesCompactMode();
@@ -1114,12 +1158,14 @@ export function AuthFilesPage() {
                     statusUpdating={statusUpdating}
                     quotaFilterType={quotaFilterType}
                     statusBarCache={statusBarCache}
+                    refreshingToken={refreshingTokenName === file.name}
                     onShowModels={showModels}
                     onDownload={handleDownload}
                     onOpenPrefixProxyEditor={openPrefixProxyEditor}
                     onDelete={handleDelete}
                     onToggleStatus={handleStatusToggle}
                     onToggleSelect={toggleSelect}
+                    onRefreshToken={handleRefreshToken}
                   />
                 ))}
               </div>
