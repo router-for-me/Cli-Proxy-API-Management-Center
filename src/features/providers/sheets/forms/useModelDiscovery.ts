@@ -14,23 +14,6 @@ export const MODEL_DISCOVERY_BRANDS: ReadonlyArray<ProviderBrand> = [
 export const isModelDiscoveryBrand = (brand: ProviderBrand): boolean =>
   MODEL_DISCOVERY_BRANDS.includes(brand);
 
-const parseHeadersText = (text: string): Record<string, string> => {
-  const out: Record<string, string> = {};
-  String(text ?? '')
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .forEach((line) => {
-      const sep = line.indexOf(':');
-      if (sep <= 0) return;
-      const key = line.slice(0, sep).trim();
-      const value = line.slice(sep + 1).trim();
-      if (!key) return;
-      out[key] = value;
-    });
-  return out;
-};
-
 const toErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message;
   if (typeof err === 'string') return err;
@@ -115,13 +98,11 @@ export function useModelDiscovery(
         const entryKey = (firstEntry?.apiKey ?? '').trim();
         const entryAuthIndex =
           (firstEntry?.authIndex ?? '').trim() || resolvedAuthIndex;
-        const entryHeaders = parseHeadersText(firstEntry?.headersText ?? '');
-        const headers = { ...baseHeaders, ...entryHeaders };
         try {
           next = await modelsApi.fetchModelsViaApiCall(
             baseUrl,
             entryKey,
-            headers,
+            baseHeaders,
             entryAuthIndex
           );
         } catch (firstErr) {
@@ -167,7 +148,7 @@ export function useModelDiscovery(
       .map((h) => `${h.key}:${h.value}`)
       .join('|');
     const entriesSig = (apiKeyEntries ?? [])
-      .map((e) => `${e.apiKey ?? ''}::${e.authIndex ?? ''}::${e.headersText ?? ''}`)
+      .map((e) => `${e.apiKey ?? ''}::${e.authIndex ?? ''}`)
       .join('|');
     return [
       baseUrl,

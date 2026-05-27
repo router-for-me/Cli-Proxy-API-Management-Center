@@ -42,23 +42,6 @@ const pickModel = (
   return '';
 };
 
-const parseHeadersText = (text: string): Record<string, string> => {
-  const out: Record<string, string> = {};
-  String(text ?? '')
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .forEach((line) => {
-      const sep = line.indexOf(':');
-      if (sep <= 0) return;
-      const key = line.slice(0, sep).trim();
-      const value = line.slice(sep + 1).trim();
-      if (!key) return;
-      out[key] = value;
-    });
-  return out;
-};
-
 const resolveBearerToken = (headers: Record<string, string>): string => {
   const auth = Object.entries(headers).find(
     ([k]) => k.toLowerCase() === 'authorization'
@@ -130,7 +113,6 @@ export function useConnectivityTest(
             entry.apiKey ?? '',
             entry.authIndex ?? '',
             entry.proxyUrl ?? '',
-            entry.headersText ?? '',
           ].join('||')
       ),
     [apiKeyEntries]
@@ -225,7 +207,6 @@ export function useConnectivityTest(
       const headerObj: Record<string, string> = {
         'Content-Type': 'application/json',
         ...buildHeaderObject(formHeaders),
-        ...parseHeadersText(entry?.headersText ?? ''),
       };
       if (!hasHeader(headerObj, 'authorization')) {
         if (entryKey) {

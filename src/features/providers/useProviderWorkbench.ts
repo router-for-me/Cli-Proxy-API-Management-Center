@@ -74,23 +74,6 @@ const parseTextList = (text: string): string[] =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-const parseHeadersText = (text: string): Record<string, string> => {
-  const result: Record<string, string> = {};
-  text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .forEach((line) => {
-      const sep = line.indexOf(':');
-      if (sep <= 0) return;
-      const key = line.slice(0, sep).trim();
-      const value = line.slice(sep + 1).trim();
-      if (!key) return;
-      result[key] = value;
-    });
-  return result;
-};
-
 const headersFromEntries = (
   entries: Array<{ key: string; value: string }>
 ): Record<string, string> => {
@@ -177,9 +160,6 @@ const buildOpenAIConfig = (
       ?.map((entry) => ({
         apiKey: entry.apiKey.trim(),
         proxyUrl: entry.proxyUrl.trim() || undefined,
-        headers: Object.keys(parseHeadersText(entry.headersText)).length
-          ? parseHeadersText(entry.headersText)
-          : undefined,
         authIndex: entry.authIndex?.trim() || undefined,
       }))
       .filter((entry) => entry.apiKey) ?? [];

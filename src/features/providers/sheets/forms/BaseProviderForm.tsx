@@ -55,14 +55,7 @@ const emptyModel = (): ModelEntryInput => ({ name: '', alias: '' });
 const emptyApiKeyEntry = (): ApiKeyEntryInput => ({
   apiKey: '',
   proxyUrl: '',
-  headersText: '',
 });
-
-const headersObjectToText = (headers?: Record<string, string>): string =>
-  Object.entries(headers ?? {})
-    .filter(([k]) => k.trim())
-    .map(([k, v]) => `${k}: ${v}`)
-    .join('\n');
 
 const stripDisableAllRule = (list?: string[]): string[] =>
   (list ?? []).filter((s) => s.trim() !== '*');
@@ -124,7 +117,6 @@ function buildInitialForm(
         ? cfg.apiKeyEntries.map((entry) => ({
             apiKey: entry.apiKey,
             proxyUrl: entry.proxyUrl ?? '',
-            headersText: headersObjectToText(entry.headers),
             authIndex: entry.authIndex,
           }))
         : [emptyApiKeyEntry()],
@@ -821,30 +813,6 @@ export function BaseProviderForm({
                       }
                       disabled={mutating}
                       placeholder="http://127.0.0.1:7890"
-                    />
-                  </div>
-                  <div className={styles.field}>
-                    <label className={styles.label}>
-                      {t('providersPage.form.headers')}
-                      <span className={styles.labelHint}>
-                        {' '}
-                        · {t('providersPage.form.headersHint')}
-                      </span>
-                    </label>
-                    <textarea
-                      className={styles.textarea}
-                      value={entry.headersText}
-                      rows={3}
-                      onChange={(e) =>
-                        updateField(
-                          'apiKeyEntries',
-                          apiKeyEntries.map((it, i) =>
-                            i === realIdx ? { ...it, headersText: e.target.value } : it
-                          )
-                        )
-                      }
-                      disabled={mutating}
-                      placeholder="X-Custom-Header: value"
                     />
                   </div>
                   {status.state === 'error' ? (
