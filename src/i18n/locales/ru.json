@@ -1310,6 +1310,8 @@
       "apiKeyEntriesSection": "API-ключи",
       "apiKeyEntry": "Ключ #{{index}}",
       "addApiKeyEntry": "Добавить ключ",
+      "showApiKey": "Показать ключ API",
+      "hideApiKey": "Скрыть ключ API",
       "validation": {
         "nameRequired": "Название обязательно",
         "apiKeyRequired": "Нужен хотя бы один API-ключ",

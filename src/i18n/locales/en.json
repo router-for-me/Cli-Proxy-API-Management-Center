@@ -1313,6 +1313,8 @@
       "apiKeyEntriesSection": "API key entries",
       "apiKeyEntry": "Key #{{index}}",
       "addApiKeyEntry": "Add key entry",
+      "showApiKey": "Show API key",
+      "hideApiKey": "Hide API key",
       "validation": {
         "nameRequired": "Name is required",
         "apiKeyRequired": "At least one API key is required",

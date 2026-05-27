@@ -4,6 +4,8 @@ import {
   IconAlertTriangle,
   IconCheckCircle2,
   IconDownload,
+  IconEye,
+  IconEyeOff,
   IconLoader2,
   IconPlus,
   IconX,
@@ -133,7 +135,8 @@ function buildInitialForm(
   const disabled = hasDisableAllModelsRule(cfg.excludedModels);
   const excludedList = stripDisableAllRule(cfg.excludedModels);
   return {
-    apiKey: '',
+    // Populate apiKey from resource.raw in edit mode so the field is not empty
+    apiKey: cfg.apiKey ?? '',
     name: '',
     baseUrl: cfg.baseUrl ?? '',
     proxyUrl: cfg.proxyUrl ?? '',
@@ -211,6 +214,20 @@ export function BaseProviderForm({
     JSON.stringify(buildInitialForm(brand, resource, mode))
   );
   const [error, setError] = useState<string | null>(null);
+  const [showPasswords, setShowPasswords] = useState<Set<number>>(new Set());
+  const [showSingleApiKey, setShowSingleApiKey] = useState(false);
+
+  const togglePasswordVisibility = (idx: number) => {
+    setShowPasswords((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
+  };
 
   const isDirty = useMemo(
     () => JSON.stringify(form) !== initialFormSignature,
@@ -454,19 +471,43 @@ export function BaseProviderForm({
             <label className={styles.label} htmlFor={`${fid}-apiKey`}>
               {t('providersPage.form.apiKey')}
             </label>
-            <input
-              id={`${fid}-apiKey`}
-              className={styles.input}
-              type="password"
-              value={form.apiKey}
-              onChange={(e) => updateField('apiKey', e.target.value)}
-              placeholder={
-                mode === 'edit'
-                  ? t('providersPage.form.apiKeyEditPlaceholder')
-                  : t('providersPage.form.apiKeyCreatePlaceholder')
-              }
-              disabled={mutating}
-            />
+            <div className={styles.passwordField}>
+              <input
+                id={`${fid}-apiKey`}
+                className={styles.passwordInput}
+                type={showSingleApiKey ? 'text' : 'password'}
+                value={form.apiKey}
+                onChange={(e) => updateField('apiKey', e.target.value)}
+                placeholder={
+                  mode === 'edit'
+                    ? t('providersPage.form.apiKeyEditPlaceholder')
+                    : t('providersPage.form.apiKeyCreatePlaceholder')
+                }
+                disabled={mutating}
+              />
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={() => setShowSingleApiKey((v) => !v)}
+                disabled={mutating}
+                aria-label={
+                  showSingleApiKey
+                    ? t('providersPage.form.hideApiKey')
+                    : t('providersPage.form.showApiKey')
+                }
+                title={
+                  showSingleApiKey
+                    ? t('providersPage.form.hideApiKey')
+                    : t('providersPage.form.showApiKey')
+                }
+              >
+                {showSingleApiKey ? (
+                  <IconEyeOff size={16} />
+                ) : (
+                  <IconEye size={16} />
+                )}
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -709,21 +750,45 @@ export function BaseProviderForm({
                     <label className={styles.label}>
                       {t('providersPage.form.apiKey')}
                     </label>
-                    <input
-                      className={styles.input}
-                      type="password"
-                      value={entry.apiKey}
-                      onChange={(e) =>
-                        updateField(
-                          'apiKeyEntries',
-                          apiKeyEntries.map((it, i) =>
-                            i === realIdx ? { ...it, apiKey: e.target.value } : it
+                    <div className={styles.passwordField}>
+                      <input
+                        className={styles.passwordInput}
+                        type={showPasswords.has(realIdx) ? 'text' : 'password'}
+                        value={entry.apiKey}
+                        onChange={(e) =>
+                          updateField(
+                            'apiKeyEntries',
+                            apiKeyEntries.map((it, i) =>
+                              i === realIdx ? { ...it, apiKey: e.target.value } : it
+                            )
                           )
-                        )
-                      }
-                      disabled={mutating}
-                      placeholder={t('providersPage.form.apiKeyCreatePlaceholder')}
-                    />
+                        }
+                        disabled={mutating}
+                        placeholder={t('providersPage.form.apiKeyCreatePlaceholder')}
+                      />
+                      <button
+                        type="button"
+                        className={styles.passwordToggle}
+                        onClick={() => togglePasswordVisibility(realIdx)}
+                        disabled={mutating}
+                        aria-label={
+                          showPasswords.has(realIdx)
+                            ? t('providersPage.form.hideApiKey')
+                            : t('providersPage.form.showApiKey')
+                        }
+                        title={
+                          showPasswords.has(realIdx)
+                            ? t('providersPage.form.hideApiKey')
+                            : t('providersPage.form.showApiKey')
+                        }
+                      >
+                        {showPasswords.has(realIdx) ? (
+                          <IconEyeOff size={16} />
+                        ) : (
+                          <IconEye size={16} />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <div className={styles.field}>
                     <label className={styles.label}>
