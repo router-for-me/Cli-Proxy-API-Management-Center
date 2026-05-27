@@ -8,7 +8,9 @@ import {
   IconSatellite
 } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
-import { apiKeysApi, providersApi, authFilesApi } from '@/services/api';
+import { apiKeysApi, providersApi, authFilesApi, usageStatisticsApi } from '@/services/api';
+import type { SummaryTotal, SummaryRow } from '@/types/usageStatistics';
+import { formatCost, formatTokens } from '@/types/usageStatistics';
 import styles from './DashboardPage.module.scss';
 
 interface QuickStat {
@@ -37,6 +39,23 @@ function getTimeOfDay(): TimeOfDay {
   return 'night';
 }
 
+function todayDateStr(): string {
+  return toDateStrLocal(new Date());
+}
+
+function daysAgoDateStr(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days + 1);
+  return toDateStrLocal(d);
+}
+
+function toDateStrLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function DashboardPage() {
   const { t, i18n } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
@@ -63,6 +82,10 @@ export function DashboardPage() {
     claude: null,
     openai: null
   });
+
+  const [_usageStatsToday, setUsageStatsToday] = useState<SummaryTotal | null>(null);
+  const [usageStats7d, setUsageStats7d] = useState<SummaryTotal | null>(null);
+  const [usageStats9dGroups, setUsageStats9dGroups] = useState<SummaryRow[] | null>(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -151,13 +174,19 @@ export function DashboardPage() {
     const fetchStats = async () => {
       setLoading(true);
       try {
-        const [keysRes, filesRes, geminiRes, codexRes, claudeRes, openaiRes] = await Promise.allSettled([
+        const [keysRes, filesRes, geminiRes, codexRes, claudeRes, openaiRes, todayRes, sevendRes, ninedRes] = await Promise.allSettled([
           apiKeysApi.list(),
           authFilesApi.list(),
           providersApi.getGeminiKeys(),
           providersApi.getCodexConfigs(),
           providersApi.getClaudeConfigs(),
-          providersApi.getOpenAIProviders()
+          providersApi.getOpenAIProviders(),
+          // Usage statistics: today
+          usageStatisticsApi.getSummary({ from: todayDateStr(), to: todayDateStr(), group_by: 'day' }),
+          // Usage statistics: last 7 days summary
+          usageStatisticsApi.getSummary({ from: daysAgoDateStr(7), to: todayDateStr(), group_by: 'day' }),
+          // Usage statistics: last 9 days grouped by day (for chart)
+          usageStatisticsApi.getSummary({ from: daysAgoDateStr(9), to: todayDateStr(), group_by: 'day' }),
         ]);
 
         setStats({
@@ -171,6 +200,19 @@ export function DashboardPage() {
           claude: claudeRes.status === 'fulfilled' ? claudeRes.value.length : null,
           openai: openaiRes.status === 'fulfilled' ? openaiRes.value.length : null
         });
+
+        // Usage stats: only show card when calls succeed
+        if (todayRes.status === 'fulfilled') {
+          setUsageStatsToday(todayRes.value.summary);
+        } else {
+          console.warn('[Dashboard] usage stats (today) unavailable:', todayRes.reason);
+        }
+        if (sevendRes.status === 'fulfilled') {
+          setUsageStats7d(sevendRes.value.summary);
+        }
+        if (ninedRes.status === 'fulfilled') {
+          setUsageStats9dGroups(ninedRes.value.groups);
+        }
       } finally {
         setLoading(false);
       }
@@ -329,6 +371,84 @@ export function DashboardPage() {
         </div>
       </section>
 
+      {/* Usage overview section — only shown when usage stats available */}
+      {usageStats7d && (
+        <section className={`${styles.usageOverview} ${styles.statsSection}`}>
+          <h2 className={styles.sectionHeading}>{t('usage_statistics.usage_stats_overview')}</h2>
+
+          {/* 7-day summary cards */}
+          <div className={styles.usageSummaryRow}>
+            <div className={styles.usageSummaryCard}>
+              <span className={styles.usageSummaryLabel}>{t('usage_statistics.usage_total_tokens')}</span>
+              <span className={styles.usageSummaryValue}>{formatTokens(usageStats7d.tokens.total_tokens)}</span>
+            </div>
+            <div className={styles.usageSummaryCard}>
+              <span className={styles.usageSummaryLabel}>{t('usage_statistics.usage_cost_cny')}</span>
+              <span className={styles.usageSummaryValue}>{formatCost(usageStats7d.cost)}</span>
+            </div>
+            <div className={styles.usageSummaryCard}>
+              <span className={styles.usageSummaryLabel}>{t('usage_statistics.usage_total_requests')}</span>
+              <span className={styles.usageSummaryValue}>
+                {formatTokens(usageStats7d.requests)}
+                {usageStats7d.failed > 0 && (
+                  <span className={styles.usageFailedBadge}>{t('usage_statistics.usage_failed_requests')} {formatTokens(usageStats7d.failed)}</span>
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* 9-day bar chart */}
+          {usageStats9dGroups && usageStats9dGroups.length > 0 && (
+            <div className={styles.usageChart}>
+              <h3 className={styles.usageChartTitle}>{t('usage_statistics.usage_chart_title')}</h3>
+              <div className={styles.usageChartLegend}>
+                <span className={styles.usageChartLegendItem}>
+                  <span className={`${styles.usageChartLegendDot} ${styles.dotInput}`} />
+                  {t('usage_statistics.usage_chart_input')}
+                </span>
+                <span className={styles.usageChartLegendItem}>
+                  <span className={`${styles.usageChartLegendDot} ${styles.dotOutput}`} />
+                  {t('usage_statistics.usage_chart_output')}
+                </span>
+              </div>
+              <div className={styles.usageBarChart}>
+                {(() => {
+                  const groups = usageStats9dGroups;
+                  const maxTokens = Math.max(1, ...groups.map(g => g.tokens.input_tokens + g.tokens.output_tokens));
+                  return groups.map((g) => {
+                    const inputPct = maxTokens > 0 ? (g.tokens.input_tokens / maxTokens) * 100 : 0;
+                    const outputPct = maxTokens > 0 ? (g.tokens.output_tokens / maxTokens) * 100 : 0;
+                    const label = g.key.length >= 10 ? g.key.slice(5) : g.key;
+                    const costStr = g.cost.known ? formatCost(g.cost) : '-';
+                    return (
+                      <div key={g.key} className={styles.barCol}>
+                        <div className={styles.barStack}>
+                          <div className={`${styles.barSegment} ${styles.barInput}`} style={{ height: `${inputPct}%` }} />
+                          <div className={`${styles.barSegment} ${styles.barOutput}`} style={{ height: `${outputPct}%` }} />
+                        </div>
+                        <div className={styles.barTooltip}>
+                          <span className={styles.tooltipDate}>{g.key}</span>
+                          <span>{t('usage_statistics.tooltip_cost')}{costStr}</span>
+                          <span>{t('usage_statistics.tooltip_requests')}{formatTokens(g.requests)}</span>
+                          <span>{t('usage_statistics.tooltip_success')}{formatTokens(g.success)}</span>
+                          <span>{t('usage_statistics.tooltip_failed')}{formatTokens(g.failed)}</span>
+                          <span className={styles.tooltipDivider} />
+                          <span>{t('usage_statistics.tooltip_tokens')}{formatTokens(g.tokens.total_tokens)}</span>
+                          <span>{t('usage_statistics.tooltip_input')}{formatTokens(g.tokens.input_tokens)}</span>
+                          <span>{t('usage_statistics.tooltip_output')}{formatTokens(g.tokens.output_tokens)}</span>
+                          <span>{t('usage_statistics.tooltip_cached')}{formatTokens(g.tokens.cached_tokens)}</span>
+                        </div>
+                        <span className={styles.barLabel}>{label}</span>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Bento stats grid */}
       <section className={styles.statsSection}>
         <h2 className={styles.sectionHeading}>{t('dashboard.system_overview')}</h2>
@@ -352,6 +472,7 @@ export function DashboardPage() {
               </div>
             </Link>
           ))}
+
         </div>
       </section>
 

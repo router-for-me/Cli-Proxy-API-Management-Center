@@ -12,4 +12,5 @@ export * from './logs';
 export * from './version';
 export * from './models';
 export * from './transformers';
+export * from './usageStatistics';
 export * from './vertex';
