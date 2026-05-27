@@ -1040,7 +1040,10 @@
   },
   "stats": {
     "success": "成功",
-    "failure": "失敗"
+    "failure": "失敗",
+    "input_tokens": "輸入 Tokens",
+    "output_tokens": "輸出 Tokens",
+    "total_tokens": "總 Tokens"
   },
   "status_bar": {
     "success_short": "✓",

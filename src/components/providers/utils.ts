@@ -108,6 +108,48 @@ const EMPTY_RECENT_USAGE_ENTRY: RecentRequestUsageEntry = {
   recentRequests: [],
 };
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
+export function getProviderTokenUsage(
+  usageByProvider: ProviderRecentUsageMap,
+  provider: string,
+  apiKey?: string,
+  baseUrl?: string
+): TokenUsage {
+  const entry = getProviderRecentUsageEntry(usageByProvider, provider, apiKey, baseUrl);
+  return {
+    inputTokens: entry.inputTokens ?? 0,
+    outputTokens: entry.outputTokens ?? 0,
+    totalTokens: entry.totalTokens ?? 0,
+  };
+}
+
+export function getOpenAIProviderTotalTokenUsage(
+  provider: OpenAIProviderConfig,
+  usageByProvider: ProviderRecentUsageMap
+): TokenUsage {
+  return (provider.apiKeyEntries || []).reduce<TokenUsage>(
+    (total, entry) => {
+      const usage = getProviderTokenUsage(
+        usageByProvider,
+        provider.name,
+        entry.apiKey,
+        provider.baseUrl
+      );
+      return {
+        inputTokens: total.inputTokens + usage.inputTokens,
+        outputTokens: total.outputTokens + usage.outputTokens,
+        totalTokens: total.totalTokens + usage.totalTokens,
+      };
+    },
+    { inputTokens: 0, outputTokens: 0, totalTokens: 0 }
+  );
+}
+
 const normalizeProviderRecentKey = (value: unknown): string =>
   String(value ?? '').trim().toLowerCase();
 

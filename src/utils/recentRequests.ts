@@ -26,6 +26,9 @@ export interface RecentRequestUsageEntry {
   success: number;
   failed: number;
   recentRequests: RecentRequestBucket[];
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
 }
 
 export type ApiKeyUsageResponse = Record<
@@ -37,6 +40,9 @@ export type ApiKeyUsageResponse = Record<
       failed?: unknown;
       recent_requests?: unknown;
       recentRequests?: unknown;
+      input_tokens?: unknown;
+      output_tokens?: unknown;
+      total_tokens?: unknown;
     }
   >
 >;
@@ -109,10 +115,17 @@ export function normalizeRecentRequestUsageEntry(input: unknown): RecentRequestU
 
   const record = input as Record<string, unknown>;
 
+  const inputTokens = toFiniteNumber(record.input_tokens);
+  const outputTokens = toFiniteNumber(record.output_tokens);
+  const totalTokens = toFiniteNumber(record.total_tokens);
+
   return {
     success: normalizeUsageTotal(record.success),
     failed: normalizeUsageTotal(record.failed),
     recentRequests: normalizeRecentRequestBuckets(record.recent_requests ?? record.recentRequests),
+    ...(inputTokens > 0 ? { inputTokens } : {}),
+    ...(outputTokens > 0 ? { outputTokens } : {}),
+    ...(totalTokens > 0 ? { totalTokens } : {}),
   };
 }
 

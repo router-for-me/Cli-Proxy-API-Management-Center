@@ -34,8 +34,11 @@ import {
   getOpenAIProviderTotalStats,
   getOpenAIProviderKey,
   getProviderTotalStats,
+  getProviderTokenUsage,
+  getOpenAIProviderTotalTokenUsage,
   type ProviderRecentUsageMap,
 } from '../utils';
+import { formatTokenCount } from './openAICompatBalanceConfigs';
 
 type SortOption = 'name' | 'priority' | 'recent-success';
 type SortDirection = 'asc' | 'desc';
@@ -626,6 +629,11 @@ function OpenAISectionInner({
 
   const renderProviderCard = ({ config: provider, originalIndex }: IndexedOpenAIProvider) => {
     const stats = getOpenAIProviderTotalStats(provider, usageByProvider);
+    const providerTokenUsage = getOpenAIProviderTotalTokenUsage(provider, usageByProvider);
+    const hasProviderTokenData =
+      providerTokenUsage.inputTokens > 0 ||
+      providerTokenUsage.outputTokens > 0 ||
+      providerTokenUsage.totalTokens > 0;
     const headerEntries = Object.entries(provider.headers || {});
     const apiKeyEntries = provider.apiKeyEntries || [];
     const statusData =
@@ -700,6 +708,16 @@ function OpenAISectionInner({
                     entry.apiKey,
                     provider.baseUrl
                   );
+                  const entryTokenUsage = getProviderTokenUsage(
+                    usageByProvider,
+                    provider.name,
+                    entry.apiKey,
+                    provider.baseUrl
+                  );
+                  const hasTokenData =
+                    entryTokenUsage.inputTokens > 0 ||
+                    entryTokenUsage.outputTokens > 0 ||
+                    entryTokenUsage.totalTokens > 0;
                   return (
                     <div
                       key={getApiKeyEntryRenderKey(entry, entryIndex)}
@@ -721,6 +739,11 @@ function OpenAISectionInner({
                         >
                           <IconX size={12} /> {entryStats.failure}
                         </span>
+                        {hasTokenData && (
+                          <span className={styles.apiKeyEntryStat}>
+                            {t('stats.total_tokens')}: {formatTokenCount(entryTokenUsage.totalTokens)}
+                          </span>
+                        )}
                       </div>
                       {balanceKind && (
                         <OpenAICompatBalancePanel
@@ -766,6 +789,19 @@ function OpenAISectionInner({
             <span className={`${styles.statPill} ${styles.statFailure}`}>
               {t('stats.failure')}: {stats.failure}
             </span>
+            {hasProviderTokenData && (
+              <>
+                <span className={styles.statPill}>
+                  {t('stats.input_tokens')}: {formatTokenCount(providerTokenUsage.inputTokens)}
+                </span>
+                <span className={styles.statPill}>
+                  {t('stats.output_tokens')}: {formatTokenCount(providerTokenUsage.outputTokens)}
+                </span>
+                <span className={styles.statPill}>
+                  {t('stats.total_tokens')}: {formatTokenCount(providerTokenUsage.totalTokens)}
+                </span>
+              </>
+            )}
           </div>
           <ProviderStatusBar statusData={statusData} />
         </div>
