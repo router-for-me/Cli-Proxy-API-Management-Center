@@ -52,8 +52,8 @@
 }
 
 .logo {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-md);
   object-fit: contain;
   flex-shrink: 0;
@@ -66,7 +66,7 @@
 }
 
 .title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
@@ -84,13 +84,13 @@
 
 .searchInput {
   width: 100%;
-  height: 36px;
-  padding: 0 12px 0 36px;
+  height: 38px;
+  padding: 0 12px 0 38px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 14px;
   box-sizing: border-box;
 
   &::placeholder {
@@ -107,7 +107,7 @@
 .searchIcon {
   position: absolute;
   top: 50%;
-  left: 12px;
+  left: 13px;
   transform: translateY(-50%);
   color: var(--muted-foreground);
   pointer-events: none;
@@ -119,7 +119,7 @@
   background: var(--amber-10);
   border-radius: var(--radius-md);
   padding: 12px 14px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--amber-text);
   line-height: 1.5;
 }
@@ -135,7 +135,7 @@
   padding: 32px;
   text-align: center;
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .emptyAction {

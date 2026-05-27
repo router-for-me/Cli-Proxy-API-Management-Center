@@ -18,7 +18,7 @@
 }
 
 .primarySub {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted-foreground);
   font-family: $font-mono;
   overflow: hidden;
@@ -29,7 +29,7 @@
 
 .baseUrl {
   font-family: $font-mono;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted-foreground);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -40,12 +40,12 @@
 .chip {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--muted-bg);
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .metricsCell {
@@ -59,11 +59,11 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--muted-bg);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
   white-space: nowrap;
 }
@@ -81,12 +81,12 @@
 .flagTag {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: var(--radius-md);
   border: 1px solid var(--primary-30);
   background: var(--primary-10);
   color: var(--primary-color);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
   white-space: nowrap;
@@ -96,10 +96,10 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: var(--radius-md);
   border: 1px solid;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -122,9 +122,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.4;
   border: 1px solid transparent;
@@ -173,8 +173,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-md);

@@ -93,7 +93,7 @@ export function ProviderResourcePanel({
           {group.id !== 'ampcode' ? (
             <div className={styles.searchWrap}>
               <span className={styles.searchIcon} aria-hidden="true">
-                <IconSearch size={14} />
+                <IconSearch size={16} />
               </span>
               <input
                 type="search"
@@ -141,15 +141,15 @@ export function ProviderResourcePanel({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
-                padding: '6px 12px',
+                padding: '7px 13px',
                 borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border-color)',
                 background: 'var(--bg-primary)',
                 cursor: 'pointer',
-                fontSize: 13,
+                fontSize: 14,
               }}
             >
-              <IconPlus size={14} />
+              <IconPlus size={16} />
               <span>{t('providersPage.actions.new')}</span>
             </button>
           </div>

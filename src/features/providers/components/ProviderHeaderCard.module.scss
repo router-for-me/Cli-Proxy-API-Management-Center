@@ -28,14 +28,14 @@
 
 .title {
   margin: 0;
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .subtitle {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted-foreground);
   line-height: 1.5;
 }
@@ -55,10 +55,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
-  padding: 0 12px;
+  height: 34px;
+  padding: 0 14px;
   border-radius: var(--radius-md);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color $transition-fast, border-color $transition-fast,
@@ -111,12 +111,12 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--muted-bg);
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 

@@ -15,7 +15,7 @@
 }
 
 .label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted-foreground);
   white-space: nowrap;
 }
@@ -24,8 +24,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--bg-primary);
@@ -47,13 +47,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 28px;
-  padding: 0 10px;
+  height: 30px;
+  padding: 0 11px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
   transition: background-color $transition-fast, border-color $transition-fast;
 
@@ -93,12 +93,12 @@
 }
 
 .filterToolbarBtn {
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--bg-primary);
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
 
   &:hover:not(:disabled) {
@@ -115,7 +115,7 @@
 .filterEmpty {
   padding: 12px;
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted-foreground);
 }
 
@@ -141,6 +141,6 @@
 
 .filterItemLabel {
   font-family: $font-mono;
-  font-size: 12px;
+  font-size: 13px;
   word-break: break-all;
 }

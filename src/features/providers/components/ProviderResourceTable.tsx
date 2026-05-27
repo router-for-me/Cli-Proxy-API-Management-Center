@@ -136,7 +136,7 @@ export function ProviderResourceTable({
     if (r.brand === 'ampcode' && r.flags.isPlaceholder) {
       return (
         <span className={`${styles.statusBadge} ${styles.statusDisabled}`}>
-          <IconAlertTriangle size={12} />
+          <IconAlertTriangle size={14} />
           {t('providersPage.status.notConfigured')}
         </span>
       );
@@ -144,14 +144,14 @@ export function ProviderResourceTable({
     if (r.disabled) {
       return (
         <span className={`${styles.statusBadge} ${styles.statusDisabled}`}>
-          <IconAlertTriangle size={12} />
+          <IconAlertTriangle size={14} />
           {t('providersPage.status.disabled')}
         </span>
       );
     }
     return (
       <span className={`${styles.statusBadge} ${styles.statusActive}`}>
-        <IconCheckCircle2 size={12} />
+        <IconCheckCircle2 size={14} />
         {t('providersPage.status.active')}
       </span>
     );
@@ -297,7 +297,7 @@ export function ProviderResourceTable({
                       onView(resource);
                     }}
                   >
-                    <IconEye size={14} />
+                    <IconEye size={16} />
                   </button>
                   <button
                     type="button"
@@ -310,7 +310,7 @@ export function ProviderResourceTable({
                       onEdit(resource);
                     }}
                   >
-                    <IconPencil size={14} />
+                    <IconPencil size={16} />
                   </button>
                   {isAmpcode ? (
                     <button
@@ -324,7 +324,7 @@ export function ProviderResourceTable({
                         onDelete(resource);
                       }}
                     >
-                      <IconTrash2 size={14} />
+                      <IconTrash2 size={16} />
                     </button>
                   ) : (
                     <button
@@ -338,7 +338,7 @@ export function ProviderResourceTable({
                         onDelete(resource);
                       }}
                     >
-                      <IconTrash2 size={14} />
+                      <IconTrash2 size={16} />
                     </button>
                   )}
                 </div>

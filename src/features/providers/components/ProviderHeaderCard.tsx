@@ -52,7 +52,7 @@ export function ProviderHeaderCard({
             }
           >
             <span className={`${styles.btnIcon} ${isFetching ? styles.spin : ''}`.trim()}>
-              {isFetching ? <IconLoader2 size={14} /> : <IconRefreshCw size={14} />}
+              {isFetching ? <IconLoader2 size={16} /> : <IconRefreshCw size={16} />}
             </span>
             <span>
               {isFetching
@@ -66,7 +66,7 @@ export function ProviderHeaderCard({
             onClick={onNew}
             disabled={isNewDisabled}
           >
-            <IconPlus size={14} />
+            <IconPlus size={16} />
             <span>{newLabel ?? t('providersPage.actions.new')}</span>
           </button>
         </div>
