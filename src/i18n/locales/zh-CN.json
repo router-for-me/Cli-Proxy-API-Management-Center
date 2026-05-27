@@ -1313,6 +1313,8 @@
       "apiKeyEntriesSection": "API 密钥条目",
       "apiKeyEntry": "密钥 #{{index}}",
       "addApiKeyEntry": "添加密钥条目",
+      "showApiKey": "显示密钥",
+      "hideApiKey": "隐藏密钥",
       "validation": {
         "nameRequired": "名称必填",
         "apiKeyRequired": "至少填写一个 API 密钥",

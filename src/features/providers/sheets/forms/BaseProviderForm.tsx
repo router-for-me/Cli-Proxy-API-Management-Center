@@ -4,6 +4,8 @@ import {
   IconAlertTriangle,
   IconCheckCircle2,
   IconDownload,
+  IconEye,
+  IconEyeOff,
   IconLoader2,
   IconPlus,
   IconX,
@@ -64,6 +66,19 @@ const headersObjectToText = (headers?: Record<string, string>): string =>
 
 const stripDisableAllRule = (list?: string[]): string[] =>
   (list ?? []).filter((s) => s.trim() !== '*');
+
+/** Populate apiKey from resource.raw when editing a non-OpenAI provider. */
+const applyRawApiKey = (
+  brand: Exclude<ProviderBrand, 'ampcode'>,
+  resource: ProviderResource | null,
+  mode: 'create' | 'edit',
+  form: ProviderEntryFormInput
+): void => {
+  if (mode === 'edit' && resource && brand !== 'openaiCompatibility') {
+    const rawKey = (resource.raw as { apiKey?: string } | undefined)?.apiKey ?? '';
+    if (rawKey) form.apiKey = rawKey;
+  }
+};
 
 function buildInitialForm(
   brand: Exclude<ProviderBrand, 'ampcode'>,
@@ -204,13 +219,37 @@ export function BaseProviderForm({
   const { t } = useTranslation();
   const descriptor = PROVIDER_DESCRIPTORS[brand];
   const fid = useId();
-  const [form, setForm] = useState<ProviderEntryFormInput>(() =>
-    buildInitialForm(brand, resource, mode)
-  );
-  const [initialFormSignature] = useState<string>(() =>
-    JSON.stringify(buildInitialForm(brand, resource, mode))
-  );
+  const [form, setForm] = useState<ProviderEntryFormInput>(() => {
+    const initial = buildInitialForm(brand, resource, mode);
+    applyRawApiKey(brand, resource, mode, initial);
+    return initial;
+  });
+  const [initialFormSignature] = useState<string>(() => {
+    const initial = buildInitialForm(brand, resource, mode);
+    applyRawApiKey(brand, resource, mode, initial);
+    return JSON.stringify(initial);
+  });
   const [error, setError] = useState<string | null>(null);
+  const [showPasswords, setShowPasswords] = useState<Set<number>>(new Set());
+  const [showSingleApiKey, setShowSingleApiKey] = useState(false);
+
+  // Reset password visibility when the sheet closes or resource changes
+  useEffect(() => {
+    setShowPasswords(new Set());
+    setShowSingleApiKey(false);
+  }, [resource?.id, mode]);
+
+  const togglePasswordVisibility = (idx: number) => {
+    setShowPasswords((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
+  };
 
   const isDirty = useMemo(
     () => JSON.stringify(form) !== initialFormSignature,
@@ -454,19 +493,43 @@ export function BaseProviderForm({
             <label className={styles.label} htmlFor={`${fid}-apiKey`}>
               {t('providersPage.form.apiKey')}
             </label>
-            <input
-              id={`${fid}-apiKey`}
-              className={styles.input}
-              type="password"
-              value={form.apiKey}
-              onChange={(e) => updateField('apiKey', e.target.value)}
-              placeholder={
-                mode === 'edit'
-                  ? t('providersPage.form.apiKeyEditPlaceholder')
-                  : t('providersPage.form.apiKeyCreatePlaceholder')
-              }
-              disabled={mutating}
-            />
+            <div className={styles.passwordField}>
+              <input
+                id={`${fid}-apiKey`}
+                className={styles.passwordInput}
+                type={showSingleApiKey ? 'text' : 'password'}
+                value={form.apiKey}
+                onChange={(e) => updateField('apiKey', e.target.value)}
+                placeholder={
+                  mode === 'edit'
+                    ? t('providersPage.form.apiKeyEditPlaceholder')
+                    : t('providersPage.form.apiKeyCreatePlaceholder')
+                }
+                disabled={mutating}
+              />
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={() => setShowSingleApiKey((v) => !v)}
+                disabled={mutating}
+                aria-label={
+                  showSingleApiKey
+                    ? t('providersPage.form.hideApiKey')
+                    : t('providersPage.form.showApiKey')
+                }
+                title={
+                  showSingleApiKey
+                    ? t('providersPage.form.hideApiKey')
+                    : t('providersPage.form.showApiKey')
+                }
+              >
+                {showSingleApiKey ? (
+                  <IconEyeOff size={16} />
+                ) : (
+                  <IconEye size={16} />
+                )}
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -695,21 +758,45 @@ export function BaseProviderForm({
                     <label className={styles.label}>
                       {t('providersPage.form.apiKey')}
                     </label>
-                    <input
-                      className={styles.input}
-                      type="password"
-                      value={entry.apiKey}
-                      onChange={(e) =>
-                        updateField(
-                          'apiKeyEntries',
-                          apiKeyEntries.map((it, i) =>
-                            i === idx ? { ...it, apiKey: e.target.value } : it
+                    <div className={styles.passwordField}>
+                      <input
+                        className={styles.passwordInput}
+                        type={showPasswords.has(idx) ? 'text' : 'password'}
+                        value={entry.apiKey}
+                        onChange={(e) =>
+                          updateField(
+                            'apiKeyEntries',
+                            apiKeyEntries.map((it, i) =>
+                              i === idx ? { ...it, apiKey: e.target.value } : it
+                            )
                           )
-                        )
-                      }
-                      disabled={mutating}
-                      placeholder={t('providersPage.form.apiKeyCreatePlaceholder')}
-                    />
+                        }
+                        disabled={mutating}
+                        placeholder={t('providersPage.form.apiKeyCreatePlaceholder')}
+                      />
+                      <button
+                        type="button"
+                        className={styles.passwordToggle}
+                        onClick={() => togglePasswordVisibility(idx)}
+                        disabled={mutating}
+                        aria-label={
+                          showPasswords.has(idx)
+                            ? t('providersPage.form.hideApiKey')
+                            : t('providersPage.form.showApiKey')
+                        }
+                        title={
+                          showPasswords.has(idx)
+                            ? t('providersPage.form.hideApiKey')
+                            : t('providersPage.form.showApiKey')
+                        }
+                      >
+                        {showPasswords.has(idx) ? (
+                          <IconEyeOff size={16} />
+                        ) : (
+                          <IconEye size={16} />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <div className={styles.field}>
                     <label className={styles.label}>

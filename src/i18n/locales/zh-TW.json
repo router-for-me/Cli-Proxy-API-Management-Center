@@ -1339,6 +1339,8 @@
       "apiKeyEntriesSection": "API 金鑰條目",
       "apiKeyEntry": "金鑰 #{{index}}",
       "addApiKeyEntry": "新增金鑰條目",
+      "showApiKey": "顯示金鑰",
+      "hideApiKey": "隱藏金鑰",
       "validation": {
         "nameRequired": "名稱必填",
         "apiKeyRequired": "至少填寫一個 API 金鑰",
