@@ -502,3 +502,14 @@ export function IconSidebarSystem({ size = 20, ...props }: IconProps) {
     </svg>
   );
 }
+
+export function IconSidebarUsageStats({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...sidebarSvgProps} width={size} height={size} {...props}>
+      <path d="M3 3v18h18" />
+      <path d="M18 17V9" />
+      <path d="M13 17V5" />
+      <path d="M8 17v-3" />
+    </svg>
+  );
+}

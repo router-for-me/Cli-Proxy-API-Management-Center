@@ -565,3 +565,266 @@
     opacity: 0.5;
   }
 }
+
+// ─── Usage Statistics Card ────────────────────────────────────
+
+// ─── Usage Overview Section ──────────────────────────────────
+
+.usageOverview {
+  position: relative;
+  z-index: 1;
+  animation: cardEnter 0.4s ease-out 0.25s both;
+}
+
+.usageSummaryRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-md;
+
+  @media (max-width: 800px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.usageSummaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: $spacing-lg;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--bg-primary) 86%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 72%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--border-color) 66%, transparent);
+  border-radius: $radius-lg;
+  --glass-blur: 12px;
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+}
+
+.usageSummaryLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.usageSummaryValue {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+
+.usageFailedBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: $radius-full;
+  background: rgba($error-color, 0.12);
+  color: $error-color;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+// ─── Bar Chart ────────────────────────────────────────────
+
+.usageChart {
+  margin-top: $spacing-lg;
+  padding: $spacing-lg;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--bg-primary) 86%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 72%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--border-color) 66%, transparent);
+  border-radius: $radius-lg;
+  --glass-blur: 12px;
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+}
+
+.usageChartTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 0 0 $spacing-sm;
+}
+
+.usageChartLegend {
+  display: flex;
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+}
+
+.usageChartLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.usageChartLegendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+
+  &.dotInput {
+    background: var(--primary-color);
+  }
+
+  &.dotOutput {
+    background: $success-color;
+  }
+}
+
+.usageBarChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 160px;
+}
+
+.barCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+.barStack {
+  flex: 1;
+  width: 100%;
+  max-width: 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-radius: 4px 4px 0 0;
+  overflow: hidden;
+  cursor: default;
+}
+
+.barCol:hover .barTooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.barTooltip {
+  position: absolute;
+  bottom: calc(100% - 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  z-index: 10;
+  min-width: 180px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
+  white-space: nowrap;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--bg-primary);
+  }
+}
+
+.tooltipDate {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.tooltipDivider {
+  display: block;
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.barSegment {
+  width: 100%;
+  min-height: 0;
+  transition: height 0.3s ease;
+}
+
+.barInput {
+  background: color-mix(in srgb, var(--primary-color) 70%, transparent);
+}
+
+.barOutput {
+  background: color-mix(in srgb, $success-color 70%, transparent);
+}
+
+.barLabel {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.statsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.statsSection_block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statsSectionLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: var(--text-tertiary);
+}
+
+.statsMetrics {
+  display: flex;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  span {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.statsDivider {
+  height: 1px;
+  background: var(--border-color);
+  margin: $spacing-xs 0;
+}

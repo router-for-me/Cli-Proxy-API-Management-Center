@@ -21,6 +21,7 @@ import {
   IconSidebarProviders,
   IconSidebarQuota,
   IconSidebarSystem,
+  IconSidebarUsageStats,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import {
@@ -41,6 +42,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
+  usageStats: <IconSidebarUsageStats size={18} />,
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
@@ -430,6 +432,12 @@ export function MainLayout() {
           labelKey: 'nav.quota_management',
           metaKey: 'nav_meta.quota_management',
           icon: sidebarIcons.quota,
+        },
+        {
+          path: '/usage-statistics',
+          labelKey: 'usage_statistics.nav_label',
+          metaKey: 'usage_statistics.nav_meta',
+          icon: sidebarIcons.usageStats,
         },
         ...(config?.loggingToFile
           ? [

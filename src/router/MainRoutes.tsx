@@ -9,6 +9,7 @@ import { QuotaPage } from '@/pages/QuotaPage';
 import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
+import { UsageStatisticsPage } from '@/pages/UsageStatisticsPage';
 
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -22,6 +23,7 @@ const mainRoutes = [
   { path: '/auth-files/oauth-model-alias', element: <AuthFilesOAuthModelAliasEditPage /> },
   { path: '/oauth', element: <OAuthPage /> },
   { path: '/quota', element: <QuotaPage /> },
+  { path: '/usage-statistics', element: <UsageStatisticsPage /> },
   { path: '/config', element: <ConfigPage /> },
   { path: '/logs', element: <LogsPage /> },
   { path: '/system', element: <SystemPage /> },
