@@ -1,0 +1,3649 @@
+@use '../styles/mixins.scss' as *;
+
+.page,
+.monitorModal {
+  --monitor-bg: var(--bg-secondary);
+  --monitor-surface: var(--bg-primary);
+  --monitor-surface-elevated: color-mix(in srgb, var(--bg-primary) 82%, var(--bg-secondary));
+  --monitor-surface-muted: var(--bg-tertiary);
+  --monitor-surface-hover: color-mix(in srgb, var(--bg-tertiary) 74%, var(--bg-primary));
+  --monitor-ink: var(--text-primary);
+  --monitor-muted: var(--text-secondary);
+  --monitor-line: var(--border-color);
+  --monitor-line-strong: var(--border-primary);
+  --monitor-accent: var(--primary-color);
+  --monitor-accent-strong: var(--primary-active);
+  --monitor-accent-soft: var(--color-primary-light-9);
+  --monitor-cyan: #06b6d4;
+  --monitor-green: var(--success-color);
+  --monitor-amber: var(--warning-color);
+  --monitor-red: var(--error-color);
+  color: var(--monitor-ink);
+}
+
+.page {
+  container: monitoring-page / inline-size;
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.headerShell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 20px;
+  min-width: 0;
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pageTitle {
+  margin: 0;
+  color: var(--monitor-ink);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.description {
+  margin: 0;
+  color: var(--monitor-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.statusBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: min(100%, 520px);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.statusMeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.statusMeta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--monitor-surface-muted);
+  color: var(--monitor-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusMetaWarn {
+  color: var(--monitor-red) !important;
+  background: color-mix(in srgb, var(--monitor-red) 10%, var(--monitor-surface)) !important;
+}
+
+.loadingOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.loadingOverlayContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 20px;
+  border: 1px solid var(--monitor-line);
+  background: var(--monitor-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.masthead,
+.panel,
+.summaryCard {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--monitor-line);
+  border-radius: 24px;
+  background: var(--monitor-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  padding: 28px;
+}
+
+.mastheadGlow {
+  display: none;
+}
+
+.mastheadCopy {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--monitor-accent) 18%, transparent);
+  background: color-mix(in srgb, var(--monitor-accent) 10%, var(--monitor-surface));
+  color: var(--monitor-accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 42px;
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 760px;
+  color: var(--monitor-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.mastheadControls {
+  display: grid;
+  gap: 14px;
+  min-width: 420px;
+  justify-items: end;
+}
+
+.segmentedControl {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--monitor-line);
+  background: var(--monitor-surface-elevated);
+}
+
+.segmentButton,
+.refreshButton,
+.actionButton,
+.filterToggleChip,
+.quickLinkButton,
+.clearButton,
+.inlineActionButton,
+.quotaRefreshButton,
+.accountButton,
+.quickLink {
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.actionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--monitor-line);
+  border-radius: 20px;
+  background: var(--monitor-surface);
+  box-shadow: var(--shadow);
+}
+
+.actionGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.actionGroupNav {
+  justify-content: flex-end;
+}
+
+.actionButton,
+.filterToggleChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid var(--monitor-line);
+  border-radius: 999px;
+  background: var(--monitor-surface-elevated);
+  color: var(--monitor-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.actionButtonPrimary {
+  border-color: color-mix(in srgb, var(--monitor-accent) 24%, var(--monitor-line));
+  background: color-mix(in srgb, var(--monitor-accent) 10%, var(--monitor-surface));
+  color: var(--monitor-accent-strong);
+}
+
+.quickNavLink {
+  color: var(--monitor-muted);
+}
+
+.actionButton:hover,
+.filterToggleChip:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--monitor-accent) 35%, var(--monitor-line-strong));
+  background: var(--monitor-surface-hover);
+  color: var(--monitor-ink);
+}
+
+.actionButton:disabled,
+.filterToggleChip:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.segmentButton {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--monitor-muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.segmentButton:hover {
+  transform: translateY(-1px);
+  color: var(--monitor-ink);
+}
+
+.segmentButtonActive {
+  background: linear-gradient(135deg, var(--monitor-accent), var(--monitor-cyan));
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+}
+
+.customRangeModalBody {
+  display: grid;
+  gap: 12px;
+}
+
+.customRangeModalGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+.customRangeModalGrid :global(.form-group) {
+  margin-bottom: 0;
+}
+
+.customRangeModalGrid :global(label) {
+  margin-bottom: 5px;
+  color: var(--monitor-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.customRangeInput {
+  min-height: 38px;
+  border-radius: 14px;
+  font-size: 12px;
+}
+
+.customRangeError {
+  grid-column: 1 / -1;
+  color: var(--monitor-red);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.customRangeModalFooter {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.refreshControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.syncPill,
+.metaPill,
+.quickLink,
+.quickLinkButton,
+.clearButton,
+.inlineActionButton,
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--monitor-line);
+  background: var(--monitor-surface-elevated);
+}
+
+.syncPill,
+.metaPill,
+.quickLink,
+.quickLinkButton {
+  color: var(--monitor-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.syncPill {
+  min-height: 44px;
+  padding: 0 14px;
+}
+
+.metaPill,
+.quickLink,
+.quickLinkButton {
+  gap: 6px;
+}
+
+.quickLink,
+.quickLinkButton {
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.quickLink:hover,
+.quickLinkButton:hover,
+.clearButton:hover,
+.inlineActionButton:hover,
+.quotaRefreshButton:hover,
+.refreshButton:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--monitor-accent) 35%, var(--monitor-line-strong));
+  background: var(--monitor-surface-hover);
+  color: var(--monitor-ink);
+}
+
+.quickLinkButton:disabled,
+.refreshButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.clearButton,
+.inlineActionButton {
+  gap: 8px;
+  color: var(--monitor-ink);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.autoRefreshField {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px 0 14px;
+  border-radius: 16px;
+  border: 1px solid var(--monitor-line);
+  background: var(--monitor-surface);
+}
+
+.autoRefreshLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--monitor-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.autoRefreshSelect {
+  width: 116px;
+  flex: 0 0 auto;
+}
+
+.autoRefreshSelectTrigger {
+  min-width: 92px;
+  height: 36px !important;
+  padding: 0 2px 0 8px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--monitor-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.autoRefreshSelectTrigger:hover,
+.autoRefreshSelectTrigger:focus,
+.autoRefreshSelectTrigger[aria-expanded='true'] {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.refreshButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 112px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--monitor-line);
+  border-radius: 16px;
+  background: var(--monitor-surface);
+  color: var(--monitor-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.refreshButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.refreshIcon,
+.refreshIconSpinning {
+  display: block;
+  flex-shrink: 0;
+  transform-origin: center;
+}
+
+.refreshIconSpinning {
+  animation: monitor-spin 0.9s linear infinite;
+}
+
+.refreshButtonLabel {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.panel {
+  min-width: 0;
+  padding: 22px;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.panelHeaderCopy {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0;
+  min-width: 0;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.panelTitleWithHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.panelTitleHintIcon {
+  flex: 0 0 auto;
+  color: var(--monitor-muted);
+}
+
+.panelSubtitle {
+  margin: 6px 0 0;
+  color: var(--monitor-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.panelExtra {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.accountOverviewHeaderActions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  width: 100%;
+}
+
+.accountOverviewToolbarRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.accountOverviewSearchWrap {
+  flex: 0 0 auto;
+  width: 220px;
+  min-width: 0;
+}
+
+.accountOverviewSearchWrap :global(.form-group) {
+  margin-bottom: 0;
+}
+
+.accountOverviewSearchInput {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 36px 0 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.accountOverviewToolButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--monitor-line);
+  border-radius: 12px;
+  background: var(--monitor-surface-elevated);
+  color: var(--monitor-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.accountOverviewToolButton:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--monitor-accent) 35%, var(--monitor-line-strong));
+  background: var(--monitor-surface-hover);
+}
+
+.accountOverviewToolButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.accountOverviewFilterButtonActive {
+  border-color: color-mix(in srgb, var(--monitor-accent) 42%, var(--monitor-line-strong));
+  background: color-mix(in srgb, var(--monitor-accent) 10%, var(--monitor-surface-elevated));
+  color: var(--monitor-accent-strong);
+}
+
+.accountOverviewFilterCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--monitor-accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.accountOverviewModeToggle {
+  width: auto;
+  padding: 4px;
+}
+
+.accountOverviewModeToggle .segmentButton {
+  min-height: 30px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+.accountOverviewSortBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.accountOverviewSortLabel {
+  color: var(--monitor-muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.accountOverviewSortSelect {
+  width: 172px;
+  flex: 0 0 auto;
+}
+
+.accountOverviewSortSelectTrigger {
+  min-width: 132px;
+  height: 38px !important;
+  padding: 0 2px 0 10px !important;
+  border-radius: 12px !important;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.accountPanel .panelHeaderCopy {
+  flex: 0 1 440px;
+  max-width: 440px;
+}
+
+.accountPanel .panelExtra {
+  flex: 1 1 680px;
+}
+
+.toolbarPanel,
+.pricingPanel,
+.accountPanel,
+.realtimePanel {
+  background: var(--monitor-surface);
+}
+
+.controlBar,
+.toolbarControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--monitor-line) 82%, transparent);
+}
+
+.filterBar {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.filterBarCollapsed {
+  display: none;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+
+  @include narrow-laptop {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @include compact-desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.filterAccountStack {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.filterAccountStack :global(.form-group) {
+  margin-bottom: 0;
+}
+
+.filterSearchRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.filterSearchInputWrap,
+.filterSearchAction {
+  min-width: 0;
+}
+
+.filterSearchInputWrap :global(.form-group) {
+  min-width: min(100%, 360px);
+  margin-bottom: 0;
+}
+
+.filterSearchAction {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  max-width: 100%;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--monitor-line);
+  background: var(--monitor-surface);
+  color: var(--monitor-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.toolbarFoot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.searchInput,
+.filterSearchInput {
+  width: 100%;
+  min-height: 46px;
+  padding-right: 40px;
+  border-radius: 16px;
+}
+
+.toolbarMeta,
+.quickLinkRow,
+.inlineMetrics,
+.savedPricesActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toolbarMeta,
+.quickLinkRow {
+  align-items: center;
+}
+
+.quickLinkRow {
+  justify-content: flex-end;
+}
+
+.realtimeHeaderActions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.realtimeHeaderActions > * {
+  max-width: 100%;
+}
+
+.inlineMetrics span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--monitor-line);
+  background: var(--monitor-surface-elevated);
+  color: var(--monitor-muted);
+  font-size: 12px;
+}
+
+.filterToggleChip {
+  min-height: 30px;
+  padding: 0 10px;
+  color: var(--monitor-muted);
+}
+
+.filterToggleChipActive {
+  border-color: color-mix(in srgb, var(--monitor-red) 30%, var(--monitor-line));
+  background: color-mix(in srgb, var(--monitor-red) 10%, var(--monitor-surface));
+  color: var(--monitor-red);
+}
+
+.errorBox,
+.callout {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--monitor-line);
+}
+
+.errorBox {
+  margin-top: 14px;
+  border-color: color-mix(in srgb, var(--monitor-red) 28%, var(--monitor-line));
+  background: color-mix(in srgb, var(--monitor-red) 10%, var(--monitor-surface));
+  color: var(--monitor-red);
+}
+
+.callout {
+  margin-top: 14px;
+  border-color: color-mix(in srgb, var(--monitor-accent) 24%, var(--monitor-line));
+  background: color-mix(in srgb, var(--monitor-accent) 8%, var(--monitor-surface));
+}
+
+.configLink {
+  color: var(--monitor-accent);
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.summarySection {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.summaryHero,
+.summarySub,
+.summaryGrid {
+  display: grid;
+  gap: 14px;
+}
+
+.summaryHero {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  @include narrow-laptop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.summarySub {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  @include narrow-laptop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.summaryCard {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 18px;
+  background: var(--monitor-surface-elevated);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.summaryCardPrimary {
+  min-height: 150px;
+}
+
+.summaryCardSecondary {
+  min-height: 104px;
+  padding: 15px 16px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 78%, var(--monitor-surface));
+  box-shadow: var(--shadow);
+}
+
+.summaryCard:hover {
+  transform: translateY(-1px);
+}
+
+.summaryCard:hover {
+  border-color: var(--monitor-line-strong);
+  box-shadow: var(--shadow-lg);
+}
+
+.summaryLabel,
+.savedPricesHeader,
+.priceField label {
+  color: var(--monitor-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.summaryValue {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 31px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryCardSecondary .summaryValue {
+  font-size: 23px;
+}
+
+.summaryMeta {
+  margin-top: auto;
+  color: var(--monitor-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.statusBadge {
+  gap: 6px;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tonegood {
+  color: var(--monitor-green);
+}
+
+.tonewarn {
+  color: var(--monitor-amber);
+}
+
+.tonebad {
+  color: var(--monitor-red);
+}
+
+.statusBadge.tonegood {
+  border-color: color-mix(in srgb, var(--monitor-green) 26%, var(--monitor-line));
+  background: color-mix(in srgb, var(--monitor-green) 10%, var(--monitor-surface));
+}
+
+.statusBadge.tonewarn {
+  border-color: color-mix(in srgb, var(--monitor-amber) 24%, var(--monitor-line));
+  background: color-mix(in srgb, var(--monitor-amber) 10%, var(--monitor-surface));
+}
+
+.statusBadge.tonebad {
+  border-color: color-mix(in srgb, var(--monitor-red) 26%, var(--monitor-line));
+  background: color-mix(in srgb, var(--monitor-red) 10%, var(--monitor-surface));
+}
+
+.goodText {
+  color: var(--monitor-green);
+}
+
+.warnText {
+  color: var(--monitor-amber);
+}
+
+.badText {
+  color: var(--monitor-red);
+}
+
+.patternBars {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 6px;
+  gap: 4px;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--monitor-line);
+  background: var(--monitor-surface-muted);
+}
+
+.patternBarsPlain {
+  grid-auto-columns: 4px;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.patternBar {
+  width: 6px;
+  height: 16px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--monitor-muted) 24%, transparent);
+}
+
+.patternBarPlain {
+  width: 4px;
+  height: 24px;
+}
+
+.patternSuccess {
+  background: var(--monitor-green);
+}
+
+.patternFailed {
+  background: var(--monitor-red);
+}
+
+.priceEditor {
+  margin-top: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.priceGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+}
+
+.priceField {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.priceField :global(.form-group) {
+  margin-bottom: 0;
+}
+
+.priceField :global(.input) {
+  min-height: 44px;
+}
+
+.priceField input,
+.priceField button {
+  min-height: 44px;
+}
+
+.priceFieldModel {
+  grid-column: span 5;
+}
+
+.priceFieldPrompt {
+  grid-column: span 7;
+}
+
+.priceFieldCompletion,
+.priceFieldCache {
+  grid-column: span 6;
+}
+
+.priceActionsBar {
+  margin-top: 2px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.savedPricesList {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.savedPricesHeader {
+  color: var(--monitor-ink);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.savedPricesTableWrap {
+  overflow-x: auto;
+  border: 1px solid color-mix(in srgb, var(--monitor-line-strong) 30%, var(--monitor-line));
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--monitor-surface-elevated) 90%, white 10%),
+    var(--monitor-surface)
+  );
+}
+
+.savedPricesTable {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.savedPricesTable thead th {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--monitor-line) 90%, transparent);
+  background: color-mix(in srgb, var(--monitor-accent) 10%, var(--monitor-surface-muted));
+  color: var(--monitor-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.savedPricesTable tbody td {
+  padding: 13px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--monitor-line) 86%, transparent);
+  color: var(--monitor-ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--monitor-surface) 88%, white 12%);
+  transition: background 0.18s ease;
+}
+
+.savedPricesTable tbody tr:first-child td {
+  border-top: 0;
+}
+
+.savedPricesTable tbody tr:nth-child(odd) td {
+  background: color-mix(in srgb, var(--monitor-accent) 4%, var(--monitor-surface-elevated));
+}
+
+.savedPricesTable tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--monitor-surface) 92%, var(--monitor-surface-elevated));
+}
+
+.savedPricesTable tbody tr:hover td {
+  background: color-mix(in srgb, var(--monitor-accent) 10%, var(--monitor-surface-hover));
+}
+
+.savedPricesTable th:last-child,
+.savedPricesTable td:last-child {
+  text-align: left;
+}
+
+.savedPricesModelCell {
+  min-width: 200px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.savedPricesActionsCell {
+  min-width: 120px;
+}
+
+.savedPricesActions {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.tableWrapper {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+}
+
+.accountOverviewTable {
+  --account-col-account: 21%;
+  --account-col-status: 8%;
+  --account-col-total-calls: 5%;
+  --account-col-success-calls: 7%;
+  --account-col-failure-calls: 7%;
+  --account-col-success-rate: 8%;
+  --account-col-total-tokens: 10%;
+  --account-col-estimated-cost: 9%;
+  --account-col-latest-request: 13%;
+  --account-col-action: 12%;
+  --account-overview-columns: var(--account-col-account) var(--account-col-status)
+    var(--account-col-total-calls) var(--account-col-success-calls) var(--account-col-failure-calls)
+    var(--account-col-success-rate) var(--account-col-total-tokens)
+    var(--account-col-estimated-cost) var(--account-col-latest-request) var(--account-col-action);
+
+  min-width: 1180px;
+  overflow: hidden;
+  border: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border-radius: 16px;
+  background: var(--monitor-surface-elevated);
+  table-layout: fixed;
+}
+
+.accountOverviewTableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--monitor-line-strong);
+  border-radius: 16px;
+  background: var(--monitor-surface-elevated);
+}
+
+.apiKeySummaryTable {
+  --api-key-col-key: 28%;
+  --api-key-col-total-calls: 9%;
+  --api-key-col-success-calls: 9%;
+  --api-key-col-failure-calls: 9%;
+  --api-key-col-total-tokens: 13%;
+  --api-key-col-estimated-cost: 12%;
+  --api-key-col-latest-request: 20%;
+
+  min-width: 980px;
+  overflow: hidden;
+  border: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border-radius: 16px;
+  background: var(--monitor-surface-elevated);
+  table-layout: fixed;
+}
+
+.apiKeySummaryTableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--monitor-line-strong);
+  border-radius: 16px;
+  background: var(--monitor-surface-elevated);
+}
+
+.apiKeySummaryTable col:nth-child(1) {
+  width: var(--api-key-col-key);
+}
+
+.apiKeySummaryTable col:nth-child(2) {
+  width: var(--api-key-col-total-calls);
+}
+
+.apiKeySummaryTable col:nth-child(3) {
+  width: var(--api-key-col-success-calls);
+}
+
+.apiKeySummaryTable col:nth-child(4) {
+  width: var(--api-key-col-failure-calls);
+}
+
+.apiKeySummaryTable col:nth-child(5) {
+  width: var(--api-key-col-total-tokens);
+}
+
+.apiKeySummaryTable col:nth-child(6) {
+  width: var(--api-key-col-estimated-cost);
+}
+
+.apiKeySummaryTable col:nth-child(7) {
+  width: var(--api-key-col-latest-request);
+}
+
+.accountOverviewTable col:nth-child(1) {
+  width: var(--account-col-account);
+}
+
+.accountOverviewTable col:nth-child(2) {
+  width: var(--account-col-status);
+}
+
+.accountOverviewTable col:nth-child(3) {
+  width: var(--account-col-total-calls);
+}
+
+.accountOverviewTable col:nth-child(4) {
+  width: var(--account-col-success-calls);
+}
+
+.accountOverviewTable col:nth-child(5) {
+  width: var(--account-col-failure-calls);
+}
+
+.accountOverviewTable col:nth-child(6) {
+  width: var(--account-col-success-rate);
+}
+
+.accountOverviewTable col:nth-child(7) {
+  width: var(--account-col-total-tokens);
+}
+
+.accountOverviewTable col:nth-child(8) {
+  width: var(--account-col-estimated-cost);
+}
+
+.accountOverviewTable col:nth-child(9) {
+  width: var(--account-col-latest-request);
+}
+
+.accountOverviewTable col:nth-child(10) {
+  width: var(--account-col-action);
+}
+
+.accountOverviewTable td:last-child {
+  min-width: 0;
+}
+
+.accountOverviewTable td:last-child .inlineActionButton {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountActionGroup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.accountRowMenuButton {
+  flex: 0 0 auto;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--monitor-line) 86%, transparent);
+  background: transparent;
+  color: var(--monitor-muted);
+}
+
+.realtimeTable {
+  min-width: 1210px;
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--monitor-surface) 92%, var(--monitor-surface-muted));
+  text-align: left;
+  color: var(--monitor-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sortableHeaderButton {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.sortableHeaderButton:hover {
+  transform: none;
+  color: var(--monitor-ink);
+}
+
+.sortableHeaderButton:focus,
+.sortableHeaderButton:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.sortableHeaderButtonActive {
+  color: var(--monitor-ink);
+}
+
+.sortIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  min-width: 14px;
+  height: 14px;
+  color: var(--monitor-accent-strong);
+}
+
+.sortIndicator svg {
+  display: block;
+}
+
+.table tbody td {
+  padding: 12px 10px;
+  vertical-align: middle;
+  white-space: nowrap;
+  border-top: 1px solid var(--monitor-line);
+  border-bottom: 1px solid var(--monitor-line);
+  background: var(--monitor-surface-elevated);
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.table tbody td:first-child {
+  border-left: 1px solid var(--monitor-line);
+  border-radius: 18px 0 0 18px;
+}
+
+.table tbody td:last-child {
+  border-right: 1px solid var(--monitor-line);
+  border-radius: 0 18px 18px 0;
+}
+
+.table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 86%, var(--monitor-surface));
+}
+
+.table tbody tr:hover td {
+  background: var(--monitor-surface-hover);
+}
+
+.accountOverviewTable thead th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--monitor-line);
+  background: color-mix(in srgb, var(--monitor-surface) 88%, var(--monitor-surface-muted));
+}
+
+.table.accountOverviewTable tbody td {
+  padding: 12px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--monitor-line) 88%, transparent);
+  border-radius: 0;
+  background: var(--monitor-surface-elevated);
+  box-shadow: none;
+}
+
+.table.accountOverviewTable tbody td:first-child,
+.table.accountOverviewTable tbody td:last-child {
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+}
+
+.table.accountOverviewTable tbody tr:nth-child(even) td {
+  background: var(--monitor-surface-elevated);
+}
+
+.table.accountOverviewTable tbody .accountSummaryRow:hover td {
+  background: var(--monitor-surface-hover);
+}
+
+.apiKeySummaryTable thead th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--monitor-line);
+  background: color-mix(in srgb, var(--monitor-surface) 88%, var(--monitor-surface-muted));
+  box-shadow: inset 0 -1px 0 var(--monitor-line);
+}
+
+.table.apiKeySummaryTable tbody td {
+  padding: 12px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--monitor-line) 88%, transparent);
+  border-radius: 0;
+  background: var(--monitor-surface-elevated);
+  box-shadow: none;
+}
+
+.table.apiKeySummaryTable tbody td:first-child,
+.table.apiKeySummaryTable tbody td:last-child {
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+}
+
+.table.apiKeySummaryTable tbody tr:nth-child(even) td {
+  background: var(--monitor-surface-elevated);
+}
+
+.table.apiKeySummaryTable tbody .apiKeySummaryRow:hover td {
+  background: var(--monitor-surface-hover);
+}
+
+.table.apiKeySummaryTable tbody .apiKeySummaryRowExpanded td {
+  border-bottom-color: transparent;
+}
+
+.innerTable {
+  min-width: 940px;
+}
+
+.primaryCell {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.primaryCell small,
+.statusCell small {
+  color: var(--monitor-muted);
+  font-size: 11px;
+}
+
+.monoCell {
+  font-family: var(--font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+
+.statusCell {
+  display: grid;
+  gap: 6px;
+  min-width: 88px;
+}
+
+.recentStatusCell {
+  display: flex;
+  align-items: center;
+  min-width: 70px;
+}
+
+.realtimeTable .statusBadge {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 11px;
+}
+
+.realtimeTable .statusBadge::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.paginationBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--monitor-line);
+}
+
+.paginationInfo {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--monitor-line);
+  background: var(--monitor-surface-elevated);
+  color: var(--monitor-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pageSizeField {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 8px 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--monitor-line);
+  background: var(--monitor-surface-elevated);
+  color: var(--monitor-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pageSizeSelect {
+  width: 104px;
+  flex: 0 0 auto;
+}
+
+.pageSizeSelectTrigger {
+  min-width: 88px;
+  height: 30px !important;
+  padding: 0 2px 0 8px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--monitor-ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pageSizeSelectTrigger:hover,
+.pageSizeSelectTrigger:focus,
+.pageSizeSelectTrigger[aria-expanded='true'] {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.accountButton {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  min-width: 0;
+  text-align: left;
+  cursor: pointer;
+  white-space: normal;
+}
+
+.accountExpandGlyph {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  color: var(--monitor-muted);
+  align-self: center;
+}
+
+.accountIdentityLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.accountButton:hover {
+  transform: none;
+  color: var(--monitor-accent-strong);
+}
+
+.accountButton:focus,
+.accountButton:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.accountButton:focus-visible {
+  color: var(--monitor-accent-strong);
+}
+
+.accountButtonLabel {
+  min-width: 0;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountButton small {
+  grid-column: 2;
+  color: var(--monitor-muted);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountButtonMuted {
+  color: color-mix(in srgb, var(--monitor-ink) 66%, var(--monitor-muted));
+}
+
+.expandedAccountButton {
+  align-items: center;
+}
+
+.focusedRow td {
+  border-color: color-mix(in srgb, var(--monitor-accent) 36%, var(--monitor-line));
+  background: color-mix(in srgb, var(--monitor-accent) 7%, var(--monitor-surface-elevated));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--monitor-accent) 18%, transparent);
+}
+
+.accountOverviewRowExpanded td {
+  border-color: color-mix(in srgb, var(--monitor-line) 90%, transparent);
+}
+
+.accountOverviewRowDisabled td {
+  color: color-mix(in srgb, var(--monitor-ink) 70%, var(--monitor-muted));
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 74%, var(--monitor-surface));
+}
+
+.table.accountOverviewTable tbody .focusedRow td {
+  background: color-mix(in srgb, var(--monitor-accent) 7%, var(--monitor-surface-elevated));
+  box-shadow: none;
+}
+
+.table.accountOverviewTable tbody .focusedRow td:first-child {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--monitor-accent) 72%, transparent);
+}
+
+.table.accountOverviewTable tbody .accountOverviewRowExpanded td {
+  background: var(--monitor-surface-elevated);
+  border-bottom-color: transparent;
+}
+
+.table.accountOverviewTable tbody .accountOverviewRowDisabled td {
+  color: color-mix(in srgb, var(--monitor-ink) 70%, var(--monitor-muted));
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 74%, var(--monitor-surface));
+}
+
+.table.accountOverviewTable tbody .accountDetailRow > td {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--monitor-line);
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 78%, var(--monitor-surface));
+  box-shadow: none;
+  white-space: normal;
+}
+
+.table.accountOverviewTable tbody .accountDetailRow > td:first-child,
+.table.accountOverviewTable tbody .accountDetailRow > td:last-child {
+  border-radius: 0;
+}
+
+.table.accountOverviewTable tbody .accountDetailRow:hover > td {
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 78%, var(--monitor-surface));
+  box-shadow: none;
+}
+
+.table.apiKeySummaryTable tbody .apiKeyDetailRow > td {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--monitor-line);
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 78%, var(--monitor-surface));
+  box-shadow: none;
+  white-space: normal;
+}
+
+.table.apiKeySummaryTable tbody .apiKeyDetailRow > td:first-child,
+.table.apiKeySummaryTable tbody .apiKeyDetailRow > td:last-child {
+  border-radius: 0;
+}
+
+.table.apiKeySummaryTable tbody .apiKeyDetailRow:hover > td {
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 78%, var(--monitor-surface));
+  box-shadow: none;
+}
+
+.expandedAccountDetails {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.42fr) minmax(640px, 1fr);
+  align-items: stretch;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px 16px;
+  border: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 78%, var(--monitor-surface));
+}
+
+.apiKeyExpandedDetails {
+  padding: 14px 16px 16px;
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 78%, var(--monitor-surface));
+}
+
+.accountStructureModelPanel {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.24fr) minmax(540px, 1fr);
+  align-items: stretch;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--monitor-line) 82%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--monitor-accent) 5%, var(--monitor-surface-elevated));
+}
+
+.accountStructureModelPanel > .accountTokenStructurePanel {
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.accountStructureModelPanel > .accountTokenStructurePanel::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  right: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--monitor-line) 90%, transparent);
+}
+
+.accountStructureModelPanel > .accountModelTablePanel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.accountStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  min-height: 22px;
+  padding: 0;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--monitor-muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.accountStatusBadgeenabled {
+  color: var(--success-badge-text, #065f46);
+}
+
+.accountStatusBadgedisabled,
+.accountStatusBadgeunavailable {
+  color: var(--monitor-muted);
+}
+
+.accountStatusBadgemixed {
+  color: var(--warning-text, #92400e);
+}
+
+.accountStatusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.apiKeyIcon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--monitor-accent) 12%, var(--monitor-surface));
+  color: var(--monitor-accent-strong);
+  flex: 0 0 auto;
+}
+
+.accountStatusDotEnabled {
+  color: var(--monitor-green);
+}
+
+.accountStatusDotDisabled,
+.accountStatusDotUnavailable {
+  color: color-mix(in srgb, var(--monitor-muted) 58%, transparent);
+}
+
+.accountStatusDotMixed {
+  color: var(--monitor-amber);
+}
+
+.accountOverviewCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+
+.accountOverviewCard {
+  display: grid;
+  gap: 14px;
+  align-self: start;
+  height: auto;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--monitor-line) 84%, transparent);
+  border-radius: 22px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--monitor-accent) 3%, var(--monitor-surface)) 0%,
+    var(--monitor-surface) 100%
+  );
+  box-shadow: var(--shadow);
+}
+
+.accountOverviewCardExpanded {
+  border-color: color-mix(in srgb, var(--monitor-accent) 26%, var(--monitor-line));
+}
+
+.accountOverviewCardFocused {
+  border-color: color-mix(in srgb, var(--monitor-accent) 42%, var(--monitor-line));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--monitor-accent) 18%, transparent),
+    var(--shadow-lg);
+}
+
+.accountOverviewCardDisabled {
+  opacity: 0.78;
+}
+
+.accountOverviewCardHeader {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.accountTitleRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.accountOverviewCardTimestamp {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--monitor-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountEnabledControl {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.accountEnabledLabel {
+  color: var(--monitor-muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.accountMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.accountMetaRow .inlineActionButton {
+  margin-left: auto;
+}
+
+.accountFocusButton {
+  min-height: 26px;
+  padding: 0 8px;
+  gap: 5px;
+  border-color: color-mix(in srgb, var(--monitor-line) 56%, transparent);
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 58%, transparent);
+  color: var(--monitor-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.accountMetaSeparator {
+  color: var(--monitor-muted);
+}
+
+.accountOverviewToggleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--monitor-line) 82%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 84%, var(--monitor-surface));
+}
+
+.accountOverviewToggleMeta,
+.accountOverviewToggleMetaRow {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.accountOverviewToggleMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.accountOverviewToggleLabel,
+.accountOverviewStatusLabel {
+  color: var(--monitor-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.accountOverviewStatusLabel {
+  display: none;
+}
+
+.accountOverviewToggleActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.accountOverviewEnabledStateBadge,
+.accountOverviewLinkedFilesMeta,
+.accountOverviewStatusPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.accountOverviewEnabledStateBadge {
+  border: 1px solid transparent;
+}
+
+.accountOverviewEnabledStateEnabled {
+  color: var(--success-badge-text, #065f46);
+  background: var(--success-badge-bg, #d1fae5);
+  border-color: var(--success-badge-border, #6ee7b7);
+}
+
+.accountOverviewEnabledStateDisabled {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-tertiary) 84%, transparent);
+  border-color: var(--monitor-line);
+}
+
+.accountOverviewEnabledStateMixed {
+  color: var(--warning-text);
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+}
+
+.accountOverviewEnabledStateUnavailable {
+  color: var(--monitor-muted);
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 82%, var(--monitor-surface));
+  border-color: color-mix(in srgb, var(--monitor-line) 90%, transparent);
+}
+
+.accountOverviewLinkedFilesMeta {
+  color: var(--monitor-muted);
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 82%, var(--monitor-surface));
+  border: 1px solid color-mix(in srgb, var(--monitor-line) 90%, transparent);
+}
+
+.accountOverviewStatusSection,
+.accountTokenStructurePanel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--monitor-line) 82%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 86%, var(--monitor-surface));
+}
+
+.accountTokenPanel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.accountTokenStructurePanel {
+  align-content: stretch;
+  grid-template-rows: auto 1fr;
+  padding: 14px;
+}
+
+.accountTokenStructurePanel .accountOverviewMetricGrid {
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 8px;
+}
+
+.accountTokenStructurePanel .accountOverviewMetricCard {
+  min-height: 78px;
+  padding: 12px;
+}
+
+.tokenStructureRowList {
+  display: grid;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  max-width: 320px;
+  width: 100%;
+}
+
+.tokenStructureRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--monitor-surface-elevated);
+}
+
+.tokenStructureRowLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--monitor-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.tokenStructureRowIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+}
+
+.tokenStructureRowLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tokenStructureRowValue {
+  flex: 0 0 auto;
+  color: var(--monitor-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.tokenStructureRowInput {
+  background: color-mix(in srgb, var(--monitor-green) 14%, var(--monitor-surface-elevated));
+}
+.tokenStructureRowInput .tokenStructureRowIcon {
+  color: var(--monitor-green);
+}
+
+.tokenStructureRowOutput {
+  background: color-mix(in srgb, var(--monitor-amber) 16%, var(--monitor-surface-elevated));
+}
+.tokenStructureRowOutput .tokenStructureRowIcon {
+  color: var(--monitor-amber);
+}
+
+.tokenStructureRowCached {
+  background: color-mix(in srgb, var(--monitor-cyan) 14%, var(--monitor-surface-elevated));
+}
+.tokenStructureRowCached .tokenStructureRowIcon {
+  color: var(--monitor-cyan);
+}
+
+.accountSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.accountSectionHeader strong {
+  min-width: 0;
+  color: var(--monitor-ink);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.accountSectionInfo {
+  display: inline-flex;
+  align-items: center;
+  color: var(--monitor-muted);
+}
+
+.tokenStructureList {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
+.healthMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+
+  @include narrow-laptop {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @include compact-desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.healthMetricItem {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.healthMetricItem span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--monitor-muted);
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.healthMetricItem strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--monitor-ink);
+  font-size: 16px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.primaryText {
+  color: var(--monitor-accent-strong);
+}
+
+.healthMetricItem .goodText {
+  color: var(--monitor-green);
+}
+
+.healthMetricItem .warnText {
+  color: var(--monitor-amber);
+}
+
+.healthMetricItem .badText {
+  color: var(--monitor-red);
+}
+
+.healthMetricItem .primaryText {
+  color: var(--monitor-accent-strong);
+}
+
+.accountScopeText {
+  color: var(--monitor-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.monitoringStatusBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.monitoringStatusBlocks {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.monitoringStatusBlockWrapper {
+  flex: 1;
+  min-width: 6px;
+  position: relative;
+}
+
+.monitoringStatusBlockButton {
+  width: 100%;
+  padding: 3px 0;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.monitoringStatusBlockButton:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--monitor-accent) 78%, white);
+  outline-offset: 2px;
+}
+
+.monitoringStatusBlockActive .monitoringStatusBlock,
+.monitoringStatusBlockButton:hover .monitoringStatusBlock,
+.monitoringStatusBlockButton:focus-visible .monitoringStatusBlock {
+  transform: scaleY(1.35);
+  opacity: 1;
+}
+
+.monitoringStatusBlock {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  opacity: 0.92;
+  transform-origin: center;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.monitoringStatusBlockIdle {
+  background-color: color-mix(in srgb, var(--monitor-line) 82%, transparent);
+}
+
+.monitoringStatusTooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  padding: 6px 10px;
+  border: 1px solid var(--monitor-line);
+  border-radius: 8px;
+  background: var(--monitor-surface);
+  box-shadow: var(--shadow-lg);
+  color: var(--monitor-ink);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.monitoringStatusTooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--monitor-surface);
+}
+
+.monitoringStatusTooltip::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--monitor-line);
+}
+
+.monitoringStatusTooltipLeft {
+  left: 0;
+  transform: translateX(0);
+}
+
+.monitoringStatusTooltipLeft::after,
+.monitoringStatusTooltipLeft::before {
+  left: 8px;
+  transform: none;
+}
+
+.monitoringStatusTooltipRight {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+.monitoringStatusTooltipRight::after,
+.monitoringStatusTooltipRight::before {
+  left: auto;
+  right: 8px;
+  transform: none;
+}
+
+.monitoringTooltipTime {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--monitor-muted);
+}
+
+.monitoringTooltipStats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.monitoringTooltipSuccess {
+  color: var(--success-color, #22c55e);
+}
+
+.monitoringTooltipFailure {
+  color: var(--error-color, #ef4444);
+}
+
+.monitoringTooltipRate {
+  color: var(--monitor-muted);
+}
+
+.monitoringStatusRate {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 88%, var(--monitor-surface));
+  color: var(--monitor-muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.monitoringStatusRatePlaceholder {
+  display: none;
+}
+
+.monitoringStatusRateHigh {
+  color: var(--success-badge-text, #065f46);
+  background: var(--success-badge-bg, #d1fae5);
+}
+
+.monitoringStatusRateMedium {
+  color: var(--warning-text, #92400e);
+  background: var(--warning-bg, #fef3c7);
+}
+
+.monitoringStatusRateLow {
+  color: var(--failure-badge-text, #7f1d1d);
+  background: var(--failure-badge-bg, #fee2e2);
+}
+
+.accountOverviewMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+
+  @include narrow-laptop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.accountOverviewMetricCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-height: 68px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--monitor-line) 80%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 88%, var(--monitor-surface));
+}
+
+.accountOverviewMetricLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--monitor-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.accountMetricIcon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--monitor-accent) 11%, var(--monitor-surface));
+  color: var(--monitor-accent-strong);
+}
+
+.accountMetricIconTotal {
+  background: color-mix(in srgb, var(--monitor-accent) 13%, var(--monitor-surface));
+  color: var(--monitor-accent-strong);
+}
+
+.accountMetricIconInput {
+  background: color-mix(in srgb, var(--monitor-green) 13%, var(--monitor-surface));
+  color: var(--monitor-green);
+}
+
+.accountMetricIconOutput {
+  background: color-mix(in srgb, var(--monitor-amber) 17%, var(--monitor-surface));
+  color: var(--monitor-amber);
+}
+
+.accountMetricIconCached {
+  background: color-mix(in srgb, var(--monitor-cyan) 14%, var(--monitor-surface));
+  color: var(--monitor-cyan);
+}
+
+.accountOverviewMetricValue {
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.accountOverviewCardBody {
+  display: grid;
+  gap: 14px;
+  padding-top: 2px;
+  min-width: 0;
+}
+
+.expandPanel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.quotaRefreshButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--monitor-line);
+  border-radius: 999px;
+  background: var(--monitor-surface);
+  color: var(--monitor-ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.quotaRefreshButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.quotaSection {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--monitor-line) 82%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--monitor-accent) 5%, var(--monitor-surface-elevated));
+}
+
+.quotaSectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quotaSectionTitleGroup {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.quotaSectionTitleGroup strong {
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.quotaSectionTitleGroup span,
+.quotaEntryMain small,
+.quotaWindowRow small {
+  color: var(--monitor-muted);
+  font-size: 11px;
+}
+
+.quotaEntryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.quotaCompactCard {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 0;
+  background: color-mix(in srgb, var(--monitor-accent) 6%, var(--monitor-surface-elevated));
+}
+
+.quotaCompactHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quotaEntryCard {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--monitor-line) 82%, transparent);
+  background: color-mix(in srgb, var(--monitor-surface) 78%, var(--monitor-surface-elevated));
+}
+
+.quotaEntryHeader,
+.quotaEntryMain,
+.quotaWindowList,
+.quotaWindowRow {
+  display: grid;
+  gap: 6px;
+}
+
+.quotaWindowMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.quotaEntryMain strong,
+.quotaWindowHeader strong {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.quotaWindowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quotaWindowHeader span {
+  color: var(--monitor-ink);
+  font-size: 12px;
+}
+
+.quotaProgressTrack {
+  position: relative;
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--monitor-line) 68%, transparent);
+}
+
+.quotaProgressBar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--monitor-accent), var(--monitor-cyan));
+}
+
+.quotaStateMessage {
+  display: grid;
+  gap: 3px;
+  min-height: 44px;
+  place-items: center start;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--monitor-line) 82%, transparent);
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 82%, var(--monitor-surface));
+  color: var(--monitor-muted);
+  font-size: 12px;
+}
+
+.quotaStateMessage small {
+  color: var(--monitor-muted);
+  font-size: 11px;
+}
+
+.quotaRetryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  margin-top: 4px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--monitor-accent) 56%, var(--monitor-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--monitor-accent) 12%, var(--monitor-surface));
+  color: var(--monitor-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.quotaRetryButton:hover:not(:disabled) {
+  border-color: var(--monitor-accent);
+  background: color-mix(in srgb, var(--monitor-accent) 18%, var(--monitor-surface));
+}
+
+.quotaRetryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.accountModelTablePanel {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--monitor-line) 82%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--monitor-surface-elevated) 86%, var(--monitor-surface));
+}
+
+.accountModelListPanel {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.accountModelViewAllButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--monitor-accent-strong);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.accountModelViewAllButton:hover {
+  transform: none;
+  color: var(--monitor-accent);
+}
+
+.accountModelViewAllButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.accountModelList {
+  display: grid;
+  min-width: 0;
+}
+
+.accountModelItem {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--monitor-line) 84%, transparent);
+}
+
+.accountModelItem:first-child {
+  border-top: 0;
+}
+
+.accountModelRow {
+  display: grid;
+  align-items: start;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.accountModelRow:hover {
+  transform: none;
+  color: var(--monitor-accent-strong);
+}
+
+.accountModelRow:focus,
+.accountModelRow:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.accountModelStat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.accountModelStat small {
+  color: var(--monitor-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.accountModelStat strong {
+  min-width: 0;
+  color: var(--monitor-ink);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.accountModelMetaLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+  color: var(--monitor-muted);
+}
+
+.accountModelChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  color: var(--monitor-muted);
+}
+
+.accountModelExpanded {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 12px;
+  padding: 8px 10px 4px;
+  border-top: 1px dashed color-mix(in srgb, var(--monitor-line) 80%, transparent);
+}
+
+.accountModelExpandedItem {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.accountModelExpandedItem small {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--monitor-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountModelExpandedItem strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--monitor-ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountModelName {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--monitor-ink);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountModelTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.accountModelTable th,
+.accountModelTable td {
+  padding: 8px 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--monitor-line) 84%, transparent);
+  text-align: left;
+  vertical-align: middle;
+  font-size: 11px;
+}
+
+.accountModelTable th {
+  color: var(--monitor-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountModelTable td {
+  overflow: hidden;
+  color: var(--monitor-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountModelTable th:first-child,
+.accountModelTable td:first-child {
+  width: 17%;
+}
+
+.accountModelTable th:nth-child(2),
+.accountModelTable td:nth-child(2) {
+  width: 7%;
+}
+
+.accountModelTable th:nth-child(3),
+.accountModelTable td:nth-child(3) {
+  width: 9%;
+}
+
+.accountModelTable th:nth-child(4),
+.accountModelTable td:nth-child(4),
+.accountModelTable th:nth-child(5),
+.accountModelTable td:nth-child(5),
+.accountModelTable th:nth-child(6),
+.accountModelTable td:nth-child(6),
+.accountModelTable th:nth-child(7),
+.accountModelTable td:nth-child(7) {
+  width: 9.5%;
+}
+
+.accountModelTable th:nth-child(8),
+.accountModelTable td:nth-child(8) {
+  width: 9%;
+}
+
+.accountModelTable th:nth-child(9),
+.accountModelTable td:nth-child(9) {
+  width: 20%;
+}
+
+.accountModelTable tr:last-child td {
+  border-bottom: 0;
+}
+
+.accountModelTable .goodText {
+  color: var(--monitor-green);
+}
+
+.accountModelTable .warnText {
+  color: var(--monitor-amber);
+}
+
+.accountModelTable .badText {
+  color: var(--monitor-red);
+}
+
+.table .accountModelTable {
+  min-width: 0;
+  border-spacing: 0;
+}
+
+.table .accountModelTable th,
+.table .accountModelTable td {
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.table .accountModelTable tbody td,
+.table .accountModelTable tbody tr:nth-child(even) td,
+.table .accountModelTable tbody tr:hover td,
+.accountStructureModelPanel .accountModelTable tbody tr td,
+.accountStructureModelPanel .accountModelTable tbody tr:hover td {
+  background: transparent;
+}
+
+.realtimeTable .primaryCell small {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.45;
+}
+
+.logTypeCell {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.logTypeIcon {
+  position: relative;
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 10%, var(--monitor-surface));
+  color: var(--monitor-green);
+}
+
+.logTypeIcon::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.logTypeIconFailed {
+  color: var(--monitor-red);
+}
+
+.logTypeIconSuccess {
+  color: var(--monitor-green);
+}
+
+.logRowFailed td {
+  border-top-color: color-mix(in srgb, var(--monitor-red) 28%, var(--monitor-line));
+  border-bottom-color: color-mix(in srgb, var(--monitor-red) 28%, var(--monitor-line));
+  background: color-mix(in srgb, var(--monitor-red) 7%, var(--monitor-surface-elevated));
+}
+
+.logRowFailed td:first-child,
+.logRowFailed td:last-child {
+  border-color: color-mix(in srgb, var(--monitor-red) 28%, var(--monitor-line));
+}
+
+.logRowFailed:hover td {
+  background: color-mix(in srgb, var(--monitor-red) 9%, var(--monitor-surface-hover));
+}
+
+.emptyBlock,
+.emptyTable,
+.emptyBlockSmall {
+  display: grid;
+  place-items: center;
+  color: var(--monitor-muted);
+  text-align: center;
+  font-size: 14px;
+}
+
+.emptyBlock,
+.emptyTable {
+  min-height: 120px;
+}
+
+.emptyTable {
+  gap: 7px;
+  padding: 12px;
+
+  strong {
+    color: var(--monitor-ink);
+    font-size: 14px;
+  }
+
+  span {
+    max-width: 680px;
+    color: var(--monitor-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+.emptyBlockSmall {
+  min-height: 80px;
+}
+
+@keyframes monitor-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@container monitoring-page (max-width: 1240px) {
+  .headerShell {
+    grid-template-columns: 1fr;
+  }
+
+  .statusBar,
+  .statusMeta {
+    justify-content: flex-start;
+  }
+
+  .actionBar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actionGroupNav {
+    justify-content: flex-start;
+  }
+
+  .masthead {
+    grid-template-columns: 1fr;
+  }
+
+  .mastheadControls {
+    min-width: 0;
+    justify-items: start;
+  }
+
+  .toolbarFoot {
+    grid-template-columns: 1fr;
+  }
+
+  .actionGroup,
+  .quickLinkRow {
+    justify-content: flex-start;
+  }
+
+  .refreshControls {
+    flex-wrap: wrap;
+  }
+
+  .filterGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .summaryHero,
+  .summarySub,
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .accountOverviewCardGrid {
+    grid-template-columns: repeat(2, minmax(360px, 1fr));
+  }
+}
+
+@container monitoring-page (max-width: 1280px) {
+  .expandedAccountDetails {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .accountStructureModelPanel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .accountStructureModelPanel > .accountTokenStructurePanel::after {
+    top: auto;
+    right: 16px;
+    bottom: 0;
+    left: 16px;
+    width: auto;
+    height: 1px;
+  }
+}
+
+@container monitoring-page (max-width: 1024px) {
+  .panelHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panelHeaderCopy,
+  .panelExtra,
+  .accountOverviewHeaderActions,
+  .realtimeHeaderActions {
+    width: 100%;
+  }
+
+  .accountPanel .panelHeaderCopy,
+  .accountPanel .panelExtra {
+    flex: 0 1 auto;
+  }
+
+  .accountPanel .panelHeaderCopy {
+    max-width: none;
+  }
+
+  .accountOverviewHeaderActions {
+    justify-content: flex-start;
+  }
+
+  .accountOverviewToolbarRow {
+    justify-content: flex-start;
+  }
+
+  .accountOverviewSearchWrap {
+    max-width: none;
+  }
+
+  .accountOverviewSortBar,
+  .realtimeHeaderActions {
+    justify-content: flex-start;
+  }
+
+  .filterSearchRow :global(.form-group) {
+    min-width: 0;
+  }
+
+  .filterSearchRow {
+    grid-template-columns: 1fr;
+  }
+
+  .filterSearchAction {
+    justify-content: stretch;
+  }
+}
+
+@container monitoring-page (max-width: 900px) {
+  .filterGrid,
+  .summaryHero,
+  .summarySub,
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .priceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .priceFieldModel,
+  .priceFieldPrompt,
+  .priceFieldCompletion,
+  .priceFieldCache {
+    grid-column: auto;
+  }
+}
+
+@container monitoring-page (max-width: 768px) {
+  .page {
+    gap: 16px;
+  }
+
+  .headerShell {
+    gap: 14px;
+  }
+
+  .pageHeader {
+    gap: 6px;
+  }
+
+  .pageTitle {
+    font-size: 24px;
+  }
+
+  .description,
+  .panelSubtitle {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .masthead,
+  .panel,
+  .summaryCard {
+    border-radius: 20px;
+  }
+
+  .masthead,
+  .panel {
+    padding: 18px;
+  }
+
+  .title {
+    font-size: 34px;
+  }
+
+  .segmentedControl,
+  .controlBar,
+  .toolbarControls,
+  .actionBar,
+  .actionGroup,
+  .refreshControls,
+  .filterSearchRow,
+  .realtimeHeaderActions {
+    width: 100%;
+  }
+
+  .controlBar,
+  .refreshControls,
+  .paginationBar,
+  .paginationControls,
+  .realtimeHeaderActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .segmentedControl,
+  .realtimeHeaderActions {
+    justify-content: flex-start;
+  }
+
+  .actionButton {
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .autoRefreshField {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .autoRefreshSelect {
+    width: 124px;
+  }
+
+  .autoRefreshLabel {
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .filterGrid,
+  .summaryHero,
+  .summarySub,
+  .summaryGrid,
+  .priceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryValue {
+    font-size: 26px;
+  }
+
+  .summaryCardSecondary .summaryValue {
+    font-size: 22px;
+  }
+
+  .priceActionsBar {
+    justify-content: stretch;
+  }
+
+  .priceActionsBar :global(.btn) {
+    flex: 1 1 0;
+  }
+
+  .paginationInfo,
+  .pageSizeField {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .panelExtra,
+  .accountOverviewHeaderActions,
+  .accountOverviewSortBar {
+    width: 100%;
+  }
+
+  .accountOverviewHeaderActions {
+    justify-content: flex-start;
+  }
+
+  .accountOverviewModeToggle,
+  .accountOverviewSortSelect {
+    width: 100%;
+  }
+
+  .accountOverviewSortBar {
+    justify-content: stretch;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .accountTitleRow,
+  .expandedAccountDetails {
+    grid-template-columns: 1fr;
+  }
+
+  .accountEnabledControl,
+  .accountMetaRow .inlineActionButton {
+    justify-self: start;
+    margin-left: 0;
+  }
+
+  .accountOverviewModeToggle .segmentButton {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .accountOverviewSortLabel {
+    white-space: normal;
+  }
+
+  .filterSearchRow :global(.form-group) {
+    min-width: 0;
+  }
+
+  .refreshButton,
+  .clearButton,
+  .realtimeHeaderActions > span,
+  .realtimeHeaderActions > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .statusMeta span {
+    white-space: normal;
+  }
+
+  .accountOverviewCardActionStack {
+    width: 100%;
+    justify-items: start;
+  }
+
+  .accountOverviewToggleRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .monitoringStatusBar {
+    width: 100%;
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .monitoringStatusBlocks {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .accountOverviewToggleActions,
+  .accountMetaRow {
+    width: 100%;
+  }
+
+  .accountOverviewCardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .healthMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .accountOverviewMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .table {
+    min-width: 920px;
+  }
+
+  .accountOverviewTable {
+    min-width: 1180px;
+  }
+
+  .realtimeTable {
+    min-width: 1180px;
+  }
+}
+
+@container monitoring-page (max-width: 480px) {
+  .accountOverviewMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .accountOverviewMetricCard {
+    gap: 4px;
+    padding: 10px 8px;
+    border-radius: 14px;
+  }
+
+  .accountOverviewMetricLabel {
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .accountOverviewMetricValue {
+    font-size: 13px;
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    gap: 14px;
+  }
+
+  .panel,
+  .actionBar {
+    border-radius: 18px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .panelHeader {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .pageTitle {
+    font-size: 22px;
+  }
+
+  .description,
+  .panelSubtitle {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .segmentedControl {
+    gap: 6px;
+    padding: 4px;
+    border-radius: 18px;
+  }
+
+  .segmentButton {
+    flex: 1 1 calc(50% - 6px);
+    min-height: 36px;
+    padding: 0 12px;
+  }
+
+  .actionButton {
+    flex-basis: 100%;
+  }
+
+  .autoRefreshField {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .autoRefreshSelect {
+    width: 100%;
+  }
+
+  .autoRefreshSelectTrigger {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .statusMeta span,
+  .realtimeHeaderActions > span,
+  .realtimeHeaderActions > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .customRangeModalGrid {
+    grid-template-columns: 1fr;
+  }
+}

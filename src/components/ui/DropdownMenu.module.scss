@@ -1,0 +1,121 @@
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 999px;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #111827);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.trigger:hover,
+.triggerOpen {
+  transform: translateY(-1px);
+  border-color: var(--border-primary, #d1d5db);
+  background: var(--bg-tertiary, #f3f4f6);
+}
+
+.trigger:focus,
+.trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color, #2563eb) 28%, transparent);
+}
+
+.trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
+.menu {
+  position: fixed;
+  z-index: 9000;
+  min-width: 168px;
+  max-width: 280px;
+  padding: 4px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  background: var(--bg-primary, #fff);
+  box-shadow: var(--shadow-lg, 0 16px 32px rgba(15, 23, 42, 0.12));
+  color: var(--text-primary, #111827);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.item:hover,
+.item:focus,
+.itemActive {
+  background: var(--bg-tertiary, #f3f4f6);
+}
+
+.item:focus,
+.item:focus-visible {
+  outline: none;
+}
+
+.itemDanger {
+  color: var(--error-color, #dc2626);
+}
+
+.itemDanger:hover,
+.itemDanger:focus,
+.itemDanger.itemActive {
+  background: color-mix(in srgb, var(--error-color, #dc2626) 10%, var(--bg-primary, #fff));
+}
+
+.itemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  flex: 0 0 16px;
+  color: currentColor;
+}
+
+.item:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.item:disabled:hover {
+  background: transparent;
+}
+
+.divider {
+  height: 1px;
+  margin: 4px 4px;
+  background: var(--border-color, #e5e7eb);
+}

@@ -23,6 +23,8 @@ interface SelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  triggerClassName?: string;
+  dropdownClassName?: string;
   disabled?: boolean;
   ariaLabel?: string;
   ariaLabelledBy?: string;
@@ -82,6 +84,8 @@ export function Select({
   onChange,
   placeholder,
   className,
+  triggerClassName,
+  dropdownClassName,
   disabled = false,
   ariaLabel,
   ariaLabelledBy,
@@ -263,7 +267,7 @@ export function Select({
       ? (
           <div
             ref={dropdownRef}
-            className={styles.dropdown}
+            className={[styles.dropdown, dropdownClassName].filter(Boolean).join(' ')}
             id={listboxId}
             role="listbox"
             aria-label={ariaLabel}
@@ -301,7 +305,7 @@ export function Select({
         <button
           id={selectId}
           type="button"
-          className={styles.trigger}
+          className={[styles.trigger, triggerClassName].filter(Boolean).join(' ')}
           onClick={disabled ? undefined : () => setOpen((prev) => !prev)}
           onKeyDown={handleKeyDown}
           aria-haspopup="listbox"

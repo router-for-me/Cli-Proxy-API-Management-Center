@@ -13,6 +13,7 @@ import { parseTimestampMs } from '@/utils/timestamp';
 
 type StatusError = { status?: number };
 type AuthFileStatusResponse = { status: string; disabled: boolean };
+type AuthFilePatchPayload = { name: string; disabled?: boolean; [key: string]: unknown };
 type AuthFileEntry = AuthFilesResponse['files'][number];
 export type AuthFileFieldsPatch = {
   prefix?: string;
@@ -416,8 +417,19 @@ const OAUTH_MODEL_ALIAS_ENDPOINT = '/oauth-model-alias';
 export const authFilesApi = {
   list: async () => dedupeAuthFilesResponse(await apiClient.get<AuthFilesResponse>('/auth-files')),
 
+  patchFile: (payload: AuthFilePatchPayload) =>
+    apiClient.patch<AuthFileStatusResponse>('/auth-files', payload),
+
   setStatus: (name: string, disabled: boolean) =>
     apiClient.patch<AuthFileStatusResponse>('/auth-files/status', { name, disabled }),
+
+  setStatusWithFallback: async (name: string, disabled: boolean) => {
+    try {
+      return await authFilesApi.patchFile({ name, disabled });
+    } catch {
+      return authFilesApi.setStatus(name, disabled);
+    }
+  },
 
   patchFields: (name: string, fields: AuthFileFieldsPatch) =>
     apiClient.patch('/auth-files/fields', { name, ...fields }),
@@ -451,6 +463,18 @@ export const authFilesApi = {
   },
 
   deleteFile: (name: string) => authFilesApi.deleteFiles([name]),
+
+  deleteFileByName: async (name: string): Promise<AuthFileBatchDeleteResult> => {
+    const requestedNames = normalizeRequestedAuthFileNames([name]);
+    if (requestedNames.length === 0) {
+      return { status: 'ok', deleted: 0, files: [], failed: [] };
+    }
+
+    const payload = await apiClient.delete<AuthFileBatchDeleteResponse>(
+      `/auth-files?name=${encodeURIComponent(requestedNames[0])}`
+    );
+    return normalizeBatchDeleteResponse(payload, requestedNames);
+  },
 
   deleteAll: () => apiClient.delete('/auth-files', { params: { all: true } }),
 
