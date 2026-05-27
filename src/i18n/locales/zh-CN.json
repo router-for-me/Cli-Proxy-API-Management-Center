@@ -1017,7 +1017,10 @@
   },
   "stats": {
     "success": "成功",
-    "failure": "失败"
+    "failure": "失败",
+    "input_tokens": "输入 Tokens",
+    "output_tokens": "输出 Tokens",
+    "total_tokens": "总 Tokens"
   },
   "status_bar": {
     "success_short": "✓",

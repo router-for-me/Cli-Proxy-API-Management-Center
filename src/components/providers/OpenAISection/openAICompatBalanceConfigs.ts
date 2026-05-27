@@ -56,7 +56,7 @@ const xiaomiStateFromPayload = (payload: XiaomiBalancePayload): XiaomiQuotaState
   fetchedAt: toTrimmedOrNull(payload?.fetched_at),
 });
 
-const formatTokenCount = (value: number): string => {
+export const formatTokenCount = (value: number): string => {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
   if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
   return String(Math.round(value));

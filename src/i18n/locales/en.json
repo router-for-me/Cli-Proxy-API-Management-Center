@@ -1017,7 +1017,10 @@
   },
   "stats": {
     "success": "Success",
-    "failure": "Failure"
+    "failure": "Failure",
+    "input_tokens": "Input Tokens",
+    "output_tokens": "Output Tokens",
+    "total_tokens": "Total Tokens"
   },
   "status_bar": {
     "success_short": "✓",

@@ -1011,7 +1011,10 @@
   },
   "stats": {
     "success": "Успех",
-    "failure": "Сбой"
+    "failure": "Сбой",
+    "input_tokens": "Входные токены",
+    "output_tokens": "Выходные токены",
+    "total_tokens": "Всего токенов"
   },
   "status_bar": {
     "success_short": "✓",
