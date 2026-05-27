@@ -642,7 +642,7 @@ export function BaseProviderForm({
                 className={styles.addBtn}
                 disabled={mutating}
                 onClick={() =>
-                  updateField('apiKeyEntries', [emptyApiKeyEntry(), ...apiKeyEntries])
+                  updateField('apiKeyEntries', [...apiKeyEntries, emptyApiKeyEntry()])
                 }
               >
                 <IconPlus size={12} />
@@ -663,16 +663,17 @@ export function BaseProviderForm({
                 <span>{t('providersPage.connectivity.testAll')}</span>
               </button>
             </div>
-            {apiKeyEntries.map((entry, idx) => {
-              const status = connectivity.openaiStatuses[idx] ?? {
+            {[...apiKeyEntries].reverse().map((entry, visualIdx) => {
+              const realIdx = apiKeyEntries.length - 1 - visualIdx;
+              const status = connectivity.openaiStatuses[realIdx] ?? {
                 state: 'idle' as ConnectivityState,
                 message: '',
               };
               return (
-                <div key={idx} className={styles.entryCard}>
+                <div key={realIdx} className={styles.entryCard}>
                   <div className={styles.entryCardHeader}>
                     <span>
-                      {t('providersPage.form.apiKeyEntry', { index: idx + 1 })}
+                      {t('providersPage.form.apiKeyEntry', { index: realIdx + 1 })}
                     </span>
                     <div className={styles.entryCardHeaderRight}>
                       <ConnectivityStatusIcon state={status.state} />
@@ -680,7 +681,7 @@ export function BaseProviderForm({
                         type="button"
                         className={styles.connectivityBtnGhost}
                         disabled={mutating || status.state === 'loading'}
-                        onClick={() => void connectivity.runOpenAIKey(idx)}
+                        onClick={() => void connectivity.runOpenAIKey(realIdx)}
                       >
                         {status.state === 'loading' ? (
                           <span className={`${styles.statusIcon} ${styles.statusIconLoading}`}>
@@ -696,7 +697,7 @@ export function BaseProviderForm({
                         onClick={() =>
                           updateField(
                             'apiKeyEntries',
-                            apiKeyEntries.filter((_, i) => i !== idx)
+                            apiKeyEntries.filter((_, i) => i !== realIdx)
                           )
                         }
                       >
@@ -716,7 +717,7 @@ export function BaseProviderForm({
                         updateField(
                           'apiKeyEntries',
                           apiKeyEntries.map((it, i) =>
-                            i === idx ? { ...it, apiKey: e.target.value } : it
+                            i === realIdx ? { ...it, apiKey: e.target.value } : it
                           )
                         )
                       }
@@ -735,7 +736,7 @@ export function BaseProviderForm({
                         updateField(
                           'apiKeyEntries',
                           apiKeyEntries.map((it, i) =>
-                            i === idx ? { ...it, proxyUrl: e.target.value } : it
+                            i === realIdx ? { ...it, proxyUrl: e.target.value } : it
                           )
                         )
                       }
@@ -759,7 +760,7 @@ export function BaseProviderForm({
                         updateField(
                           'apiKeyEntries',
                           apiKeyEntries.map((it, i) =>
-                            i === idx ? { ...it, headersText: e.target.value } : it
+                            i === realIdx ? { ...it, headersText: e.target.value } : it
                           )
                         )
                       }
