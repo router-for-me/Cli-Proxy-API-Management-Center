@@ -60,14 +60,6 @@ const API_KEY_ENTRY_FIELDS = ['api-key', 'proxy-url'] as const;
 
 const CLOAK_FIELDS = ['mode', 'strict-mode', 'sensitive-words'] as const;
 
-const RAW_SECTION_ALIASES: Record<string, readonly string[]> = {
-  'gemini-api-key': ['gemini-api-key', 'geminiApiKey', 'geminiApiKeys'],
-  'codex-api-key': ['codex-api-key', 'codexApiKey', 'codexApiKeys'],
-  'claude-api-key': ['claude-api-key', 'claudeApiKey', 'claudeApiKeys'],
-  'vertex-api-key': ['vertex-api-key', 'vertexApiKey', 'vertexApiKeys'],
-  'openai-compatibility': ['openai-compatibility', 'openaiCompatibility', 'openAICompatibility'],
-};
-
 const getStringField = (record: Record<string, unknown>, keys: readonly string[]) => {
   for (const key of keys) {
     const value = record[key];
@@ -163,14 +155,10 @@ const mergeKnownRecordList = (
   });
 };
 
-const getRawSectionList = (rawConfig: unknown, section: string) => {
+const getRawSectionList = (rawConfig: unknown, section: string): unknown[] => {
   if (!isRecord(rawConfig)) return [];
-  const aliases = RAW_SECTION_ALIASES[section] ?? [section];
-  for (const alias of aliases) {
-    const value = rawConfig[alias];
-    if (Array.isArray(value)) return value;
-  }
-  return [];
+  const value = rawConfig[section];
+  return Array.isArray(value) ? value : [];
 };
 
 const mergeModelPayloads = (raw: unknown, models: unknown) =>
@@ -242,10 +230,9 @@ const buildPreservedList = async <T>(
 };
 
 const extractArrayPayload = (data: unknown, key: string): unknown[] => {
-  if (Array.isArray(data)) return data;
   if (!isRecord(data)) return [];
-  const candidate = data[key] ?? data.items ?? data.data ?? data;
-  return Array.isArray(candidate) ? candidate : [];
+  const list = data[key];
+  return Array.isArray(list) ? list : [];
 };
 
 const buildProviderDeleteQuery = (apiKey: string, baseUrl?: string) => {
