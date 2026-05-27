@@ -635,7 +635,20 @@ export function BaseProviderForm({
           defaultOpen
         >
           <div className={styles.entriesList}>
-            <div className={styles.entriesToolbar}>
+            <div className={`${styles.entriesToolbar} ${styles.entriesToolbarSplit}`}>
+              {/* Add entry button on the left */}
+              <button
+                type="button"
+                className={styles.addBtn}
+                disabled={mutating}
+                onClick={() =>
+                  updateField('apiKeyEntries', [emptyApiKeyEntry(), ...apiKeyEntries])
+                }
+              >
+                <IconPlus size={12} />
+                <span>{t('providersPage.form.addApiKeyEntry')}</span>
+              </button>
+              {/* Test all button on the right */}
               <button
                 type="button"
                 className={styles.connectivityBtn}
@@ -762,17 +775,6 @@ export function BaseProviderForm({
                 </div>
               );
             })}
-            <button
-              type="button"
-              className={styles.addBtn}
-              disabled={mutating}
-              onClick={() =>
-                updateField('apiKeyEntries', [...apiKeyEntries, emptyApiKeyEntry()])
-              }
-            >
-              <IconPlus size={12} />
-              <span>{t('providersPage.form.addApiKeyEntry')}</span>
-            </button>
           </div>
         </Collapsible>
       ) : null}
