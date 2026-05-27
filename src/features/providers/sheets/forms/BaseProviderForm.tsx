@@ -67,19 +67,6 @@ const headersObjectToText = (headers?: Record<string, string>): string =>
 const stripDisableAllRule = (list?: string[]): string[] =>
   (list ?? []).filter((s) => s.trim() !== '*');
 
-/** Populate apiKey from resource.raw when editing a non-OpenAI provider. */
-const applyRawApiKey = (
-  brand: Exclude<ProviderBrand, 'ampcode'>,
-  resource: ProviderResource | null,
-  mode: 'create' | 'edit',
-  form: ProviderEntryFormInput
-): void => {
-  if (mode === 'edit' && resource && brand !== 'openaiCompatibility') {
-    const rawKey = (resource.raw as { apiKey?: string } | undefined)?.apiKey ?? '';
-    if (rawKey) form.apiKey = rawKey;
-  }
-};
-
 function buildInitialForm(
   brand: Exclude<ProviderBrand, 'ampcode'>,
   resource: ProviderResource | null,
@@ -148,7 +135,8 @@ function buildInitialForm(
   const disabled = hasDisableAllModelsRule(cfg.excludedModels);
   const excludedList = stripDisableAllRule(cfg.excludedModels);
   return {
-    apiKey: '',
+    // Populate apiKey from resource.raw in edit mode so the field is not empty
+    apiKey: cfg.apiKey ?? '',
     name: '',
     baseUrl: cfg.baseUrl ?? '',
     proxyUrl: cfg.proxyUrl ?? '',
@@ -219,16 +207,12 @@ export function BaseProviderForm({
   const { t } = useTranslation();
   const descriptor = PROVIDER_DESCRIPTORS[brand];
   const fid = useId();
-  const [form, setForm] = useState<ProviderEntryFormInput>(() => {
-    const initial = buildInitialForm(brand, resource, mode);
-    applyRawApiKey(brand, resource, mode, initial);
-    return initial;
-  });
-  const [initialFormSignature] = useState<string>(() => {
-    const initial = buildInitialForm(brand, resource, mode);
-    applyRawApiKey(brand, resource, mode, initial);
-    return JSON.stringify(initial);
-  });
+  const [form, setForm] = useState<ProviderEntryFormInput>(() =>
+    buildInitialForm(brand, resource, mode)
+  );
+  const [initialFormSignature] = useState<string>(() =>
+    JSON.stringify(buildInitialForm(brand, resource, mode))
+  );
   const [error, setError] = useState<string | null>(null);
   const [showPasswords, setShowPasswords] = useState<Set<number>>(new Set());
   const [showSingleApiKey, setShowSingleApiKey] = useState(false);
