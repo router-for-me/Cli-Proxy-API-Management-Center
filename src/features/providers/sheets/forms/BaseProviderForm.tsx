@@ -447,6 +447,25 @@ export function BaseProviderForm({
     [form.apiKeyEntries]
   );
 
+  const removeApiKeyEntry = (removeIdx: number) => {
+    setShowPasswords((prev) => {
+      if (!prev.size) return prev;
+      const next = new Set<number>();
+      prev.forEach((idx) => {
+        if (idx < removeIdx) {
+          next.add(idx);
+        } else if (idx > removeIdx) {
+          next.add(idx - 1);
+        }
+      });
+      return next;
+    });
+    updateField(
+      'apiKeyEntries',
+      apiKeyEntries.filter((_, i) => i !== removeIdx)
+    );
+  };
+
   return (
     <form id={formId} className={styles.form} onSubmit={handleSubmit} noValidate>
       {/* 基础字段 */}
@@ -735,12 +754,7 @@ export function BaseProviderForm({
                         type="button"
                         className={styles.removeBtn}
                         disabled={mutating || apiKeyEntries.length <= 1}
-                        onClick={() =>
-                          updateField(
-                            'apiKeyEntries',
-                            apiKeyEntries.filter((_, i) => i !== realIdx)
-                          )
-                        }
+                        onClick={() => removeApiKeyEntry(realIdx)}
                       >
                         <IconX size={12} />
                       </button>
