@@ -92,25 +92,34 @@ const normalizeBatchFailures = (value: unknown): AuthFileBatchFailure[] => {
 };
 
 const normalizeBatchUploadResponse = (
-  payload: AuthFileBatchUploadResponse | undefined
+  payload: AuthFileBatchUploadResponse | undefined,
+  requestedNames: string[]
 ): AuthFileBatchUploadResult => {
   const failed = normalizeBatchFailures(payload?.failed);
+  const filesFromPayload = normalizeBatchFileNames(payload?.files);
+  // Backend single-file success path returns only {status:"ok"} (auth_files.go:680).
+  // Derive count + names from the request when no failures and counts are absent.
+  const inferFromRequest = payload?.uploaded === undefined && failed.length === 0;
   return {
     status: payload?.status ?? (failed.length > 0 ? 'partial' : 'ok'),
-    uploaded: payload?.uploaded ?? 0,
-    files: normalizeBatchFileNames(payload?.files),
+    uploaded: payload?.uploaded ?? (inferFromRequest ? requestedNames.length : 0),
+    files: filesFromPayload.length ? filesFromPayload : inferFromRequest ? [...requestedNames] : [],
     failed,
   };
 };
 
 const normalizeBatchDeleteResponse = (
-  payload: AuthFileBatchDeleteResponse | undefined
+  payload: AuthFileBatchDeleteResponse | undefined,
+  requestedNames: string[]
 ): AuthFileBatchDeleteResult => {
   const failed = normalizeBatchFailures(payload?.failed);
+  const filesFromPayload = normalizeBatchFileNames(payload?.files);
+  // Backend single-name delete returns only {status:"ok"} (auth_files.go:794).
+  const inferFromRequest = payload?.deleted === undefined && failed.length === 0;
   return {
     status: payload?.status ?? (failed.length > 0 ? 'partial' : 'ok'),
-    deleted: payload?.deleted ?? 0,
-    files: normalizeBatchFileNames(payload?.files),
+    deleted: payload?.deleted ?? (inferFromRequest ? requestedNames.length : 0),
+    files: filesFromPayload.length ? filesFromPayload : inferFromRequest ? [...requestedNames] : [],
     failed,
   };
 };
@@ -358,7 +367,7 @@ export const authFilesApi = {
       formData.append('file', file, file.name);
     });
     const payload = await apiClient.postForm<AuthFileBatchUploadResponse>('/auth-files', formData);
-    return normalizeBatchUploadResponse(payload);
+    return normalizeBatchUploadResponse(payload, requestedNames);
   },
 
   upload: (file: File) => authFilesApi.uploadFiles([file]),
@@ -372,7 +381,7 @@ export const authFilesApi = {
     const payload = await apiClient.delete<AuthFileBatchDeleteResponse>('/auth-files', {
       data: { names: requestedNames },
     });
-    return normalizeBatchDeleteResponse(payload);
+    return normalizeBatchDeleteResponse(payload, requestedNames);
   },
 
   deleteFile: (name: string) => authFilesApi.deleteFiles([name]),
