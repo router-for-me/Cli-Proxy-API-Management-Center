@@ -15,17 +15,8 @@ import { buildHeaderObject } from '@/utils/headers';
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
-const normalizeBoolean = (value: unknown): boolean | undefined => {
-  if (value === undefined || value === null) return undefined;
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'number') return value !== 0;
-  if (typeof value === 'string') {
-    const trimmed = value.trim().toLowerCase();
-    if (['true', '1', 'yes', 'y', 'on'].includes(trimmed)) return true;
-    if (['false', '0', 'no', 'n', 'off'].includes(trimmed)) return false;
-  }
-  return Boolean(value);
-};
+const normalizeBoolean = (value: unknown): boolean | undefined =>
+  typeof value === 'boolean' ? value : undefined;
 
 const normalizeModelAliases = (models: unknown): ModelAlias[] => {
   if (!Array.isArray(models)) return [];
