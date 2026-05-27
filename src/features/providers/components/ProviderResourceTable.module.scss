@@ -1,0 +1,209 @@
+@use '../../../styles/mixins' as *;
+@use '../../../styles/variables' as *;
+
+.primaryCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.primaryName {
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.primarySub {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-family: $font-mono;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.baseUrl {
+  font-family: $font-mono;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--muted-bg);
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.metricsCell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--muted-bg);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.metricLabel {
+  color: var(--muted-foreground);
+}
+
+.metricValue {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.flagTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--primary-30);
+  background: var(--primary-10);
+  color: var(--primary-color);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.statusCell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.statPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.statSuccess {
+  background-color: var(--success-badge-bg);
+  color: var(--success-badge-text);
+  border-color: var(--success-badge-border);
+}
+
+.statFailure {
+  background-color: var(--failure-badge-bg);
+  color: var(--failure-badge-text);
+  border-color: var(--failure-badge-border);
+}
+
+.statusActive {
+  border-color: var(--success-badge-border);
+  background: var(--success-badge-bg);
+  color: var(--success-badge-text);
+}
+
+.statusDisabled {
+  border-color: var(--amber-30);
+  background: var(--amber-10);
+  color: var(--amber-text);
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.toggleWrap {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color $transition-fast, color $transition-fast;
+
+  &:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -1px;
+  }
+}
+
+.iconBtnDanger {
+  color: var(--destructive-color);
+
+  &:hover:not(:disabled) {
+    background: var(--destructive-10);
+    color: var(--destructive-color);
+  }
+}

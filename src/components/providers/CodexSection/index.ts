@@ -1,1 +1,0 @@
-export { CodexSection } from './CodexSection';

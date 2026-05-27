@@ -20,7 +20,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { IconFilterAll } from '@/components/ui/icons';
+import { IconFilterAll, IconSearch } from '@/components/ui/icons';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -194,7 +194,7 @@ export function AuthFilesPage() {
     const persisted = readAuthFilesUiState();
     if (persisted) {
       if (typeof persisted.filter === 'string' && persisted.filter.trim()) {
-        setFilter(persisted.filter);
+        setFilter(normalizeProviderKey(persisted.filter));
       }
       if (typeof persisted.problemOnly === 'boolean') {
         setProblemOnly(persisted.problemOnly);
@@ -349,9 +349,8 @@ export function AuthFilesPage() {
   const existingTypes = useMemo(() => {
     const types = new Set<string>(['all']);
     files.forEach((file) => {
-      if (file.type) {
-        types.add(file.type);
-      }
+      const type = normalizeProviderKey(String(file.type ?? file.provider ?? ''));
+      if (type) types.add(type);
     });
     return Array.from(types);
   }, [files]);
@@ -378,8 +377,9 @@ export function AuthFilesPage() {
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { all: filesMatchingStatusFilters.length };
     filesMatchingStatusFilters.forEach((file) => {
-      if (!file.type) return;
-      counts[file.type] = (counts[file.type] || 0) + 1;
+      const type = normalizeProviderKey(String(file.type ?? file.provider ?? ''));
+      if (!type) return;
+      counts[type] = (counts[type] || 0) + 1;
     });
     return counts;
   }, [filesMatchingStatusFilters]);
@@ -391,7 +391,8 @@ export function AuthFilesPage() {
     const normalizedTerm = normalizedSearch.toLowerCase();
 
     return filesMatchingStatusFilters.filter((item) => {
-      const matchType = filter === 'all' || item.type === filter;
+      const type = normalizeProviderKey(String(item.type ?? item.provider ?? ''));
+      const matchType = normalizedFilter === 'all' || type === normalizedFilter;
       const matchSearch =
         !normalizedSearch ||
         [item.name, item.type, item.provider].some((value) => {
@@ -402,7 +403,7 @@ export function AuthFilesPage() {
         });
       return matchType && matchSearch;
     });
-  }, [filesMatchingStatusFilters, filter, normalizedSearch, wildcardSearch]);
+  }, [filesMatchingStatusFilters, normalizedFilter, normalizedSearch, wildcardSearch]);
 
   const sorted = useMemo(() => {
     const copy = [...filtered];
@@ -586,7 +587,7 @@ export function AuthFilesPage() {
     <div className={styles.filterRail}>
       <div className={styles.filterTags}>
         {existingTypes.map((type) => {
-          const isActive = filter === type;
+          const isActive = normalizedFilter === type;
           const iconSrc = getAuthFileIcon(type, resolvedTheme);
           const color =
             type === 'all'
@@ -646,13 +647,15 @@ export function AuthFilesPage() {
       return t('auth_files.delete_filtered_result_button');
     }
     if (problemOnly) {
-      return filter === 'all'
+      return normalizedFilter === 'all'
         ? t('auth_files.delete_problem_button')
-        : t('auth_files.delete_problem_button_with_type', { type: getTypeLabel(t, filter) });
+        : t('auth_files.delete_problem_button_with_type', {
+            type: getTypeLabel(t, normalizedFilter),
+          });
     }
-    return filter === 'all'
+    return normalizedFilter === 'all'
       ? t('auth_files.delete_all_button')
-      : `${t('common.delete')} ${getTypeLabel(t, filter)}`;
+      : `${t('common.delete')} ${getTypeLabel(t, normalizedFilter)}`;
   })();
 
   return (
@@ -714,15 +717,17 @@ export function AuthFilesPage() {
           <div className={styles.filterContent}>
             <div className={styles.filterControlsPanel}>
               <div className={styles.filterControls}>
-                <div className={styles.filterItem}>
+                <div className={`${styles.filterItem} ${styles.filterSearchItem}`}>
                   <label>{t('auth_files.search_label')}</label>
                   <Input
+                    className={styles.searchInput}
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value);
                       setPage(1);
                     }}
                     placeholder={t('auth_files.search_placeholder')}
+                    rightElement={<IconSearch className={styles.searchIcon} size={18} />}
                   />
                 </div>
                 <div className={styles.filterItem}>
