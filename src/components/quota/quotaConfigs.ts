@@ -32,6 +32,8 @@ import type {
   KimiQuotaState,
   OllamaBalancePayload,
   OllamaQuotaState,
+  XaiBillingSummary,
+  XaiQuotaState,
 } from '@/types';
 import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
 import { useQuotaStore } from '@/stores';
@@ -80,6 +82,8 @@ import {
   isKimiFile,
   isOllamaFile,
   isRuntimeOnlyAuthFile,
+  isXaiFile,
+  fetchXaiQuota,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import type { QuotaRenderHelpers } from './QuotaCard';
@@ -87,7 +91,7 @@ import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'ollama' | 'deepseek';
+export type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'ollama' | 'deepseek' | 'xai';
 
 const DEFAULT_ANTIGRAVITY_PROJECT_ID = 'bamboo-precept-lgxtn';
 const QUOTA_PROGRESS_HIGH_THRESHOLD = 70;
@@ -106,6 +110,7 @@ export interface QuotaStore {
   kimiQuota: Record<string, KimiQuotaState>;
   ollamaQuota: Record<string, OllamaQuotaState>;
   deepseekQuota: Record<string, DeepSeekQuotaState>;
+  xaiQuota: Record<string, XaiQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
@@ -113,6 +118,7 @@ export interface QuotaStore {
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
   setOllamaQuota: (updater: QuotaUpdater<Record<string, OllamaQuotaState>>) => void;
   setDeepSeekQuota: (updater: QuotaUpdater<Record<string, DeepSeekQuotaState>>) => void;
+  setXaiQuota: (updater: QuotaUpdater<Record<string, XaiQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -1761,4 +1767,97 @@ export const DEEPSEEK_CONFIG: QuotaConfig<DeepSeekQuotaState, DeepSeekBalancePay
   controlClassName: styles.deepseekControl,
   gridClassName: styles.deepseekGrid,
   renderQuotaItems: renderDeepSeekItems,
+};
+
+const formatUsdFromCents = (cents: number | null): string => {
+  if (cents === null) return '--';
+  return `$${(cents / 100).toFixed(2)}`;
+};
+
+const formatXaiUsageAmount = (billing: XaiBillingSummary): string => {
+  const used = formatUsdFromCents(billing.usedCents);
+  const limit = formatUsdFromCents(billing.monthlyLimitCents);
+  if (billing.monthlyLimitCents === null) return used;
+  return `${used} / ${limit}`;
+};
+
+const renderXaiItems = (
+  quota: XaiQuotaState,
+  t: TFunction,
+  helpers: QuotaRenderHelpers
+): ReactNode => {
+  const { styles: styleMap, QuotaProgressBar } = helpers;
+  const { createElement: h, Fragment } = React;
+  const billing = quota.billing;
+
+  if (!billing) {
+    return h('div', { className: styleMap.quotaMessage }, t('xai_quota.empty_data'));
+  }
+
+  const clampedUsed =
+    billing.usedPercent === null ? null : Math.max(0, Math.min(100, billing.usedPercent));
+  const remaining = clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
+  const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
+  const amountLabel = formatXaiUsageAmount(billing);
+  const resetLabel = formatQuotaResetTime(billing.billingPeriodEnd);
+  const onDemandCap = billing.onDemandCapCents ?? 0;
+  const payAsYouGoLabel =
+    onDemandCap > 0
+      ? t('xai_quota.pay_as_you_go_enabled', { cap: formatUsdFromCents(onDemandCap) })
+      : t('xai_quota.pay_as_you_go_disabled');
+
+  return h(
+    Fragment,
+    null,
+    h(
+      'div',
+      { key: 'pay-as-you-go', className: styleMap.codexPlan },
+      h('span', { className: styleMap.codexPlanLabel }, t('xai_quota.pay_as_you_go_label')),
+      h('span', { className: styleMap.codexPlanValue }, payAsYouGoLabel)
+    ),
+    h(
+      'div',
+      { key: 'monthly-credits', className: styleMap.quotaRow },
+      h(
+        'div',
+        { className: styleMap.quotaRowHeader },
+        h('span', { className: styleMap.quotaModel }, t('xai_quota.monthly_credits')),
+        h(
+          'div',
+          { className: styleMap.quotaMeta },
+          h('span', { className: styleMap.quotaPercent }, percentLabel),
+          h('span', { className: styleMap.quotaAmount }, amountLabel),
+          h('span', { className: styleMap.quotaReset }, resetLabel)
+        )
+      ),
+      h(QuotaProgressBar, {
+        percent: remaining,
+        highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+        mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+      })
+    )
+  );
+};
+
+export const XAI_CONFIG: QuotaConfig<XaiQuotaState, XaiBillingSummary> = {
+  type: 'xai',
+  i18nPrefix: 'xai_quota',
+  cardIdleMessageKey: 'quota_management.card_idle_hint',
+  filterFn: (file) => isXaiFile(file) && !isDisabledAuthFile(file),
+  fetchQuota: fetchXaiQuota,
+  storeSelector: (state) => state.xaiQuota,
+  storeSetter: 'setXaiQuota',
+  buildLoadingState: () => ({ status: 'loading', billing: null }),
+  buildSuccessState: (billing) => ({ status: 'success', billing }),
+  buildErrorState: (message, status) => ({
+    status: 'error',
+    billing: null,
+    error: message,
+    errorStatus: status,
+  }),
+  cardClassName: styles.kimiCard,
+  controlsClassName: styles.kimiControls,
+  controlClassName: styles.kimiControl,
+  gridClassName: styles.kimiGrid,
+  renderQuotaItems: renderXaiItems,
 };

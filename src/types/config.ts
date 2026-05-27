@@ -12,11 +12,26 @@ export interface QuotaExceededConfig {
   antigravityCredits?: boolean;
 }
 
+export interface AuthPoolCleanConfig {
+  baseUrl?: string;
+  token?: string;
+  targetType?: string;
+  workers?: number;
+  deleteWorkers?: number;
+  timeout?: number;
+  retries?: number;
+  userAgent?: string;
+  usedPercentThreshold?: number;
+  sampleSize?: number;
+}
+
 export interface Config {
   debug?: boolean;
   proxyUrl?: string;
   requestRetry?: number;
   quotaExceeded?: QuotaExceededConfig;
+  clean?: AuthPoolCleanConfig;
+  usageStatisticsEnabled?: boolean;
   requestLog?: boolean;
   successRequestLog?: boolean;
   successLogsMaxFiles?: number;
@@ -41,6 +56,7 @@ export type RawConfigSection =
   | 'proxy-url'
   | 'request-retry'
   | 'quota-exceeded'
+  | 'usage-statistics-enabled'
   | 'request-log'
   | 'success-request-log'
   | 'success-logs-max-files'

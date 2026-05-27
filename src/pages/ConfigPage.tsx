@@ -19,11 +19,28 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useVisualConfig } from '@/hooks/useVisualConfig';
 import { useNotificationStore, useAuthStore, useThemeStore, useConfigStore } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
+import { normalizeUsageServiceBase } from '@/services/api/usageService';
 import styles from './ConfigPage.module.scss';
 
 type ConfigEditorTab = 'visual' | 'source';
 
 const LazyConfigSourceEditor = lazy(() => import('@/components/config/ConfigSourceEditor'));
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function getUsageServiceBootstrapToSync({
+  serviceBase,
+  usageServiceEnabled,
+  usageServiceBase,
+}: {
+  serviceBase: string;
+  usageServiceEnabled: boolean;
+  usageServiceBase: string;
+}): string {
+  const normalized = normalizeUsageServiceBase(serviceBase);
+  if (!normalized) return '';
+  if (usageServiceEnabled && usageServiceBase === normalized) return '';
+  return normalized;
+}
 
 function readCommercialModeFromYaml(yamlContent: string): boolean {
   try {

@@ -13,5 +13,6 @@ export {
   GEMINI_CLI_CONFIG,
   KIMI_CONFIG,
   OLLAMA_CONFIG,
+  XAI_CONFIG,
 } from './quotaConfigs';
-export type { QuotaConfig } from './quotaConfigs';
+export type { QuotaConfig, QuotaType } from './quotaConfigs';

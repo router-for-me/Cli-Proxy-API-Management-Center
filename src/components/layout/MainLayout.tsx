@@ -17,6 +17,7 @@ import {
   IconSidebarConfig,
   IconSidebarDashboard,
   IconSidebarLogs,
+  IconSidebarMonitor,
   IconSidebarOauth,
   IconSidebarProviders,
   IconSidebarQuota,
@@ -33,6 +34,8 @@ import {
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useRequestMonitoringAvailability } from '@/hooks/useRequestMonitoringAvailability';
 import type { Theme } from '@/types';
 
 const sidebarIcons: Record<string, ReactNode> = {
@@ -43,6 +46,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   quota: <IconSidebarQuota size={18} />,
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
+  monitoring: <IconSidebarMonitor size={18} />,
   system: <IconSidebarSystem size={18} />,
 };
 
@@ -223,7 +227,10 @@ export function MainLayout() {
   const setLanguage = useLanguageStore((state) => state.setLanguage);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorage(
+    'mainLayout.sidebarCollapsed',
+    false
+  );
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -235,6 +242,7 @@ export function MainLayout() {
   const abbrBrandName = t('title.abbr');
   const isLogsPage = location.pathname.startsWith('/logs');
   const showSidebarLabels = !sidebarCollapsed || sidebarOpen;
+  const requestMonitoringAvailability = useRequestMonitoringAvailability();
 
   // 将顶部悬浮控制区高度写入 CSS 变量，供移动端粘性元素和浮层避让。
   useLayoutEffect(() => {
@@ -393,6 +401,9 @@ export function MainLayout() {
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
     ...(config?.loggingToFile
       ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
+      : []),
+    ...(requestMonitoringAvailability.available
+      ? [{ path: '/monitoring', label: t('nav.monitoring_center'), icon: sidebarIcons.monitoring }]
       : []),
     { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system },
   ];
@@ -647,8 +658,27 @@ export function MainLayout() {
           className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
         >
           <div className="sidebar-brand" title={fullBrandName}>
-            <img src={INLINE_LOGO_JPEG} alt="CPAMC logo" className="sidebar-brand-logo" />
-            {showSidebarLabels && <span className="sidebar-brand-title">{abbrBrandName}</span>}
+            <div className="sidebar-brand-main">
+              <img src={INLINE_LOGO_JPEG} alt="CPAMC logo" className="sidebar-brand-logo" />
+              {showSidebarLabels && <span className="sidebar-brand-title">{abbrBrandName}</span>}
+            </div>
+            <button
+              type="button"
+              className="sidebar-collapse-inline"
+              onClick={() => setSidebarCollapsed((prev) => !prev)}
+              title={
+                sidebarCollapsed
+                  ? t('sidebar.expand', { defaultValue: '展开' })
+                  : t('sidebar.collapse', { defaultValue: '收起' })
+              }
+              aria-label={
+                sidebarCollapsed
+                  ? t('sidebar.expand', { defaultValue: '展开' })
+                  : t('sidebar.collapse', { defaultValue: '收起' })
+              }
+            >
+              {sidebarCollapsed ? headerIcons.chevronRight : headerIcons.chevronLeft}
+            </button>
           </div>
 
           <div className="nav-section">

@@ -6,8 +6,10 @@ import type { AuthFileItem } from '@/types';
 import { GEMINI_CLI_IGNORED_MODEL_PREFIXES } from './constants';
 
 export function resolveAuthProvider(file: AuthFileItem): string {
-  const raw = file.provider ?? file.type ?? '';
-  return String(raw).trim().toLowerCase();
+  const raw = file.provider ?? file.type ?? file.typo ?? '';
+  const key = String(raw).trim().toLowerCase().replace(/_/g, '-');
+  if (key === 'x-ai' || key === 'grok') return 'xai';
+  return key;
 }
 
 // resolveCanonicalProvider returns the *real* sub-provider when an auth is
@@ -64,6 +66,10 @@ export function isKimiFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'kimi';
 }
 
+export function isXaiFile(file: AuthFileItem): boolean {
+  return resolveAuthProvider(file) === 'xai';
+}
+
 export function isOllamaFile(file: AuthFileItem): boolean {
   return resolveCanonicalProvider(file) === 'ollama';
 }
@@ -81,9 +87,18 @@ export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
 
 export function isDisabledAuthFile(file: AuthFileItem): boolean {
   const raw = (file as { disabled?: unknown }).disabled;
+  const statusRaw = file.status ?? file.state;
+  const normalizedStatus =
+    typeof statusRaw === 'string' ? statusRaw.trim().toLowerCase() : '';
+  if (normalizedStatus === 'disabled' || normalizedStatus === 'inactive') {
+    return true;
+  }
   if (typeof raw === 'boolean') return raw;
   if (typeof raw === 'number') return raw !== 0;
-  if (typeof raw === 'string') return raw.trim().toLowerCase() === 'true';
+  if (typeof raw === 'string') {
+    const normalized = raw.trim().toLowerCase();
+    return normalized === 'true' || normalized === '1';
+  }
   return false;
 }
 

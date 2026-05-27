@@ -23,6 +23,24 @@
   }
 }
 
+@mixin compact-desktop {
+  @media (max-width: 1280px) {
+    @content;
+  }
+}
+
+@mixin narrow-laptop {
+  @media (max-width: 1440px) {
+    @content;
+  }
+}
+
+@mixin wide-desktop {
+  @media (min-width: 1681px) {
+    @content;
+  }
+}
+
 // Flexbox 居中
 @mixin flex-center {
   display: flex;
