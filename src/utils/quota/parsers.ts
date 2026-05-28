@@ -2,7 +2,14 @@
  * Normalization and parsing functions for quota data.
  */
 
-import type { ClaudeUsagePayload, CodexUsagePayload, GeminiCliCodeAssistPayload, GeminiCliQuotaPayload, KimiUsagePayload, XaiBillingPayload } from '@/types';
+import type {
+  ClaudeUsagePayload,
+  CodexUsagePayload,
+  GeminiCliCodeAssistPayload,
+  GeminiCliQuotaPayload,
+  KimiUsagePayload,
+  XaiBillingPayload,
+} from '@/types';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 
 const GEMINI_CLI_MODEL_SUFFIX = '_vertex';

@@ -26,10 +26,10 @@
 .track {
   width: 44px;
   height: 24px;
-  background: var(--border-color);
+  background: var(--border-secondary);
   border-radius: $radius-full;
   position: relative;
-  transition: background $transition-fast;
+  transition: background $transition-fast, box-shadow $transition-fast;
 }
 
 .thumb {
@@ -46,6 +46,7 @@
 
 .root input:checked + .track {
   background: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--color-primary-light-8);
 }
 
 .root input:checked + .track .thumb {

@@ -25,16 +25,6 @@ export interface ErrorLogsResponse {
   files?: ErrorLogFile[];
 }
 
-export interface SuccessLogFile {
-  name: string;
-  size?: number;
-  modified?: number;
-}
-
-export interface SuccessLogsResponse {
-  files?: SuccessLogFile[];
-}
-
 export const logsApi = {
   fetchLogs: (params: LogsQuery = {}): Promise<LogsResponse> =>
     apiClient.get('/logs', { params, timeout: LOGS_TIMEOUT_MS }),
@@ -46,15 +36,6 @@ export const logsApi = {
 
   downloadErrorLog: (filename: string) =>
     apiClient.getRaw(`/request-error-logs/${encodeURIComponent(filename)}`, {
-      responseType: 'blob',
-      timeout: LOGS_TIMEOUT_MS
-    }),
-
-  fetchSuccessLogs: (): Promise<SuccessLogsResponse> =>
-    apiClient.get('/request-success-logs', { timeout: LOGS_TIMEOUT_MS }),
-
-  downloadSuccessLog: (filename: string) =>
-    apiClient.getRaw(`/request-success-logs/${encodeURIComponent(filename)}`, {
       responseType: 'blob',
       timeout: LOGS_TIMEOUT_MS
     }),

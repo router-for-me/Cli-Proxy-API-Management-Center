@@ -7,10 +7,8 @@ import type {
   AntigravityQuotaState,
   ClaudeQuotaState,
   CodexQuotaState,
-  DeepSeekQuotaState,
   GeminiCliQuotaState,
   KimiQuotaState,
-  OllamaQuotaState,
   XaiQuotaState,
 } from '@/types';
 
@@ -22,16 +20,12 @@ interface QuotaStoreState {
   codexQuota: Record<string, CodexQuotaState>;
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
-  ollamaQuota: Record<string, OllamaQuotaState>;
-  deepseekQuota: Record<string, DeepSeekQuotaState>;
   xaiQuota: Record<string, XaiQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
-  setOllamaQuota: (updater: QuotaUpdater<Record<string, OllamaQuotaState>>) => void;
-  setDeepSeekQuota: (updater: QuotaUpdater<Record<string, DeepSeekQuotaState>>) => void;
   setXaiQuota: (updater: QuotaUpdater<Record<string, XaiQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
@@ -49,8 +43,6 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
   codexQuota: {},
   geminiCliQuota: {},
   kimiQuota: {},
-  ollamaQuota: {},
-  deepseekQuota: {},
   xaiQuota: {},
   setAntigravityQuota: (updater) =>
     set((state) => ({
@@ -72,14 +64,6 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
     set((state) => ({
       kimiQuota: resolveUpdater(updater, state.kimiQuota)
     })),
-  setOllamaQuota: (updater) =>
-    set((state) => ({
-      ollamaQuota: resolveUpdater(updater, state.ollamaQuota)
-    })),
-  setDeepSeekQuota: (updater) =>
-    set((state) => ({
-      deepseekQuota: resolveUpdater(updater, state.deepseekQuota)
-    })),
   setXaiQuota: (updater) =>
     set((state) => ({
       xaiQuota: resolveUpdater(updater, state.xaiQuota)
@@ -91,8 +75,6 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
       codexQuota: {},
       geminiCliQuota: {},
       kimiQuota: {},
-      ollamaQuota: {},
-      deepseekQuota: {},
       xaiQuota: {}
     })
 }));

@@ -145,7 +145,6 @@ export interface ClaudeExtraUsage {
 
 export interface ClaudeUsagePayload {
   five_hour?: ClaudeUsageWindow | null;
-  one_day?: ClaudeUsageWindow | null;
   seven_day?: ClaudeUsageWindow | null;
   seven_day_oauth_apps?: ClaudeUsageWindow | null;
   seven_day_opus?: ClaudeUsageWindow | null;
@@ -308,128 +307,6 @@ export interface KimiQuotaState {
   errorStatus?: number;
 }
 
-// Ollama account usage (cli-proxy backend response shape)
-export interface OllamaBalancePayload {
-  session_usage_pct?: number;
-  weekly_usage_pct?: number;
-  session_resets_at?: string;
-  weekly_resets_at?: string;
-  plan?: string;
-  source?: string;
-  fetched_at?: string;
-}
-
-export interface OllamaQuotaState {
-  status: 'idle' | 'loading' | 'success' | 'error';
-  sessionUsagePct: number | null;
-  weeklyUsagePct: number | null;
-  sessionResetsAt: string | null;
-  weeklyResetsAt: string | null;
-  plan: string | null;
-  source: string | null;
-  fetchedAt: string | null;
-  error?: string;
-  errorStatus?: number;
-}
-
-// DeepSeek wallet snapshot (cli-proxy backend response shape)
-export interface DeepSeekBalancePayload {
-  currency?: string;
-  balance?: number;
-  token_estimation?: number;
-  bonus_balance?: number;
-  bonus_token_estimation?: number;
-  total_available_tokens?: number;
-  monthly_cost?: number;
-  monthly_token_usage?: number;
-  current_token?: number;
-  source?: string;
-  fetched_at?: string;
-}
-
-export interface DeepSeekQuotaState {
-  status: 'idle' | 'loading' | 'success' | 'error';
-  currency: string | null;
-  balance: number | null;
-  tokenEstimation: number | null;
-  bonusBalance: number | null;
-  bonusTokenEstimation: number | null;
-  totalAvailableTokens: number | null;
-  monthlyCost: number | null;
-  monthlyTokenUsage: number | null;
-  currentToken: number | null;
-  source: string | null;
-  fetchedAt: string | null;
-  error?: string;
-  errorStatus?: number;
-}
-
-// Xiaomi platform token-plan usage (cli-proxy backend response shape)
-export interface XiaomiBalancePayload {
-  month_used?: number;
-  month_limit?: number;
-  month_percent?: number;
-  plan_used?: number;
-  plan_limit?: number;
-  plan_percent?: number;
-  compensation_used?: number;
-  compensation_limit?: number;
-  source?: string;
-  fetched_at?: string;
-}
-
-export interface XiaomiQuotaState {
-  status: 'idle' | 'loading' | 'success' | 'error';
-  monthUsed: number | null;
-  monthLimit: number | null;
-  monthPercent: number | null;
-  planUsed: number | null;
-  planLimit: number | null;
-  planPercent: number | null;
-  compensationUsed: number | null;
-  compensationLimit: number | null;
-  source: string | null;
-  fetchedAt: string | null;
-  error?: string;
-  errorStatus?: number;
-}
-
-// Anyrouter (anyrouter.top) account snapshot
-export interface AnyrouterBalancePayload {
-  user_id?: number;
-  username?: string;
-  display_name?: string;
-  group?: string;
-  quota?: number;
-  used_quota?: number;
-  request_count?: number;
-  aff_code?: string;
-  aff_count?: number;
-  aff_quota?: number;
-  aff_history_quota?: number;
-  source?: string;
-  fetched_at?: string;
-}
-
-export interface AnyrouterQuotaState {
-  status: 'idle' | 'loading' | 'success' | 'error';
-  userId: number | null;
-  username: string | null;
-  displayName: string | null;
-  group: string | null;
-  quota: number | null;
-  usedQuota: number | null;
-  requestCount: number | null;
-  affCode: string | null;
-  affCount: number | null;
-  affQuota: number | null;
-  affHistoryQuota: number | null;
-  source: string | null;
-  fetchedAt: string | null;
-  error?: string;
-  errorStatus?: number;
-}
-
 // xAI/Grok API payload types
 export interface XaiBillingCent {
   val?: number | string;
@@ -465,4 +342,73 @@ export interface XaiQuotaState {
   billing: XaiBillingSummary | null;
   error?: string;
   errorStatus?: number;
+}
+
+// Xiaomi balance payload types
+export interface XiaomiBalancePayload {
+  month_used?: number;
+  month_limit?: number;
+  month_percent?: number;
+  plan_used?: number;
+  plan_limit?: number;
+  plan_percent?: number;
+  compensation_used?: number;
+  compensation_limit?: number;
+  source?: string;
+  fetched_at?: string;
+}
+
+export interface XiaomiQuotaState {
+  status: 'success';
+  monthUsed: number | null;
+  monthLimit: number | null;
+  monthPercent: number | null;
+  planUsed: number | null;
+  planLimit: number | null;
+  planPercent: number | null;
+  compensationUsed: number | null;
+  compensationLimit: number | null;
+  source: string | null;
+  fetchedAt: string | null;
+}
+
+// Anyrouter balance payload types
+export interface AnyrouterBalancePayload {
+  user_id?: number;
+  username?: string;
+  display_name?: string;
+  group?: string;
+  quota?: number;
+  used_quota?: number;
+  request_count?: number;
+  aff_code?: string;
+  aff_count?: number;
+  aff_quota?: number;
+  aff_history_quota?: number;
+  source?: string;
+  fetched_at?: string;
+}
+
+export interface AnyrouterQuotaState {
+  status: 'success';
+  userId: number | null;
+  username: string | null;
+  displayName: string | null;
+  group: string | null;
+  quota: number | null;
+  usedQuota: number | null;
+  requestCount: number | null;
+  affCode: string | null;
+  affCount: number | null;
+  affQuota: number | null;
+  affHistoryQuota: number | null;
+  source: string | null;
+  fetchedAt: string | null;
+}
+
+// Token usage summary
+export interface TokenUsageSummary {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
 }

@@ -4,11 +4,7 @@
 
 import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
-import type {
-  DeepSeekBalancePayload,
-  OAuthModelAliasEntry,
-  OllamaBalancePayload,
-} from '@/types';
+import type { OAuthModelAliasEntry } from '@/types';
 import { parseTimestampMs } from '@/utils/timestamp';
 
 type StatusError = { status?: number };
@@ -18,6 +14,7 @@ type AuthFileEntry = AuthFilesResponse['files'][number];
 export type AuthFileFieldsPatch = {
   prefix?: string;
   proxy_url?: string;
+  websockets?: boolean;
   headers?: Record<string, string>;
   priority?: number;
   note?: string;
@@ -95,12 +92,11 @@ const normalizeBatchFailures = (value: unknown): AuthFileBatchFailure[] => {
   }, []);
 };
 
-const deriveSuccessfulFileNames = (requestedNames: string[], failed: AuthFileBatchFailure[]): string[] => {
-  const failedNames = new Set(
-    failed
-      .map((entry) => entry.name.trim())
-      .filter(Boolean)
-  );
+const deriveSuccessfulFileNames = (
+  requestedNames: string[],
+  failed: AuthFileBatchFailure[]
+): string[] => {
+  const failedNames = new Set(failed.map((entry) => entry.name.trim()).filter(Boolean));
 
   if (failedNames.size === 0) {
     return [...requestedNames];
@@ -137,7 +133,8 @@ const normalizeBatchUploadResponse = (
   }
 
   return {
-    status: typeof payload?.status === 'string' ? payload.status : failed.length > 0 ? 'partial' : 'ok',
+    status:
+      typeof payload?.status === 'string' ? payload.status : failed.length > 0 ? 'partial' : 'ok',
     uploaded,
     files: uploadedFiles,
     failed,
@@ -172,7 +169,8 @@ const normalizeBatchDeleteResponse = (
   }
 
   return {
-    status: typeof payload?.status === 'string' ? payload.status : failed.length > 0 ? 'partial' : 'ok',
+    status:
+      typeof payload?.status === 'string' ? payload.status : failed.length > 0 ? 'partial' : 'ok',
     deleted,
     files: deletedFiles,
     failed,
@@ -266,18 +264,11 @@ const mergeAuthFileEntries = (entries: AuthFileEntry[]): AuthFileEntry => {
   return merged;
 };
 
-const XIAOMI_COOKIE_FILE_PREFIX = 'xiaomi_platform_cookies_';
-
 const dedupeAuthFilesResponse = (payload: AuthFilesResponse): AuthFilesResponse => {
   const files = Array.isArray(payload?.files) ? payload.files : [];
-  // Filter out Xiaomi cookie cache files — these are internal persistence, not auth credentials.
-  const filtered = files.filter((entry) => {
-    const name = readTextField(entry, 'name');
-    return !name.startsWith(XIAOMI_COOKIE_FILE_PREFIX);
-  });
   const grouped = new Map<string, AuthFileEntry[]>();
 
-  filtered.forEach((entry) => {
+  files.forEach((entry) => {
     const name = readTextField(entry, 'name');
     const key = name || JSON.stringify(entry);
     const bucket = grouped.get(key);
@@ -321,7 +312,14 @@ const parseAuthFileJsonObject = (rawText: string): Record<string, unknown> => {
 
 const saveAuthFileText = async (name: string, text: string) => {
   const file = new File([text], name, { type: 'application/json' });
-  await authFilesApi.upload(file);
+  const result = await authFilesApi.upload(file);
+  const normalizedStatus = result.status.trim().toLowerCase();
+  const hasExplicitFailureStatus =
+    normalizedStatus === 'error' || normalizedStatus === 'failed' || normalizedStatus === 'partial';
+  if (hasExplicitFailureStatus || result.failed.length > 0 || result.uploaded === 0) {
+    const failure = result.failed[0];
+    throw new Error(failure?.error || 'Upload failed');
+  }
 };
 
 export const isAuthFileInvalidJsonObjectError = (err: unknown): boolean =>
@@ -369,10 +367,7 @@ const normalizeOauthModelAlias = (payload: unknown): Record<string, OAuthModelAl
   if (!payload || typeof payload !== 'object') return {};
 
   const record = payload as Record<string, unknown>;
-  const source =
-    record['oauth-model-alias'] ??
-    record.items ??
-    payload;
+  const source = record['oauth-model-alias'] ?? record.items ?? payload;
   if (!source || typeof source !== 'object') return {};
 
   const result: Record<string, OAuthModelAliasEntry[]> = {};
@@ -384,17 +379,17 @@ const normalizeOauthModelAlias = (payload: unknown): Record<string, OAuthModelAl
     if (!key) return;
     if (!Array.isArray(mappings)) return;
 
-	    const seen = new Set<string>();
-	    const normalized = mappings
-	      .map((item) => {
-	        if (!item || typeof item !== 'object') return null;
-	        const entry = item as Record<string, unknown>;
-	        const name = String(entry.name ?? entry.id ?? entry.model ?? '').trim();
-	        const alias = String(entry.alias ?? '').trim();
-	        if (!name || !alias) return null;
-	        const fork = entry.fork === true;
-	        return fork ? { name, alias, fork } : { name, alias };
-	      })
+    const seen = new Set<string>();
+    const normalized = mappings
+      .map((item) => {
+        if (!item || typeof item !== 'object') return null;
+        const entry = item as Record<string, unknown>;
+        const name = String(entry.name ?? entry.id ?? entry.model ?? '').trim();
+        const alias = String(entry.alias ?? '').trim();
+        if (!name || !alias) return null;
+        const fork = entry.fork === true;
+        return fork ? { name, alias, fork } : { name, alias };
+      })
       .filter(Boolean)
       .filter((entry) => {
         const aliasEntry = entry as OAuthModelAliasEntry;
@@ -479,9 +474,12 @@ export const authFilesApi = {
   deleteAll: () => apiClient.delete('/auth-files', { params: { all: true } }),
 
   downloadText: async (name: string): Promise<string> => {
-    const response = await apiClient.getRaw(`/auth-files/download?name=${encodeURIComponent(name)}`, {
-      responseType: 'blob'
-    });
+    const response = await apiClient.getRaw(
+      `/auth-files/download?name=${encodeURIComponent(name)}`,
+      {
+        responseType: 'blob',
+      }
+    );
     const blob = response.data as Blob;
     return blob.text();
   },
@@ -521,8 +519,12 @@ export const authFilesApi = {
     const normalizedChannel = String(channel ?? '')
       .trim()
       .toLowerCase();
-    const normalizedAliases = normalizeOauthModelAlias({ [normalizedChannel]: aliases })[normalizedChannel] ?? [];
-    await apiClient.patch(OAUTH_MODEL_ALIAS_ENDPOINT, { channel: normalizedChannel, aliases: normalizedAliases });
+    const normalizedAliases =
+      normalizeOauthModelAlias({ [normalizedChannel]: aliases })[normalizedChannel] ?? [];
+    await apiClient.patch(OAUTH_MODEL_ALIAS_ENDPOINT, {
+      channel: normalizedChannel,
+      aliases: normalizedAliases,
+    });
   },
 
   deleteOauthModelAlias: async (channel: string) => {
@@ -531,62 +533,23 @@ export const authFilesApi = {
       .toLowerCase();
 
     try {
-      await apiClient.patch(OAUTH_MODEL_ALIAS_ENDPOINT, { channel: normalizedChannel, aliases: [] });
+      await apiClient.patch(OAUTH_MODEL_ALIAS_ENDPOINT, {
+        channel: normalizedChannel,
+        aliases: [],
+      });
     } catch (err: unknown) {
       const status = getStatusCode(err);
       if (status !== 405) throw err;
-      await apiClient.delete(`${OAUTH_MODEL_ALIAS_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`);
+      await apiClient.delete(
+        `${OAUTH_MODEL_ALIAS_ENDPOINT}?channel=${encodeURIComponent(normalizedChannel)}`
+      );
     }
   },
 
-  // 强制刷新 ollama 余额（旁路 10 分钟缓存，直接打 ollama.com）
-  refreshOllamaBalance: (name: string) =>
-    apiClient.post<{ balance: OllamaBalancePayload }>(
-      '/auth-files/ollama-balance/refresh',
-      { name }
-    ),
-
-  // 强制刷新 deepseek 钱包余额（旁路 10 分钟缓存，直接打 platform.deepseek.com）
-  refreshDeepSeekBalance: (name: string) =>
-    apiClient.post<{ balance: DeepSeekBalancePayload }>(
-      '/auth-files/deepseek-balance/refresh',
-      { name }
-    ),
-
-  // 刷新 Codex OAuth token
-  refreshCodexToken: (name: string) =>
-    apiClient.post<{ status: string; email?: string; expire?: string; message?: string }>(
-      '/auth-files/codex-token/refresh',
-      { name }
-    ),
-
-  // 直接用 openai-compatibility 配置里的凭据刷新余额，不依赖 auth manager 查找。
-  // ollama: 传 cookie（必需）+ 可选的 inference api_key
-  // deepseek: 传 balance_token（必需，从 platform.deepseek.com 单独签发）+ 可选的 cookie
-  // xiaomi: 传 cookie（platform.xiaomimimo.com 浏览器会话）
-  // anyrouter: 传 cookie + new_api_user（数字账号 ID，对应 new-api-user 请求头）
-  refreshOpenAICompatBalance: (params: {
-    provider: 'ollama' | 'deepseek' | 'xiaomi' | 'anyrouter';
-    baseUrl?: string;
-    apiKey?: string;
-    cookie?: string;
-    balanceToken?: string;
-    newApiUser?: string;
-  }) =>
-    apiClient.post<{ balance: Record<string, unknown> }>(
-      '/openai-compat/balance/refresh',
-      {
-        provider: params.provider,
-        base_url: params.baseUrl ?? '',
-        api_key: params.apiKey ?? '',
-        cookie: params.cookie ?? '',
-        balance_token: params.balanceToken ?? '',
-        new_api_user: params.newApiUser ?? '',
-      }
-    ),
-
   // 获取认证凭证支持的模型
-  async getModelsForAuthFile(name: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
+  async getModelsForAuthFile(
+    name: string
+  ): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
     const data = await apiClient.get<Record<string, unknown>>(
       `/auth-files/models?name=${encodeURIComponent(name)}`
     );
@@ -597,14 +560,12 @@ export const authFilesApi = {
   },
 
   // 获取指定 channel 的模型定义
-  verifyXiaomiCode: async (sessionId: string, code: string) =>
-    apiClient.post<{ status: string }>('/xiaomi/verify', {
-      session_id: sessionId,
-      code,
-    }),
-
-  async getModelDefinitions(channel: string): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
-    const normalizedChannel = String(channel ?? '').trim().toLowerCase();
+  async getModelDefinitions(
+    channel: string
+  ): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
+    const normalizedChannel = String(channel ?? '')
+      .trim()
+      .toLowerCase();
     if (!normalizedChannel) return [];
     const data = await apiClient.get<Record<string, unknown>>(
       `/model-definitions/${encodeURIComponent(normalizedChannel)}`
@@ -613,5 +574,18 @@ export const authFilesApi = {
     return Array.isArray(models)
       ? (models as { id: string; display_name?: string; type?: string; owned_by?: string }[])
       : [];
-  }
+  },
+
+  // OpenAI 兼容余额刷新
+  refreshOpenAICompatBalance: (
+    params: Record<string, unknown>
+  ): Promise<Record<string, unknown>> =>
+    apiClient.post<Record<string, unknown>>('/openai-compat/balance/refresh', params),
+
+  // 小米邮箱验证码验证
+  verifyXiaomiCode: (sessionId: string, code: string): Promise<Record<string, unknown>> =>
+    apiClient.post<Record<string, unknown>>('/openai-compat/balance/verify', {
+      session_id: sessionId,
+      code,
+    }),
 };

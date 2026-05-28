@@ -18,32 +18,6 @@ $openai-toolbar-control-height: 36px;
   height: 24px;
 }
 
-.cardTitleRefreshBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background-color -fast, color -fast;
-  flex-shrink: 0;
-
-  &:hover:not(:disabled) {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
 .pageTitle {
   font-size: 28px;
   font-weight: 700;
@@ -119,11 +93,34 @@ $openai-toolbar-control-height: 36px;
 }
 
 .openaiProviderTitle {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
   font-weight: 700;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardTitleRefreshBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 // 排序控件
@@ -726,49 +723,6 @@ $openai-toolbar-control-height: 36px;
 .apiKeyEntryStatFailure {
   background: var(--failure-badge-bg);
   color: var(--failure-badge-text);
-}
-
-.apiKeyEntryRefreshButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  margin-left: 4px;
-  background: transparent;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 6px;
-  color: var(--text-secondary, #6b7280);
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-
-  &:hover:not(:disabled) {
-    background: var(--bg-secondary, #f3f4f6);
-    border-color: var(--primary-color, #2563eb);
-    color: var(--primary-color, #2563eb);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
-
-.apiKeyEntryRefreshButtonSpinning svg {
-  animation: apiKeyEntryRefreshSpin 0.8s linear infinite;
-}
-
-@keyframes apiKeyEntryRefreshSpin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 // OpenAI 模型发现（二级界面）
@@ -1382,71 +1336,6 @@ $openai-toolbar-control-height: 36px;
   font-size: 14px;
   min-height: 38px;
   text-align: center;
-}
-
-.keyExpandToggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  transition: background-color $transition-fast, color $transition-fast;
-  flex-shrink: 0;
-
-  &:hover:not(:disabled) {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  svg {
-    transition: transform $transition-fast;
-  }
-
-  &.expanded svg {
-    transform: rotate(90deg);
-  }
-}
-
-.keyTableExpandRow {
-  grid-column: 1 / -1;
-  padding: $spacing-sm $spacing-md $spacing-md;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-top: none;
-}
-
-.keyExpandContent {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  padding: $spacing-sm;
-  background: var(--bg-tertiary);
-  border-radius: $radius-md;
-}
-
-.keyExpandSectionLabel {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.5;
-}
-
-.keyExpandSectionHint {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--text-secondary);
-  margin-bottom: $spacing-xs;
 }
 
 .addKeyButton {

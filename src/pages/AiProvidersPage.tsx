@@ -19,11 +19,7 @@ import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer'
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { ampcodeApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
-import type {
-  GeminiKeyConfig,
-  OpenAIProviderConfig,
-  ProviderKeyConfig,
-} from '@/types';
+import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import styles from './AiProvidersPage.module.scss';
 
 export function AiProvidersPage() {
@@ -163,66 +159,6 @@ export function AiProvidersPage() {
     },
     [navigate]
   );
-
-  const refreshGeminiKeys = useCallback(async () => {
-    try {
-      const data = await fetchConfig();
-      const keys = data?.geminiApiKeys || [];
-      setGeminiKeys(keys);
-      updateConfigValue('gemini-api-key', keys);
-      clearCache('gemini-api-key');
-      showNotification(t('notification.data_refreshed'), 'success');
-    } catch (err: unknown) {
-      showNotification(t('notification.refresh_failed'), 'error');
-    }
-  }, [fetchConfig, updateConfigValue, clearCache, showNotification, t]);
-
-  const refreshCodexConfigs = useCallback(async () => {
-    try {
-      const data = await providersApi.getCodexConfigs();
-      setCodexConfigs(data);
-      updateConfigValue('codex-api-key', data);
-      clearCache('codex-api-key');
-      showNotification(t('notification.data_refreshed'), 'success');
-    } catch (err: unknown) {
-      showNotification(t('notification.refresh_failed'), 'error');
-    }
-  }, [providersApi, updateConfigValue, clearCache, showNotification, t]);
-
-  const refreshClaudeConfigs = useCallback(async () => {
-    try {
-      const data = await providersApi.getClaudeConfigs();
-      setClaudeConfigs(data);
-      updateConfigValue('claude-api-key', data);
-      clearCache('claude-api-key');
-      showNotification(t('notification.data_refreshed'), 'success');
-    } catch (err: unknown) {
-      showNotification(t('notification.refresh_failed'), 'error');
-    }
-  }, [providersApi, updateConfigValue, clearCache, showNotification, t]);
-
-  const refreshVertexConfigs = useCallback(async () => {
-    try {
-      const data = await providersApi.getVertexConfigs();
-      setVertexConfigs(data);
-      updateConfigValue('vertex-api-key', data);
-      clearCache('vertex-api-key');
-      showNotification(t('notification.data_refreshed'), 'success');
-    } catch (err: unknown) {
-      showNotification(t('notification.refresh_failed'), 'error');
-    }
-  }, [providersApi, updateConfigValue, clearCache, showNotification, t]);
-
-  const refreshAmpcode = useCallback(async () => {
-    try {
-      const data = await ampcodeApi.getAmpcode();
-      updateConfigValue('ampcode', data);
-      clearCache('ampcode');
-      showNotification(t('notification.data_refreshed'), 'success');
-    } catch (err: unknown) {
-      showNotification(t('notification.refresh_failed'), 'error');
-    }
-  }, [ampcodeApi, updateConfigValue, clearCache, showNotification, t]);
 
   const deleteGemini = async (index: number) => {
     const entry = geminiKeys[index];
@@ -486,7 +422,6 @@ export function AiProvidersPage() {
             onEdit={(index) => openEditor(`/ai-providers/gemini/${index}`)}
             onDelete={deleteGemini}
             onToggle={(index, enabled) => void setConfigEnabled('gemini', index, enabled)}
-            onRefresh={refreshGeminiKeys}
           />
         </div>
 
@@ -501,7 +436,6 @@ export function AiProvidersPage() {
             onEdit={(index) => openEditor(`/ai-providers/codex/${index}`)}
             onDelete={(index) => void deleteProviderEntry('codex', index)}
             onToggle={(index, enabled) => void setConfigEnabled('codex', index, enabled)}
-            onRefresh={refreshCodexConfigs}
           />
         </div>
 
@@ -516,7 +450,6 @@ export function AiProvidersPage() {
             onEdit={(index) => openEditor(`/ai-providers/claude/${index}`)}
             onDelete={(index) => void deleteProviderEntry('claude', index)}
             onToggle={(index, enabled) => void setConfigEnabled('claude', index, enabled)}
-            onRefresh={refreshClaudeConfigs}
           />
         </div>
 
@@ -531,7 +464,6 @@ export function AiProvidersPage() {
             onEdit={(index) => openEditor(`/ai-providers/vertex/${index}`)}
             onDelete={deleteVertex}
             onToggle={(index, enabled) => void setConfigEnabled('vertex', index, enabled)}
-            onRefresh={refreshVertexConfigs}
           />
         </div>
 
@@ -542,7 +474,6 @@ export function AiProvidersPage() {
             disableControls={disableControls}
             isSwitching={isSwitching}
             onEdit={() => openEditor('/ai-providers/ampcode')}
-            onRefresh={refreshAmpcode}
           />
         </div>
 
@@ -558,7 +489,6 @@ export function AiProvidersPage() {
             onEdit={(index) => openEditor(`/ai-providers/openai/${index}`)}
             onDelete={deleteOpenai}
             onToggle={(index, enabled) => void setOpenAIProviderEnabled(index, enabled)}
-            onRefreshUsage={refreshRecentRequests}
           />
         </div>
       </div>

@@ -489,12 +489,8 @@
     "model_search_clear": "Clear",
     "model_select_all": "Select All",
     "model_filter_empty": "No models to filter",
-    "openai_key_advanced_toggle": "Advanced",
-    "openai_key_balance_token_label": "Balance Token",
-    "openai_key_balance_token_placeholder": "Optional token for balance queries (e.g. DeepSeek platform token)",
-    "openai_key_headers_label": "Per-Key Headers",
-    "openai_key_headers_hint": "Custom headers for this key, e.g. Cookie for Ollama session authentication.",
-    "openai_refresh_all_balances": "Refresh"
+    "openai_refresh_all_balances": "Refresh",
+    "refresh_provider_keys": "Refresh"
   },
   "auth_files": {
     "title": "Auth Files Management",
@@ -680,15 +676,7 @@
     "prefix_proxy_html_challenge": "Downloaded content is an HTML challenge page, not an auth JSON object. Re-authenticate or replace this auth file before editing fields.",
     "prefix_proxy_saved_success": "Updated auth file \"{{name}}\" successfully",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
-    "sort_az": "A-Z Name",
-    "sort_priority": "Priority",
-    "filter_ollama": "Ollama",
-    "filter_deepseek": "DeepSeek",
-    "quota_refresh_action": "Refresh",
-    "refresh_token_button": "Refresh Token",
-    "refresh_token_success": "Token refreshed successfully{{details}}",
-    "refresh_token_failed": "Failed to refresh token: {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",
@@ -728,8 +716,7 @@
     "plan_max": "Max",
     "plan_max5": "Max 5x",
     "plan_max20": "Max 20x",
-    "plan_team": "Team",
-    "one_day": "Daily limit"
+    "plan_team": "Team"
   },
   "codex_quota": {
     "title": "Codex Quota",
@@ -1155,10 +1142,7 @@
   },
   "stats": {
     "success": "Success",
-    "failure": "Failure",
-    "input_tokens": "Input Tokens",
-    "output_tokens": "Output Tokens",
-    "total_tokens": "Total Tokens"
+    "failure": "Failure"
   },
   "status_bar": {
     "success_short": "✓",
@@ -1612,22 +1596,7 @@
     "lines": "lines",
     "removed": "Filtered",
     "upgrade_required_title": "Please Upgrade CLI Proxy API",
-    "upgrade_required_desc": "The current server version does not support the logs viewing feature. Please upgrade to the latest version of CLI Proxy API to use this feature.",
-    "success_logs_modal_title": "Success Request Logs",
-    "success_logs_description": "Pick a success request log file to download (only generated when both request logging and success request logging are enabled).",
-    "success_logs_request_log_disabled": "Success request logging requires request logging to be enabled. Enable request logging and success request logging, then refresh to view success logs.",
-    "success_logs_empty": "No success request log files found",
-    "success_logs_load_error": "Failed to load success log list",
-    "success_logs_size": "Size",
-    "success_logs_modified": "Last modified",
-    "success_logs_download": "Download",
-    "success_log_download_success": "Success log downloaded successfully",
-    "success_logs_enable": "Enable Success Request Logging",
-    "filter_latency": "Latency",
-    "filter_latency_min": "Min latency",
-    "filter_latency_max": "Max latency",
-    "filter_latency_unit_ms": "Unit: ms",
-    "filter_latency_clear": "Clear latency"
+    "upgrade_required_desc": "The current server version does not support the logs viewing feature. Please upgrade to the latest version of CLI Proxy API to use this feature."
   },
   "config_management": {
     "title": "Config Panel",
@@ -2129,60 +2098,5 @@
     "build_date": "Build Time",
     "version": "Management UI Version",
     "author": "Author"
-  },
-  "ollama_quota": {
-    "idle": "Click here to load Ollama usage",
-    "loading": "Loading Ollama usage...",
-    "load_failed": "Failed to load Ollama usage: {{message}}",
-    "empty": "No usage data available",
-    "missing_name": "Auth file missing name",
-    "plan_label": "Plan",
-    "session_label": "Session remaining",
-    "weekly_label": "Weekly remaining",
-    "refresh_button": "Refresh Ollama balance",
-    "refresh_no_match": "No matching auth file for this API key",
-    "refresh_success": "Ollama balance updated: plan {{plan}}, session {{session}}% left, weekly {{weekly}}% left",
-    "refresh_failed": "Failed to refresh Ollama balance: {{message}}"
-  },
-  "deepseek_quota": {
-    "idle": "Click here to load DeepSeek balance",
-    "loading": "Loading DeepSeek balance...",
-    "load_failed": "Failed to load DeepSeek balance: {{message}}",
-    "empty": "No balance data available",
-    "missing_name": "Auth file missing name",
-    "wallet_label": "Wallet",
-    "bonus_label": "Bonus",
-    "monthly_cost_label": "Month-to-date",
-    "token_estimation": "≈ {{formatted}} tokens",
-    "monthly_tokens": "{{formatted}} tokens",
-    "refresh_button": "Refresh DeepSeek balance",
-    "refresh_no_match": "No matching auth file for this API key",
-    "refresh_success": "DeepSeek balance updated: wallet {{currency}} {{balance}}, bonus {{currency}} {{bonus}}, MTD {{currency}} {{cost}}",
-    "refresh_failed": "Failed to refresh DeepSeek balance: {{message}}"
-  },
-  "xiaomi_quota": {
-    "idle": "Click here to load Xiaomi usage",
-    "loading": "Loading Xiaomi usage...",
-    "load_failed": "Failed to load Xiaomi usage: {{message}}",
-    "empty": "No usage data available",
-    "month_label": "Monthly usage",
-    "plan_label": "Plan usage",
-    "compensation_label": "Compensation",
-    "tokens_used": "{{used}} / {{limit}} tokens",
-    "refresh_button": "Refresh Xiaomi usage",
-    "refresh_failed": "Failed to refresh Xiaomi usage: {{message}}"
-  },
-  "anyrouter_quota": {
-    "idle": "Click here to load Anyrouter balance",
-    "loading": "Loading Anyrouter balance...",
-    "load_failed": "Failed to load Anyrouter balance: {{message}}",
-    "empty": "No balance data available",
-    "quota_label": "Remaining quota",
-    "used_label": "Used quota",
-    "request_count_label": "Request count",
-    "aff_quota_label": "Affiliate reward",
-    "group_label": "Group",
-    "refresh_button": "Refresh Anyrouter balance",
-    "refresh_failed": "Failed to refresh Anyrouter balance: {{message}}"
   }
 }

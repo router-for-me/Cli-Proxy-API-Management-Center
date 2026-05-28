@@ -172,6 +172,16 @@ function getPortError(value: string): 'port_range' | undefined {
   return parsed >= 1 && parsed <= 65535 ? undefined : 'port_range';
 }
 
+function getRedisUsageQueueRetentionError(
+  value: string
+): 'retention_seconds_range' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (!/^\d+$/.test(trimmed)) return 'retention_seconds_range';
+  const parsed = Number(trimmed);
+  return parsed >= 0 && parsed <= 3600 ? undefined : 'retention_seconds_range';
+}
+
 export function getVisualConfigValidationErrors(
   values: VisualConfigValues
 ): VisualConfigValidationErrors {
@@ -179,7 +189,7 @@ export function getVisualConfigValidationErrors(
     port: getPortError(values.port),
     errorLogsMaxFiles: getNonNegativeIntegerError(values.errorLogsMaxFiles),
     logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
-    redisUsageQueueRetentionSeconds: getNonNegativeIntegerError(
+    redisUsageQueueRetentionSeconds: getRedisUsageQueueRetentionError(
       values.redisUsageQueueRetentionSeconds
     ),
     requestRetry: getNonNegativeIntegerError(values.requestRetry),
@@ -790,6 +800,12 @@ function getNextDirtyFields(
   if (Object.prototype.hasOwnProperty.call(patch, 'commercialMode')) {
     updateDirty('commercialMode', nextValues.commercialMode === baselineValues.commercialMode);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'usageStatisticsEnabled')) {
+    updateDirty(
+      'usageStatisticsEnabled',
+      nextValues.usageStatisticsEnabled === baselineValues.usageStatisticsEnabled
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'loggingToFile')) {
     updateDirty('loggingToFile', nextValues.loggingToFile === baselineValues.loggingToFile);
   }
@@ -797,6 +813,13 @@ function getNextDirtyFields(
     updateDirty(
       'logsMaxTotalSizeMb',
       nextValues.logsMaxTotalSizeMb === baselineValues.logsMaxTotalSizeMb
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'redisUsageQueueRetentionSeconds')) {
+    updateDirty(
+      'redisUsageQueueRetentionSeconds',
+      nextValues.redisUsageQueueRetentionSeconds ===
+        baselineValues.redisUsageQueueRetentionSeconds
     );
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'proxyUrl')) {
@@ -1026,12 +1049,16 @@ export function useVisualConfig() {
 
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
+        usageStatisticsEnabled: Boolean(
+          parsed['usage-statistics-enabled'] ?? parsed.usageStatisticsEnabled
+        ),
         loggingToFile: Boolean(parsed['logging-to-file']),
         logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
         errorLogsMaxFiles: String(parsed['error-logs-max-files'] ?? ''),
-        usageStatisticsEnabled: Boolean(parsed['usage-statistics-enabled']),
         redisUsageQueueRetentionSeconds: String(
-          parsed['redis-usage-queue-retention-seconds'] ?? ''
+          parsed['redis-usage-queue-retention-seconds'] ??
+            parsed.redisUsageQueueRetentionSeconds ??
+            ''
         ),
 
         proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
@@ -1187,15 +1214,24 @@ export function useVisualConfig() {
         setBooleanInDoc(doc, ['debug'], values.debug);
 
         setBooleanInDoc(doc, ['commercial-mode'], values.commercialMode);
+        setBooleanInDoc(doc, ['usage-statistics-enabled'], values.usageStatisticsEnabled);
         setBooleanInDoc(doc, ['logging-to-file'], values.loggingToFile);
         setIntFromStringInDoc(doc, ['logs-max-total-size-mb'], values.logsMaxTotalSizeMb);
         setIntFromStringInDoc(doc, ['error-logs-max-files'], values.errorLogsMaxFiles);
-        setBooleanInDoc(doc, ['usage-statistics-enabled'], values.usageStatisticsEnabled);
-        setIntFromStringInDoc(
-          doc,
-          ['redis-usage-queue-retention-seconds'],
-          values.redisUsageQueueRetentionSeconds
-        );
+        if (
+          shouldWriteManagedField(
+            doc,
+            ['redis-usage-queue-retention-seconds'],
+            dirtyFields,
+            'redisUsageQueueRetentionSeconds'
+          )
+        ) {
+          setIntFromStringInDoc(
+            doc,
+            ['redis-usage-queue-retention-seconds'],
+            values.redisUsageQueueRetentionSeconds
+          );
+        }
 
         setStringInDoc(doc, ['proxy-url'], values.proxyUrl);
         setBooleanInDoc(doc, ['force-model-prefix'], values.forceModelPrefix);

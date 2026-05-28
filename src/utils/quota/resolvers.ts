@@ -9,10 +9,29 @@ import {
   parseIdTokenPayload
 } from './parsers';
 
+const resolveAccountIdCandidate = (value: unknown): string | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  return normalizeStringValue(
+    record.chatgpt_account_id ??
+      record.chatgptAccountId ??
+      record.account_id ??
+      record.accountId
+  );
+};
+
 export function extractCodexChatgptAccountId(value: unknown): string | null {
+  const direct = resolveAccountIdCandidate(value);
+  if (direct) return direct;
+
   const payload = parseIdTokenPayload(value);
   if (!payload) return null;
-  return normalizeStringValue(payload.chatgpt_account_id ?? payload.chatgptAccountId);
+  return normalizeStringValue(
+    payload.chatgpt_account_id ??
+      payload.chatgptAccountId ??
+      payload.account_id ??
+      payload.accountId
+  );
 }
 
 export function resolveCodexChatgptAccountId(file: AuthFileItem): string | null {
@@ -25,7 +44,23 @@ export function resolveCodexChatgptAccountId(file: AuthFileItem): string | null 
       ? (file.attributes as Record<string, unknown>)
       : null;
 
-  const candidates = [file.id_token, metadata?.id_token, attributes?.id_token];
+  const candidates = [
+    file.chatgpt_account_id,
+    file.chatgptAccountId,
+    file.account_id,
+    file.accountId,
+    metadata?.chatgpt_account_id,
+    metadata?.chatgptAccountId,
+    metadata?.account_id,
+    metadata?.accountId,
+    attributes?.chatgpt_account_id,
+    attributes?.chatgptAccountId,
+    attributes?.account_id,
+    attributes?.accountId,
+    file.id_token,
+    metadata?.id_token,
+    attributes?.id_token,
+  ];
 
   for (const candidate of candidates) {
     const id = extractCodexChatgptAccountId(candidate);
@@ -52,22 +87,27 @@ export function resolveCodexPlanType(file: AuthFileItem): string | null {
     metadata && typeof metadata.id_token === 'object' && metadata.id_token !== null
       ? (metadata.id_token as Record<string, unknown>)
       : null;
+  const resolveIdTokenPlanCandidate = (value: unknown): string | null => {
+    const payload = parseIdTokenPayload(value);
+    if (!payload) return null;
+    return normalizePlanType(payload.plan_type ?? payload.planType);
+  };
   const candidates = [
     file.plan_type,
     file.planType,
     file['plan_type'],
     file['planType'],
-    file.id_token,
+    resolveIdTokenPlanCandidate(file.id_token),
     idToken?.plan_type,
     idToken?.planType,
     metadata?.plan_type,
     metadata?.planType,
-    metadata?.id_token,
+    resolveIdTokenPlanCandidate(metadata?.id_token),
     metadataIdToken?.plan_type,
     metadataIdToken?.planType,
     attributes?.plan_type,
     attributes?.planType,
-    attributes?.id_token
+    resolveIdTokenPlanCandidate(attributes?.id_token)
   ];
 
   for (const candidate of candidates) {

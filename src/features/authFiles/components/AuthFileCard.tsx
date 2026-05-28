@@ -7,14 +7,12 @@ import {
   IconDownload,
   IconInfo,
   IconModelCluster,
-  IconRefreshCw,
   IconSettings,
   IconTrash2,
 } from '@/components/ui/icons';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import type { AuthFileItem } from '@/types';
-import { resolveAuthProvider, resolveCanonicalProvider } from '@/utils/quota';
-import { isCodexFile } from '@/utils/quota/validators';
+import { resolveAuthProvider } from '@/utils/quota';
 import {
   normalizeRecentRequestAuthIndex,
   normalizeRecentRequestBuckets,
@@ -25,7 +23,6 @@ import { formatFileSize } from '@/utils/format';
 import {
   QUOTA_PROVIDER_TYPES,
   formatModified,
-  getAuthFileIcon,
   getAuthFileStatusMessage,
   getTypeColor,
   getTypeLabel,
@@ -49,30 +46,19 @@ export type AuthFileCardProps = {
   disableControls: boolean;
   deleting: string | null;
   statusUpdating: Record<string, boolean>;
-  quotaFilterType: QuotaProviderType | null;
   statusBarCache: Map<string, AuthFileStatusBarData>;
-  refreshingToken?: boolean;
   onShowModels: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
   onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
   onToggleSelect: (name: string) => void;
-  onRefreshToken?: (name: string) => void;
 };
 
 const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
-  // Native registrations expose provider directly; openai-compatibility
-  // sub-providers (deepseek, ollama, ...) need the canonical lookup.
-  const direct = resolveAuthProvider(file);
-  if (QUOTA_PROVIDER_TYPES.has(direct as QuotaProviderType)) {
-    return direct as QuotaProviderType;
-  }
-  const canonical = resolveCanonicalProvider(file);
-  if (QUOTA_PROVIDER_TYPES.has(canonical as QuotaProviderType)) {
-    return canonical as QuotaProviderType;
-  }
-  return null;
+  const provider = resolveAuthProvider(file);
+  if (!QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) return null;
+  return provider as QuotaProviderType;
 };
 
 export function AuthFileCard(props: AuthFileCardProps) {
@@ -85,16 +71,13 @@ export function AuthFileCard(props: AuthFileCardProps) {
     disableControls,
     deleting,
     statusUpdating,
-    quotaFilterType,
     statusBarCache,
-    refreshingToken,
     onShowModels,
     onDownload,
     onOpenPrefixProxyEditor,
     onDelete,
     onToggleStatus,
     onToggleSelect,
-    onRefreshToken,
   } = props;
 
   const recentBuckets = normalizeRecentRequestBuckets(file.recent_requests ?? file.recentRequests);
@@ -108,11 +91,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const showModelsButton = !isRuntimeOnly || isAistudio;
   const typeColor = getTypeColor(providerKey, resolvedTheme);
   const typeLabel = getTypeLabel(t, providerKey);
-  const providerIcon = getAuthFileIcon(providerKey, resolvedTheme);
 
-  const quotaType =
-    quotaFilterType && resolveQuotaType(file) === quotaFilterType ? quotaFilterType : null;
-
+  const quotaType = resolveQuotaType(file);
   const showQuotaLayout = Boolean(quotaType) && !isRuntimeOnly && !compact;
 
   const providerCardClass =
@@ -126,11 +106,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
             ? styles.geminiCliCard
             : quotaType === 'kimi'
               ? styles.kimiCard
-              : quotaType === 'ollama'
-                ? styles.ollamaCard
-                : quotaType === 'deepseek'
-                  ? styles.deepseekCard
-                  : '';
+              : '';
 
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndexKey = normalizeRecentRequestAuthIndex(rawAuthIndex);
@@ -142,6 +118,16 @@ export function AuthFileCard(props: AuthFileCardProps) {
     Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(rawStatusMessage.toLowerCase());
 
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
+  const projectIdValue = (() => {
+    const raw =
+      file.project_id ??
+      file.projectId ??
+      file.gemini_virtual_project ??
+      file.geminiVirtualProject ??
+      file['gemini_virtual_project'];
+    if (typeof raw !== 'string') return '';
+    return raw.trim();
+  })();
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
   const stateLabel = isRuntimeOnly
     ? t('auth_files.type_virtual') || '虚拟认证文件'
@@ -178,22 +164,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 title={selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')}
               />
             )}
-            <div
-              className={styles.providerAvatar}
-              style={{
-                backgroundColor: typeColor.bg,
-                color: typeColor.text,
-                ...(typeColor.border ? { border: typeColor.border } : {}),
-              }}
-            >
-              {providerIcon ? (
-                <img src={providerIcon} alt="" className={styles.providerAvatarImage} />
-              ) : (
-                <span className={styles.providerAvatarFallback}>
-                  {typeLabel.slice(0, 1).toUpperCase()}
-                </span>
-              )}
-            </div>
             <div className={styles.cardHeaderContent}>
               <div className={styles.cardBadgeRow}>
                 <span
@@ -239,6 +209,12 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 </span>
               </div>
             )}
+            {projectIdValue && (
+              <div className={styles.metaItem} title={projectIdValue}>
+                <span className={styles.metaLabel}>{t('auth_files.project_id_display')}</span>
+                <span className={styles.metaValue}>{projectIdValue}</span>
+              </div>
+            )}
           </div>
 
           {rawStatusMessage && hasStatusWarning && (
@@ -278,77 +254,61 @@ export function AuthFileCard(props: AuthFileCardProps) {
 
           <div className={styles.cardActions}>
             <div className={styles.cardActionsMain}>
-              {showModelsButton && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => onShowModels(file)}
-                  className={`${styles.primaryActionButton} ${styles.modelsActionButton}`}
-                  title={t('auth_files.models_button', { defaultValue: '模型' })}
-                  disabled={disableControls}
-                >
-                  <>
-                    <span className={styles.modelsActionIconWrap}>
-                      <IconModelCluster className={styles.actionIcon} size={16} />
-                    </span>
-                    <span className={styles.actionButtonLabel}>
-                      {t('auth_files.models_button', { defaultValue: '模型' })}
-                    </span>
-                  </>
-                </Button>
-              )}
-              {!isRuntimeOnly && (
+              {(showModelsButton || !isRuntimeOnly) && (
                 <div className={styles.cardUtilityActions}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onDownload(file.name)}
-                    className={styles.iconButton}
-                    title={t('auth_files.download_button')}
-                    disabled={disableControls}
-                  >
-                    <IconDownload className={styles.actionIcon} size={16} />
-                  </Button>
-                  {isCodexFile(file) && onRefreshToken && (
+                  {showModelsButton && (
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => onRefreshToken(file.name)}
-                      className={styles.iconButton}
-                      title={t('auth_files.refresh_token_button', { defaultValue: '刷新 Token' })}
-                      disabled={disableControls || refreshingToken}
+                      onClick={() => onShowModels(file)}
+                      className={`${styles.primaryActionButton} ${styles.modelsActionButton}`}
+                      title={t('auth_files.models_button', { defaultValue: '模型' })}
+                      aria-label={t('auth_files.models_button', { defaultValue: '模型' })}
+                      disabled={disableControls}
                     >
-                      {refreshingToken ? (
-                        <LoadingSpinner size={14} />
-                      ) : (
-                        <IconRefreshCw className={styles.actionIcon} size={16} />
-                      )}
+                      <span className={styles.modelsActionIconWrap}>
+                        <IconModelCluster className={styles.actionIcon} size={16} />
+                      </span>
                     </Button>
                   )}
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onOpenPrefixProxyEditor(file)}
-                    className={styles.iconButton}
-                    title={t('auth_files.prefix_proxy_button')}
-                    disabled={disableControls}
-                  >
-                    <IconSettings className={styles.actionIcon} size={16} />
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => onDelete(file.name)}
-                    className={styles.iconButton}
-                    title={t('auth_files.delete_button')}
-                    disabled={disableControls || deleting === file.name}
-                  >
-                    {deleting === file.name ? (
-                      <LoadingSpinner size={14} />
-                    ) : (
-                      <IconTrash2 className={styles.actionIcon} size={16} />
-                    )}
-                  </Button>
+                  {!isRuntimeOnly && (
+                    <>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onDownload(file.name)}
+                        className={styles.iconButton}
+                        title={t('auth_files.download_button')}
+                        disabled={disableControls}
+                      >
+                        <IconDownload className={styles.actionIcon} size={16} />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onOpenPrefixProxyEditor(file)}
+                        className={styles.iconButton}
+                        title={t('auth_files.prefix_proxy_button')}
+                        disabled={disableControls}
+                      >
+                        <IconSettings className={styles.actionIcon} size={16} />
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => onDelete(file.name)}
+                        className={styles.iconButton}
+                        title={t('auth_files.delete_button')}
+                        disabled={disableControls || deleting === file.name}
+                      >
+                        {deleting === file.name ? (
+                          <LoadingSpinner size={14} />
+                        ) : (
+                          <IconTrash2 className={styles.actionIcon} size={16} />
+                        )}
+                      </Button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

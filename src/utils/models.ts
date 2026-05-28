@@ -18,7 +18,6 @@ const MODEL_CATEGORIES = [
   { id: 'glm', label: 'GLM', patterns: [/glm/i, /chatglm/i] },
   { id: 'grok', label: 'Grok', patterns: [/grok/i] },
   { id: 'deepseek', label: 'DeepSeek', patterns: [/deepseek/i] },
-  { id: 'ollama', label: 'Ollama', patterns: [/ollama/i, /llama/i] },
   { id: 'minimax', label: 'MiniMax', patterns: [/minimax/i, /abab/i] }
 ];
 

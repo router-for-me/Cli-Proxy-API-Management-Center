@@ -32,10 +32,10 @@ import {
   useThemeStore,
 } from '@/stores';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
-import { isSupportedLanguage } from '@/utils/language';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useRequestMonitoringAvailability } from '@/hooks/useRequestMonitoringAvailability';
+import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
+import { isSupportedLanguage } from '@/utils/language';
 import type { Theme } from '@/types';
 
 const sidebarIcons: Record<string, ReactNode> = {
@@ -44,9 +44,9 @@ const sidebarIcons: Record<string, ReactNode> = {
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
+  monitoring: <IconSidebarMonitor size={18} />,
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
-  monitoring: <IconSidebarMonitor size={18} />,
   system: <IconSidebarSystem size={18} />,
 };
 
@@ -220,6 +220,7 @@ export function MainLayout() {
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const clearCache = useConfigStore((state) => state.clearCache);
+  const requestMonitoringAvailability = useRequestMonitoringAvailability();
 
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
@@ -242,7 +243,6 @@ export function MainLayout() {
   const abbrBrandName = t('title.abbr');
   const isLogsPage = location.pathname.startsWith('/logs');
   const showSidebarLabels = !sidebarCollapsed || sidebarOpen;
-  const requestMonitoringAvailability = useRequestMonitoringAvailability();
 
   // 将顶部悬浮控制区高度写入 CSS 变量，供移动端粘性元素和浮层避让。
   useLayoutEffect(() => {
@@ -399,11 +399,11 @@ export function MainLayout() {
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
-    ...(config?.loggingToFile
-      ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
-      : []),
     ...(requestMonitoringAvailability.available
       ? [{ path: '/monitoring', label: t('nav.monitoring_center'), icon: sidebarIcons.monitoring }]
+      : []),
+    ...(config?.loggingToFile
+      ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
       : []),
     { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system },
   ];
@@ -488,27 +488,7 @@ export function MainLayout() {
 
   return (
     <div className={`app-shell ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
-      <div className="top-gradient-blur" aria-hidden="true" />
-
       <header className="main-header" ref={headerRef}>
-        <button
-          type="button"
-          className="sidebar-toggle-floating"
-          onClick={() => setSidebarCollapsed((prev) => !prev)}
-          title={
-            sidebarCollapsed
-              ? t('sidebar.expand', { defaultValue: '展开' })
-              : t('sidebar.collapse', { defaultValue: '收起' })
-          }
-          aria-label={
-            sidebarCollapsed
-              ? t('sidebar.expand', { defaultValue: '展开' })
-              : t('sidebar.collapse', { defaultValue: '收起' })
-          }
-        >
-          {sidebarCollapsed ? headerIcons.chevronRight : headerIcons.chevronLeft}
-        </button>
-
         <div className="mobile-sidebar-actions">
           <Button
             className="mobile-menu-btn"

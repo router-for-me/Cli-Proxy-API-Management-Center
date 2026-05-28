@@ -15,4 +15,4 @@ export {
   OLLAMA_CONFIG,
   XAI_CONFIG,
 } from './quotaConfigs';
-export type { QuotaConfig, QuotaType } from './quotaConfigs';
+export type { QuotaConfig, QuotaSortMode, QuotaType } from './quotaConfigs';

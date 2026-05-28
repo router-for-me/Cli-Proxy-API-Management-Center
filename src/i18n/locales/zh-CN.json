@@ -489,12 +489,8 @@
     "model_search_clear": "清除",
     "model_select_all": "全选",
     "model_filter_empty": "暂无可筛选模型",
-    "openai_key_advanced_toggle": "高级设置",
-    "openai_key_balance_token_label": "余额查询令牌",
-    "openai_key_balance_token_placeholder": "余额查询使用的令牌（如 DeepSeek 平台令牌）",
-    "openai_key_headers_label": "密钥级请求头",
-    "openai_key_headers_hint": "此密钥的自定义请求头，例如 Ollama 会话认证的 Cookie。",
-    "openai_refresh_all_balances": "刷新"
+    "openai_refresh_all_balances": "刷新",
+    "refresh_provider_keys": "刷新"
   },
   "auth_files": {
     "title": "认证文件管理",
@@ -680,15 +676,7 @@
     "prefix_proxy_html_challenge": "下载到的是 HTML 验证页面，不是认证 JSON 对象。请重新认证或替换该认证文件后再编辑字段。",
     "prefix_proxy_saved_success": "已更新认证文件 \"{{name}}\"",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
-    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
-    "sort_az": "A-Z 名称",
-    "sort_priority": "优先级",
-    "filter_ollama": "Ollama",
-    "filter_deepseek": "DeepSeek",
-    "quota_refresh_action": "刷新",
-    "refresh_token_button": "刷新 Token",
-    "refresh_token_success": "Token 刷新成功{{details}}",
-    "refresh_token_failed": "Token 刷新失败：{{message}}"
+    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
   },
   "antigravity_quota": {
     "title": "Antigravity 额度",
@@ -728,8 +716,7 @@
     "plan_max": "Max",
     "plan_max5": "Max 5x",
     "plan_max20": "Max 20x",
-    "plan_team": "团队版",
-    "one_day": "日限额"
+    "plan_team": "团队版"
   },
   "codex_quota": {
     "title": "Codex 额度",
@@ -1155,10 +1142,7 @@
   },
   "stats": {
     "success": "成功",
-    "failure": "失败",
-    "input_tokens": "输入 Tokens",
-    "output_tokens": "输出 Tokens",
-    "total_tokens": "总 Tokens"
+    "failure": "失败"
   },
   "status_bar": {
     "success_short": "✓",
@@ -1612,22 +1596,7 @@
     "lines": "行",
     "removed": "已过滤",
     "upgrade_required_title": "需要升级 CLI Proxy API",
-    "upgrade_required_desc": "当前服务器版本不支持日志查看功能，请升级到最新版本的 CLI Proxy API 以使用此功能。",
-    "success_logs_modal_title": "成功请求日志",
-    "success_logs_description": "请选择要下载的成功请求日志文件（需同时开启请求日志和成功请求日志）。",
-    "success_logs_request_log_disabled": "成功请求日志需要先开启请求日志。请开启请求日志和成功请求日志后刷新查看。",
-    "success_logs_empty": "暂无成功请求日志文件",
-    "success_logs_load_error": "加载成功日志列表失败",
-    "success_logs_size": "大小",
-    "success_logs_modified": "最后修改",
-    "success_logs_download": "下载",
-    "success_log_download_success": "成功日志下载成功",
-    "success_logs_enable": "启用成功请求日志",
-    "filter_latency": "耗时",
-    "filter_latency_min": "最小耗时",
-    "filter_latency_max": "最大耗时",
-    "filter_latency_unit_ms": "单位 ms",
-    "filter_latency_clear": "清空耗时"
+    "upgrade_required_desc": "当前服务器版本不支持日志查看功能，请升级到最新版本的 CLI Proxy API 以使用此功能。"
   },
   "config_management": {
     "title": "配置面板",
@@ -2129,60 +2098,5 @@
     "build_date": "构建时间",
     "version": "管理中心版本",
     "author": "作者"
-  },
-  "ollama_quota": {
-    "idle": "点击此处获取 Ollama 用量",
-    "loading": "正在加载 Ollama 用量...",
-    "load_failed": "Ollama 用量获取失败：{{message}}",
-    "empty": "暂无用量数据",
-    "missing_name": "认证文件缺少名称",
-    "plan_label": "套餐",
-    "session_label": "本次会话剩余",
-    "weekly_label": "本周剩余",
-    "refresh_button": "刷新 Ollama 余额",
-    "refresh_no_match": "未找到与该 API Key 匹配的认证文件",
-    "refresh_success": "Ollama 余额已更新：套餐 {{plan}}，本次会话剩余 {{session}}%，本周剩余 {{weekly}}%",
-    "refresh_failed": "刷新 Ollama 余额失败：{{message}}"
-  },
-  "deepseek_quota": {
-    "idle": "点击此处获取 DeepSeek 余额",
-    "loading": "正在加载 DeepSeek 余额...",
-    "load_failed": "DeepSeek 余额获取失败：{{message}}",
-    "empty": "暂无余额数据",
-    "missing_name": "认证文件缺少名称",
-    "wallet_label": "钱包余额",
-    "bonus_label": "赠送余额",
-    "monthly_cost_label": "本月消费",
-    "token_estimation": "约 {{formatted}} tokens",
-    "monthly_tokens": "{{formatted}} tokens",
-    "refresh_button": "刷新 DeepSeek 余额",
-    "refresh_no_match": "未找到与该 API Key 匹配的认证文件",
-    "refresh_success": "DeepSeek 余额已更新：钱包 {{currency}} {{balance}}，赠送 {{currency}} {{bonus}}，本月消费 {{currency}} {{cost}}",
-    "refresh_failed": "刷新 DeepSeek 余额失败：{{message}}"
-  },
-  "xiaomi_quota": {
-    "idle": "点击此处获取 Xiaomi 用量",
-    "loading": "正在加载 Xiaomi 用量...",
-    "load_failed": "Xiaomi 用量获取失败：{{message}}",
-    "empty": "暂无用量数据",
-    "month_label": "本月用量",
-    "plan_label": "套餐用量",
-    "compensation_label": "补偿额度",
-    "tokens_used": "{{used}} / {{limit}} tokens",
-    "refresh_button": "刷新 Xiaomi 用量",
-    "refresh_failed": "刷新 Xiaomi 用量失败：{{message}}"
-  },
-  "anyrouter_quota": {
-    "idle": "点击此处获取 Anyrouter 余额",
-    "loading": "正在加载 Anyrouter 余额...",
-    "load_failed": "Anyrouter 余额获取失败：{{message}}",
-    "empty": "暂无余额数据",
-    "quota_label": "剩余额度",
-    "used_label": "已用额度",
-    "request_count_label": "请求次数",
-    "aff_quota_label": "邀请奖励",
-    "group_label": "用户组",
-    "refresh_button": "刷新 Anyrouter 余额",
-    "refresh_failed": "刷新 Anyrouter 余额失败：{{message}}"
   }
 }

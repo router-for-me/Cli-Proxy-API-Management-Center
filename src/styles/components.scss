@@ -1,5 +1,12 @@
-@use 'sass:color';
 @use './variables.scss' as *;
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
 
 .btn {
   display: inline-flex;
@@ -15,25 +22,57 @@
   background-color: var(--bg-secondary);
   color: var(--text-primary);
 
+  &:not(:disabled) {
+    cursor: pointer;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 3px var(--primary-ring, color-mix(in srgb, var(--primary-color) 20%, transparent)),
+      var(--shadow);
+  }
+
   &.btn-primary {
     background-color: var(--primary-color);
     color: var(--primary-contrast, #fff);
     border-color: var(--primary-color);
+    box-shadow: 0 8px 18px -14px color-mix(in srgb, var(--primary-color) 72%, transparent);
 
     &:hover {
       background-color: var(--primary-hover);
       border-color: var(--primary-hover);
+      box-shadow: 0 10px 22px -14px color-mix(in srgb, var(--primary-color) 76%, transparent);
+    }
+
+    &:active {
+      background-color: var(--primary-active);
+      border-color: var(--primary-active);
     }
   }
 
   &.btn-secondary {
-    background-color: var(--bg-tertiary);
+    background: var(--bg-primary);
     border-color: var(--border-color);
-    color: var(--text-primary);
+    color: var(--text-secondary);
 
     &:hover {
-      background-color: var(--bg-hover, var(--bg-tertiary));
-      border-color: var(--border-hover);
+      background: var(--color-primary-light-9);
+      border-color: var(--color-primary-light-7);
+      color: var(--primary-color);
+    }
+
+    &:active {
+      border-color: var(--primary-color);
+      color: var(--primary-active);
     }
   }
 
@@ -43,18 +82,28 @@
     color: var(--text-secondary);
 
     &:hover {
-      color: var(--text-primary);
-      background: var(--bg-tertiary);
+      color: var(--primary-color);
+      background: var(--color-primary-light-9);
+    }
+
+    &:active {
+      color: var(--primary-active);
     }
   }
 
   &.btn-danger {
-    background-color: $error-color;
-    border-color: $error-color;
+    background-color: var(--color-danger);
+    border-color: var(--color-danger);
     color: #fff;
 
     &:hover {
-      background-color: color.adjust($error-color, $lightness: -5%);
+      background-color: var(--color-danger-light-3);
+      border-color: var(--color-danger-light-3);
+    }
+
+    &:active {
+      background-color: var(--color-danger-dark-2);
+      border-color: var(--color-danger-dark-2);
     }
   }
 
@@ -70,17 +119,22 @@
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    box-shadow: none;
   }
 }
 
 [data-theme='dark'] {
   .btn {
-    color: #fff;
+    color: var(--text-primary);
+  }
+
+  .btn.btn-primary {
+    color: var(--primary-contrast, #08111f);
   }
 
   .btn.btn-secondary,
   .btn.btn-ghost {
-    color: #fff;
+    color: var(--text-primary);
   }
 }
 
@@ -97,7 +151,7 @@ textarea {
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba($primary-color, 0.18);
+    box-shadow: 0 0 0 3px var(--primary-ring, color-mix(in srgb, var(--primary-color) 20%, transparent));
   }
 }
 
@@ -163,21 +217,21 @@ textarea {
   }
 
   &.success {
-    color: $success-color;
-    border-color: rgba($success-color, 0.35);
-    background: rgba($success-color, 0.08);
+    color: var(--color-success-dark-2);
+    border-color: var(--color-success-light-5);
+    background: var(--color-success-light-9);
   }
 
   &.warning {
-    color: $warning-color;
-    border-color: rgba($warning-color, 0.35);
-    background: rgba($warning-color, 0.08);
+    color: var(--color-warning-dark-2);
+    border-color: var(--color-warning-light-5);
+    background: var(--color-warning-light-9);
   }
 
   &.error {
-    color: $error-color;
-    border-color: rgba($error-color, 0.35);
-    background: rgba($error-color, 0.08);
+    color: var(--color-danger-dark-2);
+    border-color: var(--color-danger-light-5);
+    background: var(--color-danger-light-9);
   }
 
   &.muted {
@@ -240,13 +294,13 @@ textarea {
   }
 
   &.success {
-    border-color: rgba($success-color, 0.4);
+    border-color: var(--color-success-light-5);
   }
   &.warning {
-    border-color: rgba($warning-color, 0.4);
+    border-color: var(--color-warning-light-5);
   }
   &.error {
-    border-color: rgba($error-color, 0.4);
+    border-color: var(--color-danger-light-5);
   }
 
   .message {
@@ -316,6 +370,7 @@ textarea {
 
   input:checked + .track {
     background: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--color-primary-light-8);
   }
 
   input:checked + .track .thumb {

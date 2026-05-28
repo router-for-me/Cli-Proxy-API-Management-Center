@@ -64,7 +64,7 @@ export function formatFileSize(bytes: number): string {
  * 格式化日期时间
  */
 export function formatDateTime(date: string | Date, locale?: string): string {
-  const d = typeof date === 'string' ? parseTimestamp(date) ?? new Date(date) : date;
+  const d = typeof date === 'string' ? (parseTimestamp(date) ?? new Date(date)) : date;
 
   if (isNaN(d.getTime())) {
     return 'Invalid Date';
@@ -77,7 +77,7 @@ export function formatDateTime(date: string | Date, locale?: string): string {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
   });
 }
 

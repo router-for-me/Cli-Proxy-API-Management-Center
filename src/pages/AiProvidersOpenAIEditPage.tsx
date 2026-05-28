@@ -12,8 +12,8 @@ import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useNotificationStore } from '@/stores';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import type { ApiKeyEntry } from '@/types';
-import { buildHeaderObject, hasHeader, headersToEntries } from '@/utils/headers';
-import type { HeaderEntry } from '@/utils/headers';
+import { normalizeAuthIndex } from '@/utils/authIndex';
+import { buildHeaderObject, hasHeader } from '@/utils/headers';
 import { buildApiKeyEntry, buildOpenAIChatCompletionsEndpoint } from '@/components/providers/utils';
 import type { OpenAIEditOutletContext } from './AiProvidersOpenAIEditLayout';
 import type { KeyTestStatus } from '@/stores/useOpenAIEditDraftStore';
@@ -61,7 +61,7 @@ function StatusSuccessIcon() {
 function StatusErrorIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="8" fill="var(--danger-color, #c65746)" />
+      <circle cx="8" cy="8" r="8" fill="var(--danger-color, #f56c6c)" />
       <path
         d="M5 5L11 11M11 5L5 11"
         stroke="white"
@@ -127,7 +127,6 @@ export function AiProvidersOpenAIEditPage() {
 
   const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
   const [isTestingKeys, setIsTestingKeys] = useState(false);
-  const [expandedKeyIndex, setExpandedKeyIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -199,7 +198,8 @@ export function AiProvidersOpenAIEditPage() {
       }
 
       const keyEntry = form.apiKeyEntries[keyIndex];
-      if (!keyEntry?.apiKey?.trim()) {
+      const keyAuthIndex = normalizeAuthIndex(keyEntry?.authIndex) ?? undefined;
+      if (!keyEntry?.apiKey?.trim() && !keyAuthIndex) {
         setDraftKeyTestStatus(keyIndex, { status: 'error', message: t('notification.openai_test_key_required') });
         return false;
       }
@@ -216,7 +216,7 @@ export function AiProvidersOpenAIEditPage() {
         ...customHeaders,
       };
       if (!hasHeader(headers, 'authorization')) {
-        headers.Authorization = `Bearer ${keyEntry.apiKey.trim()}`;
+        headers.Authorization = keyAuthIndex ? 'Bearer $TOKEN$' : `Bearer ${keyEntry.apiKey.trim()}`;
       }
 
       // Set loading state for this key
@@ -225,6 +225,7 @@ export function AiProvidersOpenAIEditPage() {
       try {
         const result = await apiCallApi.request(
           {
+            authIndex: keyAuthIndex,
             method: 'POST',
             url: endpoint,
             header: Object.keys(headers).length ? headers : undefined,
@@ -306,7 +307,7 @@ export function AiProvidersOpenAIEditPage() {
     }
 
     const validKeyIndexes = form.apiKeyEntries
-      .map((entry, index) => (entry.apiKey?.trim() ? index : -1))
+      .map((entry, index) => (entry.apiKey?.trim() || normalizeAuthIndex(entry.authIndex) ? index : -1))
       .filter((index) => index >= 0);
     if (validKeyIndexes.length === 0) {
       const message = t('notification.openai_test_key_required');
@@ -380,12 +381,6 @@ export function AiProvidersOpenAIEditPage() {
       setTestMessage('');
     };
 
-    const updateEntryHeaders = (idx: number, headerEntries: HeaderEntry[]) => {
-      const headers = buildHeaderObject(headerEntries);
-      const next = list.map((entry, i) => (i === idx ? { ...entry, headers } : entry));
-      setForm((prev) => ({ ...prev, apiKeyEntries: next }));
-    };
-
     const removeEntry = (idx: number) => {
       const next = list.filter((_, i) => i !== idx);
       const nextLength = next.length ? next.length : 1;
@@ -403,10 +398,6 @@ export function AiProvidersOpenAIEditPage() {
       resetDraftKeyTestStatuses(list.length + 1);
       setTestStatus('idle');
       setTestMessage('');
-    };
-
-    const toggleExpand = (idx: number) => {
-      setExpandedKeyIndex((prev) => (prev === idx ? null : idx));
     };
 
     return (
@@ -438,111 +429,67 @@ export function AiProvidersOpenAIEditPage() {
           {/* 数据行 */}
           {list.map((entry, index) => {
             const keyStatus = keyTestStatuses[index]?.status ?? 'idle';
-            const canTestKey = Boolean(entry.apiKey?.trim()) && hasConfiguredModels;
-            const isExpanded = expandedKeyIndex === index;
+            const canTestKey =
+              Boolean(entry.apiKey?.trim() || normalizeAuthIndex(entry.authIndex)) &&
+              hasConfiguredModels;
 
             return (
-              <div key={index}>
-                <div className={styles.keyTableRow}>
-                  {/* 序号 */}
-                  <div className={styles.keyTableColIndex}>{index + 1}</div>
+              <div key={index} className={styles.keyTableRow}>
+                {/* 序号 */}
+                <div className={styles.keyTableColIndex}>{index + 1}</div>
 
-                  {/* 状态指示灯 */}
-                  <div
-                    className={styles.keyTableColStatus}
-                    title={keyTestStatuses[index]?.message || ''}
-                  >
-                    <StatusIcon status={keyStatus} />
-                  </div>
-
-                  {/* Key 输入框 */}
-                  <div className={styles.keyTableColKey}>
-                    <input
-                      type="text"
-                      value={entry.apiKey}
-                      onChange={(e) => updateEntry(index, 'apiKey', e.target.value)}
-                      disabled={saving || disableControls || isTestingKeys}
-                      className={`input ${styles.keyTableInput}`}
-                      placeholder={t('ai_providers.openai_key_placeholder')}
-                    />
-                  </div>
-
-                  {/* Proxy 输入框 */}
-                  <div className={styles.keyTableColProxy}>
-                    <input
-                      type="text"
-                      value={entry.proxyUrl ?? ''}
-                      onChange={(e) => updateEntry(index, 'proxyUrl', e.target.value)}
-                      disabled={saving || disableControls || isTestingKeys}
-                      className={`input ${styles.keyTableInput}`}
-                      placeholder={t('ai_providers.openai_proxy_placeholder')}
-                    />
-                  </div>
-
-                  {/* 操作按钮 */}
-                  <div className={styles.keyTableColAction}>
-                    <button
-                      type="button"
-                      className={`${styles.keyExpandToggle} ${isExpanded ? styles.expanded : ''}`}
-                      onClick={() => toggleExpand(index)}
-                      disabled={saving || disableControls || isTestingKeys}
-                      title={t('ai_providers.openai_key_advanced_toggle')}
-                      aria-label={t('ai_providers.openai_key_advanced_toggle')}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                        <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => void testSingleKey(index)}
-                      disabled={saving || disableControls || isTestingKeys || !canTestKey}
-                      loading={keyStatus === 'loading'}
-                    >
-                      {t('ai_providers.openai_test_single_action')}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeEntry(index)}
-                      disabled={saving || disableControls || isTestingKeys || list.length <= 1}
-                    >
-                      {t('common.delete')}
-                    </Button>
-                  </div>
+                {/* 状态指示灯 */}
+                <div
+                  className={styles.keyTableColStatus}
+                  title={keyTestStatuses[index]?.message || ''}
+                >
+                  <StatusIcon status={keyStatus} />
                 </div>
 
-                {/* 展开的高级设置 */}
-                {isExpanded && (
-                  <div className={styles.keyTableExpandRow}>
-                    <div className={styles.keyExpandContent}>
-                      <Input
-                        label={t('ai_providers.openai_key_balance_token_label')}
-                        value={entry.balanceToken ?? ''}
-                        onChange={(e) => updateEntry(index, 'balanceToken', e.target.value)}
-                        placeholder={t('ai_providers.openai_key_balance_token_placeholder')}
-                        disabled={saving || disableControls || isTestingKeys}
-                      />
-                      <div className={styles.keyExpandSectionLabel}>
-                        {t('ai_providers.openai_key_headers_label')}
-                      </div>
-                      <div className={styles.keyExpandSectionHint}>
-                        {t('ai_providers.openai_key_headers_hint')}
-                      </div>
-                      <HeaderInputList
-                        entries={headersToEntries(entry.headers)}
-                        onChange={(headerEntries) => updateEntryHeaders(index, headerEntries)}
-                        addLabel={t('common.custom_headers_add')}
-                        keyPlaceholder={t('common.custom_headers_key_placeholder')}
-                        valuePlaceholder={t('common.custom_headers_value_placeholder')}
-                        removeButtonTitle={t('common.delete')}
-                        removeButtonAriaLabel={t('common.delete')}
-                        disabled={saving || disableControls || isTestingKeys}
-                      />
-                    </div>
-                  </div>
-                )}
+                {/* Key 输入框 */}
+                <div className={styles.keyTableColKey}>
+                  <input
+                    type="text"
+                    value={entry.apiKey}
+                    onChange={(e) => updateEntry(index, 'apiKey', e.target.value)}
+                    disabled={saving || disableControls || isTestingKeys}
+                    className={`input ${styles.keyTableInput}`}
+                    placeholder={t('ai_providers.openai_key_placeholder')}
+                  />
+                </div>
+
+                {/* Proxy 输入框 */}
+                <div className={styles.keyTableColProxy}>
+                  <input
+                    type="text"
+                    value={entry.proxyUrl ?? ''}
+                    onChange={(e) => updateEntry(index, 'proxyUrl', e.target.value)}
+                    disabled={saving || disableControls || isTestingKeys}
+                    className={`input ${styles.keyTableInput}`}
+                    placeholder={t('ai_providers.openai_proxy_placeholder')}
+                  />
+                </div>
+
+                {/* 操作按钮 */}
+                <div className={styles.keyTableColAction}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void testSingleKey(index)}
+                    disabled={saving || disableControls || isTestingKeys || !canTestKey}
+                    loading={keyStatus === 'loading'}
+                  >
+                    {t('ai_providers.openai_test_single_action')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeEntry(index)}
+                    disabled={saving || disableControls || isTestingKeys || list.length <= 1}
+                  >
+                    {t('common.delete')}
+                  </Button>
+                </div>
               </div>
             );
           })}

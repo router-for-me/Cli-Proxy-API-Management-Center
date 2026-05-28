@@ -21,6 +21,285 @@ const serializeHeaders = (headers?: Record<string, string>) => (headers && Objec
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
+const AUTH_INDEX_FIELDS = ['auth-index', 'authIndex', 'auth_index'] as const;
+
+const PROVIDER_KEY_FIELDS = [
+  'api-key',
+  'apiKey',
+  ...AUTH_INDEX_FIELDS,
+  'priority',
+  'prefix',
+  'base-url',
+  'baseUrl',
+  'base_url',
+  'websockets',
+  'proxy-url',
+  'proxyUrl',
+  'proxy_url',
+  'headers',
+  'models',
+  'excluded-models',
+  'excludedModels',
+  'excluded_models',
+  'cloak',
+] as const;
+
+const GEMINI_KEY_FIELDS = PROVIDER_KEY_FIELDS.filter(
+  (field) => field !== 'websockets' && field !== 'cloak'
+);
+const VERTEX_KEY_FIELDS = GEMINI_KEY_FIELDS;
+
+const OPENAI_PROVIDER_FIELDS = [
+  'name',
+  'priority',
+  'disabled',
+  'prefix',
+  'base-url',
+  'baseUrl',
+  'base_url',
+  'api-key-entries',
+  'apiKeyEntries',
+  'api_key_entries',
+  'api-keys',
+  'apiKeys',
+  'api_keys',
+  ...AUTH_INDEX_FIELDS,
+  'headers',
+  'models',
+  'test-model',
+  'testModel',
+  'test_model',
+] as const;
+
+const MODEL_ALIAS_FIELDS = [
+  'name',
+  'id',
+  'model',
+  'alias',
+  'display_name',
+  'displayName',
+  'priority',
+  'test-model',
+  'testModel',
+  'test_model',
+] as const;
+
+const API_KEY_ENTRY_FIELDS = [
+  'api-key',
+  'apiKey',
+  'key',
+  ...AUTH_INDEX_FIELDS,
+  'proxy-url',
+  'proxyUrl',
+  'proxy_url',
+] as const;
+
+const CLOAK_FIELDS = [
+  'mode',
+  'strict-mode',
+  'strictMode',
+  'strict_mode',
+  'sensitive-words',
+  'sensitiveWords',
+  'sensitive_words',
+] as const;
+
+const RAW_SECTION_ALIASES: Record<string, readonly string[]> = {
+  'gemini-api-key': ['gemini-api-key', 'geminiApiKey', 'geminiApiKeys'],
+  'codex-api-key': ['codex-api-key', 'codexApiKey', 'codexApiKeys'],
+  'claude-api-key': ['claude-api-key', 'claudeApiKey', 'claudeApiKeys'],
+  'vertex-api-key': ['vertex-api-key', 'vertexApiKey', 'vertexApiKeys'],
+  'openai-compatibility': ['openai-compatibility', 'openaiCompatibility', 'openAICompatibility'],
+};
+
+const getStringField = (record: Record<string, unknown>, keys: readonly string[]) => {
+  for (const key of keys) {
+    const value = record[key];
+    if (value === undefined || value === null) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return '';
+};
+
+const providerKeyIdentity = (record: Record<string, unknown>) => {
+  const authIndex = getStringField(record, AUTH_INDEX_FIELDS);
+  if (authIndex) return `auth-index\u0000${authIndex}`;
+  const apiKey = getStringField(record, ['api-key', 'apiKey']);
+  if (!apiKey) return '';
+  const baseUrl = getStringField(record, ['base-url', 'baseUrl', 'base_url']);
+  return `${apiKey}\u0000${baseUrl}`;
+};
+
+const openAIProviderIdentity = (record: Record<string, unknown>) =>
+  getStringField(record, ['name', 'id']);
+
+const modelIdentity = (record: Record<string, unknown>) =>
+  getStringField(record, ['name', 'id', 'model']);
+
+const apiKeyEntryIdentity = (record: Record<string, unknown>) =>
+  getStringField(record, AUTH_INDEX_FIELDS) ||
+  getStringField(record, ['api-key', 'apiKey', 'key']);
+
+const cloneWithoutKnownFields = (
+  raw: unknown,
+  knownFields: readonly string[]
+): Record<string, unknown> => {
+  const next: Record<string, unknown> = isRecord(raw) ? { ...raw } : {};
+  knownFields.forEach((field) => {
+    delete next[field];
+  });
+  return next;
+};
+
+const mergeKnownFields = (
+  raw: unknown,
+  payload: Record<string, unknown>,
+  knownFields: readonly string[]
+) => {
+  const next = cloneWithoutKnownFields(raw, knownFields);
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== undefined) {
+      next[key] = value;
+    }
+  });
+  return next;
+};
+
+const findRawRecord = (
+  rawRecords: Array<Record<string, unknown> | undefined>,
+  usedIndexes: Set<number>,
+  payload: Record<string, unknown>,
+  index: number,
+  getIdentity: (record: Record<string, unknown>) => string
+) => {
+  const identity = getIdentity(payload);
+  if (identity) {
+    for (let i = 0; i < rawRecords.length; i += 1) {
+      const candidate = rawRecords[i];
+      if (!candidate || usedIndexes.has(i)) continue;
+      if (getIdentity(candidate) === identity) {
+        usedIndexes.add(i);
+        return candidate;
+      }
+    }
+  }
+
+  const fallback = rawRecords[index];
+  if (fallback && !usedIndexes.has(index)) {
+    usedIndexes.add(index);
+    return fallback;
+  }
+
+  return undefined;
+};
+
+const mergeKnownRecordList = (
+  rawItems: unknown,
+  payloadItems: Record<string, unknown>[],
+  knownFields: readonly string[],
+  getIdentity: (record: Record<string, unknown>) => string
+) => {
+  const rawRecords = Array.isArray(rawItems)
+    ? rawItems.map((item) => (isRecord(item) ? item : undefined))
+    : [];
+  const usedIndexes = new Set<number>();
+
+  return payloadItems.map((payload, index) => {
+    const raw = findRawRecord(rawRecords, usedIndexes, payload, index, getIdentity);
+    return mergeKnownFields(raw, payload, knownFields);
+  });
+};
+
+const getRawSectionList = (rawConfig: unknown, section: string) => {
+  if (!isRecord(rawConfig)) return [];
+  const aliases = RAW_SECTION_ALIASES[section] ?? [section];
+  for (const alias of aliases) {
+    const value = rawConfig[alias];
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+};
+
+const mergeModelPayloads = (raw: unknown, models: unknown) =>
+  Array.isArray(models)
+    ? mergeKnownRecordList(
+        isRecord(raw) ? raw.models : undefined,
+        models.filter(isRecord),
+        MODEL_ALIAS_FIELDS,
+        modelIdentity
+      )
+    : undefined;
+
+const mergeProviderKeyPayload = (
+  raw: unknown,
+  payload: Record<string, unknown>,
+  knownFields: readonly string[]
+) => {
+  const next = mergeKnownFields(raw, payload, knownFields);
+  const models = mergeModelPayloads(raw, payload.models);
+  if (models) next.models = models;
+  if (isRecord(payload.cloak)) {
+    next.cloak = mergeKnownFields(
+      isRecord(raw) ? raw.cloak : undefined,
+      payload.cloak,
+      CLOAK_FIELDS
+    );
+  }
+  return next;
+};
+
+const mergeOpenAIProviderPayload = (raw: unknown, payload: Record<string, unknown>) => {
+  const next = mergeKnownFields(raw, payload, OPENAI_PROVIDER_FIELDS);
+  const rawApiKeyEntries = isRecord(raw)
+    ? raw['api-key-entries'] ?? raw.apiKeyEntries
+    : undefined;
+  const apiKeyEntries = payload['api-key-entries'];
+  if (Array.isArray(apiKeyEntries)) {
+    next['api-key-entries'] = mergeKnownRecordList(
+      rawApiKeyEntries,
+      apiKeyEntries.filter(isRecord),
+      API_KEY_ENTRY_FIELDS,
+      apiKeyEntryIdentity
+    );
+  }
+  const models = mergeModelPayloads(raw, payload.models);
+  if (models) next.models = models;
+  return next;
+};
+
+const buildPreservedList = async <T>(
+  section: string,
+  configs: T[],
+  serialize: (item: T) => Record<string, unknown>,
+  mergePayload: (raw: unknown, payload: Record<string, unknown>) => Record<string, unknown>,
+  getIdentity: (record: Record<string, unknown>) => string
+) => {
+  const payloads = configs.map((item) => serialize(item));
+
+  let rawConfig: unknown;
+  try {
+    rawConfig = await apiClient.get('/config');
+  } catch (err) {
+    // GET /config failure (auth, network, 5xx) must not block saves. Fall back to
+    // the plain payload — equivalent to the pre-merge behavior — so users can
+    // still persist their edits even when raw-field preservation is unavailable.
+    console.warn('buildPreservedList: failed to fetch raw /config, falling back to payload-only save', err);
+    return payloads;
+  }
+
+  const rawItems = getRawSectionList(rawConfig, section);
+  const rawRecords = Array.isArray(rawItems)
+    ? rawItems.map((item) => (isRecord(item) ? item : undefined))
+    : [];
+  const usedIndexes = new Set<number>();
+
+  return payloads.map((payload, index) => {
+    const raw = findRawRecord(rawRecords, usedIndexes, payload, index, getIdentity);
+    return mergePayload(raw, payload);
+  });
+};
+
 const extractArrayPayload = (data: unknown, key: string): unknown[] => {
   if (Array.isArray(data)) return data;
   if (!isRecord(data)) return [];
@@ -55,22 +334,26 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
         .filter(Boolean)
     : undefined;
 
+const serializeAuthIndex = (value?: string) => {
+  const trimmed = String(value ?? '').trim();
+  return trimmed || undefined;
+};
+
 const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
   const payload: Record<string, unknown> = {};
-  if (entry.apiKey?.trim()) payload['api-key'] = entry.apiKey.trim();
+  if (entry.apiKey) payload['api-key'] = entry.apiKey;
+  const authIndex = serializeAuthIndex(entry.authIndex);
+  if (authIndex) payload['auth-index'] = authIndex;
   if (entry.proxyUrl) payload['proxy-url'] = entry.proxyUrl;
   const headers = serializeHeaders(entry.headers);
   if (headers) payload.headers = headers;
-  if (entry.balanceToken && entry.balanceToken.trim()) {
-    payload['balance-token'] = entry.balanceToken.trim();
-  }
-  if (entry.authIndex?.trim()) payload['auth-index'] = entry.authIndex.trim();
   return payload;
 };
 
 const serializeProviderKey = (config: ProviderKeyConfig) => {
-  const payload: Record<string, unknown> = {};
-  if (config.apiKey?.trim()) payload['api-key'] = config.apiKey.trim();
+  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  const authIndex = serializeAuthIndex(config.authIndex);
+  if (authIndex) payload['auth-index'] = authIndex;
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -111,8 +394,9 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
     : undefined;
 
 const serializeVertexKey = (config: ProviderKeyConfig) => {
-  const payload: Record<string, unknown> = {};
-  if (config.apiKey?.trim()) payload['api-key'] = config.apiKey.trim();
+  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  const authIndex = serializeAuthIndex(config.authIndex);
+  if (authIndex) payload['auth-index'] = authIndex;
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -128,8 +412,9 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
 };
 
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
-  const payload: Record<string, unknown> = {};
-  if (config.apiKey?.trim()) payload['api-key'] = config.apiKey.trim();
+  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  const authIndex = serializeAuthIndex(config.authIndex);
+  if (authIndex) payload['auth-index'] = authIndex;
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -152,6 +437,8 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
       ? provider.apiKeyEntries.map((entry) => serializeApiKeyEntry(entry))
       : []
   };
+  const authIndex = serializeAuthIndex(provider.authIndex);
+  if (authIndex) payload['auth-index'] = authIndex;
   if (provider.prefix?.trim()) payload.prefix = provider.prefix.trim();
   if (provider.disabled !== undefined) payload.disabled = provider.disabled;
   const headers = serializeHeaders(provider.headers);
@@ -170,8 +457,17 @@ export const providersApi = {
     return list.map((item) => normalizeGeminiKeyConfig(item)).filter(Boolean) as GeminiKeyConfig[];
   },
 
-  saveGeminiKeys: (configs: GeminiKeyConfig[]) =>
-    apiClient.put('/gemini-api-key', configs.map((item) => serializeGeminiKey(item))),
+  saveGeminiKeys: async (configs: GeminiKeyConfig[]) =>
+    apiClient.put(
+      '/gemini-api-key',
+      await buildPreservedList(
+        'gemini-api-key',
+        configs,
+        serializeGeminiKey,
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, GEMINI_KEY_FIELDS),
+        providerKeyIdentity
+      )
+    ),
 
   updateGeminiKey: (index: number, value: GeminiKeyConfig) =>
     apiClient.patch('/gemini-api-key', { index, value: serializeGeminiKey(value) }),
@@ -185,8 +481,17 @@ export const providersApi = {
     return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
   },
 
-  saveCodexConfigs: (configs: ProviderKeyConfig[]) =>
-    apiClient.put('/codex-api-key', configs.map((item) => serializeProviderKey(item))),
+  saveCodexConfigs: async (configs: ProviderKeyConfig[]) =>
+    apiClient.put(
+      '/codex-api-key',
+      await buildPreservedList(
+        'codex-api-key',
+        configs,
+        serializeProviderKey,
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, PROVIDER_KEY_FIELDS),
+        providerKeyIdentity
+      )
+    ),
 
   updateCodexConfig: (index: number, value: ProviderKeyConfig) =>
     apiClient.patch('/codex-api-key', { index, value: serializeProviderKey(value) }),
@@ -200,8 +505,17 @@ export const providersApi = {
     return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
   },
 
-  saveClaudeConfigs: (configs: ProviderKeyConfig[]) =>
-    apiClient.put('/claude-api-key', configs.map((item) => serializeProviderKey(item))),
+  saveClaudeConfigs: async (configs: ProviderKeyConfig[]) =>
+    apiClient.put(
+      '/claude-api-key',
+      await buildPreservedList(
+        'claude-api-key',
+        configs,
+        serializeProviderKey,
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, PROVIDER_KEY_FIELDS),
+        providerKeyIdentity
+      )
+    ),
 
   updateClaudeConfig: (index: number, value: ProviderKeyConfig) =>
     apiClient.patch('/claude-api-key', { index, value: serializeProviderKey(value) }),
@@ -215,8 +529,17 @@ export const providersApi = {
     return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
   },
 
-  saveVertexConfigs: (configs: ProviderKeyConfig[]) =>
-    apiClient.put('/vertex-api-key', configs.map((item) => serializeVertexKey(item))),
+  saveVertexConfigs: async (configs: ProviderKeyConfig[]) =>
+    apiClient.put(
+      '/vertex-api-key',
+      await buildPreservedList(
+        'vertex-api-key',
+        configs,
+        serializeVertexKey,
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, VERTEX_KEY_FIELDS),
+        providerKeyIdentity
+      )
+    ),
 
   updateVertexConfig: (index: number, value: ProviderKeyConfig) =>
     apiClient.patch('/vertex-api-key', { index, value: serializeVertexKey(value) }),
@@ -230,8 +553,17 @@ export const providersApi = {
     return list.map((item) => normalizeOpenAIProvider(item)).filter(Boolean) as OpenAIProviderConfig[];
   },
 
-  saveOpenAIProviders: (providers: OpenAIProviderConfig[]) =>
-    apiClient.put('/openai-compatibility', providers.map((item) => serializeOpenAIProvider(item))),
+  saveOpenAIProviders: async (providers: OpenAIProviderConfig[]) =>
+    apiClient.put(
+      '/openai-compatibility',
+      await buildPreservedList(
+        'openai-compatibility',
+        providers,
+        serializeOpenAIProvider,
+        mergeOpenAIProviderPayload,
+        openAIProviderIdentity
+      )
+    ),
 
   updateOpenAIProvider: (index: number, value: OpenAIProviderConfig) =>
     apiClient.patch('/openai-compatibility', { index, value: serializeOpenAIProvider(value) }),

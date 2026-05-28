@@ -1,0 +1,62 @@
+name: 功能需求
+description: 新功能、优化建议、使用体验改进
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请尽量描述真实使用场景，而不是只写“希望支持 xxx”。
+
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景
+      description: 你在什么情况下需要这个功能？
+      placeholder: 例如：我有多个 CPA 实例，希望在一个 CPA-Manager 中统一查看请求统计。
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 当前痛点
+      description: 现在没有这个功能时，你是怎么处理的？哪里不方便？
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 期望方案
+      description: 你希望 CPA-Manager 怎么实现？
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 需求优先级
+      options:
+        - 很高：影响主要使用流程
+        - 中等：明显提升体验
+        - 较低：锦上添花
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充信息
+      description: 截图、竞品参考、相关链接等。
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 检查清单
+      options:
+        - label: 我已经搜索过现有 Issues，没有找到重复需求
+          required: true

@@ -20,6 +20,7 @@ dist
 dist-ssr
 *.local
 skills
+.playwright-mcp/
 
 # Editor directories and files
 settings.local.json
@@ -33,3 +34,11 @@ settings.local.json
 *.njsproj
 *.sln
 *.sw?
+
+TODO.md
+
+/bin/tmp/
+/bin/cpa-manager
+/data/usage.sqlite*
+/run/*.pid
+/run/*.log
