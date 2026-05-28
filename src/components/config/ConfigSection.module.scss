@@ -1,45 +1,37 @@
 @use '../../styles/mixins' as *;
+@use '../../styles/variables' as *;
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 2vw, 22px);
-  height: clamp(520px, calc(100dvh - var(--header-height, 64px) - 250px), 780px);
+  gap: 12px;
   min-width: 0;
-  box-sizing: border-box;
-  overflow-y: auto;
-  overscroll-behavior: auto;
-  padding: clamp(20px, 2.4vw, 28px);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
-  scroll-margin-top: 104px;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  scrollbar-width: thin;
+  max-width: 100%;
+  padding: 24px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  scroll-margin-top: 112px;
+
+  &:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
 
   @include mobile {
-    gap: 14px;
-    height: clamp(420px, calc(100dvh - var(--header-height, 64px) - 260px), 680px);
-    padding: 16px;
-    scroll-margin-top: 92px;
+    gap: 12px;
+    padding: 20px 0;
+    scroll-margin-top: 88px;
   }
 }
 
 .header {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  display: flex;
+  align-items: center;
   gap: 10px;
-  align-items: start;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  min-width: 0;
+  max-width: 100%;
 
   @include mobile {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-    padding-bottom: 12px;
-    background: transparent;
+    align-items: flex-start;
   }
 }
 
@@ -48,66 +40,57 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-
-.indexBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: 0.08em;
+  flex: 0 0 auto;
 }
 
 .iconBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
   color: var(--text-secondary);
   flex: 0 0 auto;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .headingGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
   min-width: 0;
+  flex: 1;
 }
 
 .title {
   margin: 0;
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 700;
   color: var(--text-primary);
-  font-size: clamp(18px, 1.6vw, 22px);
-  font-weight: 680;
-  line-height: 1.18;
-  letter-spacing: 0;
 }
 
 .description {
   margin: 0;
-  max-width: 72ch;
+  max-width: none;
   color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.65;
-
-  @include mobile {
-    max-width: none;
-  }
+  font-size: 11.5px;
+  line-height: 1.45;
 }
 
 .content {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 100%;
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }

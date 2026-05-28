@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
   ANTIGRAVITY_CONFIG,
   CLAUDE_CONFIG,
   CODEX_CONFIG,
-  DEEPSEEK_CONFIG,
   GEMINI_CLI_CONFIG,
   KIMI_CONFIG,
-  OLLAMA_CONFIG
+  XAI_CONFIG
 } from '@/components/quota';
 import { useNotificationStore, useQuotaStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
@@ -28,8 +27,7 @@ const getQuotaConfig = (type: QuotaProviderType) => {
   if (type === 'claude') return CLAUDE_CONFIG;
   if (type === 'codex') return CODEX_CONFIG;
   if (type === 'kimi') return KIMI_CONFIG;
-  if (type === 'ollama') return OLLAMA_CONFIG;
-  if (type === 'deepseek') return DEEPSEEK_CONFIG;
+  if (type === 'xai') return XAI_CONFIG;
   return GEMINI_CLI_CONFIG;
 };
 
@@ -49,8 +47,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (quotaType === 'claude') return state.claudeQuota[file.name] as QuotaState;
     if (quotaType === 'codex') return state.codexQuota[file.name] as QuotaState;
     if (quotaType === 'kimi') return state.kimiQuota[file.name] as QuotaState;
-    if (quotaType === 'ollama') return state.ollamaQuota[file.name] as QuotaState;
-    if (quotaType === 'deepseek') return state.deepseekQuota[file.name] as QuotaState;
+    if (quotaType === 'xai') return state.xaiQuota[file.name] as QuotaState;
     return state.geminiCliQuota[file.name] as QuotaState;
   });
 
@@ -59,34 +56,9 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (quotaType === 'claude') return state.setClaudeQuota as unknown as (updater: unknown) => void;
     if (quotaType === 'codex') return state.setCodexQuota as unknown as (updater: unknown) => void;
     if (quotaType === 'kimi') return state.setKimiQuota as unknown as (updater: unknown) => void;
-    if (quotaType === 'ollama') return state.setOllamaQuota as unknown as (updater: unknown) => void;
-    if (quotaType === 'deepseek') return state.setDeepSeekQuota as unknown as (updater: unknown) => void;
+    if (quotaType === 'xai') return state.setXaiQuota as unknown as (updater: unknown) => void;
     return state.setGeminiCliQuota as unknown as (updater: unknown) => void;
   });
-
-  // For providers whose backend already attaches a fresh balance to the
-  // auth-files list response (ollama / deepseek), seed the store on mount so
-  // the user sees the data immediately — no manual refresh required.
-  // The seed is a one-shot per (file, quotaType) pair: it only fires when the
-  // store still has nothing for this file. After the first seed, normal
-  // user-driven refresh takes over.
-  const seededKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (quota !== undefined) return;
-    const config = getQuotaConfig(quotaType) as unknown as {
-      extractInitialState?: (file: AuthFileItem) => unknown;
-    };
-    if (typeof config.extractInitialState !== 'function') return;
-    const seedKey = `${quotaType}::${file.name}`;
-    if (seededKeyRef.current === seedKey) return;
-    const seed = config.extractInitialState(file);
-    if (!seed) return;
-    seededKeyRef.current = seedKey;
-    updateQuotaState((prev: Record<string, unknown>) => ({
-      ...prev,
-      [file.name]: seed
-    }));
-  }, [file, quota, quotaType, updateQuotaState]);
 
   const refreshQuotaForFile = useCallback(async () => {
     if (disableControls) return;
@@ -128,7 +100,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
 
   const config = getQuotaConfig(quotaType) as unknown as {
     i18nPrefix: string;
-    renderQuotaItems: (quota: unknown, t: TFunction, helpers: unknown) => ReactNode;
+    renderQuotaItems: (quota: unknown, t: TFunction, helpers: unknown) => unknown;
   };
 
   const quotaStatus = quota?.status ?? 'idle';
@@ -159,18 +131,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
           })}
         </div>
       ) : quota ? (
-        <>
-          {config.renderQuotaItems(quota, t, { styles, QuotaProgressBar })}
-          {quotaStatus === 'success' && canRefreshQuota && (
-            <button
-              type="button"
-              className={`${styles.quotaMessage} ${styles.quotaMessageAction}`}
-              onClick={() => void refreshQuotaForFile()}
-            >
-              {t('auth_files.quota_refresh_action', { defaultValue: '刷新' })}
-            </button>
-          )}
-        </>
+        (config.renderQuotaItems(quota, t, { styles, QuotaProgressBar }) as ReactNode)
       ) : (
         <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.idle`)}</div>
       )}

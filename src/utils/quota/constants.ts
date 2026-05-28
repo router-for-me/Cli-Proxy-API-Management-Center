@@ -42,6 +42,10 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#e0f7fa', text: '#006064' },
     dark: { bg: '#004d40', text: '#80deea' },
   },
+  xai: {
+    light: { bg: '#f3f4f6', text: '#111827', border: '1px solid #d1d5db' },
+    dark: { bg: '#111827', text: '#f9fafb', border: '1px solid #374151' },
+  },
   iflow: {
     light: { bg: '#f5e3fc', text: '#9025c8' },
     dark: { bg: '#521490', text: '#d49cf5' },
@@ -175,7 +179,6 @@ export const CLAUDE_REQUEST_HEADERS = {
 
 export const CLAUDE_USAGE_WINDOW_KEYS = [
   { key: 'five_hour', id: 'five-hour', labelKey: 'claude_quota.five_hour' },
-  { key: 'one_day', id: 'one-day', labelKey: 'claude_quota.one_day' },
   { key: 'seven_day', id: 'seven-day', labelKey: 'claude_quota.seven_day' },
   { key: 'seven_day_oauth_apps', id: 'seven-day-oauth-apps', labelKey: 'claude_quota.seven_day_oauth_apps' },
   { key: 'seven_day_opus', id: 'seven-day-opus', labelKey: 'claude_quota.seven_day_opus' },

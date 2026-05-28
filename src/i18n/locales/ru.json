@@ -487,12 +487,8 @@
     "model_search_clear": "Очистить",
     "model_select_all": "Выбрать все",
     "model_filter_empty": "Нет моделей для фильтра",
-    "openai_key_advanced_toggle": "Дополнительно",
-    "openai_key_balance_token_label": "Токен баланса",
-    "openai_key_balance_token_placeholder": "Токен для запросов баланса (например, токен платформы DeepSeek)",
-    "openai_key_headers_label": "Заголовки ключа",
-    "openai_key_headers_hint": "Пользовательские заголовки для этого ключа, например Cookie для аутентификации сессии Ollama.",
-    "openai_refresh_all_balances": "Обновить"
+    "openai_refresh_all_balances": "Обновить",
+    "refresh_provider_keys": "Обновить"
   },
   "auth_files": {
     "title": "Управление файлами авторизации",
@@ -675,12 +671,7 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
-    "sort_az": "A-Z Имя",
-    "sort_priority": "Приоритет",
-    "filter_ollama": "Ollama",
-    "filter_deepseek": "DeepSeek",
-    "quota_refresh_action": "Обновить"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
   },
   "antigravity_quota": {
     "title": "Квота Antigravity",
@@ -720,8 +711,7 @@
     "plan_max": "Max",
     "plan_max5": "Max 5x",
     "plan_max20": "Max 20x",
-    "plan_team": "Team",
-    "one_day": "Дневной лимит"
+    "plan_team": "Team"
   },
   "codex_quota": {
     "title": "Квота Codex",
@@ -1147,10 +1137,7 @@
   },
   "stats": {
     "success": "Успех",
-    "failure": "Сбой",
-    "input_tokens": "Входные токены",
-    "output_tokens": "Выходные токены",
-    "total_tokens": "Всего токенов"
+    "failure": "Сбой"
   },
   "status_bar": {
     "success_short": "✓",
@@ -1604,22 +1591,7 @@
     "lines": "строк",
     "removed": "Отфильтровано",
     "upgrade_required_title": "Обновите CLI Proxy API",
-    "upgrade_required_desc": "Текущая версия сервера не поддерживает просмотр журналов. Обновите CLI Proxy API до последней версии, чтобы использовать эту функцию.",
-    "success_logs_modal_title": "Журналы успешных запросов",
-    "success_logs_description": "Выберите файл журнала успешного запроса для скачивания (создаётся только при включённом журналировании запросов и журналировании успешных запросов).",
-    "success_logs_request_log_disabled": "Для журналирования успешных запросов необходимо включить журналирование запросов. Включите оба параметра и обновите список.",
-    "success_logs_empty": "Файлы журнала успешных запросов не найдены",
-    "success_logs_load_error": "Не удалось загрузить список журналов успешных запросов",
-    "success_logs_size": "Размер",
-    "success_logs_modified": "Изменён",
-    "success_logs_download": "Скачать",
-    "success_log_download_success": "Журнал успешно скачан",
-    "success_logs_enable": "Включить журналирование успешных запросов",
-    "filter_latency": "Задержка",
-    "filter_latency_lt_1s": "< 1 с",
-    "filter_latency_1s_5s": "1 с - 5 с",
-    "filter_latency_5s_30s": "5 с - 30 с",
-    "filter_latency_gte_30s": "≥ 30 с"
+    "upgrade_required_desc": "Текущая версия сервера не поддерживает просмотр журналов. Обновите CLI Proxy API до последней версии, чтобы использовать эту функцию."
   },
   "config_management": {
     "title": "Панель конфигурации",
@@ -2121,60 +2093,5 @@
     "build_date": "Время сборки",
     "version": "Версия интерфейса управления",
     "author": "Автор"
-  },
-  "ollama_quota": {
-    "idle": "Нажмите, чтобы загрузить использование Ollama",
-    "loading": "Загрузка использования Ollama...",
-    "load_failed": "Не удалось загрузить использование Ollama: {{message}}",
-    "empty": "Данные по использованию отсутствуют",
-    "missing_name": "В файле авторизации отсутствует имя",
-    "plan_label": "Тариф",
-    "session_label": "Осталось в сессии",
-    "weekly_label": "Осталось за неделю",
-    "refresh_button": "Обновить баланс Ollama",
-    "refresh_no_match": "Не найден файл авторизации для этого API-ключа",
-    "refresh_success": "Баланс Ollama обновлён: тариф {{plan}}, в сессии {{session}}%, за неделю {{weekly}}%",
-    "refresh_failed": "Не удалось обновить баланс Ollama: {{message}}"
-  },
-  "deepseek_quota": {
-    "idle": "Нажмите, чтобы загрузить баланс DeepSeek",
-    "loading": "Загрузка баланса DeepSeek...",
-    "load_failed": "Не удалось загрузить баланс DeepSeek: {{message}}",
-    "empty": "Данные по балансу отсутствуют",
-    "missing_name": "В файле авторизации отсутствует имя",
-    "wallet_label": "Кошелёк",
-    "bonus_label": "Бонус",
-    "monthly_cost_label": "С начала месяца",
-    "token_estimation": "≈ {{formatted}} токенов",
-    "monthly_tokens": "{{formatted}} токенов",
-    "refresh_button": "Обновить баланс DeepSeek",
-    "refresh_no_match": "Не найден файл авторизации для этого API-ключа",
-    "refresh_success": "Баланс DeepSeek обновлён: кошелёк {{currency}} {{balance}}, бонус {{currency}} {{bonus}}, расход {{currency}} {{cost}}",
-    "refresh_failed": "Не удалось обновить баланс DeepSeek: {{message}}"
-  },
-  "xiaomi_quota": {
-    "idle": "Нажмите, чтобы загрузить статистику Xiaomi",
-    "loading": "Загрузка статистики Xiaomi...",
-    "load_failed": "Не удалось загрузить статистику Xiaomi: {{message}}",
-    "empty": "Данные отсутствуют",
-    "month_label": "Месяц",
-    "plan_label": "Тариф",
-    "compensation_label": "Компенсация",
-    "tokens_used": "{{used}} / {{limit}} токенов",
-    "refresh_button": "Обновить статистику Xiaomi",
-    "refresh_failed": "Не удалось обновить статистику Xiaomi: {{message}}"
-  },
-  "anyrouter_quota": {
-    "idle": "Нажмите, чтобы загрузить баланс Anyrouter",
-    "loading": "Загрузка баланса Anyrouter...",
-    "load_failed": "Не удалось загрузить баланс Anyrouter: {{message}}",
-    "empty": "Данные по балансу отсутствуют",
-    "quota_label": "Остаток квоты",
-    "used_label": "Использовано",
-    "request_count_label": "Запросов",
-    "aff_quota_label": "Реферальный бонус",
-    "group_label": "Группа",
-    "refresh_button": "Обновить баланс Anyrouter",
-    "refresh_failed": "Не удалось обновить баланс Anyrouter: {{message}}"
   }
 }

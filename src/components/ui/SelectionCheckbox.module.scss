@@ -47,7 +47,7 @@
 
 .root:hover .box {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 16%, transparent);
+  box-shadow: 0 0 0 3px var(--color-primary-light-8);
 }
 
 .root:active .box {
@@ -66,13 +66,16 @@
 .input:focus-visible + .box {
   border-color: var(--primary-color);
   box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--primary-color) 16%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--primary-color) 50%, transparent);
+    0 0 0 3px var(--color-primary-light-8),
+    0 0 0 1px var(--color-primary-light-5);
 }
 
 .boxChecked {
   border-color: var(--primary-color);
   background: var(--primary-color);
+  box-shadow:
+    0 0 0 3px var(--color-primary-light-8),
+    0 8px 18px -14px color-mix(in srgb, var(--primary-color) 70%, transparent);
 }
 
 .boxChecked svg {

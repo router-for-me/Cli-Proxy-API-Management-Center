@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, var(--primary-color) 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-active) 100%);
   padding: $spacing-md;
 }
 

@@ -9,6 +9,7 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { modelsApi } from '@/services/api';
 import type { ModelInfo } from '@/utils/models';
+import { normalizeAuthIndex } from '@/utils/authIndex';
 import { buildHeaderObject } from '@/utils/headers';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
 import styles from './AiProvidersPage.module.scss';
@@ -66,7 +67,8 @@ export function AiProvidersClaudeModelsPage() {
       const list = await modelsApi.fetchClaudeModelsViaApiCall(
         form.baseUrl ?? '',
         form.apiKey.trim() || undefined,
-        headerObject
+        headerObject,
+        normalizeAuthIndex(form.authIndex) ?? undefined
       );
       setModels(list);
     } catch (err: unknown) {
@@ -89,7 +91,7 @@ export function AiProvidersClaudeModelsPage() {
     } finally {
       setFetching(false);
     }
-  }, [form.apiKey, form.baseUrl, form.headers, t]);
+  }, [form.apiKey, form.authIndex, form.baseUrl, form.headers, t]);
 
   useEffect(() => {
     if (initialLoading) return;
@@ -109,7 +111,8 @@ export function AiProvidersClaudeModelsPage() {
       (key) => key.toLowerCase() === 'authorization'
     );
     const hasApiKeyField = Boolean(form.apiKey.trim());
-    const canAutoFetch = hasApiKeyField || hasCustomXApiKey || hasAuthorization;
+    const hasAuthIndex = Boolean(normalizeAuthIndex(form.authIndex));
+    const canAutoFetch = hasApiKeyField || hasCustomXApiKey || hasAuthorization || hasAuthIndex;
 
     // Avoid firing a guaranteed 401 on initial render (common while the parent form is still
     // initializing), and avoid duplicate auto-fetches (e.g. React StrictMode in dev).
@@ -119,12 +122,12 @@ export function AiProvidersClaudeModelsPage() {
       .sort(([a], [b]) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .map(([key, value]) => `${key}:${value}`)
       .join('|');
-    const signature = `${nextEndpoint}||${form.apiKey.trim()}||${headerSignature}`;
+    const signature = `${nextEndpoint}||${form.apiKey.trim()}||${normalizeAuthIndex(form.authIndex) ?? ''}||${headerSignature}`;
     if (autoFetchSignatureRef.current === signature) return;
     autoFetchSignatureRef.current = signature;
 
     void fetchClaudeModelDiscovery();
-  }, [fetchClaudeModelDiscovery, form.apiKey, form.baseUrl, form.headers, initialLoading]);
+  }, [fetchClaudeModelDiscovery, form.apiKey, form.authIndex, form.baseUrl, form.headers, initialLoading]);
 
   useEffect(() => {
     const availableNames = new Set(models.map((model) => model.name));

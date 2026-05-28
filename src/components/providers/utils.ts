@@ -4,6 +4,7 @@ import type {
   AmpcodeUpstreamApiKeyMapping,
   ApiKeyEntry,
   OpenAIProviderConfig,
+  TokenUsageSummary,
 } from '@/types';
 import {
   buildRecentRequestCompositeKey,
@@ -107,48 +108,6 @@ const EMPTY_RECENT_USAGE_ENTRY: RecentRequestUsageEntry = {
   failed: 0,
   recentRequests: [],
 };
-
-export interface TokenUsage {
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
-}
-
-export function getProviderTokenUsage(
-  usageByProvider: ProviderRecentUsageMap,
-  provider: string,
-  apiKey?: string,
-  baseUrl?: string
-): TokenUsage {
-  const entry = getProviderRecentUsageEntry(usageByProvider, provider, apiKey, baseUrl);
-  return {
-    inputTokens: entry.inputTokens ?? 0,
-    outputTokens: entry.outputTokens ?? 0,
-    totalTokens: entry.totalTokens ?? 0,
-  };
-}
-
-export function getOpenAIProviderTotalTokenUsage(
-  provider: OpenAIProviderConfig,
-  usageByProvider: ProviderRecentUsageMap
-): TokenUsage {
-  return (provider.apiKeyEntries || []).reduce<TokenUsage>(
-    (total, entry) => {
-      const usage = getProviderTokenUsage(
-        usageByProvider,
-        provider.name,
-        entry.apiKey,
-        provider.baseUrl
-      );
-      return {
-        inputTokens: total.inputTokens + usage.inputTokens,
-        outputTokens: total.outputTokens + usage.outputTokens,
-        totalTokens: total.totalTokens + usage.totalTokens,
-      };
-    },
-    { inputTokens: 0, outputTokens: 0, totalTokens: 0 }
-  );
-}
 
 const normalizeProviderRecentKey = (value: unknown): string =>
   String(value ?? '').trim().toLowerCase();
@@ -281,6 +240,28 @@ export function getOpenAIProviderRecentStatusData(
   );
 }
 
+const EMPTY_TOKEN_USAGE: TokenUsageSummary = {
+  inputTokens: 0,
+  outputTokens: 0,
+  totalTokens: 0,
+};
+
+export function getProviderTokenUsage(
+  _usageByProvider: ProviderRecentUsageMap,
+  _provider: string,
+  _apiKey?: string,
+  _baseUrl?: string
+): TokenUsageSummary {
+  return EMPTY_TOKEN_USAGE;
+}
+
+export function getOpenAIProviderTotalTokenUsage(
+  _provider: OpenAIProviderConfig,
+  _usageByProvider: ProviderRecentUsageMap
+): TokenUsageSummary {
+  return EMPTY_TOKEN_USAGE;
+}
+
 export const getProviderConfigKey = (
   config: {
     authIndex?: unknown;
@@ -317,8 +298,6 @@ export const buildApiKeyEntry = (input?: Partial<ApiKeyEntry>): ApiKeyEntry => (
   apiKey: input?.apiKey ?? '',
   proxyUrl: input?.proxyUrl ?? '',
   headers: input?.headers ?? {},
-  authIndex: input?.authIndex ?? undefined,
-  balanceToken: input?.balanceToken ?? undefined,
 });
 
 export const ampcodeMappingsToEntries = (mappings?: AmpcodeModelMapping[]): ModelEntry[] => {

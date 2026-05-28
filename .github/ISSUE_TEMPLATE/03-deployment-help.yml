@@ -1,0 +1,76 @@
+name: 部署 / 配置求助
+description: Docker、Usage Service、网络、反代、Windows 部署相关问题
+title: "[Deploy]: "
+labels: ["deployment", "needs-triage"]
+
+body:
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 运行环境
+      options:
+        - Linux Docker
+        - Windows Docker
+        - Windows 原生
+        - macOS
+        - Hugging Face / Render / ClawCloud / 其他托管平台
+        - 其他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deploy-mode
+    attributes:
+      label: 部署方式
+      options:
+        - 只配置 CPA 面板仓库地址
+        - 完整 Docker 方案
+        - CPA 控制面板 + 外部 Usage Service
+        - 不确定
+    validations:
+      required: true
+
+  - type: textarea
+    id: docker-compose
+    attributes:
+      label: Docker Compose / 启动命令
+      description: 请脱敏后粘贴。
+      render: yaml
+    validations:
+      required: false
+
+  - type: input
+    id: cpa-url
+    attributes:
+      label: CPA 地址
+      placeholder: http://127.0.0.1:xxxx
+    validations:
+      required: true
+
+  - type: input
+    id: usage-url
+    attributes:
+      label: Usage Service 地址
+      placeholder: http://127.0.0.1:18317
+    validations:
+      required: false
+
+  - type: textarea
+    id: error
+    attributes:
+      label: 报错信息
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: 已尝试的排查
+      placeholder: |
+        例如：
+        - 已确认容器在同一个 network
+        - 已确认端口映射
+        - 已 curl /status
+    validations:
+      required: false

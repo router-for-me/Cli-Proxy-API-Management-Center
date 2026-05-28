@@ -1,0 +1,29 @@
+services:
+  cpa-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile.usage-service
+    image: seakee/cpa-manager:latest
+    restart: unless-stopped
+    ports:
+      - "18317:18317"
+    environment:
+      HTTP_ADDR: "0.0.0.0:18317"
+      USAGE_DB_PATH: "/data/usage.sqlite"
+      USAGE_COLLECTOR_MODE: "auto"
+      USAGE_RESP_QUEUE: "usage"
+      USAGE_RESP_POP_SIDE: "right"
+      USAGE_BATCH_SIZE: "100"
+      USAGE_POLL_INTERVAL_MS: "500"
+      USAGE_QUERY_LIMIT: "50000"
+      USAGE_CORS_ORIGINS: "*"
+    volumes:
+      - cpa-manager-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:18317/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  cpa-manager-data:

@@ -12,27 +12,6 @@ export function resolveAuthProvider(file: AuthFileItem): string {
   return key;
 }
 
-// resolveCanonicalProvider returns the *real* sub-provider when an auth is
-// registered through openai-compatibility. The backend exposes provider_key
-// (canonical, e.g. "deepseek") and compat_name (user-facing label) in the
-// auth-files response; falling through to provider/type preserves behavior
-// for native registrations (claude, codex, gemini-cli, etc).
-export function resolveCanonicalProvider(file: AuthFileItem): string {
-  const candidates = [
-    file.provider_key,
-    file.compat_name,
-    file.provider,
-    file.type,
-  ];
-  for (const candidate of candidates) {
-    const normalized = String(candidate ?? '').trim().toLowerCase();
-    if (normalized && normalized !== 'openai-compatibility') {
-      return normalized;
-    }
-  }
-  return '';
-}
-
 export function isAntigravityFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'antigravity';
 }
@@ -68,14 +47,6 @@ export function isKimiFile(file: AuthFileItem): boolean {
 
 export function isXaiFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'xai';
-}
-
-export function isOllamaFile(file: AuthFileItem): boolean {
-  return resolveCanonicalProvider(file) === 'ollama';
-}
-
-export function isDeepSeekFile(file: AuthFileItem): boolean {
-  return resolveCanonicalProvider(file) === 'deepseek';
 }
 
 export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {

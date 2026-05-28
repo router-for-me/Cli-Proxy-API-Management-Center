@@ -1,0 +1,76 @@
+name: Deployment / Configuration Help
+description: Docker, Usage Service, networking, reverse proxy, and Windows deployment questions
+title: "[Deploy]: "
+labels: ["deployment", "needs-triage"]
+
+body:
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Runtime Environment
+      options:
+        - Linux Docker
+        - Windows Docker
+        - Native Windows
+        - macOS
+        - Hugging Face / Render / ClawCloud / other hosting platform
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deploy-mode
+    attributes:
+      label: Deployment Mode
+      options:
+        - CPA panel repository URL only
+        - Full Docker setup
+        - CPA control panel + external Usage Service
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: docker-compose
+    attributes:
+      label: Docker Compose / Startup Command
+      description: Paste the sanitized command or configuration.
+      render: yaml
+    validations:
+      required: false
+
+  - type: input
+    id: cpa-url
+    attributes:
+      label: CPA URL
+      placeholder: http://127.0.0.1:xxxx
+    validations:
+      required: true
+
+  - type: input
+    id: usage-url
+    attributes:
+      label: Usage Service URL
+      placeholder: http://127.0.0.1:18317
+    validations:
+      required: false
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error Message
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: Troubleshooting Already Tried
+      placeholder: |
+        For example:
+        - Confirmed that the containers are in the same network
+        - Confirmed port mappings
+        - Ran curl /status
+    validations:
+      required: false

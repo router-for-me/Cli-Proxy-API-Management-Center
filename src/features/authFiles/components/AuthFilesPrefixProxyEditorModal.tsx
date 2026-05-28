@@ -3,6 +3,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import type {
   PrefixProxyEditorField,
   PrefixProxyEditorFieldValue,
@@ -141,6 +142,18 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                     disabled={disableControls || editor.saving || !editor.json}
                     onChange={(e) => onChange('priority', e.target.value)}
                   />
+                  {editor.providerKey === 'codex' && (
+                    <div className="form-group">
+                      <label>{t('ai_providers.codex_websockets_label')}</label>
+                      <ToggleSwitch
+                        checked={Boolean(editor.websockets)}
+                        onChange={(value) => onChange('websockets', value)}
+                        disabled={disableControls || editor.saving || !editor.json}
+                        ariaLabel={t('ai_providers.codex_websockets_label')}
+                      />
+                      <div className="hint">{t('ai_providers.codex_websockets_hint')}</div>
+                    </div>
+                  )}
                   <div className="form-group">
                     <label>{t('auth_files.headers_label')}</label>
                     <textarea

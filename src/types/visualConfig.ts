@@ -18,7 +18,10 @@ export type VisualConfigFieldPath =
   | 'streaming.bootstrapRetries'
   | 'streaming.nonstreamKeepaliveInterval';
 
-export type VisualConfigValidationErrorCode = 'port_range' | 'non_negative_integer';
+export type VisualConfigValidationErrorCode =
+  | 'port_range'
+  | 'non_negative_integer'
+  | 'retention_seconds_range';
 
 export type VisualConfigValidationErrors = Partial<
   Record<VisualConfigFieldPath, VisualConfigValidationErrorCode>
@@ -82,10 +85,10 @@ export type VisualConfigValues = {
   apiKeysText: string;
   debug: boolean;
   commercialMode: boolean;
+  usageStatisticsEnabled: boolean;
   loggingToFile: boolean;
   logsMaxTotalSizeMb: string;
   errorLogsMaxFiles: string;
-  usageStatisticsEnabled: boolean;
   redisUsageQueueRetentionSeconds: string;
   proxyUrl: string;
   forceModelPrefix: boolean;
@@ -143,10 +146,10 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   apiKeysText: '',
   debug: false,
   commercialMode: false,
+  usageStatisticsEnabled: false,
   loggingToFile: false,
   logsMaxTotalSizeMb: '',
   errorLogsMaxFiles: '',
-  usageStatisticsEnabled: false,
   redisUsageQueueRetentionSeconds: '',
   proxyUrl: '',
   forceModelPrefix: false,

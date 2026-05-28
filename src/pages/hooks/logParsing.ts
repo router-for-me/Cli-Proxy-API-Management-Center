@@ -1,10 +1,4 @@
-import {
-  HTTP_METHODS,
-  type HttpMethod,
-  type LogLevel,
-  type ParsedLogLine,
-  type ParsedLogTiming,
-} from './logTypes';
+import { HTTP_METHODS, type HttpMethod, type LogLevel, type ParsedLogLine } from './logTypes';
 
 const HTTP_METHOD_REGEX = new RegExp(`\\b(${HTTP_METHODS.join('|')})\\b`);
 
@@ -13,11 +7,6 @@ const LOG_LEVEL_REGEX = /^\[?(trace|debug|info|warn|warning|error|fatal)\s*\]?(?
 const LOG_SOURCE_REGEX = /^\[([^\]]+)\]/;
 const LOG_LATENCY_REGEX =
   /\b(?:\d+(?:\.\d+)?\s*(?:µs|us|ms|s|m))(?:\s*\d+(?:\.\d+)?\s*(?:µs|us|ms|s|m))*\b/i;
-const LOG_DURATION_PART_REGEX = /(\d+(?:\.\d+)?)\s*(µs|us|ms|s|m)\b/gi;
-const LOG_TIMING_REGEX =
-  /\b([a-z][a-z0-9_-]*)\b\s*(?:=|:|：)?\s*((?:\d+(?:\.\d+)?\s*(?:µs|us|ms|s|m))(?:\s*\d+(?:\.\d+)?\s*(?:µs|us|ms|s|m))*)/gi;
-const LOG_CHINESE_TIMING_REGEX =
-  /([\p{Script=Han}]{1,8})\s*(?:=|:|：)?\s*((?:\d+(?:\.\d+)?\s*(?:µs|us|ms|s|m))(?:\s*\d+(?:\.\d+)?\s*(?:µs|us|ms|s|m))*)/giu;
 const LOG_IPV4_REGEX = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
 const LOG_IPV6_REGEX = /\b(?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}\b/i;
 const LOG_REQUEST_ID_REGEX = /^([a-f0-9]{8}|--------)$/i;
@@ -67,57 +56,6 @@ const normalizeTimestampToSeconds = (value: string): string => {
   const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})/);
   if (!match) return trimmed;
   return `${match[1]} ${match[2]}`;
-};
-
-const normalizeTimingLabel = (value: string): string => value.trim().replace(/[：:=\s]+$/g, '');
-
-export const parseDurationToMs = (value: string): number | undefined => {
-  const matches = Array.from(value.matchAll(LOG_DURATION_PART_REGEX));
-  if (matches.length === 0) return undefined;
-
-  const total = matches.reduce((sum, match) => {
-    const amount = Number.parseFloat(match[1]);
-    const unit = match[2].toLowerCase();
-    if (!Number.isFinite(amount)) return sum;
-    if (unit === 'µs' || unit === 'us') return sum + amount / 1000;
-    if (unit === 'ms') return sum + amount;
-    if (unit === 's') return sum + amount * 1000;
-    if (unit === 'm') return sum + amount * 60 * 1000;
-    return sum;
-  }, 0);
-
-  return Number.isFinite(total) ? total : undefined;
-};
-
-const createTiming = (label: string, value: string): ParsedLogTiming | undefined => {
-  const milliseconds = parseDurationToMs(value);
-  if (milliseconds === undefined) return undefined;
-  return {
-    label: normalizeTimingLabel(label),
-    value: value.replace(/\s+/g, ''),
-    milliseconds,
-  };
-};
-
-const dedupeTimings = (timings: ParsedLogTiming[]): ParsedLogTiming[] => {
-  const seen = new Set<string>();
-  return timings.filter((timing) => {
-    const key = `${timing.label}:${timing.value}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-};
-
-const extractTimings = (text: string): ParsedLogTiming[] => {
-  const englishTimings = Array.from(text.matchAll(LOG_TIMING_REGEX))
-    .map((match) => createTiming(match[1], match[2]))
-    .filter((timing): timing is ParsedLogTiming => Boolean(timing));
-  const chineseTimings = Array.from(text.matchAll(LOG_CHINESE_TIMING_REGEX))
-    .map((match) => createTiming(match[1], match[2]))
-    .filter((timing): timing is ParsedLogTiming => Boolean(timing));
-
-  return dedupeTimings([...englishTimings, ...chineseTimings]);
 };
 
 const extractLatency = (text: string): string | undefined => {
@@ -200,7 +138,6 @@ export const parseLogLine = (raw: string): ParsedLogLine => {
   let method: HttpMethod | undefined;
   let path: string | undefined;
   let message = remaining;
-  const timingCandidates: ParsedLogTiming[] = extractTimings(raw);
 
   if (remaining.includes('|')) {
     const segments = remaining
@@ -258,8 +195,6 @@ export const parseLogLine = (raw: string): ParsedLogLine => {
       const extracted = extractLatency(segments[latencyIndex]);
       if (extracted) {
         latency = extracted;
-        const timing = createTiming('latency', extracted);
-        if (timing) timingCandidates.unshift(timing);
         consumed.add(latencyIndex);
       }
     }
@@ -301,11 +236,7 @@ export const parseLogLine = (raw: string): ParsedLogLine => {
     statusCode = detectHttpStatusCode(remaining);
 
     const extracted = extractLatency(remaining);
-    if (extracted) {
-      latency = extracted;
-      const timing = createTiming('latency', extracted);
-      if (timing) timingCandidates.unshift(timing);
-    }
+    if (extracted) latency = extracted;
 
     ip = extractIp(remaining);
 
@@ -327,12 +258,6 @@ export const parseLogLine = (raw: string): ParsedLogLine => {
     }
   }
 
-  if (!latency && timingCandidates.length > 0) {
-    latency = timingCandidates[0].value;
-  }
-
-  const timings = dedupeTimings(timingCandidates);
-
   return {
     raw,
     timestamp,
@@ -341,7 +266,6 @@ export const parseLogLine = (raw: string): ParsedLogLine => {
     requestId,
     statusCode,
     latency,
-    timings,
     ip,
     method,
     path,

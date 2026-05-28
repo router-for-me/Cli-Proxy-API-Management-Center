@@ -4,22 +4,17 @@ import styles from './ConfigSection.module.scss';
 interface ConfigSectionProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   title: ReactNode;
   description?: ReactNode;
-  indexLabel?: ReactNode;
   icon?: ReactNode;
 }
 
 export const ConfigSection = forwardRef<HTMLElement, PropsWithChildren<ConfigSectionProps>>(
-  function ConfigSection(
-    { title, description, indexLabel, icon, className, children, ...rest },
-    ref
-  ) {
+  function ConfigSection({ title, description, icon, className, children, ...rest }, ref) {
     const sectionClassName = [styles.section, className].filter(Boolean).join(' ');
 
     return (
       <section ref={ref} className={sectionClassName} {...rest}>
         <header className={styles.header}>
           <div className={styles.titleRow}>
-            {indexLabel ? <span className={styles.indexBadge}>{indexLabel}</span> : null}
             {icon ? <span className={styles.iconBadge}>{icon}</span> : null}
           </div>
           <div className={styles.headingGroup}>

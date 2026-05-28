@@ -80,6 +80,40 @@
   font-size: 14px;
 }
 
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(190px, 260px);
+  gap: $spacing-md;
+  align-items: end;
+  padding: $spacing-md;
+  border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  border-radius: $radius-lg;
+  background: color-mix(in srgb, var(--bg-secondary) 58%, transparent);
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.toolbarField {
+  min-width: 0;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+.sortField {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.toolbarLabel {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .pageSizeSelect {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
@@ -114,9 +148,7 @@
 .claudeGrid,
 .codexGrid,
 .geminiCliGrid,
-.kimiGrid,
-.ollamaGrid,
-.deepseekGrid {
+.kimiGrid {
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -130,9 +162,7 @@
 .claudeControls,
 .codexControls,
 .geminiCliControls,
-.kimiControls,
-.ollamaControls,
-.deepseekControls {
+.kimiControls {
   display: flex;
   gap: $spacing-md;
   flex-wrap: wrap;
@@ -144,9 +174,7 @@
 .claudeControl,
 .codexControl,
 .geminiCliControl,
-.kimiControl,
-.ollamaControl,
-.deepseekControl {
+.kimiControl {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -282,18 +310,6 @@
       rgba(220, 232, 255, 0));
 }
 
-.ollamaCard {
-  background-image: linear-gradient(180deg,
-      rgba(226, 232, 240, 0.2),
-      rgba(226, 232, 240, 0));
-}
-
-.deepseekCard {
-  background-image: linear-gradient(180deg,
-      rgba(222, 229, 255, 0.2),
-      rgba(222, 229, 255, 0));
-}
-
 .quotaSection {
   display: flex;
   flex-direction: column;
@@ -355,7 +371,7 @@
 }
 
 .quotaBarFillMedium {
-  background-color: var(--quota-medium-color, #e0aa14);
+  background-color: var(--quota-medium-color, #e6a23c);
 }
 
 .quotaBarFillLow {
@@ -466,13 +482,18 @@
       rgba(255, 255, 255, 0.72) 18%,
       rgba(255, 255, 255, 0) 42%
     ),
-    linear-gradient(135deg, #fff9e3 0%, #ffe07f 52%, #e0aa14 100%);
-  border: 1px solid rgba(217, 165, 22, 0.72);
+    linear-gradient(
+      135deg,
+      var(--color-warning-light-9) 0%,
+      var(--color-warning-light-5) 52%,
+      var(--warning-color) 100%
+    );
+  border: 1px solid var(--color-warning-light-5);
   box-shadow:
     0 1px 3px rgba(133, 92, 0, 0.16),
     0 0 0 1px rgba(255, 255, 255, 0.22) inset,
     0 0 16px rgba(255, 214, 98, 0.28);
-  color: #6b4b00;
+  color: var(--color-warning-dark-2);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
   text-transform: capitalize;
 

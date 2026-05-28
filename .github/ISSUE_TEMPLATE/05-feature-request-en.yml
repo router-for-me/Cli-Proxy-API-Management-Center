@@ -1,0 +1,62 @@
+name: Feature Request
+description: New features, improvements, and user experience suggestions
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the real use case instead of only saying "please support xxx".
+
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Use Case
+      description: In what situation do you need this feature?
+      placeholder: "Example: I have multiple CPA instances and want to view request statistics from all of them in one CPA-Manager."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Current Pain Point
+      description: How do you handle this today? What is inconvenient?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Expected Solution
+      description: How would you like CPA-Manager to support this?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - High: affects the main workflow
+        - Medium: clearly improves usability
+        - Low: nice to have
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional Context
+      description: Screenshots, references, related links, or examples.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing Issues and did not find a duplicate request.
+          required: true

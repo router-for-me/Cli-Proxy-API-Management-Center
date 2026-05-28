@@ -1,0 +1,117 @@
+name: Bug Report
+description: Empty monitoring data, incorrect statistics, inspection failures, deployment errors, and related issues
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please fill in the details below as completely as possible so we can determine whether the issue is caused by CPA, CPA-Manager, networking, Docker, or configuration.
+
+  - type: dropdown
+    id: deploy-mode
+    attributes:
+      label: Deployment Mode
+      description: How are you deploying CPA-Manager?
+      options:
+        - CPA panel repository URL only
+        - Full Docker setup
+        - CPA control panel + external Usage Service
+        - Windows / non-Docker
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: cpa-version
+    attributes:
+      label: CPA Version
+      placeholder: e.g. v6.10.8
+    validations:
+      required: true
+
+  - type: input
+    id: manager-version
+    attributes:
+      label: CPA-Manager Version
+      placeholder: e.g. v1.1.5 / latest / commit hash
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Description
+      description: What happened? What did you expect to happen?
+      placeholder: "Example: Request monitoring is empty, but CPA is forwarding requests normally."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction Steps
+      placeholder: |
+        1. Open the xxx page
+        2. Fill in xxx
+        3. Click xxx
+        4. See xxx error
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Key Configuration
+      description: Paste the relevant sanitized configuration, such as Usage Service URL, CPA URL, Docker Compose snippets, or related settings.
+      render: yaml
+      placeholder: |
+        usage-statistics-enabled: true
+        Usage Service URL: http://...
+        CPA URL: http://...
+    validations:
+      required: true
+
+  - type: textarea
+    id: status
+    attributes:
+      label: /status Response
+      description: If this is about statistics, request monitoring, or inspection, paste the Usage Service /status response.
+      render: json
+      placeholder: |
+        {
+          "collector": {
+            "upstream": "...",
+            "lastError": "..."
+          }
+        }
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste relevant CPA-Manager, Usage Service, Docker, or reverse proxy logs.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: You can drag and drop screenshots here.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing Issues and did not find a duplicate.
+          required: true
+        - label: I have removed sensitive information such as tokens, keys, and account details.
+          required: true

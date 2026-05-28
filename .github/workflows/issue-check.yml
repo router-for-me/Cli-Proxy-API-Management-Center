@@ -1,0 +1,108 @@
+name: Check issue template
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check issue body
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.issue.body || "";
+            const issue_number = context.payload.issue.number;
+            const label = "needs-template";
+
+            const requiredMarkers = [
+              "### 部署方式",
+              "### 使用场景",
+              "### 运行环境",
+              "### Deployment Mode",
+              "### Use Case",
+              "### Runtime Environment"
+            ];
+
+            const usesTemplate = requiredMarkers.some((marker) => body.includes(marker));
+
+            if (usesTemplate) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number,
+                  name: label
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+              }
+              return;
+            }
+
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label
+              });
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label,
+                color: "d73a4a",
+                description: "Issue did not use a required template"
+              });
+            }
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              labels: [label]
+            });
+
+            const commentMarker = "<!-- cpa-manager-template-check -->";
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              per_page: 100
+            });
+
+            const alreadyCommented = comments.some((comment) => {
+              return comment.body && comment.body.includes(commentMarker);
+            });
+
+            if (alreadyCommented) {
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              body: [
+                commentMarker,
+                "这个 Issue 看起来没有使用模板，信息不足，暂时无法排查。",
+                "This issue does not appear to use a required template, so it does not contain enough information for triage.",
+                "",
+                "请重新创建 Issue，并选择对应模板：Bug 反馈、功能需求或部署 / 配置求助。",
+                "Please recreate the issue and choose one of the templates: Bug Report, Feature Request, or Deployment / Configuration Help.",
+                "",
+                "如果是请求监控为空、Usage Service、Docker 网络相关问题，请务必提供版本、部署方式、关键配置和 `/status` 返回内容。",
+                "For empty request monitoring, Usage Service, or Docker networking issues, include versions, deployment mode, key configuration, and the `/status` response."
+              ].join("\n")
+            });

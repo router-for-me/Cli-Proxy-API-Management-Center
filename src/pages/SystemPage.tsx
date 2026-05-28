@@ -92,6 +92,7 @@ export function SystemPage() {
   const [requestLogDraft, setRequestLogDraft] = useState(false);
   const [requestLogTouched, setRequestLogTouched] = useState(false);
   const [requestLogSaving, setRequestLogSaving] = useState(false);
+  const [checkingAppVersion, setCheckingAppVersion] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
 
   const apiKeysCache = useRef<string[]>([]);
@@ -282,6 +283,41 @@ export function SystemPage() {
     }
   };
 
+  const handleAppVersionCheck = useCallback(async () => {
+    setCheckingAppVersion(true);
+    try {
+      const data = await versionApi.checkManagerLatest();
+      const latestRaw = data?.tag_name ?? data?.name ?? data?.latest_version ?? data?.latest ?? '';
+      const latest = typeof latestRaw === 'string' ? latestRaw : String(latestRaw ?? '');
+      const comparison = compareVersions(latest, __APP_VERSION__);
+
+      if (!latest) {
+        showNotification(t('system_info.manager_version_check_error'), 'error');
+        return;
+      }
+
+      if (comparison === null) {
+        showNotification(t('system_info.manager_version_current_missing'), 'warning');
+        return;
+      }
+
+      if (comparison > 0) {
+        showNotification(
+          t('system_info.manager_version_update_available', { version: latest }),
+          'warning'
+        );
+      } else {
+        showNotification(t('system_info.manager_version_is_latest'), 'success');
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+      const suffix = message ? `: ${message}` : '';
+      showNotification(`${t('system_info.manager_version_check_error')}${suffix}`, 'error');
+    } finally {
+      setCheckingAppVersion(false);
+    }
+  }, [showNotification, t]);
+
   const handleVersionCheck = useCallback(async () => {
     setCheckingVersion(true);
     try {
@@ -351,16 +387,39 @@ export function SystemPage() {
           </div>
 
           <div className={styles.aboutInfoGrid}>
-            <button
-              type="button"
+            <div
               className={`${styles.infoTile} ${styles.tapTile}`}
+              role="button"
+              tabIndex={0}
               onClick={handleInfoVersionTap}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handleInfoVersionTap();
+                }
+              }}
             >
               <div className={styles.tileHeader}>
                 <div className={styles.tileLabel}>{t('footer.version')}</div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={styles.tileAction}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void handleAppVersionCheck();
+                  }}
+                  onKeyDown={(event) => event.stopPropagation()}
+                  loading={checkingAppVersion}
+                  title={t('system_info.version_check_button')}
+                  aria-label={t('system_info.version_check_button')}
+                >
+                  {t('system_info.version_check_button')}
+                </Button>
               </div>
               <div className={styles.tileValue}>{appVersion}</div>
-            </button>
+            </div>
 
             <div className={styles.infoTile}>
               <div className={styles.tileHeader}>
@@ -416,7 +475,7 @@ export function SystemPage() {
             </a>
 
             <a
-              href="https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
+              href="https://github.com/seakee/CPA-Manager"
               target="_blank"
               rel="noopener noreferrer"
               className={styles.linkCard}

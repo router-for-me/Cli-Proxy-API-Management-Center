@@ -1,5 +1,6 @@
 @use 'sass:color';
 @use '../styles/variables.scss' as *;
+@use '../styles/mixins.scss' as *;
 
 // ─── Container ──────────────────────────────────────────
 
@@ -7,9 +8,13 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
-  max-width: 1000px;
+  max-width: min(1280px, 100%);
   margin: 0 auto;
   position: relative;
+
+  @include wide-desktop {
+    max-width: min(1440px, 100%);
+  }
 }
 
 // ─── Decorative Background Orbs ─────────────────────────
@@ -285,6 +290,10 @@
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: auto auto;
   gap: $spacing-md;
+
+  @include narrow-laptop {
+    gap: $spacing-sm;
+  }
 
   @media (max-width: 900px) {
     grid-template-columns: repeat(2, 1fr);

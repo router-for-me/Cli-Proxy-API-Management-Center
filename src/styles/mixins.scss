@@ -23,18 +23,21 @@
   }
 }
 
+// 中等及以下桌面（≤1280px）：MacBook Pro 13 / 1280 桌面窗口
 @mixin compact-desktop {
   @media (max-width: 1280px) {
     @content;
   }
 }
 
+// 窄屏笔记本（≤1440px）：1366×768、1440×900、MacBook Pro 14 默认缩放
 @mixin narrow-laptop {
   @media (max-width: 1440px) {
     @content;
   }
 }
 
+// 宽屏桌面（≥1681px）：2K / 4K / MacBook Pro 16 默认缩放（1728）
 @mixin wide-desktop {
   @media (min-width: 1681px) {
     @content;

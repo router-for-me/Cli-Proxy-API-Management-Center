@@ -2,12 +2,14 @@
 @use '../styles/variables' as *;
 
 .container {
-  width: min(100%, 1480px);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: clamp(18px, 2.4vw, 28px);
-  margin: 0 auto;
+  gap: $spacing-lg;
+  box-sizing: border-box;
   overflow-y: auto;
   padding-bottom: calc(
     var(--config-action-bar-height, 0px) + 16px + env(safe-area-inset-bottom) + #{$spacing-md}
@@ -16,72 +18,139 @@
 
 .pageHeader {
   display: flex;
-  align-items: flex-start;
-}
-
-.pageHeaderCopy {
-  display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-  width: min(100%, 360px);
+  gap: $spacing-sm;
 }
 
 .pageTitle {
+  margin: 0;
+  color: var(--text-primary);
   font-size: 28px;
   font-weight: 700;
-  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.description {
   margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pageMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+
+  @include mobile {
+    align-items: stretch;
+  }
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+
+  @include mobile {
+    width: 100%;
+  }
 }
 
 .tabBar {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @include mobile {
+    width: 100%;
+  }
 }
 
 .tabItem {
   @include button-reset;
-  min-height: 38px;
-  padding: 0 12px;
-  border-radius: 6px;
+  padding: 10px 16px;
+  border-radius: 999px;
   border: 1px solid transparent;
   color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.25;
+  font-size: 14px;
+  font-weight: 700;
   white-space: nowrap;
   transition:
     color 0.15s ease,
     background-color 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    transform 0.15s ease;
 
   &:hover:not(:disabled) {
     color: var(--text-primary);
-    background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+    background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+    border-color: color-mix(in srgb, var(--border-color) 88%, transparent);
   }
 
   &:disabled {
-    opacity: 0.58;
+    opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
+  }
+
+  @include mobile {
+    flex: 1;
+    text-align: center;
   }
 }
 
 .tabActive {
-  color: var(--bg-primary);
-  background: var(--text-primary);
-  border-color: var(--text-primary);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border-color: color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
+  box-shadow: 0 16px 32px -28px rgba(0, 0, 0, 0.3);
 }
 
 .workspaceShell {
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+
+  @include mobile {
+    padding: 0;
+    border-radius: 0;
+  }
 }
 
 .content {
@@ -89,31 +158,258 @@
   flex-direction: column;
   gap: $spacing-lg;
   min-height: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.managerConfigPanel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+}
+
+.managerConfigHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+
+  h2 {
+    margin: 0 0 6px;
+    color: var(--text-primary);
+    font-size: 18px;
+    line-height: 1.3;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+.managerSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  min-width: 0;
+  padding: $spacing-md;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+.managerSectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  min-width: 0;
+
+  > div {
+    min-width: 0;
+  }
+
+  h3 {
+    margin: 0 0 4px;
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.managerRuntimeBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 30px;
+  max-width: 100%;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 26%, var(--border-color));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-color) 9%, var(--bg-primary));
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.managerReadonlyGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $spacing-sm;
+
+  > div {
+    min-width: 0;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+    border-radius: 8px;
+    background: var(--bg-primary);
+  }
+
+  span,
+  strong {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  span {
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+}
+
+.managerDependencyNote {
+  padding: 10px 12px;
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.managerQueueNote {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warning-border) 70%, var(--border-color));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--warning-bg) 74%, var(--bg-primary));
+  color: var(--warning-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.managerConfigGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-md;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.managerField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.managerFieldLabel {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.managerSelectTrigger {
+  height: 46px !important;
+  padding: 10px 12px !important;
+  background-color: var(--bg-secondary) !important;
+  box-shadow: none !important;
+  font-size: inherit !important;
+  font-weight: 400 !important;
+}
+
+.managerMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $spacing-sm;
+
+  @include narrow-laptop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  > div {
+    min-width: 0;
+    padding: $spacing-sm $spacing-md;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+  }
+
+  span,
+  strong {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  span {
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
 }
 
 .sourceWorkspace {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   min-height: 0;
 }
 
 .sourceToolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  display: flex;
   align-items: center;
-  padding: 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--bg-primary) 76%, transparent);
+  gap: $spacing-sm;
+  padding-bottom: 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
 
   @include mobile {
-    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
 .searchInputWrapper {
+  flex: 1;
   min-width: 0;
   position: relative;
   display: flex;
@@ -126,28 +422,28 @@
 }
 
 .searchInput {
-  min-height: 38px !important;
-  border-radius: 6px !important;
-  padding-right: 128px !important;
-  background: var(--bg-secondary) !important;
+  flex: 1;
+  border-radius: 16px !important;
+  padding-right: 132px !important;
 }
 
 .searchRight {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .searchCount {
   display: inline-flex;
   align-items: center;
-  min-height: 26px;
-  padding: 0 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
   color: var(--text-secondary);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 700;
   pointer-events: none;
   white-space: nowrap;
 }
@@ -157,12 +453,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  border: 1px solid var(--text-primary);
-  background: var(--text-primary);
-  color: var(--bg-primary);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  color: #fff;
   transition:
     background-color $transition-fast,
     border-color $transition-fast,
@@ -174,7 +470,7 @@
   }
 
   &:disabled {
-    opacity: 0.45;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 }
@@ -185,11 +481,11 @@
   flex-shrink: 0;
 
   button {
-    min-width: 38px;
-    width: 38px;
-    height: 38px;
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
     padding: 0 !important;
-    border-radius: 6px;
+    border-radius: 999px;
   }
 
   @include mobile {
@@ -205,23 +501,21 @@
 .editorWrapper {
   width: 100%;
   flex: 0 0 auto;
-  height: clamp(500px, 70vh, 1040px);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  height: clamp(420px, 64vh, 980px);
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  border-radius: 28px;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: color-mix(in srgb, var(--bg-primary) 90%, transparent);
 
   @supports (height: 100dvh) {
-    height: clamp(500px, 70dvh, 1040px);
+    height: clamp(420px, 64dvh, 980px);
   }
 
   :global {
     .cm-editor {
       height: 100%;
-      font-size: 13px;
-      font-family:
-        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-        monospace;
+      font-size: 14px;
+      font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
       background: transparent;
     }
 
@@ -233,8 +527,8 @@
     }
 
     .cm-gutters {
-      border-right: 1px solid var(--border-color);
-      background: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
+      border-right: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+      background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
     }
 
     .cm-lineNumbers .cm-gutterElement {
@@ -243,22 +537,35 @@
       color: var(--text-muted);
     }
 
-    .cm-activeLine,
+    .cm-activeLine {
+      background: var(--bg-hover);
+    }
+
     .cm-activeLineGutter {
-      background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+      background: var(--bg-hover);
     }
 
     .cm-selectionMatch {
-      background: rgba(224, 170, 20, 0.24);
+      background: rgba(255, 193, 7, 0.3);
     }
 
     .cm-searchMatch {
-      background: rgba(224, 170, 20, 0.32);
-      outline: 1px solid rgba(224, 170, 20, 0.48);
+      background: rgba(255, 193, 7, 0.4);
+      outline: 1px solid rgba(255, 193, 7, 0.6);
     }
 
     .cm-searchMatch-selected {
-      background: rgba(198, 87, 70, 0.32);
+      background: rgba(255, 152, 0, 0.5);
+    }
+
+    [data-theme='dark'] & {
+      .cm-gutters {
+        background: var(--bg-tertiary);
+      }
+
+      .cm-selectionMatch {
+        background: rgba(255, 193, 7, 0.2);
+      }
     }
   }
 }
@@ -271,8 +578,8 @@
 
 .saved {
   color: var(--success-color);
-  background: color-mix(in srgb, var(--success-color) 10%, transparent);
-  border-color: color-mix(in srgb, var(--success-color) 34%, var(--border-color));
+  background: color-mix(in srgb, var(--success-color) 12%, var(--bg-primary));
+  border-color: color-mix(in srgb, var(--success-color) 28%, var(--border-color));
 }
 
 .error {
@@ -295,14 +602,17 @@
 .floatingActionList {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px;
+  gap: 8px;
+  padding: 8px 10px;
+  --glass-blur: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
   max-width: inherit;
   overflow-x: auto;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
-  box-shadow: var(--shadow-lg);
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
@@ -314,16 +624,16 @@
   display: inline-flex;
   align-items: center;
   min-width: 0;
-  min-height: 34px;
+  min-height: 28px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: 999px;
   border: 1px solid transparent;
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
   color: var(--text-primary);
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.2;
   text-align: center;
-  max-width: min(300px, 46vw);
+  max-width: min(280px, 46vw);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -341,24 +651,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 6px;
-  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
   cursor: pointer;
+  color: var(--text-primary);
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease,
-    opacity 0.15s ease;
+    background-color 0.2s ease,
+    transform 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: var(--text-primary);
-    color: var(--bg-primary);
+    background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    transform: scale(1.08);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.95);
   }
 
   &:disabled {
-    opacity: 0.45;
+    opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
   }
 }
 
@@ -370,7 +684,7 @@
   height: 7px;
   border-radius: 999px;
   background: var(--warning-color);
-  box-shadow: 0 0 0 2px var(--bg-primary);
+  box-shadow: 0 0 0 2px rgba($warning-color, 0.25);
 }
 
 @media (max-width: 1200px) {
@@ -379,8 +693,21 @@
     max-width: calc(100vw - 16px);
   }
 
+  .floatingActionList {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
   .floatingStatus {
     max-width: min(180px, 40vw);
+    font-size: 10px;
+    padding: 0 8px;
+  }
+
+  .floatingActionButton {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
   }
 }
 
@@ -388,8 +715,10 @@
   .floatingStatus {
     max-width: min(132px, 38vw);
   }
+}
 
-  .searchInput {
-    padding-right: 108px !important;
+@media (max-width: 380px) {
+  .workspaceShell {
+    padding: 0;
   }
 }

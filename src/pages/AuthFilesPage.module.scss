@@ -46,6 +46,32 @@
   }
 }
 
+.authFilesShell {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.authFilesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.authFilesTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .titleWrapper {
   display: flex;
   align-items: center;
@@ -86,36 +112,46 @@
   margin-bottom: $spacing-lg;
 }
 
-.filterRail {
+.filterPanel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+  gap: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-secondary);
+  background: transparent;
+  box-shadow: none;
 
   @include mobile {
-    padding: 10px;
+    gap: 12px;
+    padding: 12px;
+  }
+}
+
+.filterPanelTags {
+  min-width: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 56%, transparent);
+
+  @include mobile {
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
   }
 }
 
 .filterAllIconWrap {
   position: relative;
-  border-color: color-mix(in srgb, var(--primary-color) 20%, var(--border-color));
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--bg-secondary) 94%, var(--primary-color) 8%),
-    color-mix(in srgb, var(--bg-primary) 92%, var(--primary-color) 5%)
-  );
-  box-shadow: 0 10px 22px -18px color-mix(in srgb, var(--primary-color) 50%, transparent);
+  border-color: var(--color-primary-light-7);
+  background: var(--color-primary-light-9);
+  box-shadow: none;
 }
 
 .filterAllIcon {
   position: relative;
   z-index: 1;
   display: block;
-  color: color-mix(in srgb, var(--primary-color) 70%, var(--text-primary));
+  color: var(--primary-color);
 }
 
 .filterContent {
@@ -130,6 +166,13 @@
   flex-direction: row;
   flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
+
+  @include mobile {
+    width: max-content;
+    min-width: 100%;
+    flex-wrap: nowrap;
+  }
 }
 
 .filterTag {
@@ -141,8 +184,8 @@
   font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-primary);
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
@@ -153,18 +196,20 @@
 
   &:hover {
     border-color: color-mix(in srgb, var(--filter-color) 40%, var(--border-color));
-    background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
-    color: var(--text-primary);
+    background: color-mix(in srgb, var(--filter-color) 10%, var(--bg-primary));
+    color: color-mix(in srgb, var(--filter-color) 56%, var(--text-primary));
   }
 }
 
 .filterTagActive {
-  border-color: color-mix(in srgb, var(--filter-color) 50%, var(--border-color));
-  background: color-mix(in srgb, var(--filter-surface) 22%, var(--bg-secondary));
-  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--filter-color) 58%, var(--border-color));
+  background: color-mix(in srgb, var(--filter-surface) 36%, var(--bg-secondary));
+  color: color-mix(in srgb, var(--filter-color) 64%, var(--text-primary));
+  box-shadow: 0 8px 20px -18px color-mix(in srgb, var(--filter-color) 70%, transparent);
 
   .filterTagIconWrap {
-    border-color: color-mix(in srgb, var(--filter-color) 40%, transparent);
+    border-color: color-mix(in srgb, var(--filter-color) 48%, transparent);
+    background: color-mix(in srgb, var(--filter-color) 13%, var(--bg-primary));
   }
 }
 
@@ -225,37 +270,20 @@
 }
 
 .filterTagActive .filterTagCount {
-  background: color-mix(in srgb, var(--filter-color) 22%, transparent);
+  background: color-mix(in srgb, var(--filter-color) 18%, transparent);
   color: var(--filter-color);
 }
 
 .filterControlsPanel {
-  position: relative;
-  overflow: hidden;
-  padding: 16px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--primary-color) 8%, transparent),
-      transparent 46%
-    ),
-    color-mix(in srgb, var(--bg-secondary) 56%, transparent);
-
-  @include mobile {
-    padding: 12px;
-  }
+  min-width: 0;
 }
 
 .filterControls {
   display: grid;
-  grid-template-columns:
-    minmax(260px, 1fr)
-    minmax(108px, 0.35fr)
-    minmax(148px, 0.45fr);
+  grid-template-columns: minmax(0, 1fr) minmax(96px, 132px) minmax(160px, 220px);
   gap: 12px;
   align-items: flex-end;
+  min-width: 0;
 
   // 修复 Input 组件在 filterItem 中的嵌套样式
   :global(.form-group) {
@@ -263,21 +291,17 @@
   }
 
   :global(.input) {
-    height: 42px;
+    height: 40px;
     box-sizing: border-box;
   }
 
   @include tablet {
-    grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(140px, 0.8fr));
+    grid-template-columns: minmax(220px, 1fr) minmax(120px, 0.45fr) minmax(160px, 0.55fr);
   }
 
   @include mobile {
     grid-template-columns: 1fr;
   }
-}
-
-.filterSearchItem {
-  min-width: 0;
 }
 
 .filterItem {
@@ -290,28 +314,43 @@
     font-size: 11px;
     color: var(--text-tertiary);
     font-weight: 700;
-    letter-spacing: 0;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 }
 
 .filterToggleItem {
-  min-width: 0;
+  display: grid;
   grid-column: 1 / -1;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  min-width: 0;
 
-  @include tablet {
-    grid-column: 1 / -1;
+  label {
+    align-self: center;
+  }
+
+  @include mobile {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
 .filterToggleGroup {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: inline-flex;
+  flex-wrap: wrap;
   gap: 8px;
-  min-height: 42px;
+  min-height: 40px;
+  width: fit-content;
+  max-width: 100%;
 
   @include mobile {
+    display: grid;
     grid-template-columns: 1fr;
+    width: 100%;
   }
 }
 
@@ -319,15 +358,23 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  min-height: 42px;
+  min-height: 40px;
   padding: 0 10px;
   border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 56%, transparent);
+  border: none;
+  background: transparent;
 
-  > label {
+  :global(label) {
     width: 100%;
     min-width: 0;
+  }
+
+  :global(label > span:last-child) {
+    min-width: 0;
+  }
+
+  @include mobile {
+    padding-inline: 10px;
   }
 }
 
@@ -339,22 +386,13 @@
 }
 
 .filterToggleLabel {
-  display: inline-flex;
-  align-items: center;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.searchInput {
-  padding-right: 40px;
-}
-
-.searchIcon {
   display: block;
-  color: var(--text-tertiary);
-  pointer-events: none;
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  @include text-ellipsis;
 }
 
 .pageSizeSelect {
@@ -366,7 +404,7 @@
   color: var(--text-primary);
   font-size: 14px;
   cursor: text;
-  height: 42px;
+  height: 40px;
   box-sizing: border-box;
 
   &:focus {
@@ -396,6 +434,10 @@
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 
+  @include narrow-laptop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -410,6 +452,10 @@
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 
+  @include narrow-laptop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -423,6 +469,10 @@
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @include narrow-laptop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   @include tablet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -517,14 +567,6 @@
   background-image: linear-gradient(180deg, rgba(220, 232, 255, 0.08), transparent);
 }
 
-.ollamaCard {
-  background-image: linear-gradient(180deg, rgba(226, 232, 240, 0.1), transparent);
-}
-
-.deepseekCard {
-  background-image: linear-gradient(180deg, rgba(222, 229, 255, 0.1), transparent);
-}
-
 .quotaSection {
   display: flex;
   flex-direction: column;
@@ -586,7 +628,7 @@
 }
 
 .quotaBarFillMedium {
-  background-color: var(--quota-medium-color, #e0aa14);
+  background-color: var(--quota-medium-color, #e6a23c);
 }
 
 .quotaBarFillLow {
@@ -687,23 +729,23 @@
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 6px;
-  background: rgba(217, 165, 22, 0.15);
-  border: 1px solid rgba(217, 165, 22, 0.3);
-  color: #e0aa14;
+  background: var(--color-warning-light-9);
+  border: 1px solid var(--color-warning-light-5);
+  color: var(--color-warning-dark-2);
   text-transform: capitalize;
 }
 
 :global([data-theme='dark']) .premiumPlanValue {
-  background: rgba(226, 180, 50, 0.12);
-  border-color: rgba(226, 180, 50, 0.28);
-  color: #ffd862;
+  background: var(--color-warning-light-9);
+  border-color: var(--color-warning-light-5);
+  color: var(--color-warning-dark-2);
 }
 
 // 单个认证文件卡片
 .fileCard {
   position: relative;
   overflow: hidden;
-  background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+  background: var(--bg-primary);
   --glass-blur: 8px;
   backdrop-filter: var(--glass-backdrop-filter);
   -webkit-backdrop-filter: var(--glass-backdrop-filter);
@@ -721,16 +763,19 @@
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.15);
-    border-color: color-mix(in srgb, var(--primary-color) 28%, var(--border-color));
+    border-color: var(--color-primary-light-7);
   }
 }
 
 .fileCardSelected {
-  border-color: color-mix(in srgb, var(--primary-color) 60%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-color) 30%, transparent);
+  background: var(--color-primary-light-9);
+  border-color: var(--color-primary-light-5);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--primary-color) 30%, transparent),
+    0 12px 28px -24px color-mix(in srgb, var(--primary-color) 74%, transparent);
 
   &:hover {
-    border-color: color-mix(in srgb, var(--primary-color) 60%, transparent);
+    border-color: var(--primary-color);
   }
 }
 
@@ -738,7 +783,6 @@
   background-color: color-mix(in srgb, var(--bg-primary) 78%, var(--bg-secondary));
   border-color: color-mix(in srgb, var(--border-color) 62%, transparent);
 
-  .providerAvatar,
   .cardHeaderContent,
   .cardMeta,
   .healthStatusMessage,
@@ -772,21 +816,6 @@
 
   .cardSelection {
     margin-top: 6px;
-  }
-
-  .providerAvatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-  }
-
-  .providerAvatarImage {
-    width: 16px;
-    height: 16px;
-  }
-
-  .providerAvatarFallback {
-    font-size: 14px;
   }
 
   .cardHeaderContent {
@@ -832,6 +861,14 @@
     flex: 0 1 auto;
     min-width: 0;
     padding-inline: 8px;
+  }
+
+  .modelsActionButton:global(.btn.btn-sm) {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
   }
 
   .cardUtilityActions {
@@ -880,29 +917,6 @@
 .cardSelection {
   flex-shrink: 0;
   margin-top: 8px;
-}
-
-.providerAvatar {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-}
-
-.providerAvatarImage {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-}
-
-.providerAvatarFallback {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
 }
 
 .cardHeaderContent {
@@ -1489,35 +1503,28 @@
 }
 
 .modelsActionButton:global(.btn.btn-sm) {
-  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
-  border-color: color-mix(in srgb, var(--primary-color) 20%, var(--border-color));
-}
-
-.modelsActionButton:global(.btn.btn-sm):hover {
-  border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
-  background: color-mix(in srgb, var(--primary-color) 14%, var(--bg-secondary));
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 8px;
+  gap: 0;
 }
 
 .modelsActionButton:global(.btn.btn-sm) > span {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
+  justify-content: center;
+  line-height: 0;
 }
 
 .modelsActionIconWrap {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--primary-color) 16%, transparent);
-}
-
-.actionButtonLabel {
-  @include text-ellipsis;
+  line-height: 0;
 }
 
 .cardUtilityActions {
@@ -1526,7 +1533,7 @@
   gap: 3px;
   padding: 2px;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--bg-tertiary) 50%, transparent);
+  background: transparent;
 }
 
 .statusToggle {
@@ -1572,6 +1579,12 @@
     min-width: 0;
   }
 
+  .modelsActionButton:global(.btn.btn-sm) {
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+  }
+
   .statusToggle {
     width: 100%;
     justify-content: space-between;
@@ -1609,12 +1622,14 @@
   gap: $spacing-sm;
   padding: 10px 12px;
   border-radius: $radius-lg;
-  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
+  border: 1px solid var(--color-primary-light-7);
+  background: color-mix(in srgb, var(--bg-primary) 90%, transparent);
   --glass-blur: 12px;
   backdrop-filter: var(--glass-backdrop-filter);
   -webkit-backdrop-filter: var(--glass-backdrop-filter);
-  box-shadow: var(--shadow-lg);
+  box-shadow:
+    0 12px 30px -20px color-mix(in srgb, var(--primary-color) 70%, transparent),
+    var(--shadow-lg);
 }
 
 .batchActionLeft,
@@ -1658,7 +1673,7 @@
   font-size: 13px;
   color: var(--text-secondary);
   padding: $spacing-xs $spacing-md;
-  background-color: var(--bg-secondary);
+  background-color: var(--color-primary-light-9);
   border-radius: $radius-md;
 }
 
@@ -1742,8 +1757,8 @@
 
   &:hover {
     border-color: var(--primary-color);
-    color: var(--text-primary);
-    background-color: var(--bg-hover);
+    color: var(--primary-color);
+    background-color: var(--color-primary-light-9);
   }
 
   &:disabled {
@@ -1753,13 +1768,13 @@
 }
 
 .providerTagActive {
-  background-color: var(--primary-color);
+  background: var(--primary-color);
   border-color: var(--primary-color);
   color: #fff;
 
   &:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
     color: #fff;
   }
 }
@@ -1809,8 +1824,8 @@
   max-width: 100%;
   padding: 2px;
   border-radius: $radius-md;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: var(--color-primary-light-9);
+  border: 1px solid var(--color-primary-light-8);
 
   :global(.btn.btn-sm) {
     min-width: 0;

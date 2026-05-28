@@ -14,7 +14,7 @@ import { getStatusFromError } from '@/utils/quota';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
 import { useQuotaLoader } from './useQuotaLoader';
-import type { QuotaConfig } from './quotaConfigs';
+import type { QuotaConfig, QuotaSortMode } from './quotaConfigs';
 import { useGridColumns } from './useGridColumns';
 import { IconRefreshCw } from '@/components/ui/icons';
 import styles from '@/pages/QuotaPage.module.scss';
@@ -27,6 +27,17 @@ type ViewMode = 'paged' | 'all';
 
 const MAX_ITEMS_PER_PAGE = 25;
 const MAX_SHOW_ALL_THRESHOLD = 30;
+
+const stringifySearchValue = (value: unknown): string[] => {
+  if (value === undefined || value === null) return [];
+  if (Array.isArray(value)) return value.flatMap(stringifySearchValue);
+  if (typeof value === 'string') return value.trim() ? [value] : [];
+  if (typeof value === 'number' || typeof value === 'boolean') return [String(value)];
+  return [];
+};
+
+const compareFileName = (left: AuthFileItem, right: AuthFileItem) =>
+  left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' });
 
 interface QuotaPaginationState<T> {
   pageSize: number;
@@ -96,13 +107,17 @@ interface QuotaSectionProps<TState extends QuotaStatusState, TData> {
   files: AuthFileItem[];
   loading: boolean;
   disabled: boolean;
+  searchQuery?: string;
+  sortMode?: QuotaSortMode;
 }
 
 export function QuotaSection<TState extends QuotaStatusState, TData>({
   config,
   files,
   loading,
-  disabled
+  disabled,
+  searchQuery = '',
+  sortMode = 'default'
 }: QuotaSectionProps<TState, TData>) {
   const { t } = useTranslation();
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
@@ -120,7 +135,64 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     files,
     config
   ]);
-  const showAllAllowed = filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+
+  const { quota, loadQuota } = useQuotaLoader(config);
+
+  const displayFiles = useMemo(() => {
+    const matchesSearch = (file: AuthFileItem): boolean => {
+      if (!normalizedSearchQuery) return true;
+      const fileQuota = quota[file.name];
+      const searchValues = [
+        file.name,
+        file.type,
+        file.provider,
+        file.authIndex,
+        file['auth_index'],
+        file.status,
+        file.statusMessage,
+        fileQuota?.status,
+        fileQuota?.error,
+        fileQuota?.errorStatus,
+        ...(config.getSearchText?.(file, fileQuota, t) ?? [])
+      ];
+
+      return stringifySearchValue(searchValues).some((value) =>
+        value.toLowerCase().includes(normalizedSearchQuery)
+      );
+    };
+
+    const nextFiles = filteredFiles.filter(matchesSearch);
+    const sortedFiles = [...nextFiles];
+
+    if (sortMode === 'name-asc') {
+      sortedFiles.sort(compareFileName);
+      return sortedFiles;
+    }
+
+    if (sortMode === 'plan-asc' || sortMode === 'plan-desc') {
+      sortedFiles.sort((left, right) => {
+        const leftRank = config.getPlanSortRank?.(left, quota[left.name]);
+        const rightRank = config.getPlanSortRank?.(right, quota[right.name]);
+        const leftKnown = leftRank !== null && leftRank !== undefined;
+        const rightKnown = rightRank !== null && rightRank !== undefined;
+
+        if (leftKnown || rightKnown) {
+          if (!leftKnown) return 1;
+          if (!rightKnown) return -1;
+          const rankDiff =
+            sortMode === 'plan-desc' ? rightRank - leftRank : leftRank - rightRank;
+          if (rankDiff !== 0) return rankDiff;
+        }
+
+        return compareFileName(left, right);
+      });
+    }
+
+    return sortedFiles;
+  }, [config, filteredFiles, normalizedSearchQuery, quota, sortMode, t]);
+
+  const showAllAllowed = displayFiles.length <= MAX_SHOW_ALL_THRESHOLD;
   const effectiveViewMode: ViewMode = viewMode === 'all' && !showAllAllowed ? 'paged' : viewMode;
 
   const {
@@ -133,7 +205,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     goToNext,
     loading: sectionLoading,
     setLoading
-  } = useQuotaPagination(filteredFiles);
+  } = useQuotaPagination(displayFiles);
 
   useEffect(() => {
     if (showAllAllowed) return;
@@ -154,14 +226,12 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   // Update page size based on view mode and columns
   useEffect(() => {
     if (effectiveViewMode === 'all') {
-      setPageSize(Math.max(1, filteredFiles.length));
+      setPageSize(Math.max(1, displayFiles.length));
     } else {
       // Paged mode: 3 rows * columns, capped to avoid oversized pages.
       setPageSize(Math.min(columns * 3, MAX_ITEMS_PER_PAGE));
     }
-  }, [effectiveViewMode, columns, filteredFiles.length, setPageSize]);
-
-  const { quota, loadQuota } = useQuotaLoader(config);
+  }, [effectiveViewMode, columns, displayFiles.length, setPageSize]);
 
   const pendingQuotaRefreshRef = useRef(false);
   const prevFilesLoadingRef = useRef(loading);
@@ -181,10 +251,10 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
     pendingQuotaRefreshRef.current = false;
     const scope = effectiveViewMode === 'all' ? 'all' : 'page';
-    const targets = effectiveViewMode === 'all' ? filteredFiles : pageItems;
+    const targets = effectiveViewMode === 'all' ? displayFiles : pageItems;
     if (targets.length === 0) return;
     loadQuota(targets, scope, setLoading);
-  }, [loading, effectiveViewMode, filteredFiles, pageItems, loadQuota, setLoading]);
+  }, [loading, effectiveViewMode, displayFiles, pageItems, loadQuota, setLoading]);
 
   useEffect(() => {
     if (loading) return;
@@ -242,7 +312,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       <span>{t(`${config.i18nPrefix}.title`)}</span>
       {filteredFiles.length > 0 && (
         <span className={styles.countBadge}>
-          {filteredFiles.length}
+          {normalizedSearchQuery ? displayFiles.length : filteredFiles.length}
         </span>
       )}
     </div>
@@ -273,7 +343,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                 effectiveViewMode === 'all' ? styles.viewModeButtonActive : ''
               }`}
               onClick={() => {
-                if (filteredFiles.length > MAX_SHOW_ALL_THRESHOLD) {
+                if (displayFiles.length > MAX_SHOW_ALL_THRESHOLD) {
                   setShowTooManyWarning(true);
                 } else {
                   setViewMode('all');
@@ -304,6 +374,11 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
           title={t(`${config.i18nPrefix}.empty_title`)}
           description={t(`${config.i18nPrefix}.empty_desc`)}
         />
+      ) : displayFiles.length === 0 ? (
+        <EmptyState
+          title={t('quota_management.search_empty_title')}
+          description={t('quota_management.search_empty_desc')}
+        />
       ) : (
         <>
           <div ref={gridRef} className={config.gridClassName}>
@@ -323,7 +398,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
               />
             ))}
           </div>
-          {filteredFiles.length > pageSize && effectiveViewMode === 'paged' && (
+          {displayFiles.length > pageSize && effectiveViewMode === 'paged' && (
             <div className={styles.pagination}>
               <Button
                 variant="secondary"
@@ -337,7 +412,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                 {t('auth_files.pagination_info', {
                   current: currentPage,
                   total: totalPages,
-                  count: filteredFiles.length
+                  count: displayFiles.length
                 })}
               </div>
               <Button

@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: 使用交流 / 非结构化讨论
+    url: https://linux.do/t/topic/2116998
+    about: 如果不是明确 Bug 或功能需求，可以先到 linux.do 讨论。

@@ -27,6 +27,25 @@ const normalizeBoolean = (value: unknown): boolean | undefined => {
   return Boolean(value);
 };
 
+const normalizeString = (value: unknown): string | undefined => {
+  if (value === undefined || value === null) return undefined;
+  const trimmed = String(value).trim();
+  return trimmed ? trimmed : undefined;
+};
+
+const normalizeNumber = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+};
+
 const normalizeModelAliases = (models: unknown): ModelAlias[] => {
   if (!Array.isArray(models)) return [];
   return models
@@ -106,19 +125,13 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   const apiKey =
     record?.['api-key'] ?? record?.apiKey ?? record?.key ?? (typeof entry === 'string' ? entry : '');
   const trimmed = String(apiKey || '').trim();
-
-  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl : undefined;
-  const headers = record ? normalizeHeaders(record.headers) : undefined;
   const authIndex = normalizeAuthIndex(
     record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
   );
-  const balanceTokenRaw =
-    record?.['balance-token'] ?? record?.balanceToken ?? record?.['balance_token'];
-  const balanceToken =
-    typeof balanceTokenRaw === 'string' ? balanceTokenRaw.trim() : '';
+  if (!trimmed && !authIndex) return null;
 
-  // Keep entries that have an API key OR other meaningful auth fields (headers, balanceToken)
-  if (!trimmed && !headers && !balanceToken) return null;
+  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl : undefined;
+  const headers = record ? normalizeHeaders(record.headers) : undefined;
 
   const result: ApiKeyEntry = {
     apiKey: trimmed,
@@ -126,7 +139,6 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
     headers
   };
   if (authIndex) result.authIndex = authIndex;
-  if (balanceToken) result.balanceToken = balanceToken;
   return result;
 };
 
@@ -135,12 +147,10 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   const record = isRecord(item) ? item : null;
   const apiKey = record?.['api-key'] ?? record?.apiKey ?? (typeof item === 'string' ? item : '');
   const trimmed = String(apiKey || '').trim();
-
-  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl : undefined;
-  const headers = record ? normalizeHeaders(record.headers) : undefined;
-
-  // Keep entries that have an API key OR other meaningful auth fields (headers, proxyUrl)
-  if (!trimmed && !headers && !proxyUrl) return null;
+  const authIndex = normalizeAuthIndex(
+    record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
+  );
+  if (!trimmed && !authIndex) return null;
 
   const config: ProviderKeyConfig = { apiKey: trimmed };
   const priority = record?.priority ?? record?.['priority'];
@@ -153,10 +163,12 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   const prefix = normalizePrefix(record?.prefix ?? record?.['prefix']);
   if (prefix) config.prefix = prefix;
   const baseUrl = record ? record['base-url'] ?? record.baseUrl : undefined;
+  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl : undefined;
   if (baseUrl) config.baseUrl = String(baseUrl);
   const websockets = normalizeBoolean(record?.websockets ?? record?.['websockets']);
   if (websockets !== undefined) config.websockets = websockets;
   if (proxyUrl) config.proxyUrl = String(proxyUrl);
+  const headers = normalizeHeaders(record?.headers);
   if (headers) config.headers = headers;
   const models = normalizeModelAliases(record?.models);
   if (models.length) config.models = models;
@@ -167,9 +179,6 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
       record?.excluded_models
   );
   if (excludedModels.length) config.excludedModels = excludedModels;
-  const authIndex = normalizeAuthIndex(
-    record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
-  );
   if (authIndex) config.authIndex = authIndex;
 
   const cloakRaw = record?.cloak;
@@ -207,12 +216,10 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
     apiKey = item;
   }
   const trimmed = String(apiKey || '').trim();
-
-  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl ?? record['proxy_url'] : undefined;
-  const headers = record ? normalizeHeaders(record.headers) : undefined;
-
-  // Keep entries that have an API key OR other meaningful auth fields (headers, proxyUrl)
-  if (!trimmed && !headers && !proxyUrl) return null;
+  const authIndex = normalizeAuthIndex(
+    record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
+  );
+  if (!trimmed && !authIndex) return null;
 
   const config: GeminiKeyConfig = { apiKey: trimmed };
   const priority = record?.priority ?? record?.['priority'];
@@ -226,15 +233,14 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   if (prefix) config.prefix = prefix;
   const baseUrl = record ? record['base-url'] ?? record.baseUrl ?? record['base_url'] : undefined;
   if (baseUrl) config.baseUrl = String(baseUrl);
+  const proxyUrl = record ? record['proxy-url'] ?? record.proxyUrl ?? record['proxy_url'] : undefined;
   if (proxyUrl) config.proxyUrl = String(proxyUrl);
   const models = normalizeModelAliases(record?.models);
   if (models.length) config.models = models;
+  const headers = normalizeHeaders(record?.headers);
   if (headers) config.headers = headers;
   const excludedModels = normalizeExcludedModels(record?.['excluded-models'] ?? record?.excludedModels);
   if (excludedModels.length) config.excludedModels = excludedModels;
-  const authIndex = normalizeAuthIndex(
-    record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
-  );
   if (authIndex) config.authIndex = authIndex;
   return config;
 };
@@ -413,17 +419,33 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
     };
   }
 
-  config.requestLog = normalizeBoolean(raw['request-log'] ?? raw.requestLog);
-  config.successRequestLog = normalizeBoolean(raw['success-request-log'] ?? raw.successRequestLog);
-  const successLogsMaxFiles = raw['success-logs-max-files'] ?? raw.successLogsMaxFiles;
-  if (typeof successLogsMaxFiles === 'number' && Number.isFinite(successLogsMaxFiles)) {
-    config.successLogsMaxFiles = successLogsMaxFiles;
-  } else if (typeof successLogsMaxFiles === 'string' && successLogsMaxFiles.trim() !== '') {
-    const parsed = Number(successLogsMaxFiles);
-    if (Number.isFinite(parsed)) {
-      config.successLogsMaxFiles = parsed;
-    }
+  const clean = raw.clean;
+  if (isRecord(clean)) {
+    const threshold = normalizeNumber(
+      clean['used_percent_threshold'] ??
+        clean.usedPercentThreshold ??
+        clean['used-percent-threshold']
+    );
+    config.clean = {
+      baseUrl: normalizeString(clean['base_url'] ?? clean.baseUrl ?? clean['base-url']),
+      token: normalizeString(clean.token),
+      targetType: normalizeString(clean['target_type'] ?? clean.targetType ?? clean['target-type']),
+      workers: normalizeNumber(clean.workers),
+      deleteWorkers: normalizeNumber(
+        clean['delete_workers'] ?? clean.deleteWorkers ?? clean['delete-workers']
+      ),
+      timeout: normalizeNumber(clean.timeout),
+      retries: normalizeNumber(clean.retries),
+      userAgent: normalizeString(clean['user_agent'] ?? clean.userAgent ?? clean['user-agent']),
+      usedPercentThreshold: threshold,
+      sampleSize: normalizeNumber(clean['sample_size'] ?? clean.sampleSize ?? clean['sample-size']),
+    };
   }
+
+  config.usageStatisticsEnabled = normalizeBoolean(
+    raw['usage-statistics-enabled'] ?? raw.usageStatisticsEnabled
+  );
+  config.requestLog = normalizeBoolean(raw['request-log'] ?? raw.requestLog);
   config.loggingToFile = normalizeBoolean(raw['logging-to-file'] ?? raw.loggingToFile);
   const logsMaxTotalSizeMb = raw['logs-max-total-size-mb'] ?? raw.logsMaxTotalSizeMb;
   if (typeof logsMaxTotalSizeMb === 'number' && Number.isFinite(logsMaxTotalSizeMb)) {

@@ -1,0 +1,117 @@
+name: Bug 反馈
+description: 请求监控为空、统计异常、巡检失败、部署报错等问题
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请尽量完整填写下面信息，否则很难判断是 CPA、CPA-Manager、网络、Docker 还是配置问题。
+
+  - type: dropdown
+    id: deploy-mode
+    attributes:
+      label: 部署方式
+      description: 你现在是如何部署 CPA-Manager 的？
+      options:
+        - 只配置 CPA 面板仓库地址
+        - 完整 Docker 方案
+        - CPA 控制面板 + 外部 Usage Service
+        - Windows / 非 Docker
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    id: cpa-version
+    attributes:
+      label: CPA 版本
+      placeholder: 例如 v6.10.8
+    validations:
+      required: true
+
+  - type: input
+    id: manager-version
+    attributes:
+      label: CPA-Manager 版本
+      placeholder: 例如 v1.1.5 / latest / commit hash
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题描述
+      description: 发生了什么？你期望发生什么？
+      placeholder: 例如：请求监控为空，但 CPA 正常转发请求。
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 xxx 页面
+        2. 填写 xxx
+        3. 点击 xxx
+        4. 出现 xxx 报错
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: 关键配置
+      description: 请脱敏后粘贴相关配置，例如 Usage Service 地址、CPA 地址、Docker Compose 片段等。
+      render: yaml
+      placeholder: |
+        usage-statistics-enabled: true
+        Usage Service URL: http://...
+        CPA URL: http://...
+    validations:
+      required: true
+
+  - type: textarea
+    id: status
+    attributes:
+      label: /status 返回内容
+      description: 如果是统计、请求监控、巡检相关问题，请粘贴 Usage Service /status 的返回内容。
+      render: json
+      placeholder: |
+        {
+          "collector": {
+            "upstream": "...",
+            "lastError": "..."
+          }
+        }
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志
+      description: 请粘贴 CPA-Manager / Usage Service / Docker 相关日志。
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图
+      description: 可以直接拖拽上传截图。
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 检查清单
+      options:
+        - label: 我已经搜索过现有 Issues，没有找到重复问题
+          required: true
+        - label: 我已经确认敏感信息已经脱敏，例如 token、key、账号信息
+          required: true

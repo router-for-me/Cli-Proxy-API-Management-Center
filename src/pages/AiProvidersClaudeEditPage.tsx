@@ -12,6 +12,7 @@ import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import { useNotificationStore } from '@/stores';
+import { normalizeAuthIndex } from '@/utils/authIndex';
 import { buildHeaderObject } from '@/utils/headers';
 import { buildClaudeMessagesEndpoint, parseTextList } from '@/components/providers/utils';
 import type { ClaudeEditOutletContext } from './AiProvidersClaudeEditLayout';
@@ -132,12 +133,13 @@ export function AiProvidersClaudeEditPage() {
       .join('|');
     return [
       form.apiKey.trim(),
+      normalizeAuthIndex(form.authIndex) ?? '',
       form.baseUrl?.trim() ?? '',
       testModel.trim(),
       headersSignature,
       modelsSignature,
     ].join('||');
-  }, [form.apiKey, form.baseUrl, form.headers, form.modelEntries, testModel]);
+  }, [form.apiKey, form.authIndex, form.baseUrl, form.headers, form.modelEntries, testModel]);
 
   const previousConnectivityConfigRef = useRef(connectivityConfigSignature);
 
@@ -168,11 +170,12 @@ export function AiProvidersClaudeEditPage() {
 
     const customHeaders = buildHeaderObject(form.headers);
     const apiKey = form.apiKey.trim();
+    const keyAuthIndex = normalizeAuthIndex(form.authIndex) ?? undefined;
     const hasApiKeyHeader = hasHeader(customHeaders, 'x-api-key');
     const apiKeyFromAuthorization = resolveBearerTokenFromAuthorization(customHeaders);
     const resolvedApiKey = apiKey || apiKeyFromAuthorization;
 
-    if (!resolvedApiKey && !hasApiKeyHeader) {
+    if (!resolvedApiKey && !hasApiKeyHeader && !keyAuthIndex) {
       const message = t('ai_providers.claude_test_key_required');
       setTestStatus('error');
       setTestMessage(message);
@@ -201,11 +204,13 @@ export function AiProvidersClaudeEditPage() {
       headers['Anthropic-Version'] = headers['anthropic-version'] ?? DEFAULT_ANTHROPIC_VERSION;
     }
 
-    if (!hasApiKeyHeader && resolvedApiKey) {
-      headers['x-api-key'] = resolvedApiKey;
+    const tokenValue = resolvedApiKey || (keyAuthIndex ? '$TOKEN$' : '');
+
+    if (!hasApiKeyHeader && tokenValue) {
+      headers['x-api-key'] = tokenValue;
     }
-    if (!Object.prototype.hasOwnProperty.call(headers, 'X-Api-Key') && resolvedApiKey) {
-      headers['X-Api-Key'] = resolvedApiKey;
+    if (!Object.prototype.hasOwnProperty.call(headers, 'X-Api-Key') && tokenValue) {
+      headers['X-Api-Key'] = tokenValue;
     }
 
     setIsTesting(true);
@@ -216,6 +221,7 @@ export function AiProvidersClaudeEditPage() {
       const result = await apiCallApi.request(
         {
           method: 'POST',
+          authIndex: keyAuthIndex,
           url: endpoint,
           header: headers,
           data: JSON.stringify({
@@ -254,6 +260,7 @@ export function AiProvidersClaudeEditPage() {
   }, [
     availableModels,
     form.apiKey,
+    form.authIndex,
     form.baseUrl,
     form.headers,
     isTesting,
