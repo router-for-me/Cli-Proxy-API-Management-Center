@@ -200,6 +200,13 @@ export function VisualConfigEditor({
   const requestRetryError = getValidationMessage(t, validationErrors?.requestRetry);
   const maxRetryCredentialsError = getValidationMessage(t, validationErrors?.maxRetryCredentials);
   const maxRetryIntervalError = getValidationMessage(t, validationErrors?.maxRetryInterval);
+  const rpmLimitDefaultError = getValidationMessage(t, validationErrors?.rpmLimitDefault);
+  const tpmLimitDefaultError = getValidationMessage(t, validationErrors?.tpmLimitDefault);
+  const concurrencyLimitDefaultError = getValidationMessage(
+    t,
+    validationErrors?.concurrencyLimitDefault
+  );
+  const rphLimitDefaultError = getValidationMessage(t, validationErrors?.rphLimitDefault);
   const authAutoRefreshWorkersError = getValidationMessage(
     t,
     validationErrors?.authAutoRefreshWorkers
@@ -287,6 +294,10 @@ export function VisualConfigEditor({
           'requestRetry',
           'maxRetryCredentials',
           'maxRetryInterval',
+          'rpmLimitDefault',
+          'tpmLimitDefault',
+          'concurrencyLimitDefault',
+          'rphLimitDefault',
           'authAutoRefreshWorkers',
         ]),
       },
@@ -858,6 +869,48 @@ export function VisualConfigEditor({
                       onChange={(e) => onChange({ maxRetryInterval: e.target.value })}
                       disabled={disabled}
                       error={maxRetryIntervalError}
+                    />
+                    <Input
+                      label={t('config_management.visual.sections.network.rpm_limit_default')}
+                      type="number"
+                      placeholder="0"
+                      value={values.rpmLimitDefault}
+                      onChange={(e) => onChange({ rpmLimitDefault: e.target.value })}
+                      disabled={disabled}
+                      hint={t('config_management.visual.sections.network.rate_limit_hint')}
+                      error={rpmLimitDefaultError}
+                    />
+                    <Input
+                      label={t('config_management.visual.sections.network.tpm_limit_default')}
+                      type="number"
+                      placeholder="0"
+                      value={values.tpmLimitDefault}
+                      onChange={(e) => onChange({ tpmLimitDefault: e.target.value })}
+                      disabled={disabled}
+                      hint={t('config_management.visual.sections.network.rate_limit_hint')}
+                      error={tpmLimitDefaultError}
+                    />
+                    <Input
+                      label={t(
+                        'config_management.visual.sections.network.concurrency_limit_default'
+                      )}
+                      type="number"
+                      placeholder="0"
+                      value={values.concurrencyLimitDefault}
+                      onChange={(e) => onChange({ concurrencyLimitDefault: e.target.value })}
+                      disabled={disabled}
+                      hint={t('config_management.visual.sections.network.rate_limit_hint')}
+                      error={concurrencyLimitDefaultError}
+                    />
+                    <Input
+                      label={t('config_management.visual.sections.network.rph_limit_default')}
+                      type="number"
+                      placeholder="0"
+                      value={values.rphLimitDefault}
+                      onChange={(e) => onChange({ rphLimitDefault: e.target.value })}
+                      disabled={disabled}
+                      hint={t('config_management.visual.sections.network.rate_limit_hint')}
+                      error={rphLimitDefaultError}
                     />
                     <Input
                       label={t(

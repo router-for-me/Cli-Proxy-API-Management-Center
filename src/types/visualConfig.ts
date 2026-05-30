@@ -13,6 +13,10 @@ export type VisualConfigFieldPath =
   | 'requestRetry'
   | 'maxRetryCredentials'
   | 'maxRetryInterval'
+  | 'rpmLimitDefault'
+  | 'tpmLimitDefault'
+  | 'concurrencyLimitDefault'
+  | 'rphLimitDefault'
   | 'authAutoRefreshWorkers'
   | 'streaming.keepaliveSeconds'
   | 'streaming.bootstrapRetries'
@@ -93,6 +97,10 @@ export type VisualConfigValues = {
   requestRetry: string;
   maxRetryCredentials: string;
   maxRetryInterval: string;
+  rpmLimitDefault: string;
+  tpmLimitDefault: string;
+  concurrencyLimitDefault: string;
+  rphLimitDefault: string;
   disableCooling: boolean;
   disableImageGeneration: DisableImageGenerationMode;
   authAutoRefreshWorkers: string;
@@ -154,6 +162,10 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   requestRetry: '',
   maxRetryCredentials: '',
   maxRetryInterval: '',
+  rpmLimitDefault: '',
+  tpmLimitDefault: '',
+  concurrencyLimitDefault: '',
+  rphLimitDefault: '',
   disableCooling: false,
   disableImageGeneration: 'false',
   authAutoRefreshWorkers: '',

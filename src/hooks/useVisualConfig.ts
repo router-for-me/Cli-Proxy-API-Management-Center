@@ -185,6 +185,10 @@ export function getVisualConfigValidationErrors(
     requestRetry: getNonNegativeIntegerError(values.requestRetry),
     maxRetryCredentials: getNonNegativeIntegerError(values.maxRetryCredentials),
     maxRetryInterval: getNonNegativeIntegerError(values.maxRetryInterval),
+    rpmLimitDefault: getNonNegativeIntegerError(values.rpmLimitDefault),
+    tpmLimitDefault: getNonNegativeIntegerError(values.tpmLimitDefault),
+    concurrencyLimitDefault: getNonNegativeIntegerError(values.concurrencyLimitDefault),
+    rphLimitDefault: getNonNegativeIntegerError(values.rphLimitDefault),
     authAutoRefreshWorkers: getNonNegativeIntegerError(values.authAutoRefreshWorkers),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
@@ -823,6 +827,21 @@ function getNextDirtyFields(
       nextValues.maxRetryInterval === baselineValues.maxRetryInterval
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'rpmLimitDefault')) {
+    updateDirty('rpmLimitDefault', nextValues.rpmLimitDefault === baselineValues.rpmLimitDefault);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'tpmLimitDefault')) {
+    updateDirty('tpmLimitDefault', nextValues.tpmLimitDefault === baselineValues.tpmLimitDefault);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'concurrencyLimitDefault')) {
+    updateDirty(
+      'concurrencyLimitDefault',
+      nextValues.concurrencyLimitDefault === baselineValues.concurrencyLimitDefault
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'rphLimitDefault')) {
+    updateDirty('rphLimitDefault', nextValues.rphLimitDefault === baselineValues.rphLimitDefault);
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'wsAuth')) {
     updateDirty('wsAuth', nextValues.wsAuth === baselineValues.wsAuth);
   }
@@ -1040,6 +1059,10 @@ export function useVisualConfig() {
         requestRetry: String(parsed['request-retry'] ?? ''),
         maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
         maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
+        rpmLimitDefault: String(parsed['rpm-limit-default'] ?? ''),
+        tpmLimitDefault: String(parsed['tpm-limit-default'] ?? ''),
+        concurrencyLimitDefault: String(parsed['concurrency-limit-default'] ?? ''),
+        rphLimitDefault: String(parsed['rph-limit-default'] ?? ''),
         disableCooling: Boolean(parsed['disable-cooling']),
         disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
         authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
@@ -1203,6 +1226,10 @@ export function useVisualConfig() {
         setIntFromStringInDoc(doc, ['request-retry'], values.requestRetry);
         setIntFromStringInDoc(doc, ['max-retry-credentials'], values.maxRetryCredentials);
         setIntFromStringInDoc(doc, ['max-retry-interval'], values.maxRetryInterval);
+        setIntFromStringInDoc(doc, ['rpm-limit-default'], values.rpmLimitDefault);
+        setIntFromStringInDoc(doc, ['tpm-limit-default'], values.tpmLimitDefault);
+        setIntFromStringInDoc(doc, ['concurrency-limit-default'], values.concurrencyLimitDefault);
+        setIntFromStringInDoc(doc, ['rph-limit-default'], values.rphLimitDefault);
         setBooleanInDoc(doc, ['disable-cooling'], values.disableCooling);
         setDisableImageGenerationInDoc(
           doc,

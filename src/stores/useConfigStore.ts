@@ -37,6 +37,12 @@ const SECTION_KEYS: RawConfigSection[] = [
   'debug',
   'proxy-url',
   'request-retry',
+  'max-retry-credentials',
+  'max-retry-interval',
+  'rpm-limit-default',
+  'tpm-limit-default',
+  'concurrency-limit-default',
+  'rph-limit-default',
   'quota-exceeded',
   'request-log',
   'logging-to-file',
@@ -51,7 +57,7 @@ const SECTION_KEYS: RawConfigSection[] = [
   'claude-api-key',
   'vertex-api-key',
   'openai-compatibility',
-  'oauth-excluded-models'
+  'oauth-excluded-models',
 ];
 
 const extractSectionValue = (config: Config | null, section?: RawConfigSection) => {
@@ -63,6 +69,18 @@ const extractSectionValue = (config: Config | null, section?: RawConfigSection) 
       return config.proxyUrl;
     case 'request-retry':
       return config.requestRetry;
+    case 'max-retry-credentials':
+      return config.maxRetryCredentials;
+    case 'max-retry-interval':
+      return config.maxRetryInterval;
+    case 'rpm-limit-default':
+      return config.rpmLimitDefault;
+    case 'tpm-limit-default':
+      return config.tpmLimitDefault;
+    case 'concurrency-limit-default':
+      return config.concurrencyLimitDefault;
+    case 'rph-limit-default':
+      return config.rphLimitDefault;
     case 'quota-exceeded':
       return config.quotaExceeded;
     case 'request-log':
@@ -159,17 +177,21 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       set({
         config: data,
         cache: newCache,
-        loading: false
+        loading: false,
       });
 
       return section ? extractSectionValue(data, section) : data;
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'Failed to fetch config';
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'Failed to fetch config';
       if (requestId === configRequestToken) {
         set({
           error: message || 'Failed to fetch config',
-          loading: false
+          loading: false,
         });
       }
       throw error;
@@ -195,6 +217,24 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           break;
         case 'request-retry':
           nextConfig.requestRetry = value as Config['requestRetry'];
+          break;
+        case 'max-retry-credentials':
+          nextConfig.maxRetryCredentials = value as Config['maxRetryCredentials'];
+          break;
+        case 'max-retry-interval':
+          nextConfig.maxRetryInterval = value as Config['maxRetryInterval'];
+          break;
+        case 'rpm-limit-default':
+          nextConfig.rpmLimitDefault = value as Config['rpmLimitDefault'];
+          break;
+        case 'tpm-limit-default':
+          nextConfig.tpmLimitDefault = value as Config['tpmLimitDefault'];
+          break;
+        case 'concurrency-limit-default':
+          nextConfig.concurrencyLimitDefault = value as Config['concurrencyLimitDefault'];
+          break;
+        case 'rph-limit-default':
+          nextConfig.rphLimitDefault = value as Config['rphLimitDefault'];
           break;
         case 'quota-exceeded':
           nextConfig.quotaExceeded = value as Config['quotaExceeded'];
@@ -287,5 +327,5 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     if (!cached) return false;
 
     return Date.now() - cached.timestamp < CACHE_EXPIRY_MS;
-  }
+  },
 }));

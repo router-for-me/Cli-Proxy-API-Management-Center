@@ -22,6 +22,7 @@ import {
 import { formatFileSize } from '@/utils/format';
 import {
   QUOTA_PROVIDER_TYPES,
+  formatCreated,
   formatModified,
   getAuthFileIcon,
   getAuthFileStatusMessage,
@@ -210,6 +211,10 @@ export function AuthFileCard(props: AuthFileCardProps) {
               <span className={styles.metaValue}>
                 {file.size ? formatFileSize(file.size) : '-'}
               </span>
+            </div>
+            <div className={styles.metaItem}>
+              <span className={styles.metaLabel}>{t('auth_files.file_created')}</span>
+              <span className={styles.metaValue}>{formatCreated(file)}</span>
             </div>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>{t('auth_files.file_modified')}</span>

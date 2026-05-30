@@ -142,6 +142,38 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                     disabled={disableControls || editor.saving || !editor.json}
                     onChange={(e) => onChange('priority', e.target.value)}
                   />
+                  <Input
+                    label={t('auth_files.rpm_limit_label')}
+                    value={editor.rpmLimit}
+                    placeholder="0"
+                    hint={t('auth_files.rate_limit_hint')}
+                    disabled={disableControls || editor.saving || !editor.json}
+                    onChange={(e) => onChange('rpmLimit', e.target.value)}
+                  />
+                  <Input
+                    label={t('auth_files.tpm_limit_label')}
+                    value={editor.tpmLimit}
+                    placeholder="0"
+                    hint={t('auth_files.rate_limit_hint')}
+                    disabled={disableControls || editor.saving || !editor.json}
+                    onChange={(e) => onChange('tpmLimit', e.target.value)}
+                  />
+                  <Input
+                    label={t('auth_files.concurrency_limit_label')}
+                    value={editor.concurrencyLimit}
+                    placeholder="0"
+                    hint={t('auth_files.rate_limit_hint')}
+                    disabled={disableControls || editor.saving || !editor.json}
+                    onChange={(e) => onChange('concurrencyLimit', e.target.value)}
+                  />
+                  <Input
+                    label={t('auth_files.rph_limit_label')}
+                    value={editor.rphLimit}
+                    placeholder="0"
+                    hint={t('auth_files.rate_limit_hint')}
+                    disabled={disableControls || editor.saving || !editor.json}
+                    onChange={(e) => onChange('rphLimit', e.target.value)}
+                  />
                   {editor.providerKey === 'codex' && (
                     <div className="form-group">
                       <label>{t('auth_files.codex_websockets_label')}</label>

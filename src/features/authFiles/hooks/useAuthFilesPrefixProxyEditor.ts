@@ -23,6 +23,10 @@ export type PrefixProxyEditorField =
   | 'prefix'
   | 'proxyUrl'
   | 'priority'
+  | 'rpmLimit'
+  | 'tpmLimit'
+  | 'concurrencyLimit'
+  | 'rphLimit'
   | 'websockets'
   | 'note'
   | 'headersText';
@@ -43,6 +47,10 @@ export type PrefixProxyEditorState = {
   prefix: string;
   proxyUrl: string;
   priority: string;
+  rpmLimit: string;
+  tpmLimit: string;
+  concurrencyLimit: string;
+  rphLimit: string;
   websockets: boolean;
   websocketsTouched: boolean;
   note: string;
@@ -107,6 +115,39 @@ const parseHeadersText = (
 
 const normalizeTextField = (value: unknown): string =>
   typeof value === 'string' ? value.trim() : '';
+
+const parseRateLimitValue = (value: unknown): number | undefined => {
+  const parsed = parsePriorityValue(value);
+  return parsed !== undefined && parsed >= 0 ? parsed : undefined;
+};
+
+const addRateLimitPatch = (
+  patch: AuthFileFieldsPatch,
+  original: Record<string, unknown>,
+  key: 'rpm_limit' | 'tpm_limit' | 'concurrency_limit' | 'rph_limit',
+  text: string
+) => {
+  const originalLimit = parseRateLimitValue(original[key]);
+  const trimmed = text.trim();
+  if (!trimmed) {
+    if (originalLimit !== undefined && originalLimit > 0) {
+      patch[key] = 0;
+    }
+    return;
+  }
+
+  const nextLimit = parseRateLimitValue(trimmed);
+  if (nextLimit === undefined) return;
+  if (nextLimit <= 0) {
+    if (originalLimit !== undefined && originalLimit > 0) {
+      patch[key] = 0;
+    }
+    return;
+  }
+  if (nextLimit !== originalLimit) {
+    patch[key] = nextLimit;
+  }
+};
 
 const INVALID_CONTENT_PREVIEW_LIMIT = 1000;
 
@@ -248,6 +289,11 @@ const buildAuthFileFieldsPatch = (
     }
   }
 
+  addRateLimitPatch(patch, original, 'rpm_limit', editor.rpmLimit);
+  addRateLimitPatch(patch, original, 'tpm_limit', editor.tpmLimit);
+  addRateLimitPatch(patch, original, 'concurrency_limit', editor.concurrencyLimit);
+  addRateLimitPatch(patch, original, 'rph_limit', editor.rphLimit);
+
   if (editor.noteTouched) {
     const originalNote = normalizeTextField(original.note);
     const nextNote = editor.note.trim();
@@ -319,6 +365,16 @@ const buildPrefixProxyUpdatedText = (
     }
   }
 
+  (['rpm_limit', 'tpm_limit', 'concurrency_limit', 'rph_limit'] as const).forEach((key) => {
+    const value = patch[key];
+    if (value === undefined) return;
+    if (value <= 0) {
+      delete next[key];
+      return;
+    }
+    next[key] = value;
+  });
+
   applyHeadersPatch(next, patch.headers);
 
   if (patch.websockets !== undefined) {
@@ -380,6 +436,10 @@ export function useAuthFilesPrefixProxyEditor(
       prefix: '',
       proxyUrl: '',
       priority: '',
+      rpmLimit: '',
+      tpmLimit: '',
+      concurrencyLimit: '',
+      rphLimit: '',
       websockets: false,
       websocketsTouched: false,
       note: '',
@@ -426,6 +486,10 @@ export function useAuthFilesPrefixProxyEditor(
       const prefix = typeof json.prefix === 'string' ? json.prefix : '';
       const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
       const priority = parsePriorityValue(json.priority);
+      const rpmLimit = parseRateLimitValue(json.rpm_limit);
+      const tpmLimit = parseRateLimitValue(json.tpm_limit);
+      const concurrencyLimit = parseRateLimitValue(json.concurrency_limit);
+      const rphLimit = parseRateLimitValue(json.rph_limit);
       const websockets = providerKey === 'codex' ? readCodexAuthFileWebsockets(json) : false;
       const note = typeof json.note === 'string' ? json.note : '';
       const headers = json.headers;
@@ -450,6 +514,11 @@ export function useAuthFilesPrefixProxyEditor(
           prefix,
           proxyUrl,
           priority: priority !== undefined ? String(priority) : '',
+          rpmLimit: rpmLimit !== undefined && rpmLimit > 0 ? String(rpmLimit) : '',
+          tpmLimit: tpmLimit !== undefined && tpmLimit > 0 ? String(tpmLimit) : '',
+          concurrencyLimit:
+            concurrencyLimit !== undefined && concurrencyLimit > 0 ? String(concurrencyLimit) : '',
+          rphLimit: rphLimit !== undefined && rphLimit > 0 ? String(rphLimit) : '',
           websockets,
           websocketsTouched: false,
           note,
@@ -479,6 +548,10 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'prefix') return { ...prev, prefix: String(value) };
       if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
       if (field === 'priority') return { ...prev, priority: String(value) };
+      if (field === 'rpmLimit') return { ...prev, rpmLimit: String(value) };
+      if (field === 'tpmLimit') return { ...prev, tpmLimit: String(value) };
+      if (field === 'concurrencyLimit') return { ...prev, concurrencyLimit: String(value) };
+      if (field === 'rphLimit') return { ...prev, rphLimit: String(value) };
       if (field === 'websockets') {
         return { ...prev, websockets: Boolean(value), websocketsTouched: true };
       }

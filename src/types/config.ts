@@ -16,6 +16,12 @@ export interface Config {
   debug?: boolean;
   proxyUrl?: string;
   requestRetry?: number;
+  maxRetryCredentials?: number;
+  maxRetryInterval?: number;
+  rpmLimitDefault?: number;
+  tpmLimitDefault?: number;
+  concurrencyLimitDefault?: number;
+  rphLimitDefault?: number;
   quotaExceeded?: QuotaExceededConfig;
   requestLog?: boolean;
   loggingToFile?: boolean;
@@ -38,6 +44,12 @@ export type RawConfigSection =
   | 'debug'
   | 'proxy-url'
   | 'request-retry'
+  | 'max-retry-credentials'
+  | 'max-retry-interval'
+  | 'rpm-limit-default'
+  | 'tpm-limit-default'
+  | 'concurrency-limit-default'
+  | 'rph-limit-default'
   | 'quota-exceeded'
   | 'request-log'
   | 'logging-to-file'

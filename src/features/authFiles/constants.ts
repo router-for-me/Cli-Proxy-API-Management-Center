@@ -241,8 +241,7 @@ export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   return false;
 }
 
-export const formatModified = (item: AuthFileItem): string => {
-  const raw = item['modtime'] ?? item.modified;
+const formatAuthFileDate = (raw: unknown): string => {
   if (!raw) return '-';
   const asNumber = Number(raw);
   const date =
@@ -251,6 +250,12 @@ export const formatModified = (item: AuthFileItem): string => {
       : (parseTimestamp(raw) ?? new Date(String(raw)));
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString();
 };
+
+export const formatCreated = (item: AuthFileItem): string =>
+  formatAuthFileDate(item['created_at'] ?? item.createdAt ?? item.created);
+
+export const formatModified = (item: AuthFileItem): string =>
+  formatAuthFileDate(item['modtime'] ?? item.modified ?? item['updated_at']);
 
 // 检查模型是否被 OAuth 排除
 export const isModelExcluded = (
