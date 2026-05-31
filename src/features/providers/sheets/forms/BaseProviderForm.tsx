@@ -127,8 +127,11 @@ function buildInitialForm(
   const disabled = hasDisableAllModelsRule(cfg.excludedModels);
   const excludedList = stripDisableAllRule(cfg.excludedModels);
   return {
-    // Populate apiKey from resource.raw in edit mode so the field is not empty
-    apiKey: cfg.apiKey ?? '',
+    // Keep the API key blank in edit mode. Pre-filling the real key makes this
+    // password field a browser-autofill target (the saved management key can
+    // overwrite it) and defeats the "leave empty = keep unchanged" contract; an
+    // empty field is preserved on save via buildProviderKeyConfig's existing fallback.
+    apiKey: '',
     name: '',
     baseUrl: cfg.baseUrl ?? '',
     proxyUrl: cfg.proxyUrl ?? '',
@@ -489,6 +492,10 @@ export function BaseProviderForm({
                 type={showSingleApiKey ? 'text' : 'password'}
                 value={form.apiKey}
                 onChange={(e) => updateField('apiKey', e.target.value)}
+                autoComplete="new-password"
+                data-1p-ignore="true"
+                data-lpignore="true"
+                data-bwignore="true"
                 placeholder={
                   mode === 'edit'
                     ? t('providersPage.form.apiKeyEditPlaceholder')
@@ -769,6 +776,10 @@ export function BaseProviderForm({
                             )
                           )
                         }
+                        autoComplete="new-password"
+                        data-1p-ignore="true"
+                        data-lpignore="true"
+                        data-bwignore="true"
                         disabled={mutating}
                         placeholder={t('providersPage.form.apiKeyCreatePlaceholder')}
                       />

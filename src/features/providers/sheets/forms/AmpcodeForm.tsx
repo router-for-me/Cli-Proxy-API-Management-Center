@@ -152,6 +152,10 @@ export function AmpcodeForm({
             onChange={(e) =>
               setForm((s) => ({ ...s, upstreamApiKey: e.target.value }))
             }
+            autoComplete="new-password"
+            data-1p-ignore="true"
+            data-lpignore="true"
+            data-bwignore="true"
             disabled={mutating}
           />
         </div>
