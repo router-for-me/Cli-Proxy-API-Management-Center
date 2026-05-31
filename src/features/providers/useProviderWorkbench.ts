@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ampcodeApi,
-  providersApi,
-} from '@/services/api';
+import { ampcodeApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore } from '@/stores';
 import {
   withDisableAllModelsRule,
@@ -22,10 +19,7 @@ import {
   openaiToResource,
   vertexToResource,
 } from './adapters';
-import {
-  PROVIDER_BRAND_ORDER,
-  PROVIDER_PATHS,
-} from './descriptors';
+import { PROVIDER_BRAND_ORDER, PROVIDER_PATHS } from './descriptors';
 import type {
   ProviderBrand,
   ProviderEntryFormInput,
@@ -49,14 +43,8 @@ export interface UseProviderWorkbenchResult {
   snapshot: ProviderSnapshot | null;
   refetch: () => Promise<void>;
 
-  createProvider: (
-    brand: ProviderBrand,
-    input: ProviderEntryFormInput
-  ) => Promise<void>;
-  updateProvider: (
-    resource: ProviderResource,
-    input: ProviderEntryFormInput
-  ) => Promise<void>;
+  createProvider: (brand: ProviderBrand, input: ProviderEntryFormInput) => Promise<void>;
+  updateProvider: (resource: ProviderResource, input: ProviderEntryFormInput) => Promise<void>;
   deleteProvider: (resource: ProviderResource) => Promise<void>;
   toggleDisabled: (resource: ProviderResource, disabled: boolean) => Promise<void>;
   saveAmpcode: (config: AmpcodeConfig) => Promise<void>;
@@ -157,11 +145,15 @@ const buildOpenAIConfig = (
     .filter((m) => m.name);
   const apiKeyEntries =
     input.apiKeyEntries
-      ?.map((entry) => ({
-        apiKey: entry.apiKey.trim(),
-        proxyUrl: entry.proxyUrl.trim() || undefined,
-        authIndex: entry.authIndex?.trim() || undefined,
-      }))
+      ?.map((entry, index) => {
+        const fallbackApiKey =
+          entry.existingApiKey?.trim() || existing?.apiKeyEntries?.[index]?.apiKey?.trim() || '';
+        return {
+          apiKey: entry.apiKey.trim() || fallbackApiKey,
+          proxyUrl: entry.proxyUrl.trim() || undefined,
+          authIndex: entry.authIndex?.trim() || undefined,
+        };
+      })
       .filter((entry) => entry.apiKey) ?? [];
 
   return {
@@ -169,9 +161,7 @@ const buildOpenAIConfig = (
     name: input.name.trim(),
     baseUrl: input.baseUrl.trim(),
     prefix: input.prefix.trim() || undefined,
-    apiKeyEntries: apiKeyEntries.length
-      ? apiKeyEntries
-      : existing?.apiKeyEntries ?? [],
+    apiKeyEntries: apiKeyEntries.length ? apiKeyEntries : (existing?.apiKeyEntries ?? []),
     disabled: input.disabled,
     headers: Object.keys(headers).length ? headers : undefined,
     models: models.length ? models : undefined,

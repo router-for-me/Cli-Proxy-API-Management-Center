@@ -2,11 +2,7 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { IconPlus, IconX } from '@/components/ui/icons';
-import type {
-  AmpcodeConfig,
-  AmpcodeModelMapping,
-  AmpcodeUpstreamApiKeyMapping,
-} from '@/types';
+import type { AmpcodeConfig, AmpcodeModelMapping, AmpcodeUpstreamApiKeyMapping } from '@/types';
 import type { ProviderResource } from '../../types';
 import styles from './sharedForm.module.scss';
 
@@ -34,7 +30,7 @@ function buildState(config?: AmpcodeConfig | null): AmpcodeFormState {
     : [emptyModelMapping()];
   return {
     upstreamUrl: safe.upstreamUrl ?? '',
-    upstreamApiKey: safe.upstreamApiKey ?? '',
+    upstreamApiKey: '',
     forceModelMappings: safe.forceModelMappings === true,
     upstreamMappings,
     modelMappings,
@@ -66,9 +62,7 @@ export function AmpcodeForm({
   const fid = useId();
   const initialConfig = (resource?.raw as AmpcodeConfig | undefined) ?? {};
   const [form, setForm] = useState<AmpcodeFormState>(() => buildState(initialConfig));
-  const [initialFormSignature] = useState<string>(() =>
-    JSON.stringify(buildState(initialConfig))
-  );
+  const [initialFormSignature] = useState<string>(() => JSON.stringify(buildState(initialConfig)));
   const [error, setError] = useState<string | null>(null);
 
   const isDirty = useMemo(
@@ -109,7 +103,8 @@ export function AmpcodeForm({
 
       const next: AmpcodeConfig = {
         upstreamUrl: form.upstreamUrl.trim() || undefined,
-        upstreamApiKey: form.upstreamApiKey.trim() || undefined,
+        upstreamApiKey:
+          form.upstreamApiKey.trim() || initialConfig.upstreamApiKey?.trim() || undefined,
         upstreamApiKeys: upstreamApiKeys.length ? upstreamApiKeys : undefined,
         modelMappings: modelMappings.length ? modelMappings : undefined,
         forceModelMappings: form.forceModelMappings,
@@ -149,9 +144,7 @@ export function AmpcodeForm({
             className={styles.input}
             type="password"
             value={form.upstreamApiKey}
-            onChange={(e) =>
-              setForm((s) => ({ ...s, upstreamApiKey: e.target.value }))
-            }
+            onChange={(e) => setForm((s) => ({ ...s, upstreamApiKey: e.target.value }))}
             autoComplete="new-password"
             data-1p-ignore="true"
             data-lpignore="true"
@@ -165,9 +158,7 @@ export function AmpcodeForm({
             className={styles.checkboxBox}
             checked={form.forceModelMappings}
             disabled={mutating}
-            onChange={(e) =>
-              setForm((s) => ({ ...s, forceModelMappings: e.target.checked }))
-            }
+            onChange={(e) => setForm((s) => ({ ...s, forceModelMappings: e.target.checked }))}
           />
           <span className={styles.checkboxText}>
             <span>{t('providersPage.ampcode.forceModelMappings')}</span>
@@ -197,9 +188,7 @@ export function AmpcodeForm({
                 </button>
               </div>
               <div className={styles.field}>
-                <label className={styles.label}>
-                  {t('providersPage.ampcode.upstreamApiKey')}
-                </label>
+                <label className={styles.label}>{t('providersPage.ampcode.upstreamApiKey')}</label>
                 <input
                   className={styles.input}
                   value={m.upstreamApiKey}
@@ -259,10 +248,7 @@ export function AmpcodeForm({
       <Collapsible label={t('providersPage.ampcode.modelMappingsSection')}>
         <div className={styles.entriesList}>
           {form.modelMappings.map((m, idx) => (
-            <div
-              key={idx}
-              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8 }}
-            >
+            <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8 }}>
               <input
                 className={styles.input}
                 placeholder="from"
