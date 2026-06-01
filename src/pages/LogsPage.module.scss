@@ -722,3 +722,47 @@
     height: 280px;
   }
 }
+
+.logCardFullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: $z-modal;
+  min-height: 0;
+  width: 100vw;
+  height: 100vh;
+  padding: $spacing-lg;
+  border-radius: 0;
+  border: none;
+  overflow: hidden;
+  background: var(--bg-primary);
+
+  @include mobile {
+    padding: $spacing-md;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+:global(body.logs-fullscreen-active) :global(.page-transition__layer) {
+  transform: none !important;
+}
+
+.logPanelFullscreen {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  resize: none;
+
+  @include tablet {
+    min-height: 0;
+    max-height: none;
+  }
+
+  @include mobile {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+  }
+}

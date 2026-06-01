@@ -729,6 +729,8 @@
     "title": "Просмотр журналов",
     "refresh_button": "Обновить журналы",
     "clear_button": "Очистить журналы",
+    "fullscreen_button": "На весь экран",
+    "exit_fullscreen_button": "Выйти из полноэкранного режима",
     "download_button": "Скачать журналы",
     "error_log_button": "Выбрать журнал ошибок",
     "error_logs_modal_title": "Журналы ошибок запросов",

@@ -732,6 +732,8 @@
     "title": "日志查看",
     "refresh_button": "刷新日志",
     "clear_button": "清空日志",
+    "fullscreen_button": "全屏显示",
+    "exit_fullscreen_button": "退出全屏",
     "download_button": "下载日志",
     "error_log_button": "选择错误日志",
     "error_logs_modal_title": "错误请求日志",

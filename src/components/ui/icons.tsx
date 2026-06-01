@@ -182,6 +182,28 @@ export function IconTrash2({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconMaximize2({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="M15 3h6v6" />
+      <path d="m21 3-7 7" />
+      <path d="M9 21H3v-6" />
+      <path d="m3 21 7-7" />
+    </svg>
+  );
+}
+
+export function IconMinimize2({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="M4 14h6v6" />
+      <path d="m10 14-7 7" />
+      <path d="M20 10h-6V4" />
+      <path d="m14 10 7-7" />
+    </svg>
+  );
+}
+
 export function IconPlus({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>
