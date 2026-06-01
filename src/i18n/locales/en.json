@@ -1306,6 +1306,8 @@
       "headersHint": "One per line, format Key: Value",
       "excludedSection": "Excluded models",
       "excludedHint": "One model per line; matched models won't be routed",
+      "allowedKeysSection": "Allowed client keys",
+      "allowedKeysHint": "One client API key per line (from the top-level api-keys). Empty = public; otherwise only the listed keys can see and use this provider's models",
       "cloakSection": "Cloak settings",
       "cloakMode": "Mode",
       "cloakStrict": "Strict mode",

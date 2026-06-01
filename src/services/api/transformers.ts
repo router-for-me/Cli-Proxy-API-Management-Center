@@ -199,6 +199,21 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   return config;
 };
 
+// normalizeAllowedKeys cleans a provider allowed-keys list. Unlike model names, client API
+// keys are opaque secrets, so they are matched case-sensitively and case is preserved.
+const normalizeAllowedKeys = (input: unknown): string[] => {
+  const rawList = Array.isArray(input) ? input : typeof input === 'string' ? input.split(/[\n,]/) : [];
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+  rawList.forEach((item) => {
+    const trimmed = String(item ?? '').trim();
+    if (!trimmed || seen.has(trimmed)) return;
+    seen.add(trimmed);
+    normalized.push(trimmed);
+  });
+  return normalized;
+};
+
 const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null => {
   if (!isRecord(provider)) return null;
   const name = provider.name;
@@ -232,6 +247,8 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   if (testModel) result.testModel = String(testModel);
   const authIndex = normalizeAuthIndex(provider['auth-index']);
   if (authIndex) result.authIndex = authIndex;
+  const allowedKeys = normalizeAllowedKeys(provider['allowed-keys']);
+  if (allowedKeys.length) result.allowedKeys = allowedKeys;
   return result;
 };
 

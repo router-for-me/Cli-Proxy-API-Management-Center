@@ -78,6 +78,7 @@ function buildInitialForm(
         brand === 'claude' ? { mode: '', strictMode: false, sensitiveWordsText: '' } : undefined,
       testModel: brand === 'openaiCompatibility' || brand === 'claude' ? '' : undefined,
       apiKeyEntries: brand === 'openaiCompatibility' ? [emptyApiKeyEntry()] : undefined,
+      allowedKeysText: brand === 'openaiCompatibility' ? '' : undefined,
     };
   }
 
@@ -113,6 +114,7 @@ function buildInitialForm(
             authIndex: entry.authIndex,
           }))
         : [emptyApiKeyEntry()],
+      allowedKeysText: (cfg.allowedKeys ?? []).join('\n'),
     };
   }
 
@@ -969,6 +971,22 @@ export function BaseProviderForm({
               onChange={(e) => updateField('excludedModelsText', e.target.value)}
               disabled={mutating}
               placeholder="model-1&#10;model-2"
+            />
+          </div>
+        </Collapsible>
+      ) : null}
+
+      {brand === 'openaiCompatibility' ? (
+        <Collapsible label={t('providersPage.form.allowedKeysSection')}>
+          <div className={styles.field}>
+            <span className={styles.labelHint}>{t('providersPage.form.allowedKeysHint')}</span>
+            <textarea
+              className={styles.textarea}
+              rows={3}
+              value={form.allowedKeysText ?? ''}
+              onChange={(e) => updateField('allowedKeysText', e.target.value)}
+              disabled={mutating}
+              placeholder="client-key-1&#10;client-key-2"
             />
           </div>
         </Collapsible>

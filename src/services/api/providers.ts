@@ -358,6 +358,11 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
   if (models && models.length) payload.models = models;
   if (provider.priority !== undefined) payload.priority = provider.priority;
   if (provider.testModel) payload['test-model'] = provider.testModel;
+  if (Array.isArray(provider.allowedKeys) && provider.allowedKeys.length) {
+    payload['allowed-keys'] = provider.allowedKeys
+      .map((key) => String(key ?? '').trim())
+      .filter((key) => key.length > 0);
+  }
   return payload;
 };
 

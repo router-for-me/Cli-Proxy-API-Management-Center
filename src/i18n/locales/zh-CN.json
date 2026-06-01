@@ -1306,6 +1306,8 @@
       "headersHint": "每行一条,格式 Key: Value",
       "excludedSection": "排除模型",
       "excludedHint": "每行一个模型名,匹配后将不会被路由到此提供商",
+      "allowedKeysSection": "允许的客户端密钥",
+      "allowedKeysHint": "每行一个客户端 API 密钥(来自顶层 api-keys)。留空表示公开;否则仅列出的密钥可以查看和使用此提供商的模型",
       "cloakSection": "Cloak 配置",
       "cloakMode": "模式",
       "cloakStrict": "严格模式",

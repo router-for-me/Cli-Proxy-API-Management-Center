@@ -156,6 +156,12 @@ const buildOpenAIConfig = (
       })
       .filter((entry) => entry.apiKey) ?? [];
 
+  // Client API keys are opaque secrets: trim, drop blanks and dedupe case-sensitively.
+  const allowedKeys = (input.allowedKeysText ?? '')
+    .split(/[\n,]/)
+    .map((key) => key.trim())
+    .filter((key, index, arr) => key.length > 0 && arr.indexOf(key) === index);
+
   return {
     ...(existing ?? {}),
     name: input.name.trim(),
@@ -167,6 +173,7 @@ const buildOpenAIConfig = (
     models: models.length ? models : undefined,
     priority: input.priority,
     testModel: input.testModel?.trim() || undefined,
+    allowedKeys: allowedKeys.length ? allowedKeys : undefined,
   };
 };
 

@@ -124,4 +124,6 @@ export interface ProviderEntryFormInput {
   /** OpenAI 专属 */
   testModel?: string;
   apiKeyEntries?: ApiKeyEntryInput[];
+  /** OpenAI 专属: client API keys allowed to use this provider (newline/comma separated). Empty = public. */
+  allowedKeysText?: string;
 }

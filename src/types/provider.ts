@@ -59,5 +59,10 @@ export interface OpenAIProviderConfig {
   priority?: number;
   testModel?: string;
   authIndex?: string;
+  /**
+   * Client API keys (from the top-level api-keys list) allowed to use this provider.
+   * Empty/undefined means the provider is public to every client key.
+   */
+  allowedKeys?: string[];
   [key: string]: unknown;
 }
