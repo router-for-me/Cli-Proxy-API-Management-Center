@@ -10,6 +10,7 @@ const LOG_LATENCY_REGEX =
 const LOG_IPV4_REGEX = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
 const LOG_IPV6_REGEX = /\b(?:[a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4}\b/i;
 const LOG_REQUEST_ID_REGEX = /^([a-f0-9]{8}|--------)$/i;
+const LOG_NAMED_REQUEST_ID_REGEX = /\brequest[_-]?id=([A-Za-z0-9][A-Za-z0-9._:-]{0,127})\b/i;
 const LOG_TIME_OF_DAY_REGEX = /^\d{1,2}:\d{2}:\d{2}(?:\.\d{1,3})?$/;
 const GIN_TIMESTAMP_SEGMENT_REGEX =
   /^\[GIN\]\s+(\d{4})\/(\d{2})\/(\d{2})\s*-\s*(\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\s*$/;
@@ -85,6 +86,14 @@ const inferLogLevel = (line: string): LogLevel | undefined => {
   if (/\bdebug\b/.test(lowered)) return 'debug';
   if (/\btrace\b/.test(lowered)) return 'trace';
   return undefined;
+};
+
+const extractNamedRequestId = (text: string): string | undefined => {
+  const match = text.match(LOG_NAMED_REQUEST_ID_REGEX);
+  if (!match) return undefined;
+  const id = match[1];
+  if (/^-+$/.test(id)) return undefined;
+  return id;
 };
 
 const extractHttpMethodAndPath = (text: string): { method?: HttpMethod; path?: string } => {
@@ -163,16 +172,24 @@ export const parseLogLine = (raw: string): ParsedLogLine => {
       }
     }
 
-    // request id (8-char hex or dashes)
-    const requestIdIndex = segments.findIndex((segment) => LOG_REQUEST_ID_REGEX.test(segment));
+    // request id
+    const requestIdIndex = segments.findIndex(
+      (segment) => LOG_REQUEST_ID_REGEX.test(segment) || Boolean(extractNamedRequestId(segment))
+    );
     if (requestIdIndex >= 0) {
-      const match = segments[requestIdIndex].match(LOG_REQUEST_ID_REGEX);
-      if (match) {
-        const id = match[1];
-        if (!/^-+$/.test(id)) {
-          requestId = id;
-        }
+      const namedId = extractNamedRequestId(segments[requestIdIndex]);
+      if (namedId) {
+        requestId = namedId;
         consumed.add(requestIdIndex);
+      } else {
+        const match = segments[requestIdIndex].match(LOG_REQUEST_ID_REGEX);
+        if (match) {
+          const id = match[1];
+          if (!/^-+$/.test(id)) {
+            requestId = id;
+          }
+          consumed.add(requestIdIndex);
+        }
       }
     }
 
@@ -243,6 +260,10 @@ export const parseLogLine = (raw: string): ParsedLogLine => {
     const parsed = extractHttpMethodAndPath(remaining);
     method = parsed.method;
     path = parsed.path;
+
+    if (!requestId) {
+      requestId = extractNamedRequestId(remaining);
+    }
   }
 
   if (!level) level = inferLogLevel(raw);
@@ -272,4 +293,3 @@ export const parseLogLine = (raw: string): ParsedLogLine => {
     message,
   };
 };
-

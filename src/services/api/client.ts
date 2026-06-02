@@ -7,10 +7,15 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import type { ApiClientConfig, ApiError } from '@/types';
 import {
   BUILD_DATE_HEADER_KEYS,
+  CPA_BUILD_DATE_HEADER_KEYS,
+  CPA_VERSION_HEADER_KEYS,
+  HOME_BUILD_DATE_HEADER_KEYS,
+  HOME_VERSION_HEADER_KEYS,
   REQUEST_TIMEOUT_MS,
   VERSION_HEADER_KEYS
 } from '@/utils/constants';
 import { computeApiUrl } from '@/utils/connection';
+import type { ServerRuntimeKind } from '@/types';
 
 class ApiClient {
   private instance: AxiosInstance;
@@ -109,14 +114,21 @@ class ApiClient {
     this.instance.interceptors.response.use(
       (response) => {
         const headers = response.headers as Record<string, string | undefined>;
-        const version = this.readHeader(headers, VERSION_HEADER_KEYS);
-        const buildDate = this.readHeader(headers, BUILD_DATE_HEADER_KEYS);
+        const homeVersion = this.readHeader(headers, HOME_VERSION_HEADER_KEYS);
+        const homeBuildDate = this.readHeader(headers, HOME_BUILD_DATE_HEADER_KEYS);
+        const cpaVersion = this.readHeader(headers, CPA_VERSION_HEADER_KEYS);
+        const cpaBuildDate = this.readHeader(headers, CPA_BUILD_DATE_HEADER_KEYS);
+        const version = homeVersion || cpaVersion || this.readHeader(headers, VERSION_HEADER_KEYS);
+        const buildDate =
+          homeBuildDate || cpaBuildDate || this.readHeader(headers, BUILD_DATE_HEADER_KEYS);
+        const runtimeKind: ServerRuntimeKind | null =
+          homeVersion || homeBuildDate ? 'home' : cpaVersion || cpaBuildDate ? 'cpa' : null;
 
         // 触发版本更新事件（后续通过 store 处理）
-        if (version || buildDate) {
+        if (version || buildDate || runtimeKind) {
           window.dispatchEvent(
             new CustomEvent('server-version-update', {
-              detail: { version: version || null, buildDate: buildDate || null }
+              detail: { version: version || null, buildDate: buildDate || null, runtimeKind }
             })
           );
         }
