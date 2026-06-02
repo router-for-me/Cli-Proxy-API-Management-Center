@@ -417,6 +417,7 @@ export function ProvidersWorkbenchPage() {
         workbench={workbench}
         onCreated={handleCreated}
         onUpdated={handleUpdated}
+        mutationDisabled={disableMutations}
         usageByProvider={usageByProvider}
       />
     </div>

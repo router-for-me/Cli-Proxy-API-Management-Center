@@ -36,6 +36,7 @@ interface ProviderSheetProps {
   workbench: UseProviderWorkbenchResult;
   onCreated: () => void;
   onUpdated: () => void;
+  mutationDisabled?: boolean;
   usageByProvider?: ProviderRecentUsageMap;
   ref?: Ref<ProviderSheetHandle>;
 }
@@ -47,6 +48,7 @@ export function ProviderSheet({
   workbench,
   onCreated,
   onUpdated,
+  mutationDisabled = false,
   usageByProvider,
   ref,
 }: ProviderSheetProps) {
@@ -70,6 +72,8 @@ export function ProviderSheet({
   const descriptor = PROVIDER_DESCRIPTORS[state.brand];
   const isAmpcode = state.brand === 'ampcode';
   const isEditingForm = state.mode === 'create' || state.mode === 'edit';
+  const formMutating = submitting || mutationDisabled;
+  const submitDisabled = formMutating || (state.mode === 'edit' && !isDirty);
 
   const confirmDiscardIfDirty = useCallback((): Promise<boolean> => {
     if (!isEditingForm || !isDirty || submitting) {
@@ -111,6 +115,7 @@ export function ProviderSheet({
 
   const handleCreate = useCallback(
     async (input: ProviderEntryFormInput) => {
+      if (mutationDisabled) return;
       setSubmitting(true);
       try {
         await workbench.createProvider(state.brand, input);
@@ -119,12 +124,12 @@ export function ProviderSheet({
         setSubmitting(false);
       }
     },
-    [onCreated, state.brand, workbench]
+    [mutationDisabled, onCreated, state.brand, workbench]
   );
 
   const handleUpdate = useCallback(
     async (input: ProviderEntryFormInput) => {
-      if (!state.resource) return;
+      if (!state.resource || mutationDisabled || !isDirty) return;
       setSubmitting(true);
       try {
         await workbench.updateProvider(state.resource, input);
@@ -133,11 +138,12 @@ export function ProviderSheet({
         setSubmitting(false);
       }
     },
-    [onUpdated, state.resource, workbench]
+    [isDirty, mutationDisabled, onUpdated, state.resource, workbench]
   );
 
   const handleAmpcodeSubmit = useCallback(
     async (config: Parameters<UseProviderWorkbenchResult['saveAmpcode']>[0]) => {
+      if (mutationDisabled || !isDirty) return;
       setSubmitting(true);
       try {
         await workbench.saveAmpcode(config);
@@ -146,7 +152,7 @@ export function ProviderSheet({
         setSubmitting(false);
       }
     },
-    [onUpdated, workbench]
+    [isDirty, mutationDisabled, onUpdated, workbench]
   );
 
   const renderBody = () => {
@@ -162,7 +168,7 @@ export function ProviderSheet({
         <AmpcodeForm
           key={formKey}
           resource={state.resource}
-          mutating={submitting || workbench.mutating}
+          mutating={formMutating}
           formId={formId}
           onSubmit={handleAmpcodeSubmit}
           onDirtyChange={handleDirtyChange}
@@ -175,7 +181,7 @@ export function ProviderSheet({
         brand={state.brand as Exclude<ProviderBrand, 'ampcode'>}
         resource={state.resource}
         mode={state.mode}
-        mutating={submitting || workbench.mutating}
+        mutating={formMutating}
         formId={formId}
         onSubmit={state.mode === 'create' ? handleCreate : handleUpdate}
         onDirtyChange={handleDirtyChange}
@@ -198,6 +204,7 @@ export function ProviderSheet({
             type="button"
             className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
             onClick={onSwitchToEdit}
+            disabled={formMutating}
           >
             <IconPencil size={14} />
             {t('providersPage.actions.edit')}
@@ -226,7 +233,7 @@ export function ProviderSheet({
           type="submit"
           form={formId}
           className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
-          disabled={submitting}
+          disabled={submitDisabled}
         >
           {submitting ? (
             <IconLoader2 size={14} />
