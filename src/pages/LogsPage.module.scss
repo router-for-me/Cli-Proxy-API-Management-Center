@@ -13,11 +13,25 @@
   }
 }
 
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  margin: 0 0 $spacing-lg 0;
+
+  @include mobile {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+}
+
 .pageTitle {
   font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 $spacing-lg 0;
+  margin: 0;
 }
 
 .tabBar {
@@ -82,6 +96,17 @@
     min-height: auto;
     overflow: visible;
   }
+}
+
+.runtimeNotice {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-full;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  font-size: 12px;
+  line-height: 1.3;
 }
 
 .toolbar {
@@ -622,6 +647,9 @@
 @media (max-height: 820px) {
   .pageTitle {
     font-size: 24px;
+  }
+
+  .pageHeader {
     margin-bottom: $spacing-md;
   }
 
@@ -671,6 +699,9 @@
 @media (max-height: 600px) {
   .pageTitle {
     font-size: 20px;
+  }
+
+  .pageHeader {
     margin-bottom: $spacing-sm;
   }
 

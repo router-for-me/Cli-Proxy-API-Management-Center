@@ -213,7 +213,6 @@ export function MainLayout() {
 
   const logout = useAuthStore((state) => state.logout);
 
-  const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const clearCache = useConfigStore((state) => state.clearCache);
 
@@ -431,16 +430,12 @@ export function MainLayout() {
           metaKey: 'nav_meta.quota_management',
           icon: sidebarIcons.quota,
         },
-        ...(config?.loggingToFile
-          ? [
-              {
-                path: '/logs',
-                labelKey: 'nav.logs',
-                metaKey: 'nav_meta.logs',
-                icon: sidebarIcons.logs,
-              },
-            ]
-          : []),
+        {
+          path: '/logs',
+          labelKey: 'nav.logs',
+          metaKey: 'nav_meta.logs',
+          icon: sidebarIcons.logs,
+        },
       ],
     },
     {
