@@ -18,6 +18,7 @@ import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconGrok from '@/assets/icons/grok.svg';
 import iconGrokDark from '@/assets/icons/grok-dark.svg';
+import iconGitHubCopilot from '@/assets/icons/github-copilot.svg';
 
 interface ProviderState {
   url?: string;
@@ -31,6 +32,10 @@ interface ProviderState {
   callbackSubmitting?: boolean;
   callbackStatus?: 'success' | 'error';
   callbackError?: string;
+  // Device flow fields
+  userCode?: string;
+  verificationUri?: string;
+  expiresIn?: number;
 }
 
 interface VertexImportResult {
@@ -64,13 +69,14 @@ function getErrorStatus(error: unknown): number | undefined {
   return typeof error.status === 'number' ? error.status : undefined;
 }
 
-const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string; icon: string | { light: string; dark: string } }[] = [
+const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string; icon: string | { light: string; dark: string }; isDeviceFlow?: boolean }[] = [
   { id: 'codex', titleKey: 'auth_login.codex_oauth_title', hintKey: 'auth_login.codex_oauth_hint', urlLabelKey: 'auth_login.codex_oauth_url_label', icon: iconCodex },
   { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
   { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconAntigravity },
   { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini },
   { id: 'kimi', titleKey: 'auth_login.kimi_oauth_title', hintKey: 'auth_login.kimi_oauth_hint', urlLabelKey: 'auth_login.kimi_oauth_url_label', icon: { light: iconKimiLight, dark: iconKimiDark } },
-  { id: 'xai', titleKey: 'auth_login.xai_oauth_title', hintKey: 'auth_login.xai_oauth_hint', urlLabelKey: 'auth_login.xai_oauth_url_label', icon: { light: iconGrok, dark: iconGrokDark } }
+  { id: 'xai', titleKey: 'auth_login.xai_oauth_title', hintKey: 'auth_login.xai_oauth_hint', urlLabelKey: 'auth_login.xai_oauth_url_label', icon: { light: iconGrok, dark: iconGrokDark } },
+  { id: 'github-copilot', titleKey: 'auth_login.github_copilot_oauth_title', hintKey: 'auth_login.github_copilot_oauth_hint', urlLabelKey: 'auth_login.github_copilot_oauth_url_label', icon: iconGitHubCopilot, isDeviceFlow: true }
 ];
 
 const CALLBACK_SUPPORTED: OAuthProvider[] = [
@@ -302,7 +308,10 @@ export function OAuthPage() {
       error: undefined,
       callbackStatus: undefined,
       callbackError: undefined,
-      callbackUrl: ''
+      callbackUrl: '',
+      userCode: undefined,
+      verificationUri: undefined,
+      expiresIn: undefined
     });
     try {
       const res = await oauthApi.startAuth(
@@ -321,7 +330,21 @@ export function OAuthPage() {
         showNotification(message, 'error');
         return;
       }
-      updateProviderState(provider, { url: res.url, state: res.state, status: 'waiting', polling: true });
+      // Handle device flow response
+      if ('user_code' in res && 'verification_uri' in res) {
+        const deviceRes = res as { url: string; state: string; user_code: string; verification_uri: string; expires_in?: number };
+        updateProviderState(provider, {
+          url: deviceRes.url,
+          state: deviceRes.state,
+          status: 'waiting',
+          polling: true,
+          userCode: deviceRes.user_code,
+          verificationUri: deviceRes.verification_uri,
+          expiresIn: deviceRes.expires_in
+        });
+      } else {
+        updateProviderState(provider, { url: res.url, state: res.state, status: 'waiting', polling: true });
+      }
       startPolling(provider, res.state);
     } catch (err: unknown) {
       const message = getErrorMessage(err);
@@ -502,7 +525,7 @@ export function OAuthPage() {
                       />
                     </div>
                   )}
-                  {state.url && (
+                  {state.url && !provider.isDeviceFlow && (
                     <div className={styles.authUrlBox}>
                       <div className={styles.authUrlLabel}>{t(provider.urlLabelKey)}</div>
                       <div className={styles.authUrlValue}>{state.url}</div>
@@ -518,6 +541,33 @@ export function OAuthPage() {
                           {t(getAuthKey(provider.id, 'open_link'))}
                         </Button>
                       </div>
+                    </div>
+                  )}
+                  {provider.isDeviceFlow && state.userCode && (
+                    <div className={styles.authUrlBox}>
+                      <div className={styles.authUrlLabel}>{t('auth_login.github_copilot_device_code_label')}</div>
+                      <div className={styles.authUrlValue} style={{ fontSize: '1.5em', fontWeight: 'bold', letterSpacing: '0.1em' }}>
+                        {state.userCode}
+                      </div>
+                      <div className={styles.authUrlActions}>
+                        <Button variant="secondary" size="sm" onClick={() => copyLink(state.userCode!)}>
+                          {t(getAuthKey(provider.id, 'copy_link'))}
+                        </Button>
+                        {state.verificationUri && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => window.open(state.verificationUri, '_blank', 'noopener,noreferrer')}
+                          >
+                            {t(getAuthKey(provider.id, 'open_link'))}
+                          </Button>
+                        )}
+                      </div>
+                      {state.verificationUri && (
+                        <div className={styles.cardHintSecondary}>
+                          {t('auth_login.github_copilot_verification_uri')}: {state.verificationUri}
+                        </div>
+                      )}
                     </div>
                   )}
                   {canSubmitCallback && (

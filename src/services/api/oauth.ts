@@ -10,11 +10,16 @@ export type OAuthProvider =
   | 'antigravity'
   | 'gemini-cli'
   | 'kimi'
-  | 'xai';
+  | 'xai'
+  | 'github-copilot';
 
 export interface OAuthStartResponse {
   url: string;
   state?: string;
+  // Device flow fields
+  user_code?: string;
+  verification_uri?: string;
+  expires_in?: number;
 }
 
 export interface OAuthCallbackResponse {
@@ -26,7 +31,8 @@ const WEBUI_SUPPORTED: OAuthProvider[] = [
   'anthropic',
   'antigravity',
   'gemini-cli',
-  'xai'
+  'xai',
+  'github-copilot'
 ];
 const CALLBACK_PROVIDER_MAP: Partial<Record<OAuthProvider, string>> = {
   'gemini-cli': 'gemini'
