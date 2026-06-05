@@ -115,11 +115,22 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const [columns, gridRef] = useGridColumns(380); // Min card width 380px matches SCSS
   const [viewMode, setViewMode] = useState<ViewMode>('paged');
   const [showTooManyWarning, setShowTooManyWarning] = useState(false);
+  const [fileFilter, setFileFilter] = useState('');
 
-  const filteredFiles = useMemo(() => files.filter((file) => config.filterFn(file)), [
+  const sectionFiles = useMemo(() => files.filter((file) => config.filterFn(file)), [
     files,
     config
   ]);
+  const filteredFiles = useMemo(() => {
+    const term = fileFilter.trim().toLowerCase();
+    if (!term) return sectionFiles;
+
+    return sectionFiles.filter((file) =>
+      [file.name, file.type, file.provider, file.email, file.account, file.label]
+        .filter((value) => value !== undefined && value !== null)
+        .some((value) => String(value).toLowerCase().includes(term))
+    );
+  }, [fileFilter, sectionFiles]);
   const showAllAllowed = filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
   const effectiveViewMode: ViewMode = viewMode === 'all' && !showAllAllowed ? 'paged' : viewMode;
 
@@ -299,6 +310,25 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         </div>
       }
     >
+      <div className={styles.filterPanel}>
+        <label className={styles.filterLabel} htmlFor={`${config.type}-quota-file-filter`}>
+          {t('quota_management.file_filter_label')}
+        </label>
+        <input
+          id={`${config.type}-quota-file-filter`}
+          className={styles.fileFilterInput}
+          value={fileFilter}
+          onChange={(event) => setFileFilter(event.currentTarget.value)}
+          placeholder={t('quota_management.file_filter_placeholder')}
+        />
+        <span className={styles.filterStats}>
+          {t('quota_management.file_filter_count', {
+            count: filteredFiles.length,
+            total: sectionFiles.length,
+          })}
+        </span>
+      </div>
+
       {filteredFiles.length === 0 ? (
         <EmptyState
           title={t(`${config.i18nPrefix}.empty_title`)}

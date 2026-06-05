@@ -1072,6 +1072,9 @@
     "refresh_files": "刷新认证文件",
     "refresh_files_and_quota": "刷新认证文件&额度",
     "refresh_all_credentials": "刷新全部凭证",
+    "file_filter_label": "过滤认证文件",
+    "file_filter_placeholder": "输入文件名、邮箱或类型",
+    "file_filter_count": "显示 {{count}} / {{total}} 个认证文件",
     "card_idle_hint": "请使用顶部“刷新全部凭证”按钮获取最新额度。"
   },
   "system_info": {

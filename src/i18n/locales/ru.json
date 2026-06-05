@@ -1069,6 +1069,9 @@
     "refresh_files": "Обновить файлы авторизации",
     "refresh_files_and_quota": "Обновить файлы и квоты",
     "refresh_all_credentials": "Обновить все учётные данные",
+    "file_filter_label": "Фильтр файлов авторизации",
+    "file_filter_placeholder": "Введите имя файла, email или тип",
+    "file_filter_count": "Показано {{count}} / {{total}} файлов авторизации",
     "card_idle_hint": "Используйте кнопку «Обновить все учётные данные» сверху, чтобы загрузить актуальные данные по квотам."
   },
   "system_info": {

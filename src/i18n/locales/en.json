@@ -1072,6 +1072,9 @@
     "refresh_files": "Refresh auth files",
     "refresh_files_and_quota": "Refresh files & quota",
     "refresh_all_credentials": "Refresh all credentials",
+    "file_filter_label": "Filter auth files",
+    "file_filter_placeholder": "Enter file name, email, or type",
+    "file_filter_count": "Showing {{count}} / {{total}} auth files",
     "card_idle_hint": "Use the top \"Refresh all credentials\" button to fetch the latest quota data."
   },
   "system_info": {
