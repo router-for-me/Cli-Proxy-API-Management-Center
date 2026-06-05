@@ -80,6 +80,51 @@
   font-size: 14px;
 }
 
+.filterPanel {
+  display: flex;
+  align-items: flex-end;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+  padding: $spacing-md;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background-color: var(--bg-secondary);
+}
+
+.filterLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.fileFilterInput {
+  width: min(420px, 100%);
+  height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+}
+
+.filterStats {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
 .pageSizeSelect {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
@@ -243,6 +288,15 @@
 }
 
 @include mobile {
+  .filterPanel {
+    align-items: stretch;
+  }
+
+  .filterLabel,
+  .fileFilterInput {
+    width: 100%;
+  }
+
   .headerActions {
     gap: $spacing-xs;
   }
