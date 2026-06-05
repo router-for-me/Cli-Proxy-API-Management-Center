@@ -1,4 +1,4 @@
-import { useCallback, type ReactNode } from 'react';
+import { useCallback, useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
@@ -35,10 +35,11 @@ export type AuthFileQuotaSectionProps = {
   file: AuthFileItem;
   quotaType: QuotaProviderType;
   disableControls: boolean;
+  registerRefreshHandler?: (handler: (() => void) | null) => void;
 };
 
 export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
-  const { file, quotaType, disableControls } = props;
+  const { file, quotaType, disableControls, registerRefreshHandler } = props;
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
 
@@ -99,6 +100,12 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       showNotification(t('auth_files.quota_refresh_failed', { name: file.name, message }), 'error');
     }
   }, [disableControls, file, quota?.status, quotaType, showNotification, t, updateQuotaState]);
+
+  useEffect(() => {
+    if (!registerRefreshHandler) return;
+    registerRefreshHandler(() => void refreshQuotaForFile());
+    return () => registerRefreshHandler(null);
+  }, [refreshQuotaForFile, registerRefreshHandler]);
 
   const config = getQuotaConfig(quotaType) as unknown as {
     i18nPrefix: string;

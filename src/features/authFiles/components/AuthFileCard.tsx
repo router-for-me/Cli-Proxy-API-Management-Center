@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -7,6 +8,7 @@ import {
   IconDownload,
   IconInfo,
   IconModelCluster,
+  IconRefreshCw,
   IconSettings,
   IconTrash2,
 } from '@/components/ui/icons';
@@ -65,6 +67,10 @@ const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
 
 export function AuthFileCard(props: AuthFileCardProps) {
   const { t } = useTranslation();
+  const [quotaRefreshHandler, setQuotaRefreshHandler] = useState<(() => void) | null>(null);
+  const registerQuotaRefreshHandler = useCallback((handler: (() => void) | null) => {
+    setQuotaRefreshHandler(() => handler);
+  }, []);
   const {
     file,
     compact,
@@ -256,6 +262,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 file={file}
                 quotaType={quotaType}
                 disableControls={disableControls}
+                registerRefreshHandler={registerQuotaRefreshHandler}
               />
             )}
           </div>
@@ -303,6 +310,21 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   >
                     <IconSettings className={styles.actionIcon} size={16} />
                   </Button>
+                  {showQuotaLayout && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => quotaRefreshHandler?.()}
+                      className={styles.quotaActionButton}
+                      title={t('auth_files.quota_refresh_hint')}
+                      disabled={disableControls || file.disabled || !quotaRefreshHandler}
+                    >
+                      <>
+                        <IconRefreshCw className={styles.actionIcon} size={14} />
+                        <span>{t('auth_files.quota_refresh_single')}</span>
+                      </>
+                    </Button>
+                  )}
                   <Button
                     variant="danger"
                     size="sm"

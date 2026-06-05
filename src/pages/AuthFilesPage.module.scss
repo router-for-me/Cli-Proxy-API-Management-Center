@@ -1549,6 +1549,19 @@
   gap: 0;
 }
 
+.quotaActionButton:global(.btn.btn-sm) {
+  height: 32px;
+  padding-inline: 9px;
+  border-radius: 8px;
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+}
+
 .actionIcon {
   display: block;
 }
