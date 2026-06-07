@@ -43,11 +43,20 @@ const formatPercent = (value: number | null | undefined, locale?: string): strin
   return `${value.toLocaleString(locale)}%`;
 };
 
-const buildIdentityLabel = (item: CodexStateEntry): string => {
-  if (item.email?.trim()) return item.email.trim();
-  if (item.account?.trim()) return item.account.trim();
-  if (item.name?.trim()) return item.name.trim();
-  return item.id;
+type CodexIdentityLike = {
+  id?: string;
+  email?: string;
+  note?: string;
+  account?: string;
+  name?: string;
+};
+
+const buildIdentityLabel = (item: CodexIdentityLike | null | undefined): string => {
+  if (!item) return '';
+  const primary =
+    item.email?.trim() || item.account?.trim() || item.name?.trim() || item.id?.trim() || '';
+  const note = item.note?.trim();
+  return primary && note ? `${primary} (${note})` : primary;
 };
 
 const formatDraftValue = (value: number): string => {
@@ -168,19 +177,29 @@ export function CodexRuntimePage() {
     setScoreDrafts(next);
   }, []);
 
-  const loadState = useCallback(async () => {
+  const fetchState = useCallback(async () => {
+    const data = await codexStateApi.list();
+    setItems(data);
+    syncDrafts(data);
+    return data;
+  }, [syncDrafts]);
+
+  const reloadState = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await codexStateApi.list();
-      setItems(data);
-      syncDrafts(data);
+      return await fetchState();
     } catch (err: unknown) {
       setError(getErrorMessage(err) || t('notification.refresh_failed'));
+      return [] as CodexStateEntry[];
     } finally {
       setLoading(false);
     }
-  }, [syncDrafts, t]);
+  }, [fetchState, t]);
+
+  const loadState = useCallback(async () => {
+    await reloadState();
+  }, [reloadState]);
 
   useHeaderRefresh(loadState);
 
@@ -314,16 +333,8 @@ export function CodexRuntimePage() {
 
     return {
       accounts: items.length,
-      currentAccount:
-        currentAccount?.email?.trim() ||
-        currentAccount?.account?.trim() ||
-        currentAccount?.name?.trim() ||
-        '—',
-      recommendedAccount:
-        recommendedAccount?.email?.trim() ||
-        recommendedAccount?.account?.trim() ||
-        recommendedAccount?.name?.trim() ||
-        '—',
+      currentAccount: buildIdentityLabel(currentAccount) || '—',
+      recommendedAccount: buildIdentityLabel(recommendedAccount) || '—',
       usableFiveHourRemainingPercent:
         fiveHourLimit > 0 ? Math.round((fiveHourRemaining / fiveHourLimit) * 100) : null,
       fleetUsableWeeklyRemainingPercent:
@@ -413,8 +424,11 @@ export function CodexRuntimePage() {
     setRecalculating(true);
     try {
       const result = await codexStateApi.recalc();
-      await loadState();
-      const account = result?.on_device?.email || result?.on_device?.account || result?.on_device?.name || '';
+      const refreshedItems = await reloadState();
+      const refreshedOnDevice = result?.on_device?.id
+        ? refreshedItems.find((item) => item.id === result.on_device?.id)
+        : refreshedItems.find((item) => item.on_device);
+      const account = buildIdentityLabel(refreshedOnDevice ?? result?.on_device);
       showNotification(
         account
           ? `${t('codex_runtime.recalc_success')}: ${account}`

@@ -36,6 +36,7 @@ export interface CodexStateEntry {
   disabled?: boolean;
   unavailable?: boolean;
   email?: string;
+  note?: string;
   account_type?: string;
   account?: string;
   codex_quota?: CodexRuntimeQuotaState | null;
@@ -79,6 +80,7 @@ export interface CodexStateRecalcResponse {
     auth_index?: string;
     name?: string;
     email?: string;
+    note?: string;
     account?: string;
   } | null;
 }
