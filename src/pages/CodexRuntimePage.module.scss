@@ -137,6 +137,15 @@
 .cardExhausted {
   background-image: linear-gradient(180deg, rgba(255, 228, 230, 0.92), rgba(255, 241, 242, 0.78));
   border-color: rgba(244, 114, 182, 0.24);
+
+  [data-theme='dark'] & {
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--warning-color) 22%, var(--bg-primary)),
+      color-mix(in srgb, var(--warning-color) 12%, var(--bg-primary))
+    );
+    border-color: color-mix(in srgb, var(--warning-color) 48%, var(--border-color));
+  }
 }
 
 .cardTitle {
