@@ -75,9 +75,9 @@ export function PayloadPresetBar({ disabled, values, onChange }: PayloadPresetBa
     setConfirmDeleteId(null);
   }, [confirmDeleteId, deletePreset, selectedId]);
 
-  const selectedPreset = useMemo(
-    () => presets.find((p) => p.id === selectedId),
-    [presets, selectedId],
+  const deleteTargetPreset = useMemo(
+    () => (confirmDeleteId ? presets.find((p) => p.id === confirmDeleteId) : null),
+    [presets, confirmDeleteId],
   );
 
   if (presets.length === 0 && !saveModalOpen) {
@@ -215,8 +215,8 @@ export function PayloadPresetBar({ disabled, values, onChange }: PayloadPresetBa
         <p>
           {t(
             'config_management.visual.sections.payload.preset_confirm_delete',
-            selectedPreset
-              ? { name: selectedPreset.name }
+            deleteTargetPreset
+              ? { name: deleteTargetPreset.name }
               : { name: '' },
           )}
         </p>

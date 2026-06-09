@@ -28,7 +28,7 @@ export function usePayloadPresets() {
       name: string,
       currentRules: PresetRules,
     ) => {
-      const deep = <T>(v: T): T => JSON.parse(JSON.stringify(v));
+      const deep = <T>(v: T): T => structuredClone(v);
 
       setPresets((prev) => {
         const existing = prev.findIndex((p) => p.name === name);
@@ -60,7 +60,7 @@ export function usePayloadPresets() {
     (id: string): PresetRules | null => {
       const preset = presets.find((p) => p.id === id);
       if (!preset) return null;
-      const deep = <T>(v: T): T => JSON.parse(JSON.stringify(v));
+      const deep = <T>(v: T): T => structuredClone(v);
       return {
         payloadDefaultRules: deep(preset.payloadDefaultRules),
         payloadDefaultRawRules: deep(preset.payloadDefaultRawRules),
