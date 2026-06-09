@@ -744,3 +744,57 @@
     padding: 12px;
   }
 }
+
+/* Payload Preset Bar */
+.payloadPresetBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.payloadPresetBarLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.payloadPresetBarActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.payloadPresetBarSelect {
+  min-width: 160px;
+  max-width: 260px;
+  flex: 1;
+}
+
+.payloadPresetBarBtn {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .payloadPresetBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .payloadPresetBarActions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .payloadPresetBarSelect {
+    max-width: none;
+  }
+}

@@ -982,7 +982,20 @@
           "override_raw_rules": "Override Raw Rules",
           "override_raw_rules_desc": "Always overwrite parameter values as raw JSON fragments, useful for response_format, schemas, and other complex fields",
           "filter_rules": "Filter Rules",
-          "filter_rules_desc": "Pre-filter upstream request body via JSON Path, automatically remove non-compliant/redundant parameters (Request Sanitization)"
+          "filter_rules_desc": "Pre-filter upstream request body via JSON Path, automatically remove non-compliant/redundant parameters (Request Sanitization)",
+          "preset_title": "Payload Presets",
+          "preset_select_placeholder": "Select preset...",
+          "preset_save": "Save Current",
+          "preset_apply": "Apply",
+          "preset_delete": "Delete",
+          "preset_name_label": "Preset Name",
+          "preset_name_placeholder": "Enter preset name...",
+          "preset_confirm_delete": "Delete preset '{{name}}'?",
+          "preset_no_presets": "No presets saved",
+          "preset_overwrite": "A preset with this name exists. Overwrite?",
+          "preset_applied": "Preset '{{name}}' applied",
+          "preset_saved": "Preset '{{name}}' saved",
+          "preset_deleted": "Preset '{{name}}' deleted"
         }
       },
       "api_keys": {

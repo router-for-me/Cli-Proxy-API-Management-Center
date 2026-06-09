@@ -1008,7 +1008,20 @@
           "override_raw_rules": "覆寫 Raw 規則",
           "override_raw_rules_desc": "始終按原始 JSON 片段覆寫參數值，適合 response_format、schema 等複雜欄位",
           "filter_rules": "篩選規則",
-          "filter_rules_desc": "透過 JSON Path 預篩選上游請求體，自動剔除不合規/冗餘參數（Request Sanitization）"
+          "filter_rules_desc": "透過 JSON Path 預篩選上游請求體，自動剔除不合規/冗餘參數（Request Sanitization）",
+          "preset_title": "載荷預設",
+          "preset_select_placeholder": "選擇預設...",
+          "preset_save": "儲存目前",
+          "preset_apply": "套用",
+          "preset_delete": "刪除",
+          "preset_name_label": "預設名稱",
+          "preset_name_placeholder": "輸入預設名稱...",
+          "preset_confirm_delete": "確定刪除預設 '{{name}}' 嗎？",
+          "preset_no_presets": "暫無預設",
+          "preset_overwrite": "同名預設已存在，是否覆蓋？",
+          "preset_applied": "已套用預設 '{{name}}'",
+          "preset_saved": "已儲存預設 '{{name}}'",
+          "preset_deleted": "已刪除預設 '{{name}}'"
         }
       },
       "api_keys": {

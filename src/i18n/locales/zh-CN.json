@@ -982,7 +982,20 @@
           "override_raw_rules": "覆盖 Raw 规则",
           "override_raw_rules_desc": "始终按原始 JSON 片段覆盖参数值，适合 response_format、schema 等复杂字段",
           "filter_rules": "过滤规则",
-          "filter_rules_desc": "通过 JSON Path 预过滤上游请求体，自动剔除不合规/冗余参数（Request Sanitization）"
+          "filter_rules_desc": "通过 JSON Path 预过滤上游请求体，自动剔除不合规/冗余参数（Request Sanitization）",
+          "preset_title": "载荷预设",
+          "preset_select_placeholder": "选择预设...",
+          "preset_save": "保存当前",
+          "preset_apply": "应用",
+          "preset_delete": "删除",
+          "preset_name_label": "预设名称",
+          "preset_name_placeholder": "输入预设名称...",
+          "preset_confirm_delete": "确定删除预设 '{{name}}' 吗？",
+          "preset_no_presets": "暂无预设",
+          "preset_overwrite": "同名预设已存在，是否覆盖？",
+          "preset_applied": "已应用预设 '{{name}}'",
+          "preset_saved": "已保存预设 '{{name}}'",
+          "preset_deleted": "已删除预设 '{{name}}'"
         }
       },
       "api_keys": {

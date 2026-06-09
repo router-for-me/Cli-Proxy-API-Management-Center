@@ -38,6 +38,7 @@ import {
   PayloadFilterRulesEditor,
   PayloadRulesEditor,
 } from './VisualConfigEditorBlocks';
+import { PayloadPresetBar } from '@/components/config/PayloadPresetBar';
 import styles from './VisualConfigEditor.module.scss';
 
 type VisualSectionId = 'server' | 'auth' | 'system' | 'quota' | 'streaming' | 'payload';
@@ -1143,6 +1144,11 @@ export function VisualConfigEditor({
             title={t('config_management.visual.sections.payload.title')}
             description={t('config_management.visual.sections.payload.description')}
           >
+            <PayloadPresetBar
+              disabled={disabled}
+              values={values}
+              onChange={onChange}
+            />
             <SectionStack>
               <SectionSubsection
                 title={t('config_management.visual.sections.payload.default_rules')}

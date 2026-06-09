@@ -123,6 +123,17 @@ export type VisualConfigValues = {
   streaming: StreamingConfig;
 };
 
+export type PayloadPreset = {
+  id: string;
+  name: string;
+  payloadDefaultRules: PayloadRule[];
+  payloadDefaultRawRules: PayloadRule[];
+  payloadOverrideRules: PayloadRule[];
+  payloadOverrideRawRules: PayloadRule[];
+  payloadFilterRules: PayloadFilterRule[];
+  createdAt: number;
+};
+
 export const makeClientId = () => {
   if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID();
   return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
