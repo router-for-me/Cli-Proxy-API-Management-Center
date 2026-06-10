@@ -18,6 +18,7 @@ import {
   IconSidebarDashboard,
   IconSidebarLogs,
   IconSidebarOauth,
+  IconSidebarPlugins,
   IconSidebarProviders,
   IconSidebarQuota,
   IconSidebarSystem,
@@ -41,6 +42,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
+  plugins: <IconSidebarPlugins size={18} />,
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
@@ -235,7 +237,7 @@ export function MainLayout() {
   const isLogsPage = location.pathname.startsWith('/logs');
   const showSidebarLabels = !sidebarCollapsed || sidebarOpen;
 
-  // 将顶部悬浮控制区高度写入 CSS 变量，供移动端粘性元素和浮层避让。
+  // Keep floating header height available to sticky mobile elements and overlays.
   useLayoutEffect(() => {
     const updateHeaderHeight = () => {
       const height = headerRef.current?.offsetHeight;
@@ -264,7 +266,7 @@ export function MainLayout() {
     };
   }, []);
 
-  // 将主内容区的中心点写入 CSS 变量，供底部浮层（配置面板操作栏、提供商导航）对齐到内容区
+  // Keep the content center available to bottom overlays that align with the main area.
   useLayoutEffect(() => {
     const updateContentCenter = () => {
       const el = contentRef.current;
@@ -379,7 +381,7 @@ export function MainLayout() {
 
   useEffect(() => {
     fetchConfig().catch(() => {
-      // ignore initial failure; login flow会提示
+      // Ignore the initial failure; the login flow shows the user-facing prompt.
     });
   }, [fetchConfig]);
 
@@ -447,6 +449,12 @@ export function MainLayout() {
           labelKey: 'nav.config_management',
           metaKey: 'nav_meta.config_management',
           icon: sidebarIcons.config,
+        },
+        {
+          path: '/plugins',
+          labelKey: 'nav.plugins',
+          metaKey: 'nav_meta.plugins',
+          icon: sidebarIcons.plugins,
         },
         {
           path: '/system',
