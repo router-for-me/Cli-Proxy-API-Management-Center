@@ -10,10 +10,10 @@ import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import type { ProviderBrand, ProviderGroup, ProviderResource } from '../types';
 import { ProviderResourceTable } from './ProviderResourceTable';
 import {
-  OpenAIBrandToolbar,
-  type OpenAISortBy,
+  ProviderResourceToolbar,
+  type ProviderSortBy,
   type SortDir,
-} from './OpenAIBrandToolbar';
+} from './ProviderResourceToolbar';
 import styles from './ProviderResourcePanel.module.scss';
 
 const LOGOS: Record<ProviderBrand, { src: string; invertOnDark?: boolean }> = {
@@ -25,10 +25,10 @@ const LOGOS: Record<ProviderBrand, { src: string; invertOnDark?: boolean }> = {
   ampcode: { src: ampcodeLogo },
 };
 
-export interface OpenAIPanelControls {
-  sortBy: OpenAISortBy;
+export interface ProviderPanelControls {
+  sortBy: ProviderSortBy;
   sortDir: SortDir;
-  onSortBy: (value: OpenAISortBy) => void;
+  onSortBy: (value: ProviderSortBy) => void;
   onSortDir: (value: SortDir) => void;
   availableModels: ReadonlyArray<string>;
   selectedModels: ReadonlySet<string>;
@@ -43,7 +43,7 @@ interface ProviderResourcePanelProps {
   selectedId: string | null;
   disableMutations?: boolean;
   usageByProvider?: ProviderRecentUsageMap;
-  openaiControls?: OpenAIPanelControls;
+  toolbarControls?: ProviderPanelControls;
   onView: (resource: ProviderResource) => void;
   onEdit: (resource: ProviderResource) => void;
   onDelete: (resource: ProviderResource) => void;
@@ -59,7 +59,7 @@ export function ProviderResourcePanel({
   selectedId,
   disableMutations,
   usageByProvider,
-  openaiControls,
+  toolbarControls,
   onView,
   onEdit,
   onDelete,
@@ -105,16 +105,17 @@ export function ProviderResourcePanel({
             </div>
           ) : null}
         </div>
-        {openaiControls ? (
+        {toolbarControls ? (
           <div className={styles.headerToolbarRow}>
-            <OpenAIBrandToolbar
-              sortBy={openaiControls.sortBy}
-              sortDir={openaiControls.sortDir}
-              onSortBy={openaiControls.onSortBy}
-              onSortDir={openaiControls.onSortDir}
-              availableModels={openaiControls.availableModels}
-              selectedModels={openaiControls.selectedModels}
-              onSelectedModelsChange={openaiControls.onSelectedModelsChange}
+            <ProviderResourceToolbar
+              key={group.id}
+              sortBy={toolbarControls.sortBy}
+              sortDir={toolbarControls.sortDir}
+              onSortBy={toolbarControls.onSortBy}
+              onSortDir={toolbarControls.onSortDir}
+              availableModels={toolbarControls.availableModels}
+              selectedModels={toolbarControls.selectedModels}
+              onSelectedModelsChange={toolbarControls.onSelectedModelsChange}
             />
           </div>
         ) : null}

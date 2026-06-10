@@ -7,22 +7,22 @@ import {
 } from '@/components/ui/icons';
 import { Select } from '@/components/ui/Select';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
-import styles from './OpenAIBrandToolbar.module.scss';
+import styles from './ProviderResourceToolbar.module.scss';
 
-export type OpenAISortBy = 'name' | 'priority' | 'recent-success';
+export type ProviderSortBy = 'name' | 'priority' | 'recent-success';
 export type SortDir = 'asc' | 'desc';
 
-interface OpenAIBrandToolbarProps {
-  sortBy: OpenAISortBy;
+interface ProviderResourceToolbarProps {
+  sortBy: ProviderSortBy;
   sortDir: SortDir;
-  onSortBy: (value: OpenAISortBy) => void;
+  onSortBy: (value: ProviderSortBy) => void;
   onSortDir: (value: SortDir) => void;
   availableModels: ReadonlyArray<string>;
   selectedModels: ReadonlySet<string>;
   onSelectedModelsChange: (next: Set<string>) => void;
 }
 
-export function OpenAIBrandToolbar({
+export function ProviderResourceToolbar({
   sortBy,
   sortDir,
   onSortBy,
@@ -30,7 +30,7 @@ export function OpenAIBrandToolbar({
   availableModels,
   selectedModels,
   onSelectedModelsChange,
-}: OpenAIBrandToolbarProps) {
+}: ProviderResourceToolbarProps) {
   const { t } = useTranslation();
   const [filterOpen, setFilterOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -86,7 +86,7 @@ export function OpenAIBrandToolbar({
         <Select
           value={sortBy}
           options={sortOptions}
-          onChange={(value) => onSortBy(value as OpenAISortBy)}
+          onChange={(value) => onSortBy(value as ProviderSortBy)}
           ariaLabel={t('providersPage.toolbar.sortBy')}
           size="sm"
         />

@@ -180,6 +180,15 @@ export function getProviderTotalStats(
   return { success: entry.success, failure: entry.failed };
 }
 
+export function getProviderRecentWindowStats(
+  usageByProvider: ProviderRecentUsageMap,
+  provider: string,
+  apiKey?: string,
+  baseUrl?: string
+): { success: number; failure: number } {
+  return sumRecentRequests(getProviderRecentBuckets(usageByProvider, provider, apiKey, baseUrl));
+}
+
 const collectOpenAIProviderRecentBuckets = (
   provider: OpenAIProviderConfig,
   usageByProvider: ProviderRecentUsageMap
