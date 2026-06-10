@@ -76,7 +76,10 @@ function buildInitialForm(
       websockets: brand === 'codex' ? false : undefined,
       cloak:
         brand === 'claude' ? { mode: '', strictMode: false, sensitiveWordsText: '' } : undefined,
-      testModel: brand === 'openaiCompatibility' || brand === 'claude' ? '' : undefined,
+      testModel:
+        brand === 'openaiCompatibility' || brand === 'claude' || brand === 'gemini'
+          ? ''
+          : undefined,
       apiKeyEntries: brand === 'openaiCompatibility' ? [emptyApiKeyEntry()] : undefined,
     };
   }
@@ -152,7 +155,7 @@ function buildInitialForm(
             sensitiveWordsText: (cfg as ProviderKeyConfig).cloak?.sensitiveWords?.join('\n') ?? '',
           }
         : undefined,
-    testModel: brand === 'claude' ? '' : undefined,
+    testModel: brand === 'claude' || brand === 'gemini' ? '' : undefined,
   };
 }
 
@@ -415,6 +418,12 @@ export function BaseProviderForm({
     [form.apiKeyEntries]
   );
   const actualApiKeyEntries = form.apiKeyEntries ?? [];
+  const singleConnectivity =
+    brand === 'gemini'
+      ? { status: connectivity.geminiStatus, run: connectivity.runGemini }
+      : brand === 'claude'
+        ? { status: connectivity.claudeStatus, run: connectivity.runClaude }
+        : null;
 
   const removeApiKeyEntry = (removeIdx: number) => {
     setShowPasswords((prev) => {
@@ -578,7 +587,7 @@ export function BaseProviderForm({
           <div className={styles.field}>
             <label className={styles.label} htmlFor={`${fid}-testModel`}>
               {t('providersPage.form.testModel')}
-              {brand === 'claude' ? (
+              {brand === 'claude' || brand === 'gemini' ? (
                 <span className={styles.labelHint}>
                   {' '}
                   · {t('providersPage.form.testModelClaudeHint')}
@@ -593,31 +602,31 @@ export function BaseProviderForm({
               disabled={mutating}
               ariaLabel={t('providersPage.form.testModel')}
             />
-            {brand === 'claude' ? (
+            {singleConnectivity ? (
               <div className={styles.connectivityRow}>
                 <button
                   type="button"
                   className={styles.connectivityBtn}
                   disabled={mutating || connectivity.isTestingAny}
-                  onClick={() => void connectivity.runClaude()}
+                  onClick={() => void singleConnectivity.run()}
                 >
-                  {connectivity.claudeStatus.state === 'loading' ? (
+                  {singleConnectivity.status.state === 'loading' ? (
                     <span className={`${styles.statusIcon} ${styles.statusIconLoading}`}>
                       <IconLoader2 size={14} />
                     </span>
                   ) : null}
                   <span>{t('providersPage.connectivity.test')}</span>
                 </button>
-                <ConnectivityStatusIcon state={connectivity.claudeStatus.state} />
-                {connectivity.claudeStatus.state === 'success' ? (
+                <ConnectivityStatusIcon state={singleConnectivity.status.state} />
+                {singleConnectivity.status.state === 'success' ? (
                   <span className={styles.connectivityHintSuccess}>
                     {t('providersPage.connectivity.success')}
                   </span>
                 ) : null}
               </div>
             ) : null}
-            {brand === 'claude' && connectivity.claudeStatus.state === 'error' ? (
-              <div className={styles.connectivityError}>{connectivity.claudeStatus.message}</div>
+            {singleConnectivity?.status.state === 'error' ? (
+              <div className={styles.connectivityError}>{singleConnectivity.status.message}</div>
             ) : null}
           </div>
         ) : null}
