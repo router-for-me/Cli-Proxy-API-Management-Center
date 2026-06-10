@@ -372,6 +372,53 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+
+  :global(.item-meta) {
+    flex: 1 1 260px;
+    min-width: 0;
+  }
+
+  :global(.item-title) {
+    overflow-wrap: anywhere;
+  }
+
+  :global(.item-actions) {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+.errorLogViewer {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  min-height: 0;
+}
+
+.errorLogViewerMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm $spacing-md;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.errorLogContent {
+  margin: 0;
+  padding: 12px;
+  max-height: min(58vh, 640px);
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  -webkit-overflow-scrolling: touch;
 }
 
 .loadMoreBanner {
