@@ -12,28 +12,13 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useAuthStore, useNotificationStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
+import { buildOAuthProviderOptions, normalizeProviderKey } from '@/features/authFiles/constants';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
 import styles from './AuthFilesOAuthExcludedEditPage.module.scss';
 
 type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
 
 type LocationState = { fromAuthFiles?: boolean } | null;
-
-const OAUTH_PROVIDER_PRESETS = [
-  'gemini-cli',
-  'vertex',
-  'aistudio',
-  'antigravity',
-  'claude',
-  'codex',
-  'qwen',
-  'kimi',
-  'iflow',
-];
-
-const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
-
-const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
 
 export function AuthFilesOAuthExcludedEditPage() {
   const { t } = useTranslation();
@@ -76,16 +61,7 @@ export function AuthFilesOAuthExcludedEditPage() {
       }
     });
 
-    const normalizedExtras = Array.from(extraProviders)
-      .map((value) => value.trim())
-      .filter((value) => value && !OAUTH_PROVIDER_EXCLUDES.has(value.toLowerCase()));
-
-    const baseSet = new Set(OAUTH_PROVIDER_PRESETS.map((value) => value.toLowerCase()));
-    const extraList = normalizedExtras
-      .filter((value) => !baseSet.has(value.toLowerCase()))
-      .sort((a, b) => a.localeCompare(b));
-
-    return [...OAUTH_PROVIDER_PRESETS, ...extraList];
+    return buildOAuthProviderOptions(extraProviders);
   }, [excluded, files, modelAlias]);
 
   const getTypeLabel = useCallback(
@@ -223,7 +199,7 @@ export function AuthFilesOAuthExcludedEditPage() {
             ? (err as { status?: unknown }).status
             : undefined;
 
-        if (status === 404) {
+        if (status === 400 || status === 404) {
           setModelsList([]);
           setModelsError('unsupported');
           return;
@@ -281,7 +257,7 @@ export function AuthFilesOAuthExcludedEditPage() {
     try {
       if (models.length) {
         await authFilesApi.saveOauthExcludedModels(normalizedProvider, models);
-      } else {
+      } else if (isEditing) {
         await authFilesApi.deleteOauthExcludedEntry(normalizedProvider);
       }
       showNotification(t('oauth_excluded.save_success'), 'success');
@@ -292,7 +268,7 @@ export function AuthFilesOAuthExcludedEditPage() {
     } finally {
       setSaving(false);
     }
-  }, [handleBack, provider, selectedModels, showNotification, t]);
+  }, [handleBack, isEditing, provider, selectedModels, showNotification, t]);
 
   const canSave = !disableControls && !saving && !excludedUnsupported;
 
@@ -352,7 +328,8 @@ export function AuthFilesOAuthExcludedEditPage() {
               {providerOptions.length > 0 && (
                 <div className={styles.tagList}>
                   {providerOptions.map((option) => {
-                    const isActive = normalizeProviderKey(provider) === option.toLowerCase();
+                    const isActive =
+                      normalizeProviderKey(provider) === normalizeProviderKey(option);
                     return (
                       <button
                         key={option}

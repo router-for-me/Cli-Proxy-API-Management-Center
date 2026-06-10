@@ -11,6 +11,7 @@ import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import type { AuthFileItem } from '@/types';
+import { normalizeOAuthProviderKey } from '@/utils/providerKeys';
 import { parseTimestamp } from '@/utils/timestamp';
 
 export type ThemeColors = { bg: string; text: string; border?: string };
@@ -34,6 +35,19 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'kimi',
   'xai',
 ]);
+
+export const OAUTH_PROVIDER_PRESETS = [
+  'gemini-cli',
+  'vertex',
+  'aistudio',
+  'antigravity',
+  'xai',
+  'claude',
+  'codex',
+  'kimi',
+];
+
+const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
 
 export const MIN_CARD_PAGE_SIZE = 3;
 export const MAX_CARD_PAGE_SIZE = 30;
@@ -137,10 +151,23 @@ export const resolveQuotaErrorMessage = (
   return fallback;
 };
 
-export const normalizeProviderKey = (value: string) => {
-  const key = value.trim().toLowerCase().replace(/_/g, '-');
-  if (key === 'x-ai' || key === 'grok') return 'xai';
-  return key;
+export const normalizeProviderKey = normalizeOAuthProviderKey;
+
+export const buildOAuthProviderOptions = (values: Iterable<unknown>): string[] => {
+  const extraProviders = new Set<string>();
+
+  Array.from(values).forEach((value) => {
+    const key = normalizeProviderKey(String(value ?? ''));
+    if (!key || OAUTH_PROVIDER_EXCLUDES.has(key)) return;
+    extraProviders.add(key);
+  });
+
+  const baseSet = new Set(OAUTH_PROVIDER_PRESETS.map((value) => normalizeProviderKey(value)));
+  const extraList = Array.from(extraProviders)
+    .filter((value) => !baseSet.has(value))
+    .sort((a, b) => a.localeCompare(b));
+
+  return [...OAUTH_PROVIDER_PRESETS, ...extraList];
 };
 
 export const getAuthFileStatusMessage = (file: AuthFileItem): string => {

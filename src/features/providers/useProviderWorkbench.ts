@@ -161,7 +161,7 @@ const buildOpenAIConfig = (
     name: input.name.trim(),
     baseUrl: input.baseUrl.trim(),
     prefix: input.prefix.trim() || undefined,
-    apiKeyEntries: apiKeyEntries.length ? apiKeyEntries : (existing?.apiKeyEntries ?? []),
+    apiKeyEntries,
     disabled: input.disabled,
     headers: Object.keys(headers).length ? headers : undefined,
     models: models.length ? models : undefined,
@@ -443,7 +443,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           updateConfigValue('vertex-api-key', next);
           clearCache('vertex-api-key');
         } else if (sel.brand === 'openaiCompatibility') {
-          await providersApi.deleteOpenAIProvider(sel.name);
+          await providersApi.deleteOpenAIProvider(sel.index);
           const next = (config?.openaiCompatibility ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('openai-compatibility', next);
           clearCache('openai-compatibility');

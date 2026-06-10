@@ -381,13 +381,6 @@ export function BaseProviderForm({
     if (descriptor.baseUrlRequired && !form.baseUrl.trim()) {
       return t('providersPage.form.validation.baseUrlRequired');
     }
-    if (
-      brand === 'openaiCompatibility' &&
-      mode === 'create' &&
-      !form.apiKeyEntries?.some((e) => e.apiKey.trim())
-    ) {
-      return t('providersPage.form.validation.apiKeyRequired');
-    }
     return null;
   };
 
@@ -421,6 +414,7 @@ export function BaseProviderForm({
       form.apiKeyEntries && form.apiKeyEntries.length ? form.apiKeyEntries : [emptyApiKeyEntry()],
     [form.apiKeyEntries]
   );
+  const actualApiKeyEntries = form.apiKeyEntries ?? [];
 
   const removeApiKeyEntry = (removeIdx: number) => {
     setShowPasswords((prev) => {
@@ -437,7 +431,7 @@ export function BaseProviderForm({
     });
     updateField(
       'apiKeyEntries',
-      apiKeyEntries.filter((_, i) => i !== removeIdx)
+      actualApiKeyEntries.filter((_, i) => i !== removeIdx)
     );
   };
 
@@ -676,7 +670,9 @@ export function BaseProviderForm({
                 type="button"
                 className={styles.addBtn}
                 disabled={mutating}
-                onClick={() => updateField('apiKeyEntries', [...apiKeyEntries, emptyApiKeyEntry()])}
+                onClick={() =>
+                  updateField('apiKeyEntries', [...actualApiKeyEntries, emptyApiKeyEntry()])
+                }
               >
                 <IconPlus size={12} />
                 <span>{t('providersPage.form.addApiKeyEntry')}</span>
@@ -724,7 +720,7 @@ export function BaseProviderForm({
                       <button
                         type="button"
                         className={styles.removeBtn}
-                        disabled={mutating || apiKeyEntries.length <= 1}
+                        disabled={mutating || actualApiKeyEntries.length === 0}
                         onClick={() => removeApiKeyEntry(realIdx)}
                       >
                         <IconX size={12} />

@@ -1,4 +1,13 @@
-import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror';
@@ -16,6 +25,7 @@ import {
 import { VisualConfigEditor } from '@/components/config/VisualConfigEditor';
 import { DiffModal } from '@/components/config/DiffModal';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useVisualConfig } from '@/hooks/useVisualConfig';
 import { useNotificationStore, useAuthStore, useThemeStore, useConfigStore } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
@@ -97,6 +107,21 @@ export function ConfigPage() {
   const hasVisualValidationErrors =
     activeTab === 'visual' &&
     (Object.values(visualValidationErrors).some(Boolean) || visualHasPayloadValidationErrors);
+  const unsavedChangesDialog = useMemo(
+    () => ({
+      title: t('common.unsaved_changes_title'),
+      message: t('common.unsaved_changes_message'),
+      confirmText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+    }),
+    [t]
+  );
+
+  useUnsavedChangesGuard({
+    enabled: isCurrentLayer,
+    shouldBlock: isDirty,
+    dialog: unsavedChangesDialog,
+  });
 
   const loadConfig = useCallback(async () => {
     setLoading(true);

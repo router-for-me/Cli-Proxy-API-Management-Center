@@ -29,12 +29,7 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { downloadBlob } from '@/utils/download';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
-import {
-  HTTP_METHODS,
-  STATUS_GROUPS,
-  resolveStatusGroup,
-  type LogState,
-} from './hooks/logTypes';
+import { HTTP_METHODS, STATUS_GROUPS, resolveStatusGroup, type LogState } from './hooks/logTypes';
 import { parseLogLine } from './hooks/logParsing';
 import { useLogFilters } from './hooks/useLogFilters';
 import { isNearBottom, useLogScroller } from './hooks/useLogScroller';
@@ -52,6 +47,37 @@ const MAX_BUFFER_LINES = 10000;
 const LONG_PRESS_MS = 650;
 const LONG_PRESS_MOVE_THRESHOLD = 10;
 
+const getIncrementalAfter = (cursor: LogsQuery['after']): LogsQuery['after'] => {
+  if (typeof cursor !== 'number') return cursor;
+  return cursor > 1 ? cursor - 1 : undefined;
+};
+
+const findLineOverlap = (currentLines: string[], incomingLines: string[]): number => {
+  const maxOverlap = Math.min(currentLines.length, incomingLines.length);
+
+  for (let size = maxOverlap; size > 0; size -= 1) {
+    let matched = true;
+    for (let i = 0; i < size; i += 1) {
+      if (currentLines[currentLines.length - size + i] !== incomingLines[i]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return size;
+  }
+
+  return 0;
+};
+
+const mergeIncrementalLines = (currentLines: string[], incomingLines: string[]): string[] => {
+  if (currentLines.length === 0 || incomingLines.length === 0) {
+    return [...currentLines, ...incomingLines];
+  }
+
+  const overlap = findLineOverlap(currentLines, incomingLines);
+  return [...currentLines, ...incomingLines.slice(overlap)];
+};
+
 const getErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message;
   if (typeof err === 'string') return err;
@@ -66,7 +92,7 @@ const getErrorPayloadText = (err: unknown): string => {
   if (typeof err !== 'object' || err === null) return '';
   const payloads = [
     (err as { data?: unknown }).data,
-    (err as { details?: unknown }).details
+    (err as { details?: unknown }).details,
   ].filter((payload) => payload !== undefined);
   return payloads
     .map((payload) => {
@@ -184,7 +210,7 @@ export function LogsPage() {
 
       const params: LogsQuery =
         incremental && latestCursorRef.current
-          ? { after: latestCursorRef.current, limit: MAX_BUFFER_LINES }
+          ? { after: getIncrementalAfter(latestCursorRef.current), limit: MAX_BUFFER_LINES }
           : { limit: MAX_BUFFER_LINES };
       const data = await logsApi.fetchLogs(params);
       setFileLoggingRequired(false);
@@ -209,7 +235,7 @@ export function LogsPage() {
         // 增量更新：追加新日志并限制缓冲区大小（避免内存与渲染膨胀）
         setLogState((prev) => {
           const prevRenderedCount = prev.buffer.length - prev.visibleFrom;
-          const combined = [...prev.buffer, ...newLines];
+          const combined = mergeIncrementalLines(prev.buffer, newLines);
           const dropCount = Math.max(combined.length - MAX_BUFFER_LINES, 0);
           const buffer = dropCount > 0 ? combined.slice(dropCount) : combined;
           let visibleFrom = Math.max(prev.visibleFrom - dropCount, 0);
@@ -442,14 +468,14 @@ export function LogsPage() {
     return {
       filteredParsedLines: filteredParsed,
       filteredLines: filteredParsed.map((line) => line.raw),
-      removedCount: Math.max(baseLines.length - filteredParsed.length, 0)
+      removedCount: Math.max(baseLines.length - filteredParsed.length, 0),
     };
   }, [
     baseLines,
     filters.methodFilterSet,
     filters.pathFilterSet,
     filters.statusFilterSet,
-    parsedSearchLines
+    parsedSearchLines,
   ]);
 
   const parsedVisibleLines = useMemo(
@@ -466,7 +492,7 @@ export function LogsPage() {
     isSearching,
     filteredLineCount: filteredLines.length,
     hasStructuredFilters: filters.hasStructuredFilters,
-    showRawLogs
+    showRawLogs,
   });
 
   logScrollerRef.current = scroller;
@@ -535,7 +561,7 @@ export function LogsPage() {
       );
       downloadBlob({
         filename: `request-${id}.log`,
-        blob: new Blob([response.data], { type: 'text/plain' })
+        blob: new Blob([response.data], { type: 'text/plain' }),
       });
       showNotification(t('logs.request_log_download_success'), 'success');
       setRequestLogId(null);
@@ -563,9 +589,7 @@ export function LogsPage() {
     <div className={styles.container}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
-        <div className={styles.runtimeNotice}>
-          {t(`logs.runtime_${serverRuntimeKind}`)}
-        </div>
+        <div className={styles.runtimeNotice}>{t(`logs.runtime_${serverRuntimeKind}`)}</div>
       </div>
 
       <div className={styles.tabBar}>
@@ -828,9 +852,7 @@ export function LogsPage() {
                   <div className={styles.loadMoreBanner}>
                     <span>{t('logs.load_more_hint')}</span>
                     <div className={styles.loadMoreStats}>
-                      <span>
-                        {t('logs.loaded_lines', { count: filteredLines.length })}
-                      </span>
+                      <span>{t('logs.loaded_lines', { count: filteredLines.length })}</span>
                       {removedCount > 0 && (
                         <span className={styles.loadMoreCount}>
                           {t('logs.filtered_lines', { count: removedCount })}
@@ -993,7 +1015,9 @@ export function LogsPage() {
 
               {requestLogEnabled && !isHomeRuntime && (
                 <div>
-                  <div className="status-badge warning">{t('logs.error_logs_request_log_enabled')}</div>
+                  <div className="status-badge warning">
+                    {t('logs.error_logs_request_log_enabled')}
+                  </div>
                 </div>
               )}
 
@@ -1041,7 +1065,11 @@ export function LogsPage() {
         title={t('logs.request_log_download_title')}
         footer={
           <>
-            <Button variant="secondary" onClick={closeRequestLogModal} disabled={requestLogDownloading}>
+            <Button
+              variant="secondary"
+              onClick={closeRequestLogModal}
+              disabled={requestLogDownloading}
+            >
               {t('common.cancel')}
             </Button>
             <Button

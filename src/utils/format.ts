@@ -67,3 +67,26 @@ export function formatUnixTimestamp(value: unknown, locale?: string): string {
   if (Number.isNaN(date.getTime())) return '';
   return locale ? date.toLocaleString(locale) : date.toLocaleString();
 }
+
+export function parseDateValue(value: unknown): Date | null {
+  if (value === null || value === undefined || value === '') return null;
+
+  const date =
+    typeof value === 'number'
+      ? new Date(value < 1e12 ? value * 1000 : value)
+      : (parseTimestamp(value) ?? new Date(String(value)));
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatDateValue(value: unknown, locale?: string): string {
+  const date = parseDateValue(value);
+  if (!date) return '';
+  return locale ? date.toLocaleDateString(locale) : date.toLocaleDateString();
+}
+
+export function formatDateTimeValue(value: unknown, locale?: string): string {
+  const date = parseDateValue(value);
+  if (!date) return '';
+  return locale ? date.toLocaleString(locale) : date.toLocaleString();
+}

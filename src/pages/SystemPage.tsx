@@ -14,6 +14,7 @@ import {
 } from '@/stores';
 import { configApi, versionApi } from '@/services/api';
 import { apiKeysApi } from '@/services/api/apiKeys';
+import { formatDateTimeValue } from '@/utils/format';
 import { classifyModels } from '@/utils/models';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
@@ -109,9 +110,8 @@ export function SystemPage() {
 
   const appVersion = __APP_VERSION__ || t('system_info.version_unknown');
   const apiVersion = auth.serverVersion || t('system_info.version_unknown');
-  const buildTime = auth.serverBuildDate
-    ? new Date(auth.serverBuildDate).toLocaleString(i18n.language)
-    : t('system_info.version_unknown');
+  const buildTime =
+    formatDateTimeValue(auth.serverBuildDate, i18n.language) || t('system_info.version_unknown');
 
   const getIconForCategory = (categoryId: string): string | null => {
     const iconEntry = MODEL_CATEGORY_ICONS[categoryId];
