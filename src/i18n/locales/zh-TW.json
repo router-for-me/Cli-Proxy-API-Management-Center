@@ -368,6 +368,8 @@
     "prefix_proxy_invalid_json": "該驗證檔案不是 JSON 物件，無法編輯欄位。",
     "prefix_proxy_html_challenge": "下載到的是 HTML 驗證頁面，不是驗證 JSON 物件。請重新驗證或替換該驗證檔案後再編輯欄位。",
     "prefix_proxy_saved_success": "已更新驗證檔案「{{name}}」",
+    "quota_refresh_single": "重新整理配額",
+    "quota_refresh_hint": "僅重新整理該驗證檔案的配額",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
     "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
   },
