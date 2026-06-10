@@ -152,7 +152,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
         )}
       </div>
 
-      {onRefresh && (
+      {onRefresh && quotaStatus !== 'idle' && (
         <div className={styles.quotaCardActions}>
           <Button
             type="button"
