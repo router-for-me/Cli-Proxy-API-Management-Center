@@ -7,12 +7,15 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { lockScroll, unlockScroll } from '@/components/ui/scrollLock';
 import {
   IconChevronDown,
   IconChevronUp,
   IconCode,
   IconDownload,
   IconEyeOff,
+  IconMaximize2,
+  IconMinimize2,
   IconRefreshCw,
   IconSearch,
   IconSlidersHorizontal,
@@ -148,6 +151,7 @@ export function LogsPage() {
   const [errorLogsError, setErrorLogsError] = useState('');
   const [requestLogId, setRequestLogId] = useState<string | null>(null);
   const [requestLogDownloading, setRequestLogDownloading] = useState(false);
+  const [fullscreenLogs, setFullscreenLogs] = useState(false);
 
   const logScrollerRef = useRef<ReturnType<typeof useLogScroller> | null>(null);
   const requestLogHomeIpByIdRef = useRef<Record<string, string>>({});
@@ -585,6 +589,27 @@ export function LogsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!fullscreenLogs) return;
+
+    document.body.classList.add('logs-fullscreen-active');
+    lockScroll();
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (document.querySelector('.modal-overlay')) return;
+      setFullscreenLogs(false);
+    };
+
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.classList.remove('logs-fullscreen-active');
+      unlockScroll();
+    };
+  }, [fullscreenLogs]);
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
@@ -603,7 +628,10 @@ export function LogsPage() {
         <button
           type="button"
           className={`${styles.tabItem} ${activeTab === 'errors' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('errors')}
+          onClick={() => {
+            setFullscreenLogs(false);
+            setActiveTab('errors');
+          }}
         >
           {t('logs.error_logs_modal_title')}
         </button>
@@ -611,7 +639,11 @@ export function LogsPage() {
 
       <div className={styles.content}>
         {activeTab === 'logs' && (
-          <Card className={styles.logCard}>
+          <Card
+            className={[styles.logCard, fullscreenLogs ? styles.logCardFullscreen : '']
+              .filter(Boolean)
+              .join(' ')}
+          >
             {showFileLoggingRequired && (
               <div className="status-badge warning">
                 {t(
@@ -624,63 +656,67 @@ export function LogsPage() {
             {error && <div className="error-box">{error}</div>}
 
             <div className={styles.filters}>
-              <div className={styles.searchWrapper}>
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('logs.search_placeholder')}
-                  className={styles.searchInput}
-                  rightElement={
-                    searchQuery ? (
-                      <button
-                        type="button"
-                        className={styles.searchClear}
-                        onClick={() => setSearchQuery('')}
-                        title="Clear"
-                        aria-label="Clear"
-                      >
-                        <IconX size={16} />
-                      </button>
-                    ) : (
-                      <IconSearch size={16} className={styles.searchIcon} />
-                    )
-                  }
-                />
-              </div>
+              {!fullscreenLogs && (
+                <>
+                  <div className={styles.searchWrapper}>
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={t('logs.search_placeholder')}
+                      className={styles.searchInput}
+                      rightElement={
+                        searchQuery ? (
+                          <button
+                            type="button"
+                            className={styles.searchClear}
+                            onClick={() => setSearchQuery('')}
+                            title="Clear"
+                            aria-label="Clear"
+                          >
+                            <IconX size={16} />
+                          </button>
+                        ) : (
+                          <IconSearch size={16} className={styles.searchIcon} />
+                        )
+                      }
+                    />
+                  </div>
 
-              <div className={styles.filterPanelHeader}>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className={styles.filterPanelToggle}
-                  onClick={() => setStructuredFiltersExpanded((prev) => !prev)}
-                  aria-expanded={structuredFiltersExpanded}
-                  aria-controls={structuredFiltersPanelId}
-                  title={
-                    structuredFiltersExpanded
-                      ? t('logs.filter_panel_collapse')
-                      : t('logs.filter_panel_expand')
-                  }
-                >
-                  <span className={styles.filterPanelButtonContent}>
-                    <IconSlidersHorizontal size={16} />
-                    <span>{t('logs.filter_panel_title')}</span>
-                    {structuredFilterCount > 0 && (
-                      <span className={styles.filterPanelCount}>
-                        {t('logs.filter_panel_active_count', { count: structuredFilterCount })}
+                  <div className={styles.filterPanelHeader}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className={styles.filterPanelToggle}
+                      onClick={() => setStructuredFiltersExpanded((prev) => !prev)}
+                      aria-expanded={structuredFiltersExpanded}
+                      aria-controls={structuredFiltersPanelId}
+                      title={
+                        structuredFiltersExpanded
+                          ? t('logs.filter_panel_collapse')
+                          : t('logs.filter_panel_expand')
+                      }
+                    >
+                      <span className={styles.filterPanelButtonContent}>
+                        <IconSlidersHorizontal size={16} />
+                        <span>{t('logs.filter_panel_title')}</span>
+                        {structuredFilterCount > 0 && (
+                          <span className={styles.filterPanelCount}>
+                            {t('logs.filter_panel_active_count', { count: structuredFilterCount })}
+                          </span>
+                        )}
+                        {structuredFiltersExpanded ? (
+                          <IconChevronUp size={16} />
+                        ) : (
+                          <IconChevronDown size={16} />
+                        )}
                       </span>
-                    )}
-                    {structuredFiltersExpanded ? (
-                      <IconChevronUp size={16} />
-                    ) : (
-                      <IconChevronDown size={16} />
-                    )}
-                  </span>
-                </Button>
-              </div>
+                    </Button>
+                  </div>
+                </>
+              )}
 
-              {structuredFiltersExpanded && (
+              {!fullscreenLogs && structuredFiltersExpanded && (
                 <div id={structuredFiltersPanelId} className={styles.structuredFilters}>
                   <div className={styles.filterChipGroup}>
                     <span className={styles.filterChipLabel}>{t('logs.filter_method')}</span>
@@ -837,6 +873,23 @@ export function LogsPage() {
                     {t('logs.clear_button')}
                   </span>
                 </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setFullscreenLogs((prev) => !prev)}
+                  className={styles.actionButton}
+                  aria-pressed={fullscreenLogs}
+                  title={
+                    fullscreenLogs ? t('logs.exit_fullscreen_button') : t('logs.fullscreen_button')
+                  }
+                >
+                  <span className={styles.buttonContent}>
+                    {fullscreenLogs ? <IconMinimize2 size={16} /> : <IconMaximize2 size={16} />}
+                    {fullscreenLogs
+                      ? t('logs.exit_fullscreen_button')
+                      : t('logs.fullscreen_button')}
+                  </span>
+                </Button>
               </div>
             </div>
 
@@ -845,7 +898,9 @@ export function LogsPage() {
             ) : logState.buffer.length > 0 && filteredLines.length > 0 ? (
               <div
                 ref={scroller.logViewerRef}
-                className={styles.logPanel}
+                className={[styles.logPanel, fullscreenLogs ? styles.logPanelFullscreen : '']
+                  .filter(Boolean)
+                  .join(' ')}
                 onScroll={scroller.handleLogScroll}
               >
                 {scroller.canLoadMore && (

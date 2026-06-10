@@ -762,6 +762,8 @@
     "runtime_home": "目前執行端：Home",
     "refresh_button": "重新整理記錄",
     "clear_button": "清空記錄",
+    "fullscreen_button": "全螢幕顯示",
+    "exit_fullscreen_button": "退出全螢幕",
     "download_button": "下載記錄",
     "error_log_button": "選擇錯誤記錄",
     "error_logs_modal_title": "錯誤請求記錄",

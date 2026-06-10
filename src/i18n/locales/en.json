@@ -736,6 +736,8 @@
     "runtime_home": "Current runtime: Home",
     "refresh_button": "Refresh Logs",
     "clear_button": "Clear Logs",
+    "fullscreen_button": "Full Screen",
+    "exit_fullscreen_button": "Exit Full Screen",
     "download_button": "Download Logs",
     "error_log_button": "Select Error Log",
     "error_logs_modal_title": "Error Request Logs",
