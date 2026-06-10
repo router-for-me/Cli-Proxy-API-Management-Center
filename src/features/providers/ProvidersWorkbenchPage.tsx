@@ -15,13 +15,16 @@ import { ProviderHeaderCard } from './components/ProviderHeaderCard';
 import { ProviderCategoryList } from './components/ProviderCategoryList';
 import { ProviderResourcePanel } from './components/ProviderResourcePanel';
 import type { ProviderPanelControls } from './components/ProviderResourcePanel';
-import type {
-  ProviderSortBy,
-  SortDir,
-} from './components/ProviderResourceToolbar';
 import { ProviderSheet, type ProviderSheetHandle } from './sheets/ProviderSheet';
 import { useProviderWorkbench } from './useProviderWorkbench';
-import type { ProviderBrand, ProviderResource } from './types';
+import {
+  getProviderFilterState,
+  readProvidersWorkbenchUiState,
+  writeProvidersWorkbenchUiState,
+  type ProviderFilterState,
+  type ProvidersWorkbenchUiState,
+} from './uiState';
+import type { ProviderBrand, ProviderResource, ProviderSortBy, SortDir } from './types';
 import styles from './ProvidersWorkbenchPage.module.scss';
 
 type SheetMode = 'detail' | 'create' | 'edit';
@@ -129,11 +132,9 @@ export function ProvidersWorkbenchPage() {
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
 
   const workbench = useProviderWorkbench();
-  const [activeBrand, setActiveBrand] = useState<ProviderBrand>('gemini');
-  const [filter, setFilter] = useState('');
-  const [providerSortBy, setProviderSortBy] = useState<ProviderSortBy>('name');
-  const [providerSortDir, setProviderSortDir] = useState<SortDir>('asc');
-  const [selectedModels, setSelectedModels] = useState<Set<string>>(() => new Set());
+  const [uiState, setUiState] = useState<ProvidersWorkbenchUiState>(
+    readProvidersWorkbenchUiState
+  );
   const [sheetState, setSheetState] = useState<SheetState>({
     open: false,
     brand: 'gemini',
@@ -158,7 +159,52 @@ export function ProvidersWorkbenchPage() {
 
   const disableMutations = connectionStatus !== 'connected' || workbench.mutating;
 
+  const persistUiState = useCallback(
+    (updater: (prev: ProvidersWorkbenchUiState) => ProvidersWorkbenchUiState) => {
+      setUiState((prev) => {
+        const next = updater(prev);
+        writeProvidersWorkbenchUiState(next);
+        return next;
+      });
+    },
+    []
+  );
+
+  const setActiveBrand = useCallback(
+    (brand: ProviderBrand) => {
+      persistUiState((prev) =>
+        prev.activeBrand === brand ? prev : { ...prev, activeBrand: brand }
+      );
+    },
+    [persistUiState]
+  );
+
+  const updateActiveFilterState = useCallback(
+    (patch: Partial<ProviderFilterState>) => {
+      persistUiState((prev) => {
+        const brand = prev.activeBrand;
+        const current = getProviderFilterState(prev, brand);
+        return {
+          ...prev,
+          filtersByBrand: {
+            ...prev.filtersByBrand,
+            [brand]: {
+              ...current,
+              ...patch,
+            },
+          },
+        };
+      });
+    },
+    [persistUiState]
+  );
+
   const groups = useMemo(() => workbench.snapshot?.groups ?? [], [workbench.snapshot]);
+  const activeBrand = uiState.activeBrand;
+  const activeFilterState = getProviderFilterState(uiState, activeBrand);
+  const filter = activeFilterState.filter;
+  const providerSortBy = activeFilterState.sortBy;
+  const providerSortDir = activeFilterState.sortDir;
   const activeGroup =
     groups.find((g) => g.id === activeBrand) ?? groups[0] ?? null;
 
@@ -176,6 +222,14 @@ export function ProvidersWorkbenchPage() {
     });
     return Array.from(seen).sort();
   }, [activeGroup]);
+
+  const selectedModels = useMemo(() => {
+    if (availableModels.length === 0) return new Set<string>();
+    const availableModelSet = new Set(availableModels);
+    return new Set(
+      activeFilterState.selectedModels.filter((name) => availableModelSet.has(name))
+    );
+  }, [activeFilterState.selectedModels, availableModels]);
 
   const visibleResources = useMemo(() => {
     let arr = filteredResources;
@@ -219,11 +273,14 @@ export function ProvidersWorkbenchPage() {
     return {
       sortBy: providerSortBy,
       sortDir: providerSortDir,
-      onSortBy: setProviderSortBy,
-      onSortDir: setProviderSortDir,
+      onSortBy: (value: ProviderSortBy) => updateActiveFilterState({ sortBy: value }),
+      onSortDir: (value: SortDir) => updateActiveFilterState({ sortDir: value }),
       availableModels,
       selectedModels,
-      onSelectedModelsChange: setSelectedModels,
+      onSelectedModelsChange: (next) =>
+        updateActiveFilterState({
+          selectedModels: Array.from(next).sort((a, b) => a.localeCompare(b)),
+        }),
     };
   }, [
     activeGroup,
@@ -231,6 +288,7 @@ export function ProvidersWorkbenchPage() {
     providerSortBy,
     providerSortDir,
     selectedModels,
+    updateActiveFilterState,
   ]);
 
   const totalResources = useMemo(
@@ -423,8 +481,6 @@ export function ProvidersWorkbenchPage() {
             void proceed.then((ok) => {
               if (!ok) return;
               setActiveBrand(brand);
-              setFilter('');
-              setSelectedModels(new Set());
               if (isSwitching) {
                 closeSheet();
               }
@@ -434,7 +490,7 @@ export function ProvidersWorkbenchPage() {
         <ProviderResourcePanel
           group={activeGroup}
           filter={filter}
-          onFilterChange={setFilter}
+          onFilterChange={(value) => updateActiveFilterState({ filter: value })}
           filteredResources={visibleResources}
           selectedId={sheetState.open ? sheetState.resource?.id ?? null : null}
           disableMutations={disableMutations}

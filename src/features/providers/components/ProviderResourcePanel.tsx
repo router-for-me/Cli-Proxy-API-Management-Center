@@ -9,11 +9,8 @@ import { IconPlus, IconSearch } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import type { ProviderBrand, ProviderGroup, ProviderResource } from '../types';
 import { ProviderResourceTable } from './ProviderResourceTable';
-import {
-  ProviderResourceToolbar,
-  type ProviderSortBy,
-  type SortDir,
-} from './ProviderResourceToolbar';
+import { ProviderResourceToolbar } from './ProviderResourceToolbar';
+import type { ProviderSortBy, SortDir } from '../types';
 import styles from './ProviderResourcePanel.module.scss';
 
 const LOGOS: Record<ProviderBrand, { src: string; invertOnDark?: boolean }> = {

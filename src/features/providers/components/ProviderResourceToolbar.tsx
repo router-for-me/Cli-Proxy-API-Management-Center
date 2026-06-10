@@ -7,10 +7,8 @@ import {
 } from '@/components/ui/icons';
 import { Select } from '@/components/ui/Select';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
+import type { ProviderSortBy, SortDir } from '../types';
 import styles from './ProviderResourceToolbar.module.scss';
-
-export type ProviderSortBy = 'name' | 'priority' | 'recent-success';
-export type SortDir = 'asc' | 'desc';
 
 interface ProviderResourceToolbarProps {
   sortBy: ProviderSortBy;
