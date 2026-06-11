@@ -1,6 +1,8 @@
 @use '../../styles/variables' as *;
 @use '../../styles/mixins' as *;
 
+// ─── Page Container ─────────────────────────────────────
+
 .page {
   display: flex;
   flex-direction: column;
@@ -8,22 +10,12 @@
   width: 100%;
 }
 
-.header {
+// ─── Header ─────────────────────────────────────────────
+
+.pageHeader {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: $spacing-md;
-
-  :global(.btn > span) {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  @include mobile {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  flex-direction: column;
+  gap: $spacing-sm;
 }
 
 .title {
@@ -35,11 +27,13 @@
 }
 
 .description {
-  margin: $spacing-sm 0 0;
+  margin: 0;
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
 }
+
+// ─── Alert Boxes ────────────────────────────────────────
 
 .errorBox,
 .warningBox {
@@ -61,53 +55,89 @@
   color: var(--text-primary);
 }
 
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: $spacing-md;
+// ─── Status Bar ─────────────────────────────────────────
 
-  @media (max-width: 1100px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+  flex-wrap: wrap;
+}
+
+.statusPill {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: $radius-full;
+  border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 56%, transparent);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDotOn {
+  background: $success-color;
+  box-shadow: 0 0 6px rgba($success-color, 0.5);
+}
+
+.statusDotOff {
+  background: var(--text-tertiary);
+}
+
+.statusLabel {
+  color: var(--text-secondary);
+}
+
+.statusValue {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.statusPathValue {
+  display: block;
+  min-width: 0;
+  max-width: min(360px, 58vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusDivider {
+  width: 1px;
+  height: 20px;
+  background: color-mix(in srgb, var(--border-color) 60%, transparent);
+  flex-shrink: 0;
 
   @include mobile {
-    grid-template-columns: 1fr;
+    display: none;
   }
 }
 
-.statTile {
-  display: flex;
-  min-width: 0;
-  min-height: 76px;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  padding: $spacing-md;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background: color-mix(in srgb, var(--bg-secondary) 84%, transparent);
-
-  span {
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  strong {
-    min-width: 0;
-    color: var(--text-primary);
-    font-size: 20px;
-    line-height: 1.2;
-    overflow-wrap: anywhere;
-  }
-}
+// ─── Toolbar ────────────────────────────────────────────
 
 .toolbar {
   display: flex;
-  max-width: 520px;
+  align-items: center;
+  gap: $spacing-sm;
 
   :global(.form-group) {
-    width: 100%;
+    flex: 1;
+    max-width: 480px;
     margin: 0;
   }
 
@@ -115,111 +145,158 @@
     padding-right: 36px;
   }
 
+  :global(.btn > span) {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   @include mobile {
-    max-width: none;
+    flex-direction: column;
+    align-items: stretch;
+
+    :global(.form-group) {
+      max-width: none;
+    }
   }
 }
 
-.pluginGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: $spacing-md;
+// ─── Plugin List ────────────────────────────────────────
 
-  @include mobile {
-    grid-template-columns: 1fr;
-  }
-}
-
-.pluginCard {
+.pluginList {
   display: flex;
-  min-width: 0;
-  min-height: 260px;
   flex-direction: column;
-  gap: $spacing-md;
-  padding: $spacing-lg;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background: var(--bg-primary);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
+  gap: 1px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  border-radius: $radius-lg;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--border-color) 30%, transparent);
 }
 
-.skeletonCard {
-  min-height: 260px;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--bg-secondary) 86%, transparent) 25%,
-      color-mix(in srgb, var(--bg-hover) 70%, transparent) 37%,
-      color-mix(in srgb, var(--bg-secondary) 86%, transparent) 63%
-    );
-  background-size: 400% 100%;
-  animation: skeletonPulse 1.35s ease-in-out infinite;
-}
+// ─── Plugin Row ─────────────────────────────────────────
 
-@keyframes skeletonPulse {
-  0% {
-    background-position: 100% 0;
-  }
-
-  100% {
-    background-position: 0 0;
-  }
-}
-
-.cardHeader {
+.pluginRow {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-columns: 40px 1fr auto;
   align-items: center;
   gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  background: var(--bg-primary);
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+
+  @include mobile {
+    grid-template-columns: 36px 1fr;
+    grid-template-rows: auto auto;
+    gap: $spacing-sm;
+    padding: $spacing-md;
+  }
 }
 
 .logoBox {
   display: inline-flex;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+  background: color-mix(in srgb, var(--bg-tertiary) 60%, transparent);
   color: var(--text-secondary);
+  flex-shrink: 0;
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
+
+  @include mobile {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
 }
 
-.pluginIdentity {
+.pluginInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pluginName {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
   min-width: 0;
 
   h2 {
+    min-width: 0;
     margin: 0;
     color: var(--text-primary);
-    font-size: 17px;
-    font-weight: 700;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-  }
-
-  span {
-    display: block;
-    margin-top: 4px;
-    color: var(--text-tertiary);
-    font-family: $font-mono;
-    font-size: 12px;
-    overflow-wrap: anywhere;
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.3;
+    @include text-ellipsis;
   }
 }
+
+.pluginId {
+  color: var(--text-tertiary);
+  font-family: $font-mono;
+  font-size: 12px;
+  @include text-ellipsis;
+}
+
+.pluginMeta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.metaItem {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  white-space: nowrap;
+
+  strong {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+}
+
+.metaPath {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metaDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text-tertiary) 50%, transparent);
+  flex-shrink: 0;
+}
+
+// ─── Badges ─────────────────────────────────────────────
 
 .badgeRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 
 .badge,
@@ -227,83 +304,75 @@
 .badgeWarning,
 .badgeMuted {
   display: inline-flex;
-  min-height: 24px;
+  min-height: 22px;
   align-items: center;
-  border-radius: $radius-sm;
-  padding: 3px 8px;
-  font-size: 12px;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.25;
 }
 
 .badge {
   background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
   color: var(--text-secondary);
 }
 
 .badgeSuccess {
-  background: rgba($success-color, 0.12);
+  background: rgba($success-color, 0.1);
+  border: 1px solid rgba($success-color, 0.2);
   color: var(--success-color);
 }
 
 .badgeWarning {
-  background: rgba($warning-color, 0.12);
+  background: rgba($warning-color, 0.1);
+  border: 1px solid rgba($warning-color, 0.2);
   color: var(--warning-color);
 }
 
 .badgeMuted {
   background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 40%, transparent);
   color: var(--text-tertiary);
 }
 
-.metaList {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 6px $spacing-sm;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 13px;
+// ─── Row Actions ────────────────────────────────────────
 
-  dt {
-    color: var(--text-tertiary);
-    font-weight: 600;
-  }
-
-  dd {
-    min-width: 0;
-    margin: 0;
-    color: var(--text-secondary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-.cardActions {
+.rowActions {
   display: flex;
+  min-width: 0;
+  max-width: min(560px, 48vw);
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: $spacing-sm;
-  margin-top: auto;
+  flex-shrink: 0;
 
   :global(.btn > span) {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+  }
+
+  @include mobile {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    max-width: none;
   }
 }
 
 .linkButton,
 .iconLink {
   display: inline-flex;
-  min-height: 34px;
+  min-height: 30px;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   text-decoration: none;
   transition:
@@ -319,16 +388,74 @@
 }
 
 .linkButton {
-  gap: 8px;
-  max-width: 100%;
-  padding: 0 12px;
+  gap: 5px;
+  min-width: 0;
+  max-width: min(180px, 100%);
+  padding: 0 10px;
   overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .iconLink {
-  width: 34px;
+  width: 30px;
   flex: 0 0 auto;
 }
+
+// ─── Skeleton ───────────────────────────────────────────
+
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  background: var(--bg-primary);
+}
+
+.skeletonAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--bg-secondary) 86%, transparent) 25%,
+    color-mix(in srgb, var(--bg-hover) 70%, transparent) 37%,
+    color-mix(in srgb, var(--bg-secondary) 86%, transparent) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeletonPulse 1.35s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.skeletonText {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.skeletonLine {
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--bg-secondary) 86%, transparent) 25%,
+    color-mix(in srgb, var(--bg-hover) 70%, transparent) 37%,
+    color-mix(in srgb, var(--bg-secondary) 86%, transparent) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeletonPulse 1.35s ease-in-out infinite;
+
+  &:first-child {
+    width: 45%;
+  }
+
+  &:last-child {
+    width: 70%;
+    height: 10px;
+  }
+}
+
+// ─── Sheet Config Form ──────────────────────────────────
 
 .sheetFooter {
   display: flex;
@@ -493,27 +620,22 @@
   font-size: 14px;
 }
 
+// ─── Animation ──────────────────────────────────────────
+
+@keyframes skeletonPulse {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+// ─── Mobile Overrides ───────────────────────────────────
+
 @include mobile {
   .page {
     gap: $spacing-md;
-  }
-
-  .pluginCard {
-    padding: $spacing-md;
-  }
-
-  .cardHeader {
-    grid-template-columns: 44px minmax(0, 1fr) auto;
-    gap: $spacing-sm;
-  }
-
-  .logoBox {
-    width: 44px;
-    height: 44px;
-  }
-
-  .metaList {
-    grid-template-columns: 1fr;
   }
 
   .sheetFooter {

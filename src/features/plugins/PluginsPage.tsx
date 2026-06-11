@@ -593,11 +593,76 @@ export function PluginsPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>{t('plugin_management.title')}</h1>
-          <p className={styles.description}>{t('plugin_management.description')}</p>
+      {/* ── Page Header ── */}
+      <div className={styles.pageHeader}>
+        <h1 className={styles.title}>{t('plugin_management.title')}</h1>
+        <p className={styles.description}>{t('plugin_management.description')}</p>
+      </div>
+
+      {/* ── Alerts ── */}
+      {error ? <div className={styles.errorBox}>{error}</div> : null}
+
+      {data && !data.pluginsEnabled ? (
+        <div className={styles.warningBox}>{t('plugin_management.global_disabled_hint')}</div>
+      ) : null}
+
+      {/* ── Status Bar ── */}
+      {data ? (
+        <div className={styles.statusBar}>
+          <div className={styles.statusPill}>
+            <span
+              className={`${styles.statusDot} ${
+                data.pluginsEnabled ? styles.statusDotOn : styles.statusDotOff
+              }`}
+            />
+            <span className={styles.statusLabel}>{t('plugin_management.global_status')}</span>
+            <span className={styles.statusValue}>
+              {data.pluginsEnabled
+                ? t('plugin_management.global_enabled')
+                : t('plugin_management.global_disabled')}
+            </span>
+          </div>
+
+          <span className={styles.statusDivider} />
+
+          <div className={styles.statusPill}>
+            <span className={styles.statusLabel}>{t('plugin_management.plugins_dir')}</span>
+            <span
+              className={`${styles.statusValue} ${styles.statusPathValue}`}
+              title={data.pluginsDir || 'plugins'}
+            >
+              {data.pluginsDir || 'plugins'}
+            </span>
+          </div>
+
+          <span className={styles.statusDivider} />
+
+          <div className={styles.statusPill}>
+            <span className={styles.statusLabel}>{t('plugin_management.discovered')}</span>
+            <span className={styles.statusValue}>{pluginStats.discovered}</span>
+          </div>
+
+          <span className={styles.statusDivider} />
+
+          <div className={styles.statusPill}>
+            <span className={styles.statusLabel}>{t('plugin_management.effective')}</span>
+            <span className={styles.statusValue}>
+              {pluginStats.effective}/{pluginStats.registered}
+            </span>
+          </div>
         </div>
+      ) : null}
+
+      {/* ── Toolbar ── */}
+      <div className={styles.toolbar}>
+        <Input
+          type="search"
+          value={filter}
+          onChange={(event) => setFilter(event.target.value)}
+          placeholder={t('plugin_management.search_placeholder')}
+          aria-label={t('plugin_management.search_label')}
+          rightElement={<IconSearch size={16} />}
+        />
         <Button
           variant="secondary"
           size="sm"
@@ -610,52 +675,17 @@ export function PluginsPage() {
         </Button>
       </div>
 
-      {error ? <div className={styles.errorBox}>{error}</div> : null}
-
-      {data && !data.pluginsEnabled ? (
-        <div className={styles.warningBox}>{t('plugin_management.global_disabled_hint')}</div>
-      ) : null}
-
-      <div className={styles.statsGrid}>
-        <div className={styles.statTile}>
-          <span>{t('plugin_management.global_status')}</span>
-          <strong>
-            {data?.pluginsEnabled
-              ? t('plugin_management.global_enabled')
-              : t('plugin_management.global_disabled')}
-          </strong>
-        </div>
-        <div className={styles.statTile}>
-          <span>{t('plugin_management.plugins_dir')}</span>
-          <strong>{data?.pluginsDir || 'plugins'}</strong>
-        </div>
-        <div className={styles.statTile}>
-          <span>{t('plugin_management.discovered')}</span>
-          <strong>{pluginStats.discovered}</strong>
-        </div>
-        <div className={styles.statTile}>
-          <span>{t('plugin_management.effective')}</span>
-          <strong>
-            {pluginStats.effective}/{pluginStats.registered}
-          </strong>
-        </div>
-      </div>
-
-      <div className={styles.toolbar}>
-        <Input
-          type="search"
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
-          placeholder={t('plugin_management.search_placeholder')}
-          aria-label={t('plugin_management.search_label')}
-          rightElement={<IconSearch size={16} />}
-        />
-      </div>
-
+      {/* ── Plugin List ── */}
       {loading ? (
-        <div className={styles.pluginGrid} aria-busy="true">
+        <div className={styles.pluginList}>
           {Array.from({ length: 4 }, (_, index) => (
-            <div key={index} className={styles.skeletonCard} />
+            <div key={index} className={styles.skeletonRow}>
+              <div className={styles.skeletonAvatar} />
+              <div className={styles.skeletonText}>
+                <div className={styles.skeletonLine} />
+                <div className={styles.skeletonLine} />
+              </div>
+            </div>
           ))}
         </div>
       ) : visiblePlugins.length === 0 ? (
@@ -670,79 +700,94 @@ export function PluginsPage() {
           }
         />
       ) : (
-        <div className={styles.pluginGrid}>
+        <div className={styles.pluginList}>
           {visiblePlugins.map((plugin) => {
             const logo = resolvePluginAssetURL(plugin.logo || plugin.metadata?.logo || '');
             const github = plugin.metadata?.githubRepository.trim();
             const mutating = mutatingID === plugin.id;
+            const version = plugin.metadata?.version;
+            const author = plugin.metadata?.author;
+
             return (
-              <article key={plugin.id} className={styles.pluginCard}>
-                <div className={styles.cardHeader}>
-                  <div className={styles.logoBox} aria-hidden="true">
-                    {logo ? <img src={logo} alt="" /> : <IconPlug size={22} />}
-                  </div>
-                  <div className={styles.pluginIdentity}>
+              <article key={plugin.id} className={styles.pluginRow}>
+                {/* Logo */}
+                <div className={styles.logoBox} aria-hidden="true">
+                  {logo ? <img src={logo} alt="" /> : <IconPlug size={18} />}
+                </div>
+
+                {/* Info */}
+                <div className={styles.pluginInfo}>
+                  <div className={styles.pluginName}>
                     <h2>{getPluginTitle(plugin)}</h2>
-                    <span>{plugin.id}</span>
+                    <div className={styles.badgeRow}>
+                      <span
+                        className={
+                          plugin.effectiveEnabled ? styles.badgeSuccess : styles.badgeMuted
+                        }
+                      >
+                        {plugin.effectiveEnabled
+                          ? t('plugin_management.status_effective')
+                          : t('plugin_management.status_inactive')}
+                      </span>
+                      <span className={plugin.registered ? styles.badge : styles.badgeWarning}>
+                        {plugin.registered
+                          ? t('plugin_management.registered')
+                          : t('plugin_management.not_registered')}
+                      </span>
+                      <span className={plugin.configured ? styles.badge : styles.badgeMuted}>
+                        {plugin.configured
+                          ? t('plugin_management.configured')
+                          : t('plugin_management.not_configured')}
+                      </span>
+                      {plugin.supportsOAuth ? (
+                        <span className={styles.badge}>{t('plugin_management.oauth')}</span>
+                      ) : null}
+                    </div>
                   </div>
+
+                  <span className={styles.pluginId}>{plugin.id}</span>
+
+                  {version || author || plugin.path ? (
+                    <div className={styles.pluginMeta}>
+                      {version ? (
+                        <span className={styles.metaItem}>
+                          <strong>{version}</strong>
+                        </span>
+                      ) : null}
+                      {version && author ? (
+                        <span className={styles.metaDot} aria-hidden="true" />
+                      ) : null}
+                      {author ? <span className={styles.metaItem}>{author}</span> : null}
+                      {(version || author) && plugin.path ? (
+                        <span className={styles.metaDot} aria-hidden="true" />
+                      ) : null}
+                      {plugin.path ? (
+                        <span
+                          className={`${styles.metaItem} ${styles.metaPath}`}
+                          title={plugin.path}
+                        >
+                          {plugin.path}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Actions */}
+                <div className={styles.rowActions}>
                   <ToggleSwitch
                     checked={plugin.enabled}
                     onChange={(enabled) => handleTogglePlugin(plugin, enabled)}
                     disabled={!connected || mutating}
                     ariaLabel={t('plugin_management.enabled')}
                   />
-                </div>
-
-                <div className={styles.badgeRow}>
-                  <span className={plugin.effectiveEnabled ? styles.badgeSuccess : styles.badgeMuted}>
-                    {plugin.effectiveEnabled
-                      ? t('plugin_management.status_effective')
-                      : t('plugin_management.status_inactive')}
-                  </span>
-                  <span className={plugin.registered ? styles.badge : styles.badgeWarning}>
-                    {plugin.registered
-                      ? t('plugin_management.registered')
-                      : t('plugin_management.not_registered')}
-                  </span>
-                  <span className={plugin.configured ? styles.badge : styles.badgeMuted}>
-                    {plugin.configured
-                      ? t('plugin_management.configured')
-                      : t('plugin_management.not_configured')}
-                  </span>
-                  {plugin.supportsOAuth ? (
-                    <span className={styles.badge}>{t('plugin_management.oauth')}</span>
-                  ) : null}
-                </div>
-
-                <dl className={styles.metaList}>
-                  {plugin.metadata?.version ? (
-                    <>
-                      <dt>{t('plugin_management.version_label')}</dt>
-                      <dd>{plugin.metadata.version}</dd>
-                    </>
-                  ) : null}
-                  {plugin.metadata?.author ? (
-                    <>
-                      <dt>{t('plugin_management.author_label')}</dt>
-                      <dd>{plugin.metadata.author}</dd>
-                    </>
-                  ) : null}
-                  {plugin.path ? (
-                    <>
-                      <dt>{t('plugin_management.path_label')}</dt>
-                      <dd title={plugin.path}>{plugin.path}</dd>
-                    </>
-                  ) : null}
-                </dl>
-
-                <div className={styles.cardActions}>
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => openConfigSheet(plugin)}
                     disabled={!connected}
                   >
-                    <IconSettings size={16} />
+                    <IconSettings size={14} />
                     {t('plugin_management.edit_config')}
                   </Button>
                   {plugin.menus.map((menu) => (
@@ -754,7 +799,7 @@ export function PluginsPage() {
                       rel="noreferrer"
                       title={menu.description || menu.menu}
                     >
-                      <IconExternalLink size={16} />
+                      <IconExternalLink size={12} />
                       {menu.menu || t('plugin_management.open_resource')}
                     </a>
                   ))}
@@ -767,7 +812,7 @@ export function PluginsPage() {
                       title={t('plugin_management.open_repository')}
                       aria-label={t('plugin_management.open_repository')}
                     >
-                      <IconGithub size={16} />
+                      <IconGithub size={14} />
                     </a>
                   ) : null}
                 </div>
@@ -777,6 +822,7 @@ export function PluginsPage() {
         </div>
       )}
 
+      {/* ── Config Sheet ── */}
       <Sheet
         open={Boolean(editingPlugin && draft)}
         onClose={closeConfigSheet}
