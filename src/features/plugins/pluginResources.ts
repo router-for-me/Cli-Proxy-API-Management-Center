@@ -4,6 +4,7 @@ import { normalizeApiBase } from '@/utils/connection';
 export interface PluginResourceEntry {
   pluginID: string;
   pluginTitle: string;
+  pluginLogo: string;
   menuIndex: number;
   menu: PluginMenu;
   label: string;
@@ -31,6 +32,7 @@ export const collectPluginResourceEntries = (
 ): PluginResourceEntry[] =>
   plugins.flatMap((plugin) => {
     const pluginTitle = getPluginTitle(plugin);
+    const pluginLogo = plugin.logo || plugin.metadata?.logo || '';
 
     return plugin.menus
       .map((menu, menuIndex): PluginResourceEntry | null => {
@@ -41,6 +43,7 @@ export const collectPluginResourceEntries = (
         return {
           pluginID: plugin.id,
           pluginTitle,
+          pluginLogo,
           menuIndex,
           menu: { ...menu, path },
           label: menuLabel || pluginTitle,

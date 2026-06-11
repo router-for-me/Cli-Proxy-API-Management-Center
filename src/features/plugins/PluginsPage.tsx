@@ -31,6 +31,17 @@ interface PluginConfigDraft {
   errors: Record<string, string>;
 }
 
+function PluginCardLogo({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false);
+  const showImage = Boolean(src) && !failed;
+
+  return showImage ? (
+    <img src={src} alt="" onError={() => setFailed(true)} />
+  ) : (
+    <IconPlug size={18} />
+  );
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -701,7 +712,7 @@ export function PluginsPage() {
               <article key={plugin.id} className={styles.pluginRow}>
                 {/* Logo */}
                 <div className={styles.logoBox} aria-hidden="true">
-                  {logo ? <img src={logo} alt="" /> : <IconPlug size={18} />}
+                  <PluginCardLogo src={logo} />
                 </div>
 
                 {/* Info */}

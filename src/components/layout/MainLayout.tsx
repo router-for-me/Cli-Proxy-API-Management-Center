@@ -35,6 +35,7 @@ import {
 } from '@/stores';
 import {
   collectPluginResourceEntries,
+  resolvePluginAssetURL,
   type PluginResourceEntry,
 } from '@/features/plugins/pluginResources';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
@@ -83,6 +84,17 @@ interface SidebarNavGroup {
 
 const flattenNavItems = (items: SidebarNavItem[]): SidebarNavLinkItem[] =>
   items.flatMap((item) => item.kind === 'drawer' ? item.children : [item]);
+
+function PluginSidebarIcon({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false);
+  const showImage = Boolean(src) && !failed;
+
+  return showImage ? (
+    <img src={src} alt="" onError={() => setFailed(true)} />
+  ) : (
+    <IconSidebarPlugins size={18} />
+  );
+}
 
 // Header action icons - smaller size for header buttons
 const headerIconProps: SVGProps<SVGSVGElement> = {
@@ -471,23 +483,25 @@ export function MainLayout() {
     (group): SidebarNavItem[] => {
       if (group.entries.length === 1) {
         const resource = group.entries[0];
+        const pluginLogo = resolvePluginAssetURL(resource.pluginLogo, apiBase);
         return [
           {
             path: resource.route,
             label: resource.label,
             meta: resource.description,
-            icon: sidebarIcons.plugins,
+            icon: <PluginSidebarIcon src={pluginLogo} />,
           },
         ];
       }
 
+      const pluginLogo = resolvePluginAssetURL(group.entries[0]?.pluginLogo ?? '', apiBase);
       return [
         {
           kind: 'drawer',
           id: `plugin-pages-${group.pluginID}`,
           label: group.pluginTitle,
           meta: t('plugin_resource.page_count', { count: group.entries.length }),
-          icon: sidebarIcons.plugins,
+          icon: <PluginSidebarIcon src={pluginLogo} />,
           children: group.entries.map((resource) => ({
             path: resource.route,
             label: resource.label,
@@ -554,15 +568,6 @@ export function MainLayout() {
         },
       ],
     },
-    ...(pluginPageNavItems.length > 0
-      ? [
-          {
-            id: 'plugin-pages',
-            labelKey: 'nav_groups.plugin_pages',
-            items: pluginPageNavItems,
-          },
-        ]
-      : []),
     {
       id: 'control',
       labelKey: 'nav_groups.control',
@@ -587,6 +592,15 @@ export function MainLayout() {
         },
       ],
     },
+    ...(pluginPageNavItems.length > 0
+      ? [
+          {
+            id: 'plugin-pages',
+            labelKey: 'nav_groups.plugin_pages',
+            items: pluginPageNavItems,
+          },
+        ]
+      : []),
   ];
   const navItems = navGroups.flatMap((group) => flattenNavItems(group.items));
   const navOrder = navItems.map((item) => item.path);
@@ -928,7 +942,10 @@ export function MainLayout() {
 
           <div className="nav-section">
             {navGroups.map((group, idx) => (
-              <div className="nav-group" key={group.id}>
+              <div
+                className={`nav-group ${group.id === 'plugin-pages' ? 'nav-group-bottom' : ''}`}
+                key={group.id}
+              >
                 {showSidebarLabels
                   ? <div className="nav-group-label">{t(group.labelKey)}</div>
                   : idx > 0 && <div className="nav-group-divider" aria-hidden="true" />}

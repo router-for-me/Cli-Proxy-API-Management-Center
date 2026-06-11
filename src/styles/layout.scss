@@ -498,6 +498,11 @@
     gap: $spacing-xs;
   }
 
+  .nav-group-bottom {
+    margin-top: auto;
+    padding-top: 12px;
+  }
+
   .nav-group-label {
     padding: 0 12px 4px;
     font-size: 10.5px;
@@ -589,6 +594,14 @@
         width: 18px;
         height: 18px;
         display: block;
+      }
+
+      img {
+        display: block;
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        object-fit: cover;
       }
     }
 
