@@ -125,6 +125,7 @@
     "operate": "Operate",
     "gateway": "Gateway",
     "observe": "Observe",
+    "plugin_pages": "Plugins",
     "control": "Control"
   },
   "nav_meta": {
@@ -133,7 +134,7 @@
     "auth_files": "Auth files & credentials",
     "oauth": "OAuth authorization",
     "quota_management": "API keys & limits",
-    "plugins": "Plugin toggles & resources",
+    "plugins": "Plugin toggles & config",
     "logs": "Request tracing",
     "config_management": "Gateway configuration",
     "system_info": "Runtime & diagnostics"
@@ -1139,6 +1140,16 @@
     "expected_array": "Enter a JSON array",
     "expected_object": "Enter a JSON object",
     "invalid_enum": "Choose one of the declared enum values"
+  },
+  "plugin_resource": {
+    "title": "Plugin Page",
+    "page_count": "{{count}} pages",
+    "load_failed": "Failed to load plugin page",
+    "unavailable": "Plugin page unavailable",
+    "not_found": "Plugin page not found",
+    "not_found_desc": "This plugin page is not declared by the current backend plugin list.",
+    "empty_src": "Plugin page URL is empty",
+    "empty_src_desc": "This plugin menu does not provide an embeddable page URL."
   },
   "system_info": {
     "title": "Management Center Info",

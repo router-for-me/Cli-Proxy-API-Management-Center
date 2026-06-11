@@ -7,7 +7,6 @@ import { Select } from '@/components/ui/Select';
 import { Sheet } from '@/components/ui/Sheet';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
-  IconExternalLink,
   IconGithub,
   IconPlug,
   IconPlus,
@@ -20,7 +19,7 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { pluginsApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import type { PluginConfigField, PluginListEntry, PluginListResponse } from '@/types';
-import { normalizeApiBase } from '@/utils/connection';
+import { getPluginTitle, resolvePluginAssetURL } from './pluginResources';
 import styles from './PluginsPage.module.scss';
 
 type PluginDraftValue = string | boolean | string[];
@@ -60,9 +59,6 @@ const getPluginRawConfig = (
   const configs = getPluginsConfigMap(rawConfig);
   return cloneRecord(configs[pluginID]);
 };
-
-const getPluginTitle = (plugin: PluginListEntry) =>
-  plugin.metadata?.name.trim() || plugin.id;
 
 const stringifyArrayItem = (value: unknown): string => {
   if (value === undefined || value === null) return '';
@@ -310,15 +306,8 @@ export function PluginsPage() {
     });
   }, [data?.plugins, filter]);
 
-  const resolvePluginAssetURL = useCallback(
-    (value: string) => {
-      const trimmed = value.trim();
-      if (!trimmed) return '';
-      if (/^(https?:|data:|blob:)/i.test(trimmed)) return trimmed;
-      if (!trimmed.startsWith('/')) return trimmed;
-      const base = normalizeApiBase(apiBase);
-      return base ? `${base}${trimmed}` : trimmed;
-    },
+  const resolvePluginAsset = useCallback(
+    (value: string) => resolvePluginAssetURL(value, apiBase),
     [apiBase]
   );
 
@@ -702,7 +691,7 @@ export function PluginsPage() {
       ) : (
         <div className={styles.pluginList}>
           {visiblePlugins.map((plugin) => {
-            const logo = resolvePluginAssetURL(plugin.logo || plugin.metadata?.logo || '');
+            const logo = resolvePluginAsset(plugin.logo || plugin.metadata?.logo || '');
             const github = plugin.metadata?.githubRepository.trim();
             const mutating = mutatingID === plugin.id;
             const version = plugin.metadata?.version;
@@ -790,19 +779,6 @@ export function PluginsPage() {
                     <IconSettings size={14} />
                     {t('plugin_management.edit_config')}
                   </Button>
-                  {plugin.menus.map((menu) => (
-                    <a
-                      key={`${plugin.id}-${menu.path}`}
-                      className={styles.linkButton}
-                      href={resolvePluginAssetURL(menu.path)}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={menu.description || menu.menu}
-                    >
-                      <IconExternalLink size={12} />
-                      {menu.menu || t('plugin_management.open_resource')}
-                    </a>
-                  ))}
                   {github ? (
                     <a
                       className={styles.iconLink}

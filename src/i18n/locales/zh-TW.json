@@ -125,6 +125,7 @@
     "operate": "運行",
     "gateway": "閘道",
     "observe": "觀測",
+    "plugin_pages": "插件",
     "control": "控制"
   },
   "nav_meta": {
@@ -133,7 +134,7 @@
     "auth_files": "Auth 檔案與憑證",
     "oauth": "OAuth 授權登入",
     "quota_management": "API Key 與限額",
-    "plugins": "插件啟停與資源",
+    "plugins": "插件啟停與設定",
     "logs": "請求追蹤與排查",
     "config_management": "閘道基礎設定",
     "system_info": "運行與診斷資訊"
@@ -1165,6 +1166,16 @@
     "expected_array": "請輸入 JSON 陣列",
     "expected_object": "請輸入 JSON 物件",
     "invalid_enum": "請選擇宣告的枚舉值"
+  },
+  "plugin_resource": {
+    "title": "插件頁面",
+    "page_count": "{{count}} 個頁面",
+    "load_failed": "載入插件頁面失敗",
+    "unavailable": "插件頁面不可用",
+    "not_found": "找不到插件頁面",
+    "not_found_desc": "目前後端插件清單未宣告此插件頁面。",
+    "empty_src": "插件頁面位址為空",
+    "empty_src_desc": "此插件選單未提供可嵌入的頁面位址。"
   },
   "system_info": {
     "title": "管理中心資訊",

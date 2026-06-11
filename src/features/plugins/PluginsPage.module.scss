@@ -362,7 +362,6 @@
   }
 }
 
-.linkButton,
 .iconLink {
   display: inline-flex;
   min-height: 30px;
@@ -385,15 +384,6 @@
     background: var(--bg-hover);
     color: var(--primary-color);
   }
-}
-
-.linkButton {
-  gap: 5px;
-  min-width: 0;
-  max-width: min(180px, 100%);
-  padding: 0 10px;
-  overflow-wrap: anywhere;
-  white-space: normal;
 }
 
 .iconLink {

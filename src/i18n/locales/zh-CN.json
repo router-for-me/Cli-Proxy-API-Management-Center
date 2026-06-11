@@ -125,6 +125,7 @@
     "operate": "运行",
     "gateway": "网关",
     "observe": "观测",
+    "plugin_pages": "插件",
     "control": "控制"
   },
   "nav_meta": {
@@ -133,7 +134,7 @@
     "auth_files": "Auth 文件与凭证",
     "oauth": "OAuth 授权登录",
     "quota_management": "API Key 与限额",
-    "plugins": "插件启停与资源",
+    "plugins": "插件启停与配置",
     "logs": "请求追踪与排查",
     "config_management": "网关基础配置",
     "system_info": "运行与诊断信息"
@@ -1139,6 +1140,16 @@
     "expected_array": "请输入 JSON 数组",
     "expected_object": "请输入 JSON 对象",
     "invalid_enum": "请选择声明的枚举值"
+  },
+  "plugin_resource": {
+    "title": "插件页面",
+    "page_count": "{{count}} 个页面",
+    "load_failed": "加载插件页面失败",
+    "unavailable": "插件页面不可用",
+    "not_found": "未找到插件页面",
+    "not_found_desc": "该插件页面未在当前后端插件列表中声明。",
+    "empty_src": "插件页面地址为空",
+    "empty_src_desc": "该插件菜单未提供可嵌入的页面地址。"
   },
   "system_info": {
     "title": "管理中心信息",

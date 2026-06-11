@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { PageTransition } from '@/components/common/PageTransition';
 import { MainRoutes } from '@/router/MainRoutes';
+import { pluginsApi } from '@/services/api';
 import {
   IconSidebarAuthFiles,
   IconSidebarConfig,
@@ -22,6 +23,7 @@ import {
   IconSidebarProviders,
   IconSidebarQuota,
   IconSidebarSystem,
+  IconChevronDown,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import {
@@ -31,6 +33,10 @@ import {
   useNotificationStore,
   useThemeStore,
 } from '@/stores';
+import {
+  collectPluginResourceEntries,
+  type PluginResourceEntry,
+} from '@/features/plugins/pluginResources';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
@@ -47,6 +53,36 @@ const sidebarIcons: Record<string, ReactNode> = {
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
 };
+
+interface SidebarNavLinkItem {
+  kind?: 'link';
+  path: string;
+  labelKey?: string;
+  metaKey?: string;
+  label?: string;
+  meta?: string;
+  icon: ReactNode;
+}
+
+interface SidebarNavDrawerItem {
+  kind: 'drawer';
+  id: string;
+  label: string;
+  meta?: string;
+  icon: ReactNode;
+  children: SidebarNavLinkItem[];
+}
+
+type SidebarNavItem = SidebarNavLinkItem | SidebarNavDrawerItem;
+
+interface SidebarNavGroup {
+  id: string;
+  labelKey: string;
+  items: SidebarNavItem[];
+}
+
+const flattenNavItems = (items: SidebarNavItem[]): SidebarNavLinkItem[] =>
+  items.flatMap((item) => item.kind === 'drawer' ? item.children : [item]);
 
 // Header action icons - smaller size for header buttons
 const headerIconProps: SVGProps<SVGSVGElement> = {
@@ -214,6 +250,8 @@ export function MainLayout() {
   const location = useLocation();
 
   const logout = useAuthStore((state) => state.logout);
+  const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const apiBase = useAuthStore((state) => state.apiBase);
 
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const clearCache = useConfigStore((state) => state.clearCache);
@@ -227,6 +265,10 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const [pluginResources, setPluginResources] = useState<PluginResourceEntry[]>([]);
+  const [expandedPluginResourceIDs, setExpandedPluginResourceIDs] = useState<Set<string>>(
+    () => new Set()
+  );
   const contentRef = useRef<HTMLDivElement | null>(null);
   const languageMenuRef = useRef<HTMLDivElement | null>(null);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
@@ -235,6 +277,7 @@ export function MainLayout() {
   const fullBrandName = 'CLI Proxy API Management Center';
   const abbrBrandName = t('title.abbr');
   const isLogsPage = location.pathname.startsWith('/logs');
+  const isPluginResourcePage = location.pathname.startsWith('/plugin-pages');
   const showSidebarLabels = !sidebarCollapsed || sidebarOpen;
 
   // Keep floating header height available to sticky mobile elements and overlays.
@@ -385,7 +428,78 @@ export function MainLayout() {
     });
   }, [fetchConfig]);
 
-  const navGroups = [
+  const loadPluginResources = useCallback(async () => {
+    if (connectionStatus !== 'connected') {
+      setPluginResources([]);
+      return;
+    }
+
+    try {
+      const plugins = await pluginsApi.list();
+      setPluginResources(collectPluginResourceEntries(plugins.plugins));
+    } catch {
+      setPluginResources([]);
+    }
+  }, [connectionStatus]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadPluginResources();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [apiBase, loadPluginResources]);
+
+  const pluginResourceGroups = pluginResources.reduce<
+    Array<{ pluginID: string; pluginTitle: string; entries: PluginResourceEntry[] }>
+  >((groups, resource) => {
+    const group = groups.find((item) => item.pluginID === resource.pluginID);
+    if (group) {
+      group.entries.push(resource);
+      return groups;
+    }
+
+    groups.push({
+      pluginID: resource.pluginID,
+      pluginTitle: resource.pluginTitle,
+      entries: [resource],
+    });
+    return groups;
+  }, []);
+
+  const pluginPageNavItems: SidebarNavItem[] = pluginResourceGroups.flatMap(
+    (group): SidebarNavItem[] => {
+      if (group.entries.length === 1) {
+        const resource = group.entries[0];
+        return [
+          {
+            path: resource.route,
+            label: resource.label,
+            meta: resource.description,
+            icon: sidebarIcons.plugins,
+          },
+        ];
+      }
+
+      return [
+        {
+          kind: 'drawer',
+          id: `plugin-pages-${group.pluginID}`,
+          label: group.pluginTitle,
+          meta: t('plugin_resource.page_count', { count: group.entries.length }),
+          icon: sidebarIcons.plugins,
+          children: group.entries.map((resource) => ({
+            path: resource.route,
+            label: resource.label,
+            meta: resource.description,
+            icon: <span className="nav-sub-dot" aria-hidden="true" />,
+          })),
+        },
+      ];
+    }
+  );
+
+  const navGroups: SidebarNavGroup[] = [
     {
       id: 'operate',
       labelKey: 'nav_groups.operate',
@@ -440,6 +554,15 @@ export function MainLayout() {
         },
       ],
     },
+    ...(pluginPageNavItems.length > 0
+      ? [
+          {
+            id: 'plugin-pages',
+            labelKey: 'nav_groups.plugin_pages',
+            items: pluginPageNavItems,
+          },
+        ]
+      : []),
     {
       id: 'control',
       labelKey: 'nav_groups.control',
@@ -465,7 +588,7 @@ export function MainLayout() {
       ],
     },
   ];
-  const navItems = navGroups.flatMap((group) => group.items);
+  const navItems = navGroups.flatMap((group) => flattenNavItems(group.items));
   const navOrder = navItems.map((item) => item.path);
   const getRouteOrder = (pathname: string) => {
     const trimmedPath =
@@ -526,6 +649,7 @@ export function MainLayout() {
     clearCache();
     const results = await Promise.allSettled([
       fetchConfig(undefined, true),
+      loadPluginResources(),
       triggerHeaderRefresh(),
     ]);
     const rejected = results.find((result) => result.status === 'rejected');
@@ -541,12 +665,93 @@ export function MainLayout() {
     }
     showNotification(t('notification.data_refreshed'), 'success');
   };
+
+  const togglePluginResourceDrawer = useCallback((drawerID: string) => {
+    setExpandedPluginResourceIDs((current) => {
+      const next = new Set(current);
+      if (next.has(drawerID)) {
+        next.delete(drawerID);
+      } else {
+        next.add(drawerID);
+      }
+      return next;
+    });
+  }, []);
+
+  const renderNavLink = (item: SidebarNavLinkItem, className = 'nav-item') => {
+    const itemLabel = item.label ?? (item.labelKey ? t(item.labelKey) : '');
+    const itemMeta = item.meta ?? (item.metaKey ? t(item.metaKey) : '');
+
+    return (
+      <NavLink
+        key={item.path}
+        to={item.path}
+        className={({ isActive }) => `${className} ${isActive ? 'active' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+        title={showSidebarLabels ? undefined : itemLabel}
+      >
+        <span className="nav-icon">{item.icon}</span>
+        {showSidebarLabels && (
+          <span className="nav-text">
+            <span className="nav-label">{itemLabel}</span>
+            {itemMeta ? <span className="nav-meta">{itemMeta}</span> : null}
+          </span>
+        )}
+      </NavLink>
+    );
+  };
+
+  const renderNavItem = (item: SidebarNavItem) => {
+    if (item.kind !== 'drawer') {
+      return renderNavLink(item);
+    }
+
+    const isActive = item.children.some((child) => child.path === location.pathname);
+    const isOpen = isActive || expandedPluginResourceIDs.has(item.id);
+
+    return (
+      <div className={`nav-drawer ${isOpen ? 'open' : ''}`} key={item.id}>
+        <button
+          type="button"
+          className={`nav-item nav-drawer-toggle ${isActive ? 'active' : ''} ${
+            isOpen ? 'open' : ''
+          }`}
+          onClick={() => togglePluginResourceDrawer(item.id)}
+          title={showSidebarLabels ? undefined : item.label}
+          aria-expanded={isOpen}
+        >
+          <span className="nav-icon">{item.icon}</span>
+          {showSidebarLabels && (
+            <>
+              <span className="nav-text">
+                <span className="nav-label">{item.label}</span>
+                {item.meta ? <span className="nav-meta">{item.meta}</span> : null}
+              </span>
+              <span className="nav-drawer-caret" aria-hidden="true">
+                <IconChevronDown size={14} />
+              </span>
+            </>
+          )}
+        </button>
+        {isOpen ? (
+          <div className="nav-sub-list">
+            {item.children.map((child) => renderNavLink(child, 'nav-item nav-sub-item'))}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   const mobileSidebarToggleLabel = sidebarOpen
     ? t('sidebar.toggle_collapse', { defaultValue: 'Close navigation' })
     : t('sidebar.toggle_expand', { defaultValue: 'Open navigation' });
 
   return (
-    <div className={`app-shell ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
+    <div
+      className={`app-shell ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''} ${
+        isPluginResourcePage ? 'plugin-resource-shell' : ''
+      }`}
+    >
       <div className="top-gradient-blur" aria-hidden="true" />
 
       <header className="main-header" ref={headerRef}>
@@ -727,33 +932,23 @@ export function MainLayout() {
                 {showSidebarLabels
                   ? <div className="nav-group-label">{t(group.labelKey)}</div>
                   : idx > 0 && <div className="nav-group-divider" aria-hidden="true" />}
-                {group.items.map((item) => {
-                  const itemLabel = t(item.labelKey);
-                  return (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                      onClick={() => setSidebarOpen(false)}
-                      title={showSidebarLabels ? undefined : itemLabel}
-                    >
-                      <span className="nav-icon">{item.icon}</span>
-                      {showSidebarLabels && (
-                        <span className="nav-text">
-                          <span className="nav-label">{itemLabel}</span>
-                          <span className="nav-meta">{t(item.metaKey)}</span>
-                        </span>
-                      )}
-                    </NavLink>
-                  );
-                })}
+                {group.items.map((item) => renderNavItem(item))}
               </div>
             ))}
           </div>
         </aside>
 
-        <div className={`content${isLogsPage ? ' content-logs' : ''}`} ref={contentRef}>
-          <main className={`main-content${isLogsPage ? ' main-content-logs' : ''}`}>
+        <div
+          className={`content${isLogsPage ? ' content-logs' : ''}${
+            isPluginResourcePage ? ' content-plugin-resource' : ''
+          }`}
+          ref={contentRef}
+        >
+          <main
+            className={`main-content${isLogsPage ? ' main-content-logs' : ''}${
+              isPluginResourcePage ? ' main-content-plugin-resource' : ''
+            }`}
+          >
             <PageTransition
               render={(location) => <MainRoutes location={location} />}
               getRouteOrder={getRouteOrder}
