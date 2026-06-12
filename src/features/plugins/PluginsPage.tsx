@@ -27,7 +27,11 @@ import type {
   PluginListEntry,
   PluginListResponse,
 } from '@/types';
-import { getPluginTitle, resolvePluginAssetURL } from './pluginResources';
+import {
+  getPluginTitle,
+  notifyPluginResourcesChanged,
+  resolvePluginAssetURL,
+} from './pluginResources';
 import styles from './PluginsPage.module.scss';
 
 type PluginDraftValue = string | boolean | string[];
@@ -376,6 +380,7 @@ export function PluginsPage() {
       await pluginsApi.updateEnabled(plugin.id, enabled);
       clearConfigCache();
       await loadPluginsAfterMutation(enabled);
+      notifyPluginResourcesChanged();
       showNotification(t('plugin_management.toggle_success'), 'success');
     } catch (err: unknown) {
       showNotification(
@@ -412,6 +417,7 @@ export function PluginsPage() {
       await loadPluginsAfterMutation(
         nextConfig.enabled === true && editingPlugin.enabled !== true
       );
+      notifyPluginResourcesChanged();
       setEditingPlugin(null);
       setEditingConfig({});
       setDraft(null);

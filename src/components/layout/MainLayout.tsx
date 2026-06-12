@@ -37,6 +37,7 @@ import {
 } from '@/stores';
 import {
   collectPluginResourceEntries,
+  PLUGIN_RESOURCES_REFRESH_EVENT,
   resolvePluginAssetURL,
   type PluginResourceEntry,
 } from '@/features/plugins/pluginResources';
@@ -449,7 +450,12 @@ export function MainLayout() {
       void loadPluginResources();
     }, 0);
 
-    return () => window.clearTimeout(timer);
+    window.addEventListener(PLUGIN_RESOURCES_REFRESH_EVENT, loadPluginResources);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener(PLUGIN_RESOURCES_REFRESH_EVENT, loadPluginResources);
+    };
   }, [apiBase, loadPluginResources]);
 
   const pluginResourceGroups = pluginResources.reduce<

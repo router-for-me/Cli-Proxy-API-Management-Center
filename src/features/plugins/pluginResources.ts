@@ -1,6 +1,12 @@
 import type { PluginListEntry, PluginMenu } from '@/types';
 import { normalizeApiBase } from '@/utils/connection';
 
+export const PLUGIN_RESOURCES_REFRESH_EVENT = 'plugin-resources-refresh';
+
+export const notifyPluginResourcesChanged = () => {
+  window.dispatchEvent(new Event(PLUGIN_RESOURCES_REFRESH_EVENT));
+};
+
 export interface PluginResourceEntry {
   pluginID: string;
   pluginTitle: string;
@@ -39,6 +45,8 @@ export const collectPluginResourceEntries = (
   plugins: PluginListEntry[]
 ): PluginResourceEntry[] =>
   plugins.flatMap((plugin) => {
+    if (!plugin.effectiveEnabled) return [];
+
     const pluginTitle = getPluginTitle(plugin);
     const pluginLogo = plugin.logo || plugin.metadata?.logo || '';
 

@@ -9,6 +9,7 @@ import { getErrorMessage, isRecord } from '@/utils/helpers';
 import type { PluginListResponse } from '@/types';
 import {
   collectPluginResourceEntries,
+  PLUGIN_RESOURCES_REFRESH_EVENT,
   resolvePluginAssetURL,
 } from './pluginResources';
 import styles from './PluginResourcePage.module.scss';
@@ -76,6 +77,14 @@ export function PluginResourcePage() {
 
   useEffect(() => {
     void loadResource();
+  }, [loadResource]);
+
+  useEffect(() => {
+    window.addEventListener(PLUGIN_RESOURCES_REFRESH_EVENT, loadResource);
+
+    return () => {
+      window.removeEventListener(PLUGIN_RESOURCES_REFRESH_EVENT, loadResource);
+    };
   }, [loadResource]);
 
   const resource = useMemo(() => {
