@@ -321,9 +321,8 @@ export function AuthFilesPage() {
       if (!isAuthFilesSortMode(value) || value === sortMode) return;
       setSortMode(value);
       setPage(1);
-      void loadFiles().catch(() => {});
     },
-    [loadFiles, sortMode]
+    [sortMode]
   );
 
   const handleHeaderRefresh = useCallback(async () => {
@@ -419,8 +418,8 @@ export function AuthFilesPage() {
       copy.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortMode === 'priority') {
       copy.sort((a, b) => {
-        const pa = parsePriorityValue(a.priority ?? a['priority']) ?? 0;
-        const pb = parsePriorityValue(b.priority ?? b['priority']) ?? 0;
+        const pa = parsePriorityValue(a.priority) ?? 0;
+        const pb = parsePriorityValue(b.priority) ?? 0;
         return pb - pa; // 高优先级排前面
       });
     }
