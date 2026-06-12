@@ -11,7 +11,6 @@ import {
   type ProviderRecentUsageMap,
 } from '@/components/providers/utils';
 import type { OpenAIProviderConfig } from '@/types';
-import { isRecord } from '@/utils/helpers';
 import { ProviderHeaderCard } from './components/ProviderHeaderCard';
 import { ProviderCategoryList } from './components/ProviderCategoryList';
 import { ProviderResourcePanel } from './components/ProviderResourcePanel';
@@ -65,38 +64,6 @@ const matchesFilter = (r: ProviderResource, normalized: string): boolean => {
     .filter(Boolean)
     .map((v) => String(v).toLowerCase());
   return haystack.some((v) => v.includes(normalized));
-};
-
-const getResourceModels = (resource: ProviderResource): string[] => {
-  if (!isRecord(resource.raw)) return [];
-  if (resource.brand === 'ampcode') {
-    const mappings = resource.raw.modelMappings;
-    if (!Array.isArray(mappings)) return [];
-    const seen = new Set<string>();
-    mappings.forEach((mapping) => {
-      if (!isRecord(mapping)) return;
-      const from = typeof mapping.from === 'string' ? mapping.from.trim() : '';
-      const to = typeof mapping.to === 'string' ? mapping.to.trim() : '';
-      if (from) seen.add(from);
-      if (to) seen.add(to);
-    });
-    return Array.from(seen);
-  }
-  const models = resource.raw.models;
-  if (!Array.isArray(models)) return [];
-  const seen = new Set<string>();
-  models.forEach((model) => {
-    if (!isRecord(model)) return;
-    const name = typeof model.name === 'string' ? model.name.trim() : '';
-    if (name) seen.add(name);
-  });
-  return Array.from(seen);
-};
-
-const getResourcePriority = (resource: ProviderResource): number => {
-  if (!isRecord(resource.raw)) return 0;
-  const priority = resource.raw.priority;
-  return typeof priority === 'number' && Number.isFinite(priority) ? priority : 0;
 };
 
 const getResourceSortName = (resource: ProviderResource): string =>
@@ -216,7 +183,7 @@ export function ProvidersWorkbenchPage() {
     if (!activeGroup) return [];
     const seen = new Set<string>();
     activeGroup.resources.forEach((r) => {
-      getResourceModels(r).forEach((name) => seen.add(name));
+      r.models.forEach((name) => seen.add(name));
     });
     return Array.from(seen).sort();
   }, [activeGroup]);
@@ -232,10 +199,7 @@ export function ProvidersWorkbenchPage() {
   const visibleResources = useMemo(() => {
     let arr = filteredResources;
     if (selectedModels.size > 0) {
-      arr = arr.filter((r) => {
-        const models = getResourceModels(r);
-        return models.some((name) => selectedModels.has(name));
-      });
+      arr = arr.filter((r) => r.models.some((name) => selectedModels.has(name)));
     }
 
     const sorted = [...arr].sort((a, b) => {
@@ -243,9 +207,7 @@ export function ProvidersWorkbenchPage() {
       if (providerSortBy === 'name') {
         diff = getResourceSortName(a).localeCompare(getResourceSortName(b));
       } else if (providerSortBy === 'priority') {
-        const ap = getResourcePriority(a);
-        const bp = getResourcePriority(b);
-        diff = ap - bp;
+        diff = a.priority - b.priority;
       } else {
         diff =
           getResourceRecentSuccess(a, usageByProvider) -
