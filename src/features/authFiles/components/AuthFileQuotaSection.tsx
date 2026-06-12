@@ -1,4 +1,4 @@
-import { useCallback, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
@@ -17,6 +17,8 @@ import {
   resolveQuotaErrorMessage,
   type QuotaProviderType,
 } from '@/features/authFiles/constants';
+import { Button } from '@/components/ui/Button';
+import { IconRefreshCw } from '@/components/ui/icons';
 import { QuotaProgressBar } from '@/features/authFiles/components/QuotaProgressBar';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
@@ -41,6 +43,8 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
   const { file, quotaType, disableControls } = props;
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
+  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
+  const [resettingQuota, setResettingQuota] = useState(false);
 
   const quota = useQuotaStore((state) => {
     if (quotaType === 'antigravity') return state.antigravityQuota[file.name] as QuotaState;
@@ -100,13 +104,79 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     }
   }, [disableControls, file, quota?.status, quotaType, showNotification, t, updateQuotaState]);
 
+  const resetQuotaForFile = useCallback(() => {
+    if (disableControls) return;
+    if (isRuntimeOnlyAuthFile(file)) return;
+    if (file.disabled) return;
+    if (quota?.status === 'loading') return;
+    if (resettingQuota) return;
+
+    const config = getQuotaConfig(quotaType) as unknown as {
+      resetQuota?: (file: AuthFileItem, t: TFunction) => Promise<unknown>;
+      buildSuccessState: (data: unknown) => unknown;
+    };
+    const resetQuota = config.resetQuota;
+    if (!resetQuota) return;
+
+    showConfirmation({
+      title: t('codex_quota.reset_confirm_title'),
+      message: t('codex_quota.reset_confirm_message', { name: file.name }),
+      confirmText: t('codex_quota.reset_confirm_button'),
+      variant: 'primary',
+      onConfirm: async () => {
+        setResettingQuota(true);
+        try {
+          const data = await resetQuota(file, t);
+          updateQuotaState((prev: Record<string, unknown>) => ({
+            ...prev,
+            [file.name]: config.buildSuccessState(data),
+          }));
+          showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : t('common.unknown_error');
+          showNotification(t('codex_quota.reset_failed', { name: file.name, message }), 'error');
+        } finally {
+          setResettingQuota(false);
+        }
+      },
+    });
+  }, [
+    disableControls,
+    file,
+    quota?.status,
+    quotaType,
+    resettingQuota,
+    showConfirmation,
+    showNotification,
+    t,
+    updateQuotaState,
+  ]);
+
   const config = getQuotaConfig(quotaType) as unknown as {
     i18nPrefix: string;
+    resetQuota?: (file: AuthFileItem, t: TFunction) => Promise<unknown>;
     renderQuotaItems: (quota: unknown, t: TFunction, helpers: unknown) => unknown;
   };
 
   const quotaStatus = quota?.status ?? 'idle';
-  const canRefreshQuota = !disableControls && !file.disabled;
+  const canRefreshQuota = !disableControls && !file.disabled && !resettingQuota;
+  const canResetQuota = canRefreshQuota && quotaStatus !== 'loading';
+  const resetQuotaAction = config.resetQuota ? (
+    <Button
+      type="button"
+      variant="secondary"
+      size="sm"
+      className={styles.quotaResetCreditButton}
+      onClick={() => resetQuotaForFile()}
+      disabled={!canResetQuota}
+      loading={resettingQuota}
+      title={t('codex_quota.reset_button')}
+      aria-label={t('codex_quota.reset_button')}
+    >
+      {!resettingQuota && <IconRefreshCw size={14} />}
+      {t('codex_quota.reset_button')}
+    </Button>
+  ) : undefined;
   const quotaErrorMessage = resolveQuotaErrorMessage(
     t,
     quota?.errorStatus,
@@ -133,7 +203,11 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
           })}
         </div>
       ) : quota ? (
-        (config.renderQuotaItems(quota, t, { styles, QuotaProgressBar }) as ReactNode)
+        (config.renderQuotaItems(quota, t, {
+          styles,
+          QuotaProgressBar,
+          resetQuotaAction,
+        }) as ReactNode)
       ) : (
         <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.idle`)}</div>
       )}

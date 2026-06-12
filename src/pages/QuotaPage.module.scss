@@ -392,12 +392,19 @@
   }
 }
 
+.quotaInlineActions {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: $spacing-xs;
+}
+
 .quotaCardActions {
   display: flex;
   justify-content: flex-end;
   padding-top: $spacing-xs;
 }
 
+.quotaResetCreditButton:global(.btn.btn-sm),
 .quotaRefreshButton:global(.btn.btn-sm) {
   border-radius: 999px;
   padding-inline: 12px;

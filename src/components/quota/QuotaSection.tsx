@@ -107,6 +107,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const { t } = useTranslation();
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const showNotification = useNotificationStore((state) => state.showNotification);
+  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const setQuota = useQuotaStore((state) => state[config.storeSetter]) as QuotaSetter<
     Record<string, TState>
   >;
@@ -115,6 +116,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const [columns, gridRef] = useGridColumns(380); // Min card width 380px matches SCSS
   const [viewMode, setViewMode] = useState<ViewMode>('paged');
   const [showTooManyWarning, setShowTooManyWarning] = useState(false);
+  const [resettingQuotaName, setResettingQuotaName] = useState<string | null>(null);
 
   const filteredFiles = useMemo(() => files.filter((file) => config.filterFn(file)), [
     files,
@@ -237,6 +239,52 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     [config, disabled, quota, setQuota, showNotification, t]
   );
 
+  const resetQuotaForFile = useCallback(
+    (file: AuthFileItem) => {
+      const resetQuota = config.resetQuota;
+      if (!resetQuota) return;
+      if (disabled || file.disabled) return;
+      if (quota[file.name]?.status === 'loading') return;
+      if (resettingQuotaName === file.name) return;
+
+      showConfirmation({
+        title: t('codex_quota.reset_confirm_title'),
+        message: t('codex_quota.reset_confirm_message', { name: file.name }),
+        confirmText: t('codex_quota.reset_confirm_button'),
+        variant: 'primary',
+        onConfirm: async () => {
+          setResettingQuotaName(file.name);
+          try {
+            const data = await resetQuota(file, t);
+            setQuota((prev) => ({
+              ...prev,
+              [file.name]: config.buildSuccessState(data)
+            }));
+            showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : t('common.unknown_error');
+            showNotification(
+              t('codex_quota.reset_failed', { name: file.name, message }),
+              'error'
+            );
+          } finally {
+            setResettingQuotaName((current) => (current === file.name ? null : current));
+          }
+        }
+      });
+    },
+    [
+      config,
+      disabled,
+      quota,
+      resettingQuotaName,
+      setQuota,
+      showConfirmation,
+      showNotification,
+      t
+    ]
+  );
+
   const titleNode = (
     <div className={styles.titleWrapper}>
       <span>{t(`${config.i18nPrefix}.title`)}</span>
@@ -307,21 +355,45 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       ) : (
         <>
           <div ref={gridRef} className={config.gridClassName}>
-            {pageItems.map((item) => (
-              <QuotaCard
-                key={item.name}
-                item={item}
-                quota={quota[item.name]}
-                resolvedTheme={resolvedTheme}
-                i18nPrefix={config.i18nPrefix}
-                cardIdleMessageKey={config.cardIdleMessageKey}
-                cardClassName={config.cardClassName}
-                defaultType={config.type}
-                canRefresh={!disabled && !item.disabled}
-                onRefresh={() => void refreshQuotaForFile(item)}
-                renderQuotaItems={config.renderQuotaItems}
-              />
-            ))}
+            {pageItems.map((item) => {
+              const itemQuota = quota[item.name];
+              const isResettingQuota = resettingQuotaName === item.name;
+              const canUseQuotaAction =
+                !disabled && !item.disabled && itemQuota?.status !== 'loading';
+              const resetQuotaAction = config.resetQuota ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className={styles.quotaResetCreditButton}
+                  onClick={() => resetQuotaForFile(item)}
+                  disabled={!canUseQuotaAction || isResettingQuota}
+                  loading={isResettingQuota}
+                  title={t('codex_quota.reset_button')}
+                  aria-label={t('codex_quota.reset_button')}
+                >
+                  {!isResettingQuota && <IconRefreshCw size={14} />}
+                  {t('codex_quota.reset_button')}
+                </Button>
+              ) : undefined;
+
+              return (
+                <QuotaCard
+                  key={item.name}
+                  item={item}
+                  quota={itemQuota}
+                  resolvedTheme={resolvedTheme}
+                  i18nPrefix={config.i18nPrefix}
+                  cardIdleMessageKey={config.cardIdleMessageKey}
+                  cardClassName={config.cardClassName}
+                  defaultType={config.type}
+                  canRefresh={canUseQuotaAction && !isResettingQuota}
+                  onRefresh={() => void refreshQuotaForFile(item)}
+                  resetQuotaAction={resetQuotaAction}
+                  renderQuotaItems={config.renderQuotaItems}
+                />
+              );
+            })}
           </div>
           {filteredFiles.length > pageSize && effectiveViewMode === 'paged' && (
             <div className={styles.pagination}>

@@ -640,6 +640,24 @@
   }
 }
 
+.quotaInlineActions {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: $spacing-xs;
+}
+
+.quotaResetCreditButton:global(.btn.btn-sm) {
+  border-radius: 999px;
+  padding-inline: 12px;
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+}
+
 .quotaError {
   font-size: 12px;
   color: var(--danger-color);
@@ -674,6 +692,12 @@
   font-weight: 600;
   color: var(--text-primary);
   text-transform: capitalize;
+}
+
+.codexPlanSeparator {
+  width: 1px;
+  height: 12px;
+  background-color: var(--border-color);
 }
 
 .premiumPlanValue {
