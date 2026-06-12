@@ -29,6 +29,7 @@ interface AuthStoreState extends AuthState {
     runtimeKind?: ServerRuntimeKind | null
   ) => void;
   updateServerRuntimeKind: (runtimeKind: ServerRuntimeKind) => void;
+  updateServerPluginSupport: (supportsPlugin: boolean) => void;
   updateConnectionStatus: (status: ConnectionStatus, error?: string | null) => void;
 }
 
@@ -54,6 +55,7 @@ export const useAuthStore = create<AuthStoreState>()(
       serverVersion: null,
       serverBuildDate: null,
       serverRuntimeKind: 'unknown',
+      supportsPlugin: false,
       connectionStatus: 'disconnected',
       connectionError: null,
 
@@ -113,7 +115,8 @@ export const useAuthStore = create<AuthStoreState>()(
             connectionStatus: 'connecting',
             serverVersion: null,
             serverBuildDate: null,
-            serverRuntimeKind: 'unknown'
+            serverRuntimeKind: 'unknown',
+            supportsPlugin: false
           });
           useModelsStore.getState().clearCache();
 
@@ -169,6 +172,7 @@ export const useAuthStore = create<AuthStoreState>()(
           serverVersion: null,
           serverBuildDate: null,
           serverRuntimeKind: 'unknown',
+          supportsPlugin: false,
           connectionStatus: 'disconnected',
           connectionError: null
         });
@@ -186,6 +190,7 @@ export const useAuthStore = create<AuthStoreState>()(
         try {
           // 重新配置客户端
           apiClient.setConfig({ apiBase, managementKey });
+          set({ supportsPlugin: false });
 
           // 验证连接
           await useConfigStore.getState().fetchConfig();
@@ -201,7 +206,8 @@ export const useAuthStore = create<AuthStoreState>()(
         } catch {
           set({
             isAuthenticated: false,
-            connectionStatus: 'error'
+            connectionStatus: 'error',
+            supportsPlugin: false
           });
           return false;
         }
@@ -218,6 +224,10 @@ export const useAuthStore = create<AuthStoreState>()(
 
       updateServerRuntimeKind: (runtimeKind) => {
         set({ serverRuntimeKind: runtimeKind });
+      },
+
+      updateServerPluginSupport: (supportsPlugin) => {
+        set({ supportsPlugin });
       },
 
       // 更新连接状态
@@ -271,6 +281,13 @@ if (typeof window !== 'undefined') {
       useAuthStore
         .getState()
         .updateServerVersion(detail.version || null, detail.buildDate || null, runtimeKind);
+    }) as EventListener
+  );
+
+  window.addEventListener(
+    'server-plugin-support-update',
+    ((e: CustomEvent) => {
+      useAuthStore.getState().updateServerPluginSupport(e.detail?.supportsPlugin === true);
     }) as EventListener
   );
 }

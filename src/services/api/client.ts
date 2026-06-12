@@ -8,6 +8,7 @@ import type { ApiClientConfig, ApiError } from '@/types';
 import {
   BUILD_DATE_HEADER_KEYS,
   CPA_BUILD_DATE_HEADER_KEYS,
+  CPA_SUPPORT_PLUGIN_HEADER_KEYS,
   CPA_VERSION_HEADER_KEYS,
   HOME_BUILD_DATE_HEADER_KEYS,
   HOME_VERSION_HEADER_KEYS,
@@ -87,6 +88,19 @@ class ApiClient {
     return null;
   }
 
+  private readBooleanHeader(
+    headers: Record<string, unknown> | undefined,
+    keys: string[]
+  ): boolean | null {
+    const value = this.readHeader(headers, keys);
+    if (value === null) return null;
+
+    const normalized = value.trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+    if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+    return null;
+  }
+
   /**
    * 设置请求/响应拦截器
    */
@@ -122,6 +136,7 @@ class ApiClient {
         const version = homeVersion || cpaVersion || this.readHeader(headers, VERSION_HEADER_KEYS);
         const buildDate =
           homeBuildDate || cpaBuildDate || this.readHeader(headers, BUILD_DATE_HEADER_KEYS);
+        const supportsPlugin = this.readBooleanHeader(headers, CPA_SUPPORT_PLUGIN_HEADER_KEYS);
         const runtimeKind: ServerRuntimeKind | null =
           homeVersion || homeBuildDate ? 'home' : cpaVersion || cpaBuildDate ? 'cpa' : null;
 
@@ -130,6 +145,13 @@ class ApiClient {
           window.dispatchEvent(
             new CustomEvent('server-version-update', {
               detail: { version: version || null, buildDate: buildDate || null, runtimeKind }
+            })
+          );
+        }
+        if (supportsPlugin !== null) {
+          window.dispatchEvent(
+            new CustomEvent('server-plugin-support-update', {
+              detail: { supportsPlugin }
             })
           );
         }
