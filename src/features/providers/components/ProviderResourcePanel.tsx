@@ -1,26 +1,12 @@
 import { useTranslation } from 'react-i18next';
-import ampcodeLogo from '@/assets/icons/amp.svg';
-import claudeLogo from '@/assets/icons/claude.svg';
-import codexLogo from '@/assets/icons/codex.svg';
-import geminiLogo from '@/assets/icons/gemini.svg';
-import openaiLogo from '@/assets/icons/openai-light.svg';
-import vertexLogo from '@/assets/icons/vertex.svg';
 import { IconPlus, IconSearch } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
-import type { ProviderBrand, ProviderGroup, ProviderResource } from '../types';
+import { PROVIDER_LOGOS } from '../brandLogos';
+import type { ProviderGroup, ProviderResource } from '../types';
 import { ProviderResourceTable } from './ProviderResourceTable';
 import { ProviderResourceToolbar } from './ProviderResourceToolbar';
 import type { ProviderSortBy, SortDir } from '../types';
 import styles from './ProviderResourcePanel.module.scss';
-
-const LOGOS: Record<ProviderBrand, { src: string; invertOnDark?: boolean }> = {
-  gemini: { src: geminiLogo },
-  claude: { src: claudeLogo },
-  codex: { src: codexLogo },
-  vertex: { src: vertexLogo },
-  openaiCompatibility: { src: openaiLogo, invertOnDark: true },
-  ampcode: { src: ampcodeLogo },
-};
 
 export interface ProviderPanelControls {
   sortBy: ProviderSortBy;
@@ -64,7 +50,7 @@ export function ProviderResourcePanel({
   onCreate,
 }: ProviderResourcePanelProps) {
   const { t } = useTranslation();
-  const logo = LOGOS[group.id];
+  const logo = PROVIDER_LOGOS[group.id];
 
   const realResources = filteredResources.filter((r) => !r.flags.isPlaceholder);
 
