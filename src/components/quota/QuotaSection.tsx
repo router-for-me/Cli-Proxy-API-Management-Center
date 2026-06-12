@@ -360,7 +360,9 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
               const isResettingQuota = resettingQuotaName === item.name;
               const canUseQuotaAction =
                 !disabled && !item.disabled && itemQuota?.status !== 'loading';
-              const resetQuotaAction = config.resetQuota ? (
+              const showResetQuotaAction =
+                itemQuota !== undefined && Boolean(config.canResetQuota?.(itemQuota));
+              const resetQuotaAction = config.resetQuota && showResetQuotaAction ? (
                 <Button
                   type="button"
                   variant="secondary"

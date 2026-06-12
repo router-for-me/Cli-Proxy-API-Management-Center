@@ -56,7 +56,6 @@ export function QuotaProgressBar({
 export interface QuotaRenderHelpers {
   styles: typeof styles;
   QuotaProgressBar: (props: QuotaProgressBarProps) => ReactElement;
-  resetQuotaAction?: ReactNode;
 }
 
 interface QuotaCardProps<TState extends QuotaStatusState> {
@@ -149,27 +148,30 @@ export function QuotaCard<TState extends QuotaStatusState>({
             })}
           </div>
         ) : quota ? (
-          renderQuotaItems(quota, t, { styles, QuotaProgressBar, resetQuotaAction })
+          renderQuotaItems(quota, t, { styles, QuotaProgressBar })
         ) : (
           <div className={styles.quotaMessage}>{t(idleMessageKey)}</div>
         )}
       </div>
 
-      {onRefresh && quotaStatus !== 'idle' && (
+      {(resetQuotaAction || (onRefresh && quotaStatus !== 'idle')) && (
         <div className={styles.quotaCardActions}>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className={styles.quotaRefreshButton}
-            onClick={onRefresh}
-            disabled={!canRefresh || quotaLoading}
-            loading={quotaLoading}
-            title={t('auth_files.quota_refresh_hint')}
-          >
-            {!quotaLoading && <IconRefreshCw size={14} />}
-            {t('auth_files.quota_refresh_single')}
-          </Button>
+          {resetQuotaAction}
+          {onRefresh && quotaStatus !== 'idle' && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className={styles.quotaRefreshButton}
+              onClick={onRefresh}
+              disabled={!canRefresh || quotaLoading}
+              loading={quotaLoading}
+              title={t('auth_files.quota_refresh_hint')}
+            >
+              {!quotaLoading && <IconRefreshCw size={14} />}
+              {t('auth_files.quota_refresh_single')}
+            </Button>
+          )}
         </div>
       )}
     </div>

@@ -392,15 +392,11 @@
   }
 }
 
-.quotaInlineActions {
-  display: flex;
-  justify-content: flex-start;
-  padding-top: $spacing-xs;
-}
-
 .quotaCardActions {
   display: flex;
   justify-content: flex-end;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
   padding-top: $spacing-xs;
 }
 
