@@ -157,6 +157,18 @@ function setDisableImageGenerationInDoc(
   if (docHas(doc, path)) doc.setIn(path, false);
 }
 
+const PAYLOAD_DIRTY_FIELDS = [
+  'payloadDefaultRules',
+  'payloadDefaultRawRules',
+  'payloadOverrideRules',
+  'payloadOverrideRawRules',
+  'payloadFilterRules',
+] as const;
+
+function hasPayloadDirtyFields(dirtyFields: Set<string>): boolean {
+  return PAYLOAD_DIRTY_FIELDS.some((field) => dirtyFields.has(field));
+}
+
 function getNonNegativeIntegerError(value: string): 'non_negative_integer' | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -1309,14 +1321,7 @@ export function useVisualConfig() {
 
         setIntFromStringInDoc(doc, ['nonstream-keepalive-interval'], nonstreamKeepaliveInterval);
 
-        if (
-          docHas(doc, ['payload']) ||
-          values.payloadDefaultRules.length > 0 ||
-          values.payloadDefaultRawRules.length > 0 ||
-          values.payloadOverrideRules.length > 0 ||
-          values.payloadOverrideRawRules.length > 0 ||
-          values.payloadFilterRules.length > 0
-        ) {
+        if (hasPayloadDirtyFields(dirtyFields)) {
           ensureMapInDoc(doc, ['payload']);
           if (values.payloadDefaultRules.length > 0) {
             doc.setIn(
