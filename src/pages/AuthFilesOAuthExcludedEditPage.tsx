@@ -12,7 +12,11 @@ import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useAuthStore, useNotificationStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
-import { buildOAuthProviderOptions, normalizeProviderKey } from '@/features/authFiles/constants';
+import {
+  buildOAuthProviderOptions,
+  getTypeLabel,
+  normalizeProviderKey,
+} from '@/features/authFiles/constants';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
 import styles from './AuthFilesOAuthExcludedEditPage.module.scss';
 
@@ -63,17 +67,6 @@ export function AuthFilesOAuthExcludedEditPage() {
 
     return buildOAuthProviderOptions(extraProviders);
   }, [excluded, files, modelAlias]);
-
-  const getTypeLabel = useCallback(
-    (type: string): string => {
-      const key = `auth_files.filter_${type}`;
-      const translated = t(key);
-      if (translated !== key) return translated;
-      if (type.toLowerCase() === 'iflow') return 'iFlow';
-      return type.charAt(0).toUpperCase() + type.slice(1);
-    },
-    [t]
-  );
 
   const resolvedProviderKey = useMemo(() => normalizeProviderKey(provider), [provider]);
   const isEditing = useMemo(() => {
@@ -338,7 +331,7 @@ export function AuthFilesOAuthExcludedEditPage() {
                         onClick={() => updateProvider(option)}
                         disabled={disableControls || saving}
                       >
-                        {getTypeLabel(option)}
+                        {getTypeLabel(t, option)}
                       </button>
                     );
                   })}
