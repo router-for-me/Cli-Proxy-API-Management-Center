@@ -174,7 +174,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
   const config = useConfigStore((s) => s.config);
   const fetchConfig = useConfigStore((s) => s.fetchConfig);
   const updateConfigValue = useConfigStore((s) => s.updateConfigValue);
-  const clearCache = useConfigStore((s) => s.clearCache);
   const isCacheValid = useConfigStore((s) => s.isCacheValid);
 
   const [isPending, setIsPending] = useState<boolean>(() => !isCacheValid());
@@ -202,15 +201,12 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       }
       if (vertexResult.status === 'fulfilled') {
         updateConfigValue('vertex-api-key', vertexResult.value || []);
-        clearCache('vertex-api-key');
       }
       if (ampcodeResult.status === 'fulfilled') {
         updateConfigValue('ampcode', ampcodeResult.value);
-        clearCache('ampcode');
       }
       if (openaiResult.status === 'fulfilled') {
         updateConfigValue('openai-compatibility', openaiResult.value || []);
-        clearCache('openai-compatibility');
       }
       setFetchedAt(new Date().toISOString());
     } catch (err) {
@@ -219,7 +215,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       setIsPending(false);
       setIsFetching(false);
     }
-  }, [clearCache, fetchConfig, updateConfigValue]);
+  }, [fetchConfig, updateConfigValue]);
 
   const refreshSnapshot = useCallback(() => {
     setFetchedAt(new Date().toISOString());
@@ -275,45 +271,40 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     async (next: GeminiKeyConfig[]) => {
       await providersApi.saveGeminiKeys(next);
       updateConfigValue('gemini-api-key', next);
-      clearCache('gemini-api-key');
     },
-    [clearCache, updateConfigValue]
+    [updateConfigValue]
   );
 
   const persistCodexConfigs = useCallback(
     async (next: ProviderKeyConfig[]) => {
       await providersApi.saveCodexConfigs(next);
       updateConfigValue('codex-api-key', next);
-      clearCache('codex-api-key');
     },
-    [clearCache, updateConfigValue]
+    [updateConfigValue]
   );
 
   const persistClaudeConfigs = useCallback(
     async (next: ProviderKeyConfig[]) => {
       await providersApi.saveClaudeConfigs(next);
       updateConfigValue('claude-api-key', next);
-      clearCache('claude-api-key');
     },
-    [clearCache, updateConfigValue]
+    [updateConfigValue]
   );
 
   const persistVertexConfigs = useCallback(
     async (next: ProviderKeyConfig[]) => {
       await providersApi.saveVertexConfigs(next);
       updateConfigValue('vertex-api-key', next);
-      clearCache('vertex-api-key');
     },
-    [clearCache, updateConfigValue]
+    [updateConfigValue]
   );
 
   const persistOpenAIConfigs = useCallback(
     async (next: OpenAIProviderConfig[]) => {
       await providersApi.saveOpenAIProviders(next);
       updateConfigValue('openai-compatibility', next);
-      clearCache('openai-compatibility');
     },
-    [clearCache, updateConfigValue]
+    [updateConfigValue]
   );
 
   const createProvider = useCallback(
@@ -418,27 +409,22 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.deleteGeminiKey(sel.apiKey, sel.baseUrl);
           const next = (config?.geminiApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('gemini-api-key', next);
-          clearCache('gemini-api-key');
         } else if (sel.brand === 'codex') {
           await providersApi.deleteCodexConfig(sel.apiKey, sel.baseUrl);
           const next = (config?.codexApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('codex-api-key', next);
-          clearCache('codex-api-key');
         } else if (sel.brand === 'claude') {
           await providersApi.deleteClaudeConfig(sel.apiKey, sel.baseUrl);
           const next = (config?.claudeApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('claude-api-key', next);
-          clearCache('claude-api-key');
         } else if (sel.brand === 'vertex') {
           await providersApi.deleteVertexConfig(sel.apiKey, sel.baseUrl);
           const next = (config?.vertexApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('vertex-api-key', next);
-          clearCache('vertex-api-key');
         } else if (sel.brand === 'openaiCompatibility') {
           await providersApi.deleteOpenAIProvider(sel.index);
           const next = (config?.openaiCompatibility ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('openai-compatibility', next);
-          clearCache('openai-compatibility');
         } else if (sel.brand === 'ampcode') {
           await Promise.allSettled([
             ampcodeApi.clearUpstreamUrl(),
@@ -446,14 +432,13 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             ampcodeApi.clearModelMappings(),
           ]);
           updateConfigValue('ampcode', {});
-          clearCache('ampcode');
         }
         refreshSnapshot();
       } finally {
         setMutating(false);
       }
     },
-    [clearCache, config, refreshSnapshot, updateConfigValue]
+    [config, refreshSnapshot, updateConfigValue]
   );
 
   const toggleDisabled = useCallback(
@@ -495,7 +480,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           if (current) {
             list[idx] = { ...current, disabled };
             updateConfigValue('openai-compatibility', list);
-            clearCache('openai-compatibility');
           }
         } else if (brand === 'ampcode') {
           /* ampcode toggle 不支持,跳过 */
@@ -506,7 +490,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       }
     },
     [
-      clearCache,
       config,
       persistClaudeConfigs,
       persistCodexConfigs,
@@ -551,13 +534,12 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
         await ampcodeApi.updateForceModelMappings(next.forceModelMappings === true);
 
         updateConfigValue('ampcode', next);
-        clearCache('ampcode');
         refreshSnapshot();
       } finally {
         setMutating(false);
       }
     },
-    [clearCache, refreshSnapshot, updateConfigValue]
+    [updateConfigValue, refreshSnapshot]
   );
 
   return {
