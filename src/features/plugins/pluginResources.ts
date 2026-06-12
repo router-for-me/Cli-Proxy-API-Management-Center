@@ -27,6 +27,14 @@ export const resolvePluginAssetURL = (value: string, apiBase: string) => {
   return base ? `${base}${trimmed}` : trimmed;
 };
 
+// Registry entries usually carry an "owner/repo" slug rather than a full URL.
+export const buildRepositoryURL = (repository: string) => {
+  const trimmed = repository.trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://github.com/${trimmed.replace(/^\/+/, '')}`;
+};
+
 export const collectPluginResourceEntries = (
   plugins: PluginListEntry[]
 ): PluginResourceEntry[] =>

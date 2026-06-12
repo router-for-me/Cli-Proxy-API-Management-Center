@@ -5,6 +5,9 @@ import type {
   PluginListResponse,
   PluginMetadata,
   PluginMenu,
+  PluginStoreEntry,
+  PluginStoreInstallResult,
+  PluginStoreResponse,
 } from '@/types';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -113,6 +116,62 @@ const normalizePluginList = (value: unknown): PluginListResponse => {
   };
 };
 
+const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
+  if (!isRecord(value)) return null;
+  const id = asString(value.id).trim();
+  if (!id) return null;
+
+  const tags = Array.isArray(value.tags)
+    ? value.tags.map((item) => asString(item).trim()).filter(Boolean)
+    : [];
+
+  return {
+    id,
+    name: asString(value.name).trim(),
+    description: asString(value.description).trim(),
+    author: asString(value.author).trim(),
+    version: asString(value.version).trim(),
+    repository: asString(value.repository).trim(),
+    logo: asString(value.logo).trim(),
+    homepage: asString(value.homepage).trim(),
+    license: asString(value.license).trim(),
+    tags,
+    installed: asBoolean(value.installed),
+    installedVersion: asString(value.installed_version).trim(),
+    path: asString(value.path).trim(),
+    configured: asBoolean(value.configured),
+    registered: asBoolean(value.registered),
+    enabled: asBoolean(value.enabled),
+    effectiveEnabled: asBoolean(value.effective_enabled),
+    updateAvailable: asBoolean(value.update_available),
+  };
+};
+
+const normalizeStoreList = (value: unknown): PluginStoreResponse => {
+  const source = isRecord(value) ? value : {};
+  const plugins = Array.isArray(source.plugins)
+    ? source.plugins.map((item) => normalizeStoreEntry(item)).filter(Boolean) as PluginStoreEntry[]
+    : [];
+
+  return {
+    pluginsEnabled: asBoolean(source.plugins_enabled),
+    pluginsDir: asString(source.plugins_dir).trim() || 'plugins',
+    plugins,
+  };
+};
+
+const normalizeInstallResult = (value: unknown): PluginStoreInstallResult => {
+  const source = isRecord(value) ? value : {};
+  return {
+    status: asString(source.status).trim(),
+    id: asString(source.id).trim(),
+    version: asString(source.version).trim(),
+    path: asString(source.path).trim(),
+    pluginsEnabled: asBoolean(source.plugins_enabled),
+    restartRequired: asBoolean(source.restart_required),
+  };
+};
+
 export const pluginsApi = {
   async list(): Promise<PluginListResponse> {
     const data = await apiClient.get('/plugins');
@@ -127,4 +186,16 @@ export const pluginsApi = {
 
   patchConfig: (id: string, patch: Record<string, unknown>) =>
     apiClient.patch(`/plugins/${encodeURIComponent(id)}/config`, patch),
+};
+
+export const pluginStoreApi = {
+  async list(): Promise<PluginStoreResponse> {
+    const data = await apiClient.get('/plugin-store');
+    return normalizeStoreList(data);
+  },
+
+  async install(id: string): Promise<PluginStoreInstallResult> {
+    const data = await apiClient.post(`/plugin-store/${encodeURIComponent(id)}/install`);
+    return normalizeInstallResult(data);
+  },
 };

@@ -48,3 +48,39 @@ export interface PluginListResponse {
   pluginsDir: string;
   plugins: PluginListEntry[];
 }
+
+export interface PluginStoreEntry {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  version: string;
+  repository: string;
+  logo: string;
+  homepage: string;
+  license: string;
+  tags: string[];
+  installed: boolean;
+  installedVersion: string;
+  path: string;
+  configured: boolean;
+  registered: boolean;
+  enabled: boolean;
+  effectiveEnabled: boolean;
+  updateAvailable: boolean;
+}
+
+export interface PluginStoreResponse {
+  pluginsEnabled: boolean;
+  pluginsDir: string;
+  plugins: PluginStoreEntry[];
+}
+
+export interface PluginStoreInstallResult {
+  status: string;
+  id: string;
+  version: string;
+  path: string;
+  pluginsEnabled: boolean;
+  restartRequired: boolean;
+}

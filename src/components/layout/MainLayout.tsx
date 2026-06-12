@@ -22,6 +22,7 @@ import {
   IconSidebarPlugins,
   IconSidebarProviders,
   IconSidebarQuota,
+  IconSidebarStore,
   IconSidebarSystem,
   IconChevronDown,
 } from '@/components/ui/icons';
@@ -50,6 +51,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
   plugins: <IconSidebarPlugins size={18} />,
+  pluginStore: <IconSidebarStore size={18} />,
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
@@ -583,6 +585,12 @@ export function MainLayout() {
           labelKey: 'nav.plugins',
           metaKey: 'nav_meta.plugins',
           icon: sidebarIcons.plugins,
+        },
+        {
+          path: '/plugin-store',
+          labelKey: 'nav.plugin_store',
+          metaKey: 'nav_meta.plugin_store',
+          icon: sidebarIcons.pluginStore,
         },
         {
           path: '/system',
