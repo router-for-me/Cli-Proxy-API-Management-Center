@@ -729,9 +729,11 @@ function getNextDirtyFields(
       'errorLogsMaxFiles',
       'usageStatisticsEnabled',
       'redisUsageQueueRetentionSeconds',
+      'pluginsEnabled',
       'passthroughHeaders',
       'disableCooling',
       'disableImageGeneration',
+      'gptImage2BaseModel',
       'authAutoRefreshWorkers',
       'enableGeminiCliEndpoint',
       'antigravitySignatureCacheEnabled',
@@ -745,6 +747,7 @@ function getNextDirtyFields(
       'claudeHeaderStabilizeDeviceProfile',
       'codexHeaderUserAgent',
       'codexHeaderBetaFeatures',
+      'codexIdentityConfuse',
       'host',
       'port',
       'tlsEnable',
@@ -912,6 +915,8 @@ export function useVisualConfig() {
       const routing = asRecord(parsed.routing);
       const payload = asRecord(parsed.payload);
       const streaming = asRecord(parsed.streaming);
+      const plugins = asRecord(parsed.plugins);
+      const codex = asRecord(parsed.codex);
       const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
       const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
 
@@ -939,6 +944,7 @@ export function useVisualConfig() {
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
         apiKeysText: resolveApiKeysText(parsed),
+        pluginsEnabled: Boolean(plugins?.enabled),
 
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
@@ -958,6 +964,10 @@ export function useVisualConfig() {
         maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
         disableCooling: Boolean(parsed['disable-cooling']),
         disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
+        gptImage2BaseModel:
+          typeof parsed['gpt-image-2-base-model'] === 'string'
+            ? parsed['gpt-image-2-base-model']
+            : '',
         authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
         wsAuth: Boolean(parsed['ws-auth']),
         enableGeminiCliEndpoint: Boolean(parsed['enable-gemini-cli-endpoint']),
@@ -994,6 +1004,7 @@ export function useVisualConfig() {
           typeof codexHeaderDefaults?.['beta-features'] === 'string'
             ? codexHeaderDefaults['beta-features']
             : '',
+        codexIdentityConfuse: Boolean(codex?.['identity-confuse']),
 
         quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
         quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
@@ -1100,6 +1111,16 @@ export function useVisualConfig() {
         }
         deleteLegacyApiKeysProvider(doc);
 
+        if (
+          docHas(doc, ['plugins']) ||
+          values.pluginsEnabled ||
+          shouldWriteManagedField(doc, ['plugins', 'enabled'], dirtyFields, 'pluginsEnabled')
+        ) {
+          ensureMapInDoc(doc, ['plugins']);
+          setBooleanInDoc(doc, ['plugins', 'enabled'], values.pluginsEnabled);
+          deleteIfMapEmpty(doc, ['plugins']);
+        }
+
         setBooleanInDoc(doc, ['debug'], values.debug);
 
         setBooleanInDoc(doc, ['commercial-mode'], values.commercialMode);
@@ -1125,6 +1146,17 @@ export function useVisualConfig() {
           ['disable-image-generation'],
           values.disableImageGeneration
         );
+        if (
+          values.gptImage2BaseModel.trim() ||
+          shouldWriteManagedField(
+            doc,
+            ['gpt-image-2-base-model'],
+            dirtyFields,
+            'gptImage2BaseModel'
+          )
+        ) {
+          setStringInDoc(doc, ['gpt-image-2-base-model'], values.gptImage2BaseModel);
+        }
         setIntFromStringInDoc(doc, ['auth-auto-refresh-workers'], values.authAutoRefreshWorkers);
         setBooleanInDoc(doc, ['ws-auth'], values.wsAuth);
         setBooleanInDoc(doc, ['enable-gemini-cli-endpoint'], values.enableGeminiCliEndpoint);
@@ -1193,6 +1225,21 @@ export function useVisualConfig() {
             values.codexHeaderBetaFeatures
           );
           deleteIfMapEmpty(doc, ['codex-header-defaults']);
+        }
+
+        if (
+          docHas(doc, ['codex']) ||
+          values.codexIdentityConfuse ||
+          shouldWriteManagedField(
+            doc,
+            ['codex', 'identity-confuse'],
+            dirtyFields,
+            'codexIdentityConfuse'
+          )
+        ) {
+          ensureMapInDoc(doc, ['codex']);
+          setBooleanInDoc(doc, ['codex', 'identity-confuse'], values.codexIdentityConfuse);
+          deleteIfMapEmpty(doc, ['codex']);
         }
 
         if (

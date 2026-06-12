@@ -918,6 +918,8 @@
           "commercial_mode_desc": "禁用高开销中间件以支持高并发",
           "logging_to_file": "写入日志文件",
           "logging_to_file_desc": "将日志保存到文件",
+          "plugins_enabled": "启用插件系统",
+          "plugins_enabled_desc": "启用标准动态库插件加载；具体插件实例仍在插件管理页启停",
           "logs_max_size": "日志文件大小限制 (MB)",
           "error_logs_max_files": "错误日志保留文件数",
           "usage_statistics_enabled": "启用内存用量统计",
@@ -942,7 +944,9 @@
           "timeout": "Timeout",
           "stabilize_device": "稳定设备指纹",
           "stabilize_device_desc": "固定 OS/Arch，并按凭据/API Key 稳定软件指纹",
-          "beta_features": "Beta Features"
+          "beta_features": "Beta Features",
+          "codex_identity_confuse": "Codex 身份混淆",
+          "codex_identity_confuse_desc": "在 fill-first 或会话粘性路由下，按所选认证重映射 Codex prompt_cache_key 与安装身份"
         },
         "network": {
           "title": "网络配置",
@@ -959,6 +963,8 @@
           "disable_image_generation_false": "false（启用）",
           "disable_image_generation_true": "true（全部禁用）",
           "disable_image_generation_chat": "chat（仅禁用聊天注入）",
+          "gpt_image_2_base_model": "GPT Image 2 基础模型",
+          "gpt_image_2_base_model_hint": "代理 gpt-image-2 图片请求时使用的主线模型；留空或非法时后端使用默认值",
           "routing_strategy": "路由策略",
           "routing_strategy_hint": "选择凭据选择策略",
           "strategy_round_robin": "轮询 (Round Robin)",

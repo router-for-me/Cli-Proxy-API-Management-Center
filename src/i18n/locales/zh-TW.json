@@ -944,6 +944,8 @@
           "commercial_mode_desc": "停用高開銷中介軟體以支援高並行",
           "logging_to_file": "寫入記錄檔",
           "logging_to_file_desc": "將記錄儲存到檔案",
+          "plugins_enabled": "啟用插件系統",
+          "plugins_enabled_desc": "啟用標準動態庫插件載入；具體插件實例仍在插件管理頁啟停",
           "logs_max_size": "記錄檔大小限制（MB）",
           "error_logs_max_files": "錯誤記錄保留檔案數",
           "usage_statistics_enabled": "啟用記憶體用量統計",
@@ -968,7 +970,9 @@
           "timeout": "Timeout",
           "stabilize_device": "穩定設備指紋",
           "stabilize_device_desc": "固定 OS/Arch，並按憑證/API Key 穩定軟體指紋",
-          "beta_features": "Beta Features"
+          "beta_features": "Beta Features",
+          "codex_identity_confuse": "Codex 身分混淆",
+          "codex_identity_confuse_desc": "在 fill-first 或會話黏性路由下，按所選驗證重映射 Codex prompt_cache_key 與安裝身分"
         },
         "network": {
           "title": "網路設定",
@@ -985,6 +989,8 @@
           "disable_image_generation_false": "false（啟用）",
           "disable_image_generation_true": "true（全部停用）",
           "disable_image_generation_chat": "chat（僅停用聊天注入）",
+          "gpt_image_2_base_model": "GPT Image 2 基礎模型",
+          "gpt_image_2_base_model_hint": "代理 gpt-image-2 圖片請求時使用的主線模型；留空或非法時後端使用預設值",
           "routing_strategy": "路由策略",
           "routing_strategy_hint": "選擇憑證選擇策略",
           "strategy_round_robin": "輪詢（Round Robin）",

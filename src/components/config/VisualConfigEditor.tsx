@@ -658,6 +658,13 @@ export function VisualConfigEditor({
                   disabled={disabled}
                   onChange={(loggingToFile) => onChange({ loggingToFile })}
                 />
+                <ToggleRow
+                  title={t('config_management.visual.sections.system.plugins_enabled')}
+                  description={t('config_management.visual.sections.system.plugins_enabled_desc')}
+                  checked={values.pluginsEnabled}
+                  disabled={disabled}
+                  onChange={(pluginsEnabled) => onChange({ pluginsEnabled })}
+                />
               </SectionGrid>
 
               <SectionGrid>
@@ -813,6 +820,17 @@ export function VisualConfigEditor({
                       disabled={disabled}
                     />
                   </SectionGrid>
+                  <SectionGrid>
+                    <ToggleRow
+                      title={t('config_management.visual.sections.headers.codex_identity_confuse')}
+                      description={t(
+                        'config_management.visual.sections.headers.codex_identity_confuse_desc'
+                      )}
+                      checked={values.codexIdentityConfuse}
+                      disabled={disabled}
+                      onChange={(codexIdentityConfuse) => onChange({ codexIdentityConfuse })}
+                    />
+                  </SectionGrid>
                 </SectionStack>
               </SectionSubsection>
 
@@ -931,6 +949,16 @@ export function VisualConfigEditor({
                         }
                       />
                     </FieldShell>
+                    <Input
+                      label={t('config_management.visual.sections.network.gpt_image_2_base_model')}
+                      placeholder="gpt-5.4-mini"
+                      value={values.gptImage2BaseModel}
+                      onChange={(e) => onChange({ gptImage2BaseModel: e.target.value })}
+                      disabled={disabled}
+                      hint={t(
+                        'config_management.visual.sections.network.gpt_image_2_base_model_hint'
+                      )}
+                    />
                     <Input
                       label={t('config_management.visual.sections.network.session_affinity_ttl')}
                       placeholder="1h"

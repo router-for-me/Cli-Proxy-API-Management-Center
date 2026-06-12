@@ -905,6 +905,8 @@
           "commercial_mode_desc": "Отключить тяжёлое промежуточное ПО для поддержки высокой нагрузки",
           "logging_to_file": "Журналировать в файл",
           "logging_to_file_desc": "Сохранять журналы в файлы",
+          "plugins_enabled": "Включить систему плагинов",
+          "plugins_enabled_desc": "Включает загрузку стандартных dynamic-library плагинов; отдельные экземпляры управляются на странице плагинов",
           "logs_max_size": "Максимальный размер файла журнала (МБ)",
           "error_logs_max_files": "Файлов журнала ошибок",
           "usage_statistics_enabled": "Включить статистику использования в памяти",
@@ -929,7 +931,9 @@
           "timeout": "Timeout",
           "stabilize_device": "Стабилизировать профиль устройства",
           "stabilize_device_desc": "Фиксировать OS/Arch и стабилизировать программный отпечаток для учётных данных/API-ключа",
-          "beta_features": "Beta Features"
+          "beta_features": "Beta Features",
+          "codex_identity_confuse": "Codex identity-confuse",
+          "codex_identity_confuse_desc": "При fill-first routing или session affinity переопределяет Codex prompt_cache_key и installation identity под выбранную auth-запись"
         },
         "network": {
           "title": "Сетевые настройки",
@@ -946,6 +950,8 @@
           "disable_image_generation_false": "false (включено)",
           "disable_image_generation_true": "true (отключено везде)",
           "disable_image_generation_chat": "chat (только отключить chat-инъекцию)",
+          "gpt_image_2_base_model": "Базовая модель GPT Image 2",
+          "gpt_image_2_base_model_hint": "Основная модель для проксирования gpt-image-2 image-запросов; если пусто или неверно, backend использует значение по умолчанию",
           "routing_strategy": "Стратегия маршрутизации",
           "routing_strategy_hint": "Выберите стратегию подбора учётных данных",
           "strategy_round_robin": "По кругу",
