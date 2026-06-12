@@ -22,23 +22,35 @@ const serializeHeaders = (headers?: Record<string, string>) =>
 
 const RESPONSE_ONLY_FIELDS = ['auth-index'] as const;
 
-const PROVIDER_KEY_FIELDS = [
+const PROVIDER_COMMON_KEY_FIELDS = [
   'api-key',
   'priority',
   'prefix',
   'base-url',
-  'websockets',
   'proxy-url',
   'headers',
   'models',
   'excluded-models',
-  'cloak',
+  'disable-cooling',
 ] as const;
 
-const GEMINI_KEY_FIELDS = PROVIDER_KEY_FIELDS.filter(
-  (field) => field !== 'websockets' && field !== 'cloak'
-);
-const VERTEX_KEY_FIELDS = GEMINI_KEY_FIELDS;
+const GEMINI_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
+const CODEX_KEY_FIELDS = [...PROVIDER_COMMON_KEY_FIELDS, 'websockets'] as const;
+const CLAUDE_KEY_FIELDS = [
+  ...PROVIDER_COMMON_KEY_FIELDS,
+  'cloak',
+  'experimental-cch-signing',
+] as const;
+const VERTEX_KEY_FIELDS = [
+  'api-key',
+  'priority',
+  'prefix',
+  'base-url',
+  'proxy-url',
+  'headers',
+  'models',
+  'excluded-models',
+] as const;
 
 const OPENAI_PROVIDER_FIELDS = [
   'name',
@@ -50,13 +62,15 @@ const OPENAI_PROVIDER_FIELDS = [
   'headers',
   'models',
   'test-model',
+  'disable-cooling',
 ] as const;
 
 const MODEL_ALIAS_FIELDS = ['name', 'alias', 'priority', 'test-model'] as const;
+const OPENAI_MODEL_ALIAS_FIELDS = [...MODEL_ALIAS_FIELDS, 'image', 'thinking'] as const;
 
 const API_KEY_ENTRY_FIELDS = ['api-key', 'proxy-url'] as const;
 
-const CLOAK_FIELDS = ['mode', 'strict-mode', 'sensitive-words'] as const;
+const CLOAK_FIELDS = ['mode', 'strict-mode', 'sensitive-words', 'cache-user-id'] as const;
 
 const getStringField = (record: Record<string, unknown>, keys: readonly string[]) => {
   for (const key of keys) {
@@ -170,12 +184,16 @@ const getRawSectionList = (rawConfig: unknown, section: string): unknown[] => {
   return Array.isArray(value) ? value : [];
 };
 
-const mergeModelPayloads = (raw: unknown, models: unknown) =>
+const mergeModelPayloads = (
+  raw: unknown,
+  models: unknown,
+  knownFields: readonly string[] = MODEL_ALIAS_FIELDS
+) =>
   Array.isArray(models)
     ? mergeKnownRecordList(
         isRecord(raw) ? raw.models : undefined,
         models.filter(isRecord),
-        MODEL_ALIAS_FIELDS,
+        knownFields,
         modelIdentity,
         false
       )
@@ -211,7 +229,7 @@ const mergeOpenAIProviderPayload = (raw: unknown, payload: Record<string, unknow
       apiKeyEntryIdentity
     );
   }
-  const models = mergeModelPayloads(raw, payload.models);
+  const models = mergeModelPayloads(raw, payload.models, OPENAI_MODEL_ALIAS_FIELDS);
   if (models) next.models = models;
   return next;
 };
@@ -252,7 +270,7 @@ const buildProviderDeleteQuery = (apiKey: string, baseUrl?: string) => {
   return `?${params.toString()}`;
 };
 
-const serializeModelAliases = (models?: ModelAlias[]) =>
+const serializeModelAliases = (models?: ModelAlias[], includeOpenAIFields = false) =>
   Array.isArray(models)
     ? models
         .map((model) => {
@@ -266,6 +284,14 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
           }
           if (model.testModel) {
             payload['test-model'] = model.testModel;
+          }
+          if (includeOpenAIFields) {
+            if (model.image) {
+              payload.image = true;
+            }
+            if (model.thinking) {
+              payload.thinking = model.thinking;
+            }
           }
           return payload;
         })
@@ -285,6 +311,7 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.websockets !== undefined) payload.websockets = config.websockets;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
+  if (config.disableCooling) payload['disable-cooling'] = true;
   const headers = serializeHeaders(config.headers);
   if (headers) payload.headers = headers;
   const models = serializeModelAliases(config.models);
@@ -301,9 +328,15 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
     if (config.cloak.sensitiveWords && config.cloak.sensitiveWords.length) {
       cloakPayload['sensitive-words'] = config.cloak.sensitiveWords;
     }
+    if (config.cloak.cacheUserId) {
+      cloakPayload['cache-user-id'] = true;
+    }
     if (Object.keys(cloakPayload).length) {
       payload.cloak = cloakPayload;
     }
+  }
+  if (config.experimentalCchSigning) {
+    payload['experimental-cch-signing'] = true;
   }
   return payload;
 };
@@ -342,6 +375,7 @@ const serializeGeminiKey = (config: GeminiKeyConfig) => {
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
+  if (config.disableCooling) payload['disable-cooling'] = true;
   const headers = serializeHeaders(config.headers);
   if (headers) payload.headers = headers;
   const models = serializeModelAliases(config.models);
@@ -364,10 +398,11 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
   if (provider.disabled !== undefined) payload.disabled = provider.disabled;
   const headers = serializeHeaders(provider.headers);
   if (headers) payload.headers = headers;
-  const models = serializeModelAliases(provider.models);
+  const models = serializeModelAliases(provider.models, true);
   if (models && models.length) payload.models = models;
   if (provider.priority !== undefined) payload.priority = provider.priority;
   if (provider.testModel) payload['test-model'] = provider.testModel;
+  if (provider.disableCooling) payload['disable-cooling'] = true;
   return payload;
 };
 
@@ -408,7 +443,7 @@ export const providersApi = {
         'codex-api-key',
         configs,
         serializeProviderKey,
-        (raw, payload) => mergeProviderKeyPayload(raw, payload, PROVIDER_KEY_FIELDS),
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, CODEX_KEY_FIELDS),
         providerKeyIdentity
       )
     ),
@@ -431,7 +466,7 @@ export const providersApi = {
         'claude-api-key',
         configs,
         serializeProviderKey,
-        (raw, payload) => mergeProviderKeyPayload(raw, payload, PROVIDER_KEY_FIELDS),
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, CLAUDE_KEY_FIELDS),
         providerKeyIdentity
       )
     ),

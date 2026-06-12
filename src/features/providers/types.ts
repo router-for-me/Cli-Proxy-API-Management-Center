@@ -87,6 +87,8 @@ export interface ModelEntryInput {
   alias?: string;
   priority?: number;
   testModel?: string;
+  image?: boolean;
+  thinkingJson?: string;
 }
 
 export interface ApiKeyEntryInput {
@@ -100,6 +102,7 @@ export interface CloakInput {
   mode: string;
   strictMode: boolean;
   sensitiveWordsText: string;
+  cacheUserId: boolean;
 }
 
 export interface ProviderEntryFormInput {
@@ -111,6 +114,7 @@ export interface ProviderEntryFormInput {
   proxyUrl: string;
   prefix: string;
   disabled: boolean;
+  disableCooling?: boolean;
   priority?: number;
 
   /** 高级折叠区 */
@@ -122,6 +126,7 @@ export interface ProviderEntryFormInput {
   websockets?: boolean;
   /** Claude 专属 */
   cloak?: CloakInput;
+  experimentalCchSigning?: boolean;
   /** OpenAI persists this; Gemini/Claude use it for one-off connectivity tests. */
   testModel?: string;
   apiKeyEntries?: ApiKeyEntryInput[];

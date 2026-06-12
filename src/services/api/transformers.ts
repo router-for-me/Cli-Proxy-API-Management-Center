@@ -16,6 +16,9 @@ import { isRecord } from '@/utils/helpers';
 const normalizeBoolean = (value: unknown): boolean | undefined =>
   typeof value === 'boolean' ? value : undefined;
 
+const normalizeRecord = (value: unknown): Record<string, unknown> | undefined =>
+  isRecord(value) ? value : undefined;
+
 const normalizeModelAliases = (models: unknown): ModelAlias[] => {
   if (!Array.isArray(models)) return [];
   return models
@@ -32,6 +35,8 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       const alias = item.alias;
       const priority = item.priority;
       const testModel = item['test-model'];
+      const image = normalizeBoolean(item.image);
+      const thinking = normalizeRecord(item.thinking);
       const entry: ModelAlias = { name: String(name) };
       if (alias && alias !== name) {
         entry.alias = String(alias);
@@ -44,6 +49,12 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       }
       if (testModel) {
         entry.testModel = String(testModel);
+      }
+      if (image !== undefined) {
+        entry.image = image;
+      }
+      if (thinking) {
+        entry.thinking = thinking;
       }
       return entry;
     })
@@ -130,6 +141,8 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   const websockets = normalizeBoolean(record?.websockets);
   if (websockets !== undefined) config.websockets = websockets;
   if (proxyUrl) config.proxyUrl = String(proxyUrl);
+  const disableCooling = normalizeBoolean(record?.['disable-cooling']);
+  if (disableCooling !== undefined) config.disableCooling = disableCooling;
   const headers = normalizeHeaders(record?.headers);
   if (headers) config.headers = headers;
   const models = normalizeModelAliases(record?.models);
@@ -154,9 +167,17 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
     if (sensitiveWords.length) {
       cloak.sensitiveWords = sensitiveWords;
     }
+    const cacheUserId = normalizeBoolean(cloakRaw['cache-user-id']);
+    if (cacheUserId !== undefined) {
+      cloak.cacheUserId = cacheUserId;
+    }
     if (Object.keys(cloak).length) {
       config.cloak = cloak;
     }
+  }
+  const experimentalCchSigning = normalizeBoolean(record?.['experimental-cch-signing']);
+  if (experimentalCchSigning !== undefined) {
+    config.experimentalCchSigning = experimentalCchSigning;
   }
 
   return config;
@@ -186,6 +207,8 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   if (baseUrl) config.baseUrl = String(baseUrl);
   const proxyUrl = record?.['proxy-url'];
   if (proxyUrl) config.proxyUrl = String(proxyUrl);
+  const disableCooling = normalizeBoolean(record?.['disable-cooling']);
+  if (disableCooling !== undefined) config.disableCooling = disableCooling;
   const models = normalizeModelAliases(record?.models);
   if (models.length) config.models = models;
   const headers = normalizeHeaders(record?.headers);
@@ -222,6 +245,8 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
 
   const disabled = normalizeBoolean(provider.disabled);
   if (disabled !== undefined) result.disabled = disabled;
+  const disableCooling = normalizeBoolean(provider['disable-cooling']);
+  if (disableCooling !== undefined) result.disableCooling = disableCooling;
   const prefix = normalizePrefix(provider.prefix);
   if (prefix) result.prefix = prefix;
   if (headers) result.headers = headers;
