@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { IconKey, IconBot, IconFileText, IconSatellite } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
-import { apiKeysApi, providersApi, authFilesApi, ampcodeApi } from '@/services/api';
+import { authFilesApi } from '@/services/api';
 import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
 import type { AmpcodeConfig } from '@/types';
 import { formatDateValue } from '@/utils/format';
@@ -18,25 +18,17 @@ interface QuickStat {
   sublabel?: string;
 }
 
-interface ProviderStats {
-  gemini: number | null;
-  codex: number | null;
-  claude: number | null;
-  vertex: number | null;
-  openai: number | null;
-  ampcode: number | null;
-}
-
 type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
 
 const countAmpcodeConfig = (value: AmpcodeConfig | undefined): number => {
   if (!value) return 0;
-  if (value.upstreamUrl?.trim()) return 1;
-  if (value.upstreamApiKey?.trim()) return 1;
-  if ((value.upstreamApiKeys?.length ?? 0) > 0) return 1;
-  if ((value.modelMappings?.length ?? 0) > 0) return 1;
-  if (value.forceModelMappings === true) return 1;
-  return 0;
+  const configured =
+    Boolean(value.upstreamUrl?.trim()) ||
+    Boolean(value.upstreamApiKey?.trim()) ||
+    (value.upstreamApiKeys?.length ?? 0) > 0 ||
+    (value.modelMappings?.length ?? 0) > 0 ||
+    value.forceModelMappings === true;
+  return configured ? 1 : 0;
 };
 
 function getTimeOfDay(): TimeOfDay {
@@ -54,29 +46,14 @@ export function DashboardPage() {
   const serverBuildDate = useAuthStore((state) => state.serverBuildDate);
   const apiBase = useAuthStore((state) => state.apiBase);
   const config = useConfigStore((state) => state.config);
+  const fetchConfig = useConfigStore((state) => state.fetchConfig);
 
   const models = useModelsStore((state) => state.models);
   const modelsLoading = useModelsStore((state) => state.loading);
   const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
 
-  const [stats, setStats] = useState<{
-    apiKeys: number | null;
-    authFiles: number | null;
-  }>({
-    apiKeys: null,
-    authFiles: null,
-  });
-
-  const [providerStats, setProviderStats] = useState<ProviderStats>({
-    gemini: null,
-    codex: null,
-    claude: null,
-    vertex: null,
-    openai: null,
-    ampcode: null,
-  });
-
-  const [loading, setLoading] = useState(true);
+  const [authFilesCount, setAuthFilesCount] = useState<number | null>(null);
+  const [authFilesLoading, setAuthFilesLoading] = useState(false);
 
   // Time-of-day state for dynamic greeting
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay);
@@ -108,111 +85,81 @@ export function DashboardPage() {
   }, [connectionStatus, apiBase, resolveApiKeysForModels, fetchModelsFromStore]);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
+    if (connectionStatus !== 'connected') {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadAuthFiles = async () => {
+      setAuthFilesLoading(true);
       try {
-        const [
-          keysRes,
-          filesRes,
-          geminiRes,
-          codexRes,
-          claudeRes,
-          vertexRes,
-          openaiRes,
-          ampcodeRes,
-        ] = await Promise.allSettled([
-          apiKeysApi.list(),
-          authFilesApi.list(),
-          providersApi.getGeminiKeys(),
-          providersApi.getCodexConfigs(),
-          providersApi.getClaudeConfigs(),
-          providersApi.getVertexConfigs(),
-          providersApi.getOpenAIProviders(),
-          ampcodeApi.getAmpcode(),
-        ]);
-
-        setStats({
-          apiKeys: keysRes.status === 'fulfilled' ? keysRes.value.length : null,
-          authFiles: filesRes.status === 'fulfilled' ? filesRes.value.files.length : null,
-        });
-
-        setProviderStats({
-          gemini: geminiRes.status === 'fulfilled' ? geminiRes.value.length : null,
-          codex: codexRes.status === 'fulfilled' ? codexRes.value.length : null,
-          claude: claudeRes.status === 'fulfilled' ? claudeRes.value.length : null,
-          vertex: vertexRes.status === 'fulfilled' ? vertexRes.value.length : null,
-          openai: openaiRes.status === 'fulfilled' ? openaiRes.value.length : null,
-          ampcode: ampcodeRes.status === 'fulfilled' ? countAmpcodeConfig(ampcodeRes.value) : null,
-        });
+        const res = await authFilesApi.list();
+        if (!cancelled) setAuthFilesCount(res.files.length);
+      } catch {
+        if (!cancelled) setAuthFilesCount(null);
       } finally {
-        setLoading(false);
+        setAuthFilesLoading(false);
       }
     };
 
-    if (connectionStatus === 'connected') {
-      fetchStats();
-      fetchModels();
-    } else {
-      setLoading(false);
-    }
-  }, [connectionStatus, fetchModels]);
+    // 提供商/密钥统计直接来自 config store；这里只需保证配置已加载并取认证文件数。
+    fetchConfig().catch(() => undefined);
+    fetchModels();
+    void loadAuthFiles();
 
-  // Calculate total provider keys only when all provider stats are available.
-  const providerStatsReady =
-    providerStats.gemini !== null &&
-    providerStats.codex !== null &&
-    providerStats.claude !== null &&
-    providerStats.vertex !== null &&
-    providerStats.openai !== null &&
-    providerStats.ampcode !== null;
-  const hasProviderStats =
-    providerStats.gemini !== null ||
-    providerStats.codex !== null ||
-    providerStats.claude !== null ||
-    providerStats.vertex !== null ||
-    providerStats.openai !== null ||
-    providerStats.ampcode !== null;
-  const totalProviderKeys = providerStatsReady
-    ? (providerStats.gemini ?? 0) +
-      (providerStats.codex ?? 0) +
-      (providerStats.claude ?? 0) +
-      (providerStats.vertex ?? 0) +
-      (providerStats.openai ?? 0) +
-      (providerStats.ampcode ?? 0)
+    return () => {
+      cancelled = true;
+    };
+  }, [connectionStatus, fetchConfig, fetchModels]);
+
+  const configLoading = !config;
+  const providerStats = config
+    ? {
+        gemini: config.geminiApiKeys?.length ?? 0,
+        codex: config.codexApiKeys?.length ?? 0,
+        claude: config.claudeApiKeys?.length ?? 0,
+        vertex: config.vertexApiKeys?.length ?? 0,
+        openai: config.openaiCompatibility?.length ?? 0,
+        ampcode: countAmpcodeConfig(config.ampcode),
+      }
+    : null;
+  const totalProviderKeys = providerStats
+    ? Object.values(providerStats).reduce((sum, count) => sum + count, 0)
     : 0;
 
   const quickStats: QuickStat[] = [
     {
       label: t('dashboard.management_keys'),
-      value: stats.apiKeys ?? '-',
+      value: config ? (config.apiKeys?.length ?? 0) : '-',
       icon: <IconKey size={24} />,
       path: '/config',
-      loading: loading && stats.apiKeys === null,
+      loading: configLoading,
       sublabel: t('nav.config_management'),
     },
     {
       label: t('nav.ai_providers'),
-      value: loading ? '-' : providerStatsReady ? totalProviderKeys : '-',
+      value: providerStats ? totalProviderKeys : '-',
       icon: <IconBot size={24} />,
       path: '/ai-providers',
-      loading: loading,
-      sublabel: hasProviderStats
+      loading: configLoading,
+      sublabel: providerStats
         ? t('dashboard.provider_keys_detail', {
-            gemini: providerStats.gemini ?? '-',
-            codex: providerStats.codex ?? '-',
-            claude: providerStats.claude ?? '-',
-            vertex: providerStats.vertex ?? '-',
-            openai: providerStats.openai ?? '-',
-            ampcode: providerStats.ampcode ?? '-',
+            gemini: providerStats.gemini,
+            codex: providerStats.codex,
+            claude: providerStats.claude,
+            vertex: providerStats.vertex,
+            openai: providerStats.openai,
+            ampcode: providerStats.ampcode,
           })
         : undefined,
     },
     {
       label: t('nav.auth_files'),
-      value: stats.authFiles ?? '-',
+      value: authFilesCount ?? '-',
       icon: <IconFileText size={24} />,
       path: '/auth-files',
-      loading: loading && stats.authFiles === null,
+      loading: authFilesLoading && authFilesCount === null,
       sublabel: t('dashboard.oauth_credentials'),
     },
     {
