@@ -246,12 +246,18 @@ const fetchAntigravityQuota = async (
   throw createStatusError(lastError || t('common.unknown_error'), priorityStatus ?? lastStatus);
 };
 
-const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): CodexQuotaWindow[] => {
+const buildCodexQuotaWindows = (
+  payload: CodexUsagePayload,
+  t: TFunction,
+  planType?: string | null
+): CodexQuotaWindow[] => {
   const FIVE_HOUR_SECONDS = 18000;
   const WEEK_SECONDS = 604800;
+  const isTeamPlan = normalizePlanType(planType) === 'team';
   const WINDOW_META = {
     codeFiveHour: { id: 'five-hour', labelKey: 'codex_quota.primary_window' },
     codeWeekly: { id: 'weekly', labelKey: 'codex_quota.secondary_window' },
+    codeMonthly: { id: 'monthly', labelKey: 'codex_quota.team_secondary_window' },
     codeReviewFiveHour: {
       id: 'code-review-five-hour',
       labelKey: 'codex_quota.code_review_primary_window',
@@ -259,6 +265,10 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     codeReviewWeekly: {
       id: 'code-review-weekly',
       labelKey: 'codex_quota.code_review_secondary_window',
+    },
+    codeReviewMonthly: {
+      id: 'code-review-monthly',
+      labelKey: 'codex_quota.code_review_team_secondary_window',
     },
   } as const;
 
@@ -346,10 +356,11 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     rawLimitReached,
     rawAllowed
   );
+  const codeSecondaryWindowMeta = isTeamPlan ? WINDOW_META.codeMonthly : WINDOW_META.codeWeekly;
   addWindow(
-    WINDOW_META.codeWeekly.id,
-    t(WINDOW_META.codeWeekly.labelKey),
-    WINDOW_META.codeWeekly.labelKey,
+    codeSecondaryWindowMeta.id,
+    t(codeSecondaryWindowMeta.labelKey),
+    codeSecondaryWindowMeta.labelKey,
     undefined,
     rateWindows.weeklyWindow,
     rawLimitReached,
@@ -368,10 +379,13 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     codeReviewLimitReached,
     codeReviewAllowed
   );
+  const codeReviewSecondaryWindowMeta = isTeamPlan
+    ? WINDOW_META.codeReviewMonthly
+    : WINDOW_META.codeReviewWeekly;
   addWindow(
-    WINDOW_META.codeReviewWeekly.id,
-    t(WINDOW_META.codeReviewWeekly.labelKey),
-    WINDOW_META.codeReviewWeekly.labelKey,
+    codeReviewSecondaryWindowMeta.id,
+    t(codeReviewSecondaryWindowMeta.labelKey),
+    codeReviewSecondaryWindowMeta.labelKey,
     undefined,
     codeReviewWindows.weeklyWindow,
     codeReviewLimitReached,
@@ -411,10 +425,14 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
         additionalLimitReached,
         additionalAllowed
       );
+      const additionalSecondaryLabelKey = isTeamPlan
+        ? 'codex_quota.additional_team_secondary_window'
+        : 'codex_quota.additional_secondary_window';
+      const additionalSecondaryId = isTeamPlan ? 'monthly' : 'weekly';
       addWindow(
-        `${idPrefix}-weekly-${index}`,
-        t('codex_quota.additional_secondary_window', { name: limitName }),
-        'codex_quota.additional_secondary_window',
+        `${idPrefix}-${additionalSecondaryId}-${index}`,
+        t(additionalSecondaryLabelKey, { name: limitName }),
+        additionalSecondaryLabelKey,
         { name: limitName },
         additionalSecondaryWindow,
         additionalLimitReached,
@@ -473,9 +491,10 @@ const fetchCodexQuota = async (
   const rateLimitResetCreditsAvailableCount = normalizeNumberValue(
     resetCredits?.available_count ?? resetCredits?.availableCount
   );
-  const windows = buildCodexQuotaWindows(payload, t);
+  const planType = planTypeFromUsage ?? planTypeFromFile;
+  const windows = buildCodexQuotaWindows(payload, t, planType);
   return {
-    planType: planTypeFromUsage ?? planTypeFromFile,
+    planType,
     subscriptionActiveUntil,
     rateLimitResetCreditsAvailableCount,
     windows,
