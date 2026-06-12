@@ -101,8 +101,3 @@ export function deobfuscateData(payload: string): string {
 export function isObfuscated(value: string): boolean {
   return value?.startsWith(ENC_PREFIX) || false;
 }
-
-// Backward-compatible aliases (this module was historically named "encryption").
-export const encryptData = obfuscateData;
-export const decryptData = deobfuscateData;
-export const isEncrypted = isObfuscated;
