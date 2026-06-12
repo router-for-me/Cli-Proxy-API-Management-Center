@@ -1131,6 +1131,8 @@
     "description": "查看已發現和已註冊的插件，管理實例開關、設定欄位和資源入口。",
     "refresh": "重新整理",
     "load_failed": "載入插件失敗",
+    "config_load_failed": "讀取插件設定失敗",
+    "config_not_found": "無法讀取插件設定，後端未找到該插件。",
     "unsupported_backend": "目前後端未暴露插件管理 API。請使用包含插件管理介面的新版後端建置，並重新啟動服務。",
     "global_status": "全域狀態",
     "global_enabled": "已啟用",

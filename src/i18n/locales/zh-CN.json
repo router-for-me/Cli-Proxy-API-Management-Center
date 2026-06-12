@@ -1105,6 +1105,8 @@
     "description": "查看已发现和已注册的插件，管理实例开关、配置字段和资源入口。",
     "refresh": "刷新",
     "load_failed": "加载插件失败",
+    "config_load_failed": "读取插件配置失败",
+    "config_not_found": "无法读取插件配置，后端未找到该插件。",
     "unsupported_backend": "当前后端未暴露插件管理 API。请使用包含插件管理接口的新后端构建，并重启服务。",
     "global_status": "全局状态",
     "global_enabled": "已启用",

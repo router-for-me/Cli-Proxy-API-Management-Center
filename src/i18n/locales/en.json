@@ -1105,6 +1105,8 @@
     "description": "Review discovered and registered plugins, then manage instance toggles, config fields, and resource links.",
     "refresh": "Refresh",
     "load_failed": "Failed to load plugins",
+    "config_load_failed": "Failed to read plugin config",
+    "config_not_found": "Unable to read plugin config because the backend could not find this plugin.",
     "unsupported_backend": "The current backend does not expose the plugin management API. Use a newer backend build that includes plugin management endpoints, then restart the service.",
     "global_status": "Global status",
     "global_enabled": "Enabled",

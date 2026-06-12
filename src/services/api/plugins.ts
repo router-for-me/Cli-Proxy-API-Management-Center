@@ -2,6 +2,7 @@ import { apiClient } from './client';
 import { isRecord } from '@/utils/helpers';
 import type {
   PluginConfigField,
+  PluginConfigObject,
   PluginListEntry,
   PluginListResponse,
   PluginMetadata,
@@ -114,6 +115,9 @@ const normalizePluginList = (value: unknown): PluginListResponse => {
   };
 };
 
+const normalizePluginConfig = (value: unknown): PluginConfigObject =>
+  isRecord(value) ? { ...value } : {};
+
 const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
   if (!isRecord(value)) return null;
   const id = asString(value.id).trim();
@@ -179,10 +183,15 @@ export const pluginsApi = {
   updateEnabled: (id: string, enabled: boolean) =>
     apiClient.patch(`/plugins/${encodeURIComponent(id)}/enabled`, { enabled }),
 
-  putConfig: (id: string, config: Record<string, unknown>) =>
+  async getConfig(id: string): Promise<PluginConfigObject> {
+    const data = await apiClient.get(`/plugins/${encodeURIComponent(id)}/config`);
+    return normalizePluginConfig(data);
+  },
+
+  putConfig: (id: string, config: PluginConfigObject) =>
     apiClient.put(`/plugins/${encodeURIComponent(id)}/config`, config),
 
-  patchConfig: (id: string, patch: Record<string, unknown>) =>
+  patchConfig: (id: string, patch: PluginConfigObject) =>
     apiClient.patch(`/plugins/${encodeURIComponent(id)}/config`, patch),
 };
 

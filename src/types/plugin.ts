@@ -14,6 +14,8 @@ export interface PluginConfigField {
   description: string;
 }
 
+export type PluginConfigObject = Record<string, unknown>;
+
 export interface PluginMetadata {
   name: string;
   version: string;
