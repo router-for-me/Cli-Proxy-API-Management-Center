@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useAuthStore } from '@/stores';
-import { authFilesApi, configFileApi } from '@/services/api';
+import { authFilesApi } from '@/services/api';
 import {
   QuotaSection,
   ANTIGRAVITY_CONFIG,
@@ -29,15 +29,6 @@ export function QuotaPage() {
 
   const disableControls = connectionStatus !== 'connected';
 
-  const loadConfig = useCallback(async () => {
-    try {
-      await configFileApi.fetchConfigYaml();
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');
-      setError((prev) => prev || errorMessage);
-    }
-  }, [t]);
-
   const loadFiles = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -52,16 +43,11 @@ export function QuotaPage() {
     }
   }, [t]);
 
-  const handleHeaderRefresh = useCallback(async () => {
-    await Promise.all([loadConfig(), loadFiles()]);
-  }, [loadConfig, loadFiles]);
-
-  useHeaderRefresh(handleHeaderRefresh);
+  useHeaderRefresh(loadFiles);
 
   useEffect(() => {
     loadFiles();
-    loadConfig();
-  }, [loadFiles, loadConfig]);
+  }, [loadFiles]);
 
   return (
     <div className={styles.container}>
