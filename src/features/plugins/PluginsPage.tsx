@@ -39,6 +39,13 @@ interface PluginConfigDraft {
   errors: Record<string, string>;
 }
 
+const PLUGIN_ENABLE_REFRESH_DELAY_MS = 1600;
+
+const wait = (ms: number) =>
+  new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+
 function PluginCardLogo({ src }: { src: string }) {
   const [failed, setFailed] = useState(false);
   const showImage = Boolean(src) && !failed;
@@ -261,6 +268,16 @@ export function PluginsPage() {
     }
   }, [connected, t]);
 
+  const loadPluginsAfterMutation = useCallback(
+    async (waitForRegistration: boolean) => {
+      if (waitForRegistration) {
+        await wait(PLUGIN_ENABLE_REFRESH_DELAY_MS);
+      }
+      await loadPlugins();
+    },
+    [loadPlugins]
+  );
+
   useHeaderRefresh(loadPlugins, connected);
 
   useEffect(() => {
@@ -358,7 +375,7 @@ export function PluginsPage() {
     try {
       await pluginsApi.updateEnabled(plugin.id, enabled);
       clearConfigCache();
-      await loadPlugins();
+      await loadPluginsAfterMutation(enabled);
       showNotification(t('plugin_management.toggle_success'), 'success');
     } catch (err: unknown) {
       showNotification(
@@ -392,7 +409,9 @@ export function PluginsPage() {
     try {
       await pluginsApi.putConfig(editingPlugin.id, nextConfig);
       clearConfigCache();
-      await loadPlugins();
+      await loadPluginsAfterMutation(
+        nextConfig.enabled === true && editingPlugin.enabled !== true
+      );
       setEditingPlugin(null);
       setEditingConfig({});
       setDraft(null);
@@ -682,7 +701,7 @@ export function PluginsPage() {
           variant="secondary"
           size="sm"
           onClick={loadPlugins}
-          disabled={!connected || loading}
+          disabled={!connected || loading || Boolean(mutatingID)}
           loading={loading}
         >
           <IconRefreshCw size={16} />
