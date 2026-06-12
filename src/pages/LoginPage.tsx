@@ -141,9 +141,8 @@ export function LoginPage() {
           setRememberPassword(storedRememberPassword || Boolean(storedKey));
         }
       } finally {
-        if (!autoLoginSuccess) {
-          setAutoLoading(false);
-        }
+        // 自动登录成功时 showSplash 仍由 autoLoginSuccess 维持，可无条件结束 loading
+        setAutoLoading(false);
       }
     };
 
