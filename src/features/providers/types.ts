@@ -64,23 +64,14 @@ export interface ProviderResource {
   raw: unknown;
 }
 
-export interface ProviderGroupIssue {
-  status?: string;
-  message: string;
-}
-
 export interface ProviderGroup {
   id: ProviderBrand;
   resources: ProviderResource[];
-  issue: ProviderGroupIssue | null;
-  /** 描述路径,例如 /ai-providers/gemini,用于 Sheet description */
-  path: string;
 }
 
 export interface ProviderSnapshot {
   fetchedAt: string;
   groups: ProviderGroup[];
-  issues: Array<{ brand: ProviderBrand; message: string }>;
 }
 
 /**

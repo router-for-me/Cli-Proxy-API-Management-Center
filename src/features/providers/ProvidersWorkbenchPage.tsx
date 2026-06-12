@@ -457,7 +457,6 @@ export function ProvidersWorkbenchPage() {
         totalResources={totalResources}
         providerFamilies={providerFamilies}
         updatedAtLabel={updatedAtLabel}
-        issueCount={workbench.snapshot?.issues.length ?? 0}
         isFetching={workbench.isFetching}
         isNewDisabled={disableMutations && !ampcodeBrandActive}
         newLabel={

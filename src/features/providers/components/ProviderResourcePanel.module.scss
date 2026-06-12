@@ -114,21 +114,6 @@
   display: inline-flex;
 }
 
-.issue {
-  border: 1px solid var(--amber-30);
-  background: var(--amber-10);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-  font-size: 14px;
-  color: var(--amber-text);
-  line-height: 1.5;
-}
-
-.issueTitle {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
 .empty {
   border: 1px dashed var(--border-color);
   border-radius: var(--radius-md);

@@ -153,12 +153,3 @@ export const PROVIDER_BRAND_ORDER: ProviderBrand[] = [
   'openaiCompatibility',
   'ampcode',
 ];
-
-export const PROVIDER_PATHS: Record<ProviderBrand, string> = {
-  gemini: '/ai-providers/gemini',
-  codex: '/ai-providers/codex',
-  claude: '/ai-providers/claude',
-  vertex: '/ai-providers/vertex',
-  openaiCompatibility: '/ai-providers/openai',
-  ampcode: '/ai-providers/ampcode',
-};

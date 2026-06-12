@@ -5,7 +5,6 @@ import codexLogo from '@/assets/icons/codex.svg';
 import geminiLogo from '@/assets/icons/gemini.svg';
 import openaiLogo from '@/assets/icons/openai-light.svg';
 import vertexLogo from '@/assets/icons/vertex.svg';
-import { IconAlertTriangle } from '@/components/ui/icons';
 import type { ProviderBrand, ProviderGroup } from '../types';
 import styles from './ProviderCategoryList.module.scss';
 
@@ -80,20 +79,13 @@ export function ProviderCategoryList({
                   </span>
                 </span>
               </span>
-              {group.issue ? (
-                <IconAlertTriangle
-                  size={16}
-                  style={{ color: 'var(--amber-text)', flexShrink: 0 }}
-                />
-              ) : (
-                <span
-                  className={`${styles.badge} ${
-                    group.id !== 'ampcode' && total === 0 ? styles.badgeAmber : ''
-                  }`}
-                >
-                  {group.id === 'ampcode' ? (group.resources[0]?.disabled ? '—' : '1') : total}
-                </span>
-              )}
+              <span
+                className={`${styles.badge} ${
+                  group.id !== 'ampcode' && total === 0 ? styles.badgeAmber : ''
+                }`}
+              >
+                {group.id === 'ampcode' ? (group.resources[0]?.disabled ? '—' : '1') : total}
+              </span>
             </button>
           );
         })}

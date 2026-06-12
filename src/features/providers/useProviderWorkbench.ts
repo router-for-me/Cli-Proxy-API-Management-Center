@@ -19,7 +19,7 @@ import {
   openaiToResource,
   vertexToResource,
 } from './adapters';
-import { PROVIDER_BRAND_ORDER, PROVIDER_PATHS } from './descriptors';
+import { PROVIDER_BRAND_ORDER } from './descriptors';
 import type {
   ProviderBrand,
   ProviderEntryFormInput,
@@ -266,14 +266,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       return {
         id: brand,
         resources,
-        issue: null,
-        path: PROVIDER_PATHS[brand],
       };
     });
     return {
       fetchedAt,
       groups,
-      issues: [],
     };
   }, [config, fetchedAt]);
 

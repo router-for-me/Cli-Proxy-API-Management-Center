@@ -11,7 +11,6 @@ interface ProviderHeaderCardProps {
   totalResources: number;
   providerFamilies: number;
   updatedAtLabel: string;
-  issueCount?: number;
   isFetching?: boolean;
   isNewDisabled?: boolean;
   newLabel?: string;
@@ -24,7 +23,6 @@ export function ProviderHeaderCard({
   totalResources,
   providerFamilies,
   updatedAtLabel,
-  issueCount = 0,
   isFetching = false,
   isNewDisabled = false,
   newLabel,
@@ -85,11 +83,6 @@ export function ProviderHeaderCard({
         <span className={styles.chip}>
           {t('providersPage.header.updatedAt', { time: updatedAtLabel })}
         </span>
-        {issueCount > 0 ? (
-          <span className={`${styles.chip} ${styles.chipAmber}`}>
-            {t('providersPage.header.issueCount', { count: issueCount })}
-          </span>
-        ) : null}
       </div>
     </section>
   );

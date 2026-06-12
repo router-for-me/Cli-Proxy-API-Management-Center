@@ -118,16 +118,6 @@ export function ProviderResourcePanel({
         ) : null}
       </div>
 
-      {group.issue ? (
-        <div className={styles.issue}>
-          <div className={styles.issueTitle}>
-            {t('providersPage.table.providerIssue')}
-            {group.issue.status ? ` · ${group.issue.status}` : ''}
-          </div>
-          <div>{group.issue.message}</div>
-        </div>
-      ) : null}
-
       {realResources.length === 0 && group.id !== 'ampcode' ? (
         <div className={styles.empty}>
           <div>{t('providersPage.table.empty')}</div>
