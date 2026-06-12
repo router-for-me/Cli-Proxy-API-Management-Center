@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { pluginsApi } from '@/services/api';
 import { useAuthStore } from '@/stores';
+import { getErrorMessage, isRecord } from '@/utils/helpers';
 import type { PluginListResponse } from '@/types';
 import {
   collectPluginResourceEntries,
@@ -12,14 +13,8 @@ import {
 } from './pluginResources';
 import styles from './PluginResourcePage.module.scss';
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
-
 const hasStatus = (error: unknown, status: number) =>
   isRecord(error) && error.status === status;
-
-const getErrorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error ? error.message : typeof error === 'string' ? error : fallback;
 
 const safeDecodeURIComponent = (value = '') => {
   try {

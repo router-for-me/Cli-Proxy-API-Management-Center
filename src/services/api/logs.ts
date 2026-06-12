@@ -4,6 +4,7 @@
 
 import { apiClient } from './client';
 import { LOGS_TIMEOUT_MS } from '@/utils/constants';
+import { isRecord } from '@/utils/helpers';
 
 export type LogCursor = number | string;
 export type LogBackendKind = 'unknown' | 'file' | 'home-db';
@@ -58,9 +59,6 @@ export interface ErrorLogFile {
 export interface ErrorLogsResponse {
   files?: ErrorLogFile[];
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object';
 
 const stringValue = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 

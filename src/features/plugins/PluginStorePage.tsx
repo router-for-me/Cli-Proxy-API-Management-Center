@@ -16,6 +16,7 @@ import {
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { pluginStoreApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
+import { getErrorMessage, isRecord } from '@/utils/helpers';
 import type { PluginStoreEntry, PluginStoreResponse } from '@/types';
 import { buildRepositoryURL, resolvePluginAssetURL } from './pluginResources';
 import styles from './PluginStorePage.module.scss';
@@ -26,12 +27,6 @@ interface StoreLoadError {
   kind: 'unsupported' | 'registry' | 'generic';
   message: string;
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
-
-const getErrorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error ? error.message : typeof error === 'string' ? error : fallback;
 
 const getErrorStatus = (error: unknown): number | undefined =>
   isRecord(error) && typeof error.status === 'number' ? error.status : undefined;

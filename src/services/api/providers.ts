@@ -3,6 +3,7 @@
  */
 
 import { apiClient } from './client';
+import { isRecord } from '@/utils/helpers';
 import {
   normalizeGeminiKeyConfig,
   normalizeOpenAIProvider,
@@ -18,9 +19,6 @@ import type {
 
 const serializeHeaders = (headers?: Record<string, string>) =>
   headers && Object.keys(headers).length ? headers : undefined;
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
 
 const RESPONSE_ONLY_FIELDS = ['auth-index'] as const;
 

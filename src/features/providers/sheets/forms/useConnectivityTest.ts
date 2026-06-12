@@ -6,6 +6,7 @@ import {
   buildOpenAIChatCompletionsEndpoint,
 } from '@/components/providers/utils';
 import { buildHeaderObject, hasHeader } from '@/utils/headers';
+import { getErrorMessage } from '@/utils/helpers';
 import type { ApiKeyEntryInput, ModelEntryInput, ProviderBrand } from '../../types';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -20,14 +21,8 @@ export interface ConnectivityStatus {
 
 const IDLE: ConnectivityStatus = { state: 'idle', message: '' };
 
-const errorMessage = (err: unknown): string => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  return '';
-};
-
 const requestFailureMessage = (err: unknown, messages: ConnectivityErrorMessages): string => {
-  const raw = errorMessage(err);
+  const raw = getErrorMessage(err);
   const isTimeout =
     (typeof err === 'object' &&
       err !== null &&

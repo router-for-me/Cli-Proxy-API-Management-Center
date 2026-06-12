@@ -30,6 +30,7 @@ import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi, type LogsQuery } from '@/services/api/logs';
 import { versionApi } from '@/services/api/version';
 import { copyToClipboard } from '@/utils/clipboard';
+import { getErrorMessage } from '@/utils/helpers';
 import { downloadBlob } from '@/utils/download';
 import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
@@ -80,16 +81,6 @@ const mergeIncrementalLines = (currentLines: string[], incomingLines: string[]):
 
   const overlap = findLineOverlap(currentLines, incomingLines);
   return [...currentLines, ...incomingLines.slice(overlap)];
-};
-
-const getErrorMessage = (err: unknown): string => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  if (typeof err !== 'object' || err === null) return '';
-  if (!('message' in err)) return '';
-
-  const message = (err as { message?: unknown }).message;
-  return typeof message === 'string' ? message : '';
 };
 
 const getErrorPayloadText = (err: unknown): string => {

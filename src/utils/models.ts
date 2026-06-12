@@ -3,6 +3,8 @@
  * 迁移自基线 utils/models.js
  */
 
+import { isRecord } from './helpers';
+
 export interface ModelInfo {
   name: string;
   alias?: string;
@@ -29,9 +31,6 @@ const matchCategory = (text: string) => {
   }
   return null;
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
 
 export function normalizeModelList(payload: unknown, { dedupe = false } = {}): ModelInfo[] {
   const toModel = (entry: unknown): ModelInfo | null => {

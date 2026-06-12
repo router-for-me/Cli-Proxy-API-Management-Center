@@ -15,6 +15,7 @@ import {
   VERSION_HEADER_KEYS
 } from '@/utils/constants';
 import { computeApiUrl } from '@/utils/connection';
+import { isRecord } from '@/utils/helpers';
 import type { ServerRuntimeKind } from '@/types';
 
 class ApiClient {
@@ -143,9 +144,6 @@ class ApiClient {
    * 错误处理
    */
   private handleError(error: unknown): ApiError {
-    const isRecord = (value: unknown): value is Record<string, unknown> =>
-      value !== null && typeof value === 'object';
-
     if (axios.isAxiosError(error)) {
       const responseData: unknown = error.response?.data;
       const responseRecord = isRecord(responseData) ? responseData : null;

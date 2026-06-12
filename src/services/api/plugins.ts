@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { isRecord } from '@/utils/helpers';
 import type {
   PluginConfigField,
   PluginListEntry,
@@ -9,9 +10,6 @@ import type {
   PluginStoreInstallResult,
   PluginStoreResponse,
 } from '@/types';
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
 
 const asString = (value: unknown): string => {
   if (value === undefined || value === null) return '';

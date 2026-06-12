@@ -1,3 +1,4 @@
+import { isRecord } from '@/utils/helpers';
 import { PROVIDER_BRAND_ORDER } from './descriptors';
 import {
   PROVIDER_SORT_BY_VALUES,
@@ -31,9 +32,6 @@ export interface ProvidersWorkbenchUiState {
   activeBrand: ProviderBrand;
   filtersByBrand: Partial<Record<ProviderBrand, ProviderFilterState>>;
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === 'object' && !Array.isArray(value));
 
 const isProviderBrand = (value: unknown): value is ProviderBrand =>
   typeof value === 'string' && PROVIDER_BRAND_SET.has(value as ProviderBrand);

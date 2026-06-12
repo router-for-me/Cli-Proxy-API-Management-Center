@@ -20,6 +20,7 @@ import {
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { pluginsApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
+import { getErrorMessage, isRecord } from '@/utils/helpers';
 import type { PluginConfigField, PluginListEntry, PluginListResponse } from '@/types';
 import { getPluginTitle, resolvePluginAssetURL } from './pluginResources';
 import styles from './PluginsPage.module.scss';
@@ -44,14 +45,8 @@ function PluginCardLogo({ src }: { src: string }) {
   );
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
-
 const cloneRecord = (value: unknown): Record<string, unknown> =>
   isRecord(value) ? { ...value } : {};
-
-const getErrorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error ? error.message : typeof error === 'string' ? error : fallback;
 
 const hasStatus = (error: unknown, status: number) =>
   isRecord(error) && error.status === status;

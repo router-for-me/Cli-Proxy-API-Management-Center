@@ -11,6 +11,7 @@ import {
   type ProviderRecentUsageMap,
 } from '@/components/providers/utils';
 import type { OpenAIProviderConfig } from '@/types';
+import { isRecord } from '@/utils/helpers';
 import { ProviderHeaderCard } from './components/ProviderHeaderCard';
 import { ProviderCategoryList } from './components/ProviderCategoryList';
 import { ProviderResourcePanel } from './components/ProviderResourcePanel';
@@ -65,9 +66,6 @@ const matchesFilter = (r: ProviderResource, normalized: string): boolean => {
     .map((v) => String(v).toLowerCase());
   return haystack.some((v) => v.includes(normalized));
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === 'object' && !Array.isArray(value));
 
 const getResourceModels = (resource: ProviderResource): string[] => {
   if (!isRecord(resource.raw)) return [];

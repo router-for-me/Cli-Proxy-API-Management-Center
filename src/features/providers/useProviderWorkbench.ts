@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ampcodeApi, providersApi } from '@/services/api';
+import { getErrorMessage } from '@/utils/helpers';
 import { useAuthStore, useConfigStore } from '@/stores';
 import {
   withDisableAllModelsRule,
@@ -27,12 +28,6 @@ import type {
   ProviderResource,
   ProviderSnapshot,
 } from './types';
-
-const getErrorMessage = (err: unknown): string => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  return '';
-};
 
 export interface UseProviderWorkbenchResult {
   connected: boolean;

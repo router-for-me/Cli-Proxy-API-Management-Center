@@ -4,9 +4,7 @@
 
 import { apiClient } from './client';
 import type { ServerRuntimeKind } from '@/types';
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object';
+import { isRecord } from '@/utils/helpers';
 
 export const versionApi = {
   checkLatest: () => apiClient.get<Record<string, unknown>>('/latest-version'),
