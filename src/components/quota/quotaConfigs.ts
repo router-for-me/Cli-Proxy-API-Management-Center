@@ -64,6 +64,7 @@ import {
   parseXaiBillingPayload,
   resolveCodexChatgptAccountId,
   resolveCodexPlanType,
+  resolveCodexSubscriptionActiveUntil,
   resolveGeminiCliProjectId,
   formatCodexResetLabel,
   formatQuotaResetTime,
@@ -83,6 +84,7 @@ import {
   isXaiFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
+import { formatDateTimeValue } from '@/utils/format';
 import type { QuotaRenderHelpers } from './QuotaCard';
 import styles from '@/pages/QuotaPage.module.scss';
 
@@ -424,7 +426,11 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
 const fetchCodexQuota = async (
   file: AuthFileItem,
   t: TFunction
-): Promise<{ planType: string | null; windows: CodexQuotaWindow[] }> => {
+): Promise<{
+  planType: string | null;
+  subscriptionActiveUntil: string | number | null;
+  windows: CodexQuotaWindow[];
+}> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
@@ -432,6 +438,7 @@ const fetchCodexQuota = async (
   }
 
   const planTypeFromFile = resolveCodexPlanType(file);
+  const subscriptionActiveUntil = resolveCodexSubscriptionActiveUntil(file);
   const accountId = resolveCodexChatgptAccountId(file);
 
   const requestHeader: Record<string, string> = {
@@ -459,7 +466,7 @@ const fetchCodexQuota = async (
 
   const planTypeFromUsage = normalizePlanType(payload.plan_type ?? payload.planType);
   const windows = buildCodexQuotaWindows(payload, t);
-  return { planType: planTypeFromUsage ?? planTypeFromFile, windows };
+  return { planType: planTypeFromUsage ?? planTypeFromFile, subscriptionActiveUntil, windows };
 };
 
 const GEMINI_CLI_G1_CREDIT_TYPE = 'GOOGLE_ONE_AI';
@@ -760,6 +767,7 @@ const renderCodexItems = (
   const { createElement: h, Fragment } = React;
   const windows = quota.windows ?? [];
   const planType = quota.planType ?? null;
+  const subscriptionActiveUntil = quota.subscriptionActiveUntil ?? null;
 
   const getPlanLabel = (pt?: string | null): string | null => {
     const normalized = normalizePlanType(pt);
@@ -776,18 +784,48 @@ const renderCodexItems = (
 
   const planLabel = getPlanLabel(planType);
   const isPremiumPlan = PREMIUM_CODEX_PLAN_TYPES.has(normalizePlanType(planType) ?? '');
+  const expiryLabel = subscriptionActiveUntil ? formatDateTimeValue(subscriptionActiveUntil) : '';
   const nodes: ReactNode[] = [];
 
-  if (planLabel) {
-    const valueClass = isPremiumPlan ? styleMap.premiumPlanValue : styleMap.codexPlanValue;
-    nodes.push(
-      h(
-        'div',
-        { key: 'plan', className: styleMap.codexPlan },
-        h('span', { className: styleMap.codexPlanLabel }, t('codex_quota.plan_label')),
-        h('span', { className: valueClass }, planLabel)
-      )
-    );
+  if (planLabel || expiryLabel) {
+    const planValueClass = isPremiumPlan ? styleMap.premiumPlanValue : styleMap.codexPlanValue;
+    const planNodes: ReactNode[] = [];
+
+    if (planLabel) {
+      planNodes.push(
+        h(
+          'span',
+          { key: 'plan-label', className: styleMap.codexPlanLabel },
+          t('codex_quota.plan_label')
+        ),
+        h('span', { key: 'plan-value', className: planValueClass }, planLabel)
+      );
+    }
+
+    if (expiryLabel) {
+      if (planNodes.length > 0) {
+        planNodes.push(
+          h('span', {
+            key: 'subscription-expiry-separator',
+            className: styleMap.codexPlanSeparator,
+          })
+        );
+      }
+      planNodes.push(
+        h(
+          'span',
+          { key: 'subscription-expiry-label', className: styleMap.codexPlanLabel },
+          t('codex_quota.expires_label')
+        ),
+        h(
+          'span',
+          { key: 'subscription-expiry-value', className: styleMap.codexPlanValue },
+          expiryLabel
+        )
+      );
+    }
+
+    nodes.push(h('div', { key: 'plan', className: styleMap.codexPlan }, ...planNodes));
   }
 
   if (windows.length === 0) {
@@ -1199,7 +1237,11 @@ export const ANTIGRAVITY_CONFIG: QuotaConfig<AntigravityQuotaState, AntigravityQ
 
 export const CODEX_CONFIG: QuotaConfig<
   CodexQuotaState,
-  { planType: string | null; windows: CodexQuotaWindow[] }
+  {
+    planType: string | null;
+    subscriptionActiveUntil: string | number | null;
+    windows: CodexQuotaWindow[];
+  }
 > = {
   type: 'codex',
   i18nPrefix: 'codex_quota',
@@ -1213,6 +1255,7 @@ export const CODEX_CONFIG: QuotaConfig<
     status: 'success',
     windows: data.windows,
     planType: data.planType,
+    subscriptionActiveUntil: data.subscriptionActiveUntil,
   }),
   buildErrorState: (message, status) => ({
     status: 'error',
