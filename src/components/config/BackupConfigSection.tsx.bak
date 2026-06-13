@@ -64,30 +64,8 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
     }
   };
 
-  if (loading) {
+  if (loading || !config) {
     return <div className={styles.loading}>加载中...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className={styles.error}>
-        <p>{error}</p>
-        <p className={styles.errorHint}>
-          请确保后端服务器已启用备份功能。需要在后端实现以下 API：
-        </p>
-        <ul className={styles.apiList}>
-          <li>GET /v0/management/backup/config</li>
-          <li>PUT /v0/management/backup/config</li>
-          <li>POST /v0/management/backup/test</li>
-          <li>POST /v0/management/backup/create</li>
-          <li>GET /v0/management/backup/list</li>
-        </ul>
-      </div>
-    );
-  }
-
-  if (!config) {
-    return <div className={styles.error}>配置不可用</div>;
   }
 
   return (

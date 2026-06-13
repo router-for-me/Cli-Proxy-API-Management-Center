@@ -12,6 +12,39 @@
   color: var(--text-secondary);
 }
 
+.error {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+
+  p {
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+
+  .errorHint {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+
+  .apiList {
+    display: inline-block;
+    text-align: left;
+    margin-top: 12px;
+    padding: 12px 16px;
+    background-color: var(--bg-secondary);
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--text-primary);
+
+    li {
+      margin: 4px 0;
+    }
+  }
+}
+
 .formGroup {
   padding: 16px;
 }
