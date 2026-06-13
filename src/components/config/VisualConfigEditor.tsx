@@ -313,6 +313,12 @@ export function VisualConfigEditor({
         icon: IconCode,
         errorCount: hasPayloadValidationErrors ? 1 : 0,
       },
+      {
+        id: 'backup',
+        title: '备份配置',
+        icon: IconSettings,
+        errorCount: 0,
+      },
     ],
     [countErrors, hasPayloadValidationErrors, t]
   );
