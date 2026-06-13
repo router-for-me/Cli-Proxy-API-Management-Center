@@ -38,6 +38,13 @@ export function formatFileSize(bytes: number): string {
 }
 
 /**
+ * 格式化字节大小（别名）
+ */
+export function formatBytes(bytes: number): string {
+  return formatFileSize(bytes);
+}
+
+/**
  * 将 Unix 时间戳（秒/毫秒/微秒/纳秒）格式化为本地时间字符串
  */
 export function formatUnixTimestamp(value: unknown, locale?: string): string {

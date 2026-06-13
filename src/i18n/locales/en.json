@@ -120,7 +120,8 @@
     "plugin_store": "Plugin Store",
     "config_management": "Config Panel",
     "logs": "Logs Viewer",
-    "system_info": "Management Center Info"
+    "system_info": "Management Center Info",
+    "backup": "Backup"
   },
   "nav_groups": {
     "operate": "Operate",
@@ -139,7 +140,8 @@
     "plugin_store": "Discover & install plugins",
     "logs": "Request tracing",
     "config_management": "Gateway configuration",
-    "system_info": "Runtime & diagnostics"
+    "system_info": "Runtime & diagnostics",
+    "backup": "Backup & restore"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1573,6 +1575,59 @@
     },
     "modelCatalog": {
       "notLoaded": "Not loaded"
+    },
+    "backup": {
+      "title": "Backup Management",
+      "description": "Configure automatic backups and manage backup files",
+      "configuration": "Backup Configuration",
+      "backups_list": "Backups List",
+      "enabled": "Enable Automatic Backup",
+      "storage_type": "Storage Type",
+      "storage_local": "Local Storage",
+      "storage_s3": "S3 Storage",
+      "storage_webdav": "WebDAV Storage",
+      "schedule": "Backup Schedule",
+      "schedule_manual": "Manual Only",
+      "schedule_hourly": "Hourly",
+      "schedule_daily": "Daily",
+      "schedule_weekly": "Weekly",
+      "schedule_monthly": "Monthly",
+      "max_backups": "Max Backups",
+      "local_dir": "Local Directory",
+      "s3_config": "S3 Configuration",
+      "s3_endpoint": "Endpoint",
+      "s3_region": "Region",
+      "s3_bucket": "Bucket",
+      "s3_path": "Path Prefix",
+      "s3_access_key": "Access Key",
+      "s3_secret_key": "Secret Key",
+      "s3_use_ssl": "Use SSL",
+      "webdav_config": "WebDAV Configuration",
+      "webdav_url": "Server URL",
+      "webdav_username": "Username",
+      "webdav_password": "Password",
+      "webdav_path": "Remote Path",
+      "test_connection": "Test Connection",
+      "testing": "Testing...",
+      "connection_success": "Connection successful",
+      "connection_error": "Connection failed",
+      "create_backup": "Create Backup",
+      "creating": "Creating...",
+      "backup_created": "Backup created successfully",
+      "backup_downloaded": "Backup downloaded successfully",
+      "create_backup_error": "Failed to create backup",
+      "download_backup_error": "Failed to download backup",
+      "delete_backup_title": "Delete Backup",
+      "delete_backup_message": "Are you sure you want to delete backup {{name}}? This action cannot be undone.",
+      "backup_deleted": "Backup deleted successfully",
+      "delete_backup_error": "Failed to delete backup",
+      "no_backups": "No backups available",
+      "backups_refreshed": "List refreshed",
+      "config_saved": "Configuration saved",
+      "save_config_error": "Failed to save configuration",
+      "load_config_error": "Failed to load configuration",
+      "load_backups_error": "Failed to load backups list",
+      "config_not_available": "Configuration not available"
     }
   }
 }

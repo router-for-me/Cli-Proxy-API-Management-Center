@@ -26,6 +26,7 @@ import {
   IconSidebarStore,
   IconSidebarSystem,
   IconChevronDown,
+  IconDownload,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import {
@@ -57,6 +58,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
+  backup: <IconDownload size={18} />,
 };
 
 interface SidebarNavLinkItem {
@@ -595,6 +597,12 @@ export function MainLayout() {
           labelKey: 'nav.system_info',
           metaKey: 'nav_meta.system_info',
           icon: sidebarIcons.system,
+        },
+        {
+          path: '/backup',
+          labelKey: 'nav.backup',
+          metaKey: 'nav_meta.backup',
+          icon: sidebarIcons.backup,
         },
       ],
     },

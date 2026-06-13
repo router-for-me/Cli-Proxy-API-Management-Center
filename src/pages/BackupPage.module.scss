@@ -1,0 +1,133 @@
+.backupPage {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .description {
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+}
+
+.loading,
+.error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.configCard,
+.backupsCard {
+  margin-bottom: 24px;
+}
+
+.configForm {
+  padding: 16px;
+}
+
+.formRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+
+  label {
+    flex: 0 0 200px;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  input,
+  select {
+    flex: 1;
+    max-width: 400px;
+  }
+}
+
+.storageConfig {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+}
+
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.listActions {
+  display: flex;
+  gap: 8px;
+}
+
+.backupsList {
+  padding: 16px;
+}
+
+.backupItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--primary-color);
+    background-color: var(--hover-bg);
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.backupInfo {
+  flex: 1;
+}
+
+.backupName {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.backupMeta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  .storage {
+    padding: 2px 8px;
+    background-color: var(--tag-bg);
+    border-radius: 4px;
+    font-weight: 500;
+  }
+}
+
+.backupActions {
+  display: flex;
+  gap: 8px;
+}
