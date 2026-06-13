@@ -62,6 +62,21 @@ export interface ErrorLogsResponse {
 
 const stringValue = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
+const numberValue = (value: unknown): number | undefined => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const positiveNumberValue = (value: unknown): number | undefined => {
+  const parsed = numberValue(value);
+  return parsed !== undefined && parsed > 0 ? parsed : undefined;
+};
+
+const homeRecordsFromPayload = (data: Record<string, unknown>): HomeLogRecord[] =>
+  Array.isArray(data.logs)
+    ? data.logs.filter((entry): entry is HomeLogRecord => isRecord(entry))
+    : [];
+
 const unixSecondsFromValue = (value: unknown): number => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   const text = stringValue(value);
@@ -95,9 +110,7 @@ const normalizeCPALogs = (data: Record<string, unknown>): LogsResponse => {
 };
 
 const normalizeHomeLogs = (data: Record<string, unknown>): LogsResponse => {
-  const rawLogs = Array.isArray(data.logs)
-    ? data.logs.filter((entry): entry is HomeLogRecord => isRecord(entry))
-    : [];
+  const rawLogs = homeRecordsFromPayload(data);
   const orderedLogs = [...rawLogs].reverse();
   const lines = orderedLogs
     .map((record) => record.line)
@@ -145,9 +158,62 @@ const normalizeLogsResponse = (data: unknown): LogsResponse => {
   return { lines: [], lineCount: 0, logBackendKind: 'unknown' };
 };
 
+const fetchCompleteHomeLogs = async (
+  firstPage: Record<string, unknown>,
+  params: LogsQuery
+): Promise<Record<string, unknown>> => {
+  const requestedLimit = positiveNumberValue(params.limit);
+  const firstPageLimit = positiveNumberValue(firstPage.limit);
+  const pageLimit = firstPageLimit ?? requestedLimit;
+  const total = numberValue(firstPage.total);
+  const firstOffset = numberValue(firstPage.offset) ?? numberValue(params.offset) ?? 0;
+  const records = homeRecordsFromPayload(firstPage);
+
+  if (requestedLimit === undefined || pageLimit === undefined || total === undefined) {
+    return firstPage;
+  }
+
+  let nextOffset = firstOffset + records.length;
+  const targetCount = Math.min(requestedLimit, Math.max(total - firstOffset, 0));
+
+  while (records.length < targetCount && nextOffset < total) {
+    const remaining = targetCount - records.length;
+    const data = await apiClient.get('/logs', {
+      params: {
+        ...params,
+        limit: Math.min(pageLimit, remaining),
+        offset: nextOffset,
+      },
+      timeout: LOGS_TIMEOUT_MS,
+    });
+
+    if (!isRecord(data) || !Array.isArray(data.logs)) {
+      break;
+    }
+
+    const pageRecords = homeRecordsFromPayload(data);
+    if (pageRecords.length === 0) {
+      break;
+    }
+
+    records.push(...pageRecords);
+    nextOffset += pageRecords.length;
+  }
+
+  return {
+    ...firstPage,
+    logs: records,
+    limit: records.length,
+    offset: firstOffset,
+  };
+};
+
 export const logsApi = {
   async fetchLogs(params: LogsQuery = {}): Promise<LogsResponse> {
     const data = await apiClient.get('/logs', { params, timeout: LOGS_TIMEOUT_MS });
+    if (isRecord(data) && Array.isArray(data.logs)) {
+      return normalizeLogsResponse(await fetchCompleteHomeLogs(data, params));
+    }
     return normalizeLogsResponse(data);
   },
 
