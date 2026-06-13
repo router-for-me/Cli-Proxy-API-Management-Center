@@ -1191,6 +1191,8 @@
   "plugin_store": {
     "title": "插件商店",
     "description": "瀏覽插件註冊表,為目前後端安裝或更新插件。",
+    "description_show_more": "展開描述",
+    "description_show_less": "收起描述",
     "refresh": "重新整理",
     "retry": "重試",
     "load_failed": "插件商店載入失敗",

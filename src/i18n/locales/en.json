@@ -1165,6 +1165,8 @@
   "plugin_store": {
     "title": "Plugin Store",
     "description": "Browse the plugin registry, then install or update plugins for the current backend.",
+    "description_show_more": "Show more",
+    "description_show_less": "Show less",
     "refresh": "Refresh",
     "retry": "Retry",
     "load_failed": "Failed to load the plugin store",

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -37,6 +37,8 @@ const getErrorDetailMessage = (error: unknown): string => {
   return typeof message === 'string' ? message.trim() : '';
 };
 
+const DESCRIPTION_COLLAPSED_LINES = 2;
+
 const getStoreEntryTitle = (entry: PluginStoreEntry) => entry.name || entry.id;
 
 function StoreCardLogo({ src }: { src: string }) {
@@ -66,6 +68,9 @@ export function PluginStorePage() {
   const [statusFilter, setStatusFilter] = useState<StoreStatusFilter>('all');
   const [installingID, setInstallingID] = useState('');
   const [restartRequiredIDs, setRestartRequiredIDs] = useState<string[]>([]);
+  const [expandedDescriptionIDs, setExpandedDescriptionIDs] = useState<string[]>([]);
+  const [overflowingDescriptionIDs, setOverflowingDescriptionIDs] = useState<string[]>([]);
+  const descriptionRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
 
   const connected = connectionStatus === 'connected';
 
@@ -168,6 +173,68 @@ export function PluginStorePage() {
 
   const hasActiveFilters = Boolean(filter.trim()) || statusFilter !== 'all';
 
+  const expandedDescriptionIDSet = useMemo(
+    () => new Set(expandedDescriptionIDs),
+    [expandedDescriptionIDs]
+  );
+  const overflowingDescriptionIDSet = useMemo(
+    () => new Set(overflowingDescriptionIDs),
+    [overflowingDescriptionIDs]
+  );
+
+  const registerDescriptionRef = useCallback((id: string, node: HTMLParagraphElement | null) => {
+    if (node) {
+      descriptionRefs.current[id] = node;
+    } else {
+      delete descriptionRefs.current[id];
+    }
+  }, []);
+
+  const measureDescriptionOverflow = useCallback(() => {
+    const nextIDs = Object.entries(descriptionRefs.current)
+      .filter(([, node]) => {
+        if (!node) return false;
+        const computed = window.getComputedStyle(node);
+        const lineHeight = Number.parseFloat(computed.lineHeight);
+        if (!Number.isFinite(lineHeight) || lineHeight <= 0) {
+          return node.scrollHeight > node.clientHeight + 1;
+        }
+        return node.scrollHeight > lineHeight * DESCRIPTION_COLLAPSED_LINES + 1;
+      })
+      .map(([id]) => id);
+
+    setOverflowingDescriptionIDs((current) => {
+      if (current.length === nextIDs.length && current.every((id) => nextIDs.includes(id))) {
+        return current;
+      }
+      return nextIDs;
+    });
+  }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(measureDescriptionOverflow);
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [measureDescriptionOverflow, visiblePlugins]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      window.requestAnimationFrame(measureDescriptionOverflow);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [measureDescriptionOverflow]);
+
+  const toggleDescription = useCallback((id: string) => {
+    setExpandedDescriptionIDs((current) =>
+      current.includes(id) ? current.filter((currentID) => currentID !== id) : [...current, id]
+    );
+  }, []);
+
   const handleInstall = (entry: PluginStoreEntry) => {
     const isUpdate = entry.installed && entry.updateAvailable;
     const title = getStoreEntryTitle(entry);
@@ -223,6 +290,9 @@ export function PluginStorePage() {
             ? `v${entry.version}`
             : '';
     const metaItems = [versionText, entry.author, entry.license].filter(Boolean);
+    const isDescriptionExpanded = expandedDescriptionIDSet.has(entry.id);
+    const isDescriptionOverflowing = overflowingDescriptionIDSet.has(entry.id);
+    const descriptionID = `plugin-store-desc-${entry.id}`;
 
     return (
       <article key={entry.id} className={styles.card}>
@@ -246,7 +316,34 @@ export function PluginStorePage() {
           </div>
         </div>
 
-        {entry.description ? <p className={styles.cardDesc}>{entry.description}</p> : null}
+        {entry.description ? (
+          <div className={styles.cardDescBlock}>
+            <p
+              id={descriptionID}
+              ref={(node) => registerDescriptionRef(entry.id, node)}
+              className={`${styles.cardDesc} ${
+                isDescriptionExpanded ? styles.cardDescExpanded : ''
+              }`}
+            >
+              {entry.description}
+            </p>
+            {isDescriptionOverflowing ? (
+              <button
+                type="button"
+                className={styles.cardDescToggle}
+                onClick={() => toggleDescription(entry.id)}
+                aria-expanded={isDescriptionExpanded}
+                aria-controls={descriptionID}
+              >
+                {t(
+                  isDescriptionExpanded
+                    ? 'plugin_store.description_show_less'
+                    : 'plugin_store.description_show_more'
+                )}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         {metaItems.length > 0 ? (
           <div className={styles.cardMeta}>
