@@ -712,6 +712,14 @@ function mergeVisualConfigValues(
   if (patch.streaming) {
     nextValues.streaming = { ...currentValues.streaming, ...patch.streaming };
   }
+  if (patch.backup) {
+    nextValues.backup = {
+      ...currentValues.backup,
+      ...patch.backup,
+      s3: patch.backup.s3 ? { ...currentValues.backup.s3, ...patch.backup.s3 } : currentValues.backup.s3,
+      webdav: patch.backup.webdav ? { ...currentValues.backup.webdav, ...patch.backup.webdav } : currentValues.backup.webdav,
+    };
+  }
   return nextValues;
 }
 
@@ -846,6 +854,13 @@ function getNextDirtyFields(
     }
   }
 
+  if (patch.backup) {
+    // Mark backup as dirty if any backup field changed
+    const isBackupEqual =
+      JSON.stringify(nextValues.backup) === JSON.stringify(baselineValues.backup);
+    updateDirty('backup', isBackupEqual);
+  }
+
   return nextDirtyFields;
 }
 
@@ -931,6 +946,7 @@ export function useVisualConfig() {
       const codex = asRecord(parsed.codex);
       const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
       const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
+      const backupConfig = asRecord(parsed.backup);
 
       const newValues: VisualConfigValues = {
         host: typeof parsed.host === 'string' ? parsed.host : '',
@@ -1045,6 +1061,29 @@ export function useVisualConfig() {
           keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
           bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
           nonstreamKeepaliveInterval: String(parsed['nonstream-keepalive-interval'] ?? ''),
+        },
+
+        backup: {
+          enabled: Boolean(backupConfig?.enabled),
+          schedule: String(backupConfig?.schedule ?? ''),
+          storage: String(backupConfig?.storage ?? '') as 'local' | 's3' | 'webdav' | '',
+          localDir: String(backupConfig?.['local-dir'] ?? ''),
+          maxBackups: String(backupConfig?.['max-backups'] ?? '0'),
+          s3: {
+            endpoint: String(asRecord(backupConfig?.s3)?.endpoint ?? ''),
+            region: String(asRecord(backupConfig?.s3)?.region ?? ''),
+            bucket: String(asRecord(backupConfig?.s3)?.bucket ?? ''),
+            path: String(asRecord(backupConfig?.s3)?.path ?? ''),
+            accessKey: String(asRecord(backupConfig?.s3)?.['access-key'] ?? ''),
+            secretKey: String(asRecord(backupConfig?.s3)?.['secret-key'] ?? ''),
+            useSSL: Boolean(asRecord(backupConfig?.s3)?.['use-ssl'] ?? true),
+          },
+          webdav: {
+            url: String(asRecord(backupConfig?.webdav)?.url ?? ''),
+            username: String(asRecord(backupConfig?.webdav)?.username ?? ''),
+            password: String(asRecord(backupConfig?.webdav)?.password ?? ''),
+            path: String(asRecord(backupConfig?.webdav)?.path ?? ''),
+          },
         },
       };
 
@@ -1364,6 +1403,41 @@ export function useVisualConfig() {
             doc.deleteIn(['payload', 'filter']);
           }
           deleteIfMapEmpty(doc, ['payload']);
+        }
+
+        // Write backup configuration
+        if (dirtyFields.has('backup') || docHas(doc, ['backup'])) {
+          ensureMapInDoc(doc, ['backup']);
+          setBooleanInDoc(doc, ['backup', 'enabled'], values.backup.enabled);
+          setStringInDoc(doc, ['backup', 'schedule'], values.backup.schedule);
+          setStringInDoc(doc, ['backup', 'storage'], values.backup.storage);
+          setStringInDoc(doc, ['backup', 'local-dir'], values.backup.localDir);
+          setIntFromStringInDoc(doc, ['backup', 'max-backups'], values.backup.maxBackups);
+
+          // Write S3 config
+          if (values.backup.storage === 's3' || docHas(doc, ['backup', 's3'])) {
+            ensureMapInDoc(doc, ['backup', 's3']);
+            setStringInDoc(doc, ['backup', 's3', 'endpoint'], values.backup.s3.endpoint);
+            setStringInDoc(doc, ['backup', 's3', 'region'], values.backup.s3.region);
+            setStringInDoc(doc, ['backup', 's3', 'bucket'], values.backup.s3.bucket);
+            setStringInDoc(doc, ['backup', 's3', 'path'], values.backup.s3.path);
+            setStringInDoc(doc, ['backup', 's3', 'access-key'], values.backup.s3.accessKey);
+            setStringInDoc(doc, ['backup', 's3', 'secret-key'], values.backup.s3.secretKey);
+            setBooleanInDoc(doc, ['backup', 's3', 'use-ssl'], values.backup.s3.useSSL);
+            deleteIfMapEmpty(doc, ['backup', 's3']);
+          }
+
+          // Write WebDAV config
+          if (values.backup.storage === 'webdav' || docHas(doc, ['backup', 'webdav'])) {
+            ensureMapInDoc(doc, ['backup', 'webdav']);
+            setStringInDoc(doc, ['backup', 'webdav', 'url'], values.backup.webdav.url);
+            setStringInDoc(doc, ['backup', 'webdav', 'username'], values.backup.webdav.username);
+            setStringInDoc(doc, ['backup', 'webdav', 'password'], values.backup.webdav.password);
+            setStringInDoc(doc, ['backup', 'webdav', 'path'], values.backup.webdav.path);
+            deleteIfMapEmpty(doc, ['backup', 'webdav']);
+          }
+
+          deleteIfMapEmpty(doc, ['backup']);
         }
 
         return doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });

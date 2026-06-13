@@ -1250,7 +1250,11 @@ export function VisualConfigEditor({
             title="备份配置"
             description="配置自动备份和存储设置"
           >
-            <BackupConfigSection disabled={disabled} />
+            <BackupConfigSection
+              disabled={disabled}
+              config={values.backup}
+              onChange={(backup) => onChange({ backup: { ...values.backup, ...backup } })}
+            />
           </ConfigSection>
         </div>
       </div>

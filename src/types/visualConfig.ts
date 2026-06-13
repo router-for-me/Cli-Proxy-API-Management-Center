@@ -124,6 +124,30 @@ export type VisualConfigValues = {
   payloadOverrideRawRules: PayloadRule[];
   payloadFilterRules: PayloadFilterRule[];
   streaming: StreamingConfig;
+  backup: BackupConfig;
+};
+
+export type BackupConfig = {
+  enabled: boolean;
+  schedule: string;
+  storage: 'local' | 's3' | 'webdav' | '';
+  localDir: string;
+  maxBackups: string;
+  s3: {
+    endpoint: string;
+    region: string;
+    bucket: string;
+    path: string;
+    accessKey: string;
+    secretKey: string;
+    useSSL: boolean;
+  };
+  webdav: {
+    url: string;
+    username: string;
+    password: string;
+    path: string;
+  };
 };
 
 export const makeClientId = () => {
@@ -191,5 +215,27 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
     keepaliveSeconds: '',
     bootstrapRetries: '',
     nonstreamKeepaliveInterval: '',
+  },
+  backup: {
+    enabled: false,
+    schedule: '',
+    storage: '',
+    localDir: '',
+    maxBackups: '0',
+    s3: {
+      endpoint: '',
+      region: '',
+      bucket: '',
+      path: '',
+      accessKey: '',
+      secretKey: '',
+      useSSL: true,
+    },
+    webdav: {
+      url: '',
+      username: '',
+      password: '',
+      path: '',
+    },
   },
 };

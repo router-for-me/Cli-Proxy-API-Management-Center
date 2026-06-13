@@ -1,43 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { backupApi, type BackupConfig } from '@/services/api';
+import { backupApi } from '@/services/api';
+import type { BackupConfig } from '@/types/visualConfig';
 import styles from './BackupConfigSection.module.scss';
 
 interface BackupConfigSectionProps {
   disabled?: boolean;
+  config: BackupConfig;
+  onChange: (config: Partial<BackupConfig>) => void;
 }
 
-export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
-  const [config, setConfig] = useState<BackupConfig | null>(null);
-  const [loading, setLoading] = useState(true);
+export function BackupConfigSection({ disabled, config, onChange }: BackupConfigSectionProps) {
   const [testing, setTesting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [restoring, setRestoring] = useState(false);
-
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
-    try {
-      const data = await backupApi.getConfig();
-      setConfig(data);
-      setError(null);
-    } catch (err: any) {
-      console.error('Failed to load backup config:', err);
-      if (err?.response?.status === 404 || err?.status === 404) {
-        setError('备份功能尚未在后端启用');
-      } else {
-        setError('加载配置失败');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleTest = async () => {
     setTesting(true);
@@ -96,32 +75,6 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
     }
   };
 
-  if (loading) {
-    return <div className={styles.loading}>加载中...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className={styles.error}>
-        <p>{error}</p>
-        <p className={styles.errorHint}>
-          请确保后端服务器已启用备份功能。需要在后端实现以下 API：
-        </p>
-        <ul className={styles.apiList}>
-          <li>GET /v0/management/backup/config</li>
-          <li>PUT /v0/management/backup/config</li>
-          <li>POST /v0/management/backup/test</li>
-          <li>POST /v0/management/backup/create</li>
-          <li>GET /v0/management/backup/list</li>
-        </ul>
-      </div>
-    );
-  }
-
-  if (!config) {
-    return <div className={styles.error}>配置不可用</div>;
-  }
-
   return (
     <div className={styles.backupConfig}>
       {/* 基础配置 */}
@@ -131,7 +84,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
             <label>启用自动备份</label>
             <ToggleSwitch
               checked={config.enabled}
-              onChange={(checked) => setConfig({ ...config, enabled: checked })}
+              onChange={(checked) => onChange({ enabled: checked })}
               disabled={disabled}
             />
           </div>
@@ -139,7 +92,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
             <label>备份计划</label>
             <select
               value={config.schedule}
-              onChange={(e) => setConfig({ ...config, schedule: e.target.value })}
+              onChange={(e) => onChange({ schedule: e.target.value })}
               className={styles.select}
               disabled={disabled}
             >
@@ -155,9 +108,9 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
             <Input
               type="number"
               min="0"
-              value={config['max-backups'].toString()}
+              value={config.maxBackups.toString()}
               onChange={(e) =>
-                setConfig({ ...config, 'max-backups': parseInt(e.target.value) || 0 })
+                onChange({ maxBackups: String(parseInt(e.target.value) || 0) })
               }
               placeholder="0 = 无限制"
               disabled={disabled}
@@ -173,7 +126,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
             <label>启用本地存储</label>
             <ToggleSwitch
               checked={config.storage === 'local'}
-              onChange={(checked) => setConfig({ ...config, storage: checked ? 'local' : '' })}
+              onChange={(checked) => onChange({ storage: checked ? 'local' : '' })}
               disabled={disabled}
             />
           </div>
@@ -181,8 +134,8 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
             <div className={styles.row}>
               <label>本地目录</label>
               <Input
-                value={config['local-dir']}
-                onChange={(e) => setConfig({ ...config, 'local-dir': e.target.value })}
+                value={config.localDir}
+                onChange={(e) => onChange({ localDir: e.target.value })}
                 placeholder="./backups"
                 disabled={disabled}
               />
@@ -203,7 +156,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
             <label>启用 S3 存储</label>
             <ToggleSwitch
               checked={config.storage === 's3'}
-              onChange={(checked) => setConfig({ ...config, storage: checked ? 's3' : '' })}
+              onChange={(checked) => onChange({ storage: checked ? 's3' : '' })}
               disabled={disabled}
             />
           </div>
@@ -214,7 +167,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
                 <Input
                   value={config.s3.endpoint}
                   onChange={(e) =>
-                    setConfig({ ...config, s3: { ...config.s3, endpoint: e.target.value } })
+                    onChange({ s3: { ...config.s3, endpoint: e.target.value } })
                   }
                   placeholder="s3.amazonaws.com"
                   disabled={disabled}
@@ -225,7 +178,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
                 <Input
                   value={config.s3.region}
                   onChange={(e) =>
-                    setConfig({ ...config, s3: { ...config.s3, region: e.target.value } })
+                    onChange({ s3: { ...config.s3, region: e.target.value } })
                   }
                   placeholder="us-east-1"
                   disabled={disabled}
@@ -236,7 +189,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
                 <Input
                   value={config.s3.bucket}
                   onChange={(e) =>
-                    setConfig({ ...config, s3: { ...config.s3, bucket: e.target.value } })
+                    onChange({ s3: { ...config.s3, bucket: e.target.value } })
                   }
                   placeholder="my-backups"
                   disabled={disabled}
@@ -247,7 +200,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
                 <Input
                   value={config.s3.path}
                   onChange={(e) =>
-                    setConfig({ ...config, s3: { ...config.s3, path: e.target.value } })
+                    onChange({ s3: { ...config.s3, path: e.target.value } })
                   }
                   placeholder="backups/"
                   disabled={disabled}
@@ -256,9 +209,9 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
               <div className={styles.row}>
                 <label>访问密钥</label>
                 <Input
-                  value={config.s3['access-key']}
+                  value={config.s3.accessKey}
                   onChange={(e) =>
-                    setConfig({ ...config, s3: { ...config.s3, 'access-key': e.target.value } })
+                    onChange({ s3: { ...config.s3, accessKey: e.target.value } })
                   }
                   placeholder="Access Key ID"
                   disabled={disabled}
@@ -268,9 +221,9 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
                 <label>密钥</label>
                 <Input
                   type="password"
-                  value={config.s3['secret-key']}
+                  value={config.s3.secretKey}
                   onChange={(e) =>
-                    setConfig({ ...config, s3: { ...config.s3, 'secret-key': e.target.value } })
+                    onChange({ s3: { ...config.s3, secretKey: e.target.value } })
                   }
                   placeholder="Secret Access Key"
                   disabled={disabled}
@@ -279,9 +232,9 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
               <div className={styles.row}>
                 <label>使用 SSL</label>
                 <ToggleSwitch
-                  checked={config.s3['use-ssl']}
+                  checked={config.s3.useSSL}
                   onChange={(checked) =>
-                    setConfig({ ...config, s3: { ...config.s3, 'use-ssl': checked } })
+                    onChange({ s3: { ...config.s3, useSSL: checked } })
                   }
                   disabled={disabled}
                 />
@@ -305,7 +258,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
             <label>启用 WebDAV 存储</label>
             <ToggleSwitch
               checked={config.storage === 'webdav'}
-              onChange={(checked) => setConfig({ ...config, storage: checked ? 'webdav' : '' })}
+              onChange={(checked) => onChange({ storage: checked ? 'webdav' : '' })}
               disabled={disabled}
             />
           </div>
@@ -316,7 +269,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
                 <Input
                   value={config.webdav.url}
                   onChange={(e) =>
-                    setConfig({ ...config, webdav: { ...config.webdav, url: e.target.value } })
+                    onChange({ webdav: { ...config.webdav, url: e.target.value } })
                   }
                   placeholder="https://webdav.example.com"
                   disabled={disabled}
@@ -327,7 +280,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
                 <Input
                   value={config.webdav.username}
                   onChange={(e) =>
-                    setConfig({ ...config, webdav: { ...config.webdav, username: e.target.value } })
+                    onChange({ webdav: { ...config.webdav, username: e.target.value } })
                   }
                   placeholder="Username"
                   disabled={disabled}
@@ -339,7 +292,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
                   type="password"
                   value={config.webdav.password}
                   onChange={(e) =>
-                    setConfig({ ...config, webdav: { ...config.webdav, password: e.target.value } })
+                    onChange({ webdav: { ...config.webdav, password: e.target.value } })
                   }
                   placeholder="Password"
                   disabled={disabled}
@@ -350,7 +303,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
                 <Input
                   value={config.webdav.path}
                   onChange={(e) =>
-                    setConfig({ ...config, webdav: { ...config.webdav, path: e.target.value } })
+                    onChange({ webdav: { ...config.webdav, path: e.target.value } })
                   }
                   placeholder="backups/"
                   disabled={disabled}
