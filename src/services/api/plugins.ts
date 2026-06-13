@@ -3,6 +3,7 @@ import { isRecord } from '@/utils/helpers';
 import type {
   PluginConfigField,
   PluginConfigObject,
+  PluginDeleteResult,
   PluginListEntry,
   PluginListResponse,
   PluginMetadata,
@@ -118,6 +119,18 @@ const normalizePluginList = (value: unknown): PluginListResponse => {
 const normalizePluginConfig = (value: unknown): PluginConfigObject =>
   isRecord(value) ? { ...value } : {};
 
+const normalizeDeleteResult = (value: unknown): PluginDeleteResult => {
+  const source = isRecord(value) ? value : {};
+  return {
+    status: asString(source.status).trim(),
+    id: asString(source.id).trim(),
+    path: asString(source.path).trim(),
+    fileDeleted: asBoolean(source.file_deleted),
+    configuredRemoved: asBoolean(source.configured_removed),
+    restartRequired: asBoolean(source.restart_required),
+  };
+};
+
 const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
   if (!isRecord(value)) return null;
   const id = asString(value.id).trim();
@@ -182,6 +195,11 @@ export const pluginsApi = {
 
   updateEnabled: (id: string, enabled: boolean) =>
     apiClient.patch(`/plugins/${encodeURIComponent(id)}/enabled`, { enabled }),
+
+  async deletePlugin(id: string): Promise<PluginDeleteResult> {
+    const data = await apiClient.delete(`/plugins/${encodeURIComponent(id)}`);
+    return normalizeDeleteResult(data);
+  },
 
   async getConfig(id: string): Promise<PluginConfigObject> {
     const data = await apiClient.get(`/plugins/${encodeURIComponent(id)}/config`);

@@ -64,6 +64,12 @@ function PluginCardLogo({ src }: { src: string }) {
 const hasStatus = (error: unknown, status: number) =>
   isRecord(error) && error.status === status;
 
+const hasRestartRequired = (value: unknown) =>
+  isRecord(value) && value.restart_required === true;
+
+const hasRestartRequiredError = (error: unknown) =>
+  isRecord(error) && (hasRestartRequired(error.details) || hasRestartRequired(error.data));
+
 const normalizeFieldType = (field: PluginConfigField) => field.type.trim().toLowerCase();
 
 const stringifyArrayItem = (value: unknown): string => {
@@ -235,6 +241,7 @@ export function PluginsPage() {
   const apiBase = useAuthStore((state) => state.apiBase);
   const clearConfigCache = useConfigStore((state) => state.clearCache);
   const showNotification = useNotificationStore((state) => state.showNotification);
+  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
 
   const [data, setData] = useState<PluginListResponse | null>(null);
   const [filter, setFilter] = useState('');
@@ -244,6 +251,7 @@ export function PluginsPage() {
   const [editingConfig, setEditingConfig] = useState<PluginConfigObject>({});
   const [draft, setDraft] = useState<PluginConfigDraft | null>(null);
   const [mutatingID, setMutatingID] = useState('');
+  const [deletingID, setDeletingID] = useState('');
   const [openingConfigID, setOpeningConfigID] = useState('');
   const configRequestSeq = useRef(0);
 
@@ -326,7 +334,7 @@ export function PluginsPage() {
   );
 
   const openConfigSheet = async (plugin: PluginListEntry) => {
-    if (openingConfigID || mutatingID) return;
+    if (openingConfigID || mutatingID || deletingID) return;
 
     const requestSeq = configRequestSeq.current + 1;
     configRequestSeq.current = requestSeq;
@@ -364,7 +372,7 @@ export function PluginsPage() {
   };
 
   const closeConfigSheet = () => {
-    if (mutatingID || openingConfigID) return;
+    if (mutatingID || openingConfigID || deletingID) return;
     setEditingPlugin(null);
     setEditingConfig({});
     setDraft(null);
@@ -375,6 +383,7 @@ export function PluginsPage() {
   };
 
   const handleTogglePlugin = async (plugin: PluginListEntry, enabled: boolean) => {
+    if (deletingID) return;
     setMutatingID(plugin.id);
     try {
       await pluginsApi.updateEnabled(plugin.id, enabled);
@@ -395,8 +404,51 @@ export function PluginsPage() {
     }
   };
 
+  const handleDeletePlugin = (plugin: PluginListEntry) => {
+    if (!connected || mutatingID || openingConfigID || deletingID) return;
+
+    const name = getPluginTitle(plugin);
+    showConfirmation({
+      title: t('plugin_management.delete_confirm_title'),
+      message: t('plugin_management.delete_confirm_message', { name, id: plugin.id }),
+      variant: 'danger',
+      confirmText: t('plugin_management.delete_plugin'),
+      onConfirm: async () => {
+        setDeletingID(plugin.id);
+        setMutatingID(plugin.id);
+        try {
+          const result = await pluginsApi.deletePlugin(plugin.id);
+          clearConfigCache();
+          if (editingPlugin?.id === plugin.id) {
+            setEditingPlugin(null);
+            setEditingConfig({});
+            setDraft(null);
+          }
+          await loadPluginsAfterMutation(false);
+          notifyPluginResourcesChanged();
+          showNotification(t('plugin_management.delete_success'), 'success');
+          if (result.restartRequired) {
+            showNotification(t('plugin_management.delete_restart_required'), 'warning');
+          }
+        } catch (err: unknown) {
+          const restartRequired = hasRestartRequiredError(err);
+          const fallback = restartRequired
+            ? t('plugin_management.delete_restart_required')
+            : t('plugin_management.delete_failed');
+          showNotification(
+            `${t('plugin_management.delete_failed')}: ${getErrorMessage(err, fallback)}`,
+            restartRequired ? 'warning' : 'error'
+          );
+        } finally {
+          setDeletingID('');
+          setMutatingID('');
+        }
+      },
+    });
+  };
+
   const handleSaveConfig = async () => {
-    if (!editingPlugin || !draft || openingConfigID || mutatingID) return;
+    if (!editingPlugin || !draft || openingConfigID || mutatingID || deletingID) return;
     const { nextConfig, errors } = buildConfigPayload(
       draft,
       editingPlugin.configFields,
@@ -707,7 +759,7 @@ export function PluginsPage() {
           variant="secondary"
           size="sm"
           onClick={loadPlugins}
-          disabled={!connected || loading || Boolean(mutatingID)}
+          disabled={!connected || loading || Boolean(mutatingID || deletingID)}
           loading={loading}
         >
           <IconRefreshCw size={16} />
@@ -749,7 +801,8 @@ export function PluginsPage() {
             const logo = resolvePluginAsset(plugin.logo || plugin.metadata?.logo || '');
             const github = plugin.metadata?.githubRepository.trim();
             const openingConfig = openingConfigID === plugin.id;
-            const actionBusy = Boolean(mutatingID || openingConfigID);
+            const deletingPlugin = deletingID === plugin.id;
+            const actionBusy = Boolean(mutatingID || openingConfigID || deletingID);
             const version = plugin.metadata?.version;
             const author = plugin.metadata?.author;
 
@@ -835,6 +888,18 @@ export function PluginsPage() {
                   >
                     <IconSettings size={14} />
                     {t('plugin_management.edit_config')}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDeletePlugin(plugin)}
+                    disabled={!connected || actionBusy}
+                    loading={deletingPlugin}
+                    title={t('plugin_management.delete_plugin')}
+                    aria-label={t('plugin_management.delete_plugin')}
+                  >
+                    <IconTrash2 size={14} />
+                    {t('plugin_management.delete_plugin')}
                   </Button>
                   {github ? (
                     <a

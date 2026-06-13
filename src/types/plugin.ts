@@ -51,6 +51,15 @@ export interface PluginListResponse {
   plugins: PluginListEntry[];
 }
 
+export interface PluginDeleteResult {
+  status: string;
+  id: string;
+  path: string;
+  fileDeleted: boolean;
+  configuredRemoved: boolean;
+  restartRequired: boolean;
+}
+
 export interface PluginStoreEntry {
   id: string;
   name: string;
