@@ -16,6 +16,8 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   useEffect(() => {
     loadConfig();
@@ -61,6 +63,50 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
       alert(error?.response?.data?.message || error?.message || '连接失败');
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleDownloadBackup = async () => {
+    setDownloading(true);
+    try {
+      const blob = await backupApi.downloadNewBackup();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup-${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      alert('备份已下载');
+    } catch (error) {
+      alert('下载备份失败');
+      console.error('Failed to download backup:', error);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleRestoreFromFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm(`确定要使用文件 "${file.name}" 恢复配置吗？当前配置将被覆盖。`)) {
+      event.target.value = '';
+      return;
+    }
+
+    setRestoring(true);
+    try {
+      // TODO: 实现文件上传恢复 API
+      // await backupApi.restoreFromFile(file);
+      alert('恢复功能需要后端 API 支持：POST /v0/management/backup/restore');
+      event.target.value = '';
+    } catch (error) {
+      alert('恢复配置失败');
+      console.error('Failed to restore from file:', error);
+    } finally {
+      setRestoring(false);
     }
   };
 
@@ -165,6 +211,9 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
         <div className={styles.actions}>
           <Button onClick={handleSave} disabled={saving || disabled}>
             {saving ? '保存中...' : '保存配置'}
+          </Button>
+          <Button onClick={handleDownloadBackup} disabled={downloading || disabled} variant="secondary">
+            {downloading ? '下载中...' : '下载备份'}
           </Button>
         </div>
       </Card>
@@ -344,6 +393,30 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
               {testing ? '测试中...' : '测试连接'}
             </Button>
           )}
+        </div>
+      </Card>
+
+      {/* 恢复配置 */}
+      <Card title="恢复配置" className={styles.card}>
+        <div className={styles.formGroup}>
+          <div className={styles.row}>
+            <label>从文件恢复</label>
+            <div className={styles.fileInput}>
+              <input
+                type="file"
+                accept=".zip,.tar.gz"
+                onChange={handleRestoreFromFile}
+                disabled={disabled || restoring}
+                id="restore-file-input"
+              />
+              <label htmlFor="restore-file-input" className={styles.fileLabel}>
+                {restoring ? '恢复中...' : '选择备份文件'}
+              </label>
+            </div>
+          </div>
+          <div className={styles.hint}>
+            支持从本地上传的备份文件恢复配置。上传 .zip 或 .tar.gz 格式的备份文件。
+          </div>
         </div>
       </Card>
     </div>

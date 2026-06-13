@@ -100,3 +100,57 @@
   padding: 16px;
   border-top: 1px solid var(--border-color);
 }
+
+.fileInput {
+  flex: 1;
+  max-width: 400px;
+  position: relative;
+
+  input[type='file'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .fileLabel {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: var(--button-secondary-bg);
+    color: var(--button-secondary-text);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+
+    &:hover {
+      background-color: var(--button-secondary-hover-bg);
+      border-color: var(--primary-color);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  input:disabled + .fileLabel {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.hint {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
