@@ -13,7 +13,6 @@ interface BackupConfigSectionProps {
 export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
   const [config, setConfig] = useState<BackupConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -37,20 +36,6 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!config) return;
-    setSaving(true);
-    try {
-      await backupApi.updateConfig(config);
-      alert('配置已保存');
-    } catch (error) {
-      alert('保存配置失败');
-      console.error('Failed to save backup config:', error);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -91,19 +76,20 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!confirm(`确定要使用文件 "${file.name}" 恢复配置吗？当前配置将被覆盖。`)) {
+    if (!confirm(`确定要使用文件 "${file.name}" 恢复配置吗？当前配置将被覆盖。\n\n恢复后需要重启服务器才能生效。`)) {
       event.target.value = '';
       return;
     }
 
     setRestoring(true);
     try {
-      // TODO: 实现文件上传恢复 API
-      // await backupApi.restoreFromFile(file);
-      alert('恢复功能需要后端 API 支持：POST /v0/management/backup/restore');
+      const result = await backupApi.restoreFromFile(file);
+      alert(result.message || '恢复成功！请重启服务器以应用更改。');
       event.target.value = '';
-    } catch (error) {
-      alert('恢复配置失败');
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || '恢复配置失败';
+      alert(message);
+      event.target.value = '';
       console.error('Failed to restore from file:', error);
     } finally {
       setRestoring(false);
@@ -178,11 +164,6 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
             />
           </div>
         </div>
-        <div className={styles.actions}>
-          <Button onClick={handleSave} disabled={saving || disabled}>
-            {saving ? '保存中...' : '保存配置'}
-          </Button>
-        </div>
       </Card>
 
       {/* 本地存储 */}
@@ -209,10 +190,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
           )}
         </div>
         <div className={styles.actions}>
-          <Button onClick={handleSave} disabled={saving || disabled}>
-            {saving ? '保存中...' : '保存配置'}
-          </Button>
-          <Button onClick={handleDownloadBackup} disabled={downloading || disabled} variant="secondary">
+          <Button onClick={handleDownloadBackup} disabled={downloading || disabled}>
             {downloading ? '下载中...' : '下载备份'}
           </Button>
         </div>
@@ -312,11 +290,8 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
           )}
         </div>
         <div className={styles.actions}>
-          <Button onClick={handleSave} disabled={saving || disabled}>
-            {saving ? '保存中...' : '保存配置'}
-          </Button>
           {config.storage === 's3' && (
-            <Button onClick={handleTest} disabled={testing || disabled} variant="secondary">
+            <Button onClick={handleTest} disabled={testing || disabled}>
               {testing ? '测试中...' : '测试连接'}
             </Button>
           )}
@@ -385,11 +360,8 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
           )}
         </div>
         <div className={styles.actions}>
-          <Button onClick={handleSave} disabled={saving || disabled}>
-            {saving ? '保存中...' : '保存配置'}
-          </Button>
           {config.storage === 'webdav' && (
-            <Button onClick={handleTest} disabled={testing || disabled} variant="secondary">
+            <Button onClick={handleTest} disabled={testing || disabled}>
               {testing ? '测试中...' : '测试连接'}
             </Button>
           )}
@@ -404,7 +376,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
             <div className={styles.fileInput}>
               <input
                 type="file"
-                accept=".zip,.tar.gz"
+                accept=".zip"
                 onChange={handleRestoreFromFile}
                 disabled={disabled || restoring}
                 id="restore-file-input"
@@ -415,7 +387,7 @@ export function BackupConfigSection({ disabled }: BackupConfigSectionProps) {
             </div>
           </div>
           <div className={styles.hint}>
-            支持从本地上传的备份文件恢复配置。上传 .zip 或 .tar.gz 格式的备份文件。
+            支持从本地上传的备份文件恢复配置。上传 .zip 格式的备份文件，恢复后需要重启服务器。
           </div>
         </div>
       </Card>

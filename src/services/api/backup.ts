@@ -99,4 +99,17 @@ export const backupApi = {
   testConnection: async (): Promise<{ message: string }> => {
     return await apiClient.post<{ message: string }>('/backup/test-connection');
   },
+
+  /**
+   * Restore configuration from uploaded backup file
+   */
+  restoreFromFile: async (file: File): Promise<{ message: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return await apiClient.post<{ message: string }>('/backup/restore', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
