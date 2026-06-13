@@ -3,7 +3,7 @@ import { apiClient } from './client';
 export interface BackupConfig {
   enabled: boolean;
   schedule: string;
-  storage: 'local' | 's3' | 'webdav';
+  storage: 'local' | 's3' | 'webdav' | '';
   'local-dir': string;
   'max-backups': number;
   s3: {

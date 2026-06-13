@@ -1,0 +1,69 @@
+.backupConfig {
+  padding: 16px 0;
+}
+
+.card {
+  margin-bottom: 20px;
+}
+
+.loading {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.formGroup {
+  padding: 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+
+  label {
+    flex: 0 0 160px;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  input,
+  .select {
+    flex: 1;
+    max-width: 400px;
+  }
+}
+
+.select {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: var(--primary-color);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+}
