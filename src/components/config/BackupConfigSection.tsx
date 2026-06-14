@@ -137,10 +137,11 @@ export function BackupConfigSection({ disabled, config, onChange }: BackupConfig
             <Input
               type="number"
               min="0"
-              value={config.maxBackups.toString()}
-              onChange={(e) =>
-                onChange({ maxBackups: String(parseInt(e.target.value) || 0) })
-              }
+              value={config.maxBackups}
+              onChange={(e) => {
+                const val = e.target.value;
+                onChange({ maxBackups: val === '' ? '' : String(parseInt(val) || 0) });
+              }}
               placeholder="0 = 无限制"
               disabled={disabled}
             />
