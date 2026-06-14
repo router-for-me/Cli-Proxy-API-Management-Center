@@ -441,7 +441,7 @@
     "additional_secondary_window": "{{name}} 週限額",
     "additional_team_secondary_window": "{{name}} 月度限額",
     "plan_label": "方案",
-    "expires_label": "到期時間",
+    "expires_label": "續期時間",
     "reset_credits_label": "主動重置次數",
     "reset_button": "重置配額",
     "reset_confirm_title": "重置 Codex 配額",

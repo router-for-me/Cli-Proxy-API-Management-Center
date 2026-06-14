@@ -441,7 +441,7 @@
     "additional_secondary_window": "{{name}} weekly limit",
     "additional_team_secondary_window": "{{name}} monthly limit",
     "plan_label": "Plan",
-    "expires_label": "Expires",
+    "expires_label": "Renewal time",
     "reset_credits_label": "Manual resets",
     "reset_button": "Reset quota",
     "reset_confirm_title": "Reset Codex quota",
