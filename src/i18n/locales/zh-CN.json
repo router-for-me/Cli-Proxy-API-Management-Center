@@ -120,7 +120,8 @@
     "plugin_store": "插件商店",
     "config_management": "配置面板",
     "logs": "日志查看",
-    "system_info": "中心信息"
+    "system_info": "中心信息",
+    "backup": "备份管理"
   },
   "nav_groups": {
     "operate": "运行",
@@ -139,7 +140,8 @@
     "plugin_store": "发现并安装插件",
     "logs": "请求追踪与排查",
     "config_management": "网关基础配置",
-    "system_info": "运行与诊断信息"
+    "system_info": "运行与诊断信息",
+    "backup": "备份与恢复"
   },
   "dashboard": {
     "title": "仪表盘",
@@ -1573,6 +1575,59 @@
     },
     "modelCatalog": {
       "notLoaded": "未加载"
+    },
+    "backup": {
+      "title": "备份管理",
+      "description": "配置自动备份并管理备份文件",
+      "configuration": "备份配置",
+      "backups_list": "备份列表",
+      "enabled": "启用自动备份",
+      "storage_type": "存储类型",
+      "storage_local": "本地存储",
+      "storage_s3": "S3 存储",
+      "storage_webdav": "WebDAV 存储",
+      "schedule": "备份计划",
+      "schedule_manual": "手动备份",
+      "schedule_hourly": "每小时",
+      "schedule_daily": "每天",
+      "schedule_weekly": "每周",
+      "schedule_monthly": "每月",
+      "max_backups": "最大备份数",
+      "local_dir": "本地目录",
+      "s3_config": "S3 配置",
+      "s3_endpoint": "端点地址",
+      "s3_region": "区域",
+      "s3_bucket": "存储桶",
+      "s3_path": "路径前缀",
+      "s3_access_key": "访问密钥",
+      "s3_secret_key": "密钥",
+      "s3_use_ssl": "使用 SSL",
+      "webdav_config": "WebDAV 配置",
+      "webdav_url": "服务器地址",
+      "webdav_username": "用户名",
+      "webdav_password": "密码",
+      "webdav_path": "远程路径",
+      "test_connection": "测试连接",
+      "testing": "测试中...",
+      "connection_success": "连接成功",
+      "connection_error": "连接失败",
+      "create_backup": "创建备份",
+      "creating": "创建中...",
+      "backup_created": "备份创建成功",
+      "backup_downloaded": "备份下载成功",
+      "create_backup_error": "创建备份失败",
+      "download_backup_error": "下载备份失败",
+      "delete_backup_title": "删除备份",
+      "delete_backup_message": "确定要删除备份 {{name}} 吗？此操作不可撤销。",
+      "backup_deleted": "备份删除成功",
+      "delete_backup_error": "删除备份失败",
+      "no_backups": "暂无备份",
+      "backups_refreshed": "列表已刷新",
+      "config_saved": "配置已保存",
+      "save_config_error": "保存配置失败",
+      "load_config_error": "加载配置失败",
+      "load_backups_error": "加载备份列表失败",
+      "config_not_available": "配置不可用"
     }
   }
 }

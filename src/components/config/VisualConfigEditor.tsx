@@ -23,6 +23,7 @@ import {
   type IconProps,
 } from '@/components/ui/icons';
 import { ConfigSection } from '@/components/config/ConfigSection';
+import { BackupConfigSection } from '@/components/config/BackupConfigSection';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type {
   PayloadFilterRule,
@@ -40,7 +41,7 @@ import {
 } from './VisualConfigEditorBlocks';
 import styles from './VisualConfigEditor.module.scss';
 
-type VisualSectionId = 'server' | 'auth' | 'system' | 'quota' | 'streaming' | 'payload';
+type VisualSectionId = 'server' | 'auth' | 'system' | 'quota' | 'streaming' | 'payload' | 'backup';
 
 type VisualSection = {
   id: VisualSectionId;
@@ -311,6 +312,12 @@ export function VisualConfigEditor({
         title: t('config_management.visual.sections.payload.title'),
         icon: IconCode,
         errorCount: hasPayloadValidationErrors ? 1 : 0,
+      },
+      {
+        id: 'backup',
+        title: '备份配置',
+        icon: IconSettings,
+        errorCount: 0,
       },
     ],
     [countErrors, hasPayloadValidationErrors, t]
@@ -1231,6 +1238,23 @@ export function VisualConfigEditor({
                 />
               </SectionSubsection>
             </SectionStack>
+          </ConfigSection>
+
+          <ConfigSection
+            id="backup"
+            ref={(node) => {
+              sectionRefs.current.backup = node;
+            }}
+            indexLabel="07"
+            icon={<IconSettings size={16} />}
+            title="备份配置"
+            description="配置自动备份和存储设置"
+          >
+            <BackupConfigSection
+              disabled={disabled}
+              config={values.backup}
+              onChange={(backup) => onChange({ backup: { ...values.backup, ...backup } })}
+            />
           </ConfigSection>
         </div>
       </div>
