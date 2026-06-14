@@ -1173,6 +1173,7 @@
     "description": "浏览插件注册表,为当前后端安装或更新插件。",
     "description_show_more": "展开描述",
     "description_show_less": "收起描述",
+    "source_name": "来源：{{source}}",
     "refresh": "刷新",
     "retry": "重试",
     "load_failed": "插件商店加载失败",

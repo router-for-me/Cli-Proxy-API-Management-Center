@@ -11,6 +11,7 @@ import type {
   PluginStoreEntry,
   PluginStoreInstallResult,
   PluginStoreResponse,
+  PluginStoreSource,
 } from '@/types';
 
 const asString = (value: unknown): string => {
@@ -135,12 +136,18 @@ const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
   if (!isRecord(value)) return null;
   const id = asString(value.id).trim();
   if (!id) return null;
+  const sourceId = asString(value.source_id).trim();
+  const storeId = asString(value.store_id).trim() || (sourceId ? `${sourceId}/${id}` : id);
 
   const tags = Array.isArray(value.tags)
     ? value.tags.map((item) => asString(item).trim()).filter(Boolean)
     : [];
 
   return {
+    storeId,
+    sourceId,
+    sourceName: asString(value.source_name).trim(),
+    sourceUrl: asString(value.source_url).trim(),
     id,
     name: asString(value.name).trim(),
     description: asString(value.description).trim(),
@@ -162,15 +169,31 @@ const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
   };
 };
 
+const normalizeStoreSource = (value: unknown): PluginStoreSource | null => {
+  if (!isRecord(value)) return null;
+  const id = asString(value.id).trim();
+  const url = asString(value.url).trim();
+  if (!id && !url) return null;
+  return {
+    id,
+    name: asString(value.name).trim(),
+    url,
+  };
+};
+
 const normalizeStoreList = (value: unknown): PluginStoreResponse => {
   const source = isRecord(value) ? value : {};
   const plugins = Array.isArray(source.plugins)
     ? source.plugins.map((item) => normalizeStoreEntry(item)).filter(Boolean) as PluginStoreEntry[]
     : [];
+  const sources = Array.isArray(source.sources)
+    ? source.sources.map((item) => normalizeStoreSource(item)).filter(Boolean) as PluginStoreSource[]
+    : [];
 
   return {
     pluginsEnabled: asBoolean(source.plugins_enabled),
     pluginsDir: asString(source.plugins_dir).trim() || 'plugins',
+    sources,
     plugins,
   };
 };
@@ -179,6 +202,9 @@ const normalizeInstallResult = (value: unknown): PluginStoreInstallResult => {
   const source = isRecord(value) ? value : {};
   return {
     status: asString(source.status).trim(),
+    sourceId: asString(source.source_id).trim(),
+    sourceName: asString(source.source_name).trim(),
+    sourceUrl: asString(source.source_url).trim(),
     id: asString(source.id).trim(),
     version: asString(source.version).trim(),
     path: asString(source.path).trim(),
@@ -219,8 +245,10 @@ export const pluginStoreApi = {
     return normalizeStoreList(data);
   },
 
-  async install(id: string): Promise<PluginStoreInstallResult> {
-    const data = await apiClient.post(`/plugin-store/${encodeURIComponent(id)}/install`);
+  async install(id: string, sourceId?: string): Promise<PluginStoreInstallResult> {
+    const path = `/plugin-store/${encodeURIComponent(id)}/install`;
+    const query = sourceId ? `?${new URLSearchParams({ source: sourceId }).toString()}` : '';
+    const data = await apiClient.post(`${path}${query}`);
     return normalizeInstallResult(data);
   },
 };

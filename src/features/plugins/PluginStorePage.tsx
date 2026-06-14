@@ -40,6 +40,9 @@ const getErrorDetailMessage = (error: unknown): string => {
 const DESCRIPTION_COLLAPSED_LINES = 2;
 
 const getStoreEntryTitle = (entry: PluginStoreEntry) => entry.name || entry.id;
+const getStoreEntryKey = (entry: PluginStoreEntry) => entry.storeId || entry.id;
+const getDescriptionDOMID = (entryKey: string) =>
+  `plugin-store-desc-${encodeURIComponent(entryKey)}`;
 
 function StoreCardLogo({ src }: { src: string }) {
   const [failed, setFailed] = useState(false);
@@ -66,10 +69,10 @@ export function PluginStorePage() {
   const [error, setError] = useState<StoreLoadError | null>(null);
   const [filter, setFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<StoreStatusFilter>('all');
-  const [installingID, setInstallingID] = useState('');
-  const [restartRequiredIDs, setRestartRequiredIDs] = useState<string[]>([]);
-  const [expandedDescriptionIDs, setExpandedDescriptionIDs] = useState<string[]>([]);
-  const [overflowingDescriptionIDs, setOverflowingDescriptionIDs] = useState<string[]>([]);
+  const [installingKey, setInstallingKey] = useState('');
+  const [restartRequiredKeys, setRestartRequiredKeys] = useState<string[]>([]);
+  const [expandedDescriptionKeys, setExpandedDescriptionKeys] = useState<string[]>([]);
+  const [overflowingDescriptionKeys, setOverflowingDescriptionKeys] = useState<string[]>([]);
   const descriptionRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
 
   const connected = connectionStatus === 'connected';
@@ -145,6 +148,8 @@ export function PluginStorePage() {
         plugin.description,
         plugin.author,
         plugin.repository,
+        plugin.sourceName,
+        plugin.sourceUrl,
         plugin.license,
         ...plugin.tags,
       ]
@@ -166,20 +171,20 @@ export function PluginStorePage() {
     { key: 'updates', label: t('plugin_store.filter_updates'), count: stats.updates },
   ];
 
-  const restartNames = restartRequiredIDs.map((id) => {
-    const entry = data?.plugins.find((plugin) => plugin.id === id);
-    return entry ? getStoreEntryTitle(entry) : id;
+  const restartNames = restartRequiredKeys.map((key) => {
+    const entry = data?.plugins.find((plugin) => getStoreEntryKey(plugin) === key);
+    return entry ? getStoreEntryTitle(entry) : key;
   });
 
   const hasActiveFilters = Boolean(filter.trim()) || statusFilter !== 'all';
 
-  const expandedDescriptionIDSet = useMemo(
-    () => new Set(expandedDescriptionIDs),
-    [expandedDescriptionIDs]
+  const expandedDescriptionKeySet = useMemo(
+    () => new Set(expandedDescriptionKeys),
+    [expandedDescriptionKeys]
   );
-  const overflowingDescriptionIDSet = useMemo(
-    () => new Set(overflowingDescriptionIDs),
-    [overflowingDescriptionIDs]
+  const overflowingDescriptionKeySet = useMemo(
+    () => new Set(overflowingDescriptionKeys),
+    [overflowingDescriptionKeys]
   );
 
   const registerDescriptionRef = useCallback((id: string, node: HTMLParagraphElement | null) => {
@@ -203,7 +208,7 @@ export function PluginStorePage() {
       })
       .map(([id]) => id);
 
-    setOverflowingDescriptionIDs((current) => {
+    setOverflowingDescriptionKeys((current) => {
       if (current.length === nextIDs.length && current.every((id) => nextIDs.includes(id))) {
         return current;
       }
@@ -230,12 +235,13 @@ export function PluginStorePage() {
   }, [measureDescriptionOverflow]);
 
   const toggleDescription = useCallback((id: string) => {
-    setExpandedDescriptionIDs((current) =>
+    setExpandedDescriptionKeys((current) =>
       current.includes(id) ? current.filter((currentID) => currentID !== id) : [...current, id]
     );
   }, []);
 
   const handleInstall = (entry: PluginStoreEntry) => {
+    const entryKey = getStoreEntryKey(entry);
     const isUpdate = entry.installed && entry.updateAvailable;
     const title = getStoreEntryTitle(entry);
     const target = entry.version ? `${title} v${entry.version}` : title;
@@ -251,16 +257,16 @@ export function PluginStorePage() {
       confirmText: isUpdate ? t('plugin_store.update') : t('plugin_store.install'),
       variant: 'primary',
       onConfirm: async () => {
-        setInstallingID(entry.id);
+        setInstallingKey(entryKey);
         try {
-          const result = await pluginStoreApi.install(entry.id);
+          const result = await pluginStoreApi.install(entry.id, entry.sourceId || undefined);
           showNotification(
             isUpdate ? t('plugin_store.update_success') : t('plugin_store.install_success'),
             'success'
           );
           if (result.restartRequired) {
-            setRestartRequiredIDs((current) =>
-              current.includes(entry.id) ? current : [...current, entry.id]
+            setRestartRequiredKeys((current) =>
+              current.includes(entryKey) ? current : [...current, entryKey]
             );
             showNotification(t('plugin_store.restart_required_notice'), 'warning');
           }
@@ -270,13 +276,14 @@ export function PluginStorePage() {
           showNotification(`${t(failedKey)}: ${getErrorMessage(err, t(failedKey))}`, 'error');
           throw err;
         } finally {
-          setInstallingID('');
+          setInstallingKey('');
         }
       },
     });
   };
 
   const renderCard = (entry: PluginStoreEntry) => {
+    const entryKey = getStoreEntryKey(entry);
     const logo = resolvePluginAssetURL(entry.logo, apiBase);
     const repositoryURL = buildRepositoryURL(entry.repository);
     const homepageURL = /^https?:\/\//i.test(entry.homepage) ? entry.homepage : '';
@@ -289,13 +296,18 @@ export function PluginStorePage() {
           : entry.version
             ? `v${entry.version}`
             : '';
-    const metaItems = [versionText, entry.author, entry.license].filter(Boolean);
-    const isDescriptionExpanded = expandedDescriptionIDSet.has(entry.id);
-    const isDescriptionOverflowing = overflowingDescriptionIDSet.has(entry.id);
-    const descriptionID = `plugin-store-desc-${entry.id}`;
+    const sourceText = entry.sourceName
+      ? t('plugin_store.source_name', { source: entry.sourceName })
+      : '';
+    const metaItems = [versionText, sourceText, entry.author, entry.license].filter(Boolean);
+    const isInstalling = installingKey === entryKey;
+    const hasPendingInstall = Boolean(installingKey);
+    const isDescriptionExpanded = expandedDescriptionKeySet.has(entryKey);
+    const isDescriptionOverflowing = overflowingDescriptionKeySet.has(entryKey);
+    const descriptionID = getDescriptionDOMID(entryKey);
 
     return (
-      <article key={entry.id} className={styles.card}>
+      <article key={entryKey} className={styles.card}>
         <div className={styles.cardHeader}>
           <div className={styles.logoBox} aria-hidden="true">
             <StoreCardLogo src={logo} />
@@ -320,7 +332,7 @@ export function PluginStorePage() {
           <div className={styles.cardDescBlock}>
             <p
               id={descriptionID}
-              ref={(node) => registerDescriptionRef(entry.id, node)}
+              ref={(node) => registerDescriptionRef(entryKey, node)}
               className={`${styles.cardDesc} ${
                 isDescriptionExpanded ? styles.cardDescExpanded : ''
               }`}
@@ -331,7 +343,7 @@ export function PluginStorePage() {
               <button
                 type="button"
                 className={styles.cardDescToggle}
-                onClick={() => toggleDescription(entry.id)}
+                onClick={() => toggleDescription(entryKey)}
                 aria-expanded={isDescriptionExpanded}
                 aria-controls={descriptionID}
               >
@@ -348,7 +360,7 @@ export function PluginStorePage() {
         {metaItems.length > 0 ? (
           <div className={styles.cardMeta}>
             {metaItems.map((item, index) => (
-              <span key={`${entry.id}-meta-${index}`} className={styles.metaItem}>
+              <span key={`${entryKey}-meta-${index}`} className={styles.metaItem}>
                 {index > 0 ? <span className={styles.metaDot} aria-hidden="true" /> : null}
                 {index === 0 && versionText ? <strong>{item}</strong> : item}
               </span>
@@ -359,7 +371,7 @@ export function PluginStorePage() {
         {entry.tags.length > 0 ? (
           <div className={styles.tagRow}>
             {entry.tags.map((tag) => (
-              <span key={`${entry.id}-tag-${tag}`} className={styles.tag}>
+              <span key={`${entryKey}-tag-${tag}`} className={styles.tag}>
                 {tag}
               </span>
             ))}
@@ -372,7 +384,8 @@ export function PluginStorePage() {
               <Button
                 size="sm"
                 onClick={() => handleInstall(entry)}
-                disabled={!connected || Boolean(installingID)}
+                disabled={!connected || (hasPendingInstall && !isInstalling)}
+                loading={isInstalling}
               >
                 <IconDownload size={14} />
                 {t('plugin_store.install')}
@@ -383,7 +396,8 @@ export function PluginStorePage() {
                   <Button
                     size="sm"
                     onClick={() => handleInstall(entry)}
-                    disabled={!connected || Boolean(installingID)}
+                    disabled={!connected || (hasPendingInstall && !isInstalling)}
+                    loading={isInstalling}
                   >
                     <IconRefreshCw size={14} />
                     {t('plugin_store.update')}
