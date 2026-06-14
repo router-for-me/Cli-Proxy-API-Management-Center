@@ -341,7 +341,7 @@ const buildCodexQuotaWindows = (
       const seconds = getWindowSeconds(window);
       if (seconds === FIVE_HOUR_SECONDS && !fiveHourWindow) {
         fiveHourWindow = window;
-      } else if (seconds === WEEK_SECONDS && !weeklyWindow) {
+      } else if ((seconds === WEEK_SECONDS || isMonthlyWindow(window)) && !weeklyWindow) {
         weeklyWindow = window;
       }
     }
