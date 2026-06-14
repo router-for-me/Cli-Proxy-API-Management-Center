@@ -54,7 +54,7 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
     supportsHeaders: true,
     supportsExcludedModels: true,
     supportsPriority: true,
-    supportsTestModel: false,
+    supportsTestModel: true,
     supportsWebsockets: true,
     supportsCloak: false,
     supportsApiKeyEntries: false,

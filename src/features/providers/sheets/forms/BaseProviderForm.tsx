@@ -86,7 +86,10 @@ function buildInitialForm(
           : undefined,
       experimentalCchSigning: brand === 'claude' ? false : undefined,
       testModel:
-        brand === 'openaiCompatibility' || brand === 'claude' || brand === 'gemini'
+        brand === 'openaiCompatibility' ||
+        brand === 'codex' ||
+        brand === 'claude' ||
+        brand === 'gemini'
           ? ''
           : undefined,
       apiKeyEntries: brand === 'openaiCompatibility' ? [emptyApiKeyEntry()] : undefined,
@@ -173,7 +176,7 @@ function buildInitialForm(
       brand === 'claude'
         ? (cfg as ProviderKeyConfig).experimentalCchSigning === true
         : undefined,
-    testModel: brand === 'claude' || brand === 'gemini' ? '' : undefined,
+    testModel: brand === 'codex' || brand === 'claude' || brand === 'gemini' ? '' : undefined,
   };
 }
 
@@ -448,7 +451,9 @@ export function BaseProviderForm({
     brand === 'openaiCompatibility';
   const supportsOpenAIModelOptions = brand === 'openaiCompatibility';
   const singleConnectivity =
-    brand === 'gemini'
+    brand === 'codex'
+      ? { status: connectivity.codexStatus, run: connectivity.runCodex }
+      : brand === 'gemini'
       ? { status: connectivity.geminiStatus, run: connectivity.runGemini }
       : brand === 'claude'
         ? { status: connectivity.claudeStatus, run: connectivity.runClaude }
@@ -630,7 +635,7 @@ export function BaseProviderForm({
           <div className={styles.field}>
             <label className={styles.label} htmlFor={`${fid}-testModel`}>
               {t('providersPage.form.testModel')}
-              {brand === 'claude' || brand === 'gemini' ? (
+              {brand === 'codex' || brand === 'claude' || brand === 'gemini' ? (
                 <span className={styles.labelHint}>
                   {' '}
                   · {t('providersPage.form.testModelClaudeHint')}
