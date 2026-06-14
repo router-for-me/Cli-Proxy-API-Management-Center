@@ -1066,9 +1066,12 @@ export function useVisualConfig() {
         backup: {
           enabled: Boolean(backupConfig?.enabled),
           schedule: String(backupConfig?.schedule ?? ''),
-          storage: String(backupConfig?.storage ?? '') as 'local' | 's3' | 'webdav' | '',
+          storage: String(backupConfig?.storage ?? ''),
           localDir: String(backupConfig?.['local-dir'] ?? ''),
           maxBackups: String(backupConfig?.['max-backups'] ?? '0'),
+          enableLocal: String(backupConfig?.storage ?? '').includes('local'),
+          enableS3: String(backupConfig?.storage ?? '').includes('s3'),
+          enableWebDAV: String(backupConfig?.storage ?? '').includes('webdav'),
           s3: {
             endpoint: String(asRecord(backupConfig?.s3)?.endpoint ?? ''),
             region: String(asRecord(backupConfig?.s3)?.region ?? ''),
@@ -1410,12 +1413,19 @@ export function useVisualConfig() {
           ensureMapInDoc(doc, ['backup']);
           setBooleanInDoc(doc, ['backup', 'enabled'], values.backup.enabled);
           setStringInDoc(doc, ['backup', 'schedule'], values.backup.schedule);
-          setStringInDoc(doc, ['backup', 'storage'], values.backup.storage);
+
+          // Build storage string from enabled flags
+          const storageTypes: string[] = [];
+          if (values.backup.enableLocal) storageTypes.push('local');
+          if (values.backup.enableS3) storageTypes.push('s3');
+          if (values.backup.enableWebDAV) storageTypes.push('webdav');
+          setStringInDoc(doc, ['backup', 'storage'], storageTypes.join(','));
+
           setStringInDoc(doc, ['backup', 'local-dir'], values.backup.localDir);
           setIntFromStringInDoc(doc, ['backup', 'max-backups'], values.backup.maxBackups);
 
           // Write S3 config
-          if (values.backup.storage === 's3' || docHas(doc, ['backup', 's3'])) {
+          if (values.backup.enableS3 || docHas(doc, ['backup', 's3'])) {
             ensureMapInDoc(doc, ['backup', 's3']);
             setStringInDoc(doc, ['backup', 's3', 'endpoint'], values.backup.s3.endpoint);
             setStringInDoc(doc, ['backup', 's3', 'region'], values.backup.s3.region);
@@ -1428,7 +1438,7 @@ export function useVisualConfig() {
           }
 
           // Write WebDAV config
-          if (values.backup.storage === 'webdav' || docHas(doc, ['backup', 'webdav'])) {
+          if (values.backup.enableWebDAV || docHas(doc, ['backup', 'webdav'])) {
             ensureMapInDoc(doc, ['backup', 'webdav']);
             setStringInDoc(doc, ['backup', 'webdav', 'url'], values.backup.webdav.url);
             setStringInDoc(doc, ['backup', 'webdav', 'username'], values.backup.webdav.username);

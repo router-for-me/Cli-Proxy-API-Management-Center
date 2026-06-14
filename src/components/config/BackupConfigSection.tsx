@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { backupApi } from '@/services/api';
+import { useNotificationStore } from '@/stores';
 import type { BackupConfig } from '@/types/visualConfig';
 import styles from './BackupConfigSection.module.scss';
 
@@ -14,17 +15,21 @@ interface BackupConfigSectionProps {
 }
 
 export function BackupConfigSection({ disabled, config, onChange }: BackupConfigSectionProps) {
+  const showNotification = useNotificationStore((state) => state.showNotification);
+  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const [testing, setTesting] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const handleTest = async () => {
     setTesting(true);
     try {
       const result = await backupApi.testConnection();
-      alert(result.message || '连接成功');
+      showNotification(result.message || '连接成功', 'success');
     } catch (error: any) {
-      alert(error?.response?.data?.message || error?.message || '连接失败');
+      const message = error?.response?.data?.message || error?.message || '连接失败';
+      showNotification(message, 'error');
     } finally {
       setTesting(false);
     }
@@ -42,12 +47,26 @@ export function BackupConfigSection({ disabled, config, onChange }: BackupConfig
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      alert('备份已下载');
+      showNotification('备份已下载', 'success');
     } catch (error) {
-      alert('下载备份失败');
+      showNotification('下载备份失败', 'error');
       console.error('Failed to download backup:', error);
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    setCreating(true);
+    try {
+      await backupApi.createBackup();
+      showNotification('备份已创建', 'success');
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || '创建备份失败';
+      showNotification(message, 'error');
+      console.error('Failed to create backup:', error);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -55,24 +74,34 @@ export function BackupConfigSection({ disabled, config, onChange }: BackupConfig
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!confirm(`确定要使用文件 "${file.name}" 恢复配置吗？当前配置将被覆盖。\n\n恢复后需要重启服务器才能生效。`)) {
-      event.target.value = '';
-      return;
-    }
+    showConfirmation({
+      title: '确认恢复',
+      message: `确定要使用文件 "${file.name}" 恢复配置吗？当前配置将被覆盖。`,
+      confirmText: '确认恢复',
+      cancelText: '取消',
+      variant: 'danger',
+      onConfirm: async () => {
+        setRestoring(true);
+        try {
+          const result = await backupApi.restoreFromFile(file);
+          showNotification(result.message || '恢复成功！配置已自动重新加载。', 'success');
+          event.target.value = '';
 
-    setRestoring(true);
-    try {
-      const result = await backupApi.restoreFromFile(file);
-      alert(result.message || '恢复成功！请重启服务器以应用更改。');
-      event.target.value = '';
-    } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || '恢复配置失败';
-      alert(message);
-      event.target.value = '';
-      console.error('Failed to restore from file:', error);
-    } finally {
-      setRestoring(false);
-    }
+          // Trigger config reload
+          window.location.reload();
+        } catch (error: any) {
+          const message = error?.response?.data?.message || error?.message || '恢复配置失败';
+          showNotification(message, 'error');
+          event.target.value = '';
+          console.error('Failed to restore from file:', error);
+        } finally {
+          setRestoring(false);
+        }
+      },
+      onCancel: () => {
+        event.target.value = '';
+      },
+    });
   };
 
   return (
@@ -125,12 +154,12 @@ export function BackupConfigSection({ disabled, config, onChange }: BackupConfig
           <div className={styles.row}>
             <label>启用本地存储</label>
             <ToggleSwitch
-              checked={config.storage === 'local'}
-              onChange={(checked) => onChange({ storage: checked ? 'local' : '' })}
+              checked={config.enableLocal}
+              onChange={(checked) => onChange({ enableLocal: checked })}
               disabled={disabled}
             />
           </div>
-          {config.storage === 'local' && (
+          {config.enableLocal && (
             <div className={styles.row}>
               <label>本地目录</label>
               <Input
@@ -146,6 +175,11 @@ export function BackupConfigSection({ disabled, config, onChange }: BackupConfig
           <Button onClick={handleDownloadBackup} disabled={downloading || disabled}>
             {downloading ? '下载中...' : '下载备份'}
           </Button>
+          {config.enableLocal && (
+            <Button onClick={handleCreateBackup} disabled={creating || disabled} variant="secondary">
+              {creating ? '创建中...' : '创建备份'}
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -155,12 +189,12 @@ export function BackupConfigSection({ disabled, config, onChange }: BackupConfig
           <div className={styles.row}>
             <label>启用 S3 存储</label>
             <ToggleSwitch
-              checked={config.storage === 's3'}
-              onChange={(checked) => onChange({ storage: checked ? 's3' : '' })}
+              checked={config.enableS3}
+              onChange={(checked) => onChange({ enableS3: checked })}
               disabled={disabled}
             />
           </div>
-          {config.storage === 's3' && (
+          {config.enableS3 && (
             <>
               <div className={styles.row}>
                 <label>端点地址</label>
@@ -169,9 +203,12 @@ export function BackupConfigSection({ disabled, config, onChange }: BackupConfig
                   onChange={(e) =>
                     onChange({ s3: { ...config.s3, endpoint: e.target.value } })
                   }
-                  placeholder="s3.amazonaws.com"
+                  placeholder="https://s3.amazonaws.com"
                   disabled={disabled}
                 />
+              </div>
+              <div className={styles.hint}>
+                端点地址应包含协议前缀（如 https://），且不能包含路径。
               </div>
               <div className={styles.row}>
                 <label>区域</label>
@@ -243,10 +280,15 @@ export function BackupConfigSection({ disabled, config, onChange }: BackupConfig
           )}
         </div>
         <div className={styles.actions}>
-          {config.storage === 's3' && (
-            <Button onClick={handleTest} disabled={testing || disabled}>
-              {testing ? '测试中...' : '测试连接'}
-            </Button>
+          {config.enableS3 && (
+            <>
+              <Button onClick={handleTest} disabled={testing || disabled}>
+                {testing ? '测试中...' : '测试连接'}
+              </Button>
+              <Button onClick={handleCreateBackup} disabled={creating || disabled} variant="secondary">
+                {creating ? '创建中...' : '创建备份'}
+              </Button>
+            </>
           )}
         </div>
       </Card>
@@ -257,12 +299,12 @@ export function BackupConfigSection({ disabled, config, onChange }: BackupConfig
           <div className={styles.row}>
             <label>启用 WebDAV 存储</label>
             <ToggleSwitch
-              checked={config.storage === 'webdav'}
-              onChange={(checked) => onChange({ storage: checked ? 'webdav' : '' })}
+              checked={config.enableWebDAV}
+              onChange={(checked) => onChange({ enableWebDAV: checked })}
               disabled={disabled}
             />
           </div>
-          {config.storage === 'webdav' && (
+          {config.enableWebDAV && (
             <>
               <div className={styles.row}>
                 <label>服务器地址</label>
@@ -313,10 +355,15 @@ export function BackupConfigSection({ disabled, config, onChange }: BackupConfig
           )}
         </div>
         <div className={styles.actions}>
-          {config.storage === 'webdav' && (
-            <Button onClick={handleTest} disabled={testing || disabled}>
-              {testing ? '测试中...' : '测试连接'}
-            </Button>
+          {config.enableWebDAV && (
+            <>
+              <Button onClick={handleTest} disabled={testing || disabled}>
+                {testing ? '测试中...' : '测试连接'}
+              </Button>
+              <Button onClick={handleCreateBackup} disabled={creating || disabled} variant="secondary">
+                {creating ? '创建中...' : '创建备份'}
+              </Button>
+            </>
           )}
         </div>
       </Card>

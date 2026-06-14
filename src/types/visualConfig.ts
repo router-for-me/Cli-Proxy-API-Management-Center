@@ -130,9 +130,12 @@ export type VisualConfigValues = {
 export type BackupConfig = {
   enabled: boolean;
   schedule: string;
-  storage: 'local' | 's3' | 'webdav' | '';
+  storage: string; // Keep as string for YAML compatibility, but UI will manage checkboxes
   localDir: string;
   maxBackups: string;
+  enableLocal: boolean;
+  enableS3: boolean;
+  enableWebDAV: boolean;
   s3: {
     endpoint: string;
     region: string;
@@ -222,6 +225,9 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
     storage: '',
     localDir: '',
     maxBackups: '0',
+    enableLocal: false,
+    enableS3: false,
+    enableWebDAV: false,
     s3: {
       endpoint: '',
       region: '',
