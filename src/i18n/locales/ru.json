@@ -147,7 +147,7 @@
     "quick_actions": "Быстрые действия",
     "current_config": "Текущая конфигурация",
     "management_keys": "Ключи управления",
-    "provider_keys_detail": "G:{{gemini}} C:{{codex}} Cl:{{claude}} V:{{vertex}} O:{{openai}} Amp:{{ampcode}}",
+    "provider_keys_detail": "G:{{gemini}} C:{{codex}} Cl:{{claude}} V:{{vertex}} O:{{openai}}",
     "oauth_credentials": "Учётные данные OAuth",
     "edit_settings": "Изменить настройки",
     "routing_strategy": "Стратегия маршрутизации",
@@ -1286,8 +1286,6 @@
     "openai_provider_added": "Провайдер OpenAI успешно добавлен",
     "openai_provider_updated": "Провайдер OpenAI успешно обновлён",
     "openai_provider_deleted": "Провайдер OpenAI успешно удалён",
-    "ampcode_updated": "Настройки Ampcode обновлены",
-    "ampcode_upstream_api_key_cleared": "Переопределение upstream-ключа Ampcode очищено",
     "openai_model_name_required": "Введите имя модели",
     "openai_test_url_required": "Укажите корректный базовый URL перед тестированием",
     "openai_test_key_required": "Добавьте хотя бы один API-ключ перед тестированием",
@@ -1362,17 +1360,14 @@
     },
     "categories": {
       "title": "Провайдеры",
-      "activeCount": "{{active}}/{{total}} активных",
-      "ampcodeActive": "Подключено",
-      "ampcodeInactive": "Не настроено"
+      "activeCount": "{{active}}/{{total}} активных"
     },
     "providerNames": {
       "gemini": "Gemini",
       "codex": "Codex",
       "claude": "Claude",
       "vertex": "Vertex",
-      "openaiCompatibility": "OpenAI-совместимый",
-      "ampcode": "Amp CLI"
+      "openaiCompatibility": "OpenAI-совместимый"
     },
     "table": {
       "key": "Ключ",
@@ -1384,12 +1379,10 @@
       "metrics": {
         "models": "Модели",
         "keys": "Ключи",
-        "headers": "Заголовки",
-        "mappings": "Сопоставления"
+        "headers": "Заголовки"
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
-      "noFallbackKey": "Резервный ключ не задан",
       "empty": "Нет ресурсов, нажмите \"Создать\".",
       "filterPlaceholder": "Поиск по ключам, URL, префиксам…",
       "description": "Управление ресурсами {{route}}",
@@ -1472,25 +1465,9 @@
         "baseUrlRequired": "Base URL обязателен"
       }
     },
-    "ampcode": {
-      "upstreamUrl": "Upstream URL",
-      "upstreamApiKey": "Резервный API-ключ",
-      "upstreamApiKeyHint": "Используется, когда нет совпадений",
-      "keyMappingsSection": "Сопоставление ключей",
-      "mappingRow": "Сопоставление #{{index}}",
-      "clientKeys": "Клиентские ключи",
-      "clientKeysHint": "По одному в строке; совпавшие пересылаются на ключ выше",
-      "addMapping": "Добавить сопоставление",
-      "modelMappingsSection": "Сопоставление моделей",
-      "addModelMapping": "Добавить сопоставление",
-      "forceModelMappings": "Принудительное сопоставление",
-      "forceModelMappingsHint": "Запросы без совпадений отклоняются"
-    },
     "delete": {
       "title": "Удалить ресурс",
-      "confirm": "Удалить {{name}}? Действие необратимо.",
-      "ampcodeTitle": "Очистить настройки Amp CLI",
-      "ampcodeConfirm": "Удалить все настройки Amp CLI? Upstream URL, ключи и сопоставления будут удалены."
+      "confirm": "Удалить {{name}}? Действие необратимо."
     },
     "toast": {
       "created": "Создано",

@@ -148,7 +148,7 @@
     "quick_actions": "快速操作",
     "current_config": "目前設定",
     "management_keys": "管理金鑰",
-    "provider_keys_detail": "G:{{gemini}} C:{{codex}} Cl:{{claude}} V:{{vertex}} O:{{openai}} Amp:{{ampcode}}",
+    "provider_keys_detail": "G:{{gemini}} C:{{codex}} Cl:{{claude}} V:{{vertex}} O:{{openai}}",
     "oauth_credentials": "OAuth 憑證",
     "edit_settings": "編輯設定",
     "routing_strategy": "路由策略",
@@ -1335,8 +1335,6 @@
     "openai_provider_added": "OpenAI 供應商新增成功",
     "openai_provider_updated": "OpenAI 供應商更新成功",
     "openai_provider_deleted": "OpenAI 供應商刪除成功",
-    "ampcode_updated": "Ampcode 設定已更新",
-    "ampcode_upstream_api_key_cleared": "Ampcode upstream API key 覆寫已清除",
     "openai_model_name_required": "請填寫模型名稱",
     "openai_test_url_required": "請先填寫有效的 Base URL 以進行測試",
     "openai_test_key_required": "請至少填寫一個 API 金鑰以進行測試",
@@ -1411,17 +1409,14 @@
     },
     "categories": {
       "title": "提供商",
-      "activeCount": "{{active}}/{{total}} 活躍",
-      "ampcodeActive": "已連線",
-      "ampcodeInactive": "未設定"
+      "activeCount": "{{active}}/{{total}} 活躍"
     },
     "providerNames": {
       "gemini": "Gemini",
       "codex": "Codex",
       "claude": "Claude",
       "vertex": "Vertex",
-      "openaiCompatibility": "OpenAI 相容",
-      "ampcode": "Amp CLI"
+      "openaiCompatibility": "OpenAI 相容"
     },
     "table": {
       "key": "金鑰",
@@ -1433,12 +1428,10 @@
       "metrics": {
         "models": "模型",
         "keys": "金鑰",
-        "headers": "請求標頭",
-        "mappings": "映射"
+        "headers": "請求標頭"
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
-      "noFallbackKey": "未設定備援金鑰",
       "empty": "尚未新增設定,點擊右上角新增。",
       "filterPlaceholder": "搜尋金鑰、位址、前綴…",
       "description": "在 {{route}} 下管理資源",
@@ -1521,25 +1514,9 @@
         "baseUrlRequired": "服務位址必填"
       }
     },
-    "ampcode": {
-      "upstreamUrl": "上游 URL",
-      "upstreamApiKey": "上游 API 金鑰(備援)",
-      "upstreamApiKeyHint": "未匹配金鑰映射時使用",
-      "keyMappingsSection": "上游金鑰映射",
-      "mappingRow": "映射 #{{index}}",
-      "clientKeys": "客戶端金鑰",
-      "clientKeysHint": "每行一個,匹配後轉發到上述上游金鑰",
-      "addMapping": "新增金鑰映射",
-      "modelMappingsSection": "模型映射",
-      "addModelMapping": "新增模型映射",
-      "forceModelMappings": "強制模型映射",
-      "forceModelMappingsHint": "啟用後,所有請求必須命中模型映射規則"
-    },
     "delete": {
       "title": "刪除資源",
-      "confirm": "確定要刪除 {{name}} 嗎?此操作不可復原。",
-      "ampcodeTitle": "清空 Amp CLI 設定",
-      "ampcodeConfirm": "確定要清空 Amp CLI 設定嗎?上游 URL、API 金鑰與模型映射都會被移除。"
+      "confirm": "確定要刪除 {{name}} 嗎?此操作不可復原。"
     },
     "toast": {
       "created": "建立成功",

@@ -17,7 +17,6 @@ export interface ProviderDescriptor {
   supportsWebsockets: boolean;
   supportsCloak: boolean;
   supportsApiKeyEntries: boolean;
-  supportsAmpcodeMappings: boolean;
   /** Sheet 默认宽度 */
   sheetSize: 'md' | 'lg' | 'xl';
 }
@@ -40,7 +39,6 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
     supportsWebsockets: false,
     supportsCloak: false,
     supportsApiKeyEntries: false,
-    supportsAmpcodeMappings: false,
     sheetSize: 'md',
   },
   codex: {
@@ -60,7 +58,6 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
     supportsWebsockets: true,
     supportsCloak: false,
     supportsApiKeyEntries: false,
-    supportsAmpcodeMappings: false,
     sheetSize: 'md',
   },
   claude: {
@@ -80,7 +77,6 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
     supportsWebsockets: false,
     supportsCloak: true,
     supportsApiKeyEntries: false,
-    supportsAmpcodeMappings: false,
     sheetSize: 'md',
   },
   vertex: {
@@ -100,7 +96,6 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
     supportsWebsockets: false,
     supportsCloak: false,
     supportsApiKeyEntries: false,
-    supportsAmpcodeMappings: false,
     sheetSize: 'md',
   },
   openaiCompatibility: {
@@ -120,27 +115,6 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
     supportsWebsockets: false,
     supportsCloak: false,
     supportsApiKeyEntries: true,
-    supportsAmpcodeMappings: false,
-    sheetSize: 'lg',
-  },
-  ampcode: {
-    id: 'ampcode',
-    supportsName: false,
-    supportsApiKey: false,
-    supportsDisabled: false,
-    supportsBaseUrl: true,
-    baseUrlRequired: false,
-    supportsProxyUrl: false,
-    supportsPrefix: false,
-    supportsModels: false,
-    supportsHeaders: false,
-    supportsExcludedModels: false,
-    supportsPriority: false,
-    supportsTestModel: false,
-    supportsWebsockets: false,
-    supportsCloak: false,
-    supportsApiKeyEntries: false,
-    supportsAmpcodeMappings: true,
     sheetSize: 'lg',
   },
 };
@@ -151,5 +125,4 @@ export const PROVIDER_BRAND_ORDER: ProviderBrand[] = [
   'claude',
   'vertex',
   'openaiCompatibility',
-  'ampcode',
 ];

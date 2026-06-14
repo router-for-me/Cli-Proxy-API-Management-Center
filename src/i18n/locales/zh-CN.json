@@ -148,7 +148,7 @@
     "quick_actions": "快捷操作",
     "current_config": "当前配置",
     "management_keys": "管理密钥",
-    "provider_keys_detail": "G:{{gemini}} C:{{codex}} Cl:{{claude}} V:{{vertex}} O:{{openai}} Amp:{{ampcode}}",
+    "provider_keys_detail": "G:{{gemini}} C:{{codex}} Cl:{{claude}} V:{{vertex}} O:{{openai}}",
     "oauth_credentials": "OAuth 凭证",
     "edit_settings": "编辑设置",
     "routing_strategy": "路由策略",
@@ -1309,8 +1309,6 @@
     "openai_provider_added": "OpenAI提供商添加成功",
     "openai_provider_updated": "OpenAI提供商更新成功",
     "openai_provider_deleted": "OpenAI提供商删除成功",
-    "ampcode_updated": "Ampcode 配置已更新",
-    "ampcode_upstream_api_key_cleared": "Ampcode upstream API key 覆盖已清除",
     "openai_model_name_required": "请填写模型名称",
     "openai_test_url_required": "请先填写有效的 Base URL 以进行测试",
     "openai_test_key_required": "请至少填写一个 API 密钥以进行测试",
@@ -1385,17 +1383,14 @@
     },
     "categories": {
       "title": "提供商",
-      "activeCount": "{{active}}/{{total}} 活跃",
-      "ampcodeActive": "已连接",
-      "ampcodeInactive": "未配置"
+      "activeCount": "{{active}}/{{total}} 活跃"
     },
     "providerNames": {
       "gemini": "Gemini",
       "codex": "Codex",
       "claude": "Claude",
       "vertex": "Vertex",
-      "openaiCompatibility": "OpenAI 兼容",
-      "ampcode": "Amp CLI"
+      "openaiCompatibility": "OpenAI 兼容"
     },
     "table": {
       "key": "密钥",
@@ -1407,12 +1402,10 @@
       "metrics": {
         "models": "模型",
         "keys": "密钥",
-        "headers": "请求头",
-        "mappings": "映射"
+        "headers": "请求头"
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
-      "noFallbackKey": "未设置兜底密钥",
       "empty": "尚未添加配置,点击右上角新建。",
       "filterPlaceholder": "搜索密钥、地址、前缀…",
       "description": "在 {{route}} 下管理资源",
@@ -1495,25 +1488,9 @@
         "baseUrlRequired": "服务地址必填"
       }
     },
-    "ampcode": {
-      "upstreamUrl": "上游 URL",
-      "upstreamApiKey": "上游 API 密钥(兜底)",
-      "upstreamApiKeyHint": "未匹配密钥映射时使用",
-      "keyMappingsSection": "上游密钥映射",
-      "mappingRow": "映射 #{{index}}",
-      "clientKeys": "客户端密钥",
-      "clientKeysHint": "每行一个,匹配后转发到上述上游密钥",
-      "addMapping": "添加密钥映射",
-      "modelMappingsSection": "模型映射",
-      "addModelMapping": "添加模型映射",
-      "forceModelMappings": "强制模型映射",
-      "forceModelMappingsHint": "启用后,所有请求必须命中模型映射规则"
-    },
     "delete": {
       "title": "删除资源",
-      "confirm": "确定要删除 {{name}} 吗?此操作不可撤销。",
-      "ampcodeTitle": "清空 Amp CLI 配置",
-      "ampcodeConfirm": "确定要清空 Amp CLI 配置吗?上游 URL、API 密钥与模型映射都会被移除。"
+      "confirm": "确定要删除 {{name}} 吗?此操作不可撤销。"
     },
     "toast": {
       "created": "创建成功",

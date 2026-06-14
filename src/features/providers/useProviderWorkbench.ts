@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ampcodeApi, providersApi } from '@/services/api';
+import { providersApi } from '@/services/api';
 import { getErrorMessage } from '@/utils/helpers';
 import { useAuthStore, useConfigStore } from '@/stores';
 import {
@@ -7,13 +7,11 @@ import {
   withoutDisableAllModelsRule,
 } from '@/components/providers/utils';
 import type {
-  AmpcodeConfig,
   GeminiKeyConfig,
   OpenAIProviderConfig,
   ProviderKeyConfig,
 } from '@/types';
 import {
-  ampcodeToResource,
   claudeToResource,
   codexToResource,
   geminiToResource,
@@ -42,7 +40,6 @@ export interface UseProviderWorkbenchResult {
   updateProvider: (resource: ProviderResource, input: ProviderEntryFormInput) => Promise<void>;
   deleteProvider: (resource: ProviderResource) => Promise<void>;
   toggleDisabled: (resource: ProviderResource, disabled: boolean) => Promise<void>;
-  saveAmpcode: (config: AmpcodeConfig) => Promise<void>;
   mutating: boolean;
   refreshSnapshot: () => void;
 }
@@ -208,10 +205,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     setIsFetching(true);
     setErrorMessage(null);
     try {
-      const [configResult, vertexResult, ampcodeResult, openaiResult] = await Promise.allSettled([
+      const [configResult, vertexResult, openaiResult] = await Promise.allSettled([
         fetchConfig(undefined, true),
         providersApi.getVertexConfigs(),
-        ampcodeApi.getAmpcode(),
         providersApi.getOpenAIProviders(),
       ]);
       if (configResult.status !== 'fulfilled') {
@@ -219,9 +215,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       }
       if (vertexResult.status === 'fulfilled') {
         updateConfigValue('vertex-api-key', vertexResult.value || []);
-      }
-      if (ampcodeResult.status === 'fulfilled') {
-        updateConfigValue('ampcode', ampcodeResult.value);
       }
       if (openaiResult.status === 'fulfilled') {
         updateConfigValue('openai-compatibility', openaiResult.value || []);
@@ -267,9 +260,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           break;
         case 'openaiCompatibility':
           resources = (config.openaiCompatibility ?? []).map((c, i) => openaiToResource(c, i));
-          break;
-        case 'ampcode':
-          resources = [ampcodeToResource(config.ampcode)];
           break;
       }
       return {
@@ -349,8 +339,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const next = [...(config?.openaiCompatibility ?? [])];
           next.push(buildOpenAIConfig(input));
           await persistOpenAIConfigs(next);
-        } else if (brand === 'ampcode') {
-          throw new Error('Use saveAmpcode for ampcode create/update');
         }
         refreshSnapshot();
       } finally {
@@ -399,8 +387,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const existing = list[idx];
           list[idx] = buildOpenAIConfig(input, existing);
           await persistOpenAIConfigs(list);
-        } else if (brand === 'ampcode') {
-          throw new Error('Use saveAmpcode for ampcode update');
         }
         refreshSnapshot();
       } finally {
@@ -443,13 +429,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.deleteOpenAIProvider(sel.index);
           const next = (config?.openaiCompatibility ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('openai-compatibility', next);
-        } else if (sel.brand === 'ampcode') {
-          await Promise.allSettled([
-            ampcodeApi.clearUpstreamUrl(),
-            ampcodeApi.clearUpstreamApiKey(),
-            ampcodeApi.clearModelMappings(),
-          ]);
-          updateConfigValue('ampcode', {});
         }
         refreshSnapshot();
       } finally {
@@ -499,8 +478,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             list[idx] = { ...current, disabled };
             updateConfigValue('openai-compatibility', list);
           }
-        } else if (brand === 'ampcode') {
-          /* ampcode toggle 不支持,跳过 */
         }
         refreshSnapshot();
       } finally {
@@ -518,48 +495,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     ]
   );
 
-  const saveAmpcode = useCallback(
-    async (next: AmpcodeConfig) => {
-      setMutating(true);
-      try {
-        // 细粒度 PUT 序列以保留兼容性
-        const url = (next.upstreamUrl ?? '').trim();
-        if (url) {
-          await ampcodeApi.updateUpstreamUrl(url);
-        } else {
-          await ampcodeApi.clearUpstreamUrl();
-        }
-
-        const fallbackKey = (next.upstreamApiKey ?? '').trim();
-        if (fallbackKey) {
-          await ampcodeApi.updateUpstreamApiKey(fallbackKey);
-        } else {
-          await ampcodeApi.clearUpstreamApiKey();
-        }
-
-        if (Array.isArray(next.upstreamApiKeys) && next.upstreamApiKeys.length) {
-          await ampcodeApi.saveUpstreamApiKeys(next.upstreamApiKeys);
-        } else {
-          await ampcodeApi.saveUpstreamApiKeys([]);
-        }
-
-        if (Array.isArray(next.modelMappings) && next.modelMappings.length) {
-          await ampcodeApi.saveModelMappings(next.modelMappings);
-        } else {
-          await ampcodeApi.clearModelMappings();
-        }
-
-        await ampcodeApi.updateForceModelMappings(next.forceModelMappings === true);
-
-        updateConfigValue('ampcode', next);
-        refreshSnapshot();
-      } finally {
-        setMutating(false);
-      }
-    },
-    [updateConfigValue, refreshSnapshot]
-  );
-
   return {
     connected,
     isPending,
@@ -572,7 +507,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     updateProvider,
     deleteProvider,
     toggleDisabled,
-    saveAmpcode,
     mutating,
     refreshSnapshot,
   };

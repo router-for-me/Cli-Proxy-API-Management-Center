@@ -25,7 +25,7 @@ export function ProviderCategoryList({
           const realResources = group.resources.filter(
             (r) => !r.flags.isPlaceholder
           );
-          const total = realResources.length || (group.id === 'ampcode' ? 1 : 0);
+          const total = realResources.length;
           const activeCount = realResources.filter((r) => !r.disabled).length;
           const logo = PROVIDER_LOGOS[group.id];
           const itemClass = `${styles.item} ${active ? styles.active : ''}`;
@@ -52,25 +52,19 @@ export function ProviderCategoryList({
                     {t(`providersPage.providerNames.${group.id}`)}
                   </span>
                   <span className={styles.itemSubtitle}>
-                    {group.id === 'ampcode'
-                      ? t(
-                          group.resources[0]?.disabled
-                            ? 'providersPage.categories.ampcodeInactive'
-                            : 'providersPage.categories.ampcodeActive'
-                        )
-                      : t('providersPage.categories.activeCount', {
-                          active: activeCount,
-                          total,
-                        })}
+                    {t('providersPage.categories.activeCount', {
+                      active: activeCount,
+                      total,
+                    })}
                   </span>
                 </span>
               </span>
               <span
                 className={`${styles.badge} ${
-                  group.id !== 'ampcode' && total === 0 ? styles.badgeAmber : ''
+                  total === 0 ? styles.badgeAmber : ''
                 }`}
               >
-                {group.id === 'ampcode' ? (group.resources[0]?.disabled ? '—' : '1') : total}
+                {total}
               </span>
             </button>
           );

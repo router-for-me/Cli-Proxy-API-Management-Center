@@ -73,20 +73,18 @@ export function ProviderResourcePanel({
               </h2>
             </div>
           </div>
-          {group.id !== 'ampcode' ? (
-            <div className={styles.searchWrap}>
-              <span className={styles.searchIcon} aria-hidden="true">
-                <IconSearch size={16} />
-              </span>
-              <input
-                type="search"
-                className={styles.searchInput}
-                value={filter}
-                onChange={(event) => onFilterChange(event.target.value)}
-                placeholder={t('providersPage.table.filterPlaceholder')}
-              />
-            </div>
-          ) : null}
+          <div className={styles.searchWrap}>
+            <span className={styles.searchIcon} aria-hidden="true">
+              <IconSearch size={16} />
+            </span>
+            <input
+              type="search"
+              className={styles.searchInput}
+              value={filter}
+              onChange={(event) => onFilterChange(event.target.value)}
+              placeholder={t('providersPage.table.filterPlaceholder')}
+            />
+          </div>
         </div>
         {toolbarControls ? (
           <div className={styles.headerToolbarRow}>
@@ -104,7 +102,7 @@ export function ProviderResourcePanel({
         ) : null}
       </div>
 
-      {realResources.length === 0 && group.id !== 'ampcode' ? (
+      {realResources.length === 0 ? (
         <div className={styles.empty}>
           <div>{t('providersPage.table.empty')}</div>
           <div className={styles.emptyAction}>

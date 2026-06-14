@@ -11,7 +11,6 @@ import type {
   ProviderResource,
 } from '../types';
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
-import { AmpcodeForm } from './forms/AmpcodeForm';
 import { BaseProviderForm } from './forms/BaseProviderForm';
 import { ResourceDetailView } from './ResourceDetailView';
 import styles from './forms/sharedForm.module.scss';
@@ -70,7 +69,6 @@ export function ProviderSheet({
   }, []);
 
   const descriptor = PROVIDER_DESCRIPTORS[state.brand];
-  const isAmpcode = state.brand === 'ampcode';
   const isEditingForm = state.mode === 'create' || state.mode === 'edit';
   const formMutating = submitting || mutationDisabled;
   const submitDisabled = formMutating || (state.mode === 'edit' && !isDirty);
@@ -141,20 +139,6 @@ export function ProviderSheet({
     [isDirty, mutationDisabled, onUpdated, state.resource, workbench]
   );
 
-  const handleAmpcodeSubmit = useCallback(
-    async (config: Parameters<UseProviderWorkbenchResult['saveAmpcode']>[0]) => {
-      if (mutationDisabled || !isDirty) return;
-      setSubmitting(true);
-      try {
-        await workbench.saveAmpcode(config);
-        onUpdated();
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    [isDirty, mutationDisabled, onUpdated, workbench]
-  );
-
   const renderBody = () => {
     if (state.mode === 'detail') {
       if (!state.resource) {
@@ -163,22 +147,10 @@ export function ProviderSheet({
       return <ResourceDetailView resource={state.resource} usageByProvider={usageByProvider} />;
     }
     const formKey = `${state.brand}:${state.resource?.id ?? 'new'}:${state.mode}`;
-    if (isAmpcode) {
-      return (
-        <AmpcodeForm
-          key={formKey}
-          resource={state.resource}
-          mutating={formMutating}
-          formId={formId}
-          onSubmit={handleAmpcodeSubmit}
-          onDirtyChange={handleDirtyChange}
-        />
-      );
-    }
     return (
       <BaseProviderForm
         key={formKey}
-        brand={state.brand as Exclude<ProviderBrand, 'ampcode'>}
+        brand={state.brand}
         resource={state.resource}
         mode={state.mode}
         mutating={formMutating}

@@ -79,7 +79,6 @@ const getResourceRecentSuccess = (
       usageByProvider
     ).success;
   }
-  if (resource.brand === 'ampcode') return 0;
   return getProviderRecentWindowStats(
     usageByProvider,
     resource.brand,
@@ -285,15 +284,8 @@ export function ProvidersWorkbenchPage() {
 
   const openCreate = useCallback(() => {
     const brand = activeBrand;
-    if (brand === 'ampcode') {
-      // ampcode 走单例编辑
-      const r =
-        groups.find((g) => g.id === 'ampcode')?.resources[0] ?? null;
-      setSheetState({ open: true, brand: 'ampcode', mode: 'edit', resource: r });
-    } else {
-      setSheetState({ open: true, brand, mode: 'create', resource: null });
-    }
-  }, [activeBrand, groups]);
+    setSheetState({ open: true, brand, mode: 'create', resource: null });
+  }, [activeBrand]);
 
   const openView = useCallback((resource: ProviderResource) => {
     setSheetState({
@@ -319,20 +311,13 @@ export function ProvidersWorkbenchPage() {
 
   const handleDelete = useCallback(
     (resource: ProviderResource) => {
-      const isAmpcode = resource.brand === 'ampcode';
       const name =
         resource.name ?? resource.apiKeyPreview ?? resource.identifier ?? '';
       showConfirmation({
-        title: isAmpcode
-          ? t('providersPage.delete.ampcodeTitle')
-          : t('providersPage.delete.title'),
-        message: isAmpcode
-          ? t('providersPage.delete.ampcodeConfirm')
-          : t('providersPage.delete.confirm', { name }),
+        title: t('providersPage.delete.title'),
+        message: t('providersPage.delete.confirm', { name }),
         variant: 'danger',
-        confirmText: isAmpcode
-          ? t('providersPage.actions.clear')
-          : t('providersPage.actions.delete'),
+        confirmText: t('providersPage.actions.delete'),
         onConfirm: async () => {
           try {
             await workbench.deleteProvider(resource);
@@ -408,8 +393,6 @@ export function ProvidersWorkbenchPage() {
     );
   }
 
-  const ampcodeBrandActive = activeBrand === 'ampcode';
-
   return (
     <div className={styles.page}>
       <ProviderHeaderCard
@@ -418,12 +401,8 @@ export function ProvidersWorkbenchPage() {
         providerFamilies={providerFamilies}
         updatedAtLabel={updatedAtLabel}
         isFetching={workbench.isFetching}
-        isNewDisabled={disableMutations && !ampcodeBrandActive}
-        newLabel={
-          ampcodeBrandActive
-            ? t('providersPage.actions.edit')
-            : t('providersPage.actions.new')
-        }
+        isNewDisabled={disableMutations}
+        newLabel={t('providersPage.actions.new')}
         onRefresh={() => void handleRefresh()}
         onNew={openCreate}
       />
