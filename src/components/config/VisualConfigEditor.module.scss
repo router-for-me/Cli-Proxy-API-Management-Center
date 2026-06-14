@@ -646,6 +646,10 @@
   align-items: start;
 }
 
+.payloadRuleRawParamRow {
+  grid-template-columns: minmax(240px, 1fr) minmax(320px, 1fr) auto;
+}
+
 .payloadRuleParamGroup {
   display: flex;
   flex-direction: column;
@@ -673,6 +677,7 @@
 
 .payloadRowActionButton {
   flex: 0 0 auto;
+  justify-self: start;
 }
 
 .apiKeyModalInputRow {
