@@ -73,6 +73,43 @@
   color: var(--text-primary);
 }
 
+// ─── Security Banner (third-party plugin risk) ──────────
+
+.securityBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  padding: 12px 14px;
+  border-radius: $radius-md;
+  border: 1px solid color-mix(in srgb, var(--quota-medium-color, #e0aa14) 45%, var(--border-color));
+  background: color-mix(in srgb, var(--quota-medium-color, #e0aa14) 14%, var(--bg-secondary));
+  color: var(--text-primary);
+
+  > svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--quota-medium-color, #e0aa14);
+  }
+}
+
+.securityBannerText {
+  min-width: 0;
+
+  strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+}
+
 // ─── Status Bar ─────────────────────────────────────────
 
 .statusBar {
@@ -323,7 +360,8 @@
 
 .badge,
 .badgeSuccess,
-.badgeWarning {
+.badgeWarning,
+.badgeUntrusted {
   display: inline-flex;
   min-height: 22px;
   align-items: center;
@@ -350,6 +388,17 @@
   background: rgba($warning-color, 0.1);
   border: 1px solid rgba($warning-color, 0.2);
   color: var(--warning-color);
+}
+
+.badgeUntrusted {
+  gap: 4px;
+  background: rgba($warning-color, 0.12);
+  border: 1px solid rgba($warning-color, 0.4);
+  color: var(--danger-color);
+
+  svg {
+    flex-shrink: 0;
+  }
 }
 
 .cardDesc {

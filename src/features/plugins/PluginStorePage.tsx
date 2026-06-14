@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import {
+  IconAlertTriangle,
   IconDownload,
   IconExternalLink,
   IconGithub,
@@ -12,13 +13,15 @@ import {
   IconRefreshCw,
   IconSearch,
   IconSettings,
+  IconShield,
 } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { pluginStoreApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { getErrorMessage, isRecord } from '@/utils/helpers';
 import type { PluginStoreEntry, PluginStoreResponse } from '@/types';
-import { buildRepositoryURL, resolvePluginAssetURL } from './pluginResources';
+import { buildRepositoryURL, isOfficialPlugin, resolvePluginAssetURL } from './pluginResources';
+import { PluginInstallGateModal } from './components/PluginInstallGateModal';
 import styles from './PluginStorePage.module.scss';
 
 type StoreStatusFilter = 'all' | 'installed' | 'notInstalled' | 'updates';
@@ -74,6 +77,11 @@ export function PluginStorePage() {
   const [expandedDescriptionKeys, setExpandedDescriptionKeys] = useState<string[]>([]);
   const [overflowingDescriptionKeys, setOverflowingDescriptionKeys] = useState<string[]>([]);
   const descriptionRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
+
+  // Multi-step install gauntlet, shown only for non-official (third-party) plugins.
+  const [gateOpen, setGateOpen] = useState(false);
+  const [gateEntry, setGateEntry] = useState<PluginStoreEntry | null>(null);
+  const [gateIsUpdate, setGateIsUpdate] = useState(false);
 
   const connected = connectionStatus === 'connected';
 
@@ -240,13 +248,49 @@ export function PluginStorePage() {
     );
   }, []);
 
+  const runInstall = useCallback(
+    async (entry: PluginStoreEntry, isUpdate: boolean) => {
+      const entryKey = getStoreEntryKey(entry);
+      const failedKey = isUpdate ? 'plugin_store.update_failed' : 'plugin_store.install_failed';
+      setInstallingKey(entryKey);
+      try {
+        const result = await pluginStoreApi.install(entry.id, entry.sourceId || undefined);
+        showNotification(
+          isUpdate ? t('plugin_store.update_success') : t('plugin_store.install_success'),
+          'success'
+        );
+        if (result.restartRequired) {
+          setRestartRequiredKeys((current) =>
+            current.includes(entryKey) ? current : [...current, entryKey]
+          );
+          showNotification(t('plugin_store.restart_required_notice'), 'warning');
+        }
+        clearConfigCache();
+        await loadStore();
+      } catch (err: unknown) {
+        showNotification(`${t(failedKey)}: ${getErrorMessage(err, t(failedKey))}`, 'error');
+        throw err;
+      } finally {
+        setInstallingKey('');
+      }
+    },
+    [clearConfigCache, loadStore, showNotification, t]
+  );
+
   const handleInstall = (entry: PluginStoreEntry) => {
-    const entryKey = getStoreEntryKey(entry);
     const isUpdate = entry.installed && entry.updateAvailable;
+
+    // Third-party plugins must clear the multi-step confirmation gauntlet first.
+    if (!isOfficialPlugin(entry)) {
+      setGateEntry(entry);
+      setGateIsUpdate(isUpdate);
+      setGateOpen(true);
+      return;
+    }
+
+    // Official router-for-me plugins keep the lightweight single-step confirm.
     const title = getStoreEntryTitle(entry);
     const target = entry.version ? `${title} v${entry.version}` : title;
-    const failedKey = isUpdate ? 'plugin_store.update_failed' : 'plugin_store.install_failed';
-
     showConfirmation({
       title: isUpdate
         ? t('plugin_store.update_confirm_title')
@@ -256,31 +300,17 @@ export function PluginStorePage() {
         : t('plugin_store.install_confirm_message', { target }),
       confirmText: isUpdate ? t('plugin_store.update') : t('plugin_store.install'),
       variant: 'primary',
-      onConfirm: async () => {
-        setInstallingKey(entryKey);
-        try {
-          const result = await pluginStoreApi.install(entry.id, entry.sourceId || undefined);
-          showNotification(
-            isUpdate ? t('plugin_store.update_success') : t('plugin_store.install_success'),
-            'success'
-          );
-          if (result.restartRequired) {
-            setRestartRequiredKeys((current) =>
-              current.includes(entryKey) ? current : [...current, entryKey]
-            );
-            showNotification(t('plugin_store.restart_required_notice'), 'warning');
-          }
-          clearConfigCache();
-          await loadStore();
-        } catch (err: unknown) {
-          showNotification(`${t(failedKey)}: ${getErrorMessage(err, t(failedKey))}`, 'error');
-          throw err;
-        } finally {
-          setInstallingKey('');
-        }
-      },
+      onConfirm: () => runInstall(entry, isUpdate),
     });
   };
+
+  const handleGateConfirm = useCallback(async () => {
+    if (!gateEntry) return;
+    await runInstall(gateEntry, gateIsUpdate);
+    setGateOpen(false);
+  }, [gateEntry, gateIsUpdate, runInstall]);
+
+  const handleGateClose = useCallback(() => setGateOpen(false), []);
 
   const renderCard = (entry: PluginStoreEntry) => {
     const entryKey = getStoreEntryKey(entry);
@@ -288,6 +318,7 @@ export function PluginStorePage() {
     const repositoryURL = buildRepositoryURL(entry.repository);
     const homepageURL = /^https?:\/\//i.test(entry.homepage) ? entry.homepage : '';
     const isUpdate = entry.installed && entry.updateAvailable;
+    const isOfficial = isOfficialPlugin(entry);
     const versionText =
       isUpdate && entry.installedVersion && entry.version
         ? t('plugin_store.version_arrow', { from: entry.installedVersion, to: entry.version })
@@ -317,6 +348,12 @@ export function PluginStorePage() {
             <span className={styles.cardId}>{entry.id}</span>
           </div>
           <div className={styles.cardBadges}>
+            {!isOfficial ? (
+              <span className={styles.badgeUntrusted}>
+                <IconAlertTriangle size={11} />
+                {t('plugin_store.badge_untrusted')}
+              </span>
+            ) : null}
             {isUpdate ? (
               <span className={styles.badgeWarning}>{t('plugin_store.badge_update')}</span>
             ) : entry.installed ? (
@@ -447,6 +484,15 @@ export function PluginStorePage() {
       <div className={styles.pageHeader}>
         <h1 className={styles.title}>{t('plugin_store.title')}</h1>
         <p className={styles.description}>{t('plugin_store.description')}</p>
+      </div>
+
+      {/* ── Security Banner ── */}
+      <div className={styles.securityBanner} role="note">
+        <IconShield size={20} />
+        <div className={styles.securityBannerText}>
+          <strong>{t('plugin_store.security_banner_title')}</strong>
+          <p>{t('plugin_store.security_banner_text')}</p>
+        </div>
       </div>
 
       {/* ── Alerts ── */}
@@ -602,6 +648,15 @@ export function PluginStorePage() {
       ) : (
         <div className={styles.cardGrid}>{visiblePlugins.map((entry) => renderCard(entry))}</div>
       )}
+
+      <PluginInstallGateModal
+        open={gateOpen}
+        entry={gateEntry}
+        isUpdate={gateIsUpdate}
+        installing={gateEntry ? installingKey === getStoreEntryKey(gateEntry) : false}
+        onClose={handleGateClose}
+        onConfirm={handleGateConfirm}
+      />
     </div>
   );
 }
