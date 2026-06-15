@@ -52,9 +52,27 @@ const MAX_BUFFER_LINES = 10000;
 const LONG_PRESS_MS = 650;
 const LONG_PRESS_MOVE_THRESHOLD = 10;
 
-const getIncrementalAfter = (cursor: LogsQuery['after']): LogsQuery['after'] => {
-  if (typeof cursor !== 'number') return cursor;
-  return cursor > 1 ? cursor - 1 : undefined;
+type LogPosition = Pick<LogsQuery, 'after' | 'cursor'>;
+
+const getIncrementalAfter = (after: LogsQuery['after']): LogsQuery['after'] => {
+  if (typeof after !== 'number') return after;
+  return after > 1 ? after - 1 : undefined;
+};
+
+const buildLogsQuery = (incremental: boolean, position: LogPosition): LogsQuery => {
+  const params: LogsQuery = { limit: MAX_BUFFER_LINES };
+  if (!incremental) return params;
+
+  if (position.cursor) {
+    params.cursor = position.cursor;
+  }
+
+  const after = getIncrementalAfter(position.after);
+  if (after !== undefined) {
+    params.after = after;
+  }
+
+  return params;
 };
 
 const findLineOverlap = (currentLines: string[], incomingLines: string[]): number => {
@@ -174,8 +192,29 @@ export function LogsPage() {
   const logRequestInFlightRef = useRef(false);
   const pendingFullReloadRef = useRef(false);
 
-  // 保存最新游标用于增量获取
-  const latestCursorRef = useRef<LogsQuery['after']>(undefined);
+  // 保存最新游标用于增量获取；新 CPA 后端优先使用 cursor，旧接口和 Home 继续使用 after。
+  const logPositionRef = useRef<LogPosition>({});
+
+  const resetLogPosition = () => {
+    logPositionRef.current = {};
+  };
+
+  const updateLogPosition = (
+    data: Awaited<ReturnType<typeof logsApi.fetchLogs>>,
+    incremental: boolean
+  ) => {
+    const currentPosition = logPositionRef.current;
+    const nextPosition: LogPosition = {};
+    if (data.nextCursor) {
+      nextPosition.cursor = data.nextCursor;
+    }
+    if (data.latestAfter !== undefined) {
+      nextPosition.after = data.latestAfter;
+    } else if (incremental && currentPosition.after !== undefined) {
+      nextPosition.after = currentPosition.after;
+    }
+    logPositionRef.current = nextPosition;
+  };
 
   const disableControls = connectionStatus !== 'connected';
   const refreshDisabled = disableControls || loading || cpaNeedsFileLogging;
@@ -190,7 +229,7 @@ export function LogsPage() {
 
     if (cpaNeedsFileLogging) {
       if (!incremental) {
-        latestCursorRef.current = undefined;
+        resetLogPosition();
         requestLogHomeIpByIdRef.current = {};
         setFileLoggingRequired(false);
         setLogState({ buffer: [], visibleFrom: 0 });
@@ -222,19 +261,12 @@ export function LogsPage() {
         scrollerInstance?.requestScrollToBottom();
       }
 
-      const params: LogsQuery =
-        incremental && latestCursorRef.current
-          ? { after: getIncrementalAfter(latestCursorRef.current), limit: MAX_BUFFER_LINES }
-          : { limit: MAX_BUFFER_LINES };
+      const params = buildLogsQuery(incremental, logPositionRef.current);
       const data = await logsApi.fetchLogs(params);
       setFileLoggingRequired(false);
 
-      // 更新游标
-      if (data.latestCursor) {
-        latestCursorRef.current = data.latestCursor;
-      } else if (!incremental) {
-        latestCursorRef.current = undefined;
-      }
+      updateLogPosition(data, incremental);
+
       if (data.requestLogHomeIpById) {
         requestLogHomeIpByIdRef.current = incremental
           ? { ...requestLogHomeIpByIdRef.current, ...data.requestLogHomeIpById }
@@ -245,7 +277,11 @@ export function LogsPage() {
 
       const newLines = Array.isArray(data.lines) ? data.lines : [];
 
-      if (incremental && newLines.length > 0) {
+      if (incremental && data.cursorReset) {
+        const buffer = newLines.slice(-MAX_BUFFER_LINES);
+        const visibleFrom = Math.max(buffer.length - INITIAL_DISPLAY_LINES, 0);
+        setLogState({ buffer, visibleFrom });
+      } else if (incremental && newLines.length > 0) {
         // 增量更新：追加新日志并限制缓冲区大小（避免内存与渲染膨胀）
         setLogState((prev) => {
           const prevRenderedCount = prev.buffer.length - prev.visibleFrom;
@@ -271,7 +307,7 @@ export function LogsPage() {
       console.error('Failed to load logs:', err);
       if (isLoggingToFileDisabledError(err)) {
         if (!incremental) {
-          latestCursorRef.current = undefined;
+          resetLogPosition();
           requestLogHomeIpByIdRef.current = {};
           setFileLoggingRequired(true);
           setLogState({ buffer: [], visibleFrom: 0 });
@@ -318,7 +354,7 @@ export function LogsPage() {
         try {
           await logsApi.clearLogs();
           setLogState({ buffer: [], visibleFrom: 0 });
-          latestCursorRef.current = undefined;
+          resetLogPosition();
           requestLogHomeIpByIdRef.current = {};
           setFileLoggingRequired(false);
           showNotification(t('logs.clear_success'), 'success');
@@ -429,7 +465,7 @@ export function LogsPage() {
 
   useEffect(() => {
     if (connectionStatus === 'connected') {
-      latestCursorRef.current = undefined;
+      resetLogPosition();
       requestLogHomeIpByIdRef.current = {};
       setFileLoggingRequired(false);
       loadLogs(false);

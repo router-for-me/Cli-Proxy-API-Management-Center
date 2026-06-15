@@ -11,6 +11,7 @@ export type LogBackendKind = 'unknown' | 'file' | 'home-db';
 
 export interface LogsQuery {
   after?: LogCursor;
+  cursor?: string;
   limit?: number;
   offset?: number;
 }
@@ -42,7 +43,9 @@ export interface HomeLogsResponse {
 export interface LogsResponse {
   lines: string[];
   lineCount: number;
-  latestCursor?: LogCursor;
+  latestAfter?: LogCursor;
+  nextCursor?: string;
+  cursorReset?: boolean;
   logBackendKind: LogBackendKind;
   requestLogHomeIpById?: Record<string, string>;
   total?: number;
@@ -66,6 +69,9 @@ const numberValue = (value: unknown): number | undefined => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
 };
+
+const booleanValue = (value: unknown): boolean =>
+  value === true || (typeof value === 'string' && value.trim().toLowerCase() === 'true');
 
 const positiveNumberValue = (value: unknown): number | undefined => {
   const parsed = numberValue(value);
@@ -104,8 +110,10 @@ const normalizeCPALogs = (data: Record<string, unknown>): LogsResponse => {
   return {
     lines,
     lineCount: Number.isFinite(lineCount) ? lineCount : lines.length,
-    latestCursor: latestTimestamp > 0 ? latestTimestamp : undefined,
-    logBackendKind: 'file'
+    latestAfter: latestTimestamp > 0 ? latestTimestamp : undefined,
+    nextCursor: stringValue(data['next-cursor']) || undefined,
+    cursorReset: booleanValue(data['cursor-reset']),
+    logBackendKind: 'file',
   };
 };
 
@@ -140,12 +148,12 @@ const normalizeHomeLogs = (data: Record<string, unknown>): LogsResponse => {
   return {
     lines,
     lineCount: Number.isFinite(total) ? total : lines.length,
-    latestCursor,
+    latestAfter: latestCursor,
     logBackendKind: 'home-db',
     requestLogHomeIpById,
     total: Number.isFinite(total) ? total : undefined,
     limit: Number.isFinite(limit) ? limit : undefined,
-    offset: Number.isFinite(offset) ? offset : undefined
+    offset: Number.isFinite(offset) ? offset : undefined,
   };
 };
 
