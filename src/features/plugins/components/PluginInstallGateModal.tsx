@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { IconAlertTriangle, IconPlug } from '@/components/ui/icons';
+import { IconAlertTriangle, IconExternalLink, IconPlug } from '@/components/ui/icons';
 import { useAuthStore } from '@/stores';
 import type { PluginStoreEntry } from '@/types';
 import {
+  buildRepositoryURL,
   getPluginConfirmToken,
   getPluginRepositorySlug,
   isDefaultPluginStoreSource,
@@ -60,6 +61,8 @@ export function PluginInstallGateModal({
 
   const title = entry.name || entry.id;
   const repoSlug = getPluginRepositorySlug(entry.repository);
+  const repositoryURL = buildRepositoryURL(entry.repository);
+  const repoLabel = repoSlug || entry.id;
   const token = getPluginConfirmToken(entry);
   const logo = resolvePluginAssetURL(entry.logo, apiBase);
   const rawSourceText = entry.sourceName || entry.sourceUrl;
@@ -87,7 +90,21 @@ export function PluginInstallGateModal({
         <GateLogo src={logo} />
       </div>
       <h3 className={styles.name}>{title}</h3>
-      <p className={styles.slug}>{repoSlug || entry.id}</p>
+      {repositoryURL ? (
+        <a
+          className={styles.repoLink}
+          href={repositoryURL}
+          target="_blank"
+          rel="noreferrer"
+          title={t('plugin_store.open_repository')}
+          aria-label={t('plugin_store.open_repository')}
+        >
+          <span>{repoLabel}</span>
+          <IconExternalLink size={12} />
+        </a>
+      ) : (
+        <p className={styles.slug}>{repoLabel}</p>
+      )}
       {sourceText ? (
         <p className={styles.source}>{t('plugin_store.source_name', { source: sourceText })}</p>
       ) : null}

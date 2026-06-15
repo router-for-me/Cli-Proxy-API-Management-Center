@@ -50,6 +50,43 @@
   overflow-wrap: anywhere;
 }
 
+.repoLink {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-family: $font-mono;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  svg {
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+  }
+
+  &:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+
+    svg {
+      color: currentColor;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring-color, var(--accent-color));
+    outline-offset: 3px;
+    border-radius: $radius-sm;
+  }
+}
+
 .source {
   margin: 0;
   font-size: 12px;
