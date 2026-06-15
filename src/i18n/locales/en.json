@@ -1174,6 +1174,7 @@
     "description_show_more": "Show more",
     "description_show_less": "Show less",
     "source_name": "Source: {{source}}",
+    "cli_proxy_api_source": "CLIProxyAPI source",
     "refresh": "Refresh",
     "retry": "Retry",
     "load_failed": "Failed to load the plugin store",

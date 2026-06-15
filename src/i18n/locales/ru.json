@@ -1161,6 +1161,7 @@
     "description_show_more": "Показать больше",
     "description_show_less": "Свернуть",
     "source_name": "Источник: {{source}}",
+    "cli_proxy_api_source": "Источник CLIProxyAPI",
     "refresh": "Обновить",
     "retry": "Повторить",
     "load_failed": "Не удалось загрузить магазин плагинов",

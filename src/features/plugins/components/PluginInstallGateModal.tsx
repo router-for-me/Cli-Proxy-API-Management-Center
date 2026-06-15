@@ -9,6 +9,7 @@ import type { PluginStoreEntry } from '@/types';
 import {
   getPluginConfirmToken,
   getPluginRepositorySlug,
+  isDefaultPluginStoreSource,
   resolvePluginAssetURL,
 } from '../pluginResources';
 import styles from './PluginInstallGateModal.module.scss';
@@ -61,7 +62,10 @@ export function PluginInstallGateModal({
   const repoSlug = getPluginRepositorySlug(entry.repository);
   const token = getPluginConfirmToken(entry);
   const logo = resolvePluginAssetURL(entry.logo, apiBase);
-  const sourceText = entry.sourceName || entry.sourceUrl;
+  const rawSourceText = entry.sourceName || entry.sourceUrl;
+  const sourceText = isDefaultPluginStoreSource(entry)
+    ? t('plugin_store.cli_proxy_api_source')
+    : rawSourceText;
   const tokenMatches = typed.trim() === token;
 
   const handleClose = () => {

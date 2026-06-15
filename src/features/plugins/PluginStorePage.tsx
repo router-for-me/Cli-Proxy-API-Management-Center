@@ -20,7 +20,12 @@ import { pluginStoreApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { getErrorMessage, isRecord } from '@/utils/helpers';
 import type { PluginStoreEntry, PluginStoreResponse } from '@/types';
-import { buildRepositoryURL, isOfficialPlugin, resolvePluginAssetURL } from './pluginResources';
+import {
+  buildRepositoryURL,
+  isDefaultPluginStoreSource,
+  isOfficialPlugin,
+  resolvePluginAssetURL,
+} from './pluginResources';
 import { PluginInstallGateModal } from './components/PluginInstallGateModal';
 import styles from './PluginStorePage.module.scss';
 
@@ -327,9 +332,10 @@ export function PluginStorePage() {
           : entry.version
             ? `v${entry.version}`
             : '';
-    const sourceText = entry.sourceName
-      ? t('plugin_store.source_name', { source: entry.sourceName })
-      : '';
+    const sourceName = isDefaultPluginStoreSource(entry)
+      ? t('plugin_store.cli_proxy_api_source')
+      : entry.sourceName;
+    const sourceText = sourceName ? t('plugin_store.source_name', { source: sourceName }) : '';
     const metaItems = [versionText, sourceText, entry.author, entry.license].filter(Boolean);
     const isInstalling = installingKey === entryKey;
     const hasPendingInstall = Boolean(installingKey);
