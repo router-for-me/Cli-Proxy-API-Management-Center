@@ -24,9 +24,11 @@ import {
   buildRepositoryURL,
   isDefaultPluginStoreSource,
   isOfficialPlugin,
+  notifyPluginResourcesChanged,
   resolvePluginAssetURL,
 } from './pluginResources';
 import { PluginInstallGateModal } from './components/PluginInstallGateModal';
+import { waitForPluginStoreState } from './pluginPolling';
 import styles from './PluginStorePage.module.scss';
 
 type StoreStatusFilter = 'all' | 'installed' | 'notInstalled' | 'updates';
@@ -260,18 +262,66 @@ export function PluginStorePage() {
       setInstallingKey(entryKey);
       try {
         const result = await pluginStoreApi.install(entry.id, entry.sourceId || undefined);
-        showNotification(
-          isUpdate ? t('plugin_store.update_success') : t('plugin_store.install_success'),
-          'success'
+        clearConfigCache();
+        const sourceId = result.sourceId || entry.sourceId;
+        const installedState = await waitForPluginStoreState(
+          entry.id,
+          sourceId,
+          (plugin) => plugin.installed && plugin.configured
         );
+        setData(installedState.response);
+        if (
+          installedState.timedOut ||
+          !installedState.plugin?.installed ||
+          !installedState.plugin.configured
+        ) {
+          showNotification(t('plugin_store.status_pending'), 'warning');
+          return;
+        }
+
         if (result.restartRequired) {
           setRestartRequiredKeys((current) =>
             current.includes(entryKey) ? current : [...current, entryKey]
           );
+          showNotification(
+            isUpdate ? t('plugin_store.update_success') : t('plugin_store.install_success'),
+            'success'
+          );
           showNotification(t('plugin_store.restart_required_notice'), 'warning');
+          return;
         }
-        clearConfigCache();
-        await loadStore();
+
+        if (!installedState.response.pluginsEnabled) {
+          showNotification(
+            isUpdate ? t('plugin_store.update_success') : t('plugin_store.install_success'),
+            'success'
+          );
+          showNotification(t('plugin_store.global_disabled_hint'), 'warning');
+          return;
+        }
+
+        if (installedState.plugin.enabled) {
+          const registeredState = await waitForPluginStoreState(
+            entry.id,
+            sourceId,
+            (plugin) => plugin.registered && plugin.effectiveEnabled
+          );
+          setData(registeredState.response);
+          if (
+            registeredState.timedOut ||
+            !registeredState.plugin?.registered ||
+            !registeredState.plugin.effectiveEnabled
+          ) {
+            showNotification(t('plugin_store.registration_pending'), 'warning');
+            return;
+          }
+          notifyPluginResourcesChanged();
+        }
+
+        showNotification(
+          isUpdate ? t('plugin_store.update_success') : t('plugin_store.install_success'),
+          'success'
+        );
       } catch (err: unknown) {
         showNotification(`${t(failedKey)}: ${getErrorMessage(err, t(failedKey))}`, 'error');
         throw err;
@@ -279,7 +329,7 @@ export function PluginStorePage() {
         setInstallingKey('');
       }
     },
-    [clearConfigCache, loadStore, showNotification, t]
+    [clearConfigCache, showNotification, t]
   );
 
   const handleInstall = (entry: PluginStoreEntry) => {
