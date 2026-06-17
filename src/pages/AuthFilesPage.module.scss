@@ -795,6 +795,7 @@
   .cardHeaderContent,
   .cardMeta,
   .healthStatusMessage,
+  .subscriptionError,
   .cardInsights {
     opacity: 0.72;
   }
@@ -851,7 +852,8 @@
   }
 
   .typeBadge,
-  .stateBadge {
+  .stateBadge,
+  .subscriptionBadge {
     padding: 3px 7px;
     font-size: 10px;
   }
@@ -862,7 +864,8 @@
     -webkit-line-clamp: 1;
   }
 
-  .healthStatusMessage {
+  .healthStatusMessage,
+  .subscriptionError {
     padding: 6px 8px;
     border-radius: 8px;
     font-size: 11px;
@@ -1022,6 +1025,56 @@
   border: 1px dashed color-mix(in srgb, var(--border-primary) 90%, transparent);
 }
 
+.subscriptionBadge {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.subscriptionBadgeLoading {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-tertiary) 86%, transparent);
+  border-color: var(--border-color);
+}
+
+.subscriptionBadgeFree {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-tertiary) 82%, transparent);
+  border-color: color-mix(in srgb, var(--border-color) 86%, transparent);
+}
+
+.subscriptionBadgePaid {
+  color: #8a5b00;
+  background: rgba(217, 165, 22, 0.14);
+  border-color: rgba(217, 165, 22, 0.34);
+}
+
+:global([data-theme='dark']) .subscriptionBadgePaid {
+  color: #ffd862;
+  background: rgba(226, 180, 50, 0.12);
+  border-color: rgba(226, 180, 50, 0.28);
+}
+
+.subscriptionBadgeUnknown {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-tertiary) 80%, transparent);
+  border-color: color-mix(in srgb, var(--border-color) 72%, transparent);
+}
+
+.subscriptionBadgeError {
+  color: var(--danger-color);
+  background: rgba($error-color, 0.08);
+  border-color: color-mix(in srgb, var(--danger-color) 70%, transparent);
+}
+
 .fileName {
   font-size: 14px;
   font-weight: 800;
@@ -1116,6 +1169,28 @@
   word-break: break-word;
 }
 
+.subscriptionSubtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.subscriptionSubtitleLabel {
+  flex: 0 0 auto;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.subscriptionSubtitleValue {
+  @include text-ellipsis-multiline(2);
+  min-width: 0;
+  word-break: break-word;
+}
+
 .sortSelect {
   width: 100%;
   min-width: 0;
@@ -1129,6 +1204,19 @@
   color: var(--warning-text);
   background-color: color-mix(in srgb, var(--warning-bg) 60%, transparent);
   border: 1px solid color-mix(in srgb, var(--warning-border) 60%, transparent);
+  border-radius: 8px;
+  padding: 8px 10px;
+  word-break: break-word;
+}
+
+.subscriptionError {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--danger-color);
+  background-color: rgba($error-color, 0.08);
+  border: 1px solid color-mix(in srgb, var(--danger-color) 58%, transparent);
   border-radius: 8px;
   padding: 8px 10px;
   word-break: break-word;

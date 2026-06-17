@@ -378,6 +378,20 @@
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
     "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
   },
+  "antigravity_subscription": {
+    "subscription_label": "訂閱",
+    "plan_badge": "方案 {{plan}}",
+    "loading_short": "方案...",
+    "error_badge": "方案錯誤",
+    "load_failed": "訂閱狀態取得失敗：{{message}}",
+    "missing_auth_index": "驗證檔案缺少 auth_index",
+    "empty_data": "暫無訂閱資料",
+    "plan_unknown": "未知",
+    "plan_free": "免費版",
+    "plan_pro": "Pro",
+    "plan_ultra": "Ultra",
+    "plan_ultra_lite": "Ultra Lite"
+  },
   "antigravity_quota": {
     "title": "Antigravity 配額",
     "empty_title": "暫無 Antigravity 驗證",

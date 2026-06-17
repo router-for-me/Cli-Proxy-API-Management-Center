@@ -378,6 +378,20 @@
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
     "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
   },
+  "antigravity_subscription": {
+    "subscription_label": "订阅",
+    "plan_badge": "套餐 {{plan}}",
+    "loading_short": "套餐...",
+    "error_badge": "套餐错误",
+    "load_failed": "订阅状态获取失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "empty_data": "暂无订阅数据",
+    "plan_unknown": "未知",
+    "plan_free": "免费版",
+    "plan_pro": "Pro",
+    "plan_ultra": "Ultra",
+    "plan_ultra_lite": "Ultra Lite"
+  },
   "antigravity_quota": {
     "title": "Antigravity 额度",
     "empty_title": "暂无 Antigravity 认证",

@@ -378,6 +378,20 @@
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
     "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
   },
+  "antigravity_subscription": {
+    "subscription_label": "Subscription",
+    "plan_badge": "Plan {{plan}}",
+    "loading_short": "Plan...",
+    "error_badge": "Plan error",
+    "load_failed": "Subscription check failed: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_data": "No subscription data available",
+    "plan_unknown": "Unknown",
+    "plan_free": "Free",
+    "plan_pro": "Pro",
+    "plan_ultra": "Ultra",
+    "plan_ultra_lite": "Ultra Lite"
+  },
   "antigravity_quota": {
     "title": "Antigravity Quota",
     "empty_title": "No Antigravity Auth Files",
