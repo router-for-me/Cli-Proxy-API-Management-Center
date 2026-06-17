@@ -528,6 +528,9 @@
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All",
     "monthly_credits": "Monthly credits",
+    "plan_label": "Plan",
+    "plan_supergrok": "SuperGrok",
+    "plan_supergrok_heavy": "SuperGrok Heavy",
     "pay_as_you_go_label": "Pay as you go",
     "pay_as_you_go_enabled": "Enabled, cap {{cap}}",
     "pay_as_you_go_disabled": "Disabled"

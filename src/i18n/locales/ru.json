@@ -515,6 +515,9 @@
     "refresh_button": "Обновить квоту",
     "fetch_all": "Получить все",
     "monthly_credits": "Месячные кредиты",
+    "plan_label": "План",
+    "plan_supergrok": "SuperGrok",
+    "plan_supergrok_heavy": "SuperGrok Heavy",
     "pay_as_you_go_label": "Оплата по факту",
     "pay_as_you_go_enabled": "Включено, лимит {{cap}}",
     "pay_as_you_go_disabled": "Отключено"

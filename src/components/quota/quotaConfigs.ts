@@ -1749,6 +1749,21 @@ const formatXaiRemainingAmount = (billing: XaiBillingSummary): string => {
   return `${remaining} / ${limit}`;
 };
 
+const XAI_SUPERGROK_LIMIT_CENTS = 15_000;
+const XAI_SUPERGROK_HEAVY_LIMIT_CENTS = 150_000;
+
+const resolveXaiPlan = (
+  monthlyLimitCents: number | null
+): { labelKey: string; premium: boolean } | null => {
+  if (monthlyLimitCents === XAI_SUPERGROK_LIMIT_CENTS) {
+    return { labelKey: 'plan_supergrok', premium: false };
+  }
+  if (monthlyLimitCents === XAI_SUPERGROK_HEAVY_LIMIT_CENTS) {
+    return { labelKey: 'plan_supergrok_heavy', premium: true };
+  }
+  return null;
+};
+
 const renderXaiItems = (
   quota: XaiQuotaState,
   t: TFunction,
@@ -1769,6 +1784,7 @@ const renderXaiItems = (
   const amountLabel = formatXaiRemainingAmount(billing);
   const resetLabel = formatQuotaResetTime(billing.billingPeriodEnd);
   const onDemandCap = billing.onDemandCapCents ?? 0;
+  const plan = resolveXaiPlan(billing.monthlyLimitCents);
   const payAsYouGoLabel =
     onDemandCap > 0
       ? t('xai_quota.pay_as_you_go_enabled', { cap: formatUsdFromCents(onDemandCap) })
@@ -1777,6 +1793,18 @@ const renderXaiItems = (
   return h(
     Fragment,
     null,
+    plan
+      ? h(
+          'div',
+          { key: 'plan', className: styleMap.codexPlan },
+          h('span', { className: styleMap.codexPlanLabel }, t('xai_quota.plan_label')),
+          h(
+            'span',
+            { className: plan.premium ? styleMap.premiumPlanValue : styleMap.codexPlanValue },
+            t(`xai_quota.${plan.labelKey}`)
+          )
+        )
+      : null,
     h(
       'div',
       { key: 'pay-as-you-go', className: styleMap.codexPlan },

@@ -528,6 +528,9 @@
     "refresh_button": "重新整理配額",
     "fetch_all": "取得全部",
     "monthly_credits": "月度點數",
+    "plan_label": "方案",
+    "plan_supergrok": "SuperGrok",
+    "plan_supergrok_heavy": "SuperGrok Heavy",
     "pay_as_you_go_label": "按量付費",
     "pay_as_you_go_enabled": "已啟用，封頂 {{cap}}",
     "pay_as_you_go_disabled": "未啟用"

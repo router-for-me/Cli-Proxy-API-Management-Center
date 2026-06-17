@@ -528,6 +528,9 @@
     "refresh_button": "刷新额度",
     "fetch_all": "获取全部",
     "monthly_credits": "月度积分",
+    "plan_label": "套餐",
+    "plan_supergrok": "SuperGrok",
+    "plan_supergrok_heavy": "SuperGrok Heavy",
     "pay_as_you_go_label": "按量付费",
     "pay_as_you_go_enabled": "已启用，封顶 {{cap}}",
     "pay_as_you_go_disabled": "未启用"
