@@ -133,11 +133,11 @@ export function buildGeminiCliQuotaBuckets(
 }
 
 const ANTIGRAVITY_BUCKET_WINDOW_ORDER = new Map<string, number>([
-  ['weekly', 0],
-  ['week', 0],
-  ['5h', 1],
-  ['five-hour', 1],
-  ['five_hour', 1],
+  ['5h', 0],
+  ['five-hour', 0],
+  ['five_hour', 0],
+  ['weekly', 1],
+  ['week', 1],
 ]);
 
 function toStableId(value: string, fallback: string): string {

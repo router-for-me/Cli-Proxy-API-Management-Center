@@ -34,7 +34,6 @@ import {
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
-import type { AntigravitySubscriptionState } from '@/features/authFiles/hooks/useAntigravitySubscriptions';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
@@ -50,7 +49,6 @@ export type AuthFileCardProps = {
   statusUpdating: Record<string, boolean>;
   quotaFilterType: QuotaProviderType | null;
   statusBarCache: Map<string, AuthFileStatusBarData>;
-  antigravitySubscription?: AntigravitySubscriptionState;
   onShowModels: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
   onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
@@ -77,7 +75,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
     statusUpdating,
     quotaFilterType,
     statusBarCache,
-    antigravitySubscription,
     onShowModels,
     onDownload,
     onOpenPrefixProxyEditor,
@@ -93,7 +90,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
   };
   const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
   const providerKey = normalizeProviderKey(String(file.type ?? file.provider ?? 'unknown'));
-  const isAntigravity = providerKey === 'antigravity';
   const isAistudio = providerKey === 'aistudio';
   const showModelsButton = !isRuntimeOnly || isAistudio;
   const typeColor = getTypeColor(providerKey, resolvedTheme);
@@ -131,55 +127,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
 
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
-  const subscription =
-    isAntigravity && !isRuntimeOnly ? antigravitySubscription : undefined;
-  const subscriptionData = subscription?.status === 'success' ? subscription.data : undefined;
-  const subscriptionPlanLabel =
-    subscriptionData?.plan === 'free'
-      ? t('antigravity_subscription.plan_free')
-      : subscriptionData?.plan === 'pro'
-        ? t('antigravity_subscription.plan_pro')
-        : subscriptionData?.plan === 'ultra'
-          ? t('antigravity_subscription.plan_ultra')
-          : subscriptionData?.plan === 'ultra-lite'
-            ? t('antigravity_subscription.plan_ultra_lite')
-            : subscriptionData
-              ? subscriptionData.tierName ||
-                subscriptionData.tierId ||
-                t('antigravity_subscription.plan_unknown')
-              : '';
-  const subscriptionBadgeLabel =
-    subscription?.status === 'loading'
-      ? t('antigravity_subscription.loading_short')
-      : subscription?.status === 'error'
-        ? t('antigravity_subscription.error_badge')
-        : subscriptionData
-          ? t('antigravity_subscription.plan_badge', {
-              plan: subscriptionPlanLabel,
-            })
-          : '';
-  const subscriptionTitle =
-    subscription?.status === 'error'
-      ? subscription.error || t('common.unknown_error')
-      : subscriptionData?.tierName && subscriptionData.tierId
-        ? `${subscriptionData.tierName} (${subscriptionData.tierId})`
-        : subscriptionData?.tierName || subscriptionData?.tierId || subscriptionBadgeLabel;
-  const subscriptionBadgeClass =
-    subscription?.status === 'loading'
-      ? styles.subscriptionBadgeLoading
-      : subscription?.status === 'error'
-        ? styles.subscriptionBadgeError
-        : subscriptionData?.plan === 'free'
-          ? styles.subscriptionBadgeFree
-          : subscriptionData?.plan === 'ultra' || subscriptionData?.plan === 'ultra-lite'
-            ? styles.subscriptionBadgePremium
-          : subscriptionData?.plan === 'unknown'
-            ? styles.subscriptionBadgeUnknown
-            : styles.subscriptionBadgePaid;
-  const subscriptionErrorMessage =
-    subscription?.status === 'error'
-      ? subscription.error || t('common.unknown_error')
-      : '';
   const stateLabel = isRuntimeOnly
     ? t('auth_files.type_virtual') || '虚拟认证文件'
     : file.disabled
@@ -244,28 +191,10 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   {typeLabel}
                 </span>
                 <span className={`${styles.stateBadge} ${stateBadgeClass}`}>{stateLabel}</span>
-                {subscriptionBadgeLabel && (
-                  <span
-                    className={`${styles.subscriptionBadge} ${subscriptionBadgeClass}`}
-                    title={subscriptionTitle}
-                  >
-                    {subscriptionBadgeLabel}
-                  </span>
-                )}
               </div>
               <span className={styles.fileName} title={file.name}>
                 {file.name}
               </span>
-              {!compact && subscriptionData?.tierName && (
-                <div className={styles.subscriptionSubtitle} title={subscriptionTitle}>
-                  <span className={styles.subscriptionSubtitleLabel}>
-                    {t('antigravity_subscription.subscription_label')}
-                  </span>
-                  <span className={styles.subscriptionSubtitleValue}>
-                    {subscriptionData.tierName}
-                  </span>
-                </div>
-              )}
               {!compact && noteValue && (
                 <div className={styles.noteText} title={noteValue}>
                   <span className={styles.noteLabel}>{t('auth_files.note_display')}</span>
@@ -300,17 +229,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
             <div className={styles.healthStatusMessage} title={rawStatusMessage}>
               <IconInfo className={styles.messageIcon} size={14} />
               <span>{rawStatusMessage}</span>
-            </div>
-          )}
-
-          {subscriptionErrorMessage && (
-            <div className={styles.subscriptionError} title={subscriptionErrorMessage}>
-              <IconInfo className={styles.messageIcon} size={14} />
-              <span>
-                {t('antigravity_subscription.load_failed', {
-                  message: subscriptionErrorMessage,
-                })}
-              </span>
             </div>
           )}
 

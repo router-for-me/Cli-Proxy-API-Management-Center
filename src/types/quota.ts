@@ -205,6 +205,12 @@ export interface AntigravityQuotaGroup {
   buckets: AntigravityQuotaBucket[];
 }
 
+export interface AntigravityQuotaSubscription {
+  plan: string | null;
+  tierName: string | null;
+  tierId: string | null;
+}
+
 export interface AntigravityQuotaBucket {
   id: string;
   label: string;
@@ -217,6 +223,7 @@ export interface AntigravityQuotaBucket {
 export interface AntigravityQuotaState {
   status: 'idle' | 'loading' | 'success' | 'error';
   groups: AntigravityQuotaGroup[];
+  subscription?: AntigravityQuotaSubscription | null;
   serverTimeOffsetMs?: number | null;
   error?: string;
   errorStatus?: number;

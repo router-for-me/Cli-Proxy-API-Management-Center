@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import type {
   AntigravityQuotaGroup,
+  AntigravityQuotaSubscription,
   AntigravityQuotaSummaryPayload,
   AntigravityQuotaState,
   AuthFileItem,
@@ -32,7 +33,13 @@ import type {
   XaiBillingSummary,
   XaiQuotaState,
 } from '@/types';
-import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
+import {
+  antigravitySubscriptionApi,
+  apiCallApi,
+  authFilesApi,
+  getApiCallErrorMessage,
+  type AntigravitySubscriptionSummary,
+} from '@/services/api';
 import { useQuotaStore } from '@/stores';
 import {
   ANTIGRAVITY_QUOTA_URLS,
@@ -95,6 +102,7 @@ type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'x
 
 type AntigravityQuotaData = {
   groups: AntigravityQuotaGroup[];
+  subscription: AntigravityQuotaSubscription | null;
   serverTimeOffsetMs: number | null;
 };
 
@@ -229,6 +237,10 @@ const fetchAntigravityQuota = async (
     throw new Error(t('antigravity_quota.missing_project_id'));
   }
   const requestBody = JSON.stringify({ project: projectId });
+  const subscriptionPromise = antigravitySubscriptionApi
+    .get(authIndex)
+    .then(toAntigravityQuotaSubscription)
+    .catch(() => null);
 
   let lastError = '';
   let lastStatus: number | undefined;
@@ -271,6 +283,7 @@ const fetchAntigravityQuota = async (
 
       return {
         groups,
+        subscription: await subscriptionPromise,
         serverTimeOffsetMs: resolveResponseServerTimeOffsetMs(result.header),
       };
     } catch (err: unknown) {
@@ -286,16 +299,24 @@ const fetchAntigravityQuota = async (
   }
 
   if (hadSuccess) {
-    return { groups: [], serverTimeOffsetMs: null };
+    return { groups: [], subscription: await subscriptionPromise, serverTimeOffsetMs: null };
   }
 
   throw createStatusError(lastError || t('common.unknown_error'), priorityStatus ?? lastStatus);
 };
 
-const buildCodexQuotaWindows = (
-  payload: CodexUsagePayload,
-  t: TFunction
-): CodexQuotaWindow[] => {
+const toAntigravityQuotaSubscription = (
+  summary: AntigravitySubscriptionSummary | null
+): AntigravityQuotaSubscription | null => {
+  if (!summary) return null;
+  return {
+    plan: summary.plan,
+    tierName: summary.tierName,
+    tierId: summary.tierId,
+  };
+};
+
+const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): CodexQuotaWindow[] => {
   const FIVE_HOUR_SECONDS = 18000;
   const WEEK_SECONDS = 604800;
   const MIN_MONTH_SECONDS = 28 * 24 * 60 * 60;
@@ -912,6 +933,62 @@ const formatAntigravityResetLabel = (
   });
 };
 
+const ANTIGRAVITY_GROUP_LABEL_KEYS = new Map<string, string>([
+  ['gemini models', 'group_gemini_models'],
+  ['claude and gpt models', 'group_claude_gpt_models'],
+]);
+
+const ANTIGRAVITY_BUCKET_LABEL_KEYS = new Map<string, string>([
+  ['weekly limit', 'weekly_limit'],
+  ['daily limit', 'daily_limit'],
+  ['5 hour limit', 'five_hour_limit'],
+  ['5-hour limit', 'five_hour_limit'],
+  ['five hour limit', 'five_hour_limit'],
+  ['monthly limit', 'monthly_limit'],
+]);
+
+const normalizeAntigravityQuotaText = (value: string): string =>
+  value.trim().toLowerCase().replace(/\s+/g, ' ');
+
+const translateAntigravityQuotaLabel = (
+  value: string,
+  keys: Map<string, string>,
+  t: TFunction
+): string => {
+  const key = keys.get(normalizeAntigravityQuotaText(value));
+  return key ? t(`antigravity_quota.${key}`) : value;
+};
+
+const translateAntigravityQuotaDescription = (
+  value: string | undefined,
+  t: TFunction
+): string | undefined => {
+  if (!value) return undefined;
+  const modelsMatch = value.match(/^models within this group:\s*(.+)$/i);
+  if (modelsMatch) {
+    return t('antigravity_quota.group_models_description', {
+      models: modelsMatch[1].trim(),
+    });
+  }
+  return value;
+};
+
+const getAntigravityPlanLabel = (
+  subscription: AntigravityQuotaSubscription | null | undefined,
+  t: TFunction
+): string | null => {
+  if (!subscription) return null;
+  if (subscription.plan === 'free') return t('antigravity_subscription.plan_free');
+  if (subscription.plan === 'pro') return t('antigravity_subscription.plan_pro');
+  if (subscription.plan === 'ultra') return t('antigravity_subscription.plan_ultra');
+  if (subscription.plan === 'ultra-lite') return t('antigravity_subscription.plan_ultra_lite');
+  return (
+    subscription.tierName ||
+    subscription.tierId ||
+    (subscription.plan === 'unknown' ? t('antigravity_subscription.plan_unknown') : null)
+  );
+};
+
 const renderAntigravityItems = (
   quota: AntigravityQuotaState,
   t: TFunction,
@@ -920,26 +997,61 @@ const renderAntigravityItems = (
   const { styles: styleMap, QuotaProgressBar } = helpers;
   const { createElement: h, Fragment } = React;
   const groups = quota.groups ?? [];
+  const nodes: ReactNode[] = [];
+  const planLabel = getAntigravityPlanLabel(quota.subscription, t);
+  const normalizedPlan = quota.subscription?.plan?.toLowerCase() ?? '';
+  const isPremiumPlan = normalizedPlan === 'ultra' || normalizedPlan === 'ultra-lite';
+
+  if (planLabel) {
+    nodes.push(
+      h(
+        'div',
+        { key: 'plan', className: styleMap.codexPlan },
+        h(
+          'span',
+          { className: styleMap.codexPlanItem },
+          h('span', { className: styleMap.codexPlanLabel }, t('antigravity_quota.plan_label')),
+          h(
+            'span',
+            { className: isPremiumPlan ? styleMap.premiumPlanValue : styleMap.codexPlanValue },
+            planLabel
+          )
+        )
+      )
+    );
+  }
 
   if (groups.length === 0) {
-    return h('div', { className: styleMap.quotaMessage }, t('antigravity_quota.empty_models'));
+    nodes.push(
+      h(
+        'div',
+        { key: 'empty', className: styleMap.quotaMessage },
+        t('antigravity_quota.empty_models')
+      )
+    );
+    return h(Fragment, null, ...nodes);
   }
 
   const nowMs = Date.now() + (quota.serverTimeOffsetMs ?? 0);
 
-  return h(
-    Fragment,
-    null,
-    ...groups.map((group) =>
-      h(
+  nodes.push(
+    ...groups.map((group) => {
+      const groupLabel = translateAntigravityQuotaLabel(
+        group.label,
+        ANTIGRAVITY_GROUP_LABEL_KEYS,
+        t
+      );
+      const groupDescription = translateAntigravityQuotaDescription(group.description, t);
+
+      return h(
         'div',
         { key: group.id, className: styleMap.antigravityQuotaGroup },
         h(
           'div',
           { className: styleMap.antigravityQuotaGroupHeader },
-          h('span', { className: styleMap.antigravityQuotaGroupTitle }, group.label),
-          group.description
-            ? h('span', { className: styleMap.antigravityQuotaGroupDescription }, group.description)
+          h('span', { className: styleMap.antigravityQuotaGroupTitle }, groupLabel),
+          groupDescription
+            ? h('span', { className: styleMap.antigravityQuotaGroupDescription }, groupDescription)
             : null
         ),
         ...group.buckets.map((bucket) => {
@@ -952,6 +1064,12 @@ const renderAntigravityItems = (
                   percent: Math.round(percent),
                 });
           const resetLabel = formatAntigravityResetLabel(bucket.resetTime, t, nowMs);
+          const bucketLabel = translateAntigravityQuotaLabel(
+            bucket.label,
+            ANTIGRAVITY_BUCKET_LABEL_KEYS,
+            t
+          );
+          const bucketDescription = translateAntigravityQuotaDescription(bucket.description, t);
 
           return h(
             'div',
@@ -959,11 +1077,7 @@ const renderAntigravityItems = (
             h(
               'div',
               { className: styleMap.quotaRowHeader },
-              h(
-                'span',
-                { className: styleMap.quotaModel, title: bucket.description },
-                bucket.label
-              ),
+              h('span', { className: styleMap.quotaModel, title: bucketDescription }, bucketLabel),
               h(
                 'div',
                 { className: styleMap.quotaMeta },
@@ -978,9 +1092,11 @@ const renderAntigravityItems = (
             })
           );
         })
-      )
-    )
+      );
+    })
   );
+
+  return h(Fragment, null, ...nodes);
 };
 
 const PREMIUM_GEMINI_CLI_TIER_IDS = new Set(['g1-ultra-tier']);
@@ -996,8 +1112,7 @@ const renderCodexItems = (
   const windows = quota.windows ?? [];
   const planType = quota.planType ?? null;
   const subscriptionActiveUntil = quota.subscriptionActiveUntil ?? null;
-  const rateLimitResetCreditsAvailableCount =
-    quota.rateLimitResetCreditsAvailableCount ?? null;
+  const rateLimitResetCreditsAvailableCount = quota.rateLimitResetCreditsAvailableCount ?? null;
 
   const getPlanLabel = (pt?: string | null): string | null => {
     const normalized = normalizePlanType(pt);
@@ -1020,56 +1135,36 @@ const renderCodexItems = (
   if (planLabel || expiryLabel || rateLimitResetCreditsAvailableCount !== null) {
     const planValueClass = isPremiumPlan ? styleMap.premiumPlanValue : styleMap.codexPlanValue;
     const planNodes: ReactNode[] = [];
-    const appendSeparator = (key: string) => {
-      if (planNodes.length === 0) return;
+
+    const appendPlanItem = (
+      key: string,
+      label: string,
+      value: string,
+      valueClassName = styleMap.codexPlanValue
+    ) => {
       planNodes.push(
-        h('span', {
-          key,
-          className: styleMap.codexPlanSeparator,
-        })
+        h(
+          'span',
+          { key, className: styleMap.codexPlanItem },
+          h('span', { className: styleMap.codexPlanLabel }, label),
+          h('span', { className: valueClassName }, value)
+        )
       );
     };
 
     if (planLabel) {
-      planNodes.push(
-        h(
-          'span',
-          { key: 'plan-label', className: styleMap.codexPlanLabel },
-          t('codex_quota.plan_label')
-        ),
-        h('span', { key: 'plan-value', className: planValueClass }, planLabel)
-      );
+      appendPlanItem('plan-type', t('codex_quota.plan_label'), planLabel, planValueClass);
     }
 
     if (expiryLabel) {
-      appendSeparator('subscription-expiry-separator');
-      planNodes.push(
-        h(
-          'span',
-          { key: 'subscription-expiry-label', className: styleMap.codexPlanLabel },
-          t('codex_quota.expires_label')
-        ),
-        h(
-          'span',
-          { key: 'subscription-expiry-value', className: styleMap.codexPlanValue },
-          expiryLabel
-        )
-      );
+      appendPlanItem('subscription-expiry', t('codex_quota.expires_label'), expiryLabel);
     }
 
     if (rateLimitResetCreditsAvailableCount !== null) {
-      appendSeparator('reset-credits-separator');
-      planNodes.push(
-        h(
-          'span',
-          { key: 'reset-credits-label', className: styleMap.codexPlanLabel },
-          t('codex_quota.reset_credits_label')
-        ),
-        h(
-          'span',
-          { key: 'reset-credits-value', className: styleMap.codexPlanValue },
-          rateLimitResetCreditsAvailableCount.toString()
-        )
+      appendPlanItem(
+        'reset-credits',
+        t('codex_quota.reset_credits_label'),
+        rateLimitResetCreditsAvailableCount.toString()
       );
     }
 
@@ -1468,15 +1563,22 @@ export const ANTIGRAVITY_CONFIG: QuotaConfig<AntigravityQuotaState, AntigravityQ
   fetchQuota: fetchAntigravityQuota,
   storeSelector: (state) => state.antigravityQuota,
   storeSetter: 'setAntigravityQuota',
-  buildLoadingState: () => ({ status: 'loading', groups: [], serverTimeOffsetMs: null }),
+  buildLoadingState: () => ({
+    status: 'loading',
+    groups: [],
+    subscription: null,
+    serverTimeOffsetMs: null,
+  }),
   buildSuccessState: (data) => ({
     status: 'success',
     groups: data.groups,
+    subscription: data.subscription,
     serverTimeOffsetMs: data.serverTimeOffsetMs,
   }),
   buildErrorState: (message, status) => ({
     status: 'error',
     groups: [],
+    subscription: null,
     serverTimeOffsetMs: null,
     error: message,
     errorStatus: status,

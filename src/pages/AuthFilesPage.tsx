@@ -50,7 +50,6 @@ import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModel
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
-import { useAntigravitySubscriptions } from '@/features/authFiles/hooks/useAntigravitySubscriptions';
 import {
   isAuthFilesSortMode,
   readAuthFilesUiState,
@@ -69,8 +68,7 @@ const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
 
-const escapeWildcardSearchSegment = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildWildcardSearch = (value: string): RegExp | null => {
   if (!value.includes('*')) return null;
@@ -204,10 +202,7 @@ export function AuthFilesPage() {
       if (typeof persisted.disabledOnly === 'boolean') {
         setDisabledOnly(persisted.disabledOnly);
       }
-      if (
-        typeof persistedCompactMode !== 'boolean' &&
-        typeof persisted.compactMode === 'boolean'
-      ) {
+      if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
         setCompactMode(persisted.compactMode);
       }
       if (typeof persisted.search === 'string') {
@@ -223,11 +218,11 @@ export function AuthFilesPage() {
       const regularPageSize =
         typeof persisted.regularPageSize === 'number' && Number.isFinite(persisted.regularPageSize)
           ? clampCardPageSize(persisted.regularPageSize)
-          : legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE);
       const compactPageSize =
         typeof persisted.compactPageSize === 'number' && Number.isFinite(persisted.compactPageSize)
           ? clampCardPageSize(persisted.compactPageSize)
-          : legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE);
       setPageSizeByMode({
         regular: regularPageSize,
         compact: compactPageSize,
@@ -432,7 +427,6 @@ export function AuthFilesPage() {
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
   const pageItems = useMemo(() => sorted.slice(start, start + pageSize), [pageSize, sorted, start]);
-  const antigravitySubscriptions = useAntigravitySubscriptions(pageItems);
   const selectablePageItems = useMemo(
     () => pageItems.filter((file) => !isRuntimeOnlyAuthFile(file)),
     [pageItems]
@@ -813,7 +807,6 @@ export function AuthFilesPage() {
                     statusUpdating={statusUpdating}
                     quotaFilterType={quotaFilterType}
                     statusBarCache={statusBarCache}
-                    antigravitySubscription={antigravitySubscriptions[file.name]}
                     onShowModels={showModels}
                     onDownload={handleDownload}
                     onOpenPrefixProxyEditor={openPrefixProxyEditor}
