@@ -288,6 +288,37 @@
   gap: $spacing-xs;
 }
 
+.antigravityQuotaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding-bottom: $spacing-xs;
+}
+
+.antigravityQuotaGroup + .antigravityQuotaGroup {
+  padding-top: $spacing-sm;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+}
+
+.antigravityQuotaGroupHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.antigravityQuotaGroupTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.antigravityQuotaGroupDescription {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-tertiary);
+}
+
 .quotaRowHeader {
   display: flex;
   align-items: center;

@@ -41,7 +41,7 @@ export function QuotaProgressBar({
         : normalized >= mediumThreshold
           ? styles.quotaBarFillMedium
           : styles.quotaBarFillLow;
-  const widthPercent = Math.round(normalized ?? 0);
+  const widthPercent = Math.round((normalized ?? 0) * 100) / 100;
 
   return (
     <div className={styles.quotaBar}>

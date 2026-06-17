@@ -3,10 +3,9 @@
  */
 
 import type {
+  AntigravityQuotaBucket,
   AntigravityQuotaGroup,
-  AntigravityQuotaGroupDefinition,
-  AntigravityQuotaInfo,
-  AntigravityModelsPayload,
+  AntigravityQuotaSummaryPayload,
   GeminiCliParsedBucket,
   GeminiCliQuotaBucketState,
   KimiUsagePayload,
@@ -15,12 +14,8 @@ import type {
   KimiLimitWindow,
   KimiQuotaRow,
 } from '@/types';
-import {
-  ANTIGRAVITY_QUOTA_GROUPS,
-  GEMINI_CLI_GROUP_LOOKUP,
-  GEMINI_CLI_GROUP_ORDER,
-} from './constants';
-import { normalizeQuotaFraction } from './parsers';
+import { GEMINI_CLI_GROUP_LOOKUP, GEMINI_CLI_GROUP_ORDER } from './constants';
+import { normalizeQuotaFraction, normalizeStringValue } from './parsers';
 import { isIgnoredGeminiCliModel } from './validators';
 
 export function pickEarlierResetTime(current?: string, next?: string): string | undefined {
@@ -137,120 +132,80 @@ export function buildGeminiCliQuotaBuckets(
     });
 }
 
-export function getAntigravityQuotaInfo(entry?: AntigravityQuotaInfo): {
-  remainingFraction: number | null;
-  resetTime?: string;
-  displayName?: string;
-} {
-  if (!entry) {
-    return { remainingFraction: null };
-  }
-  const quotaInfo = entry.quotaInfo ?? entry.quota_info ?? {};
-  const remainingValue =
-    quotaInfo.remainingFraction ?? quotaInfo.remaining_fraction ?? quotaInfo.remaining;
-  const remainingFraction = normalizeQuotaFraction(remainingValue);
-  const resetValue = quotaInfo.resetTime ?? quotaInfo.reset_time;
-  const resetTime = typeof resetValue === 'string' ? resetValue : undefined;
-  const displayName = typeof entry.displayName === 'string' ? entry.displayName : undefined;
+const ANTIGRAVITY_BUCKET_WINDOW_ORDER = new Map<string, number>([
+  ['weekly', 0],
+  ['week', 0],
+  ['5h', 1],
+  ['five-hour', 1],
+  ['five_hour', 1],
+]);
 
-  return {
-    remainingFraction,
-    resetTime,
-    displayName,
-  };
+function toStableId(value: string, fallback: string): string {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return normalized || fallback;
 }
 
-export function findAntigravityModel(
-  models: AntigravityModelsPayload,
-  identifier: string
-): { id: string; entry: AntigravityQuotaInfo } | null {
-  const direct = models[identifier];
-  if (direct) {
-    return { id: identifier, entry: direct };
-  }
-
-  const match = Object.entries(models).find(([, entry]) => {
-    const name = typeof entry?.displayName === 'string' ? entry.displayName : '';
-    return name.toLowerCase() === identifier.toLowerCase();
-  });
-  if (match) {
-    return { id: match[0], entry: match[1] };
-  }
-
-  return null;
+function getAntigravityWindowOrder(bucket: AntigravityQuotaBucket): number {
+  const window = bucket.window?.toLowerCase();
+  if (!window) return Number.MAX_SAFE_INTEGER;
+  return ANTIGRAVITY_BUCKET_WINDOW_ORDER.get(window) ?? Number.MAX_SAFE_INTEGER;
 }
 
 export function buildAntigravityQuotaGroups(
-  models: AntigravityModelsPayload
+  payload: AntigravityQuotaSummaryPayload
 ): AntigravityQuotaGroup[] {
-  const groups: AntigravityQuotaGroup[] = [];
-  const definitions = new Map(
-    ANTIGRAVITY_QUOTA_GROUPS.map((definition) => [definition.id, definition] as const)
-  );
+  const groups = Array.isArray(payload.groups) ? payload.groups : [];
 
-  const buildGroup = (
-    def: AntigravityQuotaGroupDefinition,
-    overrideResetTime?: string
-  ): AntigravityQuotaGroup | null => {
-    const matches = def.identifiers
-      .map((identifier) => findAntigravityModel(models, identifier))
-      .filter((entry): entry is { id: string; entry: AntigravityQuotaInfo } => Boolean(entry));
+  return groups
+    .map((group, groupIndex): AntigravityQuotaGroup | null => {
+      const label =
+        normalizeStringValue(group.displayName ?? group.display_name) ??
+        `Quota Group ${groupIndex + 1}`;
+      const groupId = toStableId(label, `quota-group-${groupIndex + 1}`);
+      const buckets = Array.isArray(group.buckets) ? group.buckets : [];
+      const parsedBuckets = buckets
+        .map((bucket, bucketIndex): AntigravityQuotaBucket | null => {
+          const remainingFraction = normalizeQuotaFraction(
+            bucket.remainingFraction ?? bucket.remaining_fraction
+          );
+          if (remainingFraction === null) return null;
 
-    const quotaEntries = matches
-      .map(({ id, entry }) => {
-        const info = getAntigravityQuotaInfo(entry);
-        const remainingFraction = info.remainingFraction ?? (info.resetTime ? 0 : null);
-        if (remainingFraction === null) return null;
-        return {
-          id,
-          remainingFraction,
-          resetTime: info.resetTime,
-          displayName: info.displayName,
-        };
-      })
-      .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+          const window = normalizeStringValue(bucket.window) ?? undefined;
+          const rawId =
+            normalizeStringValue(bucket.bucketId ?? bucket.bucket_id) ??
+            `${groupId}-${window ?? `bucket-${bucketIndex + 1}`}`;
+          const label = normalizeStringValue(bucket.displayName ?? bucket.display_name) ?? rawId;
 
-    if (quotaEntries.length === 0) return null;
+          return {
+            id: rawId,
+            label,
+            window,
+            remainingFraction,
+            resetTime: normalizeStringValue(bucket.resetTime ?? bucket.reset_time) ?? undefined,
+            description: normalizeStringValue(bucket.description) ?? undefined,
+          };
+        })
+        .filter((bucket): bucket is AntigravityQuotaBucket => bucket !== null)
+        .sort((a, b) => {
+          const orderDiff = getAntigravityWindowOrder(a) - getAntigravityWindowOrder(b);
+          if (orderDiff !== 0) return orderDiff;
+          return a.label.localeCompare(b.label);
+        });
 
-    const remainingFraction = Math.min(...quotaEntries.map((entry) => entry.remainingFraction));
-    const resetTime =
-      overrideResetTime ?? quotaEntries.map((entry) => entry.resetTime).find(Boolean);
-    const displayName = quotaEntries.map((entry) => entry.displayName).find(Boolean);
-    const label = def.labelFromModel && displayName ? displayName : def.label;
+      if (parsedBuckets.length === 0) return null;
 
-    return {
-      id: def.id,
-      label,
-      models: quotaEntries.map((entry) => entry.id),
-      remainingFraction,
-      resetTime,
-    };
-  };
-
-  const appendGroup = (
-    id: string,
-    overrideResetTime?: string
-  ): AntigravityQuotaGroup | null => {
-    const definition = definitions.get(id);
-    if (!definition) return null;
-    const group = buildGroup(definition, overrideResetTime);
-    if (group) {
-      groups.push(group);
-    }
-    return group;
-  };
-
-  appendGroup('claude-gpt');
-  const gemini31ProGroup = appendGroup('gemini-3-1-pro-series');
-  const geminiProGroup = appendGroup('gemini-3-pro');
-  const geminiProResetTime = gemini31ProGroup?.resetTime ?? geminiProGroup?.resetTime;
-  appendGroup('gemini-2-5-flash');
-  appendGroup('gemini-2-5-flash-lite');
-  appendGroup('gemini-2-5-cu');
-  appendGroup('gemini-3-flash');
-  appendGroup('gemini-image', geminiProResetTime);
-
-  return groups;
+      return {
+        id: groupId,
+        label,
+        description: normalizeStringValue(group.description) ?? undefined,
+        buckets: parsedBuckets,
+      };
+    })
+    .filter((group): group is AntigravityQuotaGroup => group !== null);
 }
 
 function toInt(value: unknown): number | null {
