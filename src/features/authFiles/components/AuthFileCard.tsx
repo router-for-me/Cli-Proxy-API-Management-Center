@@ -171,6 +171,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
         ? styles.subscriptionBadgeError
         : subscriptionData?.plan === 'free'
           ? styles.subscriptionBadgeFree
+          : subscriptionData?.plan === 'ultra' || subscriptionData?.plan === 'ultra-lite'
+            ? styles.subscriptionBadgePremium
           : subscriptionData?.plan === 'unknown'
             ? styles.subscriptionBadgeUnknown
             : styles.subscriptionBadgePaid;
