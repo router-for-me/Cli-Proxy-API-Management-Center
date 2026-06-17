@@ -1738,11 +1738,15 @@ const formatUsdFromCents = (cents: number | null): string => {
   }).format(cents / 100);
 };
 
-const formatXaiUsageAmount = (billing: XaiBillingSummary): string => {
-  const used = formatUsdFromCents(billing.usedCents);
+const formatXaiRemainingAmount = (billing: XaiBillingSummary): string => {
+  const remainingCents =
+    billing.monthlyLimitCents !== null && billing.usedCents !== null
+      ? Math.max(0, billing.monthlyLimitCents - billing.usedCents)
+      : null;
+  const remaining = formatUsdFromCents(remainingCents);
   const limit = formatUsdFromCents(billing.monthlyLimitCents);
-  if (billing.monthlyLimitCents === null) return used;
-  return `${used} / ${limit}`;
+  if (billing.monthlyLimitCents === null) return remaining;
+  return `${remaining} / ${limit}`;
 };
 
 const renderXaiItems = (
@@ -1762,7 +1766,7 @@ const renderXaiItems = (
     billing.usedPercent === null ? null : Math.max(0, Math.min(100, billing.usedPercent));
   const remaining = clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
   const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
-  const amountLabel = formatXaiUsageAmount(billing);
+  const amountLabel = formatXaiRemainingAmount(billing);
   const resetLabel = formatQuotaResetTime(billing.billingPeriodEnd);
   const onDemandCap = billing.onDemandCapCents ?? 0;
   const payAsYouGoLabel =
