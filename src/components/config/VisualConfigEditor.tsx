@@ -253,8 +253,9 @@ export function VisualConfigEditor({
 
     const el = document.getElementById(configFieldDomId(fieldId));
     if (!el) {
-      // Field not rendered right now (e.g. TLS cert while TLS is disabled) — fall back to section.
-      sectionRefs.current[sectionId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Field not rendered right now (e.g. TLS cert while TLS is disabled) — fall back to
+      // bringing its section into view horizontally.
+      sectionRefs.current[sectionId]?.scrollIntoView({ block: 'nearest', inline: 'start' });
       return;
     }
 
@@ -270,8 +271,15 @@ export function VisualConfigEditor({
       highlightedElRef.current?.classList.remove(styles.fieldHighlightActive);
     }
 
+    // Full-mode sections live in a horizontal scroll-snap container (`scroll-snap-type: x
+    // mandatory`). A single field-level scrollIntoView() tries to do the horizontal section
+    // switch AND the vertical field scroll at once, which the snap pulls back / lands wrong.
+    // So: (1) switch to the target section horizontally and instantly (no smooth → no snap
+    // fight), then (2) next frame, scroll the field vertically with inline:'nearest' so it
+    // can't re-trigger horizontal snapping.
+    sectionRefs.current[sectionId]?.scrollIntoView({ block: 'nearest', inline: 'start' });
     requestAnimationFrame(() => {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
       el.classList.add(styles.fieldHighlightActive);
     });
     highlightedElRef.current = el;
