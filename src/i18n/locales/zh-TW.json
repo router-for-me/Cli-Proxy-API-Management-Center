@@ -943,6 +943,10 @@
         "validation_banner": "部分進階設定項存在驗證錯誤，已阻止儲存。請切換到完整模式進行修正。",
         "switch_to_full": "切換完整模式"
       },
+      "search": {
+        "placeholder": "搜尋設定項（標籤或 YAML 鍵名）",
+        "no_results": "沒有符合的設定項"
+      },
       "sections": {
         "connectivity": {
           "title": "接入與認證",

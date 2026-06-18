@@ -917,6 +917,10 @@
         "validation_banner": "Some advanced settings have validation errors and are blocking save. Switch to full mode to fix them.",
         "switch_to_full": "Switch to full mode"
       },
+      "search": {
+        "placeholder": "Search settings (label or YAML key)",
+        "no_results": "No matching settings"
+      },
       "sections": {
         "connectivity": {
           "title": "Access & Authentication",

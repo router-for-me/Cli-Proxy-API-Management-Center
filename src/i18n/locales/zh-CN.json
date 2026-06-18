@@ -917,6 +917,10 @@
         "validation_banner": "部分高级配置项存在校验错误，已阻止保存。请切换到完整模式进行修复。",
         "switch_to_full": "切换完整模式"
       },
+      "search": {
+        "placeholder": "搜索配置项（标签或 YAML 键名）",
+        "no_results": "没有匹配的配置项"
+      },
       "sections": {
         "connectivity": {
           "title": "接入与认证",
