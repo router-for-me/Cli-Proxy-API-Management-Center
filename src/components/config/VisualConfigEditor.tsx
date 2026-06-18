@@ -262,8 +262,12 @@ export function VisualConfigEditor({
     if (mode !== 'full' || !jumpRequest || handledJumpRef.current === jumpRequest) return;
     handledJumpRef.current = jumpRequest; // handle each request once, even if deps re-fire
     const { fieldId, sectionId } = jumpRequest;
+    const targetFieldId =
+      (fieldId === 'tlsCert' || fieldId === 'tlsKey') && !values.tlsEnable
+        ? 'tlsEnable'
+        : fieldId;
 
-    const el = document.getElementById(configFieldDomId(fieldId));
+    const el = document.getElementById(configFieldDomId(targetFieldId));
     if (!el) {
       // Field not rendered right now (e.g. TLS cert while TLS is disabled) — fall back to
       // bringing its section into view horizontally.
@@ -300,7 +304,7 @@ export function VisualConfigEditor({
       highlightTimerRef.current = null;
       highlightedElRef.current = null;
     }, 1800);
-  }, [mode, jumpRequest]);
+  }, [mode, jumpRequest, values.tlsEnable]);
 
   // Clear the highlight timer on unmount.
   useEffect(
@@ -481,6 +485,7 @@ export function VisualConfigEditor({
     (Object.keys(validationErrors ?? {}) as VisualConfigFieldPath[]).some(
       (field) => field !== 'port' && Boolean(validationErrors?.[field])
     ) || hasPayloadValidationErrors;
+  const payloadValidationKey = hasPayloadValidationErrors ? 'payload-errors' : 'payload-ok';
   const activeSection = sections.find((section) => section.id === activeSectionId) ?? sections[0];
 
   useEffect(() => {
@@ -1725,6 +1730,7 @@ export function VisualConfigEditor({
               <SectionStack>
                 <FieldAnchor fieldId="payloadDefaultRules">
                   <Collapsible
+                    key={`payloadDefaultRules-${payloadValidationKey}`}
                     label={t('config_management.visual.sections.payload.default_rules')}
                     hint={t('config_management.visual.sections.payload.default_rules_desc')}
                     defaultOpen={hasPayloadValidationErrors}
@@ -1739,6 +1745,7 @@ export function VisualConfigEditor({
 
                 <FieldAnchor fieldId="payloadDefaultRawRules">
                   <Collapsible
+                    key={`payloadDefaultRawRules-${payloadValidationKey}`}
                     label={t('config_management.visual.sections.payload.default_raw_rules')}
                     hint={t('config_management.visual.sections.payload.default_raw_rules_desc')}
                     defaultOpen={hasPayloadValidationErrors}
@@ -1754,6 +1761,7 @@ export function VisualConfigEditor({
 
                 <FieldAnchor fieldId="payloadOverrideRules">
                   <Collapsible
+                    key={`payloadOverrideRules-${payloadValidationKey}`}
                     label={t('config_management.visual.sections.payload.override_rules')}
                     hint={t('config_management.visual.sections.payload.override_rules_desc')}
                     defaultOpen={hasPayloadValidationErrors}
@@ -1769,6 +1777,7 @@ export function VisualConfigEditor({
 
                 <FieldAnchor fieldId="payloadOverrideRawRules">
                   <Collapsible
+                    key={`payloadOverrideRawRules-${payloadValidationKey}`}
                     label={t('config_management.visual.sections.payload.override_raw_rules')}
                     hint={t('config_management.visual.sections.payload.override_raw_rules_desc')}
                     defaultOpen={hasPayloadValidationErrors}
@@ -1785,6 +1794,7 @@ export function VisualConfigEditor({
 
                 <FieldAnchor fieldId="payloadFilterRules">
                   <Collapsible
+                    key={`payloadFilterRules-${payloadValidationKey}`}
                     label={t('config_management.visual.sections.payload.filter_rules')}
                     hint={t('config_management.visual.sections.payload.filter_rules_desc')}
                     defaultOpen={hasPayloadValidationErrors}
