@@ -929,7 +929,8 @@
         "advanced": {
           "title": "高级与实验",
           "description": "请求头伪装、签名缓存、插件源等不常修改的设置",
-          "disclosure": "展开高级与实验配置（默认隐藏）"
+          "plugins_title": "插件",
+          "signature_title": "Antigravity 签名"
         },
         "server": {
           "title": "服务器配置",

@@ -227,6 +227,14 @@
   min-width: 0;
 }
 
+// Wrap bare inputs so they read as cards consistent with toggleRow / API key blocks.
+.simpleField {
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+}
+
 .simpleBanner {
   display: flex;
   align-items: center;

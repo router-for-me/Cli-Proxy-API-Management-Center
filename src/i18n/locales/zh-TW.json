@@ -955,7 +955,8 @@
         "advanced": {
           "title": "進階與實驗",
           "description": "請求標頭偽裝、簽章快取、外掛來源等不常修改的設定",
-          "disclosure": "展開進階與實驗設定（預設隱藏）"
+          "plugins_title": "外掛",
+          "signature_title": "Antigravity 簽章"
         },
         "server": {
           "title": "伺服器設定",

@@ -929,7 +929,8 @@
         "advanced": {
           "title": "Advanced & Experimental",
           "description": "Header spoofing, signature cache, plugin sources, and other rarely changed settings",
-          "disclosure": "Show advanced & experimental settings (hidden by default)"
+          "plugins_title": "Plugins",
+          "signature_title": "Antigravity Signature"
         },
         "server": {
           "title": "Server Configuration",
