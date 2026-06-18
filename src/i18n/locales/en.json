@@ -909,7 +909,28 @@
     "visual": {
       "notice": "Visual mode covers common fields. Review or edit unsupported config.yaml entries in source mode.",
       "quick_jump": "Quick Jump",
+      "mode": {
+        "simple": "Simple",
+        "full": "Full",
+        "label": "Editor mode",
+        "more_settings": "Switch to full mode to see all {{total}} sections",
+        "validation_banner": "Some advanced settings have validation errors and are blocking save. Switch to full mode to fix them.",
+        "switch_to_full": "Switch to full mode"
+      },
       "sections": {
+        "connectivity": {
+          "title": "Access & Authentication",
+          "description": "Server address, port, auth directory, and API keys"
+        },
+        "logging": {
+          "title": "Logging & Diagnostics",
+          "description": "Debug, log output, and usage statistics"
+        },
+        "advanced": {
+          "title": "Advanced & Experimental",
+          "description": "Header spoofing, signature cache, plugin sources, and other rarely changed settings",
+          "disclosure": "Show advanced & experimental settings (hidden by default)"
+        },
         "server": {
           "title": "Server Configuration",
           "description": "Basic server settings",

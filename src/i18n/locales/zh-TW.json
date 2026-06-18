@@ -935,7 +935,28 @@
     "visual": {
       "notice": "視覺化模式涵蓋常用欄位，未涵蓋的設定仍需在原始檔模式中查看或編輯。",
       "quick_jump": "快速跳轉",
+      "mode": {
+        "simple": "簡單",
+        "full": "完整",
+        "label": "編輯模式",
+        "more_settings": "切換到完整模式，檢視全部 {{total}} 個設定分區",
+        "validation_banner": "部分進階設定項存在驗證錯誤，已阻止儲存。請切換到完整模式進行修正。",
+        "switch_to_full": "切換完整模式"
+      },
       "sections": {
+        "connectivity": {
+          "title": "接入與認證",
+          "description": "服務位址、連接埠、認證目錄與 API 金鑰"
+        },
+        "logging": {
+          "title": "日誌與診斷",
+          "description": "除錯、日誌輸出與使用統計"
+        },
+        "advanced": {
+          "title": "進階與實驗",
+          "description": "請求標頭偽裝、簽章快取、外掛來源等不常修改的設定",
+          "disclosure": "展開進階與實驗設定（預設隱藏）"
+        },
         "server": {
           "title": "伺服器設定",
           "description": "基本伺服器設定",

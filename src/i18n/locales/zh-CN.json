@@ -909,7 +909,28 @@
     "visual": {
       "notice": "可视化模式覆盖常用字段，未覆盖的配置仍需在源文件模式中查看或编辑。",
       "quick_jump": "快速跳转",
+      "mode": {
+        "simple": "简单",
+        "full": "完整",
+        "label": "编辑模式",
+        "more_settings": "切换到完整模式，查看全部 {{total}} 个配置分区",
+        "validation_banner": "部分高级配置项存在校验错误，已阻止保存。请切换到完整模式进行修复。",
+        "switch_to_full": "切换完整模式"
+      },
       "sections": {
+        "connectivity": {
+          "title": "接入与认证",
+          "description": "服务地址、端口、认证目录与 API 密钥"
+        },
+        "logging": {
+          "title": "日志与诊断",
+          "description": "调试、日志输出与使用统计"
+        },
+        "advanced": {
+          "title": "高级与实验",
+          "description": "请求头伪装、签名缓存、插件源等不常修改的设置",
+          "disclosure": "展开高级与实验配置（默认隐藏）"
+        },
         "server": {
           "title": "服务器配置",
           "description": "基础服务器设置",
