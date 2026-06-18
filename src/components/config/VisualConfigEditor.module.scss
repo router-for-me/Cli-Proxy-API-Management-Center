@@ -263,6 +263,11 @@
   }
 }
 
+// Keyboard/pointer "active" option — the aria-activedescendant target.
+.searchResultItemActive {
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
 .searchResultLabel {
   display: inline-flex;
   align-items: baseline;

@@ -214,6 +214,10 @@ export function VisualConfigEditor({
   // Dropdown visibility is tracked separately from the query text so a jump can close the
   // results while leaving the typed text in the box for further editing.
   const [searchOpen, setSearchOpen] = useState(false);
+  // Highlighted option for keyboard navigation of the results listbox (-1 = none).
+  const [activeResultIndex, setActiveResultIndex] = useState(0);
+  const searchListboxId = useId();
+  const searchResultsRef = useRef<HTMLDivElement | null>(null);
   // A fresh object per jump; the effect handles it once (guarded by handledJumpRef) so it
   // never needs to clear state from inside the effect.
   const [jumpRequest, setJumpRequest] = useState<{
@@ -231,6 +235,14 @@ export function VisualConfigEditor({
   }, []);
 
   const searchResults = useMemo(() => searchConfigFields(searchQuery, t), [searchQuery, t]);
+  // The results popup is visible only when the box is open AND there's a (trimmed) query.
+  const isResultsOpen = searchOpen && Boolean(searchQuery.trim());
+  // Clamp the highlighted index to the current result set so a stale index (e.g. after the
+  // query narrows the list) never points past the end or at an option that no longer exists.
+  const effectiveActiveIndex =
+    searchResults.length > 0
+      ? Math.min(Math.max(activeResultIndex, 0), searchResults.length - 1)
+      : -1;
 
   const handleResultJump = useCallback(
     (entry: ConfigFieldSearchEntry) => {
@@ -309,6 +321,15 @@ export function VisualConfigEditor({
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [searchOpen]);
+
+  // Keep the highlighted option scrolled into view during keyboard navigation.
+  useEffect(() => {
+    if (!isResultsOpen || effectiveActiveIndex < 0) return;
+    const node = searchResultsRef.current?.querySelector<HTMLElement>(
+      `[data-result-index="${effectiveActiveIndex}"]`
+    );
+    node?.scrollIntoView({ block: 'nearest' });
+  }, [effectiveActiveIndex, isResultsOpen]);
 
   const isKeepaliveDisabled =
     values.streaming.keepaliveSeconds === '' || values.streaming.keepaliveSeconds === '0';
@@ -522,6 +543,18 @@ export function VisualConfigEditor({
 
   // Shared high-frequency field blocks — reused verbatim by both the simple view and full mode
   // so the two layouts never drift apart.
+  const hostField = (
+    <FieldAnchor fieldId="host">
+      <Input
+        label={t('config_management.visual.sections.server.host')}
+        placeholder="0.0.0.0"
+        value={values.host}
+        onChange={(e) => onChange({ host: e.target.value })}
+        disabled={disabled}
+      />
+    </FieldAnchor>
+  );
+
   const portField = (
     <FieldAnchor fieldId="port">
       <Input
@@ -688,21 +721,55 @@ export function VisualConfigEditor({
             className={styles.searchControl}
             placeholder={t('config_management.visual.search.placeholder')}
             aria-label={t('config_management.visual.search.placeholder')}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={isResultsOpen}
+            aria-controls={isResultsOpen ? searchListboxId : undefined}
+            aria-activedescendant={
+              isResultsOpen && effectiveActiveIndex >= 0
+                ? `${searchListboxId}-opt-${effectiveActiveIndex}`
+                : undefined
+            }
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setSearchOpen(true);
+              setActiveResultIndex(0);
             }}
             onFocus={() => setSearchOpen(true)}
             onKeyDown={(e) => {
-              // Ignore Enter/keys fired while an IME is composing (e.g. picking a
-              // Chinese candidate) — otherwise candidate selection triggers a jump.
+              // Ignore keys fired while an IME is composing (e.g. picking a Chinese
+              // candidate) — otherwise candidate selection triggers navigation/jump.
               if (e.nativeEvent.isComposing) return;
               if (e.key === 'Escape') {
                 setSearchOpen(false);
-              } else if (e.key === 'Enter' && searchOpen && searchResults.length > 0) {
+                return;
+              }
+              if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                handleResultJump(searchResults[0]);
+                if (!isResultsOpen) {
+                  setSearchOpen(true);
+                  return;
+                }
+                if (searchResults.length === 0) return;
+                setActiveResultIndex((effectiveActiveIndex + 1) % searchResults.length);
+                return;
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (!isResultsOpen) {
+                  setSearchOpen(true);
+                  return;
+                }
+                if (searchResults.length === 0) return;
+                setActiveResultIndex(
+                  effectiveActiveIndex <= 0 ? searchResults.length - 1 : effectiveActiveIndex - 1
+                );
+                return;
+              }
+              if (e.key === 'Enter' && isResultsOpen && searchResults.length > 0) {
+                e.preventDefault();
+                handleResultJump(searchResults[effectiveActiveIndex] ?? searchResults[0]);
               }
             }}
             rightElement={
@@ -711,16 +778,28 @@ export function VisualConfigEditor({
               </span>
             }
           />
-          {searchOpen && searchQuery.trim() ? (
-            <div className={styles.searchResults} role="listbox">
+          {isResultsOpen ? (
+            <div
+              className={styles.searchResults}
+              role="listbox"
+              id={searchListboxId}
+              aria-label={t('config_management.visual.search.placeholder')}
+              ref={searchResultsRef}
+            >
               {searchResults.length > 0 ? (
-                searchResults.map((entry) => (
+                searchResults.map((entry, index) => (
                   <button
                     key={entry.fieldId}
                     type="button"
                     role="option"
-                    aria-selected={false}
-                    className={styles.searchResultItem}
+                    id={`${searchListboxId}-opt-${index}`}
+                    data-result-index={index}
+                    tabIndex={-1}
+                    aria-selected={index === effectiveActiveIndex}
+                    className={`${styles.searchResultItem} ${
+                      index === effectiveActiveIndex ? styles.searchResultItemActive : ''
+                    }`}
+                    onMouseEnter={() => setActiveResultIndex(index)}
                     onClick={() => handleResultJump(entry)}
                   >
                     <span className={styles.searchResultLabel}>
@@ -762,6 +841,7 @@ export function VisualConfigEditor({
           ) : null}
 
           <div className={styles.simpleForm}>
+            <div className={styles.simpleField}>{hostField}</div>
             <div className={styles.simpleField}>{portField}</div>
             {apiKeysField}
             <div className={styles.simpleField}>{proxyUrlField}</div>
@@ -832,15 +912,7 @@ export function VisualConfigEditor({
             >
               <SectionStack>
                 <SectionGrid>
-                  <FieldAnchor fieldId="host">
-                    <Input
-                      label={t('config_management.visual.sections.server.host')}
-                      placeholder="0.0.0.0"
-                      value={values.host}
-                      onChange={(e) => onChange({ host: e.target.value })}
-                      disabled={disabled}
-                    />
-                  </FieldAnchor>
+                  {hostField}
                   {portField}
                 </SectionGrid>
 
