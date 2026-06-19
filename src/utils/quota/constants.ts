@@ -2,7 +2,7 @@
  * Quota constants for API URLs, headers, and theme colors.
  */
 
-import type { GeminiCliQuotaGroupDefinition, TypeColorSet } from '@/types';
+import type { TypeColorSet } from '@/types';
 
 // Theme colors for type badges — 与 authFiles/constants.ts 保持同步
 export const TYPE_COLORS: Record<string, TypeColorSet> = {
@@ -13,10 +13,6 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
   gemini: {
     light: { bg: '#e3f2fd', text: '#1565c0' },
     dark: { bg: '#0d47a1', text: '#64b5f6' },
-  },
-  'gemini-cli': {
-    light: { bg: '#e0e8ff', text: '#1e4fa3' },
-    dark: { bg: '#1c3f73', text: '#a8c7ff' },
   },
   aistudio: {
     light: { bg: '#f0f2f5', text: '#2f343c' },
@@ -75,51 +71,6 @@ export const ANTIGRAVITY_REQUEST_HEADERS = {
   'Content-Type': 'application/json',
   'User-Agent': 'antigravity/cli/1.0.8 darwin/arm64',
 };
-
-// Gemini CLI API configuration
-export const GEMINI_CLI_QUOTA_URL =
-  'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota';
-
-export const GEMINI_CLI_CODE_ASSIST_URL =
-  'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist';
-
-export const GEMINI_CLI_REQUEST_HEADERS = {
-  Authorization: 'Bearer $TOKEN$',
-  'Content-Type': 'application/json',
-};
-
-export const GEMINI_CLI_QUOTA_GROUPS: GeminiCliQuotaGroupDefinition[] = [
-  {
-    id: 'gemini-flash-lite-series',
-    label: 'Gemini Flash Lite Series',
-    preferredModelId: 'gemini-2.5-flash-lite',
-    modelIds: ['gemini-2.5-flash-lite'],
-  },
-  {
-    id: 'gemini-flash-series',
-    label: 'Gemini Flash Series',
-    preferredModelId: 'gemini-3-flash-preview',
-    modelIds: ['gemini-3-flash-preview', 'gemini-2.5-flash'],
-  },
-  {
-    id: 'gemini-pro-series',
-    label: 'Gemini Pro Series',
-    preferredModelId: 'gemini-3.1-pro-preview',
-    modelIds: ['gemini-3.1-pro-preview', 'gemini-3-pro-preview', 'gemini-2.5-pro'],
-  },
-];
-
-export const GEMINI_CLI_GROUP_ORDER = new Map(
-  GEMINI_CLI_QUOTA_GROUPS.map((group, index) => [group.id, index] as const)
-);
-
-export const GEMINI_CLI_GROUP_LOOKUP = new Map(
-  GEMINI_CLI_QUOTA_GROUPS.flatMap((group) =>
-    group.modelIds.map((modelId) => [modelId, group] as const)
-  )
-);
-
-export const GEMINI_CLI_IGNORED_MODEL_PREFIXES = ['gemini-2.0-flash'];
 
 // Claude API configuration
 export const CLAUDE_PROFILE_URL = 'https://api.anthropic.com/api/oauth/profile';

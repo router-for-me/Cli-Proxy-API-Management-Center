@@ -216,13 +216,6 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     yamlKeys: ['ws-auth'],
     keywords: ['websocket'],
   },
-  {
-    fieldId: 'enableGeminiCliEndpoint',
-    sectionId: 'network',
-    labelKey: L('sections.network.enable_gemini_cli_endpoint'),
-    hintKey: L('sections.network.enable_gemini_cli_endpoint_desc'),
-    yamlKeys: ['enable-gemini-cli-endpoint'],
-  },
   // ── logging ───────────────────────────────────────────────────────────────
   {
     fieldId: 'debug',
