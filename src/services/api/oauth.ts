@@ -9,7 +9,9 @@ export type OAuthProvider =
   | 'anthropic'
   | 'antigravity'
   | 'kimi'
-  | 'xai';
+  | 'xai'
+  | 'zai'
+  | 'bigmodel';
 
 export interface OAuthStartResponse {
   url: string;
