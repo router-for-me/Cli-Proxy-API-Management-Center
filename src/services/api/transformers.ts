@@ -4,7 +4,7 @@ import type {
   GeminiKeyConfig,
   ModelAlias,
   OpenAIProviderConfig,
-  ProviderKeyConfig
+  ProviderKeyConfig,
 } from '@/types';
 import type { Config } from '@/types/config';
 import { buildHeaderObject } from '@/utils/headers';
@@ -69,7 +69,11 @@ const normalizeHeaders = (headers: unknown) => {
 };
 
 const normalizeExcludedModels = (input: unknown): string[] => {
-  const rawList = Array.isArray(input) ? input : typeof input === 'string' ? input.split(/[\n,]/) : [];
+  const rawList = Array.isArray(input)
+    ? input
+    : typeof input === 'string'
+      ? input.split(/[\n,]/)
+      : [];
   const seen = new Set<string>();
   const normalized: string[] = [];
 
@@ -97,6 +101,12 @@ const normalizeAuthIndex = (value: unknown): string | undefined => {
   return trimmed ? trimmed : undefined;
 };
 
+const normalizeSelectionWeight = (value: unknown): number | undefined => {
+  if (value === undefined || value === null || String(value).trim() === '') return undefined;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : undefined;
+};
+
 const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   if (entry === undefined || entry === null) return null;
   const record = isRecord(entry) ? entry : null;
@@ -105,12 +115,14 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   if (!trimmed) return null;
 
   const proxyUrl = record?.['proxy-url'];
+  const selectionWeight = normalizeSelectionWeight(record?.['selection-weight']);
   const authIndex = normalizeAuthIndex(record?.['auth-index']);
 
   const result: ApiKeyEntry = {
     apiKey: trimmed,
-    proxyUrl: proxyUrl ? String(proxyUrl) : undefined
+    proxyUrl: proxyUrl ? String(proxyUrl) : undefined,
   };
+  if (selectionWeight !== undefined) result.selectionWeight = selectionWeight;
   if (authIndex) result.authIndex = authIndex;
   return result;
 };
@@ -130,6 +142,8 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
       config.priority = parsed;
     }
   }
+  const selectionWeight = normalizeSelectionWeight(record?.['selection-weight']);
+  if (selectionWeight !== undefined) config.selectionWeight = selectionWeight;
   const prefix = normalizePrefix(record?.prefix);
   if (prefix) config.prefix = prefix;
   const baseUrl = record?.['base-url'];
@@ -198,6 +212,8 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
       config.priority = parsed;
     }
   }
+  const selectionWeight = normalizeSelectionWeight(record?.['selection-weight']);
+  if (selectionWeight !== undefined) config.selectionWeight = selectionWeight;
   const prefix = normalizePrefix(record?.prefix);
   if (prefix) config.prefix = prefix;
   const baseUrl = record?.['base-url'];
@@ -237,7 +253,7 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   const result: OpenAIProviderConfig = {
     name: String(name),
     baseUrl: String(baseUrl),
-    apiKeyEntries
+    apiKeyEntries,
   };
 
   const disabled = normalizeBoolean(provider.disabled);
@@ -249,6 +265,8 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   if (headers) result.headers = headers;
   if (models.length) result.models = models;
   if (priority !== undefined) result.priority = Number(priority);
+  const selectionWeight = normalizeSelectionWeight(provider['selection-weight']);
+  if (selectionWeight !== undefined) result.selectionWeight = selectionWeight;
   if (testModel) result.testModel = String(testModel);
   const authIndex = normalizeAuthIndex(provider['auth-index']);
   if (authIndex) result.authIndex = authIndex;
@@ -281,7 +299,11 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   config.debug = normalizeBoolean(raw.debug);
   const proxyUrl = raw['proxy-url'];
   config.proxyUrl =
-    typeof proxyUrl === 'string' ? proxyUrl : proxyUrl === undefined || proxyUrl === null ? undefined : String(proxyUrl);
+    typeof proxyUrl === 'string'
+      ? proxyUrl
+      : proxyUrl === undefined || proxyUrl === null
+        ? undefined
+        : String(proxyUrl);
   const requestRetry = raw['request-retry'];
   if (typeof requestRetry === 'number' && Number.isFinite(requestRetry)) {
     config.requestRetry = requestRetry;
@@ -297,7 +319,7 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
     config.quotaExceeded = {
       switchProject: normalizeBoolean(quota['switch-project']),
       switchPreviewModel: normalizeBoolean(quota['switch-preview-model']),
-      antigravityCredits: normalizeBoolean(quota['antigravity-credits'])
+      antigravityCredits: normalizeBoolean(quota['antigravity-credits']),
     };
   }
 
@@ -374,5 +396,5 @@ export {
   normalizeOpenAIProvider,
   normalizeProviderKeyConfig,
   normalizeHeaders,
-  normalizeExcludedModels
+  normalizeExcludedModels,
 };

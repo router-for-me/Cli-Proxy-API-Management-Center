@@ -193,10 +193,11 @@
     "ws_auth_enable": "Требовать аутентификацию для /ws/*",
     "routing_title": "Стратегия маршрутизации",
     "routing_strategy_label": "Стратегия маршрутизации:",
-    "routing_strategy_hint": "round-robin циклически перебирает ключи; fill-first отдаёт приоритет первому доступному ключу.",
+    "routing_strategy_hint": "round-robin циклически перебирает ключи; fill-first отдаёт приоритет первому доступному ключу; weighted-round-robin распределяет по весу выбора.",
     "routing_strategy_update": "Обновить",
     "routing_strategy_round_robin": "round-robin (цикл)",
-    "routing_strategy_fill_first": "fill-first (приоритет)"
+    "routing_strategy_fill_first": "fill-first (приоритет)",
+    "routing_strategy_weighted_round_robin": "weighted-round-robin (по весу)"
   },
   "api_keys": {
     "title": "Управление API-ключами",
@@ -278,6 +279,7 @@
     "sort_az": "A-Z Имя",
     "sort_priority": "Приоритет",
     "priority_display": "Приоритет",
+    "selection_weight_display": "Вес выбора",
     "page_size_label": "На странице",
     "page_size_unit": "элементов",
     "view_mode_paged": "Постранично",
@@ -349,6 +351,9 @@
     "priority_label": "Приоритет (priority)",
     "priority_placeholder": "например: 10 или -1",
     "priority_hint": "Только целые числа. Некорректные значения игнорируются. Чем больше число, тем выше приоритет.",
+    "selection_weight_label": "Вес выбора (selection_weight)",
+    "selection_weight_placeholder": "например: 2",
+    "selection_weight_hint": "Только неотрицательные целые числа. Оставьте пустым для веса по умолчанию 1.",
     "codex_websockets_label": "WebSockets (websockets)",
     "codex_websockets_hint": "Включает websocket-транспорт Responses API для этих учётных данных Codex.",
     "excluded_models_label": "Исключённые модели (excluded_models)",
@@ -959,7 +964,7 @@
           "stabilize_device_desc": "Фиксировать OS/Arch и стабилизировать программный отпечаток для учётных данных/API-ключа",
           "beta_features": "Beta Features",
           "codex_identity_confuse": "Codex identity-confuse",
-          "codex_identity_confuse_desc": "При fill-first routing или session affinity переопределяет Codex prompt_cache_key и installation identity под выбранную auth-запись"
+          "codex_identity_confuse_desc": "При fill-first routing, weighted-round-robin или session affinity переопределяет Codex prompt_cache_key и installation identity под выбранную auth-запись"
         },
         "network": {
           "title": "Сетевые настройки",
@@ -982,6 +987,7 @@
           "routing_strategy_hint": "Выберите стратегию подбора учётных данных",
           "strategy_round_robin": "По кругу",
           "strategy_fill_first": "Сначала заполнить",
+          "strategy_weighted_round_robin": "По весу",
           "session_affinity_ttl": "TTL привязки сессии",
           "force_model_prefix": "Принудительный префикс модели",
           "force_model_prefix_desc": "Запросы к моделям без префикса используют только учётные данные без префикса",
@@ -1425,7 +1431,8 @@
       "metrics": {
         "models": "Модели",
         "keys": "Ключи",
-        "headers": "Заголовки"
+        "headers": "Заголовки",
+        "selectionWeight": "Вес"
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
@@ -1454,7 +1461,8 @@
         "headers": "Заголовков",
         "authIndex": "Auth Index",
         "excludedModels": "Исключённых моделей",
-        "apiKeyEntries": "API-ключей"
+        "apiKeyEntries": "API-ключей",
+        "selectionWeight": "Вес выбора"
       }
     },
     "form": {
@@ -1469,6 +1477,8 @@
       "proxyUrl": "Proxy URL",
       "prefix": "Префикс",
       "priority": "Приоритет",
+      "selectionWeight": "Вес выбора",
+      "selectionWeightHint": "Используется weighted round-robin; оставьте пустым для веса по умолчанию 1.",
       "disabled": "Отключить эту запись",
       "disabledHint": "Отключённые записи не используются шлюзом",
       "websockets": "Включить WebSockets",
@@ -1508,7 +1518,8 @@
       "validation": {
         "nameRequired": "Название обязательно",
         "apiKeyRequired": "Нужен хотя бы один API-ключ",
-        "baseUrlRequired": "Base URL обязателен"
+        "baseUrlRequired": "Base URL обязателен",
+        "selectionWeightInvalid": "Вес выбора должен быть неотрицательным целым числом"
       }
     },
     "delete": {
