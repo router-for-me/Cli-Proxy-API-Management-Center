@@ -1,14 +1,7 @@
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
-import {
-  hasDisableAllModelsRule,
-  stripDisableAllModelsRule,
-} from '@/components/providers/utils';
+import { hasDisableAllModelsRule, stripDisableAllModelsRule } from '@/components/providers/utils';
 import { maskApiKey } from '@/utils/format';
-import type {
-  ProviderBrand,
-  ProviderResource,
-  ProviderResourceSelector,
-} from './types';
+import type { ProviderBrand, ProviderResource, ProviderResourceSelector } from './types';
 
 const countHeaders = (headers?: Record<string, string>): number =>
   headers ? Object.keys(headers).length : 0;
@@ -24,6 +17,9 @@ const collectModelNames = (models?: Array<{ name?: string }>): string[] => {
 
 const normalizePriority = (priority?: number): number =>
   typeof priority === 'number' && Number.isFinite(priority) ? priority : 0;
+
+const normalizeSelectionWeight = (weight?: number): number | undefined =>
+  typeof weight === 'number' && Number.isInteger(weight) && weight >= 0 ? weight : undefined;
 
 const buildId = (brand: ProviderBrand, index: number, fragment: string) =>
   `${brand}:${index}:${fragment || 'item'}`;
@@ -73,6 +69,7 @@ function providerKeyToResource(
     modelCount: config.models?.length ?? 0,
     models: collectModelNames(config.models),
     priority: normalizePriority(config.priority),
+    selectionWeight: normalizeSelectionWeight(config.selectionWeight),
     headerCount: countHeaders(config.headers),
     excludedModelCount: stripDisableAllModelsRule(config.excludedModels).length,
     apiKeyEntryCount: 0,
@@ -99,10 +96,7 @@ export function vertexToResource(config: ProviderKeyConfig, index: number): Prov
   return providerKeyToResource('vertex', config, index);
 }
 
-export function openaiToResource(
-  config: OpenAIProviderConfig,
-  index: number
-): ProviderResource {
+export function openaiToResource(config: OpenAIProviderConfig, index: number): ProviderResource {
   const name = (config.name ?? '').trim();
   const firstEntry = config.apiKeyEntries?.[0];
   const previewApiKey = firstEntry?.apiKey ? maskApiKey(firstEntry.apiKey) : null;
@@ -121,6 +115,7 @@ export function openaiToResource(
     modelCount: config.models?.length ?? 0,
     models: collectModelNames(config.models),
     priority: normalizePriority(config.priority),
+    selectionWeight: normalizeSelectionWeight(config.selectionWeight),
     headerCount: countHeaders(config.headers),
     excludedModelCount: 0,
     apiKeyEntryCount: config.apiKeyEntries?.length ?? 0,

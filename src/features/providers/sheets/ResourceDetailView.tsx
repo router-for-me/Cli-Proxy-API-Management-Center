@@ -1,10 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { IconCheck, IconX } from '@/components/ui/icons';
-import {
-  getProviderTotalStats,
-  type ProviderRecentUsageMap,
-} from '@/components/providers/utils';
+import { getProviderTotalStats, type ProviderRecentUsageMap } from '@/components/providers/utils';
 import type { OpenAIProviderConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import type { ProviderResource } from '../types';
@@ -23,6 +20,12 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
     ['baseUrl', resource.baseUrl ?? t('providersPage.status.notSet')],
     ['proxyUrl', resource.proxyUrl ?? t('providersPage.status.notSet')],
     ['prefix', resource.prefix ?? t('providersPage.status.none')],
+    [
+      'selectionWeight',
+      resource.selectionWeight !== undefined
+        ? String(resource.selectionWeight)
+        : t('providersPage.status.defaultSuffix'),
+    ],
     ['models', String(resource.modelCount)],
     ['headers', String(resource.headerCount)],
   ];
@@ -34,17 +37,13 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
   ];
 
   const openaiConfig =
-    resource.brand === 'openaiCompatibility'
-      ? (resource.raw as OpenAIProviderConfig)
-      : null;
+    resource.brand === 'openaiCompatibility' ? (resource.raw as OpenAIProviderConfig) : null;
   const apiKeyEntries = openaiConfig?.apiKeyEntries ?? [];
 
   return (
     <div>
       <div className={styles.detailHeader}>
-        <div className={styles.sectionTitle}>
-          {resource.name ?? resource.identifier}
-        </div>
+        <div className={styles.sectionTitle}>{resource.name ?? resource.identifier}</div>
       </div>
 
       <dl className={styles.dl}>
@@ -72,24 +71,22 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
                   )
                 : { success: 0, failure: 0 };
               return (
-                <div
-                  key={`${entry.apiKey}-${entryIndex}`}
-                  className={styles.apiKeyEntryCard}
-                >
+                <div key={`${entry.apiKey}-${entryIndex}`} className={styles.apiKeyEntryCard}>
                   <span className={styles.apiKeyEntryIndex}>{entryIndex + 1}</span>
                   <span className={styles.apiKeyEntryKey}>{maskApiKey(entry.apiKey)}</span>
                   {entry.proxyUrl ? (
                     <span className={styles.apiKeyEntryProxy}>{entry.proxyUrl}</span>
                   ) : null}
+                  {entry.selectionWeight !== undefined ? (
+                    <span className={styles.apiKeyEntryProxy}>
+                      {t('providersPage.form.selectionWeight')}: {entry.selectionWeight}
+                    </span>
+                  ) : null}
                   <div className={styles.apiKeyEntryStats}>
-                    <span
-                      className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatSuccess}`}
-                    >
+                    <span className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatSuccess}`}>
                       <IconCheck size={12} /> {entryStats.success}
                     </span>
-                    <span
-                      className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatFailure}`}
-                    >
+                    <span className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatFailure}`}>
                       <IconX size={12} /> {entryStats.failure}
                     </span>
                   </div>

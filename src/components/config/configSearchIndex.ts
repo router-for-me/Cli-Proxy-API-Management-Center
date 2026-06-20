@@ -159,7 +159,7 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     labelKey: L('sections.network.routing_strategy'),
     hintKey: L('sections.network.routing_strategy_hint'),
     yamlKeys: ['routing', 'strategy'],
-    keywords: ['round-robin', 'fill-first'],
+    keywords: ['round-robin', 'fill-first', 'weighted-round-robin'],
   },
   {
     fieldId: 'disableImageGeneration',

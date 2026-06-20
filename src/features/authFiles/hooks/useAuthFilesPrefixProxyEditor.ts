@@ -23,6 +23,7 @@ export type PrefixProxyEditorField =
   | 'prefix'
   | 'proxyUrl'
   | 'priority'
+  | 'selectionWeight'
   | 'websockets'
   | 'note'
   | 'headersText';
@@ -43,6 +44,7 @@ export type PrefixProxyEditorState = {
   prefix: string;
   proxyUrl: string;
   priority: string;
+  selectionWeight: string;
   websockets: boolean;
   websocketsTouched: boolean;
   note: string;
@@ -107,6 +109,11 @@ const parseHeadersText = (
 
 const normalizeTextField = (value: unknown): string =>
   typeof value === 'string' ? value.trim() : '';
+
+const parseSelectionWeightValue = (value: unknown): number | undefined => {
+  const parsed = parsePriorityValue(value);
+  return parsed !== undefined && parsed >= 0 ? parsed : undefined;
+};
 
 const INVALID_CONTENT_PREVIEW_LIMIT = 1000;
 
@@ -248,6 +255,19 @@ const buildAuthFileFieldsPatch = (
     }
   }
 
+  const originalSelectionWeight = parseSelectionWeightValue(
+    original.selection_weight ?? original['selection-weight']
+  );
+  const selectionWeightText = editor.selectionWeight.trim();
+  const nextSelectionWeight = parseSelectionWeightValue(selectionWeightText);
+  if (!selectionWeightText) {
+    if (originalSelectionWeight !== undefined) {
+      patch.selection_weight = null;
+    }
+  } else if (nextSelectionWeight !== undefined && nextSelectionWeight !== originalSelectionWeight) {
+    patch.selection_weight = nextSelectionWeight;
+  }
+
   if (editor.noteTouched) {
     const originalNote = normalizeTextField(original.note);
     const nextNote = editor.note.trim();
@@ -308,6 +328,15 @@ const buildPrefixProxyUpdatedText = (
       delete next.priority;
     } else {
       next.priority = patch.priority;
+    }
+  }
+
+  if (patch.selection_weight !== undefined) {
+    delete next['selection-weight'];
+    if (patch.selection_weight === null) {
+      delete next.selection_weight;
+    } else {
+      next.selection_weight = patch.selection_weight;
     }
   }
 
@@ -380,6 +409,7 @@ export function useAuthFilesPrefixProxyEditor(
       prefix: '',
       proxyUrl: '',
       priority: '',
+      selectionWeight: '',
       websockets: false,
       websocketsTouched: false,
       note: '',
@@ -426,6 +456,9 @@ export function useAuthFilesPrefixProxyEditor(
       const prefix = typeof json.prefix === 'string' ? json.prefix : '';
       const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
       const priority = parsePriorityValue(json.priority);
+      const selectionWeight = parseSelectionWeightValue(
+        json.selection_weight ?? json['selection-weight']
+      );
       const websockets = providerKey === 'codex' ? readCodexAuthFileWebsockets(json) : false;
       const note = typeof json.note === 'string' ? json.note : '';
       const headers = json.headers;
@@ -450,6 +483,7 @@ export function useAuthFilesPrefixProxyEditor(
           prefix,
           proxyUrl,
           priority: priority !== undefined ? String(priority) : '',
+          selectionWeight: selectionWeight !== undefined ? String(selectionWeight) : '',
           websockets,
           websocketsTouched: false,
           note,
@@ -479,6 +513,7 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'prefix') return { ...prev, prefix: String(value) };
       if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
       if (field === 'priority') return { ...prev, priority: String(value) };
+      if (field === 'selectionWeight') return { ...prev, selectionWeight: String(value) };
       if (field === 'websockets') {
         return { ...prev, websockets: Boolean(value), websocketsTouched: true };
       }

@@ -142,6 +142,14 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                     disabled={disableControls || editor.saving || !editor.json}
                     onChange={(e) => onChange('priority', e.target.value)}
                   />
+                  <Input
+                    label={t('auth_files.selection_weight_label')}
+                    value={editor.selectionWeight}
+                    placeholder={t('auth_files.selection_weight_placeholder')}
+                    hint={t('auth_files.selection_weight_hint')}
+                    disabled={disableControls || editor.saving || !editor.json}
+                    onChange={(e) => onChange('selectionWeight', e.target.value)}
+                  />
                   {editor.providerKey === 'codex' && (
                     <div className="form-group">
                       <label>{t('auth_files.codex_websockets_label')}</label>
