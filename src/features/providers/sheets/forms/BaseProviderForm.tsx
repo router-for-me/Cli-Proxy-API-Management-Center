@@ -18,6 +18,7 @@ import type { ModelInfo } from '@/utils/models';
 import { PROVIDER_DESCRIPTORS } from '../../descriptors';
 import type {
   ApiKeyEntryInput,
+  CommandAuthInput,
   ModelEntryInput,
   ProviderBrand,
   ProviderEntryFormInput,
@@ -52,6 +53,15 @@ const emptyApiKeyEntry = (): ApiKeyEntryInput => ({
   apiKey: '',
   proxyUrl: '',
 });
+const emptyCommandAuth = (): CommandAuthInput => ({
+  command: '',
+  argsText: '',
+});
+
+const supportsCommandAuthBrand = (brand: ProviderBrand) =>
+  brand === 'codex' || brand === 'openaiCompatibility';
+
+const formatCommandAuthArgs = (args?: string[]): string => (args ?? []).join('\n');
 
 const stripDisableAllRule = (list?: string[]): string[] =>
   (list ?? []).filter((s) => s.trim() !== '*');
@@ -67,6 +77,7 @@ function buildInitialForm(
   mode: 'create' | 'edit'
 ): ProviderEntryFormInput {
   if (mode === 'create' || !resource) {
+    const supportsCommandAuth = supportsCommandAuthBrand(brand);
     return {
       apiKey: '',
       name: '',
@@ -76,6 +87,8 @@ function buildInitialForm(
       disabled: false,
       disableCooling: false,
       priority: undefined,
+      authMode: supportsCommandAuth ? 'apiKey' : undefined,
+      commandAuth: supportsCommandAuth ? emptyCommandAuth() : undefined,
       models: [emptyModel()],
       headers: [emptyHeader()],
       excludedModelsText: '',
@@ -99,6 +112,7 @@ function buildInitialForm(
   const raw = resource.raw;
   if (brand === 'openaiCompatibility') {
     const cfg = raw as OpenAIProviderConfig;
+    const commandAuth = cfg.auth?.command?.trim() ? cfg.auth : undefined;
     return {
       apiKey: '',
       name: cfg.name ?? '',
@@ -108,6 +122,15 @@ function buildInitialForm(
       disabled: cfg.disabled === true,
       disableCooling: cfg.disableCooling === true,
       priority: cfg.priority,
+      authMode: commandAuth ? 'command' : 'apiKey',
+      commandAuth: commandAuth
+        ? {
+            command: commandAuth.command,
+            argsText: formatCommandAuthArgs(commandAuth.args),
+            timeoutMs: commandAuth.timeoutMs,
+            refreshIntervalMs: commandAuth.refreshIntervalMs,
+          }
+        : emptyCommandAuth(),
       models: cfg.models?.length
         ? cfg.models.map((m) => ({
             name: m.name,
@@ -123,18 +146,24 @@ function buildInitialForm(
         : [emptyHeader()],
       excludedModelsText: '',
       testModel: cfg.testModel ?? '',
-      apiKeyEntries: cfg.apiKeyEntries?.length
-        ? cfg.apiKeyEntries.map((entry) => ({
-            apiKey: '',
-            existingApiKey: entry.apiKey,
-            proxyUrl: entry.proxyUrl ?? '',
-            authIndex: entry.authIndex,
-          }))
-        : [emptyApiKeyEntry()],
+      apiKeyEntries: commandAuth
+        ? [emptyApiKeyEntry()]
+        : cfg.apiKeyEntries?.length
+          ? cfg.apiKeyEntries.map((entry) => ({
+              apiKey: '',
+              existingApiKey: entry.apiKey,
+              proxyUrl: entry.proxyUrl ?? '',
+              authIndex: entry.authIndex,
+            }))
+          : [emptyApiKeyEntry()],
     };
   }
 
   const cfg = raw as GeminiKeyConfig & ProviderKeyConfig;
+  const commandAuth =
+    brand === 'codex' && (cfg as ProviderKeyConfig).auth?.command?.trim()
+      ? (cfg as ProviderKeyConfig).auth
+      : undefined;
   const disabled = hasDisableAllModelsRule(cfg.excludedModels);
   const excludedList = stripDisableAllRule(cfg.excludedModels);
   return {
@@ -150,6 +179,17 @@ function buildInitialForm(
     disabled,
     disableCooling: cfg.disableCooling === true,
     priority: cfg.priority,
+    authMode: supportsCommandAuthBrand(brand) ? (commandAuth ? 'command' : 'apiKey') : undefined,
+    commandAuth: supportsCommandAuthBrand(brand)
+      ? commandAuth
+        ? {
+            command: commandAuth.command,
+            argsText: formatCommandAuthArgs(commandAuth.args),
+            timeoutMs: commandAuth.timeoutMs,
+            refreshIntervalMs: commandAuth.refreshIntervalMs,
+          }
+        : emptyCommandAuth()
+      : undefined,
     models: cfg.models?.length
       ? cfg.models.map((m) => ({
           name: m.name,
@@ -380,6 +420,19 @@ export function BaseProviderForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const updateCommandAuth = <K extends keyof CommandAuthInput>(
+    key: K,
+    value: CommandAuthInput[K]
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      commandAuth: {
+        ...(prev.commandAuth ?? emptyCommandAuth()),
+        [key]: value,
+      },
+    }));
+  };
+
   const updateCloak = <K extends keyof NonNullable<ProviderEntryFormInput['cloak']>>(
     key: K,
     value: NonNullable<ProviderEntryFormInput['cloak']>[K]
@@ -402,7 +455,11 @@ export function BaseProviderForm({
     if (descriptor.supportsName && !form.name.trim()) {
       return t('providersPage.form.validation.nameRequired');
     }
-    if (descriptor.supportsApiKey && mode === 'create' && !form.apiKey.trim()) {
+    const commandAuthMode = supportsCommandAuthBrand(brand) && form.authMode === 'command';
+    if (commandAuthMode && !form.commandAuth?.command?.trim()) {
+      return t('providersPage.form.validation.commandRequired');
+    }
+    if (!commandAuthMode && descriptor.supportsApiKey && mode === 'create' && !form.apiKey.trim()) {
       return t('providersPage.form.validation.apiKeyRequired');
     }
     if (descriptor.baseUrlRequired && !form.baseUrl.trim()) {
@@ -442,6 +499,8 @@ export function BaseProviderForm({
     [form.apiKeyEntries]
   );
   const actualApiKeyEntries = form.apiKeyEntries ?? [];
+  const supportsCommandAuth = supportsCommandAuthBrand(brand);
+  const commandAuthMode = supportsCommandAuth && form.authMode === 'command';
   const supportsDisableCooling =
     brand === 'gemini' ||
     brand === 'codex' ||
@@ -509,7 +568,32 @@ export function BaseProviderForm({
           </div>
         ) : null}
 
-        {descriptor.supportsApiKey ? (
+        {supportsCommandAuth ? (
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${fid}-authMode`}>
+              {t('providersPage.form.authMode')}
+            </label>
+            <Select
+              id={`${fid}-authMode`}
+              value={form.authMode ?? 'apiKey'}
+              options={[
+                { value: 'apiKey', label: t('providersPage.form.authModeApiKey') },
+                { value: 'command', label: t('providersPage.form.authModeCommand') },
+              ]}
+              onChange={(value) =>
+                setForm((prev) => ({
+                  ...prev,
+                  authMode: value === 'command' ? 'command' : 'apiKey',
+                  commandAuth: prev.commandAuth ?? emptyCommandAuth(),
+                }))
+              }
+              disabled={mutating}
+              ariaLabel={t('providersPage.form.authMode')}
+            />
+          </div>
+        ) : null}
+
+        {descriptor.supportsApiKey && !commandAuthMode ? (
           <div className={styles.field}>
             <label className={styles.label} htmlFor={`${fid}-apiKey`}>
               {t('providersPage.form.apiKey')}
@@ -551,6 +635,90 @@ export function BaseProviderForm({
                 {showSingleApiKey ? <IconEyeOff size={16} /> : <IconEye size={16} />}
               </button>
             </div>
+          </div>
+        ) : null}
+
+        {supportsCommandAuth && commandAuthMode ? (
+          <div className={styles.entryCard}>
+            <div className={styles.entryCardHeader}>
+              <span>{t('providersPage.form.commandAuthSection')}</span>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor={`${fid}-commandAuthCommand`}>
+                {t('providersPage.form.commandAuthCommand')}
+              </label>
+              <input
+                id={`${fid}-commandAuthCommand`}
+                className={styles.input}
+                value={form.commandAuth?.command ?? ''}
+                onChange={(e) => updateCommandAuth('command', e.target.value)}
+                placeholder={t('providersPage.form.commandAuthCommandPlaceholder')}
+                disabled={mutating}
+              />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor={`${fid}-commandAuthArgs`}>
+                {t('providersPage.form.commandAuthArgs')}
+                <span className={styles.labelHint}>
+                  {' '}
+                  · {t('providersPage.form.commandAuthArgsHint')}
+                </span>
+              </label>
+              <textarea
+                id={`${fid}-commandAuthArgs`}
+                className={styles.textarea}
+                rows={3}
+                value={form.commandAuth?.argsText ?? ''}
+                onChange={(e) => updateCommandAuth('argsText', e.target.value)}
+                disabled={mutating}
+                placeholder="--audience&#10;codex"
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor={`${fid}-commandAuthTimeout`}>
+                  {t('providersPage.form.commandAuthTimeoutMs')}
+                </label>
+                <input
+                  id={`${fid}-commandAuthTimeout`}
+                  type="number"
+                  min={1}
+                  className={styles.input}
+                  value={form.commandAuth?.timeoutMs ?? ''}
+                  onChange={(e) =>
+                    updateCommandAuth(
+                      'timeoutMs',
+                      e.target.value === '' ? undefined : Number(e.target.value)
+                    )
+                  }
+                  disabled={mutating}
+                  placeholder="5000"
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor={`${fid}-commandAuthRefresh`}>
+                  {t('providersPage.form.commandAuthRefreshIntervalMs')}
+                </label>
+                <input
+                  id={`${fid}-commandAuthRefresh`}
+                  type="number"
+                  min={1}
+                  className={styles.input}
+                  value={form.commandAuth?.refreshIntervalMs ?? ''}
+                  onChange={(e) =>
+                    updateCommandAuth(
+                      'refreshIntervalMs',
+                      e.target.value === '' ? undefined : Number(e.target.value)
+                    )
+                  }
+                  disabled={mutating}
+                  placeholder="300000"
+                />
+              </div>
+            </div>
+            <span className={styles.labelHint}>
+              {t('providersPage.form.commandAuthSavedTestHint')}
+            </span>
           </div>
         ) : null}
 
@@ -648,7 +816,7 @@ export function BaseProviderForm({
               disabled={mutating}
               ariaLabel={t('providersPage.form.testModel')}
             />
-            {singleConnectivity ? (
+            {singleConnectivity && !commandAuthMode ? (
               <div className={styles.connectivityRow}>
                 <button
                   type="button"
@@ -671,7 +839,7 @@ export function BaseProviderForm({
                 ) : null}
               </div>
             ) : null}
-            {singleConnectivity?.status.state === 'error' ? (
+            {!commandAuthMode && singleConnectivity?.status.state === 'error' ? (
               <div className={styles.connectivityError}>{singleConnectivity.status.message}</div>
             ) : null}
           </div>
@@ -726,7 +894,7 @@ export function BaseProviderForm({
       </div>
 
       {/* 高级折叠区 */}
-      {descriptor.supportsApiKeyEntries && form.apiKeyEntries ? (
+      {descriptor.supportsApiKeyEntries && form.apiKeyEntries && !commandAuthMode ? (
         <Collapsible
           label={t('providersPage.form.apiKeyEntriesSection')}
           hint={`${

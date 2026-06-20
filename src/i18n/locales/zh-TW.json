@@ -1503,6 +1503,7 @@
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
+      "commandAuthTag": "命令認證",
       "empty": "尚未新增設定,點擊右上角新增。",
       "filterPlaceholder": "搜尋金鑰、位址、前綴…",
       "description": "在 {{route}} 下管理資源",
@@ -1601,6 +1602,17 @@
       "disabled": "停用此條目",
       "disabledHint": "停用後不會被閘道使用",
       "websockets": "啟用 WebSockets",
+      "authMode": "認證方式",
+      "authModeApiKey": "API 金鑰",
+      "authModeCommand": "命令認證",
+      "commandAuthSection": "命令認證",
+      "commandAuthCommand": "命令",
+      "commandAuthCommandPlaceholder": "/usr/local/bin/fetch-codex-token",
+      "commandAuthArgs": "參數",
+      "commandAuthArgsHint": "每行一個參數",
+      "commandAuthTimeoutMs": "逾時(ms)",
+      "commandAuthRefreshIntervalMs": "重新整理間隔(ms)",
+      "commandAuthSavedTestHint": "儲存後由服務端執行命令,從 stdout 讀取 bearer token。",
       "testModel": "測試模型",
       "testModelClaudeHint": "僅用於連通性測試,不會被儲存",
       "testModelAutoWith": "自動 · {{name}}",
@@ -1637,6 +1649,7 @@
       "validation": {
         "nameRequired": "名稱必填",
         "apiKeyRequired": "至少填寫一個 API 金鑰",
+        "commandRequired": "命令必填",
         "baseUrlRequired": "服務位址必填"
       }
     },

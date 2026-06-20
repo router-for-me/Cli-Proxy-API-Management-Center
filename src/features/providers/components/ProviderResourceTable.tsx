@@ -124,6 +124,9 @@ export function ProviderResourceTable({
         items.push(renderFlagTag('cloak', t('providersPage.table.cloakTag')));
       }
     }
+    if (r.flags.commandAuth) {
+      items.push(renderFlagTag('command-auth', t('providersPage.table.commandAuthTag')));
+    }
     return <div className={styles.metricsCell}>{items}</div>;
   };
 

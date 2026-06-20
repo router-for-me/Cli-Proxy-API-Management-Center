@@ -10,6 +10,7 @@ import {
   normalizeProviderKeyConfig,
 } from './transformers';
 import type {
+  CommandAuthConfig,
   GeminiKeyConfig,
   OpenAIProviderConfig,
   ProviderKeyConfig,
@@ -36,6 +37,7 @@ const PROVIDER_COMMON_KEY_FIELDS = [
 
 const GEMINI_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
 const CODEX_KEY_FIELDS = [...PROVIDER_COMMON_KEY_FIELDS, 'websockets'] as const;
+const CODEX_KEY_FIELDS_WITH_AUTH = [...CODEX_KEY_FIELDS, 'auth'] as const;
 const CLAUDE_KEY_FIELDS = [
   ...PROVIDER_COMMON_KEY_FIELDS,
   'cloak',
@@ -63,6 +65,7 @@ const OPENAI_PROVIDER_FIELDS = [
   'models',
   'test-model',
   'disable-cooling',
+  'auth',
 ] as const;
 
 const MODEL_ALIAS_FIELDS = ['name', 'alias', 'priority', 'test-model'] as const;
@@ -84,9 +87,17 @@ const getStringField = (record: Record<string, unknown>, keys: readonly string[]
 
 const providerKeyIdentity = (record: Record<string, unknown>) => {
   const apiKey = getStringField(record, ['api-key']);
-  if (!apiKey) return '';
   const baseUrl = getStringField(record, ['base-url']);
-  return `${apiKey}\u0000${baseUrl}`;
+  if (apiKey) return `${apiKey}\u0000${baseUrl}`;
+  const auth = isRecord(record.auth) ? record.auth : undefined;
+  const command = auth ? getStringField(auth, ['command']) : '';
+  if (!command || !auth) return '';
+  const args = Array.isArray(auth.args)
+    ? auth.args.map((arg) => String(arg ?? '')).join('\u0001')
+    : '';
+  const timeout = getStringField(auth, ['timeout-ms', 'timeout_ms']);
+  const refresh = getStringField(auth, ['refresh-interval-ms', 'refresh_interval_ms']);
+  return `auth:${command}\u0000${args}\u0000${timeout}\u0000${refresh}\u0000${baseUrl}`;
 };
 
 const openAIProviderIdentity = (record: Record<string, unknown>) =>
@@ -270,6 +281,8 @@ const buildProviderDeleteQuery = (apiKey: string, baseUrl?: string) => {
   return `?${params.toString()}`;
 };
 
+const buildIndexDeleteQuery = (index: number) => `?index=${encodeURIComponent(String(index))}`;
+
 const serializeModelAliases = (models?: ModelAlias[], includeOpenAIFields = false) =>
   Array.isArray(models)
     ? models
@@ -304,8 +317,23 @@ const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
   return payload;
 };
 
+const serializeCommandAuth = (auth?: CommandAuthConfig) => {
+  const command = auth?.command?.trim();
+  if (!command) return undefined;
+  const payload: Record<string, unknown> = { command };
+  if (auth?.args?.length) payload.args = auth.args;
+  if (auth?.timeoutMs !== undefined) payload['timeout-ms'] = auth.timeoutMs;
+  if (auth?.refreshIntervalMs !== undefined) {
+    payload['refresh-interval-ms'] = auth.refreshIntervalMs;
+  }
+  return payload;
+};
+
 const serializeProviderKey = (config: ProviderKeyConfig) => {
-  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  const auth = serializeCommandAuth(config.auth);
+  const payload: Record<string, unknown> = {};
+  if (auth) payload.auth = auth;
+  else payload['api-key'] = config.apiKey;
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -387,13 +415,17 @@ const serializeGeminiKey = (config: GeminiKeyConfig) => {
 };
 
 const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
+  const auth = serializeCommandAuth(provider.auth);
   const payload: Record<string, unknown> = {
     name: provider.name,
     'base-url': provider.baseUrl,
-    'api-key-entries': Array.isArray(provider.apiKeyEntries)
-      ? provider.apiKeyEntries.map((entry) => serializeApiKeyEntry(entry))
-      : [],
+    'api-key-entries': auth
+      ? []
+      : Array.isArray(provider.apiKeyEntries)
+        ? provider.apiKeyEntries.map((entry) => serializeApiKeyEntry(entry))
+        : [],
   };
+  if (auth) payload.auth = auth;
   if (provider.prefix?.trim()) payload.prefix = provider.prefix.trim();
   if (provider.disabled !== undefined) payload.disabled = provider.disabled;
   const headers = serializeHeaders(provider.headers);
@@ -432,7 +464,7 @@ export const providersApi = {
     const data = await apiClient.get('/codex-api-key');
     const list = extractArrayPayload(data, 'codex-api-key');
     return list
-      .map((item) => normalizeProviderKeyConfig(item))
+      .map((item) => normalizeProviderKeyConfig(item, { commandAuth: true }))
       .filter(Boolean) as ProviderKeyConfig[];
   },
 
@@ -443,13 +475,19 @@ export const providersApi = {
         'codex-api-key',
         configs,
         serializeProviderKey,
-        (raw, payload) => mergeProviderKeyPayload(raw, payload, CODEX_KEY_FIELDS),
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, CODEX_KEY_FIELDS_WITH_AUTH),
         providerKeyIdentity
       )
     ),
 
-  deleteCodexConfig: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/codex-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+  deleteCodexConfig: (apiKey: string, baseUrl?: string, index?: number) =>
+    apiClient.delete(
+      `/codex-api-key${
+        apiKey.trim()
+          ? buildProviderDeleteQuery(apiKey, baseUrl)
+          : buildIndexDeleteQuery(index ?? -1)
+      }`
+    ),
 
   async getClaudeConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/claude-api-key');

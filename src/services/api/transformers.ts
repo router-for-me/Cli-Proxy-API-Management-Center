@@ -1,6 +1,7 @@
 import type {
   ApiKeyEntry,
   CloakConfig,
+  CommandAuthConfig,
   GeminiKeyConfig,
   ModelAlias,
   OpenAIProviderConfig,
@@ -101,6 +102,29 @@ const normalizeAuthIndex = (value: unknown): string | undefined => {
   return trimmed ? trimmed : undefined;
 };
 
+const normalizePositiveNumber = (value: unknown): number | undefined => {
+  if (value === undefined || value === null || String(value).trim() === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+};
+
+const normalizeCommandAuth = (value: unknown): CommandAuthConfig | undefined => {
+  if (!isRecord(value)) return undefined;
+  const command = String(value.command ?? '').trim();
+  if (!command) return undefined;
+
+  const args = Array.isArray(value.args) ? value.args.map((arg) => String(arg ?? '')) : undefined;
+  const timeoutMs = normalizePositiveNumber(value['timeout-ms'] ?? value.timeout_ms);
+  const refreshIntervalMs = normalizePositiveNumber(
+    value['refresh-interval-ms'] ?? value.refresh_interval_ms
+  );
+  const config: CommandAuthConfig = { command };
+  if (args && args.length) config.args = args;
+  if (timeoutMs !== undefined) config.timeoutMs = timeoutMs;
+  if (refreshIntervalMs !== undefined) config.refreshIntervalMs = refreshIntervalMs;
+  return config;
+};
+
 const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   if (entry === undefined || entry === null) return null;
   const record = isRecord(entry) ? entry : null;
@@ -119,14 +143,19 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   return result;
 };
 
-const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => {
+const normalizeProviderKeyConfig = (
+  item: unknown,
+  options?: { commandAuth?: boolean }
+): ProviderKeyConfig | null => {
   if (item === undefined || item === null) return null;
   const record = isRecord(item) ? item : null;
   const apiKey = record?.['api-key'] ?? (typeof item === 'string' ? item : '');
   const trimmed = String(apiKey || '').trim();
-  if (!trimmed) return null;
+  const auth = options?.commandAuth ? normalizeCommandAuth(record?.auth) : undefined;
+  if (!trimmed && !auth) return null;
 
-  const config: ProviderKeyConfig = { apiKey: trimmed };
+  const config: ProviderKeyConfig = { apiKey: auth ? '' : trimmed };
+  if (auth) config.auth = auth;
   const priority = record?.priority;
   if (priority !== undefined && priority !== null && String(priority).trim() !== '') {
     const parsed = Number(priority);
@@ -232,6 +261,7 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
         .map((entry) => normalizeApiKeyEntry(entry))
         .filter(Boolean) as ApiKeyEntry[])
     : [];
+  const auth = normalizeCommandAuth(provider.auth);
 
   const headers = normalizeHeaders(provider.headers);
   const models = normalizeModelAliases(provider.models);
@@ -243,6 +273,7 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
     baseUrl: String(baseUrl),
     apiKeyEntries,
   };
+  if (auth) result.auth = auth;
 
   const disabled = normalizeBoolean(provider.disabled);
   if (disabled !== undefined) result.disabled = disabled;
@@ -342,7 +373,7 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   const codexList = raw['codex-api-key'];
   if (Array.isArray(codexList)) {
     config.codexApiKeys = codexList
-      .map((item) => normalizeProviderKeyConfig(item))
+      .map((item) => normalizeProviderKeyConfig(item, { commandAuth: true }))
       .filter(Boolean) as ProviderKeyConfig[];
   }
 
@@ -381,6 +412,7 @@ export {
   normalizeModelAliases,
   normalizeOpenAIProvider,
   normalizeProviderKeyConfig,
+  normalizeCommandAuth,
   normalizeHeaders,
   normalizeExcludedModels,
 };

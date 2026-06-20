@@ -18,6 +18,13 @@ export interface ApiKeyEntry {
   authIndex?: string;
 }
 
+export interface CommandAuthConfig {
+  command: string;
+  args?: string[];
+  timeoutMs?: number;
+  refreshIntervalMs?: number;
+}
+
 export interface CloakConfig {
   mode?: string;
   strictMode?: boolean;
@@ -40,6 +47,7 @@ export interface GeminiKeyConfig {
 
 export interface ProviderKeyConfig {
   apiKey: string;
+  auth?: CommandAuthConfig;
   priority?: number;
   prefix?: string;
   baseUrl?: string;
@@ -58,6 +66,7 @@ export interface OpenAIProviderConfig {
   name: string;
   prefix?: string;
   baseUrl: string;
+  auth?: CommandAuthConfig;
   apiKeyEntries: ApiKeyEntry[];
   disabled?: boolean;
   headers?: Record<string, string>;

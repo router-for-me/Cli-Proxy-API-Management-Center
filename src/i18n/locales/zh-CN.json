@@ -1477,6 +1477,7 @@
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
+      "commandAuthTag": "命令认证",
       "empty": "尚未添加配置,点击右上角新建。",
       "filterPlaceholder": "搜索密钥、地址、前缀…",
       "description": "在 {{route}} 下管理资源",
@@ -1575,6 +1576,17 @@
       "disabled": "停用此条目",
       "disabledHint": "停用后不会被网关使用",
       "websockets": "启用 WebSockets",
+      "authMode": "认证方式",
+      "authModeApiKey": "API 密钥",
+      "authModeCommand": "命令认证",
+      "commandAuthSection": "命令认证",
+      "commandAuthCommand": "命令",
+      "commandAuthCommandPlaceholder": "/usr/local/bin/fetch-codex-token",
+      "commandAuthArgs": "参数",
+      "commandAuthArgsHint": "每行一个参数",
+      "commandAuthTimeoutMs": "超时(ms)",
+      "commandAuthRefreshIntervalMs": "刷新间隔(ms)",
+      "commandAuthSavedTestHint": "保存后由服务端执行命令,从 stdout 读取 bearer token。",
       "testModel": "测试模型",
       "testModelClaudeHint": "仅用于连通性测试,不会被保存",
       "testModelAutoWith": "自动 · {{name}}",
@@ -1611,6 +1623,7 @@
       "validation": {
         "nameRequired": "名称必填",
         "apiKeyRequired": "至少填写一个 API 密钥",
+        "commandRequired": "命令必填",
         "baseUrlRequired": "服务地址必填"
       }
     },
