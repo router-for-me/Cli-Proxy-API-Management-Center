@@ -1146,6 +1146,12 @@ export function VisualConfigEditor({
                               'config_management.visual.sections.network.strategy_fill_first'
                             ),
                           },
+                          {
+                            value: 'weighted-round-robin',
+                            label: t(
+                              'config_management.visual.sections.network.strategy_weighted_round_robin'
+                            ),
+                          },
                         ]}
                         id={`${routingStrategyLabelId}-select`}
                         disabled={disabled}

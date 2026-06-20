@@ -160,8 +160,13 @@
     "request_log_enable": "启用请求日志",
     "request_log_warning": "仅在需要排查问题时开启，日常请保持关闭。",
     "ws_auth_enable": "启用 /ws/* 鉴权",
+    "routing_title": "路由策略",
+    "routing_strategy_label": "路由策略:",
+    "routing_strategy_hint": "round-robin 为轮询，fill-first 为优先填充，weighted-round-robin 按选择权重分配。",
+    "routing_strategy_update": "更新",
     "routing_strategy_round_robin": "round-robin (轮询)",
-    "routing_strategy_fill_first": "fill-first (优先填充)"
+    "routing_strategy_fill_first": "fill-first (优先填充)",
+    "routing_strategy_weighted_round_robin": "weighted-round-robin (加权轮询)"
   },
   "auth_files": {
     "title": "认证文件管理",
@@ -223,6 +228,7 @@
     "sort_az": "A-Z 名称",
     "sort_priority": "优先级",
     "priority_display": "优先级",
+    "selection_weight_display": "选择权重",
     "page_size_label": "单页数量",
     "view_mode_paged": "按页显示",
     "view_mode_all": "显示全部",
@@ -280,10 +286,20 @@
     "priority_label": "优先级（priority）",
     "priority_placeholder": "例如: 10 或 -1",
     "priority_hint": "仅支持整数；非法值会被忽略。数值越大优先级越高。",
+    "selection_weight_label": "选择权重（selection_weight）",
+    "selection_weight_placeholder": "例如: 2",
+    "selection_weight_hint": "仅支持非负整数；留空按默认权重 1 处理。",
+    "selection_weight_invalid": "选择权重必须是非负整数。",
     "websockets_label": "WebSockets（websockets）",
     "websockets_hint": "为该凭证开启 Responses API 的 websocket 传输。",
     "using_api_label": "使用官方 API（using_api）",
     "using_api_hint": "开启后使用 xAI 官方 API；关闭时使用 Grok CLI chat-proxy。",
+    "excluded_models_label": "排除模型（excluded_models）",
+    "excluded_models_placeholder": "用逗号或换行分隔，例如: model-a, gpt-5-*, *-preview",
+    "excluded_models_hint": "保存为数组；会自动 trim、小写、去重并排序。",
+    "disable_cooling_label": "禁用冷却（disable_cooling）",
+    "disable_cooling_placeholder": "例如: true / false / 1 / 0",
+    "disable_cooling_hint": "支持布尔值、0/非0 数字或字符串 true/false/1/0；无法解析时忽略。",
     "note_label": "备注（note）",
     "note_placeholder": "输入备注信息，例如：张三的账号",
     "note_hint": "可选，用于标记凭证用途或归属；留空则不写入。",
@@ -907,7 +923,7 @@
           "stabilize_device_desc": "固定 OS/Arch，并按凭据/API Key 稳定软件指纹",
           "beta_features": "Beta Features",
           "codex_identity_confuse": "Codex 身份混淆",
-          "codex_identity_confuse_desc": "在 fill-first 或会话粘性路由下，按所选认证重映射 Codex prompt_cache_key 与安装身份"
+          "codex_identity_confuse_desc": "在 fill-first、weighted-round-robin 或会话粘性路由下，按所选认证重映射 Codex prompt_cache_key 与安装身份"
         },
         "network": {
           "title": "网络配置",
@@ -931,6 +947,7 @@
           "routing_strategy_hint": "选择凭据选择策略",
           "strategy_round_robin": "轮询 (Round Robin)",
           "strategy_fill_first": "填充优先 (Fill First)",
+          "strategy_weighted_round_robin": "加权轮询 (Weighted Round Robin)",
           "session_affinity_ttl": "会话粘性 TTL",
           "force_model_prefix": "强制模型前缀",
           "force_model_prefix_desc": "未带前缀的模型请求只使用无前缀凭据",
@@ -1343,7 +1360,8 @@
       "metrics": {
         "models": "模型",
         "keys": "密钥",
-        "headers": "请求头"
+        "headers": "请求头",
+        "selectionWeight": "权重"
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
@@ -1438,7 +1456,8 @@
         "headers": "请求头数",
         "authIndex": "Auth Index",
         "excludedModels": "排除模型数",
-        "apiKeyEntries": "密钥条目数"
+        "apiKeyEntries": "密钥条目数",
+        "selectionWeight": "选择权重"
       }
     },
     "form": {
@@ -1453,6 +1472,8 @@
       "proxyUrl": "代理 URL",
       "prefix": "前缀",
       "priority": "优先级",
+      "selectionWeight": "选择权重",
+      "selectionWeightHint": "用于 weighted round-robin；留空按默认权重 1 处理。",
       "disabled": "停用此条目",
       "disabledHint": "停用后不会被网关使用",
       "websockets": "启用 WebSockets",
@@ -1494,7 +1515,8 @@
       "validation": {
         "nameRequired": "名称必填",
         "apiKeyRequired": "至少填写一个 API 密钥",
-        "baseUrlRequired": "服务地址必填"
+        "baseUrlRequired": "服务地址必填",
+        "selectionWeightInvalid": "选择权重必须是非负整数"
       }
     },
     "delete": {

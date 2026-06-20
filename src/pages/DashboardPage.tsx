@@ -186,14 +186,18 @@ export function DashboardPage() {
       ? t('basic_settings.routing_strategy_round_robin')
       : routingStrategyRaw === 'fill-first'
         ? t('basic_settings.routing_strategy_fill_first')
-        : routingStrategyRaw;
+        : routingStrategyRaw === 'weighted-round-robin'
+          ? t('basic_settings.routing_strategy_weighted_round_robin')
+          : routingStrategyRaw;
   const routingStrategyBadgeClass = !routingStrategyRaw
     ? styles.configBadgeUnknown
     : routingStrategyRaw === 'round-robin'
       ? styles.configBadgeRoundRobin
       : routingStrategyRaw === 'fill-first'
         ? styles.configBadgeFillFirst
-        : styles.configBadgeUnknown;
+        : routingStrategyRaw === 'weighted-round-robin'
+          ? styles.configBadgeWeightedRoundRobin
+          : styles.configBadgeUnknown;
 
   // Derived time-based values
   const greetingKey = `dashboard.greeting_${timeOfDay}`;
