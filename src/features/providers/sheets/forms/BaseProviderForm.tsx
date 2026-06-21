@@ -59,7 +59,11 @@ const emptyCommandAuth = (): CommandAuthInput => ({
 });
 
 const supportsCommandAuthBrand = (brand: ProviderBrand) =>
-  brand === 'codex' || brand === 'openaiCompatibility';
+  brand === 'gemini' ||
+  brand === 'codex' ||
+  brand === 'claude' ||
+  brand === 'vertex' ||
+  brand === 'openaiCompatibility';
 
 const formatCommandAuthArgs = (args?: string[]): string => (args ?? []).join('\n');
 
@@ -160,10 +164,7 @@ function buildInitialForm(
   }
 
   const cfg = raw as GeminiKeyConfig & ProviderKeyConfig;
-  const commandAuth =
-    brand === 'codex' && (cfg as ProviderKeyConfig).auth?.command?.trim()
-      ? (cfg as ProviderKeyConfig).auth
-      : undefined;
+  const commandAuth = cfg.auth?.command?.trim() ? cfg.auth : undefined;
   const disabled = hasDisableAllModelsRule(cfg.excludedModels);
   const excludedList = stripDisableAllRule(cfg.excludedModels);
   return {

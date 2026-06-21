@@ -155,7 +155,7 @@ const buildProviderKeyConfig = (
   const headers = headersFromEntries(input.headers);
   const models = buildModelAliases(input.models);
   const excluded = buildExcludedModels(input.excludedModelsText, input.disabled, brand);
-  const useCommandAuth = brand === 'codex' && input.authMode === 'command';
+  const useCommandAuth = input.authMode === 'command';
   const commandAuth = useCommandAuth ? buildCommandAuth(input) : undefined;
   const apiKeyChanged = input.apiKey.trim().length > 0;
   const next: ProviderKeyConfig = {
@@ -606,7 +606,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       try {
         const sel = resource.selector;
         if (sel.brand === 'gemini') {
-          await providersApi.deleteGeminiKey(sel.apiKey, sel.baseUrl);
+          await providersApi.deleteGeminiKey(sel.apiKey, sel.baseUrl, sel.index);
           const next = (config?.geminiApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('gemini-api-key', next);
         } else if (sel.brand === 'codex') {
@@ -614,11 +614,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const next = (config?.codexApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('codex-api-key', next);
         } else if (sel.brand === 'claude') {
-          await providersApi.deleteClaudeConfig(sel.apiKey, sel.baseUrl);
+          await providersApi.deleteClaudeConfig(sel.apiKey, sel.baseUrl, sel.index);
           const next = (config?.claudeApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('claude-api-key', next);
         } else if (sel.brand === 'vertex') {
-          await providersApi.deleteVertexConfig(sel.apiKey, sel.baseUrl);
+          await providersApi.deleteVertexConfig(sel.apiKey, sel.baseUrl, sel.index);
           const next = (config?.vertexApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('vertex-api-key', next);
         } else if (sel.brand === 'openaiCompatibility') {

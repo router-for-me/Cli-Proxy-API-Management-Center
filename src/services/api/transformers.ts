@@ -143,15 +143,12 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   return result;
 };
 
-const normalizeProviderKeyConfig = (
-  item: unknown,
-  options?: { commandAuth?: boolean }
-): ProviderKeyConfig | null => {
+const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => {
   if (item === undefined || item === null) return null;
   const record = isRecord(item) ? item : null;
   const apiKey = record?.['api-key'] ?? (typeof item === 'string' ? item : '');
   const trimmed = String(apiKey || '').trim();
-  const auth = options?.commandAuth ? normalizeCommandAuth(record?.auth) : undefined;
+  const auth = normalizeCommandAuth(record?.auth);
   if (!trimmed && !auth) return null;
 
   const config: ProviderKeyConfig = { apiKey: auth ? '' : trimmed };
@@ -221,9 +218,11 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
     apiKey = item;
   }
   const trimmed = String(apiKey || '').trim();
-  if (!trimmed) return null;
+  const auth = normalizeCommandAuth(record?.auth);
+  if (!trimmed && !auth) return null;
 
-  const config: GeminiKeyConfig = { apiKey: trimmed };
+  const config: GeminiKeyConfig = { apiKey: auth ? '' : trimmed };
+  if (auth) config.auth = auth;
   const priority = record?.priority;
   if (priority !== undefined && priority !== null && String(priority).trim() !== '') {
     const parsed = Number(priority);
@@ -373,7 +372,7 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   const codexList = raw['codex-api-key'];
   if (Array.isArray(codexList)) {
     config.codexApiKeys = codexList
-      .map((item) => normalizeProviderKeyConfig(item, { commandAuth: true }))
+      .map((item) => normalizeProviderKeyConfig(item))
       .filter(Boolean) as ProviderKeyConfig[];
   }
 

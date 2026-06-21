@@ -34,6 +34,7 @@ export interface CloakConfig {
 
 export interface GeminiKeyConfig {
   apiKey: string;
+  auth?: CommandAuthConfig;
   priority?: number;
   prefix?: string;
   baseUrl?: string;
