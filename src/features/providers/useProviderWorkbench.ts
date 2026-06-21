@@ -169,6 +169,8 @@ const buildProviderKeyConfig = (
     excludedModels: excluded,
     disableCooling: input.disableCooling === true,
     authIndex: existing?.authIndex,
+    authKey: existing?.authKey,
+    authSource: existing?.authSource,
   };
   if (commandAuth) {
     next.auth = commandAuth;
@@ -208,6 +210,8 @@ const buildOpenAIConfig = (
             apiKey: entry.apiKey.trim() || fallbackApiKey,
             proxyUrl: entry.proxyUrl.trim() || undefined,
             authIndex: entry.authIndex?.trim() || undefined,
+            authKey: entry.authKey,
+            authSource: entry.authSource,
           };
         })
         .filter((entry) => entry.apiKey) ?? []);

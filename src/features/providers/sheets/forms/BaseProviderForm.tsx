@@ -158,6 +158,8 @@ function buildInitialForm(
               existingApiKey: entry.apiKey,
               proxyUrl: entry.proxyUrl ?? '',
               authIndex: entry.authIndex,
+              authKey: entry.authKey,
+              authSource: entry.authSource,
             }))
           : [emptyApiKeyEntry()],
     };

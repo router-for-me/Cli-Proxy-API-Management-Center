@@ -21,7 +21,7 @@ import type {
 const serializeHeaders = (headers?: Record<string, string>) =>
   headers && Object.keys(headers).length ? headers : undefined;
 
-const RESPONSE_ONLY_FIELDS = ['auth-index'] as const;
+const RESPONSE_ONLY_FIELDS = ['auth-index', 'auth-key', 'auth-source'] as const;
 
 const PROVIDER_COMMON_KEY_FIELDS = [
   'api-key',

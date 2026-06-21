@@ -10,6 +10,7 @@ import type {
 import type { Config } from '@/types/config';
 import { buildHeaderObject } from '@/utils/headers';
 import { isRecord } from '@/utils/helpers';
+import { normalizeRecentRequestIdentity } from '@/utils/recentRequests';
 
 const normalizeBoolean = (value: unknown): boolean | undefined =>
   typeof value === 'boolean' ? value : undefined;
@@ -102,6 +103,9 @@ const normalizeAuthIndex = (value: unknown): string | undefined => {
   return trimmed ? trimmed : undefined;
 };
 
+const normalizeAuthKey = (value: unknown): string | undefined =>
+  normalizeRecentRequestIdentity(value);
+
 const normalizePositiveNumber = (value: unknown): number | undefined => {
   if (value === undefined || value === null || String(value).trim() === '') return undefined;
   const parsed = Number(value);
@@ -134,12 +138,16 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
 
   const proxyUrl = record?.['proxy-url'];
   const authIndex = normalizeAuthIndex(record?.['auth-index']);
+  const authKey = normalizeAuthKey(record?.['auth-key'] ?? record?.auth_key);
+  const authSource = normalizeAuthKey(record?.['auth-source'] ?? record?.auth_source);
 
   const result: ApiKeyEntry = {
     apiKey: trimmed,
     proxyUrl: proxyUrl ? String(proxyUrl) : undefined,
   };
   if (authIndex) result.authIndex = authIndex;
+  if (authKey) result.authKey = authKey;
+  if (authSource) result.authSource = authSource;
   return result;
 };
 
@@ -178,6 +186,10 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   if (excludedModels.length) config.excludedModels = excludedModels;
   const authIndex = normalizeAuthIndex(record?.['auth-index']);
   if (authIndex) config.authIndex = authIndex;
+  const authKey = normalizeAuthKey(record?.['auth-key'] ?? record?.auth_key);
+  if (authKey) config.authKey = authKey;
+  const authSource = normalizeAuthKey(record?.['auth-source'] ?? record?.auth_source);
+  if (authSource) config.authSource = authSource;
 
   const cloakRaw = record?.cloak;
   if (isRecord(cloakRaw)) {
@@ -246,6 +258,10 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   if (excludedModels.length) config.excludedModels = excludedModels;
   const authIndex = normalizeAuthIndex(record?.['auth-index']);
   if (authIndex) config.authIndex = authIndex;
+  const authKey = normalizeAuthKey(record?.['auth-key'] ?? record?.auth_key);
+  if (authKey) config.authKey = authKey;
+  const authSource = normalizeAuthKey(record?.['auth-source'] ?? record?.auth_source);
+  if (authSource) config.authSource = authSource;
   return config;
 };
 
@@ -286,6 +302,10 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   if (testModel) result.testModel = String(testModel);
   const authIndex = normalizeAuthIndex(provider['auth-index']);
   if (authIndex) result.authIndex = authIndex;
+  const authKey = normalizeAuthKey(provider['auth-key'] ?? provider.auth_key);
+  if (authKey) result.authKey = authKey;
+  const authSource = normalizeAuthKey(provider['auth-source'] ?? provider.auth_source);
+  if (authSource) result.authSource = authSource;
   return result;
 };
 

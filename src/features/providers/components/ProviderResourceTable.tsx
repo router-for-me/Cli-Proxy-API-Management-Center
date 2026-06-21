@@ -53,8 +53,12 @@ const resolveStatusBarData = (
   return getProviderRecentStatusData(
     usageByProvider,
     resource.brand,
-    resource.apiKey ?? undefined,
-    resource.baseUrl ?? undefined
+    {
+      apiKey: resource.apiKey,
+      authKey: resource.authKey,
+      authSource: resource.authSource,
+      baseUrl: resource.baseUrl,
+    }
   );
 };
 
@@ -68,8 +72,12 @@ const resolveTotalStats = (
   return getProviderTotalStats(
     usageByProvider,
     resource.brand,
-    resource.apiKey ?? undefined,
-    resource.baseUrl ?? undefined
+    {
+      apiKey: resource.apiKey,
+      authKey: resource.authKey,
+      authSource: resource.authSource,
+      baseUrl: resource.baseUrl,
+    }
   );
 };
 
