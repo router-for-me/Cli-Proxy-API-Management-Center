@@ -7,6 +7,7 @@ export const APIKEY_FUN_DIRECT_BASE_URL = 'https://slb.apikey.fun';
 export const APIKEY_FUN_OPENAI_BASE_URL = `${APIKEY_FUN_STANDARD_BASE_URL}/v1`;
 export const APIKEY_FUN_CODEX_BASE_URL = APIKEY_FUN_OPENAI_BASE_URL;
 export const APIKEY_FUN_ANTHROPIC_BASE_URL = APIKEY_FUN_STANDARD_BASE_URL;
+export const APIKEY_FUN_USAGE_PATH = '/v1/usage';
 
 export const APIKEY_FUN_BASE_URL_OPTIONS = [
   {
@@ -60,6 +61,87 @@ export const getApiKeyFunProtocolUrls = (value: string | undefined | null) => {
     anthropic: matched.anthropicBaseUrl,
     openai: matched.openaiBaseUrl,
     codex: matched.codexBaseUrl,
+  };
+};
+
+const buildApiKeyFunUsageEndpoint = (baseUrl: string): string =>
+  `${baseUrl.replace(/\/+$/, '')}${APIKEY_FUN_USAGE_PATH}`;
+
+export const getApiKeyFunUsageEndpoints = (value: string | undefined | null): string[] => {
+  const baseUrl = resolveApiKeyFunBaseUrl(value);
+  const primary = buildApiKeyFunUsageEndpoint(baseUrl);
+  const standard = buildApiKeyFunUsageEndpoint(APIKEY_FUN_STANDARD_BASE_URL);
+  return primary === standard ? [primary] : [primary, standard];
+};
+
+export interface ApiKeyFunUsageSummary {
+  isValid: boolean;
+  status?: string;
+  mode?: string;
+  remaining: number | string | null;
+  unit: string;
+  limit: number | string | null;
+  used: number | string | null;
+}
+
+const normalizeUsageAmount = (value: unknown): number | string | null => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+  return null;
+};
+
+const normalizeString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim() ? value.trim() : undefined;
+
+const normalizeBoolean = (value: unknown, fallback: boolean): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'active'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'inactive', 'disabled'].includes(normalized)) return false;
+  }
+  return fallback;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+export const normalizeApiKeyFunUsagePayload = (
+  payload: unknown
+): ApiKeyFunUsageSummary | null => {
+  if (!isRecord(payload)) return null;
+
+  const quota = isRecord(payload.quota) ? payload.quota : {};
+  const remaining = normalizeUsageAmount(
+    payload.remaining ?? quota.remaining ?? payload.balance
+  );
+  const unit = normalizeString(payload.unit ?? quota.unit) ?? 'USD';
+  const limit = normalizeUsageAmount(quota.limit);
+  const used = normalizeUsageAmount(quota.used);
+  const status = normalizeString(payload.status);
+  const mode = normalizeString(payload.mode);
+  const isValid = normalizeBoolean(
+    payload.is_active ?? payload.isValid,
+    true
+  );
+
+  if (remaining === null && limit === null && used === null && !status && !mode) {
+    return null;
+  }
+
+  return {
+    isValid,
+    status,
+    mode,
+    remaining,
+    unit,
+    limit,
+    used,
   };
 };
 

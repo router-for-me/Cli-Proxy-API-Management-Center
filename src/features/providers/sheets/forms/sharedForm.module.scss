@@ -334,6 +334,45 @@
   overflow-wrap: anywhere;
 }
 
+.sponsorUsageSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sponsorUsageResult {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--success-color) 34%, var(--border-color));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--success-color) 8%, var(--bg-primary));
+  color: var(--text-primary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.sponsorUsageResultWarning {
+  color: var(--warning-text);
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.sponsorUsageMain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.sponsorUsageMeta {
+  color: var(--muted-foreground);
+}
+
 .connectivityRow {
   display: flex;
   align-items: center;

@@ -2,12 +2,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { Select } from '@/components/ui/Select';
-import { IconDownload, IconEye, IconEyeOff, IconPlus, IconX } from '@/components/ui/icons';
+import {
+  IconAlertTriangle,
+  IconCheckCircle2,
+  IconDollarSign,
+  IconDownload,
+  IconEye,
+  IconEyeOff,
+  IconLoader2,
+  IconPlus,
+  IconX,
+} from '@/components/ui/icons';
 import { hasDisableAllModelsRule } from '@/components/providers/utils';
 import type { ModelInfo } from '@/utils/models';
 import {
   APIKEY_FUN_BASE_URL_OPTIONS,
   getApiKeyFunProtocolUrls,
+  type ApiKeyFunUsageSummary,
   resolveApiKeyFunBaseUrl,
 } from '../../sponsor';
 import type {
@@ -21,6 +32,7 @@ import type {
 } from '../../types';
 import { ModelDiscoveryPanel } from './ModelDiscoveryPanel';
 import { useModelDiscovery, type UseModelDiscoveryResult } from './useModelDiscovery';
+import { useSponsorUsageCheck, type SponsorUsageMessages } from './useSponsorUsageCheck';
 import styles from './sharedForm.module.scss';
 
 interface SponsorProviderFormProps {
@@ -109,6 +121,24 @@ const protocolUrlForEntry = (entry: SponsorKeyEntryInput): string => {
   if (entry.protocol === 'claude') return urls.anthropic;
   if (entry.protocol === 'codex') return urls.codex;
   return urls.openai;
+};
+
+const formatUsageAmount = (
+  value: ApiKeyFunUsageSummary['remaining'],
+  locale: string
+): string => {
+  if (value === null) return '--';
+  if (typeof value === 'number') {
+    return new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 6,
+    }).format(value);
+  }
+  return value;
+};
+
+const isHealthyUsageSummary = (summary: ApiKeyFunUsageSummary): boolean => {
+  const normalizedStatus = (summary.status ?? '').trim().toLowerCase();
+  return summary.isValid && (!normalizedStatus || normalizedStatus === 'active');
 };
 
 const modelsFromConfig = (
@@ -319,11 +349,35 @@ function SponsorKeyEntryCard({
   onChange,
   onRemove,
 }: SponsorKeyEntryCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [showApiKey, setShowApiKey] = useState(false);
   const endpointUrl = protocolUrlForEntry(entry);
   const protocolLabel = t(`providersPage.sponsor.protocols.${protocolI18nKey(entry.protocol)}`);
   const modelKey = protocolModelI18nKey(entry.protocol);
+  const usageMessages = useMemo<SponsorUsageMessages>(
+    () => ({
+      apiKeyRequired: t('providersPage.sponsor.usageApiKeyRequired'),
+      emptyResponse: t('providersPage.sponsor.usageEmpty'),
+      requestFailed: t('providersPage.connectivity.requestFailed'),
+    }),
+    [t]
+  );
+  const usageCheck = useSponsorUsageCheck(
+    {
+      baseUrl: entry.baseUrl,
+      apiKey: entry.apiKey,
+      fallbackApiKey: entry.existingApiKey,
+    },
+    usageMessages
+  );
+  const usageSummary = usageCheck.status.summary;
+  const usageHealthy = usageSummary ? isHealthyUsageSummary(usageSummary) : true;
+  const usageRemaining =
+    usageSummary !== null ? formatUsageAmount(usageSummary.remaining, i18n.language) : '';
+  const usageUsed =
+    usageSummary !== null ? formatUsageAmount(usageSummary.used, i18n.language) : '';
+  const usageLimit =
+    usageSummary !== null ? formatUsageAmount(usageSummary.limit, i18n.language) : '';
   const discoveryHeaders = useMemo<Array<{ key: string; value: string }>>(() => [], []);
   const openaiDiscoveryEntries = useMemo(
     () => [
@@ -467,6 +521,74 @@ function SponsorKeyEntryCard({
           </button>
         </div>
         <span className={styles.labelHint}>{t('providersPage.sponsor.apiKeyHint')}</span>
+      </div>
+
+      <div className={styles.sponsorUsageSection}>
+        <button
+          type="button"
+          className={styles.connectivityBtn}
+          onClick={() => void usageCheck.run()}
+          disabled={mutating || usageCheck.isLoading}
+        >
+          {usageCheck.isLoading ? (
+            <IconLoader2 className={styles.statusIconLoading} size={14} />
+          ) : (
+            <IconDollarSign size={14} />
+          )}
+          <span>
+            {usageCheck.isLoading
+              ? t('providersPage.sponsor.usageChecking')
+              : t('providersPage.sponsor.usageCheck')}
+          </span>
+        </button>
+        {usageCheck.status.state === 'success' && usageSummary ? (
+          <div
+            className={[
+              styles.sponsorUsageResult,
+              usageHealthy ? '' : styles.sponsorUsageResultWarning,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <div className={styles.sponsorUsageMain}>
+              {usageHealthy ? (
+                <IconCheckCircle2
+                  className={`${styles.statusIcon} ${styles.statusIconSuccess}`}
+                  size={14}
+                />
+              ) : (
+                <IconAlertTriangle
+                  className={`${styles.statusIcon} ${styles.statusIconError}`}
+                  size={14}
+                />
+              )}
+              <span>
+                {t('providersPage.sponsor.usageRemaining', {
+                  amount: usageRemaining,
+                  unit: usageSummary.unit,
+                })}
+              </span>
+            </div>
+            {usageSummary.used !== null || usageSummary.limit !== null ? (
+              <span className={styles.sponsorUsageMeta}>
+                {t('providersPage.sponsor.usageBreakdown', {
+                  used: usageUsed,
+                  limit: usageLimit,
+                })}
+              </span>
+            ) : null}
+            {!usageHealthy ? (
+              <span className={styles.sponsorUsageMeta}>
+                {t('providersPage.sponsor.usageStatus', {
+                  status: usageSummary.status || t('providersPage.sponsor.usageInvalid'),
+                })}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+        {usageCheck.status.state === 'error' ? (
+          <div className={styles.connectivityError}>{usageCheck.status.message}</div>
+        ) : null}
       </div>
 
       <div className={styles.field}>
