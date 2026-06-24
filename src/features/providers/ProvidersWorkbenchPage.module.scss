@@ -12,6 +12,7 @@
 
 .layout {
   display: grid;
+  align-items: start;
   gap: 16px;
   grid-template-columns: minmax(0, 1fr);
 
