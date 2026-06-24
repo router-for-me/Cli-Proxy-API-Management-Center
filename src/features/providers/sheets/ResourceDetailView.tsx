@@ -8,9 +8,8 @@ import {
 import type { OpenAIProviderConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import {
-  APIKEY_FUN_ANTHROPIC_BASE_URL,
-  APIKEY_FUN_CODEX_BASE_URL,
-  APIKEY_FUN_OPENAI_BASE_URL,
+  getApiKeyFunProtocolUrls,
+  resolveApiKeyFunBaseUrl,
 } from '../sponsor';
 import type { ProviderResource, SponsorProviderRaw } from '../types';
 import styles from './forms/sharedForm.module.scss';
@@ -36,6 +35,12 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
         .find((entry) => entry.apiKey?.trim())?.apiKey ??
       raw.codex.find((item) => item.config.apiKey?.trim())?.config.apiKey ??
       raw.claude.find((item) => item.config.apiKey?.trim())?.config.apiKey;
+    const baseUrl = resolveApiKeyFunBaseUrl(
+      raw.openai[0]?.config.baseUrl ??
+        raw.codex[0]?.config.baseUrl ??
+        raw.claude[0]?.config.baseUrl
+    );
+    const protocolUrls = getApiKeyFunProtocolUrls(baseUrl);
 
     return (
       <div>
@@ -49,19 +54,19 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
             <span className={styles.sponsorProtocolName}>
               {t('providersPage.sponsor.protocols.anthropic')}
             </span>
-            <span className={styles.sponsorProtocolUrl}>{APIKEY_FUN_ANTHROPIC_BASE_URL}</span>
+            <span className={styles.sponsorProtocolUrl}>{protocolUrls.anthropic}</span>
           </div>
           <div className={styles.sponsorProtocolCard}>
             <span className={styles.sponsorProtocolName}>
               {t('providersPage.sponsor.protocols.openai')}
             </span>
-            <span className={styles.sponsorProtocolUrl}>{APIKEY_FUN_OPENAI_BASE_URL}</span>
+            <span className={styles.sponsorProtocolUrl}>{protocolUrls.openai}</span>
           </div>
           <div className={styles.sponsorProtocolCard}>
             <span className={styles.sponsorProtocolName}>
               {t('providersPage.sponsor.protocols.codexResponses')}
             </span>
-            <span className={styles.sponsorProtocolUrl}>{APIKEY_FUN_CODEX_BASE_URL}</span>
+            <span className={styles.sponsorProtocolUrl}>{protocolUrls.codex}</span>
           </div>
         </div>
 

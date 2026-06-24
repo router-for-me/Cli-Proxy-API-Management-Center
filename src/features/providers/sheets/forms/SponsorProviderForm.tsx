@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconEye, IconEyeOff } from '@/components/ui/icons';
 import {
-  APIKEY_FUN_ANTHROPIC_BASE_URL,
-  APIKEY_FUN_CODEX_BASE_URL,
-  APIKEY_FUN_OPENAI_BASE_URL,
+  APIKEY_FUN_BASE_URL_OPTIONS,
+  getApiKeyFunProtocolUrls,
+  resolveApiKeyFunBaseUrl,
 } from '../../sponsor';
 import type {
   ProviderEntryFormInput,
@@ -25,7 +25,7 @@ interface SponsorProviderFormProps {
 const emptySponsorForm = (): ProviderEntryFormInput => ({
   apiKey: '',
   name: '',
-  baseUrl: '',
+  baseUrl: APIKEY_FUN_BASE_URL_OPTIONS[0].baseUrl,
   proxyUrl: '',
   prefix: '',
   disabled: false,
@@ -60,8 +60,12 @@ const buildInitialForm = (
   const openai = raw?.openai[0]?.config;
   const codex = raw?.codex[0]?.config;
   const claude = raw?.claude[0]?.config;
+  const baseUrl = resolveApiKeyFunBaseUrl(
+    openai?.baseUrl ?? codex?.baseUrl ?? claude?.baseUrl
+  );
   return {
     ...emptySponsorForm(),
+    baseUrl,
     proxyUrl: firstSponsorProxy(raw),
     prefix: openai?.prefix ?? codex?.prefix ?? claude?.prefix ?? '',
     disabled: resource?.disabled === true,
@@ -90,6 +94,10 @@ export function SponsorProviderForm({
   );
   const [showApiKey, setShowApiKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const protocolUrls = useMemo(
+    () => getApiKeyFunProtocolUrls(form.baseUrl),
+    [form.baseUrl]
+  );
 
   const isDirty = useMemo(
     () => JSON.stringify(form) !== initialFormSignature,
@@ -123,24 +131,56 @@ export function SponsorProviderForm({
 
   return (
     <form id={formId} className={styles.form} onSubmit={handleSubmit} noValidate>
+      <div className={styles.field}>
+        <span className={styles.label}>{t('providersPage.sponsor.urlMode')}</span>
+        <div className={styles.sponsorUrlOptions} role="radiogroup">
+          {APIKEY_FUN_BASE_URL_OPTIONS.map((option) => {
+            const checked = resolveApiKeyFunBaseUrl(form.baseUrl) === option.baseUrl;
+            const className = [
+              styles.sponsorUrlOption,
+              checked ? styles.sponsorUrlOptionActive : '',
+            ]
+              .filter(Boolean)
+              .join(' ');
+            return (
+              <label key={option.id} className={className}>
+                <input
+                  type="radio"
+                  name={`${formId}-base-url`}
+                  value={option.baseUrl}
+                  checked={checked}
+                  onChange={() => updateField('baseUrl', option.baseUrl)}
+                  disabled={mutating}
+                />
+                <span className={styles.sponsorUrlOptionText}>
+                  <span>{t(`providersPage.sponsor.urlOptions.${option.id}`)}</span>
+                  <small>{option.baseUrl}</small>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        <span className={styles.labelHint}>{t('providersPage.sponsor.urlHint')}</span>
+      </div>
+
       <div className={styles.sponsorProtocolGrid}>
         <div className={styles.sponsorProtocolCard}>
           <span className={styles.sponsorProtocolName}>
             {t('providersPage.sponsor.protocols.anthropic')}
           </span>
-          <span className={styles.sponsorProtocolUrl}>{APIKEY_FUN_ANTHROPIC_BASE_URL}</span>
+          <span className={styles.sponsorProtocolUrl}>{protocolUrls.anthropic}</span>
         </div>
         <div className={styles.sponsorProtocolCard}>
           <span className={styles.sponsorProtocolName}>
             {t('providersPage.sponsor.protocols.openai')}
           </span>
-          <span className={styles.sponsorProtocolUrl}>{APIKEY_FUN_OPENAI_BASE_URL}</span>
+          <span className={styles.sponsorProtocolUrl}>{protocolUrls.openai}</span>
         </div>
         <div className={styles.sponsorProtocolCard}>
           <span className={styles.sponsorProtocolName}>
             {t('providersPage.sponsor.protocols.codexResponses')}
           </span>
-          <span className={styles.sponsorProtocolUrl}>{APIKEY_FUN_CODEX_BASE_URL}</span>
+          <span className={styles.sponsorProtocolUrl}>{protocolUrls.codex}</span>
         </div>
       </div>
 

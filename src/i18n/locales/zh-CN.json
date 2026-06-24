@@ -1467,6 +1467,12 @@
       "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
       "detailHint": "此赞助商会分别写入 Claude API Key、OpenAI 兼容配置与 Codex API Key,这里只做聚合管理。",
       "apiKeyHint": "保存后会同步写入 Anthropic、OpenAI 兼容和 Codex API (Responses) 可用的底层配置。",
+      "urlMode": "APIKEY.FUN URL",
+      "urlHint": "两种 URL 的使用规范一致,保存时会同步写入各协议对应地址。",
+      "urlOptions": {
+        "standard": "普通 URL",
+        "direct": "专线直连 URL"
+      },
       "openaiEntries": "OpenAI 兼容密钥数",
       "codexEntries": "Codex API 密钥数",
       "anthropicEntries": "Anthropic 密钥数",

@@ -225,6 +225,65 @@
   justify-content: space-between;
 }
 
+.sponsorUrlOptions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+
+  @media (min-width: 560px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sponsorUrlOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: border-color $transition-fast, background-color $transition-fast;
+
+  input {
+    margin: 2px 0 0;
+    accent-color: var(--primary-color);
+    flex-shrink: 0;
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+  }
+
+  &:hover {
+    border-color: var(--primary-color);
+  }
+}
+
+.sponsorUrlOptionActive {
+  border-color: var(--primary-color);
+  background: var(--primary-10);
+}
+
+.sponsorUrlOptionText {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--text-primary);
+
+  small {
+    font-family: $font-mono;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--muted-foreground);
+    overflow-wrap: anywhere;
+  }
+}
+
 .sponsorProtocolGrid {
   display: grid;
   grid-template-columns: 1fr;

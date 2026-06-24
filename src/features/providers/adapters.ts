@@ -5,10 +5,10 @@ import {
 } from '@/components/providers/utils';
 import { maskApiKey } from '@/utils/format';
 import {
-  APIKEY_FUN_ANTHROPIC_BASE_URL,
   APIKEY_FUN_DISPLAY_NAME,
-  APIKEY_FUN_OPENAI_BASE_URL,
   APIKEY_FUN_PROTOCOLS,
+  getApiKeyFunProtocolUrls,
+  resolveApiKeyFunBaseUrl,
 } from './sponsor';
 import type {
   ProviderBrand,
@@ -185,6 +185,12 @@ export function apiKeyFunToResource(raw: SponsorProviderRaw): ProviderResource |
     ...raw.codex.map((item) => normalizePriority(item.config.priority)),
     ...raw.claude.map((item) => normalizePriority(item.config.priority))
   );
+  const baseUrl = resolveApiKeyFunBaseUrl(
+    raw.openai[0]?.config.baseUrl ??
+      raw.codex[0]?.config.baseUrl ??
+      raw.claude[0]?.config.baseUrl
+  );
+  const protocolUrls = getApiKeyFunProtocolUrls(baseUrl);
 
   return {
     id: buildId('apikeyFun', 0, 'sponsor'),
@@ -195,7 +201,7 @@ export function apiKeyFunToResource(raw: SponsorProviderRaw): ProviderResource |
     apiKeyPreview: apiKey ? maskApiKey(apiKey) : null,
     apiKey: apiKey || null,
     authIndex: null,
-    baseUrl: `${APIKEY_FUN_OPENAI_BASE_URL} / ${APIKEY_FUN_ANTHROPIC_BASE_URL}`,
+    baseUrl: `${protocolUrls.openai} / ${protocolUrls.anthropic}`,
     proxyUrl:
       firstOpenAIEntry?.proxyUrl ??
       raw.codex.find((item) => item.config.proxyUrl)?.config.proxyUrl ??

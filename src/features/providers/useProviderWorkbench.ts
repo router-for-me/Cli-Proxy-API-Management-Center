@@ -31,10 +31,8 @@ import type {
   SponsorProviderRaw,
 } from './types';
 import {
-  APIKEY_FUN_ANTHROPIC_BASE_URL,
-  APIKEY_FUN_CODEX_BASE_URL,
-  APIKEY_FUN_OPENAI_BASE_URL,
   APIKEY_FUN_PROVIDER_NAME,
+  getApiKeyFunProtocolUrls,
   isApiKeyFunClaudeProvider,
   isApiKeyFunCodexProvider,
   isApiKeyFunOpenAIProvider,
@@ -242,6 +240,7 @@ const buildApiKeyFunOpenAIConfig = (
   raw: SponsorProviderRaw
 ): OpenAIProviderConfig => {
   const existing = raw.openai[0]?.config;
+  const urls = getApiKeyFunProtocolUrls(input.baseUrl);
   const existingEntries = existing?.apiKeyEntries ?? [];
   const apiKey = input.apiKey.trim() || firstApiKeyFunKey(raw);
   const proxyUrl = input.proxyUrl.trim() || undefined;
@@ -257,7 +256,7 @@ const buildApiKeyFunOpenAIConfig = (
   return {
     ...(existing ?? {}),
     name: APIKEY_FUN_PROVIDER_NAME,
-    baseUrl: APIKEY_FUN_OPENAI_BASE_URL,
+    baseUrl: urls.openai,
     prefix: input.prefix.trim() || undefined,
     disabled: input.disabled,
     disableCooling: input.disableCooling === true,
@@ -271,6 +270,7 @@ const buildApiKeyFunClaudeConfig = (
   raw: SponsorProviderRaw
 ): ProviderKeyConfig => {
   const existing = raw.claude[0]?.config;
+  const urls = getApiKeyFunProtocolUrls(input.baseUrl);
   const apiKey = input.apiKey.trim() || firstApiKeyFunKey(raw);
   const excluded = input.disabled
     ? withDisableAllModelsRule(stripDisableAllModelsRule(existing?.excludedModels))
@@ -279,7 +279,7 @@ const buildApiKeyFunClaudeConfig = (
   return {
     ...(existing ?? {}),
     apiKey,
-    baseUrl: APIKEY_FUN_ANTHROPIC_BASE_URL,
+    baseUrl: urls.anthropic,
     proxyUrl: input.proxyUrl.trim() || undefined,
     prefix: input.prefix.trim() || undefined,
     priority: input.priority,
@@ -293,6 +293,7 @@ const buildApiKeyFunCodexConfig = (
   raw: SponsorProviderRaw
 ): ProviderKeyConfig => {
   const existing = raw.codex[0]?.config;
+  const urls = getApiKeyFunProtocolUrls(input.baseUrl);
   const apiKey = input.apiKey.trim() || firstApiKeyFunKey(raw);
   const excluded = input.disabled
     ? withDisableAllModelsRule(stripDisableAllModelsRule(existing?.excludedModels))
@@ -301,7 +302,7 @@ const buildApiKeyFunCodexConfig = (
   return {
     ...(existing ?? {}),
     apiKey,
-    baseUrl: APIKEY_FUN_CODEX_BASE_URL,
+    baseUrl: urls.codex,
     proxyUrl: input.proxyUrl.trim() || undefined,
     prefix: input.prefix.trim() || undefined,
     priority: input.priority,

@@ -1467,6 +1467,12 @@
       "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
       "detailHint": "This sponsor is persisted as Claude API key, OpenAI-compatible, and Codex API key entries; this view manages them together.",
       "apiKeyHint": "Saving writes the underlying config for Anthropic, OpenAI-compatible, and Codex API (Responses) access.",
+      "urlMode": "APIKEY.FUN URL",
+      "urlHint": "Both URLs use the same API conventions. Saving writes the matching endpoint for each protocol.",
+      "urlOptions": {
+        "standard": "Standard URL",
+        "direct": "Direct URL"
+      },
       "openaiEntries": "OpenAI-compatible keys",
       "codexEntries": "Codex API keys",
       "anthropicEntries": "Anthropic keys",
