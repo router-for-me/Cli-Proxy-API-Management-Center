@@ -8,6 +8,8 @@ import { ProviderResourceToolbar } from './ProviderResourceToolbar';
 import type { ProviderSortBy, SortDir } from '../types';
 import styles from './ProviderResourcePanel.module.scss';
 
+const APIKEY_FUN_AFFILIATE_URL = 'https://apikey.fun/register?aff=AKCPA';
+
 export interface ProviderPanelControls {
   sortBy: ProviderSortBy;
   sortDir: SortDir;
@@ -72,6 +74,16 @@ export function ProviderResourcePanel({
                 {t(`providersPage.providerNames.${group.id}`)}
               </h2>
             </div>
+            {group.id === 'apikeyFun' ? (
+              <a
+                className={styles.sponsorLink}
+                href={APIKEY_FUN_AFFILIATE_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {APIKEY_FUN_AFFILIATE_URL}
+              </a>
+            ) : null}
           </div>
           <div className={styles.searchWrap}>
             <span className={styles.searchIcon} aria-hidden="true">

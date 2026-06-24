@@ -73,6 +73,28 @@
   letter-spacing: -0.005em;
 }
 
+.sponsorLink {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--primary-color);
+  font-family: $font-mono;
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: min(520px, 100%);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
 .searchWrap {
   position: relative;
   min-width: 0;

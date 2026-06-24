@@ -73,6 +73,9 @@ const getResourceRecentSuccess = (
   resource: ProviderResource,
   usageByProvider: ProviderRecentUsageMap
 ): number => {
+  if (resource.brand === 'apikeyFun') {
+    return 0;
+  }
   if (resource.brand === 'openaiCompatibility') {
     return getOpenAIProviderRecentWindowStats(
       resource.raw as OpenAIProviderConfig,

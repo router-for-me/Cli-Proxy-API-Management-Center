@@ -1459,14 +1459,16 @@
     },
     "categories": {
       "title": "提供商",
-      "activeCount": "{{active}}/{{total}} 活躍"
+      "activeCount": "{{active}}/{{total}} 活躍",
+      "sponsors": "贊助商"
     },
     "providerNames": {
       "gemini": "Gemini",
       "codex": "Codex",
       "claude": "Claude",
       "vertex": "Vertex",
-      "openaiCompatibility": "OpenAI 相容"
+      "openaiCompatibility": "OpenAI 相容",
+      "apikeyFun": "APIKEY.FUN"
     },
     "table": {
       "key": "金鑰",
@@ -1486,6 +1488,19 @@
       "filterPlaceholder": "搜尋金鑰、位址、前綴…",
       "description": "在 {{route}} 下管理資源",
       "providerIssue": "此提供商存在問題"
+    },
+    "sponsor": {
+      "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
+      "detailHint": "此贊助商會分別寫入 Claude API Key、OpenAI 相容設定與 Codex API Key,此處只做聚合管理。",
+      "apiKeyHint": "儲存後會同步寫入 Anthropic、OpenAI 相容和 Codex API (Responses) 可用的底層設定。",
+      "openaiEntries": "OpenAI 相容金鑰數",
+      "codexEntries": "Codex API 金鑰數",
+      "anthropicEntries": "Anthropic 金鑰數",
+      "protocols": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI 相容",
+        "codexResponses": "Codex API (Responses)"
+      }
     },
     "status": {
       "active": "活躍",

@@ -7,7 +7,12 @@ import {
 } from '@/components/providers/utils';
 import type { OpenAIProviderConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
-import type { ProviderResource } from '../types';
+import {
+  APIKEY_FUN_ANTHROPIC_BASE_URL,
+  APIKEY_FUN_CODEX_BASE_URL,
+  APIKEY_FUN_OPENAI_BASE_URL,
+} from '../sponsor';
+import type { ProviderResource, SponsorProviderRaw } from '../types';
 import styles from './forms/sharedForm.module.scss';
 
 interface ResourceDetailViewProps {
@@ -17,6 +22,74 @@ interface ResourceDetailViewProps {
 
 export function ResourceDetailView({ resource, usageByProvider }: ResourceDetailViewProps) {
   const { t } = useTranslation();
+
+  if (resource.brand === 'apikeyFun') {
+    const raw = resource.raw as SponsorProviderRaw;
+    const openaiKeyCount = raw.openai.reduce(
+      (count, item) => count + (item.config.apiKeyEntries?.length ?? 0),
+      0
+    );
+    const codexKeyCount = raw.codex.length;
+    const firstKey =
+      raw.openai
+        .flatMap((item) => item.config.apiKeyEntries ?? [])
+        .find((entry) => entry.apiKey?.trim())?.apiKey ??
+      raw.codex.find((item) => item.config.apiKey?.trim())?.config.apiKey ??
+      raw.claude.find((item) => item.config.apiKey?.trim())?.config.apiKey;
+
+    return (
+      <div>
+        <div className={styles.detailHeader}>
+          <div className={styles.sectionTitle}>{resource.name ?? resource.identifier}</div>
+          <p className={styles.sectionDesc}>{t('providersPage.sponsor.detailHint')}</p>
+        </div>
+
+        <div className={styles.sponsorProtocolGrid}>
+          <div className={styles.sponsorProtocolCard}>
+            <span className={styles.sponsorProtocolName}>
+              {t('providersPage.sponsor.protocols.anthropic')}
+            </span>
+            <span className={styles.sponsorProtocolUrl}>{APIKEY_FUN_ANTHROPIC_BASE_URL}</span>
+          </div>
+          <div className={styles.sponsorProtocolCard}>
+            <span className={styles.sponsorProtocolName}>
+              {t('providersPage.sponsor.protocols.openai')}
+            </span>
+            <span className={styles.sponsorProtocolUrl}>{APIKEY_FUN_OPENAI_BASE_URL}</span>
+          </div>
+          <div className={styles.sponsorProtocolCard}>
+            <span className={styles.sponsorProtocolName}>
+              {t('providersPage.sponsor.protocols.codexResponses')}
+            </span>
+            <span className={styles.sponsorProtocolUrl}>{APIKEY_FUN_CODEX_BASE_URL}</span>
+          </div>
+        </div>
+
+        <dl className={styles.dl} style={{ marginTop: 16 }}>
+          <div>
+            <dt className={styles.dt}>{t('providersPage.detail.fields.identifier')}</dt>
+            <dd className={styles.dd}>{firstKey ? maskApiKey(firstKey) : resource.identifier}</dd>
+          </div>
+          <div>
+            <dt className={styles.dt}>{t('providersPage.detail.fields.prefix')}</dt>
+            <dd className={styles.dd}>{resource.prefix ?? t('providersPage.status.none')}</dd>
+          </div>
+          <div>
+            <dt className={styles.dt}>{t('providersPage.sponsor.openaiEntries')}</dt>
+            <dd className={styles.dd}>{openaiKeyCount}</dd>
+          </div>
+          <div>
+            <dt className={styles.dt}>{t('providersPage.sponsor.codexEntries')}</dt>
+            <dd className={styles.dd}>{codexKeyCount}</dd>
+          </div>
+          <div>
+            <dt className={styles.dt}>{t('providersPage.sponsor.anthropicEntries')}</dt>
+            <dd className={styles.dd}>{raw.claude.length}</dd>
+          </div>
+        </dl>
+      </div>
+    );
+  }
 
   const primary: Array<[string, string]> = [
     ['identifier', resource.identifier],

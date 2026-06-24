@@ -2,12 +2,15 @@
  * AI 提供商 Workbench 视图模型(归一化各 brand 的异构 config)
  */
 
+import type { OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+
 export type ProviderBrand =
   | 'gemini'
   | 'codex'
   | 'claude'
   | 'vertex'
-  | 'openaiCompatibility';
+  | 'openaiCompatibility'
+  | 'apikeyFun';
 
 export const PROVIDER_SORT_BY_VALUES = ['name', 'priority', 'recent-success'] as const;
 export type ProviderSortBy = (typeof PROVIDER_SORT_BY_VALUES)[number];
@@ -20,12 +23,19 @@ export type ProviderResourceSelector =
   | { brand: 'codex'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'claude'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'vertex'; apiKey: string; baseUrl?: string; index: number }
-  | { brand: 'openaiCompatibility'; name: string; index: number };
+  | { brand: 'openaiCompatibility'; name: string; index: number }
+  | {
+      brand: 'apikeyFun';
+      openaiIndices: number[];
+      claudeIndices: number[];
+      codexIndices: number[];
+    };
 
 export interface ProviderResourceFlags {
   cloakEnabled?: boolean;
   websockets?: boolean;
   isPlaceholder?: boolean;
+  protocols?: string[];
 }
 
 export interface ProviderResource {
@@ -73,6 +83,12 @@ export interface ProviderGroup {
 export interface ProviderSnapshot {
   fetchedAt: string;
   groups: ProviderGroup[];
+}
+
+export interface SponsorProviderRaw {
+  openai: Array<{ config: OpenAIProviderConfig; index: number }>;
+  claude: Array<{ config: ProviderKeyConfig; index: number }>;
+  codex: Array<{ config: ProviderKeyConfig; index: number }>;
 }
 
 /**

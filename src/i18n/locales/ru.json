@@ -1411,14 +1411,16 @@
     },
     "categories": {
       "title": "Провайдеры",
-      "activeCount": "{{active}}/{{total}} активных"
+      "activeCount": "{{active}}/{{total}} активных",
+      "sponsors": "Спонсоры"
     },
     "providerNames": {
       "gemini": "Gemini",
       "codex": "Codex",
       "claude": "Claude",
       "vertex": "Vertex",
-      "openaiCompatibility": "OpenAI-совместимый"
+      "openaiCompatibility": "OpenAI-совместимый",
+      "apikeyFun": "APIKEY.FUN"
     },
     "table": {
       "key": "Ключ",
@@ -1438,6 +1440,19 @@
       "filterPlaceholder": "Поиск по ключам, URL, префиксам…",
       "description": "Управление ресурсами {{route}}",
       "providerIssue": "Проблема с провайдером"
+    },
+    "sponsor": {
+      "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
+      "detailHint": "Этот спонсор сохраняется как записи Claude API key, OpenAI-compatible и Codex API key; здесь они управляются вместе.",
+      "apiKeyHint": "Сохранение запишет базовые настройки для Anthropic, OpenAI-compatible и Codex API (Responses).",
+      "openaiEntries": "Ключей OpenAI-compatible",
+      "codexEntries": "Ключей Codex API",
+      "anthropicEntries": "Ключей Anthropic",
+      "protocols": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI-compatible",
+        "codexResponses": "Codex API (Responses)"
+      }
     },
     "status": {
       "active": "Активен",
