@@ -5,6 +5,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .quickStartForm {
@@ -133,6 +135,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 .sectionTitle {
@@ -155,6 +158,7 @@
 .field {
   display: grid;
   gap: 6px;
+  min-width: 0;
 }
 
 .label {
@@ -266,6 +270,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  min-width: 0;
 }
 
 .divider {
@@ -317,6 +322,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--bg-secondary);
 }
 
@@ -325,9 +333,31 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
   font-size: 12px;
   font-weight: 500;
   color: var(--muted-foreground);
+}
+
+.entryCardToggle {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+  }
 }
 
 .sponsorGroupTitle {
@@ -339,13 +369,89 @@
   strong {
     color: var(--text-primary);
     font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
+}
+
+.sponsorGroupSummary {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.sponsorSummaryKey,
+.sponsorSummaryUrl {
+  display: inline-block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sponsorSummaryKey {
+  max-width: 140px;
+  font-family: $font-mono;
+  color: var(--text-primary);
+}
+
+.sponsorSummaryUrl {
+  max-width: min(360px, 45vw);
+  font-family: $font-mono;
+  color: var(--muted-foreground);
 }
 
 .entryCardHeaderRight {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+}
+
+.entryCardBody {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.entryCardIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -1px;
+  }
+}
+
+.entryCardChevron {
+  transition: transform $transition-fast;
+}
+
+.entryCardChevronOpen {
+  transform: rotate(180deg);
 }
 
 .entriesToolbar {
@@ -785,6 +891,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .passwordInput {

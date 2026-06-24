@@ -90,17 +90,16 @@ export function SponsorQuickStartPanel({
           <div className={styles.titleText}>
             <h2 className={styles.title}>{t('providersPage.providerNames.apikeyFun')}</h2>
           </div>
+          <a
+            className={`${styles.topLink} ${resource ? '' : styles.topLinkEmphasis}`.trim()}
+            href={actionHref}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <IconExternalLink size={14} />
+            <span>{actionLabel}</span>
+          </a>
         </div>
-
-        <a
-          className={`${styles.topLink} ${resource ? '' : styles.topLinkEmphasis}`.trim()}
-          href={actionHref}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <IconExternalLink size={14} />
-          <span>{actionLabel}</span>
-        </a>
       </div>
 
       <SponsorProviderForm

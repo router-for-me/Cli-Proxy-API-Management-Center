@@ -15,37 +15,35 @@
 
 .header {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: flex-start;
-  gap: 10px;
   min-width: 0;
 }
 
 .topLink {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   min-width: 0;
   max-width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--border-color);
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: transparent;
+  color: var(--muted-foreground);
   font-size: 13px;
   font-weight: 600;
-  line-height: 1.45;
+  line-height: 1;
   text-decoration: none;
   overflow-wrap: anywhere;
   transition:
     background-color $transition-fast,
-    border-color $transition-fast,
-    transform $transition-fast;
+    color $transition-fast;
 
   &:hover {
-    border-color: var(--border-hover);
     background: var(--bg-hover);
-    transform: translateY(-1px);
+    color: var(--text-primary);
   }
 
   &:focus-visible {
@@ -77,7 +75,8 @@
 
 .titleRow {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   min-width: 0;
 }
@@ -143,6 +142,10 @@
   .title {
     font-size: 22px;
     line-height: 1.25;
+  }
+
+  .titleRow {
+    gap: 10px;
   }
 
   .footer {
