@@ -138,18 +138,8 @@ export function ProviderResourcePanel({
           <div className={styles.emptyAction}>
             <button
               type="button"
+              className={styles.emptyActionButton}
               onClick={onCreate}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '7px 13px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-color)',
-                background: 'var(--bg-primary)',
-                cursor: 'pointer',
-                fontSize: 14,
-              }}
             >
               <IconPlus size={16} />
               <span>{t('providersPage.actions.new')}</span>
