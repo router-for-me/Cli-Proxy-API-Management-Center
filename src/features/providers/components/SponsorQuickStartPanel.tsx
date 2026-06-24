@@ -109,6 +109,7 @@ export function SponsorQuickStartPanel({
         mode={mode}
         mutating={formMutating}
         formId={formId}
+        variant="quickStart"
         onSubmit={handleSubmit}
         onDirtyChange={setIsDirty}
       />
@@ -117,7 +118,9 @@ export function SponsorQuickStartPanel({
         <button
           type="submit"
           form={formId}
-          className={`${formStyles.footerBtn} ${formStyles.footerBtnPrimary}`}
+          className={`${formStyles.footerBtn} ${formStyles.footerBtnPrimary} ${
+            styles.primaryAction
+          }`}
           disabled={submitDisabled}
         >
           {submitting ? (

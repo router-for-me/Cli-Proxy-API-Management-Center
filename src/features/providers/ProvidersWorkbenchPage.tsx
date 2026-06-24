@@ -436,6 +436,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
         showNewAction={!fixedBrand}
         showSummary={fixedBrand !== 'apikeyFun'}
         newLabel={t('providersPage.actions.new')}
+        variant={fixedBrand === 'apikeyFun' ? 'quickStart' : undefined}
         onRefresh={() => void handleRefresh()}
         onNew={openCreate}
       />

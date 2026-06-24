@@ -10,7 +10,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 22px;
 }
 
 .header {
@@ -34,7 +34,7 @@
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.45;
   text-decoration: none;
   overflow-wrap: anywhere;
   transition:
@@ -100,9 +100,10 @@
 .title {
   margin: 0;
   color: var(--text-primary);
-  font-size: 22px;
-  font-weight: 650;
-  line-height: 1.25;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: 0;
 }
 
 .footer {
@@ -111,6 +112,13 @@
   align-items: center;
   gap: 8px;
   padding-top: 4px;
+}
+
+.primaryAction {
+  height: 38px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .spin {
@@ -129,7 +137,12 @@
 @media (max-width: 768px) {
   .panel {
     padding: 16px;
-    gap: 16px;
+    gap: 18px;
+  }
+
+  .title {
+    font-size: 22px;
+    line-height: 1.25;
   }
 
   .footer {

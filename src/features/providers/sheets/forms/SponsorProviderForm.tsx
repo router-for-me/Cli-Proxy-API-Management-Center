@@ -40,6 +40,7 @@ interface SponsorProviderFormProps {
   mode: 'create' | 'edit';
   mutating: boolean;
   formId: string;
+  variant?: 'quickStart';
   onSubmit: (input: ProviderEntryFormInput) => Promise<void>;
   onDirtyChange?: (dirty: boolean) => void;
 }
@@ -694,6 +695,7 @@ export function SponsorProviderForm({
   mode,
   mutating,
   formId,
+  variant,
   onSubmit,
   onDirtyChange,
 }: SponsorProviderFormProps) {
@@ -769,11 +771,14 @@ export function SponsorProviderForm({
     }
   };
 
+  const formClassName = [styles.form, variant === 'quickStart' ? styles.quickStartForm : '']
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <form id={formId} className={styles.form} onSubmit={handleSubmit} noValidate>
+    <form id={formId} className={formClassName} onSubmit={handleSubmit} noValidate>
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>{t('providersPage.sponsor.groupedKeysTitle')}</h3>
-        <p className={styles.sectionDesc}>{t('providersPage.sponsor.groupedKeysHint')}</p>
         {entries.map((entry, index) => (
           <SponsorKeyEntryCard
             key={`${entry.protocol}-${index}`}
