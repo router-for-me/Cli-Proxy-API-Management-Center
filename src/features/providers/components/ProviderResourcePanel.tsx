@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { IconPlus, IconSearch } from '@/components/ui/icons';
+import { IconExternalLink, IconPlus, IconSearch } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { PROVIDER_LOGOS } from '../brandLogos';
 import type { ProviderGroup, ProviderResource } from '../types';
@@ -53,27 +53,44 @@ export function ProviderResourcePanel({
 }: ProviderResourcePanelProps) {
   const { t } = useTranslation();
   const logo = PROVIDER_LOGOS[group.id];
+  const providerTitle = t(`providersPage.providerNames.${group.id}`);
 
   const realResources = filteredResources.filter((r) => !r.flags.isPlaceholder);
+  const titleContent = (
+    <>
+      {logo ? (
+        <img
+          src={logo.src}
+          alt=""
+          aria-hidden="true"
+          className={`${styles.logo} ${logo.invertOnDark ? styles.logoInvertOnDark : ''}`}
+        />
+      ) : null}
+      <h2 className={styles.title}>{providerTitle}</h2>
+      {group.id === 'apikeyFun' ? (
+        <IconExternalLink className={styles.titleExternalIcon} size={16} />
+      ) : null}
+    </>
+  );
 
   return (
     <section className={styles.panel}>
       <div className={styles.header}>
         <div className={styles.headerMain}>
           <div className={styles.titleArea}>
-            <div className={styles.titleRow}>
-              {logo ? (
-                <img
-                  src={logo.src}
-                  alt=""
-                  aria-hidden="true"
-                  className={`${styles.logo} ${logo.invertOnDark ? styles.logoInvertOnDark : ''}`}
-                />
-              ) : null}
-              <h2 className={styles.title}>
-                {t(`providersPage.providerNames.${group.id}`)}
-              </h2>
-            </div>
+            {group.id === 'apikeyFun' ? (
+              <a
+                className={`${styles.titleRow} ${styles.titleLink}`}
+                href={APIKEY_FUN_AFFILIATE_URL}
+                target="_blank"
+                rel="noreferrer"
+                title={APIKEY_FUN_AFFILIATE_URL}
+              >
+                {titleContent}
+              </a>
+            ) : (
+              <div className={styles.titleRow}>{titleContent}</div>
+            )}
             {group.id === 'apikeyFun' ? (
               <a
                 className={styles.sponsorLink}
@@ -81,7 +98,8 @@ export function ProviderResourcePanel({
                 target="_blank"
                 rel="noreferrer"
               >
-                {APIKEY_FUN_AFFILIATE_URL}
+                <span className={styles.sponsorLinkText}>{APIKEY_FUN_AFFILIATE_URL}</span>
+                <IconExternalLink className={styles.sponsorLinkIcon} size={14} />
               </a>
             ) : null}
           </div>
