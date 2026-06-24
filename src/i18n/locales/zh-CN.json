@@ -132,7 +132,7 @@
   },
   "nav_meta": {
     "dashboard": "运行总览",
-    "quick_start": "APIKEY.FUN 快速配置",
+    "quick_start": "快速配置",
     "ai_providers": "上游模型路由",
     "auth_files": "Auth 文件与凭证",
     "oauth": "OAuth 授权登录",
@@ -156,6 +156,9 @@
     "routing_strategy": "路由策略",
     "available_models": "可用模型",
     "available_models_desc": "所有提供商的模型总数",
+    "quick_start_card": "快速配置",
+    "quick_start_entry": "快速入口",
+    "quick_start_entry_desc": "进入快速配置页面",
     "welcome_back": "欢迎回来",
     "greeting_morning": "早上好",
     "greeting_afternoon": "下午好",

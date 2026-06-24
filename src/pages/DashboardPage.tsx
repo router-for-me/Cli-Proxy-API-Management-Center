@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { IconKey, IconBot, IconFileText, IconSatellite } from '@/components/ui/icons';
+import {
+  IconKey,
+  IconBot,
+  IconFileText,
+  IconSatellite,
+  IconSidebarQuickStart,
+} from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
 import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
@@ -155,6 +161,13 @@ export function DashboardPage() {
       path: '/system',
       loading: modelsLoading,
       sublabel: t('dashboard.available_models_desc'),
+    },
+    {
+      label: t('dashboard.quick_start_card'),
+      value: t('dashboard.quick_start_entry'),
+      icon: <IconSidebarQuickStart size={24} />,
+      path: '/quick-start',
+      sublabel: t('dashboard.quick_start_entry_desc'),
     },
   ];
 
