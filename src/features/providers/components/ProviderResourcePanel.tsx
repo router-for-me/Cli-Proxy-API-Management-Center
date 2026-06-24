@@ -9,6 +9,7 @@ import type { ProviderSortBy, SortDir } from '../types';
 import styles from './ProviderResourcePanel.module.scss';
 
 const APIKEY_FUN_AFFILIATE_URL = 'https://apikey.fun/register?aff=AKCPA';
+const APIKEY_FUN_DASHBOARD_URL = 'https://apikey.fun/dashboard';
 
 export interface ProviderPanelControls {
   sortBy: ProviderSortBy;
@@ -54,20 +55,45 @@ export function ProviderResourcePanel({
   const { t } = useTranslation();
   const logo = PROVIDER_LOGOS[group.id];
   const providerTitle = t(`providersPage.providerNames.${group.id}`);
+  const hasProviderInfo = group.resources.some((r) => !r.flags.isPlaceholder);
+  const showSponsorRegistrationLink = group.id === 'apikeyFun' && !hasProviderInfo;
+  const showSponsorDashboardLink = group.id === 'apikeyFun' && hasProviderInfo;
+  const emptyText = showSponsorRegistrationLink
+    ? t('providersPage.sponsor.emptyRegisterHint')
+    : t('providersPage.table.empty');
+  const logoClassName = [
+    styles.logo,
+    logo?.darkSrc ? styles.logoThemeLight : '',
+    logo?.invertOnDark ? styles.logoInvertOnDark : '',
+  ].filter(Boolean).join(' ');
+  const darkLogoClassName = [
+    styles.logo,
+    styles.logoThemeDark,
+  ].filter(Boolean).join(' ');
 
   const realResources = filteredResources.filter((r) => !r.flags.isPlaceholder);
   const titleContent = (
     <>
       {logo ? (
-        <img
-          src={logo.src}
-          alt=""
-          aria-hidden="true"
-          className={`${styles.logo} ${logo.invertOnDark ? styles.logoInvertOnDark : ''}`}
-        />
+        <>
+          <img
+            src={logo.src}
+            alt=""
+            aria-hidden="true"
+            className={logoClassName}
+          />
+          {logo.darkSrc ? (
+            <img
+              src={logo.darkSrc}
+              alt=""
+              aria-hidden="true"
+              className={darkLogoClassName}
+            />
+          ) : null}
+        </>
       ) : null}
       <h2 className={styles.title}>{providerTitle}</h2>
-      {group.id === 'apikeyFun' ? (
+      {showSponsorDashboardLink ? (
         <IconExternalLink className={styles.titleExternalIcon} size={16} />
       ) : null}
     </>
@@ -78,27 +104,29 @@ export function ProviderResourcePanel({
       <div className={styles.header}>
         <div className={styles.headerMain}>
           <div className={styles.titleArea}>
-            {group.id === 'apikeyFun' ? (
+            {showSponsorDashboardLink ? (
               <a
                 className={`${styles.titleRow} ${styles.titleLink}`}
-                href={APIKEY_FUN_AFFILIATE_URL}
+                href={APIKEY_FUN_DASHBOARD_URL}
                 target="_blank"
                 rel="noreferrer"
-                title={APIKEY_FUN_AFFILIATE_URL}
+                title={t('providersPage.sponsor.dashboardLink')}
               >
                 {titleContent}
               </a>
             ) : (
               <div className={styles.titleRow}>{titleContent}</div>
             )}
-            {group.id === 'apikeyFun' ? (
+            {showSponsorDashboardLink ? (
               <a
                 className={styles.sponsorLink}
-                href={APIKEY_FUN_AFFILIATE_URL}
+                href={APIKEY_FUN_DASHBOARD_URL}
                 target="_blank"
                 rel="noreferrer"
               >
-                <span className={styles.sponsorLinkText}>{APIKEY_FUN_AFFILIATE_URL}</span>
+                <span className={styles.sponsorLinkText}>
+                  {t('providersPage.sponsor.dashboardLink')}
+                </span>
                 <IconExternalLink className={styles.sponsorLinkIcon} size={14} />
               </a>
             ) : null}
@@ -134,16 +162,28 @@ export function ProviderResourcePanel({
 
       {realResources.length === 0 ? (
         <div className={styles.empty}>
-          <div>{t('providersPage.table.empty')}</div>
+          <div>{emptyText}</div>
           <div className={styles.emptyAction}>
-            <button
-              type="button"
-              className={styles.emptyActionButton}
-              onClick={onCreate}
-            >
-              <IconPlus size={16} />
-              <span>{t('providersPage.actions.new')}</span>
-            </button>
+            {showSponsorRegistrationLink ? (
+              <a
+                className={`${styles.emptyActionButton} ${styles.emptyActionButtonEmphasis}`}
+                href={APIKEY_FUN_AFFILIATE_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <IconExternalLink size={16} />
+                <span>{t('providersPage.sponsor.registerLink')}</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                className={styles.emptyActionButton}
+                onClick={onCreate}
+              >
+                <IconPlus size={16} />
+                <span>{t('providersPage.actions.new')}</span>
+              </button>
+            )}
           </div>
         </div>
       ) : (

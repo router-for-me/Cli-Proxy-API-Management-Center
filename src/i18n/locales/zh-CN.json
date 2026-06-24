@@ -1466,6 +1466,9 @@
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
       "detailHint": "此赞助商会分别写入 Claude API Key、OpenAI 兼容配置与 Codex API Key,这里只做聚合管理。",
+      "registerLink": "点此注册",
+      "dashboardLink": "控制面板",
+      "emptyRegisterHint": "尚未添加配置",
       "apiKeyHint": "此 Key 只会写入当前选择的分组/协议配置。",
       "usageCheck": "查询额度",
       "usageChecking": "查询中",

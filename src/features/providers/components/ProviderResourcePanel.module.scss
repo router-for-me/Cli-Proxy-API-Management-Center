@@ -64,7 +64,7 @@
   &:hover {
     .title,
     .titleExternalIcon {
-      color: var(--amber-color);
+      color: var(--text-primary);
     }
 
     .titleExternalIcon {
@@ -74,7 +74,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--amber-color);
+    outline: 2px solid var(--primary-color);
     outline-offset: 3px;
   }
 }
@@ -85,6 +85,20 @@
   border-radius: var(--radius-md);
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.logoThemeDark {
+  display: none;
+
+  [data-theme='dark'] & {
+    display: block;
+  }
+}
+
+.logoThemeLight {
+  [data-theme='dark'] & {
+    display: none;
+  }
 }
 
 .logoInvertOnDark {
@@ -103,7 +117,7 @@
 
 .titleExternalIcon {
   flex-shrink: 0;
-  color: var(--amber-color);
+  color: var(--muted-foreground);
   opacity: 0.72;
   transition:
     color 0.16s ease,
@@ -116,20 +130,18 @@
   align-items: center;
   gap: 8px;
   width: fit-content;
-  color: var(--amber-text);
+  color: var(--text-primary);
   margin-top: 10px;
   padding: 8px 11px;
-  border: 1px solid color-mix(in srgb, var(--amber-color) 42%, var(--border-color));
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--amber-color) 12%, var(--bg-primary));
-  font-family: $font-mono;
+  background: var(--bg-primary);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
   max-width: min(520px, 100%);
   overflow-wrap: anywhere;
   text-decoration: none;
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--amber-color) 18%, transparent);
   transition:
     background 0.16s ease,
     border-color 0.16s ease,
@@ -137,14 +149,13 @@
     transform 0.16s ease;
 
   &:hover {
-    border-color: color-mix(in srgb, var(--amber-color) 68%, var(--border-color));
-    background: color-mix(in srgb, var(--amber-color) 18%, var(--bg-primary));
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--amber-color) 18%, transparent);
+    border-color: var(--border-hover);
+    background: var(--bg-hover);
     transform: translateY(-1px);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--amber-color);
+    outline: 2px solid var(--primary-color);
     outline-offset: 2px;
   }
 }
@@ -230,6 +241,7 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 1.4;
+  text-decoration: none;
   transition:
     background 0.16s ease,
     border-color 0.16s ease,
@@ -249,5 +261,23 @@
   &:disabled {
     cursor: not-allowed;
     opacity: 0.6;
+  }
+}
+
+.emptyActionButtonEmphasis {
+  color: var(--amber-text);
+  border-color: color-mix(in srgb, var(--amber-color) 48%, var(--border-color));
+  background: color-mix(in srgb, var(--amber-color) 14%, var(--bg-primary));
+  font-weight: 600;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--amber-color) 18%, transparent);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--amber-color) 72%, var(--border-color));
+    background: color-mix(in srgb, var(--amber-color) 20%, var(--bg-primary));
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--amber-color) 18%, transparent);
+  }
+
+  &:focus-visible {
+    outline-color: var(--amber-color);
   }
 }

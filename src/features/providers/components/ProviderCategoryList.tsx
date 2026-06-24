@@ -15,8 +15,6 @@ export function ProviderCategoryList({
   onSelect,
 }: ProviderCategoryListProps) {
   const { t } = useTranslation();
-  const providerGroups = groups.filter((group) => group.id !== 'apikeyFun');
-  const sponsorGroups = groups.filter((group) => group.id === 'apikeyFun');
 
   const renderGroups = (items: ProviderGroup[]) => (
     <div className={styles.list}>
@@ -29,6 +27,17 @@ export function ProviderCategoryList({
         const activeCount = realResources.filter((r) => !r.disabled).length;
         const logo = PROVIDER_LOGOS[group.id];
         const itemClass = `${styles.item} ${active ? styles.active : ''}`;
+        const logoClassName = [
+          styles.logo,
+          logo?.transparent ? styles.logoTransparent : '',
+          logo?.darkSrc ? styles.logoThemeLight : '',
+          logo?.invertOnDark ? styles.logoInvertOnDark : '',
+        ].filter(Boolean).join(' ');
+        const darkLogoClassName = [
+          styles.logo,
+          logo?.transparent ? styles.logoTransparent : '',
+          styles.logoThemeDark,
+        ].filter(Boolean).join(' ');
 
         return (
           <button
@@ -40,12 +49,22 @@ export function ProviderCategoryList({
           >
             <span className={styles.itemLeft}>
               {logo ? (
-                <img
-                  src={logo.src}
-                  alt=""
-                  aria-hidden="true"
-                  className={`${styles.logo} ${logo.invertOnDark ? styles.logoInvertOnDark : ''}`}
-                />
+                <>
+                  <img
+                    src={logo.src}
+                    alt=""
+                    aria-hidden="true"
+                    className={logoClassName}
+                  />
+                  {logo.darkSrc ? (
+                    <img
+                      src={logo.darkSrc}
+                      alt=""
+                      aria-hidden="true"
+                      className={darkLogoClassName}
+                    />
+                  ) : null}
+                </>
               ) : null}
               <span className={styles.itemText}>
                 <span className={styles.itemTitle}>
@@ -76,14 +95,8 @@ export function ProviderCategoryList({
     <div className={styles.stack}>
       <aside className={styles.aside}>
         <p className={styles.eyebrow}>{t('providersPage.categories.title')}</p>
-        {renderGroups(providerGroups)}
+        {renderGroups(groups)}
       </aside>
-      {sponsorGroups.length > 0 ? (
-        <aside className={styles.aside}>
-          <p className={styles.eyebrow}>{t('providersPage.categories.sponsors')}</p>
-          {renderGroups(sponsorGroups)}
-        </aside>
-      ) : null}
     </div>
   );
 }
