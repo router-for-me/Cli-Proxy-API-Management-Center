@@ -7,13 +7,7 @@ import {
   withDisableAllModelsRule,
   withoutDisableAllModelsRule,
 } from '@/components/providers/utils';
-import type {
-  Config,
-  GeminiKeyConfig,
-  ModelAlias,
-  OpenAIProviderConfig,
-  ProviderKeyConfig,
-} from '@/types';
+import type { GeminiKeyConfig, ModelAlias, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import {
   apiKeyFunToResource,
   claudeToResource,
@@ -30,10 +24,10 @@ import type {
   ProviderResource,
   ProviderSnapshot,
   SponsorKeyEntryInput,
-  SponsorProviderRaw,
 } from './types';
 import {
   APIKEY_FUN_PROVIDER_NAME,
+  buildApiKeyFunRaw,
   getApiKeyFunProtocolUrls,
   isApiKeyFunClaudeProvider,
   isApiKeyFunCodexProvider,
@@ -196,18 +190,6 @@ const buildOpenAIConfig = (
     testModel: input.testModel?.trim() || undefined,
   };
 };
-
-const buildApiKeyFunRaw = (config: Config | null | undefined): SponsorProviderRaw => ({
-  openai: (config?.openaiCompatibility ?? [])
-    .map((item, index) => ({ config: item, index }))
-    .filter((item) => isApiKeyFunOpenAIProvider(item.config)),
-  claude: (config?.claudeApiKeys ?? [])
-    .map((item, index) => ({ config: item, index }))
-    .filter((item) => isApiKeyFunClaudeProvider(item.config)),
-  codex: (config?.codexApiKeys ?? [])
-    .map((item, index) => ({ config: item, index }))
-    .filter((item) => isApiKeyFunCodexProvider(item.config)),
-});
 
 const removeSponsorEntries = <T>(list: T[], indices: number[]): T[] => {
   const sponsorIndices = new Set(indices);

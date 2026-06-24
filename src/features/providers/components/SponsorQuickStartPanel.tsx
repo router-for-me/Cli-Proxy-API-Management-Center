@@ -6,6 +6,7 @@ import {
   IconCheckCircle2,
   IconExternalLink,
   IconLoader2,
+  IconPlus,
 } from '@/components/ui/icons';
 import { PROVIDER_LOGOS } from '../brandLogos';
 import {
@@ -35,9 +36,11 @@ export function SponsorQuickStartPanel({
   const [submitting, setSubmitting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [formVersion, setFormVersion] = useState(0);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const formMutating = submitting || mutationDisabled || workbench.mutating;
-  const submitDisabled = formMutating || !isDirty;
+  const mode = resource ? 'edit' : 'create';
+  const submitDisabled = formMutating || (mode === 'edit' && !isDirty);
   const logo = PROVIDER_LOGOS.apikeyFun;
 
   useUnsavedChangesGuard({
@@ -52,17 +55,23 @@ export function SponsorQuickStartPanel({
   });
 
   const handleSubmit = async (input: ProviderEntryFormInput) => {
-    if (!resource || mutationDisabled) return;
+    if (mutationDisabled) return;
     setSubmitting(true);
     try {
-      await workbench.updateProvider(resource, input);
-      showNotification(t('providersPage.toast.updated'), 'success');
+      if (resource) {
+        await workbench.updateProvider(resource, input);
+        showNotification(t('providersPage.toast.updated'), 'success');
+      } else {
+        await workbench.createProvider('apikeyFun', input);
+        showNotification(t('providersPage.toast.created'), 'success');
+        setShowCreateForm(false);
+      }
       setIsDirty(false);
       setFormVersion((current) => current + 1);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       showNotification(
-        `${t('notification.update_failed')}: ${msg}`,
+        `${t(resource ? 'notification.update_failed' : 'notification.add_failed')}: ${msg}`,
         'error'
       );
       throw err;
@@ -71,7 +80,7 @@ export function SponsorQuickStartPanel({
     }
   };
 
-  if (!resource) {
+  if (!resource && !showCreateForm) {
     return (
       <section className={styles.panel}>
         <div className={styles.header}>
@@ -85,9 +94,18 @@ export function SponsorQuickStartPanel({
 
         <div className={styles.empty}>
           <div>{t('providersPage.sponsor.emptyRegisterHint')}</div>
-          <div className={styles.emptyAction}>
+          <div className={styles.emptyActions}>
+            <button
+              type="button"
+              className={`${styles.emptyActionButton} ${styles.emptyActionButtonPrimary}`}
+              onClick={() => setShowCreateForm(true)}
+              disabled={formMutating}
+            >
+              <IconPlus size={16} />
+              <span>{t('providersPage.actions.new')}</span>
+            </button>
             <a
-              className={styles.emptyActionButton}
+              className={`${styles.emptyActionButton} ${styles.emptyActionButtonEmphasis}`}
               href={APIKEY_FUN_AFFILIATE_URL}
               target="_blank"
               rel="noreferrer"
@@ -101,6 +119,11 @@ export function SponsorQuickStartPanel({
     );
   }
 
+  const actionHref = resource ? APIKEY_FUN_DASHBOARD_URL : APIKEY_FUN_AFFILIATE_URL;
+  const actionLabel = resource
+    ? t('providersPage.sponsor.dashboardLink')
+    : t('providersPage.sponsor.registerLink');
+
   return (
     <section className={styles.panel}>
       <div className={styles.header}>
@@ -111,20 +134,20 @@ export function SponsorQuickStartPanel({
           </div>
           <a
             className={styles.topLink}
-            href={APIKEY_FUN_DASHBOARD_URL}
+            href={actionHref}
             target="_blank"
             rel="noreferrer"
           >
             <IconExternalLink size={14} />
-            <span>{t('providersPage.sponsor.dashboardLink')}</span>
+            <span>{actionLabel}</span>
           </a>
         </div>
       </div>
 
       <SponsorProviderForm
-        key={`edit:${resource.id}:${formVersion}`}
+        key={`${mode}:${resource?.id ?? 'new'}:${formVersion}`}
         resource={resource}
-        mode="edit"
+        mode={mode}
         mutating={formMutating}
         formId={formId}
         variant="quickStart"
@@ -133,6 +156,20 @@ export function SponsorQuickStartPanel({
       />
 
       <div className={styles.footer}>
+        {!resource ? (
+          <button
+            type="button"
+            className={`${formStyles.footerBtn} ${formStyles.footerBtnGhost}`}
+            onClick={() => {
+              setShowCreateForm(false);
+              setIsDirty(false);
+              setFormVersion((current) => current + 1);
+            }}
+            disabled={submitting}
+          >
+            {t('providersPage.actions.cancel')}
+          </button>
+        ) : null}
         <button
           type="submit"
           form={formId}
@@ -143,10 +180,16 @@ export function SponsorQuickStartPanel({
         >
           {submitting ? (
             <IconLoader2 className={styles.spin} size={14} />
+          ) : mode === 'create' ? (
+            <IconPlus size={14} />
           ) : (
             <IconCheckCircle2 size={14} />
           )}
-          <span>{t('providersPage.actions.save')}</span>
+          <span>
+            {mode === 'create'
+              ? t('providersPage.actions.create')
+              : t('providersPage.actions.save')}
+          </span>
         </button>
       </div>
     </section>

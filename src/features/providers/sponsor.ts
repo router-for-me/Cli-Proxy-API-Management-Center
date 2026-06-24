@@ -1,4 +1,5 @@
-import type { OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import type { Config, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import type { SponsorProviderRaw } from './types';
 
 export const APIKEY_FUN_PROVIDER_NAME = 'apikeyFun';
 export const APIKEY_FUN_DISPLAY_NAME = 'APIKEY.FUN';
@@ -185,4 +186,21 @@ export const isApiKeyFunCodexProvider = (
 ): boolean => {
   if (!config) return false;
   return matchesApiKeyFunOpenAIBaseUrl(config.baseUrl);
+};
+
+export const buildApiKeyFunRaw = (config: Config | null | undefined): SponsorProviderRaw => ({
+  openai: (config?.openaiCompatibility ?? [])
+    .map((item, index) => ({ config: item, index }))
+    .filter((item) => isApiKeyFunOpenAIProvider(item.config)),
+  claude: (config?.claudeApiKeys ?? [])
+    .map((item, index) => ({ config: item, index }))
+    .filter((item) => isApiKeyFunClaudeProvider(item.config)),
+  codex: (config?.codexApiKeys ?? [])
+    .map((item, index) => ({ config: item, index }))
+    .filter((item) => isApiKeyFunCodexProvider(item.config)),
+});
+
+export const hasApiKeyFunConfig = (config: Config | null | undefined): boolean => {
+  const raw = buildApiKeyFunRaw(config);
+  return raw.openai.length > 0 || raw.claude.length > 0 || raw.codex.length > 0;
 };
