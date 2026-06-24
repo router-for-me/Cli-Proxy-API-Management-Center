@@ -1444,12 +1444,36 @@
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
       "detailHint": "Этот спонсор сохраняется как записи Claude API key, OpenAI-compatible и Codex API key; здесь они управляются вместе.",
-      "apiKeyHint": "Сохранение запишет базовые настройки для Anthropic, OpenAI-compatible и Codex API (Responses).",
+      "apiKeyHint": "Этот ключ записывается только в выбранную группу/протокол.",
+      "groupedKeysTitle": "Групповые ключи",
+      "groupedKeysHint": "Ключи APIKEY.FUN привязываются к группе при создании на платформе. Каждый групповой ключ здесь управляет одним протоколом, а модели загружаются только из этого протокола.",
+      "groupedKey": "Групповой ключ #{{index}}",
+      "addGroupedKey": "Добавить групповой ключ",
+      "removeGroupedKey": "Удалить групповой ключ",
+      "protocol": "Группа/протокол",
+      "protocolHint": "Выберите группу APIKEY.FUN, к которой привязан этот ключ.",
+      "protocolEndpoint": "Текущий endpoint протокола",
       "urlMode": "APIKEY.FUN URL",
-      "urlHint": "Оба URL используют одинаковые правила API. При сохранении записывается соответствующий endpoint для каждого протокола.",
+      "urlHint": "Оба URL используют одинаковые правила API. При сохранении записывается только endpoint текущего группового протокола.",
       "urlOptions": {
         "standard": "Обычный URL",
         "direct": "Прямой URL"
+      },
+      "modelsTitle": "Настройки моделей по протоколам",
+      "modelsHint": "Настраивайте allowlist моделей и алиасы отдельно для маршрутов APIKEY.FUN Codex API, Anthropic и OpenAI-compatible.",
+      "protocolModels": {
+        "codex": "Модели Codex API",
+        "anthropic": "Модели Anthropic",
+        "openai": "Модели OpenAI-compatible"
+      },
+      "protocolModelHints": {
+        "codex": "Записывается в models конфигурации Codex API. Можно загрузить из /v1/models и задать алиасы.",
+        "anthropic": "Записывается в models конфигурации Anthropic. Можно загрузить из /v1/models и задать алиасы.",
+        "openai": "Записывается в models конфигурации OpenAI-compatible. Можно загрузить из /models и задать алиасы."
+      },
+      "validation": {
+        "keyRequired": "Введите API key для каждого группового ключа.",
+        "protocolDuplicate": "Для каждого протокола можно добавить только один групповой ключ."
       },
       "openaiEntries": "Ключей OpenAI-compatible",
       "codexEntries": "Ключей Codex API",

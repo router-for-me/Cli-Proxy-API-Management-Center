@@ -104,6 +104,21 @@ export interface ModelEntryInput {
   thinkingJson?: string;
 }
 
+export type SponsorProtocol = 'openai' | 'codex' | 'claude';
+
+export interface SponsorKeyEntryInput {
+  protocol: SponsorProtocol;
+  apiKey: string;
+  existingApiKey?: string;
+  baseUrl: string;
+  proxyUrl: string;
+  prefix: string;
+  disabled: boolean;
+  disableCooling?: boolean;
+  priority?: number;
+  models: ModelEntryInput[];
+}
+
 export interface ApiKeyEntryInput {
   apiKey: string;
   existingApiKey?: string;
@@ -143,4 +158,6 @@ export interface ProviderEntryFormInput {
   /** OpenAI persists this; Gemini/Claude use it for one-off connectivity tests. */
   testModel?: string;
   apiKeyEntries?: ApiKeyEntryInput[];
+  /** APIKEY.FUN stores one grouped key per platform protocol. */
+  sponsorKeyEntries?: SponsorKeyEntryInput[];
 }

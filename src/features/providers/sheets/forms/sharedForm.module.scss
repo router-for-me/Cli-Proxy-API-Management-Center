@@ -202,9 +202,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   font-size: 12px;
   font-weight: 500;
   color: var(--muted-foreground);
+}
+
+.sponsorGroupTitle {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+  }
 }
 
 .entryCardHeaderRight {
@@ -245,7 +258,9 @@
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
   cursor: pointer;
-  transition: border-color $transition-fast, background-color $transition-fast;
+  transition:
+    border-color $transition-fast,
+    background-color $transition-fast;
 
   input {
     margin: 2px 0 0;
@@ -339,7 +354,9 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color $transition-fast, border-color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast;
 
   &:hover:not(:disabled) {
     border-color: var(--primary-color);
@@ -365,7 +382,9 @@
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color $transition-fast, color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
 
   &:hover:not(:disabled) {
     background: var(--bg-tertiary);
@@ -538,6 +557,19 @@
   word-break: break-all;
 }
 
+.discoveryNameGroup {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.discoveryAlias {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  word-break: break-all;
+}
+
 .discoveryAddedTag {
   font-size: 11px;
   color: var(--muted-foreground);
@@ -627,6 +659,20 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.modelAliasRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr auto;
+
+    input:first-child {
+      grid-column: 1 / -1;
+    }
+  }
 }
 
 .removeBtn {

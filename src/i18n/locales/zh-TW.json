@@ -1492,12 +1492,36 @@
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
       "detailHint": "此贊助商會分別寫入 Claude API Key、OpenAI 相容設定與 Codex API Key,此處只做聚合管理。",
-      "apiKeyHint": "儲存後會同步寫入 Anthropic、OpenAI 相容和 Codex API (Responses) 可用的底層設定。",
+      "apiKeyHint": "此金鑰只會寫入目前選擇的分組/協議設定。",
+      "groupedKeysTitle": "分組金鑰",
+      "groupedKeysHint": "APIKEY.FUN 在平台建立 Key 時需要選擇分組,這裡每個分組金鑰只管理一個協議,模型也只從該協議拉取。",
+      "groupedKey": "分組金鑰 #{{index}}",
+      "addGroupedKey": "新增分組金鑰",
+      "removeGroupedKey": "刪除分組金鑰",
+      "protocol": "分組/協議",
+      "protocolHint": "請選擇此 Key 在 APIKEY.FUN 平台綁定的分組。",
+      "protocolEndpoint": "目前協議位址",
       "urlMode": "APIKEY.FUN URL",
-      "urlHint": "兩種 URL 的使用規範一致,儲存時會同步寫入各協議對應位址。",
+      "urlHint": "兩種 URL 的使用規範一致,儲存時只會寫入目前分組協議對應位址。",
       "urlOptions": {
         "standard": "普通 URL",
         "direct": "專線直連 URL"
+      },
+      "modelsTitle": "協議模型設定",
+      "modelsHint": "可分別限制或別名映射 APIKEY.FUN 走 Codex API、Anthropic 與 OpenAI 相容入口的模型。",
+      "protocolModels": {
+        "codex": "Codex API 模型",
+        "anthropic": "Anthropic 模型",
+        "openai": "OpenAI 相容模型"
+      },
+      "protocolModelHints": {
+        "codex": "寫入 Codex API 設定的 models,可從 /v1/models 拉取後設定別名。",
+        "anthropic": "寫入 Anthropic 設定的 models,可從 /v1/models 拉取後設定別名。",
+        "openai": "寫入 OpenAI 相容設定的 models,可從 /models 拉取後設定別名。"
+      },
+      "validation": {
+        "keyRequired": "請為每個分組金鑰填寫 API Key。",
+        "protocolDuplicate": "每個協議只能新增一個分組金鑰。"
       },
       "openaiEntries": "OpenAI 相容金鑰數",
       "codexEntries": "Codex API 金鑰數",

@@ -1466,12 +1466,36 @@
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
       "detailHint": "This sponsor is persisted as Claude API key, OpenAI-compatible, and Codex API key entries; this view manages them together.",
-      "apiKeyHint": "Saving writes the underlying config for Anthropic, OpenAI-compatible, and Codex API (Responses) access.",
+      "apiKeyHint": "This key is only written to the selected group/protocol config.",
+      "groupedKeysTitle": "Grouped keys",
+      "groupedKeysHint": "APIKEY.FUN keys are bound to a platform group when created. Each grouped key here manages one protocol, and model discovery only uses that protocol.",
+      "groupedKey": "Grouped key #{{index}}",
+      "addGroupedKey": "Add grouped key",
+      "removeGroupedKey": "Remove grouped key",
+      "protocol": "Group/protocol",
+      "protocolHint": "Select the APIKEY.FUN platform group bound to this key.",
+      "protocolEndpoint": "Current protocol endpoint",
       "urlMode": "APIKEY.FUN URL",
-      "urlHint": "Both URLs use the same API conventions. Saving writes the matching endpoint for each protocol.",
+      "urlHint": "Both URLs use the same API conventions. Saving writes only the endpoint for the current grouped protocol.",
       "urlOptions": {
         "standard": "Standard URL",
         "direct": "Direct URL"
+      },
+      "modelsTitle": "Protocol model settings",
+      "modelsHint": "Configure model allowlists or aliases separately for APIKEY.FUN's Codex API, Anthropic, and OpenAI-compatible routes.",
+      "protocolModels": {
+        "codex": "Codex API models",
+        "anthropic": "Anthropic models",
+        "openai": "OpenAI-compatible models"
+      },
+      "protocolModelHints": {
+        "codex": "Writes to the Codex API config models. Fetch from /v1/models and set aliases if needed.",
+        "anthropic": "Writes to the Anthropic config models. Fetch from /v1/models and set aliases if needed.",
+        "openai": "Writes to the OpenAI-compatible config models. Fetch from /models and set aliases if needed."
+      },
+      "validation": {
+        "keyRequired": "Enter an API key for every grouped key.",
+        "protocolDuplicate": "Each protocol can only have one grouped key."
       },
       "openaiEntries": "OpenAI-compatible keys",
       "codexEntries": "Codex API keys",
