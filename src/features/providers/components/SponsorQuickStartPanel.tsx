@@ -6,7 +6,6 @@ import {
   IconCheckCircle2,
   IconExternalLink,
   IconLoader2,
-  IconPlus,
 } from '@/components/ui/icons';
 import { PROVIDER_LOGOS } from '../brandLogos';
 import {
@@ -37,14 +36,9 @@ export function SponsorQuickStartPanel({
   const [isDirty, setIsDirty] = useState(false);
   const [formVersion, setFormVersion] = useState(0);
 
-  const mode = resource ? 'edit' : 'create';
   const formMutating = submitting || mutationDisabled || workbench.mutating;
-  const submitDisabled = formMutating || (mode === 'edit' && !isDirty);
+  const submitDisabled = formMutating || !isDirty;
   const logo = PROVIDER_LOGOS.apikeyFun;
-  const actionHref = resource ? APIKEY_FUN_DASHBOARD_URL : APIKEY_FUN_AFFILIATE_URL;
-  const actionLabel = resource
-    ? t('providersPage.sponsor.dashboardLink')
-    : t('providersPage.sponsor.registerLink');
 
   useUnsavedChangesGuard({
     shouldBlock: isDirty && !submitting,
@@ -58,22 +52,17 @@ export function SponsorQuickStartPanel({
   });
 
   const handleSubmit = async (input: ProviderEntryFormInput) => {
-    if (mutationDisabled) return;
+    if (!resource || mutationDisabled) return;
     setSubmitting(true);
     try {
-      if (resource) {
-        await workbench.updateProvider(resource, input);
-        showNotification(t('providersPage.toast.updated'), 'success');
-      } else {
-        await workbench.createProvider('apikeyFun', input);
-        showNotification(t('providersPage.toast.created'), 'success');
-      }
+      await workbench.updateProvider(resource, input);
+      showNotification(t('providersPage.toast.updated'), 'success');
       setIsDirty(false);
       setFormVersion((current) => current + 1);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       showNotification(
-        `${t(resource ? 'notification.update_failed' : 'notification.add_failed')}: ${msg}`,
+        `${t('notification.update_failed')}: ${msg}`,
         'error'
       );
       throw err;
@@ -81,6 +70,36 @@ export function SponsorQuickStartPanel({
       setSubmitting(false);
     }
   };
+
+  if (!resource) {
+    return (
+      <section className={styles.panel}>
+        <div className={styles.header}>
+          <div className={styles.titleRow}>
+            <img src={logo.src} alt="" aria-hidden="true" className={styles.logo} />
+            <div className={styles.titleText}>
+              <h2 className={styles.title}>{t('providersPage.providerNames.apikeyFun')}</h2>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.empty}>
+          <div>{t('providersPage.sponsor.emptyRegisterHint')}</div>
+          <div className={styles.emptyAction}>
+            <a
+              className={styles.emptyActionButton}
+              href={APIKEY_FUN_AFFILIATE_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <IconExternalLink size={16} />
+              <span>{t('nav.quick_start')}</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.panel}>
@@ -91,21 +110,21 @@ export function SponsorQuickStartPanel({
             <h2 className={styles.title}>{t('providersPage.providerNames.apikeyFun')}</h2>
           </div>
           <a
-            className={`${styles.topLink} ${resource ? '' : styles.topLinkEmphasis}`.trim()}
-            href={actionHref}
+            className={styles.topLink}
+            href={APIKEY_FUN_DASHBOARD_URL}
             target="_blank"
             rel="noreferrer"
           >
             <IconExternalLink size={14} />
-            <span>{actionLabel}</span>
+            <span>{t('providersPage.sponsor.dashboardLink')}</span>
           </a>
         </div>
       </div>
 
       <SponsorProviderForm
-        key={`${mode}:${resource?.id ?? 'new'}:${formVersion}`}
+        key={`edit:${resource.id}:${formVersion}`}
         resource={resource}
-        mode={mode}
+        mode="edit"
         mutating={formMutating}
         formId={formId}
         variant="quickStart"
@@ -124,16 +143,10 @@ export function SponsorQuickStartPanel({
         >
           {submitting ? (
             <IconLoader2 className={styles.spin} size={14} />
-          ) : mode === 'create' ? (
-            <IconPlus size={14} />
           ) : (
             <IconCheckCircle2 size={14} />
           )}
-          <span>
-            {mode === 'create'
-              ? t('providersPage.actions.create')
-              : t('providersPage.actions.save')}
-          </span>
+          <span>{t('providersPage.actions.save')}</span>
         </button>
       </div>
     </section>
