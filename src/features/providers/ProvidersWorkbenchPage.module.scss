@@ -21,6 +21,12 @@
   }
 }
 
+.layoutSingle {
+  @media (min-width: 1280px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .modelCatalogSlot {
   margin-top: 4px;
 }

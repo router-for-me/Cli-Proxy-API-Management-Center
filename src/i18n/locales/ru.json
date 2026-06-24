@@ -112,6 +112,7 @@
     "dashboard": "Панель",
     "basic_settings": "Основные настройки",
     "api_keys": "API ключи",
+    "quick_start": "Быстрый старт",
     "ai_providers": "Поставщики AI",
     "auth_files": "Файлы аутентификации",
     "oauth": "OAuth вход",
@@ -130,6 +131,7 @@
   },
   "nav_meta": {
     "dashboard": "Обзор работы",
+    "quick_start": "Настройка APIKEY.FUN",
     "ai_providers": "Маршрутизация моделей",
     "auth_files": "Файлы и учётные данные",
     "oauth": "Авторизация OAuth",

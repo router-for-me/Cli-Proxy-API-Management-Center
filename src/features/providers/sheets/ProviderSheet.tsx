@@ -249,7 +249,7 @@ export function ProviderSheet({
           state.brand === 'openaiCompatibility'
             ? '/ai-providers/openai'
             : state.brand === 'apikeyFun'
-              ? '/ai-providers/sponsor/apikey-fun'
+              ? '/quick-start'
               : `/ai-providers/${state.brand}`,
       })}
       footer={footer}

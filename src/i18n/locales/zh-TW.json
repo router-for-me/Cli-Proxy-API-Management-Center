@@ -112,6 +112,7 @@
     "dashboard": "儀表板",
     "basic_settings": "基本設定",
     "api_keys": "API 金鑰",
+    "quick_start": "快速開始",
     "ai_providers": "AI 供應商",
     "auth_files": "驗證檔案",
     "oauth": "OAuth 登入",
@@ -131,6 +132,7 @@
   },
   "nav_meta": {
     "dashboard": "運行總覽",
+    "quick_start": "APIKEY.FUN 快速設定",
     "ai_providers": "上游模型路由",
     "auth_files": "Auth 檔案與憑證",
     "oauth": "OAuth 授權登入",

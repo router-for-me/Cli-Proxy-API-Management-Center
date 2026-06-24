@@ -2,14 +2,12 @@ import { useTranslation } from 'react-i18next';
 import { IconExternalLink, IconPlus, IconSearch } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { PROVIDER_LOGOS } from '../brandLogos';
+import { APIKEY_FUN_AFFILIATE_URL, APIKEY_FUN_DASHBOARD_URL } from '../sponsor';
 import type { ProviderGroup, ProviderResource } from '../types';
 import { ProviderResourceTable } from './ProviderResourceTable';
 import { ProviderResourceToolbar } from './ProviderResourceToolbar';
 import type { ProviderSortBy, SortDir } from '../types';
 import styles from './ProviderResourcePanel.module.scss';
-
-const APIKEY_FUN_AFFILIATE_URL = 'https://apikey.fun/register?aff=AKCPA';
-const APIKEY_FUN_DASHBOARD_URL = 'https://apikey.fun/dashboard';
 
 export interface ProviderPanelControls {
   sortBy: ProviderSortBy;

@@ -22,6 +22,7 @@ import {
   IconSidebarOauth,
   IconSidebarPlugins,
   IconSidebarProviders,
+  IconSidebarQuickStart,
   IconSidebarQuota,
   IconSidebarStore,
   IconSidebarSystem,
@@ -48,6 +49,7 @@ import type { Theme } from '@/types';
 
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconSidebarDashboard size={18} />,
+  quickStart: <IconSidebarQuickStart size={18} />,
   aiProviders: <IconSidebarProviders size={18} />,
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
@@ -519,6 +521,12 @@ export function MainLayout() {
           labelKey: 'nav.dashboard',
           metaKey: 'nav_meta.dashboard',
           icon: sidebarIcons.dashboard,
+        },
+        {
+          path: '/quick-start',
+          labelKey: 'nav.quick_start',
+          metaKey: 'nav_meta.quick_start',
+          icon: sidebarIcons.quickStart,
         },
       ],
     },
