@@ -75,7 +75,9 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
               editor?.saving === true ||
               !dirty ||
               !editor?.json ||
-              Boolean(editor?.headersTouched && editor.headersError)
+              Boolean(
+                (editor?.headersTouched && editor.headersError) || editor?.selectionWeightError
+              )
             }
           >
             {t('common.save')}

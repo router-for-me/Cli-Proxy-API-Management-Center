@@ -322,10 +322,10 @@ const buildAuthFileFieldsPatch = (
 
 const buildPrefixProxyUpdatedText = (
   editor: PrefixProxyEditorState | null,
-  resolveHeadersError: (key: AuthFileHeadersErrorKey) => string
+  resolveFieldError: (key: AuthFileFieldsErrorKey) => string
 ): string => {
   if (!editor?.json) return editor?.rawText ?? '';
-  const patch = buildAuthFileFieldsPatch(editor, resolveHeadersError);
+  const patch = buildAuthFileFieldsPatch(editor, resolveFieldError);
   let next: Record<string, unknown> = { ...editor.json };
   if (patch.prefix !== undefined) {
     if (patch.prefix) {
