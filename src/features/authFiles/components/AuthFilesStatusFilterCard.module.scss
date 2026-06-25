@@ -93,31 +93,6 @@
   }
 }
 
-.helpBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #a1a1aa;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  transition: color 0.2s;
-  line-height: 1;
-}
-
-.helpBtn:hover {
-  color: #d4d4d8;
-}
-
-.helpBtn svg {
-  height: 18px;
-  width: auto;
-  display: block;
-  flex-shrink: 0;
-  shape-rendering: geometricPrecision;
-}
-
 .scaleLabels {
   display: flex;
   justify-content: space-between;
@@ -185,19 +160,7 @@
     opacity 0.6s,
     background-color 0.2s ease,
     transform 0.2s ease;
-  pointer-events: auto;
-  cursor: pointer;
   z-index: 6;
-}
-
-.dot:hover {
-  background: #6f6f78;
-  transform: translate(-50%, -50%) scale(1.35);
-}
-
-.dot:active {
-  background: #8b8b95;
-  transform: translate(-50%, -50%) scale(1.15);
 }
 
 .trackWrapperActive .dot {

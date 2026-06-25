@@ -83,6 +83,7 @@ const resolveStatusFilterMode = (
   problemOnly: boolean,
   disabledOnly: boolean
 ): AuthFilesStatusFilterMode => {
+  if (problemOnly && disabledOnly) return 'disabledProblem';
   if (problemOnly) return 'problem';
   if (disabledOnly) return 'disabled';
   return 'all';
@@ -195,8 +196,8 @@ export function AuthFilesPage() {
     ? (normalizedFilter as QuotaProviderType)
     : null;
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
-  const problemOnly = statusFilterMode === 'problem';
-  const disabledOnly = statusFilterMode === 'disabled';
+  const problemOnly = statusFilterMode === 'problem' || statusFilterMode === 'disabledProblem';
+  const disabledOnly = statusFilterMode === 'disabled' || statusFilterMode === 'disabledProblem';
   const enabledOnly = statusFilterMode === 'enabled';
 
   useEffect(() => {
@@ -379,12 +380,12 @@ export function AuthFilesPage() {
   const filesMatchingStatusFilters = useMemo(
     () =>
       files.filter((file) => {
-        if (statusFilterMode === 'enabled' && file.disabled === true) return false;
-        if (statusFilterMode === 'disabled' && file.disabled !== true) return false;
-        if (statusFilterMode === 'problem' && !hasAuthFileStatusMessage(file)) return false;
+        if (enabledOnly && file.disabled === true) return false;
+        if (disabledOnly && file.disabled !== true) return false;
+        if (problemOnly && !hasAuthFileStatusMessage(file)) return false;
         return true;
       }),
-    [files, statusFilterMode]
+    [disabledOnly, enabledOnly, files, problemOnly]
   );
 
   const statusFilterOptions = useMemo(
@@ -393,6 +394,7 @@ export function AuthFilesPage() {
         { value: 'all', label: t('auth_files.problem_filter_all') },
         { value: 'enabled', label: t('auth_files.problem_filter_enabled') },
         { value: 'disabled', label: t('auth_files.problem_filter_disabled') },
+        { value: 'disabledProblem', label: t('auth_files.problem_filter_disabled_problem') },
         { value: 'problem', label: t('auth_files.problem_filter_problem') },
       ] satisfies Array<{ value: AuthFilesStatusFilterMode; label: string }>,
     [t]
