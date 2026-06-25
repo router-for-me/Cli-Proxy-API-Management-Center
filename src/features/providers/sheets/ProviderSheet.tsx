@@ -5,11 +5,7 @@ import { IconLoader2, IconPencil } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { useNotificationStore } from '@/stores';
 import { PROVIDER_DESCRIPTORS } from '../descriptors';
-import type {
-  ProviderBrand,
-  ProviderEntryFormInput,
-  ProviderResource,
-} from '../types';
+import type { ProviderBrand, ProviderEntryFormInput, ProviderResource } from '../types';
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
 import { BaseProviderForm } from './forms/BaseProviderForm';
 import { ResourceDetailView } from './ResourceDetailView';
@@ -108,9 +104,7 @@ export function ProviderSheet({
         ? `${t('providersPage.form.editEyebrow')} · ${t(
             `providersPage.providerNames.${state.brand}`
           )}`
-        : `${t('providersPage.detail.title')} · ${t(
-            `providersPage.providerNames.${state.brand}`
-          )}`;
+        : `${t('providersPage.detail.title')} · ${t(`providersPage.providerNames.${state.brand}`)}`;
 
   const handleCreate = useCallback(
     async (input: ProviderEntryFormInput) => {
@@ -221,9 +215,7 @@ export function ProviderSheet({
           className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
           disabled={submitDisabled}
         >
-          {submitting ? (
-            <IconLoader2 size={14} />
-          ) : null}
+          {submitting ? <IconLoader2 size={14} /> : null}
           {state.mode === 'create'
             ? t('providersPage.actions.create')
             : t('providersPage.actions.save')}

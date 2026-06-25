@@ -41,14 +41,14 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
         <EmptyState
           title={t('auth_files.models_unsupported', { defaultValue: '当前版本不支持此功能' })}
           description={t('auth_files.models_unsupported_desc', {
-            defaultValue: '请更新 CLI Proxy API 到最新版本后重试'
+            defaultValue: '请更新 CLI Proxy API 到最新版本后重试',
           })}
         />
       ) : models.length === 0 ? (
         <EmptyState
           title={t('auth_files.models_empty', { defaultValue: '该凭证暂无可用模型' })}
           description={t('auth_files.models_empty_desc', {
-            defaultValue: '该认证凭证可能尚未被服务器加载或没有绑定任何模型'
+            defaultValue: '该认证凭证可能尚未被服务器加载或没有绑定任何模型',
           })}
         />
       ) : (
@@ -65,7 +65,7 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
                 title={
                   excludedModel
                     ? t('auth_files.models_excluded_hint', {
-                        defaultValue: '此 OAuth 模型已被禁用'
+                        defaultValue: '此 OAuth 模型已被禁用',
                       })
                     : t('common.copy', { defaultValue: '点击复制' })
                 }
@@ -88,4 +88,3 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
     </Modal>
   );
 }
-

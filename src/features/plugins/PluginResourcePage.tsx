@@ -14,8 +14,7 @@ import {
 } from './pluginResources';
 import styles from './PluginResourcePage.module.scss';
 
-const hasStatus = (error: unknown, status: number) =>
-  isRecord(error) && error.status === status;
+const hasStatus = (error: unknown, status: number) => isRecord(error) && error.status === status;
 
 const safeDecodeURIComponent = (value = '') => {
   try {
@@ -41,14 +40,8 @@ export function PluginResourcePage() {
   const [error, setError] = useState('');
 
   const connected = connectionStatus === 'connected';
-  const pluginID = useMemo(
-    () => safeDecodeURIComponent(params.pluginId),
-    [params.pluginId]
-  );
-  const menuIndex = useMemo(
-    () => parseMenuIndex(params.menuIndex),
-    [params.menuIndex]
-  );
+  const pluginID = useMemo(() => safeDecodeURIComponent(params.pluginId), [params.pluginId]);
+  const menuIndex = useMemo(() => parseMenuIndex(params.menuIndex), [params.menuIndex]);
 
   const loadResource = useCallback(async () => {
     if (!connected) {

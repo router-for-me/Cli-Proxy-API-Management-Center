@@ -50,17 +50,21 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
       set({
         models: list,
         loading: false,
-        cache: { data: list, timestamp: now, apiBase, apiKey: apiKeyScope }
+        cache: { data: list, timestamp: now, apiBase, apiKey: apiKeyScope },
       });
 
       return list;
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'Failed to fetch models';
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'Failed to fetch models';
       set({
         error: message,
         loading: false,
-        models: []
+        models: [],
       });
       throw error;
     }
@@ -77,5 +81,5 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
     const apiKeyScope = apiKey?.trim() || '';
     if ((cache.apiKey || '') !== apiKeyScope) return false;
     return Date.now() - cache.timestamp < CACHE_EXPIRY_MS;
-  }
+  },
 }));

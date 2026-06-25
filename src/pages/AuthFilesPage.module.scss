@@ -306,9 +306,13 @@
 
 .filterToggleGroup {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  min-height: 42px;
+  grid-template-columns: minmax(320px, 1fr) minmax(170px, 0.42fr);
+  gap: 10px;
+  align-items: center;
+
+  @include tablet {
+    grid-template-columns: 1fr;
+  }
 
   @include mobile {
     grid-template-columns: 1fr;
@@ -319,8 +323,8 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  min-height: 42px;
-  padding: 0 10px;
+  min-height: 58px;
+  padding: 0 12px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
   background: color-mix(in srgb, var(--bg-primary) 56%, transparent);
@@ -331,11 +335,8 @@
   }
 }
 
-.filterToggle {
-  display: flex;
+.compactToggleCard {
   align-items: center;
-  min-height: 40px;
-  padding-inline: 2px;
 }
 
 .filterToggleLabel {

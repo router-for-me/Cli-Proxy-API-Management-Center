@@ -35,7 +35,7 @@ export const useLanguageStore = create<LanguageState>()(
         const currentIndex = LANGUAGE_ORDER.indexOf(language);
         const nextLanguage = LANGUAGE_ORDER[(currentIndex + 1) % LANGUAGE_ORDER.length];
         setLanguage(nextLanguage);
-      }
+      },
     }),
     {
       name: STORAGE_KEY_LANGUAGE,
@@ -45,11 +45,11 @@ export const useLanguageStore = create<LanguageState>()(
           return {
             ...currentState,
             ...(persistedState as Partial<LanguageState>),
-            language: nextLanguage
+            language: nextLanguage,
           };
         }
         return currentState;
-      }
+      },
     }
   )
 );

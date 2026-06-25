@@ -26,7 +26,7 @@ export function Button({
     `btn-${variant}`,
     size === 'sm' ? 'btn-sm' : '',
     fullWidth ? 'btn-full' : '',
-    className
+    className,
   ]
     .filter(Boolean)
     .join(' ');

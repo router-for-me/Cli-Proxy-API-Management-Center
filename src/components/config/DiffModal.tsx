@@ -130,7 +130,7 @@ function computeUnifiedDiff(original: string, modified: string): DiffResult {
           type: 'context',
           oldNum,
           newNum,
-          text: oldDoc.line(oldNum).text
+          text: oldDoc.line(oldNum).text,
         });
       }
     }
@@ -164,7 +164,7 @@ function computeUnifiedDiff(original: string, modified: string): DiffResult {
           type: 'context',
           oldNum,
           newNum,
-          text: oldDoc.line(oldNum).text
+          text: oldDoc.line(oldNum).text,
         });
       }
     }
@@ -205,7 +205,7 @@ export function DiffModal({
   modified,
   onConfirm,
   onCancel,
-  loading = false
+  loading = false,
 }: DiffModalProps) {
   const { t } = useTranslation();
 

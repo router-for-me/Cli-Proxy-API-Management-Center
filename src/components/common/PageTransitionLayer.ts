@@ -8,10 +8,14 @@ export type PageTransitionLayerContextValue = {
   isAnimating: boolean;
 };
 
-export const PageTransitionLayerContext =
-  createContext<PageTransitionLayerContextValue | null>(null);
+export const PageTransitionLayerContext = createContext<PageTransitionLayerContextValue | null>(
+  null
+);
 
-export const PAGE_TRANSITION_LAYER_CONTEXT_VALUES: Record<LayerStatus, PageTransitionLayerContextValue> = {
+export const PAGE_TRANSITION_LAYER_CONTEXT_VALUES: Record<
+  LayerStatus,
+  PageTransitionLayerContextValue
+> = {
   current: { status: 'current', isCurrentLayer: true, isAnimating: false },
   stacked: { status: 'stacked', isCurrentLayer: false, isAnimating: false },
   exiting: { status: 'exiting', isCurrentLayer: false, isAnimating: false },

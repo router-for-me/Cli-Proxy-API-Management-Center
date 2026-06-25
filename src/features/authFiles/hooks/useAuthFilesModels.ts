@@ -80,7 +80,6 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
     modelsFileType,
     modelsError,
     showModels,
-    closeModelsModal
+    closeModelsModal,
   };
 }
-

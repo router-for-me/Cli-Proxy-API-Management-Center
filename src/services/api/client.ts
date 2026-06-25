@@ -13,7 +13,7 @@ import {
   HOME_BUILD_DATE_HEADER_KEYS,
   HOME_VERSION_HEADER_KEYS,
   REQUEST_TIMEOUT_MS,
-  VERSION_HEADER_KEYS
+  VERSION_HEADER_KEYS,
 } from '@/utils/constants';
 import { computeApiUrl } from '@/utils/connection';
 import { isRecord } from '@/utils/helpers';
@@ -28,8 +28,8 @@ class ApiClient {
     this.instance = axios.create({
       timeout: REQUEST_TIMEOUT_MS,
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
     this.setupInterceptors();
@@ -49,16 +49,15 @@ class ApiClient {
     }
   }
 
-  private readHeader(
-    headers: Record<string, unknown> | undefined,
-    keys: string[]
-  ): string | null {
+  private readHeader(headers: Record<string, unknown> | undefined, keys: string[]): string | null {
     if (!headers) return null;
 
     const normalizeValue = (value: unknown): string | null => {
       if (value === undefined || value === null) return null;
       if (Array.isArray(value)) {
-        const first = value.find((entry) => entry !== undefined && entry !== null && String(entry).trim());
+        const first = value.find(
+          (entry) => entry !== undefined && entry !== null && String(entry).trim()
+        );
         return first !== undefined ? String(first) : null;
       }
       const text = String(value);
@@ -144,14 +143,14 @@ class ApiClient {
         if (version || buildDate || runtimeKind) {
           window.dispatchEvent(
             new CustomEvent('server-version-update', {
-              detail: { version: version || null, buildDate: buildDate || null, runtimeKind }
+              detail: { version: version || null, buildDate: buildDate || null, runtimeKind },
             })
           );
         }
         if (supportsPlugin !== null) {
           window.dispatchEvent(
             new CustomEvent('server-plugin-support-update', {
-              detail: { supportsPlugin }
+              detail: { supportsPlugin },
             })
           );
         }
@@ -194,7 +193,11 @@ class ApiClient {
     }
 
     const fallbackMessage =
-      error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error occurred';
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
+          : 'Unknown error occurred';
     const fallback = new Error(fallbackMessage) as ApiError;
     fallback.name = 'ApiError';
     return fallback;
@@ -259,8 +262,8 @@ class ApiClient {
       ...config,
       headers: {
         ...(config?.headers || {}),
-        'Content-Type': 'multipart/form-data'
-      }
+        'Content-Type': 'multipart/form-data',
+      },
     });
     return response.data;
   }

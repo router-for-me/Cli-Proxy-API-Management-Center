@@ -263,9 +263,7 @@ export function VisualConfigEditor({
     handledJumpRef.current = jumpRequest; // handle each request once, even if deps re-fire
     const { fieldId, sectionId } = jumpRequest;
     const targetFieldId =
-      (fieldId === 'tlsCert' || fieldId === 'tlsKey') && !values.tlsEnable
-        ? 'tlsEnable'
-        : fieldId;
+      (fieldId === 'tlsCert' || fieldId === 'tlsKey') && !values.tlsEnable ? 'tlsEnable' : fieldId;
 
     const el = document.getElementById(configFieldDomId(targetFieldId));
     if (!el) {

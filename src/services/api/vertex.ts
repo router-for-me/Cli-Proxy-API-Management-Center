@@ -21,5 +21,5 @@ export const vertexApi = {
       formData.append('location', location);
     }
     return apiClient.postForm<VertexImportResponse>('/vertex/import', formData);
-  }
+  },
 };

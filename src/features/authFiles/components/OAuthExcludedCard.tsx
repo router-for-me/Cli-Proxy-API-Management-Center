@@ -23,7 +23,11 @@ export function OAuthExcludedCard(props: OAuthExcludedCardProps) {
     <Card
       title={t('oauth_excluded.title')}
       extra={
-        <Button size="sm" onClick={onAdd} disabled={disableControls || excludedError === 'unsupported'}>
+        <Button
+          size="sm"
+          onClick={onAdd}
+          disabled={disableControls || excludedError === 'unsupported'}
+        >
           {t('oauth_excluded.add')}
         </Button>
       }
@@ -62,4 +66,3 @@ export function OAuthExcludedCard(props: OAuthExcludedCardProps) {
     </Card>
   );
 }
-

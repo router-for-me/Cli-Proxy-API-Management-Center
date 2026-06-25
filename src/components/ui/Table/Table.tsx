@@ -61,9 +61,7 @@ export function TableRow({
   selected,
   ...rest
 }: PropsWithChildren<TableRowProps>) {
-  const cls = [styles.row, selected ? styles.selected : null, className]
-    .filter(Boolean)
-    .join(' ');
+  const cls = [styles.row, selected ? styles.selected : null, className].filter(Boolean).join(' ');
   return (
     <tr className={cls} {...rest}>
       {children}

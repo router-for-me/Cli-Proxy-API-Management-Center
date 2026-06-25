@@ -94,9 +94,7 @@ export const readProvidersWorkbenchUiState = (): ProvidersWorkbenchUiState => {
     });
 
     return {
-      activeBrand: isProviderBrand(parsed.activeBrand)
-        ? parsed.activeBrand
-        : DEFAULT_ACTIVE_BRAND,
+      activeBrand: isProviderBrand(parsed.activeBrand) ? parsed.activeBrand : DEFAULT_ACTIVE_BRAND,
       filtersByBrand,
     };
   } catch {

@@ -24,7 +24,12 @@ export type OAuthModelAliasCardProps = {
   allProviderModels: Record<string, AuthFileModelItem[]>;
   onUpdate: (provider: string, sourceModel: string, newAlias: string) => Promise<void>;
   onDeleteLink: (provider: string, sourceModel: string, alias: string) => void;
-  onToggleFork: (provider: string, sourceModel: string, alias: string, fork: boolean) => Promise<void>;
+  onToggleFork: (
+    provider: string,
+    sourceModel: string,
+    alias: string,
+    fork: boolean
+  ) => Promise<void>;
   onRenameAlias: (oldAlias: string, newAlias: string) => Promise<void>;
   onDeleteAlias: (aliasName: string) => void;
 };
@@ -46,7 +51,7 @@ export function OAuthModelAliasCard(props: OAuthModelAliasCardProps) {
     onDeleteLink,
     onToggleFork,
     onRenameAlias,
-    onDeleteAlias
+    onDeleteAlias,
   } = props;
 
   return (
@@ -149,4 +154,3 @@ export function OAuthModelAliasCard(props: OAuthModelAliasCardProps) {
     </Card>
   );
 }
-

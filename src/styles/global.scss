@@ -12,7 +12,9 @@
 body {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  transition: background-color $transition-normal, color $transition-normal;
+  transition:
+    background-color $transition-normal,
+    color $transition-normal;
 }
 
 html.modal-open,

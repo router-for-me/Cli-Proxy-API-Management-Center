@@ -221,7 +221,9 @@
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background-color $transition-fast, color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
 
   &:hover:not(:disabled) {
     background: var(--bg-tertiary);

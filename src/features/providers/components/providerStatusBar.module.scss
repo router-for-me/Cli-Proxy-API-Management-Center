@@ -29,7 +29,9 @@
   width: 100%;
   height: 6px;
   border-radius: 2px;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
 
   .statusBlockWrapper:hover &,
   .statusBlockWrapper.statusBlockActive & {

@@ -21,7 +21,10 @@ let cachedUsageByProvider: ProviderRecentRequests = EMPTY_USAGE_BY_PROVIDER;
 let cachedAt = 0;
 let inFlightRequest: Promise<ProviderRecentRequests> | null = null;
 
-const normalizeProviderKey = (value: unknown): string => String(value ?? '').trim().toLowerCase();
+const normalizeProviderKey = (value: unknown): string =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase();
 
 const normalizeApiKeyUsageResponse = (payload: ApiKeyUsageResponse): ProviderRecentRequests => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -67,9 +70,8 @@ const fetchProviderRecentRequests = async (): Promise<ProviderRecentRequests> =>
 
 export function useProviderRecentRequests(options: UseProviderRecentRequestsOptions = {}) {
   const enabled = options.enabled ?? true;
-  const [usageByProvider, setUsageByProvider] = useState<ProviderRecentRequests>(
-    cachedUsageByProvider
-  );
+  const [usageByProvider, setUsageByProvider] =
+    useState<ProviderRecentRequests>(cachedUsageByProvider);
   const [isLoading, setIsLoading] = useState(false);
 
   const loadRecentRequests = useCallback(
@@ -79,8 +81,7 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
       }
 
       const hasFreshCache =
-        cachedAt > 0 &&
-        Date.now() - cachedAt < PROVIDER_RECENT_REQUESTS_STALE_TIME_MS;
+        cachedAt > 0 && Date.now() - cachedAt < PROVIDER_RECENT_REQUESTS_STALE_TIME_MS;
 
       if (!loadOptions.force && hasFreshCache) {
         setUsageByProvider(cachedUsageByProvider);
@@ -117,9 +118,12 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
     void loadRecentRequests().catch(() => {});
   }, [enabled, loadRecentRequests]);
 
-  useInterval(() => {
-    void refreshRecentRequests().catch(() => {});
-  }, enabled ? PROVIDER_RECENT_REQUESTS_STALE_TIME_MS : null);
+  useInterval(
+    () => {
+      void refreshRecentRequests().catch(() => {});
+    },
+    enabled ? PROVIDER_RECENT_REQUESTS_STALE_TIME_MS : null
+  );
 
   return {
     usageByProvider: enabled ? usageByProvider : EMPTY_USAGE_BY_PROVIDER,

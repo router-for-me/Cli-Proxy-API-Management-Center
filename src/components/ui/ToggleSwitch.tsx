@@ -16,7 +16,7 @@ export function ToggleSwitch({
   label,
   ariaLabel,
   disabled = false,
-  labelPosition = 'right'
+  labelPosition = 'right',
 }: ToggleSwitchProps) {
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.checked);

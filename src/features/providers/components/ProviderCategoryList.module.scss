@@ -46,7 +46,9 @@
   text-align: left;
   width: 100%;
   color: var(--text-primary);
-  transition: background-color $transition-fast, border-color $transition-fast,
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
     color $transition-fast;
   min-width: 0;
 

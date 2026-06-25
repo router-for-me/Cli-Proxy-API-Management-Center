@@ -230,13 +230,13 @@ export const logsApi = {
   downloadErrorLog: (filename: string) =>
     apiClient.getRaw(`/request-error-logs/${encodeURIComponent(filename)}`, {
       responseType: 'blob',
-      timeout: LOGS_TIMEOUT_MS
+      timeout: LOGS_TIMEOUT_MS,
     }),
 
   downloadRequestLogById: (id: string, homeIp?: string) =>
     apiClient.getRaw(`/request-log-by-id/${encodeURIComponent(id)}`, {
       params: homeIp ? { home_ip: homeIp } : undefined,
       responseType: 'blob',
-      timeout: LOGS_TIMEOUT_MS
+      timeout: LOGS_TIMEOUT_MS,
     }),
 };

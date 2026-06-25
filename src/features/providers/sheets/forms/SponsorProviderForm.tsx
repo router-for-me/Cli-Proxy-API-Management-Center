@@ -126,10 +126,7 @@ const protocolUrlForEntry = (entry: SponsorKeyEntryInput): string => {
   return urls.openai;
 };
 
-const formatUsageAmount = (
-  value: ApiKeyFunUsageSummary['remaining'],
-  locale: string
-): string => {
+const formatUsageAmount = (value: ApiKeyFunUsageSummary['remaining'], locale: string): string => {
   if (value === null) return '--';
   if (typeof value === 'number') {
     return new Intl.NumberFormat(locale, {
@@ -446,10 +443,7 @@ function SponsorKeyEntryCard({
             aria-label={expanded ? t('common.collapse') : t('common.expand')}
           >
             <IconChevronDown
-              className={[
-                styles.entryCardChevron,
-                expanded ? styles.entryCardChevronOpen : '',
-              ]
+              className={[styles.entryCardChevron, expanded ? styles.entryCardChevronOpen : '']
                 .filter(Boolean)
                 .join(' ')}
               size={14}

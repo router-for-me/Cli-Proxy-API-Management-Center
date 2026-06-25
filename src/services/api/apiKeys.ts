@@ -15,5 +15,5 @@ export const apiKeysApi = {
 
   update: (index: number, value: string) => apiClient.patch('/api-keys', { index, value }),
 
-  delete: (index: number) => apiClient.delete(`/api-keys?index=${index}`)
+  delete: (index: number) => apiClient.delete(`/api-keys?index=${index}`),
 };

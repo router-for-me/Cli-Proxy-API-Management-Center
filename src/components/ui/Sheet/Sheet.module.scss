@@ -115,7 +115,9 @@
   color: var(--text-secondary);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color $transition-fast, color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
 
   &:hover {
     background: var(--bg-tertiary);

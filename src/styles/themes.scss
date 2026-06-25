@@ -230,7 +230,9 @@
   --glass-border: color-mix(in srgb, var(--border-color) 55%, transparent);
 }
 
-@media (max-width: 768px), (prefers-reduced-motion: reduce), (prefers-reduced-transparency: reduce) {
+@media (max-width: 768px),
+  (prefers-reduced-motion: reduce),
+  (prefers-reduced-transparency: reduce) {
   :root {
     --glass-backdrop-filter: none;
     --glass-filter: none;

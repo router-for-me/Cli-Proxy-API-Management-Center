@@ -26,8 +26,7 @@ export const withDisableAllModelsRule = (models?: string[]) => {
   return [...base, DISABLE_ALL_MODELS_RULE];
 };
 
-export const withoutDisableAllModelsRule = (models?: string[]) =>
-  stripDisableAllModelsRule(models);
+export const withoutDisableAllModelsRule = (models?: string[]) => stripDisableAllModelsRule(models);
 
 const normalizeUpstreamBaseUrl = (baseUrl: string, fallback = ''): string => {
   let trimmed = String(baseUrl || '').trim();
@@ -90,10 +89,7 @@ export const buildClaudeMessagesEndpoint = (baseUrl: string): string => {
   return `${trimmed}/v1/messages`;
 };
 
-export const buildGeminiGenerateContentEndpoint = (
-  baseUrl: string,
-  model: string
-): string => {
+export const buildGeminiGenerateContentEndpoint = (baseUrl: string, model: string): string => {
   const resource = buildGeminiModelResource(model);
   if (!resource) return '';
 
@@ -123,7 +119,9 @@ const EMPTY_RECENT_USAGE_ENTRY: RecentRequestUsageEntry = {
 };
 
 const normalizeProviderRecentKey = (value: unknown): string =>
-  String(value ?? '').trim().toLowerCase();
+  String(value ?? '')
+    .trim()
+    .toLowerCase();
 
 const getProviderRecentUsageEntry = (
   usageByProvider: ProviderRecentUsageMap,

@@ -25,7 +25,7 @@ export function RenameAliasModal({
   error,
   onChange,
   onClose,
-  onSubmit
+  onSubmit,
 }: RenameAliasModalProps) {
   return (
     <Modal
@@ -74,7 +74,7 @@ export function AddAliasModal({
   error,
   onChange,
   onClose,
-  onSubmit
+  onSubmit,
 }: AddAliasModalProps) {
   return (
     <Modal
@@ -123,7 +123,7 @@ export function SettingsAliasModal({
   aliasNodes,
   onClose,
   onToggleFork,
-  onUnlink
+  onUnlink,
 }: SettingsAliasModalProps) {
   return (
     <Modal
@@ -137,56 +137,62 @@ export function SettingsAliasModal({
         </Button>
       }
     >
-      {alias ? (
-        (() => {
-          const node = aliasNodes.find((n) => n.alias === alias);
-          if (!node || node.sources.length === 0) {
-            return <div className={styles.settingsEmpty}>{t('oauth_model_alias.diagram_settings_empty')}</div>;
-          }
-          return (
-            <div className={styles.settingsList}>
-              {node.sources.map((source) => {
-                const entry = source.aliases.find((item) => item.alias === alias);
-                const forkEnabled = entry?.fork === true;
-                return (
-                  <div key={source.id} className={styles.settingsRow}>
-                    <div className={styles.settingsNames}>
-                      <span className={styles.settingsSource}>{source.name}</span>
-                      <span className={styles.settingsArrow}>→</span>
-                      <span className={styles.settingsAlias}>{alias}</span>
+      {alias
+        ? (() => {
+            const node = aliasNodes.find((n) => n.alias === alias);
+            if (!node || node.sources.length === 0) {
+              return (
+                <div className={styles.settingsEmpty}>
+                  {t('oauth_model_alias.diagram_settings_empty')}
+                </div>
+              );
+            }
+            return (
+              <div className={styles.settingsList}>
+                {node.sources.map((source) => {
+                  const entry = source.aliases.find((item) => item.alias === alias);
+                  const forkEnabled = entry?.fork === true;
+                  return (
+                    <div key={source.id} className={styles.settingsRow}>
+                      <div className={styles.settingsNames}>
+                        <span className={styles.settingsSource}>{source.name}</span>
+                        <span className={styles.settingsArrow}>→</span>
+                        <span className={styles.settingsAlias}>{alias}</span>
+                      </div>
+                      <div className={styles.settingsActions}>
+                        <span className={styles.settingsLabel}>
+                          {t('oauth_model_alias.alias_fork_label')}
+                        </span>
+                        <ToggleSwitch
+                          checked={forkEnabled}
+                          onChange={(value) =>
+                            onToggleFork(source.provider, source.name, alias, value)
+                          }
+                          ariaLabel={t('oauth_model_alias.alias_fork_label')}
+                        />
+                        <button
+                          type="button"
+                          className={styles.settingsDelete}
+                          onClick={() => onUnlink(source.provider, source.name, alias)}
+                          aria-label={t('oauth_model_alias.diagram_delete_link', {
+                            provider: source.provider,
+                            name: source.name,
+                          })}
+                          title={t('oauth_model_alias.diagram_delete_link', {
+                            provider: source.provider,
+                            name: source.name,
+                          })}
+                        >
+                          <IconTrash2 size={14} />
+                        </button>
+                      </div>
                     </div>
-                    <div className={styles.settingsActions}>
-                      <span className={styles.settingsLabel}>
-                        {t('oauth_model_alias.alias_fork_label')}
-                      </span>
-                      <ToggleSwitch
-                        checked={forkEnabled}
-                        onChange={(value) => onToggleFork(source.provider, source.name, alias, value)}
-                        ariaLabel={t('oauth_model_alias.alias_fork_label')}
-                      />
-                      <button
-                        type="button"
-                        className={styles.settingsDelete}
-                        onClick={() => onUnlink(source.provider, source.name, alias)}
-                        aria-label={t('oauth_model_alias.diagram_delete_link', {
-                          provider: source.provider,
-                          name: source.name
-                        })}
-                        title={t('oauth_model_alias.diagram_delete_link', {
-                          provider: source.provider,
-                          name: source.name
-                        })}
-                      >
-                        <IconTrash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })()
-      ) : null}
+                  );
+                })}
+              </div>
+            );
+          })()
+        : null}
     </Modal>
   );
 }
@@ -206,7 +212,7 @@ export function SettingsSourceModal({
   source,
   onClose,
   onToggleFork,
-  onUnlink
+  onUnlink,
 }: SettingsSourceModalProps) {
   return (
     <Modal
@@ -222,7 +228,9 @@ export function SettingsSourceModal({
     >
       {source ? (
         source.aliases.length === 0 ? (
-          <div className={styles.settingsEmpty}>{t('oauth_model_alias.diagram_settings_empty')}</div>
+          <div className={styles.settingsEmpty}>
+            {t('oauth_model_alias.diagram_settings_empty')}
+          </div>
         ) : (
           <div className={styles.settingsList}>
             {source.aliases.map((entry) => (
@@ -238,7 +246,9 @@ export function SettingsSourceModal({
                   </span>
                   <ToggleSwitch
                     checked={entry.fork === true}
-                    onChange={(value) => onToggleFork(source.provider, source.name, entry.alias, value)}
+                    onChange={(value) =>
+                      onToggleFork(source.provider, source.name, entry.alias, value)
+                    }
                     ariaLabel={t('oauth_model_alias.alias_fork_label')}
                   />
                   <button
@@ -247,11 +257,11 @@ export function SettingsSourceModal({
                     onClick={() => onUnlink(source.provider, source.name, entry.alias)}
                     aria-label={t('oauth_model_alias.diagram_delete_link', {
                       provider: source.provider,
-                      name: source.name
+                      name: source.name,
                     })}
                     title={t('oauth_model_alias.diagram_delete_link', {
                       provider: source.provider,
-                      name: source.name
+                      name: source.name,
                     })}
                   >
                     <IconTrash2 size={14} />

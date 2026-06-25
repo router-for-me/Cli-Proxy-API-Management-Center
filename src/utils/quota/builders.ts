@@ -231,8 +231,12 @@ export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
   const limits = payload.limits;
   if (Array.isArray(limits)) {
     limits.forEach((item, idx) => {
-      const detail = (item.detail && typeof item.detail === 'object' ? item.detail : item) as KimiUsageDetail | KimiLimitItem;
-      const window = (item.window && typeof item.window === 'object' ? item.window : {}) as KimiLimitWindow;
+      const detail = (item.detail && typeof item.detail === 'object' ? item.detail : item) as
+        | KimiUsageDetail
+        | KimiLimitItem;
+      const window = (
+        item.window && typeof item.window === 'object' ? item.window : {}
+      ) as KimiLimitWindow;
       const fallbackLabel = kimiLimitLabel(item, detail, window, idx);
       const row = toKimiUsageRow(detail as Record<string, unknown>, fallbackLabel);
       if (row) {

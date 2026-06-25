@@ -79,7 +79,9 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color $transition-fast, border-color $transition-fast,
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
     color $transition-fast;
   border: 1px solid transparent;
   background: transparent;

@@ -27,7 +27,7 @@ export function DiagramContextMenu({
   onDeleteAlias,
   onEditProvider,
   onDeleteProvider,
-  onOpenSourceSettings
+  onOpenSourceSettings,
 }: DiagramContextMenuProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -78,7 +78,10 @@ export function DiagramContextMenu({
           <span>{t('common.edit')}</span>
         </div>
         <div className={styles.menuDivider} />
-        <div className={`${styles.menuItem} ${styles.danger}`} onClick={() => onDeleteProvider(data)}>
+        <div
+          className={`${styles.menuItem} ${styles.danger}`}
+          onClick={() => onDeleteProvider(data)}
+        >
           <span>{t('oauth_model_alias.delete')}</span>
         </div>
       </>

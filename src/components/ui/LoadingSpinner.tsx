@@ -1,6 +1,6 @@
 export function LoadingSpinner({
   size = 20,
-  className = ''
+  className = '',
 }: {
   size?: number;
   className?: string;

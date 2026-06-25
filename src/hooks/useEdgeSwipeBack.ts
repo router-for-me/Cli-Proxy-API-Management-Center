@@ -100,4 +100,3 @@ export function useEdgeSwipeBack({
 
   return containerRef;
 }
-

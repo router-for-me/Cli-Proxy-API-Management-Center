@@ -1,10 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  IconChevronDown,
-  IconChevronUp,
-  IconSlidersHorizontal,
-} from '@/components/ui/icons';
+import { IconChevronDown, IconChevronUp, IconSlidersHorizontal } from '@/components/ui/icons';
 import { Select } from '@/components/ui/Select';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import type { ProviderSortBy, SortDir } from '../types';
@@ -48,10 +44,7 @@ export function ProviderResourceToolbar({
   useEffect(() => {
     if (!filterOpen) return;
     const onClickOutside = (e: PointerEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setFilterOpen(false);
       }
     };
@@ -103,11 +96,7 @@ export function ProviderResourceToolbar({
               : t('providersPage.toolbar.sort.directionDesc')
           }
         >
-          {sortDir === 'asc' ? (
-            <IconChevronUp size={14} />
-          ) : (
-            <IconChevronDown size={14} />
-          )}
+          {sortDir === 'asc' ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
         </button>
       </div>
 
@@ -143,9 +132,7 @@ export function ProviderResourceToolbar({
               </button>
             </div>
             {availableModels.length === 0 ? (
-              <div className={styles.filterEmpty}>
-                {t('providersPage.toolbar.filter.empty')}
-              </div>
+              <div className={styles.filterEmpty}>{t('providersPage.toolbar.filter.empty')}</div>
             ) : (
               <ul className={styles.filterList}>
                 {availableModels.map((name) => (

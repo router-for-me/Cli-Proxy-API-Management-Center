@@ -8,7 +8,7 @@ export const configFileApi = {
   async fetchConfigYaml(): Promise<string> {
     const response = await apiClient.getRaw('/config.yaml', {
       responseType: 'text',
-      headers: { Accept: 'application/yaml, text/yaml, text/plain' }
+      headers: { Accept: 'application/yaml, text/yaml, text/plain' },
     });
     const data: unknown = response.data;
     if (typeof data === 'string') return data;
@@ -20,8 +20,8 @@ export const configFileApi = {
     await apiClient.put('/config.yaml', content, {
       headers: {
         'Content-Type': 'application/yaml',
-        Accept: 'application/json, text/plain, */*'
-      }
+        Accept: 'application/json, text/plain, */*',
+      },
     });
-  }
+  },
 };

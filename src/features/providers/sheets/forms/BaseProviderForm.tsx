@@ -173,9 +173,7 @@ function buildInitialForm(
           }
         : undefined,
     experimentalCchSigning:
-      brand === 'claude'
-        ? (cfg as ProviderKeyConfig).experimentalCchSigning === true
-        : undefined,
+      brand === 'claude' ? (cfg as ProviderKeyConfig).experimentalCchSigning === true : undefined,
     testModel: brand === 'codex' || brand === 'claude' || brand === 'gemini' ? '' : undefined,
   };
 }
@@ -454,10 +452,10 @@ export function BaseProviderForm({
     brand === 'codex'
       ? { status: connectivity.codexStatus, run: connectivity.runCodex }
       : brand === 'gemini'
-      ? { status: connectivity.geminiStatus, run: connectivity.runGemini }
-      : brand === 'claude'
-        ? { status: connectivity.claudeStatus, run: connectivity.runClaude }
-        : null;
+        ? { status: connectivity.geminiStatus, run: connectivity.runGemini }
+        : brand === 'claude'
+          ? { status: connectivity.claudeStatus, run: connectivity.runClaude }
+          : null;
 
   const removeApiKeyEntry = (removeIdx: number) => {
     setShowPasswords((prev) => {

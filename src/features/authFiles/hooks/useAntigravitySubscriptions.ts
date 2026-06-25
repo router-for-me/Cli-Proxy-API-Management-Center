@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  antigravitySubscriptionApi,
-  type AntigravitySubscriptionSummary,
-} from '@/services/api';
+import { antigravitySubscriptionApi, type AntigravitySubscriptionSummary } from '@/services/api';
 import type { AuthFileItem } from '@/types';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import { getStatusFromError, isAntigravityFile, isRuntimeOnlyAuthFile } from '@/utils/quota';

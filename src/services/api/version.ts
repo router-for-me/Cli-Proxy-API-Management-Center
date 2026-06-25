@@ -20,5 +20,5 @@ export const versionApi = {
       }
       return 'unknown';
     }
-  }
+  },
 };

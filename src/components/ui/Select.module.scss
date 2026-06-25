@@ -36,12 +36,16 @@
 
   &:focus {
     outline: none;
-    box-shadow: var(--shadow), 0 0 0 3px rgba($primary-color, 0.18);
+    box-shadow:
+      var(--shadow),
+      0 0 0 3px rgba($primary-color, 0.18);
   }
 
   &[aria-expanded='true'] {
     border-color: var(--primary-color);
-    box-shadow: var(--shadow), 0 0 0 3px rgba($primary-color, 0.18);
+    box-shadow:
+      var(--shadow),
+      0 0 0 3px rgba($primary-color, 0.18);
   }
 }
 
@@ -99,7 +103,9 @@
   text-align: left;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
   flex-shrink: 0;
 
   &:hover {

@@ -96,7 +96,7 @@ export const parseAntigravitySubscriptionSummary = (
   if (!effectiveTier?.id && !effectiveTier?.name) return null;
 
   const rawCredits = isRecord(paidTierPayload)
-    ? paidTierPayload.availableCredits ?? paidTierPayload.available_credits
+    ? (paidTierPayload.availableCredits ?? paidTierPayload.available_credits)
     : undefined;
 
   return {

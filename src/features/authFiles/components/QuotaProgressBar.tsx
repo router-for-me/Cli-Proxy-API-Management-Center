@@ -6,7 +6,11 @@ export type QuotaProgressBarProps = {
   mediumThreshold: number;
 };
 
-export function QuotaProgressBar({ percent, highThreshold, mediumThreshold }: QuotaProgressBarProps) {
+export function QuotaProgressBar({
+  percent,
+  highThreshold,
+  mediumThreshold,
+}: QuotaProgressBarProps) {
   const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
   const normalized = percent === null ? null : clamp(percent, 0, 100);
   const fillClass =
@@ -21,7 +25,10 @@ export function QuotaProgressBar({ percent, highThreshold, mediumThreshold }: Qu
 
   return (
     <div className={styles.quotaBar}>
-      <div className={`${styles.quotaBarFill} ${fillClass}`} style={{ width: `${widthPercent}%` }} />
+      <div
+        className={`${styles.quotaBarFill} ${fillClass}`}
+        style={{ width: `${widthPercent}%` }}
+      />
     </div>
   );
 }

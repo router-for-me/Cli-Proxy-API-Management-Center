@@ -23,7 +23,9 @@ export function NotificationContainer() {
 
     const newNotifications = notifications.filter((n) => !prevIds.has(n.id));
 
-    const removedIds = new Set(prevNotifications.filter((n) => !currentIds.has(n.id)).map((n) => n.id));
+    const removedIds = new Set(
+      prevNotifications.filter((n) => !currentIds.has(n.id)).map((n) => n.id)
+    );
 
     setAnimatedNotifications((prev) => {
       let updated = prev.map((n) => (removedIds.has(n.id) ? { ...n, isExiting: true } : n));
@@ -49,7 +51,9 @@ export function NotificationContainer() {
   }, [notifications]);
 
   const handleClose = (id: string) => {
-    setAnimatedNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isExiting: true } : n)));
+    setAnimatedNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isExiting: true } : n))
+    );
 
     setTimeout(() => {
       removeNotification(id);

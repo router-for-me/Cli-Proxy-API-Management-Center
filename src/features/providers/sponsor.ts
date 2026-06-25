@@ -29,15 +29,13 @@ export const APIKEY_FUN_BASE_URL_OPTIONS = [
   },
 ] as const;
 
-export const APIKEY_FUN_PROTOCOLS = [
-  'anthropic',
-  'openai',
-  'codexResponses',
-] as const;
+export const APIKEY_FUN_PROTOCOLS = ['anthropic', 'openai', 'codexResponses'] as const;
 export type ApiKeyFunProtocol = (typeof APIKEY_FUN_PROTOCOLS)[number];
 
 const normalizeText = (value: string | undefined | null): string =>
-  String(value ?? '').trim().toLowerCase();
+  String(value ?? '')
+    .trim()
+    .toLowerCase();
 
 const normalizeBaseUrl = (value: string | undefined | null): string =>
   normalizeText(value).replace(/\/+$/, '');
@@ -114,24 +112,17 @@ const normalizeBoolean = (value: unknown, fallback: boolean): boolean => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
-export const normalizeApiKeyFunUsagePayload = (
-  payload: unknown
-): ApiKeyFunUsageSummary | null => {
+export const normalizeApiKeyFunUsagePayload = (payload: unknown): ApiKeyFunUsageSummary | null => {
   if (!isRecord(payload)) return null;
 
   const quota = isRecord(payload.quota) ? payload.quota : {};
-  const remaining = normalizeUsageAmount(
-    payload.remaining ?? quota.remaining ?? payload.balance
-  );
+  const remaining = normalizeUsageAmount(payload.remaining ?? quota.remaining ?? payload.balance);
   const unit = normalizeString(payload.unit ?? quota.unit) ?? 'USD';
   const limit = normalizeUsageAmount(quota.limit);
   const used = normalizeUsageAmount(quota.used);
   const status = normalizeString(payload.status);
   const mode = normalizeString(payload.mode);
-  const isValid = normalizeBoolean(
-    payload.is_active ?? payload.isValid,
-    true
-  );
+  const isValid = normalizeBoolean(payload.is_active ?? payload.isValid, true);
 
   if (remaining === null && limit === null && used === null && !status && !mode) {
     return null;
@@ -181,9 +172,7 @@ export const isApiKeyFunClaudeProvider = (
   return matchesApiKeyFunAnthropicBaseUrl(config.baseUrl);
 };
 
-export const isApiKeyFunCodexProvider = (
-  config: ProviderKeyConfig | undefined | null
-): boolean => {
+export const isApiKeyFunCodexProvider = (config: ProviderKeyConfig | undefined | null): boolean => {
   if (!config) return false;
   return matchesApiKeyFunOpenAIBaseUrl(config.baseUrl);
 };

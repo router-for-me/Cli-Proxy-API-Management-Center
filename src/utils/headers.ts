@@ -7,7 +7,9 @@ export interface HeaderEntry {
   value: string;
 }
 
-export function buildHeaderObject(input?: HeaderEntry[] | Record<string, string | undefined | null>): Record<string, string> {
+export function buildHeaderObject(
+  input?: HeaderEntry[] | Record<string, string | undefined | null>
+): Record<string, string> {
   if (!input) return {};
 
   if (Array.isArray(input)) {
@@ -31,13 +33,18 @@ export function buildHeaderObject(input?: HeaderEntry[] | Record<string, string 
   }, {});
 }
 
-export function hasHeader(headers: Record<string, unknown> | null | undefined, name: string): boolean {
+export function hasHeader(
+  headers: Record<string, unknown> | null | undefined,
+  name: string
+): boolean {
   if (!headers) return false;
   const target = name.toLowerCase();
   return Object.keys(headers).some((key) => key.toLowerCase() === target);
 }
 
-export function headersToEntries(headers?: Record<string, string | undefined | null>): HeaderEntry[] {
+export function headersToEntries(
+  headers?: Record<string, string | undefined | null>
+): HeaderEntry[] {
   if (!headers || typeof headers !== 'object') return [];
   return Object.entries(headers)
     .filter(([, value]) => value !== undefined && value !== null && value !== '')

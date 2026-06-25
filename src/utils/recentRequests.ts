@@ -153,9 +153,10 @@ export function mergeRecentRequestBucketGroups(
   return merged;
 }
 
-export function sumRecentRequests(
-  buckets: RecentRequestBucket[]
-): { success: number; failure: number } {
+export function sumRecentRequests(buckets: RecentRequestBucket[]): {
+  success: number;
+  failure: number;
+} {
   return normalizeRecentRequestBuckets(buckets).reduce(
     (total, bucket) => ({
       success: total.success + bucket.success,

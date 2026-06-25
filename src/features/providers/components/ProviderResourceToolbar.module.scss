@@ -31,7 +31,9 @@
   background: var(--bg-primary);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background-color $transition-fast, color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
 
   &:hover {
     background: var(--bg-tertiary);
@@ -55,7 +57,9 @@
   color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
-  transition: background-color $transition-fast, border-color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast;
 
   &:hover:not(:disabled) {
     border-color: var(--primary-color);

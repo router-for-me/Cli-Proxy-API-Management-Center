@@ -2,17 +2,9 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useNotificationStore } from '@/stores';
-import {
-  IconCheckCircle2,
-  IconExternalLink,
-  IconLoader2,
-  IconPlus,
-} from '@/components/ui/icons';
+import { IconCheckCircle2, IconExternalLink, IconLoader2, IconPlus } from '@/components/ui/icons';
 import { PROVIDER_LOGOS } from '../brandLogos';
-import {
-  APIKEY_FUN_AFFILIATE_URL,
-  APIKEY_FUN_DASHBOARD_URL,
-} from '../sponsor';
+import { APIKEY_FUN_AFFILIATE_URL, APIKEY_FUN_DASHBOARD_URL } from '../sponsor';
 import type { ProviderEntryFormInput, ProviderResource } from '../types';
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
 import { SponsorProviderForm } from '../sheets/forms/SponsorProviderForm';
@@ -132,12 +124,7 @@ export function SponsorQuickStartPanel({
           <div className={styles.titleText}>
             <h2 className={styles.title}>{t('providersPage.providerNames.apikeyFun')}</h2>
           </div>
-          <a
-            className={styles.topLink}
-            href={actionHref}
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a className={styles.topLink} href={actionHref} target="_blank" rel="noreferrer">
             <IconExternalLink size={14} />
             <span>{actionLabel}</span>
           </a>

@@ -1,9 +1,4 @@
-import {
-  useState,
-  type HTMLAttributes,
-  type PropsWithChildren,
-  type ReactNode,
-} from 'react';
+import { useState, type HTMLAttributes, type PropsWithChildren, type ReactNode } from 'react';
 import { IconChevronDown } from '../icons';
 import styles from './Collapsible.module.scss';
 
