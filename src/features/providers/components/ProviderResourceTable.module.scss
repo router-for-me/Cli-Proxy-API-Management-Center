@@ -1,6 +1,15 @@
 @use '../../../styles/mixins' as *;
 @use '../../../styles/variables' as *;
 
+.providerTable {
+  min-width: 960px;
+  table-layout: fixed;
+
+  tbody tr:hover .actionsCell {
+    background: color-mix(in srgb, var(--accent-bg) 50%, transparent);
+  }
+}
+
 .primaryCell {
   display: flex;
   flex-direction: column;
@@ -110,19 +119,21 @@
   gap: 6px;
   align-items: flex-start;
   min-width: 0;
+  max-width: 190px;
 }
 
 .stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
+  max-width: 100%;
 }
 
 .statPill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
+  padding: 2px 7px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
@@ -156,11 +167,40 @@
   color: var(--amber-text);
 }
 
+.statusBarWrap {
+  width: min(100%, 178px);
+  min-width: 0;
+}
+
+.actionsHead,
+.actionsCell {
+  position: sticky;
+  right: 0;
+  width: 176px;
+  min-width: 176px;
+  box-shadow: -12px 0 16px -18px rgba(15, 23, 42, 0.45);
+}
+
+.actionsHead {
+  z-index: 3;
+  background: var(--muted-bg);
+}
+
+.actionsCell {
+  z-index: 2;
+  background: var(--bg-primary);
+}
+
+.actionsCellSelected {
+  background: var(--primary-8);
+}
+
 .actions {
   display: flex;
   gap: 4px;
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .toggleWrap {

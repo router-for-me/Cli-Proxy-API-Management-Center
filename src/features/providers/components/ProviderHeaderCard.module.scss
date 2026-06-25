@@ -30,7 +30,25 @@
   margin: 0;
   font-size: 30px;
   font-weight: 700;
+  line-height: 1.2;
   color: var(--text-primary);
+}
+
+.quickStartCard {
+  gap: 14px;
+
+  .title {
+    font-size: 32px;
+    font-weight: 720;
+    line-height: 1.18;
+    letter-spacing: 0;
+  }
+
+  .btn {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+  }
 }
 
 .subtitle {
@@ -148,5 +166,14 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .quickStartCard {
+    .title {
+      font-size: 28px;
+      line-height: 1.2;
+    }
   }
 }

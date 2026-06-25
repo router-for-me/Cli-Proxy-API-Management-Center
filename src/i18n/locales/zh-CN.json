@@ -112,6 +112,7 @@
     "dashboard": "仪表盘",
     "basic_settings": "基础设置",
     "api_keys": "API 密钥",
+    "quick_start": "快速开始",
     "ai_providers": "AI 提供商",
     "auth_files": "认证文件",
     "oauth": "OAuth 登录",
@@ -131,6 +132,7 @@
   },
   "nav_meta": {
     "dashboard": "运行总览",
+    "quick_start": "快速配置",
     "ai_providers": "上游模型路由",
     "auth_files": "Auth 文件与凭证",
     "oauth": "OAuth 授权登录",
@@ -154,6 +156,9 @@
     "routing_strategy": "路由策略",
     "available_models": "可用模型",
     "available_models_desc": "所有提供商的模型总数",
+    "quick_start_card": "快速开始",
+    "quick_start_entry": "快速开始",
+    "quick_start_entry_desc": "进入快速开始页面",
     "welcome_back": "欢迎回来",
     "greeting_morning": "早上好",
     "greeting_afternoon": "下午好",
@@ -477,6 +482,10 @@
     "plan_label": "套餐",
     "expires_label": "续期时间",
     "reset_credits_label": "主动重置次数",
+    "reset_credits_expiry_label": "主动重置过期时间（GMT+8）",
+    "reset_credit_number": "第 {{index}} 次",
+    "reset_credits_expiry_failed": "主动重置过期时间获取失败：{{message}}",
+    "reset_credits_invalid_payload": "主动重置过期时间响应格式无效",
     "reset_button": "重置额度",
     "reset_confirm_title": "重置 Codex 额度",
     "reset_confirm_message": "将消耗 1 次主动重置次数来重置 \"{{name}}\" 的 Codex 额度。是否继续？",
@@ -701,6 +710,16 @@
     "xai_oauth_status_error": "认证失败:",
     "xai_oauth_start_error": "启动 xAI OAuth 失败:",
     "xai_oauth_polling_error": "检查认证状态失败:",
+    "plugin_oauth_title": "{{name}} OAuth",
+    "plugin_oauth_button": "开始 {{name}} 登录",
+    "plugin_oauth_hint": "通过插件提供的 OAuth 流程登录 {{name}}，自动获取并保存认证文件。",
+    "plugin_oauth_url_label": "授权链接:",
+    "plugin_open_link": "打开链接",
+    "plugin_copy_link": "复制链接",
+    "plugin_oauth_status_waiting": "等待认证中...",
+    "plugin_oauth_status_success": "认证成功！",
+    "plugin_oauth_status_error": "认证失败:",
+    "plugin_oauth_start_error": "启动插件 OAuth 失败:",
     "xai_callback_label": "回调 URL 或授权码",
     "xai_callback_placeholder": "粘贴页面显示的 code，或完整 callback URL",
     "xai_callback_hint": "Grok 有时只在页面显示 code。可直接粘贴 code，系统会自动拼接为 http://127.0.0.1:56121/callback?... 后提交。",
@@ -1435,14 +1454,16 @@
     },
     "categories": {
       "title": "提供商",
-      "activeCount": "{{active}}/{{total}} 活跃"
+      "activeCount": "{{active}}/{{total}} 活跃",
+      "sponsors": "赞助商"
     },
     "providerNames": {
       "gemini": "Gemini",
       "codex": "Codex",
       "claude": "Claude",
       "vertex": "Vertex",
-      "openaiCompatibility": "OpenAI 兼容"
+      "openaiCompatibility": "OpenAI 兼容",
+      "apikeyFun": "APIKEY.FUN"
     },
     "table": {
       "key": "密钥",
@@ -1463,6 +1484,61 @@
       "filterPlaceholder": "搜索密钥、地址、前缀…",
       "description": "在 {{route}} 下管理资源",
       "providerIssue": "此提供商存在问题"
+    },
+    "sponsor": {
+      "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
+      "detailHint": "此赞助商会分别写入 Claude API Key、OpenAI 兼容配置与 Codex API Key,这里只做聚合管理。",
+      "registerLink": "点此注册",
+      "registerNow": "立即注册",
+      "dashboardLink": "控制面板",
+      "emptyRegisterHint": "尚未添加配置",
+      "apiKeyHint": "此 Key 只会写入当前选择的分组/协议配置。",
+      "usageCheck": "查询额度",
+      "usageChecking": "查询中",
+      "usageRemaining": "剩余额度: {{amount}} {{unit}}",
+      "usageBreakdown": "已用 {{used}} / 总额 {{limit}}",
+      "usageStatus": "状态: {{status}}",
+      "usageInvalid": "Key 无效",
+      "usageEmpty": "端点未返回额度数据",
+      "usageApiKeyRequired": "API 密钥必填",
+      "groupedKeysTitle": "分组 Key",
+      "groupedKeysHint": "APIKEY.FUN 在平台创建 Key 时需要选择分组,这里每个分组 Key 只管理一个协议,模型也只从该协议拉取。",
+      "groupedKey": "分组 Key #{{index}}",
+      "addGroupedKey": "添加分组 Key",
+      "removeGroupedKey": "删除分组 Key",
+      "protocol": "分组/协议",
+      "protocolHint": "请选择此 Key 在 APIKEY.FUN 平台绑定的分组。",
+      "protocolEndpoint": "当前协议地址",
+      "urlMode": "APIKEY.FUN URL",
+      "urlHint": "两种 URL 的使用规范一致,保存时只会写入当前分组协议对应地址。",
+      "urlOptions": {
+        "standard": "普通 URL",
+        "direct": "专线直连 URL"
+      },
+      "modelsTitle": "协议模型配置",
+      "modelsHint": "可分别限制或别名映射 APIKEY.FUN 走 Codex API、Anthropic 与 OpenAI 兼容入口的模型。",
+      "protocolModels": {
+        "codex": "Codex API 模型",
+        "anthropic": "Anthropic 模型",
+        "openai": "OpenAI 兼容模型"
+      },
+      "protocolModelHints": {
+        "codex": "写入 Codex API 配置的 models,可从 /v1/models 拉取后设置别名。",
+        "anthropic": "写入 Anthropic 配置的 models,可从 /v1/models 拉取后设置别名。",
+        "openai": "写入 OpenAI 兼容配置的 models,可从 /models 拉取后设置别名。"
+      },
+      "validation": {
+        "keyRequired": "请为每个分组 Key 填写 API Key。",
+        "protocolDuplicate": "每个协议只能添加一个分组 Key。"
+      },
+      "openaiEntries": "OpenAI 兼容密钥数",
+      "codexEntries": "Codex API 密钥数",
+      "anthropicEntries": "Anthropic 密钥数",
+      "protocols": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI 兼容",
+        "codexResponses": "Codex API (Responses)"
+      }
     },
     "status": {
       "active": "活跃",

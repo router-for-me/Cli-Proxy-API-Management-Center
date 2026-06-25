@@ -5,12 +5,137 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.quickStartForm {
+  gap: 20px;
+
+  .section {
+    gap: 14px;
+  }
+
+  .sectionTitle {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: 0;
+  }
+
+  .sectionDesc {
+    max-width: 72ch;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .field {
+    gap: 7px;
+  }
+
+  .label {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  .labelHint {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--muted-foreground);
+  }
+
+  .input,
+  .textarea,
+  .discoverySearch {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .entryCard {
+    gap: 12px;
+  }
+
+  .entryCardHeader {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .sponsorGroupTitle {
+    gap: 3px;
+
+    strong {
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.4;
+    }
+  }
+
+  .sponsorUrlOptionText,
+  .checkboxText {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .sponsorUrlOptionText small,
+  .checkboxText small,
+  .sponsorProtocolUrl,
+  .sponsorUsageResult,
+  .connectivityError,
+  .discoveryEmpty,
+  .discoveryItem,
+  .discoveryBatchLabel,
+  .discoveryName {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .sponsorProtocolName {
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.4;
+  }
+
+  .sponsorUsageMain {
+    line-height: 1.45;
+  }
+
+  .sponsorUsageMeta,
+  .discoveryAlias,
+  .discoveryCount,
+  .discoveryAddedTag {
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .connectivityBtn,
+  .discoveryApplyBtn,
+  .addBtn,
+  .removeBtn {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .footerBtn {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  details summary {
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 1.45;
+  }
 }
 
 .section {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 .sectionTitle {
@@ -33,6 +158,7 @@
 .field {
   display: grid;
   gap: 6px;
+  min-width: 0;
 }
 
 .label {
@@ -144,6 +270,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  min-width: 0;
 }
 
 .divider {
@@ -195,6 +322,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--bg-secondary);
 }
 
@@ -202,8 +332,76 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
   font-size: 12px;
   font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.entryCardToggle {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+.sponsorGroupTitle {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.sponsorGroupSummary {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.sponsorSummaryKey,
+.sponsorSummaryUrl {
+  display: inline-block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sponsorSummaryKey {
+  max-width: 140px;
+  font-family: $font-mono;
+  color: var(--text-primary);
+}
+
+.sponsorSummaryUrl {
+  max-width: min(360px, 45vw);
+  font-family: $font-mono;
   color: var(--muted-foreground);
 }
 
@@ -211,6 +409,49 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+}
+
+.entryCardBody {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.entryCardIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -1px;
+  }
+}
+
+.entryCardChevron {
+  transition: transform $transition-fast;
+}
+
+.entryCardChevronOpen {
+  transform: rotate(180deg);
 }
 
 .entriesToolbar {
@@ -223,6 +464,141 @@
 
 .entriesToolbarSplit {
   justify-content: space-between;
+}
+
+.sponsorUrlOptions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+
+  @media (min-width: 560px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sponsorUrlOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition:
+    border-color $transition-fast,
+    background-color $transition-fast;
+
+  input {
+    margin: 2px 0 0;
+    accent-color: var(--primary-color);
+    flex-shrink: 0;
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+  }
+
+  &:hover {
+    border-color: var(--primary-color);
+  }
+}
+
+.sponsorUrlOptionActive {
+  border-color: var(--primary-color);
+  background: var(--primary-10);
+}
+
+.sponsorUrlOptionText {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--text-primary);
+
+  small {
+    font-family: $font-mono;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--muted-foreground);
+    overflow-wrap: anywhere;
+  }
+}
+
+.sponsorProtocolGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+
+  @media (min-width: 560px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.sponsorProtocolCard {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+}
+
+.sponsorProtocolName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sponsorProtocolUrl {
+  font-family: $font-mono;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.sponsorUsageSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sponsorUsageResult {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--success-color) 34%, var(--border-color));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--success-color) 8%, var(--bg-primary));
+  color: var(--text-primary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.sponsorUsageResultWarning {
+  color: var(--warning-text);
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.sponsorUsageMain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.sponsorUsageMeta {
+  color: var(--muted-foreground);
 }
 
 .connectivityRow {
@@ -245,7 +621,9 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color $transition-fast, border-color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast;
 
   &:hover:not(:disabled) {
     border-color: var(--primary-color);
@@ -271,7 +649,9 @@
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color $transition-fast, color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast;
 
   &:hover:not(:disabled) {
     background: var(--bg-tertiary);
@@ -444,6 +824,19 @@
   word-break: break-all;
 }
 
+.discoveryNameGroup {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.discoveryAlias {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  word-break: break-all;
+}
+
 .discoveryAddedTag {
   font-size: 11px;
   color: var(--muted-foreground);
@@ -498,6 +891,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .passwordInput {
@@ -533,6 +927,20 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.modelAliasRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr auto;
+
+    input:first-child {
+      grid-column: 1 / -1;
+    }
+  }
 }
 
 .removeBtn {

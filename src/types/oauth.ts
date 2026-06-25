@@ -3,12 +3,11 @@
  * 基于原项目 src/modules/oauth.js
  */
 
-// OAuth 提供商类型
-export type OAuthProvider =
-  | 'codex'
-  | 'anthropic'
-  | 'antigravity'
-  | 'kimi';
+// 内置 OAuth 提供商类型
+export type BuiltInOAuthProvider = 'codex' | 'anthropic' | 'antigravity' | 'kimi' | 'xai';
+
+// OAuth provider 可来自内置通道或插件 AuthProvider identifier。
+export type OAuthProvider = string;
 
 // OAuth 流程状态
 export interface OAuthFlow {

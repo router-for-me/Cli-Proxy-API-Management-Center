@@ -78,6 +78,13 @@ export function ModelDiscoveryPanel({
     setSelected(new Set());
   };
 
+  const renderModelLabel = (model: ModelInfo) => (
+    <span className={styles.discoveryNameGroup}>
+      <span className={styles.discoveryName}>{model.name}</span>
+      {model.alias ? <span className={styles.discoveryAlias}>{model.alias}</span> : null}
+    </span>
+  );
+
   return (
     <div className={styles.discoveryPanel}>
       <div className={styles.discoveryToolbar}>
@@ -157,7 +164,7 @@ export function ModelDiscoveryPanel({
                 >
                   {existing ? (
                     <>
-                      <span className={styles.discoveryName}>{m.name}</span>
+                      {renderModelLabel(m)}
                       <span className={styles.discoveryAddedTag}>
                         {t('providersPage.discovery.alreadyAdded')}
                       </span>
@@ -166,9 +173,7 @@ export function ModelDiscoveryPanel({
                     <SelectionCheckbox
                       checked={selected.has(m.name)}
                       onChange={() => toggle(m.name)}
-                      label={
-                        <span className={styles.discoveryName}>{m.name}</span>
-                      }
+                      label={renderModelLabel(m)}
                     />
                   )}
                 </li>

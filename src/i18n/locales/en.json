@@ -112,6 +112,7 @@
     "dashboard": "Dashboard",
     "basic_settings": "Basic Settings",
     "api_keys": "API Keys",
+    "quick_start": "Quick Start",
     "ai_providers": "AI Providers",
     "auth_files": "Auth Files",
     "oauth": "OAuth Login",
@@ -131,6 +132,7 @@
   },
   "nav_meta": {
     "dashboard": "Operations overview",
+    "quick_start": "APIKEY.FUN setup",
     "ai_providers": "Upstream model routing",
     "auth_files": "Auth files & credentials",
     "oauth": "OAuth authorization",
@@ -154,6 +156,9 @@
     "routing_strategy": "Routing Strategy",
     "available_models": "Available Models",
     "available_models_desc": "Total models from all providers",
+    "quick_start_card": "Quick Start",
+    "quick_start_entry": "Quick Start",
+    "quick_start_entry_desc": "Open the quick start page",
     "welcome_back": "Welcome Back",
     "greeting_morning": "Good Morning",
     "greeting_afternoon": "Good Afternoon",
@@ -477,6 +482,10 @@
     "plan_label": "Plan",
     "expires_label": "Renewal time",
     "reset_credits_label": "Manual resets",
+    "reset_credits_expiry_label": "Manual reset expiry (GMT+8)",
+    "reset_credit_number": "Reset {{index}}",
+    "reset_credits_expiry_failed": "Failed to load manual reset expiry: {{message}}",
+    "reset_credits_invalid_payload": "Invalid manual reset expiry response",
     "reset_button": "Reset quota",
     "reset_confirm_title": "Reset Codex quota",
     "reset_confirm_message": "This will consume 1 manual reset to reset the Codex quota for \"{{name}}\". Continue?",
@@ -701,6 +710,16 @@
     "xai_oauth_status_error": "Authentication failed:",
     "xai_oauth_start_error": "Failed to start xAI OAuth:",
     "xai_oauth_polling_error": "Failed to check authentication status:",
+    "plugin_oauth_title": "{{name}} OAuth",
+    "plugin_oauth_button": "Start {{name}} Login",
+    "plugin_oauth_hint": "Log in to {{name}} through the plugin OAuth flow, automatically obtain and save authentication files.",
+    "plugin_oauth_url_label": "Authorization URL:",
+    "plugin_open_link": "Open Link",
+    "plugin_copy_link": "Copy Link",
+    "plugin_oauth_status_waiting": "Waiting for authentication...",
+    "plugin_oauth_status_success": "Authentication successful!",
+    "plugin_oauth_status_error": "Authentication failed:",
+    "plugin_oauth_start_error": "Failed to start plugin OAuth:",
     "xai_callback_label": "Callback URL or code",
     "xai_callback_placeholder": "Paste the code shown by Grok, or the full callback URL",
     "xai_callback_hint": "Grok may only show a code on the page. Paste that code directly and the app will submit it as http://127.0.0.1:56121/callback?... automatically.",
@@ -1435,14 +1454,16 @@
     },
     "categories": {
       "title": "Providers",
-      "activeCount": "{{active}}/{{total}} active"
+      "activeCount": "{{active}}/{{total}} active",
+      "sponsors": "Sponsors"
     },
     "providerNames": {
       "gemini": "Gemini",
       "codex": "Codex",
       "claude": "Claude",
       "vertex": "Vertex",
-      "openaiCompatibility": "OpenAI Compatible"
+      "openaiCompatibility": "OpenAI Compatible",
+      "apikeyFun": "APIKEY.FUN"
     },
     "table": {
       "key": "Key",
@@ -1463,6 +1484,61 @@
       "filterPlaceholder": "Search keys, URLs, prefixes…",
       "description": "Manage resources under {{route}}",
       "providerIssue": "This provider has an issue"
+    },
+    "sponsor": {
+      "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
+      "detailHint": "This sponsor is persisted as Claude API key, OpenAI-compatible, and Codex API key entries; this view manages them together.",
+      "registerLink": "Register here",
+      "registerNow": "Register now",
+      "dashboardLink": "Dashboard",
+      "emptyRegisterHint": "No configuration yet.",
+      "apiKeyHint": "This key is only written to the selected group/protocol config.",
+      "usageCheck": "Check usage",
+      "usageChecking": "Checking",
+      "usageRemaining": "Remaining: {{amount}} {{unit}}",
+      "usageBreakdown": "Used {{used}} / Limit {{limit}}",
+      "usageStatus": "Status: {{status}}",
+      "usageInvalid": "Invalid key",
+      "usageEmpty": "The endpoint returned no usage data.",
+      "usageApiKeyRequired": "API key is required",
+      "groupedKeysTitle": "Grouped keys",
+      "groupedKeysHint": "APIKEY.FUN keys are bound to a platform group when created. Each grouped key here manages one protocol, and model discovery only uses that protocol.",
+      "groupedKey": "Grouped key #{{index}}",
+      "addGroupedKey": "Add grouped key",
+      "removeGroupedKey": "Remove grouped key",
+      "protocol": "Group/protocol",
+      "protocolHint": "Select the APIKEY.FUN platform group bound to this key.",
+      "protocolEndpoint": "Current protocol endpoint",
+      "urlMode": "APIKEY.FUN URL",
+      "urlHint": "Both URLs use the same API conventions. Saving writes only the endpoint for the current grouped protocol.",
+      "urlOptions": {
+        "standard": "Standard URL",
+        "direct": "Direct URL"
+      },
+      "modelsTitle": "Protocol model settings",
+      "modelsHint": "Configure model allowlists or aliases separately for APIKEY.FUN's Codex API, Anthropic, and OpenAI-compatible routes.",
+      "protocolModels": {
+        "codex": "Codex API models",
+        "anthropic": "Anthropic models",
+        "openai": "OpenAI-compatible models"
+      },
+      "protocolModelHints": {
+        "codex": "Writes to the Codex API config models. Fetch from /v1/models and set aliases if needed.",
+        "anthropic": "Writes to the Anthropic config models. Fetch from /v1/models and set aliases if needed.",
+        "openai": "Writes to the OpenAI-compatible config models. Fetch from /models and set aliases if needed."
+      },
+      "validation": {
+        "keyRequired": "Enter an API key for every grouped key.",
+        "protocolDuplicate": "Each protocol can only have one grouped key."
+      },
+      "openaiEntries": "OpenAI-compatible keys",
+      "codexEntries": "Codex API keys",
+      "anthropicEntries": "Anthropic keys",
+      "protocols": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI Compatible",
+        "codexResponses": "Codex API (Responses)"
+      }
     },
     "status": {
       "active": "Active",

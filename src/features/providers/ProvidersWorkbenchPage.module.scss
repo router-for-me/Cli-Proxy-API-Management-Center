@@ -12,11 +12,18 @@
 
 .layout {
   display: grid;
+  align-items: start;
   gap: 16px;
   grid-template-columns: minmax(0, 1fr);
 
   @media (min-width: 1280px) {
     grid-template-columns: 240px minmax(0, 1fr);
+  }
+}
+
+.layoutSingle {
+  @media (min-width: 1280px) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

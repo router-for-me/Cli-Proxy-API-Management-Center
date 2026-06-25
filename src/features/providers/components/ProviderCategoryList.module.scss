@@ -1,6 +1,14 @@
 @use '../../../styles/mixins' as *;
 @use '../../../styles/variables' as *;
 
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  align-self: start;
+}
+
 .aside {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
@@ -75,6 +83,24 @@
   object-fit: contain;
   background: var(--bg-tertiary);
   padding: 2px;
+}
+
+.logoTransparent {
+  background: transparent;
+}
+
+.logoThemeDark {
+  display: none;
+
+  [data-theme='dark'] & {
+    display: block;
+  }
+}
+
+.logoThemeLight {
+  [data-theme='dark'] & {
+    display: none;
+  }
 }
 
 .logoInvertOnDark {

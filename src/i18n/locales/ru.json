@@ -112,6 +112,7 @@
     "dashboard": "Панель",
     "basic_settings": "Основные настройки",
     "api_keys": "API ключи",
+    "quick_start": "Быстрый старт",
     "ai_providers": "Поставщики AI",
     "auth_files": "Файлы аутентификации",
     "oauth": "OAuth вход",
@@ -130,6 +131,7 @@
   },
   "nav_meta": {
     "dashboard": "Обзор работы",
+    "quick_start": "Настройка APIKEY.FUN",
     "ai_providers": "Маршрутизация моделей",
     "auth_files": "Файлы и учётные данные",
     "oauth": "Авторизация OAuth",
@@ -153,6 +155,9 @@
     "routing_strategy": "Стратегия маршрутизации",
     "available_models": "Доступные модели",
     "available_models_desc": "Всего моделей от всех провайдеров",
+    "quick_start_card": "Быстрый старт",
+    "quick_start_entry": "Быстрый старт",
+    "quick_start_entry_desc": "Открыть страницу быстрого старта",
     "welcome_back": "С возвращением",
     "greeting_morning": "Доброе утро",
     "greeting_afternoon": "Добрый день",
@@ -470,6 +475,11 @@
     "additional_team_secondary_window": "{{name}}: месячный лимит",
     "plan_label": "Тариф",
     "expires_label": "Истекает",
+    "reset_credits_label": "Ручные сбросы",
+    "reset_credits_expiry_label": "Срок действия ручных сбросов (GMT+8)",
+    "reset_credit_number": "Сброс {{index}}",
+    "reset_credits_expiry_failed": "Не удалось загрузить срок действия ручных сбросов: {{message}}",
+    "reset_credits_invalid_payload": "Недопустимый ответ о сроке действия ручных сбросов",
     "plan_plus": "Plus",
     "plan_team": "Team",
     "plan_free": "Free",
@@ -688,6 +698,16 @@
     "xai_oauth_status_error": "Ошибка аутентификации:",
     "xai_oauth_start_error": "Не удалось запустить xAI OAuth:",
     "xai_oauth_polling_error": "Не удалось проверить статус аутентификации:",
+    "plugin_oauth_title": "{{name}} OAuth",
+    "plugin_oauth_button": "Начать вход {{name}}",
+    "plugin_oauth_hint": "Выполните вход в {{name}} через OAuth-поток плагина и автоматически получите/сохраните файлы авторизации.",
+    "plugin_oauth_url_label": "URL авторизации:",
+    "plugin_open_link": "Открыть ссылку",
+    "plugin_copy_link": "Скопировать ссылку",
+    "plugin_oauth_status_waiting": "Ожидание аутентификации...",
+    "plugin_oauth_status_success": "Аутентификация успешна!",
+    "plugin_oauth_status_error": "Ошибка аутентификации:",
+    "plugin_oauth_start_error": "Не удалось запустить OAuth плагина:",
     "xai_callback_label": "Callback URL или код",
     "xai_callback_placeholder": "Вставьте код со страницы Grok или полный callback URL",
     "xai_callback_hint": "Grok иногда показывает только код на странице. Вставьте этот код напрямую, приложение автоматически отправит его как http://127.0.0.1:56121/callback?...",
@@ -1412,14 +1432,16 @@
     },
     "categories": {
       "title": "Провайдеры",
-      "activeCount": "{{active}}/{{total}} активных"
+      "activeCount": "{{active}}/{{total}} активных",
+      "sponsors": "Спонсоры"
     },
     "providerNames": {
       "gemini": "Gemini",
       "codex": "Codex",
       "claude": "Claude",
       "vertex": "Vertex",
-      "openaiCompatibility": "OpenAI-совместимый"
+      "openaiCompatibility": "OpenAI-совместимый",
+      "apikeyFun": "APIKEY.FUN"
     },
     "table": {
       "key": "Ключ",
@@ -1440,6 +1462,61 @@
       "filterPlaceholder": "Поиск по ключам, URL, префиксам…",
       "description": "Управление ресурсами {{route}}",
       "providerIssue": "Проблема с провайдером"
+    },
+    "sponsor": {
+      "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
+      "detailHint": "Этот спонсор сохраняется как записи Claude API key, OpenAI-compatible и Codex API key; здесь они управляются вместе.",
+      "registerLink": "Зарегистрироваться",
+      "registerNow": "Зарегистрироваться сейчас",
+      "dashboardLink": "Панель управления",
+      "emptyRegisterHint": "Конфигурации пока нет.",
+      "apiKeyHint": "Этот ключ записывается только в выбранную группу/протокол.",
+      "usageCheck": "Проверить квоту",
+      "usageChecking": "Проверка",
+      "usageRemaining": "Остаток: {{amount}} {{unit}}",
+      "usageBreakdown": "Использовано {{used}} / Лимит {{limit}}",
+      "usageStatus": "Статус: {{status}}",
+      "usageInvalid": "Недействительный ключ",
+      "usageEmpty": "Endpoint не вернул данные квоты.",
+      "usageApiKeyRequired": "Требуется API key",
+      "groupedKeysTitle": "Групповые ключи",
+      "groupedKeysHint": "Ключи APIKEY.FUN привязываются к группе при создании на платформе. Каждый групповой ключ здесь управляет одним протоколом, а модели загружаются только из этого протокола.",
+      "groupedKey": "Групповой ключ #{{index}}",
+      "addGroupedKey": "Добавить групповой ключ",
+      "removeGroupedKey": "Удалить групповой ключ",
+      "protocol": "Группа/протокол",
+      "protocolHint": "Выберите группу APIKEY.FUN, к которой привязан этот ключ.",
+      "protocolEndpoint": "Текущий endpoint протокола",
+      "urlMode": "APIKEY.FUN URL",
+      "urlHint": "Оба URL используют одинаковые правила API. При сохранении записывается только endpoint текущего группового протокола.",
+      "urlOptions": {
+        "standard": "Обычный URL",
+        "direct": "Прямой URL"
+      },
+      "modelsTitle": "Настройки моделей по протоколам",
+      "modelsHint": "Настраивайте allowlist моделей и алиасы отдельно для маршрутов APIKEY.FUN Codex API, Anthropic и OpenAI-compatible.",
+      "protocolModels": {
+        "codex": "Модели Codex API",
+        "anthropic": "Модели Anthropic",
+        "openai": "Модели OpenAI-compatible"
+      },
+      "protocolModelHints": {
+        "codex": "Записывается в models конфигурации Codex API. Можно загрузить из /v1/models и задать алиасы.",
+        "anthropic": "Записывается в models конфигурации Anthropic. Можно загрузить из /v1/models и задать алиасы.",
+        "openai": "Записывается в models конфигурации OpenAI-compatible. Можно загрузить из /models и задать алиасы."
+      },
+      "validation": {
+        "keyRequired": "Введите API key для каждого группового ключа.",
+        "protocolDuplicate": "Для каждого протокола можно добавить только один групповой ключ."
+      },
+      "openaiEntries": "Ключей OpenAI-compatible",
+      "codexEntries": "Ключей Codex API",
+      "anthropicEntries": "Ключей Anthropic",
+      "protocols": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI-compatible",
+        "codexResponses": "Codex API (Responses)"
+      }
     },
     "status": {
       "active": "Активен",
