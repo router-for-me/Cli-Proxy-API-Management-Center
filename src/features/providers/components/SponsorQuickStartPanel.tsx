@@ -111,7 +111,7 @@ export function SponsorQuickStartPanel({
               rel="noreferrer"
             >
               <IconExternalLink size={16} />
-              <span>{t('nav.quick_start')}</span>
+              <span>{t('providersPage.sponsor.registerNow')}</span>
             </a>
           </div>
         </div>

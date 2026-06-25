@@ -1460,6 +1460,7 @@
       "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
       "detailHint": "Этот спонсор сохраняется как записи Claude API key, OpenAI-compatible и Codex API key; здесь они управляются вместе.",
       "registerLink": "Зарегистрироваться",
+      "registerNow": "Зарегистрироваться сейчас",
       "dashboardLink": "Панель управления",
       "emptyRegisterHint": "Конфигурации пока нет.",
       "apiKeyHint": "Этот ключ записывается только в выбранную группу/протокол.",
