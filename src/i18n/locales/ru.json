@@ -359,6 +359,7 @@
     "selection_weight_label": "Вес выбора (selection_weight)",
     "selection_weight_placeholder": "например: 2",
     "selection_weight_hint": "Только неотрицательные целые числа. Оставьте пустым для веса по умолчанию 1.",
+    "selection_weight_invalid": "Вес выбора должен быть неотрицательным целым числом.",
     "codex_websockets_label": "WebSockets (websockets)",
     "codex_websockets_hint": "Включает websocket-транспорт Responses API для этих учётных данных Codex.",
     "excluded_models_label": "Исключённые модели (excluded_models)",

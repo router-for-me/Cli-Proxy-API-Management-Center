@@ -360,6 +360,7 @@
     "selection_weight_label": "选择权重（selection_weight）",
     "selection_weight_placeholder": "例如: 2",
     "selection_weight_hint": "仅支持非负整数；留空按默认权重 1 处理。",
+    "selection_weight_invalid": "选择权重必须是非负整数。",
     "codex_websockets_label": "WebSockets（websockets）",
     "codex_websockets_hint": "为该 Codex 凭证开启 Responses API 的 websocket 传输。",
     "excluded_models_label": "排除模型（excluded_models）",

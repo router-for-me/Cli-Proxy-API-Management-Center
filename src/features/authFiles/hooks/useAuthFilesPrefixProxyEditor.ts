@@ -15,6 +15,7 @@ type AuthFileHeadersErrorKey =
   | 'auth_files.headers_invalid_json'
   | 'auth_files.headers_invalid_object'
   | 'auth_files.headers_invalid_value';
+type AuthFileFieldsErrorKey = AuthFileHeadersErrorKey | 'auth_files.selection_weight_invalid';
 type AuthFileContentErrorKey =
   | 'auth_files.prefix_proxy_invalid_json'
   | 'auth_files.prefix_proxy_html_challenge';
@@ -45,6 +46,7 @@ export type PrefixProxyEditorState = {
   proxyUrl: string;
   priority: string;
   selectionWeight: string;
+  selectionWeightError: string | null;
   websockets: boolean;
   websocketsTouched: boolean;
   note: string;
@@ -221,7 +223,7 @@ const applyHeadersPatch = (
 
 const buildAuthFileFieldsPatch = (
   editor: PrefixProxyEditorState,
-  resolveHeadersError: (key: AuthFileHeadersErrorKey) => string
+  resolveFieldError: (key: AuthFileFieldsErrorKey) => string
 ): AuthFileFieldsPatch => {
   const original = editor.json ?? {};
   const patch: AuthFileFieldsPatch = {};
@@ -265,7 +267,7 @@ const buildAuthFileFieldsPatch = (
       patch.selection_weight = null;
     }
   } else if (nextSelectionWeight === undefined) {
-    patch.selection_weight = -1;
+    throw new Error(resolveFieldError('auth_files.selection_weight_invalid'));
   } else if (nextSelectionWeight !== originalSelectionWeight) {
     patch.selection_weight = nextSelectionWeight;
   }
@@ -289,7 +291,7 @@ const buildAuthFileFieldsPatch = (
   if (editor.headersTouched) {
     const { value: parsedHeaders, errorKey } = parseHeadersText(editor.headersText);
     if (errorKey) {
-      throw new Error(resolveHeadersError(errorKey));
+      throw new Error(resolveFieldError(errorKey));
     }
     const headersPatch = buildHeadersPatch(
       normalizeHeaders(original.headers),
@@ -305,10 +307,10 @@ const buildAuthFileFieldsPatch = (
 
 const buildPrefixProxyUpdatedText = (
   editor: PrefixProxyEditorState | null,
-  resolveHeadersError: (key: AuthFileHeadersErrorKey) => string
+  resolveFieldError: (key: AuthFileFieldsErrorKey) => string
 ): string => {
   if (!editor?.json) return editor?.rawText ?? '';
-  const patch = buildAuthFileFieldsPatch(editor, resolveHeadersError);
+  const patch = buildAuthFileFieldsPatch(editor, resolveFieldError);
   let next: Record<string, unknown> = { ...editor.json };
   if (patch.prefix !== undefined) {
     if (patch.prefix) {
@@ -369,7 +371,8 @@ export function useAuthFilesPrefixProxyEditor(
   const [prefixProxyEditor, setPrefixProxyEditor] = useState<PrefixProxyEditorState | null>(null);
 
   const hasBlockingValidationError = Boolean(
-    prefixProxyEditor?.headersTouched && prefixProxyEditor.headersError
+    (prefixProxyEditor?.headersTouched && prefixProxyEditor.headersError) ||
+      prefixProxyEditor?.selectionWeightError
   );
   const prefixProxyUpdatedText =
     prefixProxyEditor && !hasBlockingValidationError
@@ -412,6 +415,7 @@ export function useAuthFilesPrefixProxyEditor(
       proxyUrl: '',
       priority: '',
       selectionWeight: '',
+      selectionWeightError: null,
       websockets: false,
       websocketsTouched: false,
       note: '',
@@ -486,6 +490,7 @@ export function useAuthFilesPrefixProxyEditor(
           proxyUrl,
           priority: priority !== undefined ? String(priority) : '',
           selectionWeight: selectionWeight !== undefined ? String(selectionWeight) : '',
+          selectionWeightError: null,
           websockets,
           websocketsTouched: false,
           note,
@@ -515,7 +520,15 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'prefix') return { ...prev, prefix: String(value) };
       if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
       if (field === 'priority') return { ...prev, priority: String(value) };
-      if (field === 'selectionWeight') return { ...prev, selectionWeight: String(value) };
+      if (field === 'selectionWeight') {
+        const selectionWeight = String(value);
+        const trimmedSelectionWeight = selectionWeight.trim();
+        const selectionWeightError =
+          trimmedSelectionWeight && parseSelectionWeightValue(trimmedSelectionWeight) === undefined
+            ? t('auth_files.selection_weight_invalid')
+            : null;
+        return { ...prev, selectionWeight, selectionWeightError };
+      }
       if (field === 'websockets') {
         return { ...prev, websockets: Boolean(value), websocketsTouched: true };
       }

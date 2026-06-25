@@ -360,6 +360,7 @@
     "selection_weight_label": "Selection weight (selection_weight)",
     "selection_weight_placeholder": "e.g. 2",
     "selection_weight_hint": "Non-negative integers only. Leave empty to use the default weight 1.",
+    "selection_weight_invalid": "Selection weight must be a non-negative integer.",
     "codex_websockets_label": "WebSockets (websockets)",
     "codex_websockets_hint": "Enable Responses API websocket transport for this Codex credential.",
     "excluded_models_label": "Excluded models (excluded_models)",
