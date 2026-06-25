@@ -477,7 +477,7 @@
     "plan_label": "套餐",
     "expires_label": "续期时间",
     "reset_credits_label": "主动重置次数",
-    "reset_credits_expiry_label": "主动重置过期时间（上海）",
+    "reset_credits_expiry_label": "主动重置过期时间（GMT+8）",
     "reset_credit_number": "第 {{index}} 次",
     "reset_credits_expiry_failed": "主动重置过期时间获取失败：{{message}}",
     "reset_credits_invalid_payload": "主动重置过期时间响应格式无效",

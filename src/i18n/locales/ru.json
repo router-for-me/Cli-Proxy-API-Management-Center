@@ -471,7 +471,7 @@
     "plan_label": "Тариф",
     "expires_label": "Истекает",
     "reset_credits_label": "Ручные сбросы",
-    "reset_credits_expiry_label": "Срок действия ручных сбросов (Шанхай)",
+    "reset_credits_expiry_label": "Срок действия ручных сбросов (GMT+8)",
     "reset_credit_number": "Сброс {{index}}",
     "reset_credits_expiry_failed": "Не удалось загрузить срок действия ручных сбросов: {{message}}",
     "reset_credits_invalid_payload": "Недопустимый ответ о сроке действия ручных сбросов",

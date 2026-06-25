@@ -477,7 +477,7 @@
     "plan_label": "方案",
     "expires_label": "續期時間",
     "reset_credits_label": "主動重置次數",
-    "reset_credits_expiry_label": "主動重置過期時間（上海）",
+    "reset_credits_expiry_label": "主動重置過期時間（GMT+8）",
     "reset_credit_number": "第 {{index}} 次",
     "reset_credits_expiry_failed": "主動重置過期時間取得失敗：{{message}}",
     "reset_credits_invalid_payload": "主動重置過期時間回應格式無效",
