@@ -9,12 +9,13 @@ const VERT = `#version 300 es
 const FRAG_SIM = `#version 300 es
   precision highp float;
   in vec2 v_uv; out vec4 fc;
-  uniform float u_time, u_slider, u_elapsed;
+  uniform float u_time, u_slider, u_elapsed, u_grid_x;
+  uniform vec3 u_ember, u_glow, u_core;
   uniform sampler2D u_back;
   float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
   void main(){
     vec2 uv=v_uv;
-    vec2 g=uv*vec2(72.0,6.0);
+    vec2 g=uv*vec2(u_grid_x,6.0);
     vec2 id=floor(g);
     vec2 cf=fract(g);
     float h=hash(id);
@@ -75,9 +76,9 @@ const FRAG_SIM = `#version 300 es
     float leadF    = sin(leadD * 100.0 + t * 20.0 * ts + h2 * 6.28) * 0.5 + 0.5;
     float leadSpark = leadZone * step(0.6, h2) * leadF * act * es * 0.5;
     float total = energy + edge + leadSpark;
-    vec3 ember = vec3(0.28, 0.10, 0.58);
-    vec3 wpur  = vec3(0.62, 0.32, 1.0);
-    vec3 wht   = vec3(1.0, 0.94, 0.98);
+    vec3 ember = u_ember;
+    vec3 wpur  = u_glow;
+    vec3 wht   = u_core;
     float temp = 1.0 - dn;
     vec3 col   = mix(ember, wpur, temp);
     col        = mix(col, wht, pow(temp, 4.5));
@@ -127,6 +128,98 @@ type FBO = {
   fbo: WebGLFramebuffer;
   tex: WebGLTexture;
 };
+
+type Rgb = readonly [number, number, number];
+
+type ThemeFireColors = {
+  ember: Rgb;
+  glow: Rgb;
+  core: Rgb;
+};
+
+const BASE_GRID_WIDTH_PX = 256;
+const BASE_GRID_COLUMNS = 58;
+const FALLBACK_WARNING_COLOR: Rgb = [198 / 255, 87 / 255, 70 / 255];
+const FALLBACK_PRIMARY_COLOR: Rgb = [139 / 255, 134 / 255, 128 / 255];
+const FALLBACK_CONTRAST_COLOR: Rgb = [1, 1, 1];
+const FALLBACK_FIRE_COLORS: ThemeFireColors = {
+  ember: [0.38, 0.14, 0.1],
+  glow: [0.78, 0.34, 0.27],
+  core: [1, 0.9, 0.86],
+};
+
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function parseCssColor(value: string): Rgb | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const hex = trimmed.match(/^#([\da-f]{3}|[\da-f]{6})$/i);
+  if (hex) {
+    const raw = hex[1];
+    const expanded =
+      raw.length === 3
+        ? raw
+            .split('')
+            .map((part) => `${part}${part}`)
+            .join('')
+        : raw;
+    const parsed = Number.parseInt(expanded, 16);
+    return [
+      ((parsed >> 16) & 255) / 255,
+      ((parsed >> 8) & 255) / 255,
+      (parsed & 255) / 255,
+    ];
+  }
+
+  const rgb = trimmed.match(/^rgba?\((.+)\)$/i);
+  if (!rgb) return null;
+
+  const channels = rgb[1]
+    .replace(/\s*\/.*$/, '')
+    .split(/[,\s]+/)
+    .filter(Boolean)
+    .slice(0, 3);
+  if (channels.length !== 3) return null;
+
+  const normalized = channels.map((channel) => {
+    if (channel.endsWith('%')) {
+      return clamp01(Number.parseFloat(channel) / 100);
+    }
+    return clamp01(Number.parseFloat(channel) / 255);
+  });
+  if (normalized.some((channel) => Number.isNaN(channel))) return null;
+
+  return [normalized[0], normalized[1], normalized[2]];
+}
+
+function mixRgb(from: Rgb, to: Rgb, toRatio: number): Rgb {
+  const ratio = clamp01(toRatio);
+  return [
+    from[0] * (1 - ratio) + to[0] * ratio,
+    from[1] * (1 - ratio) + to[1] * ratio,
+    from[2] * (1 - ratio) + to[2] * ratio,
+  ];
+}
+
+function resolveThemeFireColors(canvasEl: HTMLCanvasElement): ThemeFireColors {
+  const elementStyle = window.getComputedStyle(canvasEl);
+  const rootStyle = window.getComputedStyle(document.documentElement);
+  const readCssVar = (name: string) =>
+    parseCssColor(elementStyle.getPropertyValue(name)) ??
+    parseCssColor(rootStyle.getPropertyValue(name));
+  const warning = readCssVar('--warning-color') ?? FALLBACK_WARNING_COLOR;
+  const primary = readCssVar('--primary-color') ?? FALLBACK_PRIMARY_COLOR;
+  const contrast = readCssVar('--primary-contrast') ?? FALLBACK_CONTRAST_COLOR;
+
+  return {
+    ember: mixRgb(warning, [0, 0, 0], 0.46),
+    glow: mixRgb(warning, primary, 0.18),
+    core: mixRgb(warning, contrast, 0.72),
+  };
+}
 
 export function useStatusFilterWebglFire(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -179,6 +272,10 @@ export function useStatusFilterWebglFire(
       simTime: null,
       simSlider: null,
       simElapsed: null,
+      simGridX: null,
+      simEmber: null,
+      simGlow: null,
+      simCore: null,
       simBack: null,
       blurDir: null,
       blurExt: null,
@@ -189,6 +286,9 @@ export function useStatusFilterWebglFire(
     };
 
     const MAX_IDLE = 180;
+    let gridColumns = BASE_GRID_COLUMNS;
+    let themeFireColors = FALLBACK_FIRE_COLORS;
+    let themeObserver: MutationObserver | null = null;
 
     function onContextLost(e: Event) {
       e.preventDefault();
@@ -258,6 +358,10 @@ export function useStatusFilterWebglFire(
       U.simTime = gl.getUniformLocation(simProg, 'u_time');
       U.simSlider = gl.getUniformLocation(simProg, 'u_slider');
       U.simElapsed = gl.getUniformLocation(simProg, 'u_elapsed');
+      U.simGridX = gl.getUniformLocation(simProg, 'u_grid_x');
+      U.simEmber = gl.getUniformLocation(simProg, 'u_ember');
+      U.simGlow = gl.getUniformLocation(simProg, 'u_glow');
+      U.simCore = gl.getUniformLocation(simProg, 'u_core');
       U.simBack = gl.getUniformLocation(simProg, 'u_back');
       U.blurDir = gl.getUniformLocation(blurProg, 'u_dir');
       U.blurExt = gl.getUniformLocation(blurProg, 'u_ext');
@@ -322,6 +426,11 @@ export function useStatusFilterWebglFire(
       blurV = null;
     }
 
+    function refreshThemeFireColors() {
+      if (!canvasEl) return;
+      themeFireColors = resolveThemeFireColors(canvasEl);
+    }
+
     function destroyPrograms() {
       if (!gl) return;
       if (simProg) {
@@ -353,6 +462,10 @@ export function useStatusFilterWebglFire(
       if (!rect.width || !rect.height) return;
 
       const dpr = window.devicePixelRatio || 1;
+      gridColumns = Math.max(
+        BASE_GRID_COLUMNS,
+        Math.round((rect.width / BASE_GRID_WIDTH_PX) * BASE_GRID_COLUMNS)
+      );
       canvasEl.width = Math.round(rect.width * dpr);
       canvasEl.height = Math.round(rect.height * dpr);
 
@@ -417,6 +530,10 @@ export function useStatusFilterWebglFire(
       gl.uniform1f(U.simTime, t * 0.001);
       gl.uniform1f(U.simSlider, sv);
       gl.uniform1f(U.simElapsed, elapsed);
+      gl.uniform1f(U.simGridX, gridColumns);
+      gl.uniform3f(U.simEmber, ...themeFireColors.ember);
+      gl.uniform3f(U.simGlow, ...themeFireColors.glow);
+      gl.uniform3f(U.simCore, ...themeFireColors.core);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, simA.tex);
       gl.uniform1i(U.simBack, 0);
@@ -470,8 +587,14 @@ export function useStatusFilterWebglFire(
 
       gl = ctx;
       canvasEl = canvas;
+      refreshThemeFireColors();
       canvas.addEventListener('webglcontextlost', onContextLost);
       canvas.addEventListener('webglcontextrestored', onContextRestored);
+      themeObserver = new MutationObserver(refreshThemeFireColors);
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme', 'class', 'style'],
+      });
 
       compilePrograms();
       if (!programsReady) return;
@@ -506,6 +629,10 @@ export function useStatusFilterWebglFire(
       if (resizeDebounce) {
         clearTimeout(resizeDebounce);
         resizeDebounce = null;
+      }
+      if (themeObserver) {
+        themeObserver.disconnect();
+        themeObserver = null;
       }
       loopRunning = false;
       destroyFBOs();

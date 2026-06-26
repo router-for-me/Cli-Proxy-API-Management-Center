@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useStatusFilterWebglFire } from '@/features/authFiles/hooks/useStatusFilterWebglFire';
 import styles from './AuthFilesStatusFilterCard.module.scss';
 
@@ -25,7 +25,10 @@ export function AuthFilesStatusFilterCard({
   onChange,
 }: AuthFilesStatusFilterCardProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const draggingRef = useRef(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevActiveRef = useRef(false);
 
@@ -91,29 +94,74 @@ export function AuthFilesStatusFilterCard({
       WebkitMaskImage: gradient,
     };
   }, [sliderValue]);
+  const thumbStyle = useMemo(() => ({ left: `${sliderValue}%` }), [sliderValue]);
 
-  const selectIndex = (nextIndex: number) => {
-    const clamped = Math.max(0, Math.min(options.length - 1, nextIndex));
-    const nextValue = options[clamped]?.value;
-    if (nextValue && nextValue !== value) {
-      onChange(nextValue);
+  const selectIndex = useCallback(
+    (nextIndex: number) => {
+      const clamped = Math.max(0, Math.min(options.length - 1, nextIndex));
+      const nextValue = options[clamped]?.value;
+      if (nextValue && nextValue !== value) {
+        onChange(nextValue);
+      }
+    },
+    [onChange, options, value]
+  );
+
+  const selectFromPercent = useCallback(
+    (raw: number) => {
+      const step = 100 / Math.max(1, options.length - 1);
+      const nextIndex = Math.max(
+        0,
+        Math.min(options.length - 1, Math.round(raw / step + 1e-9))
+      );
+      selectIndex(nextIndex);
+    },
+    [options.length, selectIndex]
+  );
+
+  const selectFromClientX = useCallback(
+    (clientX: number) => {
+      const rect = inputRef.current?.getBoundingClientRect();
+      if (!rect || rect.width <= 0) return;
+      const raw = ((clientX - rect.left) / rect.width) * 100;
+      selectFromPercent(Math.max(0, Math.min(100, raw)));
+    },
+    [selectFromPercent]
+  );
+
+  const handleTrackPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (options.length <= 1) return;
+    event.preventDefault();
+    draggingRef.current = true;
+    setIsDragging(true);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    inputRef.current?.focus({ preventScroll: true });
+    selectFromClientX(event.clientX);
+  };
+
+  const handleTrackPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return;
+    selectFromClientX(event.clientX);
+  };
+
+  const handleTrackPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    draggingRef.current = false;
+    setIsDragging(false);
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
     }
   };
 
   const handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = Number(event.currentTarget.value);
-    const step = 100 / Math.max(1, options.length - 1);
-    const nextIndex = Math.max(0, Math.min(options.length - 1, Math.round(raw / step + 1e-9)));
-    selectIndex(nextIndex);
+    selectFromPercent(Number(event.currentTarget.value));
   };
 
   const trackWrapperClass = [
     styles.trackWrapper,
     isActive ? styles.trackWrapperActive : '',
     isFull ? styles.trackWrapperFull : '',
+    isDragging ? styles.trackWrapperDragging : '',
   ].join(' ');
-
-  const sliderClass = [styles.slider, isActive ? styles.sliderGlowing : ''].join(' ');
 
   const statusClass = [
     styles.statusText,
@@ -147,7 +195,14 @@ export function AuthFilesStatusFilterCard({
           <span>{maxLabel ?? options[options.length - 1]?.label}</span>
         </div>
 
-        <div className={trackWrapperClass} style={trackClip}>
+        <div
+          className={trackWrapperClass}
+          style={trackClip}
+          onPointerDown={handleTrackPointerDown}
+          onPointerMove={handleTrackPointerMove}
+          onPointerUp={handleTrackPointerEnd}
+          onPointerCancel={handleTrackPointerEnd}
+        >
           <div className={styles.trackBg} />
           <div className={styles.dotsLayer}>
             {options.map((option, index) => {
@@ -170,16 +225,20 @@ export function AuthFilesStatusFilterCard({
             aria-hidden="true"
           />
           <input
+            ref={inputRef}
             type="range"
             min={0}
             max={100}
             step="any"
             value={sliderValue}
-            className={sliderClass}
+            className={styles.slider}
             onChange={handleInput}
             aria-label={label}
             disabled={options.length <= 1}
           />
+          <div className={styles.thumbLayer} aria-hidden="true">
+            <span className={styles.thumb} style={thumbStyle} />
+          </div>
         </div>
       </div>
     </div>

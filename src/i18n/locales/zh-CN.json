@@ -278,7 +278,6 @@
     "problem_filter_all": "全部",
     "problem_filter_enabled": "启用",
     "problem_filter_problem": "问题",
-    "problem_filter_disabled_problem": "停用问题",
     "problem_filter_disabled": "停用",
     "problem_filter_only": "仅显示有问题凭证",
     "disabled_filter_only": "仅显示已停用凭证",

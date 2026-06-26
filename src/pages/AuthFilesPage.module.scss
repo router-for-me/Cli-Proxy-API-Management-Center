@@ -235,13 +235,7 @@
   padding: 16px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--primary-color) 8%, transparent),
-      transparent 46%
-    ),
-    color-mix(in srgb, var(--bg-secondary) 56%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 56%, transparent);
 
   @include mobile {
     padding: 12px;
@@ -250,12 +244,12 @@
 
 .filterControls {
   display: grid;
-  grid-template-columns:
-    minmax(260px, 1fr)
-    minmax(108px, 0.35fr)
-    minmax(148px, 0.45fr);
+  grid-template-columns: minmax(340px, 1fr) minmax(340px, 420px);
+  grid-template-areas:
+    'search options'
+    'status options';
   gap: 12px;
-  align-items: flex-end;
+  align-items: stretch;
 
   // 修复 Input 组件在 filterItem 中的嵌套样式
   :global(.form-group) {
@@ -267,17 +261,27 @@
     box-sizing: border-box;
   }
 
-  @include tablet {
-    grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(140px, 0.8fr));
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'search'
+      'status'
+      'options';
   }
 
   @include mobile {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      'search'
+      'status'
+      'options';
   }
 }
 
 .filterSearchItem {
+  grid-area: search;
   min-width: 0;
+  width: 100%;
 }
 
 .filterItem {
@@ -296,47 +300,58 @@
 }
 
 .filterToggleItem {
+  grid-area: status;
   min-width: 0;
-  grid-column: 1 / -1;
-
-  @include tablet {
-    grid-column: 1 / -1;
-  }
+  width: 100%;
 }
 
-.filterToggleGroup {
+.filterOptionsCard {
+  grid-area: options;
   display: grid;
-  grid-template-columns: minmax(320px, 1fr) minmax(170px, 0.42fr);
-  gap: 10px;
-  align-items: center;
-
-  @include tablet {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: minmax(96px, 0.58fr) minmax(156px, 1fr);
+  gap: 12px;
+  align-content: center;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 56%, transparent);
 
   @include mobile {
     grid-template-columns: 1fr;
   }
 }
 
-.filterToggleCard {
+.filterOptionsControl {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
   min-width: 0;
-  min-height: 58px;
-  padding: 0 12px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 56%, transparent);
+
+  label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 700;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+}
+
+.filterOptionsToggle {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 42px;
+  padding-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 46%, transparent);
 
   > label {
     width: 100%;
     min-width: 0;
+    justify-content: center;
   }
-}
-
-.compactToggleCard {
-  align-items: center;
 }
 
 .filterToggleLabel {

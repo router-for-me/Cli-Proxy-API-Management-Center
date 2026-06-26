@@ -278,7 +278,6 @@
     "problem_filter_all": "All",
     "problem_filter_enabled": "Enabled",
     "problem_filter_problem": "Problem",
-    "problem_filter_disabled_problem": "Disabled problems",
     "problem_filter_disabled": "Disabled",
     "problem_filter_only": "Only show problematic credentials",
     "disabled_filter_only": "Only show disabled credentials",
