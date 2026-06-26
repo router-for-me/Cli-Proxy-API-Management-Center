@@ -204,6 +204,8 @@ export function apiKeyFunToResource(raw: SponsorProviderRaw): ProviderResource |
     apiKeyPreview: apiKey ? maskApiKey(apiKey) : null,
     apiKey: apiKey || null,
     authIndex: null,
+    authKey: null,
+    authSource: null,
     baseUrl: `${protocolUrls.openai} / ${protocolUrls.anthropic}`,
     proxyUrl:
       firstOpenAIEntry?.proxyUrl ??
