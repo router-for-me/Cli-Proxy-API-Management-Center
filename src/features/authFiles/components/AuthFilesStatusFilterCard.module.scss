@@ -107,7 +107,8 @@
 /* ── track ─────────────────────────────────── */
 .trackWrapper {
   --thumb-size: 22px;
-  --track-inset: 17px;
+  --thumb-half: calc(var(--thumb-size) / 2);
+  --track-inset: var(--thumb-half);
 
   position: relative;
   height: 26px;
