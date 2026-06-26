@@ -101,6 +101,12 @@ const normalizeAuthIndex = (value: unknown): string | undefined => {
   return trimmed ? trimmed : undefined;
 };
 
+const normalizeSelectionWeight = (value: unknown): number | undefined => {
+  if (value === undefined || value === null || String(value).trim() === '') return undefined;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : undefined;
+};
+
 const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   if (entry === undefined || entry === null) return null;
   const record = isRecord(entry) ? entry : null;
@@ -109,12 +115,14 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   if (!trimmed) return null;
 
   const proxyUrl = record?.['proxy-url'];
+  const selectionWeight = normalizeSelectionWeight(record?.['selection-weight']);
   const authIndex = normalizeAuthIndex(record?.['auth-index']);
 
   const result: ApiKeyEntry = {
     apiKey: trimmed,
     proxyUrl: proxyUrl ? String(proxyUrl) : undefined,
   };
+  if (selectionWeight !== undefined) result.selectionWeight = selectionWeight;
   if (authIndex) result.authIndex = authIndex;
   return result;
 };
@@ -134,6 +142,8 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
       config.priority = parsed;
     }
   }
+  const selectionWeight = normalizeSelectionWeight(record?.['selection-weight']);
+  if (selectionWeight !== undefined) config.selectionWeight = selectionWeight;
   const prefix = normalizePrefix(record?.prefix);
   if (prefix) config.prefix = prefix;
   const baseUrl = record?.['base-url'];
@@ -202,6 +212,8 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
       config.priority = parsed;
     }
   }
+  const selectionWeight = normalizeSelectionWeight(record?.['selection-weight']);
+  if (selectionWeight !== undefined) config.selectionWeight = selectionWeight;
   const prefix = normalizePrefix(record?.prefix);
   if (prefix) config.prefix = prefix;
   const baseUrl = record?.['base-url'];
@@ -253,6 +265,8 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   if (headers) result.headers = headers;
   if (models.length) result.models = models;
   if (priority !== undefined) result.priority = Number(priority);
+  const selectionWeight = normalizeSelectionWeight(provider['selection-weight']);
+  if (selectionWeight !== undefined) result.selectionWeight = selectionWeight;
   if (testModel) result.testModel = String(testModel);
   const authIndex = normalizeAuthIndex(provider['auth-index']);
   if (authIndex) result.authIndex = authIndex;

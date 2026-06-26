@@ -106,6 +106,14 @@ export function ProviderResourceTable({
       });
       return <div className={styles.metricsCell}>{items}</div>;
     }
+    const selectionWeight =
+      r.selectionWeight !== undefined
+        ? renderMetric(
+            'selection-weight',
+            t('providersPage.table.metrics.selectionWeight'),
+            r.selectionWeight
+          )
+        : null;
     if (r.brand === 'openaiCompatibility') {
       items.push(
         renderMetric('models', t('providersPage.table.metrics.models'), r.modelCount),
@@ -123,6 +131,9 @@ export function ProviderResourceTable({
       if (r.brand === 'claude' && r.flags.cloakEnabled) {
         items.push(renderFlagTag('cloak', t('providersPage.table.cloakTag')));
       }
+    }
+    if (selectionWeight) {
+      items.push(selectionWeight);
     }
     return <div className={styles.metricsCell}>{items}</div>;
   };

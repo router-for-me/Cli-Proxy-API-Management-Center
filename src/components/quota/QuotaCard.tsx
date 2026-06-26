@@ -57,6 +57,17 @@ export interface QuotaRenderHelpers {
   QuotaProgressBar: (props: QuotaProgressBarProps) => ReactElement;
 }
 
+const parseIntegerField = (value: unknown, fallback: number): number => {
+  if (typeof value === 'number' && Number.isInteger(value)) return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return fallback;
+    const parsed = Number(trimmed);
+    if (Number.isInteger(parsed)) return parsed;
+  }
+  return fallback;
+};
+
 interface QuotaCardProps<TState extends QuotaStatusState> {
   item: AuthFileItem;
   quota?: TState;
@@ -90,6 +101,12 @@ export function QuotaCard<TState extends QuotaStatusState>({
   const typeColorSet = TYPE_COLORS[displayType] || TYPE_COLORS.unknown;
   const typeColor: ThemeColors =
     resolvedTheme === 'dark' && typeColorSet.dark ? typeColorSet.dark : typeColorSet.light;
+  const priority = parseIntegerField(item.priority, 0);
+  const parsedSelectionWeight = parseIntegerField(
+    item.selection_weight ?? item['selection-weight'],
+    1
+  );
+  const selectionWeight = parsedSelectionWeight >= 0 ? parsedSelectionWeight : 1;
 
   const quotaStatus = quota?.status ?? 'idle';
   const quotaLoading = quotaStatus === 'loading';
@@ -124,6 +141,14 @@ export function QuotaCard<TState extends QuotaStatusState>({
           {getTypeLabel(displayType)}
         </span>
         <span className={styles.fileName}>{item.name}</span>
+      </div>
+      <div className={styles.scheduleMeta}>
+        <span>
+          {t('auth_files.priority_display')}: {priority}
+        </span>
+        <span>
+          {t('auth_files.selection_weight_display')}: {selectionWeight}
+        </span>
       </div>
 
       <div className={styles.quotaSection}>

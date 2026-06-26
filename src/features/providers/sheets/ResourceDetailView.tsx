@@ -93,6 +93,12 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
     ['baseUrl', resource.baseUrl ?? t('providersPage.status.notSet')],
     ['proxyUrl', resource.proxyUrl ?? t('providersPage.status.notSet')],
     ['prefix', resource.prefix ?? t('providersPage.status.none')],
+    [
+      'selectionWeight',
+      resource.selectionWeight !== undefined
+        ? String(resource.selectionWeight)
+        : t('providersPage.status.defaultSuffix'),
+    ],
     ['models', String(resource.modelCount)],
     ['headers', String(resource.headerCount)],
   ];
@@ -143,6 +149,11 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
                   <span className={styles.apiKeyEntryKey}>{maskApiKey(entry.apiKey)}</span>
                   {entry.proxyUrl ? (
                     <span className={styles.apiKeyEntryProxy}>{entry.proxyUrl}</span>
+                  ) : null}
+                  {entry.selectionWeight !== undefined ? (
+                    <span className={styles.apiKeyEntryProxy}>
+                      {t('providersPage.form.selectionWeight')}: {entry.selectionWeight}
+                    </span>
                   ) : null}
                   <div className={styles.apiKeyEntryStats}>
                     <span className={`${styles.apiKeyEntryStat} ${styles.apiKeyEntryStatSuccess}`}>

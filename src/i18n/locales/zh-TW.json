@@ -199,10 +199,11 @@
     "ws_auth_enable": "啟用 /ws/* 驗證",
     "routing_title": "路由策略",
     "routing_strategy_label": "路由策略:",
-    "routing_strategy_hint": "round-robin 為輪詢，fill-first 為優先填充。",
+    "routing_strategy_hint": "round-robin 為輪詢，fill-first 為優先填充，weighted-round-robin 按選擇權重分配。",
     "routing_strategy_update": "更新",
     "routing_strategy_round_robin": "round-robin（輪詢）",
-    "routing_strategy_fill_first": "fill-first（優先填充）"
+    "routing_strategy_fill_first": "fill-first（優先填充）",
+    "routing_strategy_weighted_round_robin": "weighted-round-robin（加權輪詢）"
   },
   "api_keys": {
     "title": "API 金鑰管理",
@@ -288,6 +289,7 @@
     "sort_az": "A-Z 名稱",
     "sort_priority": "優先順序",
     "priority_display": "優先順序",
+    "selection_weight_display": "選擇權重",
     "page_size_label": "單頁數量",
     "page_size_unit": "個/頁",
     "view_mode_paged": "分頁顯示",
@@ -359,6 +361,10 @@
     "priority_label": "優先順序（priority）",
     "priority_placeholder": "例如: 10 或 -1",
     "priority_hint": "僅支援整數；無效值會被忽略。數值越大優先順序越高。",
+    "selection_weight_label": "選擇權重（selection_weight）",
+    "selection_weight_placeholder": "例如: 2",
+    "selection_weight_hint": "僅支援非負整數；留空按預設權重 1 處理。",
+    "selection_weight_invalid": "選擇權重必須是非負整數。",
     "codex_websockets_label": "WebSockets（websockets）",
     "codex_websockets_hint": "為該 Codex 憑證開啟 Responses API 的 websocket 傳輸。",
     "excluded_models_label": "排除模型（excluded_models）",
@@ -1021,7 +1027,7 @@
           "stabilize_device_desc": "固定 OS/Arch，並按憑證/API Key 穩定軟體指紋",
           "beta_features": "Beta Features",
           "codex_identity_confuse": "Codex 身分混淆",
-          "codex_identity_confuse_desc": "在 fill-first 或會話黏性路由下，按所選驗證重映射 Codex prompt_cache_key 與安裝身分"
+          "codex_identity_confuse_desc": "在 fill-first、weighted-round-robin 或會話黏性路由下，按所選驗證重映射 Codex prompt_cache_key 與安裝身分"
         },
         "network": {
           "title": "網路設定",
@@ -1044,6 +1050,7 @@
           "routing_strategy_hint": "選擇憑證選擇策略",
           "strategy_round_robin": "輪詢（Round Robin）",
           "strategy_fill_first": "填充優先（Fill First）",
+          "strategy_weighted_round_robin": "加權輪詢（Weighted Round Robin）",
           "session_affinity_ttl": "會話黏性 TTL",
           "force_model_prefix": "強制模型前綴",
           "force_model_prefix_desc": "未帶前綴的模型請求只使用無前綴憑證",
@@ -1499,7 +1506,8 @@
       "metrics": {
         "models": "模型",
         "keys": "金鑰",
-        "headers": "請求標頭"
+        "headers": "請求標頭",
+        "selectionWeight": "權重"
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
@@ -1583,7 +1591,8 @@
         "headers": "請求標頭數",
         "authIndex": "Auth Index",
         "excludedModels": "排除模型數",
-        "apiKeyEntries": "金鑰條目數"
+        "apiKeyEntries": "金鑰條目數",
+        "selectionWeight": "選擇權重"
       }
     },
     "form": {
@@ -1598,6 +1607,8 @@
       "proxyUrl": "代理 URL",
       "prefix": "前綴",
       "priority": "優先級",
+      "selectionWeight": "選擇權重",
+      "selectionWeightHint": "用於 weighted round-robin；留空按預設權重 1 處理。",
       "disabled": "停用此條目",
       "disabledHint": "停用後不會被閘道使用",
       "websockets": "啟用 WebSockets",
@@ -1637,7 +1648,8 @@
       "validation": {
         "nameRequired": "名稱必填",
         "apiKeyRequired": "至少填寫一個 API 金鑰",
-        "baseUrlRequired": "服務位址必填"
+        "baseUrlRequired": "服務位址必填",
+        "selectionWeightInvalid": "選擇權重必須是非負整數"
       }
     },
     "delete": {
