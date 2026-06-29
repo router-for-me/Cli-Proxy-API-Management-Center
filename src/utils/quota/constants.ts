@@ -66,10 +66,34 @@ export const ANTIGRAVITY_QUOTA_URLS = [
 export const ANTIGRAVITY_CODE_ASSIST_URL =
   'https://daily-cloudcode-pa.googleapis.com/v1internal:loadCodeAssist';
 
+export const ANTIGRAVITY_CLI_VERSION = '1.0.13';
+export const ANTIGRAVITY_CLIENT_NAME = 'aidev_client';
+export const ANTIGRAVITY_CLIENT_PLATFORM = {
+  osType: 'darwin',
+  arch: 'arm64',
+} as const;
+
+type AntigravityUserAgentOptions = {
+  version?: string;
+  clientName?: string;
+  osType?: string;
+  arch?: string;
+};
+
+export const buildAntigravityUserAgent = ({
+  version = ANTIGRAVITY_CLI_VERSION,
+  clientName = ANTIGRAVITY_CLIENT_NAME,
+  osType = ANTIGRAVITY_CLIENT_PLATFORM.osType,
+  arch = ANTIGRAVITY_CLIENT_PLATFORM.arch,
+}: AntigravityUserAgentOptions = {}) =>
+  `antigravity/cli/${version} (${clientName}; os_type=${osType}; arch=${arch})`;
+
+export const ANTIGRAVITY_USER_AGENT = buildAntigravityUserAgent();
+
 export const ANTIGRAVITY_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
   'Content-Type': 'application/json',
-  'User-Agent': 'antigravity/cli/1.0.8 darwin/arm64',
+  'User-Agent': ANTIGRAVITY_USER_AGENT,
 };
 
 // Claude API configuration
