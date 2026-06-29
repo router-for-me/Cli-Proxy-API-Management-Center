@@ -211,6 +211,111 @@
   box-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 10%, transparent);
 }
 
+.storeAuthEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.storeAuthEmpty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.storeAuthRule {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-secondary) 42%, transparent);
+}
+
+.storeAuthRuleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+
+  strong {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.storeAuthGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.storeAuthField {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+
+  > span {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+  }
+}
+
+.storeAuthApplyTo {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  > span {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  small {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
+
+.storeAuthCheckboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.storeAuthCheckbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+
+  input {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--primary-color);
+  }
+}
+
 // ── Global field search (P1) ────────────────────────────────────────────────
 .searchBox {
   position: relative;

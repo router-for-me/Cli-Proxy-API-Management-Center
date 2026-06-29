@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
 import {
   IconAlertTriangle,
   IconDownload,
@@ -53,6 +54,20 @@ const getStoreEntryTitle = (entry: PluginStoreEntry) => entry.name || entry.id;
 const getStoreEntryKey = (entry: PluginStoreEntry) => entry.storeId || entry.id;
 const getDescriptionDOMID = (entryKey: string) =>
   `plugin-store-desc-${encodeURIComponent(entryKey)}`;
+const normalizePluginVersion = (version: string) => version.trim().replace(/^v/i, '');
+const formatPluginVersion = (version: string) => {
+  const trimmed = version.trim();
+  if (!trimmed) return '';
+  return /^v/i.test(trimmed) ? trimmed : `v${trimmed}`;
+};
+const pluginVersionMatches = (left: string, right: string) =>
+  normalizePluginVersion(left) === normalizePluginVersion(right);
+const formatInstallType = (installType: string) =>
+  installType
+    .trim()
+    .split('-')
+    .map((part) => (part ? `${part[0].toUpperCase()}${part.slice(1)}` : part))
+    .join(' ');
 
 function StoreCardLogo({ src }: { src: string }) {
   const [failed, setFailed] = useState(false);
@@ -65,6 +80,88 @@ function StoreCardLogo({ src }: { src: string }) {
   );
 }
 
+interface PluginInstallOptionsModalProps {
+  entry: PluginStoreEntry | null;
+  isUpdate: boolean;
+  version: string;
+  installing: boolean;
+  onVersionChange: (version: string) => void;
+  onClose: () => void;
+  onConfirm: () => void | Promise<void>;
+}
+
+function PluginInstallOptionsModal({
+  entry,
+  isUpdate,
+  version,
+  installing,
+  onVersionChange,
+  onClose,
+  onConfirm,
+}: PluginInstallOptionsModalProps) {
+  const { t } = useTranslation();
+  if (!entry) return null;
+
+  const title = isUpdate
+    ? t('plugin_store.update_confirm_title')
+    : t('plugin_store.install_confirm_title');
+  const requestedVersion = version.trim();
+  const displayVersion = requestedVersion || entry.version;
+  const target = displayVersion
+    ? `${getStoreEntryTitle(entry)} ${formatPluginVersion(displayVersion)}`
+    : getStoreEntryTitle(entry);
+  const message = isUpdate
+    ? t('plugin_store.update_confirm_message', { target })
+    : t('plugin_store.install_confirm_message', { target });
+  const placeholder = entry.version
+    ? formatPluginVersion(entry.version)
+    : t('plugin_store.install_version_latest');
+
+  const handleClose = () => {
+    if (installing) return;
+    onClose();
+  };
+
+  return (
+    <Modal open={Boolean(entry)} onClose={handleClose} title={title} closeDisabled={installing}>
+      <div className={styles.installOptions}>
+        <p className={styles.installMessage}>{message}</p>
+        <div className={styles.installVersionField}>
+          <label className={styles.installVersionLabel} htmlFor="plugin-store-install-version">
+            {t('plugin_store.install_version_label')}
+          </label>
+          <Input
+            id="plugin-store-install-version"
+            value={version}
+            onChange={(event) => onVersionChange(event.target.value)}
+            placeholder={placeholder}
+            disabled={installing}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <p className={styles.installVersionHint}>
+            {t('plugin_store.install_version_hint', {
+              version: entry.version ? formatPluginVersion(entry.version) : placeholder,
+            })}
+          </p>
+        </div>
+        <div className={styles.installDialogActions}>
+          <Button variant="ghost" onClick={handleClose} disabled={installing}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant={isOfficialPlugin(entry) ? 'primary' : 'danger'}
+            onClick={onConfirm}
+            loading={installing}
+          >
+            {isUpdate ? t('plugin_store.update') : t('plugin_store.install')}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export function PluginStorePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -72,7 +169,6 @@ export function PluginStorePage() {
   const apiBase = useAuthStore((state) => state.apiBase);
   const clearConfigCache = useConfigStore((state) => state.clearCache);
   const showNotification = useNotificationStore((state) => state.showNotification);
-  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
 
   const [data, setData] = useState<PluginStoreResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,6 +185,11 @@ export function PluginStorePage() {
   const [gateOpen, setGateOpen] = useState(false);
   const [gateEntry, setGateEntry] = useState<PluginStoreEntry | null>(null);
   const [gateIsUpdate, setGateIsUpdate] = useState(false);
+  const [gateRequestedVersion, setGateRequestedVersion] = useState('');
+
+  const [installOptionsEntry, setInstallOptionsEntry] = useState<PluginStoreEntry | null>(null);
+  const [installOptionsIsUpdate, setInstallOptionsIsUpdate] = useState(false);
+  const [installVersion, setInstallVersion] = useState('');
 
   const connected = connectionStatus === 'connected';
 
@@ -256,18 +357,25 @@ export function PluginStorePage() {
   }, []);
 
   const runInstall = useCallback(
-    async (entry: PluginStoreEntry, isUpdate: boolean) => {
+    async (entry: PluginStoreEntry, isUpdate: boolean, requestedVersion = '') => {
       const entryKey = getStoreEntryKey(entry);
       const failedKey = isUpdate ? 'plugin_store.update_failed' : 'plugin_store.install_failed';
+      const version = requestedVersion.trim();
       setInstallingKey(entryKey);
       try {
-        const result = await pluginStoreApi.install(entry.id, entry.sourceId || undefined);
+        const result = await pluginStoreApi.install(entry.id, {
+          sourceId: entry.sourceId || undefined,
+          version: version || undefined,
+        });
         clearConfigCache();
         const sourceId = result.sourceId || entry.sourceId;
         const installedState = await waitForPluginStoreState(
           entry.id,
           sourceId,
-          (plugin) => plugin.installed && plugin.configured
+          (plugin) =>
+            plugin.installed &&
+            plugin.configured &&
+            (!version || pluginVersionMatches(plugin.installedVersion, version))
         );
         setData(installedState.response);
         if (
@@ -334,38 +442,52 @@ export function PluginStorePage() {
 
   const handleInstall = (entry: PluginStoreEntry) => {
     const isUpdate = entry.installed && entry.updateAvailable;
+    setInstallOptionsEntry(entry);
+    setInstallOptionsIsUpdate(isUpdate);
+    setInstallVersion('');
+  };
+
+  const handleInstallOptionsClose = useCallback(() => {
+    if (installingKey) return;
+    setInstallOptionsEntry(null);
+    setInstallVersion('');
+  }, [installingKey]);
+
+  const handleInstallOptionsConfirm = useCallback(async () => {
+    if (!installOptionsEntry) return;
+    const requestedVersion = installVersion.trim();
 
     // Third-party plugins must clear the multi-step confirmation gauntlet first.
-    if (!isOfficialPlugin(entry)) {
-      setGateEntry(entry);
-      setGateIsUpdate(isUpdate);
+    if (!isOfficialPlugin(installOptionsEntry)) {
+      setGateEntry(installOptionsEntry);
+      setGateIsUpdate(installOptionsIsUpdate);
+      setGateRequestedVersion(requestedVersion);
       setGateOpen(true);
+      setInstallOptionsEntry(null);
+      setInstallVersion('');
       return;
     }
 
-    // Official router-for-me plugins keep the lightweight single-step confirm.
-    const title = getStoreEntryTitle(entry);
-    const target = entry.version ? `${title} v${entry.version}` : title;
-    showConfirmation({
-      title: isUpdate
-        ? t('plugin_store.update_confirm_title')
-        : t('plugin_store.install_confirm_title'),
-      message: isUpdate
-        ? t('plugin_store.update_confirm_message', { target })
-        : t('plugin_store.install_confirm_message', { target }),
-      confirmText: isUpdate ? t('plugin_store.update') : t('plugin_store.install'),
-      variant: 'primary',
-      onConfirm: () => runInstall(entry, isUpdate),
-    });
-  };
+    try {
+      await runInstall(installOptionsEntry, installOptionsIsUpdate, requestedVersion);
+      setInstallOptionsEntry(null);
+      setInstallVersion('');
+    } catch {
+      // runInstall already surfaced a notification; keep the modal available for correction.
+    }
+  }, [installOptionsEntry, installOptionsIsUpdate, installVersion, runInstall]);
 
   const handleGateConfirm = useCallback(async () => {
     if (!gateEntry) return;
-    await runInstall(gateEntry, gateIsUpdate);
+    await runInstall(gateEntry, gateIsUpdate, gateRequestedVersion);
     setGateOpen(false);
-  }, [gateEntry, gateIsUpdate, runInstall]);
+    setGateRequestedVersion('');
+  }, [gateEntry, gateIsUpdate, gateRequestedVersion, runInstall]);
 
-  const handleGateClose = useCallback(() => setGateOpen(false), []);
+  const handleGateClose = useCallback(() => {
+    setGateOpen(false);
+    setGateRequestedVersion('');
+  }, []);
 
   const renderCard = (entry: PluginStoreEntry) => {
     const entryKey = getStoreEntryKey(entry);
@@ -389,9 +511,26 @@ export function PluginStorePage() {
     const metaItems = [versionText, sourceText, entry.author, entry.license].filter(Boolean);
     const isInstalling = installingKey === entryKey;
     const hasPendingInstall = Boolean(installingKey);
+    const missingAuth = entry.authRequired && !entry.authConfigured;
     const isDescriptionExpanded = expandedDescriptionKeySet.has(entryKey);
     const isDescriptionOverflowing = overflowingDescriptionKeySet.has(entryKey);
     const descriptionID = getDescriptionDOMID(entryKey);
+    const installTypeText = entry.installType ? formatInstallType(entry.installType) : '';
+    const platformText =
+      entry.platforms.length > 0
+        ? t('plugin_store.platforms', {
+            platforms: entry.platforms
+              .map((platform) => `${platform.goos}/${platform.goarch}`)
+              .join(', '),
+          })
+        : '';
+    const authText = entry.authRequired
+      ? entry.authConfigured
+        ? t('plugin_store.auth_configured')
+        : t('plugin_store.auth_required')
+      : '';
+    const actionDisabled = !connected || missingAuth || (hasPendingInstall && !isInstalling);
+    const actionTitle = missingAuth ? t('plugin_store.auth_required_hint') : undefined;
 
     return (
       <article key={entryKey} className={styles.card}>
@@ -417,6 +556,11 @@ export function PluginStorePage() {
             ) : null}
             {entry.installed && entry.effectiveEnabled ? (
               <span className={styles.badge}>{t('plugin_store.badge_effective')}</span>
+            ) : null}
+            {entry.authRequired ? (
+              <span className={entry.authConfigured ? styles.badge : styles.badgeWarning}>
+                {authText}
+              </span>
             ) : null}
           </div>
         </div>
@@ -450,8 +594,14 @@ export function PluginStorePage() {
           </div>
         ) : null}
 
-        {metaItems.length > 0 ? (
+        {metaItems.length > 0 || installTypeText || platformText ? (
           <div className={styles.cardMeta}>
+            {installTypeText ? (
+              <span className={styles.metaItem}>
+                {t('plugin_store.install_type', { type: installTypeText })}
+              </span>
+            ) : null}
+            {platformText ? <span className={styles.metaItem}>{platformText}</span> : null}
             {metaItems.map((item, index) => (
               <span key={`${entryKey}-meta-${index}`} className={styles.metaItem}>
                 {index > 0 ? <span className={styles.metaDot} aria-hidden="true" /> : null}
@@ -477,8 +627,9 @@ export function PluginStorePage() {
               <Button
                 size="sm"
                 onClick={() => handleInstall(entry)}
-                disabled={!connected || (hasPendingInstall && !isInstalling)}
+                disabled={actionDisabled}
                 loading={isInstalling}
+                title={actionTitle}
               >
                 <IconDownload size={14} />
                 {t('plugin_store.install')}
@@ -489,8 +640,9 @@ export function PluginStorePage() {
                   <Button
                     size="sm"
                     onClick={() => handleInstall(entry)}
-                    disabled={!connected || (hasPendingInstall && !isInstalling)}
+                    disabled={actionDisabled}
                     loading={isInstalling}
+                    title={actionTitle}
                   >
                     <IconRefreshCw size={14} />
                     {t('plugin_store.update')}
@@ -560,6 +712,24 @@ export function PluginStorePage() {
               {t('plugin_store.retry')}
             </Button>
           ) : null}
+        </div>
+      ) : null}
+
+      {data?.sourceErrors.length ? (
+        <div className={styles.warningBox}>
+          <strong>{t('plugin_store.source_errors_title')}</strong>
+          <ul className={styles.sourceErrorList}>
+            {data.sourceErrors.map((sourceError, index) => {
+              const sourceLabel =
+                sourceError.sourceName || sourceError.sourceUrl || sourceError.sourceId;
+              return (
+                <li key={`${sourceError.sourceId}-${sourceError.sourceUrl}-${index}`}>
+                  <span>{sourceLabel}</span>
+                  {sourceError.message ? <small>{sourceError.message}</small> : null}
+                </li>
+              );
+            })}
+          </ul>
         </div>
       ) : null}
 
@@ -712,6 +882,17 @@ export function PluginStorePage() {
         installing={gateEntry ? installingKey === getStoreEntryKey(gateEntry) : false}
         onClose={handleGateClose}
         onConfirm={handleGateConfirm}
+      />
+      <PluginInstallOptionsModal
+        entry={installOptionsEntry}
+        isUpdate={installOptionsIsUpdate}
+        version={installVersion}
+        installing={
+          installOptionsEntry ? installingKey === getStoreEntryKey(installOptionsEntry) : false
+        }
+        onVersionChange={setInstallVersion}
+        onClose={handleInstallOptionsClose}
+        onConfirm={handleInstallOptionsConfirm}
       />
     </div>
   );

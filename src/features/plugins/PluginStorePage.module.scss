@@ -73,6 +73,33 @@
   color: var(--text-primary);
 }
 
+.sourceErrorList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  span {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    color: var(--text-secondary);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+}
+
 // ─── Security Banner (third-party plugin risk) ──────────
 
 .securityBanner {
@@ -549,6 +576,51 @@
     border-color: var(--primary-color);
     background: var(--bg-hover);
     color: var(--primary-color);
+  }
+}
+
+// ─── Install Options Dialog ───────────────────────────────
+
+.installOptions {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.installMessage {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.installVersionField {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.installVersionLabel {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.installVersionHint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.installDialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+
+  @include mobile {
+    flex-direction: column-reverse;
   }
 }
 

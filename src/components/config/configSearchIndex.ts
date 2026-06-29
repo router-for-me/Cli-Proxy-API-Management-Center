@@ -323,6 +323,13 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     yamlKeys: ['plugins', 'store-sources'],
   },
   {
+    fieldId: 'pluginStoreAuth',
+    sectionId: 'advanced',
+    labelKey: L('sections.system.plugin_store_auth'),
+    hintKey: L('sections.system.plugin_store_auth_hint'),
+    yamlKeys: ['plugins', 'store-auth'],
+  },
+  {
     fieldId: 'antigravitySignatureCacheEnabled',
     sectionId: 'advanced',
     labelKey: L('sections.system.antigravity_signature_cache'),
