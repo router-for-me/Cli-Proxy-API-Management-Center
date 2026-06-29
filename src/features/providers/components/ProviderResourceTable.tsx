@@ -53,8 +53,12 @@ const resolveStatusBarData = (
   return getProviderRecentStatusData(
     usageByProvider,
     resource.brand,
-    resource.apiKey ?? undefined,
-    resource.baseUrl ?? undefined
+    {
+      apiKey: resource.apiKey,
+      authKey: resource.authKey,
+      authSource: resource.authSource,
+      baseUrl: resource.baseUrl,
+    }
   );
 };
 
@@ -68,8 +72,12 @@ const resolveTotalStats = (
   return getProviderTotalStats(
     usageByProvider,
     resource.brand,
-    resource.apiKey ?? undefined,
-    resource.baseUrl ?? undefined
+    {
+      apiKey: resource.apiKey,
+      authKey: resource.authKey,
+      authSource: resource.authSource,
+      baseUrl: resource.baseUrl,
+    }
   );
 };
 
@@ -123,6 +131,9 @@ export function ProviderResourceTable({
       if (r.brand === 'claude' && r.flags.cloakEnabled) {
         items.push(renderFlagTag('cloak', t('providersPage.table.cloakTag')));
       }
+    }
+    if (r.flags.commandAuth) {
+      items.push(renderFlagTag('command-auth', t('providersPage.table.commandAuthTag')));
     }
     return <div className={styles.metricsCell}>{items}</div>;
   };

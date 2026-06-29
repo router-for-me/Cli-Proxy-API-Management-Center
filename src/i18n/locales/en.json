@@ -1512,6 +1512,7 @@
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
+      "commandAuthTag": "Command auth",
       "empty": "No resources yet, click \"New\" to add.",
       "filterPlaceholder": "Search keys, URLs, prefixes…",
       "description": "Manage resources under {{route}}",
@@ -1610,6 +1611,17 @@
       "disabled": "Disable this entry",
       "disabledHint": "Disabled entries won't be used by the gateway",
       "websockets": "Enable WebSockets",
+      "authMode": "Authentication",
+      "authModeApiKey": "API key",
+      "authModeCommand": "Command auth",
+      "commandAuthSection": "Command auth",
+      "commandAuthCommand": "Command",
+      "commandAuthCommandPlaceholder": "/usr/local/bin/fetch-codex-token",
+      "commandAuthArgs": "Arguments",
+      "commandAuthArgsHint": "One argument per line",
+      "commandAuthTimeoutMs": "Timeout (ms)",
+      "commandAuthRefreshIntervalMs": "Refresh interval (ms)",
+      "commandAuthSavedTestHint": "After saving, the server runs the command and reads the bearer token from stdout.",
       "testModel": "Test model",
       "testModelClaudeHint": "Used for connectivity testing only; not saved",
       "testModelAutoWith": "Auto · {{name}}",
@@ -1646,6 +1658,7 @@
       "validation": {
         "nameRequired": "Name is required",
         "apiKeyRequired": "At least one API key is required",
+        "commandRequired": "Command is required",
         "baseUrlRequired": "Base URL is required"
       }
     },

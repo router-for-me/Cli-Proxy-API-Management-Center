@@ -112,6 +112,13 @@ export const buildGeminiGenerateContentEndpoint = (baseUrl: string, model: strin
 
 export type ProviderRecentUsageMap = Map<string, Map<string, RecentRequestUsageEntry>>;
 
+export interface ProviderRecentUsageIdentity {
+  apiKey?: string | null;
+  authKey?: string | null;
+  authSource?: string | null;
+  baseUrl?: string | null;
+}
+
 const EMPTY_RECENT_USAGE_ENTRY: RecentRequestUsageEntry = {
   success: 0,
   failed: 0,
@@ -123,63 +130,118 @@ const normalizeProviderRecentKey = (value: unknown): string =>
     .trim()
     .toLowerCase();
 
-const getProviderRecentUsageEntry = (
-  usageByProvider: ProviderRecentUsageMap,
-  provider: string,
-  apiKey?: string,
-  baseUrl?: string
+const normalizeProviderRecentIdentity = (value: unknown): string => String(value ?? '').trim();
+
+const isCommandAuthSource = (value: unknown): boolean =>
+  normalizeProviderRecentKey(value) === 'command';
+
+const getCommandAuthRecentUsageEntry = (
+  entries: Map<string, RecentRequestUsageEntry> | undefined,
+  authKey: string,
+  baseUrl?: string | null
 ): RecentRequestUsageEntry => {
-  if (!String(apiKey ?? '').trim()) {
+  if (!entries) {
     return EMPTY_RECENT_USAGE_ENTRY;
   }
 
+  const base = normalizeProviderRecentIdentity(baseUrl);
+  const byCompositeKey = entries.get(buildRecentRequestCompositeKey(base, authKey));
+  if (byCompositeKey) {
+    return byCompositeKey;
+  }
+
+  const byLegacyKey = entries.get(buildRecentRequestCompositeKey(base, ''));
+  if (byLegacyKey?.authKey === authKey && isCommandAuthSource(byLegacyKey.authSource)) {
+    return byLegacyKey;
+  }
+
+  for (const entry of entries.values()) {
+    if (entry.authKey === authKey && isCommandAuthSource(entry.authSource)) {
+      return entry;
+    }
+  }
+
+  return EMPTY_RECENT_USAGE_ENTRY;
+};
+
+const getProviderRecentUsageEntry = (
+  usageByProvider: ProviderRecentUsageMap,
+  provider: string,
+  identity?: string | ProviderRecentUsageIdentity | null,
+  baseUrl?: string
+): RecentRequestUsageEntry => {
   const providerKey = normalizeProviderRecentKey(provider);
-  const compositeKey = buildRecentRequestCompositeKey(baseUrl, apiKey);
-  return usageByProvider.get(providerKey)?.get(compositeKey) ?? EMPTY_RECENT_USAGE_ENTRY;
+  const providerEntries = usageByProvider.get(providerKey);
+  const resourceIdentity =
+    typeof identity === 'object' && identity !== null
+      ? identity
+      : { apiKey: identity, baseUrl };
+  const apiKey = normalizeProviderRecentIdentity(resourceIdentity.apiKey);
+  const authKey = normalizeProviderRecentIdentity(resourceIdentity.authKey);
+  const resolvedBaseUrl = resourceIdentity.baseUrl ?? baseUrl;
+
+  if (apiKey) {
+    const compositeKey = buildRecentRequestCompositeKey(resolvedBaseUrl, apiKey);
+    return providerEntries?.get(compositeKey) ?? EMPTY_RECENT_USAGE_ENTRY;
+  }
+
+  if (authKey && isCommandAuthSource(resourceIdentity.authSource)) {
+    return getCommandAuthRecentUsageEntry(providerEntries, authKey, resolvedBaseUrl);
+  }
+
+  return EMPTY_RECENT_USAGE_ENTRY;
 };
 
 const getProviderRecentBuckets = (
   usageByProvider: ProviderRecentUsageMap,
   provider: string,
-  apiKey?: string,
+  identity?: string | ProviderRecentUsageIdentity | null,
   baseUrl?: string
 ): RecentRequestBucket[] =>
-  getProviderRecentUsageEntry(usageByProvider, provider, apiKey, baseUrl).recentRequests;
+  getProviderRecentUsageEntry(usageByProvider, provider, identity, baseUrl).recentRequests;
 
 export function getProviderRecentStatusData(
   usageByProvider: ProviderRecentUsageMap,
   provider: string,
-  apiKey?: string,
+  identity?: string | ProviderRecentUsageIdentity | null,
   baseUrl?: string
 ): StatusBarData {
   return statusBarDataFromRecentRequests(
-    getProviderRecentBuckets(usageByProvider, provider, apiKey, baseUrl)
+    getProviderRecentBuckets(usageByProvider, provider, identity, baseUrl)
   );
 }
 
 export function getProviderTotalStats(
   usageByProvider: ProviderRecentUsageMap,
   provider: string,
-  apiKey?: string,
+  identity?: string | ProviderRecentUsageIdentity | null,
   baseUrl?: string
 ): { success: number; failure: number } {
-  const entry = getProviderRecentUsageEntry(usageByProvider, provider, apiKey, baseUrl);
+  const entry = getProviderRecentUsageEntry(usageByProvider, provider, identity, baseUrl);
   return { success: entry.success, failure: entry.failed };
 }
 
 export function getProviderRecentWindowStats(
   usageByProvider: ProviderRecentUsageMap,
   provider: string,
-  apiKey?: string,
+  identity?: string | ProviderRecentUsageIdentity | null,
   baseUrl?: string
 ): { success: number; failure: number } {
-  return sumRecentRequests(getProviderRecentBuckets(usageByProvider, provider, apiKey, baseUrl));
+  return sumRecentRequests(getProviderRecentBuckets(usageByProvider, provider, identity, baseUrl));
 }
 
 const collectOpenAIProviderRecentBuckets = (
   provider: OpenAIProviderConfig,
   usageByProvider: ProviderRecentUsageMap
 ): RecentRequestBucket[] => {
+  if (provider.auth?.command && provider.authKey && isCommandAuthSource(provider.authSource)) {
+    return getProviderRecentBuckets(usageByProvider, provider.name, {
+      authKey: provider.authKey,
+      authSource: provider.authSource,
+      baseUrl: provider.baseUrl,
+    });
+  }
+
   if (!provider.apiKeyEntries?.length) {
     return [];
   }
@@ -202,13 +264,25 @@ export function getOpenAIProviderTotalStats(
   provider: OpenAIProviderConfig,
   usageByProvider: ProviderRecentUsageMap
 ): { success: number; failure: number } {
+  if (provider.auth?.command && provider.authKey && isCommandAuthSource(provider.authSource)) {
+    return getProviderTotalStats(usageByProvider, provider.name, {
+      authKey: provider.authKey,
+      authSource: provider.authSource,
+      baseUrl: provider.baseUrl,
+    });
+  }
+
   return (provider.apiKeyEntries || []).reduce(
     (total, entry) => {
       const usageEntry = getProviderRecentUsageEntry(
         usageByProvider,
         provider.name,
-        entry.apiKey,
-        provider.baseUrl
+        {
+          apiKey: entry.apiKey,
+          authKey: entry.authKey,
+          authSource: entry.authSource,
+          baseUrl: provider.baseUrl,
+        }
       );
       return {
         success: total.success + usageEntry.success,

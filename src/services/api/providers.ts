@@ -10,6 +10,7 @@ import {
   normalizeProviderKeyConfig,
 } from './transformers';
 import type {
+  CommandAuthConfig,
   GeminiKeyConfig,
   OpenAIProviderConfig,
   ProviderKeyConfig,
@@ -20,10 +21,11 @@ import type {
 const serializeHeaders = (headers?: Record<string, string>) =>
   headers && Object.keys(headers).length ? headers : undefined;
 
-const RESPONSE_ONLY_FIELDS = ['auth-index'] as const;
+const RESPONSE_ONLY_FIELDS = ['auth-index', 'auth-key', 'auth-source'] as const;
 
 const PROVIDER_COMMON_KEY_FIELDS = [
   'api-key',
+  'auth',
   'priority',
   'prefix',
   'base-url',
@@ -43,6 +45,7 @@ const CLAUDE_KEY_FIELDS = [
 ] as const;
 const VERTEX_KEY_FIELDS = [
   'api-key',
+  'auth',
   'priority',
   'prefix',
   'base-url',
@@ -63,6 +66,7 @@ const OPENAI_PROVIDER_FIELDS = [
   'models',
   'test-model',
   'disable-cooling',
+  'auth',
 ] as const;
 
 const MODEL_ALIAS_FIELDS = ['name', 'alias', 'priority', 'test-model'] as const;
@@ -84,9 +88,17 @@ const getStringField = (record: Record<string, unknown>, keys: readonly string[]
 
 const providerKeyIdentity = (record: Record<string, unknown>) => {
   const apiKey = getStringField(record, ['api-key']);
-  if (!apiKey) return '';
   const baseUrl = getStringField(record, ['base-url']);
-  return `${apiKey}\u0000${baseUrl}`;
+  if (apiKey) return `${apiKey}\u0000${baseUrl}`;
+  const auth = isRecord(record.auth) ? record.auth : undefined;
+  const command = auth ? getStringField(auth, ['command']) : '';
+  if (!command || !auth) return '';
+  const args = Array.isArray(auth.args)
+    ? auth.args.map((arg) => String(arg ?? '')).join('\u0001')
+    : '';
+  const timeout = getStringField(auth, ['timeout-ms', 'timeout_ms']);
+  const refresh = getStringField(auth, ['refresh-interval-ms', 'refresh_interval_ms']);
+  return `auth:${command}\u0000${args}\u0000${timeout}\u0000${refresh}\u0000${baseUrl}`;
 };
 
 const openAIProviderIdentity = (record: Record<string, unknown>) =>
@@ -270,6 +282,8 @@ const buildProviderDeleteQuery = (apiKey: string, baseUrl?: string) => {
   return `?${params.toString()}`;
 };
 
+const buildIndexDeleteQuery = (index: number) => `?index=${encodeURIComponent(String(index))}`;
+
 const serializeModelAliases = (models?: ModelAlias[], includeOpenAIFields = false) =>
   Array.isArray(models)
     ? models
@@ -304,8 +318,23 @@ const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
   return payload;
 };
 
+const serializeCommandAuth = (auth?: CommandAuthConfig) => {
+  const command = auth?.command?.trim();
+  if (!command) return undefined;
+  const payload: Record<string, unknown> = { command };
+  if (auth?.args?.length) payload.args = auth.args;
+  if (auth?.timeoutMs !== undefined) payload['timeout-ms'] = auth.timeoutMs;
+  if (auth?.refreshIntervalMs !== undefined) {
+    payload['refresh-interval-ms'] = auth.refreshIntervalMs;
+  }
+  return payload;
+};
+
 const serializeProviderKey = (config: ProviderKeyConfig) => {
-  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  const auth = serializeCommandAuth(config.auth);
+  const payload: Record<string, unknown> = {};
+  if (auth) payload.auth = auth;
+  else payload['api-key'] = config.apiKey;
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -354,7 +383,10 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
     : undefined;
 
 const serializeVertexKey = (config: ProviderKeyConfig) => {
-  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  const auth = serializeCommandAuth(config.auth);
+  const payload: Record<string, unknown> = {};
+  if (auth) payload.auth = auth;
+  else payload['api-key'] = config.apiKey;
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -370,7 +402,10 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
 };
 
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
-  const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  const auth = serializeCommandAuth(config.auth);
+  const payload: Record<string, unknown> = {};
+  if (auth) payload.auth = auth;
+  else payload['api-key'] = config.apiKey;
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -387,13 +422,17 @@ const serializeGeminiKey = (config: GeminiKeyConfig) => {
 };
 
 const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
+  const auth = serializeCommandAuth(provider.auth);
   const payload: Record<string, unknown> = {
     name: provider.name,
     'base-url': provider.baseUrl,
-    'api-key-entries': Array.isArray(provider.apiKeyEntries)
-      ? provider.apiKeyEntries.map((entry) => serializeApiKeyEntry(entry))
-      : [],
+    'api-key-entries': auth
+      ? []
+      : Array.isArray(provider.apiKeyEntries)
+        ? provider.apiKeyEntries.map((entry) => serializeApiKeyEntry(entry))
+        : [],
   };
+  if (auth) payload.auth = auth;
   if (provider.prefix?.trim()) payload.prefix = provider.prefix.trim();
   if (provider.disabled !== undefined) payload.disabled = provider.disabled;
   const headers = serializeHeaders(provider.headers);
@@ -425,8 +464,14 @@ export const providersApi = {
       )
     ),
 
-  deleteGeminiKey: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/gemini-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+  deleteGeminiKey: (apiKey: string, baseUrl?: string, index?: number) =>
+    apiClient.delete(
+      `/gemini-api-key${
+        apiKey.trim()
+          ? buildProviderDeleteQuery(apiKey, baseUrl)
+          : buildIndexDeleteQuery(index ?? -1)
+      }`
+    ),
 
   async getCodexConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/codex-api-key');
@@ -448,8 +493,14 @@ export const providersApi = {
       )
     ),
 
-  deleteCodexConfig: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/codex-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+  deleteCodexConfig: (apiKey: string, baseUrl?: string, index?: number) =>
+    apiClient.delete(
+      `/codex-api-key${
+        apiKey.trim()
+          ? buildProviderDeleteQuery(apiKey, baseUrl)
+          : buildIndexDeleteQuery(index ?? -1)
+      }`
+    ),
 
   async getClaudeConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/claude-api-key');
@@ -471,8 +522,14 @@ export const providersApi = {
       )
     ),
 
-  deleteClaudeConfig: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/claude-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+  deleteClaudeConfig: (apiKey: string, baseUrl?: string, index?: number) =>
+    apiClient.delete(
+      `/claude-api-key${
+        apiKey.trim()
+          ? buildProviderDeleteQuery(apiKey, baseUrl)
+          : buildIndexDeleteQuery(index ?? -1)
+      }`
+    ),
 
   async getVertexConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/vertex-api-key');
@@ -494,8 +551,14 @@ export const providersApi = {
       )
     ),
 
-  deleteVertexConfig: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/vertex-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+  deleteVertexConfig: (apiKey: string, baseUrl?: string, index?: number) =>
+    apiClient.delete(
+      `/vertex-api-key${
+        apiKey.trim()
+          ? buildProviderDeleteQuery(apiKey, baseUrl)
+          : buildIndexDeleteQuery(index ?? -1)
+      }`
+    ),
 
   async getOpenAIProviders(): Promise<OpenAIProviderConfig[]> {
     const data = await apiClient.get('/openai-compatibility');

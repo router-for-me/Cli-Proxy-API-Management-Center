@@ -1490,6 +1490,7 @@
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
+      "commandAuthTag": "Command auth",
       "empty": "Нет ресурсов, нажмите \"Создать\".",
       "filterPlaceholder": "Поиск по ключам, URL, префиксам…",
       "description": "Управление ресурсами {{route}}",
@@ -1588,6 +1589,17 @@
       "disabled": "Отключить эту запись",
       "disabledHint": "Отключённые записи не используются шлюзом",
       "websockets": "Включить WebSockets",
+      "authMode": "Аутентификация",
+      "authModeApiKey": "API-ключ",
+      "authModeCommand": "Command auth",
+      "commandAuthSection": "Command auth",
+      "commandAuthCommand": "Команда",
+      "commandAuthCommandPlaceholder": "/usr/local/bin/fetch-codex-token",
+      "commandAuthArgs": "Аргументы",
+      "commandAuthArgsHint": "Один аргумент в строке",
+      "commandAuthTimeoutMs": "Timeout (ms)",
+      "commandAuthRefreshIntervalMs": "Refresh interval (ms)",
+      "commandAuthSavedTestHint": "После сохранения сервер запускает команду и читает bearer token из stdout.",
       "testModel": "Тестовая модель",
       "testModelClaudeHint": "Используется только для проверки соединения; не сохраняется",
       "testModelAutoWith": "Авто · {{name}}",
@@ -1624,6 +1636,7 @@
       "validation": {
         "nameRequired": "Название обязательно",
         "apiKeyRequired": "Нужен хотя бы один API-ключ",
+        "commandRequired": "Команда обязательна",
         "baseUrlRequired": "Base URL обязателен"
       }
     },

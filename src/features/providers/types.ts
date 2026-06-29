@@ -34,6 +34,7 @@ export type ProviderResourceSelector =
 export interface ProviderResourceFlags {
   cloakEnabled?: boolean;
   websockets?: boolean;
+  commandAuth?: boolean;
   isPlaceholder?: boolean;
   protocols?: string[];
 }
@@ -53,6 +54,8 @@ export interface ProviderResource {
   /** 用于 selector 的真实 apiKey;OpenAI 因为多密钥这里返回 null */
   apiKey: string | null;
   authIndex: string | null;
+  authKey: string | null;
+  authSource: string | null;
   baseUrl: string | null;
   proxyUrl: string | null;
   prefix: string | null;
@@ -124,6 +127,8 @@ export interface ApiKeyEntryInput {
   existingApiKey?: string;
   proxyUrl: string;
   authIndex?: string;
+  authKey?: string;
+  authSource?: string;
 }
 
 export interface CloakInput {
@@ -131,6 +136,15 @@ export interface CloakInput {
   strictMode: boolean;
   sensitiveWordsText: string;
   cacheUserId: boolean;
+}
+
+export type ProviderAuthMode = 'apiKey' | 'command';
+
+export interface CommandAuthInput {
+  command: string;
+  argsText: string;
+  timeoutMs?: number;
+  refreshIntervalMs?: number;
 }
 
 export interface ProviderEntryFormInput {
@@ -144,6 +158,8 @@ export interface ProviderEntryFormInput {
   disabled: boolean;
   disableCooling?: boolean;
   priority?: number;
+  authMode?: ProviderAuthMode;
+  commandAuth?: CommandAuthInput;
 
   /** 高级折叠区 */
   models: ModelEntryInput[];

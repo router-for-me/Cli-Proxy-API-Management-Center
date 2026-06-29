@@ -23,6 +23,8 @@ export interface RecentRequestBucket {
 }
 
 export interface RecentRequestUsageEntry {
+  authKey?: string;
+  authSource?: string;
   success: number;
   failed: number;
   recentRequests: RecentRequestBucket[];
@@ -33,6 +35,10 @@ export type ApiKeyUsageResponse = Record<
   Record<
     string,
     {
+      auth_key?: unknown;
+      authKey?: unknown;
+      auth_source?: unknown;
+      authSource?: unknown;
       success?: unknown;
       failed?: unknown;
       recent_requests?: unknown;
@@ -81,6 +87,17 @@ export function normalizeRecentRequestAuthIndex(value: unknown): string | null {
   return null;
 }
 
+export function normalizeRecentRequestIdentity(value: unknown): string | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toString();
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : undefined;
+  }
+  return undefined;
+}
+
 export function normalizeRecentRequestBuckets(input: unknown): RecentRequestBucket[] {
   if (!Array.isArray(input)) {
     return [];
@@ -110,6 +127,8 @@ export function normalizeRecentRequestUsageEntry(input: unknown): RecentRequestU
   const record = input as Record<string, unknown>;
 
   return {
+    authKey: normalizeRecentRequestIdentity(record.auth_key ?? record.authKey),
+    authSource: normalizeRecentRequestIdentity(record.auth_source ?? record.authSource),
     success: normalizeUsageTotal(record.success),
     failed: normalizeUsageTotal(record.failed),
     recentRequests: normalizeRecentRequestBuckets(record.recent_requests ?? record.recentRequests),

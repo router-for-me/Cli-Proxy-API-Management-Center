@@ -16,6 +16,15 @@ export interface ApiKeyEntry {
   apiKey: string;
   proxyUrl?: string;
   authIndex?: string;
+  authKey?: string;
+  authSource?: string;
+}
+
+export interface CommandAuthConfig {
+  command: string;
+  args?: string[];
+  timeoutMs?: number;
+  refreshIntervalMs?: number;
 }
 
 export interface CloakConfig {
@@ -27,6 +36,7 @@ export interface CloakConfig {
 
 export interface GeminiKeyConfig {
   apiKey: string;
+  auth?: CommandAuthConfig;
   priority?: number;
   prefix?: string;
   baseUrl?: string;
@@ -36,10 +46,13 @@ export interface GeminiKeyConfig {
   excludedModels?: string[];
   disableCooling?: boolean;
   authIndex?: string;
+  authKey?: string;
+  authSource?: string;
 }
 
 export interface ProviderKeyConfig {
   apiKey: string;
+  auth?: CommandAuthConfig;
   priority?: number;
   prefix?: string;
   baseUrl?: string;
@@ -52,12 +65,15 @@ export interface ProviderKeyConfig {
   cloak?: CloakConfig;
   experimentalCchSigning?: boolean;
   authIndex?: string;
+  authKey?: string;
+  authSource?: string;
 }
 
 export interface OpenAIProviderConfig {
   name: string;
   prefix?: string;
   baseUrl: string;
+  auth?: CommandAuthConfig;
   apiKeyEntries: ApiKeyEntry[];
   disabled?: boolean;
   headers?: Record<string, string>;
@@ -66,5 +82,7 @@ export interface OpenAIProviderConfig {
   testModel?: string;
   disableCooling?: boolean;
   authIndex?: string;
+  authKey?: string;
+  authSource?: string;
   [key: string]: unknown;
 }

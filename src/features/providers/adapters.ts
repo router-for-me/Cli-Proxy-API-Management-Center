@@ -45,8 +45,10 @@ function providerKeyToResource(
   index: number
 ): ProviderResource {
   const apiKey = config.apiKey ?? '';
+  const commandAuth = config.auth?.command?.trim() ?? '';
   const disabled = hasDisableAllModelsRule(config.excludedModels);
   const flags: ProviderResource['flags'] = {};
+  flags.commandAuth = Boolean(commandAuth);
   if (brand === 'codex') {
     flags.websockets = (config as ProviderKeyConfig).websockets === true;
   }
@@ -63,14 +65,16 @@ function providerKeyToResource(
   } as ProviderResourceSelector;
 
   return {
-    id: buildId(brand, index, truncateForId(apiKey)),
+    id: buildId(brand, index, truncateForId(apiKey || commandAuth)),
     brand,
     originalIndex: index,
     name: null,
-    identifier: maskApiKey(apiKey) || `#${index + 1}`,
-    apiKeyPreview: apiKey ? maskApiKey(apiKey) : null,
+    identifier: commandAuth ? `auth: ${commandAuth}` : maskApiKey(apiKey) || `#${index + 1}`,
+    apiKeyPreview: commandAuth ? `auth: ${commandAuth}` : apiKey ? maskApiKey(apiKey) : null,
     apiKey: apiKey || null,
     authIndex: config.authIndex ?? null,
+    authKey: config.authKey ?? null,
+    authSource: config.authSource ?? null,
     baseUrl: config.baseUrl ?? null,
     proxyUrl: config.proxyUrl ?? null,
     prefix: config.prefix ?? null,
@@ -106,7 +110,12 @@ export function vertexToResource(config: ProviderKeyConfig, index: number): Prov
 export function openaiToResource(config: OpenAIProviderConfig, index: number): ProviderResource {
   const name = (config.name ?? '').trim();
   const firstEntry = config.apiKeyEntries?.[0];
-  const previewApiKey = firstEntry?.apiKey ? maskApiKey(firstEntry.apiKey) : null;
+  const commandAuth = config.auth?.command?.trim() ?? '';
+  const previewApiKey = commandAuth
+    ? `auth: ${commandAuth}`
+    : firstEntry?.apiKey
+      ? maskApiKey(firstEntry.apiKey)
+      : null;
   return {
     id: buildId('openaiCompatibility', index, truncateForId(name) || `#${index}`),
     brand: 'openaiCompatibility',
@@ -116,6 +125,8 @@ export function openaiToResource(config: OpenAIProviderConfig, index: number): P
     apiKeyPreview: previewApiKey,
     apiKey: null,
     authIndex: config.authIndex ?? null,
+    authKey: config.authKey ?? null,
+    authSource: config.authSource ?? null,
     baseUrl: config.baseUrl ?? null,
     proxyUrl: null,
     prefix: config.prefix ?? null,
@@ -124,9 +135,9 @@ export function openaiToResource(config: OpenAIProviderConfig, index: number): P
     priority: normalizePriority(config.priority),
     headerCount: countHeaders(config.headers),
     excludedModelCount: 0,
-    apiKeyEntryCount: config.apiKeyEntries?.length ?? 0,
+    apiKeyEntryCount: commandAuth ? 0 : (config.apiKeyEntries?.length ?? 0),
     disabled: config.disabled === true,
-    flags: {},
+    flags: { commandAuth: Boolean(commandAuth) },
     selector: { brand: 'openaiCompatibility', name, index },
     raw: config,
   };
@@ -193,6 +204,8 @@ export function apiKeyFunToResource(raw: SponsorProviderRaw): ProviderResource |
     apiKeyPreview: apiKey ? maskApiKey(apiKey) : null,
     apiKey: apiKey || null,
     authIndex: null,
+    authKey: null,
+    authSource: null,
     baseUrl: `${protocolUrls.openai} / ${protocolUrls.anthropic}`,
     proxyUrl:
       firstOpenAIEntry?.proxyUrl ??

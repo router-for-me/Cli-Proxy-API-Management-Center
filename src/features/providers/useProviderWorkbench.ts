@@ -7,7 +7,13 @@ import {
   withDisableAllModelsRule,
   withoutDisableAllModelsRule,
 } from '@/components/providers/utils';
-import type { GeminiKeyConfig, ModelAlias, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import type {
+  CommandAuthConfig,
+  GeminiKeyConfig,
+  ModelAlias,
+  OpenAIProviderConfig,
+  ProviderKeyConfig,
+} from '@/types';
 import {
   apiKeyFunToResource,
   claudeToResource,
@@ -60,6 +66,28 @@ const parseTextList = (text: string): string[] =>
     .split(/[\n,]+/)
     .map((item) => item.trim())
     .filter(Boolean);
+
+const parseCommandArgs = (text: string): string[] =>
+  text
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const normalizePositiveNumber = (value: number | undefined): number | undefined =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : undefined;
+
+const buildCommandAuth = (input: ProviderEntryFormInput): CommandAuthConfig | undefined => {
+  const command = input.commandAuth?.command?.trim() ?? '';
+  if (!command) return undefined;
+  const args = parseCommandArgs(input.commandAuth?.argsText ?? '');
+  const auth: CommandAuthConfig = { command };
+  if (args.length) auth.args = args;
+  const timeoutMs = normalizePositiveNumber(input.commandAuth?.timeoutMs);
+  if (timeoutMs !== undefined) auth.timeoutMs = timeoutMs;
+  const refreshIntervalMs = normalizePositiveNumber(input.commandAuth?.refreshIntervalMs);
+  if (refreshIntervalMs !== undefined) auth.refreshIntervalMs = refreshIntervalMs;
+  return auth;
+};
 
 const headersFromEntries = (
   entries: Array<{ key: string; value: string }>
@@ -127,9 +155,11 @@ const buildProviderKeyConfig = (
   const headers = headersFromEntries(input.headers);
   const models = buildModelAliases(input.models);
   const excluded = buildExcludedModels(input.excludedModelsText, input.disabled, brand);
+  const useCommandAuth = input.authMode === 'command';
+  const commandAuth = useCommandAuth ? buildCommandAuth(input) : undefined;
   const apiKeyChanged = input.apiKey.trim().length > 0;
   const next: ProviderKeyConfig = {
-    apiKey: apiKeyChanged ? input.apiKey.trim() : (existing?.apiKey ?? ''),
+    apiKey: useCommandAuth ? '' : apiKeyChanged ? input.apiKey.trim() : (existing?.apiKey ?? ''),
     priority: input.priority,
     prefix: input.prefix.trim() || undefined,
     baseUrl: input.baseUrl.trim() || undefined,
@@ -139,7 +169,12 @@ const buildProviderKeyConfig = (
     excludedModels: excluded,
     disableCooling: input.disableCooling === true,
     authIndex: existing?.authIndex,
+    authKey: existing?.authKey,
+    authSource: existing?.authSource,
   };
+  if (commandAuth) {
+    next.auth = commandAuth;
+  }
   if (brand === 'codex' && input.websockets !== undefined) {
     next.websockets = input.websockets;
   }
@@ -163,18 +198,23 @@ const buildOpenAIConfig = (
 ): OpenAIProviderConfig => {
   const headers = headersFromEntries(input.headers);
   const models = buildModelAliases(input.models, true);
-  const apiKeyEntries =
-    input.apiKeyEntries
-      ?.map((entry, index) => {
-        const fallbackApiKey =
-          entry.existingApiKey?.trim() || existing?.apiKeyEntries?.[index]?.apiKey?.trim() || '';
-        return {
-          apiKey: entry.apiKey.trim() || fallbackApiKey,
-          proxyUrl: entry.proxyUrl.trim() || undefined,
-          authIndex: entry.authIndex?.trim() || undefined,
-        };
-      })
-      .filter((entry) => entry.apiKey) ?? [];
+  const useCommandAuth = input.authMode === 'command';
+  const commandAuth = useCommandAuth ? buildCommandAuth(input) : undefined;
+  const apiKeyEntries = useCommandAuth
+    ? []
+    : (input.apiKeyEntries
+        ?.map((entry, index) => {
+          const fallbackApiKey =
+            entry.existingApiKey?.trim() || existing?.apiKeyEntries?.[index]?.apiKey?.trim() || '';
+          return {
+            apiKey: entry.apiKey.trim() || fallbackApiKey,
+            proxyUrl: entry.proxyUrl.trim() || undefined,
+            authIndex: entry.authIndex?.trim() || undefined,
+            authKey: entry.authKey,
+            authSource: entry.authSource,
+          };
+        })
+        .filter((entry) => entry.apiKey) ?? []);
 
   return {
     ...(existing ?? {}),
@@ -182,6 +222,7 @@ const buildOpenAIConfig = (
     baseUrl: input.baseUrl.trim(),
     prefix: input.prefix.trim() || undefined,
     apiKeyEntries,
+    auth: commandAuth,
     disabled: input.disabled,
     disableCooling: input.disableCooling === true,
     headers: Object.keys(headers).length ? headers : undefined,
@@ -569,19 +610,19 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       try {
         const sel = resource.selector;
         if (sel.brand === 'gemini') {
-          await providersApi.deleteGeminiKey(sel.apiKey, sel.baseUrl);
+          await providersApi.deleteGeminiKey(sel.apiKey, sel.baseUrl, sel.index);
           const next = (config?.geminiApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('gemini-api-key', next);
         } else if (sel.brand === 'codex') {
-          await providersApi.deleteCodexConfig(sel.apiKey, sel.baseUrl);
+          await providersApi.deleteCodexConfig(sel.apiKey, sel.baseUrl, sel.index);
           const next = (config?.codexApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('codex-api-key', next);
         } else if (sel.brand === 'claude') {
-          await providersApi.deleteClaudeConfig(sel.apiKey, sel.baseUrl);
+          await providersApi.deleteClaudeConfig(sel.apiKey, sel.baseUrl, sel.index);
           const next = (config?.claudeApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('claude-api-key', next);
         } else if (sel.brand === 'vertex') {
-          await providersApi.deleteVertexConfig(sel.apiKey, sel.baseUrl);
+          await providersApi.deleteVertexConfig(sel.apiKey, sel.baseUrl, sel.index);
           const next = (config?.vertexApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('vertex-api-key', next);
         } else if (sel.brand === 'openaiCompatibility') {

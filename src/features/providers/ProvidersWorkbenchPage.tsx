@@ -89,8 +89,12 @@ const getResourceRecentSuccess = (
   return getProviderRecentWindowStats(
     usageByProvider,
     resource.brand,
-    resource.apiKey ?? undefined,
-    resource.baseUrl ?? undefined
+    {
+      apiKey: resource.apiKey,
+      authKey: resource.authKey,
+      authSource: resource.authSource,
+      baseUrl: resource.baseUrl,
+    }
   ).success;
 };
 
