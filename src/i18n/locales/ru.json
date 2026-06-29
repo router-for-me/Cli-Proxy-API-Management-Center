@@ -358,6 +358,8 @@
     "priority_label": "Приоритет (priority)",
     "priority_placeholder": "например: 10 или -1",
     "priority_hint": "Только целые числа. Некорректные значения игнорируются. Чем больше число, тем выше приоритет.",
+    "websockets_label": "WebSockets (websockets)",
+    "websockets_hint": "Включает websocket-транспорт Responses API для этих учётных данных.",
     "codex_websockets_label": "WebSockets (websockets)",
     "codex_websockets_hint": "Включает websocket-транспорт Responses API для этих учётных данных Codex.",
     "excluded_models_label": "Исключённые модели (excluded_models)",

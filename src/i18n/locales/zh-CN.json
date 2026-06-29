@@ -359,6 +359,8 @@
     "priority_label": "优先级（priority）",
     "priority_placeholder": "例如: 10 或 -1",
     "priority_hint": "仅支持整数；非法值会被忽略。数值越大优先级越高。",
+    "websockets_label": "WebSockets（websockets）",
+    "websockets_hint": "为该凭证开启 Responses API 的 websocket 传输。",
     "codex_websockets_label": "WebSockets（websockets）",
     "codex_websockets_hint": "为该 Codex 凭证开启 Responses API 的 websocket 传输。",
     "excluded_models_label": "排除模型（excluded_models）",

@@ -9,6 +9,7 @@ import type {
   PrefixProxyEditorFieldValue,
   PrefixProxyEditorState,
 } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
+import { supportsAuthFileWebsockets } from '@/features/authFiles/constants';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
 export type AuthFilesPrefixProxyEditorModalProps = {
@@ -142,16 +143,16 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                     disabled={disableControls || editor.saving || !editor.json}
                     onChange={(e) => onChange('priority', e.target.value)}
                   />
-                  {editor.providerKey === 'codex' && (
+                  {supportsAuthFileWebsockets(editor.providerKey) && (
                     <div className="form-group">
-                      <label>{t('auth_files.codex_websockets_label')}</label>
+                      <label>{t('auth_files.websockets_label')}</label>
                       <ToggleSwitch
                         checked={editor.websockets}
                         onChange={(value) => onChange('websockets', value)}
                         disabled={disableControls || editor.saving || !editor.json}
-                        ariaLabel={t('auth_files.codex_websockets_label')}
+                        ariaLabel={t('auth_files.websockets_label')}
                       />
-                      <div className="hint">{t('auth_files.codex_websockets_hint')}</div>
+                      <div className="hint">{t('auth_files.websockets_hint')}</div>
                     </div>
                   )}
                   <div className="form-group">

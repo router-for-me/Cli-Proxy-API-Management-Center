@@ -54,6 +54,7 @@ export const AUTH_FILE_REFRESH_WARNING_MS = 24 * 60 * 60 * 1000;
 export const INTEGER_STRING_PATTERN = /^[+-]?\d+$/;
 export const TRUTHY_TEXT_VALUES = new Set(['true', '1', 'yes', 'y', 'on']);
 export const FALSY_TEXT_VALUES = new Set(['false', '0', 'no', 'n', 'off']);
+export const AUTH_FILE_WEBSOCKET_PROVIDERS = new Set(['codex', 'xai']);
 
 // 标签类型颜色配置 — 基于各提供商 Logo 品牌色调配，确保彼此不重复
 export const TYPE_COLORS: Record<string, TypeColorSet> = {
@@ -240,10 +241,13 @@ export const parseDisableCoolingValue = (value: unknown): boolean | undefined =>
   return undefined;
 };
 
-export const readCodexAuthFileWebsockets = (value: Record<string, unknown>): boolean =>
+export const supportsAuthFileWebsockets = (providerKey: string): boolean =>
+  AUTH_FILE_WEBSOCKET_PROVIDERS.has(normalizeProviderKey(providerKey));
+
+export const readAuthFileWebsockets = (value: Record<string, unknown>): boolean =>
   parseDisableCoolingValue(value.websockets ?? value.websocket) ?? false;
 
-export const applyCodexAuthFileWebsockets = (
+export const applyAuthFileWebsockets = (
   value: Record<string, unknown>,
   websockets: boolean
 ): Record<string, unknown> => {
