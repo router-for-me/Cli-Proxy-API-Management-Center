@@ -1428,7 +1428,6 @@ const renderKimiItems = (
           'div',
           { className: styleMap.quotaMeta },
           h('span', { className: styleMap.quotaPercent }, percentLabel),
-          limit > 0 ? h('span', { className: styleMap.quotaAmount }, `${used} / ${limit}`) : null,
           resetLabel ? h('span', { className: styleMap.quotaReset }, resetLabel) : null
         )
       ),
