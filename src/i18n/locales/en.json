@@ -1347,6 +1347,7 @@
     "models_empty": "No models returned by /models",
     "models_error": "Failed to load model list",
     "models_count": "{{count}} available models",
+    "copy_model_id": "Copy model ID",
     "version_check_title": "Update Check",
     "version_check_desc": "Call the /latest-version endpoint to compare with the server version and see if an update is available.",
     "version_current_label": "Current version",
@@ -1435,7 +1436,8 @@
     "claude_api_key": "Claude API key",
     "commercial_mode_restart_required": "Commercial mode setting changed. Please restart the service for it to take effect",
     "copy_failed": "Copy failed",
-    "link_copied": "Link copied to clipboard"
+    "link_copied": "Link copied to clipboard",
+    "model_id_copied": "Model name copied to clipboard"
   },
   "language": {
     "switch": "Language",

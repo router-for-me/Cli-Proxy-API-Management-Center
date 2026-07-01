@@ -4,7 +4,14 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconGithub, IconBookOpen, IconExternalLink, IconCode } from '@/components/ui/icons';
+import {
+  IconGithub,
+  IconBookOpen,
+  IconExternalLink,
+  IconCode,
+  IconCopy,
+  IconCheck,
+} from '@/components/ui/icons';
 import {
   useAuthStore,
   useConfigStore,
@@ -16,6 +23,7 @@ import { configApi, versionApi } from '@/services/api';
 import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
 import { formatDateTimeValue } from '@/utils/format';
 import { classifyModels } from '@/utils/models';
+import { copyToClipboard } from '@/utils/clipboard';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import iconGemini from '@/assets/icons/gemini.svg';
@@ -25,11 +33,20 @@ import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
-import iconGlm from '@/assets/icons/glm.svg';
+import iconGlmLight from '@/assets/icons/glm-light.svg';
+import iconGlmDark from '@/assets/icons/glm-dark.svg';
 import iconGrok from '@/assets/icons/grok.svg';
 import iconGrokDark from '@/assets/icons/grok-dark.svg';
 import iconDeepseek from '@/assets/icons/deepseek.svg';
 import iconMinimax from '@/assets/icons/minimax.svg';
+import iconBytedance from '@/assets/icons/bytedance.svg';
+import iconVolcengine from '@/assets/icons/volcengine.svg';
+import iconMimoLight from '@/assets/icons/xiaomimimo-light.svg';
+import iconMimoDark from '@/assets/icons/xiaomimimo-dark.svg';
+import iconHunyuan from '@/assets/icons/hunyuan.svg';
+import iconLongcat from '@/assets/icons/longcat.svg';
+import iconStepfun from '@/assets/icons/stepfun.svg';
+import iconWenxin from '@/assets/icons/wenxin.svg';
 import styles from './SystemPage.module.scss';
 
 const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: string }> = {
@@ -38,10 +55,17 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
   gemini: iconGemini,
   qwen: iconQwen,
   kimi: { light: iconKimiLight, dark: iconKimiDark },
-  glm: iconGlm,
+  glm: { light: iconGlmLight, dark: iconGlmDark },
   grok: { light: iconGrok, dark: iconGrokDark },
   deepseek: iconDeepseek,
   minimax: iconMinimax,
+  bytedance: iconBytedance,
+  volcengine: iconVolcengine,
+  mimo: { light: iconMimoLight, dark: iconMimoDark },
+  hunyuan: iconHunyuan,
+  longcat: iconLongcat,
+  stepfun: iconStepfun,
+  wenxin: iconWenxin,
 };
 
 const parseVersionSegments = (version?: string | null) => {
@@ -94,8 +118,10 @@ export function SystemPage() {
   const [requestLogTouched, setRequestLogTouched] = useState(false);
   const [requestLogSaving, setRequestLogSaving] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
+  const [copiedModelName, setCopiedModelName] = useState<string | null>(null);
 
   const versionTapCount = useRef(0);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const versionTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const otherLabel = useMemo(
@@ -118,6 +144,24 @@ export function SystemPage() {
     if (typeof iconEntry === 'string') return iconEntry;
     return resolvedTheme === 'dark' ? iconEntry.dark : iconEntry.light;
   };
+
+  const copyModelName = useCallback(
+    async (modelName: string) => {
+      const ok = await copyToClipboard(modelName);
+      if (ok) {
+        setCopiedModelName(modelName);
+        showNotification(t('notification.model_id_copied'), 'success');
+        if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+        copiedTimerRef.current = setTimeout(() => {
+          setCopiedModelName(null);
+          copiedTimerRef.current = null;
+        }, 1500);
+      } else {
+        showNotification(t('notification.copy_failed'), 'error');
+      }
+    },
+    [showNotification, t]
+  );
 
   const resolveApiKeysForModels = useApiKeysForModels();
 
@@ -280,6 +324,9 @@ export function SystemPage() {
       if (versionTapTimer.current) {
         clearTimeout(versionTapTimer.current);
       }
+      if (copiedTimerRef.current) {
+        clearTimeout(copiedTimerRef.current);
+      }
     };
   }, []);
 
@@ -424,31 +471,48 @@ export function SystemPage() {
           ) : models.length === 0 ? (
             <div className="hint">{t('system_info.models_empty')}</div>
           ) : (
-            <div className="item-list">
+            <div className={styles.modelGrid}>
               {groupedModels.map((group) => {
                 const iconSrc = getIconForCategory(group.id);
                 return (
-                  <div key={group.id} className="item-row">
-                    <div className="item-meta">
+                  <div key={group.id} className={styles.modelCard}>
+                    <div className={styles.modelCardHeader}>
                       <div className={styles.groupTitle}>
                         {iconSrc && <img src={iconSrc} alt="" className={styles.groupIcon} />}
-                        <span className="item-title">{group.label}</span>
+                        <span className={styles.modelCardLabel}>{group.label}</span>
                       </div>
-                      <div className="item-subtitle">
+                      <span className={styles.modelCardCount}>
                         {t('system_info.models_count', { count: group.items.length })}
-                      </div>
+                      </span>
                     </div>
                     <div className={styles.modelTags}>
-                      {group.items.map((model) => (
-                        <span
-                          key={`${model.name}-${model.alias ?? 'default'}`}
-                          className={styles.modelTag}
-                          title={model.description || ''}
-                        >
-                          <span className={styles.modelName}>{model.name}</span>
-                          {model.alias && <span className={styles.modelAlias}>{model.alias}</span>}
-                        </span>
-                      ))}
+                      {group.items.map((model) => {
+                        const isCopied = copiedModelName === model.name;
+                        return (
+                          <button
+                            key={`${model.name}-${model.alias ?? 'default'}`}
+                            type="button"
+                            className={`${styles.modelTag} ${isCopied ? styles.modelTagCopied : ''}`}
+                            title={model.description || model.name}
+                            aria-label={`${t('system_info.copy_model_id')} ${model.name}`}
+                            onClick={() => void copyModelName(model.name)}
+                          >
+                            <span className={styles.modelName}>{model.name}</span>
+                            {model.alias && (
+                              <span className={styles.modelAlias}>{model.alias}</span>
+                            )}
+                            {isCopied ? (
+                              <span className={styles.modelCopyIcon}>
+                                <IconCheck size={13} />
+                              </span>
+                            ) : (
+                              <span className={styles.modelCopyIcon}>
+                                <IconCopy size={13} />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 );
