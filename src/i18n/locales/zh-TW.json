@@ -1463,7 +1463,7 @@
     "commercial_mode_restart_required": "商業模式開關已變更，請重啟服務後生效",
     "copy_failed": "複製失敗",
     "link_copied": "已複製",
-    "model_id_copied": "模型名稱已複製到剪貼簿"
+    "model_id_copied": "模型 ID 已複製到剪貼簿"
   },
   "language": {
     "switch": "語言",

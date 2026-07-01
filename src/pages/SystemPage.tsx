@@ -118,7 +118,7 @@ export function SystemPage() {
   const [requestLogTouched, setRequestLogTouched] = useState(false);
   const [requestLogSaving, setRequestLogSaving] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
-  const [copiedModelName, setCopiedModelName] = useState<string | null>(null);
+  const [copiedModelId, setCopiedModelId] = useState<string | null>(null);
 
   const versionTapCount = useRef(0);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -145,15 +145,15 @@ export function SystemPage() {
     return resolvedTheme === 'dark' ? iconEntry.dark : iconEntry.light;
   };
 
-  const copyModelName = useCallback(
-    async (modelName: string) => {
-      const ok = await copyToClipboard(modelName);
+  const copyModelId = useCallback(
+    async (modelId: string) => {
+      const ok = await copyToClipboard(modelId);
       if (ok) {
-        setCopiedModelName(modelName);
+        setCopiedModelId(modelId);
         showNotification(t('notification.model_id_copied'), 'success');
         if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
         copiedTimerRef.current = setTimeout(() => {
-          setCopiedModelName(null);
+          setCopiedModelId(null);
           copiedTimerRef.current = null;
         }, 1500);
       } else {
@@ -487,7 +487,7 @@ export function SystemPage() {
                     </div>
                     <div className={styles.modelTags}>
                       {group.items.map((model) => {
-                        const isCopied = copiedModelName === model.name;
+                        const isCopied = copiedModelId === model.name;
                         return (
                           <button
                             key={`${model.name}-${model.alias ?? 'default'}`}
@@ -495,7 +495,7 @@ export function SystemPage() {
                             className={`${styles.modelTag} ${isCopied ? styles.modelTagCopied : ''}`}
                             title={model.description || model.name}
                             aria-label={`${t('system_info.copy_model_id')} ${model.name}`}
-                            onClick={() => void copyModelName(model.name)}
+                            onClick={() => void copyModelId(model.name)}
                           >
                             <span className={styles.modelName}>{model.name}</span>
                             {model.alias && (
