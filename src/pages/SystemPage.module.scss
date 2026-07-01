@@ -294,7 +294,7 @@
 
 .modelTagCopied {
   border-color: var(--success-color);
-  background-color: color-mix(in srgb, var(--bg-secondary) 90%, $success-color);
+  background-color: color-mix(in srgb, var(--bg-secondary) 90%, var(--success-color));
 }
 
 .modelName {
