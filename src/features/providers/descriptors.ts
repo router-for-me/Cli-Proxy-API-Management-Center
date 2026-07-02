@@ -183,6 +183,6 @@ export const PROVIDER_BRAND_ORDER: ProviderBrand[] = [
   'vertex',
   'openaiCompatibility',
   'apikeyFun',
-  'code0',
   'claudeApi',
+  'code0',
 ];
