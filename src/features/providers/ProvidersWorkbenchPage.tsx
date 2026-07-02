@@ -43,6 +43,12 @@ interface ProvidersWorkbenchPageProps {
   fixedBrand?: ProviderBrand;
 }
 
+const HIDDEN_GENERAL_PROVIDER_BRANDS = new Set<ProviderBrand>([
+  'apikeyFun',
+  'code0',
+  'claudeApi',
+]);
+
 const formatDateTime = (iso: string, locale?: string) => {
   try {
     const date = new Date(iso);
@@ -152,7 +158,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     () =>
       fixedBrand
         ? allGroups.filter((group) => group.id === fixedBrand)
-        : allGroups.filter((group) => group.id !== 'apikeyFun'),
+        : allGroups.filter((group) => !HIDDEN_GENERAL_PROVIDER_BRANDS.has(group.id)),
     [allGroups, fixedBrand]
   );
   const firstVisibleBrand = groups[0]?.id ?? fixedBrand ?? 'gemini';
