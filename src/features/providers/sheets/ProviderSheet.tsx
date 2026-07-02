@@ -5,6 +5,7 @@ import { IconLoader2, IconPencil } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { useNotificationStore } from '@/stores';
 import { PROVIDER_DESCRIPTORS } from '../descriptors';
+import { isMultiProtocolSponsorBrand } from '../sponsorDefinitions';
 import type { ProviderBrand, ProviderEntryFormInput, ProviderResource } from '../types';
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
 import { BaseProviderForm } from './forms/BaseProviderForm';
@@ -142,10 +143,11 @@ export function ProviderSheet({
       return <ResourceDetailView resource={state.resource} usageByProvider={usageByProvider} />;
     }
     const formKey = `${state.brand}:${state.resource?.id ?? 'new'}:${state.mode}`;
-    if (state.brand === 'apikeyFun') {
+    if (isMultiProtocolSponsorBrand(state.brand)) {
       return (
         <SponsorProviderForm
           key={formKey}
+          brand={state.brand}
           resource={state.resource}
           mode={state.mode}
           mutating={formMutating}
@@ -244,7 +246,9 @@ export function ProviderSheet({
               ? '/quick-start'
               : state.brand === 'claudeApi'
                 ? '/ai-providers/claudeapi'
-                : `/ai-providers/${state.brand}`,
+                : state.brand === 'code0'
+                  ? '/ai-providers/code0'
+                  : `/ai-providers/${state.brand}`,
       })}
       footer={footer}
       closeDisabled={submitting}

@@ -1497,7 +1497,8 @@
       "claudeApi": "ClaudeAPI",
       "vertex": "Vertex",
       "openaiCompatibility": "OpenAI 兼容",
-      "apikeyFun": "APIKEY.FUN"
+      "apikeyFun": "APIKEY.FUN",
+      "code0": "Code0"
     },
     "table": {
       "key": "密钥",
@@ -1519,8 +1520,8 @@
       "providerIssue": "此提供商存在问题"
     },
     "sponsor": {
-      "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
-      "detailHint": "此赞助商会分别写入 Claude API Key、OpenAI 兼容配置与 Codex API Key,这里只做聚合管理。",
+      "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
+      "detailHint": "{{provider}} 会按协议分别写入对应的 API Key 配置,这里只做聚合管理。",
       "registerLink": "点此注册",
       "registerNow": "立即注册",
       "dashboardLink": "控制面板",
@@ -1535,29 +1536,31 @@
       "usageEmpty": "端点未返回额度数据",
       "usageApiKeyRequired": "API 密钥必填",
       "groupedKeysTitle": "分组 Key",
-      "groupedKeysHint": "APIKEY.FUN 在平台创建 Key 时需要选择分组,这里每个分组 Key 只管理一个协议,模型也只从该协议拉取。",
+      "groupedKeysHint": "平台创建 Key 时可能需要选择分组,这里每个分组 Key 只管理一个协议,模型也只从该协议拉取。",
       "groupedKey": "分组 Key #{{index}}",
       "addGroupedKey": "添加分组 Key",
       "removeGroupedKey": "删除分组 Key",
       "protocol": "分组/协议",
-      "protocolHint": "请选择此 Key 在 APIKEY.FUN 平台绑定的分组。",
+      "protocolHint": "请选择此 Key 对应的分组/协议。",
       "protocolEndpoint": "当前协议地址",
-      "urlMode": "APIKEY.FUN URL",
-      "urlHint": "两种 URL 的使用规范一致,保存时只会写入当前分组协议对应地址。",
+      "urlMode": "{{provider}} URL",
+      "urlHint": "不同 URL 的使用规范一致,保存时只会写入当前分组协议对应地址。",
       "urlOptions": {
         "standard": "普通 URL",
         "direct": "专线直连 URL"
       },
       "modelsTitle": "协议模型配置",
-      "modelsHint": "可分别限制或别名映射 APIKEY.FUN 走 Codex API、Anthropic 与 OpenAI 兼容入口的模型。",
+      "modelsHint": "可分别限制或别名映射 Codex API、Anthropic、Gemini 与 OpenAI 兼容入口的模型。",
       "protocolModels": {
         "codex": "Codex API 模型",
         "anthropic": "Anthropic 模型",
+        "gemini": "Gemini 模型",
         "openai": "OpenAI 兼容模型"
       },
       "protocolModelHints": {
         "codex": "写入 Codex API 配置的 models,可从 /v1/models 拉取后设置别名。",
         "anthropic": "写入 Anthropic 配置的 models,可从 /v1/models 拉取后设置别名。",
+        "gemini": "写入 Gemini 配置的 models,可从 /v1beta/models 拉取后设置别名。",
         "openai": "写入 OpenAI 兼容配置的 models,可从 /models 拉取后设置别名。"
       },
       "validation": {
@@ -1567,9 +1570,11 @@
       "openaiEntries": "OpenAI 兼容密钥数",
       "codexEntries": "Codex API 密钥数",
       "anthropicEntries": "Anthropic 密钥数",
+      "geminiEntries": "Gemini 密钥数",
       "protocols": {
         "anthropic": "Anthropic",
         "openai": "OpenAI 兼容",
+        "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
       }
     },

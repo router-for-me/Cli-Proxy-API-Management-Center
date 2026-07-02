@@ -1475,7 +1475,8 @@
       "claudeApi": "ClaudeAPI",
       "vertex": "Vertex",
       "openaiCompatibility": "OpenAI-совместимый",
-      "apikeyFun": "APIKEY.FUN"
+      "apikeyFun": "APIKEY.FUN",
+      "code0": "Code0"
     },
     "table": {
       "key": "Ключ",
@@ -1497,8 +1498,8 @@
       "providerIssue": "Проблема с провайдером"
     },
     "sponsor": {
-      "protocolSummary": "Anthropic / OpenAI / Codex API (Responses)",
-      "detailHint": "Этот спонсор сохраняется как записи Claude API key, OpenAI-compatible и Codex API key; здесь они управляются вместе.",
+      "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
+      "detailHint": "{{provider}} сохраняется в соответствующие конфигурации API key по протоколам; здесь они управляются вместе.",
       "registerLink": "Зарегистрироваться",
       "registerNow": "Зарегистрироваться сейчас",
       "dashboardLink": "Панель управления",
@@ -1513,29 +1514,31 @@
       "usageEmpty": "Endpoint не вернул данные квоты.",
       "usageApiKeyRequired": "Требуется API key",
       "groupedKeysTitle": "Групповые ключи",
-      "groupedKeysHint": "Ключи APIKEY.FUN привязываются к группе при создании на платформе. Каждый групповой ключ здесь управляет одним протоколом, а модели загружаются только из этого протокола.",
+      "groupedKeysHint": "Ключи платформы могут привязываться к группе при создании. Каждый групповой ключ здесь управляет одним протоколом, а модели загружаются только из этого протокола.",
       "groupedKey": "Групповой ключ #{{index}}",
       "addGroupedKey": "Добавить групповой ключ",
       "removeGroupedKey": "Удалить групповой ключ",
       "protocol": "Группа/протокол",
-      "protocolHint": "Выберите группу APIKEY.FUN, к которой привязан этот ключ.",
+      "protocolHint": "Выберите группу/протокол для этого ключа.",
       "protocolEndpoint": "Текущий endpoint протокола",
-      "urlMode": "APIKEY.FUN URL",
-      "urlHint": "Оба URL используют одинаковые правила API. При сохранении записывается только endpoint текущего группового протокола.",
+      "urlMode": "{{provider}} URL",
+      "urlHint": "Все URL используют одинаковые правила API. При сохранении записывается только endpoint текущего группового протокола.",
       "urlOptions": {
         "standard": "Обычный URL",
         "direct": "Прямой URL"
       },
       "modelsTitle": "Настройки моделей по протоколам",
-      "modelsHint": "Настраивайте allowlist моделей и алиасы отдельно для маршрутов APIKEY.FUN Codex API, Anthropic и OpenAI-compatible.",
+      "modelsHint": "Настраивайте allowlist моделей и алиасы отдельно для маршрутов Codex API, Anthropic, Gemini и OpenAI-compatible.",
       "protocolModels": {
         "codex": "Модели Codex API",
         "anthropic": "Модели Anthropic",
+        "gemini": "Модели Gemini",
         "openai": "Модели OpenAI-compatible"
       },
       "protocolModelHints": {
         "codex": "Записывается в models конфигурации Codex API. Можно загрузить из /v1/models и задать алиасы.",
         "anthropic": "Записывается в models конфигурации Anthropic. Можно загрузить из /v1/models и задать алиасы.",
+        "gemini": "Записывается в models конфигурации Gemini. Можно загрузить из /v1beta/models и задать алиасы.",
         "openai": "Записывается в models конфигурации OpenAI-compatible. Можно загрузить из /models и задать алиасы."
       },
       "validation": {
@@ -1545,9 +1548,11 @@
       "openaiEntries": "Ключей OpenAI-compatible",
       "codexEntries": "Ключей Codex API",
       "anthropicEntries": "Ключей Anthropic",
+      "geminiEntries": "Ключей Gemini",
       "protocols": {
         "anthropic": "Anthropic",
         "openai": "OpenAI-compatible",
+        "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
       }
     },

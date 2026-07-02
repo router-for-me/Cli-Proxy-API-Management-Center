@@ -18,6 +18,7 @@ import type { ProviderPanelControls } from './components/ProviderResourcePanel';
 import { SponsorQuickStartPanel } from './components/SponsorQuickStartPanel';
 import { ProviderSheet, type ProviderSheetHandle } from './sheets/ProviderSheet';
 import { APIKEY_FUN_DISPLAY_NAME } from './sponsor';
+import { isMultiProtocolSponsorBrand } from './sponsorDefinitions';
 import { useProviderWorkbench } from './useProviderWorkbench';
 import {
   getProviderFilterState,
@@ -79,7 +80,7 @@ const getResourceRecentSuccess = (
   resource: ProviderResource,
   usageByProvider: ProviderRecentUsageMap
 ): number => {
-  if (resource.brand === 'apikeyFun') {
+  if (isMultiProtocolSponsorBrand(resource.brand)) {
     return 0;
   }
   if (resource.brand === 'openaiCompatibility') {

@@ -4,6 +4,7 @@ import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { PROVIDER_LOGOS } from '../brandLogos';
 import { CLAUDE_API_AFFILIATE_URL } from '../claudeApi';
 import { APIKEY_FUN_AFFILIATE_URL, APIKEY_FUN_DASHBOARD_URL } from '../sponsor';
+import { getSponsorProviderDefinition } from '../sponsorDefinitions';
 import type { ProviderGroup, ProviderResource } from '../types';
 import { ProviderResourceTable } from './ProviderResourceTable';
 import { ProviderResourceToolbar } from './ProviderResourceToolbar';
@@ -58,6 +59,12 @@ export function ProviderResourcePanel({
   const showSponsorRegistrationLink = group.id === 'apikeyFun' && !hasProviderInfo;
   const showSponsorDashboardLink = group.id === 'apikeyFun' && hasProviderInfo;
   const showClaudeApiSponsorLink = group.id === 'claudeApi';
+  const registrationUrl =
+    group.id === 'claudeApi'
+      ? CLAUDE_API_AFFILIATE_URL
+      : group.id === 'code0'
+        ? getSponsorProviderDefinition('code0').affiliateUrl
+        : null;
   const emptyText = showSponsorRegistrationLink
     ? t('providersPage.sponsor.emptyRegisterHint')
     : t('providersPage.table.empty');
@@ -118,10 +125,10 @@ export function ProviderResourcePanel({
                 </span>
                 <IconExternalLink className={styles.sponsorLinkIcon} size={14} />
               </a>
-            ) : showClaudeApiSponsorLink ? (
+            ) : showClaudeApiSponsorLink || registrationUrl ? (
               <a
                 className={`${styles.sponsorLink} ${styles.sponsorLinkEmphasis}`}
-                href={CLAUDE_API_AFFILIATE_URL}
+                href={registrationUrl ?? CLAUDE_API_AFFILIATE_URL}
                 target="_blank"
                 rel="noreferrer"
               >
