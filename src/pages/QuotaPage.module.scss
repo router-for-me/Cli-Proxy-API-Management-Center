@@ -424,6 +424,35 @@
   padding-top: $spacing-xs;
 }
 
+.quotaCardSelection {
+  flex: 0 0 auto;
+}
+
+.quotaBatchActions {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--danger-color) 22%, var(--border-color));
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--danger-color) 7%, var(--bg-secondary));
+
+  :global(.btn.btn-sm) > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+}
+
+.quotaBatchSelected {
+  padding-inline: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 .quotaResetCreditButton:global(.btn.btn-sm),
 .quotaRefreshButton:global(.btn.btn-sm) {
   border-radius: 999px;
@@ -435,6 +464,12 @@
     gap: 6px;
     white-space: nowrap;
   }
+}
+
+.quotaDeleteAuthFileButton:global(.btn.btn-sm) {
+  width: 34px;
+  padding-inline: 0;
+  border-radius: $radius-sm;
 }
 
 .quotaError {

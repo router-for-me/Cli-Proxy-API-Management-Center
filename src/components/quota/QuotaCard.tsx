@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { ReactElement, ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import { Button } from '@/components/ui/Button';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { IconRefreshCw } from '@/components/ui/icons';
 import type { AuthFileItem, ResolvedTheme, ThemeColors } from '@/types';
 import { TYPE_COLORS } from '@/utils/quota';
@@ -67,7 +68,10 @@ interface QuotaCardProps<TState extends QuotaStatusState> {
   defaultType: string;
   canRefresh?: boolean;
   onRefresh?: () => void;
+  selected?: boolean;
+  onToggleSelect?: (name: string, selected: boolean) => void;
   resetQuotaAction?: ReactNode;
+  deleteAuthFileAction?: ReactNode;
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
 }
 
@@ -81,7 +85,10 @@ export function QuotaCard<TState extends QuotaStatusState>({
   defaultType,
   canRefresh = false,
   onRefresh,
+  selected = false,
+  onToggleSelect,
   resetQuotaAction,
+  deleteAuthFileAction,
   renderQuotaItems,
 }: QuotaCardProps<TState>) {
   const { t } = useTranslation();
@@ -113,6 +120,15 @@ export function QuotaCard<TState extends QuotaStatusState>({
   return (
     <div className={`${styles.fileCard} ${cardClassName}`}>
       <div className={styles.cardHeader}>
+        {onToggleSelect && (
+          <SelectionCheckbox
+            checked={selected}
+            onChange={(value) => onToggleSelect(item.name, value)}
+            className={styles.quotaCardSelection}
+            ariaLabel={selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')}
+            title={selected ? t('auth_files.batch_deselect') : t('auth_files.batch_select_all')}
+          />
+        )}
         <span
           className={styles.typeBadge}
           style={{
@@ -155,7 +171,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
         )}
       </div>
 
-      {(resetQuotaAction || (onRefresh && quotaStatus !== 'idle')) && (
+      {(resetQuotaAction || deleteAuthFileAction || (onRefresh && quotaStatus !== 'idle')) && (
         <div className={styles.quotaCardActions}>
           {resetQuotaAction}
           {onRefresh && quotaStatus !== 'idle' && (
@@ -173,6 +189,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
               {t('auth_files.quota_refresh_single')}
             </Button>
           )}
+          {deleteAuthFileAction}
         </div>
       )}
     </div>
