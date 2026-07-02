@@ -43,6 +43,9 @@ interface ProviderResourceTableProps {
 
 const columnWidths = ['180px', '220px', '72px', '138px', '174px', '176px'];
 
+const getUsageProvider = (resource: ProviderResource): string =>
+  resource.brand === 'claudeApi' ? 'claude' : resource.brand;
+
 const resolveStatusBarData = (
   resource: ProviderResource,
   usageByProvider: ProviderRecentUsageMap
@@ -52,7 +55,7 @@ const resolveStatusBarData = (
   }
   return getProviderRecentStatusData(
     usageByProvider,
-    resource.brand,
+    getUsageProvider(resource),
     resource.apiKey ?? undefined,
     resource.baseUrl ?? undefined
   );
@@ -67,7 +70,7 @@ const resolveTotalStats = (
   }
   return getProviderTotalStats(
     usageByProvider,
-    resource.brand,
+    getUsageProvider(resource),
     resource.apiKey ?? undefined,
     resource.baseUrl ?? undefined
   );

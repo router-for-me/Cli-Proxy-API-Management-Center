@@ -242,7 +242,9 @@ export function ProviderSheet({
             ? '/ai-providers/openai'
             : state.brand === 'apikeyFun'
               ? '/quick-start'
-              : `/ai-providers/${state.brand}`,
+              : state.brand === 'claudeApi'
+                ? '/ai-providers/claudeapi'
+                : `/ai-providers/${state.brand}`,
       })}
       footer={footer}
       closeDisabled={submitting}

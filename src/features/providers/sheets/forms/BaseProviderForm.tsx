@@ -31,6 +31,7 @@ import {
 import { useModelDiscovery } from './useModelDiscovery';
 import { ModelDiscoveryPanel } from './ModelDiscoveryPanel';
 import styles from './sharedForm.module.scss';
+import { CLAUDE_API_BASE_URL } from '../../claudeApi';
 
 export interface BaseProviderFormHandle {
   submit: () => Promise<void>;
@@ -61,6 +62,9 @@ const formatJsonObject = (value?: Record<string, unknown>): string => {
   return JSON.stringify(value, null, 2);
 };
 
+const isClaudeLikeBrand = (brand: ProviderBrand): boolean =>
+  brand === 'claude' || brand === 'claudeApi';
+
 function buildInitialForm(
   brand: ProviderBrand,
   resource: ProviderResource | null,
@@ -70,7 +74,7 @@ function buildInitialForm(
     return {
       apiKey: '',
       name: '',
-      baseUrl: '',
+      baseUrl: brand === 'claudeApi' ? CLAUDE_API_BASE_URL : '',
       proxyUrl: '',
       prefix: '',
       disabled: false,
@@ -81,14 +85,14 @@ function buildInitialForm(
       excludedModelsText: '',
       websockets: brand === 'codex' ? false : undefined,
       cloak:
-        brand === 'claude'
+        isClaudeLikeBrand(brand)
           ? { mode: '', strictMode: false, sensitiveWordsText: '', cacheUserId: false }
           : undefined,
-      experimentalCchSigning: brand === 'claude' ? false : undefined,
+      experimentalCchSigning: isClaudeLikeBrand(brand) ? false : undefined,
       testModel:
         brand === 'openaiCompatibility' ||
         brand === 'codex' ||
-        brand === 'claude' ||
+        isClaudeLikeBrand(brand) ||
         brand === 'gemini'
           ? ''
           : undefined,
@@ -164,7 +168,7 @@ function buildInitialForm(
     excludedModelsText: excludedList.join('\n'),
     websockets: brand === 'codex' ? (cfg as ProviderKeyConfig).websockets === true : undefined,
     cloak:
-      brand === 'claude'
+      isClaudeLikeBrand(brand)
         ? {
             mode: (cfg as ProviderKeyConfig).cloak?.mode ?? '',
             strictMode: (cfg as ProviderKeyConfig).cloak?.strictMode === true,
@@ -173,8 +177,10 @@ function buildInitialForm(
           }
         : undefined,
     experimentalCchSigning:
-      brand === 'claude' ? (cfg as ProviderKeyConfig).experimentalCchSigning === true : undefined,
-    testModel: brand === 'codex' || brand === 'claude' || brand === 'gemini' ? '' : undefined,
+      isClaudeLikeBrand(brand)
+        ? (cfg as ProviderKeyConfig).experimentalCchSigning === true
+        : undefined,
+    testModel: brand === 'codex' || isClaudeLikeBrand(brand) || brand === 'gemini' ? '' : undefined,
   };
 }
 
@@ -445,7 +451,7 @@ export function BaseProviderForm({
   const supportsDisableCooling =
     brand === 'gemini' ||
     brand === 'codex' ||
-    brand === 'claude' ||
+    isClaudeLikeBrand(brand) ||
     brand === 'openaiCompatibility';
   const supportsOpenAIModelOptions = brand === 'openaiCompatibility';
   const singleConnectivity =
@@ -453,7 +459,7 @@ export function BaseProviderForm({
       ? { status: connectivity.codexStatus, run: connectivity.runCodex }
       : brand === 'gemini'
         ? { status: connectivity.geminiStatus, run: connectivity.runGemini }
-        : brand === 'claude'
+        : isClaudeLikeBrand(brand)
           ? { status: connectivity.claudeStatus, run: connectivity.runClaude }
           : null;
 
@@ -633,7 +639,7 @@ export function BaseProviderForm({
           <div className={styles.field}>
             <label className={styles.label} htmlFor={`${fid}-testModel`}>
               {t('providersPage.form.testModel')}
-              {brand === 'codex' || brand === 'claude' || brand === 'gemini' ? (
+              {brand === 'codex' || isClaudeLikeBrand(brand) || brand === 'gemini' ? (
                 <span className={styles.labelHint}>
                   {' '}
                   · {t('providersPage.form.testModelClaudeHint')}

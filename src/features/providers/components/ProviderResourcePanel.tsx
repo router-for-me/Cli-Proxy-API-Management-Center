@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { IconExternalLink, IconPlus, IconSearch } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { PROVIDER_LOGOS } from '../brandLogos';
+import { CLAUDE_API_AFFILIATE_URL } from '../claudeApi';
 import { APIKEY_FUN_AFFILIATE_URL, APIKEY_FUN_DASHBOARD_URL } from '../sponsor';
 import type { ProviderGroup, ProviderResource } from '../types';
 import { ProviderResourceTable } from './ProviderResourceTable';
@@ -56,6 +57,7 @@ export function ProviderResourcePanel({
   const hasProviderInfo = group.resources.some((r) => !r.flags.isPlaceholder);
   const showSponsorRegistrationLink = group.id === 'apikeyFun' && !hasProviderInfo;
   const showSponsorDashboardLink = group.id === 'apikeyFun' && hasProviderInfo;
+  const showClaudeApiSponsorLink = group.id === 'claudeApi';
   const emptyText = showSponsorRegistrationLink
     ? t('providersPage.sponsor.emptyRegisterHint')
     : t('providersPage.table.empty');
@@ -113,6 +115,18 @@ export function ProviderResourcePanel({
               >
                 <span className={styles.sponsorLinkText}>
                   {t('providersPage.sponsor.dashboardLink')}
+                </span>
+                <IconExternalLink className={styles.sponsorLinkIcon} size={14} />
+              </a>
+            ) : showClaudeApiSponsorLink ? (
+              <a
+                className={`${styles.sponsorLink} ${styles.sponsorLinkEmphasis}`}
+                href={CLAUDE_API_AFFILIATE_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span className={styles.sponsorLinkText}>
+                  {t('providersPage.sponsor.registerLink')}
                 </span>
                 <IconExternalLink className={styles.sponsorLinkIcon} size={14} />
               </a>

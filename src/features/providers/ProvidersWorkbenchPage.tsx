@@ -86,9 +86,10 @@ const getResourceRecentSuccess = (
     return getOpenAIProviderRecentWindowStats(resource.raw as OpenAIProviderConfig, usageByProvider)
       .success;
   }
+  const usageProvider = resource.brand === 'claudeApi' ? 'claude' : resource.brand;
   return getProviderRecentWindowStats(
     usageByProvider,
-    resource.brand,
+    usageProvider,
     resource.apiKey ?? undefined,
     resource.baseUrl ?? undefined
   ).success;

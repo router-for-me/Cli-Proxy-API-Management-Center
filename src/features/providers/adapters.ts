@@ -7,6 +7,7 @@ import {
   getApiKeyFunProtocolUrls,
   resolveApiKeyFunBaseUrl,
 } from './sponsor';
+import { CLAUDE_API_DISPLAY_NAME } from './claudeApi';
 import type {
   ProviderBrand,
   ProviderResource,
@@ -40,7 +41,7 @@ const truncateForId = (value: string | undefined | null): string => {
 };
 
 function providerKeyToResource(
-  brand: 'gemini' | 'codex' | 'claude' | 'vertex',
+  brand: 'gemini' | 'codex' | 'claude' | 'claudeApi' | 'vertex',
   config: GeminiKeyConfig | ProviderKeyConfig,
   index: number
 ): ProviderResource {
@@ -50,7 +51,7 @@ function providerKeyToResource(
   if (brand === 'codex') {
     flags.websockets = (config as ProviderKeyConfig).websockets === true;
   }
-  if (brand === 'claude') {
+  if (brand === 'claude' || brand === 'claudeApi') {
     const cloak = (config as ProviderKeyConfig).cloak;
     flags.cloakEnabled = Boolean(cloak?.mode?.trim());
   }
@@ -97,6 +98,14 @@ export function codexToResource(config: ProviderKeyConfig, index: number): Provi
 
 export function claudeToResource(config: ProviderKeyConfig, index: number): ProviderResource {
   return providerKeyToResource('claude', config, index);
+}
+
+export function claudeApiToResource(config: ProviderKeyConfig, index: number): ProviderResource {
+  const resource = providerKeyToResource('claudeApi', config, index);
+  return {
+    ...resource,
+    name: CLAUDE_API_DISPLAY_NAME,
+  };
 }
 
 export function vertexToResource(config: ProviderKeyConfig, index: number): ProviderResource {
