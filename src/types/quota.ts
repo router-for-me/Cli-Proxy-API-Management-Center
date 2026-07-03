@@ -288,7 +288,10 @@ export interface XaiBillingPayload {
 export interface XaiBillingSummary {
   monthlyLimitCents: number | null;
   usedCents: number | null;
+  includedUsedCents: number | null;
   onDemandCapCents: number | null;
+  onDemandUsedCents: number | null;
+  onDemandUsedPercent: number | null;
   billingPeriodStart?: string;
   billingPeriodEnd?: string;
   usedPercent: number | null;
