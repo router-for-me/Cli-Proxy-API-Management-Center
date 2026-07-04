@@ -32,6 +32,27 @@ export interface Config {
   raw?: Record<string, unknown>;
 }
 
+export type CodexInstructionsMode = 'prepend' | 'append' | 'replace';
+
+export interface CodexInstructionsConfig {
+  enabled: boolean;
+  mode: CodexInstructionsMode;
+  content: string;
+  file: string;
+  models: string[];
+  oauthOnly: boolean;
+}
+
+export interface RawCodexInstructionsConfig {
+  enabled?: boolean;
+  mode?: string;
+  content?: string;
+  file?: string;
+  models?: string[];
+  'oauth-only'?: boolean;
+  oauthOnly?: boolean;
+}
+
 export type RawConfigSection =
   | 'debug'
   | 'proxy-url'
