@@ -1373,6 +1373,7 @@
     "models_empty": "未從 /models 取得到模型資料",
     "models_error": "取得模型清單失敗",
     "models_count": "可用模型 {{count}} 個",
+    "copy_model_id": "複製模型 ID",
     "version_check_title": "版本檢查",
     "version_check_desc": "呼叫 /latest-version 介面比對伺服器版本，提示是否有可用更新。",
     "version_current_label": "目前版本",
@@ -1461,7 +1462,8 @@
     "claude_api_key": "Claude API 金鑰",
     "commercial_mode_restart_required": "商業模式開關已變更，請重啟服務後生效",
     "copy_failed": "複製失敗",
-    "link_copied": "已複製"
+    "link_copied": "已複製",
+    "model_id_copied": "模型 ID 已複製到剪貼簿"
   },
   "language": {
     "switch": "語言",

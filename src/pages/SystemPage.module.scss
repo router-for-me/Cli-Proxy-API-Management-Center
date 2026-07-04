@@ -196,11 +196,61 @@
   }
 }
 
+.modelGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: $spacing-md;
+}
+
+.modelCard {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  background: var(--bg-primary);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.modelCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding-bottom: $spacing-sm;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modelCardLabel {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modelCardCount {
+  font-weight: 500;
+  white-space: nowrap;
+  margin-left: auto;
+  font-size: 12px;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: $radius-full;
+}
+
 .modelTags {
   display: flex;
   flex-wrap: wrap;
-  flex: 0 0 100%;
-  gap: $spacing-sm;
+  gap: $spacing-xs;
 }
 
 .groupTitle {
@@ -210,8 +260,8 @@
 }
 
 .groupIcon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 
@@ -226,11 +276,42 @@
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
     monospace;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--primary-color);
+    background-color: color-mix(in srgb, var(--bg-secondary) 95%, var(--primary-color));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+.modelTagCopied {
+  border-color: var(--success-color);
+  background-color: color-mix(in srgb, var(--bg-secondary) 90%, var(--success-color));
 }
 
 .modelName {
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.modelCopyIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-tertiary);
+  transition: color 0.15s ease;
+  margin-left: 2px;
+}
+
+.modelTag:hover .modelCopyIcon {
+  color: var(--text-primary);
 }
 
 .modelAlias {
