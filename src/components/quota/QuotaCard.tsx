@@ -62,7 +62,6 @@ interface QuotaCardProps<TState extends QuotaStatusState> {
   quota?: TState;
   resolvedTheme: ResolvedTheme;
   i18nPrefix: string;
-  cardIdleMessageKey?: string;
   cardClassName: string;
   defaultType: string;
   canRefresh?: boolean;
@@ -76,7 +75,6 @@ export function QuotaCard<TState extends QuotaStatusState>({
   quota,
   resolvedTheme,
   i18nPrefix,
-  cardIdleMessageKey,
   cardClassName,
   defaultType,
   canRefresh = false,
@@ -98,9 +96,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
     quota?.errorStatus,
     quota?.error || t('common.unknown_error')
   );
-  const idleMessageKey = onRefresh
-    ? `${i18nPrefix}.idle`
-    : (cardIdleMessageKey ?? `${i18nPrefix}.idle`);
+  const idleMessageKey = `${i18nPrefix}.idle`;
 
   const getTypeLabel = (type: string): string => {
     const key = `auth_files.filter_${type}`;

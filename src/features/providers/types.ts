@@ -47,7 +47,6 @@ export type ProviderResourceSelector =
 export interface ProviderResourceFlags {
   cloakEnabled?: boolean;
   websockets?: boolean;
-  isPlaceholder?: boolean;
   protocols?: string[];
 }
 

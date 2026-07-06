@@ -37,15 +37,13 @@ interface QuotaPaginationState<T> {
   goToPrev: () => void;
   goToNext: () => void;
   loading: boolean;
-  loadingScope: 'page' | 'all' | null;
-  setLoading: (loading: boolean, scope?: 'page' | 'all' | null) => void;
+  setLoading: (loading: boolean) => void;
 }
 
 const useQuotaPagination = <T,>(items: T[], defaultPageSize = 6): QuotaPaginationState<T> => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(defaultPageSize);
-  const [loading, setLoadingState] = useState(false);
-  const [loadingScope, setLoadingScope] = useState<'page' | 'all' | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(items.length / pageSize)),
@@ -72,11 +70,6 @@ const useQuotaPagination = <T,>(items: T[], defaultPageSize = 6): QuotaPaginatio
     setPage((prev) => Math.min(totalPages, prev + 1));
   }, [totalPages]);
 
-  const setLoading = useCallback((isLoading: boolean, scope?: 'page' | 'all' | null) => {
-    setLoadingState(isLoading);
-    setLoadingScope(isLoading ? (scope ?? null) : null);
-  }, []);
-
   return {
     pageSize,
     totalPages,
@@ -86,7 +79,6 @@ const useQuotaPagination = <T,>(items: T[], defaultPageSize = 6): QuotaPaginatio
     goToPrev,
     goToNext,
     loading,
-    loadingScope,
     setLoading,
   };
 };
@@ -182,10 +174,9 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     if (!wasLoading) return;
 
     pendingQuotaRefreshRef.current = false;
-    const scope = effectiveViewMode === 'all' ? 'all' : 'page';
     const targets = effectiveViewMode === 'all' ? filteredFiles : pageItems;
     if (targets.length === 0) return;
-    loadQuota(targets, scope, setLoading);
+    loadQuota(targets, setLoading);
   }, [loading, effectiveViewMode, filteredFiles, pageItems, loadQuota, setLoading]);
 
   useEffect(() => {
@@ -373,7 +364,6 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                   quota={itemQuota}
                   resolvedTheme={resolvedTheme}
                   i18nPrefix={config.i18nPrefix}
-                  cardIdleMessageKey={config.cardIdleMessageKey}
                   cardClassName={config.cardClassName}
                   defaultType={config.type}
                   canRefresh={canUseQuotaAction && !isResettingQuota}

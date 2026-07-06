@@ -21,9 +21,8 @@ export function ProviderCategoryList({ groups, activeBrand, onSelect }: Provider
     <div className={styles.list}>
       {items.map((group) => {
         const active = group.id === activeBrand;
-        const realResources = group.resources.filter((r) => !r.flags.isPlaceholder);
-        const total = realResources.length;
-        const activeCount = realResources.filter((r) => !r.disabled).length;
+        const total = group.resources.length;
+        const activeCount = group.resources.filter((r) => !r.disabled).length;
         const logo = PROVIDER_LOGOS[group.id];
         const itemClass = `${styles.item} ${active ? styles.active : ''}`;
         const logoClassName = [

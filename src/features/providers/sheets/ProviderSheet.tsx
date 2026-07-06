@@ -173,7 +173,7 @@ export function ProviderSheet({
 
   const footer =
     state.mode === 'detail' ? (
-      state.resource && !state.resource.flags.isPlaceholder ? (
+      state.resource ? (
         <>
           <button
             type="button"
