@@ -6,19 +6,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Language } from '@/types';
-import { LANGUAGE_ORDER, STORAGE_KEY_LANGUAGE } from '@/utils/constants';
+import { STORAGE_KEY_LANGUAGE } from '@/utils/constants';
 import i18n from '@/i18n';
 import { getInitialLanguage, isSupportedLanguage } from '@/utils/language';
 
 interface LanguageState {
   language: Language;
   setLanguage: (language: string) => void;
-  toggleLanguage: () => void;
 }
 
 export const useLanguageStore = create<LanguageState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       language: getInitialLanguage(),
 
       setLanguage: (language) => {
@@ -28,13 +27,6 @@ export const useLanguageStore = create<LanguageState>()(
         // 切换 i18next 语言
         i18n.changeLanguage(language);
         set({ language });
-      },
-
-      toggleLanguage: () => {
-        const { language, setLanguage } = get();
-        const currentIndex = LANGUAGE_ORDER.indexOf(language);
-        const nextLanguage = LANGUAGE_ORDER[(currentIndex + 1) % LANGUAGE_ORDER.length];
-        setLanguage(nextLanguage);
       },
     }),
     {

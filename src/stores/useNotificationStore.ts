@@ -28,7 +28,6 @@ interface NotificationState {
   };
   showNotification: (message: string, type?: NotificationType, duration?: number) => void;
   removeNotification: (id: string) => void;
-  clearAll: () => void;
   showConfirmation: (options: ConfirmationOptions) => void;
   hideConfirmation: () => void;
   setConfirmationLoading: (loading: boolean) => void;
@@ -69,10 +68,6 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     set((state) => ({
       notifications: state.notifications.filter((n) => n.id !== id),
     }));
-  },
-
-  clearAll: () => {
-    set({ notifications: [] });
   },
 
   showConfirmation: (options) => {

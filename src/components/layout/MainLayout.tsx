@@ -666,7 +666,7 @@ export function MainLayout() {
   const handleRefreshAll = async () => {
     clearCache();
     const results = await Promise.allSettled([
-      fetchConfig(undefined, true),
+      fetchConfig(true),
       loadPluginResources(),
       triggerHeaderRefresh(),
     ]);
