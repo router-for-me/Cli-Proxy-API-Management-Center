@@ -1465,6 +1465,7 @@
     },
     "categories": {
       "title": "Провайдеры",
+      "quickFill": "Быстрое заполнение",
       "activeCount": "{{active}}/{{total}} активных",
       "sponsors": "Спонсоры"
     },
