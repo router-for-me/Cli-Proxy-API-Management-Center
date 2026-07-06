@@ -95,12 +95,6 @@ export interface PluginStorePlatform {
   goarch: string;
 }
 
-export interface PluginStoreSource {
-  id: string;
-  name: string;
-  url: string;
-}
-
 export interface PluginStoreSourceError {
   sourceId: string;
   sourceName: string;
@@ -111,7 +105,6 @@ export interface PluginStoreSourceError {
 export interface PluginStoreResponse {
   pluginsEnabled: boolean;
   pluginsDir: string;
-  sources: PluginStoreSource[];
   sourceErrors: PluginStoreSourceError[];
   plugins: PluginStoreEntry[];
 }

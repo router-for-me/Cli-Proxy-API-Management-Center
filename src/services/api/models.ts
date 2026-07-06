@@ -178,18 +178,6 @@ export const modelsApi = {
     return normalizeModelList(payload, { dedupe: true });
   },
 
-  buildV1ModelsEndpoint(baseUrl: string) {
-    return buildV1ModelsEndpoint(baseUrl);
-  },
-
-  buildClaudeModelsEndpoint(baseUrl: string) {
-    return buildClaudeModelsEndpoint(baseUrl);
-  },
-
-  buildGeminiModelsEndpoint(baseUrl: string) {
-    return buildGeminiModelsEndpoint(baseUrl);
-  },
-
   /**
    * Fetch Claude models from /v1/models via api-call.
    * Anthropic requires `x-api-key` and `anthropic-version` headers.

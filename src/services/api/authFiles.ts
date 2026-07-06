@@ -45,8 +45,6 @@ type AuthFileBatchDeleteResult = {
   failed: AuthFileBatchFailure[];
 };
 
-export const AUTH_FILE_INVALID_JSON_OBJECT_ERROR = 'AUTH_FILE_INVALID_JSON_OBJECT';
-
 const getStatusCode = (err: unknown): number | undefined => {
   if (!err || typeof err !== 'object') return undefined;
   if ('status' in err) return (err as StatusError).status;
@@ -236,31 +234,6 @@ const dedupeAuthFilesResponse = (payload: AuthFilesResponse): AuthFilesResponse 
   };
 };
 
-const parseAuthFileJsonObject = (rawText: string): Record<string, unknown> => {
-  const trimmed = rawText.trim();
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(trimmed) as unknown;
-  } catch {
-    throw new Error(AUTH_FILE_INVALID_JSON_OBJECT_ERROR);
-  }
-
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error(AUTH_FILE_INVALID_JSON_OBJECT_ERROR);
-  }
-
-  return { ...(parsed as Record<string, unknown>) };
-};
-
-const saveAuthFileText = async (name: string, text: string) => {
-  const file = new File([text], name, { type: 'application/json' });
-  await authFilesApi.upload(file);
-};
-
-export const isAuthFileInvalidJsonObjectError = (err: unknown): boolean =>
-  err instanceof Error && err.message === AUTH_FILE_INVALID_JSON_OBJECT_ERROR;
-
 const normalizeOauthExcludedModels = (payload: unknown): Record<string, string[]> => {
   if (!payload || typeof payload !== 'object') return {};
 
@@ -365,8 +338,6 @@ export const authFilesApi = {
     return normalizeBatchUploadResponse(payload, requestedNames);
   },
 
-  upload: (file: File) => authFilesApi.uploadFiles([file]),
-
   deleteFiles: async (names: string[]): Promise<AuthFileBatchDeleteResult> => {
     const requestedNames = normalizeRequestedAuthFileNames(names);
     if (requestedNames.length === 0) {
@@ -393,16 +364,6 @@ export const authFilesApi = {
     const blob = response.data as Blob;
     return blob.text();
   },
-
-  async downloadJsonObject(name: string): Promise<Record<string, unknown>> {
-    const rawText = await authFilesApi.downloadText(name);
-    return parseAuthFileJsonObject(rawText);
-  },
-
-  saveText: (name: string, text: string) => saveAuthFileText(name, text),
-
-  saveJsonObject: (name: string, json: Record<string, unknown>) =>
-    saveAuthFileText(name, JSON.stringify(json)),
 
   // OAuth 排除模型
   async getOauthExcludedModels(): Promise<Record<string, string[]>> {
