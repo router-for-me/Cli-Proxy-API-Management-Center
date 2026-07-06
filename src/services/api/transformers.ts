@@ -353,6 +353,13 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       .filter(Boolean) as ProviderKeyConfig[];
   }
 
+  const nvidiaList = raw['nvidia-api-key'];
+  if (Array.isArray(nvidiaList)) {
+    config.nvidiaApiKeys = nvidiaList
+      .map((item) => normalizeProviderKeyConfig(item))
+      .filter(Boolean) as ProviderKeyConfig[];
+  }
+
   const vertexList = raw['vertex-api-key'];
   if (Array.isArray(vertexList)) {
     config.vertexApiKeys = vertexList
