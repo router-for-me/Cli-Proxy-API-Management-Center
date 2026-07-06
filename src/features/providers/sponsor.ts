@@ -33,7 +33,6 @@ export const APIKEY_FUN_BASE_URL_OPTIONS = [
 ] as const;
 
 export const APIKEY_FUN_PROTOCOLS = ['anthropic', 'openai', 'codexResponses'] as const;
-export type ApiKeyFunProtocol = (typeof APIKEY_FUN_PROTOCOLS)[number];
 
 const normalizeText = (value: string | undefined | null): string =>
   String(value ?? '')

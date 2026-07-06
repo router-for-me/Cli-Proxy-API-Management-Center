@@ -27,8 +27,3 @@ export const detectApiBaseFromLocation = (): string => {
     return normalizeApiBase(`http://localhost:${DEFAULT_API_PORT}`);
   }
 };
-
-export const isLocalhost = (hostname: string): boolean => {
-  const value = (hostname || '').toLowerCase();
-  return value === 'localhost' || value === '127.0.0.1' || value === '[::1]';
-};

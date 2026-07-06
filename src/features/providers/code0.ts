@@ -126,12 +126,3 @@ export const buildCode0Raw = (config: Config | null | undefined): SponsorProvide
     .filter((item) => isCode0GeminiProvider(item.config)),
 });
 
-export const hasCode0Config = (config: Config | null | undefined): boolean => {
-  const raw = buildCode0Raw(config);
-  return (
-    raw.openai.length > 0 ||
-    raw.claude.length > 0 ||
-    raw.codex.length > 0 ||
-    raw.gemini.length > 0
-  );
-};

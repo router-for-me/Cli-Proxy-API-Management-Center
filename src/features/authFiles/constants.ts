@@ -49,7 +49,6 @@ const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
 
 export const MIN_CARD_PAGE_SIZE = 3;
 export const MAX_CARD_PAGE_SIZE = 30;
-export const AUTH_FILE_REFRESH_WARNING_MS = 24 * 60 * 60 * 1000;
 
 export const INTEGER_STRING_PATTERN = /^[+-]?\d+$/;
 export const TRUTHY_TEXT_VALUES = new Set(['true', '1', 'yes', 'y', 'on']);
@@ -208,26 +207,6 @@ export const parsePriorityValue = (value: unknown): number | undefined => {
   const parsed = Number.parseInt(trimmed, 10);
   return Number.isSafeInteger(parsed) ? parsed : undefined;
 };
-
-export const normalizeExcludedModels = (value: unknown): string[] => {
-  if (!Array.isArray(value)) return [];
-
-  const seen = new Set<string>();
-  const normalized: string[] = [];
-  value.forEach((entry) => {
-    const model = String(entry ?? '')
-      .trim()
-      .toLowerCase();
-    if (!model || seen.has(model)) return;
-    seen.add(model);
-    normalized.push(model);
-  });
-
-  return normalized.sort((a, b) => a.localeCompare(b));
-};
-
-export const parseExcludedModelsText = (value: string): string[] =>
-  normalizeExcludedModels(value.split(/[\n,]+/));
 
 export const parseDisableCoolingValue = (value: unknown): boolean | undefined => {
   if (typeof value === 'boolean') return value;

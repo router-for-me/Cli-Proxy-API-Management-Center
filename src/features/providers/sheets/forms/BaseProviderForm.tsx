@@ -30,10 +30,6 @@ import { ModelEntriesEditor } from './ModelEntriesEditor';
 import styles from './sharedForm.module.scss';
 import { CLAUDE_API_BASE_URL } from '../../claudeApi';
 
-export interface BaseProviderFormHandle {
-  submit: () => Promise<void>;
-}
-
 interface BaseProviderFormProps {
   brand: ProviderBrand;
   resource: ProviderResource | null;
