@@ -12,7 +12,6 @@
   --bg-quinary: #f6f4ee;
   --bg-error-light: rgba(198, 87, 70, 0.1);
   --floating-surface: #fffdf9;
-  --floating-border: #d8d3ca;
   --floating-shadow: 0 12px 26px rgba(0, 0, 0, 0.14);
 
   --text-primary: #2d2a26;
@@ -57,7 +56,6 @@
   --shadow-lg: 0 10px 18px -3px rgb(0 0 0 / 0.1);
 
   --radius-md: 8px;
-  --accent-tertiary: var(--bg-tertiary);
 
   // Workbench tokens (Home parity)
   --primary-8: color-mix(in srgb, var(--primary-color) 8%, transparent);
@@ -92,7 +90,6 @@
   --bg-quinary: #ffffff;
   --bg-error-light: rgba(198, 87, 70, 0.08);
   --floating-surface: #ffffff;
-  --floating-border: #d9d9d9;
   --floating-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
 
   --text-primary: #2d2a26;
@@ -137,7 +134,6 @@
   --shadow-lg: 0 10px 18px -3px rgb(0 0 0 / 0.1);
 
   --radius-md: 8px;
-  --accent-tertiary: var(--bg-tertiary);
 
   // Workbench tokens (Home parity)
   --primary-8: color-mix(in srgb, var(--primary-color) 8%, transparent);
@@ -165,7 +161,6 @@
   --bg-quinary: #191714;
   --bg-error-light: rgba(198, 87, 70, 0.18);
   --floating-surface: #2a2723;
-  --floating-border: #4a443d;
   --floating-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
 
   --text-primary: #f6f4f1;
@@ -210,7 +205,6 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3);
 
   --radius-md: 8px;
-  --accent-tertiary: var(--bg-tertiary);
 
   // Workbench tokens (Home parity, deeper amber for dark)
   --primary-8: color-mix(in srgb, var(--primary-color) 8%, transparent);

@@ -17,19 +17,6 @@
   }
 }
 
-@mixin desktop {
-  @media (min-width: #{$breakpoint-tablet + 1}) {
-    @content;
-  }
-}
-
-// Flexbox 居中
-@mixin flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 // 文本截断
 @mixin text-ellipsis {
   overflow: hidden;
