@@ -112,15 +112,6 @@ export function IconShield({ size = 20, ...props }: IconProps) {
   );
 }
 
-export function IconChartLine({ size = 20, ...props }: IconProps) {
-  return (
-    <svg {...baseSvgProps} width={size} height={size} {...props}>
-      <path d="M3 3v16a2 2 0 0 0 2 2h16" />
-      <path d="m19 9-5 5-4-4-3 3" />
-    </svg>
-  );
-}
-
 export function IconSettings({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>
@@ -363,29 +354,12 @@ export function IconSatellite({ size = 20, ...props }: IconProps) {
   );
 }
 
-export function IconDiamond({ size = 20, ...props }: IconProps) {
-  return (
-    <svg {...baseSvgProps} width={size} height={size} {...props}>
-      <path d="M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41l-7.59-7.59a2.41 2.41 0 0 0-3.41 0Z" />
-    </svg>
-  );
-}
-
 export function IconTimer({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>
       <line x1="10" x2="14" y1="2" y2="2" />
       <line x1="12" x2="15" y1="14" y2="11" />
       <circle cx="12" cy="14" r="8" />
-    </svg>
-  );
-}
-
-export function IconTrendingUp({ size = 20, ...props }: IconProps) {
-  return (
-    <svg {...baseSvgProps} width={size} height={size} {...props}>
-      <path d="M16 7h6v6" />
-      <path d="m22 7-8.5 8.5-5-5L2 17" />
     </svg>
   );
 }
@@ -432,17 +406,6 @@ export function IconCode({ size = 20, ...props }: IconProps) {
     <svg {...baseSvgProps} width={size} height={size} {...props}>
       <polyline points="16 18 22 12 16 6" />
       <polyline points="8 6 2 12 8 18" />
-    </svg>
-  );
-}
-
-export function IconLayoutDashboard({ size = 20, ...props }: IconProps) {
-  return (
-    <svg {...baseSvgProps} width={size} height={size} {...props}>
-      <rect width="7" height="9" x="3" y="3" rx="1" />
-      <rect width="7" height="5" x="14" y="3" rx="1" />
-      <rect width="7" height="9" x="14" y="12" rx="1" />
-      <rect width="7" height="5" x="3" y="16" rx="1" />
     </svg>
   );
 }
