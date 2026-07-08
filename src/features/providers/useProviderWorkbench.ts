@@ -15,6 +15,7 @@ import {
   code0ToResource,
   codexToResource,
   geminiToResource,
+  nvidiaToResource,
   openaiToResource,
   vertexToResource,
 } from './adapters';
@@ -133,7 +134,7 @@ const buildModelAliases = (
     .filter((m) => m.name);
 
 const buildProviderKeyConfig = (
-  brand: 'gemini' | 'codex' | 'claude' | 'vertex',
+  brand: 'gemini' | 'codex' | 'claude' | 'nvidia' | 'vertex',
   input: ProviderEntryFormInput,
   existing?: ProviderKeyConfig | GeminiKeyConfig | null
 ): ProviderKeyConfig | GeminiKeyConfig => {
@@ -424,6 +425,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             []
           );
           break;
+        case 'nvidia':
+          resources = (config.nvidiaApiKeys ?? []).map((c, i) => nvidiaToResource(c, i));
+          break;
         case 'vertex':
           resources = (config.vertexApiKeys ?? []).map((c, i) => vertexToResource(c, i));
           break;
@@ -482,6 +486,14 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     async (next: ProviderKeyConfig[]) => {
       await providersApi.saveClaudeConfigs(next);
       updateConfigValue('claude-api-key', next);
+    },
+    [updateConfigValue]
+  );
+
+  const persistNvidiaConfigs = useCallback(
+    async (next: ProviderKeyConfig[]) => {
+      await providersApi.saveNvidiaConfigs(next);
+      updateConfigValue('nvidia-api-key', next);
     },
     [updateConfigValue]
   );
@@ -609,6 +621,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const next = [...(config?.claudeApiKeys ?? [])];
           next.push(buildClaudeApiConfig(input));
           await persistClaudeConfigs(next);
+        } else if (brand === 'nvidia') {
+          const next = [...(config?.nvidiaApiKeys ?? [])];
+          next.push(buildProviderKeyConfig('nvidia', input) as ProviderKeyConfig);
+          await persistNvidiaConfigs(next);
         } else if (brand === 'vertex') {
           const next = [...(config?.vertexApiKeys ?? [])];
           next.push(buildProviderKeyConfig('vertex', input) as ProviderKeyConfig);
@@ -630,6 +646,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       persistClaudeConfigs,
       persistCodexConfigs,
       persistGeminiKeys,
+      persistNvidiaConfigs,
       persistOpenAIConfigs,
       persistSponsorConfig,
       persistVertexConfigs,
@@ -663,6 +680,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const existing = list[idx];
           list[idx] = buildClaudeApiConfig(input, existing);
           await persistClaudeConfigs(list);
+        } else if (brand === 'nvidia') {
+          const list = [...(config?.nvidiaApiKeys ?? [])];
+          const existing = list[idx];
+          list[idx] = buildProviderKeyConfig('nvidia', input, existing) as ProviderKeyConfig;
+          await persistNvidiaConfigs(list);
         } else if (brand === 'vertex') {
           const list = [...(config?.vertexApiKeys ?? [])];
           const existing = list[idx];
@@ -686,6 +708,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       persistClaudeConfigs,
       persistCodexConfigs,
       persistGeminiKeys,
+      persistNvidiaConfigs,
       persistOpenAIConfigs,
       persistSponsorConfig,
       persistVertexConfigs,
@@ -714,6 +737,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.deleteClaudeConfig(sel.apiKey, sel.baseUrl);
           const next = (config?.claudeApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('claude-api-key', next);
+        } else if (sel.brand === 'nvidia') {
+          await providersApi.deleteNvidiaConfig(sel.apiKey, sel.baseUrl);
+          const next = (config?.nvidiaApiKeys ?? []).filter((_, i) => i !== sel.index);
+          updateConfigValue('nvidia-api-key', next);
         } else if (sel.brand === 'vertex') {
           await providersApi.deleteVertexConfig(sel.apiKey, sel.baseUrl);
           const next = (config?.vertexApiKeys ?? []).filter((_, i) => i !== sel.index);
@@ -775,6 +802,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'codex' ||
           brand === 'claude' ||
           brand === 'claudeApi' ||
+          brand === 'nvidia' ||
           brand === 'vertex'
         ) {
           const key =
@@ -782,7 +810,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               ? 'codexApiKeys'
               : brand === 'claude' || brand === 'claudeApi'
                 ? 'claudeApiKeys'
-                : 'vertexApiKeys';
+                : brand === 'nvidia'
+                  ? 'nvidiaApiKeys'
+                  : 'vertexApiKeys';
           const list = [...((config?.[key] as ProviderKeyConfig[] | undefined) ?? [])];
           const current = list[idx];
           if (!current) return;
@@ -792,6 +822,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           list[idx] = { ...current, excludedModels: excluded };
           if (brand === 'codex') await persistCodexConfigs(list);
           else if (brand === 'claude' || brand === 'claudeApi') await persistClaudeConfigs(list);
+          else if (brand === 'nvidia') await persistNvidiaConfigs(list);
           else await persistVertexConfigs(list);
         } else if (brand === 'openaiCompatibility') {
           await providersApi.updateOpenAIProviderDisabled(idx, disabled);
@@ -862,6 +893,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       persistClaudeConfigs,
       persistCodexConfigs,
       persistGeminiKeys,
+      persistNvidiaConfigs,
       persistOpenAIConfigs,
       persistVertexConfigs,
       refreshSnapshot,

@@ -114,6 +114,7 @@ export function DashboardPage() {
         gemini: config.geminiApiKeys?.length ?? 0,
         codex: config.codexApiKeys?.length ?? 0,
         claude: config.claudeApiKeys?.length ?? 0,
+        nvidia: config.nvidiaApiKeys?.length ?? 0,
         vertex: config.vertexApiKeys?.length ?? 0,
         openai: config.openaiCompatibility?.length ?? 0,
       }
@@ -143,6 +144,7 @@ export function DashboardPage() {
             gemini: providerStats.gemini,
             codex: providerStats.codex,
             claude: providerStats.claude,
+            nvidia: providerStats.nvidia,
             vertex: providerStats.vertex,
             openai: providerStats.openai,
           })

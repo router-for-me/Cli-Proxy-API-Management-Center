@@ -48,6 +48,7 @@ const SECTION_KEYS: RawConfigSection[] = [
   'gemini-api-key',
   'codex-api-key',
   'claude-api-key',
+  'nvidia-api-key',
   'vertex-api-key',
   'openai-compatibility',
   'oauth-excluded-models',
@@ -84,6 +85,8 @@ const extractSectionValue = (config: Config | null, section?: RawConfigSection) 
       return config.codexApiKeys;
     case 'claude-api-key':
       return config.claudeApiKeys;
+    case 'nvidia-api-key':
+      return config.nvidiaApiKeys;
     case 'vertex-api-key':
       return config.vertexApiKeys;
     case 'openai-compatibility':
@@ -229,6 +232,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           break;
         case 'claude-api-key':
           nextConfig.claudeApiKeys = value as Config['claudeApiKeys'];
+          break;
+        case 'nvidia-api-key':
+          nextConfig.nvidiaApiKeys = value as Config['nvidiaApiKeys'];
           break;
         case 'vertex-api-key':
           nextConfig.vertexApiKeys = value as Config['vertexApiKeys'];

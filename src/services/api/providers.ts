@@ -41,7 +41,7 @@ const CLAUDE_KEY_FIELDS = [
   'cloak',
   'experimental-cch-signing',
 ] as const;
-const NVIDIA_KEY_FIELDS = [...PROVIDER_COMMON_KEY_FIELDS, 'rate-limit'] as const;
+const NVIDIA_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
 const VERTEX_KEY_FIELDS = [
   'api-key',
   'priority',

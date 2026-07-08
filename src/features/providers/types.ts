@@ -9,6 +9,7 @@ export type ProviderBrand =
   | 'codex'
   | 'claude'
   | 'claudeApi'
+  | 'nvidia'
   | 'vertex'
   | 'openaiCompatibility'
   | 'apikeyFun'
@@ -27,6 +28,7 @@ export type ProviderResourceSelector =
   | { brand: 'codex'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'claude'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'claudeApi'; apiKey: string; baseUrl?: string; index: number }
+  | { brand: 'nvidia'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'vertex'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'openaiCompatibility'; name: string; index: number }
   | {
