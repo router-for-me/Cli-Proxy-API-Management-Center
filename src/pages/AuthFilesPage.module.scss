@@ -1497,21 +1497,27 @@
 }
 
 .statusPanelCompact .statusBar {
-  flex-wrap: wrap;
-  gap: 8px;
-  row-gap: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 0;
 }
 
 .statusPanelCompact .statusBlocks {
   gap: 2px;
+  min-width: 0;
 }
 
 .statusPanelCompact .statusBlockWrapper {
-  min-width: 5px;
+  min-width: 0;
 }
 
 .statusPanelCompact .statusRate {
-  margin-left: auto;
+  justify-self: end;
+  justify-content: center;
+  min-width: 54px;
+  margin-left: 0;
   padding: 5px 7px;
   font-size: 11px;
 }
