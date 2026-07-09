@@ -199,7 +199,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
   const refreshQuotaForFile = useCallback(
     async (file: AuthFileItem) => {
-      if (disabled || file.disabled) return;
+      if (disabled) return;
       if (quota[file.name]?.status === 'loading') return;
 
       setQuota((prev) => ({
@@ -234,7 +234,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     (file: AuthFileItem) => {
       const resetQuota = config.resetQuota;
       if (!resetQuota) return;
-      if (disabled || file.disabled) return;
+      if (disabled) return;
       if (quota[file.name]?.status === 'loading') return;
       if (resettingQuotaName === file.name) return;
 
@@ -336,7 +336,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
               const itemQuota = quota[item.name];
               const isResettingQuota = resettingQuotaName === item.name;
               const canUseQuotaAction =
-                !disabled && !item.disabled && itemQuota?.status !== 'loading';
+                !disabled && itemQuota?.status !== 'loading';
               const showResetQuotaAction =
                 itemQuota !== undefined && Boolean(config.canResetQuota?.(itemQuota));
               const resetQuotaAction =
