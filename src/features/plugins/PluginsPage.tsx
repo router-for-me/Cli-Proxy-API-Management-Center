@@ -10,7 +10,6 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
   IconGithub,
   IconPlug,
-  IconPlus,
   IconRefreshCw,
   IconSearch,
   IconSettings,
@@ -23,10 +22,15 @@ import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { getErrorMessage, isRecord } from '@/utils/helpers';
 import type {
   PluginConfigField,
-  PluginConfigObject,
   PluginListEntry,
   PluginListResponse,
 } from '@/types';
+import {
+  buildPluginConfigDraft,
+  buildPluginConfigPatch,
+  normalizePluginConfigFieldType,
+  type PluginConfigDraft,
+} from './pluginConfigDraft';
 import {
   getPluginTitle,
   notifyPluginResourcesChanged,
@@ -35,15 +39,7 @@ import {
 import { waitForPluginState } from './pluginPolling';
 import styles from './PluginsPage.module.scss';
 
-type PluginDraftValue = string | boolean | string[];
 type PluginRuntimeWaitStatus = 'ready' | 'globalDisabled' | 'timeout';
-
-interface PluginConfigDraft {
-  enabled: boolean;
-  priority: string;
-  values: Record<string, PluginDraftValue>;
-  errors: Record<string, string>;
-}
 
 function PluginCardLogo({ src }: { src: string }) {
   const [failed, setFailed] = useState(false);
@@ -63,169 +59,6 @@ const hasRestartRequired = (value: unknown) => isRecord(value) && value.restart_
 const hasRestartRequiredError = (error: unknown) =>
   isRecord(error) && (hasRestartRequired(error.details) || hasRestartRequired(error.data));
 
-const normalizeFieldType = (field: PluginConfigField) => field.type.trim().toLowerCase();
-
-const stringifyArrayItem = (value: unknown): string => {
-  if (value === undefined || value === null) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-};
-
-const getFieldDraftValue = (field: PluginConfigField, value: unknown): PluginDraftValue => {
-  const type = normalizeFieldType(field);
-  if (type === 'boolean') return value === true;
-  if (type === 'array') {
-    if (Array.isArray(value)) {
-      return value.length > 0 ? value.map((item) => stringifyArrayItem(item)) : [''];
-    }
-    if (value !== undefined && value !== null) return [stringifyArrayItem(value)];
-    return [''];
-  }
-  if (value === undefined || value === null) return '';
-  if (type === 'object') {
-    return JSON.stringify(value, null, 2);
-  }
-  return String(value);
-};
-
-const buildDraft = (
-  plugin: PluginListEntry,
-  currentConfig: PluginConfigObject
-): PluginConfigDraft => {
-  const enabled =
-    typeof currentConfig.enabled === 'boolean' ? currentConfig.enabled : plugin.enabled;
-  const priority =
-    typeof currentConfig.priority === 'number' || typeof currentConfig.priority === 'string'
-      ? String(currentConfig.priority)
-      : '0';
-  const values: PluginConfigDraft['values'] = {};
-
-  plugin.configFields.forEach((field) => {
-    values[field.name] = getFieldDraftValue(field, currentConfig[field.name]);
-  });
-
-  return {
-    enabled,
-    priority,
-    values,
-    errors: {},
-  };
-};
-
-const parseJSONField = (
-  text: string,
-  fieldType: string,
-  fieldName: string,
-  t: (key: string, options?: Record<string, unknown>) => string,
-  errors: Record<string, string>
-) => {
-  try {
-    const parsed = JSON.parse(text);
-    if (fieldType === 'array' && !Array.isArray(parsed)) {
-      errors[fieldName] = t('plugin_management.expected_array');
-      return undefined;
-    }
-    if (fieldType === 'object' && !isRecord(parsed)) {
-      errors[fieldName] = t('plugin_management.expected_object');
-      return undefined;
-    }
-    return parsed;
-  } catch {
-    errors[fieldName] = t('plugin_management.invalid_json');
-    return undefined;
-  }
-};
-
-const buildConfigPayload = (
-  draft: PluginConfigDraft,
-  fields: PluginConfigField[],
-  currentConfig: PluginConfigObject,
-  t: (key: string, options?: Record<string, unknown>) => string
-) => {
-  const errors: Record<string, string> = {};
-  const nextConfig: PluginConfigObject = { ...currentConfig };
-  const priorityText = draft.priority.trim();
-
-  nextConfig.enabled = draft.enabled;
-  if (!priorityText) {
-    nextConfig.priority = 0;
-  } else if (!/^-?\d+$/.test(priorityText)) {
-    errors.priority = t('plugin_management.invalid_priority');
-  } else {
-    nextConfig.priority = Number.parseInt(priorityText, 10);
-  }
-
-  fields.forEach((field) => {
-    const fieldType = normalizeFieldType(field);
-    const value = draft.values[field.name];
-
-    if (fieldType === 'boolean') {
-      nextConfig[field.name] = value === true;
-      return;
-    }
-
-    if (fieldType === 'array') {
-      const items = Array.isArray(value) ? value.map((item) => item.trim()).filter(Boolean) : [];
-      if (items.length === 0) {
-        delete nextConfig[field.name];
-      } else {
-        nextConfig[field.name] = items;
-      }
-      return;
-    }
-
-    const text = typeof value === 'string' ? value.trim() : '';
-    if (!text) {
-      delete nextConfig[field.name];
-      return;
-    }
-
-    if (fieldType === 'enum') {
-      if (field.enumValues.length > 0 && !field.enumValues.includes(text)) {
-        errors[field.name] = t('plugin_management.invalid_enum');
-        return;
-      }
-      nextConfig[field.name] = text;
-      return;
-    }
-
-    if (fieldType === 'number') {
-      const parsed = Number(text);
-      if (!Number.isFinite(parsed)) {
-        errors[field.name] = t('plugin_management.invalid_number');
-        return;
-      }
-      nextConfig[field.name] = parsed;
-      return;
-    }
-
-    if (fieldType === 'integer') {
-      if (!/^-?\d+$/.test(text)) {
-        errors[field.name] = t('plugin_management.invalid_integer');
-        return;
-      }
-      nextConfig[field.name] = Number.parseInt(text, 10);
-      return;
-    }
-
-    if (fieldType === 'object') {
-      const parsed = parseJSONField(text, fieldType, field.name, t, errors);
-      if (errors[field.name]) return;
-      nextConfig[field.name] = parsed;
-      return;
-    }
-
-    nextConfig[field.name] = text;
-  });
-
-  return { nextConfig, errors };
-};
-
 export function PluginsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -240,7 +73,6 @@ export function PluginsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingPlugin, setEditingPlugin] = useState<PluginListEntry | null>(null);
-  const [editingConfig, setEditingConfig] = useState<PluginConfigObject>({});
   const [draft, setDraft] = useState<PluginConfigDraft | null>(null);
   const [mutatingID, setMutatingID] = useState('');
   const [deletingID, setDeletingID] = useState('');
@@ -338,20 +170,17 @@ export function PluginsPage() {
     configRequestSeq.current = requestSeq;
     setOpeningConfigID(plugin.id);
     setEditingPlugin(plugin);
-    setEditingConfig({});
     setDraft(null);
 
     try {
       const currentConfig = await pluginsApi.getConfig(plugin.id);
       if (configRequestSeq.current !== requestSeq) return;
 
-      setEditingConfig(currentConfig);
-      setDraft(buildDraft(plugin, currentConfig));
+      setDraft(buildPluginConfigDraft(plugin, currentConfig));
     } catch (err: unknown) {
       if (configRequestSeq.current !== requestSeq) return;
 
       setEditingPlugin(null);
-      setEditingConfig({});
       setDraft(null);
       showNotification(
         hasStatus(err, 404)
@@ -372,7 +201,6 @@ export function PluginsPage() {
   const closeConfigSheet = () => {
     if (mutatingID || openingConfigID || deletingID) return;
     setEditingPlugin(null);
-    setEditingConfig({});
     setDraft(null);
   };
 
@@ -430,7 +258,6 @@ export function PluginsPage() {
           clearConfigCache();
           if (editingPlugin?.id === plugin.id) {
             setEditingPlugin(null);
-            setEditingConfig({});
             setDraft(null);
           }
           await loadPlugins();
@@ -458,12 +285,7 @@ export function PluginsPage() {
 
   const handleSaveConfig = async () => {
     if (!editingPlugin || !draft || openingConfigID || mutatingID || deletingID) return;
-    const { nextConfig, errors } = buildConfigPayload(
-      draft,
-      editingPlugin.configFields,
-      editingConfig,
-      t
-    );
+    const { patch, errors } = buildPluginConfigPatch(draft, editingPlugin.configFields, t);
 
     if (Object.keys(errors).length > 0) {
       setDraft({ ...draft, errors });
@@ -471,20 +293,26 @@ export function PluginsPage() {
       return;
     }
 
+    if (Object.keys(patch).length === 0) {
+      setEditingPlugin(null);
+      setDraft(null);
+      showNotification(t('plugin_management.save_success'), 'success');
+      return;
+    }
+
     setMutatingID(editingPlugin.id);
     try {
-      await pluginsApi.putConfig(editingPlugin.id, nextConfig);
+      await pluginsApi.patchConfig(editingPlugin.id, patch);
       clearConfigCache();
       const enabledChanged =
-        typeof nextConfig.enabled === 'boolean' && nextConfig.enabled !== editingPlugin.enabled;
+        typeof patch.enabled === 'boolean' && patch.enabled !== editingPlugin.enabled;
       const status = enabledChanged
-        ? await waitForPluginRuntimeState(editingPlugin.id, nextConfig.enabled === true)
+        ? await waitForPluginRuntimeState(editingPlugin.id, patch.enabled === true)
         : await loadPlugins().then((): PluginRuntimeWaitStatus => 'ready');
       if (status === 'ready') {
         notifyPluginResourcesChanged();
       }
       setEditingPlugin(null);
-      setEditingConfig({});
       setDraft(null);
       if (status === 'ready') {
         showNotification(t('plugin_management.save_success'), 'success');
@@ -518,6 +346,7 @@ export function PluginsPage() {
         ...current,
         values: { ...current.values, [fieldName]: value },
         errors: { ...current.errors, [fieldName]: '' },
+        touchedFields: { ...current.touchedFields, [fieldName]: true },
       }));
     };
 
@@ -526,19 +355,8 @@ export function PluginsPage() {
       ...current,
       values: { ...current.values, [fieldName]: value },
       errors: { ...current.errors, [fieldName]: '' },
+      touchedFields: { ...current.touchedFields, [fieldName]: true },
     }));
-  };
-
-  const updateArrayField = (fieldName: string, updater: (items: string[]) => string[]) => {
-    updateDraft((current) => {
-      const currentValue = current.values[fieldName];
-      const items = Array.isArray(currentValue) ? currentValue : [''];
-      return {
-        ...current,
-        values: { ...current.values, [fieldName]: updater(items) },
-        errors: { ...current.errors, [fieldName]: '' },
-      };
-    });
   };
 
   const handlePriorityChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -547,12 +365,13 @@ export function PluginsPage() {
       ...current,
       priority: value,
       errors: { ...current.errors, priority: '' },
+      priorityTouched: true,
     }));
   };
 
   const renderFieldEditor = (field: PluginConfigField) => {
     if (!draft) return null;
-    const fieldType = normalizeFieldType(field);
+    const fieldType = normalizePluginConfigFieldType(field);
     const value = draft.values[field.name];
     const textValue = typeof value === 'string' ? value : '';
     const errorText = draft.errors[field.name];
@@ -588,6 +407,7 @@ export function PluginsPage() {
                 ...current,
                 values: { ...current.values, [field.name]: nextValue },
                 errors: { ...current.errors, [field.name]: '' },
+                touchedFields: { ...current.touchedFields, [field.name]: true },
               }))
             }
             placeholder={t('plugin_management.select_placeholder')}
@@ -598,73 +418,7 @@ export function PluginsPage() {
       );
     }
 
-    if (fieldType === 'array') {
-      const items = Array.isArray(value) && value.length > 0 ? value : [''];
-      return (
-        <div key={field.name} className={styles.formField}>
-          <div className={styles.fieldLabel}>{field.name}</div>
-          <div className={styles.arrayEditor}>
-            {items.map((item, index) => (
-              <div key={`${field.name}-${index}`} className={styles.arrayItemRow}>
-                <input
-                  className={styles.arrayInput}
-                  aria-label={`${field.name} ${index + 1}`}
-                  value={item}
-                  onChange={(event) =>
-                    updateArrayField(field.name, (currentItems) =>
-                      currentItems.map((currentItem, currentIndex) =>
-                        currentIndex === index ? event.target.value : currentItem
-                      )
-                    )
-                  }
-                  placeholder={t('plugin_management.array_item_placeholder')}
-                />
-                <div className={styles.arrayActions}>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className={styles.iconButton}
-                    onClick={() =>
-                      updateArrayField(field.name, (currentItems) => [
-                        ...currentItems.slice(0, index + 1),
-                        '',
-                        ...currentItems.slice(index + 1),
-                      ])
-                    }
-                    title={t('plugin_management.add_array_item')}
-                    aria-label={t('plugin_management.add_array_item')}
-                  >
-                    <IconPlus size={16} />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className={styles.iconButton}
-                    onClick={() =>
-                      updateArrayField(field.name, (currentItems) =>
-                        currentItems.length <= 1
-                          ? ['']
-                          : currentItems.filter((_, currentIndex) => currentIndex !== index)
-                      )
-                    }
-                    title={t('plugin_management.remove_array_item')}
-                    aria-label={t('plugin_management.remove_array_item')}
-                  >
-                    <IconTrash2 size={16} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-          {field.description ? <div className={styles.fieldHint}>{field.description}</div> : null}
-          {errorText ? <div className={styles.fieldError}>{errorText}</div> : null}
-        </div>
-      );
-    }
-
-    if (fieldType === 'object') {
+    if (fieldType === 'array' || fieldType === 'object') {
       return (
         <div key={field.name} className={styles.formField}>
           <label htmlFor={`plugin-field-${field.name}`}>{field.name}</label>
@@ -673,7 +427,7 @@ export function PluginsPage() {
             className={styles.textarea}
             value={textValue}
             onChange={handleFieldTextChange(field.name)}
-            placeholder="{}"
+            placeholder={fieldType === 'array' ? '[]' : '{}'}
             spellCheck={false}
           />
           {field.description ? <div className={styles.fieldHint}>{field.description}</div> : null}
@@ -971,7 +725,13 @@ export function PluginsPage() {
                 </div>
                 <ToggleSwitch
                   checked={draft.enabled}
-                  onChange={(enabled) => updateDraft((current) => ({ ...current, enabled }))}
+                  onChange={(enabled) =>
+                    updateDraft((current) => ({
+                      ...current,
+                      enabled,
+                      enabledTouched: true,
+                    }))
+                  }
                   ariaLabel={t('plugin_management.enabled')}
                 />
               </div>
