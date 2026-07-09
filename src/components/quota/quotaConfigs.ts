@@ -1558,15 +1558,6 @@ const formatXaiPercent = (value: number | null): string => {
   return `${Math.round(value)}%`;
 };
 
-const formatXaiPeriodRange = (start?: string, end?: string): string => {
-  const startLabel = formatQuotaResetTime(start);
-  const endLabel = formatQuotaResetTime(end);
-  if (startLabel !== '-' && endLabel !== '-') return `${startLabel} ~ ${endLabel}`;
-  if (endLabel !== '-') return endLabel;
-  if (startLabel !== '-') return startLabel;
-  return '';
-};
-
 const XAI_SUPERGROK_LIMIT_CENTS = 15_000;
 const XAI_SUPERGROK_HEAVY_LIMIT_CENTS = 150_000;
 
@@ -1611,16 +1602,8 @@ const renderXaiItems = (
   const onDemandPercentLabel = formatXaiPercent(onDemandRemaining);
   const onDemandAmountLabel = formatXaiOnDemandAmount(billing);
   const plan = resolveXaiPlan(billing.monthlyLimitCents);
-  const weeklyUsed =
-    billing.periodType === 'weekly' && billing.usagePercent !== null
-      ? Math.max(0, Math.min(100, billing.usagePercent))
-      : null;
-  const weeklyRemaining = weeklyUsed === null ? null : Math.max(0, Math.min(100, 100 - weeklyUsed));
-  const weeklyPeriodLabel = formatXaiPeriodRange(billing.periodStart, billing.periodEnd);
   const weeklyResetLabel = formatQuotaResetTime(billing.periodEnd);
-  const hasWeeklyData =
-    billing.periodType === 'weekly' &&
-    (weeklyUsed !== null || Boolean(billing.periodEnd) || billing.productUsage.length > 0);
+  const hasWeeklyReset = billing.periodType === 'weekly' && weeklyResetLabel !== '-';
   const hasMonthlyData =
     billing.monthlyLimitCents !== null ||
     billing.usedCents !== null ||
@@ -1641,43 +1624,18 @@ const renderXaiItems = (
           )
         )
       : null,
-    hasWeeklyData
+    hasWeeklyReset
       ? h(
           'div',
-          { key: 'weekly-limit', className: styleMap.quotaRow },
+          { key: 'weekly-limit', className: styleMap.codexPlan },
+          h('span', { className: styleMap.codexPlanLabel }, t('xai_quota.weekly_limit')),
           h(
-            'div',
-            { className: styleMap.quotaRowHeader },
-            h('span', { className: styleMap.quotaModel }, t('xai_quota.weekly_limit')),
-            h(
-              'div',
-              { className: styleMap.quotaMeta },
-              h(
-                'span',
-                { className: styleMap.quotaPercent },
-                t('xai_quota.used_percent', {
-                  percent: formatXaiPercent(weeklyUsed),
-                })
-              ),
-              weeklyPeriodLabel
-                ? h('span', { className: styleMap.quotaAmount }, weeklyPeriodLabel)
-                : null,
-              weeklyResetLabel !== '-'
-                ? h(
-                    'span',
-                    { className: styleMap.quotaReset },
-                    t('xai_quota.reset_at', {
-                      time: weeklyResetLabel,
-                    })
-                  )
-                : null
-            )
-          ),
-          h(QuotaProgressBar, {
-            percent: weeklyRemaining,
-            highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
-            mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
-          })
+            'span',
+            { className: styleMap.codexPlanValue },
+            t('xai_quota.reset_at', {
+              time: weeklyResetLabel,
+            })
+          )
         )
       : null,
     ...billing.productUsage.map((item) => {
