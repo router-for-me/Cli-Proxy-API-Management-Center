@@ -62,8 +62,8 @@ export function ProviderResourcePanel({
   const registrationUrl =
     group.id === 'claudeApi'
       ? CLAUDE_API_AFFILIATE_URL
-      : group.id === 'code0'
-        ? getSponsorProviderDefinition('code0').affiliateUrl
+      : group.id === 'code0' || group.id === 'fennoAI' || group.id === 'qiniuCloud'
+        ? getSponsorProviderDefinition(group.id).affiliateUrl
         : null;
   const emptyText = showSponsorRegistrationLink
     ? t('providersPage.sponsor.emptyRegisterHint')

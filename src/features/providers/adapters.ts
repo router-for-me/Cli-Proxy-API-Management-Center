@@ -14,6 +14,18 @@ import {
   getCode0ProtocolUrls,
   resolveCode0BaseUrl,
 } from './code0';
+import {
+  FENNO_AI_DISPLAY_NAME,
+  FENNO_AI_PROTOCOL_LABELS,
+  getFennoAIProtocolUrls,
+  resolveFennoAIBaseUrl,
+} from './fennoAI';
+import {
+  QINIU_CLOUD_DISPLAY_NAME,
+  QINIU_CLOUD_PROTOCOL_LABELS,
+  getQiniuCloudProtocolUrls,
+  resolveQiniuCloudBaseUrl,
+} from './qiniuCloud';
 import type {
   ProviderBrand,
   ProviderResource,
@@ -312,5 +324,23 @@ export function code0ToResource(raw: SponsorProviderRaw): ProviderResource | nul
     protocolLabels: CODE0_PROTOCOL_LABELS,
     resolveBaseUrl: resolveCode0BaseUrl,
     getProtocolUrls: getCode0ProtocolUrls,
+  });
+}
+
+export function fennoAIToResource(raw: SponsorProviderRaw): ProviderResource | null {
+  return sponsorRawToResource('fennoAI', raw, {
+    displayName: FENNO_AI_DISPLAY_NAME,
+    protocolLabels: FENNO_AI_PROTOCOL_LABELS,
+    resolveBaseUrl: resolveFennoAIBaseUrl,
+    getProtocolUrls: getFennoAIProtocolUrls,
+  });
+}
+
+export function qiniuCloudToResource(raw: SponsorProviderRaw): ProviderResource | null {
+  return sponsorRawToResource('qiniuCloud', raw, {
+    displayName: QINIU_CLOUD_DISPLAY_NAME,
+    protocolLabels: QINIU_CLOUD_PROTOCOL_LABELS,
+    resolveBaseUrl: resolveQiniuCloudBaseUrl,
+    getProtocolUrls: getQiniuCloudProtocolUrls,
   });
 }

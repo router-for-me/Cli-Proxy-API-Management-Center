@@ -1297,7 +1297,9 @@
       "vertex": "Vertex",
       "openaiCompatibility": "OpenAI-совместимый",
       "apikeyFun": "APIKEY.FUN",
-      "code0": "Code0"
+      "code0": "Code0",
+      "fennoAI": "FennoAI",
+      "qiniuCloud": "Qiniu Cloud"
     },
     "table": {
       "key": "Ключ",
@@ -1345,7 +1347,13 @@
       "urlHint": "Все URL используют одинаковые правила API. При сохранении записывается только endpoint текущего группового протокола.",
       "urlOptions": {
         "standard": "Обычный URL",
-        "direct": "Прямой URL"
+        "direct": "Прямой URL",
+        "domestic": "Маршрут для материкового Китая",
+        "overseas": "Зарубежный маршрут"
+      },
+      "urlOptionDescriptions": {
+        "domestic": "Для пользователей и нагрузок в материковом Китае; обычно дает меньшую задержку в сетях материкового Китая.",
+        "overseas": "Для зарубежных развертываний, трансграничного доступа или задач, которым нужны зарубежные модели."
       },
       "modelsTitle": "Настройки моделей по протоколам",
       "modelsHint": "Настраивайте allowlist моделей и алиасы отдельно для маршрутов Codex API, Anthropic, Gemini и OpenAI-compatible.",

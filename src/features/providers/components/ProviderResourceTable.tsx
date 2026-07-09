@@ -27,6 +27,7 @@ import {
 import type { OpenAIProviderConfig } from '@/types';
 import type { StatusBarData } from '@/utils/recentRequests';
 import type { ProviderResource } from '../types';
+import { isMultiProtocolSponsorBrand } from '../sponsorDefinitions';
 import styles from './ProviderResourceTable.module.scss';
 import statusBarStyles from './providerStatusBar.module.scss';
 
@@ -44,7 +45,7 @@ interface ProviderResourceTableProps {
 const columnWidths = ['180px', '220px', '72px', '138px', '174px', '176px'];
 
 const isSponsorResource = (resource: ProviderResource): boolean =>
-  resource.brand === 'apikeyFun' || resource.brand === 'code0';
+  isMultiProtocolSponsorBrand(resource.brand);
 
 const getUsageProvider = (resource: ProviderResource): string =>
   resource.brand === 'claudeApi' ? 'claude' : resource.brand;

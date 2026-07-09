@@ -527,6 +527,12 @@
   }
 }
 
+.sponsorUrlOptionText .sponsorUrlOptionDescription {
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .sponsorProtocolGrid {
   display: grid;
   grid-template-columns: 1fr;

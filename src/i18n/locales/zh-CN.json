@@ -1319,7 +1319,9 @@
       "vertex": "Vertex",
       "openaiCompatibility": "OpenAI 兼容",
       "apikeyFun": "APIKEY.FUN",
-      "code0": "Code0"
+      "code0": "Code0",
+      "fennoAI": "FennoAI",
+      "qiniuCloud": "七牛云"
     },
     "table": {
       "key": "密钥",
@@ -1367,7 +1369,13 @@
       "urlHint": "不同 URL 的使用规范一致,保存时只会写入当前分组协议对应地址。",
       "urlOptions": {
         "standard": "普通 URL",
-        "direct": "专线直连 URL"
+        "direct": "专线直连 URL",
+        "domestic": "国内线路",
+        "overseas": "海外线路"
+      },
+      "urlOptionDescriptions": {
+        "domestic": "面向中国大陆用户和部署在中国大陆网络环境中的业务，通常可获得更低延迟。",
+        "overseas": "面向海外部署、跨境访问或需要访问境外模型的业务。"
       },
       "modelsTitle": "协议模型配置",
       "modelsHint": "可分别限制或别名映射 Codex API、Anthropic、Gemini 与 OpenAI 兼容入口的模型。",
