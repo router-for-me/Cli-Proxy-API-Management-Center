@@ -1602,8 +1602,15 @@ const renderXaiItems = (
   const onDemandPercentLabel = formatXaiPercent(onDemandRemaining);
   const onDemandAmountLabel = formatXaiOnDemandAmount(billing);
   const plan = resolveXaiPlan(billing.monthlyLimitCents);
+  const weeklyUsed =
+    billing.periodType === 'weekly' && billing.usagePercent !== null
+      ? Math.max(0, Math.min(100, billing.usagePercent))
+      : null;
+  const weeklyRemaining = weeklyUsed === null ? null : Math.max(0, Math.min(100, 100 - weeklyUsed));
   const weeklyResetLabel = formatQuotaResetTime(billing.periodEnd);
-  const hasWeeklyReset = billing.periodType === 'weekly' && weeklyResetLabel !== '-';
+  const hasWeeklyData =
+    billing.periodType === 'weekly' &&
+    (weeklyUsed !== null || Boolean(billing.periodEnd) || billing.productUsage.length > 0);
   const hasMonthlyData =
     billing.monthlyLimitCents !== null ||
     billing.usedCents !== null ||
@@ -1624,18 +1631,40 @@ const renderXaiItems = (
           )
         )
       : null,
-    hasWeeklyReset
+    hasWeeklyData
       ? h(
           'div',
-          { key: 'weekly-limit', className: styleMap.codexPlan },
-          h('span', { className: styleMap.codexPlanLabel }, t('xai_quota.weekly_limit')),
+          { key: 'weekly-limit', className: styleMap.quotaRow },
           h(
-            'span',
-            { className: styleMap.codexPlanValue },
-            t('xai_quota.reset_at', {
-              time: weeklyResetLabel,
-            })
-          )
+            'div',
+            { className: styleMap.quotaRowHeader },
+            h('span', { className: styleMap.quotaModel }, t('xai_quota.weekly_limit')),
+            h(
+              'div',
+              { className: styleMap.quotaMeta },
+              h(
+                'span',
+                { className: styleMap.quotaPercent },
+                t('xai_quota.used_percent', {
+                  percent: formatXaiPercent(weeklyUsed),
+                })
+              ),
+              weeklyResetLabel !== '-'
+                ? h(
+                    'span',
+                    { className: styleMap.quotaReset },
+                    t('xai_quota.reset_at', {
+                      time: weeklyResetLabel,
+                    })
+                  )
+                : null
+            )
+          ),
+          h(QuotaProgressBar, {
+            percent: weeklyRemaining,
+            highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+            mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+          })
         )
       : null,
     ...billing.productUsage.map((item) => {
