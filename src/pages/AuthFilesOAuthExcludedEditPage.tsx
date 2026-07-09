@@ -7,7 +7,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { AutocompleteInput } from '@/components/ui/AutocompleteInput';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconInfo } from '@/components/ui/icons';
+import { IconInfo, IconX } from '@/components/ui/icons';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
@@ -19,6 +19,12 @@ import {
   normalizeProviderKey,
 } from '@/features/authFiles/constants';
 import { getStringSetSignature, isOAuthEditorDirty } from '@/features/authFiles/oauthEditorState';
+import {
+  getCustomOAuthExcludedRules,
+  hasOAuthExcludedRule,
+  normalizeOAuthExcludedRules,
+  updateOAuthExcludedRule,
+} from '@/features/authFiles/oauthExcludedRules';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
 import styles from './AuthFilesOAuthExcludedEditPage.module.scss';
 
@@ -49,6 +55,7 @@ export function AuthFilesOAuthExcludedEditPage() {
   const [modelsList, setModelsList] = useState<AuthFileModelItem[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState<'unsupported' | null>(null);
+  const [customRule, setCustomRule] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -77,14 +84,22 @@ export function AuthFilesOAuthExcludedEditPage() {
     return Object.prototype.hasOwnProperty.call(excluded, resolvedProviderKey);
   }, [excluded, resolvedProviderKey]);
   const baselineModelsSignature = useMemo(
-    () => getStringSetSignature(excluded[resolvedProviderKey] ?? []),
+    () => getStringSetSignature(normalizeOAuthExcludedRules(excluded[resolvedProviderKey] ?? [])),
     [excluded, resolvedProviderKey]
   );
   const selectedModelsSignature = useMemo(
-    () => getStringSetSignature(selectedModels),
+    () => getStringSetSignature(normalizeOAuthExcludedRules(selectedModels)),
     [selectedModels]
   );
   const contentDirty = baselineModelsSignature !== selectedModelsSignature;
+  const customRules = useMemo(
+    () =>
+      getCustomOAuthExcludedRules(
+        selectedModels,
+        modelsList.map((model) => model.id)
+      ),
+    [modelsList, selectedModels]
+  );
   const isDirty = isOAuthEditorDirty(
     initialProviderKey,
     provider,
@@ -195,7 +210,8 @@ export function AuthFilesOAuthExcludedEditPage() {
       return;
     }
     const existing = excluded[resolvedProviderKey] ?? [];
-    setSelectedModels(new Set(existing));
+    setSelectedModels(new Set(normalizeOAuthExcludedRules(existing)));
+    setCustomRule('');
   }, [excluded, resolvedProviderKey]);
 
   useEffect(() => {
@@ -207,6 +223,7 @@ export function AuthFilesOAuthExcludedEditPage() {
     }
 
     let cancelled = false;
+    setModelsList([]);
     setModelsLoading(true);
     setModelsError(null);
 
@@ -277,16 +294,18 @@ export function AuthFilesOAuthExcludedEditPage() {
   );
 
   const toggleModel = useCallback((modelId: string, checked: boolean) => {
-    setSelectedModels((prev) => {
-      const next = new Set(prev);
-      if (checked) {
-        next.add(modelId);
-      } else {
-        next.delete(modelId);
-      }
-      return next;
-    });
+    setSelectedModels((prev) => new Set(updateOAuthExcludedRule(prev, modelId, checked)));
   }, []);
+
+  const handleAddCustomRule = useCallback(() => {
+    const nextRule = customRule.trim();
+    if (!nextRule) return;
+    setSelectedModels((prev) => {
+      if (hasOAuthExcludedRule(prev, nextRule)) return prev;
+      return new Set(updateOAuthExcludedRule(prev, nextRule, true));
+    });
+    setCustomRule('');
+  }, [customRule]);
 
   const handleSave = useCallback(async () => {
     const normalizedProvider = normalizeProviderKey(provider);
@@ -295,7 +314,7 @@ export function AuthFilesOAuthExcludedEditPage() {
       return;
     }
 
-    const models = [...selectedModels];
+    const models = normalizeOAuthExcludedRules(selectedModels);
     setSaving(true);
     try {
       if (models.length) {
@@ -412,6 +431,64 @@ export function AuthFilesOAuthExcludedEditPage() {
               )}
             </div>
 
+            <div className={styles.customRuleSection}>
+              <div className={styles.customRuleHeader}>
+                <label className={styles.settingsLabel} htmlFor="oauth-excluded-custom-rule">
+                  {t('oauth_excluded.custom_rule_label')}
+                </label>
+                <div className={styles.settingsDesc}>{t('oauth_excluded.custom_rule_hint')}</div>
+              </div>
+              <div className={styles.customRuleRow}>
+                <input
+                  id="oauth-excluded-custom-rule"
+                  className={`input ${styles.customRuleInput}`}
+                  value={customRule}
+                  onChange={(event) => setCustomRule(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      handleAddCustomRule();
+                    }
+                  }}
+                  placeholder={t('oauth_excluded.custom_rule_placeholder')}
+                  disabled={!resolvedProviderKey || disableControls || saving}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleAddCustomRule}
+                  disabled={!resolvedProviderKey || !customRule.trim() || disableControls || saving}
+                >
+                  {t('oauth_excluded.custom_rule_add')}
+                </Button>
+              </div>
+
+              {customRules.length > 0 && (
+                <div className={styles.customRuleList}>
+                  <div className={styles.customRuleListLabel}>
+                    {t('oauth_excluded.custom_rules_label')}
+                  </div>
+                  <div className={styles.customRuleChips}>
+                    {customRules.map((rule) => (
+                      <span key={rule.toLowerCase()} className={styles.customRuleChip}>
+                        <span>{rule}</span>
+                        <button
+                          type="button"
+                          className={styles.customRuleRemove}
+                          onClick={() => toggleModel(rule, false)}
+                          disabled={disableControls || saving}
+                          aria-label={t('oauth_excluded.custom_rule_remove', { rule })}
+                        >
+                          <IconX size={13} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {modelsLoading ? (
               <div className={styles.loadingModels}>
                 <LoadingSpinner size={16} />
@@ -420,7 +497,7 @@ export function AuthFilesOAuthExcludedEditPage() {
             ) : modelsList.length > 0 ? (
               <div className={styles.modelList}>
                 {modelsList.map((model) => {
-                  const checked = selectedModels.has(model.id);
+                  const checked = hasOAuthExcludedRule(selectedModels, model.id);
                   return (
                     <SelectionCheckbox
                       key={model.id}
