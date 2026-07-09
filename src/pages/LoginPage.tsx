@@ -194,6 +194,11 @@ export function LoginPage() {
     return <Navigate to={redirect} replace />;
   }
 
+  // Avoid any branded splash while restoring an existing session.
+  if (autoLoading) {
+    return null;
+  }
+
   return (
     <div className={styles.container}>
       {/* 左侧品牌展示区 */}
@@ -207,17 +212,7 @@ export function LoginPage() {
 
       {/* 右侧功能交互区 */}
       <div className={styles.formPanel}>
-        {autoLoading ? (
-          <div className={styles.formContent}>
-            <img src={INLINE_LOGO_JPEG} alt="CPAMC" className={styles.logo} />
-            <div className={styles.loginCard}>
-              <div className={styles.loginHeader}>
-                <div className={styles.title}>{t('common.loading')}</div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* 登录表单 */
+          {/* 登录表单 */}
           <div className={styles.formContent}>
             {/* Logo */}
             <img src={INLINE_LOGO_JPEG} alt="Logo" className={styles.logo} />
@@ -313,7 +308,6 @@ export function LoginPage() {
               {error && <div className={styles.errorBox}>{error}</div>}
             </div>
           </div>
-        )}
       </div>
     </div>
   );
