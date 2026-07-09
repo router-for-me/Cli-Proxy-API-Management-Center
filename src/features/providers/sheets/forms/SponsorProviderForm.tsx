@@ -20,6 +20,7 @@ import type { ModelInfo } from '@/utils/models';
 import type { ApiKeyFunUsageSummary } from '../../sponsor';
 import {
   discoveryBrandForSponsorProtocol,
+  getSponsorAggregationConflict,
   getSponsorProviderDefinition,
   sponsorProtocolI18nKey,
   sponsorProtocolModelI18nKey,
@@ -410,12 +411,12 @@ function SponsorKeyEntryCard({
     fallbackApiKey: entry.existingApiKey,
     apiKeyEntries: entry.protocol === 'openai' ? openaiDiscoveryEntries : undefined,
   });
-  const protocolOptions = definition.protocols.filter(
-    (protocol) => protocol === entry.protocol || !usedProtocols.has(protocol)
-  ).map((protocol) => ({
-    value: protocol,
-    label: t(`providersPage.sponsor.protocols.${sponsorProtocolI18nKey(protocol)}`),
-  }));
+  const protocolOptions = definition.protocols
+    .filter((protocol) => protocol === entry.protocol || !usedProtocols.has(protocol))
+    .map((protocol) => ({
+      value: protocol,
+      label: t(`providersPage.sponsor.protocols.${sponsorProtocolI18nKey(protocol)}`),
+    }));
 
   const updateEntry = (patch: Partial<SponsorKeyEntryInput>) => {
     onChange({ ...entry, ...patch });
@@ -843,6 +844,18 @@ export function SponsorProviderForm({
   const formClassName = [styles.form, variant === 'quickStart' ? styles.quickStartForm : '']
     .filter(Boolean)
     .join(' ');
+  const aggregationConflict =
+    mode === 'edit'
+      ? getSponsorAggregationConflict(getSponsorRaw(resource, definition.brand))
+      : null;
+
+  if (aggregationConflict) {
+    return (
+      <form id={formId} className={formClassName} onSubmit={(event) => event.preventDefault()}>
+        <div className={styles.errorBox}>{t('providersPage.sponsor.aggregationConflict')}</div>
+      </form>
+    );
+  }
 
   return (
     <form id={formId} className={formClassName} onSubmit={handleSubmit} noValidate>

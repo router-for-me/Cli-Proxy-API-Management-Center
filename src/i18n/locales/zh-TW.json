@@ -1383,6 +1383,7 @@
       "usageInvalid": "Key 無效",
       "usageEmpty": "端點未回傳額度資料",
       "usageApiKeyRequired": "API 金鑰必填",
+      "aggregationConflict": "此聚合提供商包含多筆後端設定或多個 OpenAI 金鑰。為避免資料遺失，請在原始碼設定中編輯。",
       "groupedKeysTitle": "分組金鑰",
       "groupedKeysHint": "平台建立 Key 時可能需要選擇分組,這裡每個分組金鑰只管理一個協議,模型也只從該協議拉取。",
       "groupedKey": "分組金鑰 #{{index}}",

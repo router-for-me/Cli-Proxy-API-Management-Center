@@ -1357,6 +1357,7 @@
       "usageInvalid": "Key 无效",
       "usageEmpty": "端点未返回额度数据",
       "usageApiKeyRequired": "API 密钥必填",
+      "aggregationConflict": "此聚合提供商包含多条后端配置或多个 OpenAI 密钥。为避免数据丢失，请在源码配置中编辑。",
       "groupedKeysTitle": "分组 Key",
       "groupedKeysHint": "平台创建 Key 时可能需要选择分组,这里每个分组 Key 只管理一个协议,模型也只从该协议拉取。",
       "groupedKey": "分组 Key #{{index}}",
