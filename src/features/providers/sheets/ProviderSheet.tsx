@@ -173,7 +173,7 @@ export function ProviderSheet({
 
   const footer =
     state.mode === 'detail' ? (
-      state.resource && !state.resource.flags.isPlaceholder ? (
+      state.resource ? (
         <>
           <button
             type="button"
@@ -248,7 +248,11 @@ export function ProviderSheet({
                 ? '/ai-providers/claudeapi'
                 : state.brand === 'code0'
                   ? '/ai-providers/code0'
-                  : `/ai-providers/${state.brand}`,
+                  : state.brand === 'fennoAI'
+                    ? '/ai-providers/fennoai'
+                    : state.brand === 'qiniuCloud'
+                      ? '/ai-providers/qiniu'
+                      : `/ai-providers/${state.brand}`,
       })}
       footer={footer}
       closeDisabled={submitting}

@@ -10,8 +10,6 @@ import {
 
 export type BuiltInOAuthProvider = 'codex' | 'anthropic' | 'antigravity' | 'kimi' | 'xai';
 
-export type OAuthProvider = string;
-
 export interface OAuthStartResponse {
   url: string;
   state?: string;

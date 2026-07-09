@@ -15,7 +15,6 @@ interface ThemeState {
   theme: Theme;
   resolvedTheme: ResolvedTheme;
   setTheme: (theme: Theme) => void;
-  cycleTheme: () => void;
   initializeTheme: () => () => void;
 }
 
@@ -71,14 +70,6 @@ export const useThemeStore = create<ThemeState>()(
           theme,
           resolvedTheme: normalizeResolvedTheme(resolved),
         });
-      },
-
-      cycleTheme: () => {
-        const { theme, setTheme } = get();
-        const order: Theme[] = ['light', 'white', 'dark', 'auto'];
-        const currentIndex = order.indexOf(theme);
-        const nextTheme = order[(currentIndex + 1) % order.length];
-        setTheme(nextTheme);
       },
 
       initializeTheme: () => {

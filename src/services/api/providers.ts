@@ -4,11 +4,7 @@
 
 import { apiClient } from './client';
 import { isRecord } from '@/utils/helpers';
-import {
-  normalizeGeminiKeyConfig,
-  normalizeOpenAIProvider,
-  normalizeProviderKeyConfig,
-} from './transformers';
+import { normalizeOpenAIProvider, normalizeProviderKeyConfig } from './transformers';
 import type {
   GeminiKeyConfig,
   OpenAIProviderConfig,
@@ -407,12 +403,6 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
 };
 
 export const providersApi = {
-  async getGeminiKeys(): Promise<GeminiKeyConfig[]> {
-    const data = await apiClient.get('/gemini-api-key');
-    const list = extractArrayPayload(data, 'gemini-api-key');
-    return list.map((item) => normalizeGeminiKeyConfig(item)).filter(Boolean) as GeminiKeyConfig[];
-  },
-
   saveGeminiKeys: async (configs: GeminiKeyConfig[]) =>
     apiClient.put(
       '/gemini-api-key',
@@ -428,14 +418,6 @@ export const providersApi = {
   deleteGeminiKey: (apiKey: string, baseUrl?: string) =>
     apiClient.delete(`/gemini-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
 
-  async getCodexConfigs(): Promise<ProviderKeyConfig[]> {
-    const data = await apiClient.get('/codex-api-key');
-    const list = extractArrayPayload(data, 'codex-api-key');
-    return list
-      .map((item) => normalizeProviderKeyConfig(item))
-      .filter(Boolean) as ProviderKeyConfig[];
-  },
-
   saveCodexConfigs: async (configs: ProviderKeyConfig[]) =>
     apiClient.put(
       '/codex-api-key',
@@ -450,14 +432,6 @@ export const providersApi = {
 
   deleteCodexConfig: (apiKey: string, baseUrl?: string) =>
     apiClient.delete(`/codex-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
-
-  async getClaudeConfigs(): Promise<ProviderKeyConfig[]> {
-    const data = await apiClient.get('/claude-api-key');
-    const list = extractArrayPayload(data, 'claude-api-key');
-    return list
-      .map((item) => normalizeProviderKeyConfig(item))
-      .filter(Boolean) as ProviderKeyConfig[];
-  },
 
   saveClaudeConfigs: async (configs: ProviderKeyConfig[]) =>
     apiClient.put(

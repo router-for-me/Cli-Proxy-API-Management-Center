@@ -14,26 +14,3 @@ export interface Notification {
   type: NotificationType;
   duration?: number;
 }
-
-export interface ApiResponse<T = unknown> {
-  data?: T;
-  error?: string;
-  message?: string;
-}
-
-export interface PaginationState {
-  currentPage: number;
-  pageSize: number;
-  totalPages: number;
-  totalItems?: number;
-}
-
-export interface LoadingState {
-  isLoading: boolean;
-  error: Error | null;
-}
-
-// 泛型异步状态
-export interface AsyncState<T> extends LoadingState {
-  data: T | null;
-}

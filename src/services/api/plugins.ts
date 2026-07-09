@@ -16,7 +16,6 @@ import type {
   PluginStoreInstallResult,
   PluginStorePlatform,
   PluginStoreResponse,
-  PluginStoreSource,
   PluginStoreSourceError,
 } from '@/types';
 
@@ -206,18 +205,6 @@ const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
   };
 };
 
-const normalizeStoreSource = (value: unknown): PluginStoreSource | null => {
-  if (!isRecord(value)) return null;
-  const id = asString(value.id).trim();
-  const url = asString(value.url).trim();
-  if (!id && !url) return null;
-  return {
-    id,
-    name: asString(value.name).trim(),
-    url,
-  };
-};
-
 const normalizeStoreSourceError = (value: unknown): PluginStoreSourceError | null => {
   if (!isRecord(value)) return null;
   const sourceId = asString(value.source_id).trim();
@@ -239,11 +226,6 @@ const normalizeStoreList = (value: unknown): PluginStoreResponse => {
         .map((item) => normalizeStoreEntry(item))
         .filter(Boolean) as PluginStoreEntry[])
     : [];
-  const sources = Array.isArray(source.sources)
-    ? (source.sources
-        .map((item) => normalizeStoreSource(item))
-        .filter(Boolean) as PluginStoreSource[])
-    : [];
   const sourceErrors = Array.isArray(source.source_errors)
     ? (source.source_errors
         .map((item) => normalizeStoreSourceError(item))
@@ -253,7 +235,6 @@ const normalizeStoreList = (value: unknown): PluginStoreResponse => {
   return {
     pluginsEnabled: asBoolean(source.plugins_enabled),
     pluginsDir: asString(source.plugins_dir).trim() || 'plugins',
-    sources,
     sourceErrors,
     plugins,
   };
@@ -301,9 +282,6 @@ export const pluginsApi = {
 
   putConfig: (id: string, config: PluginConfigObject) =>
     apiClient.put(`/plugins/${encodeURIComponent(id)}/config`, config),
-
-  patchConfig: (id: string, patch: PluginConfigObject) =>
-    apiClient.patch(`/plugins/${encodeURIComponent(id)}/config`, patch),
 };
 
 export const pluginStoreApi = {

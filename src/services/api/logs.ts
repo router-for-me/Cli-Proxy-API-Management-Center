@@ -7,19 +7,11 @@ import { LOGS_TIMEOUT_MS } from '@/utils/constants';
 import { isRecord } from '@/utils/helpers';
 
 export type LogCursor = number | string;
-export type LogBackendKind = 'unknown' | 'file' | 'home-db';
 
 export interface LogsQuery {
   after?: LogCursor;
   cursor?: string;
   limit?: number;
-  offset?: number;
-}
-
-export interface CPALogsResponse {
-  lines: string[];
-  'line-count': number;
-  'latest-timestamp': number;
 }
 
 export interface HomeLogRecord {
@@ -33,24 +25,12 @@ export interface HomeLogRecord {
   created_at?: string | number;
 }
 
-export interface HomeLogsResponse {
-  logs?: HomeLogRecord[];
-  total?: number;
-  limit?: number;
-  offset?: number;
-}
-
 export interface LogsResponse {
   lines: string[];
-  lineCount: number;
   latestAfter?: LogCursor;
   nextCursor?: string;
   cursorReset?: boolean;
-  logBackendKind: LogBackendKind;
   requestLogHomeIpById?: Record<string, string>;
-  total?: number;
-  limit?: number;
-  offset?: number;
 }
 
 export interface ErrorLogFile {
@@ -105,15 +85,12 @@ const normalizeCPALogs = (data: Record<string, unknown>): LogsResponse => {
     ? data.lines.filter((line): line is string => typeof line === 'string')
     : [];
   const latestTimestamp = unixSecondsFromValue(data['latest-timestamp']);
-  const lineCount = Number(data['line-count']);
 
   return {
     lines,
-    lineCount: Number.isFinite(lineCount) ? lineCount : lines.length,
     latestAfter: latestTimestamp > 0 ? latestTimestamp : undefined,
     nextCursor: stringValue(data['next-cursor']) || undefined,
     cursorReset: booleanValue(data['cursor-reset']),
-    logBackendKind: 'file',
   };
 };
 
@@ -141,29 +118,20 @@ const normalizeHomeLogs = (data: Record<string, unknown>): LogsResponse => {
     return cursorTime > latestTime ? cursor : latest;
   }, undefined);
 
-  const total = Number(data.total);
-  const limit = Number(data.limit);
-  const offset = Number(data.offset);
-
   return {
     lines,
-    lineCount: Number.isFinite(total) ? total : lines.length,
     latestAfter: latestCursor,
-    logBackendKind: 'home-db',
     requestLogHomeIpById,
-    total: Number.isFinite(total) ? total : undefined,
-    limit: Number.isFinite(limit) ? limit : undefined,
-    offset: Number.isFinite(offset) ? offset : undefined,
   };
 };
 
 const normalizeLogsResponse = (data: unknown): LogsResponse => {
   if (!isRecord(data)) {
-    return { lines: [], lineCount: 0, logBackendKind: 'unknown' };
+    return { lines: [] };
   }
   if (Array.isArray(data.logs)) return normalizeHomeLogs(data);
   if (Array.isArray(data.lines)) return normalizeCPALogs(data);
-  return { lines: [], lineCount: 0, logBackendKind: 'unknown' };
+  return { lines: [] };
 };
 
 const fetchCompleteHomeLogs = async (
@@ -174,7 +142,7 @@ const fetchCompleteHomeLogs = async (
   const firstPageLimit = positiveNumberValue(firstPage.limit);
   const pageLimit = firstPageLimit ?? requestedLimit;
   const total = numberValue(firstPage.total);
-  const firstOffset = numberValue(firstPage.offset) ?? numberValue(params.offset) ?? 0;
+  const firstOffset = numberValue(firstPage.offset) ?? 0;
   const records = homeRecordsFromPayload(firstPage);
 
   if (requestedLimit === undefined || pageLimit === undefined || total === undefined) {

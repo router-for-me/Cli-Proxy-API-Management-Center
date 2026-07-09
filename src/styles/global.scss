@@ -45,37 +45,3 @@ body.modal-open .content {
   }
 }
 
-// 通用工具类
-.container {
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 $spacing-md;
-}
-
-.flex-center {
-  @include flex-center;
-}
-
-.text-ellipsis {
-  @include text-ellipsis;
-}
-
-// 通用过渡
-.fade-enter {
-  opacity: 0;
-}
-
-.fade-enter-active {
-  opacity: 1;
-  transition: opacity $transition-normal;
-}
-
-.fade-exit {
-  opacity: 1;
-}
-
-.fade-exit-active {
-  opacity: 0;
-  transition: opacity $transition-normal;
-}

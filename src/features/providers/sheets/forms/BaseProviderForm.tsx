@@ -1,8 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  IconAlertTriangle,
-  IconCheckCircle2,
   IconDownload,
   IconEye,
   IconEyeOff,
@@ -23,19 +21,14 @@ import type {
   ProviderEntryFormInput,
   ProviderResource,
 } from '../../types';
-import {
-  useConnectivityTest,
-  type ConnectivityErrorMessages,
-  type ConnectivityState,
-} from './useConnectivityTest';
+import { useConnectivityTest, type ConnectivityErrorMessages } from './useConnectivityTest';
 import { useModelDiscovery } from './useModelDiscovery';
 import { ModelDiscoveryPanel } from './ModelDiscoveryPanel';
+import { ConnectivityStatusIcon } from './ConnectivityStatusIcon';
+import { ApiKeyEntriesEditor } from './ApiKeyEntriesEditor';
+import { ModelEntriesEditor } from './ModelEntriesEditor';
 import styles from './sharedForm.module.scss';
 import { CLAUDE_API_BASE_URL } from '../../claudeApi';
-
-export interface BaseProviderFormHandle {
-  submit: () => Promise<void>;
-}
 
 interface BaseProviderFormProps {
   brand: ProviderBrand;
@@ -84,10 +77,9 @@ function buildInitialForm(
       headers: [emptyHeader()],
       excludedModelsText: '',
       websockets: brand === 'codex' ? false : undefined,
-      cloak:
-        isClaudeLikeBrand(brand)
-          ? { mode: '', strictMode: false, sensitiveWordsText: '', cacheUserId: false }
-          : undefined,
+      cloak: isClaudeLikeBrand(brand)
+        ? { mode: '', strictMode: false, sensitiveWordsText: '', cacheUserId: false }
+        : undefined,
       experimentalCchSigning: isClaudeLikeBrand(brand) ? false : undefined,
       testModel:
         brand === 'openaiCompatibility' ||
@@ -167,46 +159,19 @@ function buildInitialForm(
       : [emptyHeader()],
     excludedModelsText: excludedList.join('\n'),
     websockets: brand === 'codex' ? (cfg as ProviderKeyConfig).websockets === true : undefined,
-    cloak:
-      isClaudeLikeBrand(brand)
-        ? {
-            mode: (cfg as ProviderKeyConfig).cloak?.mode ?? '',
-            strictMode: (cfg as ProviderKeyConfig).cloak?.strictMode === true,
-            sensitiveWordsText: (cfg as ProviderKeyConfig).cloak?.sensitiveWords?.join('\n') ?? '',
-            cacheUserId: (cfg as ProviderKeyConfig).cloak?.cacheUserId === true,
-          }
-        : undefined,
-    experimentalCchSigning:
-      isClaudeLikeBrand(brand)
-        ? (cfg as ProviderKeyConfig).experimentalCchSigning === true
-        : undefined,
+    cloak: isClaudeLikeBrand(brand)
+      ? {
+          mode: (cfg as ProviderKeyConfig).cloak?.mode ?? '',
+          strictMode: (cfg as ProviderKeyConfig).cloak?.strictMode === true,
+          sensitiveWordsText: (cfg as ProviderKeyConfig).cloak?.sensitiveWords?.join('\n') ?? '',
+          cacheUserId: (cfg as ProviderKeyConfig).cloak?.cacheUserId === true,
+        }
+      : undefined,
+    experimentalCchSigning: isClaudeLikeBrand(brand)
+      ? (cfg as ProviderKeyConfig).experimentalCchSigning === true
+      : undefined,
     testModel: brand === 'codex' || isClaudeLikeBrand(brand) || brand === 'gemini' ? '' : undefined,
   };
-}
-
-function ConnectivityStatusIcon({ state }: { state: ConnectivityState }) {
-  if (state === 'loading') {
-    return (
-      <span className={`${styles.statusIcon} ${styles.statusIconLoading}`}>
-        <IconLoader2 size={14} />
-      </span>
-    );
-  }
-  if (state === 'success') {
-    return (
-      <span className={`${styles.statusIcon} ${styles.statusIconSuccess}`}>
-        <IconCheckCircle2 size={14} />
-      </span>
-    );
-  }
-  if (state === 'error') {
-    return (
-      <span className={`${styles.statusIcon} ${styles.statusIconError}`}>
-        <IconAlertTriangle size={14} />
-      </span>
-    );
-  }
-  return null;
 }
 
 export function BaseProviderForm({
@@ -228,20 +193,7 @@ export function BaseProviderForm({
     JSON.stringify(buildInitialForm(brand, resource, mode))
   );
   const [error, setError] = useState<string | null>(null);
-  const [showPasswords, setShowPasswords] = useState<Set<number>>(new Set());
   const [showSingleApiKey, setShowSingleApiKey] = useState(false);
-
-  const togglePasswordVisibility = (idx: number) => {
-    setShowPasswords((prev) => {
-      const next = new Set(prev);
-      if (next.has(idx)) {
-        next.delete(idx);
-      } else {
-        next.add(idx);
-      }
-      return next;
-    });
-  };
 
   const isDirty = useMemo(
     () => JSON.stringify(form) !== initialFormSignature,
@@ -462,25 +414,6 @@ export function BaseProviderForm({
         : isClaudeLikeBrand(brand)
           ? { status: connectivity.claudeStatus, run: connectivity.runClaude }
           : null;
-
-  const removeApiKeyEntry = (removeIdx: number) => {
-    setShowPasswords((prev) => {
-      if (!prev.size) return prev;
-      const next = new Set<number>();
-      prev.forEach((idx) => {
-        if (idx < removeIdx) {
-          next.add(idx);
-        } else if (idx > removeIdx) {
-          next.add(idx - 1);
-        }
-      });
-      return next;
-    });
-    updateField(
-      'apiKeyEntries',
-      actualApiKeyEntries.filter((_, i) => i !== removeIdx)
-    );
-  };
 
   const updateModelEntry = (idx: number, patch: Partial<ModelEntryInput>) => {
     updateField(
@@ -740,144 +673,32 @@ export function BaseProviderForm({
           }`}
           defaultOpen
         >
-          <div className={styles.entriesList}>
-            <div className={`${styles.entriesToolbar} ${styles.entriesToolbarSplit}`}>
-              {/* Add entry button on the left */}
-              <button
-                type="button"
-                className={styles.addBtn}
-                disabled={mutating}
-                onClick={() =>
-                  updateField('apiKeyEntries', [...actualApiKeyEntries, emptyApiKeyEntry()])
-                }
-              >
-                <IconPlus size={12} />
-                <span>{t('providersPage.form.addApiKeyEntry')}</span>
-              </button>
-              {/* Test all button on the right */}
-              <button
-                type="button"
-                className={styles.connectivityBtn}
-                disabled={mutating || connectivity.isTestingAny}
-                onClick={() => void connectivity.runOpenAIAllKeys()}
-              >
-                {connectivity.isTestingAny ? (
-                  <span className={`${styles.statusIcon} ${styles.statusIconLoading}`}>
-                    <IconLoader2 size={14} />
-                  </span>
-                ) : null}
-                <span>{t('providersPage.connectivity.testAll')}</span>
-              </button>
-            </div>
-            {[...apiKeyEntries].reverse().map((entry, visualIdx) => {
-              const realIdx = apiKeyEntries.length - 1 - visualIdx;
-              const status = connectivity.openaiStatuses[realIdx] ?? {
-                state: 'idle' as ConnectivityState,
-                message: '',
-              };
-              return (
-                <div key={realIdx} className={styles.entryCard}>
-                  <div className={styles.entryCardHeader}>
-                    <span>{t('providersPage.form.apiKeyEntry', { index: realIdx + 1 })}</span>
-                    <div className={styles.entryCardHeaderRight}>
-                      <ConnectivityStatusIcon state={status.state} />
-                      <button
-                        type="button"
-                        className={styles.connectivityBtnGhost}
-                        disabled={mutating || status.state === 'loading'}
-                        onClick={() => void connectivity.runOpenAIKey(realIdx)}
-                      >
-                        {status.state === 'loading' ? (
-                          <span className={`${styles.statusIcon} ${styles.statusIconLoading}`}>
-                            <IconLoader2 size={14} />
-                          </span>
-                        ) : null}
-                        <span>{t('providersPage.connectivity.test')}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.removeBtn}
-                        disabled={mutating || actualApiKeyEntries.length === 0}
-                        onClick={() => removeApiKeyEntry(realIdx)}
-                      >
-                        <IconX size={12} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className={styles.field}>
-                    <label className={styles.label}>{t('providersPage.form.apiKey')}</label>
-                    <div className={styles.passwordField}>
-                      <input
-                        className={styles.passwordInput}
-                        type={showPasswords.has(realIdx) ? 'text' : 'password'}
-                        value={entry.apiKey}
-                        onChange={(e) =>
-                          updateField(
-                            'apiKeyEntries',
-                            apiKeyEntries.map((it, i) =>
-                              i === realIdx ? { ...it, apiKey: e.target.value } : it
-                            )
-                          )
-                        }
-                        autoComplete="new-password"
-                        data-1p-ignore="true"
-                        data-lpignore="true"
-                        data-bwignore="true"
-                        disabled={mutating}
-                        placeholder={
-                          entry.existingApiKey
-                            ? t('providersPage.form.apiKeyEditPlaceholder')
-                            : t('providersPage.form.apiKeyCreatePlaceholder')
-                        }
-                      />
-                      <button
-                        type="button"
-                        className={styles.passwordToggle}
-                        onClick={() => togglePasswordVisibility(realIdx)}
-                        disabled={mutating}
-                        aria-label={
-                          showPasswords.has(realIdx)
-                            ? t('providersPage.form.hideApiKey')
-                            : t('providersPage.form.showApiKey')
-                        }
-                        title={
-                          showPasswords.has(realIdx)
-                            ? t('providersPage.form.hideApiKey')
-                            : t('providersPage.form.showApiKey')
-                        }
-                      >
-                        {showPasswords.has(realIdx) ? (
-                          <IconEyeOff size={16} />
-                        ) : (
-                          <IconEye size={16} />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  <div className={styles.field}>
-                    <label className={styles.label}>{t('providersPage.form.proxyUrl')}</label>
-                    <input
-                      className={styles.input}
-                      value={entry.proxyUrl}
-                      onChange={(e) =>
-                        updateField(
-                          'apiKeyEntries',
-                          apiKeyEntries.map((it, i) =>
-                            i === realIdx ? { ...it, proxyUrl: e.target.value } : it
-                          )
-                        )
-                      }
-                      disabled={mutating}
-                      placeholder="http://127.0.0.1:7890"
-                    />
-                  </div>
-                  {status.state === 'error' ? (
-                    <div className={styles.connectivityError}>{status.message}</div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+          <ApiKeyEntriesEditor
+            entries={apiKeyEntries}
+            removeDisabled={actualApiKeyEntries.length === 0}
+            mutating={mutating}
+            statuses={connectivity.openaiStatuses}
+            isTestingAny={connectivity.isTestingAny}
+            onUpdate={(idx, patch) =>
+              updateField(
+                'apiKeyEntries',
+                apiKeyEntries.map((it, i) => (i === idx ? { ...it, ...patch } : it))
+              )
+            }
+            onAdd={() => {
+              const next = [...actualApiKeyEntries, emptyApiKeyEntry()];
+              updateField('apiKeyEntries', next);
+              return next.length - 1;
+            }}
+            onRemove={(idx) =>
+              updateField(
+                'apiKeyEntries',
+                actualApiKeyEntries.filter((_, i) => i !== idx)
+              )
+            }
+            onTest={(idx) => void connectivity.runOpenAIKey(idx)}
+            onTestAll={() => void connectivity.runOpenAIAllKeys()}
+          />
         </Collapsible>
       ) : null}
 
@@ -944,7 +765,10 @@ export function BaseProviderForm({
       ) : null}
 
       {descriptor.supportsModels ? (
-        <Collapsible label={t('providersPage.form.modelsSection')}>
+        <Collapsible
+          label={t('providersPage.form.modelsSection')}
+          hint={`${existingModelNames.size}`}
+        >
           <div className={styles.entriesList}>
             {discovery.available ? (
               <div className={styles.entriesToolbar}>
@@ -974,106 +798,15 @@ export function BaseProviderForm({
                 onClose={closeDiscovery}
               />
             ) : null}
-            {modelsList.map((entry, idx) =>
-              supportsOpenAIModelOptions ? (
-                <div key={idx} className={styles.entryCard}>
-                  <div className={styles.entryCardHeader}>
-                    <span>{t('providersPage.form.modelEntry', { index: idx + 1 })}</span>
-                    <button
-                      type="button"
-                      className={styles.removeBtn}
-                      disabled={mutating || modelsList.length <= 1}
-                      onClick={() => removeModelEntry(idx)}
-                    >
-                      <IconX size={12} />
-                    </button>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <input
-                      className={styles.input}
-                      placeholder="model-name"
-                      value={entry.name}
-                      onChange={(e) => updateModelEntry(idx, { name: e.target.value })}
-                      disabled={mutating}
-                    />
-                    <input
-                      className={styles.input}
-                      placeholder="alias (optional)"
-                      value={entry.alias ?? ''}
-                      onChange={(e) => updateModelEntry(idx, { alias: e.target.value })}
-                      disabled={mutating}
-                    />
-                  </div>
-                  <label className={styles.checkboxRow}>
-                    <input
-                      type="checkbox"
-                      className={styles.checkboxBox}
-                      checked={entry.image === true}
-                      disabled={mutating}
-                      onChange={(e) => updateModelEntry(idx, { image: e.target.checked })}
-                    />
-                    <span className={styles.checkboxText}>
-                      <span>{t('providersPage.form.modelImage')}</span>
-                      <small>{t('providersPage.form.modelImageHint')}</small>
-                    </span>
-                  </label>
-                  <div className={styles.field}>
-                    <label className={styles.label}>
-                      {t('providersPage.form.thinkingConfig')}
-                      <span className={styles.labelHint}>
-                        {' '}
-                        · {t('providersPage.form.thinkingConfigHint')}
-                      </span>
-                    </label>
-                    <textarea
-                      className={styles.textarea}
-                      rows={4}
-                      value={entry.thinkingJson ?? ''}
-                      onChange={(e) => updateModelEntry(idx, { thinkingJson: e.target.value })}
-                      disabled={mutating}
-                      placeholder={'{"levels":["low","medium","high"]}'}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div
-                  key={idx}
-                  style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8 }}
-                >
-                  <input
-                    className={styles.input}
-                    placeholder="model-name"
-                    value={entry.name}
-                    onChange={(e) => updateModelEntry(idx, { name: e.target.value })}
-                    disabled={mutating}
-                  />
-                  <input
-                    className={styles.input}
-                    placeholder="alias (optional)"
-                    value={entry.alias ?? ''}
-                    onChange={(e) => updateModelEntry(idx, { alias: e.target.value })}
-                    disabled={mutating}
-                  />
-                  <button
-                    type="button"
-                    className={styles.removeBtn}
-                    disabled={mutating || modelsList.length <= 1}
-                    onClick={() => removeModelEntry(idx)}
-                  >
-                    <IconX size={12} />
-                  </button>
-                </div>
-              )
-            )}
-            <button
-              type="button"
-              className={styles.addBtn}
-              disabled={mutating}
-              onClick={() => updateField('models', [...modelsList, emptyModel()])}
-            >
-              <IconPlus size={12} />
-              <span>{t('providersPage.form.addModel')}</span>
-            </button>
+            <ModelEntriesEditor
+              models={modelsList}
+              extendedOptions={supportsOpenAIModelOptions}
+              mutating={mutating}
+              removeDisabled={modelsList.length <= 1}
+              onUpdate={updateModelEntry}
+              onAdd={() => updateField('models', [...modelsList, emptyModel()])}
+              onRemove={removeModelEntry}
+            />
           </div>
         </Collapsible>
       ) : null}

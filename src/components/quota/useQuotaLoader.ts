@@ -9,8 +9,6 @@ import { useQuotaStore } from '@/stores';
 import { getStatusFromError } from '@/utils/quota';
 import type { QuotaConfig } from './quotaConfigs';
 
-type QuotaScope = 'page' | 'all';
-
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
 type QuotaSetter<T> = (updater: QuotaUpdater<T>) => void;
@@ -34,15 +32,11 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
   const requestIdRef = useRef(0);
 
   const loadQuota = useCallback(
-    async (
-      targets: AuthFileItem[],
-      scope: QuotaScope,
-      setLoading: (loading: boolean, scope?: QuotaScope | null) => void
-    ) => {
+    async (targets: AuthFileItem[], setLoading: (loading: boolean) => void) => {
       if (loadingRef.current) return;
       loadingRef.current = true;
       const requestId = ++requestIdRef.current;
-      setLoading(true, scope);
+      setLoading(true);
 
       try {
         if (targets.length === 0) return;

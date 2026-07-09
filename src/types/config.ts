@@ -71,8 +71,3 @@ export type RawConfigSection =
   | 'vertex-api-key'
   | 'openai-compatibility'
   | 'oauth-excluded-models';
-
-export interface ConfigCache {
-  data: Config;
-  timestamp: number;
-}

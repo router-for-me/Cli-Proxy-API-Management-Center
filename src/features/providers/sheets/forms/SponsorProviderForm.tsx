@@ -513,6 +513,13 @@ function SponsorKeyEntryCard({
                       <span className={styles.sponsorUrlOptionText}>
                         <span>{t(`providersPage.sponsor.urlOptions.${option.id}`)}</span>
                         <small>{option.baseUrl}</small>
+                        {option.descriptionKey ? (
+                          <small className={styles.sponsorUrlOptionDescription}>
+                            {t(
+                              `providersPage.sponsor.urlOptionDescriptions.${option.descriptionKey}`
+                            )}
+                          </small>
+                        ) : null}
                       </span>
                     </label>
                   );

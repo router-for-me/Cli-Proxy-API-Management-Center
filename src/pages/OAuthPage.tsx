@@ -54,8 +54,6 @@ interface BuiltInOAuthProviderCard {
   kind: 'builtin';
   id: BuiltInOAuthProvider;
   titleKey: string;
-  hintKey: string;
-  urlLabelKey: string;
   icon: string | { light: string; dark: string };
 }
 
@@ -78,40 +76,30 @@ const PROVIDERS: BuiltInOAuthProviderCard[] = [
     kind: 'builtin',
     id: 'codex',
     titleKey: 'auth_login.codex_oauth_title',
-    hintKey: 'auth_login.codex_oauth_hint',
-    urlLabelKey: 'auth_login.codex_oauth_url_label',
     icon: iconCodex,
   },
   {
     kind: 'builtin',
     id: 'anthropic',
     titleKey: 'auth_login.anthropic_oauth_title',
-    hintKey: 'auth_login.anthropic_oauth_hint',
-    urlLabelKey: 'auth_login.anthropic_oauth_url_label',
     icon: iconClaude,
   },
   {
     kind: 'builtin',
     id: 'antigravity',
     titleKey: 'auth_login.antigravity_oauth_title',
-    hintKey: 'auth_login.antigravity_oauth_hint',
-    urlLabelKey: 'auth_login.antigravity_oauth_url_label',
     icon: iconAntigravity,
   },
   {
     kind: 'builtin',
     id: 'kimi',
     titleKey: 'auth_login.kimi_oauth_title',
-    hintKey: 'auth_login.kimi_oauth_hint',
-    urlLabelKey: 'auth_login.kimi_oauth_url_label',
     icon: { light: iconKimiLight, dark: iconKimiDark },
   },
   {
     kind: 'builtin',
     id: 'xai',
     titleKey: 'auth_login.xai_oauth_title',
-    hintKey: 'auth_login.xai_oauth_hint',
-    urlLabelKey: 'auth_login.xai_oauth_url_label',
     icon: { light: iconGrok, dark: iconGrokDark },
   },
 ];

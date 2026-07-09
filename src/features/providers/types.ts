@@ -12,9 +12,11 @@ export type ProviderBrand =
   | 'vertex'
   | 'openaiCompatibility'
   | 'apikeyFun'
-  | 'code0';
+  | 'code0'
+  | 'fennoAI'
+  | 'qiniuCloud';
 
-export type SponsorProviderBrand = 'apikeyFun' | 'code0';
+export type SponsorProviderBrand = 'apikeyFun' | 'code0' | 'fennoAI' | 'qiniuCloud';
 
 export const PROVIDER_SORT_BY_VALUES = ['name', 'priority', 'recent-success'] as const;
 export type ProviderSortBy = (typeof PROVIDER_SORT_BY_VALUES)[number];
@@ -42,12 +44,25 @@ export type ProviderResourceSelector =
       claudeIndices: number[];
       codexIndices: number[];
       geminiIndices: number[];
+    }
+  | {
+      brand: 'fennoAI';
+      openaiIndices: number[];
+      claudeIndices: number[];
+      codexIndices: number[];
+      geminiIndices: number[];
+    }
+  | {
+      brand: 'qiniuCloud';
+      openaiIndices: number[];
+      claudeIndices: number[];
+      codexIndices: number[];
+      geminiIndices: number[];
     };
 
 export interface ProviderResourceFlags {
   cloakEnabled?: boolean;
   websockets?: boolean;
-  isPlaceholder?: boolean;
   protocols?: string[];
 }
 

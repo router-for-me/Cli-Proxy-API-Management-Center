@@ -2,7 +2,8 @@
 @use '../../../styles/variables' as *;
 
 .statusBar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
   gap: 6px;
   width: 100%;
@@ -12,14 +13,14 @@
 .statusBlocks {
   display: flex;
   gap: 2px;
-  flex: 1;
-  min-width: 92px;
+  width: 100%;
+  min-width: 0;
   position: relative;
 }
 
 .statusBlockWrapper {
-  flex: 1;
-  min-width: 4px;
+  flex: 1 1 0;
+  min-width: 0;
   position: relative;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -134,6 +135,8 @@
 .statusRate {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 48px;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
