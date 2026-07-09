@@ -59,6 +59,7 @@ import {
   isQiniuCloudOpenAIProvider,
 } from './qiniuCloud';
 import { getSponsorProviderDefinition, type SponsorProtocolUrls } from './sponsorDefinitions';
+import { runSponsorMutationWithRecovery } from './sponsorMutationRecovery';
 
 export interface UseProviderWorkbenchResult {
   connected: boolean;
@@ -662,7 +663,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'fennoAI' ||
           brand === 'qiniuCloud'
         ) {
-          await persistSponsorConfig(brand, input);
+          await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
         }
         await refetch();
       } finally {
@@ -724,7 +725,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'fennoAI' ||
           brand === 'qiniuCloud'
         ) {
-          await persistSponsorConfig(brand, input);
+          await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
         }
         await refetch();
       } finally {
@@ -769,21 +770,23 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           sel.brand === 'fennoAI' ||
           sel.brand === 'qiniuCloud'
         ) {
-          const raw = resource.raw as SponsorProviderRaw;
-          for (const item of raw.gemini) {
-            await providersApi.deleteGeminiKey(item.config.apiKey, item.config.baseUrl);
-          }
-          for (const item of raw.codex) {
-            await providersApi.deleteCodexConfig(item.config.apiKey, item.config.baseUrl);
-          }
-          for (const item of raw.claude) {
-            await providersApi.deleteClaudeConfig(item.config.apiKey, item.config.baseUrl);
-          }
-          const openAINames = new Set(raw.openai.map((item) => item.config.name));
-          for (const name of openAINames) {
-            const item = raw.openai.find((candidate) => candidate.config.name === name);
-            if (item) await providersApi.deleteOpenAIProvidersByName(name);
-          }
+          await runSponsorMutationWithRecovery(async () => {
+            const raw = resource.raw as SponsorProviderRaw;
+            for (const item of raw.gemini) {
+              await providersApi.deleteGeminiKey(item.config.apiKey, item.config.baseUrl);
+            }
+            for (const item of raw.codex) {
+              await providersApi.deleteCodexConfig(item.config.apiKey, item.config.baseUrl);
+            }
+            for (const item of raw.claude) {
+              await providersApi.deleteClaudeConfig(item.config.apiKey, item.config.baseUrl);
+            }
+            const openAINames = new Set(raw.openai.map((item) => item.config.name));
+            for (const name of openAINames) {
+              const item = raw.openai.find((candidate) => candidate.config.name === name);
+              if (item) await providersApi.deleteOpenAIProvidersByName(name);
+            }
+          }, refetch);
         }
         await refetch();
       } finally {
@@ -834,7 +837,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'fennoAI' ||
           brand === 'qiniuCloud'
         ) {
-          await toggleSponsorConfig(resource.raw as SponsorProviderRaw, disabled);
+          await runSponsorMutationWithRecovery(
+            () => toggleSponsorConfig(resource.raw as SponsorProviderRaw, disabled),
+            refetch
+          );
         }
         await refetch();
       } finally {

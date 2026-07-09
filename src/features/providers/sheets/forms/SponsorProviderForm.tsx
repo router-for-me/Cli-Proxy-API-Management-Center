@@ -18,6 +18,7 @@ import { hasDisableAllModelsRule } from '@/components/providers/utils';
 import { maskApiKey } from '@/utils/format';
 import type { ModelInfo } from '@/utils/models';
 import type { ApiKeyFunUsageSummary } from '../../sponsor';
+import { isSponsorPartialMutationError } from '../../sponsorMutationRecovery';
 import {
   discoveryBrandForSponsorProtocol,
   getSponsorAggregationConflict,
@@ -837,7 +838,13 @@ export function SponsorProviderForm({
       setError(null);
       await onSubmit({ ...form, sponsorKeyEntries: entries });
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(
+        isSponsorPartialMutationError(err)
+          ? t('providersPage.sponsor.partialMutationWarning')
+          : err instanceof Error
+            ? err.message
+            : String(err)
+      );
     }
   };
 

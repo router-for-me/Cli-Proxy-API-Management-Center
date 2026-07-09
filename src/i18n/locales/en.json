@@ -1359,6 +1359,7 @@
       "usageEmpty": "The endpoint returned no usage data.",
       "usageApiKeyRequired": "API key is required",
       "aggregationConflict": "This grouped provider contains multiple backend configs or OpenAI keys. Edit it in the source configuration to avoid data loss.",
+      "partialMutationWarning": "The operation failed after one or more protocols may have been updated. The latest configuration was reloaded; review it before retrying.",
       "groupedKeysTitle": "Grouped keys",
       "groupedKeysHint": "Platform keys may be bound to a group when created. Each grouped key here manages one protocol, and model discovery only uses that protocol.",
       "groupedKey": "Grouped key #{{index}}",
