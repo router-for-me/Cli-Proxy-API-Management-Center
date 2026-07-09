@@ -20,6 +20,7 @@ dist
 dist-ssr
 *.local
 skills
+package-lock.json
 
 # Editor directories and files
 settings.local.json
