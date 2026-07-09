@@ -1314,6 +1314,8 @@ export function VisualConfigEditor({
                     <Input
                       label={t('config_management.visual.sections.system.redis_usage_retention')}
                       type="number"
+                      min={1}
+                      max={3600}
                       placeholder="60"
                       value={values.redisUsageQueueRetentionSeconds}
                       onChange={(e) =>
