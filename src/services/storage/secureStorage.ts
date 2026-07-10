@@ -84,7 +84,7 @@ class ObfuscatedStorageService {
         return;
       }
 
-      let parsed: unknown = raw;
+      let parsed: unknown;
       try {
         parsed = JSON.parse(raw);
       } catch {
