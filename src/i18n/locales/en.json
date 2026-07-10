@@ -300,7 +300,10 @@
     "quota_refresh_single": "Refresh quota",
     "quota_refresh_hint": "Refresh quota only for this credential",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "allow_private_instructions_label": "Allow private Codex instructions",
+    "allow_private_instructions_hint": "Permit this Codex OAuth file to serve private-marker model requests and receive injected instructions.",
+    "allow_private_instructions_display": "Private instructions allowed"
   },
   "antigravity_subscription": {
     "plan_unknown": "Unknown",
@@ -1267,7 +1270,7 @@
   },
   "codex_instructions": {
     "title": "Codex Instructions",
-    "description": "Edit a private instructions.md-style file and inject it into Codex/ChatGPT OAuth requests for selected models.",
+    "description": "Inject private Codex instructions only when the request uses a private model marker (for example private/gpt-5.6-sol) and, by default, only on auth files that allow it.",
     "settings_title": "Injection Settings",
     "enabled": "Enable private instructions",
     "enabled_hint": "When enabled, these instructions are merged into the final Codex upstream instructions field.",
@@ -1295,7 +1298,15 @@
     "status_loaded": "Instructions loaded",
     "status_dirty": "Unsaved changes",
     "status_saving": "Saving instructions...",
-    "status_load_failed": "Load failed"
+    "status_load_failed": "Load failed",
+    "require_auth_allow": "Require auth-file allow flag",
+    "require_auth_allow_hint": "When enabled, private-marker requests only use auth files with allow_private_instructions=true.",
+    "reserve_marked_auths": "Reserve marked auths for private requests",
+    "reserve_marked_auths_hint": "When enabled, marked auth files are excluded from normal model traffic. Leave off so marked accounts still handle ordinary requests.",
+    "prefix_markers_label": "Private model prefixes",
+    "prefix_markers_hint": "One marker per line or comma-separated. Example: private/",
+    "suffix_markers_label": "Private model suffixes",
+    "suffix_markers_hint": "One marker per line or comma-separated. Example: -private"
   },
   "language": {
     "switch": "Language",

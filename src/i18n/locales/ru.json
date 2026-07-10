@@ -293,7 +293,10 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "allow_private_instructions_label": "Разрешить private Codex instructions",
+    "allow_private_instructions_hint": "Разрешает этому Codex OAuth файлу обслуживать private-marker запросы и получать injected instructions.",
+    "allow_private_instructions_display": "Private instructions разрешены"
   },
   "antigravity_subscription": {
     "plan_unknown": "Неизвестно",
@@ -1273,7 +1276,15 @@
     "status_loaded": "Инструкции загружены",
     "status_dirty": "Есть несохранённые изменения",
     "status_saving": "Сохранение инструкций...",
-    "status_load_failed": "Не удалось загрузить"
+    "status_load_failed": "Не удалось загрузить",
+    "require_auth_allow": "Требовать флаг allow в auth-файле",
+    "require_auth_allow_hint": "Если включено, private-запросы идут только через auth-файлы с allow_private_instructions=true.",
+    "reserve_marked_auths": "Резервировать marked auth только для private",
+    "reserve_marked_auths_hint": "Если включено, marked auth не участвуют в обычном трафике. По умолчанию выключено.",
+    "prefix_markers_label": "Префиксы private-модели",
+    "prefix_markers_hint": "По одному на строку или через запятую. Пример: private/",
+    "suffix_markers_label": "Суффиксы private-модели",
+    "suffix_markers_hint": "По одному на строку или через запятую. Пример: -private"
   },
   "language": {
     "switch": "Язык",

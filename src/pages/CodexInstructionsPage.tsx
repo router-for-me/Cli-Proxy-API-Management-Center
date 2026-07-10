@@ -21,6 +21,12 @@ const DEFAULT_INSTRUCTIONS: CodexInstructionsConfig = {
   file: '',
   models: ['gpt-5.5', 'gpt-5*'],
   oauthOnly: true,
+  requireAuthAllow: true,
+  reserveMarkedAuths: false,
+  requestMarkers: {
+    prefixes: ['private/'],
+    suffixes: ['-private'],
+  },
 };
 
 function parseModels(value: string): string[] {
@@ -38,6 +44,12 @@ function normalizeForCompare(config: CodexInstructionsConfig): CodexInstructions
     file: config.file ?? '',
     models: config.models.map((model) => model.trim()).filter(Boolean),
     oauthOnly: config.oauthOnly !== false,
+    requireAuthAllow: config.requireAuthAllow !== false,
+    reserveMarkedAuths: Boolean(config.reserveMarkedAuths),
+    requestMarkers: {
+      prefixes: (config.requestMarkers?.prefixes ?? []).map((value) => value.trim()).filter(Boolean),
+      suffixes: (config.requestMarkers?.suffixes ?? []).map((value) => value.trim()).filter(Boolean),
+    },
   };
 }
 
@@ -56,14 +68,27 @@ export function CodexInstructionsPage() {
   const [draft, setDraft] = useState<CodexInstructionsConfig>(DEFAULT_INSTRUCTIONS);
   const [saved, setSaved] = useState<CodexInstructionsConfig>(DEFAULT_INSTRUCTIONS);
   const [modelsInput, setModelsInput] = useState(DEFAULT_INSTRUCTIONS.models.join('\n'));
+  const [prefixMarkersInput, setPrefixMarkersInput] = useState(
+    DEFAULT_INSTRUCTIONS.requestMarkers.prefixes.join('\n')
+  );
+  const [suffixMarkersInput, setSuffixMarkersInput] = useState(
+    DEFAULT_INSTRUCTIONS.requestMarkers.suffixes.join('\n')
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const disableControls = connectionStatus !== 'connected' || loading || saving;
   const effectiveDraft = useMemo(
-    () => ({ ...draft, models: parseModels(modelsInput) }),
-    [draft, modelsInput]
+    () => ({
+      ...draft,
+      models: parseModels(modelsInput),
+      requestMarkers: {
+        prefixes: parseModels(prefixMarkersInput),
+        suffixes: parseModels(suffixMarkersInput),
+      },
+    }),
+    [draft, modelsInput, prefixMarkersInput, suffixMarkersInput]
   );
   const dirty = !sameConfig(effectiveDraft, saved);
   const modelChips = effectiveDraft.models.length > 0 ? effectiveDraft.models : DEFAULT_INSTRUCTIONS.models;
@@ -107,6 +132,8 @@ export function CodexInstructionsPage() {
     setDraft(nextConfig);
     setSaved(nextConfig);
     setModelsInput(nextConfig.models.join('\n'));
+    setPrefixMarkersInput(nextConfig.requestMarkers.prefixes.join('\n'));
+    setSuffixMarkersInput(nextConfig.requestMarkers.suffixes.join('\n'));
   }, []);
 
   const loadInstructions = useCallback(async () => {
@@ -231,6 +258,52 @@ export function CodexInstructionsPage() {
             />
             <small>{t('codex_instructions.oauth_only_hint')}</small>
           </div>
+
+          <div className={styles.fieldGroup}>
+            <ToggleSwitch
+              checked={draft.requireAuthAllow}
+              onChange={(requireAuthAllow) => updateDraft({ requireAuthAllow })}
+              disabled={disableControls}
+              label={t('codex_instructions.require_auth_allow')}
+            />
+            <small>{t('codex_instructions.require_auth_allow_hint')}</small>
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <ToggleSwitch
+              checked={draft.reserveMarkedAuths}
+              onChange={(reserveMarkedAuths) => updateDraft({ reserveMarkedAuths })}
+              disabled={disableControls}
+              label={t('codex_instructions.reserve_marked_auths')}
+            />
+            <small>{t('codex_instructions.reserve_marked_auths_hint')}</small>
+          </div>
+
+          <label className={styles.fieldGroup}>
+            <span>{t('codex_instructions.prefix_markers_label')}</span>
+            <textarea
+              className={styles.modelsTextarea}
+              value={prefixMarkersInput}
+              onChange={(event) => setPrefixMarkersInput(event.target.value)}
+              disabled={disableControls}
+              rows={3}
+              placeholder="private/"
+            />
+            <small>{t('codex_instructions.prefix_markers_hint')}</small>
+          </label>
+
+          <label className={styles.fieldGroup}>
+            <span>{t('codex_instructions.suffix_markers_label')}</span>
+            <textarea
+              className={styles.modelsTextarea}
+              value={suffixMarkersInput}
+              onChange={(event) => setSuffixMarkersInput(event.target.value)}
+              disabled={disableControls}
+              rows={3}
+              placeholder="-private"
+            />
+            <small>{t('codex_instructions.suffix_markers_hint')}</small>
+          </label>
 
           <label className={styles.fieldGroup}>
             <span>{t('codex_instructions.models_label')}</span>

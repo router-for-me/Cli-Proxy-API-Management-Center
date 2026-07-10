@@ -26,6 +26,7 @@ export type PrefixProxyEditorField =
   | 'priority'
   | 'websockets'
   | 'note'
+  | 'allowPrivateInstructions'
   | 'headersText';
 
 export type PrefixProxyEditorFieldValue = string | boolean;
@@ -48,6 +49,8 @@ export type PrefixProxyEditorState = {
   websocketsTouched: boolean;
   note: string;
   noteTouched: boolean;
+  allowPrivateInstructions: boolean;
+  allowPrivateInstructionsTouched: boolean;
   headersText: string;
   headersTouched: boolean;
   headersError: string | null;
@@ -257,6 +260,14 @@ const buildAuthFileFieldsPatch = (
     }
   }
 
+  if (editor.allowPrivateInstructionsTouched && editor.providerKey === 'codex') {
+    const originalAllow = Boolean(original.allow_private_instructions);
+    const nextAllow = Boolean(editor.allowPrivateInstructions);
+    if (nextAllow !== originalAllow) {
+      patch.allow_private_instructions = nextAllow;
+    }
+  }
+
   if (supportsAuthFileWebsockets(editor.providerKey) && editor.websocketsTouched) {
     const originalWebsockets = readAuthFileWebsockets(original);
     const nextWebsockets = Boolean(editor.websockets);
@@ -317,6 +328,14 @@ const buildPrefixProxyUpdatedText = (
       next.note = patch.note;
     } else if ('note' in next) {
       delete next.note;
+    }
+  }
+
+  if (patch.allow_private_instructions !== undefined) {
+    if (patch.allow_private_instructions) {
+      next.allow_private_instructions = true;
+    } else {
+      delete next.allow_private_instructions;
     }
   }
 
@@ -385,6 +404,8 @@ export function useAuthFilesPrefixProxyEditor(
       websocketsTouched: false,
       note: '',
       noteTouched: false,
+      allowPrivateInstructions: false,
+      allowPrivateInstructionsTouched: false,
       headersText: '',
       headersTouched: false,
       headersError: null,
@@ -431,6 +452,7 @@ export function useAuthFilesPrefixProxyEditor(
         ? readAuthFileWebsockets(json)
         : false;
       const note = typeof json.note === 'string' ? json.note : '';
+      const allowPrivateInstructions = Boolean(json.allow_private_instructions);
       const headers = json.headers;
       let headersText = '';
       let headersError: string | null = null;
@@ -457,6 +479,8 @@ export function useAuthFilesPrefixProxyEditor(
           websocketsTouched: false,
           note,
           noteTouched: false,
+          allowPrivateInstructions,
+          allowPrivateInstructionsTouched: false,
           headersText,
           headersTouched: false,
           headersError,
@@ -486,6 +510,13 @@ export function useAuthFilesPrefixProxyEditor(
         return { ...prev, websockets: Boolean(value), websocketsTouched: true };
       }
       if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
+      if (field === 'allowPrivateInstructions') {
+        return {
+          ...prev,
+          allowPrivateInstructions: Boolean(value),
+          allowPrivateInstructionsTouched: true,
+        };
+      }
       if (field === 'headersText') {
         const headersText = String(value);
         const { errorKey } = parseHeadersText(headersText);

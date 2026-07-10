@@ -300,7 +300,10 @@
     "quota_refresh_single": "重新整理配額",
     "quota_refresh_hint": "僅重新整理該驗證檔案的配額",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "allow_private_instructions_label": "允許私有 Codex 指令",
+    "allow_private_instructions_hint": "允許此 Codex OAuth 檔處理 private 標記模型請求，並注入私有指令。",
+    "allow_private_instructions_display": "已允許私有指令"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -1321,7 +1324,15 @@
     "status_loaded": "指令已載入",
     "status_dirty": "有未儲存的變更",
     "status_saving": "正在儲存指令...",
-    "status_load_failed": "載入失敗"
+    "status_load_failed": "載入失敗",
+    "require_auth_allow": "要求帳號開啟允許標記",
+    "require_auth_allow_hint": "開啟後，帶 private 標記的請求只會使用 allow_private_instructions=true 的帳號。",
+    "reserve_marked_auths": "標記帳號僅用於私有請求",
+    "reserve_marked_auths_hint": "開啟後，被標記帳號不會參與普通模型請求。預設關閉，讓標記帳號仍可處理普通流量。",
+    "prefix_markers_label": "私有模型前綴",
+    "prefix_markers_hint": "每行一個或用逗號分隔。例如：private/",
+    "suffix_markers_label": "私有模型後綴",
+    "suffix_markers_hint": "每行一個或用逗號分隔。例如：-private"
   },
   "language": {
     "switch": "語言",

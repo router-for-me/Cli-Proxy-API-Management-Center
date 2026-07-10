@@ -300,7 +300,10 @@
     "quota_refresh_single": "刷新额度",
     "quota_refresh_hint": "仅刷新该认证文件的额度",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
-    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
+    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
+    "allow_private_instructions_label": "允许私有 Codex 指令",
+    "allow_private_instructions_hint": "允许此 Codex OAuth 文件处理 private 标记模型请求，并注入私有指令。",
+    "allow_private_instructions_display": "已允许私有指令"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -1295,7 +1298,15 @@
     "status_loaded": "指令已加载",
     "status_dirty": "有未保存的更改",
     "status_saving": "正在保存指令...",
-    "status_load_failed": "加载失败"
+    "status_load_failed": "加载失败",
+    "require_auth_allow": "要求账号开启允许标记",
+    "require_auth_allow_hint": "开启后，带 private 标记的请求只会使用 allow_private_instructions=true 的账号。",
+    "reserve_marked_auths": "标记账号仅用于私有请求",
+    "reserve_marked_auths_hint": "开启后，被标记账号不会参与普通模型请求。默认关闭，让标记账号仍可处理普通流量。",
+    "prefix_markers_label": "私有模型前缀",
+    "prefix_markers_hint": "每行一个或用逗号分隔。例如：private/",
+    "suffix_markers_label": "私有模型后缀",
+    "suffix_markers_hint": "每行一个或用逗号分隔。例如：-private"
   },
   "language": {
     "switch": "语言",

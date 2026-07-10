@@ -34,6 +34,11 @@ export interface Config {
 
 export type CodexInstructionsMode = 'prepend' | 'append' | 'replace';
 
+export interface CodexInstructionMarkersConfig {
+  prefixes: string[];
+  suffixes: string[];
+}
+
 export interface CodexInstructionsConfig {
   enabled: boolean;
   mode: CodexInstructionsMode;
@@ -41,6 +46,9 @@ export interface CodexInstructionsConfig {
   file: string;
   models: string[];
   oauthOnly: boolean;
+  requireAuthAllow: boolean;
+  reserveMarkedAuths: boolean;
+  requestMarkers: CodexInstructionMarkersConfig;
 }
 
 export interface RawCodexInstructionsConfig {
@@ -51,6 +59,18 @@ export interface RawCodexInstructionsConfig {
   models?: string[];
   'oauth-only'?: boolean;
   oauthOnly?: boolean;
+  'require-auth-allow'?: boolean;
+  requireAuthAllow?: boolean;
+  'reserve-marked-auths'?: boolean;
+  reserveMarkedAuths?: boolean;
+  'request-markers'?: {
+    prefixes?: string[];
+    suffixes?: string[];
+  };
+  requestMarkers?: {
+    prefixes?: string[];
+    suffixes?: string[];
+  };
 }
 
 export type RawConfigSection =
