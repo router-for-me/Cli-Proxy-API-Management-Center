@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test": "bun test",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
+    "verify": "bun run test && bun run lint && bun run build",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\"",
     "type-check": "tsc --noEmit"
   },

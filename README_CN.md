@@ -138,7 +138,9 @@ bun run build
 bun run dev        # 启动开发服务器
 bun run build      # tsc + Vite 构建
 bun run preview    # 本地预览 dist
+bun run test       # Bun 测试套件
 bun run lint       # ESLint（warnings 视为失败）
+bun run verify     # 测试 + lint + 构建
 bun run format     # Prettier
 bun run type-check # tsc --noEmit
 ```
@@ -149,7 +151,7 @@ bun run type-check # tsc --noEmit
 
 - 复现步骤（服务端版本 + UI 版本）
 - UI 改动截图
-- 验证记录（`bun run lint`、`bun run type-check`、`bun run build`）
+- 验证记录（`bun run verify`，以及按需单独运行的 `bun run type-check`）
 
 ## 许可证
 

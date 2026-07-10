@@ -138,7 +138,9 @@ The UI language is automatically detected from browser settings and can be manua
 bun run dev        # Vite dev server
 bun run build      # tsc + Vite build
 bun run preview    # serve dist locally
+bun run test       # Bun test suite
 bun run lint       # ESLint (fails on warnings)
+bun run verify     # test + lint + build
 bun run format     # Prettier
 bun run type-check # tsc --noEmit
 ```
@@ -149,7 +151,7 @@ Issues and PRs are welcome. Please include:
 
 - Reproduction steps (server version + UI version)
 - Screenshots for UI changes
-- Verification notes (`bun run lint`, `bun run type-check`, `bun run build`)
+- Verification notes (`bun run verify`, plus `bun run type-check` when run separately)
 
 ## License
 
