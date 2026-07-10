@@ -15,6 +15,13 @@ export function normalizeOAuthExcludedRules(values: Iterable<string>): string[] 
   return rules;
 }
 
+export function getEffectiveOAuthExcludedRules(
+  selectedRules: Iterable<string>,
+  customRule: string
+): string[] {
+  return normalizeOAuthExcludedRules([...selectedRules, customRule]);
+}
+
 export function hasOAuthExcludedRule(values: Iterable<string>, candidate: string): boolean {
   const candidateKey = getRuleKey(candidate);
   if (!candidateKey) return false;

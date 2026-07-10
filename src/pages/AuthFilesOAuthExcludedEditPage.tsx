@@ -21,6 +21,7 @@ import {
 import { getStringSetSignature, isOAuthEditorDirty } from '@/features/authFiles/oauthEditorState';
 import {
   getCustomOAuthExcludedRules,
+  getEffectiveOAuthExcludedRules,
   hasOAuthExcludedRule,
   normalizeOAuthExcludedRules,
   updateOAuthExcludedRule,
@@ -87,11 +88,15 @@ export function AuthFilesOAuthExcludedEditPage() {
     () => getStringSetSignature(normalizeOAuthExcludedRules(excluded[resolvedProviderKey] ?? [])),
     [excluded, resolvedProviderKey]
   );
-  const selectedModelsSignature = useMemo(
-    () => getStringSetSignature(normalizeOAuthExcludedRules(selectedModels)),
-    [selectedModels]
+  const effectiveRules = useMemo(
+    () => getEffectiveOAuthExcludedRules(selectedModels, customRule),
+    [customRule, selectedModels]
   );
-  const contentDirty = baselineModelsSignature !== selectedModelsSignature;
+  const effectiveRulesSignature = useMemo(
+    () => getStringSetSignature(effectiveRules),
+    [effectiveRules]
+  );
+  const contentDirty = baselineModelsSignature !== effectiveRulesSignature;
   const customRules = useMemo(
     () =>
       getCustomOAuthExcludedRules(
@@ -104,7 +109,7 @@ export function AuthFilesOAuthExcludedEditPage() {
     initialProviderKey,
     provider,
     baselineModelsSignature,
-    selectedModelsSignature
+    effectiveRulesSignature
   );
   const unsavedChangesDialog = useMemo(
     () => ({
@@ -298,14 +303,10 @@ export function AuthFilesOAuthExcludedEditPage() {
   }, []);
 
   const handleAddCustomRule = useCallback(() => {
-    const nextRule = customRule.trim();
-    if (!nextRule) return;
-    setSelectedModels((prev) => {
-      if (hasOAuthExcludedRule(prev, nextRule)) return prev;
-      return new Set(updateOAuthExcludedRule(prev, nextRule, true));
-    });
+    if (!customRule.trim()) return;
+    setSelectedModels(new Set(effectiveRules));
     setCustomRule('');
-  }, [customRule]);
+  }, [customRule, effectiveRules]);
 
   const handleSave = useCallback(async () => {
     const normalizedProvider = normalizeProviderKey(provider);
@@ -314,7 +315,7 @@ export function AuthFilesOAuthExcludedEditPage() {
       return;
     }
 
-    const models = normalizeOAuthExcludedRules(selectedModels);
+    const models = effectiveRules;
     setSaving(true);
     try {
       if (models.length) {
@@ -331,7 +332,7 @@ export function AuthFilesOAuthExcludedEditPage() {
     } finally {
       setSaving(false);
     }
-  }, [allowNextNavigation, handleBack, isEditing, provider, selectedModels, showNotification, t]);
+  }, [allowNextNavigation, effectiveRules, handleBack, isEditing, provider, showNotification, t]);
 
   const canSave = !disableControls && !saving && !excludedUnsupported;
 
