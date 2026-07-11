@@ -411,6 +411,10 @@ export function VisualConfigEditor({
         value: 'chat',
         label: t('config_management.visual.sections.network.disable_image_generation_chat'),
       },
+      {
+        value: 'passthrough',
+        label: t('config_management.visual.sections.network.disable_image_generation_passthrough'),
+      },
     ],
     [t]
   );

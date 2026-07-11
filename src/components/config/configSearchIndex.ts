@@ -167,6 +167,7 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     labelKey: L('sections.network.disable_image_generation'),
     hintKey: L('sections.network.disable_image_generation_hint'),
     yamlKeys: ['disable-image-generation'],
+    keywords: ['false', 'true', 'chat', 'passthrough'],
   },
   {
     fieldId: 'gptImage2BaseModel',

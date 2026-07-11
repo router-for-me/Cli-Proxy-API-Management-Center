@@ -1,5 +1,5 @@
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
-export type DisableImageGenerationMode = 'false' | 'true' | 'chat';
+export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';
 export type PluginStoreAuthType = 'none' | 'bearer' | 'basic' | 'header' | 'github-token';
 export type PluginStoreAuthApplyTo = 'registry' | 'metadata' | 'artifact';
 export type PayloadParamValidationErrorCode =

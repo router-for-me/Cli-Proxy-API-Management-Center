@@ -144,8 +144,8 @@ function setDisableImageGenerationInDoc(
   path: YamlPath,
   value: DisableImageGenerationMode
 ): void {
-  if (value === 'chat') {
-    doc.setIn(path, 'chat');
+  if (value === 'chat' || value === 'passthrough') {
+    doc.setIn(path, value);
     return;
   }
 
@@ -432,12 +432,13 @@ function parsePayloadProtocol(raw: unknown): string | undefined {
   return raw.trim() ? raw : undefined;
 }
 
-function parseDisableImageGenerationMode(raw: unknown): DisableImageGenerationMode {
+export function parseDisableImageGenerationMode(raw: unknown): DisableImageGenerationMode {
   if (raw === true) return 'true';
   if (typeof raw === 'string') {
     const normalized = raw.trim().toLowerCase();
     if (normalized === 'true') return 'true';
     if (normalized === 'chat') return 'chat';
+    if (normalized === 'passthrough') return 'passthrough';
   }
   return 'false';
 }
