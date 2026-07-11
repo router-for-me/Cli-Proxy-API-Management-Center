@@ -282,6 +282,8 @@
     "priority_hint": "Integers only. Invalid values are ignored. Larger value means higher priority.",
     "websockets_label": "WebSockets (websockets)",
     "websockets_hint": "Enable Responses API websocket transport for this credential.",
+    "using_api_label": "Use official API (using_api)",
+    "using_api_hint": "Use the official xAI API when enabled; use Grok CLI chat-proxy when disabled.",
     "note_label": "Note",
     "note_placeholder": "Enter a note, e.g.: John's account",
     "note_hint": "Optional. Used to describe the purpose or owner of this credential; leave empty to omit.",

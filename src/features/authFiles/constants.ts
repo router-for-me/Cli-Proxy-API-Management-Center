@@ -54,6 +54,7 @@ export const INTEGER_STRING_PATTERN = /^[+-]?\d+$/;
 export const TRUTHY_TEXT_VALUES = new Set(['true', '1', 'yes', 'y', 'on']);
 export const FALSY_TEXT_VALUES = new Set(['false', '0', 'no', 'n', 'off']);
 export const AUTH_FILE_WEBSOCKET_PROVIDERS = new Set(['codex', 'xai']);
+export const AUTH_FILE_USING_API_PROVIDERS = new Set(['xai']);
 
 // 标签类型颜色配置 — 基于各提供商 Logo 品牌色调配，确保彼此不重复
 export const TYPE_COLORS: Record<string, TypeColorSet> = {
@@ -235,6 +236,17 @@ export const applyAuthFileWebsockets = (
   next.websockets = websockets;
   return next;
 };
+
+export const supportsAuthFileUsingApi = (providerKey: string): boolean =>
+  AUTH_FILE_USING_API_PROVIDERS.has(normalizeProviderKey(providerKey));
+
+export const readAuthFileUsingApi = (value: Record<string, unknown>): boolean =>
+  parseDisableCoolingValue(value.using_api) ?? false;
+
+export const applyAuthFileUsingApi = (
+  value: Record<string, unknown>,
+  usingApi: boolean
+): Record<string, unknown> => ({ ...value, using_api: usingApi });
 
 export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   const raw = file['runtime_only'] ?? file.runtimeOnly;

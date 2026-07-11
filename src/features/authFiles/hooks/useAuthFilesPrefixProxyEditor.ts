@@ -5,10 +5,13 @@ import type { AuthFileItem } from '@/types';
 import { useNotificationStore } from '@/stores';
 import {
   applyAuthFileWebsockets,
+  applyAuthFileUsingApi,
   normalizeProviderKey,
   parsePriorityValue,
   readAuthFileWebsockets,
+  readAuthFileUsingApi,
   supportsAuthFileWebsockets,
+  supportsAuthFileUsingApi,
 } from '@/features/authFiles/constants';
 
 type AuthFileHeaders = Record<string, string>;
@@ -25,6 +28,7 @@ export type PrefixProxyEditorField =
   | 'proxyUrl'
   | 'priority'
   | 'websockets'
+  | 'usingApi'
   | 'note'
   | 'headersText';
 
@@ -46,6 +50,8 @@ export type PrefixProxyEditorState = {
   priority: string;
   websockets: boolean;
   websocketsTouched: boolean;
+  usingApi: boolean;
+  usingApiTouched: boolean;
   note: string;
   noteTouched: boolean;
   headersText: string;
@@ -265,6 +271,14 @@ const buildAuthFileFieldsPatch = (
     }
   }
 
+  if (supportsAuthFileUsingApi(editor.providerKey) && editor.usingApiTouched) {
+    const originalUsingApi = readAuthFileUsingApi(original);
+    const nextUsingApi = Boolean(editor.usingApi);
+    if (nextUsingApi !== originalUsingApi) {
+      patch.using_api = nextUsingApi;
+    }
+  }
+
   if (editor.headersTouched) {
     const { value: parsedHeaders, errorKey } = parseHeadersText(editor.headersText);
     if (errorKey) {
@@ -326,6 +340,10 @@ const buildPrefixProxyUpdatedText = (
     next = applyAuthFileWebsockets(next, patch.websockets);
   }
 
+  if (patch.using_api !== undefined) {
+    next = applyAuthFileUsingApi(next, patch.using_api);
+  }
+
   return JSON.stringify(next);
 };
 
@@ -383,6 +401,8 @@ export function useAuthFilesPrefixProxyEditor(
       priority: '',
       websockets: false,
       websocketsTouched: false,
+      usingApi: false,
+      usingApiTouched: false,
       note: '',
       noteTouched: false,
       headersText: '',
@@ -430,6 +450,7 @@ export function useAuthFilesPrefixProxyEditor(
       const websockets = supportsAuthFileWebsockets(providerKey)
         ? readAuthFileWebsockets(json)
         : false;
+      const usingApi = supportsAuthFileUsingApi(providerKey) ? readAuthFileUsingApi(json) : false;
       const note = typeof json.note === 'string' ? json.note : '';
       const headers = json.headers;
       let headersText = '';
@@ -455,6 +476,8 @@ export function useAuthFilesPrefixProxyEditor(
           priority: priority !== undefined ? String(priority) : '',
           websockets,
           websocketsTouched: false,
+          usingApi,
+          usingApiTouched: false,
           note,
           noteTouched: false,
           headersText,
@@ -484,6 +507,9 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'priority') return { ...prev, priority: String(value) };
       if (field === 'websockets') {
         return { ...prev, websockets: Boolean(value), websocketsTouched: true };
+      }
+      if (field === 'usingApi') {
+        return { ...prev, usingApi: Boolean(value), usingApiTouched: true };
       }
       if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
       if (field === 'headersText') {

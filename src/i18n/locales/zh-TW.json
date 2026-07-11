@@ -282,6 +282,8 @@
     "priority_hint": "僅支援整數；無效值會被忽略。數值越大優先順序越高。",
     "websockets_label": "WebSockets（websockets）",
     "websockets_hint": "為該憑證開啟 Responses API 的 websocket 傳輸。",
+    "using_api_label": "使用官方 API（using_api）",
+    "using_api_hint": "開啟後使用 xAI 官方 API；關閉時使用 Grok CLI chat-proxy。",
     "note_label": "備註（note）",
     "note_placeholder": "輸入備註資訊，例如：張三的帳號",
     "note_hint": "選填，用於標記憑證用途或歸屬；留空則不寫入。",

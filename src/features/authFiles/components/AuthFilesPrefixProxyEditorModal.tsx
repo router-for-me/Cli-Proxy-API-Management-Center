@@ -9,7 +9,10 @@ import type {
   PrefixProxyEditorFieldValue,
   PrefixProxyEditorState,
 } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
-import { supportsAuthFileWebsockets } from '@/features/authFiles/constants';
+import {
+  supportsAuthFileUsingApi,
+  supportsAuthFileWebsockets,
+} from '@/features/authFiles/constants';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
 export type AuthFilesPrefixProxyEditorModalProps = {
@@ -153,6 +156,18 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                         ariaLabel={t('auth_files.websockets_label')}
                       />
                       <div className="hint">{t('auth_files.websockets_hint')}</div>
+                    </div>
+                  )}
+                  {supportsAuthFileUsingApi(editor.providerKey) && (
+                    <div className="form-group">
+                      <label>{t('auth_files.using_api_label')}</label>
+                      <ToggleSwitch
+                        checked={editor.usingApi}
+                        onChange={(value) => onChange('usingApi', value)}
+                        disabled={disableControls || editor.saving || !editor.json}
+                        ariaLabel={t('auth_files.using_api_label')}
+                      />
+                      <div className="hint">{t('auth_files.using_api_hint')}</div>
                     </div>
                   )}
                   <div className="form-group">
