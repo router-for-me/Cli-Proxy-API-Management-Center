@@ -19,6 +19,7 @@ import {
   IconSidebarConfig,
   IconSidebarDashboard,
   IconSidebarInstructions,
+  IconShield,
   IconSidebarLogs,
   IconSidebarOauth,
   IconSidebarPlugins,
@@ -60,6 +61,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   pluginStore: <IconSidebarStore size={18} />,
   config: <IconSidebarConfig size={18} />,
   codexInstructions: <IconSidebarInstructions size={18} />,
+  xaiConfig: <IconShield size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
 };
@@ -596,6 +598,12 @@ export function MainLayout() {
           labelKey: 'nav.codex_instructions',
           metaKey: 'nav_meta.codex_instructions',
           icon: sidebarIcons.codexInstructions,
+        },
+        {
+          path: '/xai-config',
+          labelKey: 'nav.xai_config',
+          metaKey: 'nav_meta.xai_config',
+          icon: sidebarIcons.xaiConfig,
         },
         ...(supportsPlugin
           ? [

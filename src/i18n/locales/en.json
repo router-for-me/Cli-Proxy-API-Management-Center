@@ -102,6 +102,7 @@
     "auth_files": "Auth Files",
     "oauth": "OAuth Login",
     "codex_instructions": "Codex Instructions",
+    "xai_config": "xAI Config",
     "quota_management": "Quota Management",
     "plugins": "Plugins",
     "plugin_store": "Plugin Store",
@@ -123,6 +124,7 @@
     "auth_files": "Auth files & credentials",
     "oauth": "OAuth authorization",
     "codex_instructions": "Private instructions for Codex OAuth",
+    "xai_config": "Grok failure policy",
     "quota_management": "API keys & limits",
     "plugins": "Plugin toggles & config",
     "plugin_store": "Discover & install plugins",
@@ -305,7 +307,8 @@
     "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
     "allow_private_instructions_label": "Allow private Codex instructions",
     "allow_private_instructions_hint": "Permit this Codex OAuth file to serve private-marker model requests and receive injected instructions.",
-    "allow_private_instructions_display": "Private instructions allowed"
+    "allow_private_instructions_display": "Private instructions allowed",
+    "disabled_reason_display": "Disabled reason"
   },
   "antigravity_subscription": {
     "plan_unknown": "Unknown",
@@ -1317,6 +1320,32 @@
     "prefix_markers_hint": "One marker per line or comma-separated. Example: private/",
     "suffix_markers_label": "Private model suffixes",
     "suffix_markers_hint": "One marker per line or comma-separated. Example: -private"
+  },
+  "xai_config": {
+    "title": "xAI Failure Policy",
+    "description": "Control how Grok auth files are disabled or cooled down after upstream permission and usage failures.",
+    "settings_title": "xAI failure handling",
+    "auto_disable_label": "Disable auth files for confirmed permission failures",
+    "auto_disable_hint": "When xAI returns permission-denied or the exact Access denied response, CPA disables the auth file instead of retrying it.",
+    "reason_note": "The full upstream error response is saved as disabled_reason in the auth file. Re-enabling the file clears that reason.",
+    "other_403_label": "Other xAI 403 responses",
+    "other_403_hint": "Suspend the affected model after an unknown xAI forbidden response. Set 0 to keep it immediately eligible.",
+    "free_usage_label": "Free usage exhausted",
+    "free_usage_hint": "Suspend the affected model after subscription:free-usage-exhausted. Set 0 to keep it immediately eligible.",
+    "cooldown_hours": "Cooldown (hours)",
+    "policy_summary": "Active xAI failure policy",
+    "policy_permission": "Permission denied: disable the auth file until an operator re-enables it.",
+    "policy_forbidden": "Other 403: suspend the model for {{hours}} hours.",
+    "policy_free_usage": "Free usage exhausted: suspend the model for {{hours}} hours.",
+    "reload": "Reload",
+    "reload_confirm_message": "Reloading will discard your unsaved xAI policy changes. Do you want to continue?",
+    "save": "Save policy",
+    "save_success": "xAI failure policy saved",
+    "status_loading": "Loading policy...",
+    "status_loaded": "Policy loaded",
+    "status_dirty": "Unsaved changes",
+    "status_saving": "Saving policy...",
+    "status_load_failed": "Failed to load"
   },
   "language": {
     "switch": "Language",

@@ -73,6 +73,21 @@ export interface RawCodexInstructionsConfig {
   };
 }
 
+export interface XAIConfig {
+  autoDisablePermissionDenied: boolean;
+  otherForbiddenCooldownHours: number;
+  freeUsageExhaustedCooldownHours: number;
+}
+
+export interface RawXAIConfig {
+  'auto-disable-permission-denied'?: boolean;
+  autoDisablePermissionDenied?: boolean;
+  'other-403-cooldown-hours'?: number;
+  otherForbiddenCooldownHours?: number;
+  'free-usage-exhausted-cooldown-hours'?: number;
+  freeUsageExhaustedCooldownHours?: number;
+}
+
 export type RawConfigSection =
   | 'debug'
   | 'proxy-url'

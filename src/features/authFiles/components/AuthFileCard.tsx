@@ -125,6 +125,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
 
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
+  const disabledReason =
+    typeof file.disabled_reason === 'string' ? file.disabled_reason.trim() : '';
   const allowPrivateInstructions = Boolean((file as any).allow_private_instructions);
   const stateLabel = isRuntimeOnly
     ? t('auth_files.type_virtual') || '虚拟认证文件'
@@ -202,7 +204,17 @@ export function AuthFileCard(props: AuthFileCardProps) {
               )}
               {!compact && allowPrivateInstructions && (
                 <div className={styles.noteText}>
-                  <span className={styles.noteLabel}>{t('auth_files.allow_private_instructions_display')}</span>
+                  <span className={styles.noteLabel}>
+                    {t('auth_files.allow_private_instructions_display')}
+                  </span>
+                </div>
+              )}
+              {!compact && file.disabled && disabledReason && (
+                <div className={styles.noteText} title={disabledReason}>
+                  <span className={styles.noteLabel}>
+                    {t('auth_files.disabled_reason_display')}
+                  </span>
+                  <span className={styles.noteValue}>{disabledReason}</span>
                 </div>
               )}
             </div>

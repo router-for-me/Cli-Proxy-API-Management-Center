@@ -102,6 +102,7 @@
     "auth_files": "认证文件",
     "oauth": "OAuth 登录",
     "codex_instructions": "Codex 指令",
+    "xai_config": "xAI 配置",
     "quota_management": "配额管理",
     "plugins": "插件管理",
     "plugin_store": "插件商店",
@@ -123,6 +124,7 @@
     "auth_files": "Auth 文件与凭证",
     "oauth": "OAuth 授权登录",
     "codex_instructions": "Codex OAuth 私人指令",
+    "xai_config": "Grok 失败策略",
     "quota_management": "API Key 与限额",
     "plugins": "插件启停与配置",
     "plugin_store": "发现并安装插件",
@@ -305,7 +307,8 @@
     "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
     "allow_private_instructions_label": "允许私有 Codex 指令",
     "allow_private_instructions_hint": "允许此 Codex OAuth 文件处理 private 标记模型请求，并注入私有指令。",
-    "allow_private_instructions_display": "已允许私有指令"
+    "allow_private_instructions_display": "已允许私有指令",
+    "disabled_reason_display": "禁用原因"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -1317,6 +1320,32 @@
     "prefix_markers_hint": "每行一个或用逗号分隔。例如：private/",
     "suffix_markers_label": "私有模型后缀",
     "suffix_markers_hint": "每行一个或用逗号分隔。例如：-private"
+  },
+  "xai_config": {
+    "title": "xAI 失败策略",
+    "description": "控制 Grok 认证文件在上游权限和用量失败后的禁用与冷却行为。",
+    "settings_title": "xAI 失败处理",
+    "auto_disable_label": "确认权限失败时禁用认证文件",
+    "auto_disable_hint": "当 xAI 返回 permission-denied 或准确的 Access denied 响应时，CPA 会禁用认证文件，而不是继续重试。",
+    "reason_note": "完整上游错误响应会以 disabled_reason 保存到认证文件。重新启用认证文件会清除此原因。",
+    "other_403_label": "其他 xAI 403 响应",
+    "other_403_hint": "未知 xAI 禁止响应后，冷却受影响模型。设为 0 可让模型立即继续可用。",
+    "free_usage_label": "免费用量耗尽",
+    "free_usage_hint": "出现 subscription:free-usage-exhausted 后，冷却受影响模型。设为 0 可让模型立即继续可用。",
+    "cooldown_hours": "冷却（小时）",
+    "policy_summary": "当前 xAI 失败策略",
+    "policy_permission": "权限被拒绝：禁用认证文件，直到管理员重新启用。",
+    "policy_forbidden": "其他 403：冷却模型 {{hours}} 小时。",
+    "policy_free_usage": "免费用量耗尽：冷却模型 {{hours}} 小时。",
+    "reload": "重新加载",
+    "reload_confirm_message": "重新加载会丢弃未保存的 xAI 策略更改。要继续吗？",
+    "save": "保存策略",
+    "save_success": "xAI 失败策略已保存",
+    "status_loading": "正在加载策略...",
+    "status_loaded": "策略已加载",
+    "status_dirty": "有未保存更改",
+    "status_saving": "正在保存策略...",
+    "status_load_failed": "加载失败"
   },
   "language": {
     "switch": "语言",

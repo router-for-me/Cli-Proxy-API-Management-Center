@@ -3,7 +3,13 @@
  */
 
 import { apiClient } from './client';
-import type { CodexInstructionsConfig, Config, RawCodexInstructionsConfig } from '@/types';
+import type {
+  CodexInstructionsConfig,
+  Config,
+  RawCodexInstructionsConfig,
+  RawXAIConfig,
+  XAIConfig,
+} from '@/types';
 import { normalizeConfigResponse } from './transformers';
 
 const DEFAULT_CODEX_INSTRUCTIONS: CodexInstructionsConfig = {
@@ -21,6 +27,12 @@ const DEFAULT_CODEX_INSTRUCTIONS: CodexInstructionsConfig = {
   },
 };
 
+const DEFAULT_XAI_CONFIG: XAIConfig = {
+  autoDisablePermissionDenied: true,
+  otherForbiddenCooldownHours: 6,
+  freeUsageExhaustedCooldownHours: 24,
+};
+
 function normalizeStringList(values: unknown, fallback: string[]): string[] {
   if (!Array.isArray(values)) return fallback;
   const list = values
@@ -29,10 +41,14 @@ function normalizeStringList(values: unknown, fallback: string[]): string[] {
   return list.length > 0 ? list : fallback;
 }
 
-function normalizeCodexInstructionsResponse(raw: RawCodexInstructionsConfig): CodexInstructionsConfig {
+function normalizeCodexInstructionsResponse(
+  raw: RawCodexInstructionsConfig
+): CodexInstructionsConfig {
   const mode = raw.mode === 'append' || raw.mode === 'replace' ? raw.mode : 'prepend';
   const models = Array.isArray(raw.models)
-    ? raw.models.filter((model) => typeof model === 'string' && model.trim()).map((model) => model.trim())
+    ? raw.models
+        .filter((model) => typeof model === 'string' && model.trim())
+        .map((model) => model.trim())
     : DEFAULT_CODEX_INSTRUCTIONS.models;
   const markers = raw['request-markers'] ?? raw.requestMarkers ?? {};
 
@@ -53,8 +69,14 @@ function normalizeCodexInstructionsResponse(raw: RawCodexInstructionsConfig): Co
         : raw.reserveMarkedAuths
     ),
     requestMarkers: {
-      prefixes: normalizeStringList(markers.prefixes, DEFAULT_CODEX_INSTRUCTIONS.requestMarkers.prefixes),
-      suffixes: normalizeStringList(markers.suffixes, DEFAULT_CODEX_INSTRUCTIONS.requestMarkers.suffixes),
+      prefixes: normalizeStringList(
+        markers.prefixes,
+        DEFAULT_CODEX_INSTRUCTIONS.requestMarkers.prefixes
+      ),
+      suffixes: normalizeStringList(
+        markers.suffixes,
+        DEFAULT_CODEX_INSTRUCTIONS.requestMarkers.suffixes
+      ),
     },
   };
 }
@@ -73,6 +95,39 @@ function serializeCodexInstructions(config: CodexInstructionsConfig): RawCodexIn
       prefixes: config.requestMarkers.prefixes.map((value) => value.trim()).filter(Boolean),
       suffixes: config.requestMarkers.suffixes.map((value) => value.trim()).filter(Boolean),
     },
+  };
+}
+
+function normalizeNonNegativeInteger(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.max(0, Math.floor(value));
+}
+
+export function normalizeXAIConfigResponse(raw: RawXAIConfig): XAIConfig {
+  return {
+    autoDisablePermissionDenied:
+      typeof raw['auto-disable-permission-denied'] === 'boolean'
+        ? raw['auto-disable-permission-denied']
+        : raw.autoDisablePermissionDenied !== false,
+    otherForbiddenCooldownHours: normalizeNonNegativeInteger(
+      raw['other-403-cooldown-hours'] ?? raw.otherForbiddenCooldownHours,
+      DEFAULT_XAI_CONFIG.otherForbiddenCooldownHours
+    ),
+    freeUsageExhaustedCooldownHours: normalizeNonNegativeInteger(
+      raw['free-usage-exhausted-cooldown-hours'] ?? raw.freeUsageExhaustedCooldownHours,
+      DEFAULT_XAI_CONFIG.freeUsageExhaustedCooldownHours
+    ),
+  };
+}
+
+function serializeXAIConfig(config: XAIConfig): RawXAIConfig {
+  return {
+    'auto-disable-permission-denied': config.autoDisablePermissionDenied,
+    'other-403-cooldown-hours': Math.max(0, Math.floor(config.otherForbiddenCooldownHours)),
+    'free-usage-exhausted-cooldown-hours': Math.max(
+      0,
+      Math.floor(config.freeUsageExhaustedCooldownHours)
+    ),
   };
 }
 
@@ -103,6 +158,16 @@ export const configApi = {
    */
   async updateCodexInstructions(config: CodexInstructionsConfig): Promise<CodexInstructionsConfig> {
     await apiClient.put('/codex-instructions', serializeCodexInstructions(config));
+    return config;
+  },
+
+  async getXAIConfig(): Promise<XAIConfig> {
+    const raw = await apiClient.get<RawXAIConfig>('/xai-config');
+    return normalizeXAIConfigResponse(raw ?? {});
+  },
+
+  async updateXAIConfig(config: XAIConfig): Promise<XAIConfig> {
+    await apiClient.put('/xai-config', serializeXAIConfig(config));
     return config;
   },
 };

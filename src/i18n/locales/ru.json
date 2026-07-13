@@ -102,6 +102,7 @@
     "auth_files": "Файлы аутентификации",
     "oauth": "OAuth вход",
     "codex_instructions": "Инструкции Codex",
+    "xai_config": "Настройки xAI",
     "quota_management": "Управление квотами",
     "plugins": "Плагины",
     "plugin_store": "Магазин плагинов",
@@ -122,6 +123,7 @@
     "auth_files": "Файлы и учётные данные",
     "oauth": "Авторизация OAuth",
     "codex_instructions": "Личные инструкции для Codex OAuth",
+    "xai_config": "Политика ошибок Grok",
     "quota_management": "API ключи и лимиты",
     "plugins": "Переключатели и ресурсы плагинов",
     "plugin_store": "Поиск и установка плагинов",
@@ -298,7 +300,8 @@
     "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
     "allow_private_instructions_label": "Разрешить private Codex instructions",
     "allow_private_instructions_hint": "Разрешает этому Codex OAuth файлу обслуживать private-marker запросы и получать injected instructions.",
-    "allow_private_instructions_display": "Private instructions разрешены"
+    "allow_private_instructions_display": "Private instructions разрешены",
+    "disabled_reason_display": "Причина отключения"
   },
   "antigravity_subscription": {
     "plan_unknown": "Неизвестно",
@@ -1295,6 +1298,32 @@
     "prefix_markers_hint": "По одному на строку или через запятую. Пример: private/",
     "suffix_markers_label": "Суффиксы private-модели",
     "suffix_markers_hint": "По одному на строку или через запятую. Пример: -private"
+  },
+  "xai_config": {
+    "title": "Политика ошибок xAI",
+    "description": "Управляйте отключением и охлаждением учётных данных Grok после ошибок доступа и лимитов у провайдера.",
+    "settings_title": "Обработка ошибок xAI",
+    "auto_disable_label": "Отключать auth-файлы при подтверждённой ошибке доступа",
+    "auto_disable_hint": "Когда xAI возвращает permission-denied или точный ответ Access denied, CPA отключает auth-файл вместо повторных попыток.",
+    "reason_note": "Полный ответ ошибки сохраняется в auth-файле как disabled_reason. Повторное включение файла очищает эту причину.",
+    "other_403_label": "Другие ответы xAI 403",
+    "other_403_hint": "При неизвестном запрете xAI приостановить затронутую модель. Укажите 0, чтобы она оставалась сразу доступной.",
+    "free_usage_label": "Бесплатный лимит исчерпан",
+    "free_usage_hint": "При subscription:free-usage-exhausted приостановить затронутую модель. Укажите 0, чтобы она оставалась сразу доступной.",
+    "cooldown_hours": "Охлаждение (часы)",
+    "policy_summary": "Активная политика ошибок xAI",
+    "policy_permission": "Доступ запрещён: отключить auth-файл до ручного включения оператором.",
+    "policy_forbidden": "Другой 403: приостановить модель на {{hours}} ч.",
+    "policy_free_usage": "Бесплатный лимит исчерпан: приостановить модель на {{hours}} ч.",
+    "reload": "Перезагрузить",
+    "reload_confirm_message": "Перезагрузка отменит несохранённые изменения политики xAI. Продолжить?",
+    "save": "Сохранить политику",
+    "save_success": "Политика ошибок xAI сохранена",
+    "status_loading": "Загрузка политики...",
+    "status_loaded": "Политика загружена",
+    "status_dirty": "Есть несохранённые изменения",
+    "status_saving": "Сохранение политики...",
+    "status_load_failed": "Не удалось загрузить"
   },
   "language": {
     "switch": "Язык",
