@@ -34,6 +34,7 @@ import {
   buildGitHubReleasesPageURL,
   fetchPluginReleaseVersions,
   isValidManualReleaseTag,
+  supportsPluginVersionSelection,
   type PluginReleaseVersion,
 } from './pluginReleaseVersions';
 import { waitForPluginStoreState } from './pluginPolling';
@@ -129,8 +130,14 @@ function PluginInstallOptionsModal({
 
   const entryKey = entry ? getStoreEntryKey(entry) : '';
   const entryRepository = entry?.repository ?? '';
-  const releasePageURL = entry ? buildGitHubReleasesPageURL(entry.repository) : '';
-  const releaseCacheKey = entryKey ? `${entryKey}|${entryRepository.trim()}` : '';
+  const supportsVersionSelection = entry
+    ? supportsPluginVersionSelection(entry.installType)
+    : false;
+  const releasePageURL =
+    entry && supportsVersionSelection ? buildGitHubReleasesPageURL(entry.repository) : '';
+  const releaseCacheKey = entryKey
+    ? `${entryKey}|${entryRepository.trim()}|${entry?.installType.trim().toLowerCase() ?? ''}`
+    : '';
 
   if (releaseCacheKey !== loadedReleaseKey) {
     const cached = releaseCacheKey ? releaseVersionsCache.get(releaseCacheKey) : undefined;
@@ -139,13 +146,15 @@ function PluginInstallOptionsModal({
     setShowPrerelease(false);
     setReleaseVersions(cached ?? []);
     setReleaseError(
-      entryKey && !releasePageURL ? t('plugin_store.install_version_non_github') : ''
+      entryKey && supportsVersionSelection && !releasePageURL
+        ? t('plugin_store.install_version_non_github')
+        : ''
     );
-    setReleaseLoading(Boolean(entryKey && releasePageURL && !cached));
+    setReleaseLoading(Boolean(entryKey && supportsVersionSelection && releasePageURL && !cached));
   }
 
   useEffect(() => {
-    if (!entryKey || !releasePageURL) return;
+    if (!entryKey || !supportsVersionSelection || !releasePageURL) return;
 
     if (releaseVersionsCache.has(releaseCacheKey)) return;
 
@@ -159,9 +168,7 @@ function PluginInstallOptionsModal({
       })
       .catch((err: unknown) => {
         if (!active) return;
-        setReleaseError(
-          getErrorMessage(err, t('plugin_store.install_versions_load_failed'))
-        );
+        setReleaseError(getErrorMessage(err, t('plugin_store.install_versions_load_failed')));
       })
       .finally(() => {
         if (!active) return;
@@ -171,7 +178,7 @@ function PluginInstallOptionsModal({
     return () => {
       active = false;
     };
-  }, [entryKey, entryRepository, releaseCacheKey, releasePageURL, t]);
+  }, [entryKey, entryRepository, releaseCacheKey, releasePageURL, supportsVersionSelection, t]);
 
   const stableReleaseVersions = useMemo(
     () => releaseVersions.filter((release) => !release.prerelease),
@@ -179,9 +186,7 @@ function PluginInstallOptionsModal({
   );
   const visibleReleaseVersions = useMemo(
     () =>
-      showPrerelease
-        ? releaseVersions
-        : releaseVersions.filter((release) => !release.prerelease),
+      showPrerelease ? releaseVersions : releaseVersions.filter((release) => !release.prerelease),
     [releaseVersions, showPrerelease]
   );
   const latestRelease = stableReleaseVersions[0] ?? releaseVersions[0] ?? null;
@@ -212,21 +217,22 @@ function PluginInstallOptionsModal({
   );
 
   useEffect(() => {
-    if (versionMode !== 'release') return;
+    if (!supportsVersionSelection || versionMode !== 'release') return;
     if (visibleReleaseVersions.length === 0) {
       if (version) onVersionChange('');
       return;
     }
     if (visibleReleaseVersions.some((release) => release.tagName === version)) return;
     onVersionChange(visibleReleaseVersions[0].tagName);
-  }, [onVersionChange, version, versionMode, visibleReleaseVersions]);
+  }, [onVersionChange, supportsVersionSelection, version, versionMode, visibleReleaseVersions]);
 
   if (!entry) return null;
 
   const title = isUpdate
     ? t('plugin_store.update_confirm_title')
     : t('plugin_store.install_confirm_title');
-  const requestedVersion = versionMode === 'latest' ? '' : version.trim();
+  const requestedVersion =
+    !supportsVersionSelection || versionMode === 'latest' ? '' : version.trim();
   const displayVersion = requestedVersion || entry.version;
   const target = displayVersion
     ? `${getStoreEntryTitle(entry)} ${formatPluginVersion(displayVersion)}`
@@ -242,18 +248,22 @@ function PluginInstallOptionsModal({
   const hasPrereleaseVersions = releaseVersions.some((release) => release.prerelease);
   const releaseModeDisabled = installing || (releaseLoading && releaseVersions.length === 0);
   const manualVersionInvalid =
-    versionMode === 'manual' && Boolean(version.trim()) && !isValidManualReleaseTag(version);
+    supportsVersionSelection &&
+    versionMode === 'manual' &&
+    Boolean(version.trim()) &&
+    !isValidManualReleaseTag(version);
   const currentVersionSelected =
     Boolean(requestedVersion) &&
     Boolean(entry.installedVersion) &&
     pluginVersionMatches(entry.installedVersion, requestedVersion);
   const confirmDisabled =
-    (versionMode === 'release' && !requestedVersion) ||
-    (versionMode === 'manual' && !isValidManualReleaseTag(version)) ||
+    (supportsVersionSelection && versionMode === 'release' && !requestedVersion) ||
+    (supportsVersionSelection && versionMode === 'manual' && !isValidManualReleaseTag(version)) ||
     currentVersionSelected;
 
   const handleVersionModeChange = (nextMode: InstallVersionMode) => {
     if (installing) return;
+    if (!supportsVersionSelection && nextMode !== 'latest') return;
     setVersionMode(nextMode);
     if (nextMode === 'latest') {
       onVersionChange('');
@@ -305,47 +315,51 @@ function PluginInstallOptionsModal({
                 </small>
               </span>
             </label>
-            <label
-              className={`${styles.installVersionMode} ${
-                versionMode === 'release' ? styles.installVersionModeActive : ''
-              } ${releaseModeDisabled ? styles.installVersionModeDisabled : ''}`}
-            >
-              <input
-                type="radio"
-                name="plugin-store-install-version-mode"
-                checked={versionMode === 'release'}
-                onChange={() => handleVersionModeChange('release')}
-                disabled={releaseModeDisabled}
-              />
-              <span className={styles.installVersionModeText}>
-                <strong>{t('plugin_store.install_version_release_mode')}</strong>
-                <small>
-                  {releaseLoading
-                    ? t('plugin_store.install_versions_loading')
-                    : t('plugin_store.install_version_release_hint')}
-                </small>
-              </span>
-            </label>
-            <label
-              className={`${styles.installVersionMode} ${
-                versionMode === 'manual' ? styles.installVersionModeActive : ''
-              } ${installing ? styles.installVersionModeDisabled : ''}`}
-            >
-              <input
-                type="radio"
-                name="plugin-store-install-version-mode"
-                checked={versionMode === 'manual'}
-                onChange={() => handleVersionModeChange('manual')}
-                disabled={installing}
-              />
-              <span className={styles.installVersionModeText}>
-                <strong>{t('plugin_store.install_version_manual_mode')}</strong>
-                <small>{t('plugin_store.install_version_manual_hint')}</small>
-              </span>
-            </label>
+            {supportsVersionSelection ? (
+              <>
+                <label
+                  className={`${styles.installVersionMode} ${
+                    versionMode === 'release' ? styles.installVersionModeActive : ''
+                  } ${releaseModeDisabled ? styles.installVersionModeDisabled : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="plugin-store-install-version-mode"
+                    checked={versionMode === 'release'}
+                    onChange={() => handleVersionModeChange('release')}
+                    disabled={releaseModeDisabled}
+                  />
+                  <span className={styles.installVersionModeText}>
+                    <strong>{t('plugin_store.install_version_release_mode')}</strong>
+                    <small>
+                      {releaseLoading
+                        ? t('plugin_store.install_versions_loading')
+                        : t('plugin_store.install_version_release_hint')}
+                    </small>
+                  </span>
+                </label>
+                <label
+                  className={`${styles.installVersionMode} ${
+                    versionMode === 'manual' ? styles.installVersionModeActive : ''
+                  } ${installing ? styles.installVersionModeDisabled : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="plugin-store-install-version-mode"
+                    checked={versionMode === 'manual'}
+                    onChange={() => handleVersionModeChange('manual')}
+                    disabled={installing}
+                  />
+                  <span className={styles.installVersionModeText}>
+                    <strong>{t('plugin_store.install_version_manual_mode')}</strong>
+                    <small>{t('plugin_store.install_version_manual_hint')}</small>
+                  </span>
+                </label>
+              </>
+            ) : null}
           </div>
 
-          {versionMode === 'release' ? (
+          {supportsVersionSelection && versionMode === 'release' ? (
             <div className={styles.installVersionPanel}>
               {releaseError ? (
                 <p className={styles.installVersionWarning}>
@@ -387,7 +401,7 @@ function PluginInstallOptionsModal({
             </div>
           ) : null}
 
-          {versionMode === 'manual' ? (
+          {supportsVersionSelection && versionMode === 'manual' ? (
             <div className={styles.installVersionPanel}>
               <Input
                 id="plugin-store-install-version"
@@ -415,7 +429,7 @@ function PluginInstallOptionsModal({
             </p>
           ) : null}
 
-          {releasePageURL ? (
+          {supportsVersionSelection && releasePageURL ? (
             <a
               className={styles.installReleaseLink}
               href={releasePageURL}

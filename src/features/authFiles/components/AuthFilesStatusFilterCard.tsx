@@ -45,7 +45,6 @@ export function AuthFilesStatusFilterCard({
     if (prevActiveRef.current !== isActive) {
       // Trigger a one-off flip animation when the active state crosses the
       // threshold, mirroring the original EffortCard behavior.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAnimating(true);
       if (timerRef.current) {
         clearTimeout(timerRef.current);

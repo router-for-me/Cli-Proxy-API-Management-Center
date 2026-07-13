@@ -540,58 +540,6 @@
   }
 }
 
-.arrayEditor {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.arrayItemRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: $spacing-sm;
-}
-
-.arrayInput {
-  width: 100%;
-  min-width: 0;
-  height: 38px;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  padding: 0 12px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 14px;
-  line-height: 38px;
-  box-sizing: border-box;
-
-  &:focus {
-    border-color: var(--primary-color);
-    outline: none;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 18%, transparent);
-  }
-}
-
-.arrayActions {
-  display: inline-flex;
-  flex: 0 0 auto;
-  gap: 4px;
-}
-
-.iconButton:global(.btn.btn-sm) {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  padding: 0;
-
-  > span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
 .fieldError {
   padding: 8px 10px;
   border-radius: $radius-sm;
@@ -636,7 +584,4 @@
     }
   }
 
-  .arrayItemRow {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
 }

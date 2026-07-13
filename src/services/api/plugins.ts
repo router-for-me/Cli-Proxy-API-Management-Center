@@ -280,8 +280,8 @@ export const pluginsApi = {
     return normalizePluginConfig(data);
   },
 
-  putConfig: (id: string, config: PluginConfigObject) =>
-    apiClient.put(`/plugins/${encodeURIComponent(id)}/config`, config),
+  patchConfig: (id: string, config: PluginConfigObject) =>
+    apiClient.patch(`/plugins/${encodeURIComponent(id)}/config`, config),
 };
 
 export const pluginStoreApi = {

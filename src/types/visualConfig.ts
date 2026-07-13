@@ -1,5 +1,5 @@
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
-export type DisableImageGenerationMode = 'false' | 'true' | 'chat';
+export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';
 export type PluginStoreAuthType = 'none' | 'bearer' | 'basic' | 'header' | 'github-token';
 export type PluginStoreAuthApplyTo = 'registry' | 'metadata' | 'artifact';
 export type PayloadParamValidationErrorCode =
@@ -20,7 +20,10 @@ export type VisualConfigFieldPath =
   | 'streaming.bootstrapRetries'
   | 'streaming.nonstreamKeepaliveInterval';
 
-export type VisualConfigValidationErrorCode = 'port_range' | 'non_negative_integer';
+export type VisualConfigValidationErrorCode =
+  | 'port_range'
+  | 'non_negative_integer'
+  | 'integer_range_1_3600';
 
 export type VisualConfigValidationErrors = Partial<
   Record<VisualConfigFieldPath, VisualConfigValidationErrorCode>

@@ -8,7 +8,13 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
+import {
+  captureQuotaCacheGeneration,
+  commitIfQuotaCacheCurrent,
+  useNotificationStore,
+  useQuotaStore,
+  useThemeStore,
+} from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { getStatusFromError } from '@/utils/quota';
 import { QuotaCard } from './QuotaCard';
@@ -201,6 +207,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     async (file: AuthFileItem) => {
       if (disabled || file.disabled) return;
       if (quota[file.name]?.status === 'loading') return;
+      const cacheGeneration = captureQuotaCacheGeneration();
 
       setQuota((prev) => ({
         ...prev,
@@ -209,22 +216,26 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
       try {
         const data = await config.fetchQuota(file, t);
-        setQuota((prev) => ({
-          ...prev,
-          [file.name]: config.buildSuccessState(data),
-        }));
-        showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
+        commitIfQuotaCacheCurrent(cacheGeneration, () => {
+          setQuota((prev) => ({
+            ...prev,
+            [file.name]: config.buildSuccessState(data),
+          }));
+          showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
+        });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : t('common.unknown_error');
         const status = getStatusFromError(err);
-        setQuota((prev) => ({
-          ...prev,
-          [file.name]: config.buildErrorState(message, status),
-        }));
-        showNotification(
-          t('auth_files.quota_refresh_failed', { name: file.name, message }),
-          'error'
-        );
+        commitIfQuotaCacheCurrent(cacheGeneration, () => {
+          setQuota((prev) => ({
+            ...prev,
+            [file.name]: config.buildErrorState(message, status),
+          }));
+          showNotification(
+            t('auth_files.quota_refresh_failed', { name: file.name, message }),
+            'error'
+          );
+        });
       }
     },
     [config, disabled, quota, setQuota, showNotification, t]
@@ -244,17 +255,25 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         confirmText: t('codex_quota.reset_confirm_button'),
         variant: 'primary',
         onConfirm: async () => {
+          const cacheGeneration = captureQuotaCacheGeneration();
           setResettingQuotaName(file.name);
           try {
             const data = await resetQuota(file, t);
-            setQuota((prev) => ({
-              ...prev,
-              [file.name]: config.buildSuccessState(data),
-            }));
-            showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+            commitIfQuotaCacheCurrent(cacheGeneration, () => {
+              setQuota((prev) => ({
+                ...prev,
+                [file.name]: config.buildSuccessState(data),
+              }));
+              showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+            });
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : t('common.unknown_error');
-            showNotification(t('codex_quota.reset_failed', { name: file.name, message }), 'error');
+            commitIfQuotaCacheCurrent(cacheGeneration, () => {
+              showNotification(
+                t('codex_quota.reset_failed', { name: file.name, message }),
+                'error'
+              );
+            });
           } finally {
             setResettingQuotaName((current) => (current === file.name ? null : current));
           }

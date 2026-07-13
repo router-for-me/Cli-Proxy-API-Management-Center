@@ -5,6 +5,7 @@ import { useNotificationStore } from '@/stores';
 import { IconCheckCircle2, IconExternalLink, IconLoader2, IconPlus } from '@/components/ui/icons';
 import { PROVIDER_LOGOS } from '../brandLogos';
 import { APIKEY_FUN_AFFILIATE_URL, APIKEY_FUN_DASHBOARD_URL } from '../sponsor';
+import { isSponsorPartialMutationError } from '../sponsorMutationRecovery';
 import type { ProviderEntryFormInput, ProviderResource } from '../types';
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
 import { SponsorProviderForm } from '../sheets/forms/SponsorProviderForm';
@@ -61,6 +62,10 @@ export function SponsorQuickStartPanel({
       setIsDirty(false);
       setFormVersion((current) => current + 1);
     } catch (err) {
+      if (isSponsorPartialMutationError(err)) {
+        showNotification(t('providersPage.sponsor.partialMutationWarning'), 'warning');
+        throw err;
+      }
       const msg = err instanceof Error ? err.message : String(err);
       showNotification(
         `${t(resource ? 'notification.update_failed' : 'notification.add_failed')}: ${msg}`,

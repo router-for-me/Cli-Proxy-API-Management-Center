@@ -14,6 +14,7 @@ import type {
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
 interface QuotaStoreState {
+  cacheGeneration: number;
   antigravityQuota: Record<string, AntigravityQuotaState>;
   claudeQuota: Record<string, ClaudeQuotaState>;
   codexQuota: Record<string, CodexQuotaState>;
@@ -35,6 +36,7 @@ const resolveUpdater = <T>(updater: QuotaUpdater<T>, prev: T): T => {
 };
 
 export const useQuotaStore = create<QuotaStoreState>((set) => ({
+  cacheGeneration: 0,
   antigravityQuota: {},
   claudeQuota: {},
   codexQuota: {},
@@ -61,11 +63,24 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
       xaiQuota: resolveUpdater(updater, state.xaiQuota),
     })),
   clearQuotaCache: () =>
-    set({
+    set((state) => ({
+      cacheGeneration: state.cacheGeneration + 1,
       antigravityQuota: {},
       claudeQuota: {},
       codexQuota: {},
       kimiQuota: {},
       xaiQuota: {},
-    }),
+    })),
 }));
+
+export const captureQuotaCacheGeneration = (): number =>
+  useQuotaStore.getState().cacheGeneration;
+
+export const commitIfQuotaCacheCurrent = (
+  generation: number,
+  commit: () => void
+): boolean => {
+  if (useQuotaStore.getState().cacheGeneration !== generation) return false;
+  commit();
+  return true;
+};
