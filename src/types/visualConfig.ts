@@ -181,7 +181,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   requestRetry: '',
   maxRetryCredentials: '',
   maxRetryInterval: '',
-  saveCooldownStatus: false,
+  saveCooldownStatus: true,
   disableCooling: false,
   disableImageGeneration: 'false',
   gptImage2BaseModel: '',

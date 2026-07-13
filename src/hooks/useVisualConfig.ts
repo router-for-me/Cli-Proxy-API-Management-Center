@@ -1200,7 +1200,8 @@ export function useVisualConfig() {
         requestRetry: String(parsed['request-retry'] ?? ''),
         maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
         maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
-        saveCooldownStatus: Boolean(parsed['save-cooldown-status']),
+        // Missing key defaults to true (matches API LoadConfigOptional default / upgrade backfill).
+        saveCooldownStatus: Boolean(parsed['save-cooldown-status'] ?? true),
         disableCooling: Boolean(parsed['disable-cooling']),
         disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
         gptImage2BaseModel:

@@ -11,19 +11,28 @@ import type { XAIConfig } from '@/types';
 import styles from './XAIConfigPage.module.scss';
 
 const DEFAULT_XAI_CONFIG: XAIConfig = {
+  saveCooldownStatus: true,
   autoDisablePermissionDenied: true,
   otherForbiddenCooldownHours: 6,
   freeUsageExhaustedCooldownHours: 24,
+  freeUsageExhaustedDisableAfter: 3,
+  otherForbiddenDisableAfter: 3,
 };
 
 function normalizeConfig(config: XAIConfig): XAIConfig {
   return {
+    saveCooldownStatus: config.saveCooldownStatus !== false,
     autoDisablePermissionDenied: config.autoDisablePermissionDenied !== false,
     otherForbiddenCooldownHours: Math.max(0, Math.floor(config.otherForbiddenCooldownHours || 0)),
     freeUsageExhaustedCooldownHours: Math.max(
       0,
       Math.floor(config.freeUsageExhaustedCooldownHours || 0)
     ),
+    freeUsageExhaustedDisableAfter: Math.max(
+      0,
+      Math.floor(config.freeUsageExhaustedDisableAfter || 0)
+    ),
+    otherForbiddenDisableAfter: Math.max(0, Math.floor(config.otherForbiddenDisableAfter || 0)),
   };
 }
 
@@ -43,6 +52,9 @@ export function XAIConfigPage() {
   const [error, setError] = useState('');
 
   const disabled = connectionStatus !== 'connected' || loading || saving;
+  const cooldownPersistenceEnabled = draft.saveCooldownStatus;
+  // Exhaustion disable-after counters require .cds persistence (save-cooldown-status).
+  const counterDisabled = disabled || !cooldownPersistenceEnabled;
   const dirty = !sameConfig(draft, saved);
   const statusText = error
     ? t('xai_config.status_load_failed')
@@ -120,7 +132,11 @@ export function XAIConfigPage() {
   }, [draft, showNotification, t]);
 
   const updateHours = (
-    key: 'otherForbiddenCooldownHours' | 'freeUsageExhaustedCooldownHours',
+    key:
+      | 'otherForbiddenCooldownHours'
+      | 'freeUsageExhaustedCooldownHours'
+      | 'freeUsageExhaustedDisableAfter'
+      | 'otherForbiddenDisableAfter',
     value: string
   ) => {
     const parsed = Number.parseInt(value, 10);
@@ -154,16 +170,45 @@ export function XAIConfigPage() {
       {error && <div className="error-box">{error}</div>}
 
       <div className={styles.policyStrip} aria-label={t('xai_config.policy_summary')}>
+        <span>
+          {cooldownPersistenceEnabled
+            ? t('xai_config.policy_cds_on')
+            : t('xai_config.policy_cds_off')}
+        </span>
         <span>{t('xai_config.policy_permission')}</span>
         <span>
-          {t('xai_config.policy_forbidden', { hours: draft.otherForbiddenCooldownHours })}
+          {t('xai_config.policy_forbidden', {
+            hours: draft.otherForbiddenCooldownHours,
+            count: draft.otherForbiddenDisableAfter,
+          })}
         </span>
         <span>
-          {t('xai_config.policy_free_usage', { hours: draft.freeUsageExhaustedCooldownHours })}
+          {t('xai_config.policy_free_usage', {
+            hours: draft.freeUsageExhaustedCooldownHours,
+            count: draft.freeUsageExhaustedDisableAfter,
+          })}
         </span>
       </div>
 
       <section className={styles.settings} aria-label={t('xai_config.settings_title')}>
+        <div className={styles.settingCard}>
+          <div className={styles.settingHeader}>
+            <div>
+              <h2>{t('xai_config.save_cooldown_label')}</h2>
+              <p>{t('xai_config.save_cooldown_hint')}</p>
+            </div>
+            <ToggleSwitch
+              checked={draft.saveCooldownStatus}
+              onChange={(saveCooldownStatus) => update({ saveCooldownStatus })}
+              disabled={disabled}
+              ariaLabel={t('xai_config.save_cooldown_label')}
+            />
+          </div>
+          {!cooldownPersistenceEnabled && (
+            <div className={styles.reasonNote}>{t('xai_config.save_cooldown_required_hint')}</div>
+          )}
+        </div>
+
         <div className={styles.settingCard}>
           <div className={styles.settingHeader}>
             <div>
@@ -193,6 +238,24 @@ export function XAIConfigPage() {
               onChange={(event) => updateHours('otherForbiddenCooldownHours', event.target.value)}
               disabled={disabled}
             />
+            <div
+              className={`${styles.counterField} ${!cooldownPersistenceEnabled ? styles.dependentDisabled : ''}`}
+            >
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                label={t('xai_config.disable_after')}
+                value={String(draft.otherForbiddenDisableAfter)}
+                onChange={(event) => updateHours('otherForbiddenDisableAfter', event.target.value)}
+                disabled={counterDisabled}
+              />
+              <p className={styles.fieldHint}>
+                {cooldownPersistenceEnabled
+                  ? t('xai_config.disable_after_hint')
+                  : t('xai_config.save_cooldown_required_hint')}
+              </p>
+            </div>
           </div>
           <div className={styles.settingCard}>
             <h2>{t('xai_config.free_usage_label')}</h2>
@@ -208,6 +271,26 @@ export function XAIConfigPage() {
               }
               disabled={disabled}
             />
+            <div
+              className={`${styles.counterField} ${!cooldownPersistenceEnabled ? styles.dependentDisabled : ''}`}
+            >
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                label={t('xai_config.disable_after')}
+                value={String(draft.freeUsageExhaustedDisableAfter)}
+                onChange={(event) =>
+                  updateHours('freeUsageExhaustedDisableAfter', event.target.value)
+                }
+                disabled={counterDisabled}
+              />
+              <p className={styles.fieldHint}>
+                {cooldownPersistenceEnabled
+                  ? t('xai_config.disable_after_hint')
+                  : t('xai_config.save_cooldown_required_hint')}
+              </p>
+            </div>
           </div>
         </div>
       </section>

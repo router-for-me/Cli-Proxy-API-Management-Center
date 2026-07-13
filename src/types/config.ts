@@ -77,18 +77,27 @@ export interface RawCodexInstructionsConfig {
 }
 
 export interface XAIConfig {
+  saveCooldownStatus: boolean;
   autoDisablePermissionDenied: boolean;
   otherForbiddenCooldownHours: number;
   freeUsageExhaustedCooldownHours: number;
+  freeUsageExhaustedDisableAfter: number;
+  otherForbiddenDisableAfter: number;
 }
 
 export interface RawXAIConfig {
+  'save-cooldown-status'?: boolean;
+  saveCooldownStatus?: boolean;
   'auto-disable-permission-denied'?: boolean;
   autoDisablePermissionDenied?: boolean;
   'other-403-cooldown-hours'?: number;
   otherForbiddenCooldownHours?: number;
   'free-usage-exhausted-cooldown-hours'?: number;
   freeUsageExhaustedCooldownHours?: number;
+  'free-usage-exhausted-disable-after'?: number;
+  freeUsageExhaustedDisableAfter?: number;
+  'other-403-disable-after'?: number;
+  otherForbiddenDisableAfter?: number;
 }
 
 export type RawConfigSection =
