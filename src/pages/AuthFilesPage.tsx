@@ -61,6 +61,7 @@ import {
   type CodexStatusFilter,
 } from '@/features/authFiles/codexStatus';
 import {
+  XAI_STATUS_FILTERS,
   getXaiAccountStatus,
   matchesXaiStatusFilter,
   type XaiStatusFilter,
@@ -288,6 +289,12 @@ export function AuthFilesPage() {
       if (isAuthFilesSortMode(persisted.sortMode)) {
         setSortMode(persisted.sortMode);
       }
+      if (
+        typeof persisted.xaiStatusFilter === 'string' &&
+        XAI_STATUS_FILTERS.includes(persisted.xaiStatusFilter as XaiStatusFilter)
+      ) {
+        setXaiStatusFilter(persisted.xaiStatusFilter as XaiStatusFilter);
+      }
     }
 
     setUiStateHydrated(true);
@@ -308,6 +315,7 @@ export function AuthFilesPage() {
       regularPageSize: pageSizeByMode.regular,
       compactPageSize: pageSizeByMode.compact,
       sortMode,
+      xaiStatusFilter,
     });
     writePersistedAuthFilesCompactMode(compactMode);
   }, [
@@ -322,6 +330,7 @@ export function AuthFilesPage() {
     sortMode,
     statusFilterMode,
     uiStateHydrated,
+    xaiStatusFilter,
   ]);
 
   useEffect(() => {
@@ -468,8 +477,9 @@ export function AuthFilesPage() {
   }, [isCodexSelected, sortMode]);
 
   useEffect(() => {
-    if (!isXaiSelected) setXaiStatusFilter('all');
-  }, [isXaiSelected]);
+    if (!uiStateHydrated || isXaiSelected) return;
+    setXaiStatusFilter('all');
+  }, [isXaiSelected, uiStateHydrated]);
 
   const handleHeaderRefresh = useCallback(async () => {
     await Promise.all([loadFiles(), loadExcluded(), loadModelAlias()]);
