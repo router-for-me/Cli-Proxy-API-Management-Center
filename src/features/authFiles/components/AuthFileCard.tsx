@@ -129,7 +129,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
   const disabledReason =
     typeof file.disabled_reason === 'string' ? file.disabled_reason.trim() : '';
-  const allowPrivateInstructions = Boolean((file as any).allow_private_instructions);
+  const allowPrivateInstructions = Boolean(file.allow_private_instructions);
   const stateLabel = isRuntimeOnly
     ? t('auth_files.type_virtual') || '虚拟认证文件'
     : file.disabled

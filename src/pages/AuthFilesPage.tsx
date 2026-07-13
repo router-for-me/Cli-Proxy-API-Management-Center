@@ -512,7 +512,7 @@ export function AuthFilesPage() {
       files.filter((file) => {
         if (enabledOnly && file.disabled === true) return false;
         if (disabledOnly && file.disabled !== true) return false;
-        if (privateInstructionsOnly && !Boolean(file.allow_private_instructions)) return false;
+        if (privateInstructionsOnly && !file.allow_private_instructions) return false;
         if (isCodexSelected) {
           const refreshed = codexRefreshByName[file.name];
           const codexStatus = getCodexAccountStatus(refreshed);
