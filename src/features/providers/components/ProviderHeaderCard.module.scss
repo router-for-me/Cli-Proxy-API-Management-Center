@@ -19,10 +19,12 @@
   }
 }
 
-.rowActionsOnly {
-  @media (min-width: 1024px) {
-    justify-content: flex-end;
-  }
+.summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .titleArea {
@@ -131,6 +133,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .chip {
