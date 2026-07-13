@@ -1338,10 +1338,10 @@
     "failure": {
       "settings_title": "Codex 失败处理",
       "auto_disable_label": "确认认证失败时禁用认证文件",
-      "auto_disable_hint": "当 Codex 返回 invalid token、invalid_grant、auth_unavailable 或其他硬认证失败时，CPA 可禁用该认证文件，而不是继续重试已失效凭证。",
-      "reason_note": "完整上游错误（或计数摘要）会以 disabled_reason 保存到认证文件。重新启用认证文件会清除此原因。",
+      "auto_disable_hint": "当 Codex 返回 invalid token、invalid_grant、auth_unavailable、HTTP 402（含 deactivated_workspace）或其他硬认证失败时，CPA 会禁用整个认证文件，而不是继续重试已失效凭证。",
+      "reason_note": "完整上游错误（或计数摘要）会以 disabled_reason 保存到认证文件。重新启用认证文件会清除此原因。Codex 402 与认证死亡共用同一路径，无单独开关。",
       "auth_disable_after": "累计 N 次认证失败后禁用",
-      "auth_disable_after_hint": "首次硬认证失败即计数。设为 0（或关闭开关）则只冷却不永久禁用。默认 1 适合认证死亡池。",
+      "auth_disable_after_hint": "首次硬认证失败（401、402、无效 token、工作区停用等）即计数。设为 0（或关闭开关）则只冷却不永久禁用。默认 1 适合认证死亡池。",
       "usage_limit_label": "usage_limit_reached",
       "usage_limit_hint": "冷却优先使用上游 resets_at / resets_in_seconds。冷却结束后每次再命中会递增计数，计数保存在认证 JSON 的 runtime 块中。",
       "disable_after": "累计 N 次后禁用",

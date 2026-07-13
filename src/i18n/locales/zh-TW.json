@@ -1364,10 +1364,10 @@
     "failure": {
       "settings_title": "Codex 失敗處理",
       "auto_disable_label": "確認認證失敗時停用驗證檔案",
-      "auto_disable_hint": "當 Codex 回傳 invalid token、invalid_grant、auth_unavailable 或其他硬認證失敗時，CPA 可停用該驗證檔案，而不是繼續重試已失效憑證。",
-      "reason_note": "完整上游錯誤（或計數摘要）會以 disabled_reason 儲存到驗證檔案。重新啟用驗證檔案會清除此原因。",
+      "auto_disable_hint": "當 Codex 回傳 invalid token、invalid_grant、auth_unavailable、HTTP 402（含 deactivated_workspace）或其他硬認證失敗時，CPA 會停用整個驗證檔案，而不是繼續重試已失效憑證。",
+      "reason_note": "完整上游錯誤（或計數摘要）會以 disabled_reason 儲存到驗證檔案。重新啟用驗證檔案會清除此原因。Codex 402 與認證死亡共用同一路徑，無單獨開關。",
       "auth_disable_after": "累計 N 次認證失敗後停用",
-      "auth_disable_after_hint": "首次硬認證失敗即計數。設為 0（或關閉開關）則只冷卻不永久停用。預設 1 適合認證死亡池。",
+      "auth_disable_after_hint": "首次硬認證失敗（401、402、無效 token、工作區停用等）即計數。設為 0（或關閉開關）則只冷卻不永久停用。預設 1 適合認證死亡池。",
       "usage_limit_label": "usage_limit_reached",
       "usage_limit_hint": "冷卻優先使用上游 resets_at / resets_in_seconds。冷卻結束後每次再命中會遞增計數，計數保存在驗證 JSON 的 runtime 區塊中。",
       "disable_after": "累計 N 次後停用",

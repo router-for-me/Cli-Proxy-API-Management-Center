@@ -1338,10 +1338,10 @@
     "failure": {
       "settings_title": "Codex failure handling",
       "auto_disable_label": "Disable auth files for confirmed auth failures",
-      "auto_disable_hint": "When Codex returns invalid token, invalid_grant, auth_unavailable, or other hard auth-death responses, CPA can disable the auth file instead of retrying a dead credential.",
-      "reason_note": "The full upstream error (or a counter summary) is saved as disabled_reason in the auth file. Re-enabling the file clears that reason.",
+      "auto_disable_hint": "When Codex returns invalid token, invalid_grant, auth_unavailable, HTTP 402 (including deactivated_workspace), or other hard auth-death responses, CPA disables the entire auth file instead of retrying a dead credential.",
+      "reason_note": "The full upstream error (or a counter summary) is saved as disabled_reason in the auth file. Re-enabling the file clears that reason. Codex 402 uses the same path as auth death — no separate knob.",
       "auth_disable_after": "Disable after N auth failures",
-      "auth_disable_after_hint": "First hard auth failure counts. Set 0 (or turn the toggle off) to cool without permanent disable. Default 1 matches auth-death pools.",
+      "auth_disable_after_hint": "First hard auth failure (401, 402, invalid token, deactivated workspace, etc.) counts. Set 0 (or turn the toggle off) to cool without permanent disable. Default 1 matches auth-death pools.",
       "usage_limit_label": "usage_limit_reached",
       "usage_limit_hint": "Cooldown prefers upstream resets_at / resets_in_seconds. After cooldown ends, each re-hit increments a counter stored in the auth JSON runtime block.",
       "disable_after": "Disable after N hits",

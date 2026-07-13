@@ -1316,10 +1316,10 @@
     "failure": {
       "settings_title": "Обработка сбоев Codex",
       "auto_disable_label": "Отключать auth-файлы при подтверждённой ошибке auth",
-      "auto_disable_hint": "Когда Codex возвращает invalid token, invalid_grant, auth_unavailable или другие жёсткие ошибки auth, CPA может отключить auth-файл вместо повторных попыток с мёртвым credential.",
-      "reason_note": "Полный ответ ошибки (или сводка счётчика) сохраняется в auth-файле как disabled_reason. Повторное включение файла очищает эту причину.",
+      "auto_disable_hint": "Когда Codex возвращает invalid token, invalid_grant, auth_unavailable, HTTP 402 (включая deactivated_workspace) или другие жёсткие ошибки auth, CPA отключает весь auth-файл вместо повторных попыток с мёртвым credential.",
+      "reason_note": "Полный ответ ошибки (или сводка счётчика) сохраняется в auth-файле как disabled_reason. Повторное включение файла очищает эту причину. Codex 402 идёт тем же путём, что auth death — без отдельного knob.",
       "auth_disable_after": "Отключать после N сбоев auth",
-      "auth_disable_after_hint": "Первый жёсткий сбой auth уже считается. 0 (или выключенный переключатель) — только охлаждение без постоянного отключения. По умолчанию 1.",
+      "auth_disable_after_hint": "Первый жёсткий сбой (401, 402, invalid token, deactivated workspace и т.д.) уже считается. 0 (или выключенный переключатель) — только охлаждение без постоянного отключения. По умолчанию 1.",
       "usage_limit_label": "usage_limit_reached",
       "usage_limit_hint": "Охлаждение предпочитает upstream resets_at / resets_in_seconds. После окончания cool каждый повтор увеличивает счётчик в runtime-блоке auth JSON.",
       "disable_after": "Отключать после N попаданий",
