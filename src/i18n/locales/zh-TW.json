@@ -225,6 +225,9 @@
     "problem_filter_disabled": "停用",
     "display_options_label": "顯示選項",
     "compact_mode_label": "簡略模式",
+    "problem_only_label": "僅顯示有問題的憑證",
+    "disabled_only_label": "僅顯示已停用憑證",
+    "enabled_only_label": "僅顯示已啟用憑證",
     "sort_label": "排序",
     "sort_default": "預設",
     "sort_az": "A-Z 名稱",
@@ -1379,7 +1382,7 @@
   "language": {
     "switch": "語言",
     "chinese": "簡體中文",
-    "chinese_tw": "繁體中文（台灣）",
+    "chinese_tw": "繁體中文",
     "english": "英文",
     "russian": "俄文"
   },

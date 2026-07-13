@@ -225,6 +225,9 @@
     "problem_filter_disabled": "Disabled",
     "display_options_label": "Display options",
     "compact_mode_label": "Compact mode",
+    "problem_only_label": "Only show problematic credentials",
+    "disabled_only_label": "Only show disabled credentials",
+    "enabled_only_label": "Only show enabled credentials",
     "sort_label": "Sort",
     "sort_default": "Default",
     "sort_az": "A-Z Name",
@@ -1353,7 +1356,7 @@
   "language": {
     "switch": "Language",
     "chinese": "中文",
-    "chinese_tw": "Traditional Chinese (Taiwan)",
+    "chinese_tw": "Traditional Chinese",
     "english": "English",
     "russian": "Русский"
   },

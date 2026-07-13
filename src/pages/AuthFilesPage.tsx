@@ -24,7 +24,6 @@ import { Select } from '@/components/ui/Select';
 import { IconFilterAll, IconSearch } from '@/components/ui/icons';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { AuthFilesStatusFilterCard } from '@/features/authFiles/components/AuthFilesStatusFilterCard';
 import { copyToClipboard } from '@/utils/clipboard';
 import {
   MAX_CARD_PAGE_SIZE,
@@ -395,17 +394,6 @@ export function AuthFilesPage() {
     [disabledOnly, enabledOnly, files, problemOnly]
   );
 
-  const statusFilterOptions = useMemo(
-    () =>
-      [
-        { value: 'all', label: t('auth_files.problem_filter_all') },
-        { value: 'enabled', label: t('auth_files.problem_filter_enabled') },
-        { value: 'disabled', label: t('auth_files.problem_filter_disabled') },
-        { value: 'problem', label: t('auth_files.problem_filter_problem') },
-      ] satisfies Array<{ value: AuthFilesStatusFilterMode; label: string }>,
-    [t]
-  );
-
   const sortOptions = useMemo(
     () => [
       { value: 'default', label: t('auth_files.sort_default') },
@@ -655,13 +643,6 @@ export function AuthFilesPage() {
     </div>
   );
 
-  const titleNode = (
-    <div className={styles.titleWrapper}>
-      <span>{t('auth_files.title_section')}</span>
-      {files.length > 0 && <span className={styles.countBadge}>{files.length}</span>}
-    </div>
-  );
-
   const deleteAllButtonLabel = (() => {
     if (enabledOnly || disabledOnly) {
       return t('auth_files.delete_filtered_result_button');
@@ -680,13 +661,8 @@ export function AuthFilesPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('auth_files.title')}</h1>
-        <p className={styles.description}>{t('auth_files.description')}</p>
-      </div>
-
       <Card
-        title={titleNode}
+        title={renderFilterTags()}
         extra={
           <div className={styles.headerActions}>
             <Button variant="secondary" size="sm" onClick={handleHeaderRefresh} disabled={loading}>
@@ -734,8 +710,6 @@ export function AuthFilesPage() {
         {error && <div className={styles.errorBox}>{error}</div>}
 
         <div className={styles.filterSection}>
-          {renderFilterTags()}
-
           <div className={styles.filterContent}>
             <div className={styles.filterControlsPanel}>
               <div className={styles.filterControls}>
@@ -752,61 +726,69 @@ export function AuthFilesPage() {
                     rightElement={<IconSearch className={styles.searchIcon} size={18} />}
                   />
                 </div>
-                <div className={styles.filterOptionsCard}>
-                  <div className={styles.filterOptionsControl}>
-                    <label>{t('auth_files.page_size_label')}</label>
-                    <input
-                      className={styles.pageSizeSelect}
-                      type="number"
-                      min={MIN_CARD_PAGE_SIZE}
-                      max={MAX_CARD_PAGE_SIZE}
-                      step={1}
-                      value={pageSizeInput}
-                      onChange={handlePageSizeChange}
-                      onBlur={(e) => commitPageSizeInput(e.currentTarget.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.currentTarget.blur();
-                        }
-                      }}
+                <div className={`${styles.filterItem} ${styles.pageSizeItem}`}>
+                  <label>{t('auth_files.page_size_label')}</label>
+                  <input
+                    className={styles.pageSizeSelect}
+                    type="number"
+                    min={MIN_CARD_PAGE_SIZE}
+                    max={MAX_CARD_PAGE_SIZE}
+                    step={1}
+                    value={pageSizeInput}
+                    onChange={handlePageSizeChange}
+                    onBlur={(e) => commitPageSizeInput(e.currentTarget.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur();
+                      }
+                    }}
+                  />
+                </div>
+                <div className={`${styles.filterItem} ${styles.sortItem}`}>
+                  <label>{t('auth_files.sort_label')}</label>
+                  <Select
+                    className={styles.sortSelect}
+                    value={sortMode}
+                    options={sortOptions}
+                    onChange={handleSortModeChange}
+                    ariaLabel={t('auth_files.sort_label')}
+                    fullWidth
+                  />
+                </div>
+                <div className={`${styles.filterItem} ${styles.filterToggleItem}`}>
+                  <label>{t('auth_files.display_options_label')}</label>
+                  <div className={styles.displayOptionToggles}>
+                    <ToggleSwitch
+                      checked={problemOnly}
+                      onChange={(checked) =>
+                        handleStatusFilterModeChange(checked ? 'problem' : 'all')
+                      }
+                      ariaLabel={t('auth_files.problem_only_label')}
+                      label={t('auth_files.problem_only_label')}
                     />
-                  </div>
-                  <div className={styles.filterOptionsControl}>
-                    <label>{t('auth_files.sort_label')}</label>
-                    <Select
-                      className={styles.sortSelect}
-                      value={sortMode}
-                      options={sortOptions}
-                      onChange={handleSortModeChange}
-                      ariaLabel={t('auth_files.sort_label')}
-                      fullWidth
+                    <ToggleSwitch
+                      checked={disabledOnly}
+                      onChange={(checked) =>
+                        handleStatusFilterModeChange(checked ? 'disabled' : 'all')
+                      }
+                      ariaLabel={t('auth_files.disabled_only_label')}
+                      label={t('auth_files.disabled_only_label')}
                     />
-                  </div>
-                  <div className={styles.filterOptionsToggle}>
+                    <ToggleSwitch
+                      checked={enabledOnly}
+                      onChange={(checked) =>
+                        handleStatusFilterModeChange(checked ? 'enabled' : 'all')
+                      }
+                      ariaLabel={t('auth_files.enabled_only_label')}
+                      label={t('auth_files.enabled_only_label')}
+                    />
                     <ToggleSwitch
                       checked={compactMode}
                       onChange={(value) => setCompactMode(value)}
                       ariaLabel={t('auth_files.compact_mode_label')}
-                      label={
-                        <span className={styles.filterToggleLabel}>
-                          {t('auth_files.compact_mode_label')}
-                        </span>
-                      }
+                      label={t('auth_files.compact_mode_label')}
                     />
                   </div>
-                </div>
-                <div className={`${styles.filterItem} ${styles.filterToggleItem}`}>
-                  <label>{t('auth_files.display_options_label')}</label>
-                  <AuthFilesStatusFilterCard
-                    label={t('auth_files.problem_filter_label')}
-                    minLabel={statusFilterOptions[0]?.label}
-                    maxLabel={statusFilterOptions[statusFilterOptions.length - 1]?.label}
-                    value={statusFilterMode}
-                    options={statusFilterOptions}
-                    onChange={(next) =>
-                      handleStatusFilterModeChange(next as AuthFilesStatusFilterMode)
-                    }
-                  />
                 </div>
               </div>
             </div>

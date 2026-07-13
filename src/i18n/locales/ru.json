@@ -224,6 +224,9 @@
     "problem_filter_disabled": "Откл.",
     "display_options_label": "Параметры отображения",
     "compact_mode_label": "Компактный режим",
+    "problem_only_label": "Показывать только проблемные учётные данные",
+    "disabled_only_label": "Показывать только отключённые учётные данные",
+    "enabled_only_label": "Показывать только включённые учётные данные",
     "sort_label": "Сортировка",
     "sort_default": "По умолчанию",
     "sort_az": "A-Z Имя",
@@ -1331,7 +1334,7 @@
   "language": {
     "switch": "Язык",
     "chinese": "中文",
-    "chinese_tw": "繁體中文（台灣）",
+    "chinese_tw": "繁體中文",
     "english": "English",
     "russian": "Русский"
   },
