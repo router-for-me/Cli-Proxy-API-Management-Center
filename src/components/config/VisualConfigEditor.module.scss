@@ -412,19 +412,7 @@
 
 .fieldHighlightActive {
   border-radius: 10px;
-  animation: cfgFieldHighlight 1.8s ease-out;
-}
-
-@keyframes cfgFieldHighlight {
-  0% {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-primary) 55%, transparent);
-  }
-  55% {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-primary) 32%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 3px transparent;
-  }
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-primary) 32%, transparent);
 }
 
 .workspace {

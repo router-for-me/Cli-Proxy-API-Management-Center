@@ -36,7 +36,6 @@
   );
   top: -140px;
   right: -80px;
-  animation: orbFloat 22s ease-in-out infinite alternate;
 }
 
 .orb2 {
@@ -51,16 +50,6 @@
   );
   bottom: 18%;
   left: -100px;
-  animation: orbFloat 28s ease-in-out infinite alternate-reverse;
-}
-
-@keyframes orbFloat {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-  100% {
-    transform: translate(30px, -20px) scale(1.1);
-  }
 }
 
 // ─── Hero Welcome Section ───────────────────────────────
@@ -84,7 +73,6 @@
   backdrop-filter: var(--glass-backdrop-filter);
   -webkit-backdrop-filter: var(--glass-backdrop-filter);
   overflow: hidden;
-  animation: heroEnter 0.6s ease-out both;
 
   @media (max-width: $breakpoint-mobile) {
     flex-direction: column;
@@ -109,22 +97,10 @@
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
-  animation: watermarkEnter 0.8s ease-out 0.1s both;
 
   @media (max-width: $breakpoint-mobile) {
     font-size: 58px;
     left: $spacing-lg;
-  }
-}
-
-@keyframes watermarkEnter {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) translateX(-20px);
-  }
-  to {
-    opacity: 0.04;
-    transform: translateY(-50%) translateX(0);
   }
 }
 
@@ -142,7 +118,6 @@
   letter-spacing: 0;
   text-transform: uppercase;
   color: var(--primary-color);
-  animation: fadeSlideUp 0.5s ease-out 0.1s both;
 }
 
 .heroTitle {
@@ -152,7 +127,6 @@
   line-height: 1.1;
   letter-spacing: 0;
   color: var(--text-primary);
-  animation: fadeSlideUp 0.5s ease-out 0.2s both;
 
   @media (max-width: $breakpoint-mobile) {
     font-size: 34px;
@@ -164,7 +138,6 @@
   font-size: 15px;
   color: var(--text-secondary);
   line-height: 1.5;
-  animation: fadeSlideUp 0.5s ease-out 0.3s both;
 }
 
 // ─── Hero Meta (right side) ─────────────────────────────
@@ -177,7 +150,6 @@
   align-items: flex-end;
   gap: $spacing-sm;
   flex-shrink: 0;
-  animation: fadeSlideUp 0.5s ease-out 0.35s both;
 
   @media (max-width: $breakpoint-mobile) {
     align-items: flex-start;
@@ -241,7 +213,6 @@
 
   &.connecting {
     background: $warning-color;
-    animation: pulse 1s ease-in-out infinite;
   }
 
   &.disconnected {
@@ -314,18 +285,12 @@
     0 18px 42px rgb(0 0 0 / 0.12),
     inset 0 1px 0 rgb(255 255 255 / 0.03);
   text-decoration: none;
-  transition:
-    border-color $transition-fast,
-    box-shadow $transition-fast,
-    transform $transition-fast;
-  animation: cardEnter 0.4s ease-out both;
 
   &:hover {
     border-color: color-mix(in srgb, var(--border-hover) 82%, transparent);
     box-shadow:
       0 22px 48px rgb(0 0 0 / 0.16),
       inset 0 1px 0 rgb(255 255 255 / 0.04);
-    transform: translateY(-2px);
   }
 }
 
@@ -371,7 +336,6 @@
   border-radius: $radius-md;
   background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
   color: var(--primary-color);
-  transition: background $transition-fast;
 }
 
 .bentoCard:hover .bentoIcon {
@@ -412,7 +376,6 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
-  animation: cardEnter 0.4s ease-out 0.5s both;
 }
 
 .configPillGrid {
@@ -433,7 +396,6 @@
   backdrop-filter: var(--glass-backdrop-filter);
   -webkit-backdrop-filter: var(--glass-backdrop-filter);
   font-size: 13px;
-  transition: border-color $transition-fast;
 
   &:hover {
     border-color: color-mix(in srgb, var(--border-hover) 82%, transparent);
@@ -513,55 +475,9 @@
   color: var(--primary-color);
   text-decoration: none;
   margin-top: $spacing-xs;
-  transition: color $transition-fast;
 
   &:hover {
     text-decoration: underline;
     color: var(--primary-hover);
-  }
-}
-
-// ─── Animations ─────────────────────────────────────────
-
-@keyframes heroEnter {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes cardEnter {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
   }
 }

@@ -91,9 +91,6 @@ interface SidebarNavGroup {
   items: SidebarNavItem[];
 }
 
-const flattenNavItems = (items: SidebarNavItem[]): SidebarNavLinkItem[] =>
-  items.flatMap((item) => (item.kind === 'drawer' ? item.children : [item]));
-
 /** 点击菜单外或按下 Escape 时关闭弹出菜单 */
 function useMenuDismiss(
   open: boolean,
@@ -634,46 +631,6 @@ export function MainLayout() {
         ]
       : []),
   ];
-  const navItems = navGroups.flatMap((group) => flattenNavItems(group.items));
-  const navOrder = navItems.map((item) => item.path);
-  const getRouteOrder = (pathname: string) => {
-    const trimmedPath =
-      pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
-    const normalizedPath = trimmedPath === '/dashboard' ? '/' : trimmedPath;
-
-    const authFilesIndex = navOrder.indexOf('/auth-files');
-    if (authFilesIndex !== -1) {
-      if (normalizedPath === '/auth-files') return authFilesIndex;
-      if (normalizedPath.startsWith('/auth-files/')) {
-        if (normalizedPath.startsWith('/auth-files/oauth-excluded')) return authFilesIndex + 0.1;
-        if (normalizedPath.startsWith('/auth-files/oauth-model-alias')) return authFilesIndex + 0.2;
-        return authFilesIndex + 0.05;
-      }
-    }
-
-    const exactIndex = navOrder.indexOf(normalizedPath);
-    if (exactIndex !== -1) return exactIndex;
-    const nestedIndex = navOrder.findIndex(
-      (path) => path !== '/' && normalizedPath.startsWith(`${path}/`)
-    );
-    return nestedIndex === -1 ? null : nestedIndex;
-  };
-
-  const getTransitionVariant = useCallback((fromPathname: string, toPathname: string) => {
-    const normalize = (pathname: string) => {
-      const trimmed =
-        pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
-      return trimmed === '/dashboard' ? '/' : trimmed;
-    };
-
-    const from = normalize(fromPathname);
-    const to = normalize(toPathname);
-    const isAuthFiles = (pathname: string) =>
-      pathname === '/auth-files' || pathname.startsWith('/auth-files/');
-    if (isAuthFiles(from) && isAuthFiles(to)) return 'ios';
-    return 'vertical';
-  }, []);
-
   const handleRefreshAll = async () => {
     clearCache();
     const results = await Promise.allSettled([
@@ -835,7 +792,7 @@ export function MainLayout() {
             </Button>
             {languageMenuOpen && (
               <div
-                className="notification entering language-menu-popover"
+                className="notification language-menu-popover"
                 role="menu"
                 aria-label={t('language.switch')}
               >
@@ -875,7 +832,7 @@ export function MainLayout() {
             </Button>
             {themeMenuOpen && (
               <div
-                className="notification entering theme-menu-popover"
+                className="notification theme-menu-popover"
                 role="menu"
                 aria-label={t('theme.switch')}
               >
@@ -980,12 +937,7 @@ export function MainLayout() {
               isPluginResourcePage ? ' main-content-plugin-resource' : ''
             }`}
           >
-            <PageTransition
-              render={(location) => <MainRoutes location={location} />}
-              getRouteOrder={getRouteOrder}
-              getTransitionVariant={getTransitionVariant}
-              scrollContainerRef={contentRef}
-            />
+            <PageTransition render={(location) => <MainRoutes location={location} />} />
           </main>
         </div>
       </div>

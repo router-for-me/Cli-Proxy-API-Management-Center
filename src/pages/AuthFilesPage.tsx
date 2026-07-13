@@ -2,7 +2,6 @@ import {
   useCallback,
   type CSSProperties,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,8 +10,6 @@ import {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { animate } from 'motion/mini';
-import type { AnimationPlaybackControlsWithThen } from 'motion-dom';
 import { useInterval } from '@/hooks/useInterval';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useActionBarHeightVar } from '@/hooks/useActionBarHeightVar';
@@ -81,10 +78,7 @@ import { authFilesApi } from '@/services/api';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import styles from './AuthFilesPage.module.scss';
 
-const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
-const easePower2In = (progress: number) => progress ** 3;
-const BATCH_BAR_BASE_TRANSFORM = 'translateX(-50%)';
-const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
+
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
 const CODEX_REFRESH_CONCURRENCY = 4;
@@ -148,9 +142,6 @@ export function AuthFilesPage() {
   const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
-  const batchActionAnimationRef = useRef<AnimationPlaybackControlsWithThen | null>(null);
-  const previousSelectionCountRef = useRef(0);
-  const selectionCountRef = useRef(0);
 
   const {
     files,
@@ -703,67 +694,9 @@ export function AuthFilesPage() {
   );
 
   useEffect(() => {
-    selectionCountRef.current = selectionCount;
-    if (selectionCount > 0) {
-      setBatchActionBarVisible(true);
-    }
+    // Instant show/hide — no Motion slide/fade on the batch action bar.
+    setBatchActionBarVisible(selectionCount > 0);
   }, [selectionCount]);
-
-  useLayoutEffect(() => {
-    if (!batchActionBarVisible) return;
-    const currentCount = selectionCount;
-    const previousCount = previousSelectionCountRef.current;
-    const actionsEl = floatingBatchActionsRef.current;
-    if (!actionsEl) return;
-
-    batchActionAnimationRef.current?.stop();
-    batchActionAnimationRef.current = null;
-
-    if (currentCount > 0 && previousCount === 0) {
-      batchActionAnimationRef.current = animate(
-        actionsEl,
-        {
-          transform: [BATCH_BAR_HIDDEN_TRANSFORM, BATCH_BAR_BASE_TRANSFORM],
-          opacity: [0, 1],
-        },
-        {
-          duration: 0.28,
-          ease: easePower3Out,
-          onComplete: () => {
-            actionsEl.style.transform = BATCH_BAR_BASE_TRANSFORM;
-            actionsEl.style.opacity = '1';
-          },
-        }
-      );
-    } else if (currentCount === 0 && previousCount > 0) {
-      batchActionAnimationRef.current = animate(
-        actionsEl,
-        {
-          transform: [BATCH_BAR_BASE_TRANSFORM, BATCH_BAR_HIDDEN_TRANSFORM],
-          opacity: [1, 0],
-        },
-        {
-          duration: 0.22,
-          ease: easePower2In,
-          onComplete: () => {
-            if (selectionCountRef.current === 0) {
-              setBatchActionBarVisible(false);
-            }
-          },
-        }
-      );
-    }
-
-    previousSelectionCountRef.current = currentCount;
-  }, [batchActionBarVisible, selectionCount]);
-
-  useEffect(
-    () => () => {
-      batchActionAnimationRef.current?.stop();
-      batchActionAnimationRef.current = null;
-    },
-    []
-  );
 
   const renderFilterTags = () => (
     <div className={styles.filterRail}>
