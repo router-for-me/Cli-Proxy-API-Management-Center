@@ -963,6 +963,7 @@ export function AuthFilesPage() {
                         options={[
                           { value: 'all', label: t('auth_files.codex_plan_all') },
                           { value: 'free', label: t('codex_quota.plan_free') },
+                          { value: 'k12', label: t('codex_quota.plan_k12') },
                           { value: 'plus', label: t('codex_quota.plan_plus') },
                           { value: 'team', label: t('codex_quota.plan_team') },
                           { value: 'prolite', label: t('codex_quota.plan_prolite') },

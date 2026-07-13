@@ -22,6 +22,13 @@ describe('Codex auth-file status', () => {
     expect(getCodexPlanSortRank(file, refreshed)).toBe(50);
   });
 
+  test('recognizes the K12 plan type', () => {
+    const k12File = { ...file, plan_type: 'k12' };
+
+    expect(matchesCodexPlanFilter(k12File, 'k12')).toBe(true);
+    expect(getCodexPlanSortRank(k12File)).toBe(10);
+  });
+
   test('classifies full quota windows and reauthentication', () => {
     const refreshed: CodexRefreshState = {
       status: 'success',

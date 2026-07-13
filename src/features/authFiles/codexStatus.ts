@@ -4,6 +4,7 @@ import { normalizePlanType, resolveCodexPlanType } from '@/utils/quota';
 export const CODEX_PLAN_FILTERS = [
   'all',
   'free',
+  'k12',
   'plus',
   'team',
   'prolite',
@@ -45,6 +46,7 @@ const normalizedPlanFilterValue = (value: string | null): CodexPlanFilter | null
   if (!normalized) return null;
   if (
     normalized === 'free' ||
+    normalized === 'k12' ||
     normalized === 'plus' ||
     normalized === 'team' ||
     normalized === 'pro'
@@ -74,6 +76,8 @@ export const getCodexPlanSortRank = (
     case 'plus':
       return 20;
     case 'free':
+      return 10;
+    case 'k12':
       return 10;
     default:
       return null;

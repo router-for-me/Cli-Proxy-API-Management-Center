@@ -932,6 +932,7 @@ const renderCodexItems = (
     if (normalized === 'plus') return t('codex_quota.plan_plus');
     if (normalized === 'team') return t('codex_quota.plan_team');
     if (normalized === 'free') return t('codex_quota.plan_free');
+    if (normalized === 'k12') return t('codex_quota.plan_k12');
     return pt || normalized;
   };
 
