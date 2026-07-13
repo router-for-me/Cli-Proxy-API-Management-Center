@@ -4,9 +4,8 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: $spacing-lg;
   width: 100%;
-  padding: 24px;
   box-sizing: border-box;
 }
 
@@ -33,7 +32,6 @@
 
 @media (max-width: 768px) {
   .page {
-    padding: 16px;
-    gap: 16px;
+    gap: $spacing-md;
   }
 }

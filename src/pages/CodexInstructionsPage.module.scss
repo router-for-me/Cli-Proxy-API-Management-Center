@@ -2,12 +2,11 @@
 @use '../styles/variables' as *;
 
 .container {
-  width: min(100%, 1480px);
+  width: 100%;
   min-height: 100%;
   display: flex;
   flex-direction: column;
   gap: clamp(18px, 2.4vw, 28px);
-  margin: 0 auto;
   padding-bottom: $spacing-lg;
 }
 
