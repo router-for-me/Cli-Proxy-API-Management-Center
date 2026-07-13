@@ -115,7 +115,9 @@
     "gateway": "Шлюз",
     "observe": "Наблюдение",
     "control": "Управление",
-    "provider_specific": "Для провайдеров"
+    "provider_specific": "Для провайдеров",
+    "extensions": "Расширения",
+    "system": "Система"
   },
   "nav_meta": {
     "dashboard": "Обзор работы",

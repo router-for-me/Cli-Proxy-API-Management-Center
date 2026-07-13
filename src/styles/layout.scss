@@ -479,9 +479,9 @@
     min-width: 0;
     overflow: hidden;
     color: var(--text-primary);
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: 0;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
     white-space: nowrap;
   }
 
@@ -505,9 +505,9 @@
 
   .nav-group-label {
     padding: 0 12px 4px;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: color-mix(in srgb, var(--text-primary) 42%, transparent);
     user-select: none;
@@ -560,7 +560,9 @@
     border-radius: 9px;
     border: 1px solid transparent;
     color: var(--text-primary);
-    font-weight: 650;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.25;
     text-decoration: none;
     display: flex;
     align-items: center;

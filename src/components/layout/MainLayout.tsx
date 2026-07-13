@@ -29,7 +29,7 @@ import {
   IconSidebarSystem,
   IconChevronDown,
 } from '@/components/ui/icons';
-import CPAMC_MARK from '@/assets/cpamc-mark.svg';
+import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import {
   useAuthStore,
   useConfigStore,
@@ -581,8 +581,14 @@ export function MainLayout() {
           labelKey: 'nav.xai_config',
           icon: sidebarIcons.xaiConfig,
         },
-        ...(supportsPlugin
-          ? [
+      ],
+    },
+    ...(supportsPlugin
+      ? [
+          {
+            id: 'extensions',
+            labelKey: 'nav_groups.extensions',
+            items: [
               {
                 path: '/plugins',
                 labelKey: 'nav.plugins',
@@ -593,8 +599,14 @@ export function MainLayout() {
                 labelKey: 'nav.plugin_store',
                 icon: sidebarIcons.pluginStore,
               },
-            ]
-          : []),
+            ],
+          },
+        ]
+      : []),
+    {
+      id: 'system',
+      labelKey: 'nav_groups.system',
+      items: [
         {
           path: '/system',
           labelKey: 'nav.system_info',
@@ -926,7 +938,7 @@ export function MainLayout() {
           className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
         >
           <div className="sidebar-brand" title={fullBrandName}>
-            <img src={CPAMC_MARK} alt="CPAMC++ logo" className="sidebar-brand-logo" />
+            <img src={INLINE_LOGO_JPEG} alt="CPAMC++ logo" className="sidebar-brand-logo" />
             {showSidebarLabels && <span className="sidebar-brand-title">{abbrBrandName}</span>}
           </div>
 

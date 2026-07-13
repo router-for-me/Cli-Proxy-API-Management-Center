@@ -116,7 +116,9 @@
     "observe": "Observe",
     "plugin_pages": "Plugins",
     "control": "Control",
-    "provider_specific": "Provider Specific"
+    "provider_specific": "Provider Specific",
+    "extensions": "Extensions",
+    "system": "System"
   },
   "nav_meta": {
     "dashboard": "Operations overview",

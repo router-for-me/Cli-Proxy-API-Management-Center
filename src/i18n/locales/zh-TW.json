@@ -116,7 +116,9 @@
     "observe": "觀測",
     "plugin_pages": "插件",
     "control": "控制",
-    "provider_specific": "供應商專屬"
+    "provider_specific": "供應商專屬",
+    "extensions": "擴充功能",
+    "system": "系統"
   },
   "nav_meta": {
     "dashboard": "運行總覽",
