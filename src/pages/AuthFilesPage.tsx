@@ -60,6 +60,11 @@ import {
   type CodexPlanFilter,
   type CodexStatusFilter,
 } from '@/features/authFiles/codexStatus';
+import {
+  getXaiAccountStatus,
+  matchesXaiStatusFilter,
+  type XaiStatusFilter,
+} from '@/features/authFiles/xaiStatus';
 import { fetchCodexUsageSnapshot } from '@/components/quota/quotaConfigs';
 import {
   isAuthFilesStatusFilterMode,
@@ -134,6 +139,7 @@ export function AuthFilesPage() {
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
   const [codexStatusFilter, setCodexStatusFilter] = useState<CodexStatusFilter>('all');
   const [codexPlanFilter, setCodexPlanFilter] = useState<CodexPlanFilter>('all');
+  const [xaiStatusFilter, setXaiStatusFilter] = useState<XaiStatusFilter>('all');
   const [codexRefreshByName, setCodexRefreshByName] = useState<Record<string, CodexRefreshState>>(
     {}
   );
@@ -228,6 +234,7 @@ export function AuthFilesPage() {
   const disabledOnly = statusFilterMode === 'disabled';
   const enabledOnly = statusFilterMode === 'enabled';
   const isCodexSelected = normalizedFilter === 'codex';
+  const isXaiSelected = normalizedFilter === 'xai';
 
   useEffect(() => {
     const persistedCompactMode = readPersistedAuthFilesCompactMode();
@@ -460,6 +467,10 @@ export function AuthFilesPage() {
     }
   }, [isCodexSelected, sortMode]);
 
+  useEffect(() => {
+    if (!isXaiSelected) setXaiStatusFilter('all');
+  }, [isXaiSelected]);
+
   const handleHeaderRefresh = useCallback(async () => {
     await Promise.all([loadFiles(), loadExcluded(), loadModelAlias()]);
   }, [loadFiles, loadExcluded, loadModelAlias]);
@@ -507,6 +518,9 @@ export function AuthFilesPage() {
           }
           if (!matchesCodexStatusFilter(codexStatusFilter, refreshed)) return false;
           if (!matchesCodexPlanFilter(file, codexPlanFilter, refreshed)) return false;
+        } else if (isXaiSelected) {
+          if (problemOnly && getXaiAccountStatus(file).kind === 'working') return false;
+          if (!matchesXaiStatusFilter(file, xaiStatusFilter)) return false;
         } else if (problemOnly && !hasAuthFileStatusMessage(file)) {
           return false;
         }
@@ -520,7 +534,9 @@ export function AuthFilesPage() {
       enabledOnly,
       files,
       isCodexSelected,
+      isXaiSelected,
       problemOnly,
+      xaiStatusFilter,
     ]
   );
 
@@ -766,6 +782,7 @@ export function AuthFilesPage() {
                   setCodexStatusFilter('all');
                   setCodexPlanFilter('all');
                 }
+                if (type !== 'xai') setXaiStatusFilter('all');
                 setPage(1);
               }}
             >
@@ -877,7 +894,11 @@ export function AuthFilesPage() {
             <div className={styles.filterControlsPanel}>
               <div
                 className={`${styles.filterControls} ${
-                  isCodexSelected ? styles.filterControlsCodex : ''
+                  isCodexSelected
+                    ? styles.filterControlsCodex
+                    : isXaiSelected
+                      ? styles.filterControlsXai
+                      : ''
                 }`}
               >
                 <div className={`${styles.filterItem} ${styles.filterSearchItem}`}>
@@ -979,6 +1000,27 @@ export function AuthFilesPage() {
                       />
                     </div>
                   </>
+                )}
+                {isXaiSelected && (
+                  <div className={`${styles.filterItem} ${styles.xaiStatusItem}`}>
+                    <label>{t('auth_files.xai_status_label')}</label>
+                    <Select
+                      value={xaiStatusFilter}
+                      options={[
+                        { value: 'all', label: t('auth_files.xai_status_all') },
+                        { value: 'working', label: t('auth_files.xai_status_working') },
+                        { value: 'cooldown', label: t('auth_files.xai_status_cooldown') },
+                        { value: 'denied_403', label: t('auth_files.xai_status_denied_403') },
+                        { value: 'other_403', label: t('auth_files.xai_status_other_403') },
+                      ]}
+                      onChange={(value) => {
+                        setXaiStatusFilter(value as XaiStatusFilter);
+                        setPage(1);
+                      }}
+                      ariaLabel={t('auth_files.xai_status_label')}
+                      fullWidth
+                    />
+                  </div>
                 )}
                 <div className={`${styles.filterItem} ${styles.filterToggleItem}`}>
                   <label>{t('auth_files.display_options_label')}</label>

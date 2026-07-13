@@ -262,6 +262,34 @@
   }
 }
 
+.filterControlsXai {
+  grid-template-columns: minmax(220px, 1fr) minmax(96px, 120px) minmax(150px, 190px) minmax(
+      180px,
+      220px
+    );
+  grid-template-areas:
+    'search page-size sort xai-status'
+    'status status status status';
+
+  @media (max-width: 1120px) {
+    grid-template-columns: minmax(0, 1fr) minmax(104px, 132px) minmax(160px, 1fr);
+    grid-template-areas:
+      'search page-size sort'
+      'xai-status xai-status xai-status'
+      'status status status';
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'search'
+      'page-size'
+      'sort'
+      'xai-status'
+      'status';
+  }
+}
+
 .filterSearchItem {
   grid-area: search;
   min-width: 0;
@@ -303,6 +331,10 @@
 
 .codexPlanItem {
   grid-area: codex-plan;
+}
+
+.xaiStatusItem {
+  grid-area: xai-status;
 }
 
 .displayOptionToggles {
