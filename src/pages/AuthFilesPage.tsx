@@ -51,6 +51,17 @@ import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth'
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import {
+  getCodexAccountStatus,
+  getCodexPlanFilterValue,
+  getCodexPlanSortRank,
+  matchesCodexPlanFilter,
+  matchesCodexStatusFilter,
+  type CodexRefreshState,
+  type CodexPlanFilter,
+  type CodexStatusFilter,
+} from '@/features/authFiles/codexStatus';
+import { fetchCodexUsageSnapshot } from '@/components/quota/quotaConfigs';
+import {
   isAuthFilesStatusFilterMode,
   isAuthFilesSortMode,
   readAuthFilesUiState,
@@ -60,6 +71,7 @@ import {
   type AuthFilesStatusFilterMode,
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
+import { authFilesApi } from '@/services/api';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import styles from './AuthFilesPage.module.scss';
 
@@ -69,6 +81,7 @@ const BATCH_BAR_BASE_TRANSFORM = 'translateX(-50%)';
 const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
+const CODEX_REFRESH_CONCURRENCY = 4;
 
 const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -92,6 +105,12 @@ const normalizePersistedStatusFilterMode = (value: unknown): AuthFilesStatusFilt
   return isAuthFilesStatusFilterMode(value) ? value : null;
 };
 
+const requestStatus = (error: unknown): number | undefined => {
+  if (!error || typeof error !== 'object' || !('status' in error)) return undefined;
+  const value = (error as { status?: unknown }).status;
+  return typeof value === 'number' ? value : undefined;
+};
+
 export function AuthFilesPage() {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
@@ -113,6 +132,12 @@ export function AuthFilesPage() {
   const [pageSizeInput, setPageSizeInput] = useState('9');
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
+  const [codexStatusFilter, setCodexStatusFilter] = useState<CodexStatusFilter>('all');
+  const [codexPlanFilter, setCodexPlanFilter] = useState<CodexPlanFilter>('all');
+  const [codexRefreshByName, setCodexRefreshByName] = useState<Record<string, CodexRefreshState>>(
+    {}
+  );
+  const [codexRefreshing, setCodexRefreshing] = useState(false);
   const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
@@ -202,6 +227,7 @@ export function AuthFilesPage() {
   const problemOnly = statusFilterMode === 'problem';
   const disabledOnly = statusFilterMode === 'disabled';
   const enabledOnly = statusFilterMode === 'enabled';
+  const isCodexSelected = normalizedFilter === 'codex';
 
   useEffect(() => {
     const persistedCompactMode = readPersistedAuthFilesCompactMode();
@@ -354,6 +380,86 @@ export function AuthFilesPage() {
     setPage(1);
   }, []);
 
+  const refreshCodexData = useCallback(async () => {
+    const codexFiles = files.filter(
+      (file) => normalizeProviderKey(String(file.type ?? file.provider ?? '')) === 'codex'
+    );
+    if (codexFiles.length === 0) return;
+
+    setCodexRefreshing(true);
+    setCodexRefreshByName((current) => {
+      const next = { ...current };
+      codexFiles.forEach((file) => {
+        next[file.name] = { status: 'loading', planType: null, windows: [] };
+      });
+      return next;
+    });
+
+    let cursor = 0;
+    let successful = 0;
+    let failed = 0;
+    let persistenceFailed = 0;
+    const refreshOne = async () => {
+      while (cursor < codexFiles.length) {
+        const file = codexFiles[cursor++];
+        try {
+          const snapshot = await fetchCodexUsageSnapshot(file, t);
+          const checkedAt = new Date().toISOString();
+          if (snapshot.planType) {
+            try {
+              await authFilesApi.patchFields(file.name, {
+                plan_type: snapshot.planType,
+                plan_checked_at: checkedAt,
+              });
+            } catch {
+              persistenceFailed += 1;
+            }
+          }
+          successful += 1;
+          setCodexRefreshByName((current) => ({
+            ...current,
+            [file.name]: {
+              status: 'success',
+              planType: snapshot.planType,
+              windows: snapshot.windows,
+            },
+          }));
+        } catch (error: unknown) {
+          failed += 1;
+          setCodexRefreshByName((current) => ({
+            ...current,
+            [file.name]: {
+              status: 'error',
+              planType: null,
+              windows: [],
+              error: error instanceof Error ? error.message : t('common.unknown_error'),
+              errorStatus: requestStatus(error),
+            },
+          }));
+        }
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(CODEX_REFRESH_CONCURRENCY, codexFiles.length) }, refreshOne)
+    );
+    setCodexRefreshing(false);
+    await loadFiles();
+    showNotification(
+      t('auth_files.codex_refresh_result', { successful, failed, persistenceFailed }),
+      failed > 0 || persistenceFailed > 0 ? 'warning' : 'success'
+    );
+  }, [files, loadFiles, showNotification, t]);
+
+  useEffect(() => {
+    if (isCodexSelected) return;
+    setCodexStatusFilter('all');
+    setCodexPlanFilter('all');
+    if (sortMode === 'plan-desc' || sortMode === 'plan-asc') {
+      setSortMode('default');
+    }
+  }, [isCodexSelected, sortMode]);
+
   const handleHeaderRefresh = useCallback(async () => {
     await Promise.all([loadFiles(), loadExcluded(), loadModelAlias()]);
   }, [loadFiles, loadExcluded, loadModelAlias]);
@@ -388,10 +494,34 @@ export function AuthFilesPage() {
       files.filter((file) => {
         if (enabledOnly && file.disabled === true) return false;
         if (disabledOnly && file.disabled !== true) return false;
-        if (problemOnly && !hasAuthFileStatusMessage(file)) return false;
+        if (isCodexSelected) {
+          const refreshed = codexRefreshByName[file.name];
+          const codexStatus = getCodexAccountStatus(refreshed);
+          if (
+            problemOnly &&
+            !hasAuthFileStatusMessage(file) &&
+            !codexStatus.needsReauth &&
+            !codexStatus.quotaLimited
+          ) {
+            return false;
+          }
+          if (!matchesCodexStatusFilter(codexStatusFilter, refreshed)) return false;
+          if (!matchesCodexPlanFilter(file, codexPlanFilter, refreshed)) return false;
+        } else if (problemOnly && !hasAuthFileStatusMessage(file)) {
+          return false;
+        }
         return true;
       }),
-    [disabledOnly, enabledOnly, files, problemOnly]
+    [
+      codexPlanFilter,
+      codexRefreshByName,
+      codexStatusFilter,
+      disabledOnly,
+      enabledOnly,
+      files,
+      isCodexSelected,
+      problemOnly,
+    ]
   );
 
   const sortOptions = useMemo(
@@ -399,8 +529,14 @@ export function AuthFilesPage() {
       { value: 'default', label: t('auth_files.sort_default') },
       { value: 'az', label: t('auth_files.sort_az') },
       { value: 'priority', label: t('auth_files.sort_priority') },
+      ...(isCodexSelected
+        ? [
+            { value: 'plan-desc', label: t('auth_files.sort_plan_desc') },
+            { value: 'plan-asc', label: t('auth_files.sort_plan_asc') },
+          ]
+        : []),
     ],
-    [t]
+    [isCodexSelected, t]
   );
 
   const typeCounts = useMemo(() => {
@@ -452,9 +588,21 @@ export function AuthFilesPage() {
         const pb = parsePriorityValue(b.priority) ?? 0;
         return pb - pa; // 高优先级排前面
       });
+    } else if (sortMode === 'plan-desc' || sortMode === 'plan-asc') {
+      copy.sort((left, right) => {
+        const leftRank = getCodexPlanSortRank(left, codexRefreshByName[left.name]);
+        const rightRank = getCodexPlanSortRank(right, codexRefreshByName[right.name]);
+        if (leftRank !== null || rightRank !== null) {
+          if (leftRank === null) return 1;
+          if (rightRank === null) return -1;
+          const diff = sortMode === 'plan-desc' ? rightRank - leftRank : leftRank - rightRank;
+          if (diff !== 0) return diff;
+        }
+        return left.name.localeCompare(right.name);
+      });
     }
     return copy;
-  }, [filtered, sortMode]);
+  }, [codexRefreshByName, filtered, sortMode]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -614,6 +762,10 @@ export function AuthFilesPage() {
               style={buttonStyle}
               onClick={() => {
                 setFilter(type);
+                if (type !== 'codex') {
+                  setCodexStatusFilter('all');
+                  setCodexPlanFilter('all');
+                }
                 setPage(1);
               }}
             >
@@ -668,6 +820,17 @@ export function AuthFilesPage() {
             <Button variant="secondary" size="sm" onClick={handleHeaderRefresh} disabled={loading}>
               {t('common.refresh')}
             </Button>
+            {isCodexSelected && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void refreshCodexData()}
+                disabled={disableControls || codexRefreshing}
+                loading={codexRefreshing}
+              >
+                {t('auth_files.codex_refresh_button')}
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={handleUploadClick}
@@ -712,7 +875,11 @@ export function AuthFilesPage() {
         <div className={styles.filterSection}>
           <div className={styles.filterContent}>
             <div className={styles.filterControlsPanel}>
-              <div className={styles.filterControls}>
+              <div
+                className={`${styles.filterControls} ${
+                  isCodexSelected ? styles.filterControlsCodex : ''
+                }`}
+              >
                 <div className={`${styles.filterItem} ${styles.filterSearchItem}`}>
                   <label>{t('auth_files.search_label')}</label>
                   <Input
@@ -755,6 +922,63 @@ export function AuthFilesPage() {
                     fullWidth
                   />
                 </div>
+                {isCodexSelected && (
+                  <>
+                    <div className={`${styles.filterItem} ${styles.codexStatusItem}`}>
+                      <label>{t('auth_files.codex_status_label')}</label>
+                      <Select
+                        value={codexStatusFilter}
+                        options={[
+                          { value: 'all', label: t('auth_files.codex_status_all') },
+                          { value: 'reauth', label: t('auth_files.codex_status_reauth') },
+                          {
+                            value: 'quota_limited',
+                            label: t('auth_files.codex_status_quota_limited'),
+                          },
+                          {
+                            value: 'five_hour_limited',
+                            label: t('auth_files.codex_status_five_hour_limited'),
+                          },
+                          {
+                            value: 'weekly_limited',
+                            label: t('auth_files.codex_status_weekly_limited'),
+                          },
+                          {
+                            value: 'monthly_limited',
+                            label: t('auth_files.codex_status_monthly_limited'),
+                          },
+                        ]}
+                        onChange={(value) => {
+                          setCodexStatusFilter(value as CodexStatusFilter);
+                          setPage(1);
+                        }}
+                        ariaLabel={t('auth_files.codex_status_label')}
+                        fullWidth
+                      />
+                    </div>
+                    <div className={`${styles.filterItem} ${styles.codexPlanItem}`}>
+                      <label>{t('auth_files.codex_plan_label')}</label>
+                      <Select
+                        value={codexPlanFilter}
+                        options={[
+                          { value: 'all', label: t('auth_files.codex_plan_all') },
+                          { value: 'free', label: t('codex_quota.plan_free') },
+                          { value: 'plus', label: t('codex_quota.plan_plus') },
+                          { value: 'team', label: t('codex_quota.plan_team') },
+                          { value: 'prolite', label: t('codex_quota.plan_prolite') },
+                          { value: 'pro', label: t('codex_quota.plan_pro') },
+                          { value: 'unknown', label: t('auth_files.codex_plan_unknown') },
+                        ]}
+                        onChange={(value) => {
+                          setCodexPlanFilter(value as CodexPlanFilter);
+                          setPage(1);
+                        }}
+                        ariaLabel={t('auth_files.codex_plan_label')}
+                        fullWidth
+                      />
+                    </div>
+                  </>
+                )}
                 <div className={`${styles.filterItem} ${styles.filterToggleItem}`}>
                   <label>{t('auth_files.display_options_label')}</label>
                   <div className={styles.displayOptionToggles}>
@@ -816,6 +1040,26 @@ export function AuthFilesPage() {
                     statusUpdating={statusUpdating}
                     quotaFilterType={quotaFilterType}
                     statusBarCache={statusBarCache}
+                    codexBadges={
+                      isCodexSelected
+                        ? (() => {
+                            const refreshed = codexRefreshByName[file.name];
+                            const status = getCodexAccountStatus(refreshed);
+                            const badges = [] as string[];
+                            const plan = getCodexPlanFilterValue(file, refreshed);
+                            if (plan) badges.push(t(`codex_quota.plan_${plan}`));
+                            if (status.needsReauth)
+                              badges.push(t('auth_files.codex_status_reauth'));
+                            if (status.fiveHourLimited)
+                              badges.push(t('auth_files.codex_status_five_hour_limited'));
+                            if (status.weeklyLimited)
+                              badges.push(t('auth_files.codex_status_weekly_limited'));
+                            if (status.monthlyLimited)
+                              badges.push(t('auth_files.codex_status_monthly_limited'));
+                            return badges;
+                          })()
+                        : []
+                    }
                     onShowModels={showModels}
                     onDownload={handleDownload}
                     onOpenPrefixProxyEditor={openPrefixProxyEditor}

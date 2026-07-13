@@ -31,6 +31,8 @@ export interface AuthFileItem {
   unavailable?: boolean;
   status?: string;
   statusMessage?: string;
+  plan_type?: string;
+  plan_checked_at?: string;
   lastRefresh?: string | number;
   modified?: number;
   success?: unknown;

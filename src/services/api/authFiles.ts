@@ -20,6 +20,8 @@ export type AuthFileFieldsPatch = {
   using_api?: boolean;
   note?: string;
   allow_private_instructions?: boolean;
+  plan_type?: string;
+  plan_checked_at?: string;
 };
 type AuthFileBatchFailure = { name: string; error: string };
 type AuthFileBatchUploadResponse = {

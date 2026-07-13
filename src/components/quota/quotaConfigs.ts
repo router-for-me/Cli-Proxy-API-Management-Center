@@ -109,6 +109,11 @@ type CodexQuotaData = {
   windows: CodexQuotaWindow[];
 };
 
+export type CodexUsageSnapshot = Pick<
+  CodexQuotaData,
+  'planType' | 'subscriptionActiveUntil' | 'rateLimitResetCreditsAvailableCount' | 'windows'
+>;
+
 const QUOTA_PROGRESS_HIGH_THRESHOLD = 70;
 const QUOTA_PROGRESS_MEDIUM_THRESHOLD = 30;
 const CODEX_RESET_CREDITS_REQUEST_TIMEOUT_MS = 8000;
@@ -582,7 +587,10 @@ const fetchCodexResetCredits = async (
   }
 };
 
-const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaData> => {
+export const fetchCodexUsageSnapshot = async (
+  file: AuthFileItem,
+  t: TFunction
+): Promise<CodexUsageSnapshot> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
@@ -611,25 +619,39 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
 
   const planTypeFromUsage = normalizePlanType(payload.plan_type ?? payload.planType);
   const resetCredits = payload.rate_limit_reset_credits ?? payload.rateLimitResetCredits ?? null;
-  const usageResetCreditsAvailableCount = normalizeNumberValue(
-    resetCredits?.available_count ?? resetCredits?.availableCount
-  );
+  return {
+    planType: planTypeFromUsage ?? planTypeFromFile,
+    subscriptionActiveUntil,
+    rateLimitResetCreditsAvailableCount: normalizeNumberValue(
+      resetCredits?.available_count ?? resetCredits?.availableCount
+    ),
+    windows: buildCodexQuotaWindows(payload, t),
+  };
+};
+
+const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaData> => {
+  const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+  const authIndex = normalizeAuthIndex(rawAuthIndex);
+  if (!authIndex) {
+    throw new Error(t('codex_quota.missing_auth_index'));
+  }
+
+  const snapshot = await fetchCodexUsageSnapshot(file, t);
+  const requestHeader = buildCodexRequestHeader(file);
   const resetCreditsData = await fetchCodexResetCredits(authIndex, requestHeader, t);
   const resetCreditsCountFromDetails =
     resetCreditsData.credits.length > 0 ? resetCreditsData.credits.length : null;
   const rateLimitResetCreditsAvailableCount =
     resetCreditsData.availableCount ??
     resetCreditsCountFromDetails ??
-    usageResetCreditsAvailableCount;
-  const planType = planTypeFromUsage ?? planTypeFromFile;
-  const windows = buildCodexQuotaWindows(payload, t);
+    snapshot.rateLimitResetCreditsAvailableCount;
   return {
-    planType,
-    subscriptionActiveUntil,
+    planType: snapshot.planType,
+    subscriptionActiveUntil: snapshot.subscriptionActiveUntil,
     rateLimitResetCreditsAvailableCount,
     rateLimitResetCredits: resetCreditsData.credits,
     rateLimitResetCreditsError: resetCreditsData.error,
-    windows,
+    windows: snapshot.windows,
   };
 };
 

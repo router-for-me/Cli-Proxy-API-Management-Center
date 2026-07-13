@@ -49,6 +49,7 @@ export type AuthFileCardProps = {
   statusUpdating: Record<string, boolean>;
   quotaFilterType: QuotaProviderType | null;
   statusBarCache: Map<string, AuthFileStatusBarData>;
+  codexBadges?: string[];
   onShowModels: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
   onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
@@ -75,6 +76,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     statusUpdating,
     quotaFilterType,
     statusBarCache,
+    codexBadges = [],
     onShowModels,
     onDownload,
     onOpenPrefixProxyEditor,
@@ -192,6 +194,11 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   {typeLabel}
                 </span>
                 <span className={`${styles.stateBadge} ${stateBadgeClass}`}>{stateLabel}</span>
+                {codexBadges.map((badge) => (
+                  <span key={badge} className={styles.codexStatusBadge}>
+                    {badge}
+                  </span>
+                ))}
               </div>
               <span className={styles.fileName} title={file.name}>
                 {file.name}

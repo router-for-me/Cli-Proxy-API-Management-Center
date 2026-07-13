@@ -234,6 +234,34 @@
   }
 }
 
+.filterControlsCodex {
+  grid-template-columns:
+    minmax(220px, 1fr) minmax(96px, 120px) minmax(150px, 190px) minmax(170px, 210px)
+    minmax(150px, 190px);
+  grid-template-areas:
+    'search page-size sort codex-status codex-plan'
+    'status status status status status';
+
+  @media (max-width: 1320px) {
+    grid-template-columns: minmax(0, 1fr) minmax(104px, 132px) minmax(160px, 1fr);
+    grid-template-areas:
+      'search page-size sort'
+      'codex-status codex-plan codex-plan'
+      'status status status';
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'search'
+      'page-size'
+      'sort'
+      'codex-status'
+      'codex-plan'
+      'status';
+  }
+}
+
 .filterSearchItem {
   grid-area: search;
   min-width: 0;
@@ -267,6 +295,14 @@
 
 .sortItem {
   grid-area: sort;
+}
+
+.codexStatusItem {
+  grid-area: codex-status;
+}
+
+.codexPlanItem {
+  grid-area: codex-plan;
 }
 
 .displayOptionToggles {
@@ -1129,6 +1165,20 @@
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--bg-tertiary) 82%, transparent);
   border: 1px dashed color-mix(in srgb, var(--border-primary) 90%, transparent);
+}
+
+.codexStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 34%, var(--border-color));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-color) 11%, transparent);
+  color: color-mix(in srgb, var(--primary-color) 78%, var(--text-primary));
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .subscriptionBadge {
