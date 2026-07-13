@@ -697,11 +697,6 @@ export function LogsPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
-        <div className={styles.runtimeNotice}>{t(`logs.runtime_${serverRuntimeKind}`)}</div>
-      </div>
-
       <div className={styles.tabBar}>
         <button
           type="button"

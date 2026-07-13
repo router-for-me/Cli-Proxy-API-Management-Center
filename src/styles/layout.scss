@@ -606,6 +606,12 @@
         border-radius: 5px;
         object-fit: cover;
       }
+
+      // Brand SVGs from OAuth (Codex / Grok) — keep aspect, no crop mask
+      img.nav-brand-icon {
+        border-radius: 0;
+        object-fit: contain;
+      }
     }
 
     .nav-text {

@@ -985,12 +985,6 @@ export function PluginStorePage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Page Header ── */}
-      <div className={styles.pageHeader}>
-        <h1 className={styles.title}>{t('plugin_store.title')}</h1>
-        <p className={styles.description}>{t('plugin_store.description')}</p>
-      </div>
-
       {/* ── Security Banner ── */}
       <div className={styles.securityBanner} role="note">
         <IconShield size={20} />

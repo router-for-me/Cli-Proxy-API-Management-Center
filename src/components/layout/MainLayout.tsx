@@ -18,8 +18,6 @@ import {
   IconSidebarAuthFiles,
   IconSidebarConfig,
   IconSidebarDashboard,
-  IconSidebarInstructions,
-  IconShield,
   IconSidebarLogs,
   IconSidebarOauth,
   IconSidebarPlugins,
@@ -30,6 +28,9 @@ import {
   IconChevronDown,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
+import iconCodex from '@/assets/icons/codex.svg';
+import iconGrok from '@/assets/icons/grok.svg';
+import iconGrokDark from '@/assets/icons/grok-dark.svg';
 import {
   useAuthStore,
   useConfigStore,
@@ -48,6 +49,11 @@ import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
 import type { Theme } from '@/types';
 
+/** Same brand assets as OAuth Login (Codex / xAI Grok). */
+function BrandNavIcon({ src, alt }: { src: string; alt: string }) {
+  return <img src={src} alt={alt} className="nav-brand-icon" />;
+}
+
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconSidebarDashboard size={18} />,
   aiProviders: <IconSidebarProviders size={18} />,
@@ -57,8 +63,6 @@ const sidebarIcons: Record<string, ReactNode> = {
   plugins: <IconSidebarPlugins size={18} />,
   pluginStore: <IconSidebarStore size={18} />,
   config: <IconSidebarConfig size={18} />,
-  codexInstructions: <IconSidebarInstructions size={18} />,
-  xaiConfig: <IconShield size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
 };
@@ -309,6 +313,7 @@ export function MainLayout() {
 
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
 
@@ -574,12 +579,17 @@ export function MainLayout() {
         {
           path: '/codex-instructions',
           labelKey: 'nav.codex_instructions',
-          icon: sidebarIcons.codexInstructions,
+          icon: <BrandNavIcon src={iconCodex} alt="Codex" />,
         },
         {
           path: '/xai-config',
           labelKey: 'nav.xai_config',
-          icon: sidebarIcons.xaiConfig,
+          icon: (
+            <BrandNavIcon
+              src={resolvedTheme === 'dark' ? iconGrokDark : iconGrok}
+              alt="xAI"
+            />
+          ),
         },
       ],
     },

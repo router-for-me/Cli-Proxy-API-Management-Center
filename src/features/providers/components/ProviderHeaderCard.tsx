@@ -38,12 +38,17 @@ export function ProviderHeaderCard({
     .filter(Boolean)
     .join(' ');
 
+  // Optional title only for branded quick-start embeds; main AI Providers page has no page header.
+  const showTitle = Boolean(title);
+
   return (
     <section className={cardClassName}>
-      <div className={styles.row}>
-        <div className={styles.titleArea}>
-          <h1 className={styles.title}>{title ?? t('providersPage.header.title')}</h1>
-        </div>
+      <div className={`${styles.row} ${showTitle ? '' : styles.rowActionsOnly}`.trim()}>
+        {showTitle ? (
+          <div className={styles.titleArea}>
+            <h1 className={styles.title}>{title}</h1>
+          </div>
+        ) : null}
         <div className={styles.actions}>
           <button
             type="button"

@@ -1,8 +1,9 @@
-import { memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
+import { IconCopy, IconEye, IconEyeOff, IconPencil, IconTrash2 } from '@/components/ui/icons';
 import { useNotificationStore } from '@/stores';
 import styles from './VisualConfigEditor.module.scss';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -21,8 +22,11 @@ import type {
 import { makeClientId } from '@/types/visualConfig';
 import {
   getPayloadParamValidationError,
+  parseApiKeyEntries,
+  serializeApiKeyEntries,
   VISUAL_CONFIG_PAYLOAD_VALUE_TYPE_OPTIONS,
   VISUAL_CONFIG_PROTOCOL_OPTIONS,
+  type VisualApiKeyEntry,
 } from '@/hooks/useVisualConfig';
 import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
@@ -173,31 +177,36 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
 }) {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
-  const apiKeys = useMemo(
-    () =>
-      value
-        .split('\n')
-        .map((key) => key.trim())
-        .filter(Boolean),
-    [value]
-  );
-  const [apiKeyIds, setApiKeyIds] = useState(() => apiKeys.map(() => makeClientId()));
+  const entries = useMemo(() => parseApiKeyEntries(value), [value]);
+  const [apiKeyIds, setApiKeyIds] = useState(() => entries.map(() => makeClientId()));
   const renderApiKeyIds = useMemo(() => {
-    if (apiKeyIds.length === apiKeys.length) return apiKeyIds;
-    if (apiKeyIds.length > apiKeys.length) return apiKeyIds.slice(0, apiKeys.length);
+    if (apiKeyIds.length === entries.length) return apiKeyIds;
+    if (apiKeyIds.length > entries.length) return apiKeyIds.slice(0, entries.length);
     return [
       ...apiKeyIds,
-      ...Array.from({ length: apiKeys.length - apiKeyIds.length }, () => makeClientId()),
+      ...Array.from({ length: entries.length - apiKeyIds.length }, () => makeClientId()),
     ];
-  }, [apiKeyIds, apiKeys.length]);
+  }, [apiKeyIds, entries.length]);
 
   const apiKeyInputId = useId();
+  const apiKeyNameId = useId();
   const apiKeyHintId = `${apiKeyInputId}-hint`;
   const apiKeyErrorId = `${apiKeyInputId}-error`;
   const [modalOpen, setModalOpen] = useState(false);
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
+  const [nameValue, setNameValue] = useState('');
   const [formError, setFormError] = useState('');
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(() => new Set());
+  const [nameEditId, setNameEditId] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState('');
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!nameEditId) return;
+    nameInputRef.current?.focus();
+    nameInputRef.current?.select();
+  }, [nameEditId]);
 
   function generateSecureApiKey(): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -206,17 +215,24 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     return 'sk-' + Array.from(array, (b) => charset[b % charset.length]).join('');
   }
 
+  const commitEntries = (next: VisualApiKeyEntry[]) => {
+    onChange(serializeApiKeyEntries(next));
+  };
+
   const openAddModal = () => {
     setEditingApiKeyId(null);
     setInputValue('');
+    setNameValue('');
     setFormError('');
     setModalOpen(true);
   };
 
   const openEditModal = (apiKeyId: string) => {
     const editingIndex = renderApiKeyIds.findIndex((id) => id === apiKeyId);
+    const entry = entries[editingIndex];
     setEditingApiKeyId(apiKeyId);
-    setInputValue(apiKeys[editingIndex] ?? '');
+    setInputValue(entry?.key ?? '');
+    setNameValue(entry?.name ?? '');
     setFormError('');
     setModalOpen(true);
   };
@@ -224,19 +240,22 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const closeModal = () => {
     setModalOpen(false);
     setInputValue('');
+    setNameValue('');
     setEditingApiKeyId(null);
     setFormError('');
-  };
-
-  const updateApiKeys = (nextKeys: string[]) => {
-    onChange(nextKeys.join('\n'));
   };
 
   const handleDelete = (apiKeyId: string) => {
     const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
     if (index < 0) return;
     setApiKeyIds(renderApiKeyIds.filter((id) => id !== apiKeyId));
-    updateApiKeys(apiKeys.filter((_, i) => i !== index));
+    setRevealedIds((prev) => {
+      if (!prev.has(apiKeyId)) return prev;
+      const next = new Set(prev);
+      next.delete(apiKeyId);
+      return next;
+    });
+    commitEntries(entries.filter((_, i) => i !== index));
   };
 
   const handleSave = () => {
@@ -250,17 +269,19 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       return;
     }
 
+    const name = nameValue.replace(/[\r\n\t]+/g, ' ').trim();
     const editingIndex = editingApiKeyId
       ? renderApiKeyIds.findIndex((id) => id === editingApiKeyId)
       : -1;
-    const nextKeys =
+    const nextEntry: VisualApiKeyEntry = { key: trimmed, name };
+    const nextEntries =
       editingApiKeyId === null
-        ? [...apiKeys, trimmed]
-        : apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
+        ? [...entries, nextEntry]
+        : entries.map((entry, idx) => (idx === editingIndex ? nextEntry : entry));
     if (editingApiKeyId === null) {
       setApiKeyIds([...renderApiKeyIds, makeClientId()]);
     }
-    updateApiKeys(nextKeys);
+    commitEntries(nextEntries);
     closeModal();
   };
 
@@ -277,6 +298,46 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     setFormError('');
   };
 
+  const toggleReveal = (apiKeyId: string) => {
+    setRevealedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(apiKeyId)) next.delete(apiKeyId);
+      else next.add(apiKeyId);
+      return next;
+    });
+  };
+
+  const beginNameEdit = (apiKeyId: string) => {
+    if (disabled) return;
+    const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
+    if (index < 0) return;
+    setNameEditId(apiKeyId);
+    setNameDraft(entries[index]?.name ?? '');
+  };
+
+  const commitNameEdit = () => {
+    if (!nameEditId) return;
+    const index = renderApiKeyIds.findIndex((id) => id === nameEditId);
+    if (index < 0) {
+      setNameEditId(null);
+      setNameDraft('');
+      return;
+    }
+    const nextName = nameDraft.replace(/[\r\n\t]+/g, ' ').trim();
+    const current = entries[index]?.name ?? '';
+    setNameEditId(null);
+    setNameDraft('');
+    if (nextName === current) return;
+    commitEntries(
+      entries.map((entry, idx) => (idx === index ? { ...entry, name: nextName } : entry))
+    );
+  };
+
+  const cancelNameEdit = () => {
+    setNameEditId(null);
+    setNameDraft('');
+  };
+
   return (
     <div className="form-group" style={{ marginBottom: 0 }}>
       <div className={styles.blockHeaderRow}>
@@ -286,47 +347,134 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
         </Button>
       </div>
 
-      {apiKeys.length === 0 ? (
+      {entries.length === 0 ? (
         <div className={styles.emptyState}>{t('config_management.visual.api_keys.empty')}</div>
       ) : (
-        <div className="item-list" style={{ marginTop: 4 }}>
-          {apiKeys.map((key, index) => (
-            <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
-              <div className="item-meta">
-                <div className="pill">#{index + 1}</div>
-                <div className="item-title">
+        <div className={styles.apiKeyTableWrap}>
+          <table className={styles.apiKeyTable}>
+            <thead>
+              <tr>
+                <th className={styles.apiKeyColIndex}>#</th>
+                <th className={styles.apiKeyColName}>
+                  {t('config_management.visual.api_keys.name_column')}
+                </th>
+                <th className={styles.apiKeyColKey}>
                   {t('config_management.visual.api_keys.input_label')}
-                </div>
-                <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
-              </div>
-              <div className="item-actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleCopy(key)}
-                  disabled={disabled}
-                >
-                  {t('common.copy')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.edit')}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.delete')}
-                </Button>
-              </div>
-            </div>
-          ))}
+                </th>
+                <th className={styles.apiKeyColActions}>
+                  {t('config_management.visual.api_keys.actions_column')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry, index) => {
+                const rowId = renderApiKeyIds[index] ?? `${entry.key}-${index}`;
+                const revealed = revealedIds.has(rowId);
+                const editingName = nameEditId === rowId;
+
+                return (
+                  <tr key={rowId}>
+                    <td className={styles.apiKeyColIndex}>{index + 1}</td>
+                    <td
+                      className={styles.apiKeyColName}
+                      onDoubleClick={() => beginNameEdit(rowId)}
+                      title={t('config_management.visual.api_keys.name_edit_hint')}
+                    >
+                      {editingName ? (
+                        <input
+                          ref={nameInputRef}
+                          className={styles.apiKeyNameInput}
+                          value={nameDraft}
+                          disabled={disabled}
+                          placeholder={t('config_management.visual.api_keys.name_placeholder')}
+                          onChange={(e) => setNameDraft(e.target.value)}
+                          onBlur={commitNameEdit}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              commitNameEdit();
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault();
+                              cancelNameEdit();
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className={
+                            entry.name ? styles.apiKeyNameText : styles.apiKeyNamePlaceholder
+                          }
+                        >
+                          {entry.name || t('config_management.visual.api_keys.name_empty')}
+                        </span>
+                      )}
+                    </td>
+                    <td className={styles.apiKeyColKey}>
+                      <div className={styles.apiKeyValueCell}>
+                        <code className={styles.apiKeyValue}>
+                          {revealed ? entry.key : maskApiKey(entry.key)}
+                        </code>
+                        <div className={styles.apiKeyInlineActions}>
+                          <button
+                            type="button"
+                            className={styles.apiKeyIconButton}
+                            onClick={() => toggleReveal(rowId)}
+                            disabled={disabled}
+                            title={
+                              revealed
+                                ? t('config_management.visual.api_keys.hide')
+                                : t('config_management.visual.api_keys.reveal')
+                            }
+                            aria-label={
+                              revealed
+                                ? t('config_management.visual.api_keys.hide')
+                                : t('config_management.visual.api_keys.reveal')
+                            }
+                          >
+                            {revealed ? <IconEyeOff size={15} /> : <IconEye size={15} />}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.apiKeyIconButton}
+                            onClick={() => handleCopy(entry.key)}
+                            disabled={disabled}
+                            title={t('common.copy')}
+                            aria-label={t('common.copy')}
+                          >
+                            <IconCopy size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={styles.apiKeyColActions}>
+                      <div className={styles.apiKeyInlineActions}>
+                        <button
+                          type="button"
+                          className={styles.apiKeyIconButton}
+                          onClick={() => openEditModal(rowId)}
+                          disabled={disabled}
+                          title={t('config_management.visual.common.edit')}
+                          aria-label={t('config_management.visual.common.edit')}
+                        >
+                          <IconPencil size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.apiKeyIconButton} ${styles.apiKeyIconButtonDanger}`}
+                          onClick={() => handleDelete(rowId)}
+                          disabled={disabled}
+                          title={t('config_management.visual.common.delete')}
+                          aria-label={t('config_management.visual.common.delete')}
+                        >
+                          <IconTrash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -353,39 +501,53 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
           </>
         }
       >
-        <div className="form-group">
-          <label htmlFor={apiKeyInputId}>
-            {t('config_management.visual.api_keys.input_label')}
-          </label>
-          <div className={styles.apiKeyModalInputRow}>
+        <div className={styles.apiKeyModalFields}>
+          <div className="form-group">
+            <label htmlFor={apiKeyNameId}>{t('config_management.visual.api_keys.name_label')}</label>
             <input
-              id={apiKeyInputId}
+              id={apiKeyNameId}
               className="input"
-              placeholder={t('config_management.visual.api_keys.input_placeholder')}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={t('config_management.visual.api_keys.name_placeholder')}
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
               disabled={disabled}
-              aria-describedby={formError ? `${apiKeyErrorId} ${apiKeyHintId}` : apiKeyHintId}
-              aria-invalid={Boolean(formError)}
             />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleGenerate}
-              disabled={disabled}
-            >
-              {t('config_management.visual.api_keys.generate')}
-            </Button>
+            <div className="hint">{t('config_management.visual.api_keys.name_hint')}</div>
           </div>
-          <div id={apiKeyHintId} className="hint">
-            {t('config_management.visual.api_keys.input_hint')}
-          </div>
-          {formError && (
-            <div id={apiKeyErrorId} className="error-box">
-              {formError}
+          <div className="form-group">
+            <label htmlFor={apiKeyInputId}>
+              {t('config_management.visual.api_keys.input_label')}
+            </label>
+            <div className={styles.apiKeyModalInputRow}>
+              <input
+                id={apiKeyInputId}
+                className="input"
+                placeholder={t('config_management.visual.api_keys.input_placeholder')}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                disabled={disabled}
+                aria-describedby={formError ? `${apiKeyErrorId} ${apiKeyHintId}` : apiKeyHintId}
+                aria-invalid={Boolean(formError)}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleGenerate}
+                disabled={disabled}
+              >
+                {t('config_management.visual.api_keys.generate')}
+              </Button>
             </div>
-          )}
+            <div id={apiKeyHintId} className="hint">
+              {t('config_management.visual.api_keys.input_hint')}
+            </div>
+            {formError && (
+              <div id={apiKeyErrorId} className="error-box">
+                {formError}
+              </div>
+            )}
+          </div>
         </div>
       </Modal>
     </div>
