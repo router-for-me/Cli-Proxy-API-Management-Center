@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="cpamc-signal" x1="12" y1="10" x2="53" y2="55" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#39B9B0"/>
+      <stop offset="1" stop-color="#3F6BE8"/>
+    </linearGradient>
+    <linearGradient id="cpamc-core" x1="24" y1="20" x2="40" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF6B7"/>
+      <stop offset="1" stop-color="#E7A949"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#17212E"/>
+  <path d="M14 24.5 31.8 14 50 24.5v15L31.8 50 14 39.5v-15Z" stroke="url(#cpamc-signal)" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="m18 32 10-5.8M36 26.2 46 32M32 38.8V47" stroke="url(#cpamc-signal)" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="32" cy="32" r="8" fill="url(#cpamc-core)"/>
+  <circle cx="32" cy="32" r="3" fill="#17212E"/>
+</svg>

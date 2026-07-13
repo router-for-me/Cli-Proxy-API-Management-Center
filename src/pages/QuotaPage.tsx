@@ -57,36 +57,46 @@ export function QuotaPage() {
 
       {error && <div className={styles.errorBox}>{error}</div>}
 
-      <QuotaSection
-        config={CLAUDE_CONFIG}
-        files={files}
-        loading={loading}
-        disabled={disableControls}
-      />
-      <QuotaSection
-        config={ANTIGRAVITY_CONFIG}
-        files={files}
-        loading={loading}
-        disabled={disableControls}
-      />
-      <QuotaSection
-        config={CODEX_CONFIG}
-        files={files}
-        loading={loading}
-        disabled={disableControls}
-      />
-      <QuotaSection
-        config={XAI_CONFIG}
-        files={files}
-        loading={loading}
-        disabled={disableControls}
-      />
-      <QuotaSection
-        config={KIMI_CONFIG}
-        files={files}
-        loading={loading}
-        disabled={disableControls}
-      />
+      {files.some(CLAUDE_CONFIG.filterFn) && (
+        <QuotaSection
+          config={CLAUDE_CONFIG}
+          files={files}
+          loading={loading}
+          disabled={disableControls}
+        />
+      )}
+      {files.some(ANTIGRAVITY_CONFIG.filterFn) && (
+        <QuotaSection
+          config={ANTIGRAVITY_CONFIG}
+          files={files}
+          loading={loading}
+          disabled={disableControls}
+        />
+      )}
+      {files.some(CODEX_CONFIG.filterFn) && (
+        <QuotaSection
+          config={CODEX_CONFIG}
+          files={files}
+          loading={loading}
+          disabled={disableControls}
+        />
+      )}
+      {files.some(XAI_CONFIG.filterFn) && (
+        <QuotaSection
+          config={XAI_CONFIG}
+          files={files}
+          loading={loading}
+          disabled={disableControls}
+        />
+      )}
+      {files.some(KIMI_CONFIG.filterFn) && (
+        <QuotaSection
+          config={KIMI_CONFIG}
+          files={files}
+          loading={loading}
+          disabled={disableControls}
+        />
+      )}
     </div>
   );
 }

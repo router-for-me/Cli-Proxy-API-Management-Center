@@ -58,7 +58,7 @@
   },
   "title": {
     "login": "CLI Proxy API Management Center",
-    "abbr": "CPAMC"
+    "abbr": "CPAMC++"
   },
   "splash": {
     "title": "CLI Proxy API",
@@ -115,7 +115,8 @@
     "gateway": "网关",
     "observe": "观测",
     "plugin_pages": "插件",
-    "control": "控制"
+    "control": "控制",
+    "provider_specific": "提供商专属"
   },
   "nav_meta": {
     "dashboard": "运行总览",

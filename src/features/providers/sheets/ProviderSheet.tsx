@@ -243,7 +243,7 @@ export function ProviderSheet({
           state.brand === 'openaiCompatibility'
             ? '/ai-providers/openai'
             : state.brand === 'apikeyFun'
-              ? '/quick-start'
+              ? '/ai-providers/apikeyfun'
               : state.brand === 'claudeApi'
                 ? '/ai-providers/claudeapi'
                 : state.brand === 'code0'

@@ -24,13 +24,12 @@ import {
   IconSidebarOauth,
   IconSidebarPlugins,
   IconSidebarProviders,
-  IconSidebarQuickStart,
   IconSidebarQuota,
   IconSidebarStore,
   IconSidebarSystem,
   IconChevronDown,
 } from '@/components/ui/icons';
-import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
+import CPAMC_MARK from '@/assets/cpamc-mark.svg';
 import {
   useAuthStore,
   useConfigStore,
@@ -44,7 +43,6 @@ import {
   resolvePluginAssetURL,
   type PluginResourceEntry,
 } from '@/features/plugins/pluginResources';
-import { APIKEY_FUN_DISPLAY_NAME, hasApiKeyFunConfig } from '@/features/providers/sponsor';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
@@ -52,7 +50,6 @@ import type { Theme } from '@/types';
 
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconSidebarDashboard size={18} />,
-  quickStart: <IconSidebarQuickStart size={18} />,
   aiProviders: <IconSidebarProviders size={18} />,
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
@@ -70,9 +67,7 @@ interface SidebarNavLinkItem {
   kind?: 'link';
   path: string;
   labelKey?: string;
-  metaKey?: string;
   label?: string;
-  meta?: string;
   icon: ReactNode;
 }
 
@@ -80,7 +75,6 @@ interface SidebarNavDrawerItem {
   kind: 'drawer';
   id: string;
   label: string;
-  meta?: string;
   icon: ReactNode;
   children: SidebarNavLinkItem[];
 }
@@ -312,7 +306,6 @@ export function MainLayout() {
 
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const clearCache = useConfigStore((state) => state.clearCache);
-  const config = useConfigStore((state) => state.config);
 
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
@@ -332,7 +325,7 @@ export function MainLayout() {
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
 
-  const fullBrandName = 'CLI Proxy API Management Center';
+  const fullBrandName = 'CPAMC++';
   const abbrBrandName = t('title.abbr');
   const isLogsPage = location.pathname.startsWith('/logs');
   const isPluginResourcePage = location.pathname.startsWith('/plugin-pages');
@@ -492,7 +485,6 @@ export function MainLayout() {
             {
               path: resource.route,
               label: resource.label,
-              meta: resource.description,
               icon: <PluginSidebarIcon src={pluginLogo} />,
             },
           ];
@@ -504,27 +496,16 @@ export function MainLayout() {
             kind: 'drawer',
             id: `plugin-pages-${group.pluginID}`,
             label: group.pluginTitle,
-            meta: t('plugin_resource.page_count', { count: group.entries.length }),
             icon: <PluginSidebarIcon src={pluginLogo} />,
             children: group.entries.map((resource) => ({
               path: resource.route,
               label: resource.label,
-              meta: resource.description,
               icon: <span className="nav-sub-dot" aria-hidden="true" />,
             })),
           },
         ];
       })
     : [];
-
-  const isApiKeyFunConfigured = hasApiKeyFunConfig(config);
-  const quickStartNavItem: SidebarNavLinkItem = {
-    path: '/quick-start',
-    label: isApiKeyFunConfigured ? APIKEY_FUN_DISPLAY_NAME : undefined,
-    labelKey: isApiKeyFunConfigured ? undefined : 'nav.quick_start',
-    metaKey: 'nav_meta.quick_start',
-    icon: sidebarIcons.quickStart,
-  };
 
   const navGroups: SidebarNavGroup[] = [
     {
@@ -534,10 +515,8 @@ export function MainLayout() {
         {
           path: '/',
           labelKey: 'nav.dashboard',
-          metaKey: 'nav_meta.dashboard',
           icon: sidebarIcons.dashboard,
         },
-        ...(!isApiKeyFunConfigured ? [quickStartNavItem] : []),
       ],
     },
     {
@@ -547,22 +526,18 @@ export function MainLayout() {
         {
           path: '/ai-providers',
           labelKey: 'nav.ai_providers',
-          metaKey: 'nav_meta.ai_providers',
           icon: sidebarIcons.aiProviders,
         },
         {
           path: '/auth-files',
           labelKey: 'nav.auth_files',
-          metaKey: 'nav_meta.auth_files',
           icon: sidebarIcons.authFiles,
         },
         {
           path: '/oauth',
           labelKey: 'nav.oauth',
-          metaKey: 'nav_meta.oauth',
           icon: sidebarIcons.oauth,
         },
-        ...(isApiKeyFunConfigured ? [quickStartNavItem] : []),
       ],
     },
     {
@@ -572,13 +547,11 @@ export function MainLayout() {
         {
           path: '/quota',
           labelKey: 'nav.quota_management',
-          metaKey: 'nav_meta.quota_management',
           icon: sidebarIcons.quota,
         },
         {
           path: '/logs',
           labelKey: 'nav.logs',
-          metaKey: 'nav_meta.logs',
           icon: sidebarIcons.logs,
         },
       ],
@@ -590,19 +563,22 @@ export function MainLayout() {
         {
           path: '/config',
           labelKey: 'nav.config_management',
-          metaKey: 'nav_meta.config_management',
           icon: sidebarIcons.config,
         },
+      ],
+    },
+    {
+      id: 'provider-specific',
+      labelKey: 'nav_groups.provider_specific',
+      items: [
         {
           path: '/codex-instructions',
           labelKey: 'nav.codex_instructions',
-          metaKey: 'nav_meta.codex_instructions',
           icon: sidebarIcons.codexInstructions,
         },
         {
           path: '/xai-config',
           labelKey: 'nav.xai_config',
-          metaKey: 'nav_meta.xai_config',
           icon: sidebarIcons.xaiConfig,
         },
         ...(supportsPlugin
@@ -610,13 +586,11 @@ export function MainLayout() {
               {
                 path: '/plugins',
                 labelKey: 'nav.plugins',
-                metaKey: 'nav_meta.plugins',
                 icon: sidebarIcons.plugins,
               },
               {
                 path: '/plugin-store',
                 labelKey: 'nav.plugin_store',
-                metaKey: 'nav_meta.plugin_store',
                 icon: sidebarIcons.pluginStore,
               },
             ]
@@ -624,7 +598,6 @@ export function MainLayout() {
         {
           path: '/system',
           labelKey: 'nav.system_info',
-          metaKey: 'nav_meta.system_info',
           icon: sidebarIcons.system,
         },
       ],
@@ -714,7 +687,6 @@ export function MainLayout() {
 
   const renderNavLink = (item: SidebarNavLinkItem, className = 'nav-item') => {
     const itemLabel = item.label ?? (item.labelKey ? t(item.labelKey) : '');
-    const itemMeta = item.meta ?? (item.metaKey ? t(item.metaKey) : '');
 
     return (
       <NavLink
@@ -728,7 +700,6 @@ export function MainLayout() {
         {showSidebarLabels && (
           <span className="nav-text">
             <span className="nav-label">{itemLabel}</span>
-            {itemMeta ? <span className="nav-meta">{itemMeta}</span> : null}
           </span>
         )}
       </NavLink>
@@ -759,7 +730,6 @@ export function MainLayout() {
             <>
               <span className="nav-text">
                 <span className="nav-label">{item.label}</span>
-                {item.meta ? <span className="nav-meta">{item.meta}</span> : null}
               </span>
               <span className="nav-drawer-caret" aria-hidden="true">
                 <IconChevronDown size={14} />
@@ -956,7 +926,7 @@ export function MainLayout() {
           className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
         >
           <div className="sidebar-brand" title={fullBrandName}>
-            <img src={INLINE_LOGO_JPEG} alt="CPAMC logo" className="sidebar-brand-logo" />
+            <img src={CPAMC_MARK} alt="CPAMC++ logo" className="sidebar-brand-logo" />
             {showSidebarLabels && <span className="sidebar-brand-title">{abbrBrandName}</span>}
           </div>
 

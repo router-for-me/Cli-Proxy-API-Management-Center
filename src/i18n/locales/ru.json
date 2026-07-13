@@ -58,7 +58,7 @@
   },
   "title": {
     "login": "Центр управления CLI Proxy API",
-    "abbr": "CPAMC"
+    "abbr": "CPAMC++"
   },
   "splash": {
     "title": "CLI Proxy API",
@@ -114,7 +114,8 @@
     "operate": "Работа",
     "gateway": "Шлюз",
     "observe": "Наблюдение",
-    "control": "Управление"
+    "control": "Управление",
+    "provider_specific": "Для провайдеров"
   },
   "nav_meta": {
     "dashboard": "Обзор работы",
