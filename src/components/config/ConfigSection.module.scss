@@ -3,43 +3,34 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 2vw, 22px);
-  height: clamp(520px, calc(100dvh - var(--header-height, 64px) - 250px), 780px);
+  gap: clamp(14px, 1.6vw, 18px);
   min-width: 0;
   box-sizing: border-box;
-  overflow-y: auto;
-  overscroll-behavior: auto;
-  padding: clamp(20px, 2.4vw, 28px);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  padding: clamp(16px, 2vw, 22px);
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  border-radius: 12px;
   background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
-  scroll-margin-top: 104px;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  scrollbar-width: thin;
+  // Sections scroll inside the local pane (desktop), so only a small margin is needed.
+  scroll-margin-top: 8px;
 
   @include mobile {
-    gap: 14px;
-    height: clamp(420px, calc(100dvh - var(--header-height, 64px) - 260px), 680px);
-    padding: 16px;
-    scroll-margin-top: 92px;
+    gap: 12px;
+    padding: 14px;
+    scroll-margin-top: calc(var(--header-height, 64px) + 72px);
   }
 }
 
 .header {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
-  align-items: start;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
 
   @include mobile {
-    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
-    padding-bottom: 12px;
-    background: transparent;
+    padding-bottom: 10px;
   }
 }
 
@@ -48,30 +39,23 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+  flex: 0 0 auto;
+  padding-top: 2px;
 }
 
 .indexBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: 0.08em;
+  display: none;
 }
 
 .iconBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
   color: var(--text-secondary);
   flex: 0 0 auto;
 }
@@ -79,25 +63,26 @@
 .headingGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
+  flex: 1;
 }
 
 .title {
   margin: 0;
   color: var(--text-primary);
-  font-size: clamp(18px, 1.6vw, 22px);
-  font-weight: 680;
-  line-height: 1.18;
+  font-size: clamp(16px, 1.4vw, 18px);
+  font-weight: 700;
+  line-height: 1.25;
   letter-spacing: 0;
 }
 
 .description {
   margin: 0;
-  max-width: 72ch;
+  max-width: 80ch;
   color: var(--text-secondary);
   font-size: 13px;
-  line-height: 1.65;
+  line-height: 1.55;
 
   @include mobile {
     max-width: none;
@@ -107,7 +92,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
   min-width: 0;
 }

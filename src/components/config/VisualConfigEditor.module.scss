@@ -4,7 +4,25 @@
 .visualEditor {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+  // Fill the main content viewport so the left nav can stay fixed while only
+  // the sections pane scrolls. (Parent .main-content uses overflow-x:hidden,
+  // which breaks position:sticky against the outer page scroller.)
+  height: calc(
+    100dvh - var(--header-height, 64px) - 48px - var(--config-action-bar-height, 56px) -
+      env(safe-area-inset-bottom, 0px)
+  );
+  max-height: calc(
+    100dvh - var(--header-height, 64px) - 48px - var(--config-action-bar-height, 56px) -
+      env(safe-area-inset-bottom, 0px)
+  );
+
+  @include mobile {
+    height: auto;
+    max-height: none;
+  }
 
   :global(.form-group) {
     gap: 7px;
@@ -129,31 +147,37 @@
   transform: none;
 }
 
-.overview {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-  padding: 0 0 18px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.overviewHeader {
+.toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
+  flex-wrap: wrap;
 
   @include mobile {
     align-items: stretch;
+    flex-direction: column;
   }
 }
 
-.overviewMeta {
+.toolbarEnd {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  min-width: 0;
+
+  @include mobile {
+    margin-left: 0;
+    width: 100%;
+    justify-content: stretch;
+
+    > :global(*) {
+      flex: 1 1 auto;
+    }
+  }
 }
 
 .overviewPill {
@@ -167,48 +191,13 @@
   font-size: 12px;
   font-weight: 700;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .overviewPillWarning {
   color: var(--warning-text);
   border-color: var(--warning-border);
   background: var(--warning-bg);
-}
-
-.modeSwitch {
-  display: inline-flex;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-secondary);
-}
-
-.modeButton {
-  @include button-reset;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 6px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
-
-  &:hover {
-    color: var(--text-primary);
-  }
-}
-
-.modeButtonActive {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 10%, transparent);
 }
 
 .storeAuthEditor {
@@ -316,10 +305,17 @@
   }
 }
 
-// ── Global field search (P1) ────────────────────────────────────────────────
+// ── Global field search ─────────────────────────────────────────────────────
 .searchBox {
   position: relative;
   min-width: 0;
+  flex: 1 1 320px;
+  max-width: none;
+
+  @include mobile {
+    flex: 1 1 auto;
+    width: 100%;
+  }
 }
 
 .searchControl {
@@ -411,7 +407,7 @@
 .fieldAnchor {
   display: block;
   min-width: 0;
-  scroll-margin-top: calc(var(--header-height, 64px) + 16px);
+  scroll-margin-top: 12px;
 }
 
 .fieldHighlightActive {
@@ -431,97 +427,20 @@
   }
 }
 
-.simpleView {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-  max-width: 760px;
-  min-width: 0;
-}
-
-.simpleForm {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-
-// Wrap bare inputs so they read as cards consistent with toggleRow / API key blocks.
-.simpleField {
-  padding: 14px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: transparent;
-}
-
-.simpleBanner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 12px 14px;
-  border: 1px solid var(--warning-border);
-  border-radius: 8px;
-  background: var(--warning-bg);
-  color: var(--warning-text);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.5;
-}
-
-.simpleBannerAction {
-  @include button-reset;
-  flex: 0 0 auto;
-  padding: 6px 12px;
-  border: 1px solid var(--warning-border);
-  border-radius: 6px;
-  color: var(--warning-text);
-  font-size: 12px;
-  font-weight: 700;
-  transition: background-color 0.15s ease;
-
-  &:hover {
-    background: color-mix(in srgb, var(--warning-text) 10%, transparent);
-  }
-}
-
-.simpleMore {
-  @include button-reset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 46px;
-  padding: 12px 16px;
-  border: 1px dashed var(--border-color);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  text-align: center;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-
-  &:hover {
-    border-color: var(--text-primary);
-    color: var(--text-primary);
-    background: color-mix(in srgb, var(--text-primary) 4%, transparent);
-  }
-}
-
 .workspace {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: minmax(168px, 200px) minmax(0, 1fr);
+  gap: 16px 20px;
+  align-items: stretch;
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
 
   @include mobile {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
+    flex: 0 0 auto;
   }
 }
 
@@ -530,76 +449,76 @@
 
   @include mobile {
     position: sticky;
-    top: calc(var(--header-height, 64px) + 10px);
+    top: calc(var(--header-height, 64px) + 8px);
     z-index: 4;
     display: block;
-    margin-bottom: 4px;
-    background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+    margin: 0 -2px;
+    padding: 0 2px 8px;
+    background: var(--bg-secondary);
   }
 }
 
 .mobileSectionNavScroller {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
   gap: 6px;
-  overflow: visible;
-  padding: 2px 0 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0 4px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .mobileSectionNavButton {
   @include button-reset;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
+  flex: 0 0 auto;
   min-width: 0;
-  width: 100%;
-  padding: 9px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-primary);
+  max-width: 180px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
   text-align: left;
+  white-space: nowrap;
 }
 
 .mobileSectionNavButtonActive {
   border-color: var(--text-primary);
-  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
-}
-
-.mobileSectionNavIndex {
-  color: var(--text-tertiary);
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: 0.08em;
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 
 .mobileSectionNavLabel {
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
+  @include text-ellipsis;
 }
 
 .mobileSectionNavBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
   background: var(--warning-bg);
   border: 1px solid var(--warning-border);
   color: var(--warning-text);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
+  flex: 0 0 auto;
 }
 
 .sidebar {
-  position: sticky;
-  top: calc(var(--header-height, 64px) + 12px);
-  z-index: 5;
-  align-self: stretch;
   min-width: 0;
+  align-self: start;
 
   @include mobile {
     display: none;
@@ -607,20 +526,23 @@
 }
 
 .sidebarRail {
-  padding: 0 0 12px;
-  border-bottom: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  // Compact nav only — do not stretch to fill the left column.
+  // Stays fixed because it sits outside the sections scroller.
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .navList {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   min-width: 0;
-
-  @include tablet {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 .navButton {
@@ -629,9 +551,9 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 48px;
-  padding: 9px 11px;
-  border: 1px solid var(--border-color);
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
   color: inherit;
@@ -647,64 +569,45 @@
 }
 
 .navButtonActive {
-  border-color: var(--text-primary);
-  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
-}
-
-.navIndex {
-  min-width: 24px;
-  padding-top: 2px;
-  color: var(--text-tertiary);
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  flex: 0 0 auto;
-}
-
-.navMain {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.navHeadingRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.navLabelWrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
+  border-color: color-mix(in srgb, var(--text-primary) 22%, var(--border-color));
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 
 .navIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
+  width: 18px;
   color: var(--text-secondary);
   flex: 0 0 auto;
 }
 
-.navLabel {
+.navButtonActive .navIcon {
   color: var(--text-primary);
+}
+
+.navLabel {
+  min-width: 0;
+  flex: 1;
+  color: var(--text-secondary);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 650;
   line-height: 1.25;
+  @include text-ellipsis;
+}
+
+.navButtonActive .navLabel {
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 .navBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
   border-radius: 6px;
   background: var(--warning-bg);
   border: 1px solid var(--warning-border);
@@ -716,27 +619,22 @@
 
 .sections {
   display: flex;
-  gap: 0;
+  flex-direction: column;
+  gap: 16px;
   width: 100%;
-  max-width: 100%;
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  align-items: stretch;
-  padding: 0 0 12px;
-  scroll-padding-left: 0;
-  scroll-snap-type: x mandatory;
-  scrollbar-gutter: stable;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
+  padding-right: 2px;
+  // Anchor jumps land near the top of this local scroller.
+  scroll-padding-top: 8px;
 
   @include mobile {
-    padding-bottom: 10px;
-  }
-
-  > * {
-    flex: 0 0 100%;
-    width: 100%;
-    max-width: 100%;
+    gap: 12px;
+    overflow: visible;
+    max-height: none;
   }
 }
 

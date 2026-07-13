@@ -14,7 +14,9 @@
     gap: $spacing-lg;
     min-height: 0;
     flex: 1;
-    background: var(--bg-secondary);
+    // Transparent so the app-shell surface shows through; a solid
+    // --bg-secondary fill made page content look like a boxed strip.
+    background: transparent;
     backface-visibility: hidden;
     transform: translateZ(0);
 

@@ -831,17 +831,20 @@
       "sections": {
         "connectivity": {
           "title": "接入与认证",
-          "description": "服务地址、端口、认证目录与 API 密钥"
+          "description": "服务地址、端口、认证目录与 API 密钥",
+          "nav_title": "接入"
         },
         "logging": {
           "title": "日志与诊断",
-          "description": "调试、日志输出与使用统计"
+          "description": "调试、日志输出与使用统计",
+          "nav_title": "日志"
         },
         "advanced": {
           "title": "高级与实验",
           "description": "请求头伪装、签名缓存、插件源等不常修改的设置",
           "plugins_title": "插件",
-          "signature_title": "Antigravity 签名"
+          "signature_title": "Antigravity 签名",
+          "nav_title": "高级"
         },
         "server": {
           "title": "服务器配置",
@@ -977,7 +980,8 @@
           "disable_cooling_desc": "全局禁用认证/模型失败后的冷却窗口",
           "session_affinity": "会话粘性路由",
           "ws_auth": "WebSocket 认证",
-          "ws_auth_desc": "启用 WebSocket 连接认证 (/v1/ws)"
+          "ws_auth_desc": "启用 WebSocket 连接认证 (/v1/ws)",
+          "nav_title": "网络"
         },
         "quota": {
           "title": "配额回退",
@@ -986,7 +990,8 @@
           "switch_project_desc": "配额耗尽时自动切换到其他项目",
           "switch_preview_model": "切换预览模型",
           "switch_preview_model_desc": "配额耗尽时切换到预览版本模型",
-          "antigravity_credits": "使用Antigravity Credits"
+          "antigravity_credits": "使用Antigravity Credits",
+          "nav_title": "配额"
         },
         "streaming": {
           "title": "流式传输配置",
@@ -997,7 +1002,8 @@
           "bootstrap_hint": "流式传输启动时（首包前）的重试次数",
           "nonstream_keepalive": "非流式 Keepalive 间隔 (秒)",
           "nonstream_keepalive_hint": "非流式响应时每隔 N 秒发送空行以防止空闲超时，设置为 0 或留空表示禁用",
-          "disabled": "已禁用"
+          "disabled": "已禁用",
+          "nav_title": "流式"
         },
         "payload": {
           "title": "Payload 配置",
@@ -1011,7 +1017,8 @@
           "override_raw_rules": "覆盖 Raw 规则",
           "override_raw_rules_desc": "始终按原始 JSON 片段覆盖参数值，适合 response_format、schema 等复杂字段",
           "filter_rules": "过滤规则",
-          "filter_rules_desc": "通过 JSON Path 预过滤上游请求体，自动剔除不合规/冗余参数（Request Sanitization）"
+          "filter_rules_desc": "通过 JSON Path 预过滤上游请求体，自动剔除不合规/冗余参数（Request Sanitization）",
+          "nav_title": "Payload"
         }
       },
       "api_keys": {

@@ -831,14 +831,17 @@
       "sections": {
         "connectivity": {
           "title": "Access & Authentication",
+          "nav_title": "Access",
           "description": "Server address, port, auth directory, and API keys"
         },
         "logging": {
           "title": "Logging & Diagnostics",
+          "nav_title": "Logging",
           "description": "Debug, log output, and usage statistics"
         },
         "advanced": {
           "title": "Advanced & Experimental",
+          "nav_title": "Advanced",
           "description": "Header spoofing, signature cache, plugin sources, and other rarely changed settings",
           "plugins_title": "Plugins",
           "signature_title": "Antigravity Signature"
@@ -946,6 +949,7 @@
         },
         "network": {
           "title": "Network Configuration",
+          "nav_title": "Network",
           "description": "Proxy, retry, and routing settings",
           "proxy_url": "Proxy URL",
           "request_retry": "Request Retry Count",
@@ -981,6 +985,7 @@
         },
         "quota": {
           "title": "Quota Fallback",
+          "nav_title": "Quota",
           "description": "Fallback strategy when quota is exceeded",
           "switch_project": "Switch Project",
           "switch_project_desc": "Automatically switch to another project when quota is exceeded",
@@ -990,6 +995,7 @@
         },
         "streaming": {
           "title": "Streaming Configuration",
+          "nav_title": "Streaming",
           "description": "Keepalive and bootstrap retry settings",
           "keepalive_seconds": "Keepalive Seconds",
           "keepalive_hint": "Set to 0 or leave empty to disable keepalive",
@@ -1001,6 +1007,7 @@
         },
         "payload": {
           "title": "Payload Configuration",
+          "nav_title": "Payload",
           "description": "Default values, raw JSON rules, override rules, and filter rules",
           "default_rules": "Default Rules",
           "default_rules_desc": "Use these default values when parameters are not specified in the request",

@@ -551,32 +551,33 @@ export function ConfigPage() {
     </div>
   );
 
+  const modeTabs = (
+    <div className={styles.tabBar} role="tablist" aria-label={t('config_management.title')}>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeTab === 'visual'}
+        className={`${styles.tabItem} ${activeTab === 'visual' ? styles.tabActive : ''}`}
+        onClick={() => handleTabChange('visual')}
+        disabled={saving || loading}
+      >
+        {t('config_management.tabs.visual', { defaultValue: '可视化编辑' })}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeTab === 'source'}
+        className={`${styles.tabItem} ${activeTab === 'source' ? styles.tabActive : ''}`}
+        onClick={() => handleTabChange('source')}
+        disabled={saving || loading}
+      >
+        {t('config_management.tabs.source', { defaultValue: '源代码编辑' })}
+      </button>
+    </div>
+  );
+
   return (
     <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <div className={styles.pageHeaderCopy}>
-          <h1 className={styles.pageTitle}>{t('config_management.title')}</h1>
-          <div className={styles.tabBar}>
-            <button
-              type="button"
-              className={`${styles.tabItem} ${activeTab === 'visual' ? styles.tabActive : ''}`}
-              onClick={() => handleTabChange('visual')}
-              disabled={saving || loading}
-            >
-              {t('config_management.tabs.visual', { defaultValue: '可视化编辑' })}
-            </button>
-            <button
-              type="button"
-              className={`${styles.tabItem} ${activeTab === 'source' ? styles.tabActive : ''}`}
-              onClick={() => handleTabChange('source')}
-              disabled={saving || loading}
-            >
-              {t('config_management.tabs.source', { defaultValue: '源代码编辑' })}
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div className={styles.workspaceShell}>
         <div className={styles.content}>
           {error && <div className="error-box">{error}</div>}
@@ -593,6 +594,7 @@ export function ConfigPage() {
               hasPayloadValidationErrors={visualHasPayloadValidationErrors}
               disabled={disableControls || loading}
               onChange={setVisualValues}
+              toolbarEnd={modeTabs}
             />
           ) : (
             <div className={styles.sourceWorkspace}>
@@ -656,6 +658,8 @@ export function ConfigPage() {
                     <IconChevronDown size={16} />
                   </Button>
                 </div>
+
+                {modeTabs}
               </div>
 
               <div className={styles.editorWrapper}>

@@ -2,36 +2,16 @@
 @use '../styles/variables' as *;
 
 .container {
-  width: min(100%, 1480px);
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
   min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(18px, 2.4vw, 28px);
-  margin: 0 auto;
-  overflow-y: auto;
-  padding-bottom: calc(
-    var(--config-action-bar-height, 0px) + 16px + env(safe-area-inset-bottom) + #{$spacing-md}
-  );
-}
-
-.pageHeader {
-  display: flex;
-  align-items: flex-start;
-}
-
-.pageHeaderCopy {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   min-width: 0;
-  width: min(100%, 360px);
-}
-
-.pageTitle {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
+  // Visual editor manages its own viewport height; keep a small bottom pad so
+  // the floating action bar doesn't cover the last section on source mode.
+  padding-bottom: calc(
+    var(--config-action-bar-height, 0px) + 12px + env(safe-area-inset-bottom)
+  );
 }
 
 .tabBar {
@@ -39,9 +19,12 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2px;
   padding: 2px;
+  min-width: min(100%, 260px);
+  width: min(100%, 300px);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+  flex: 0 0 auto;
 }
 
 .tabItem {
@@ -80,15 +63,18 @@
 .workspaceShell {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .content {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
   min-height: 0;
+  flex: 1 1 auto;
 }
 
 .sourceWorkspace {
@@ -99,17 +85,24 @@
 }
 
 .sourceToolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  padding: 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--bg-primary) 76%, transparent);
+  min-width: 0;
 
   @include mobile {
-    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.sourceToolbar .tabBar {
+  margin-left: auto;
+
+  @include mobile {
+    margin-left: 0;
+    width: 100%;
   }
 }
 
@@ -118,6 +111,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  flex: 1 1 280px;
 
   :global(.form-group) {
     margin-bottom: 0;

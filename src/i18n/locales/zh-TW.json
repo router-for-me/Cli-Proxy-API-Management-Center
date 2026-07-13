@@ -857,17 +857,20 @@
       "sections": {
         "connectivity": {
           "title": "接入與認證",
-          "description": "服務位址、連接埠、認證目錄與 API 金鑰"
+          "description": "服務位址、連接埠、認證目錄與 API 金鑰",
+          "nav_title": "接入"
         },
         "logging": {
           "title": "日誌與診斷",
-          "description": "除錯、日誌輸出與使用統計"
+          "description": "除錯、日誌輸出與使用統計",
+          "nav_title": "日誌"
         },
         "advanced": {
           "title": "進階與實驗",
           "description": "請求標頭偽裝、簽章快取、外掛來源等不常修改的設定",
           "plugins_title": "外掛",
-          "signature_title": "Antigravity 簽章"
+          "signature_title": "Antigravity 簽章",
+          "nav_title": "進階"
         },
         "server": {
           "title": "伺服器設定",
@@ -1003,7 +1006,8 @@
           "disable_cooling_desc": "全域停用驗證/模型失敗後的冷卻視窗",
           "session_affinity": "會話黏性路由",
           "ws_auth": "WebSocket 驗證",
-          "ws_auth_desc": "啟用 WebSocket 連線驗證（/v1/ws）"
+          "ws_auth_desc": "啟用 WebSocket 連線驗證（/v1/ws）",
+          "nav_title": "網路"
         },
         "quota": {
           "title": "配額回退",
@@ -1012,7 +1016,8 @@
           "switch_project_desc": "配額耗盡時自動切換到其他專案",
           "switch_preview_model": "切換預覽模型",
           "switch_preview_model_desc": "配額耗盡時切換到預覽版本模型",
-          "antigravity_credits": "使用Antigravity Credits"
+          "antigravity_credits": "使用Antigravity Credits",
+          "nav_title": "配額"
         },
         "streaming": {
           "title": "串流傳輸設定",
@@ -1023,7 +1028,8 @@
           "bootstrap_hint": "串流傳輸啟動時（首包前）的重試次數",
           "nonstream_keepalive": "非串流 Keepalive 間隔（秒）",
           "nonstream_keepalive_hint": "非串流回應時每隔 N 秒發送空行以防止閒置逾時，設定為 0 或留空表示停用",
-          "disabled": "已停用"
+          "disabled": "已停用",
+          "nav_title": "串流"
         },
         "payload": {
           "title": "Payload 設定",
@@ -1037,7 +1043,8 @@
           "override_raw_rules": "覆寫 Raw 規則",
           "override_raw_rules_desc": "始終按原始 JSON 片段覆寫參數值，適合 response_format、schema 等複雜欄位",
           "filter_rules": "篩選規則",
-          "filter_rules_desc": "透過 JSON Path 預篩選上游請求體，自動剔除不合規/冗餘參數（Request Sanitization）"
+          "filter_rules_desc": "透過 JSON Path 預篩選上游請求體，自動剔除不合規/冗餘參數（Request Sanitization）",
+          "nav_title": "Payload"
         }
       },
       "api_keys": {

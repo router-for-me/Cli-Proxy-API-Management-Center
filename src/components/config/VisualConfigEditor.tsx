@@ -22,7 +22,6 @@ import {
   IconScrollText,
   IconSearch,
   IconShield,
-  IconSlidersHorizontal,
   IconTimer,
   type IconProps,
 } from '@/components/ui/icons';
@@ -53,13 +52,12 @@ import {
 } from './configSearchIndex';
 import styles from './VisualConfigEditor.module.scss';
 
-type EditorMode = 'simple' | 'full';
-
-const EDITOR_MODE_STORAGE_KEY = 'config-management:editor-mode';
-
 type VisualSection = {
   id: VisualSectionId;
+  /** Full title shown on the section card header. */
   title: string;
+  /** Short label for the left/mobile nav (avoids English truncation). */
+  navTitle: string;
   icon: ComponentType<IconProps>;
   errorCount: number;
 };
@@ -70,6 +68,8 @@ interface VisualConfigEditorProps {
   hasPayloadValidationErrors?: boolean;
   disabled?: boolean;
   onChange: (values: Partial<VisualConfigValues>) => void;
+  /** Optional actions rendered on the same row as the field search (e.g. Visual/Source tabs). */
+  toolbarEnd?: ReactNode;
 }
 
 function getValidationMessage(
@@ -187,6 +187,7 @@ export function VisualConfigEditor({
   hasPayloadValidationErrors = false,
   disabled = false,
   onChange,
+  toolbarEnd,
 }: VisualConfigEditorProps) {
   const { t } = useTranslation();
   const pageTransitionLayer = usePageTransitionLayer();
@@ -202,12 +203,9 @@ export function VisualConfigEditor({
   const nonstreamKeepaliveInputId = useId();
   const nonstreamKeepaliveHintId = `${nonstreamKeepaliveInputId}-hint`;
   const nonstreamKeepaliveErrorId = `${nonstreamKeepaliveInputId}-error`;
-  const [mode, setMode] = useState<EditorMode>(() => {
-    const saved = localStorage.getItem(EDITOR_MODE_STORAGE_KEY);
-    return saved === 'full' ? 'full' : 'simple';
-  });
   const [activeSectionId, setActiveSectionId] = useState<VisualSectionId>('connectivity');
   const sectionRefs = useRef<Partial<Record<VisualSectionId, HTMLElement | null>>>({});
+  const sectionsScrollerRef = useRef<HTMLDivElement | null>(null);
   const mobileNavScrollerRef = useRef<HTMLDivElement | null>(null);
   const mobileNavButtonRefs = useRef<Partial<Record<VisualSectionId, HTMLButtonElement | null>>>(
     {}
@@ -231,11 +229,6 @@ export function VisualConfigEditor({
   const highlightTimerRef = useRef<number | null>(null);
   const highlightedElRef = useRef<HTMLElement | null>(null);
 
-  const handleModeChange = useCallback((next: EditorMode) => {
-    setMode(next);
-    localStorage.setItem(EDITOR_MODE_STORAGE_KEY, next);
-  }, []);
-
   const searchResults = useMemo(() => searchConfigFields(searchQuery, t), [searchQuery, t]);
   // The results popup is visible only when the box is open AND there's a (trimmed) query.
   const isResultsOpen = searchOpen && Boolean(searchQuery.trim());
@@ -246,22 +239,16 @@ export function VisualConfigEditor({
       ? Math.min(Math.max(activeResultIndex, 0), searchResults.length - 1)
       : -1;
 
-  const handleResultJump = useCallback(
-    (entry: ConfigFieldSearchEntry) => {
-      // Keep the query text so the user can tweak it; just close the results dropdown.
-      setSearchOpen(false);
-      handleModeChange('full');
-      setActiveSectionId(entry.sectionId);
-      // A new object instance defers scroll/highlight to the effect below, giving a
-      // simple→full switch time to mount the DOM before we query for the field.
-      setJumpRequest({ fieldId: entry.fieldId, sectionId: entry.sectionId });
-    },
-    [handleModeChange]
-  );
+  const handleResultJump = useCallback((entry: ConfigFieldSearchEntry) => {
+    // Keep the query text so the user can tweak it; just close the results dropdown.
+    setSearchOpen(false);
+    setActiveSectionId(entry.sectionId);
+    setJumpRequest({ fieldId: entry.fieldId, sectionId: entry.sectionId });
+  }, []);
 
-  // Imperatively scroll to and pulse-highlight the jumped-to field once full mode is mounted.
+  // Imperatively scroll to and pulse-highlight the jumped-to field.
   useEffect(() => {
-    if (mode !== 'full' || !jumpRequest || handledJumpRef.current === jumpRequest) return;
+    if (!jumpRequest || handledJumpRef.current === jumpRequest) return;
     handledJumpRef.current = jumpRequest; // handle each request once, even if deps re-fire
     const { fieldId, sectionId } = jumpRequest;
     const targetFieldId =
@@ -270,8 +257,8 @@ export function VisualConfigEditor({
     const el = document.getElementById(configFieldDomId(targetFieldId));
     if (!el) {
       // Field not rendered right now (e.g. TLS cert while TLS is disabled) — fall back to
-      // bringing its section into view horizontally.
-      sectionRefs.current[sectionId]?.scrollIntoView({ block: 'nearest', inline: 'start' });
+      // bringing its section into view.
+      sectionRefs.current[sectionId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
@@ -287,15 +274,9 @@ export function VisualConfigEditor({
       highlightedElRef.current?.classList.remove(styles.fieldHighlightActive);
     }
 
-    // Full-mode sections live in a horizontal scroll-snap container (`scroll-snap-type: x
-    // mandatory`). A single field-level scrollIntoView() tries to do the horizontal section
-    // switch AND the vertical field scroll at once, which the snap pulls back / lands wrong.
-    // So: (1) switch to the target section horizontally and instantly (no smooth → no snap
-    // fight), then (2) next frame, scroll the field vertically with inline:'nearest' so it
-    // can't re-trigger horizontal snapping.
-    sectionRefs.current[sectionId]?.scrollIntoView({ block: 'nearest', inline: 'start' });
+    // Vertical settings layout: one page scrollbar, so a single field scroll is enough.
     requestAnimationFrame(() => {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.classList.add(styles.fieldHighlightActive);
     });
     highlightedElRef.current = el;
@@ -304,7 +285,7 @@ export function VisualConfigEditor({
       highlightTimerRef.current = null;
       highlightedElRef.current = null;
     }, 1800);
-  }, [mode, jumpRequest, values.tlsEnable]);
+  }, [jumpRequest, values.tlsEnable]);
 
   // Clear the highlight timer on unmount.
   useEffect(
@@ -430,12 +411,14 @@ export function VisualConfigEditor({
       {
         id: 'connectivity',
         title: t('config_management.visual.sections.connectivity.title'),
+        navTitle: t('config_management.visual.sections.connectivity.nav_title'),
         icon: IconKey,
         errorCount: countErrors(['port']),
       },
       {
         id: 'network',
         title: t('config_management.visual.sections.network.title'),
+        navTitle: t('config_management.visual.sections.network.nav_title'),
         icon: IconNetwork,
         errorCount: countErrors([
           'requestRetry',
@@ -447,6 +430,7 @@ export function VisualConfigEditor({
       {
         id: 'logging',
         title: t('config_management.visual.sections.logging.title'),
+        navTitle: t('config_management.visual.sections.logging.nav_title'),
         icon: IconScrollText,
         errorCount: countErrors([
           'errorLogsMaxFiles',
@@ -457,12 +441,14 @@ export function VisualConfigEditor({
       {
         id: 'quota',
         title: t('config_management.visual.sections.quota.title'),
+        navTitle: t('config_management.visual.sections.quota.nav_title'),
         icon: IconTimer,
         errorCount: 0,
       },
       {
         id: 'streaming',
         title: t('config_management.visual.sections.streaming.title'),
+        navTitle: t('config_management.visual.sections.streaming.nav_title'),
         icon: IconSatellite,
         errorCount: countErrors([
           'streaming.keepaliveSeconds',
@@ -473,12 +459,14 @@ export function VisualConfigEditor({
       {
         id: 'advanced',
         title: t('config_management.visual.sections.advanced.title'),
+        navTitle: t('config_management.visual.sections.advanced.nav_title'),
         icon: IconShield,
         errorCount: 0,
       },
       {
         id: 'payload',
         title: t('config_management.visual.sections.payload.title'),
+        navTitle: t('config_management.visual.sections.payload.nav_title'),
         icon: IconCode,
         errorCount: hasPayloadValidationErrors ? 1 : 0,
       },
@@ -488,31 +476,31 @@ export function VisualConfigEditor({
 
   const hasValidationIssues =
     sections.some((section) => section.errorCount > 0) || hasPayloadValidationErrors;
-  // Validation errors that live in fields not surfaced by simple mode (everything except `port`).
-  const hasHiddenValidationIssues =
-    (Object.keys(validationErrors ?? {}) as VisualConfigFieldPath[]).some(
-      (field) => field !== 'port' && Boolean(validationErrors?.[field])
-    ) || hasPayloadValidationErrors;
   const payloadValidationKey = hasPayloadValidationErrors ? 'payload-errors' : 'payload-ok';
-  const activeSection = sections.find((section) => section.id === activeSectionId) ?? sections[0];
 
   useEffect(() => {
-    if (mode !== 'full') return undefined;
     if (!isCurrentLayer) return undefined;
     if (typeof IntersectionObserver === 'undefined') return undefined;
+
+    // Desktop: sections scroll in a local pane. Mobile: page scroller is the root.
+    const root = isMobile ? null : sectionsScrollerRef.current;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const visibleEntries = entries
           .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => right.intersectionRatio - left.intersectionRatio);
+          .sort((left, right) => {
+            // Prefer the section nearest the top of the viewport band.
+            return left.boundingClientRect.top - right.boundingClientRect.top;
+          });
 
         if (visibleEntries.length === 0) return;
         setActiveSectionId(visibleEntries[0].target.id as VisualSectionId);
       },
       {
-        rootMargin: '-18% 0px -58% 0px',
-        threshold: [0.12, 0.3, 0.55],
+        root,
+        rootMargin: isMobile ? '-20% 0px -55% 0px' : '-8% 0px -70% 0px',
+        threshold: [0.08, 0.2, 0.4, 0.6],
       }
     );
 
@@ -522,10 +510,10 @@ export function VisualConfigEditor({
     }
 
     return () => observer.disconnect();
-  }, [isCurrentLayer, mode, sections]);
+  }, [isCurrentLayer, isMobile, sections]);
 
   useEffect(() => {
-    if (mode !== 'full' || !isCurrentLayer || !isMobile) return;
+    if (!isCurrentLayer || !isMobile) return;
     const scroller = mobileNavScrollerRef.current;
     const button = mobileNavButtonRefs.current[activeSectionId];
     if (!scroller || !button) return;
@@ -543,19 +531,17 @@ export function VisualConfigEditor({
       left: targetLeft,
       behavior: 'smooth',
     });
-  }, [activeSectionId, isCurrentLayer, isMobile, mode]);
+  }, [activeSectionId, isCurrentLayer, isMobile]);
 
   const handleSectionJump = useCallback((sectionId: VisualSectionId) => {
     setActiveSectionId(sectionId);
     sectionRefs.current[sectionId]?.scrollIntoView({
       behavior: 'smooth',
-      block: 'nearest',
-      inline: 'start',
+      block: 'start',
     });
   }, []);
 
-  // Shared high-frequency field blocks — reused verbatim by both the simple view and full mode
-  // so the two layouts never drift apart.
+  // Shared high-frequency field blocks — reused across sections so layouts never drift.
   const hostField = (
     <FieldAnchor fieldId="host">
       <Input
@@ -656,7 +642,7 @@ export function VisualConfigEditor({
 
   const navContent = (
     <div className={styles.navList}>
-      {sections.map((section, index) => {
+      {sections.map((section) => {
         const Icon = section.icon;
 
         return (
@@ -668,22 +654,15 @@ export function VisualConfigEditor({
             }`}
             onClick={() => handleSectionJump(section.id)}
           >
-            <span className={styles.navIndex}>{String(index + 1).padStart(2, '0')}</span>
-            <span className={styles.navMain}>
-              <span className={styles.navHeadingRow}>
-                <span className={styles.navLabelWrap}>
-                  <span className={styles.navIcon}>
-                    <Icon size={14} />
-                  </span>
-                  <span className={styles.navLabel}>{section.title}</span>
-                </span>
-                {section.errorCount > 0 ? (
-                  <span className={styles.navBadge} aria-hidden="true">
-                    {section.errorCount}
-                  </span>
-                ) : null}
-              </span>
+            <span className={styles.navIcon}>
+              <Icon size={15} />
             </span>
+            <span className={styles.navLabel}>{section.navTitle}</span>
+            {section.errorCount > 0 ? (
+              <span className={styles.navBadge} aria-hidden="true">
+                {section.errorCount}
+              </span>
+            ) : null}
           </button>
         );
       })}
@@ -692,43 +671,7 @@ export function VisualConfigEditor({
 
   return (
     <div className={styles.visualEditor}>
-      <div className={styles.overview}>
-        <div className={styles.overviewHeader}>
-          <div
-            className={styles.modeSwitch}
-            role="group"
-            aria-label={t('config_management.visual.mode.label')}
-          >
-            <button
-              type="button"
-              className={`${styles.modeButton} ${mode === 'simple' ? styles.modeButtonActive : ''}`}
-              onClick={() => handleModeChange('simple')}
-              aria-pressed={mode === 'simple'}
-            >
-              <IconSlidersHorizontal size={14} />
-              {t('config_management.visual.mode.simple')}
-            </button>
-            <button
-              type="button"
-              className={`${styles.modeButton} ${mode === 'full' ? styles.modeButtonActive : ''}`}
-              onClick={() => handleModeChange('full')}
-              aria-pressed={mode === 'full'}
-            >
-              {t('config_management.visual.mode.full')}
-            </button>
-          </div>
-          <div className={styles.overviewMeta}>
-            {mode === 'full' && activeSection ? (
-              <span className={styles.overviewPill}>{activeSection.title}</span>
-            ) : null}
-            {hasValidationIssues ? (
-              <span className={`${styles.overviewPill} ${styles.overviewPillWarning}`}>
-                {t('config_management.visual.validation.validation_blocked')}
-              </span>
-            ) : null}
-          </div>
-        </div>
-
+      <div className={styles.toolbar}>
         <div className={styles.searchBox} ref={searchBoxRef}>
           <Input
             className={styles.searchControl}
@@ -836,93 +779,66 @@ export function VisualConfigEditor({
             </div>
           ) : null}
         </div>
+
+        <div className={styles.toolbarEnd}>
+          {hasValidationIssues ? (
+            <span className={`${styles.overviewPill} ${styles.overviewPillWarning}`}>
+              {t('config_management.visual.validation.validation_blocked')}
+            </span>
+          ) : null}
+          {toolbarEnd}
+        </div>
       </div>
 
-      {mode === 'simple' ? (
-        <div className={styles.simpleView}>
-          {hasHiddenValidationIssues ? (
-            <div className={styles.simpleBanner} role="alert">
-              <span>{t('config_management.visual.mode.validation_banner')}</span>
-              <button
-                type="button"
-                className={styles.simpleBannerAction}
-                onClick={() => handleModeChange('full')}
-              >
-                {t('config_management.visual.mode.switch_to_full')}
-              </button>
-            </div>
-          ) : null}
-
-          <div className={styles.simpleForm}>
-            <div className={styles.simpleField}>{hostField}</div>
-            <div className={styles.simpleField}>{portField}</div>
-            {apiKeysField}
-            <div className={styles.simpleField}>{proxyUrlField}</div>
-            {debugToggle}
-            {loggingToFileToggle}
-            {quotaSwitchProjectToggle}
-            {quotaSwitchPreviewModelToggle}
-          </div>
-
-          <button
-            type="button"
-            className={styles.simpleMore}
-            onClick={() => handleModeChange('full')}
+      {isMobile ? (
+        <div className={styles.mobileSectionNav}>
+          <div
+            ref={mobileNavScrollerRef}
+            className={styles.mobileSectionNavScroller}
+            aria-label={t('config_management.visual.quick_jump', { defaultValue: '快速跳转' })}
           >
-            {t('config_management.visual.mode.more_settings', { total: sections.length })}
-          </button>
-        </div>
-      ) : (
-        <div className={styles.workspace}>
-          {isMobile ? (
-            <div className={styles.mobileSectionNav}>
-              <div
-                ref={mobileNavScrollerRef}
-                className={styles.mobileSectionNavScroller}
-                aria-label={t('config_management.visual.quick_jump', { defaultValue: '快速跳转' })}
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                ref={(node) => {
+                  mobileNavButtonRefs.current[section.id] = node;
+                }}
+                type="button"
+                className={`${styles.mobileSectionNavButton} ${
+                  activeSectionId === section.id ? styles.mobileSectionNavButtonActive : ''
+                }`}
+                onClick={() => handleSectionJump(section.id)}
               >
-                {sections.map((section, index) => (
-                  <button
-                    key={section.id}
-                    ref={(node) => {
-                      mobileNavButtonRefs.current[section.id] = node;
-                    }}
-                    type="button"
-                    className={`${styles.mobileSectionNavButton} ${
-                      activeSectionId === section.id ? styles.mobileSectionNavButtonActive : ''
-                    }`}
-                    onClick={() => handleSectionJump(section.id)}
-                  >
-                    <span className={styles.mobileSectionNavIndex}>
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                    <span className={styles.mobileSectionNavLabel}>{section.title}</span>
-                    {section.errorCount > 0 ? (
-                      <span className={styles.mobileSectionNavBadge} aria-hidden="true">
-                        {section.errorCount}
-                      </span>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
+                <span className={styles.mobileSectionNavLabel}>{section.navTitle}</span>
+                {section.errorCount > 0 ? (
+                  <span className={styles.mobileSectionNavBadge} aria-hidden="true">
+                    {section.errorCount}
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
-          <aside className={styles.sidebar}>
-            <div className={styles.sidebarRail}>{navContent}</div>
-          </aside>
+      <div className={styles.workspace}>
+        <aside
+          className={styles.sidebar}
+          aria-label={t('config_management.visual.quick_jump', { defaultValue: '快速跳转' })}
+        >
+          <div className={styles.sidebarRail}>{navContent}</div>
+        </aside>
 
-          <div className={styles.sections}>
-            <ConfigSection
-              id="connectivity"
-              ref={(node) => {
-                sectionRefs.current.connectivity = node;
-              }}
-              indexLabel="01"
-              icon={<IconKey size={16} />}
-              title={t('config_management.visual.sections.connectivity.title')}
-              description={t('config_management.visual.sections.connectivity.description')}
-            >
+        <div className={styles.sections} ref={sectionsScrollerRef}>
+          <ConfigSection
+            id="connectivity"
+            ref={(node) => {
+              sectionRefs.current.connectivity = node;
+            }}
+            icon={<IconKey size={16} />}
+            title={t('config_management.visual.sections.connectivity.title')}
+            description={t('config_management.visual.sections.connectivity.description')}
+          >
               <SectionStack>
                 <SectionGrid>
                   {hostField}
@@ -1064,7 +980,7 @@ export function VisualConfigEditor({
               ref={(node) => {
                 sectionRefs.current.network = node;
               }}
-              indexLabel="02"
+
               icon={<IconNetwork size={16} />}
               title={t('config_management.visual.sections.network.title')}
               description={t('config_management.visual.sections.network.description')}
@@ -1280,7 +1196,7 @@ export function VisualConfigEditor({
               ref={(node) => {
                 sectionRefs.current.logging = node;
               }}
-              indexLabel="03"
+
               icon={<IconScrollText size={16} />}
               title={t('config_management.visual.sections.logging.title')}
               description={t('config_management.visual.sections.logging.description')}
@@ -1366,7 +1282,7 @@ export function VisualConfigEditor({
               ref={(node) => {
                 sectionRefs.current.quota = node;
               }}
-              indexLabel="04"
+
               icon={<IconTimer size={16} />}
               title={t('config_management.visual.sections.quota.title')}
               description={t('config_management.visual.sections.quota.description')}
@@ -1390,7 +1306,7 @@ export function VisualConfigEditor({
               ref={(node) => {
                 sectionRefs.current.streaming = node;
               }}
-              indexLabel="05"
+
               icon={<IconSatellite size={16} />}
               title={t('config_management.visual.sections.streaming.title')}
               description={t('config_management.visual.sections.streaming.description')}
@@ -1499,7 +1415,7 @@ export function VisualConfigEditor({
               ref={(node) => {
                 sectionRefs.current.advanced = node;
               }}
-              indexLabel="06"
+
               icon={<IconShield size={16} />}
               title={t('config_management.visual.sections.advanced.title')}
               description={t('config_management.visual.sections.advanced.description')}
@@ -1750,7 +1666,7 @@ export function VisualConfigEditor({
               ref={(node) => {
                 sectionRefs.current.payload = node;
               }}
-              indexLabel="07"
+
               icon={<IconCode size={16} />}
               title={t('config_management.visual.sections.payload.title')}
               description={t('config_management.visual.sections.payload.description')}
@@ -1838,7 +1754,6 @@ export function VisualConfigEditor({
             </ConfigSection>
           </div>
         </div>
-      )}
     </div>
   );
 }
