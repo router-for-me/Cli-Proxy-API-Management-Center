@@ -21,6 +21,7 @@ const DEFAULT_CODEX_INSTRUCTIONS: CodexInstructionsConfig = {
   oauthOnly: true,
   requireAuthAllow: true,
   reserveMarkedAuths: false,
+  usePrefixSuffix: true,
   requestMarkers: {
     prefixes: ['private/'],
     suffixes: ['-private'],
@@ -68,6 +69,10 @@ function normalizeCodexInstructionsResponse(
         ? raw['reserve-marked-auths']
         : raw.reserveMarkedAuths
     ),
+    usePrefixSuffix:
+      typeof raw['use-prefix-suffix'] === 'boolean'
+        ? raw['use-prefix-suffix']
+        : raw.usePrefixSuffix !== false,
     requestMarkers: {
       prefixes: normalizeStringList(
         markers.prefixes,
@@ -91,6 +96,7 @@ function serializeCodexInstructions(config: CodexInstructionsConfig): RawCodexIn
     'oauth-only': config.oauthOnly,
     'require-auth-allow': config.requireAuthAllow,
     'reserve-marked-auths': config.reserveMarkedAuths,
+    'use-prefix-suffix': config.usePrefixSuffix,
     'request-markers': {
       prefixes: config.requestMarkers.prefixes.map((value) => value.trim()).filter(Boolean),
       suffixes: config.requestMarkers.suffixes.map((value) => value.trim()).filter(Boolean),

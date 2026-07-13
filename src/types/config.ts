@@ -48,6 +48,7 @@ export interface CodexInstructionsConfig {
   oauthOnly: boolean;
   requireAuthAllow: boolean;
   reserveMarkedAuths: boolean;
+  usePrefixSuffix: boolean;
   requestMarkers: CodexInstructionMarkersConfig;
 }
 
@@ -63,6 +64,8 @@ export interface RawCodexInstructionsConfig {
   requireAuthAllow?: boolean;
   'reserve-marked-auths'?: boolean;
   reserveMarkedAuths?: boolean;
+  'use-prefix-suffix'?: boolean;
+  usePrefixSuffix?: boolean;
   'request-markers'?: {
     prefixes?: string[];
     suffixes?: string[];

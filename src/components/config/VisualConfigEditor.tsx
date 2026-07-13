@@ -1232,6 +1232,17 @@ export function VisualConfigEditor({
                       onChange={(passthroughHeaders) => onChange({ passthroughHeaders })}
                     />
                   </FieldAnchor>
+                  <FieldAnchor fieldId="saveCooldownStatus">
+                    <ToggleRow
+                      title={t('config_management.visual.sections.network.save_cooldown_status')}
+                      description={t(
+                        'config_management.visual.sections.network.save_cooldown_status_desc'
+                      )}
+                      checked={values.saveCooldownStatus}
+                      disabled={disabled}
+                      onChange={(saveCooldownStatus) => onChange({ saveCooldownStatus })}
+                    />
+                  </FieldAnchor>
                   <FieldAnchor fieldId="disableCooling">
                     <ToggleRow
                       title={t('config_management.visual.sections.network.disable_cooling')}

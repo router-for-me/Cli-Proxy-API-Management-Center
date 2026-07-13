@@ -864,6 +864,7 @@ function getNextDirtyFields(
       'redisUsageQueueRetentionSeconds',
       'pluginsEnabled',
       'passthroughHeaders',
+      'saveCooldownStatus',
       'disableCooling',
       'disableImageGeneration',
       'gptImage2BaseModel',
@@ -1109,6 +1110,7 @@ export function useVisualConfig() {
         requestRetry: String(parsed['request-retry'] ?? ''),
         maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
         maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
+        saveCooldownStatus: Boolean(parsed['save-cooldown-status']),
         disableCooling: Boolean(parsed['disable-cooling']),
         disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
         gptImage2BaseModel:
@@ -1334,6 +1336,9 @@ export function useVisualConfig() {
         }
         if (dirtyFields.has('maxRetryInterval')) {
           setIntFromStringInDoc(doc, ['max-retry-interval'], values.maxRetryInterval);
+        }
+        if (dirtyFields.has('saveCooldownStatus')) {
+          setBooleanInDoc(doc, ['save-cooldown-status'], values.saveCooldownStatus);
         }
         if (dirtyFields.has('disableCooling')) {
           setBooleanInDoc(doc, ['disable-cooling'], values.disableCooling);

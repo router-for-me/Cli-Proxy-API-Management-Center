@@ -147,6 +147,14 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     yamlKeys: ['max-retry-interval'],
   },
   {
+    fieldId: 'saveCooldownStatus',
+    sectionId: 'network',
+    labelKey: L('sections.network.save_cooldown_status'),
+    hintKey: L('sections.network.save_cooldown_status_desc'),
+    yamlKeys: ['save-cooldown-status'],
+    keywords: ['cooldown', 'persist', 'restart'],
+  },
+  {
     fieldId: 'authAutoRefreshWorkers',
     sectionId: 'network',
     labelKey: L('sections.network.auth_auto_refresh_workers'),
