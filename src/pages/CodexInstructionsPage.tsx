@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconFileText, IconRefreshCw, IconShield } from '@/components/ui/icons';
+import { IconRefreshCw } from '@/components/ui/icons';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { configApi } from '@/services/api/config';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
@@ -352,18 +352,25 @@ export function CodexInstructionsPage() {
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
-        <div className={styles.pageHeaderCopy}>
-          <div className={styles.titleRow}>
-            <span className={styles.titleIcon} aria-hidden="true">
-              {activeTab === 'error_handling' ? (
-                <IconShield size={20} />
-              ) : (
-                <IconFileText size={20} />
-              )}
-            </span>
-            <h1 className={styles.pageTitle}>{t('codex_config.title')}</h1>
-          </div>
-          <p className={styles.description}>{t('codex_config.description')}</p>
+        <div className={styles.tabBar} role="tablist" aria-label={t('codex_config.title')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'error_handling'}
+            className={`${styles.tabItem} ${activeTab === 'error_handling' ? styles.tabActive : ''}`}
+            onClick={() => handleTabChange('error_handling')}
+          >
+            {t('codex_config.tabs.error_handling')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'instructions'}
+            className={`${styles.tabItem} ${activeTab === 'instructions' ? styles.tabActive : ''}`}
+            onClick={() => handleTabChange('instructions')}
+          >
+            {t('codex_config.tabs.instructions')}
+          </button>
         </div>
         <div className={styles.headerActions}>
           {activeTab === 'error_handling' ? (
@@ -408,27 +415,6 @@ export function CodexInstructionsPage() {
             </>
           )}
         </div>
-      </div>
-
-      <div className={styles.tabBar} role="tablist" aria-label={t('codex_config.title')}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'error_handling'}
-          className={`${styles.tabItem} ${activeTab === 'error_handling' ? styles.tabActive : ''}`}
-          onClick={() => handleTabChange('error_handling')}
-        >
-          {t('codex_config.tabs.error_handling')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'instructions'}
-          className={`${styles.tabItem} ${activeTab === 'instructions' ? styles.tabActive : ''}`}
-          onClick={() => handleTabChange('instructions')}
-        >
-          {t('codex_config.tabs.instructions')}
-        </button>
       </div>
 
       {activeTab === 'error_handling' && (

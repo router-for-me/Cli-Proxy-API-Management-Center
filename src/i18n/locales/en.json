@@ -230,6 +230,7 @@
     "problem_only_label": "Only show problematic credentials",
     "disabled_only_label": "Only show disabled credentials",
     "enabled_only_label": "Only show enabled credentials",
+    "private_instructions_only_label": "Only show private-instructions allowed",
     "sort_label": "Sort",
     "sort_default": "Default",
     "sort_az": "A-Z Name",

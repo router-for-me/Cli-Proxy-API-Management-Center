@@ -127,51 +127,14 @@
 .pageHeader {
   display: flex;
   justify-content: space-between;
-  gap: $spacing-lg;
-  align-items: flex-start;
+  gap: $spacing-md;
+  align-items: center;
+  flex-wrap: wrap;
 
   @include mobile {
     flex-direction: column;
+    align-items: stretch;
   }
-}
-
-.pageHeaderCopy {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-  max-width: 720px;
-}
-
-.titleRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.titleIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  color: var(--bg-primary);
-  background: var(--text-primary);
-}
-
-.pageTitle {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 28px;
-  font-weight: 740;
-}
-
-.description {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.6;
 }
 
 .headerActions {
@@ -180,9 +143,11 @@
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+  margin-left: auto;
 
   @include mobile {
     width: 100%;
+    margin-left: 0;
     justify-content: flex-start;
   }
 }

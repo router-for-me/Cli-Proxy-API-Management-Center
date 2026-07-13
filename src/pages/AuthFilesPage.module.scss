@@ -1365,6 +1365,15 @@
   word-break: break-word;
 }
 
+.privateInstructionsFlag {
+  margin: 2px 0 0;
+  color: #e91e8c;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+}
+
 .subscriptionSubtitle {
   font-size: 12px;
   color: var(--text-secondary);

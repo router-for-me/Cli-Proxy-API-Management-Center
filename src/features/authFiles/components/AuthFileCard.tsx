@@ -210,10 +210,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 </div>
               )}
               {!compact && allowPrivateInstructions && (
-                <div className={styles.noteText}>
-                  <span className={styles.noteLabel}>
-                    {t('auth_files.allow_private_instructions_display')}
-                  </span>
+                <div className={styles.privateInstructionsFlag}>
+                  {t('auth_files.allow_private_instructions_display')}
                 </div>
               )}
               {!compact && file.disabled && disabledReason && (

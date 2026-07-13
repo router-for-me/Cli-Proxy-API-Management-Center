@@ -229,6 +229,7 @@
     "problem_only_label": "Показывать только проблемные учётные данные",
     "disabled_only_label": "Показывать только отключённые учётные данные",
     "enabled_only_label": "Показывать только включённые учётные данные",
+    "private_instructions_only_label": "Только private instructions",
     "sort_label": "Сортировка",
     "sort_default": "По умолчанию",
     "sort_az": "A-Z Имя",

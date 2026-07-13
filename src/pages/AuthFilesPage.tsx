@@ -122,6 +122,7 @@ export function AuthFilesPage() {
 
   const [filter, setFilter] = useState<'all' | string>('all');
   const [statusFilterMode, setStatusFilterMode] = useState<AuthFilesStatusFilterMode>('all');
+  const [privateInstructionsOnly, setPrivateInstructionsOnly] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -255,6 +256,9 @@ export function AuthFilesPage() {
       if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
         setCompactMode(persisted.compactMode);
       }
+      if (typeof persisted.privateInstructionsOnly === 'boolean') {
+        setPrivateInstructionsOnly(persisted.privateInstructionsOnly);
+      }
       if (typeof persisted.search === 'string') {
         setSearch(persisted.search);
       }
@@ -299,6 +303,7 @@ export function AuthFilesPage() {
       statusFilterMode,
       problemOnly,
       disabledOnly,
+      privateInstructionsOnly,
       compactMode,
       search,
       page,
@@ -316,6 +321,7 @@ export function AuthFilesPage() {
     page,
     pageSize,
     pageSizeByMode,
+    privateInstructionsOnly,
     problemOnly,
     search,
     sortMode,
@@ -506,6 +512,7 @@ export function AuthFilesPage() {
       files.filter((file) => {
         if (enabledOnly && file.disabled === true) return false;
         if (disabledOnly && file.disabled !== true) return false;
+        if (privateInstructionsOnly && !Boolean(file.allow_private_instructions)) return false;
         if (isCodexSelected) {
           const refreshed = codexRefreshByName[file.name];
           const codexStatus = getCodexAccountStatus(refreshed);
@@ -536,6 +543,7 @@ export function AuthFilesPage() {
       files,
       isCodexSelected,
       isXaiSelected,
+      privateInstructionsOnly,
       problemOnly,
       xaiStatusFilter,
     ]
@@ -997,6 +1005,15 @@ export function AuthFilesPage() {
                       onChange={(value) => setCompactMode(value)}
                       ariaLabel={t('auth_files.compact_mode_label')}
                       label={t('auth_files.compact_mode_label')}
+                    />
+                    <ToggleSwitch
+                      checked={privateInstructionsOnly}
+                      onChange={(value) => {
+                        setPrivateInstructionsOnly(value);
+                        setPage(1);
+                      }}
+                      ariaLabel={t('auth_files.private_instructions_only_label')}
+                      label={t('auth_files.private_instructions_only_label')}
                     />
                   </div>
                 </div>

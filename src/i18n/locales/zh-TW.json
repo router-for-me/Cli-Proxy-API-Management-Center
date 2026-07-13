@@ -230,6 +230,7 @@
     "problem_only_label": "僅顯示有問題的憑證",
     "disabled_only_label": "僅顯示已停用憑證",
     "enabled_only_label": "僅顯示已啟用憑證",
+    "private_instructions_only_label": "僅顯示已允許私有指令",
     "sort_label": "排序",
     "sort_default": "預設",
     "sort_az": "A-Z 名稱",

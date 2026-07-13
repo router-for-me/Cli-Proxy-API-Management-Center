@@ -230,6 +230,7 @@
     "problem_only_label": "仅显示有问题的凭证",
     "disabled_only_label": "仅显示已停用凭证",
     "enabled_only_label": "仅显示已启用凭证",
+    "private_instructions_only_label": "仅显示已允许私有指令",
     "sort_label": "排序",
     "sort_default": "默认",
     "sort_az": "A-Z 名称",
