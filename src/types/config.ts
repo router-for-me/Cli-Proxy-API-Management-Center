@@ -77,7 +77,6 @@ export interface RawCodexInstructionsConfig {
 }
 
 export interface XAIConfig {
-  saveCooldownStatus: boolean;
   autoDisablePermissionDenied: boolean;
   otherForbiddenCooldownHours: number;
   freeUsageExhaustedCooldownHours: number;
@@ -86,8 +85,6 @@ export interface XAIConfig {
 }
 
 export interface RawXAIConfig {
-  'save-cooldown-status'?: boolean;
-  saveCooldownStatus?: boolean;
   'auto-disable-permission-denied'?: boolean;
   autoDisablePermissionDenied?: boolean;
   'other-403-cooldown-hours'?: number;

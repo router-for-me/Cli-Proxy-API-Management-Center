@@ -29,7 +29,6 @@ const DEFAULT_CODEX_INSTRUCTIONS: CodexInstructionsConfig = {
 };
 
 const DEFAULT_XAI_CONFIG: XAIConfig = {
-  saveCooldownStatus: true,
   autoDisablePermissionDenied: true,
   otherForbiddenCooldownHours: 6,
   freeUsageExhaustedCooldownHours: 24,
@@ -114,10 +113,6 @@ function normalizeNonNegativeInteger(value: unknown, fallback: number): number {
 
 export function normalizeXAIConfigResponse(raw: RawXAIConfig): XAIConfig {
   return {
-    saveCooldownStatus:
-      typeof raw['save-cooldown-status'] === 'boolean'
-        ? raw['save-cooldown-status']
-        : raw.saveCooldownStatus !== false,
     autoDisablePermissionDenied:
       typeof raw['auto-disable-permission-denied'] === 'boolean'
         ? raw['auto-disable-permission-denied']
@@ -143,7 +138,6 @@ export function normalizeXAIConfigResponse(raw: RawXAIConfig): XAIConfig {
 
 function serializeXAIConfig(config: XAIConfig): RawXAIConfig {
   return {
-    'save-cooldown-status': config.saveCooldownStatus,
     'auto-disable-permission-denied': config.autoDisablePermissionDenied,
     'other-403-cooldown-hours': Math.max(0, Math.floor(config.otherForbiddenCooldownHours)),
     'free-usage-exhausted-cooldown-hours': Math.max(

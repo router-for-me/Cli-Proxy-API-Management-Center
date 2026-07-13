@@ -15,7 +15,6 @@ export type VisualConfigFieldPath =
   | 'requestRetry'
   | 'maxRetryCredentials'
   | 'maxRetryInterval'
-  | 'saveCooldownStatus'
   | 'authAutoRefreshWorkers'
   | 'streaming.keepaliveSeconds'
   | 'streaming.bootstrapRetries'
@@ -115,7 +114,6 @@ export type VisualConfigValues = {
   requestRetry: string;
   maxRetryCredentials: string;
   maxRetryInterval: string;
-  saveCooldownStatus: boolean;
   disableCooling: boolean;
   disableImageGeneration: DisableImageGenerationMode;
   gptImage2BaseModel: string;
@@ -181,7 +179,6 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   requestRetry: '',
   maxRetryCredentials: '',
   maxRetryInterval: '',
-  saveCooldownStatus: true,
   disableCooling: false,
   disableImageGeneration: 'false',
   gptImage2BaseModel: '',
