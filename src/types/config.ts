@@ -97,6 +97,25 @@ export interface RawXAIConfig {
   otherForbiddenDisableAfter?: number;
 }
 
+/** Codex credential failure policy (management /codex-failure-config). */
+export interface CodexFailureConfig {
+  autoDisableAuthFailures: boolean;
+  authFailureDisableAfter: number;
+  usageLimitDisableAfter: number;
+  usageLimitCooldownFallbackHours: number;
+}
+
+export interface RawCodexFailureConfig {
+  'auto-disable-auth-failures'?: boolean;
+  autoDisableAuthFailures?: boolean;
+  'auth-failure-disable-after'?: number;
+  authFailureDisableAfter?: number;
+  'usage-limit-disable-after'?: number;
+  usageLimitDisableAfter?: number;
+  'usage-limit-cooldown-fallback-hours'?: number;
+  usageLimitCooldownFallbackHours?: number;
+}
+
 export type RawConfigSection =
   | 'debug'
   | 'proxy-url'

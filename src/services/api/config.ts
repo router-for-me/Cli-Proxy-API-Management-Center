@@ -4,8 +4,10 @@
 
 import { apiClient } from './client';
 import type {
+  CodexFailureConfig,
   CodexInstructionsConfig,
   Config,
+  RawCodexFailureConfig,
   RawCodexInstructionsConfig,
   RawXAIConfig,
   XAIConfig,
@@ -34,6 +36,13 @@ const DEFAULT_XAI_CONFIG: XAIConfig = {
   freeUsageExhaustedCooldownHours: 24,
   freeUsageExhaustedDisableAfter: 3,
   otherForbiddenDisableAfter: 3,
+};
+
+const DEFAULT_CODEX_FAILURE_CONFIG: CodexFailureConfig = {
+  autoDisableAuthFailures: true,
+  authFailureDisableAfter: 1,
+  usageLimitDisableAfter: 3,
+  usageLimitCooldownFallbackHours: 1,
 };
 
 function normalizeStringList(values: unknown, fallback: string[]): string[] {
@@ -152,6 +161,41 @@ function serializeXAIConfig(config: XAIConfig): RawXAIConfig {
   };
 }
 
+export function normalizeCodexFailureConfigResponse(
+  raw: RawCodexFailureConfig
+): CodexFailureConfig {
+  return {
+    autoDisableAuthFailures:
+      typeof raw['auto-disable-auth-failures'] === 'boolean'
+        ? raw['auto-disable-auth-failures']
+        : raw.autoDisableAuthFailures !== false,
+    authFailureDisableAfter: normalizeNonNegativeInteger(
+      raw['auth-failure-disable-after'] ?? raw.authFailureDisableAfter,
+      DEFAULT_CODEX_FAILURE_CONFIG.authFailureDisableAfter
+    ),
+    usageLimitDisableAfter: normalizeNonNegativeInteger(
+      raw['usage-limit-disable-after'] ?? raw.usageLimitDisableAfter,
+      DEFAULT_CODEX_FAILURE_CONFIG.usageLimitDisableAfter
+    ),
+    usageLimitCooldownFallbackHours: normalizeNonNegativeInteger(
+      raw['usage-limit-cooldown-fallback-hours'] ?? raw.usageLimitCooldownFallbackHours,
+      DEFAULT_CODEX_FAILURE_CONFIG.usageLimitCooldownFallbackHours
+    ),
+  };
+}
+
+function serializeCodexFailureConfig(config: CodexFailureConfig): RawCodexFailureConfig {
+  return {
+    'auto-disable-auth-failures': config.autoDisableAuthFailures,
+    'auth-failure-disable-after': Math.max(0, Math.floor(config.authFailureDisableAfter)),
+    'usage-limit-disable-after': Math.max(0, Math.floor(config.usageLimitDisableAfter)),
+    'usage-limit-cooldown-fallback-hours': Math.max(
+      0,
+      Math.floor(config.usageLimitCooldownFallbackHours)
+    ),
+  };
+}
+
 export const configApi = {
   /**
    * 获取配置（会进行字段规范化）
@@ -189,6 +233,16 @@ export const configApi = {
 
   async updateXAIConfig(config: XAIConfig): Promise<XAIConfig> {
     await apiClient.put('/xai-config', serializeXAIConfig(config));
+    return config;
+  },
+
+  async getCodexFailureConfig(): Promise<CodexFailureConfig> {
+    const raw = await apiClient.get<RawCodexFailureConfig>('/codex-failure-config');
+    return normalizeCodexFailureConfigResponse(raw ?? {});
+  },
+
+  async updateCodexFailureConfig(config: CodexFailureConfig): Promise<CodexFailureConfig> {
+    await apiClient.put('/codex-failure-config', serializeCodexFailureConfig(config));
     return config;
   },
 };

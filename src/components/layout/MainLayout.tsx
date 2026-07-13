@@ -575,7 +575,7 @@ export function MainLayout() {
       items: [
         {
           path: '/codex-instructions',
-          labelKey: 'nav.codex_instructions',
+          labelKey: 'nav.codex_config',
           icon: <BrandNavIcon src={iconCodex} alt="Codex" />,
         },
         {
