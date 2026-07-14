@@ -73,14 +73,6 @@
     0 14px 32px -26px rgba(23, 131, 255, 0.95),
     var(--shadow);
 
-  &::before {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 4px;
-    background: linear-gradient(180deg, #51a7ff, #1783ff);
-    content: '';
-  }
-
   > * {
     position: relative;
     z-index: 1;
