@@ -74,6 +74,12 @@ function getErrorStatus(error: unknown): number | undefined {
 const PROVIDERS: BuiltInOAuthProviderCard[] = [
   {
     kind: 'builtin',
+    id: 'kimi',
+    titleKey: 'auth_login.kimi_oauth_title',
+    icon: { light: iconKimiDark, dark: iconKimiLight },
+  },
+  {
+    kind: 'builtin',
     id: 'codex',
     titleKey: 'auth_login.codex_oauth_title',
     icon: iconCodex,
@@ -89,12 +95,6 @@ const PROVIDERS: BuiltInOAuthProviderCard[] = [
     id: 'antigravity',
     titleKey: 'auth_login.antigravity_oauth_title',
     icon: iconAntigravity,
-  },
-  {
-    kind: 'builtin',
-    id: 'kimi',
-    titleKey: 'auth_login.kimi_oauth_title',
-    icon: { light: iconKimiLight, dark: iconKimiDark },
   },
   {
     kind: 'builtin',
