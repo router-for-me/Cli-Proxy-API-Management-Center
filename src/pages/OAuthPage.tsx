@@ -588,11 +588,6 @@ export function OAuthPage() {
           <span className={styles.cardTitle}>
             <OAuthProviderIcon provider={provider} theme={resolvedTheme} />
             <span>{getProviderTitleText(provider)}</span>
-            {featured && (
-              <span className={styles.recommendedBadge}>
-                {t('auth_login.recommended_provider_badge')}
-              </span>
-            )}
           </span>
         }
         extra={
@@ -705,13 +700,11 @@ export function OAuthPage() {
       <div className={styles.content}>
         {featuredProvider && (
           <section className={styles.providerSection}>
-            <h2 className={styles.sectionTitle}>{t('auth_login.recommended_provider_section')}</h2>
             {renderOAuthProviderCard(featuredProvider, true)}
           </section>
         )}
 
         <section className={styles.providerSection}>
-          <h2 className={styles.sectionTitle}>{t('auth_login.other_oauth_providers')}</h2>
           <div className={styles.providerList}>
             {otherOAuthProviders.map((provider) => renderOAuthProviderCard(provider))}
           </div>
