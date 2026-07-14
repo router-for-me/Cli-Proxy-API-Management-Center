@@ -563,6 +563,10 @@
     "upgrade_required_desc": "目前伺服器版本不支援 OAuth 模型別名功能，請升級到最新版本的 CPA（CLI Proxy API）後重試。"
   },
   "auth_login": {
+    "recommended_provider_section": "推薦提供商",
+    "recommended_provider_badge": "推薦提供商",
+    "other_oauth_providers": "其他 OAuth 提供商",
+    "other_login_methods": "其他登入方式",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "開始 Codex 登入",
     "codex_oauth_hint": "透過 OAuth 流程登入 Codex 服務，自動取得並儲存驗證檔案。",
@@ -597,8 +601,8 @@
     "antigravity_oauth_start_error": "啟動 Antigravity OAuth 失敗:",
     "antigravity_oauth_polling_error": "檢查驗證狀態失敗:",
     "kimi_oauth_title": "Kimi OAuth",
-    "kimi_oauth_button": "開始 Kimi 登入",
-    "kimi_oauth_hint": "透過裝置授權流程登入 Kimi 服務，自動取得並儲存驗證檔案。",
+    "kimi_oauth_button": "使用 Kimi 登入",
+    "kimi_oauth_hint": "透過裝置授權快速登入 Kimi，完成後將自動取得並儲存驗證檔案。",
     "kimi_oauth_url_label": "授權連結:",
     "kimi_open_link": "開啟連結",
     "kimi_copy_link": "複製連結",

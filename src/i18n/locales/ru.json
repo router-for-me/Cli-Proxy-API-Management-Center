@@ -550,6 +550,10 @@
     "upgrade_required_desc": "Текущая версия сервера не поддерживает API псевдонимов моделей OAuth. Обновите CLI Proxy API (CPA) до последней версии."
   },
   "auth_login": {
+    "recommended_provider_section": "Рекомендуемый провайдер",
+    "recommended_provider_badge": "Рекомендуемый провайдер",
+    "other_oauth_providers": "Другие провайдеры OAuth",
+    "other_login_methods": "Другие способы входа",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Начать вход Codex",
     "codex_oauth_hint": "Выполните вход в сервис Codex через OAuth и автоматически получите/сохраните файлы авторизации.",
@@ -584,8 +588,8 @@
     "antigravity_oauth_start_error": "Не удалось запустить Antigravity OAuth:",
     "antigravity_oauth_polling_error": "Не удалось проверить статус аутентификации:",
     "kimi_oauth_title": "Kimi OAuth",
-    "kimi_oauth_button": "Начать вход Kimi",
-    "kimi_oauth_hint": "Выполните вход в сервис Kimi через поток авторизации устройства и автоматически получите/сохраните файлы авторизации.",
+    "kimi_oauth_button": "Войти через Kimi",
+    "kimi_oauth_hint": "Быстро войдите в Kimi через авторизацию устройства. Файлы авторизации будут получены и сохранены автоматически.",
     "kimi_oauth_url_label": "URL авторизации:",
     "kimi_open_link": "Открыть ссылку",
     "kimi_copy_link": "Скопировать ссылку",
