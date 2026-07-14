@@ -115,6 +115,7 @@ export function DashboardPage() {
     ? {
         gemini: config.geminiApiKeys?.length ?? 0,
         codex: config.codexApiKeys?.length ?? 0,
+        xai: config.xaiApiKeys?.length ?? 0,
         claude: config.claudeApiKeys?.length ?? 0,
         vertex: config.vertexApiKeys?.length ?? 0,
         openai: config.openaiCompatibility?.length ?? 0,
@@ -144,6 +145,7 @@ export function DashboardPage() {
         ? t('dashboard.provider_keys_detail', {
             gemini: providerStats.gemini,
             codex: providerStats.codex,
+            xai: providerStats.xai,
             claude: providerStats.claude,
             vertex: providerStats.vertex,
             openai: providerStats.openai,

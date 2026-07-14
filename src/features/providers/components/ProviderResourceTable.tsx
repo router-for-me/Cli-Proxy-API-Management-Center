@@ -129,7 +129,7 @@ export function ProviderResourceTable({
         renderMetric('models', t('providersPage.table.metrics.models'), r.modelCount),
         renderMetric('headers', t('providersPage.table.metrics.headers'), r.headerCount)
       );
-      if (r.brand === 'codex' && r.flags.websockets) {
+      if ((r.brand === 'codex' || r.brand === 'xai') && r.flags.websockets) {
         items.push(renderFlagTag('ws', t('providersPage.table.websocketsTag')));
       }
       if (r.brand === 'claude' && r.flags.cloakEnabled) {

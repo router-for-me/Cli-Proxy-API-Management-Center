@@ -131,7 +131,7 @@
   "dashboard": {
     "current_config": "目前設定",
     "management_keys": "管理金鑰",
-    "provider_keys_detail": "G:{{gemini}} C:{{codex}} Cl:{{claude}} V:{{vertex}} O:{{openai}}",
+    "provider_keys_detail": "G:{{gemini}} C:{{codex}} X:{{xai}} Cl:{{claude}} V:{{vertex}} O:{{openai}}",
     "oauth_credentials": "OAuth 憑證",
     "edit_settings": "編輯設定",
     "routing_strategy": "路由策略",
@@ -1350,6 +1350,7 @@
     "providerNames": {
       "gemini": "Gemini",
       "codex": "Codex",
+      "xai": "xAI",
       "claude": "Claude",
       "claudeApi": "ClaudeAPI",
       "vertex": "Vertex",
