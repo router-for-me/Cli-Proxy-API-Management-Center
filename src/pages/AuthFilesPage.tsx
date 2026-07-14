@@ -78,9 +78,8 @@ import { authFilesApi } from '@/services/api';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import styles from './AuthFilesPage.module.scss';
 
-
-const DEFAULT_REGULAR_PAGE_SIZE = 9;
-const DEFAULT_COMPACT_PAGE_SIZE = 12;
+const DEFAULT_REGULAR_PAGE_SIZE = 50;
+const DEFAULT_COMPACT_PAGE_SIZE = 50;
 const CODEX_REFRESH_CONCURRENCY = 4;
 
 const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -130,7 +129,7 @@ export function AuthFilesPage() {
     regular: DEFAULT_REGULAR_PAGE_SIZE,
     compact: DEFAULT_COMPACT_PAGE_SIZE,
   });
-  const [pageSizeInput, setPageSizeInput] = useState('9');
+  const [pageSizeInput, setPageSizeInput] = useState(String(DEFAULT_REGULAR_PAGE_SIZE));
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
   const [codexStatusFilter, setCodexStatusFilter] = useState<CodexStatusFilter>('all');
@@ -393,6 +392,26 @@ export function AuthFilesPage() {
     setPage(1);
   }, []);
 
+  const clearFilters = useCallback(() => {
+    setFilter('all');
+    setStatusFilterMode('all');
+    setPrivateInstructionsOnly(false);
+    setCompactMode(false);
+    setSearch('');
+    setPage(1);
+    setPageSizeByMode({
+      regular: DEFAULT_REGULAR_PAGE_SIZE,
+      compact: DEFAULT_COMPACT_PAGE_SIZE,
+    });
+    setPageSizeInput(String(DEFAULT_REGULAR_PAGE_SIZE));
+    setViewMode('list');
+    setSortMode('default');
+    setCodexStatusFilter('all');
+    setCodexPlanFilter('all');
+    setXaiStatusFilter('all');
+    deselectAll();
+  }, [deselectAll]);
+
   const refreshCodexData = useCallback(async () => {
     const codexFiles = files.filter(
       (file) => normalizeProviderKey(String(file.type ?? file.provider ?? '')) === 'codex'
@@ -585,7 +604,7 @@ export function AuthFilesPage() {
       const matchType = normalizedFilter === 'all' || type === normalizedFilter;
       const matchSearch =
         !normalizedSearch ||
-        [item.name, item.type, item.provider, item.note].some((value) => {
+        [item.name, item.type, item.provider, item.note, item.disabled_reason].some((value) => {
           const content = (value || '').toString();
           return wildcardSearch
             ? wildcardSearch.test(content)
@@ -1015,6 +1034,9 @@ export function AuthFilesPage() {
                       ariaLabel={t('auth_files.private_instructions_only_label')}
                       label={t('auth_files.private_instructions_only_label')}
                     />
+                    <Button variant="ghost" size="sm" onClick={clearFilters}>
+                      {t('auth_files.clear_filters')}
+                    </Button>
                   </div>
                 </div>
               </div>
