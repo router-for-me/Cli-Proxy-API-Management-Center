@@ -231,6 +231,25 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
     supportsApiKeyEntries: false,
     sheetSize: 'md',
   },
+  kimi: {
+    id: 'kimi',
+    supportsName: false,
+    supportsApiKey: true,
+    supportsDisabled: true,
+    supportsBaseUrl: false,
+    baseUrlRequired: false,
+    supportsProxyUrl: true,
+    supportsPrefix: true,
+    supportsModels: false,
+    supportsHeaders: false,
+    supportsExcludedModels: false,
+    supportsPriority: true,
+    supportsTestModel: false,
+    supportsWebsockets: false,
+    supportsCloak: false,
+    supportsApiKeyEntries: false,
+    sheetSize: 'md',
+  },
 };
 
 export const PROVIDER_BRAND_ORDER: ProviderBrand[] = [
@@ -245,4 +264,5 @@ export const PROVIDER_BRAND_ORDER: ProviderBrand[] = [
   'code0',
   'fennoAI',
   'qiniuCloud',
+  'kimi',
 ];

@@ -18,6 +18,7 @@ import {
   geminiToResource,
   openaiToResource,
   qiniuCloudToResource,
+  kimiToResource,
   vertexToResource,
   xaiToResource,
 } from './adapters';
@@ -59,6 +60,7 @@ import {
   isQiniuCloudGeminiProvider,
   isQiniuCloudOpenAIProvider,
 } from './qiniuCloud';
+import { buildKimiRaw, isKimiClaudeProvider, isKimiOpenAIProvider } from './kimi';
 import { getSponsorProviderDefinition, type SponsorProtocolUrls } from './sponsorDefinitions';
 import { runSponsorMutationWithRecovery } from './sponsorMutationRecovery';
 
@@ -457,6 +459,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
                 !isCode0ClaudeProvider(item) &&
                 !isFennoAIClaudeProvider(item) &&
                 !isQiniuCloudClaudeProvider(item) &&
+                !isKimiClaudeProvider(item) &&
                 !isClaudeApiProvider(item)
               ) {
                 out.push(claudeToResource(item, index));
@@ -487,7 +490,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
                 !isApiKeyFunOpenAIProvider(item) &&
                 !isCode0OpenAIProvider(item) &&
                 !isFennoAIOpenAIProvider(item) &&
-                !isQiniuCloudOpenAIProvider(item)
+                !isQiniuCloudOpenAIProvider(item) &&
+                !isKimiOpenAIProvider(item)
               ) {
                 out.push(openaiToResource(item, index));
               }
@@ -516,6 +520,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           resources = sponsorResource ? [sponsorResource] : [];
           break;
         }
+        case 'kimi': {
+          const sponsorResource = kimiToResource(buildKimiRaw(config));
+          resources = sponsorResource ? [sponsorResource] : [];
+          break;
+        }
       }
       return {
         id: brand,
@@ -540,7 +549,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             ? buildCode0Raw(config)
             : brand === 'fennoAI'
               ? buildFennoAIRaw(config)
-              : buildQiniuCloudRaw(config);
+              : brand === 'qiniuCloud'
+                ? buildQiniuCloudRaw(config)
+                : buildKimiRaw(config);
       const entries = normalizeSponsorKeyEntries(input.sponsorKeyEntries);
       const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
       const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
@@ -669,7 +680,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'apikeyFun' ||
           brand === 'code0' ||
           brand === 'fennoAI' ||
-          brand === 'qiniuCloud'
+          brand === 'qiniuCloud' ||
+          brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
         }
@@ -738,7 +750,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'apikeyFun' ||
           brand === 'code0' ||
           brand === 'fennoAI' ||
-          brand === 'qiniuCloud'
+          brand === 'qiniuCloud' ||
+          brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
         }
@@ -787,7 +800,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           sel.brand === 'apikeyFun' ||
           sel.brand === 'code0' ||
           sel.brand === 'fennoAI' ||
-          sel.brand === 'qiniuCloud'
+          sel.brand === 'qiniuCloud' ||
+          sel.brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(async () => {
             const raw = resource.raw as SponsorProviderRaw;
@@ -857,7 +871,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'apikeyFun' ||
           brand === 'code0' ||
           brand === 'fennoAI' ||
-          brand === 'qiniuCloud'
+          brand === 'qiniuCloud' ||
+          brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(
             () => toggleSponsorConfig(resource.raw as SponsorProviderRaw, disabled),

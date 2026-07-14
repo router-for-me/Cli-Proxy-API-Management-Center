@@ -15,9 +15,10 @@ export type ProviderBrand =
   | 'apikeyFun'
   | 'code0'
   | 'fennoAI'
-  | 'qiniuCloud';
+  | 'qiniuCloud'
+  | 'kimi';
 
-export type SponsorProviderBrand = 'apikeyFun' | 'code0' | 'fennoAI' | 'qiniuCloud';
+export type SponsorProviderBrand = 'apikeyFun' | 'code0' | 'fennoAI' | 'qiniuCloud' | 'kimi';
 
 export const PROVIDER_SORT_BY_VALUES = ['name', 'priority', 'recent-success'] as const;
 export type ProviderSortBy = (typeof PROVIDER_SORT_BY_VALUES)[number];
@@ -56,6 +57,13 @@ export type ProviderResourceSelector =
     }
   | {
       brand: 'qiniuCloud';
+      openaiIndices: number[];
+      claudeIndices: number[];
+      codexIndices: number[];
+      geminiIndices: number[];
+    }
+  | {
+      brand: 'kimi';
       openaiIndices: number[];
       claudeIndices: number[];
       codexIndices: number[];

@@ -14,6 +14,7 @@ const QUICK_FILL_BRANDS: ReadonlySet<ProviderBrand> = new Set([
   'fennoAI',
   'qiniuCloud',
   'claudeApi',
+  'kimi',
 ]);
 
 export function ProviderCategoryList({ groups, activeBrand, onSelect }: ProviderCategoryListProps) {

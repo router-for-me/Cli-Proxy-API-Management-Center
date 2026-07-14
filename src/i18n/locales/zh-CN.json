@@ -1332,7 +1332,8 @@
       "apikeyFun": "APIKEY.FUN",
       "code0": "Code0",
       "fennoAI": "FennoAI",
-      "qiniuCloud": "七牛云"
+      "qiniuCloud": "七牛云",
+      "kimi": "Kimi"
     },
     "table": {
       "key": "密钥",
