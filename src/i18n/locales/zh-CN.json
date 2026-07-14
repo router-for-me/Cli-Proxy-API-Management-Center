@@ -219,7 +219,7 @@
     "pagination_next": "下一页",
     "pagination_info": "第 {{current}} / {{total}} 页 · 共 {{count}} 个文件",
     "search_label": "搜索配置文件",
-    "search_placeholder": "输入名称、类型或提供方关键字，支持 * 通配",
+    "search_placeholder": "输入名称、备注、类型或提供方关键字，支持 * 通配",
     "problem_filter_label": "状态筛选",
     "problem_filter_all": "全部",
     "problem_filter_enabled": "启用",
@@ -337,6 +337,7 @@
     "allow_private_instructions_label": "允许私有 Codex 指令",
     "allow_private_instructions_hint": "允许此 Codex OAuth 文件处理 private 标记模型请求，并注入私有指令。",
     "allow_private_instructions_display": "已允许私有指令",
+    "allow_private_instructions_badge": "破限",
     "disabled_reason_display": "禁用原因"
   },
   "antigravity_subscription": {

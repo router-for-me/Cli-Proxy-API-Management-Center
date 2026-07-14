@@ -219,7 +219,7 @@
     "pagination_next": "Next",
     "pagination_info": "Page {{current}} / {{total}} · {{count}} files",
     "search_label": "Search configs",
-    "search_placeholder": "Filter by name, type, or provider. Use * as a wildcard",
+    "search_placeholder": "Filter by name, note, type, or provider. Use * as a wildcard",
     "problem_filter_label": "Status Filter",
     "problem_filter_all": "All",
     "problem_filter_enabled": "Enabled",
@@ -337,6 +337,7 @@
     "allow_private_instructions_label": "Allow private Codex instructions",
     "allow_private_instructions_hint": "Permit this Codex OAuth file to serve private-marker model requests and receive injected instructions.",
     "allow_private_instructions_display": "Private instructions allowed",
+    "allow_private_instructions_badge": "Jailbreak",
     "disabled_reason_display": "Disabled reason"
   },
   "antigravity_subscription": {
