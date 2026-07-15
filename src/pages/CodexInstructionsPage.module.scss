@@ -345,6 +345,46 @@
   font-weight: 700;
 }
 
+.templateImportBar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px $spacing-md 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-secondary) 48%, transparent);
+}
+
+.templateImportMain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.templateSelect {
+  min-width: 0;
+  width: 100%;
+}
+
+.templateImportHint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.templateLink {
+  color: var(--primary-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}
+
 .editorWrapper {
   width: 100%;
   height: clamp(560px, 74vh, 1040px);
@@ -403,6 +443,10 @@
 
   .tabBar {
     width: 100%;
+  }
+
+  .templateImportMain {
+    grid-template-columns: 1fr;
   }
 
   .policyStrip,

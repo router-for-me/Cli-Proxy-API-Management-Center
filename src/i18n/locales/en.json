@@ -1492,7 +1492,18 @@
     "prefix_markers_label": "Private model prefixes",
     "prefix_markers_hint": "One marker per line or comma-separated. Example: private/",
     "suffix_markers_label": "Private model suffixes",
-    "suffix_markers_hint": "One marker per line or comma-separated. Example: -private"
+    "suffix_markers_hint": "One marker per line or comma-separated. Example: -private",
+    "template_label": "Import template",
+    "template_placeholder": "Choose a template…",
+    "template_loading": "Loading templates…",
+    "template_import": "Import",
+    "template_refresh": "Refresh template list",
+    "template_hint": "Import fills the editor draft only. Nothing is saved until you click Save. Leave the page to discard.",
+    "template_list_failed": "Could not load templates ({{error}}).",
+    "template_required": "Choose a template before importing.",
+    "template_missing": "That template is no longer in the list. Refresh and try again.",
+    "template_import_draft": "Loaded “{{name}}” into the editor draft. Save when ready.",
+    "template_import_failed": "Failed to import template"
   },
   "xai_config": {
     "title": "xAI Failure Policy",

@@ -1438,7 +1438,18 @@
     "prefix_markers_label": "私有模型前綴",
     "prefix_markers_hint": "每行一個或用逗號分隔。例如：private/",
     "suffix_markers_label": "私有模型後綴",
-    "suffix_markers_hint": "每行一個或用逗號分隔。例如：-private"
+    "suffix_markers_hint": "每行一個或用逗號分隔。例如：-private",
+    "template_label": "匯入模板",
+    "template_placeholder": "選擇模板…",
+    "template_loading": "正在載入模板…",
+    "template_import": "匯入",
+    "template_refresh": "重新整理模板列表",
+    "template_hint": "匯入只會填入編輯器草稿，不會儲存。需點「儲存」才會生效；離開頁面即可捨棄。",
+    "template_list_failed": "無法載入模板（{{error}}）。",
+    "template_required": "請先選擇要匯入的模板。",
+    "template_missing": "該模板已不在列表中，請重新整理後再試。",
+    "template_import_draft": "已將「{{name}}」載入編輯器草稿。確認後請儲存。",
+    "template_import_failed": "匯入模板失敗"
   },
   "xai_config": {
     "title": "xAI 失敗策略",

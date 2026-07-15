@@ -20,6 +20,16 @@ const LazyMarkdownSourceEditor = lazy(() => import('@/components/config/Markdown
 
 type CodexConfigTab = 'error_handling' | 'instructions';
 
+/** Public Codex-X example instruction templates (list + raw content). */
+const CODEX_X_EXAMPLES_API =
+  'https://api.github.com/repos/yynxxxxx/Codex-X/contents/examples?ref=main';
+const CODEX_X_EXAMPLES_REPO_URL = 'https://github.com/yynxxxxx/Codex-X/tree/main/examples';
+
+type InstructionTemplate = {
+  name: string;
+  downloadUrl: string;
+};
+
 const DEFAULT_INSTRUCTIONS: CodexInstructionsConfig = {
   enabled: false,
   mode: 'prepend',
@@ -123,6 +133,13 @@ export function CodexInstructionsPage() {
   const [instrSaving, setInstrSaving] = useState(false);
   const [instrError, setInstrError] = useState('');
 
+  // Template import is draft-only: never calls save APIs.
+  const [templates, setTemplates] = useState<InstructionTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templatesError, setTemplatesError] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [importingTemplate, setImportingTemplate] = useState(false);
+
   const failureDisabled =
     connectionStatus !== 'connected' || failureLoading || failureSaving;
   const failureDirty = !sameFailure(failureDraft, failureSaved);
@@ -182,6 +199,19 @@ export function CodexInstructionsPage() {
     [t]
   );
 
+  const templateOptions = useMemo(
+    () => [
+      {
+        value: '',
+        label: templatesLoading
+          ? t('codex_instructions.template_loading')
+          : t('codex_instructions.template_placeholder'),
+      },
+      ...templates.map((item) => ({ value: item.name, label: item.name })),
+    ],
+    [t, templates, templatesLoading]
+  );
+
   const activeDirty = activeTab === 'error_handling' ? failureDirty : instrDirty;
   const unsavedChangesDialog = useMemo(
     () => ({
@@ -239,6 +269,48 @@ export function CodexInstructionsPage() {
     void loadInstructions();
   }, [loadFailure, loadInstructions]);
 
+  const loadTemplates = useCallback(async () => {
+    setTemplatesLoading(true);
+    setTemplatesError('');
+    try {
+      const response = await fetch(CODEX_X_EXAMPLES_API, {
+        headers: { Accept: 'application/vnd.github+json' },
+      });
+      if (!response.ok) {
+        throw new Error(`GitHub API ${response.status}`);
+      }
+      const payload = (await response.json()) as Array<{
+        name?: string;
+        type?: string;
+        download_url?: string | null;
+      }>;
+      const list = payload
+        .filter(
+          (entry) =>
+            entry.type === 'file' &&
+            typeof entry.name === 'string' &&
+            entry.name.toLowerCase().endsWith('.md') &&
+            typeof entry.download_url === 'string' &&
+            entry.download_url.length > 0
+        )
+        .map((entry) => ({
+          name: entry.name as string,
+          downloadUrl: entry.download_url as string,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setTemplates(list);
+    } catch (err: unknown) {
+      setTemplates([]);
+      setTemplatesError(err instanceof Error ? err.message : t('notification.refresh_failed'));
+    } finally {
+      setTemplatesLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    void loadTemplates();
+  }, [loadTemplates]);
+
   const updateFailure = useCallback((patch: Partial<CodexFailureConfig>) => {
     setFailureDraft((current) => ({ ...current, ...patch }));
   }, []);
@@ -246,6 +318,35 @@ export function CodexInstructionsPage() {
   const updateInstrDraft = useCallback((patch: Partial<CodexInstructionsConfig>) => {
     setInstrDraft((current) => ({ ...current, ...patch }));
   }, []);
+
+  const handleImportTemplate = useCallback(async () => {
+    if (!selectedTemplate) {
+      showNotification(t('codex_instructions.template_required'), 'error');
+      return;
+    }
+    const match = templates.find((item) => item.name === selectedTemplate);
+    if (!match) {
+      showNotification(t('codex_instructions.template_missing'), 'error');
+      return;
+    }
+
+    setImportingTemplate(true);
+    try {
+      const response = await fetch(match.downloadUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const content = await response.text();
+      // Draft only — leave instrSaved untouched so leaving without Save discards.
+      updateInstrDraft({ content });
+      showNotification(t('codex_instructions.template_import_draft', { name: match.name }), 'info');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '';
+      showNotification(`${t('codex_instructions.template_import_failed')}: ${message}`, 'error');
+    } finally {
+      setImportingTemplate(false);
+    }
+  }, [selectedTemplate, showNotification, t, templates, updateInstrDraft]);
 
   const updateFailureNumber = (
     key:
@@ -667,6 +768,58 @@ export function CodexInstructionsPage() {
                   <p>{t('codex_instructions.editor_hint')}</p>
                 </div>
                 <span className={styles.fileBadge}>instructions.md</span>
+              </div>
+
+              <div className={styles.templateImportBar}>
+                <div className={styles.templateImportMain}>
+                  <Select
+                    className={styles.templateSelect}
+                    value={selectedTemplate}
+                    options={templateOptions}
+                    onChange={setSelectedTemplate}
+                    disabled={instrDisabled || templatesLoading || importingTemplate}
+                    ariaLabel={t('codex_instructions.template_label')}
+                    size="sm"
+                    fullWidth
+                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void handleImportTemplate()}
+                    disabled={
+                      instrDisabled ||
+                      importingTemplate ||
+                      templatesLoading ||
+                      !selectedTemplate ||
+                      templates.length === 0
+                    }
+                    loading={importingTemplate}
+                  >
+                    {t('codex_instructions.template_import')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void loadTemplates()}
+                    disabled={templatesLoading || importingTemplate}
+                    aria-label={t('codex_instructions.template_refresh')}
+                  >
+                    <IconRefreshCw size={16} />
+                  </Button>
+                </div>
+                <p className={styles.templateImportHint}>
+                  {templatesError
+                    ? t('codex_instructions.template_list_failed', { error: templatesError })
+                    : t('codex_instructions.template_hint')}{' '}
+                  <a
+                    href={CODEX_X_EXAMPLES_REPO_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.templateLink}
+                  >
+                    Codex-X examples
+                  </a>
+                </p>
               </div>
 
               <div className={styles.editorWrapper}>

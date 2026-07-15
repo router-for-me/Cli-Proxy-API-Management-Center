@@ -1390,7 +1390,18 @@
     "prefix_markers_label": "Префиксы private-модели",
     "prefix_markers_hint": "По одному на строку или через запятую. Пример: private/",
     "suffix_markers_label": "Суффиксы private-модели",
-    "suffix_markers_hint": "По одному на строку или через запятую. Пример: -private"
+    "suffix_markers_hint": "По одному на строку или через запятую. Пример: -private",
+    "template_label": "Импорт шаблона",
+    "template_placeholder": "Выберите шаблон…",
+    "template_loading": "Загрузка шаблонов…",
+    "template_import": "Импорт",
+    "template_refresh": "Обновить список шаблонов",
+    "template_hint": "Импорт заполняет только черновик редактора. Сохранение — отдельно. Уход со страницы отменяет изменения.",
+    "template_list_failed": "Не удалось загрузить шаблоны ({{error}}).",
+    "template_required": "Сначала выберите шаблон.",
+    "template_missing": "Шаблон больше не в списке. Обновите и попробуйте снова.",
+    "template_import_draft": "«{{name}}» загружен в черновик. Сохраните, когда будете готовы.",
+    "template_import_failed": "Не удалось импортировать шаблон"
   },
   "xai_config": {
     "title": "Политика ошибок xAI",
