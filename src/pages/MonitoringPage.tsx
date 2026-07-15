@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/Table';
-import { IconRefreshCw, IconX } from '@/components/ui/icons';
+import { IconX } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import {
   usageEventsApi,
@@ -137,37 +137,21 @@ export function MonitoringPage() {
   const [overrideManual, setOverrideManual] = useState(false);
 
   // Build query at call time so refresh uses a fresh upper time bound.
-  // Source dropdown merges source paths + auth indices; route the pick to the right API field.
+  // Do not depend on filterOptions here — loading them would recreate this callback and loop.
   const buildQuery = useCallback((): UsageQuery => {
     const base = rangeToMs(range);
     const sourcePick = source.trim();
-    const knownSources = new Set(filterOptions?.sources || []);
-    const knownAuth = new Set(filterOptions?.auth_indices || []);
-    // Backend ANDs filters — only send one of sources vs auth_indices per pick.
-    let sources: string[] | undefined;
-    let auth_indices: string[] | undefined;
-    if (sourcePick) {
-      if (knownSources.has(sourcePick)) {
-        sources = [sourcePick];
-      } else if (knownAuth.has(sourcePick)) {
-        auth_indices = [sourcePick];
-      } else {
-        // Stale / free-form: treat as source path / key label.
-        sources = [sourcePick];
-      }
-    }
     return {
       ...base,
       search: search.trim() || undefined,
       models: model ? [model] : undefined,
       providers: provider ? [provider] : undefined,
-      sources,
-      auth_indices,
+      sources: sourcePick ? [sourcePick] : undefined,
       failed_only: statusFilter === 'failed' || undefined,
       success_only: statusFilter === 'success' || undefined,
       limit: 200,
     };
-  }, [range, search, model, provider, source, statusFilter, filterOptions?.sources, filterOptions?.auth_indices]);
+  }, [range, search, model, provider, source, statusFilter]);
 
   const loadCore = useCallback(async () => {
     setLoading(true);
@@ -433,15 +417,15 @@ export function MonitoringPage() {
   );
 
   const sourceOptions = useMemo(() => {
-    // Merge source paths and auth indices so operators can pin one auth file or key identity.
-    const values = Array.from(
-      new Set([...(filterOptions?.sources || []), ...(filterOptions?.auth_indices || [])].filter(Boolean))
-    ).sort((a, b) => a.localeCompare(b));
+    // Distinct emails / API keys only — skip auth_index hashes (already listed under Auth elsewhere).
+    const values = Array.from(new Set((filterOptions?.sources || []).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b)
+    );
     return [
       { value: '', label: t('monitoring.filter_sources') },
       ...values.map((s) => ({ value: s, label: s })),
     ];
-  }, [filterOptions?.sources, filterOptions?.auth_indices, t]);
+  }, [filterOptions?.sources, t]);
 
   const autoOptions = useMemo(
     () =>
@@ -522,7 +506,6 @@ export function MonitoringPage() {
 
           <div className={styles.filterActions}>
             <Button variant="secondary" size="sm" onClick={() => void refresh()} disabled={loading}>
-              <IconRefreshCw size={16} />
               {t('common.refresh')}
             </Button>
             <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -541,6 +524,15 @@ export function MonitoringPage() {
         </div>
 
         <div className={styles.filterSecondary}>
+          <Select
+            className={styles.filterSelect}
+            value={source}
+            options={sourceOptions}
+            onChange={setSource}
+            ariaLabel={t('monitoring.filter_sources')}
+            size="sm"
+            fullWidth
+          />
           <Select
             className={styles.filterSelect}
             value={provider}
@@ -565,15 +557,6 @@ export function MonitoringPage() {
             options={statusOptions}
             onChange={(v) => setStatusFilter(v as 'all' | 'success' | 'failed')}
             ariaLabel={t('monitoring.filter_statuses')}
-            size="sm"
-            fullWidth
-          />
-          <Select
-            className={styles.filterSelect}
-            value={source}
-            options={sourceOptions}
-            onChange={setSource}
-            ariaLabel={t('monitoring.filter_sources')}
             size="sm"
             fullWidth
           />

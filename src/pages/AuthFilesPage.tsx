@@ -393,7 +393,7 @@ export function AuthFilesPage() {
   }, []);
 
   const clearFilters = useCallback(() => {
-    setFilter('all');
+    // Keep the provider tab; only reset search, dropdowns, and display toggles.
     setStatusFilterMode('all');
     setPrivateInstructionsOnly(false);
     setCompactMode(false);
@@ -804,6 +804,9 @@ export function AuthFilesPage() {
         title={renderFilterTags()}
         extra={
           <div className={styles.headerActions}>
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              {t('auth_files.clear_filters')}
+            </Button>
             <Button variant="secondary" size="sm" onClick={handleHeaderRefresh} disabled={loading}>
               {t('common.refresh')}
             </Button>
@@ -1034,9 +1037,6 @@ export function AuthFilesPage() {
                       ariaLabel={t('auth_files.private_instructions_only_label')}
                       label={t('auth_files.private_instructions_only_label')}
                     />
-                    <Button variant="ghost" size="sm" onClick={clearFilters}>
-                      {t('auth_files.clear_filters')}
-                    </Button>
                   </div>
                 </div>
               </div>
