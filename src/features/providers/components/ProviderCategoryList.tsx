@@ -9,18 +9,25 @@ interface ProviderCategoryListProps {
   onSelect: (brand: ProviderBrand) => void;
 }
 
-const QUICK_FILL_BRANDS: ReadonlySet<ProviderBrand> = new Set([
+const QUICK_FILL_BRAND_ORDER: readonly ProviderBrand[] = [
+  'kimi',
   'code0',
   'fennoAI',
   'qiniuCloud',
   'claudeApi',
-  'kimi',
-]);
+];
+
+const QUICK_FILL_BRANDS: ReadonlySet<ProviderBrand> = new Set(QUICK_FILL_BRAND_ORDER);
 
 export function ProviderCategoryList({ groups, activeBrand, onSelect }: ProviderCategoryListProps) {
   const { t } = useTranslation();
 
-  const quickFillGroups = groups.filter((g) => QUICK_FILL_BRANDS.has(g.id));
+  const quickFillGroups = groups
+    .filter((g) => QUICK_FILL_BRANDS.has(g.id))
+    .sort(
+      (left, right) =>
+        QUICK_FILL_BRAND_ORDER.indexOf(left.id) - QUICK_FILL_BRAND_ORDER.indexOf(right.id)
+    );
   const providerGroups = groups.filter((g) => !QUICK_FILL_BRANDS.has(g.id));
 
   const renderGroups = (items: ProviderGroup[]) => (

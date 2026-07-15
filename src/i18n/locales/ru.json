@@ -589,6 +589,7 @@
     "antigravity_oauth_polling_error": "Не удалось проверить статус аутентификации:",
     "kimi_oauth_title": "Kimi OAuth",
     "kimi_oauth_button": "Войти через Kimi",
+    "kimi_sign_up_button": "Быстрая регистрация",
     "kimi_oauth_hint": "Быстро войдите в Kimi через авторизацию устройства. Файлы авторизации будут получены и сохранены автоматически.",
     "kimi_oauth_url_label": "URL авторизации:",
     "kimi_open_link": "Открыть ссылку",

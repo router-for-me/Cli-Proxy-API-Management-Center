@@ -602,6 +602,7 @@
     "antigravity_oauth_polling_error": "Failed to check authentication status:",
     "kimi_oauth_title": "Kimi OAuth",
     "kimi_oauth_button": "Log in with Kimi",
+    "kimi_sign_up_button": "Quick Sign Up",
     "kimi_oauth_hint": "Quickly log in to Kimi through device authorization. Authentication files are obtained and saved automatically.",
     "kimi_oauth_url_label": "Authorization URL:",
     "kimi_open_link": "Open Link",

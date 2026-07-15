@@ -84,12 +84,18 @@
   }
 
   .cardTitleIcon {
-    width: 38px;
-    height: 38px;
+    box-sizing: content-box;
+    width: 24px;
+    height: 24px;
     padding: 7px;
-    border: 1px solid rgba(23, 131, 255, 0.2);
     border-radius: 11px;
-    background: color-mix(in srgb, #1783ff 12%, var(--bg-primary));
+    background: #fff;
+  }
+
+  .featuredActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
   }
 
   :global(.btn-primary) {

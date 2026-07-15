@@ -602,6 +602,7 @@
     "antigravity_oauth_polling_error": "檢查驗證狀態失敗:",
     "kimi_oauth_title": "Kimi OAuth",
     "kimi_oauth_button": "使用 Kimi 登入",
+    "kimi_sign_up_button": "快速註冊",
     "kimi_oauth_hint": "透過裝置授權快速登入 Kimi，完成後將自動取得並儲存驗證檔案。",
     "kimi_oauth_url_label": "授權連結:",
     "kimi_open_link": "開啟連結",

@@ -107,6 +107,7 @@ const PROVIDERS: BuiltInOAuthProviderCard[] = [
 const BUILTIN_PROVIDER_IDS = new Set<string>(PROVIDERS.map((provider) => provider.id));
 const CALLBACK_SUPPORTED = new Set<string>(['codex', 'anthropic', 'antigravity', 'xai']);
 const XAI_CALLBACK_URL = 'http://127.0.0.1:56121/callback';
+const KIMI_SIGN_UP_URL = 'https://www.kimi.com/code/?aff=cliproxyapi';
 const SUCCESS_RESET_DELAY_MS = 5000;
 const getProviderI18nPrefix = (provider: string) => provider.replace('-', '_');
 const getAuthKey = (provider: string, suffix: string) =>
@@ -566,6 +567,7 @@ export function OAuthPage() {
 
   const renderOAuthProviderCard = (provider: OAuthProviderCard, featured = false) => {
     const state = states[provider.id] || {};
+    const showKimiSignUp = featured && provider.kind === 'builtin' && provider.id === 'kimi';
     const canSubmitCallback =
       (provider.kind === 'plugin' || CALLBACK_SUPPORTED.has(provider.id)) && Boolean(state.url);
     const loginButtonLabel =
@@ -591,9 +593,20 @@ export function OAuthPage() {
           </span>
         }
         extra={
-          <Button onClick={() => startAuth(provider.id)} loading={state.polling}>
-            {loginButtonLabel}
-          </Button>
+          showKimiSignUp ? (
+            <div className={styles.featuredActions}>
+              <Button onClick={() => window.open(KIMI_SIGN_UP_URL, '_blank', 'noopener,noreferrer')}>
+                {t('auth_login.kimi_sign_up_button')}
+              </Button>
+              <Button onClick={() => startAuth(provider.id)} loading={state.polling}>
+                {loginButtonLabel}
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={() => startAuth(provider.id)} loading={state.polling}>
+              {loginButtonLabel}
+            </Button>
+          )
         }
       >
         <div className={styles.cardContent}>
