@@ -236,7 +236,6 @@
     "enabled_only_label": "僅顯示已啟用憑證",
     "private_instructions_only_label": "僅顯示已允許私有指令",
     "sort_label": "排序",
-    "sort_default": "預設",
     "sort_az": "A-Z 名稱",
     "sort_priority": "優先順序",
     "sort_plan_desc": "方案：由高至低",

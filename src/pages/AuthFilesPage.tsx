@@ -131,7 +131,7 @@ export function AuthFilesPage() {
   });
   const [pageSizeInput, setPageSizeInput] = useState(String(DEFAULT_REGULAR_PAGE_SIZE));
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
-  const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
+  const [sortMode, setSortMode] = useState<AuthFilesSortMode>('priority');
   const [codexStatusFilter, setCodexStatusFilter] = useState<CodexStatusFilter>('all');
   const [codexPlanFilter, setCodexPlanFilter] = useState<CodexPlanFilter>('all');
   const [xaiStatusFilter, setXaiStatusFilter] = useState<XaiStatusFilter>('all');
@@ -405,7 +405,7 @@ export function AuthFilesPage() {
     });
     setPageSizeInput(String(DEFAULT_REGULAR_PAGE_SIZE));
     setViewMode('list');
-    setSortMode('default');
+    setSortMode('priority');
     setCodexStatusFilter('all');
     setCodexPlanFilter('all');
     setXaiStatusFilter('all');
@@ -489,7 +489,7 @@ export function AuthFilesPage() {
     setCodexStatusFilter('all');
     setCodexPlanFilter('all');
     if (sortMode === 'plan-desc' || sortMode === 'plan-asc') {
-      setSortMode('default');
+      setSortMode('priority');
     }
   }, [isCodexSelected, sortMode]);
 
@@ -571,9 +571,8 @@ export function AuthFilesPage() {
 
   const sortOptions = useMemo(
     () => [
-      { value: 'default', label: t('auth_files.sort_default') },
-      { value: 'az', label: t('auth_files.sort_az') },
       { value: 'priority', label: t('auth_files.sort_priority') },
+      { value: 'az', label: t('auth_files.sort_az') },
       ...(isCodexSelected
         ? [
             { value: 'plan-desc', label: t('auth_files.sort_plan_desc') },
@@ -617,21 +616,14 @@ export function AuthFilesPage() {
 
   const sorted = useMemo(() => {
     const copy = [...filtered];
-    if (sortMode === 'default') {
-      copy.sort((a, b) => {
-        const providerA = normalizeProviderKey(String(a.provider ?? a.type ?? 'unknown'));
-        const providerB = normalizeProviderKey(String(b.provider ?? b.type ?? 'unknown'));
-        const providerCompare = providerA.localeCompare(providerB);
-        if (providerCompare !== 0) return providerCompare;
-        return a.name.localeCompare(b.name);
-      });
-    } else if (sortMode === 'az') {
+    if (sortMode === 'az') {
       copy.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortMode === 'priority') {
       copy.sort((a, b) => {
         const pa = parsePriorityValue(a.priority) ?? 0;
         const pb = parsePriorityValue(b.priority) ?? 0;
-        return pb - pa; // 高优先级排前面
+        // Highest priority first (matches API candidate pool); name as tie-break.
+        return pb - pa || a.name.localeCompare(b.name);
       });
     } else if (sortMode === 'plan-desc' || sortMode === 'plan-asc') {
       copy.sort((left, right) => {

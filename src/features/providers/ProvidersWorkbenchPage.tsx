@@ -223,6 +223,10 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     }
 
     const sorted = [...arr].sort((a, b) => {
+      // Always keep enabled providers above disabled; secondary sort applies within each group.
+      if (a.disabled !== b.disabled) {
+        return a.disabled ? 1 : -1;
+      }
       const sortDiff =
         providerSortBy === 'name'
           ? getResourceSortName(a).localeCompare(getResourceSortName(b))

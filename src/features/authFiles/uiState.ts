@@ -1,7 +1,6 @@
 export const AUTH_FILES_SORT_MODES = [
-  'default',
-  'az',
   'priority',
+  'az',
   'plan-desc',
   'plan-asc',
 ] as const;

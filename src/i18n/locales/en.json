@@ -316,7 +316,6 @@
     "enabled_only_label": "Only show enabled credentials",
     "private_instructions_only_label": "Only show private-instructions allowed",
     "sort_label": "Sort",
-    "sort_default": "Default",
     "sort_az": "A-Z Name",
     "sort_priority": "Priority",
     "sort_plan_desc": "Plan: highest first",
