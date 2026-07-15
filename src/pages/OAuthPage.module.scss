@@ -116,6 +116,10 @@
   }
 }
 
+:global([data-theme='dark']) .featuredCard .cardTitleIcon {
+  background: #fff;
+}
+
 .recommendedBadge {
   display: inline-flex;
   align-items: center;
