@@ -61,7 +61,7 @@
 .featuredCard {
   position: relative;
   overflow: hidden;
-  border-color: color-mix(in srgb, #1783ff 42%, var(--border-color));
+  border-color: #000;
   background:
     radial-gradient(circle at 92% -35%, rgba(23, 131, 255, 0.24), transparent 42%),
     linear-gradient(
@@ -89,7 +89,7 @@
     height: 24px;
     padding: 7px;
     border-radius: 11px;
-    background: #fff;
+    background: #000;
   }
 
   .featuredActions {

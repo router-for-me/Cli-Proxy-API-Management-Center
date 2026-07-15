@@ -602,7 +602,7 @@
     "antigravity_oauth_polling_error": "检查认证状态失败:",
     "kimi_oauth_title": "Kimi OAuth",
     "kimi_oauth_button": "使用 Kimi 登录",
-    "kimi_sign_up_button": "快速注册",
+    "kimi_sign_up_button": "立即注册",
     "kimi_oauth_hint": "通过设备授权快速登录 Kimi，完成后将自动获取并保存认证文件。",
     "kimi_oauth_url_label": "授权链接:",
     "kimi_open_link": "打开链接",
