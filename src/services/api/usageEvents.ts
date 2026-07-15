@@ -115,6 +115,45 @@ export interface ModelPricesResponse {
   store_path?: string;
 }
 
+export interface PriceSyncCandidate {
+  source_model_id: string;
+  score: number;
+  reason: string;
+  price: ModelPrice;
+}
+
+export interface PriceSyncCandidateSet {
+  model: string;
+  candidates: PriceSyncCandidate[];
+}
+
+export interface PriceSyncSourceResult {
+  source: string;
+  models: number;
+  skipped: number;
+  error?: string;
+}
+
+export interface PriceSyncResult {
+  sources?: string[];
+  imported: number;
+  skipped: number;
+  skipped_manual?: number;
+  matched?: ModelPrice[];
+  candidates?: PriceSyncCandidateSet[];
+  unmatched?: string[];
+  source_results?: PriceSyncSourceResult[];
+  prices?: ModelPrice[];
+  aliases?: ModelPriceAlias[];
+  unpriced_models?: string[];
+}
+
+export interface PriceSyncRequest {
+  models?: string[];
+  override_manual?: boolean;
+  apply_matched?: boolean;
+}
+
 export interface UsageEventsResponse {
   events: UsageEvent[];
   next_before_id?: number;
@@ -129,6 +168,7 @@ export interface UsageSummaryResponse {
 }
 
 const TIMEOUT_MS = 30_000;
+const SYNC_TIMEOUT_MS = 90_000;
 
 export const usageEventsApi = {
   listEvents: (query: UsageQuery = {}) =>
@@ -158,4 +198,14 @@ export const usageEventsApi = {
 
   deleteModelPriceAlias: (alias: string) =>
     apiClient.delete('/model-price-aliases', { params: { alias }, timeout: TIMEOUT_MS }),
+
+  syncModelPrices: (body: PriceSyncRequest = {}) =>
+    apiClient.post<PriceSyncResult>(
+      '/model-prices/sync',
+      {
+        apply_matched: true,
+        ...body,
+      },
+      { timeout: SYNC_TIMEOUT_MS }
+    ),
 };

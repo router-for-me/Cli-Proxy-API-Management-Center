@@ -4,12 +4,23 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/Table';
 import { IconRefreshCw, IconX } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import {
   usageEventsApi,
   type ModelPrice,
   type ModelPriceAlias,
+  type PriceSyncCandidateSet,
+  type PriceSyncResult,
   type UsageAccountStat,
   type UsageEvent,
   type UsageFilterOptions,
@@ -25,10 +36,10 @@ type RangeKey = 'today' | '7d' | '14d' | '30d' | 'all';
 type TabKey = 'realtime' | 'accounts' | 'prices';
 
 const AUTO_OPTIONS = [
-  { label: 'Off', value: 0 },
-  { label: '5s', value: 5_000 },
-  { label: '10s', value: 10_000 },
-  { label: '30s', value: 30_000 },
+  { label: 'Off', value: '0' },
+  { label: '5s', value: '5000' },
+  { label: '10s', value: '10000' },
+  { label: '30s', value: '30000' },
 ] as const;
 
 const startOfTodayMs = () => {
@@ -79,6 +90,11 @@ const formatTokensCompact = (e: UsageEvent) => {
   return parts.join(' · ');
 };
 
+const formatRate = (value: number | undefined | null) => {
+  if (value === undefined || value === null || !Number.isFinite(value)) return '—';
+  return formatNumber(value, 4);
+};
+
 export function MonitoringPage() {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((s) => s.showNotification);
@@ -101,12 +117,16 @@ export function MonitoringPage() {
   const [error, setError] = useState('');
   const [statsEnabledHint, setStatsEnabledHint] = useState<boolean | null>(null);
 
-  // price form
   const [priceModel, setPriceModel] = useState('');
-  const [pricePrompt, setPricePrompt] = useState('1.25');
-  const [priceCompletion, setPriceCompletion] = useState('10');
+  const [pricePrompt, setPricePrompt] = useState('');
+  const [priceCompletion, setPriceCompletion] = useState('');
   const [aliasFrom, setAliasFrom] = useState('');
   const [aliasTo, setAliasTo] = useState('');
+
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<PriceSyncResult | null>(null);
+  const [candidatePicks, setCandidatePicks] = useState<Record<string, string>>({});
+  const [overrideManual, setOverrideManual] = useState(false);
 
   const query = useMemo((): UsageQuery => {
     const base = rangeToMs(range);
@@ -135,8 +155,7 @@ export function MonitoringPage() {
       setStatsEnabledHint(summaryRes.usage_statistics_enabled ?? null);
       setFilterOptions(filtersRes);
     } catch (err) {
-      const message = getErrorMessage(err);
-      setError(message);
+      setError(getErrorMessage(err));
       setEvents([]);
       setSummary(null);
     } finally {
@@ -153,16 +172,27 @@ export function MonitoringPage() {
     }
   }, [query, showNotification]);
 
-  const loadPrices = useCallback(async () => {
-    try {
-      const res = await usageEventsApi.getModelPrices();
+  const applyPricesResponse = useCallback(
+    (res: {
+      prices?: ModelPrice[];
+      aliases?: ModelPriceAlias[];
+      unpriced_models?: string[];
+    }) => {
       setPrices(res.prices || []);
       setAliases(res.aliases || []);
       setUnpriced(res.unpriced_models || []);
+    },
+    []
+  );
+
+  const loadPrices = useCallback(async () => {
+    try {
+      const res = await usageEventsApi.getModelPrices();
+      applyPricesResponse(res);
     } catch (err) {
       showNotification(getErrorMessage(err), 'error');
     }
-  }, [showNotification]);
+  }, [applyPricesResponse, showNotification]);
 
   const refresh = useCallback(async () => {
     await loadCore();
@@ -204,7 +234,7 @@ export function MonitoringPage() {
     }
   };
 
-  const savePrice = async () => {
+  const savePrice = async (asManual = true) => {
     const modelName = priceModel.trim();
     if (!modelName) return;
     try {
@@ -213,16 +243,24 @@ export function MonitoringPage() {
           model: modelName,
           prompt_per_1m: Number(pricePrompt) || 0,
           completion_per_1m: Number(priceCompletion) || 0,
-          source: 'manual',
+          source: asManual ? 'manual' : 'override',
         },
       ]);
       showNotification(t('monitoring.price_saved'), 'success');
       setPriceModel('');
+      setPricePrompt('');
+      setPriceCompletion('');
       await loadPrices();
       await loadCore();
     } catch (err) {
       showNotification(getErrorMessage(err), 'error');
     }
+  };
+
+  const startEditPrice = (p: ModelPrice) => {
+    setPriceModel(p.model);
+    setPricePrompt(String(p.prompt_per_1m ?? ''));
+    setPriceCompletion(String(p.completion_per_1m ?? ''));
   };
 
   const saveAlias = async () => {
@@ -261,109 +299,211 @@ export function MonitoringPage() {
     }
   };
 
+  const syncPrices = async () => {
+    setSyncing(true);
+    try {
+      const result = await usageEventsApi.syncModelPrices({
+        override_manual: overrideManual,
+        apply_matched: true,
+      });
+      setSyncResult(result);
+      applyPricesResponse({
+        prices: result.prices,
+        aliases: result.aliases,
+        unpriced_models: result.unpriced_models,
+      });
+      const picks: Record<string, string> = {};
+      for (const set of result.candidates || []) {
+        if (set.candidates?.[0]) {
+          picks[set.model] = set.candidates[0].source_model_id;
+        }
+      }
+      setCandidatePicks(picks);
+      showNotification(
+        t('monitoring.sync_success', {
+          imported: result.imported,
+          candidates: result.candidates?.length ?? 0,
+          unmatched: result.unmatched?.length ?? 0,
+        }),
+        'success'
+      );
+      await loadCore();
+    } catch (err) {
+      showNotification(getErrorMessage(err), 'error');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const applyCandidate = async (set: PriceSyncCandidateSet) => {
+    const pickId = candidatePicks[set.model];
+    const cand = set.candidates.find((c) => c.source_model_id === pickId) || set.candidates[0];
+    if (!cand) return;
+    try {
+      // Store rates under the local model id so usage rows resolve without an extra alias.
+      const price: ModelPrice = {
+        model: set.model,
+        prompt_per_1m: cand.price.prompt_per_1m,
+        completion_per_1m: cand.price.completion_per_1m,
+        cache_per_1m: cand.price.cache_per_1m,
+        cache_read_per_1m: cand.price.cache_read_per_1m,
+        cache_creation_per_1m: cand.price.cache_creation_per_1m,
+        source: cand.price.source || 'sync',
+      };
+      await usageEventsApi.putModelPrices([price]);
+      showNotification(t('monitoring.candidate_applied', { model: set.model }), 'success');
+      setSyncResult((prev) =>
+        prev
+          ? {
+              ...prev,
+              candidates: (prev.candidates || []).filter((c) => c.model !== set.model),
+            }
+          : prev
+      );
+      await loadPrices();
+      await loadCore();
+    } catch (err) {
+      showNotification(getErrorMessage(err), 'error');
+    }
+  };
+
   const statsOff = statsEnabledHint === false;
 
+  const rangeOptions: Array<[RangeKey, string]> = [
+    ['today', t('monitoring.range_today')],
+    ['7d', '7d'],
+    ['14d', '14d'],
+    ['30d', '30d'],
+    ['all', t('monitoring.range_all')],
+  ];
+
+  const providerOptions = useMemo(
+    () => [
+      { value: '', label: t('monitoring.filter_providers') },
+      ...(filterOptions?.providers || []).map((p) => ({ value: p, label: p })),
+    ],
+    [filterOptions?.providers, t]
+  );
+
+  const modelOptions = useMemo(
+    () => [
+      { value: '', label: t('monitoring.filter_models') },
+      ...(filterOptions?.models || []).map((m) => ({ value: m, label: m })),
+    ],
+    [filterOptions?.models, t]
+  );
+
+  const statusOptions = useMemo(
+    () => [
+      { value: 'all', label: t('monitoring.filter_statuses') },
+      { value: 'success', label: t('monitoring.status_success') },
+      { value: 'failed', label: t('monitoring.status_failed') },
+    ],
+    [t]
+  );
+
+  const autoOptions = useMemo(
+    () =>
+      AUTO_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: `${t('monitoring.auto_prefix')} ${opt.label}`,
+      })),
+    [t]
+  );
+
+  const tabs: Array<[TabKey, string, number | null]> = [
+    ['realtime', t('monitoring.tab_realtime'), events.length],
+    ['accounts', t('monitoring.tab_accounts'), null],
+    ['prices', t('monitoring.tab_prices'), null],
+  ];
+
   return (
-    <div className={styles.page}>
-      <div className={styles.toolbar}>
-        <div className={styles.rangeGroup}>
-          {(
-            [
-              ['today', t('monitoring.range_today')],
-              ['7d', '7d'],
-              ['14d', '14d'],
-              ['30d', '30d'],
-              ['all', t('monitoring.range_all')],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              className={`${styles.rangeChip} ${range === key ? styles.active : ''}`}
-              onClick={() => setRange(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className={styles.searchRow}>
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('monitoring.search_placeholder')}
-            aria-label={t('monitoring.search_placeholder')}
-          />
-          <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-            <IconRefreshCw size={16} />
-            {t('common.refresh')}
-          </Button>
-          <Button variant="ghost" onClick={clearFilters}>
-            <IconX size={16} />
-            {t('monitoring.clear')}
-          </Button>
-          <select
-            className={styles.filterSelect}
-            value={autoMs}
-            onChange={(e) => setAutoMs(Number(e.target.value))}
-            aria-label={t('monitoring.auto_refresh')}
-          >
-            {AUTO_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {t('monitoring.auto_prefix')} {opt.label}
-              </option>
+    <div className={styles.container}>
+      <div className={styles.filterSection}>
+        <div className={styles.filterPrimary}>
+          <div className={styles.rangeGroup} role="group" aria-label={t('monitoring.range_today')}>
+            {rangeOptions.map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={`${styles.rangeChip} ${range === key ? styles.rangeChipActive : ''}`}
+                onClick={() => setRange(key)}
+              >
+                {label}
+              </button>
             ))}
-          </select>
-        </div>
-      </div>
+          </div>
 
-      <div className={styles.filtersRow}>
-        <select
-          className={styles.filterSelect}
-          value={provider}
-          onChange={(e) => setProvider(e.target.value)}
-        >
-          <option value="">{t('monitoring.filter_providers')}</option>
-          {(filterOptions?.providers || []).map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
-        <select
-          className={styles.filterSelect}
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-        >
-          <option value="">{t('monitoring.filter_models')}</option>
-          {(filterOptions?.models || []).map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-        <select
-          className={styles.filterSelect}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as 'all' | 'success' | 'failed')}
-        >
-          <option value="all">{t('monitoring.filter_statuses')}</option>
-          <option value="success">{t('monitoring.status_success')}</option>
-          <option value="failed">{t('monitoring.status_failed')}</option>
-        </select>
+          <div className={styles.searchWrap}>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('monitoring.search_placeholder')}
+              aria-label={t('monitoring.search_placeholder')}
+            />
+          </div>
+
+          <div className={styles.filterActions}>
+            <Button variant="secondary" size="sm" onClick={() => void refresh()} disabled={loading}>
+              <IconRefreshCw size={16} />
+              {t('common.refresh')}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <IconX size={16} />
+              {t('monitoring.clear')}
+            </Button>
+            <Select
+              className={styles.filterSelect}
+              value={String(autoMs)}
+              options={autoOptions}
+              onChange={(v) => setAutoMs(Number(v))}
+              ariaLabel={t('monitoring.auto_refresh')}
+              size="sm"
+            />
+          </div>
+        </div>
+
+        <div className={styles.filterSecondary}>
+          <Select
+            className={styles.filterSelect}
+            value={provider}
+            options={providerOptions}
+            onChange={setProvider}
+            ariaLabel={t('monitoring.filter_providers')}
+            size="sm"
+          />
+          <Select
+            className={styles.filterSelect}
+            value={model}
+            options={modelOptions}
+            onChange={setModel}
+            ariaLabel={t('monitoring.filter_models')}
+            size="sm"
+          />
+          <Select
+            className={styles.filterSelect}
+            value={statusFilter}
+            options={statusOptions}
+            onChange={(v) => setStatusFilter(v as 'all' | 'success' | 'failed')}
+            ariaLabel={t('monitoring.filter_statuses')}
+            size="sm"
+          />
+        </div>
       </div>
 
       {statsOff ? (
         <div className={styles.banner}>
           <span>{t('monitoring.stats_disabled_hint')}</span>
-          <Button onClick={() => void enableStatistics()}>{t('monitoring.enable_stats')}</Button>
+          <Button size="sm" onClick={() => void enableStatistics()}>
+            {t('monitoring.enable_stats')}
+          </Button>
         </div>
       ) : null}
 
       {error ? (
-        <div className={styles.banner}>
+        <div className={`${styles.banner} ${styles.bannerError}`}>
           <span>{error}</span>
-          <Button variant="secondary" onClick={() => void refresh()}>
+          <Button variant="secondary" size="sm" onClick={() => void refresh()}>
             {t('common.retry')}
           </Button>
         </div>
@@ -371,55 +511,53 @@ export function MonitoringPage() {
 
       <div className={styles.summaryGrid}>
         <div className={styles.summaryCard}>
-          <div className={styles.label}>{t('monitoring.card_calls')}</div>
-          <div className={styles.value}>{formatNumber(summary?.total_calls)}</div>
+          <div className={styles.summaryLabel}>{t('monitoring.card_calls')}</div>
+          <div className={styles.summaryValue}>{formatNumber(summary?.total_calls)}</div>
         </div>
-        <div className={`${styles.summaryCard} ${styles.success}`}>
-          <div className={styles.label}>{t('monitoring.card_success')}</div>
-          <div className={styles.value}>
+        <div className={styles.summaryCard}>
+          <div className={styles.summaryLabel}>{t('monitoring.card_success')}</div>
+          <div className={`${styles.summaryValue} ${styles.summaryValueSuccess}`}>
             {summary ? `${(summary.success_rate * 100).toFixed(1)}%` : '—'}
           </div>
         </div>
-        <div className={`${styles.summaryCard} ${styles.danger}`}>
-          <div className={styles.label}>{t('monitoring.card_failed')}</div>
-          <div className={styles.value}>{formatNumber(summary?.failure_calls)}</div>
+        <div className={styles.summaryCard}>
+          <div className={styles.summaryLabel}>{t('monitoring.card_failed')}</div>
+          <div className={`${styles.summaryValue} ${styles.summaryValueDanger}`}>
+            {formatNumber(summary?.failure_calls)}
+          </div>
         </div>
         <div className={styles.summaryCard}>
-          <div className={styles.label}>{t('monitoring.card_cost')}</div>
-          <div className={styles.value}>{formatUsd(summary?.estimated_cost)}</div>
+          <div className={styles.summaryLabel}>{t('monitoring.card_cost')}</div>
+          <div className={styles.summaryValue}>{formatUsd(summary?.estimated_cost)}</div>
         </div>
         <div className={styles.summaryCard}>
-          <div className={styles.label}>{t('monitoring.card_tokens')}</div>
-          <div className={styles.value}>{formatNumber(summary?.total_tokens)}</div>
+          <div className={styles.summaryLabel}>{t('monitoring.card_tokens')}</div>
+          <div className={styles.summaryValue}>{formatNumber(summary?.total_tokens)}</div>
         </div>
         <div className={styles.summaryCard}>
-          <div className={styles.label}>{t('monitoring.card_input')}</div>
-          <div className={styles.value}>{formatNumber(summary?.input_tokens)}</div>
+          <div className={styles.summaryLabel}>{t('monitoring.card_input')}</div>
+          <div className={styles.summaryValue}>{formatNumber(summary?.input_tokens)}</div>
         </div>
         <div className={styles.summaryCard}>
-          <div className={styles.label}>{t('monitoring.card_output')}</div>
-          <div className={styles.value}>{formatNumber(summary?.output_tokens)}</div>
+          <div className={styles.summaryLabel}>{t('monitoring.card_output')}</div>
+          <div className={styles.summaryValue}>{formatNumber(summary?.output_tokens)}</div>
         </div>
         <div className={styles.summaryCard}>
-          <div className={styles.label}>{t('monitoring.card_cached')}</div>
-          <div className={styles.value}>
+          <div className={styles.summaryLabel}>{t('monitoring.card_cached')}</div>
+          <div className={styles.summaryValue}>
             {formatNumber((summary?.cache_read_tokens || 0) + (summary?.cached_tokens || 0))}
           </div>
         </div>
       </div>
 
-      <div className={styles.tabs}>
-        {(
-          [
-            ['realtime', t('monitoring.tab_realtime')],
-            ['accounts', t('monitoring.tab_accounts')],
-            ['prices', t('monitoring.tab_prices')],
-          ] as const
-        ).map(([key, label]) => (
+      <div className={styles.tabBar} role="tablist" aria-label={t('nav.monitoring')}>
+        {tabs.map(([key, label, count]) => (
           <button
             key={key}
             type="button"
-            className={`${styles.rangeChip} ${tab === key ? styles.active : ''}`}
+            role="tab"
+            aria-selected={tab === key}
+            className={`${styles.tabItem} ${tab === key ? styles.tabActive : ''}`}
             onClick={() => {
               setTab(key);
               if (key === 'accounts') void loadAccounts();
@@ -427,43 +565,54 @@ export function MonitoringPage() {
             }}
           >
             {label}
-            {key === 'realtime' ? ` ${events.length}` : ''}
+            {count !== null ? <span className={styles.tabCount}>{count}</span> : null}
           </button>
         ))}
       </div>
 
       {tab === 'realtime' ? (
-        <Card>
-          <div className={styles.tableWrap}>
-            {events.length === 0 ? (
-              <div className={styles.empty}>
-                <EmptyState title={t('monitoring.empty_events')} description={t('monitoring.empty_events_hint')} />
-              </div>
-            ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>{t('monitoring.col_source')}</th>
-                    <th>{t('monitoring.col_model')}</th>
-                    <th>{t('monitoring.col_effort')}</th>
-                    <th>{t('monitoring.col_status')}</th>
-                    <th>{t('monitoring.col_ttft')}</th>
-                    <th>{t('monitoring.col_elapsed')}</th>
-                    <th>{t('monitoring.col_time')}</th>
-                    <th>{t('monitoring.col_usage')}</th>
-                    <th>{t('monitoring.col_cost')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.map((e) => (
-                    <tr key={e.id}>
-                      <td>
-                        <div className={styles.mono}>{e.source || e.auth_index || '—'}</div>
-                        <div className={styles.muted}>{e.provider || ''}</div>
-                      </td>
-                      <td className={styles.mono}>{e.model || e.alias || '—'}</td>
-                      <td>{e.reasoning_effort || '—'}</td>
-                      <td>
+        <Card className={styles.sectionCard}>
+          {events.length === 0 ? (
+            <div className={styles.emptyWrap}>
+              <EmptyState
+                title={t('monitoring.empty_events')}
+                description={t('monitoring.empty_events_hint')}
+              />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('monitoring.col_source')}</TableHead>
+                  <TableHead>{t('monitoring.col_model')}</TableHead>
+                  <TableHead>{t('monitoring.col_effort')}</TableHead>
+                  <TableHead>{t('monitoring.col_status')}</TableHead>
+                  <TableHead alignRight>{t('monitoring.col_ttft')}</TableHead>
+                  <TableHead alignRight>{t('monitoring.col_elapsed')}</TableHead>
+                  <TableHead>{t('monitoring.col_time')}</TableHead>
+                  <TableHead alignRight>{t('monitoring.col_usage')}</TableHead>
+                  <TableHead alignRight>{t('monitoring.col_cost')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {events.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell>
+                      <div className={styles.cellStack}>
+                        <span className={`${styles.cellPrimary} ${styles.mono}`}>
+                          {e.source || e.auth_index || '—'}
+                        </span>
+                        {e.provider ? (
+                          <span className={styles.cellSecondary}>{e.provider}</span>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={styles.mono}>{e.model || e.alias || '—'}</span>
+                    </TableCell>
+                    <TableCell>{e.reasoning_effort || '—'}</TableCell>
+                    <TableCell>
+                      <div className={styles.cellStack}>
                         {e.failed ? (
                           <span className={styles.statusFail}>
                             {e.fail_status_code || t('monitoring.status_failed')}
@@ -472,123 +621,211 @@ export function MonitoringPage() {
                           <span className={styles.statusOk}>{t('monitoring.status_success')}</span>
                         )}
                         {e.fail_summary ? (
-                          <div className={styles.muted} title={e.fail_summary}>
-                            {e.fail_summary.slice(0, 48)}
-                          </div>
+                          <span className={styles.cellSecondary} title={e.fail_summary}>
+                            {e.fail_summary.slice(0, 64)}
+                          </span>
                         ) : null}
-                      </td>
-                      <td>{formatDuration(e.ttft_ms)}</td>
-                      <td>{formatDuration(e.latency_ms)}</td>
-                      <td>{formatTime(e.timestamp_ms)}</td>
-                      <td>
-                        <div className={styles.usageCell}>
-                          <span>{formatNumber(e.total_tokens)}</span>
-                          <span className={styles.muted}>{formatTokensCompact(e)}</span>
-                        </div>
-                      </td>
-                      <td>{formatUsd(e.estimated_cost)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                      </div>
+                    </TableCell>
+                    <TableCell alignRight>
+                      <span className={styles.num}>{formatDuration(e.ttft_ms)}</span>
+                    </TableCell>
+                    <TableCell alignRight>
+                      <span className={styles.num}>{formatDuration(e.latency_ms)}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={styles.cellSecondary}>{formatTime(e.timestamp_ms)}</span>
+                    </TableCell>
+                    <TableCell alignRight>
+                      <div className={styles.cellStack} style={{ alignItems: 'flex-end' }}>
+                        <span className={styles.num}>{formatNumber(e.total_tokens)}</span>
+                        <span className={styles.cellSecondary}>{formatTokensCompact(e)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell alignRight>
+                      <span className={styles.num}>{formatUsd(e.estimated_cost)}</span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </Card>
       ) : null}
 
       {tab === 'accounts' ? (
-        <Card>
-          <div className={styles.tableWrap}>
-            {accounts.length === 0 ? (
-              <div className={styles.empty}>
-                <EmptyState title={t('monitoring.empty_accounts')} />
-              </div>
-            ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>{t('monitoring.col_source')}</th>
-                    <th>{t('monitoring.col_auth')}</th>
-                    <th>{t('monitoring.col_provider')}</th>
-                    <th>{t('monitoring.card_calls')}</th>
-                    <th>{t('monitoring.card_success')}</th>
-                    <th>{t('monitoring.card_tokens')}</th>
-                    <th>{t('monitoring.card_cost')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {accounts.map((a, idx) => (
-                    <tr key={`${a.auth_index}-${a.source_hash}-${idx}`}>
-                      <td className={styles.mono}>{a.source || '—'}</td>
-                      <td className={styles.mono}>{a.auth_index || '—'}</td>
-                      <td>{a.provider || '—'}</td>
-                      <td>{formatNumber(a.total_calls)}</td>
-                      <td>
-                        {a.total_calls
-                          ? `${((a.success_calls / a.total_calls) * 100).toFixed(1)}%`
-                          : '—'}
-                      </td>
-                      <td>{formatNumber(a.total_tokens)}</td>
-                      <td>{formatUsd(a.estimated_cost)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+        <Card className={styles.sectionCard}>
+          {accounts.length === 0 ? (
+            <div className={styles.emptyWrap}>
+              <EmptyState title={t('monitoring.empty_accounts')} />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('monitoring.col_source')}</TableHead>
+                  <TableHead>{t('monitoring.col_auth')}</TableHead>
+                  <TableHead>{t('monitoring.col_provider')}</TableHead>
+                  <TableHead alignRight>{t('monitoring.card_calls')}</TableHead>
+                  <TableHead alignRight>{t('monitoring.card_success')}</TableHead>
+                  <TableHead alignRight>{t('monitoring.card_tokens')}</TableHead>
+                  <TableHead alignRight>{t('monitoring.card_cost')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {accounts.map((a, idx) => (
+                  <TableRow key={`${a.auth_index}-${a.source_hash}-${idx}`}>
+                    <TableCell>
+                      <span className={styles.mono}>{a.source || '—'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={styles.mono}>{a.auth_index || '—'}</span>
+                    </TableCell>
+                    <TableCell>{a.provider || '—'}</TableCell>
+                    <TableCell alignRight className={styles.num}>
+                      {formatNumber(a.total_calls)}
+                    </TableCell>
+                    <TableCell alignRight className={styles.num}>
+                      {a.total_calls
+                        ? `${((a.success_calls / a.total_calls) * 100).toFixed(1)}%`
+                        : '—'}
+                    </TableCell>
+                    <TableCell alignRight className={styles.num}>
+                      {formatNumber(a.total_tokens)}
+                    </TableCell>
+                    <TableCell alignRight className={styles.num}>
+                      {formatUsd(a.estimated_cost)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </Card>
       ) : null}
 
       {tab === 'prices' ? (
-        <div className={styles.pricesPanel}>
-          <Card title={t('monitoring.prices_editor')}>
-            <p className={styles.muted}>{t('monitoring.prices_hint')}</p>
-            <div className={styles.formRow}>
-              <div className={styles.formField}>
-                <label>{t('monitoring.col_model')}</label>
-                <Input value={priceModel} onChange={(e) => setPriceModel(e.target.value)} placeholder="gpt-5.5" />
+        <div className={styles.pricesLayout}>
+          <Card className={styles.sectionCard}>
+            <div className={styles.pricesToolbar}>
+              <div className={styles.pricesToolbarMeta}>
+                <h3 className={styles.pricesTitle}>{t('monitoring.prices_editor')}</h3>
+                <p className={styles.pricesHint}>{t('monitoring.prices_hint')}</p>
               </div>
-              <div className={styles.formField}>
-                <label>{t('monitoring.price_prompt')}</label>
-                <Input value={pricePrompt} onChange={(e) => setPricePrompt(e.target.value)} />
+              <div className={styles.pricesActions}>
+                <label className={styles.overrideRow}>
+                  <input
+                    type="checkbox"
+                    checked={overrideManual}
+                    onChange={(e) => setOverrideManual(e.target.checked)}
+                  />
+                  {t('monitoring.override_manual')}
+                </label>
+                <Button loading={syncing} onClick={() => void syncPrices()}>
+                  {t('monitoring.sync_prices')}
+                </Button>
               </div>
-              <div className={styles.formField}>
-                <label>{t('monitoring.price_completion')}</label>
-                <Input value={priceCompletion} onChange={(e) => setPriceCompletion(e.target.value)} />
-              </div>
-              <Button onClick={() => void savePrice()}>{t('monitoring.save_price')}</Button>
             </div>
+
+            {syncResult ? (
+              <div className={styles.syncResult}>
+                <span className={styles.syncPill}>
+                  {t('monitoring.sync_imported')}: {syncResult.imported}
+                </span>
+                <span className={styles.syncPill}>
+                  {t('monitoring.sync_candidates')}: {syncResult.candidates?.length ?? 0}
+                </span>
+                <span className={styles.syncPill}>
+                  {t('monitoring.sync_unmatched')}: {syncResult.unmatched?.length ?? 0}
+                </span>
+                {(syncResult.skipped_manual ?? 0) > 0 ? (
+                  <span className={styles.syncPill}>
+                    {t('monitoring.sync_skipped_manual')}: {syncResult.skipped_manual}
+                  </span>
+                ) : null}
+                {(syncResult.sources || []).length > 0 ? (
+                  <span className={styles.syncPill}>
+                    {t('monitoring.sync_sources')}: {(syncResult.sources || []).join(', ')}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </Card>
 
-          <Card title={t('monitoring.alias_editor')}>
-            <p className={styles.muted}>{t('monitoring.alias_hint')}</p>
-            <div className={styles.formRow}>
-              <div className={styles.formField}>
-                <label>{t('monitoring.alias_from')}</label>
-                <Input
-                  value={aliasFrom}
-                  onChange={(e) => setAliasFrom(e.target.value)}
-                  placeholder="brand-gpt-5.5"
-                />
+          {(syncResult?.candidates?.length ?? 0) > 0 ? (
+            <Card title={t('monitoring.candidates_title')} className={styles.sectionCard}>
+              <p className={styles.muted}>{t('monitoring.candidates_hint')}</p>
+              <div className={styles.candidatesCard}>
+                {(syncResult?.candidates || []).map((set) => {
+                  const options = set.candidates.map((c) => ({
+                    value: c.source_model_id,
+                    label: `${c.source_model_id} · ${Math.round(c.score * 100)}% · $${formatRate(c.price.prompt_per_1m)} / $${formatRate(c.price.completion_per_1m)}`,
+                  }));
+                  return (
+                    <div key={set.model} className={styles.candidateBlock}>
+                      <div className={styles.candidateHeader}>
+                        <span className={styles.candidateModel}>{set.model}</span>
+                        <div className={styles.candidateControls}>
+                          <Select
+                            className={styles.candidateSelect}
+                            value={candidatePicks[set.model] || options[0]?.value || ''}
+                            options={options}
+                            onChange={(v) =>
+                              setCandidatePicks((prev) => ({ ...prev, [set.model]: v }))
+                            }
+                            size="sm"
+                            ariaLabel={t('monitoring.candidates_title')}
+                          />
+                          <Button size="sm" onClick={() => void applyCandidate(set)}>
+                            {t('monitoring.apply_candidate')}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className={styles.formField}>
-                <label>{t('monitoring.alias_to')}</label>
-                <Input value={aliasTo} onChange={(e) => setAliasTo(e.target.value)} placeholder="gpt-5.5" />
+            </Card>
+          ) : null}
+
+          <Card title={t('monitoring.manual_price_title')} className={styles.sectionCard}>
+            <p className={styles.muted}>{t('monitoring.manual_price_hint')}</p>
+            <div className={styles.formGrid}>
+              <Input
+                label={t('monitoring.col_model')}
+                value={priceModel}
+                onChange={(e) => setPriceModel(e.target.value)}
+                placeholder="gpt-5.5"
+              />
+              <Input
+                label={t('monitoring.price_prompt')}
+                value={pricePrompt}
+                onChange={(e) => setPricePrompt(e.target.value)}
+                placeholder="1.25"
+              />
+              <Input
+                label={t('monitoring.price_completion')}
+                value={priceCompletion}
+                onChange={(e) => setPriceCompletion(e.target.value)}
+                placeholder="10"
+              />
+              <div className={styles.formActions}>
+                <Button onClick={() => void savePrice(true)}>{t('monitoring.save_price')}</Button>
               </div>
-              <Button onClick={() => void saveAlias()}>{t('monitoring.save_alias')}</Button>
             </div>
+
             {unpriced.length > 0 ? (
-              <div style={{ marginTop: '0.75rem' }}>
+              <div style={{ marginTop: 16 }}>
                 <div className={styles.muted}>{t('monitoring.unpriced_models')}</div>
-                <div className={styles.filtersRow}>
-                  {unpriced.slice(0, 20).map((m) => (
+                <div className={styles.unpricedRow}>
+                  {unpriced.slice(0, 24).map((m) => (
                     <button
                       key={m}
                       type="button"
-                      className={styles.rangeChip}
+                      className={styles.unpricedChip}
                       onClick={() => {
-                        setAliasFrom(m);
                         setPriceModel(m);
+                        setAliasFrom(m);
                       }}
                     >
                       {m}
@@ -599,60 +836,112 @@ export function MonitoringPage() {
             ) : null}
           </Card>
 
-          <Card>
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>{t('monitoring.col_model')}</th>
-                    <th>{t('monitoring.price_prompt')}</th>
-                    <th>{t('monitoring.price_completion')}</th>
-                    <th>{t('monitoring.price_source')}</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {prices.map((p) => (
-                    <tr key={p.model}>
-                      <td className={styles.mono}>{p.model}</td>
-                      <td>{p.prompt_per_1m}</td>
-                      <td>{p.completion_per_1m}</td>
-                      <td>{p.source || 'manual'}</td>
-                      <td>
-                        <Button variant="ghost" onClick={() => void deletePrice(p.model)}>
-                          {t('common.delete')}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className={styles.tableWrap} style={{ marginTop: '1rem' }}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>{t('monitoring.alias_from')}</th>
-                    <th>{t('monitoring.alias_to')}</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {aliases.map((a) => (
-                    <tr key={a.alias}>
-                      <td className={styles.mono}>{a.alias}</td>
-                      <td className={styles.mono}>{a.target_model}</td>
-                      <td>
-                        <Button variant="ghost" onClick={() => void deleteAlias(a.alias)}>
-                          {t('common.delete')}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <Card title={t('monitoring.alias_editor')} className={styles.sectionCard}>
+            <p className={styles.muted}>{t('monitoring.alias_hint')}</p>
+            <div className={styles.formGrid}>
+              <Input
+                label={t('monitoring.alias_from')}
+                value={aliasFrom}
+                onChange={(e) => setAliasFrom(e.target.value)}
+                placeholder="brand-gpt-5.5"
+              />
+              <Input
+                label={t('monitoring.alias_to')}
+                value={aliasTo}
+                onChange={(e) => setAliasTo(e.target.value)}
+                placeholder="gpt-5.5"
+              />
+              <div className={styles.formActions}>
+                <Button onClick={() => void saveAlias()}>{t('monitoring.save_alias')}</Button>
+              </div>
             </div>
           </Card>
+
+          <Card title={t('monitoring.price_book')} className={styles.sectionCard}>
+            {prices.length === 0 ? (
+              <div className={styles.emptyWrap}>
+                <EmptyState
+                  title={t('monitoring.empty_prices')}
+                  description={t('monitoring.empty_prices_hint')}
+                />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('monitoring.col_model')}</TableHead>
+                    <TableHead alignRight>{t('monitoring.price_prompt')}</TableHead>
+                    <TableHead alignRight>{t('monitoring.price_completion')}</TableHead>
+                    <TableHead>{t('monitoring.price_source')}</TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {prices.map((p) => (
+                    <TableRow key={p.model}>
+                      <TableCell>
+                        <span className={styles.mono}>{p.model}</span>
+                      </TableCell>
+                      <TableCell alignRight className={styles.num}>
+                        {formatRate(p.prompt_per_1m)}
+                      </TableCell>
+                      <TableCell alignRight className={styles.num}>
+                        {formatRate(p.completion_per_1m)}
+                      </TableCell>
+                      <TableCell>
+                        <span className={styles.cellSecondary}>{p.source || 'manual'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className={styles.formActions}>
+                          <Button variant="ghost" size="sm" onClick={() => startEditPrice(p)}>
+                            {t('common.edit')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void deletePrice(p.model)}
+                          >
+                            {t('common.delete')}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </Card>
+
+          {aliases.length > 0 ? (
+            <Card title={t('monitoring.alias_list')} className={styles.sectionCard}>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('monitoring.alias_from')}</TableHead>
+                    <TableHead>{t('monitoring.alias_to')}</TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {aliases.map((a) => (
+                    <TableRow key={a.alias}>
+                      <TableCell>
+                        <span className={styles.mono}>{a.alias}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={styles.mono}>{a.target_model}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => void deleteAlias(a.alias)}>
+                          {t('common.delete')}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          ) : null}
         </div>
       ) : null}
     </div>
