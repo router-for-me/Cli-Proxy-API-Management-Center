@@ -9,6 +9,7 @@ import {
   XAI_CONFIG,
 } from '@/components/quota';
 import { useNotificationStore, useQuotaStore } from '@/stores';
+import { authFilesApi } from '@/services/api';
 import type { AuthFileItem } from '@/types';
 import { getStatusFromError } from '@/utils/quota';
 import {
@@ -40,10 +41,11 @@ export type AuthFileQuotaSectionProps = {
   file: AuthFileItem;
   quotaType: QuotaProviderType;
   disableControls: boolean;
+  onAuthFileUpdated?: () => void | Promise<void>;
 };
 
 export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
-  const { file, quotaType, disableControls } = props;
+  const { file, quotaType, disableControls, onAuthFileUpdated } = props;
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
   const showConfirmation = useNotificationStore((state) => state.showConfirmation);
@@ -95,6 +97,24 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         ...prev,
         [file.name]: config.buildSuccessState(data),
       }));
+      if (quotaType === 'codex') {
+        const planType =
+          data && typeof data === 'object' && 'planType' in data
+            ? String((data as { planType?: unknown }).planType ?? '').trim()
+            : '';
+        if (planType) {
+          try {
+            await authFilesApi.patchFields(file.name, {
+              plan_type: planType,
+              chatgpt_plan_type: planType,
+              plan_checked_at: new Date().toISOString(),
+            });
+            await onAuthFileUpdated?.();
+          } catch {
+            // Quota display still succeeds if plan persistence fails.
+          }
+        }
+      }
       showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.unknown_error');
@@ -105,7 +125,16 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       }));
       showNotification(t('auth_files.quota_refresh_failed', { name: file.name, message }), 'error');
     }
-  }, [disableControls, file, quota?.status, quotaType, showNotification, t, updateQuotaState]);
+  }, [
+    disableControls,
+    file,
+    onAuthFileUpdated,
+    quota?.status,
+    quotaType,
+    showNotification,
+    t,
+    updateQuotaState,
+  ]);
 
   const resetQuotaForFile = useCallback(() => {
     if (disableControls) return;

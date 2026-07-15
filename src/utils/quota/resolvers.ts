@@ -48,6 +48,17 @@ export function resolveCodexChatgptAccountId(file: AuthFileItem): string | null 
   return null;
 }
 
+const planTypeFromAuthInfo = (value: unknown): string | null => {
+  const authInfo = resolveCodexAuthInfo(value);
+  if (!authInfo) return null;
+  return (
+    normalizePlanType(authInfo.chatgpt_plan_type) ??
+    normalizePlanType(authInfo.chatgptPlanType) ??
+    normalizePlanType(authInfo.plan_type) ??
+    normalizePlanType(authInfo.planType)
+  );
+};
+
 export function resolveCodexPlanType(file: AuthFileItem): string | null {
   const metadata =
     file && typeof file.metadata === 'object' && file.metadata !== null
@@ -65,26 +76,46 @@ export function resolveCodexPlanType(file: AuthFileItem): string | null {
     metadata && typeof metadata.id_token === 'object' && metadata.id_token !== null
       ? (metadata.id_token as Record<string, unknown>)
       : null;
-  const candidates = [
+
+  // Prefer explicitly stored plan fields over JWT-derived values so quota
+  // refresh can correct stale chatgpt_plan_type claims after downgrades.
+  const storedCandidates = [
     file.plan_type,
     file.planType,
     file['plan_type'],
     file['planType'],
-    file.id_token,
-    idToken?.plan_type,
-    idToken?.planType,
     metadata?.plan_type,
     metadata?.planType,
-    metadata?.id_token,
-    metadataIdToken?.plan_type,
-    metadataIdToken?.planType,
     attributes?.plan_type,
     attributes?.planType,
-    attributes?.id_token,
+    file.chatgpt_plan_type,
+    file.chatgptPlanType,
+    file['chatgpt_plan_type'],
+    file['chatgptPlanType'],
+    metadata?.chatgpt_plan_type,
+    metadata?.chatgptPlanType,
+    attributes?.chatgpt_plan_type,
+    attributes?.chatgptPlanType,
   ];
 
-  for (const candidate of candidates) {
+  for (const candidate of storedCandidates) {
     const planType = normalizePlanType(candidate);
+    if (planType) return planType;
+  }
+
+  const tokenCandidates = [
+    planTypeFromAuthInfo(file.id_token),
+    planTypeFromAuthInfo(idToken),
+    planTypeFromAuthInfo(metadata?.id_token),
+    planTypeFromAuthInfo(metadataIdToken),
+    planTypeFromAuthInfo(attributes?.id_token),
+    normalizePlanType(idToken?.plan_type),
+    normalizePlanType(idToken?.planType),
+    normalizePlanType(metadataIdToken?.plan_type),
+    normalizePlanType(metadataIdToken?.planType),
+  ];
+
+  for (const planType of tokenCandidates) {
     if (planType) return planType;
   }
 

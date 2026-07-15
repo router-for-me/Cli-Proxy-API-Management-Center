@@ -6,6 +6,7 @@ import {
   matchesCodexStatusFilter,
   type CodexRefreshState,
 } from '@/features/authFiles/codexStatus';
+import { resolveCodexPlanType } from '@/utils/quota';
 
 const file = { name: 'codex.json', type: 'codex', plan_type: 'plus' };
 
@@ -20,6 +21,42 @@ describe('Codex auth-file status', () => {
     expect(matchesCodexPlanFilter(file, 'pro', refreshed)).toBe(true);
     expect(matchesCodexPlanFilter(file, 'plus', refreshed)).toBe(false);
     expect(getCodexPlanSortRank(file, refreshed)).toBe(50);
+  });
+
+  test('prefers stored plan_type over stale JWT plus claims', () => {
+    const downgraded = {
+      name: 'codex-josephcy95@gmail.com-plus.json',
+      type: 'codex',
+      plan_type: 'free',
+      chatgpt_plan_type: 'free',
+      id_token: {
+        plan_type: 'plus',
+        'https://api.openai.com/auth': { chatgpt_plan_type: 'plus' },
+      },
+    };
+
+    expect(resolveCodexPlanType(downgraded)).toBe('free');
+    expect(matchesCodexPlanFilter(downgraded, 'free')).toBe(true);
+    expect(matchesCodexPlanFilter(downgraded, 'plus')).toBe(false);
+  });
+
+  test('falls back to chatgpt_plan_type then JWT plan', () => {
+    expect(
+      resolveCodexPlanType({
+        name: 'a.json',
+        type: 'codex',
+        chatgpt_plan_type: 'team',
+        id_token: { 'https://api.openai.com/auth': { chatgpt_plan_type: 'plus' } },
+      })
+    ).toBe('team');
+
+    expect(
+      resolveCodexPlanType({
+        name: 'b.json',
+        type: 'codex',
+        id_token: { 'https://api.openai.com/auth': { chatgpt_plan_type: 'plus' } },
+      })
+    ).toBe('plus');
   });
 
   test('recognizes the K12 plan type', () => {

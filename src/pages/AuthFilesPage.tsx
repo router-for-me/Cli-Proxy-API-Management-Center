@@ -441,6 +441,7 @@ export function AuthFilesPage() {
             try {
               await authFilesApi.patchFields(file.name, {
                 plan_type: snapshot.planType,
+                chatgpt_plan_type: snapshot.planType,
                 plan_checked_at: checkedAt,
               });
             } catch {
@@ -1091,6 +1092,7 @@ export function AuthFilesPage() {
                     onDelete={handleDelete}
                     onToggleStatus={handleStatusToggle}
                     onToggleSelect={toggleSelect}
+                    onAuthFileUpdated={loadFiles}
                   />
                 ))}
               </div>

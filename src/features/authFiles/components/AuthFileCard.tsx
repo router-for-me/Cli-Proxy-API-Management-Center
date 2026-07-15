@@ -65,6 +65,7 @@ export type AuthFileCardProps = {
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
   onToggleSelect: (name: string) => void;
+  onAuthFileUpdated?: () => void | Promise<void>;
 };
 
 const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
@@ -92,6 +93,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     onDelete,
     onToggleStatus,
     onToggleSelect,
+    onAuthFileUpdated,
   } = props;
 
   const recentBuckets = normalizeRecentRequestBuckets(file.recent_requests ?? file.recentRequests);
@@ -291,6 +293,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 file={file}
                 quotaType={quotaType}
                 disableControls={disableControls}
+                onAuthFileUpdated={onAuthFileUpdated}
               />
             )}
           </div>

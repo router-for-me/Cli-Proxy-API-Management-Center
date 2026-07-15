@@ -16,6 +16,7 @@ import {
   useThemeStore,
 } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
+import { authFilesApi } from '@/services/api';
 import { getStatusFromError } from '@/utils/quota';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
@@ -216,6 +217,23 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
       try {
         const data = await config.fetchQuota(file, t);
+        if (config.type === 'codex') {
+          const planType =
+            data && typeof data === 'object' && data !== null && 'planType' in data
+              ? String((data as { planType?: unknown }).planType ?? '').trim()
+              : '';
+          if (planType) {
+            try {
+              await authFilesApi.patchFields(file.name, {
+                plan_type: planType,
+                chatgpt_plan_type: planType,
+                plan_checked_at: new Date().toISOString(),
+              });
+            } catch {
+              // Quota display still succeeds if plan persistence fails.
+            }
+          }
+        }
         commitIfQuotaCacheCurrent(cacheGeneration, () => {
           setQuota((prev) => ({
             ...prev,
