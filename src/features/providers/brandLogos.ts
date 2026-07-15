@@ -19,6 +19,7 @@ export interface ProviderBrandLogo {
   src: string;
   darkSrc?: string;
   transparent?: boolean;
+  themeSurface?: boolean;
   invertOnDark?: boolean;
 }
 
@@ -34,5 +35,10 @@ export const PROVIDER_LOGOS: Record<ProviderBrand, ProviderBrandLogo> = {
   code0: { src: code0Logo },
   fennoAI: { src: fennoAILogo, transparent: true },
   qiniuCloud: { src: qiniuCloudLogo, transparent: true },
-  kimi: { src: kimiDarkLogo, darkSrc: kimiLightLogo, transparent: true },
+  kimi: {
+    src: kimiDarkLogo,
+    darkSrc: kimiLightLogo,
+    transparent: true,
+    themeSurface: true,
+  },
 };

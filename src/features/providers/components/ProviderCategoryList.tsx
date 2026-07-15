@@ -10,7 +10,6 @@ interface ProviderCategoryListProps {
 }
 
 const QUICK_FILL_BRAND_ORDER: readonly ProviderBrand[] = [
-  'kimi',
   'code0',
   'fennoAI',
   'qiniuCloud',
@@ -41,6 +40,7 @@ export function ProviderCategoryList({ groups, activeBrand, onSelect }: Provider
         const logoClassName = [
           styles.logo,
           logo?.transparent ? styles.logoTransparent : '',
+          logo?.themeSurface ? styles.logoThemeSurface : '',
           logo?.darkSrc ? styles.logoThemeLight : '',
           logo?.invertOnDark ? styles.logoInvertOnDark : '',
         ]
@@ -49,6 +49,7 @@ export function ProviderCategoryList({ groups, activeBrand, onSelect }: Provider
         const darkLogoClassName = [
           styles.logo,
           logo?.transparent ? styles.logoTransparent : '',
+          logo?.themeSurface ? styles.logoThemeSurface : '',
           styles.logoThemeDark,
         ]
           .filter(Boolean)

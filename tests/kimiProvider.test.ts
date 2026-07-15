@@ -1,15 +1,20 @@
 import { describe, expect, test } from 'bun:test';
 import {
   KIMI_ANTHROPIC_BASE_URL,
+  KIMI_CHINESE_AFFILIATE_URL,
+  KIMI_INTERNATIONAL_AFFILIATE_URL,
   KIMI_OPENAI_BASE_URL,
   buildKimiRaw,
+  getKimiAffiliateUrl,
   getKimiProtocolUrls,
   isKimiClaudeProvider,
   isKimiOpenAIProvider,
 } from '../src/features/providers/kimi';
+import { PROVIDER_LOGOS } from '../src/features/providers/brandLogos';
+import { PROVIDER_BRAND_ORDER } from '../src/features/providers/descriptors';
 import { getSponsorProviderDefinition } from '../src/features/providers/sponsorDefinitions';
 
-describe('Kimi quick-fill provider', () => {
+describe('Kimi provider', () => {
   test('maps OpenAI-compatible and Claude protocols to their exact endpoints', () => {
     expect(getKimiProtocolUrls(undefined)).toEqual({
       openai: 'https://api.moonshot.ai',
@@ -18,6 +23,21 @@ describe('Kimi quick-fill provider', () => {
       gemini: '',
     });
     expect(getSponsorProviderDefinition('kimi').protocols).toEqual(['openai', 'claude']);
+  });
+
+  test('uses the domestic registration link for Chinese and the international link otherwise', () => {
+    expect(getKimiAffiliateUrl('zh-CN')).toBe(KIMI_CHINESE_AFFILIATE_URL);
+    expect(getKimiAffiliateUrl('zh-TW')).toBe(KIMI_CHINESE_AFFILIATE_URL);
+    expect(getKimiAffiliateUrl('en')).toBe(KIMI_INTERNATIONAL_AFFILIATE_URL);
+    expect(getKimiAffiliateUrl('ru')).toBe(KIMI_INTERNATIONAL_AFFILIATE_URL);
+  });
+
+  test('uses the OAuth-style theme surface for its provider icon', () => {
+    expect(PROVIDER_LOGOS.kimi.themeSurface).toBeTrue();
+  });
+
+  test('is the first provider in the catalog', () => {
+    expect(PROVIDER_BRAND_ORDER[0]).toBe('kimi');
   });
 
   test('recognizes Kimi configs by provider name or protocol endpoint', () => {
