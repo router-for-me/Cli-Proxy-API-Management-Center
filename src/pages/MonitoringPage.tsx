@@ -128,7 +128,10 @@ export function MonitoringPage() {
   const [candidatePicks, setCandidatePicks] = useState<Record<string, string>>({});
   const [overrideManual, setOverrideManual] = useState(false);
 
-  const query = useMemo((): UsageQuery => {
+  // Build the query at call time so refresh / auto-refresh always use a fresh
+  // upper bound. Memoizing with to_ms: Date.now() freezes the window and makes
+  // later refreshes look broken (new events fall after the stale to_ms).
+  const buildQuery = useCallback((): UsageQuery => {
     const base = rangeToMs(range);
     return {
       ...base,
@@ -145,6 +148,7 @@ export function MonitoringPage() {
     setLoading(true);
     setError('');
     try {
+      const query = buildQuery();
       const [eventsRes, summaryRes, filtersRes] = await Promise.all([
         usageEventsApi.listEvents(query),
         usageEventsApi.getSummary(query),
@@ -161,16 +165,16 @@ export function MonitoringPage() {
     } finally {
       setLoading(false);
     }
-  }, [query]);
+  }, [buildQuery]);
 
   const loadAccounts = useCallback(async () => {
     try {
-      const res = await usageEventsApi.getAccountStats(query);
+      const res = await usageEventsApi.getAccountStats(buildQuery());
       setAccounts(res.accounts || []);
     } catch (err) {
       showNotification(getErrorMessage(err), 'error');
     }
-  }, [query, showNotification]);
+  }, [buildQuery, showNotification]);
 
   const applyPricesResponse = useCallback(
     (res: {
@@ -202,6 +206,7 @@ export function MonitoringPage() {
 
   useHeaderRefresh(refresh);
 
+  // Re-fetch when filters change (buildQuery identity) or active tab changes.
   useEffect(() => {
     void refresh();
   }, [refresh]);
