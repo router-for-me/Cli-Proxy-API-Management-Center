@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -34,6 +33,7 @@ import styles from './MonitoringPage.module.scss';
 
 type RangeKey = 'today' | '7d' | '14d' | '30d' | 'all';
 type TabKey = 'realtime' | 'accounts' | 'prices';
+type PriceListFilter = 'all' | 'manual' | 'synced' | 'unpriced';
 
 const AUTO_OPTIONS = [
   { label: 'Off', value: '0' },
@@ -95,6 +95,11 @@ const formatRate = (value: number | undefined | null) => {
   return formatNumber(value, 4);
 };
 
+const isManualSource = (source?: string) => {
+  const s = (source || '').toLowerCase();
+  return s === '' || s === 'manual' || s === 'override';
+};
+
 export function MonitoringPage() {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((s) => s.showNotification);
@@ -104,6 +109,7 @@ export function MonitoringPage() {
   const [search, setSearch] = useState('');
   const [model, setModel] = useState('');
   const [provider, setProvider] = useState('');
+  const [source, setSource] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'failed'>('all');
   const [autoMs, setAutoMs] = useState(5_000);
   const [loading, setLoading] = useState(false);
@@ -122,27 +128,46 @@ export function MonitoringPage() {
   const [priceCompletion, setPriceCompletion] = useState('');
   const [aliasFrom, setAliasFrom] = useState('');
   const [aliasTo, setAliasTo] = useState('');
+  const [priceSearch, setPriceSearch] = useState('');
+  const [priceListFilter, setPriceListFilter] = useState<PriceListFilter>('all');
 
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<PriceSyncResult | null>(null);
   const [candidatePicks, setCandidatePicks] = useState<Record<string, string>>({});
   const [overrideManual, setOverrideManual] = useState(false);
 
-  // Build the query at call time so refresh / auto-refresh always use a fresh
-  // upper bound. Memoizing with to_ms: Date.now() freezes the window and makes
-  // later refreshes look broken (new events fall after the stale to_ms).
+  // Build query at call time so refresh uses a fresh upper time bound.
+  // Source dropdown merges source paths + auth indices; route the pick to the right API field.
   const buildQuery = useCallback((): UsageQuery => {
     const base = rangeToMs(range);
+    const sourcePick = source.trim();
+    const knownSources = new Set(filterOptions?.sources || []);
+    const knownAuth = new Set(filterOptions?.auth_indices || []);
+    // Backend ANDs filters — only send one of sources vs auth_indices per pick.
+    let sources: string[] | undefined;
+    let auth_indices: string[] | undefined;
+    if (sourcePick) {
+      if (knownSources.has(sourcePick)) {
+        sources = [sourcePick];
+      } else if (knownAuth.has(sourcePick)) {
+        auth_indices = [sourcePick];
+      } else {
+        // Stale / free-form: treat as source path / key label.
+        sources = [sourcePick];
+      }
+    }
     return {
       ...base,
       search: search.trim() || undefined,
       models: model ? [model] : undefined,
       providers: provider ? [provider] : undefined,
+      sources,
+      auth_indices,
       failed_only: statusFilter === 'failed' || undefined,
       success_only: statusFilter === 'success' || undefined,
       limit: 200,
     };
-  }, [range, search, model, provider, statusFilter]);
+  }, [range, search, model, provider, source, statusFilter, filterOptions?.sources, filterOptions?.auth_indices]);
 
   const loadCore = useCallback(async () => {
     setLoading(true);
@@ -206,7 +231,6 @@ export function MonitoringPage() {
 
   useHeaderRefresh(refresh);
 
-  // Re-fetch when filters change (buildQuery identity) or active tab changes.
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -224,6 +248,7 @@ export function MonitoringPage() {
     setSearch('');
     setModel('');
     setProvider('');
+    setSource('');
     setStatusFilter('all');
     setRange('today');
   };
@@ -266,6 +291,7 @@ export function MonitoringPage() {
     setPriceModel(p.model);
     setPricePrompt(String(p.prompt_per_1m ?? ''));
     setPriceCompletion(String(p.completion_per_1m ?? ''));
+    setPriceListFilter('all');
   };
 
   const saveAlias = async () => {
@@ -345,7 +371,6 @@ export function MonitoringPage() {
     const cand = set.candidates.find((c) => c.source_model_id === pickId) || set.candidates[0];
     if (!cand) return;
     try {
-      // Store rates under the local model id so usage rows resolve without an extra alias.
       const price: ModelPrice = {
         model: set.model,
         prompt_per_1m: cand.price.prompt_per_1m,
@@ -407,6 +432,17 @@ export function MonitoringPage() {
     [t]
   );
 
+  const sourceOptions = useMemo(() => {
+    // Merge source paths and auth indices so operators can pin one auth file or key identity.
+    const values = Array.from(
+      new Set([...(filterOptions?.sources || []), ...(filterOptions?.auth_indices || [])].filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+    return [
+      { value: '', label: t('monitoring.filter_sources') },
+      ...values.map((s) => ({ value: s, label: s })),
+    ];
+  }, [filterOptions?.sources, filterOptions?.auth_indices, t]);
+
   const autoOptions = useMemo(
     () =>
       AUTO_OPTIONS.map((opt) => ({
@@ -420,6 +456,42 @@ export function MonitoringPage() {
     ['realtime', t('monitoring.tab_realtime'), events.length],
     ['accounts', t('monitoring.tab_accounts'), null],
     ['prices', t('monitoring.tab_prices'), null],
+  ];
+
+  const priceFilterCounts = useMemo(() => {
+    const manual = prices.filter((p) => isManualSource(p.source)).length;
+    const synced = prices.filter((p) => !isManualSource(p.source)).length;
+    return {
+      all: prices.length,
+      manual,
+      synced,
+      unpriced: unpriced.length,
+    };
+  }, [prices, unpriced]);
+
+  const visiblePrices = useMemo(() => {
+    const q = priceSearch.trim().toLowerCase();
+    let list = prices;
+    if (priceListFilter === 'manual') {
+      list = list.filter((p) => isManualSource(p.source));
+    } else if (priceListFilter === 'synced') {
+      list = list.filter((p) => !isManualSource(p.source));
+    } else if (priceListFilter === 'unpriced') {
+      // Show unpriced as synthetic rows for selection into the manual form.
+      return [];
+    }
+    if (!q) return list;
+    return list.filter(
+      (p) =>
+        p.model.toLowerCase().includes(q) || (p.source || '').toLowerCase().includes(q)
+    );
+  }, [prices, priceSearch, priceListFilter]);
+
+  const priceChipFilters: Array<[PriceListFilter, string]> = [
+    ['all', t('monitoring.price_filter_all')],
+    ['synced', t('monitoring.price_filter_synced')],
+    ['manual', t('monitoring.price_filter_manual')],
+    ['unpriced', t('monitoring.price_filter_unpriced')],
   ];
 
   return (
@@ -458,7 +530,7 @@ export function MonitoringPage() {
               {t('monitoring.clear')}
             </Button>
             <Select
-              className={styles.filterSelect}
+              className={styles.autoSelect}
               value={String(autoMs)}
               options={autoOptions}
               onChange={(v) => setAutoMs(Number(v))}
@@ -476,6 +548,7 @@ export function MonitoringPage() {
             onChange={setProvider}
             ariaLabel={t('monitoring.filter_providers')}
             size="sm"
+            fullWidth
           />
           <Select
             className={styles.filterSelect}
@@ -484,6 +557,7 @@ export function MonitoringPage() {
             onChange={setModel}
             ariaLabel={t('monitoring.filter_models')}
             size="sm"
+            fullWidth
           />
           <Select
             className={styles.filterSelect}
@@ -492,6 +566,16 @@ export function MonitoringPage() {
             onChange={(v) => setStatusFilter(v as 'all' | 'success' | 'failed')}
             ariaLabel={t('monitoring.filter_statuses')}
             size="sm"
+            fullWidth
+          />
+          <Select
+            className={styles.filterSelect}
+            value={source}
+            options={sourceOptions}
+            onChange={setSource}
+            ariaLabel={t('monitoring.filter_sources')}
+            size="sm"
+            fullWidth
           />
         </div>
       </div>
@@ -576,7 +660,7 @@ export function MonitoringPage() {
       </div>
 
       {tab === 'realtime' ? (
-        <Card className={styles.sectionCard}>
+        <div className={styles.tableSection}>
           {events.length === 0 ? (
             <div className={styles.emptyWrap}>
               <EmptyState
@@ -655,11 +739,11 @@ export function MonitoringPage() {
               </TableBody>
             </Table>
           )}
-        </Card>
+        </div>
       ) : null}
 
       {tab === 'accounts' ? (
-        <Card className={styles.sectionCard}>
+        <div className={styles.tableSection}>
           {accounts.length === 0 ? (
             <div className={styles.emptyWrap}>
               <EmptyState title={t('monitoring.empty_accounts')} />
@@ -706,61 +790,62 @@ export function MonitoringPage() {
               </TableBody>
             </Table>
           )}
-        </Card>
+        </div>
       ) : null}
 
       {tab === 'prices' ? (
         <div className={styles.pricesLayout}>
-          <Card className={styles.sectionCard}>
-            <div className={styles.pricesToolbar}>
-              <div className={styles.pricesToolbarMeta}>
-                <h3 className={styles.pricesTitle}>{t('monitoring.prices_editor')}</h3>
-                <p className={styles.pricesHint}>{t('monitoring.prices_hint')}</p>
-              </div>
-              <div className={styles.pricesActions}>
-                <label className={styles.overrideRow}>
-                  <input
-                    type="checkbox"
-                    checked={overrideManual}
-                    onChange={(e) => setOverrideManual(e.target.checked)}
-                  />
-                  {t('monitoring.override_manual')}
-                </label>
-                <Button loading={syncing} onClick={() => void syncPrices()}>
-                  {t('monitoring.sync_prices')}
-                </Button>
-              </div>
+          {/* 1. Action bar: title + sync controls */}
+          <section className={styles.pricesActionBar} aria-label={t('monitoring.prices_editor')}>
+            <div className={styles.pricesTitleGroup}>
+              <h3 className={styles.pricesTitle}>{t('monitoring.prices_editor')}</h3>
+              <p className={styles.pricesHint}>{t('monitoring.prices_hint')}</p>
             </div>
+            <div className={styles.pricesActionGroup}>
+              <label className={styles.overrideRow}>
+                <input
+                  type="checkbox"
+                  checked={overrideManual}
+                  onChange={(e) => setOverrideManual(e.target.checked)}
+                />
+                {t('monitoring.override_manual')}
+              </label>
+              <Button size="sm" loading={syncing} onClick={() => void syncPrices()}>
+                {t('monitoring.sync_prices')}
+              </Button>
+            </div>
+          </section>
 
-            {syncResult ? (
-              <div className={styles.syncResult}>
-                <span className={styles.syncPill}>
-                  {t('monitoring.sync_imported')}: {syncResult.imported}
+          {syncResult ? (
+            <div className={styles.syncMeta}>
+              <span className={styles.metaPill}>
+                {t('monitoring.sync_imported')}: {syncResult.imported}
+              </span>
+              <span className={styles.metaPill}>
+                {t('monitoring.sync_candidates')}: {syncResult.candidates?.length ?? 0}
+              </span>
+              <span className={styles.metaPill}>
+                {t('monitoring.sync_unmatched')}: {syncResult.unmatched?.length ?? 0}
+              </span>
+              {(syncResult.skipped_manual ?? 0) > 0 ? (
+                <span className={styles.metaPill}>
+                  {t('monitoring.sync_skipped_manual')}: {syncResult.skipped_manual}
                 </span>
-                <span className={styles.syncPill}>
-                  {t('monitoring.sync_candidates')}: {syncResult.candidates?.length ?? 0}
+              ) : null}
+              {(syncResult.sources || []).length > 0 ? (
+                <span className={styles.metaPill}>
+                  {t('monitoring.sync_sources')}: {(syncResult.sources || []).join(', ')}
                 </span>
-                <span className={styles.syncPill}>
-                  {t('monitoring.sync_unmatched')}: {syncResult.unmatched?.length ?? 0}
-                </span>
-                {(syncResult.skipped_manual ?? 0) > 0 ? (
-                  <span className={styles.syncPill}>
-                    {t('monitoring.sync_skipped_manual')}: {syncResult.skipped_manual}
-                  </span>
-                ) : null}
-                {(syncResult.sources || []).length > 0 ? (
-                  <span className={styles.syncPill}>
-                    {t('monitoring.sync_sources')}: {(syncResult.sources || []).join(', ')}
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
-          </Card>
+              ) : null}
+            </div>
+          ) : null}
 
+          {/* 2. Mapping candidates when needed */}
           {(syncResult?.candidates?.length ?? 0) > 0 ? (
-            <Card title={t('monitoring.candidates_title')} className={styles.sectionCard}>
+            <section className={styles.candidatesPanel}>
+              <h4 className={styles.panelHeading}>{t('monitoring.candidates_title')}</h4>
               <p className={styles.muted}>{t('monitoring.candidates_hint')}</p>
-              <div className={styles.candidatesCard}>
+              <div className={styles.candidatesList}>
                 {(syncResult?.candidates || []).map((set) => {
                   const options = set.candidates.map((c) => ({
                     value: c.source_model_id,
@@ -768,62 +853,66 @@ export function MonitoringPage() {
                   }));
                   return (
                     <div key={set.model} className={styles.candidateBlock}>
-                      <div className={styles.candidateHeader}>
-                        <span className={styles.candidateModel}>{set.model}</span>
-                        <div className={styles.candidateControls}>
-                          <Select
-                            className={styles.candidateSelect}
-                            value={candidatePicks[set.model] || options[0]?.value || ''}
-                            options={options}
-                            onChange={(v) =>
-                              setCandidatePicks((prev) => ({ ...prev, [set.model]: v }))
-                            }
-                            size="sm"
-                            ariaLabel={t('monitoring.candidates_title')}
-                          />
-                          <Button size="sm" onClick={() => void applyCandidate(set)}>
-                            {t('monitoring.apply_candidate')}
-                          </Button>
-                        </div>
-                      </div>
+                      <span className={styles.candidateModel} title={set.model}>
+                        {set.model}
+                      </span>
+                      <Select
+                        className={styles.candidateSelect}
+                        value={candidatePicks[set.model] || options[0]?.value || ''}
+                        options={options}
+                        onChange={(v) =>
+                          setCandidatePicks((prev) => ({ ...prev, [set.model]: v }))
+                        }
+                        size="sm"
+                        fullWidth
+                        ariaLabel={t('monitoring.candidates_title')}
+                      />
+                      <Button size="sm" onClick={() => void applyCandidate(set)}>
+                        {t('monitoring.apply_candidate')}
+                      </Button>
                     </div>
                   );
                 })}
               </div>
-            </Card>
+            </section>
           ) : null}
 
-          <Card title={t('monitoring.manual_price_title')} className={styles.sectionCard}>
-            <p className={styles.muted}>{t('monitoring.manual_price_hint')}</p>
-            <div className={styles.formGrid}>
-              <Input
-                label={t('monitoring.col_model')}
-                value={priceModel}
-                onChange={(e) => setPriceModel(e.target.value)}
-                placeholder="gpt-5.5"
-              />
-              <Input
-                label={t('monitoring.price_prompt')}
-                value={pricePrompt}
-                onChange={(e) => setPricePrompt(e.target.value)}
-                placeholder="1.25"
-              />
-              <Input
-                label={t('monitoring.price_completion')}
-                value={priceCompletion}
-                onChange={(e) => setPriceCompletion(e.target.value)}
-                placeholder="10"
-              />
-              <div className={styles.formActions}>
-                <Button onClick={() => void savePrice(true)}>{t('monitoring.save_price')}</Button>
+          {/* 3. Unified price list with search + chips */}
+          <section className={styles.pricePanel}>
+            <div className={styles.pricePanelToolbar}>
+              <div className={styles.priceSearch}>
+                <Input
+                  value={priceSearch}
+                  onChange={(e) => setPriceSearch(e.target.value)}
+                  placeholder={t('monitoring.price_search_placeholder')}
+                  aria-label={t('monitoring.price_search_placeholder')}
+                />
+              </div>
+              <div className={styles.priceFilterChips}>
+                {priceChipFilters.map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`${styles.filterChip} ${
+                      priceListFilter === key ? styles.filterChipActive : ''
+                    }`}
+                    onClick={() => setPriceListFilter(key)}
+                  >
+                    <span>{label}</span>
+                    <strong>{priceFilterCounts[key]}</strong>
+                  </button>
+                ))}
               </div>
             </div>
 
-            {unpriced.length > 0 ? (
-              <div style={{ marginTop: 16 }}>
-                <div className={styles.muted}>{t('monitoring.unpriced_models')}</div>
+            {priceListFilter === 'unpriced' ? (
+              unpriced.length === 0 ? (
+                <div className={styles.emptyWrap}>
+                  <EmptyState title={t('monitoring.empty_unpriced')} />
+                </div>
+              ) : (
                 <div className={styles.unpricedRow}>
-                  {unpriced.slice(0, 24).map((m) => (
+                  {unpriced.map((m) => (
                     <button
                       key={m}
                       type="button"
@@ -831,39 +920,15 @@ export function MonitoringPage() {
                       onClick={() => {
                         setPriceModel(m);
                         setAliasFrom(m);
+                        setPriceListFilter('all');
                       }}
                     >
                       {m}
                     </button>
                   ))}
                 </div>
-              </div>
-            ) : null}
-          </Card>
-
-          <Card title={t('monitoring.alias_editor')} className={styles.sectionCard}>
-            <p className={styles.muted}>{t('monitoring.alias_hint')}</p>
-            <div className={styles.formGrid}>
-              <Input
-                label={t('monitoring.alias_from')}
-                value={aliasFrom}
-                onChange={(e) => setAliasFrom(e.target.value)}
-                placeholder="brand-gpt-5.5"
-              />
-              <Input
-                label={t('monitoring.alias_to')}
-                value={aliasTo}
-                onChange={(e) => setAliasTo(e.target.value)}
-                placeholder="gpt-5.5"
-              />
-              <div className={styles.formActions}>
-                <Button onClick={() => void saveAlias()}>{t('monitoring.save_alias')}</Button>
-              </div>
-            </div>
-          </Card>
-
-          <Card title={t('monitoring.price_book')} className={styles.sectionCard}>
-            {prices.length === 0 ? (
+              )
+            ) : visiblePrices.length === 0 ? (
               <div className={styles.emptyWrap}>
                 <EmptyState
                   title={t('monitoring.empty_prices')}
@@ -882,7 +947,7 @@ export function MonitoringPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {prices.map((p) => (
+                  {visiblePrices.map((p) => (
                     <TableRow key={p.model}>
                       <TableCell>
                         <span className={styles.mono}>{p.model}</span>
@@ -915,38 +980,97 @@ export function MonitoringPage() {
                 </TableBody>
               </Table>
             )}
-          </Card>
+          </section>
 
-          {aliases.length > 0 ? (
-            <Card title={t('monitoring.alias_list')} className={styles.sectionCard}>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('monitoring.alias_from')}</TableHead>
-                    <TableHead>{t('monitoring.alias_to')}</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {aliases.map((a) => (
-                    <TableRow key={a.alias}>
-                      <TableCell>
-                        <span className={styles.mono}>{a.alias}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={styles.mono}>{a.target_model}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" onClick={() => void deleteAlias(a.alias)}>
-                          {t('common.delete')}
-                        </Button>
-                      </TableCell>
+          {/* 4. Secondary: manual override + alias side by side */}
+          <div className={styles.secondaryEditors}>
+            <section className={styles.editorBlock}>
+              <h4 className={styles.panelHeading}>{t('monitoring.manual_price_title')}</h4>
+              <p className={styles.muted}>{t('monitoring.manual_price_hint')}</p>
+              <div className={styles.formGrid}>
+                <Input
+                  label={t('monitoring.col_model')}
+                  value={priceModel}
+                  onChange={(e) => setPriceModel(e.target.value)}
+                  placeholder="gpt-5.5"
+                />
+                <Input
+                  label={t('monitoring.price_prompt')}
+                  value={pricePrompt}
+                  onChange={(e) => setPricePrompt(e.target.value)}
+                  placeholder="1.25"
+                />
+                <Input
+                  label={t('monitoring.price_completion')}
+                  value={priceCompletion}
+                  onChange={(e) => setPriceCompletion(e.target.value)}
+                  placeholder="10"
+                />
+                <div className={styles.formActions}>
+                  <Button size="sm" onClick={() => void savePrice(true)}>
+                    {t('monitoring.save_price')}
+                  </Button>
+                </div>
+              </div>
+            </section>
+
+            <section className={styles.editorBlock}>
+              <h4 className={styles.panelHeading}>{t('monitoring.alias_editor')}</h4>
+              <p className={styles.muted}>{t('monitoring.alias_hint')}</p>
+              <div className={styles.formGrid}>
+                <Input
+                  label={t('monitoring.alias_from')}
+                  value={aliasFrom}
+                  onChange={(e) => setAliasFrom(e.target.value)}
+                  placeholder="brand-gpt-5.5"
+                />
+                <Input
+                  label={t('monitoring.alias_to')}
+                  value={aliasTo}
+                  onChange={(e) => setAliasTo(e.target.value)}
+                  placeholder="gpt-5.5"
+                />
+                <div className={styles.formActions}>
+                  <Button size="sm" onClick={() => void saveAlias()}>
+                    {t('monitoring.save_alias')}
+                  </Button>
+                </div>
+              </div>
+
+              {aliases.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('monitoring.alias_from')}</TableHead>
+                      <TableHead>{t('monitoring.alias_to')}</TableHead>
+                      <TableHead />
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          ) : null}
+                  </TableHeader>
+                  <TableBody>
+                    {aliases.map((a) => (
+                      <TableRow key={a.alias}>
+                        <TableCell>
+                          <span className={styles.mono}>{a.alias}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={styles.mono}>{a.target_model}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void deleteAlias(a.alias)}
+                          >
+                            {t('common.delete')}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : null}
+            </section>
+          </div>
         </div>
       ) : null}
     </div>

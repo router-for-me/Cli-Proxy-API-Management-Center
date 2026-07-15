@@ -1767,6 +1767,7 @@
     "filter_providers": "服務商",
     "filter_models": "模型",
     "filter_statuses": "狀態",
+    "filter_sources": "來源",
     "status_success": "成功",
     "status_failed": "失敗",
     "stats_disabled_hint": "使用統計未啟用。啟用後會將請求寫入本機 usage 資料庫。",
@@ -1828,6 +1829,12 @@
     "price_book": "價格表",
     "empty_prices": "尚無價格",
     "empty_prices_hint": "點「同步價格」從 LiteLLM / OpenRouter 拉取流量中出現過的模型價格，或手動新增。",
+    "empty_unpriced": "近期流量中沒有未定價模型",
+    "price_search_placeholder": "搜尋模型或來源…",
+    "price_filter_all": "全部",
+    "price_filter_synced": "已同步",
+    "price_filter_manual": "手動",
+    "price_filter_unpriced": "未定價",
     "alias_list": "價格別名"
   }
 }

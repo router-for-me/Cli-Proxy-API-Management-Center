@@ -1741,6 +1741,7 @@
     "filter_providers": "服务商",
     "filter_models": "模型",
     "filter_statuses": "状态",
+    "filter_sources": "来源",
     "status_success": "成功",
     "status_failed": "失败",
     "stats_disabled_hint": "使用统计未启用。启用后会将请求写入本地 usage 数据库。",
@@ -1802,6 +1803,12 @@
     "price_book": "价格表",
     "empty_prices": "暂无价格",
     "empty_prices_hint": "点击「同步价格」从 LiteLLM / OpenRouter 拉取流量中出现过的模型价格，或手动添加。",
+    "empty_unpriced": "近期流量中没有未定价模型",
+    "price_search_placeholder": "搜索模型或来源…",
+    "price_filter_all": "全部",
+    "price_filter_synced": "已同步",
+    "price_filter_manual": "手动",
+    "price_filter_unpriced": "未定价",
     "alias_list": "价格别名"
   }
 }

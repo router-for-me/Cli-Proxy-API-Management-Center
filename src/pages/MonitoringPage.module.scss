@@ -1,6 +1,9 @@
 @use '../styles/variables' as *;
 @use '../styles/mixins' as *;
 
+// Shared control height so toolbar + filter rows align cleanly.
+$control-h: 38px;
+
 .container {
   display: flex;
   flex-direction: column;
@@ -9,35 +12,46 @@
   min-width: 0;
 }
 
-/* ── Filters ─────────────────────────────────────────── */
+/* ── Filter rows ─────────────────────────────────────── */
 
 .filterSection {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: $spacing-sm;
+  width: 100%;
+  min-width: 0;
 }
 
+// Row 1: range | search (flex) | actions — one horizontal line on desktop
 .filterPrimary {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: $spacing-sm;
+  width: 100%;
   min-width: 0;
 }
 
 .rangeGroup {
   display: inline-flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 3px;
+  height: $control-h;
   padding: 3px;
+  box-sizing: border-box;
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
   background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  flex: 0 0 auto;
 }
 
 .rangeChip {
   @include button-reset;
-  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   padding: 0 12px;
   border-radius: 6px;
   border: 1px solid transparent;
@@ -63,33 +77,71 @@
 }
 
 .searchWrap {
-  flex: 1 1 220px;
-  min-width: 180px;
-  max-width: 420px;
+  min-width: 0;
+  width: 100%;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+    width: 100%;
+  }
+
+  :global(.input) {
+    height: $control-h;
+    min-height: $control-h;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-sizing: border-box;
+  }
 }
 
 .filterActions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: $spacing-sm;
-  margin-left: auto;
+  flex: 0 0 auto;
 
-  @include mobile {
-    margin-left: 0;
-    width: 100%;
+  :global(.btn) {
+    height: $control-h;
+    min-height: $control-h;
+    box-sizing: border-box;
+    white-space: nowrap;
+  }
+
+  // Select trigger height override (sm is 28px by default)
+  :global(button[class*='trigger']) {
+    height: $control-h !important;
+    min-height: $control-h;
+    box-sizing: border-box;
   }
 }
 
+.autoSelect {
+  width: 132px;
+  min-width: 120px;
+  flex: 0 0 auto;
+}
+
+// Row 2: four equal dropdowns filling the full width
 .filterSecondary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
   gap: $spacing-sm;
+  width: 100%;
+  min-width: 0;
 }
 
 .filterSelect {
-  min-width: 140px;
+  width: 100%;
+  min-width: 0;
+
+  :global(button[class*='trigger']) {
+    height: $control-h !important;
+    min-height: $control-h;
+    width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 /* ── Banners ─────────────────────────────────────────── */
@@ -114,23 +166,27 @@
   color: var(--danger-color);
 }
 
-/* ── Summary stats ───────────────────────────────────── */
+/* ── Summary stats — full width, even columns ────────── */
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: $spacing-sm;
+  width: 100%;
 }
 
 .summaryCard {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-height: 84px;
-  padding: 14px 16px;
-  border-radius: $radius-lg;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 88px;
+  min-width: 0;
+  padding: 14px 12px;
+  border-radius: $radius-md;
   border: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  box-sizing: border-box;
 }
 
 .summaryLabel {
@@ -138,15 +194,19 @@
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.01em;
+  line-height: 1.2;
 }
 
 .summaryValue {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.02em;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .summaryValueSuccess {
@@ -214,7 +274,12 @@
   background: var(--count-badge-bg, color-mix(in srgb, var(--text-primary) 8%, transparent));
 }
 
-/* ── Table cells ─────────────────────────────────────── */
+/* ── Tables (single frame from Table primitive only) ─── */
+
+.tableSection {
+  width: 100%;
+  min-width: 0;
+}
 
 .cellStack {
   display: flex;
@@ -263,94 +328,137 @@
 
 .emptyWrap {
   padding: $spacing-xl $spacing-md;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
 }
 
-/* ── Prices panel ────────────────────────────────────── */
+/* ── Prices layout (organization, app tokens) ────────── */
 
 .pricesLayout {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
+  width: 100%;
+  min-width: 0;
 }
 
-.pricesToolbar {
-  display: flex;
-  flex-wrap: wrap;
+// Compact top action bar: title + meta + actions
+.pricesActionBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: $spacing-sm;
-  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  box-sizing: border-box;
 }
 
-.pricesToolbarMeta {
+.pricesTitleGroup {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  flex: 1 1 240px;
 }
 
 .pricesTitle {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .pricesHint {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
-.pricesActions {
+.pricesActionGroup {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: $spacing-sm;
 }
 
-.syncResult {
+.syncMeta {
   display: flex;
   flex-wrap: wrap;
-  gap: $spacing-sm;
-  font-size: 13px;
-  color: var(--text-secondary);
+  gap: 6px;
+  align-items: center;
 }
 
-.syncPill {
+.metaPill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: $radius-full;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: $radius-md;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-.candidatesCard {
+.overrideRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  user-select: none;
+  white-space: nowrap;
+}
+
+// Mapping candidates (only when needed)
+.candidatesPanel {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  box-sizing: border-box;
+}
+
+.panelHeading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.muted {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.candidatesList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
 }
 
 .candidateBlock {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr) auto;
+  align-items: center;
   gap: $spacing-sm;
-  padding: $spacing-md;
+  padding: 10px 12px;
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
-  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
-}
-
-.candidateHeader {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: $spacing-sm;
+  background: color-mix(in srgb, var(--bg-secondary) 55%, transparent);
 }
 
 .candidateModel {
@@ -358,48 +466,141 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
-}
-
-.candidateControls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: $spacing-sm;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .candidateSelect {
-  min-width: 220px;
-  max-width: 420px;
+  width: 100%;
+  min-width: 0;
+}
+
+// Main price panel: search + chips + table
+.pricePanel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  box-sizing: border-box;
+}
+
+.pricePanelToolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+}
+
+.priceSearch {
+  min-width: 0;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+
+  :global(.input) {
+    height: $control-h;
+    min-height: $control-h;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-sizing: border-box;
+  }
+}
+
+.priceFilterChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.filterChip {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: $radius-md;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  strong {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+  }
+}
+
+.filterChipActive {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--primary-color) 45%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
+}
+
+// Secondary editors under the list
+.secondaryEditors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-md;
+  width: 100%;
+}
+
+.editorBlock {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  box-sizing: border-box;
 }
 
 .formGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: $spacing-sm;
   align-items: end;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
 }
 
 .formActions {
   display: flex;
   flex-wrap: wrap;
   gap: $spacing-sm;
-  align-items: end;
-}
-
-.sectionCard {
-  min-width: 0;
+  align-items: center;
 }
 
 .unpricedRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: $spacing-sm;
+  gap: 6px;
 }
 
 .unpricedChip {
   @include button-reset;
-  padding: 6px 10px;
+  padding: 5px 9px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
@@ -414,36 +615,58 @@
   }
 }
 
-.muted {
-  color: var(--text-secondary);
-  font-size: 13px;
-  margin: 0 0 $spacing-sm;
-}
+/* ── Responsive ──────────────────────────────────────── */
 
-.overrideRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  user-select: none;
+@media (max-width: $breakpoint-tablet) {
+  .summaryGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .secondaryEditors {
+    grid-template-columns: 1fr;
+  }
+
+  .candidateBlock {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: $breakpoint-mobile) {
-  .summaryValue {
-    font-size: 18px;
-  }
-
   .filterPrimary {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .searchWrap {
-    max-width: none;
+    grid-template-columns: 1fr;
   }
 
   .rangeGroup {
     width: 100%;
+    overflow-x: auto;
+  }
+
+  .filterActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .filterSecondary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summaryValue {
+    font-size: 18px;
+  }
+
+  .pricesActionBar {
+    grid-template-columns: 1fr;
+  }
+
+  .pricePanelToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .pricesActionGroup {
+    justify-content: flex-start;
   }
 }

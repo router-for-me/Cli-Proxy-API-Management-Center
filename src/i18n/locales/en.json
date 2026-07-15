@@ -150,6 +150,7 @@
     "filter_providers": "Providers",
     "filter_models": "Models",
     "filter_statuses": "Statuses",
+    "filter_sources": "Source",
     "status_success": "Success",
     "status_failed": "Failed",
     "stats_disabled_hint": "Usage statistics are disabled. Enable them to record requests into the local usage database.",
@@ -211,6 +212,12 @@
     "price_book": "Price book",
     "empty_prices": "No prices saved yet",
     "empty_prices_hint": "Use Sync prices to pull LiteLLM / OpenRouter rates for models seen in traffic, or add a manual override.",
+    "empty_unpriced": "No unpriced models in recent traffic",
+    "price_search_placeholder": "Search model or source…",
+    "price_filter_all": "All",
+    "price_filter_synced": "Synced",
+    "price_filter_manual": "Manual",
+    "price_filter_unpriced": "Unpriced",
     "alias_list": "Price aliases"
   },
   "dashboard": {

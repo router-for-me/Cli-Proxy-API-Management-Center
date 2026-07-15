@@ -1719,6 +1719,7 @@
     "filter_providers": "Провайдеры",
     "filter_models": "Модели",
     "filter_statuses": "Статусы",
+    "filter_sources": "Источник",
     "status_success": "Успех",
     "status_failed": "Ошибка",
     "stats_disabled_hint": "Статистика использования выключена. Включите её, чтобы писать запросы в локальную БД.",
@@ -1780,6 +1781,12 @@
     "price_book": "Прайс-лист",
     "empty_prices": "Цен пока нет",
     "empty_prices_hint": "Нажмите «Синхронизировать цены», чтобы подтянуть тарифы LiteLLM / OpenRouter для моделей из трафика, или добавьте вручную.",
+    "empty_unpriced": "Нет неоценённых моделей в недавнем трафике",
+    "price_search_placeholder": "Поиск модели или источника…",
+    "price_filter_all": "Все",
+    "price_filter_synced": "Синхронизированные",
+    "price_filter_manual": "Ручные",
+    "price_filter_unpriced": "Без цены",
     "alias_list": "Псевдонимы цен"
   }
 }
