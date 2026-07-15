@@ -1,0 +1,198 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.rangeGroup {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.rangeChip {
+  border: 1px solid var(--border-color, #d0d7de);
+  background: var(--surface, #fff);
+  color: var(--text-primary, #1f2328);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  &.active {
+    background: var(--accent, #0969da);
+    border-color: var(--accent, #0969da);
+    color: #fff;
+  }
+}
+
+.searchRow {
+  display: flex;
+  flex: 1;
+  min-width: 220px;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filtersRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filterSelect {
+  min-width: 140px;
+  max-width: 200px;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.summaryCard {
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  background: var(--surface, #fff);
+
+  .label {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #656d76);
+    margin-bottom: 0.35rem;
+  }
+
+  .value {
+    font-size: 1.25rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+
+  &.success .value {
+    color: #1a7f37;
+  }
+
+  &.danger .value {
+    color: #cf222e;
+  }
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.tableWrap {
+  overflow: auto;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 1100px;
+
+  th,
+  td {
+    padding: 0.55rem 0.65rem;
+    border-bottom: 1px solid var(--border-color, #eef1f4);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary, #656d76);
+    background: var(--surface-muted, #f6f8fa);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  tbody tr:hover {
+    background: rgba(9, 105, 218, 0.04);
+  }
+}
+
+.statusOk {
+  color: #1a7f37;
+  font-weight: 600;
+}
+
+.statusFail {
+  color: #cf222e;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--text-secondary, #656d76);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+.usageCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.78rem;
+}
+
+.banner {
+  border: 1px solid #d4a72c66;
+  background: #fff8c5;
+  color: #7d4e00;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.pricesPanel {
+  display: grid;
+  gap: 1rem;
+}
+
+.formRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 120px;
+
+  label {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #656d76);
+  }
+}
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary, #656d76);
+}

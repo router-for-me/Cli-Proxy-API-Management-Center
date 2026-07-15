@@ -54,7 +54,8 @@
     "model_alias_placeholder": "Псевдоним модели (необязательно)",
     "invalid_provider_index": "Неверный индекс провайдера.",
     "unsaved_changes_title": "Несохранённые изменения",
-    "unsaved_changes_message": "У вас есть несохранённые изменения. Если вы уйдёте, они будут потеряны. Выйти?"
+    "unsaved_changes_message": "У вас есть несохранённые изменения. Если вы уйдёте, они будут потеряны. Выйти?",
+    "retry": "Retry"
   },
   "title": {
     "login": "Центр управления CLI Proxy API",
@@ -109,7 +110,8 @@
     "plugin_store": "Магазин плагинов",
     "config_management": "Панель конфигурации",
     "logs": "Просмотр логов",
-    "system_info": "Информация системы"
+    "system_info": "Информация системы",
+    "monitoring": "Мониторинг запросов"
   },
   "nav_groups": {
     "operate": "Работа",
@@ -134,7 +136,8 @@
     "plugin_store": "Поиск и установка плагинов",
     "logs": "Трассировка запросов",
     "config_management": "Базовая конфигурация шлюза",
-    "system_info": "Состояние и диагностика"
+    "system_info": "Состояние и диагностика",
+    "monitoring": "Запросы, стоимость и токены"
   },
   "dashboard": {
     "current_config": "Текущая конфигурация",
@@ -1705,5 +1708,60 @@
     "modelCatalog": {
       "notLoaded": "Не загружено"
     }
+  },
+  "monitoring": {
+    "range_today": "Сегодня",
+    "range_all": "Все",
+    "search_placeholder": "Поиск: аккаунт, модель, источник, ключ…",
+    "clear": "Сброс",
+    "auto_refresh": "Автообновление",
+    "auto_prefix": "Авто",
+    "filter_providers": "Провайдеры",
+    "filter_models": "Модели",
+    "filter_statuses": "Статусы",
+    "status_success": "Успех",
+    "status_failed": "Ошибка",
+    "stats_disabled_hint": "Статистика использования выключена. Включите её, чтобы писать запросы в локальную БД.",
+    "enable_stats": "Включить статистику",
+    "stats_enabled": "Статистика включена",
+    "card_calls": "Вызовы",
+    "card_success": "Успех",
+    "card_failed": "Ошибки",
+    "card_cost": "Стоимость",
+    "card_tokens": "Токены",
+    "card_input": "Вход",
+    "card_output": "Выход",
+    "card_cached": "Кэш",
+    "tab_realtime": "Realtime",
+    "tab_accounts": "Аккаунты",
+    "tab_prices": "Цены",
+    "empty_events": "Нет запросов в диапазоне",
+    "empty_events_hint": "Отправьте трафик через шлюз со включённой статистикой.",
+    "empty_accounts": "Пока нет агрегатов по аккаунтам",
+    "col_source": "Источник",
+    "col_model": "Модель",
+    "col_effort": "Effort",
+    "col_status": "Статус",
+    "col_ttft": "TTFT",
+    "col_elapsed": "Длительность",
+    "col_time": "Время",
+    "col_usage": "Использование",
+    "col_cost": "Стоимость",
+    "col_auth": "Auth",
+    "col_provider": "Провайдер",
+    "prices_editor": "Цены моделей ($ / 1M tokens)",
+    "prices_hint": "Оценка API-эквивалентной стоимости. Брендовые имена мапьте через алиасы.",
+    "price_prompt": "Prompt /1M",
+    "price_completion": "Completion /1M",
+    "price_source": "Источник",
+    "save_price": "Сохранить цену",
+    "price_saved": "Цена сохранена",
+    "alias_editor": "Алиасы цен моделей",
+    "alias_hint": "Пример: brand-gpt-5.5 → gpt-5.5",
+    "alias_from": "Алиас (имя модели)",
+    "alias_to": "Целевая модель",
+    "save_alias": "Сохранить алиас",
+    "alias_saved": "Алиас сохранён",
+    "unpriced_models": "Неоценённые модели (нажмите, чтобы заполнить)"
   }
 }

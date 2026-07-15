@@ -54,7 +54,8 @@
     "model_alias_placeholder": "模型別名（選填）",
     "invalid_provider_index": "無效的供應商索引。",
     "unsaved_changes_title": "未儲存的變更",
-    "unsaved_changes_message": "你有未儲存的變更，離開後將遺失這些變更。確定要離開嗎？"
+    "unsaved_changes_message": "你有未儲存的變更，離開後將遺失這些變更。確定要離開嗎？",
+    "retry": "重試"
   },
   "title": {
     "login": "CLI Proxy API Management Center",
@@ -109,7 +110,8 @@
     "plugin_store": "插件商店",
     "config_management": "設定面板",
     "logs": "記錄檢視",
-    "system_info": "中心資訊"
+    "system_info": "中心資訊",
+    "monitoring": "請求監控"
   },
   "nav_groups": {
     "operate": "運行",
@@ -135,7 +137,8 @@
     "plugin_store": "探索並安裝插件",
     "logs": "請求追蹤與排查",
     "config_management": "閘道基礎設定",
-    "system_info": "運行與診斷資訊"
+    "system_info": "運行與診斷資訊",
+    "monitoring": "即時請求、費用與 Token"
   },
   "dashboard": {
     "current_config": "目前設定",
@@ -1753,5 +1756,60 @@
     "modelCatalog": {
       "notLoaded": "未載入"
     }
+  },
+  "monitoring": {
+    "range_today": "今天",
+    "range_all": "全部",
+    "search_placeholder": "搜尋帳號、模型、來源、Key…",
+    "clear": "清除",
+    "auto_refresh": "自動重新整理",
+    "auto_prefix": "自動",
+    "filter_providers": "服務商",
+    "filter_models": "模型",
+    "filter_statuses": "狀態",
+    "status_success": "成功",
+    "status_failed": "失敗",
+    "stats_disabled_hint": "使用統計未啟用。啟用後會將請求寫入本機 usage 資料庫。",
+    "enable_stats": "啟用使用統計",
+    "stats_enabled": "已啟用使用統計",
+    "card_calls": "呼叫",
+    "card_success": "成功率",
+    "card_failed": "失敗",
+    "card_cost": "費用",
+    "card_tokens": "Tokens",
+    "card_input": "輸入",
+    "card_output": "輸出",
+    "card_cached": "快取",
+    "tab_realtime": "即時",
+    "tab_accounts": "帳號",
+    "tab_prices": "定價",
+    "empty_events": "此時間範圍沒有請求",
+    "empty_events_hint": "請在啟用使用統計後透過閘道送出流量。",
+    "empty_accounts": "尚無帳號彙總資料",
+    "col_source": "來源",
+    "col_model": "模型",
+    "col_effort": "Effort",
+    "col_status": "狀態",
+    "col_ttft": "TTFT",
+    "col_elapsed": "耗時",
+    "col_time": "時間",
+    "col_usage": "用量",
+    "col_cost": "費用",
+    "col_auth": "認證",
+    "col_provider": "服務商",
+    "prices_editor": "模型定價（$ / 百萬 tokens）",
+    "prices_hint": "僅為 API 等值估算。可透過別名對應廠商品牌模型名。",
+    "price_prompt": "輸入 /1M",
+    "price_completion": "輸出 /1M",
+    "price_source": "來源",
+    "save_price": "儲存定價",
+    "price_saved": "定價已儲存",
+    "alias_editor": "模型定價別名",
+    "alias_hint": "例如：brand-gpt-5.5 → gpt-5.5，費用使用規範模型定價。",
+    "alias_from": "別名（實際模型名）",
+    "alias_to": "目標定價模型",
+    "save_alias": "儲存別名",
+    "alias_saved": "別名已儲存",
+    "unpriced_models": "近期未定價模型（點擊填入表單）"
   }
 }

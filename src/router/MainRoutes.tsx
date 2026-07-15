@@ -13,6 +13,7 @@ import { PluginsPage } from '@/features/plugins/PluginsPage';
 import { PluginStorePage } from '@/features/plugins/PluginStorePage';
 import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
+import { MonitoringPage } from '@/pages/MonitoringPage';
 import { SystemPage } from '@/pages/SystemPage';
 import { useAuthStore } from '@/stores';
 
@@ -30,6 +31,7 @@ const createMainRoutes = (supportsPlugin: boolean) => [
   { path: '/codex-instructions', element: <CodexInstructionsPage /> },
   { path: '/xai-config', element: <XAIConfigPage /> },
   { path: '/quota', element: <QuotaPage /> },
+  { path: '/monitoring', element: <MonitoringPage /> },
   ...(supportsPlugin
     ? [
         { path: '/plugin-pages/:pluginId/:menuIndex', element: <PluginResourcePage /> },

@@ -54,7 +54,8 @@
     "model_alias_placeholder": "模型别名 (可选)",
     "invalid_provider_index": "无效的提供商索引。",
     "unsaved_changes_title": "未保存的更改",
-    "unsaved_changes_message": "你有未保存的更改，离开后将丢失这些更改。确定要离开吗？"
+    "unsaved_changes_message": "你有未保存的更改，离开后将丢失这些更改。确定要离开吗？",
+    "retry": "重试"
   },
   "title": {
     "login": "CLI Proxy API Management Center",
@@ -109,7 +110,8 @@
     "plugin_store": "插件商店",
     "config_management": "配置面板",
     "logs": "日志查看",
-    "system_info": "中心信息"
+    "system_info": "中心信息",
+    "monitoring": "请求监控"
   },
   "nav_groups": {
     "operate": "运行",
@@ -135,7 +137,8 @@
     "plugin_store": "发现并安装插件",
     "logs": "请求追踪与排查",
     "config_management": "网关基础配置",
-    "system_info": "运行与诊断信息"
+    "system_info": "运行与诊断信息",
+    "monitoring": "实时请求、费用与 Token"
   },
   "dashboard": {
     "current_config": "当前配置",
@@ -1727,5 +1730,60 @@
     "modelCatalog": {
       "notLoaded": "未加载"
     }
+  },
+  "monitoring": {
+    "range_today": "今天",
+    "range_all": "全部",
+    "search_placeholder": "搜索账号、模型、来源、Key…",
+    "clear": "清除",
+    "auto_refresh": "自动刷新",
+    "auto_prefix": "自动",
+    "filter_providers": "服务商",
+    "filter_models": "模型",
+    "filter_statuses": "状态",
+    "status_success": "成功",
+    "status_failed": "失败",
+    "stats_disabled_hint": "使用统计未启用。启用后会将请求写入本地 usage 数据库。",
+    "enable_stats": "启用使用统计",
+    "stats_enabled": "已启用使用统计",
+    "card_calls": "调用",
+    "card_success": "成功率",
+    "card_failed": "失败",
+    "card_cost": "费用",
+    "card_tokens": "Tokens",
+    "card_input": "输入",
+    "card_output": "输出",
+    "card_cached": "缓存",
+    "tab_realtime": "实时",
+    "tab_accounts": "账号",
+    "tab_prices": "定价",
+    "empty_events": "该时间范围内没有请求",
+    "empty_events_hint": "请在启用使用统计后通过网关发送流量。",
+    "empty_accounts": "暂无账号聚合数据",
+    "col_source": "来源",
+    "col_model": "模型",
+    "col_effort": "Effort",
+    "col_status": "状态",
+    "col_ttft": "TTFT",
+    "col_elapsed": "耗时",
+    "col_time": "时间",
+    "col_usage": "用量",
+    "col_cost": "费用",
+    "col_auth": "认证",
+    "col_provider": "服务商",
+    "prices_editor": "模型定价（$ / 百万 tokens）",
+    "prices_hint": "仅为 API 等值估算。可通过别名映射厂商品牌模型名。",
+    "price_prompt": "输入 /1M",
+    "price_completion": "输出 /1M",
+    "price_source": "来源",
+    "save_price": "保存定价",
+    "price_saved": "定价已保存",
+    "alias_editor": "模型定价别名",
+    "alias_hint": "例如：brand-gpt-5.5 → gpt-5.5，费用使用规范模型定价。",
+    "alias_from": "别名（实际模型名）",
+    "alias_to": "目标定价模型",
+    "save_alias": "保存别名",
+    "alias_saved": "别名已保存",
+    "unpriced_models": "近期未定价模型（点击填入表单）"
   }
 }
