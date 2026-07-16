@@ -3,8 +3,9 @@ import type { SponsorProviderRaw } from './types';
 
 export const KIMI_PROVIDER_NAME = 'kimi';
 export const KIMI_DISPLAY_NAME = 'Kimi';
-export const KIMI_OPENAI_BASE_URL = 'https://api.moonshot.ai';
-export const KIMI_ANTHROPIC_BASE_URL = 'https://api.moonshot.ai/anthropic';
+export const KIMI_LEGACY_OPENAI_BASE_URL = 'https://api.moonshot.ai';
+export const KIMI_OPENAI_BASE_URL = `${KIMI_LEGACY_OPENAI_BASE_URL}/v1`;
+export const KIMI_ANTHROPIC_BASE_URL = `${KIMI_LEGACY_OPENAI_BASE_URL}/anthropic`;
 export const KIMI_CHINESE_AFFILIATE_URL = 'https://platform.kimi.com/?aff=cliproxyapi';
 export const KIMI_INTERNATIONAL_AFFILIATE_URL = 'https://platform.kimi.ai/?aff=cliproxyapi';
 
@@ -46,9 +47,11 @@ export const getKimiProtocolUrls = (_value: string | undefined | null) => ({
 
 export const isKimiOpenAIProvider = (config: OpenAIProviderConfig | undefined | null): boolean => {
   if (!config) return false;
+  const baseUrl = normalizeBaseUrl(config.baseUrl);
   return (
     normalizeText(config.name) === KIMI_PROVIDER_NAME ||
-    normalizeBaseUrl(config.baseUrl) === normalizeBaseUrl(KIMI_OPENAI_BASE_URL)
+    baseUrl === normalizeBaseUrl(KIMI_OPENAI_BASE_URL) ||
+    baseUrl === normalizeBaseUrl(KIMI_LEGACY_OPENAI_BASE_URL)
   );
 };
 
