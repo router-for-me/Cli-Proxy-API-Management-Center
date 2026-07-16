@@ -45,12 +45,7 @@ import {
   isCode0GeminiProvider,
   isCode0OpenAIProvider,
 } from './code0';
-import {
-  buildFennoAIRaw,
-  isFennoAIClaudeProvider,
-  isFennoAICodexProvider,
-  isFennoAIOpenAIProvider,
-} from './fennoAI';
+import { buildFennoAIRaw, isFennoAIClaudeProvider, isFennoAICodexProvider } from './fennoAI';
 import {
   buildQiniuCloudRaw,
   isQiniuCloudClaudeProvider,
@@ -482,7 +477,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               if (
                 !isApiKeyFunOpenAIProvider(item) &&
                 !isCode0OpenAIProvider(item) &&
-                !isFennoAIOpenAIProvider(item) &&
                 !isQiniuCloudOpenAIProvider(item)
               ) {
                 out.push(openaiToResource(item, index));
