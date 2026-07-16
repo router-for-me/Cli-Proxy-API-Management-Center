@@ -65,13 +65,13 @@ describe('Kimi provider', () => {
     expect(PROVIDER_BRAND_ORDER[0]).toBe('kimi');
   });
 
-  test('recognizes Kimi configs by provider name or protocol endpoint', () => {
+  test('recognizes Kimi configs only by supported protocol endpoint', () => {
     expect(
       isKimiOpenAIProvider({
         name: 'Kimi',
         baseUrl: 'https://custom.example.com',
       })
-    ).toBeTrue();
+    ).toBeFalse();
     expect(
       isKimiOpenAIProvider({
         name: 'moonshot',

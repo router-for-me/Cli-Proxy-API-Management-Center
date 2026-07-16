@@ -90,10 +90,7 @@ export const isCode0OpenAIProvider = (
   config: OpenAIProviderConfig | undefined | null
 ): boolean => {
   if (!config) return false;
-  return (
-    normalizeText(config.name) === normalizeText(CODE0_PROVIDER_NAME) ||
-    matchesCode0OpenAIBaseUrl(config.baseUrl)
-  );
+  return matchesCode0OpenAIBaseUrl(config.baseUrl);
 };
 
 export const isCode0ClaudeProvider = (config: ProviderKeyConfig | undefined | null): boolean => {
@@ -113,7 +110,7 @@ export const isCode0GeminiProvider = (config: GeminiKeyConfig | undefined | null
 
 export const buildCode0Raw = (config: Config | null | undefined): SponsorProviderRaw => ({
   openai: (config?.openaiCompatibility ?? [])
-    .map((item, index) => ({ config: item, index }))
+    .map((item, index) => ({ config: item, index: item.sourceIndex ?? index }))
     .filter((item) => isCode0OpenAIProvider(item.config)),
   claude: (config?.claudeApiKeys ?? [])
     .map((item, index) => ({ config: item, index }))

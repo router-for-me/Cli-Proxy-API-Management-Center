@@ -142,15 +142,16 @@ export function vertexToResource(config: ProviderKeyConfig, index: number): Prov
 }
 
 export function openaiToResource(config: OpenAIProviderConfig, index: number): ProviderResource {
+  const sourceIndex = config.sourceIndex ?? index;
   const name = (config.name ?? '').trim();
   const firstEntry = config.apiKeyEntries?.[0];
   const previewApiKey = firstEntry?.apiKey ? maskApiKey(firstEntry.apiKey) : null;
   return {
-    id: buildId('openaiCompatibility', index, truncateForId(name) || `#${index}`),
+    id: buildId('openaiCompatibility', sourceIndex, truncateForId(name) || `#${sourceIndex}`),
     brand: 'openaiCompatibility',
-    originalIndex: index,
+    originalIndex: sourceIndex,
     name: name || null,
-    identifier: name || `#${index + 1}`,
+    identifier: name || `#${sourceIndex + 1}`,
     apiKeyPreview: previewApiKey,
     apiKey: null,
     authIndex: config.authIndex ?? null,
@@ -165,7 +166,7 @@ export function openaiToResource(config: OpenAIProviderConfig, index: number): P
     apiKeyEntryCount: config.apiKeyEntries?.length ?? 0,
     disabled: config.disabled === true,
     flags: {},
-    selector: { brand: 'openaiCompatibility', name, index },
+    selector: { brand: 'openaiCompatibility', name, index: sourceIndex },
     raw: config,
   };
 }

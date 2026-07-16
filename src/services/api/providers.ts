@@ -533,7 +533,7 @@ export const providersApi = {
     const data = await apiClient.get('/openai-compatibility');
     const list = extractArrayPayload(data, 'openai-compatibility');
     return list
-      .map((item) => normalizeOpenAIProvider(item))
+      .map((item, index) => normalizeOpenAIProvider(item, index))
       .filter(Boolean) as OpenAIProviderConfig[];
   },
 
@@ -561,7 +561,4 @@ export const providersApi = {
 
   deleteOpenAIProvider: (index: number) =>
     apiClient.delete(`/openai-compatibility?index=${encodeURIComponent(String(index))}`),
-
-  deleteOpenAIProvidersByName: (name: string) =>
-    apiClient.delete(`/openai-compatibility?name=${encodeURIComponent(name)}`),
 };

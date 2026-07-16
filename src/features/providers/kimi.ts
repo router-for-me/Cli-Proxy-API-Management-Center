@@ -49,7 +49,6 @@ export const isKimiOpenAIProvider = (config: OpenAIProviderConfig | undefined | 
   if (!config) return false;
   const baseUrl = normalizeBaseUrl(config.baseUrl);
   return (
-    normalizeText(config.name) === KIMI_PROVIDER_NAME ||
     baseUrl === normalizeBaseUrl(KIMI_OPENAI_BASE_URL) ||
     baseUrl === normalizeBaseUrl(KIMI_LEGACY_OPENAI_BASE_URL)
   );
@@ -62,7 +61,7 @@ export const isKimiClaudeProvider = (config: ProviderKeyConfig | undefined | nul
 
 export const buildKimiRaw = (config: Config | null | undefined): SponsorProviderRaw => ({
   openai: (config?.openaiCompatibility ?? [])
-    .map((item, index) => ({ config: item, index }))
+    .map((item, index) => ({ config: item, index: item.sourceIndex ?? index }))
     .filter((item) => isKimiOpenAIProvider(item.config)),
   claude: (config?.claudeApiKeys ?? [])
     .map((item, index) => ({ config: item, index }))
