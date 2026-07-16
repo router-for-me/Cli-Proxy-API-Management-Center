@@ -126,7 +126,11 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
 
   useHeaderRefresh(handleRefresh, isCurrentLayer);
 
-  const disableMutations = connectionStatus !== 'connected' || workbench.mutating;
+  const disableMutations =
+    connectionStatus !== 'connected' ||
+    workbench.mutating ||
+    workbench.isFetching ||
+    workbench.isError;
 
   const persistUiState = useCallback(
     (updater: (prev: ProvidersWorkbenchUiState) => ProvidersWorkbenchUiState) => {
@@ -293,6 +297,9 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
         ? APIKEY_FUN_DISPLAY_NAME
         : t('nav.quick_start')
       : undefined;
+  const errorBanner = workbench.errorMessage ? (
+    <div className="error-box">{workbench.errorMessage}</div>
+  ) : null;
 
   const openCreate = useCallback(() => {
     const brand = activeBrand;
@@ -406,6 +413,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
           showNewAction={!fixedBrand}
           showSummary={fixedBrand !== 'apikeyFun'}
         />
+        {errorBanner}
       </div>
     );
   }
@@ -427,6 +435,8 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
         onRefresh={() => void handleRefresh()}
         onNew={openCreate}
       />
+
+      {errorBanner}
 
       <div className={`${styles.layout} ${fixedBrand ? styles.layoutSingle : ''}`.trim()}>
         {!fixedBrand ? (

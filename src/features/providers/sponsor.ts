@@ -162,10 +162,7 @@ export const isApiKeyFunOpenAIProvider = (
   config: OpenAIProviderConfig | undefined | null
 ): boolean => {
   if (!config) return false;
-  return (
-    normalizeText(config.name) === normalizeText(APIKEY_FUN_PROVIDER_NAME) ||
-    matchesApiKeyFunOpenAIBaseUrl(config.baseUrl)
-  );
+  return matchesApiKeyFunOpenAIBaseUrl(config.baseUrl);
 };
 
 export const isApiKeyFunClaudeProvider = (
@@ -182,7 +179,7 @@ export const isApiKeyFunCodexProvider = (config: ProviderKeyConfig | undefined |
 
 export const buildApiKeyFunRaw = (config: Config | null | undefined): SponsorProviderRaw => ({
   openai: (config?.openaiCompatibility ?? [])
-    .map((item, index) => ({ config: item, index }))
+    .map((item, index) => ({ config: item, index: item.sourceIndex ?? index }))
     .filter((item) => isApiKeyFunOpenAIProvider(item.config)),
   claude: (config?.claudeApiKeys ?? [])
     .map((item, index) => ({ config: item, index }))

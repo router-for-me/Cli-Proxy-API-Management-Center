@@ -621,7 +621,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.createOpenAIProvider(next);
         }
       } else if (currentOpenAI) {
-        await providersApi.deleteOpenAIProvidersByName(currentOpenAI.config.name);
+        await providersApi.deleteOpenAIProvider(currentOpenAI.index);
       }
     },
     [config]
@@ -756,7 +756,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           updateConfigValue('vertex-api-key', next);
         } else if (sel.brand === 'openaiCompatibility') {
           await providersApi.deleteOpenAIProvider(sel.index);
-          const next = (config?.openaiCompatibility ?? []).filter((_, i) => i !== sel.index);
+          const next = (config?.openaiCompatibility ?? []).filter(
+            (item, index) => (item.sourceIndex ?? index) !== sel.index
+          );
           updateConfigValue('openai-compatibility', next);
         } else if (
           sel.brand === 'apikeyFun' ||
@@ -775,10 +777,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             for (const item of raw.claude) {
               await providersApi.deleteClaudeConfig(item.config.apiKey, item.config.baseUrl);
             }
-            const openAINames = new Set(raw.openai.map((item) => item.config.name));
-            for (const name of openAINames) {
-              const item = raw.openai.find((candidate) => candidate.config.name === name);
-              if (item) await providersApi.deleteOpenAIProvidersByName(name);
+            const openAIIndices = raw.openai
+              .map((item) => item.index)
+              .sort((left, right) => right - left);
+            for (const index of openAIIndices) {
+              await providersApi.deleteOpenAIProvider(index);
             }
           }, refetch);
         }

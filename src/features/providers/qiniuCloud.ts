@@ -99,10 +99,7 @@ export const isQiniuCloudOpenAIProvider = (
   config: OpenAIProviderConfig | undefined | null
 ): boolean => {
   if (!config) return false;
-  return (
-    normalizeText(config.name) === normalizeText(QINIU_CLOUD_PROVIDER_NAME) ||
-    matchesQiniuCloudOpenAIBaseUrl(config.baseUrl)
-  );
+  return matchesQiniuCloudOpenAIBaseUrl(config.baseUrl);
 };
 
 export const isQiniuCloudClaudeProvider = (
@@ -128,7 +125,7 @@ export const isQiniuCloudGeminiProvider = (
 
 export const buildQiniuCloudRaw = (config: Config | null | undefined): SponsorProviderRaw => ({
   openai: (config?.openaiCompatibility ?? [])
-    .map((item, index) => ({ config: item, index }))
+    .map((item, index) => ({ config: item, index: item.sourceIndex ?? index }))
     .filter((item) => isQiniuCloudOpenAIProvider(item.config)),
   claude: (config?.claudeApiKeys ?? [])
     .map((item, index) => ({ config: item, index }))
