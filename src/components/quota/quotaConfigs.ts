@@ -1043,6 +1043,12 @@ const renderCodexItems = (
   return h(Fragment, null, ...nodes);
 };
 
+// `limits` kinds that duplicate a top-level usage window (by window id above)
+const CLAUDE_LIMIT_KIND_TO_WINDOW_ID: Record<string, string> = {
+  session: 'five-hour',
+  weekly_all: 'seven-day',
+};
+
 const buildClaudeQuotaWindows = (
   payload: ClaudeUsagePayload,
   t: TFunction
@@ -1061,6 +1067,31 @@ const buildClaudeQuotaWindows = (
       labelKey,
       usedPercent,
       resetLabel,
+    });
+  }
+
+  // Scoped windows (e.g. weekly per-model limits) only exist in the `limits`
+  // array. Kinds mapped below duplicate a top-level window already rendered
+  // above; everything else renders generically — unknown future kinds fall
+  // back to `claude_quota.limit_<kind>` with the raw kind/scope as default,
+  // so new models or windows need no code change.
+  const renderedWindowIds = new Set(windows.map((w) => w.id));
+  for (const [index, limit] of (payload.limits ?? []).entries()) {
+    if (!limit || typeof limit !== 'object') continue;
+    const usedPercent = normalizeNumberValue(limit.percent);
+    if (usedPercent === null) continue;
+    const kind = typeof limit.kind === 'string' && limit.kind ? limit.kind : 'unknown';
+    const duplicateOfId = CLAUDE_LIMIT_KIND_TO_WINDOW_ID[kind];
+    if (duplicateOfId && renderedWindowIds.has(duplicateOfId)) continue;
+    const scopeName = limit.scope?.model?.display_name ?? limit.scope?.surface ?? null;
+    const fallbackLabel = scopeName ? `${kind} · ${scopeName}` : kind;
+    windows.push({
+      id: `limit-${kind}-${index}`,
+      label: fallbackLabel,
+      labelKey: `claude_quota.limit_${kind}`,
+      labelParams: { scope: scopeName ?? '', defaultValue: fallbackLabel },
+      usedPercent,
+      resetLabel: limit.resets_at ? formatQuotaResetTime(limit.resets_at) : '',
     });
   }
 
@@ -1226,7 +1257,7 @@ const renderClaudeItems = (
       const clampedUsed = used === null ? null : Math.max(0, Math.min(100, used));
       const remaining = clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
       const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
-      const windowLabel = window.labelKey ? t(window.labelKey) : window.label;
+      const windowLabel = window.labelKey ? t(window.labelKey, window.labelParams) : window.label;
 
       return h(
         'div',
