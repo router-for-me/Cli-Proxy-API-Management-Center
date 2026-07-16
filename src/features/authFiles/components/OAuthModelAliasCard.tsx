@@ -6,20 +6,19 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ModelMappingDiagram, type ModelMappingDiagramRef } from '@/components/modelAlias';
 import { IconChevronUp } from '@/components/ui/icons';
 import type { OAuthModelAliasEntry } from '@/types';
-import type { AuthFileModelItem } from '@/features/authFiles/constants';
+import type { AuthFileModelItem, OAuthConfigLoadError } from '@/features/authFiles/constants';
 import styles from '@/pages/AuthFilesPage.module.scss';
-
-type UnsupportedError = 'unsupported' | null;
 type ViewMode = 'diagram' | 'list';
 
 export type OAuthModelAliasCardProps = {
   disableControls: boolean;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  onRetry: () => void | Promise<void>;
   onAdd: () => void;
   onEditProvider: (provider?: string) => void;
   onDeleteProvider: (provider: string) => void;
-  modelAliasError: UnsupportedError;
+  modelAliasError: OAuthConfigLoadError;
   modelAlias: Record<string, OAuthModelAliasEntry[]>;
   allProviderModels: Record<string, AuthFileModelItem[]>;
   onUpdate: (provider: string, sourceModel: string, newAlias: string) => Promise<void>;
@@ -41,6 +40,7 @@ export function OAuthModelAliasCard(props: OAuthModelAliasCardProps) {
     disableControls,
     viewMode,
     onViewModeChange,
+    onRetry,
     onAdd,
     onEditProvider,
     onDeleteProvider,
@@ -64,7 +64,7 @@ export function OAuthModelAliasCard(props: OAuthModelAliasCardProps) {
               variant={viewMode === 'list' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => onViewModeChange('list')}
-              disabled={disableControls || modelAliasError === 'unsupported'}
+              disabled={disableControls || modelAliasError !== null}
             >
               {t('oauth_model_alias.view_mode_list')}
             </Button>
@@ -72,16 +72,12 @@ export function OAuthModelAliasCard(props: OAuthModelAliasCardProps) {
               variant={viewMode === 'diagram' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => onViewModeChange('diagram')}
-              disabled={disableControls || modelAliasError === 'unsupported'}
+              disabled={disableControls || modelAliasError !== null}
             >
               {t('oauth_model_alias.view_mode_diagram')}
             </Button>
           </div>
-          <Button
-            size="sm"
-            onClick={onAdd}
-            disabled={disableControls || modelAliasError === 'unsupported'}
-          >
+          <Button size="sm" onClick={onAdd} disabled={disableControls || modelAliasError !== null}>
             {t('oauth_model_alias.add')}
           </Button>
         </div>
@@ -92,6 +88,17 @@ export function OAuthModelAliasCard(props: OAuthModelAliasCardProps) {
           title={t('oauth_model_alias.upgrade_required_title')}
           description={t('oauth_model_alias.upgrade_required_desc')}
         />
+      ) : modelAliasError === 'load' ? (
+        <EmptyState
+          title={t('notification.refresh_failed')}
+          action={
+            <Button variant="secondary" size="sm" onClick={() => void onRetry()}>
+              {t('common.refresh')}
+            </Button>
+          }
+        />
+      ) : modelAliasError === 'loading' ? (
+        <EmptyState title={t('common.loading')} />
       ) : viewMode === 'diagram' ? (
         Object.keys(modelAlias).length === 0 ? (
           <EmptyState title={t('oauth_model_alias.list_empty_all')} />
@@ -103,7 +110,7 @@ export function OAuthModelAliasCard(props: OAuthModelAliasCardProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => diagramRef.current?.collapseAll()}
-                disabled={disableControls || modelAliasError === 'unsupported'}
+                disabled={disableControls || modelAliasError !== null}
                 title={t('oauth_model_alias.diagram_collapse')}
                 aria-label={t('oauth_model_alias.diagram_collapse')}
               >

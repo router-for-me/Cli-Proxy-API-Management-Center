@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -27,6 +27,7 @@ import {
   updateOAuthExcludedRule,
 } from '@/features/authFiles/oauthExcludedRules';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
+import { getErrorMessage } from '@/utils/helpers';
 import styles from './AuthFilesOAuthExcludedEditPage.module.scss';
 
 type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
@@ -50,7 +51,10 @@ export function AuthFilesOAuthExcludedEditPage() {
   const [excluded, setExcluded] = useState<Record<string, string[]>>({});
   const [modelAlias, setModelAlias] = useState<Record<string, OAuthModelAliasEntry[]>>({});
   const [initialLoading, setInitialLoading] = useState(true);
+  const [initialLoadError, setInitialLoadError] = useState<string | null>(null);
+  const [baselineReady, setBaselineReady] = useState(false);
   const [excludedUnsupported, setExcludedUnsupported] = useState(false);
+  const loadRequestRef = useRef(0);
 
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
   const [modelsList, setModelsList] = useState<AuthFileModelItem[]>([]);
@@ -153,61 +157,64 @@ export function AuthFilesOAuthExcludedEditPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleBack]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadInitialData = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
+    setInitialLoading(true);
+    setInitialLoadError(null);
+    setBaselineReady(false);
+    setExcludedUnsupported(false);
 
-    const load = async () => {
-      setInitialLoading(true);
-      setExcludedUnsupported(false);
-      try {
-        const [filesResult, excludedResult, aliasResult] = await Promise.allSettled([
-          authFilesApi.list(),
-          authFilesApi.getOauthExcludedModels(),
-          authFilesApi.getOauthModelAlias(),
-        ]);
+    try {
+      const [filesResult, excludedResult, aliasResult] = await Promise.allSettled([
+        authFilesApi.list(),
+        authFilesApi.getOauthExcludedModels(),
+        authFilesApi.getOauthModelAlias(),
+      ]);
 
-        if (cancelled) return;
+      if (requestId !== loadRequestRef.current) return;
 
-        if (filesResult.status === 'fulfilled') {
-          setFiles(filesResult.value?.files ?? []);
-        }
-
-        if (aliasResult.status === 'fulfilled') {
-          setModelAlias(aliasResult.value ?? {});
-        }
-
-        if (excludedResult.status === 'fulfilled') {
-          setExcluded(excludedResult.value ?? {});
-          return;
-        }
-
-        const err = excludedResult.status === 'rejected' ? excludedResult.reason : null;
-        const status =
-          typeof err === 'object' && err !== null && 'status' in err
-            ? (err as { status?: unknown }).status
-            : undefined;
-
-        if (status === 404) {
-          setExcludedUnsupported(true);
-          return;
-        }
-      } finally {
-        if (!cancelled) {
-          setInitialLoading(false);
-        }
+      if (filesResult.status === 'fulfilled') {
+        setFiles(filesResult.value?.files ?? []);
       }
-    };
 
-    load().catch(() => {
-      if (!cancelled) {
+      if (aliasResult.status === 'fulfilled') {
+        setModelAlias(aliasResult.value ?? {});
+      }
+
+      if (excludedResult.status === 'fulfilled') {
+        setExcluded(excludedResult.value ?? {});
+        setBaselineReady(true);
+        return;
+      }
+
+      const err = excludedResult.reason;
+      const status =
+        typeof err === 'object' && err !== null && 'status' in err
+          ? (err as { status?: unknown }).status
+          : undefined;
+
+      if (status === 404) {
+        setExcludedUnsupported(true);
+        return;
+      }
+      setInitialLoadError(getErrorMessage(err));
+    } catch (err: unknown) {
+      if (requestId === loadRequestRef.current) {
+        setInitialLoadError(getErrorMessage(err));
+      }
+    } finally {
+      if (requestId === loadRequestRef.current) {
         setInitialLoading(false);
       }
-    });
-
-    return () => {
-      cancelled = true;
-    };
+    }
   }, []);
+
+  useEffect(() => {
+    void loadInitialData();
+    return () => {
+      loadRequestRef.current += 1;
+    };
+  }, [loadInitialData]);
 
   useEffect(() => {
     if (!resolvedProviderKey) {
@@ -334,7 +341,12 @@ export function AuthFilesOAuthExcludedEditPage() {
     }
   }, [allowNextNavigation, effectiveRules, handleBack, isEditing, provider, showNotification, t]);
 
-  const canSave = !disableControls && !saving && !excludedUnsupported;
+  const canSave =
+    !disableControls &&
+    !saving &&
+    baselineReady &&
+    !excludedUnsupported &&
+    initialLoadError === null;
 
   return (
     <SecondaryScreenShell
@@ -357,6 +369,18 @@ export function AuthFilesOAuthExcludedEditPage() {
           <EmptyState
             title={t('oauth_excluded.upgrade_required_title')}
             description={t('oauth_excluded.upgrade_required_desc')}
+          />
+        </Card>
+      ) : initialLoadError !== null ? (
+        <Card>
+          <EmptyState
+            title={t('notification.refresh_failed')}
+            description={initialLoadError || t('notification.refresh_failed')}
+            action={
+              <Button variant="secondary" size="sm" onClick={() => void loadInitialData()}>
+                {t('common.refresh')}
+              </Button>
+            }
           />
         </Card>
       ) : (
