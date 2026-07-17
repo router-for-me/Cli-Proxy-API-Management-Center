@@ -31,7 +31,7 @@ import { useNotificationStore } from '@/stores';
 import { getErrorMessage } from '@/utils/helpers';
 import styles from './MonitoringPage.module.scss';
 
-type RangeKey = 'today' | '7d' | '14d' | '30d' | 'all';
+type RangeKey = '24h' | '7d' | '14d' | '30d' | 'all';
 type TabKey = 'realtime' | 'accounts' | 'prices';
 type PriceListFilter = 'all' | 'manual' | 'synced' | 'unpriced';
 
@@ -42,18 +42,15 @@ const AUTO_OPTIONS = [
   { label: '30s', value: '30000' },
 ] as const;
 
-const startOfTodayMs = () => {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-};
+const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
 
 const rangeToMs = (key: RangeKey): { from_ms?: number; to_ms?: number } => {
   const now = Date.now();
   if (key === 'all') return {};
-  if (key === 'today') return { from_ms: startOfTodayMs(), to_ms: now };
+  if (key === '24h') return { from_ms: now - 24 * MS_PER_HOUR, to_ms: now };
   const days = key === '7d' ? 7 : key === '14d' ? 14 : 30;
-  return { from_ms: now - days * 24 * 60 * 60 * 1000, to_ms: now };
+  return { from_ms: now - days * MS_PER_DAY, to_ms: now };
 };
 
 const formatNumber = (value: number | undefined | null, digits = 0) => {
@@ -104,12 +101,13 @@ export function MonitoringPage() {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((s) => s.showNotification);
 
-  const [range, setRange] = useState<RangeKey>('today');
+  const [range, setRange] = useState<RangeKey>('24h');
   const [tab, setTab] = useState<TabKey>('realtime');
   const [search, setSearch] = useState('');
   const [model, setModel] = useState('');
   const [provider, setProvider] = useState('');
   const [source, setSource] = useState('');
+  const [apiKey, setApiKey] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'failed'>('all');
   const [autoMs, setAutoMs] = useState(5_000);
   const [loading, setLoading] = useState(false);
@@ -141,17 +139,19 @@ export function MonitoringPage() {
   const buildQuery = useCallback((): UsageQuery => {
     const base = rangeToMs(range);
     const sourcePick = source.trim();
+    const apiKeyPick = apiKey.trim();
     return {
       ...base,
       search: search.trim() || undefined,
       models: model ? [model] : undefined,
       providers: provider ? [provider] : undefined,
       sources: sourcePick ? [sourcePick] : undefined,
+      api_keys: apiKeyPick ? [apiKeyPick] : undefined,
       failed_only: statusFilter === 'failed' || undefined,
       success_only: statusFilter === 'success' || undefined,
       limit: 200,
     };
-  }, [range, search, model, provider, source, statusFilter]);
+  }, [range, search, model, provider, source, apiKey, statusFilter]);
 
   const loadCore = useCallback(async () => {
     setLoading(true);
@@ -233,8 +233,9 @@ export function MonitoringPage() {
     setModel('');
     setProvider('');
     setSource('');
+    setApiKey('');
     setStatusFilter('all');
-    setRange('today');
+    setRange('24h');
   };
 
   const enableStatistics = async () => {
@@ -384,7 +385,7 @@ export function MonitoringPage() {
   const statsOff = statsEnabledHint === false;
 
   const rangeOptions: Array<[RangeKey, string]> = [
-    ['today', t('monitoring.range_today')],
+    ['24h', t('monitoring.range_24h')],
     ['7d', '7d'],
     ['14d', '14d'],
     ['30d', '30d'],
@@ -426,6 +427,16 @@ export function MonitoringPage() {
       ...values.map((s) => ({ value: s, label: s })),
     ];
   }, [filterOptions?.sources, t]);
+
+  const apiKeyOptions = useMemo(() => {
+    const values = Array.from(new Set((filterOptions?.api_keys || []).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b)
+    );
+    return [
+      { value: '', label: t('monitoring.filter_api_keys') },
+      ...values.map((k) => ({ value: k, label: k })),
+    ];
+  }, [filterOptions?.api_keys, t]);
 
   const autoOptions = useMemo(
     () =>
@@ -482,7 +493,7 @@ export function MonitoringPage() {
     <div className={styles.container}>
       <div className={styles.filterSection}>
         <div className={styles.filterPrimary}>
-          <div className={styles.rangeGroup} role="group" aria-label={t('monitoring.range_today')}>
+          <div className={styles.rangeGroup} role="group" aria-label={t('monitoring.range_24h')}>
             {rangeOptions.map(([key, label]) => (
               <button
                 key={key}
@@ -530,6 +541,15 @@ export function MonitoringPage() {
             options={sourceOptions}
             onChange={setSource}
             ariaLabel={t('monitoring.filter_sources')}
+            size="sm"
+            fullWidth
+          />
+          <Select
+            className={styles.filterSelect}
+            value={apiKey}
+            options={apiKeyOptions}
+            onChange={setApiKey}
+            ariaLabel={t('monitoring.filter_api_keys')}
             size="sm"
             fullWidth
           />
@@ -656,6 +676,7 @@ export function MonitoringPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('monitoring.col_source')}</TableHead>
+                  <TableHead>{t('monitoring.col_api_key')}</TableHead>
                   <TableHead>{t('monitoring.col_model')}</TableHead>
                   <TableHead>{t('monitoring.col_effort')}</TableHead>
                   <TableHead>{t('monitoring.col_status')}</TableHead>
@@ -678,6 +699,9 @@ export function MonitoringPage() {
                           <span className={styles.cellSecondary}>{e.provider}</span>
                         ) : null}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={styles.mono}>{e.api_key || e.api_key_hash || '—'}</span>
                     </TableCell>
                     <TableCell>
                       <span className={styles.mono}>{e.model || e.alias || '—'}</span>

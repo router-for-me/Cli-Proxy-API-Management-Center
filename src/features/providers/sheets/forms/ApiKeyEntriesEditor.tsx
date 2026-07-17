@@ -8,7 +8,6 @@ import {
   IconPlus,
   IconX,
 } from '@/components/ui/icons';
-import { maskApiKey } from '@/utils/format';
 import type { ApiKeyEntryInput } from '../../types';
 import type { ConnectivityState, ConnectivityStatus } from './useConnectivityTest';
 import { ConnectivityStatusIcon } from './ConnectivityStatusIcon';
@@ -137,7 +136,7 @@ export function ApiKeyEntriesEditor({
                     </span>
                   ) : null}
                   <span className={styles.entrySummaryKey}>
-                    {summaryKey ? maskApiKey(summaryKey) : t('providersPage.status.notConfigured')}
+                    {summaryKey || t('providersPage.status.notConfigured')}
                   </span>
                 </span>
               </button>

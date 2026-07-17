@@ -1,6 +1,5 @@
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import { hasDisableAllModelsRule, stripDisableAllModelsRule } from '@/components/providers/utils';
-import { maskApiKey } from '@/utils/format';
 import {
   APIKEY_FUN_DISPLAY_NAME,
   APIKEY_FUN_PROTOCOLS,
@@ -87,8 +86,8 @@ function providerKeyToResource(
     brand,
     originalIndex: index,
     name: null,
-    identifier: maskApiKey(apiKey) || `#${index + 1}`,
-    apiKeyPreview: apiKey ? maskApiKey(apiKey) : null,
+    identifier: apiKey || `#${index + 1}`,
+    apiKeyPreview: apiKey || null,
     apiKey: apiKey || null,
     authIndex: config.authIndex ?? null,
     baseUrl: config.baseUrl ?? null,
@@ -134,7 +133,7 @@ export function vertexToResource(config: ProviderKeyConfig, index: number): Prov
 export function openaiToResource(config: OpenAIProviderConfig, index: number): ProviderResource {
   const name = (config.name ?? '').trim();
   const firstEntry = config.apiKeyEntries?.[0];
-  const previewApiKey = firstEntry?.apiKey ? maskApiKey(firstEntry.apiKey) : null;
+  const previewApiKey = firstEntry?.apiKey ? firstEntry.apiKey : null;
   return {
     id: buildId('openaiCompatibility', index, truncateForId(name) || `#${index}`),
     brand: 'openaiCompatibility',
@@ -258,7 +257,7 @@ function sponsorRawToResource(
     originalIndex: 0,
     name: options.displayName,
     identifier: options.displayName,
-    apiKeyPreview: apiKey ? maskApiKey(apiKey) : null,
+    apiKeyPreview: apiKey || null,
     apiKey: apiKey || null,
     authIndex: null,
     baseUrl: [protocolUrls.openai, protocolUrls.anthropic, protocolUrls.gemini]

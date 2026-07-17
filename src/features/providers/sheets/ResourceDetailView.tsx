@@ -3,7 +3,6 @@ import { Collapsible } from '@/components/ui/Collapsible';
 import { IconCheck, IconX } from '@/components/ui/icons';
 import { getProviderTotalStats, type ProviderRecentUsageMap } from '@/components/providers/utils';
 import type { OpenAIProviderConfig } from '@/types';
-import { maskApiKey } from '@/utils/format';
 import {
   getSponsorProviderDefinition,
   isMultiProtocolSponsorBrand,
@@ -82,7 +81,7 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
         <dl className={styles.dl} style={{ marginTop: 16 }}>
           <div>
             <dt className={styles.dt}>{t('providersPage.detail.fields.identifier')}</dt>
-            <dd className={styles.dd}>{firstKey ? maskApiKey(firstKey) : resource.identifier}</dd>
+            <dd className={styles.dd}>{firstKey || resource.identifier}</dd>
           </div>
           <div>
             <dt className={styles.dt}>{t('providersPage.detail.fields.prefix')}</dt>
@@ -153,7 +152,7 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
               return (
                 <div key={`${entry.apiKey}-${entryIndex}`} className={styles.apiKeyEntryCard}>
                   <span className={styles.apiKeyEntryIndex}>{entryIndex + 1}</span>
-                  <span className={styles.apiKeyEntryKey}>{maskApiKey(entry.apiKey)}</span>
+                  <span className={styles.apiKeyEntryKey}>{entry.apiKey}</span>
                   {entry.proxyUrl ? (
                     <span className={styles.apiKeyEntryProxy}>{entry.proxyUrl}</span>
                   ) : null}

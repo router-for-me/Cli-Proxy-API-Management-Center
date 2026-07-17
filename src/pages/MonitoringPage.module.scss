@@ -122,10 +122,10 @@ $control-h: 38px;
   flex: 0 0 auto;
 }
 
-// Row 2: four equal dropdowns filling the full width
+// Row 2: five equal dropdowns filling the full width
 .filterSecondary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: stretch;
   gap: $spacing-sm;
   width: 100%;

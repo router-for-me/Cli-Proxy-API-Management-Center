@@ -1742,7 +1742,7 @@
     }
   },
   "monitoring": {
-    "range_today": "今天",
+    "range_24h": "24h",
     "range_all": "全部",
     "search_placeholder": "搜索账号、模型、来源、Key…",
     "clear": "清除",
@@ -1752,6 +1752,7 @@
     "filter_models": "模型",
     "filter_statuses": "状态",
     "filter_sources": "来源",
+    "filter_api_keys": "API Key",
     "status_success": "成功",
     "status_failed": "失败",
     "stats_disabled_hint": "使用统计未启用。启用后会将请求写入本地 usage 数据库。",
@@ -1772,6 +1773,7 @@
     "empty_events_hint": "请在启用使用统计后通过网关发送流量。",
     "empty_accounts": "暂无账号聚合数据",
     "col_source": "来源",
+    "col_api_key": "API Key",
     "col_model": "模型",
     "col_effort": "Effort",
     "col_status": "状态",

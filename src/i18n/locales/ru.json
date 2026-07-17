@@ -1720,7 +1720,7 @@
     }
   },
   "monitoring": {
-    "range_today": "Сегодня",
+    "range_24h": "24h",
     "range_all": "Все",
     "search_placeholder": "Поиск: аккаунт, модель, источник, ключ…",
     "clear": "Сброс",
@@ -1730,6 +1730,7 @@
     "filter_models": "Модели",
     "filter_statuses": "Статусы",
     "filter_sources": "Источник",
+    "filter_api_keys": "API Key",
     "status_success": "Успех",
     "status_failed": "Ошибка",
     "stats_disabled_hint": "Статистика использования выключена. Включите её, чтобы писать запросы в локальную БД.",
@@ -1750,6 +1751,7 @@
     "empty_events_hint": "Отправьте трафик через шлюз со включённой статистикой.",
     "empty_accounts": "Пока нет агрегатов по аккаунтам",
     "col_source": "Источник",
+    "col_api_key": "API Key",
     "col_model": "Модель",
     "col_effort": "Effort",
     "col_status": "Статус",

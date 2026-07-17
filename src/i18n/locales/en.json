@@ -141,7 +141,7 @@
     "system_info": "Runtime & diagnostics"
   },
   "monitoring": {
-    "range_today": "Today",
+    "range_24h": "24h",
     "range_all": "All",
     "search_placeholder": "Search account, model, source, key…",
     "clear": "Clear",
@@ -151,6 +151,7 @@
     "filter_models": "Models",
     "filter_statuses": "Statuses",
     "filter_sources": "Source",
+    "filter_api_keys": "API Key",
     "status_success": "Success",
     "status_failed": "Failed",
     "stats_disabled_hint": "Usage statistics are disabled. Enable them to record requests into the local usage database.",
@@ -171,6 +172,7 @@
     "empty_events_hint": "Send traffic through the gateway with usage statistics enabled.",
     "empty_accounts": "No account aggregates yet",
     "col_source": "Source",
+    "col_api_key": "API Key",
     "col_model": "Model",
     "col_effort": "Effort",
     "col_status": "Status",

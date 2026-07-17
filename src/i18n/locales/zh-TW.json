@@ -1768,7 +1768,7 @@
     }
   },
   "monitoring": {
-    "range_today": "今天",
+    "range_24h": "24h",
     "range_all": "全部",
     "search_placeholder": "搜尋帳號、模型、來源、Key…",
     "clear": "清除",
@@ -1778,6 +1778,7 @@
     "filter_models": "模型",
     "filter_statuses": "狀態",
     "filter_sources": "來源",
+    "filter_api_keys": "API Key",
     "status_success": "成功",
     "status_failed": "失敗",
     "stats_disabled_hint": "使用統計未啟用。啟用後會將請求寫入本機 usage 資料庫。",
@@ -1798,6 +1799,7 @@
     "empty_events_hint": "請在啟用使用統計後透過閘道送出流量。",
     "empty_accounts": "尚無帳號彙總資料",
     "col_source": "來源",
+    "col_api_key": "API Key",
     "col_model": "模型",
     "col_effort": "Effort",
     "col_status": "狀態",

@@ -17,6 +17,7 @@ export interface UsageEvent {
   auth_index?: string;
   source?: string;
   source_hash?: string;
+  api_key?: string;
   api_key_hash?: string;
   reasoning_effort?: string;
   service_tier?: string;
@@ -73,6 +74,7 @@ export interface UsageFilterOptions {
   providers: string[];
   auth_indices: string[];
   sources: string[];
+  api_keys: string[];
   api_key_hashes: string[];
 }
 
@@ -84,6 +86,7 @@ export interface UsageQuery {
   providers?: string[];
   auth_indices?: string[];
   sources?: string[];
+  api_keys?: string[];
   api_key_hashes?: string[];
   failed_only?: boolean;
   success_only?: boolean;
