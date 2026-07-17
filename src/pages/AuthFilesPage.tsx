@@ -477,7 +477,7 @@ export function AuthFilesPage() {
       Array.from({ length: Math.min(CODEX_REFRESH_CONCURRENCY, codexFiles.length) }, refreshOne)
     );
     setCodexRefreshing(false);
-    await loadFiles();
+    await loadFiles({ silent: true });
     showNotification(
       t('auth_files.codex_refresh_result', { successful, failed, persistenceFailed }),
       failed > 0 || persistenceFailed > 0 ? 'warning' : 'success'
@@ -513,9 +513,14 @@ export function AuthFilesPage() {
 
   useInterval(
     () => {
-      void loadFiles().catch(() => {});
+      void loadFiles({ silent: true }).catch(() => {});
     },
     isCurrentLayer ? 240_000 : null
+  );
+
+  const reloadAuthFilesSilently = useCallback(
+    () => loadFiles({ silent: true }),
+    [loadFiles]
   );
 
   const existingTypes = useMemo(() => {
@@ -533,18 +538,13 @@ export function AuthFilesPage() {
         if (enabledOnly && file.disabled === true) return false;
         if (disabledOnly && file.disabled !== true) return false;
         if (privateInstructionsOnly && !file.allow_private_instructions) return false;
-        if (isCodexSelected) {
+          if (isCodexSelected) {
           const refreshed = codexRefreshByName[file.name];
-          const codexStatus = getCodexAccountStatus(refreshed);
-          if (
-            problemOnly &&
-            !hasAuthFileStatusMessage(file) &&
-            !codexStatus.needsReauth &&
-            !codexStatus.quotaLimited
-          ) {
+          const codexStatus = getCodexAccountStatus(file, refreshed);
+          if (problemOnly && codexStatus.kind === 'working' && !hasAuthFileStatusMessage(file)) {
             return false;
           }
-          if (!matchesCodexStatusFilter(codexStatusFilter, refreshed)) return false;
+          if (!matchesCodexStatusFilter(codexStatusFilter, file, refreshed)) return false;
           if (!matchesCodexPlanFilter(file, codexPlanFilter, refreshed)) return false;
         } else if (isXaiSelected) {
           if (problemOnly && getXaiAccountStatus(file).kind === 'working') return false;
@@ -917,23 +917,10 @@ export function AuthFilesPage() {
                         value={codexStatusFilter}
                         options={[
                           { value: 'all', label: t('auth_files.codex_status_all') },
-                          { value: 'reauth', label: t('auth_files.codex_status_reauth') },
-                          {
-                            value: 'quota_limited',
-                            label: t('auth_files.codex_status_quota_limited'),
-                          },
-                          {
-                            value: 'five_hour_limited',
-                            label: t('auth_files.codex_status_five_hour_limited'),
-                          },
-                          {
-                            value: 'weekly_limited',
-                            label: t('auth_files.codex_status_weekly_limited'),
-                          },
-                          {
-                            value: 'monthly_limited',
-                            label: t('auth_files.codex_status_monthly_limited'),
-                          },
+                          { value: 'working', label: t('auth_files.codex_status_working') },
+                          { value: 'cooldown', label: t('auth_files.codex_status_cooldown') },
+                          { value: 'denied', label: t('auth_files.codex_status_denied') },
+                          { value: 'other', label: t('auth_files.codex_status_other') },
                         ]}
                         onChange={(value) => {
                           setCodexStatusFilter(value as CodexStatusFilter);
@@ -1062,18 +1049,26 @@ export function AuthFilesPage() {
                       isCodexSelected
                         ? (() => {
                             const refreshed = codexRefreshByName[file.name];
-                            const status = getCodexAccountStatus(refreshed);
+                            const status = getCodexAccountStatus(file, refreshed);
                             const badges = [] as string[];
                             const plan = getCodexPlanFilterValue(file, refreshed);
                             if (plan) badges.push(t(`codex_quota.plan_${plan}`));
-                            if (status.needsReauth)
-                              badges.push(t('auth_files.codex_status_reauth'));
-                            if (status.fiveHourLimited)
-                              badges.push(t('auth_files.codex_status_five_hour_limited'));
-                            if (status.weeklyLimited)
-                              badges.push(t('auth_files.codex_status_weekly_limited'));
-                            if (status.monthlyLimited)
-                              badges.push(t('auth_files.codex_status_monthly_limited'));
+                            if (status.kind === 'denied') {
+                              badges.push(t('auth_files.codex_status_denied'));
+                            } else if (status.kind === 'cooldown') {
+                              badges.push(t('auth_files.codex_status_cooldown'));
+                              if (status.fiveHourLimited) {
+                                badges.push(t('auth_files.codex_status_five_hour_limited'));
+                              }
+                              if (status.weeklyLimited) {
+                                badges.push(t('auth_files.codex_status_weekly_limited'));
+                              }
+                              if (status.monthlyLimited) {
+                                badges.push(t('auth_files.codex_status_monthly_limited'));
+                              }
+                            } else if (status.kind === 'other') {
+                              badges.push(t('auth_files.codex_status_other'));
+                            }
                             return badges;
                           })()
                         : []
@@ -1084,7 +1079,7 @@ export function AuthFilesPage() {
                     onDelete={handleDelete}
                     onToggleStatus={handleStatusToggle}
                     onToggleSelect={toggleSelect}
-                    onAuthFileUpdated={loadFiles}
+                    onAuthFileUpdated={reloadAuthFilesSilently}
                   />
                 ))}
               </div>

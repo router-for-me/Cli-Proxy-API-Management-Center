@@ -109,6 +109,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
               chatgpt_plan_type: planType,
               plan_checked_at: new Date().toISOString(),
             });
+            // Silent reload: avoid grid unmount flash from full loading state.
             await onAuthFileUpdated?.();
           } catch {
             // Quota display still succeeds if plan persistence fails.

@@ -66,7 +66,7 @@ describe('Codex auth-file status', () => {
     expect(getCodexPlanSortRank(k12File)).toBe(10);
   });
 
-  test('classifies full quota windows and reauthentication', () => {
+  test('classifies full quota windows as cooldown', () => {
     const refreshed: CodexRefreshState = {
       status: 'success',
       planType: 'plus',
@@ -76,9 +76,56 @@ describe('Codex auth-file status', () => {
       ],
     };
 
-    expect(getCodexAccountStatus(refreshed).fiveHourLimited).toBe(true);
-    expect(matchesCodexStatusFilter('quota_limited', refreshed)).toBe(true);
-    expect(matchesCodexStatusFilter('weekly_limited', refreshed)).toBe(false);
-    expect(matchesCodexStatusFilter('reauth', { ...refreshed, errorStatus: 401 })).toBe(true);
+    const status = getCodexAccountStatus(file, refreshed);
+    expect(status.kind).toBe('cooldown');
+    expect(status.fiveHourLimited).toBe(true);
+    expect(matchesCodexStatusFilter('cooldown', file, refreshed)).toBe(true);
+    expect(matchesCodexStatusFilter('working', file, refreshed)).toBe(false);
+  });
+
+  test('classifies 401 and invalid-token messages as denied', () => {
+    const reauth: CodexRefreshState = {
+      status: 'error',
+      planType: null,
+      windows: [],
+      errorStatus: 401,
+      error: 'unauthorized',
+    };
+    expect(getCodexAccountStatus(file, reauth).kind).toBe('denied');
+    expect(matchesCodexStatusFilter('denied', file, reauth)).toBe(true);
+
+    const deactivated = {
+      ...file,
+      disabled_reason: 'workspace deactivated',
+    };
+    expect(getCodexAccountStatus(deactivated).kind).toBe('denied');
+
+    const invalidToken = {
+      ...file,
+      status_message: 'invalid_token',
+    };
+    expect(getCodexAccountStatus(invalidToken).kind).toBe('denied');
+  });
+
+  test('treats usage_limit_reached as cooldown not denied', () => {
+    const refreshed: CodexRefreshState = {
+      status: 'error',
+      planType: 'free',
+      windows: [],
+      error: JSON.stringify({
+        error: { type: 'usage_limit_reached', message: 'The usage limit has been reached' },
+      }),
+    };
+    expect(getCodexAccountStatus(file, refreshed).kind).toBe('cooldown');
+  });
+
+  test('classifies healthy enabled files as working', () => {
+    const refreshed: CodexRefreshState = {
+      status: 'success',
+      planType: 'plus',
+      windows: [{ id: 'five-hour', label: '5h', usedPercent: 40, resetLabel: 'later' }],
+    };
+    expect(getCodexAccountStatus(file, refreshed).kind).toBe('working');
+    expect(matchesCodexStatusFilter('working', file, refreshed)).toBe(true);
   });
 });
