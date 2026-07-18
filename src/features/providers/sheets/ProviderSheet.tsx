@@ -252,7 +252,9 @@ export function ProviderSheet({
                     ? '/ai-providers/fennoai'
                     : state.brand === 'qiniuCloud'
                       ? '/ai-providers/qiniu'
-                      : `/ai-providers/${state.brand}`,
+                      : state.brand === 'kimi'
+                        ? '/ai-providers/kimi'
+                        : `/ai-providers/${state.brand}`,
       })}
       footer={footer}
       closeDisabled={submitting}

@@ -37,7 +37,7 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
   claude: iconClaude,
   gemini: iconGemini,
   qwen: iconQwen,
-  kimi: { light: iconKimiLight, dark: iconKimiDark },
+  kimi: { light: iconKimiDark, dark: iconKimiLight },
   glm: iconGlm,
   grok: { light: iconGrok, dark: iconGrokDark },
   deepseek: iconDeepseek,

@@ -7,6 +7,7 @@ import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@
 export type ProviderBrand =
   | 'gemini'
   | 'codex'
+  | 'xai'
   | 'claude'
   | 'claudeApi'
   | 'vertex'
@@ -14,9 +15,10 @@ export type ProviderBrand =
   | 'apikeyFun'
   | 'code0'
   | 'fennoAI'
-  | 'qiniuCloud';
+  | 'qiniuCloud'
+  | 'kimi';
 
-export type SponsorProviderBrand = 'apikeyFun' | 'code0' | 'fennoAI' | 'qiniuCloud';
+export type SponsorProviderBrand = 'apikeyFun' | 'code0' | 'fennoAI' | 'qiniuCloud' | 'kimi';
 
 export const PROVIDER_SORT_BY_VALUES = ['name', 'priority', 'recent-success'] as const;
 export type ProviderSortBy = (typeof PROVIDER_SORT_BY_VALUES)[number];
@@ -27,6 +29,7 @@ export type SortDir = (typeof SORT_DIR_VALUES)[number];
 export type ProviderResourceSelector =
   | { brand: 'gemini'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'codex'; apiKey: string; baseUrl?: string; index: number }
+  | { brand: 'xai'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'claude'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'claudeApi'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'vertex'; apiKey: string; baseUrl?: string; index: number }
@@ -54,6 +57,13 @@ export type ProviderResourceSelector =
     }
   | {
       brand: 'qiniuCloud';
+      openaiIndices: number[];
+      claudeIndices: number[];
+      codexIndices: number[];
+      geminiIndices: number[];
+    }
+  | {
+      brand: 'kimi';
       openaiIndices: number[];
       claudeIndices: number[];
       codexIndices: number[];

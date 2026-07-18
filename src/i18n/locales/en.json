@@ -225,7 +225,7 @@
   "dashboard": {
     "current_config": "Current Configuration",
     "management_keys": "Management Keys",
-    "provider_keys_detail": "G:{{gemini}} C:{{codex}} Cl:{{claude}} V:{{vertex}} O:{{openai}}",
+    "provider_keys_detail": "G:{{gemini}} C:{{codex}} X:{{xai}} Cl:{{claude}} V:{{vertex}} O:{{openai}}",
     "oauth_credentials": "OAuth Credentials",
     "edit_settings": "Edit Settings",
     "routing_strategy": "Routing Strategy",
@@ -691,6 +691,10 @@
     "upgrade_required_desc": "The current server does not support the OAuth model aliases API. Please upgrade to the latest CLI Proxy API (CPA) version."
   },
   "auth_login": {
+    "recommended_provider_section": "Recommended provider",
+    "recommended_provider_badge": "Recommended provider",
+    "other_oauth_providers": "Other OAuth providers",
+    "other_login_methods": "Other login methods",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Start Codex Login",
     "codex_oauth_hint": "Login to Codex service through OAuth flow, automatically obtain and save authentication files.",
@@ -725,8 +729,9 @@
     "antigravity_oauth_start_error": "Failed to start Antigravity OAuth:",
     "antigravity_oauth_polling_error": "Failed to check authentication status:",
     "kimi_oauth_title": "Kimi OAuth",
-    "kimi_oauth_button": "Start Kimi Login",
-    "kimi_oauth_hint": "Login to Kimi service through OAuth device flow, automatically obtain and save authentication files.",
+    "kimi_oauth_button": "Log in with Kimi",
+    "kimi_sign_up_button": "Sign Up Now",
+    "kimi_oauth_hint": "Quickly log in to Kimi through device authorization. Authentication files are obtained and saved automatically.",
     "kimi_oauth_url_label": "Authorization URL:",
     "kimi_open_link": "Open Link",
     "kimi_copy_link": "Copy Link",
@@ -1590,6 +1595,7 @@
     "providerNames": {
       "gemini": "Gemini",
       "codex": "Codex",
+      "xai": "xAI",
       "claude": "Claude",
       "claudeApi": "ClaudeAPI",
       "vertex": "Vertex",
@@ -1597,7 +1603,8 @@
       "apikeyFun": "APIKEY.FUN",
       "code0": "Code0",
       "fennoAI": "FennoAI",
-      "qiniuCloud": "Qiniu Cloud"
+      "qiniuCloud": "Qiniu Cloud",
+      "kimi": "Kimi"
     },
     "table": {
       "key": "Key",
