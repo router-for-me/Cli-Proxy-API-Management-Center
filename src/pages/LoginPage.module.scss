@@ -82,37 +82,37 @@
   }
 }
 
-// 右侧内容容器
+// Right content container
 .formContent {
   width: 100%;
-  max-width: 420px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: $spacing-xl;
+  gap: $spacing-lg;
 }
 
 // Logo
 .logo {
-  width: 80px;
-  height: 80px;
+  width: 56px;
+  height: 56px;
   border-radius: $radius-lg;
   object-fit: cover;
-  box-shadow: var(--shadow-lg);
-  border: 3px solid var(--border-color);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
 }
 
-// 登录表单卡片
+// Login card
 .loginCard {
   width: 100%;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: $radius-lg;
+  border-radius: 12px;
   box-shadow: var(--shadow-lg);
-  padding: $spacing-xl;
+  padding: $spacing-lg;
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
 
   @media (max-width: $breakpoint-mobile) {
     padding: $spacing-lg;
@@ -139,17 +139,18 @@
   flex-wrap: wrap;
 }
 
-// 标题
+// Title
 .title {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
   color: var(--text-primary);
 }
 
-// 副标题
+// Subtitle
 .subtitle {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 // 语言下拉选择
@@ -158,29 +159,32 @@
   flex: 0 0 auto;
 }
 
-// 连接信息框
+// Connection info box
 .connectionBox {
   background: var(--bg-secondary);
-  border: 1px dashed var(--border-color);
+  border: 1px dashed var(--border-primary);
   border-radius: $radius-md;
-  padding: $spacing-md;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: $spacing-xs;
+  gap: 3px;
 
   .label {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 12px;
+    font-weight: 550;
   }
 
   .value {
-    font-weight: 700;
+    font-weight: 600;
+    font-size: 13px;
+    font-family: $font-mono;
     color: var(--text-primary);
     word-break: break-all;
   }
 
   .hint {
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
     font-size: 12px;
   }
 }
@@ -194,16 +198,17 @@
 
 .toggleLabel {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 }
 
-// 错误提示框
+// Error box
 .errorBox {
-  background: rgba($error-color, 0.1);
-  border: 1px solid rgba($error-color, 0.4);
+  background: var(--failure-badge-bg);
+  border: 1px solid var(--failure-badge-border);
   border-radius: $radius-md;
-  padding: $spacing-sm $spacing-md;
-  color: $error-color;
-  font-size: 14px;
+  padding: $spacing-sm 12px;
+  color: var(--failure-badge-text);
+  font-size: 13px;
+  line-height: 1.5;
 }

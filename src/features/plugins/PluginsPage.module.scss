@@ -21,9 +21,10 @@
 .title {
   margin: 0;
   color: var(--text-primary);
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .description {
@@ -583,5 +584,4 @@
       width: 100%;
     }
   }
-
 }

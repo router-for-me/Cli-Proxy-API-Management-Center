@@ -4,12 +4,11 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  
+  background: rgba(12, 11, 9, 0.45);
   z-index: 2000;
   display: flex;
   justify-content: flex-end;
-
+  animation: sheet-overlay-in 120ms $ease-out;
 }
 
 .content {
@@ -21,7 +20,27 @@
   flex-direction: column;
   height: 100%;
   outline: none;
+  animation: sheet-content-in 180ms $ease-out;
+}
 
+@keyframes sheet-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheet-content-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .sizeMd {
@@ -38,11 +57,11 @@
 
 .header {
   flex-shrink: 0;
-  padding: 20px 56px 20px 24px;
+  padding: 14px 52px 14px 20px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .eyebrow {
@@ -54,8 +73,9 @@
 }
 
 .title {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
   margin: 0;
 }
@@ -70,15 +90,15 @@
 .body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 20px;
 }
 
 .footer {
   flex-shrink: 0;
-  padding: 16px 24px;
+  padding: 12px 20px;
   border-top: 1px solid var(--border-color);
   display: flex;
-  gap: 12px;
+  gap: 8px;
   justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
@@ -86,10 +106,10 @@
 
 .closeBtn {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 32px;
-  height: 32px;
+  top: 11px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;

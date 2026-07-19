@@ -16,9 +16,9 @@
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--border-color);
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-primary);
   border-radius: $radius-md;
   background-color: var(--bg-primary);
   box-shadow: var(--shadow);
@@ -29,6 +29,9 @@
   appearance: none;
   text-align: left;
   box-sizing: border-box;
+  transition:
+    border-color 120ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 120ms cubic-bezier(0.2, 0, 0, 1);
 
   &:hover {
     border-color: var(--border-hover);
@@ -36,22 +39,23 @@
 
   &:focus {
     outline: none;
+    border-color: var(--primary-color);
     box-shadow:
       var(--shadow),
-      0 0 0 3px rgba($primary-color, 0.18);
+      0 0 0 3px color-mix(in srgb, var(--primary-color) 12%, transparent);
   }
 
   &[aria-expanded='true'] {
     border-color: var(--primary-color);
     box-shadow:
       var(--shadow),
-      0 0 0 3px rgba($primary-color, 0.18);
+      0 0 0 3px color-mix(in srgb, var(--primary-color) 12%, transparent);
   }
 }
 
 .triggerSm {
-  height: 28px;
-  padding: 0 10px;
+  height: 26px;
+  padding: 0 8px;
   font-size: 12px;
   box-shadow: none;
 }
@@ -79,23 +83,35 @@
 
 .dropdown {
   position: fixed;
-  background: var(--bg-primary);
+  background: var(--floating-surface, var(--bg-primary));
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
-  padding: 6px;
+  padding: 4px;
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
   max-height: 240px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  animation: select-dropdown-in 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes select-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .option {
-  padding: 8px 12px;
-  border-radius: $radius-md;
+  padding: 6px 9px;
+  border-radius: $radius-sm;
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-primary);
@@ -104,21 +120,20 @@
   font-size: 13px;
   font-weight: 500;
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
+    background-color 120ms cubic-bezier(0.2, 0, 0, 1),
+    border-color 120ms cubic-bezier(0.2, 0, 0, 1);
   flex-shrink: 0;
 
   &:hover {
-    background: var(--bg-secondary);
+    background: color-mix(in srgb, var(--text-primary) 6%, transparent);
   }
 }
 
 .optionActive {
-  border-color: rgba($primary-color, 0.5);
-  background: rgba($primary-color, 0.1);
+  background: color-mix(in srgb, var(--text-primary) 9%, transparent);
   font-weight: 600;
 }
 
 .optionHighlighted {
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
 }

@@ -18,15 +18,14 @@ interface QuickStat {
   sublabel?: string;
 }
 
-type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
-
-function getTimeOfDay(): TimeOfDay {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 17) return 'afternoon';
-  if (hour >= 17 && hour < 21) return 'evening';
-  return 'night';
-}
+const PROVIDER_LABELS: Array<{ key: string; label: string }> = [
+  { key: 'gemini', label: 'Gemini' },
+  { key: 'codex', label: 'Codex' },
+  { key: 'xai', label: 'xAI' },
+  { key: 'claude', label: 'Claude' },
+  { key: 'vertex', label: 'Vertex' },
+  { key: 'openai', label: 'OpenAI' },
+];
 
 export function DashboardPage() {
   const { t, i18n } = useTranslation();
@@ -44,19 +43,6 @@ export function DashboardPage() {
 
   const [authFilesCount, setAuthFilesCount] = useState<number | null>(null);
   const [authFilesLoading, setAuthFilesLoading] = useState(false);
-
-  // Time-of-day state for dynamic greeting
-  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay);
-  const [currentTime, setCurrentTime] = useState(() => new Date());
-
-  // Update time every 60 seconds
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTimeOfDay(getTimeOfDay());
-      setCurrentTime(new Date());
-    }, 60_000);
-    return () => clearInterval(id);
-  }, []);
 
   const resolveApiKeysForModels = useApiKeysForModels();
 
@@ -93,7 +79,7 @@ export function DashboardPage() {
       }
     };
 
-    // 提供商/密钥统计直接来自 config store；这里只需保证配置已加载并取认证文件数。
+    // Provider/key counts come from the config store; ensure config is loaded and fetch auth files.
     fetchConfig().catch(() => undefined);
     fetchModels();
     void loadAuthFiles();
@@ -104,7 +90,7 @@ export function DashboardPage() {
   }, [connectionStatus, fetchConfig, fetchModels]);
 
   const configLoading = !config;
-  const providerStats = config
+  const providerStats: Record<string, number> | null = config
     ? {
         gemini: config.geminiApiKeys?.length ?? 0,
         codex: config.codexApiKeys?.length ?? 0,
@@ -117,37 +103,33 @@ export function DashboardPage() {
   const totalProviderKeys = providerStats
     ? Object.values(providerStats).reduce((sum, count) => sum + count, 0)
     : 0;
+  const providerBreakdown = providerStats
+    ? PROVIDER_LABELS.filter(({ key }) => (providerStats[key] ?? 0) > 0)
+        .map(({ key, label }) => `${label} ${providerStats[key]}`)
+        .join(' · ')
+    : '';
 
   const quickStats: QuickStat[] = [
     {
       label: t('dashboard.management_keys'),
-      value: config ? (config.apiKeys?.length ?? 0) : '-',
-      icon: <IconKey size={24} />,
+      value: config ? (config.apiKeys?.length ?? 0) : '—',
+      icon: <IconKey size={16} />,
       path: '/config',
       loading: configLoading,
       sublabel: t('nav.config_management'),
     },
     {
       label: t('nav.ai_providers'),
-      value: providerStats ? totalProviderKeys : '-',
-      icon: <IconBot size={24} />,
+      value: providerStats ? totalProviderKeys : '—',
+      icon: <IconBot size={16} />,
       path: '/ai-providers',
       loading: configLoading,
-      sublabel: providerStats
-        ? t('dashboard.provider_keys_detail', {
-            gemini: providerStats.gemini,
-            codex: providerStats.codex,
-            xai: providerStats.xai,
-            claude: providerStats.claude,
-            vertex: providerStats.vertex,
-            openai: providerStats.openai,
-          })
-        : undefined,
+      sublabel: providerBreakdown || undefined,
     },
     {
       label: t('nav.auth_files'),
-      value: authFilesCount ?? '-',
-      icon: <IconFileText size={24} />,
+      value: authFilesCount ?? '—',
+      icon: <IconFileText size={16} />,
       path: '/auth-files',
       loading: authFilesLoading && authFilesCount === null,
       sublabel: t('dashboard.oauth_credentials'),
@@ -155,7 +137,7 @@ export function DashboardPage() {
     {
       label: t('dashboard.available_models'),
       value: getDashboardModelsStatValue(models.length, modelsLoading, modelsError),
-      icon: <IconSatellite size={24} />,
+      icon: <IconSatellite size={16} />,
       path: '/system',
       loading: modelsLoading,
       sublabel: t('dashboard.available_models_desc'),
@@ -164,167 +146,107 @@ export function DashboardPage() {
 
   const routingStrategyRaw = config?.routingStrategy?.trim() || '';
   const routingStrategyDisplay = !routingStrategyRaw
-    ? '-'
+    ? '—'
     : routingStrategyRaw === 'round-robin'
       ? t('basic_settings.routing_strategy_round_robin')
       : routingStrategyRaw === 'fill-first'
         ? t('basic_settings.routing_strategy_fill_first')
         : routingStrategyRaw;
-  const routingStrategyBadgeClass = !routingStrategyRaw
-    ? styles.configBadgeUnknown
-    : routingStrategyRaw === 'round-robin'
-      ? styles.configBadgeRoundRobin
-      : routingStrategyRaw === 'fill-first'
-        ? styles.configBadgeFillFirst
-        : styles.configBadgeUnknown;
 
-  // Derived time-based values
-  const greetingKey = `dashboard.greeting_${timeOfDay}`;
-  const caringKey = `dashboard.caring_${timeOfDay}`;
-
-  const formattedDate = currentTime.toLocaleDateString(i18n.language, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  const formattedTime = currentTime.toLocaleTimeString(i18n.language, {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const connectionClass =
+    connectionStatus === 'connected'
+      ? styles.connected
+      : connectionStatus === 'connecting'
+        ? styles.connecting
+        : styles.disconnected;
+  const connectionLabel = t(
+    connectionStatus === 'connected'
+      ? 'common.connected'
+      : connectionStatus === 'connecting'
+        ? 'common.connecting'
+        : 'common.disconnected'
+  );
   const serverBuildDateDisplay = formatDateValue(serverBuildDate, i18n.language);
+  const versionDisplay = serverVersion ? `v${serverVersion.trim().replace(/^[vV]+/, '')}` : null;
+
+  const boolBadge = (value: boolean | undefined) => (
+    <span className={`${styles.boolBadge} ${value ? styles.on : styles.off}`}>
+      {value ? t('common.yes') : t('common.no')}
+    </span>
+  );
 
   return (
     <div className={styles.dashboard}>
-      {/* Decorative background orbs */}
-      <div className={styles.backgroundOrbs} aria-hidden="true">
-        <div className={styles.orb1} />
-        <div className={styles.orb2} />
-      </div>
-
-      {/* Hero welcome section */}
-      <section className={styles.hero}>
-        <span className={styles.heroWatermark} aria-hidden="true">
-          OVERVIEW
-        </span>
-        <div className={styles.heroContent}>
-          <span className={styles.heroGreeting}>{t(greetingKey)}</span>
-          <h1 className={styles.heroTitle}>{t('dashboard.welcome_back')}</h1>
-          <p className={styles.heroCaring}>{t(caringKey)}</p>
-        </div>
-        <div className={styles.heroMeta}>
-          <div className={styles.dateTimeBlock}>
-            <span className={styles.time}>{formattedTime}</span>
-            <span className={styles.date}>{formattedDate}</span>
-          </div>
-          <div className={styles.connectionPill}>
-            <span
-              className={`${styles.statusDot} ${
-                connectionStatus === 'connected'
-                  ? styles.connected
-                  : connectionStatus === 'connecting'
-                    ? styles.connecting
-                    : styles.disconnected
-              }`}
-            />
-            <span className={styles.pillText}>
-              {serverVersion
-                ? `v${serverVersion.trim().replace(/^[vV]+/, '')}`
-                : t(
-                    connectionStatus === 'connected'
-                      ? 'common.connected'
-                      : connectionStatus === 'connecting'
-                        ? 'common.connecting'
-                        : 'common.disconnected'
-                  )}
-            </span>
-          </div>
+      <header className={styles.header}>
+        <h1>{t('nav.dashboard')}</h1>
+        <div className={styles.serverMeta}>
+          <span className={styles.connection}>
+            <span className={`${styles.statusDot} ${connectionClass}`} />
+            {versionDisplay ?? connectionLabel}
+          </span>
           {serverBuildDateDisplay && (
             <span className={styles.buildDate}>{serverBuildDateDisplay}</span>
           )}
         </div>
-      </section>
+      </header>
 
-      {/* Bento stats grid */}
-      <section className={styles.statsSection}>
-        <h2 className={styles.sectionHeading}>{t('dashboard.system_overview')}</h2>
-        <div className={styles.bentoGrid}>
-          {quickStats.map((stat, index) => (
-            <Link
-              key={stat.path}
-              to={stat.path}
-              className={`${styles.bentoCard} ${index === 0 ? styles.bentoLarge : ''}`}
-              style={{ animationDelay: `${index * 80}ms` }}
-            >
-              <div className={styles.bentoIcon}>{stat.icon}</div>
-              <div className={styles.bentoContent}>
-                <span className={styles.bentoValue}>{stat.loading ? '...' : stat.value}</span>
-                <span className={styles.bentoLabel}>{stat.label}</span>
-                {stat.sublabel && !stat.loading && (
-                  <span className={styles.bentoSublabel}>{stat.sublabel}</span>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Config pills section */}
-      {config && (
-        <section className={styles.configSection}>
-          <h2 className={styles.sectionHeading}>{t('dashboard.current_config')}</h2>
-          <div className={styles.configPillGrid}>
-            <div className={styles.configPill}>
-              <span className={styles.configPillLabel}>{t('basic_settings.debug_enable')}</span>
-              <span
-                className={`${styles.configPillValue} ${config.debug ? styles.on : styles.off}`}
-              >
-                {config.debug ? t('common.yes') : t('common.no')}
-              </span>
+      <section className={styles.statGrid}>
+        {quickStats.map((stat) => (
+          <Link key={stat.path} to={stat.path} className={styles.statCard}>
+            <div className={styles.statTop}>
+              <span className={styles.statLabel}>{stat.label}</span>
+              <span className={styles.statIcon}>{stat.icon}</span>
             </div>
-            <div className={styles.configPill}>
-              <span className={styles.configPillLabel}>
+            <span className={styles.statValue}>{stat.loading ? '—' : stat.value}</span>
+            {stat.sublabel && !stat.loading && (
+              <span className={styles.statSub} title={stat.sublabel}>
+                {stat.sublabel}
+              </span>
+            )}
+          </Link>
+        ))}
+      </section>
+
+      {config && (
+        <section className={styles.configCard}>
+          <div className={styles.configHeader}>
+            <h2>{t('dashboard.current_config')}</h2>
+            <Link to="/config" className={styles.configEditLink}>
+              {t('dashboard.edit_settings')}
+            </Link>
+          </div>
+          <div className={styles.configGrid}>
+            <div className={styles.configRow}>
+              <span className={styles.configLabel}>{t('basic_settings.debug_enable')}</span>
+              {boolBadge(config.debug)}
+            </div>
+            <div className={styles.configRow}>
+              <span className={styles.configLabel}>
                 {t('basic_settings.logging_to_file_enable')}
               </span>
-              <span
-                className={`${styles.configPillValue} ${config.loggingToFile ? styles.on : styles.off}`}
-              >
-                {config.loggingToFile ? t('common.yes') : t('common.no')}
-              </span>
+              {boolBadge(config.loggingToFile)}
             </div>
-            <div className={styles.configPill}>
-              <span className={styles.configPillLabel}>
-                {t('basic_settings.retry_count_label')}
-              </span>
-              <span className={styles.configPillValue}>{config.requestRetry ?? 0}</span>
+            <div className={styles.configRow}>
+              <span className={styles.configLabel}>{t('basic_settings.retry_count_label')}</span>
+              <span className={styles.configValue}>{config.requestRetry ?? 0}</span>
             </div>
-            <div className={styles.configPill}>
-              <span className={styles.configPillLabel}>{t('basic_settings.ws_auth_enable')}</span>
-              <span
-                className={`${styles.configPillValue} ${config.wsAuth ? styles.on : styles.off}`}
-              >
-                {config.wsAuth ? t('common.yes') : t('common.no')}
-              </span>
+            <div className={styles.configRow}>
+              <span className={styles.configLabel}>{t('basic_settings.ws_auth_enable')}</span>
+              {boolBadge(config.wsAuth)}
             </div>
-            <div className={styles.configPill}>
-              <span className={styles.configPillLabel}>{t('dashboard.routing_strategy')}</span>
-              <span className={`${styles.configBadge} ${routingStrategyBadgeClass}`}>
-                {routingStrategyDisplay}
-              </span>
+            <div className={styles.configRow}>
+              <span className={styles.configLabel}>{t('dashboard.routing_strategy')}</span>
+              <span className={styles.configValue}>{routingStrategyDisplay}</span>
             </div>
             {config.proxyUrl && (
-              <div className={`${styles.configPill} ${styles.configPillWide}`}>
-                <span className={styles.configPillLabel}>
-                  {t('basic_settings.proxy_url_label')}
+              <div className={`${styles.configRow} ${styles.configRowWide}`}>
+                <span className={styles.configLabel}>{t('basic_settings.proxy_url_label')}</span>
+                <span className={styles.configMono} title={config.proxyUrl}>
+                  {config.proxyUrl}
                 </span>
-                <span className={styles.configPillMono}>{config.proxyUrl}</span>
               </div>
             )}
           </div>
-          <Link to="/config" className={styles.viewMoreLink}>
-            {t('dashboard.edit_settings')} →
-          </Link>
         </section>
       )}
     </div>

@@ -143,25 +143,11 @@
   "dashboard": {
     "current_config": "目前設定",
     "management_keys": "管理金鑰",
-    "provider_keys_detail": "G:{{gemini}} C:{{codex}} X:{{xai}} Cl:{{claude}} V:{{vertex}} O:{{openai}}",
     "oauth_credentials": "OAuth 憑證",
     "edit_settings": "編輯設定",
     "routing_strategy": "路由策略",
     "available_models": "可用模型",
-    "available_models_desc": "所有供應商的模型總數",
-    "quick_start_card": "快速開始",
-    "quick_start_entry": "快速開始",
-    "quick_start_entry_desc": "進入快速開始頁面",
-    "welcome_back": "歡迎回來",
-    "greeting_morning": "早安",
-    "greeting_afternoon": "午安",
-    "greeting_evening": "晚安",
-    "greeting_night": "夜深了",
-    "caring_morning": "新的一天，準備大展身手吧。",
-    "caring_afternoon": "穩步推進中，繼續加油。",
-    "caring_evening": "今天辛苦了，收尾工作做好喔。",
-    "caring_night": "夜深了，別忘了早點休息。",
-    "system_overview": "系統概覽"
+    "available_models_desc": "所有供應商的模型總數"
   },
   "basic_settings": {
     "debug_enable": "啟用除錯模式",

@@ -143,25 +143,11 @@
   "dashboard": {
     "current_config": "当前配置",
     "management_keys": "管理密钥",
-    "provider_keys_detail": "G:{{gemini}} C:{{codex}} X:{{xai}} Cl:{{claude}} V:{{vertex}} O:{{openai}}",
     "oauth_credentials": "OAuth 凭证",
     "edit_settings": "编辑设置",
     "routing_strategy": "路由策略",
     "available_models": "可用模型",
-    "available_models_desc": "所有提供商的模型总数",
-    "quick_start_card": "快速开始",
-    "quick_start_entry": "快速开始",
-    "quick_start_entry_desc": "进入快速开始页面",
-    "welcome_back": "欢迎回来",
-    "greeting_morning": "早上好",
-    "greeting_afternoon": "下午好",
-    "greeting_evening": "晚上好",
-    "greeting_night": "夜深了",
-    "caring_morning": "新的一天，准备大展身手吧。",
-    "caring_afternoon": "稳步推进中，继续加油。",
-    "caring_evening": "今天辛苦了，收尾工作做好哦。",
-    "caring_night": "夜深了，别忘了早些休息。",
-    "system_overview": "系统概览"
+    "available_models_desc": "所有提供商的模型总数"
   },
   "basic_settings": {
     "debug_enable": "启用调试模式",

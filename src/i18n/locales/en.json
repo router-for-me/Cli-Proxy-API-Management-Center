@@ -225,25 +225,11 @@
   "dashboard": {
     "current_config": "Current Configuration",
     "management_keys": "Management Keys",
-    "provider_keys_detail": "G:{{gemini}} C:{{codex}} X:{{xai}} Cl:{{claude}} V:{{vertex}} O:{{openai}}",
     "oauth_credentials": "OAuth Credentials",
     "edit_settings": "Edit Settings",
     "routing_strategy": "Routing Strategy",
     "available_models": "Available Models",
-    "available_models_desc": "Total models from all providers",
-    "quick_start_card": "Quick Start",
-    "quick_start_entry": "Quick Start",
-    "quick_start_entry_desc": "Open the quick start page",
-    "welcome_back": "Welcome Back",
-    "greeting_morning": "Good Morning",
-    "greeting_afternoon": "Good Afternoon",
-    "greeting_evening": "Good Evening",
-    "greeting_night": "Good Night",
-    "caring_morning": "A fresh start — let's make today count.",
-    "caring_afternoon": "Steady progress — you're doing great.",
-    "caring_evening": "Wrapping up nicely — almost there.",
-    "caring_night": "Burning the midnight oil? Don't forget to rest.",
-    "system_overview": "System Overview"
+    "available_models_desc": "Total models from all providers"
   },
   "basic_settings": {
     "debug_enable": "Enable Debug Mode",

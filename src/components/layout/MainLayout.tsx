@@ -277,22 +277,22 @@ const THEME_CARDS: Array<{
     key: 'light',
     labelKey: 'theme.light',
     colors: {
-      bg: '#faf9f5',
-      card: '#f0eee8',
-      border: '#e3e1db',
-      text: '#2d2a26',
-      textMuted: '#a29c95',
+      bg: '#f4f2ed',
+      card: '#fcfbf8',
+      border: '#e4e1da',
+      text: '#26231f',
+      textMuted: '#9d968e',
     },
   },
   {
     key: 'dark',
     labelKey: 'theme.dark',
     colors: {
-      bg: '#151412',
-      card: '#1d1b18',
-      border: '#3a3530',
-      text: '#f6f4f1',
-      textMuted: '#9c958d',
+      bg: '#141311',
+      card: '#1c1a17',
+      border: '#33302b',
+      text: '#f2efeb',
+      textMuted: '#857f77',
     },
   },
 ];
@@ -588,12 +588,7 @@ export function MainLayout() {
         {
           path: '/xai-config',
           labelKey: 'nav.xai_config',
-          icon: (
-            <BrandNavIcon
-              src={resolvedTheme === 'dark' ? iconGrokDark : iconGrok}
-              alt="xAI"
-            />
-          ),
+          icon: <BrandNavIcon src={resolvedTheme === 'dark' ? iconGrokDark : iconGrok} alt="xAI" />,
         },
       ],
     },
@@ -742,8 +737,6 @@ export function MainLayout() {
         isPluginResourcePage ? 'plugin-resource-shell' : ''
       }`}
     >
-      <div className="top-gradient-blur" aria-hidden="true" />
-
       <header className="main-header" ref={headerRef}>
         <button
           type="button"
