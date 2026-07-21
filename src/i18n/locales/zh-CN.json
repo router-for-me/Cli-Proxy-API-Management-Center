@@ -442,6 +442,8 @@
     "plan_label": "套餐",
     "plan_supergrok": "SuperGrok",
     "plan_supergrok_heavy": "SuperGrok Heavy",
+    "plan_paid": "付费",
+    "paid_health": "付费 API 对话可用。xAI 暂不为此 OAuth 凭证提供额度总量数据。",
     "pay_as_you_go_label": "按量付费",
     "pay_as_you_go_enabled": "已启用，封顶 {{cap}}",
     "pay_as_you_go_disabled": "未启用"

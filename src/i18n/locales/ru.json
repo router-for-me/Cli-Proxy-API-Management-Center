@@ -429,6 +429,8 @@
     "plan_label": "План",
     "plan_supergrok": "SuperGrok",
     "plan_supergrok_heavy": "SuperGrok Heavy",
+    "plan_paid": "Платный",
+    "paid_health": "Чат платного API доступен. xAI не предоставляет данные об общей квоте для этих учётных данных OAuth.",
     "pay_as_you_go_label": "Оплата по факту",
     "pay_as_you_go_enabled": "Включено, лимит {{cap}}",
     "pay_as_you_go_disabled": "Отключено"

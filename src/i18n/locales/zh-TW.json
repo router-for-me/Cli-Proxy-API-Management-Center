@@ -442,6 +442,8 @@
     "plan_label": "方案",
     "plan_supergrok": "SuperGrok",
     "plan_supergrok_heavy": "SuperGrok Heavy",
+    "plan_paid": "付費",
+    "paid_health": "付費 API 對話可用。xAI 暫不為此 OAuth 憑證提供配額總量資料。",
     "pay_as_you_go_label": "按量付費",
     "pay_as_you_go_enabled": "已啟用，封頂 {{cap}}",
     "pay_as_you_go_disabled": "未啟用"

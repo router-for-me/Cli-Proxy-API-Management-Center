@@ -47,8 +47,12 @@ import {
   CODEX_REQUEST_HEADERS,
   KIMI_USAGE_URL,
   KIMI_REQUEST_HEADERS,
+  XAI_API_CHAT_URL,
+  XAI_API_ME_URL,
+  XAI_API_REQUEST_HEADERS,
   XAI_BILLING_MONTHLY_URL,
   XAI_BILLING_WEEKLY_URL,
+  XAI_PAID_HEALTH_MODEL,
   XAI_REQUEST_HEADERS,
   normalizeNumberValue,
   normalizePlanType,
@@ -68,6 +72,7 @@ import {
   buildAntigravityQuotaGroups,
   buildKimiQuotaRows,
   buildXaiBillingSummary,
+  buildXaiPaidHealthSummary,
   mergeXaiBillingSummaries,
   createStatusError,
   formatShanghaiDateTime,
@@ -77,6 +82,7 @@ import {
   isCodexFile,
   isDisabledAuthFile,
   isKimiFile,
+  isPaidXaiAuthFile,
   isXaiFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
@@ -112,6 +118,7 @@ type CodexQuotaData = {
 const QUOTA_PROGRESS_HIGH_THRESHOLD = 70;
 const QUOTA_PROGRESS_MEDIUM_THRESHOLD = 30;
 const CODEX_RESET_CREDITS_REQUEST_TIMEOUT_MS = 8000;
+const XAI_PAID_HEALTH_REQUEST_TIMEOUT_MS = 15000;
 
 export interface QuotaStore {
   antigravityQuota: Record<string, AntigravityQuotaState>;
@@ -1496,11 +1503,63 @@ const requestXaiBilling = async (
   return buildXaiBillingSummary(payload?.config);
 };
 
+const requestXaiPaidHealth = async (authIndex: string): Promise<XaiBillingSummary> => {
+  const [profileRequest, chatRequest] = await Promise.allSettled([
+    apiCallApi.request(
+      {
+        authIndex,
+        method: 'GET',
+        url: XAI_API_ME_URL,
+        header: XAI_API_REQUEST_HEADERS,
+      },
+      { timeout: XAI_PAID_HEALTH_REQUEST_TIMEOUT_MS }
+    ),
+    apiCallApi.request(
+      {
+        authIndex,
+        method: 'POST',
+        url: XAI_API_CHAT_URL,
+        header: {
+          ...XAI_API_REQUEST_HEADERS,
+          'Content-Type': 'application/json',
+        },
+        data: JSON.stringify({
+          model: XAI_PAID_HEALTH_MODEL,
+          messages: [{ role: 'user', content: 'ping' }],
+          max_tokens: 1,
+          stream: false,
+        }),
+      },
+      { timeout: XAI_PAID_HEALTH_REQUEST_TIMEOUT_MS }
+    ),
+  ]);
+
+  if (chatRequest.status === 'rejected') throw chatRequest.reason;
+  if (chatRequest.value.statusCode < 200 || chatRequest.value.statusCode >= 300) {
+    throw createStatusError(
+      getApiCallErrorMessage(chatRequest.value),
+      chatRequest.value.statusCode
+    );
+  }
+
+  const profile =
+    profileRequest.status === 'fulfilled' &&
+    profileRequest.value.statusCode >= 200 &&
+    profileRequest.value.statusCode < 300
+      ? profileRequest.value.body
+      : null;
+  return buildXaiPaidHealthSummary(profile);
+};
+
 const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiBillingSummary> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
     throw new Error(t('xai_quota.missing_auth_index'));
+  }
+
+  if (isPaidXaiAuthFile(file)) {
+    return requestXaiPaidHealth(authIndex);
   }
 
   const requestHeader = buildXaiRequestHeaders(file);
@@ -1511,14 +1570,19 @@ const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiBilli
   const weeklySummary = weeklyResult.status === 'fulfilled' ? weeklyResult.value : null;
   const monthlySummary = monthlyResult.status === 'fulfilled' ? monthlyResult.value : null;
   const summary = mergeXaiBillingSummaries(weeklySummary, monthlySummary);
-  if (!summary) {
-    if (weeklyResult.status === 'rejected' && monthlyResult.status === 'rejected') {
-      throw weeklyResult.reason;
-    }
-    throw new Error(t('xai_quota.empty_data'));
-  }
+  if (summary) return summary;
 
-  return summary;
+  const billingError =
+    weeklyResult.status === 'rejected' && monthlyResult.status === 'rejected'
+      ? weeklyResult.reason
+      : new Error(t('xai_quota.empty_data'));
+
+  try {
+    return await requestXaiPaidHealth(authIndex);
+  } catch {
+    // Preserve the original free billing error when neither account mode can be queried.
+    throw billingError;
+  }
 };
 
 const formatUsdFromCents = (cents: number | null): string => {
@@ -1582,6 +1646,20 @@ const renderXaiItems = (
 
   if (!billing) {
     return h('div', { className: styleMap.quotaMessage }, t('xai_quota.empty_data'));
+  }
+
+  if (billing.mode === 'paid-health') {
+    return h(
+      Fragment,
+      null,
+      h(
+        'div',
+        { className: styleMap.codexPlan },
+        h('span', { className: styleMap.codexPlanLabel }, t('xai_quota.plan_label')),
+        h('span', { className: styleMap.premiumPlanValue }, t('xai_quota.plan_paid'))
+      ),
+      h('div', { className: styleMap.quotaMessage }, t('xai_quota.paid_health'))
+    );
   }
 
   const clampedUsed =
