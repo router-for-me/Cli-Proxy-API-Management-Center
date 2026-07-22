@@ -318,6 +318,15 @@ export function IconEye({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconCopy({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </svg>
+  );
+}
+
 export function IconEyeOff({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>
@@ -426,6 +435,18 @@ export function IconSidebarQuickStart({ size = 20, ...props }: IconProps) {
 }
 
 export const IconSidebarConfig = IconSlidersHorizontal;
+
+export function IconSidebarInstructions({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+      <path d="M8 13h8" />
+      <path d="M8 17h5" />
+      <path d="M8 9h2" />
+    </svg>
+  );
+}
 
 export const IconSidebarPlugins = IconPlug;
 

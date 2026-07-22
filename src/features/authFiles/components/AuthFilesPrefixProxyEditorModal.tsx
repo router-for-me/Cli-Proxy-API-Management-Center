@@ -192,6 +192,17 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                     disabled={disableControls || editor.saving || !editor.json}
                     onChange={(e) => onChange('note', e.target.value)}
                   />
+                  {editor.providerKey === 'codex' && (
+                    <div className={styles.prefixProxyField}>
+                      <ToggleSwitch
+                        checked={editor.allowPrivateInstructions}
+                        onChange={(checked) => onChange('allowPrivateInstructions', checked)}
+                        disabled={disableControls || editor.saving || !editor.json}
+                        label={t('auth_files.allow_private_instructions_label')}
+                      />
+                      <small>{t('auth_files.allow_private_instructions_hint')}</small>
+                    </div>
+                  )}
                 </div>
               )}
             </>

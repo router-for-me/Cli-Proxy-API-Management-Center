@@ -157,7 +157,15 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     () =>
       fixedBrand
         ? allGroups.filter((group) => group.id === fixedBrand)
-        : allGroups.filter((group) => group.id !== 'apikeyFun'),
+        : // Hide upstream promo quick-fill brands + apikeyFun quick-start from the main workbench.
+          allGroups.filter(
+            (group) =>
+              group.id !== 'apikeyFun' &&
+              group.id !== 'claudeApi' &&
+              group.id !== 'code0' &&
+              group.id !== 'fennoAI' &&
+              group.id !== 'qiniuCloud'
+          ),
     [allGroups, fixedBrand]
   );
   const firstVisibleBrand = groups[0]?.id ?? fixedBrand ?? 'gemini';
@@ -219,6 +227,10 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     }
 
     const sorted = [...arr].sort((a, b) => {
+      // Always keep enabled providers above disabled; secondary sort applies within each group.
+      if (a.disabled !== b.disabled) {
+        return a.disabled ? 1 : -1;
+      }
       const sortDiff =
         providerSortBy === 'name'
           ? getResourceSortName(a).localeCompare(getResourceSortName(b))

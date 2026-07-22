@@ -10,25 +10,6 @@
   );
 }
 
-.pageHeader {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.pageTitle {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.description {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
 .headerActions {
   display: flex;
   gap: $spacing-sm;
@@ -44,28 +25,6 @@
   @include mobile {
     width: 100%;
   }
-}
-
-.titleWrapper {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  line-height: 24px;
-}
-
-.countBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 24px;
-  min-width: 24px;
-  padding: 0 8px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--count-badge-text);
-  background-color: var(--count-badge-bg);
-  box-sizing: border-box;
 }
 
 .errorBox {
@@ -88,15 +47,11 @@
 
 .filterRail {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+  min-width: 0;
+  flex: 1 1 auto;
 
   @include mobile {
-    padding: 10px;
+    width: 100%;
   }
 }
 
@@ -244,10 +199,10 @@
 
 .filterControls {
   display: grid;
-  grid-template-columns: minmax(340px, 1fr) minmax(340px, 420px);
+  grid-template-columns: minmax(280px, 1fr) minmax(104px, 132px) minmax(170px, 220px);
   grid-template-areas:
-    'search options'
-    'status options';
+    'search page-size sort'
+    'status status status';
   gap: 12px;
   align-items: stretch;
 
@@ -261,20 +216,77 @@
     box-sizing: border-box;
   }
 
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
+  @media (max-width: 980px) {
+    grid-template-columns: minmax(0, 1fr) minmax(104px, 132px);
     grid-template-areas:
-      'search'
-      'status'
-      'options';
+      'search page-size'
+      'sort sort'
+      'status status';
   }
 
   @include mobile {
     grid-template-columns: 1fr;
     grid-template-areas:
       'search'
-      'status'
-      'options';
+      'page-size'
+      'sort'
+      'status';
+  }
+}
+
+.filterControlsCodex {
+  grid-template-columns:
+    minmax(220px, 1fr) minmax(96px, 120px) minmax(150px, 190px) minmax(170px, 210px)
+    minmax(150px, 190px);
+  grid-template-areas:
+    'search page-size sort codex-status codex-plan'
+    'status status status status status';
+
+  @media (max-width: 1320px) {
+    grid-template-columns: minmax(0, 1fr) minmax(104px, 132px) minmax(160px, 1fr);
+    grid-template-areas:
+      'search page-size sort'
+      'codex-status codex-plan codex-plan'
+      'status status status';
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'search'
+      'page-size'
+      'sort'
+      'codex-status'
+      'codex-plan'
+      'status';
+  }
+}
+
+.filterControlsXai {
+  grid-template-columns: minmax(220px, 1fr) minmax(96px, 120px) minmax(150px, 190px) minmax(
+      180px,
+      220px
+    );
+  grid-template-areas:
+    'search page-size sort xai-status'
+    'status status status status';
+
+  @media (max-width: 1120px) {
+    grid-template-columns: minmax(0, 1fr) minmax(104px, 132px) minmax(160px, 1fr);
+    grid-template-areas:
+      'search page-size sort'
+      'xai-status xai-status xai-status'
+      'status status status';
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'search'
+      'page-size'
+      'sort'
+      'xai-status'
+      'status';
   }
 }
 
@@ -305,62 +317,44 @@
   width: 100%;
 }
 
-.filterOptionsCard {
-  grid-area: options;
-  display: grid;
-  grid-template-columns: minmax(96px, 0.58fr) minmax(156px, 1fr);
-  gap: 12px;
-  align-content: center;
-  min-width: 0;
-  padding: 12px;
-  border-radius: 10px;
+.pageSizeItem {
+  grid-area: page-size;
+}
+
+.sortItem {
+  grid-area: sort;
+}
+
+.codexStatusItem {
+  grid-area: codex-status;
+}
+
+.codexPlanItem {
+  grid-area: codex-plan;
+}
+
+.xaiStatusItem {
+  grid-area: xai-status;
+}
+
+.displayOptionToggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  min-height: 42px;
+  padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+  border-radius: 8px;
   background: color-mix(in srgb, var(--bg-primary) 56%, transparent);
 
-  @include mobile {
-    grid-template-columns: 1fr;
-  }
-}
-
-.filterOptionsControl {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-
-  label {
-    font-size: 11px;
-    color: var(--text-tertiary);
-    font-weight: 700;
-    letter-spacing: 0;
+  :global(label) {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.25;
     white-space: nowrap;
   }
-}
-
-.filterOptionsToggle {
-  display: flex;
-  grid-column: 1 / -1;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  min-height: 42px;
-  padding-top: 2px;
-  border-top: 1px solid color-mix(in srgb, var(--border-color) 46%, transparent);
-
-  > label {
-    width: 100%;
-    min-width: 0;
-    justify-content: center;
-  }
-}
-
-.filterToggleLabel {
-  display: inline-flex;
-  align-items: center;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.25;
 }
 
 .searchInput {
@@ -1205,6 +1199,38 @@
   border: 1px dashed color-mix(in srgb, var(--border-primary) 90%, transparent);
 }
 
+.privateInstructionsBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, #e91e8c 48%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #e91e8c 12%, transparent);
+  color: #d93683;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+:global([data-theme='dark']) .privateInstructionsBadge {
+  color: #ff79bb;
+}
+
+.codexStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 34%, var(--border-color));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-color) 11%, transparent);
+  color: color-mix(in srgb, var(--primary-color) 78%, var(--text-primary));
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .subscriptionBadge {
   display: inline-flex;
   align-items: center;
@@ -1267,18 +1293,20 @@
   font-size: 14px;
   font-weight: 800;
   color: var(--text-primary);
-  word-break: break-all;
   line-height: 1.4;
-  display: -webkit-box;
+  display: block;
+  min-width: 0;
   overflow: hidden;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   letter-spacing: -0.01em;
+  cursor: text;
+  user-select: text;
 }
 
 .cardMeta {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: baseline;
   gap: 4px 14px;
   padding: 0 2px;
@@ -1304,6 +1332,7 @@
   padding: 0;
   border: none;
   background: none;
+  white-space: nowrap;
 }
 
 .metaLabel {
@@ -1341,7 +1370,7 @@
   line-height: 1.5;
   display: flex;
   gap: 6px;
-  align-items: flex-start;
+  align-items: baseline;
   min-width: 0;
 }
 
@@ -1352,9 +1381,13 @@
 }
 
 .noteValue {
-  @include text-ellipsis-multiline(2);
+  display: block;
   min-width: 0;
-  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+  user-select: text;
 }
 
 .subscriptionSubtitle {
@@ -1492,8 +1525,11 @@
   gap: 3px;
 }
 
-.statusPanelCompact .statusPanelLabel {
-  display: none;
+.healthSummary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .statusPanelCompact .statusBar {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { useStatusFilterWebglFire } from '@/features/authFiles/hooks/useStatusFilterWebglFire';
 import styles from './AuthFilesStatusFilterCard.module.scss';
 
@@ -27,10 +27,7 @@ export function AuthFilesStatusFilterCard({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const draggingRef = useRef(false);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevActiveRef = useRef(false);
 
   const activeIndex = Math.max(
     0,
@@ -40,31 +37,6 @@ export function AuthFilesStatusFilterCard({
   const isActive = activeIndex === options.length - 1;
   const isFull = sliderValue === 100;
   const currentOption = options[activeIndex] ?? options[0];
-
-  useEffect(() => {
-    if (prevActiveRef.current !== isActive) {
-      // Trigger a one-off flip animation when the active state crosses the
-      // threshold, mirroring the original EffortCard behavior.
-      setIsAnimating(true);
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-      timerRef.current = setTimeout(() => {
-        setIsAnimating(false);
-        timerRef.current = null;
-      }, 460);
-      prevActiveRef.current = isActive;
-    }
-  }, [isActive]);
-
-  useEffect(
-    () => () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    },
-    []
-  );
 
   useStatusFilterWebglFire(canvasRef, sliderValue / 100, isActive);
 
@@ -162,11 +134,7 @@ export function AuthFilesStatusFilterCard({
     isDragging ? styles.trackWrapperDragging : '',
   ].join(' ');
 
-  const statusClass = [
-    styles.statusText,
-    isActive ? styles.statusTextGlowing : '',
-    isAnimating ? styles.statusTextAnimateUp : '',
-  ].join(' ');
+  const statusClass = [styles.statusText, isActive ? styles.statusTextGlowing : ''].join(' ');
 
   return (
     <div className={styles.cardShadow}>

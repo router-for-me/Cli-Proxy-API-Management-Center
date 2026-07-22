@@ -27,9 +27,16 @@ export interface AuthFileItem {
   authIndex?: string | number | null;
   runtimeOnly?: boolean | string;
   disabled?: boolean;
+  disabled_reason?: string;
+  note?: string;
   unavailable?: boolean;
   status?: string;
   statusMessage?: string;
+  xai_last_error_status?: number | string;
+  xai_cooldown_until?: string | number;
+  plan_type?: string;
+  chatgpt_plan_type?: string;
+  plan_checked_at?: string;
   lastRefresh?: string | number;
   modified?: number;
   success?: unknown;

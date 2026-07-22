@@ -15,7 +15,6 @@ import {
   IconX,
 } from '@/components/ui/icons';
 import { hasDisableAllModelsRule } from '@/components/providers/utils';
-import { maskApiKey } from '@/utils/format';
 import type { ModelInfo } from '@/utils/models';
 import type { ApiKeyFunUsageSummary } from '../../sponsor';
 import { isSponsorPartialMutationError } from '../../sponsorMutationRecovery';
@@ -365,9 +364,7 @@ function SponsorKeyEntryCard({
   );
   const titleLabel = t('providersPage.sponsor.groupedKey', { index: index + 1 });
   const summaryKey = entry.apiKey.trim() || entry.existingApiKey?.trim() || '';
-  const summaryKeyLabel = summaryKey
-    ? maskApiKey(summaryKey)
-    : t('providersPage.status.notConfigured');
+  const summaryKeyLabel = summaryKey || t('providersPage.status.notConfigured');
   const modelKey = sponsorProtocolModelI18nKey(entry.protocol);
   const usageMessages = useMemo<SponsorUsageMessages>(
     () => ({

@@ -25,12 +25,14 @@
 
   th {
     color: var(--muted-foreground);
-    font-weight: 500;
-    font-size: 12px;
+    font-weight: 550;
+    font-size: 11.5px;
+    letter-spacing: 0.01em;
     text-align: left;
-    padding: 10px 14px;
+    padding: 7px 12px;
     border-bottom: 1px solid var(--border-color);
     vertical-align: middle;
+    white-space: nowrap;
   }
 
   th.alignRight {
@@ -43,17 +45,15 @@
 }
 
 .row {
-  transition: background-color $transition-fast;
-
   td {
-    padding: 12px 14px;
+    padding: 8px 12px;
     border-bottom: 1px solid var(--border-color);
     vertical-align: top;
-    line-height: 1.5;
+    line-height: 1.45;
   }
 
   &:hover td {
-    background: color-mix(in srgb, var(--accent-bg) 50%, transparent);
+    background: color-mix(in srgb, var(--text-primary) 3%, transparent);
   }
 
   &.selected td {

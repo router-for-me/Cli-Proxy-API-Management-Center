@@ -1,38 +1,52 @@
-@use 'sass:color';
 @use './variables.scss' as *;
+
+// ─── Buttons ─────────────────────────────────────────────
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: $spacing-sm;
+  gap: 6px;
+  min-height: $control-height-md;
+  padding: 4px 12px;
   border: 1px solid transparent;
   border-radius: $radius-md;
-  padding: 10px 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.3;
   cursor: pointer;
-  transition: all $transition-fast;
-  background-color: var(--bg-secondary);
+  user-select: none;
+  background-color: var(--bg-primary);
   color: var(--text-primary);
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:active:not(:disabled) {
+    transform: translateY(0.5px);
+  }
 
   &.btn-primary {
     background-color: var(--primary-color);
     color: var(--primary-contrast, #fff);
     border-color: var(--primary-color);
 
-    &:hover {
+    &:hover:not(:disabled) {
       background-color: var(--primary-hover);
       border-color: var(--primary-hover);
     }
   }
 
   &.btn-secondary {
-    background-color: var(--bg-tertiary);
-    border-color: var(--border-color);
+    background-color: var(--bg-primary);
+    border-color: var(--border-primary);
     color: var(--text-primary);
+    box-shadow: var(--shadow);
 
-    &:hover {
-      background-color: var(--bg-hover, var(--bg-tertiary));
+    &:hover:not(:disabled) {
+      background-color: var(--bg-tertiary);
       border-color: var(--border-hover);
     }
   }
@@ -41,20 +55,22 @@
     background: transparent;
     border-color: transparent;
     color: var(--text-secondary);
+    box-shadow: none;
 
-    &:hover {
+    &:hover:not(:disabled) {
       color: var(--text-primary);
-      background: var(--bg-tertiary);
+      background: color-mix(in srgb, var(--text-primary) 7%, transparent);
     }
   }
 
   &.btn-danger {
-    background-color: $error-color;
-    border-color: $error-color;
+    background-color: var(--error-color);
+    border-color: var(--error-color);
     color: #fff;
 
-    &:hover {
-      background-color: color.adjust($error-color, $lightness: -5%);
+    &:hover:not(:disabled) {
+      background-color: color-mix(in srgb, var(--error-color) 88%, #000);
+      border-color: color-mix(in srgb, var(--error-color) 88%, #000);
     }
   }
 
@@ -63,69 +79,98 @@
   }
 
   &.btn-sm {
-    padding: 8px 10px;
-    font-size: 14px;
+    min-height: $control-height-sm;
+    padding: 2px 9px;
+    font-size: 12.5px;
+    border-radius: $radius-sm;
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
   }
-}
 
-[data-theme='dark'] {
-  .btn {
-    color: #fff;
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
   }
 
-  .btn.btn-secondary,
-  .btn.btn-ghost {
-    color: #fff;
+  svg {
+    flex-shrink: 0;
   }
 }
+
+// ─── Inputs ──────────────────────────────────────────────
 
 .input,
 textarea {
   width: 100%;
-  border: 1px solid var(--border-color);
+  min-height: $control-height-md;
+  border: 1px solid var(--border-primary);
   border-radius: $radius-md;
-  padding: 10px 12px;
-  background-color: var(--bg-secondary);
+  padding: 5px 10px;
+  font-size: 13px;
+  background-color: var(--bg-primary);
   color: var(--text-primary);
   transition:
     border-color $transition-fast,
     box-shadow $transition-fast;
 
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  &:hover:not(:focus):not(:disabled) {
+    border-color: var(--border-hover);
+  }
+
   &:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba($primary-color, 0.18);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 12%, transparent);
   }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background-color: var(--bg-tertiary);
+  }
+}
+
+textarea {
+  line-height: 1.5;
+  padding: 8px 10px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: $spacing-xs;
+  gap: 5px;
   margin-bottom: $spacing-md;
 
   label {
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 550;
     color: var(--text-primary);
   }
 
   .hint {
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.45;
   }
 }
+
+// ─── Cards ───────────────────────────────────────────────
 
 .card {
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
   box-shadow: var(--shadow);
-  padding: $spacing-lg;
+  padding: $spacing-md;
 }
 
 .card-header {
@@ -143,43 +188,42 @@ textarea {
   .title {
     flex: 1 1 auto;
     min-width: 0;
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
     color: var(--text-primary);
   }
 }
 
+// ─── Badges / pills ──────────────────────────────────────
+
 .status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  gap: 5px;
+  padding: 2px 8px;
   border-radius: $radius-full;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
   border: 1px solid var(--border-color);
   margin-bottom: $spacing-md;
 
-  // 确保后续内容换行显示
   + * {
     display: block;
   }
 
   &.success {
-    color: $success-color;
-    border-color: rgba($success-color, 0.35);
-    background: rgba($success-color, 0.08);
+    color: var(--success-badge-text);
+    border-color: var(--success-badge-border);
+    background: var(--success-badge-bg);
   }
 
-  &.warning {
-    color: $warning-color;
-    border-color: rgba($warning-color, 0.35);
-    background: rgba($warning-color, 0.08);
-  }
-
+  &.warning,
   &.error {
-    color: $error-color;
-    border-color: rgba($error-color, 0.35);
-    background: rgba($error-color, 0.08);
+    color: var(--failure-badge-text);
+    border-color: var(--failure-badge-border);
+    background: var(--failure-badge-bg);
   }
 
   &.muted {
@@ -187,90 +231,72 @@ textarea {
   }
 }
 
+.pill {
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+// ─── Notifications ───────────────────────────────────────
+
 .notification-container {
   position: fixed;
-  top: $spacing-lg;
-  right: $spacing-lg;
+  // Below the floating header controls so toasts never cover them
+  top: calc(var(--shell-gutter, 16px) + var(--floating-control-size, 32px) + 18px);
+  right: var(--shell-gutter, 16px);
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
   z-index: $z-notification;
-  max-width: 360px;
-}
-
-@keyframes notification-enter {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes notification-exit {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(100%);
-  }
+  max-width: 340px;
 }
 
 .notification {
-  padding: $spacing-md;
-  border-radius: $radius-md;
-  box-shadow: var(--shadow);
+  padding: 10px 12px;
+  border-radius: $radius-lg;
+  box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
-  background: var(--bg-primary);
+  background: var(--floating-surface, var(--bg-primary));
   color: var(--text-primary);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: $spacing-sm;
-
-  // Animation states
-  &.entering {
-    animation: notification-enter 0.3s ease-out forwards;
-  }
-
-  &.exiting {
-    animation: notification-exit 0.3s ease-in forwards;
-  }
+  font-size: 13px;
+  animation: notification-in 160ms $ease-out;
 
   &.success {
-    border-color: rgba($success-color, 0.4);
+    border-color: var(--success-badge-border);
   }
-  &.warning {
-    border-color: rgba($warning-color, 0.4);
-  }
+  &.warning,
   &.error {
-    border-color: rgba($error-color, 0.4);
+    border-color: var(--failure-badge-border);
   }
 
   .message {
     flex: 1;
     font-weight: 500;
+    line-height: 1.45;
+    word-break: break-word;
   }
 
   .close-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
     padding: 0;
+    flex-shrink: 0;
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    border-radius: $radius-md;
+    border-radius: $radius-sm;
     cursor: pointer;
-    transition:
-      color 0.15s ease,
-      background-color 0.15s ease;
 
     svg {
       display: block;
@@ -278,28 +304,31 @@ textarea {
 
     &:hover {
       color: var(--text-primary);
-      background: var(--bg-secondary);
+      background: color-mix(in srgb, var(--text-primary) 8%, transparent);
     }
   }
 }
 
-.pill {
-  padding: 4px 10px;
-  border-radius: $radius-full;
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  font-size: 12px;
+@keyframes notification-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
+// ─── Spinner ─────────────────────────────────────────────
+
 .loading-spinner {
-  // Fallback: legacy white spinner (in case color-mix is unsupported)
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #fff;
+  border: 3px solid rgba(127, 127, 127, 0.25);
+  border-top-color: currentColor;
   border-radius: 50%;
   width: 16px;
   height: 16px;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.7s linear infinite;
 }
 
 @supports (color: color-mix(in srgb, currentColor 22%, transparent)) {
@@ -318,162 +347,127 @@ textarea {
   }
 }
 
+// ─── Modal ───────────────────────────────────────────────
+
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(12, 11, 9, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: $z-modal;
   padding: $spacing-lg;
-
-  &.modal-overlay-entering {
-    animation: modal-overlay-fade-in 0.25s ease-out forwards;
-  }
-
-  &.modal-overlay-closing {
-    animation: modal-overlay-fade-out 0.35s ease-in forwards;
-  }
-}
-
-@keyframes modal-overlay-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes modal-overlay-fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
+  animation: overlay-in 120ms $ease-out;
 }
 
 .modal {
   background: var(--bg-primary);
-  border-radius: $radius-lg;
+  border-radius: 12px;
   border: 1px solid var(--border-color);
-  box-shadow: $shadow-lg;
+  box-shadow: var(--shadow-lg);
   max-width: 100%;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
-  // 关闭按钮中心位置: right 12px + 16px = 28px, top 12px + 16px = 28px
-  transform-origin: calc(100% - 28px) 28px;
-
-  &.modal-entering {
-    animation: modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  &.modal-closing {
-    animation: modal-collapse-to-close 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
+  animation: modal-in 140ms $ease-out;
 }
 
-@keyframes modal-scale-in {
+@keyframes overlay-in {
   from {
     opacity: 0;
-    transform: scale(0.85) translateY(20px);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
   }
 }
 
-@keyframes modal-collapse-to-close {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
+@keyframes modal-in {
+  from {
     opacity: 0;
-    transform: scale(0);
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 .modal-close-floating {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
   padding: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  border-radius: $radius-full;
+  border-radius: $radius-sm;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition:
-    color 0.15s ease,
-    background-color 0.15s ease,
-    transform 0.15s ease;
+    color $transition-fast,
+    background-color $transition-fast;
   z-index: 10;
 
   svg {
     display: block;
+    width: 16px;
+    height: 16px;
   }
 
   &:hover {
     color: var(--text-primary);
-    background: var(--bg-tertiary);
-    transform: scale(1.1);
-  }
-
-  &:active {
-    transform: scale(0.95);
+    background: color-mix(in srgb, var(--text-primary) 8%, transparent);
   }
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.6;
-    transform: none;
+    opacity: 0.5;
   }
 
   &:disabled:hover {
     color: var(--text-secondary);
-    background: var(--bg-secondary);
-    transform: none;
+    background: transparent;
   }
 }
 
 .modal-header {
   display: flex;
   align-items: center;
-  padding: $spacing-md $spacing-lg;
+  padding: 13px $spacing-md;
+  padding-right: 48px;
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 
   .modal-title {
-    font-weight: 700;
-    font-size: 18px;
+    font-weight: 650;
+    font-size: 15px;
+    letter-spacing: -0.01em;
     color: var(--text-primary);
+    line-height: 1.35;
   }
 }
 
 .modal-body {
-  padding: $spacing-lg;
+  padding: $spacing-md;
   overflow: auto;
   max-height: 65vh;
 }
 
 .modal-footer {
-  padding: $spacing-md $spacing-lg;
+  padding: 12px $spacing-md;
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
   gap: $spacing-sm;
   background: var(--bg-primary);
+  flex-shrink: 0;
 }
 
 @media (max-width: $breakpoint-mobile) {
@@ -483,7 +477,6 @@ textarea {
 
   .modal {
     max-height: calc(100vh - #{$spacing-md * 2});
-    border-radius: $radius-md;
   }
 
   @supports (height: 100dvh) {
@@ -492,13 +485,7 @@ textarea {
     }
   }
 
-  .modal-header {
-    padding: $spacing-md;
-    padding-right: 52px;
-  }
-
   .modal-body {
-    padding: $spacing-md;
     max-height: min(60vh, calc(100vh - 180px));
   }
 
@@ -509,7 +496,6 @@ textarea {
   }
 
   .modal-footer {
-    padding: $spacing-md;
     flex-direction: column-reverse;
     align-items: stretch;
   }
@@ -530,11 +516,13 @@ textarea {
   }
 }
 
+// ─── Empty state ─────────────────────────────────────────
+
 .empty-state {
-  border: 1px dashed var(--border-color);
+  border: 1px dashed var(--border-primary);
   border-radius: $radius-lg;
-  padding: $spacing-lg;
-  background: var(--bg-secondary);
+  padding: $spacing-md;
+  background: transparent;
   display: flex;
   justify-content: space-between;
   gap: $spacing-md;
@@ -543,15 +531,15 @@ textarea {
   .empty-content {
     display: flex;
     align-items: center;
-    gap: $spacing-md;
+    gap: 12px;
   }
 
   .empty-icon {
-    width: 42px;
-    height: 42px;
-    flex: 0 0 42px;
-    border-radius: $radius-full;
-    border: 2px solid var(--border-color);
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-radius: $radius-md;
+    background: var(--bg-tertiary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -560,27 +548,29 @@ textarea {
 
     svg {
       display: block;
-      width: 20px;
-      height: 20px;
+      width: 17px;
+      height: 17px;
       flex-shrink: 0;
     }
   }
 
   .empty-title {
-    font-weight: 700;
+    font-size: 13.5px;
+    font-weight: 600;
     color: var(--text-primary);
   }
 
   .empty-desc {
     color: var(--text-secondary);
-    margin-top: 4px;
+    font-size: 12.5px;
+    margin-top: 2px;
   }
 
   .empty-action .btn > span {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     line-height: 1;
   }
 
@@ -589,6 +579,8 @@ textarea {
     flex-shrink: 0;
   }
 }
+
+// ─── Lists ───────────────────────────────────────────────
 
 .item-list {
   display: flex;
@@ -599,30 +591,35 @@ textarea {
 .item-row {
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
-  padding: $spacing-md;
+  padding: 10px 12px;
   background: var(--bg-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: $spacing-md;
   flex-wrap: wrap;
+  transition: border-color $transition-fast;
+
+  &:hover {
+    border-color: var(--border-hover);
+  }
 
   .item-meta {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 3px;
   }
 
   .item-title {
-    font-weight: 700;
+    font-size: 13.5px;
+    font-weight: 600;
     color: var(--text-primary);
   }
 
   .item-subtitle {
     color: var(--text-secondary);
-    font-family:
-      ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-      'Courier New', monospace;
+    font-size: 12px;
+    font-family: $font-mono;
     word-break: break-all;
   }
 
@@ -633,17 +630,19 @@ textarea {
 }
 
 .error-box {
-  background: rgba($error-color, 0.1);
-  border: 1px solid rgba($error-color, 0.4);
+  background: var(--failure-badge-bg);
+  border: 1px solid var(--failure-badge-border);
   border-radius: $radius-md;
-  padding: $spacing-sm $spacing-md;
-  color: $error-color;
+  padding: $spacing-sm 12px;
+  color: var(--failure-badge-text);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .stack {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
 }
 
 .hint {

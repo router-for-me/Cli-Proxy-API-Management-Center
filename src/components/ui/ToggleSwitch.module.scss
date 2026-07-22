@@ -24,23 +24,33 @@
 }
 
 .track {
-  width: 44px;
-  height: 24px;
-  background: var(--border-color);
+  width: 34px;
+  height: 20px;
+  flex-shrink: 0;
+  background: var(--border-primary);
   border-radius: $radius-full;
   position: relative;
   transition: background $transition-fast;
 }
 
+.root:hover input:not(:checked):not(:disabled) + .track {
+  background: var(--border-hover);
+}
+
+.root input:focus-visible + .track {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
 .thumb {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
   background: #fff;
   border-radius: $radius-full;
-  box-shadow: $shadow-sm;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
   transition: transform $transition-fast;
 }
 
@@ -49,10 +59,16 @@
 }
 
 .root input:checked + .track .thumb {
-  transform: translateX(20px);
+  transform: translateX(14px);
+  background: var(--primary-contrast, #fff);
+}
+
+.disabled .track {
+  opacity: 0.55;
 }
 
 .label {
   color: var(--text-primary);
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 550;
 }

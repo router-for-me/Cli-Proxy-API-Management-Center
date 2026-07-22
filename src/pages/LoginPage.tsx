@@ -102,7 +102,6 @@ export function LoginPage() {
   const [rememberPassword, setRememberPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [autoLoading, setAutoLoading] = useState(true);
-  const [autoLoginSuccess, setAutoLoginSuccess] = useState(false);
   const [error, setError] = useState('');
 
   const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
@@ -129,19 +128,14 @@ export function LoginPage() {
       try {
         const autoLoggedIn = await restoreSession();
         if (autoLoggedIn) {
-          setAutoLoginSuccess(true);
-          // 延迟跳转，让用户看到成功动画
-          setTimeout(() => {
-            const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
-            navigate(redirect, { replace: true });
-          }, 1500);
+          const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
+          navigate(redirect, { replace: true });
         } else {
           setApiBase(storedBase || detectedBase);
           setManagementKey(storedKey || '');
           setRememberPassword(storedRememberPassword || Boolean(storedKey));
         }
       } finally {
-        // 自动登录成功时 showSplash 仍由 autoLoginSuccess 维持，可无条件结束 loading
         setAutoLoading(false);
       }
     };
@@ -195,13 +189,15 @@ export function LoginPage() {
     [loading, handleSubmit]
   );
 
-  if (isAuthenticated && !autoLoading && !autoLoginSuccess) {
+  if (isAuthenticated && !autoLoading) {
     const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
     return <Navigate to={redirect} replace />;
   }
 
-  // 显示启动动画（自动登录中或自动登录成功）
-  const showSplash = autoLoading || autoLoginSuccess;
+  // Avoid any branded splash while restoring an existing session.
+  if (autoLoading) {
+    return null;
+  }
 
   return (
     <div className={styles.container}>
@@ -216,18 +212,7 @@ export function LoginPage() {
 
       {/* 右侧功能交互区 */}
       <div className={styles.formPanel}>
-        {showSplash ? (
-          /* 启动动画 */
-          <div className={styles.splashContent}>
-            <img src={INLINE_LOGO_JPEG} alt="CPAMC" className={styles.splashLogo} />
-            <h1 className={styles.splashTitle}>{t('splash.title')}</h1>
-            <p className={styles.splashSubtitle}>{t('splash.subtitle')}</p>
-            <div className={styles.splashLoader}>
-              <div className={styles.splashLoaderBar} />
-            </div>
-          </div>
-        ) : (
-          /* 登录表单 */
+          {/* 登录表单 */}
           <div className={styles.formContent}>
             {/* Logo */}
             <img src={INLINE_LOGO_JPEG} alt="Logo" className={styles.logo} />
@@ -323,7 +308,6 @@ export function LoginPage() {
               {error && <div className={styles.errorBox}>{error}</div>}
             </div>
           </div>
-        )}
       </div>
     </div>
   );

@@ -71,29 +71,6 @@
   font-weight: 700;
 }
 
-@keyframes flipUpFromBottom {
-  0% {
-    opacity: 0;
-    transform: translateY(18px) rotateX(-80deg);
-    filter: blur(4px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) rotateX(0deg);
-    filter: blur(0);
-  }
-}
-
-.statusTextAnimateUp {
-  animation: flipUpFromBottom 0.42s cubic-bezier(0.33, 1, 0.68, 1) forwards;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .statusTextAnimateUp {
-    animation: none;
-  }
-}
-
 .scaleLabels {
   display: flex;
   justify-content: space-between;

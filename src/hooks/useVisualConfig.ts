@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useReducer } from 'react';
-import { isMap, parse as parseYaml, parseDocument } from 'yaml';
+import { isMap, isScalar, isSeq, parse as parseYaml, parseDocument } from 'yaml';
 import type {
   DisableImageGenerationMode,
   PluginStoreAuthApplyTo,
@@ -15,6 +15,48 @@ import type {
   PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
+
+/** One management API key plus an optional display name stored as a YAML EOL comment. */
+export type VisualApiKeyEntry = {
+  key: string;
+  name: string;
+};
+
+/**
+ * Encode entries for the visual editor draft.
+ * Tab separates key from name (tabs are not allowed in API key charset validation).
+ */
+export function serializeApiKeyEntries(entries: VisualApiKeyEntry[]): string {
+  return entries
+    .map((entry) => {
+      const key = entry.key.trim();
+      if (!key) return '';
+      const name = entry.name.replace(/[\r\n\t]+/g, ' ').trim();
+      return name ? `${key}\t${name}` : key;
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+/** Decode the visual editor draft into key/name pairs. */
+export function parseApiKeyEntries(text: string): VisualApiKeyEntry[] {
+  if (!text) return [];
+  const entries: VisualApiKeyEntry[] = [];
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    const tab = line.indexOf('\t');
+    if (tab === -1) {
+      const key = line.trim();
+      if (key) entries.push({ key, name: '' });
+      continue;
+    }
+    const key = line.slice(0, tab).trim();
+    if (!key) continue;
+    const name = line.slice(tab + 1).replace(/[\r\n\t]+/g, ' ').trim();
+    entries.push({ key, name });
+  }
+  return entries;
+}
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -52,7 +94,41 @@ function parseApiKeysText(raw: unknown): string {
   return keys.join('\n');
 }
 
-function resolveApiKeysText(parsed: Record<string, unknown>): string {
+type YamlDocument = ReturnType<typeof parseDocument>;
+type YamlPath = string[];
+
+function docHas(doc: YamlDocument, path: YamlPath): boolean {
+  return doc.hasIn(path);
+}
+
+/** Read api-keys sequence from a YAML document, preserving end-of-line comments as names. */
+function parseApiKeysSeqFromDoc(doc: YamlDocument): string | null {
+  if (typeof doc?.getIn !== 'function') return null;
+  const node = doc.getIn(['api-keys'], true);
+  if (!isSeq(node)) return null;
+
+  const entries: VisualApiKeyEntry[] = [];
+  for (const item of node.items) {
+    if (isScalar(item)) {
+      const key = String(item.value ?? '').trim();
+      if (!key) continue;
+      const name = String(item.comment ?? '')
+        .replace(/^\s*/, '')
+        .trim();
+      entries.push({ key, name });
+      continue;
+    }
+    const key = extractApiKeyValue(item);
+    if (key) entries.push({ key, name: '' });
+  }
+  return serializeApiKeyEntries(entries);
+}
+
+function resolveApiKeysText(doc: YamlDocument, parsed: Record<string, unknown>): string {
+  // Prefer CST/document path so # names on list items survive the round-trip.
+  const fromDoc = parseApiKeysSeqFromDoc(doc);
+  if (fromDoc !== null) return fromDoc;
+
   if (Object.prototype.hasOwnProperty.call(parsed, 'api-keys')) {
     return parseApiKeysText(parsed['api-keys']);
   }
@@ -69,11 +145,23 @@ function resolveApiKeysText(parsed: Record<string, unknown>): string {
   return parseApiKeysText(configApiKeyProvider['api-keys']);
 }
 
-type YamlDocument = ReturnType<typeof parseDocument>;
-type YamlPath = string[];
+function writeApiKeysToDoc(doc: YamlDocument, text: string): void {
+  const entries = parseApiKeyEntries(text);
+  if (entries.length === 0) {
+    if (docHas(doc, ['api-keys'])) doc.deleteIn(['api-keys']);
+    return;
+  }
 
-function docHas(doc: YamlDocument, path: YamlPath): boolean {
-  return doc.hasIn(path);
+  const seq = doc.createNode(entries.map((entry) => entry.key));
+  if (isSeq(seq)) {
+    for (let i = 0; i < seq.items.length; i++) {
+      const item = seq.items[i];
+      if (!isScalar(item)) continue;
+      const name = entries[i]?.name.trim() ?? '';
+      item.comment = name ? ` ${name}` : undefined;
+    }
+  }
+  doc.setIn(['api-keys'], seq);
 }
 
 function ensureMapInDoc(doc: YamlDocument, path: YamlPath): void {
@@ -1047,9 +1135,11 @@ export function useVisualConfig() {
 
   const loadVisualValuesFromYaml = useCallback((yamlContent: string) => {
     try {
-      const document = parseDocument(yamlContent);
-      if (document.errors.length > 0) {
-        throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
+      // Do not name this `document` — Vite/oxc can rewrite that identifier as the DOM global
+      // and drop it from call sites (leaving resolveApiKeysText with the plain parsed object).
+      const yamlDoc = parseDocument(yamlContent);
+      if (yamlDoc.errors.length > 0) {
+        throw new Error(yamlDoc.errors[0]?.message ?? 'Invalid YAML');
       }
 
       const parsedRaw: unknown = parseYaml(yamlContent) || {};
@@ -1088,7 +1178,7 @@ export function useVisualConfig() {
               : '',
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
-        apiKeysText: resolveApiKeysText(parsed),
+        apiKeysText: resolveApiKeysText(yamlDoc, parsed),
         pluginsEnabled: Boolean(plugins?.enabled),
         pluginStoreSources: parseStringList(plugins?.['store-sources']),
         pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
@@ -1260,15 +1350,7 @@ export function useVisualConfig() {
 
         if (dirtyFields.has('authDir')) setStringInDoc(doc, ['auth-dir'], values.authDir);
         if (dirtyFields.has('apiKeysText')) {
-          const apiKeys = values.apiKeysText
-            .split('\n')
-            .map((key) => key.trim())
-            .filter(Boolean);
-          if (apiKeys.length > 0) {
-            doc.setIn(['api-keys'], apiKeys);
-          } else if (docHas(doc, ['api-keys'])) {
-            doc.deleteIn(['api-keys']);
-          }
+          writeApiKeysToDoc(doc, values.apiKeysText);
           deleteLegacyApiKeysProvider(doc);
         }
 

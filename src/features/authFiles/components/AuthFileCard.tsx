@@ -19,7 +19,6 @@ import {
   normalizeUsageTotal,
   statusBarDataFromRecentRequests,
 } from '@/utils/recentRequests';
-import { formatFileSize } from '@/utils/format';
 import {
   QUOTA_PROVIDER_TYPES,
   formatModified,
@@ -39,6 +38,16 @@ import styles from '@/pages/AuthFilesPage.module.scss';
 
 const HEALTHY_STATUS_MESSAGES = new Set(['ok', 'healthy', 'ready', 'success', 'available']);
 
+const selectText = (element: HTMLElement) => {
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  selection.removeAllRanges();
+  selection.addRange(range);
+};
+
 export type AuthFileCardProps = {
   file: AuthFileItem;
   compact: boolean;
@@ -49,12 +58,14 @@ export type AuthFileCardProps = {
   statusUpdating: Record<string, boolean>;
   quotaFilterType: QuotaProviderType | null;
   statusBarCache: Map<string, AuthFileStatusBarData>;
+  codexBadges?: string[];
   onShowModels: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
   onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
   onToggleSelect: (name: string) => void;
+  onAuthFileUpdated?: () => void | Promise<void>;
 };
 
 const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
@@ -75,12 +86,14 @@ export function AuthFileCard(props: AuthFileCardProps) {
     statusUpdating,
     quotaFilterType,
     statusBarCache,
+    codexBadges = [],
     onShowModels,
     onDownload,
     onOpenPrefixProxyEditor,
     onDelete,
     onToggleStatus,
     onToggleSelect,
+    onAuthFileUpdated,
   } = props;
 
   const recentBuckets = normalizeRecentRequestBuckets(file.recent_requests ?? file.recentRequests);
@@ -125,6 +138,9 @@ export function AuthFileCard(props: AuthFileCardProps) {
 
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
+  const disabledReason =
+    typeof file.disabled_reason === 'string' ? file.disabled_reason.trim() : '';
+  const allowPrivateInstructions = Boolean(file.allow_private_instructions);
   const stateLabel = isRuntimeOnly
     ? t('auth_files.type_virtual') || '虚拟认证文件'
     : file.disabled
@@ -188,39 +204,61 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 >
                   {typeLabel}
                 </span>
+                {providerKey === 'codex' && allowPrivateInstructions && (
+                  <span
+                    className={styles.privateInstructionsBadge}
+                    title={t('auth_files.allow_private_instructions_display')}
+                  >
+                    {t('auth_files.allow_private_instructions_badge')}
+                  </span>
+                )}
                 <span className={`${styles.stateBadge} ${stateBadgeClass}`}>{stateLabel}</span>
+                {codexBadges.map((badge) => (
+                  <span key={badge} className={styles.codexStatusBadge}>
+                    {badge}
+                  </span>
+                ))}
               </div>
-              <span className={styles.fileName} title={file.name}>
+              <span
+                className={styles.fileName}
+                title={file.name}
+                onDoubleClick={(event) => selectText(event.currentTarget)}
+              >
                 {file.name}
               </span>
               {!compact && noteValue && (
                 <div className={styles.noteText} title={noteValue}>
                   <span className={styles.noteLabel}>{t('auth_files.note_display')}</span>
-                  <span className={styles.noteValue}>{noteValue}</span>
+                  <span
+                    className={styles.noteValue}
+                    onDoubleClick={(event) => selectText(event.currentTarget)}
+                  >
+                    {noteValue}
+                  </span>
+                </div>
+              )}
+              {!compact && file.disabled && disabledReason && (
+                <div className={styles.noteText} title={disabledReason}>
+                  <span className={styles.noteLabel}>
+                    {t('auth_files.disabled_reason_display')}
+                  </span>
+                  <span className={styles.noteValue}>{disabledReason}</span>
                 </div>
               )}
             </div>
           </div>
 
           <div className={`${styles.cardMeta} ${compact ? styles.cardMetaCompact : ''}`}>
-            <div className={styles.metaItem}>
-              <span className={styles.metaLabel}>{t('auth_files.file_size')}</span>
-              <span className={styles.metaValue}>
-                {file.size ? formatFileSize(file.size) : '-'}
+            <div className={`${styles.metaItem} ${styles.priorityBadge}`}>
+              <span className={styles.metaLabel}>{t('auth_files.priority_display')}</span>
+              <span className={`${styles.metaValue} ${styles.priorityValue}`}>
+                {priorityValue ?? '-'}
               </span>
             </div>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>{t('auth_files.file_modified')}</span>
               <span className={styles.metaValue}>{formatModified(file)}</span>
             </div>
-            {priorityValue !== undefined && (
-              <div className={`${styles.metaItem} ${styles.priorityBadge}`}>
-                <span className={styles.metaLabel}>{t('auth_files.priority_display')}</span>
-                <span className={`${styles.metaValue} ${styles.priorityValue}`}>
-                  {priorityValue}
-                </span>
-              </div>
-            )}
           </div>
 
           {rawStatusMessage && hasStatusWarning && (
@@ -231,20 +269,21 @@ export function AuthFileCard(props: AuthFileCardProps) {
           )}
 
           <div className={`${styles.cardInsights} ${compact ? styles.cardInsightsCompact : ''}`}>
-            <div className={`${styles.cardStats} ${compact ? styles.cardStatsCompact : ''}`}>
-              <div className={`${styles.statPill} ${styles.statSuccess}`}>
-                <span className={styles.statLabel}>{t('stats.success')}</span>
-                <span className={styles.statValue}>{fileStats.success}</span>
-              </div>
-              <div className={`${styles.statPill} ${styles.statFailure}`}>
-                <span className={styles.statLabel}>{t('stats.failure')}</span>
-                <span className={styles.statValue}>{fileStats.failure}</span>
-              </div>
-            </div>
-
             <div className={`${styles.statusPanel} ${compact ? styles.statusPanelCompact : ''}`}>
-              <div className={styles.statusPanelLabel}>
-                <span>{t('auth_files.health_status_label')}</span>
+              <div className={styles.healthSummary}>
+                <div className={styles.statusPanelLabel}>
+                  <span>{t('auth_files.health_status_label')}</span>
+                </div>
+                <div className={`${styles.cardStats} ${compact ? styles.cardStatsCompact : ''}`}>
+                  <div className={`${styles.statPill} ${styles.statSuccess}`}>
+                    <span className={styles.statLabel}>{t('stats.success')}</span>
+                    <span className={styles.statValue}>{fileStats.success}</span>
+                  </div>
+                  <div className={`${styles.statPill} ${styles.statFailure}`}>
+                    <span className={styles.statLabel}>{t('stats.failure')}</span>
+                    <span className={styles.statValue}>{fileStats.failure}</span>
+                  </div>
+                </div>
               </div>
               <ProviderStatusBar statusData={statusData} styles={styles} />
             </div>
@@ -254,6 +293,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 file={file}
                 quotaType={quotaType}
                 disableControls={disableControls}
+                onAuthFileUpdated={onAuthFileUpdated}
               />
             )}
           </div>

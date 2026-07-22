@@ -1,10 +1,10 @@
-export const AUTH_FILES_SORT_MODES = ['default', 'az', 'priority'] as const;
-export const AUTH_FILES_STATUS_FILTER_MODES = [
-  'all',
-  'enabled',
-  'disabled',
-  'problem',
+export const AUTH_FILES_SORT_MODES = [
+  'priority',
+  'az',
+  'plan-desc',
+  'plan-asc',
 ] as const;
+export const AUTH_FILES_STATUS_FILTER_MODES = ['all', 'enabled', 'disabled', 'problem'] as const;
 
 export type AuthFilesSortMode = (typeof AUTH_FILES_SORT_MODES)[number];
 export type AuthFilesStatusFilterMode = (typeof AUTH_FILES_STATUS_FILTER_MODES)[number];
@@ -14,6 +14,7 @@ export type AuthFilesUiState = {
   problemOnly?: boolean;
   disabledOnly?: boolean;
   statusFilterMode?: AuthFilesStatusFilterMode;
+  privateInstructionsOnly?: boolean;
   compactMode?: boolean;
   search?: string;
   page?: number;
@@ -21,6 +22,7 @@ export type AuthFilesUiState = {
   regularPageSize?: number;
   compactPageSize?: number;
   sortMode?: AuthFilesSortMode;
+  xaiStatusFilter?: string;
 };
 
 const AUTH_FILES_UI_STATE_KEY = 'authFilesPage.uiState';

@@ -14,6 +14,7 @@ import {
   useNotificationStore,
   useQuotaStore,
 } from '@/stores';
+import { authFilesApi } from '@/services/api';
 import type { AuthFileItem } from '@/types';
 import { getStatusFromError } from '@/utils/quota';
 import {
@@ -45,10 +46,11 @@ export type AuthFileQuotaSectionProps = {
   file: AuthFileItem;
   quotaType: QuotaProviderType;
   disableControls: boolean;
+  onAuthFileUpdated?: () => void | Promise<void>;
 };
 
 export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
-  const { file, quotaType, disableControls } = props;
+  const { file, quotaType, disableControls, onAuthFileUpdated } = props;
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
   const showConfirmation = useNotificationStore((state) => state.showConfirmation);
@@ -97,13 +99,32 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
 
     try {
       const data = await config.fetchQuota(file, t);
-      commitIfQuotaCacheCurrent(cacheGeneration, () => {
+      const applied = commitIfQuotaCacheCurrent(cacheGeneration, () => {
         updateQuotaState((prev: Record<string, unknown>) => ({
           ...prev,
           [file.name]: config.buildSuccessState(data),
         }));
         showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
       });
+      if (applied && quotaType === 'codex') {
+        const planType =
+          data && typeof data === 'object' && 'planType' in data
+            ? String((data as { planType?: unknown }).planType ?? '').trim()
+            : '';
+        if (planType) {
+          try {
+            await authFilesApi.patchFields(file.name, {
+              plan_type: planType,
+              chatgpt_plan_type: planType,
+              plan_checked_at: new Date().toISOString(),
+            });
+            // Silent reload: avoid grid unmount flash from full loading state.
+            await onAuthFileUpdated?.();
+          } catch {
+            // Quota display still succeeds if plan persistence fails.
+          }
+        }
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.unknown_error');
       const status = getStatusFromError(err);
@@ -118,7 +139,16 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         );
       });
     }
-  }, [disableControls, file, quota?.status, quotaType, showNotification, t, updateQuotaState]);
+  }, [
+    disableControls,
+    file,
+    onAuthFileUpdated,
+    quota?.status,
+    quotaType,
+    showNotification,
+    t,
+    updateQuotaState,
+  ]);
 
   const resetQuotaForFile = useCallback(() => {
     if (disableControls) return;

@@ -1,0 +1,672 @@
+@use '../styles/variables' as *;
+@use '../styles/mixins' as *;
+
+// Shared control height so toolbar + filter rows align cleanly.
+$control-h: 38px;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ── Filter rows ─────────────────────────────────────── */
+
+.filterSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  width: 100%;
+  min-width: 0;
+}
+
+// Row 1: range | search (flex) | actions — one horizontal line on desktop
+.filterPrimary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  min-width: 0;
+}
+
+.rangeGroup {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 3px;
+  height: $control-h;
+  padding: 3px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  flex: 0 0 auto;
+}
+
+.rangeChip {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition:
+    color $transition-fast,
+    background-color $transition-fast,
+    border-color $transition-fast;
+
+  &:hover {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  }
+}
+
+.rangeChipActive {
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.searchWrap {
+  min-width: 0;
+  width: 100%;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+    width: 100%;
+  }
+
+  :global(.input) {
+    height: $control-h;
+    min-height: $control-h;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-sizing: border-box;
+  }
+}
+
+.filterActions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: $spacing-sm;
+  flex: 0 0 auto;
+
+  :global(.btn) {
+    height: $control-h;
+    min-height: $control-h;
+    box-sizing: border-box;
+    white-space: nowrap;
+  }
+
+  // Select trigger height override (sm is 28px by default)
+  :global(button[class*='trigger']) {
+    height: $control-h !important;
+    min-height: $control-h;
+    box-sizing: border-box;
+  }
+}
+
+.autoSelect {
+  width: 132px;
+  min-width: 120px;
+  flex: 0 0 auto;
+}
+
+// Row 2: five equal dropdowns filling the full width
+.filterSecondary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+  gap: $spacing-sm;
+  width: 100%;
+  min-width: 0;
+}
+
+.filterSelect {
+  width: 100%;
+  min-width: 0;
+
+  :global(button[class*='trigger']) {
+    height: $control-h !important;
+    min-height: $control-h;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* ── Banners ─────────────────────────────────────────── */
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  border: 1px solid color-mix(in srgb, var(--warning-color) 35%, var(--border-color));
+  background: color-mix(in srgb, var(--warning-color) 10%, var(--bg-secondary));
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.bannerError {
+  border-color: color-mix(in srgb, var(--danger-color) 40%, var(--border-color));
+  background: color-mix(in srgb, var(--danger-color) 10%, var(--bg-secondary));
+  color: var(--danger-color);
+}
+
+/* ── Summary stats — full width, even columns ────────── */
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: $spacing-sm;
+  width: 100%;
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 88px;
+  min-width: 0;
+  padding: 14px 12px;
+  border-radius: $radius-md;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  box-sizing: border-box;
+}
+
+.summaryLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+.summaryValue {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryValueSuccess {
+  color: var(--success-color);
+}
+
+.summaryValueDanger {
+  color: var(--danger-color);
+}
+
+/* ── Tabs ────────────────────────────────────────────── */
+
+.tabBar {
+  display: flex;
+  gap: $spacing-xs;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0;
+}
+
+.tabItem {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition:
+    color $transition-fast,
+    border-color $transition-fast;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+}
+
+.tabActive {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.tabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--count-badge-text, var(--text-secondary));
+  background: var(--count-badge-bg, color-mix(in srgb, var(--text-primary) 8%, transparent));
+}
+
+/* ── Tables (single frame from Table primitive only) ─── */
+
+.tableSection {
+  width: 100%;
+  min-width: 0;
+}
+
+.cellStack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cellPrimary {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.cellSecondary {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mono {
+  font-family: $font-mono;
+  font-size: 12px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.statusOk {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--success-color);
+}
+
+.statusFail {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger-color);
+}
+
+.emptyWrap {
+  padding: $spacing-xl $spacing-md;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+}
+
+/* ── Prices layout (organization, app tokens) ────────── */
+
+.pricesLayout {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  width: 100%;
+  min-width: 0;
+}
+
+// Compact top action bar: title + meta + actions
+.pricesActionBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  box-sizing: border-box;
+}
+
+.pricesTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pricesTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pricesHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.pricesActionGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+}
+
+.syncMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.metaPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: $radius-md;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.overrideRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  user-select: none;
+  white-space: nowrap;
+}
+
+// Mapping candidates (only when needed)
+.candidatesPanel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  box-sizing: border-box;
+}
+
+.panelHeading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.muted {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.candidatesList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.candidateBlock {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--bg-secondary) 55%, transparent);
+}
+
+.candidateModel {
+  font-family: $font-mono;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.candidateSelect {
+  width: 100%;
+  min-width: 0;
+}
+
+// Main price panel: search + chips + table
+.pricePanel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  box-sizing: border-box;
+}
+
+.pricePanelToolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+}
+
+.priceSearch {
+  min-width: 0;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+
+  :global(.input) {
+    height: $control-h;
+    min-height: $control-h;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-sizing: border-box;
+  }
+}
+
+.priceFilterChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.filterChip {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: $radius-md;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  strong {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+  }
+}
+
+.filterChipActive {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--primary-color) 45%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
+}
+
+// Secondary editors under the list
+.secondaryEditors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-md;
+  width: 100%;
+}
+
+.editorBlock {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  box-sizing: border-box;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: $spacing-sm;
+  align-items: end;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  align-items: center;
+}
+
+.unpricedRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.unpricedChip {
+  @include button-reset;
+  padding: 5px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: $font-mono;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--primary-color) 40%, var(--border-color));
+  }
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+
+@media (max-width: $breakpoint-tablet) {
+  .summaryGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .secondaryEditors {
+    grid-template-columns: 1fr;
+  }
+
+  .candidateBlock {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: $breakpoint-mobile) {
+  .filterPrimary {
+    grid-template-columns: 1fr;
+  }
+
+  .rangeGroup {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .filterActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .filterSecondary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summaryValue {
+    font-size: 18px;
+  }
+
+  .pricesActionBar {
+    grid-template-columns: 1fr;
+  }
+
+  .pricePanelToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .pricesActionGroup {
+    justify-content: flex-start;
+  }
+}

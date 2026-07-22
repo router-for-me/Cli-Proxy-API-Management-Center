@@ -454,12 +454,6 @@ export function PluginsPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Page Header ── */}
-      <div className={styles.pageHeader}>
-        <h1 className={styles.title}>{t('plugin_management.title')}</h1>
-        <p className={styles.description}>{t('plugin_management.description')}</p>
-      </div>
-
       {/* ── Alerts ── */}
       {error ? <div className={styles.errorBox}>{error}</div> : null}
 

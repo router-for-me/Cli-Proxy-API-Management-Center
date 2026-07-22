@@ -33,6 +33,90 @@ export interface Config {
   raw?: Record<string, unknown>;
 }
 
+export type CodexInstructionsMode = 'prepend' | 'append' | 'replace';
+
+export interface CodexInstructionMarkersConfig {
+  prefixes: string[];
+  suffixes: string[];
+}
+
+export interface CodexInstructionsConfig {
+  enabled: boolean;
+  mode: CodexInstructionsMode;
+  content: string;
+  file: string;
+  models: string[];
+  oauthOnly: boolean;
+  requireAuthAllow: boolean;
+  reserveMarkedAuths: boolean;
+  usePrefixSuffix: boolean;
+  requestMarkers: CodexInstructionMarkersConfig;
+}
+
+export interface RawCodexInstructionsConfig {
+  enabled?: boolean;
+  mode?: string;
+  content?: string;
+  file?: string;
+  models?: string[];
+  'oauth-only'?: boolean;
+  oauthOnly?: boolean;
+  'require-auth-allow'?: boolean;
+  requireAuthAllow?: boolean;
+  'reserve-marked-auths'?: boolean;
+  reserveMarkedAuths?: boolean;
+  'use-prefix-suffix'?: boolean;
+  usePrefixSuffix?: boolean;
+  'request-markers'?: {
+    prefixes?: string[];
+    suffixes?: string[];
+  };
+  requestMarkers?: {
+    prefixes?: string[];
+    suffixes?: string[];
+  };
+}
+
+export interface XAIConfig {
+  autoDisablePermissionDenied: boolean;
+  otherForbiddenCooldownHours: number;
+  freeUsageExhaustedCooldownHours: number;
+  freeUsageExhaustedDisableAfter: number;
+  otherForbiddenDisableAfter: number;
+}
+
+export interface RawXAIConfig {
+  'auto-disable-permission-denied'?: boolean;
+  autoDisablePermissionDenied?: boolean;
+  'other-403-cooldown-hours'?: number;
+  otherForbiddenCooldownHours?: number;
+  'free-usage-exhausted-cooldown-hours'?: number;
+  freeUsageExhaustedCooldownHours?: number;
+  'free-usage-exhausted-disable-after'?: number;
+  freeUsageExhaustedDisableAfter?: number;
+  'other-403-disable-after'?: number;
+  otherForbiddenDisableAfter?: number;
+}
+
+/** Codex credential failure policy (management /codex-failure-config). */
+export interface CodexFailureConfig {
+  autoDisableAuthFailures: boolean;
+  authFailureDisableAfter: number;
+  usageLimitDisableAfter: number;
+  usageLimitCooldownFallbackHours: number;
+}
+
+export interface RawCodexFailureConfig {
+  'auto-disable-auth-failures'?: boolean;
+  autoDisableAuthFailures?: boolean;
+  'auth-failure-disable-after'?: number;
+  authFailureDisableAfter?: number;
+  'usage-limit-disable-after'?: number;
+  usageLimitDisableAfter?: number;
+  'usage-limit-cooldown-fallback-hours'?: number;
+  usageLimitCooldownFallbackHours?: number;
+}
+
 export type RawConfigSection =
   | 'debug'
   | 'proxy-url'
