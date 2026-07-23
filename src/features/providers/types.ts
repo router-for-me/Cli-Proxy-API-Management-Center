@@ -99,6 +99,8 @@ export interface ProviderResource {
   models: string[];
   /** 排序用优先级,未配置时为 0 */
   priority: number;
+  /** weighted-round-robin 选择权重,未配置时后端按 1 处理 */
+  selectionWeight?: number;
   headerCount: number;
   excludedModelCount: number;
   /** 仅 OpenAI 有意义,其它 brand 该字段不展示但保留 */
@@ -162,6 +164,7 @@ export interface ApiKeyEntryInput {
   apiKey: string;
   existingApiKey?: string;
   proxyUrl: string;
+  selectionWeight?: number;
   authIndex?: string;
 }
 
@@ -183,6 +186,7 @@ export interface ProviderEntryFormInput {
   disabled: boolean;
   disableCooling?: boolean;
   priority?: number;
+  selectionWeight?: number;
 
   /** 高级折叠区 */
   models: ModelEntryInput[];

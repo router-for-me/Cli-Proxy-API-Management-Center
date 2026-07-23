@@ -156,6 +156,7 @@ const buildProviderKeyConfig = (
   const next: ProviderKeyConfig = {
     apiKey: apiKeyChanged ? input.apiKey.trim() : (existing?.apiKey ?? ''),
     priority: input.priority,
+    selectionWeight: input.selectionWeight,
     prefix: input.prefix.trim() || undefined,
     baseUrl: input.baseUrl.trim() || undefined,
     proxyUrl: input.proxyUrl.trim() || undefined,
@@ -209,6 +210,7 @@ const buildOpenAIConfig = (
         return {
           apiKey: entry.apiKey.trim() || fallbackApiKey,
           proxyUrl: entry.proxyUrl.trim() || undefined,
+          selectionWeight: entry.selectionWeight,
           authIndex: entry.authIndex?.trim() || undefined,
         };
       })
@@ -225,6 +227,7 @@ const buildOpenAIConfig = (
     headers: Object.keys(headers).length ? headers : undefined,
     models: models.length ? models : undefined,
     priority: input.priority,
+    selectionWeight: input.selectionWeight,
     testModel: input.testModel?.trim() || undefined,
   };
 };

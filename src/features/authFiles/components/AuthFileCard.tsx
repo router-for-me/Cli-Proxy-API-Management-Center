@@ -124,6 +124,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
     Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(rawStatusMessage.toLowerCase());
 
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
+  const selectionWeightRaw = file.selection_weight ?? file['selection-weight'];
+  const selectionWeightValue = parsePriorityValue(selectionWeightRaw);
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
   const stateLabel = isRuntimeOnly
     ? t('auth_files.type_virtual') || '虚拟认证文件'
@@ -218,6 +220,14 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 <span className={styles.metaLabel}>{t('auth_files.priority_display')}</span>
                 <span className={`${styles.metaValue} ${styles.priorityValue}`}>
                   {priorityValue}
+                </span>
+              </div>
+            )}
+            {selectionWeightValue !== undefined && selectionWeightValue >= 0 && (
+              <div className={`${styles.metaItem} ${styles.priorityBadge}`}>
+                <span className={styles.metaLabel}>{t('auth_files.selection_weight_display')}</span>
+                <span className={`${styles.metaValue} ${styles.priorityValue}`}>
+                  {selectionWeightValue}
                 </span>
               </div>
             )}

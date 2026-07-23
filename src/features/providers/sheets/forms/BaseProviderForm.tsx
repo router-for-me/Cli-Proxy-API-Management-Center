@@ -48,6 +48,9 @@ const emptyApiKeyEntry = (): ApiKeyEntryInput => ({
 });
 const XAI_API_BASE_URL = 'https://api.x.ai/v1';
 
+const selectionWeightValid = (value: number | undefined): boolean =>
+  value === undefined || (Number.isInteger(value) && value >= 0);
+
 const stripDisableAllRule = (list?: string[]): string[] =>
   (list ?? []).filter((s) => s.trim() !== '*');
 
@@ -75,6 +78,7 @@ function buildInitialForm(
       disabled: false,
       disableCooling: false,
       priority: undefined,
+      selectionWeight: undefined,
       models: [emptyModel()],
       headers: [emptyHeader()],
       excludedModelsText: '',
@@ -107,6 +111,7 @@ function buildInitialForm(
       disabled: cfg.disabled === true,
       disableCooling: cfg.disableCooling === true,
       priority: cfg.priority,
+      selectionWeight: cfg.selectionWeight,
       models: cfg.models?.length
         ? cfg.models.map((m) => ({
             name: m.name,
@@ -127,6 +132,7 @@ function buildInitialForm(
             apiKey: '',
             existingApiKey: entry.apiKey,
             proxyUrl: entry.proxyUrl ?? '',
+            selectionWeight: entry.selectionWeight,
             authIndex: entry.authIndex,
           }))
         : [emptyApiKeyEntry()],
@@ -149,6 +155,7 @@ function buildInitialForm(
     disabled,
     disableCooling: cfg.disableCooling === true,
     priority: cfg.priority,
+    selectionWeight: cfg.selectionWeight,
     models: cfg.models?.length
       ? cfg.models.map((m) => ({
           name: m.name,
@@ -375,6 +382,12 @@ export function BaseProviderForm({
     if (descriptor.baseUrlRequired && !form.baseUrl.trim()) {
       return t('providersPage.form.validation.baseUrlRequired');
     }
+    if (!selectionWeightValid(form.selectionWeight)) {
+      return t('providersPage.form.validation.selectionWeightInvalid');
+    }
+    if (form.apiKeyEntries?.some((entry) => !selectionWeightValid(entry.selectionWeight))) {
+      return t('providersPage.form.validation.selectionWeightInvalid');
+    }
     return null;
   };
 
@@ -575,6 +588,33 @@ export function BaseProviderForm({
                 />
               </div>
             ) : null}
+          </div>
+        ) : null}
+
+        {descriptor.supportsPriority ? (
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${fid}-selection-weight`}>
+              {t('providersPage.form.selectionWeight')}
+              <span className={styles.labelHint}>
+                {' '}
+                · {t('providersPage.form.selectionWeightHint')}
+              </span>
+            </label>
+            <input
+              id={`${fid}-selection-weight`}
+              type="number"
+              min={0}
+              step={1}
+              className={styles.input}
+              value={form.selectionWeight ?? ''}
+              onChange={(e) =>
+                updateField(
+                  'selectionWeight',
+                  e.target.value === '' ? undefined : Number(e.target.value)
+                )
+              }
+              disabled={mutating}
+            />
           </div>
         ) : null}
 

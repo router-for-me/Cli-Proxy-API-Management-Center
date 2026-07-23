@@ -55,6 +55,9 @@ const collectModelNames = (models?: Array<{ name?: string }>): string[] => {
 const normalizePriority = (priority?: number): number =>
   typeof priority === 'number' && Number.isFinite(priority) ? priority : 0;
 
+const normalizeSelectionWeight = (weight?: number): number | undefined =>
+  typeof weight === 'number' && Number.isInteger(weight) && weight >= 0 ? weight : undefined;
+
 const buildId = (brand: ProviderBrand, index: number, fragment: string) =>
   `${brand}:${index}:${fragment || 'item'}`;
 
@@ -103,6 +106,7 @@ function providerKeyToResource(
     modelCount: config.models?.length ?? 0,
     models: collectModelNames(config.models),
     priority: normalizePriority(config.priority),
+    selectionWeight: normalizeSelectionWeight(config.selectionWeight),
     headerCount: countHeaders(config.headers),
     excludedModelCount: stripDisableAllModelsRule(config.excludedModels).length,
     apiKeyEntryCount: 0,
@@ -161,6 +165,7 @@ export function openaiToResource(config: OpenAIProviderConfig, index: number): P
     modelCount: config.models?.length ?? 0,
     models: collectModelNames(config.models),
     priority: normalizePriority(config.priority),
+    selectionWeight: normalizeSelectionWeight(config.selectionWeight),
     headerCount: countHeaders(config.headers),
     excludedModelCount: 0,
     apiKeyEntryCount: config.apiKeyEntries?.length ?? 0,

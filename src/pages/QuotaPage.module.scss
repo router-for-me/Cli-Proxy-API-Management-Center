@@ -757,6 +757,26 @@
   line-height: 1.4;
 }
 
+.scheduleMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 2px 8px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+}
+
 .pagination {
   display: flex;
   justify-content: center;

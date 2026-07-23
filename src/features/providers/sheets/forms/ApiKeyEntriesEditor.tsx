@@ -131,6 +131,11 @@ export function ApiKeyEntriesEditor({
               >
                 <span>{t('providersPage.form.apiKeyEntry', { index: idx + 1 })}</span>
                 <span className={styles.entrySummary}>
+                  {entry.selectionWeight !== undefined ? (
+                    <span className={styles.entryBadge}>
+                      {t('providersPage.form.selectionWeight')}: {entry.selectionWeight}
+                    </span>
+                  ) : null}
                   {entry.proxyUrl.trim() ? (
                     <span className={styles.entryBadge} title={entry.proxyUrl}>
                       {t('providersPage.form.proxyBadge')}
@@ -236,6 +241,23 @@ export function ApiKeyEntriesEditor({
                     disabled={mutating}
                     placeholder="http://127.0.0.1:7890"
                   />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>{t('providersPage.form.selectionWeight')}</label>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={entry.selectionWeight ?? ''}
+                    onChange={(e) =>
+                      onUpdate(idx, {
+                        selectionWeight: e.target.value === '' ? undefined : Number(e.target.value),
+                      })
+                    }
+                    disabled={mutating}
+                  />
+                  <div className={styles.hint}>{t('providersPage.form.selectionWeightHint')}</div>
                 </div>
               </div>
             ) : null}

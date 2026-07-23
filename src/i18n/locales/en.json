@@ -160,8 +160,13 @@
     "request_log_enable": "Enable request logging",
     "request_log_warning": "Keep this off unless you need detailed troubleshooting.",
     "ws_auth_enable": "Require auth for /ws/*",
+    "routing_title": "Routing Strategy",
+    "routing_strategy_label": "Routing strategy:",
+    "routing_strategy_hint": "round-robin cycles through keys; fill-first prioritizes the first available key; weighted-round-robin distributes by selection weight.",
+    "routing_strategy_update": "Update",
     "routing_strategy_round_robin": "round-robin (cycle)",
-    "routing_strategy_fill_first": "fill-first (prioritize)"
+    "routing_strategy_fill_first": "fill-first (prioritize)",
+    "routing_strategy_weighted_round_robin": "weighted-round-robin (weighted)"
   },
   "auth_files": {
     "title": "Auth Files Management",
@@ -223,6 +228,7 @@
     "sort_az": "A-Z Name",
     "sort_priority": "Priority",
     "priority_display": "Priority",
+    "selection_weight_display": "Selection weight",
     "page_size_label": "Per page",
     "view_mode_paged": "Paged",
     "view_mode_all": "Show all",
@@ -280,10 +286,20 @@
     "priority_label": "Priority (priority)",
     "priority_placeholder": "e.g. 10 or -1",
     "priority_hint": "Integers only. Invalid values are ignored. Larger value means higher priority.",
+    "selection_weight_label": "Selection weight (selection_weight)",
+    "selection_weight_placeholder": "e.g. 2",
+    "selection_weight_hint": "Non-negative integers only. Leave empty to use the default weight 1.",
+    "selection_weight_invalid": "Selection weight must be a non-negative integer.",
     "websockets_label": "WebSockets (websockets)",
     "websockets_hint": "Enable Responses API websocket transport for this credential.",
     "using_api_label": "Use official API (using_api)",
     "using_api_hint": "Use the official xAI API when enabled; use Grok CLI chat-proxy when disabled.",
+    "excluded_models_label": "Excluded models (excluded_models)",
+    "excluded_models_placeholder": "Comma or newline separated, e.g. model-a, gpt-5-*, *-preview",
+    "excluded_models_hint": "Saved as an array and normalized by trim/lowercase/dedup/sort.",
+    "disable_cooling_label": "Disable cooling (disable_cooling)",
+    "disable_cooling_placeholder": "e.g. true / false / 1 / 0",
+    "disable_cooling_hint": "Supports booleans, numeric 0/non-0, and strings like true/false/1/0; unparseable values are ignored.",
     "note_label": "Note",
     "note_placeholder": "Enter a note, e.g.: John's account",
     "note_hint": "Optional. Used to describe the purpose or owner of this credential; leave empty to omit.",
@@ -914,7 +930,7 @@
           "stabilize_device_desc": "Pin OS/Arch and stabilize the software fingerprint per credential/API key",
           "beta_features": "Beta Features",
           "codex_identity_confuse": "Codex Identity Confuse",
-          "codex_identity_confuse_desc": "When fill-first routing or session affinity is used, remap Codex prompt_cache_key and installation identity for the selected auth"
+          "codex_identity_confuse_desc": "When fill-first routing, weighted-round-robin, or session affinity is used, remap Codex prompt_cache_key and installation identity for the selected auth"
         },
         "network": {
           "title": "Network Configuration",
@@ -938,6 +954,7 @@
           "routing_strategy_hint": "Select credential selection strategy",
           "strategy_round_robin": "Round Robin",
           "strategy_fill_first": "Fill First",
+          "strategy_weighted_round_robin": "Weighted Round Robin",
           "session_affinity_ttl": "Session Affinity TTL",
           "force_model_prefix": "Force Model Prefix",
           "force_model_prefix_desc": "Unprefixed model requests only use credentials without prefix",
@@ -1352,7 +1369,8 @@
       "metrics": {
         "models": "Models",
         "keys": "Keys",
-        "headers": "Headers"
+        "headers": "Headers",
+        "selectionWeight": "Weight"
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
@@ -1447,7 +1465,8 @@
         "headers": "Headers",
         "authIndex": "Auth Index",
         "excludedModels": "Excluded models",
-        "apiKeyEntries": "API key entries"
+        "apiKeyEntries": "API key entries",
+        "selectionWeight": "Selection weight"
       }
     },
     "form": {
@@ -1462,6 +1481,8 @@
       "proxyUrl": "Proxy URL",
       "prefix": "Prefix",
       "priority": "Priority",
+      "selectionWeight": "Selection weight",
+      "selectionWeightHint": "Used by weighted round-robin; leave empty for the default weight 1.",
       "disabled": "Disable this entry",
       "disabledHint": "Disabled entries won't be used by the gateway",
       "websockets": "Enable WebSockets",
@@ -1503,7 +1524,8 @@
       "validation": {
         "nameRequired": "Name is required",
         "apiKeyRequired": "At least one API key is required",
-        "baseUrlRequired": "Base URL is required"
+        "baseUrlRequired": "Base URL is required",
+        "selectionWeightInvalid": "Selection weight must be a non-negative integer"
       }
     },
     "delete": {
