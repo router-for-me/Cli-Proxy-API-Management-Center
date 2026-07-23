@@ -100,6 +100,19 @@ export interface ClaudeExtraUsage {
   utilization: number | null;
 }
 
+export interface ClaudeUsageLimit {
+  kind?: string | null;
+  group?: string | null;
+  percent?: number | null;
+  severity?: string | null;
+  resets_at?: string | null;
+  scope?: {
+    model?: { id?: string | null; display_name?: string | null } | null;
+    surface?: string | null;
+  } | null;
+  is_active?: boolean | null;
+}
+
 export interface ClaudeUsagePayload {
   five_hour?: ClaudeUsageWindow | null;
   seven_day?: ClaudeUsageWindow | null;
@@ -109,6 +122,7 @@ export interface ClaudeUsagePayload {
   seven_day_cowork?: ClaudeUsageWindow | null;
   iguana_necktie?: ClaudeUsageWindow | null;
   extra_usage?: ClaudeExtraUsage | null;
+  limits?: ClaudeUsageLimit[] | null;
 }
 
 export interface ClaudeProfileResponse {
@@ -137,6 +151,7 @@ export interface ClaudeQuotaWindow {
   id: string;
   label: string;
   labelKey?: string;
+  labelParams?: Record<string, string>;
   usedPercent: number | null;
   resetLabel: string;
 }
