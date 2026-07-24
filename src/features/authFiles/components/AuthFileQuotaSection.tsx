@@ -23,7 +23,10 @@ import {
 } from '@/features/authFiles/constants';
 import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
-import { QuotaProgressBar } from '@/features/authFiles/components/QuotaProgressBar';
+import {
+  QuotaProgressBar,
+  TimeProgressBar,
+} from '@/features/authFiles/components/QuotaProgressBar';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
 type QuotaState = { status?: string; error?: string; errorStatus?: number } | undefined;
@@ -230,6 +233,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         (config.renderQuotaItems(quota, t, {
           styles,
           QuotaProgressBar,
+          TimeProgressBar,
         }) as ReactNode)
       ) : (
         <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.idle`)}</div>

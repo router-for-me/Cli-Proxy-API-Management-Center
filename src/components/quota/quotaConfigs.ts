@@ -352,6 +352,19 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
   ) => {
     if (!window) return;
     const resetLabel = formatCodexResetLabel(window);
+    const durationSeconds = normalizeNumberValue(
+      window.limit_window_seconds ?? window.limitWindowSeconds
+    );
+    const resetAtSeconds = normalizeNumberValue(window.reset_at ?? window.resetAt);
+    const resetAfterSeconds = normalizeNumberValue(
+      window.reset_after_seconds ?? window.resetAfterSeconds
+    );
+    const resetAtMs =
+      resetAtSeconds !== null && resetAtSeconds > 0
+        ? resetAtSeconds * 1000
+        : resetAfterSeconds !== null && resetAfterSeconds > 0
+          ? Date.now() + resetAfterSeconds * 1000
+          : null;
     const usedPercentRaw = normalizeNumberValue(window.used_percent ?? window.usedPercent);
     const isLimitReached = Boolean(limitReached) || allowed === false;
     const usedPercent = usedPercentRaw ?? (isLimitReached && resetLabel !== '-' ? 100 : null);
@@ -362,6 +375,8 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
       labelParams,
       usedPercent,
       resetLabel,
+      resetAtMs,
+      durationMs: durationSeconds !== null && durationSeconds > 0 ? durationSeconds * 1000 : null,
     });
   };
 
@@ -898,7 +913,7 @@ const renderCodexItems = (
   t: TFunction,
   helpers: QuotaRenderHelpers
 ): ReactNode => {
-  const { styles: styleMap, QuotaProgressBar } = helpers;
+  const { styles: styleMap, QuotaProgressBar, TimeProgressBar } = helpers;
   const { createElement: h, Fragment } = React;
   const windows = quota.windows ?? [];
   const planType = quota.planType ?? null;
@@ -1020,6 +1035,19 @@ const renderCodexItems = (
       const clampedUsed = used === null ? null : Math.max(0, Math.min(100, used));
       const remaining = clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
       const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
+      const nowMs = Date.now();
+      const elapsedPercent =
+        window.resetAtMs !== null && window.durationMs !== null
+          ? Math.max(
+              0,
+              Math.min(
+                100,
+                ((nowMs - (window.resetAtMs - window.durationMs)) / window.durationMs) * 100
+              )
+            )
+          : null;
+      const timeUntilResetMs =
+        window.resetAtMs !== null ? Math.max(0, window.resetAtMs - nowMs) : undefined;
       const windowLabel = window.labelKey
         ? t(window.labelKey, window.labelParams as Record<string, string | number>)
         : window.label;
@@ -1042,7 +1070,13 @@ const renderCodexItems = (
           percent: remaining,
           highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
           mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
-        })
+        }),
+        elapsedPercent !== null
+          ? h(TimeProgressBar, {
+              percent: elapsedPercent,
+              animationDurationMs: timeUntilResetMs,
+            })
+          : null
       );
     })
   );

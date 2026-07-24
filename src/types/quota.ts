@@ -189,6 +189,8 @@ export interface CodexQuotaWindow {
   labelParams?: Record<string, string | number>;
   usedPercent: number | null;
   resetLabel: string;
+  resetAtMs: number | null;
+  durationMs: number | null;
 }
 
 export interface CodexQuotaState {

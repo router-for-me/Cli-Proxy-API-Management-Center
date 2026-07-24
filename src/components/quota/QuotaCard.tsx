@@ -52,9 +52,34 @@ export function QuotaProgressBar({
   );
 }
 
+export interface TimeProgressBarProps {
+  percent: number;
+  animationDurationMs?: number;
+}
+
+export function TimeProgressBar({ percent, animationDurationMs }: TimeProgressBarProps) {
+  const normalized = Math.min(100, Math.max(0, percent));
+  const isAnimated = animationDurationMs !== undefined && animationDurationMs > 0;
+
+  return (
+    <div className={`${styles.quotaBar} ${styles.quotaTimeBar}`}>
+      <div
+        className={`${styles.quotaBarFill} ${styles.quotaBarFillTime}`}
+        style={{
+          width: isAnimated ? '100%' : `${normalized}%`,
+          transform: isAnimated ? `scaleX(${normalized / 100})` : undefined,
+          transformOrigin: isAnimated ? 'right' : undefined,
+          animationDuration: isAnimated ? `${animationDurationMs}ms` : undefined,
+        }}
+      />
+    </div>
+  );
+}
+
 export interface QuotaRenderHelpers {
   styles: typeof styles;
   QuotaProgressBar: (props: QuotaProgressBarProps) => ReactElement;
+  TimeProgressBar: (props: TimeProgressBarProps) => ReactElement;
 }
 
 interface QuotaCardProps<TState extends QuotaStatusState> {
@@ -145,7 +170,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
             })}
           </div>
         ) : quota ? (
-          renderQuotaItems(quota, t, { styles, QuotaProgressBar })
+          renderQuotaItems(quota, t, { styles, QuotaProgressBar, TimeProgressBar })
         ) : (
           <div className={styles.quotaMessage}>{t(idleMessageKey)}</div>
         )}

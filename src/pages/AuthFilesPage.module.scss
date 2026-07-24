@@ -614,6 +614,23 @@
   background-color: var(--danger-color);
 }
 
+.quotaTimeBar {
+  height: 4px;
+}
+
+.quotaBarFillTime {
+  background-color: var(--text-tertiary);
+  animation-name: quota-time-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes quota-time-fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+
 .quotaMeta {
   display: flex;
   align-items: center;
