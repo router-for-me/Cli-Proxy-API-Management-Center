@@ -5,8 +5,7 @@ export interface ParsedApiErrorResponse {
   apiCode?: string;
 }
 
-const readString = (value: unknown): string =>
-  typeof value === 'string' ? value.trim() : '';
+const readString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
 /**
  * Parse the Management API's error envelope.

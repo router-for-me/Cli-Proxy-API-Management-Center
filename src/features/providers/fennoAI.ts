@@ -72,16 +72,12 @@ const matchesFennoAIAnthropicBaseUrl = (value: string | undefined | null): boole
   );
 };
 
-export const isFennoAIClaudeProvider = (
-  config: ProviderKeyConfig | undefined | null
-): boolean => {
+export const isFennoAIClaudeProvider = (config: ProviderKeyConfig | undefined | null): boolean => {
   if (!config) return false;
   return matchesFennoAIAnthropicBaseUrl(config.baseUrl);
 };
 
-export const isFennoAICodexProvider = (
-  config: ProviderKeyConfig | undefined | null
-): boolean => {
+export const isFennoAICodexProvider = (config: ProviderKeyConfig | undefined | null): boolean => {
   if (!config) return false;
   return matchesFennoAICodexBaseUrl(config.baseUrl);
 };

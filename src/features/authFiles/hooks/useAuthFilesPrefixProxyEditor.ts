@@ -20,17 +20,10 @@ type AuthFileHeadersErrorKey =
   | 'auth_files.headers_invalid_object'
   | 'auth_files.headers_invalid_value';
 type AuthFileContentErrorKey =
-  | 'auth_files.prefix_proxy_invalid_json'
-  | 'auth_files.prefix_proxy_html_challenge';
+  'auth_files.prefix_proxy_invalid_json' | 'auth_files.prefix_proxy_html_challenge';
 
 export type PrefixProxyEditorField =
-  | 'prefix'
-  | 'proxyUrl'
-  | 'priority'
-  | 'websockets'
-  | 'usingApi'
-  | 'note'
-  | 'headersText';
+  'prefix' | 'proxyUrl' | 'priority' | 'websockets' | 'usingApi' | 'note' | 'headersText';
 
 export type PrefixProxyEditorFieldValue = string | boolean;
 

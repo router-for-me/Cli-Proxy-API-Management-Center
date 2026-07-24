@@ -138,8 +138,7 @@ const isHealthyUsageSummary = (summary: ApiKeyFunUsageSummary): boolean => {
 
 const modelsFromConfig = (
   models:
-    | Array<{ name?: string; alias?: string; priority?: number; testModel?: string }>
-    | undefined
+    Array<{ name?: string; alias?: string; priority?: number; testModel?: string }> | undefined
 ): ModelEntryInput[] =>
   models?.length
     ? models.map((model) => ({

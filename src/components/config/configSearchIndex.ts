@@ -6,13 +6,7 @@
 // JSX in <FieldAnchor fieldId="..."> using the same `fieldId`).
 
 export type VisualSectionId =
-  | 'connectivity'
-  | 'network'
-  | 'logging'
-  | 'quota'
-  | 'streaming'
-  | 'advanced'
-  | 'payload';
+  'connectivity' | 'network' | 'logging' | 'quota' | 'streaming' | 'advanced' | 'payload';
 
 export interface ConfigFieldSearchEntry {
   /** Stable anchor id; matches FieldAnchor's `fieldId` and the rendered DOM id. */
