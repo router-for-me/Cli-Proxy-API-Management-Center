@@ -1125,10 +1125,7 @@ export function MainLayout() {
 
           <div className="nav-section">
             {navGroups.map((group, idx) => (
-              <div
-                className={`nav-group ${group.id === 'plugin-pages' ? 'nav-group-bottom' : ''}`}
-                key={group.id}
-              >
+              <div className="nav-group" key={group.id}>
                 {showSidebarLabels ? (
                   <div className="nav-group-label">{t(group.labelKey)}</div>
                 ) : (
