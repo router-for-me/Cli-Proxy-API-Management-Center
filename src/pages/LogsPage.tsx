@@ -28,7 +28,6 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi, type LogsQuery } from '@/services/api/logs';
-import { versionApi } from '@/services/api/version';
 import { copyToClipboard } from '@/utils/clipboard';
 import { getErrorMessage } from '@/utils/helpers';
 import { downloadBlob } from '@/utils/download';
@@ -143,13 +142,10 @@ export function LogsPage() {
   const { t } = useTranslation();
   const { showNotification, showConfirmation } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
-  const serverRuntimeKind = useAuthStore((state) => state.serverRuntimeKind);
-  const updateServerRuntimeKind = useAuthStore((state) => state.updateServerRuntimeKind);
   const config = useConfigStore((state) => state.config);
   const requestLogEnabled = config?.requestLog ?? false;
   const loggingToFileEnabled = config?.loggingToFile ?? false;
-  const cpaNeedsFileLogging = serverRuntimeKind === 'cpa' && !loggingToFileEnabled;
-  const isHomeRuntime = serverRuntimeKind === 'home';
+  const cpaNeedsFileLogging = !loggingToFileEnabled;
   const [fileLoggingRequired, setFileLoggingRequired] = useState(false);
   const showFileLoggingRequired = cpaNeedsFileLogging || fileLoggingRequired;
 
@@ -218,7 +214,7 @@ export function LogsPage() {
   const disableControls = connectionStatus !== 'connected';
   const refreshDisabled = disableControls || loading || cpaNeedsFileLogging;
   const autoRefreshDisabled = disableControls || showFileLoggingRequired;
-  const clearDisabled = disableControls || showFileLoggingRequired || isHomeRuntime;
+  const clearDisabled = disableControls || showFileLoggingRequired;
 
   async function loadLogs(incremental = false) {
     if (connectionStatus !== 'connected') {
@@ -330,10 +326,6 @@ export function LogsPage() {
   useHeaderRefresh(() => loadLogs(false));
 
   const clearLogs = async () => {
-    if (isHomeRuntime) {
-      showNotification(t('logs.home_clear_unavailable'), 'warning');
-      return;
-    }
     if (cpaNeedsFileLogging) {
       showNotification(t('logs.cpa_file_logging_required'), 'warning');
       return;
@@ -377,13 +369,6 @@ export function LogsPage() {
       setLoadingErrors(false);
       return;
     }
-    if (isHomeRuntime) {
-      setLoadingErrors(false);
-      setErrorLogs([]);
-      setErrorLogsError('');
-      return;
-    }
-
     setLoadingErrors(true);
     setErrorLogsError('');
     try {
@@ -469,21 +454,6 @@ export function LogsPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionStatus, loggingToFileEnabled]);
-
-  useEffect(() => {
-    if (connectionStatus !== 'connected' || serverRuntimeKind !== 'unknown') return;
-    let cancelled = false;
-    const detectRuntime = async () => {
-      const runtimeKind = await versionApi.detectRuntimeKind();
-      if (!cancelled && (runtimeKind === 'cpa' || runtimeKind === 'home')) {
-        updateServerRuntimeKind(runtimeKind);
-      }
-    };
-    void detectRuntime();
-    return () => {
-      cancelled = true;
-    };
-  }, [connectionStatus, serverRuntimeKind, updateServerRuntimeKind]);
 
   useEffect(() => {
     if (activeTab !== 'errors') return;
@@ -697,10 +667,7 @@ export function LogsPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
-        <div className={styles.runtimeNotice}>{t(`logs.runtime_${serverRuntimeKind}`)}</div>
-      </div>
+      <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
 
       <div className={styles.tabBar}>
         <button
@@ -1149,11 +1116,7 @@ export function LogsPage() {
             <div className="stack">
               <div className="hint">{t('logs.error_logs_description')}</div>
 
-              {isHomeRuntime && (
-                <div className="status-badge warning">{t('logs.error_logs_home_unavailable')}</div>
-              )}
-
-              {requestLogEnabled && !isHomeRuntime && (
+              {requestLogEnabled && (
                 <div>
                   <div className="status-badge warning">
                     {t('logs.error_logs_request_log_enabled')}
