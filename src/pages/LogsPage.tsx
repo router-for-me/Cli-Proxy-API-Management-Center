@@ -176,7 +176,6 @@ export function LogsPage() {
   const [requestLogDownloading, setRequestLogDownloading] = useState(false);
   const [fullscreenLogs, setFullscreenLogs] = useState(false);
 
-  const requestLogHomeIpByIdRef = useRef<Record<string, string>>({});
   const errorLogViewRequestRef = useRef(0);
   const longPressRef = useRef<{
     timer: number | null;
@@ -187,7 +186,7 @@ export function LogsPage() {
   const logRequestInFlightRef = useRef(false);
   const pendingFullReloadRef = useRef(false);
 
-  // 保存最新游标用于增量获取；新 CPA 后端优先使用 cursor，旧接口和 Home 继续使用 after。
+  // 保存最新游标用于增量获取；新接口优先使用 cursor，旧接口继续使用 after。
   const logPositionRef = useRef<LogPosition>({});
 
   const resetLogPosition = () => {
@@ -225,7 +224,6 @@ export function LogsPage() {
     if (cpaNeedsFileLogging) {
       if (!incremental) {
         resetLogPosition();
-        requestLogHomeIpByIdRef.current = {};
         setFileLoggingRequired(false);
         setLogState({ buffer: [], visibleFrom: 0 });
         setError('');
@@ -260,14 +258,6 @@ export function LogsPage() {
 
       updateLogPosition(data, incremental);
 
-      if (data.requestLogHomeIpById) {
-        requestLogHomeIpByIdRef.current = incremental
-          ? { ...requestLogHomeIpByIdRef.current, ...data.requestLogHomeIpById }
-          : data.requestLogHomeIpById;
-      } else if (!incremental) {
-        requestLogHomeIpByIdRef.current = {};
-      }
-
       const newLines = Array.isArray(data.lines) ? data.lines : [];
 
       if (incremental && data.cursorReset) {
@@ -301,7 +291,6 @@ export function LogsPage() {
       if (isLoggingToFileDisabledError(err)) {
         if (!incremental) {
           resetLogPosition();
-          requestLogHomeIpByIdRef.current = {};
           setFileLoggingRequired(true);
           setLogState({ buffer: [], visibleFrom: 0 });
           setError('');
@@ -344,7 +333,6 @@ export function LogsPage() {
           await logsApi.clearLogs();
           setLogState({ buffer: [], visibleFrom: 0 });
           resetLogPosition();
-          requestLogHomeIpByIdRef.current = {};
           setFileLoggingRequired(false);
           showNotification(t('logs.clear_success'), 'success');
         } catch (err: unknown) {
@@ -448,7 +436,6 @@ export function LogsPage() {
   useEffect(() => {
     if (connectionStatus === 'connected') {
       resetLogPosition();
-      requestLogHomeIpByIdRef.current = {};
       setFileLoggingRequired(false);
       loadLogs(false);
     }
@@ -614,10 +601,7 @@ export function LogsPage() {
   const downloadRequestLog = async (id: string) => {
     setRequestLogDownloading(true);
     try {
-      const response = await logsApi.downloadRequestLogById(
-        id,
-        requestLogHomeIpByIdRef.current[id]
-      );
+      const response = await logsApi.downloadRequestLogById(id);
       downloadBlob({
         filename: `request-${id}.log`,
         blob: new Blob([response.data], { type: 'text/plain' }),
