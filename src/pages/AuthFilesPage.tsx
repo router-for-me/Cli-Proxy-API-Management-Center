@@ -134,6 +134,7 @@ export function AuthFilesPage() {
     deleting,
     deletingAll,
     statusUpdating,
+    manualRefreshing,
     batchStatusUpdating,
     fileInputRef,
     loadFiles,
@@ -142,6 +143,7 @@ export function AuthFilesPage() {
     handleDelete,
     handleDeleteAll,
     handleDownload,
+    handleManualRefresh,
     handleStatusToggle,
     toggleSelect,
     selectAllVisible,
@@ -888,10 +890,12 @@ export function AuthFilesPage() {
                   disableControls={disableControls}
                   deleting={deleting}
                   statusUpdating={statusUpdating}
+                  manualRefreshing={manualRefreshing}
                   quotaFilterType={quotaFilterType}
                   statusBarCache={statusBarCache}
                   onShowModels={showModels}
                   onDownload={handleDownload}
+                  onManualRefresh={handleManualRefresh}
                   onOpenPrefixProxyEditor={openPrefixProxyEditor}
                   onDelete={handleDelete}
                   onToggleStatus={handleStatusToggle}

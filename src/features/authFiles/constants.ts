@@ -56,6 +56,13 @@ export const TRUTHY_TEXT_VALUES = new Set(['true', '1', 'yes', 'y', 'on']);
 export const FALSY_TEXT_VALUES = new Set(['false', '0', 'no', 'n', 'off']);
 export const AUTH_FILE_WEBSOCKET_PROVIDERS = new Set(['codex', 'xai']);
 export const AUTH_FILE_USING_API_PROVIDERS = new Set(['xai']);
+export const AUTH_FILE_MANUAL_REFRESH_PROVIDERS = new Set([
+  'antigravity',
+  'claude',
+  'codex',
+  'kimi',
+  'xai',
+]);
 
 // 标签类型颜色配置 — 基于各提供商 Logo 品牌色调配，确保彼此不重复
 export const TYPE_COLORS: Record<string, TypeColorSet> = {
@@ -146,6 +153,9 @@ export const resolveQuotaErrorMessage = (
 };
 
 export const normalizeProviderKey = normalizeOAuthProviderKey;
+
+export const supportsAuthFileManualRefresh = (provider: unknown): boolean =>
+  AUTH_FILE_MANUAL_REFRESH_PROVIDERS.has(normalizeProviderKey(String(provider ?? '')));
 
 export const buildOAuthProviderOptions = (values: Iterable<unknown>): string[] => {
   const extraProviders = new Set<string>();
