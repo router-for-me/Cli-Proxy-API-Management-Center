@@ -176,6 +176,7 @@
     "health_status_label": "健康状态",
     "health_status_healthy": "健康",
     "health_status_warning": "警告",
+    "health_status_unavailable": "不可用",
     "health_status_disabled": "已停用",
     "download_button": "下载",
     "manual_refresh_button": "刷新 OAuth 凭证",

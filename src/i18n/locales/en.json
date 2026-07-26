@@ -176,6 +176,7 @@
     "health_status_label": "Health",
     "health_status_healthy": "Healthy",
     "health_status_warning": "Warning",
+    "health_status_unavailable": "Unavailable",
     "health_status_disabled": "Disabled",
     "download_button": "Download",
     "manual_refresh_button": "Refresh OAuth credential",

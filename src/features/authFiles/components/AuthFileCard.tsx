@@ -29,6 +29,7 @@ import {
   getThemeSurfaceIconBackground,
   getTypeColor,
   getTypeLabel,
+  isAuthFileUnavailable,
   isRuntimeOnlyAuthFile,
   isThemeSurfaceIconProvider,
   normalizeProviderKey,
@@ -134,6 +135,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const rawStatusMessage = getAuthFileStatusMessage(file);
   const hasStatusWarning =
     Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(rawStatusMessage.toLowerCase());
+  const isUnavailable = isAuthFileUnavailable(file);
 
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
@@ -141,16 +143,18 @@ export function AuthFileCard(props: AuthFileCardProps) {
     ? t('auth_files.type_virtual') || '虚拟认证文件'
     : file.disabled
       ? t('auth_files.health_status_disabled')
-      : hasStatusWarning
-        ? t('auth_files.health_status_warning')
-        : rawStatusMessage
-          ? t('auth_files.health_status_healthy')
-          : t('auth_files.status_toggle_label');
+      : isUnavailable
+        ? t('auth_files.health_status_unavailable')
+        : hasStatusWarning
+          ? t('auth_files.health_status_warning')
+          : rawStatusMessage
+            ? t('auth_files.health_status_healthy')
+            : t('auth_files.status_toggle_label');
   const stateBadgeClass = isRuntimeOnly
     ? styles.stateBadgeVirtual
     : file.disabled
       ? styles.stateBadgeDisabled
-      : hasStatusWarning
+      : isUnavailable || hasStatusWarning
         ? styles.stateBadgeWarning
         : styles.stateBadgeActive;
 

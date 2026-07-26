@@ -34,7 +34,7 @@ import {
   getThemeSurfaceIconBackground,
   getTypeColor,
   getTypeLabel,
-  hasAuthFileStatusMessage,
+  isAuthFileProblem,
   isRuntimeOnlyAuthFile,
   isThemeSurfaceIconProvider,
   normalizeProviderKey,
@@ -416,7 +416,7 @@ export function AuthFilesPage() {
       files.filter((file) => {
         if (enabledOnly && file.disabled === true) return false;
         if (disabledOnly && file.disabled !== true) return false;
-        if (problemOnly && !hasAuthFileStatusMessage(file)) return false;
+        if (problemOnly && !isAuthFileProblem(file)) return false;
         return true;
       }),
     [disabledOnly, enabledOnly, files, problemOnly]

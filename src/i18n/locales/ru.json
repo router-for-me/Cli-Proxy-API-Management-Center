@@ -175,6 +175,7 @@
     "health_status_label": "Состояние",
     "health_status_healthy": "Нормально",
     "health_status_warning": "Предупреждение",
+    "health_status_unavailable": "Недоступно",
     "health_status_disabled": "Отключено",
     "download_button": "Скачать",
     "manual_refresh_button": "Обновить учётные данные OAuth",

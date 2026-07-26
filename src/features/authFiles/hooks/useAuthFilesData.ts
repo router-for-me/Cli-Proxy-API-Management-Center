@@ -10,7 +10,7 @@ import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
 import { downloadBlob } from '@/utils/download';
 import {
   getTypeLabel,
-  hasAuthFileStatusMessage,
+  isAuthFileProblem,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   supportsAuthFileManualRefresh,
@@ -323,7 +323,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
                 ) {
                   return false;
                 }
-                if (isProblemOnly && !hasAuthFileStatusMessage(file)) return false;
+                if (isProblemOnly && !isAuthFileProblem(file)) return false;
                 if (isDisabledOnly && file.disabled !== true) return false;
                 if (isEnabledOnly && file.disabled === true) return false;
                 return true;

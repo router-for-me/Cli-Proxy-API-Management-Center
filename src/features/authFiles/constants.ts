@@ -174,6 +174,8 @@ export const buildOAuthProviderOptions = (values: Iterable<unknown>): string[] =
   return [...OAUTH_PROVIDER_PRESETS, ...extraList];
 };
 
+const UNAVAILABLE_RUNTIME_STATUSES = new Set(['error', 'unavailable', 'failed']);
+
 export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
   const raw = file['status_message'] ?? file.statusMessage;
   if (typeof raw === 'string') return raw.trim();
@@ -181,8 +183,23 @@ export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
   return String(raw).trim();
 };
 
+export const getAuthFileRuntimeStatus = (file: AuthFileItem): string => {
+  const raw = file.status;
+  return typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+};
+
+/** True when the backend marks this credential unusable (cooldown / auth failure). */
+export const isAuthFileUnavailable = (file: AuthFileItem): boolean => {
+  if (file.unavailable === true) return true;
+  return UNAVAILABLE_RUNTIME_STATUSES.has(getAuthFileRuntimeStatus(file));
+};
+
 export const hasAuthFileStatusMessage = (file: AuthFileItem): boolean =>
   getAuthFileStatusMessage(file).length > 0;
+
+/** Problem filter: unavailable runtime state or any non-empty status message. */
+export const isAuthFileProblem = (file: AuthFileItem): boolean =>
+  isAuthFileUnavailable(file) || hasAuthFileStatusMessage(file);
 
 export const getTypeLabel = (t: TFunction, type: string): string => {
   const providerKey = normalizeProviderKey(type);
