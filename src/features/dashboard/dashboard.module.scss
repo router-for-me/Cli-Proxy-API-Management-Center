@@ -1,0 +1,860 @@
+@use '../../styles/mixins' as *;
+
+/*
+ * 可视化配色：与主题的语义色同源，但深色模式下重新取步阶。
+ * 主题自带的 #10b981 在深色卡面上亮度超出 OKLCH 0.48–0.67 区间，
+ * 且与失败色的色盲分离度不足，因此深色单独降一档。
+ * 三套主题均已通过对比度/色盲/亮度校验。
+ */
+.page {
+  --viz-success: #10b981;
+  --viz-failure: #c65746;
+
+  position: relative;
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(48px, 7vh, 88px);
+}
+
+:global(html[data-theme='dark']) .page {
+  --viz-success: #0fae78;
+  --viz-failure: #cf4b3a;
+}
+
+/* ---------- 环境层（ambient）---------- */
+
+.ambient {
+  position: absolute;
+  inset: -80px -40px auto;
+  height: 620px;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.glowOne,
+.glowTwo {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+}
+
+.glowOne {
+  top: -180px;
+  left: 4%;
+  width: 460px;
+  height: 460px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary-color) 22%, transparent),
+    transparent 68%
+  );
+  animation: driftOne 26s ease-in-out infinite alternate;
+}
+
+.glowTwo {
+  top: -120px;
+  right: 2%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--viz-success) 14%, transparent),
+    transparent 70%
+  );
+  animation: driftTwo 32s ease-in-out infinite alternate;
+}
+
+.gridWash {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--border-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border-color) 1px, transparent 1px);
+  background-size: 72px 72px;
+  opacity: 0.24;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 78%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glowOne,
+  .glowTwo {
+    animation: none;
+  }
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: clamp($spacing-lg, 4vw, 56px);
+  align-items: center;
+  padding-top: clamp($spacing-md, 3vh, 40px);
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.heroCopy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-md;
+  min-width: 0;
+}
+
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: 5px 12px 5px 10px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.dotConnected {
+  background: var(--viz-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--viz-success) 20%, transparent);
+}
+
+.dotConnecting {
+  background: var(--amber-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber-color) 20%, transparent);
+}
+
+.dotOffline {
+  background: var(--text-quaternary);
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.06;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+.heroSubtitle {
+  margin: 0;
+  max-width: 48ch;
+  font-size: clamp(15px, 1.4vw, 17px);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-top: $spacing-xs;
+}
+
+.primaryAction,
+.ghostAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 20px;
+  border-radius: $radius-full;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    transform $transition-fast,
+    background-color $transition-fast,
+    border-color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+.primaryAction {
+  background: var(--primary-color);
+  color: var(--primary-contrast);
+  border: 1px solid transparent;
+
+  &:hover {
+    background: var(--primary-hover);
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--primary-color) 30%, transparent);
+  }
+}
+
+.ghostAction {
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  background: transparent;
+
+  &:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-hover);
+  }
+}
+
+/* Hero 数字面板 —— 全页唯一的 hero figure */
+.heroPanel {
+  --glass-blur: 14px;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: clamp($spacing-lg, 2.5vw, 28px);
+  border-radius: $radius-lg;
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--bg-primary) 90%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 74%, transparent)
+  );
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  box-shadow: var(--shadow-lg);
+}
+
+.heroPanelLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* 大号独立数字使用比例字形（tabular-nums 会让 121 这类数字显得松散） */
+.heroFigure {
+  font-size: clamp(44px, 6vw, 64px);
+  line-height: 1.02;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.heroPanelMeta {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.heroSpark {
+  margin-top: $spacing-sm;
+  height: 40px;
+}
+
+.heroSplit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+  padding-top: $spacing-sm;
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.heroSplitItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  b {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.splitSwatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.splitSuccess {
+  background: var(--viz-success);
+}
+
+.splitFailure {
+  background: var(--viz-failure);
+}
+
+/* ---------- KPI 行 ---------- */
+
+.statsRow {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: $spacing-md;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 460px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.statTile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: $spacing-lg;
+  border-radius: $radius-lg;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  transition:
+    transform $transition-fast,
+    border-color $transition-fast;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-hover);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.statValue {
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.statMeter {
+  margin: 4px 0 2px;
+}
+
+.statHint {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-tertiary);
+}
+
+/* ---------- 通用区块 ---------- */
+
+.section {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: clamp(22px, 2.6vw, 30px);
+  line-height: 1.18;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+.sectionDescription {
+  margin: 0;
+  max-width: 64ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: clamp($spacing-lg, 2.4vw, 28px);
+  border-radius: $radius-lg;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+}
+
+.panelHead {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.panelLink {
+  align-self: flex-start;
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-active);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.emptyNote {
+  margin: 0;
+  padding: $spacing-lg 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* ---------- 供应商列表 ---------- */
+
+.fleetList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fleetRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(80px, 1fr) auto minmax(96px, 0.7fr);
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md 0;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  @media (max-width: 760px) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: $spacing-sm;
+  }
+}
+
+.fleetIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fleetName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  @include text-ellipsis;
+}
+
+.fleetMeta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.fleetSpark {
+  height: 28px;
+
+  @media (max-width: 760px) {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+}
+
+.fleetNumbers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.fleetTotal {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.fleetTotalLabel {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.fleetRate {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fleetRateValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.fleetMeter {
+  height: 5px;
+}
+
+/* ---------- 双栏细节区 ---------- */
+
+.detailGrid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-md;
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 分段条：相邻色块之间用 2px 表面色间隙分隔 */
+.healthBar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  margin-top: $spacing-xs;
+}
+
+.healthSegment {
+  display: block;
+  border-radius: 3px;
+  min-width: 4px;
+}
+
+.healthActive {
+  background: var(--viz-success);
+}
+
+.healthUnavailable {
+  background: var(--amber-color);
+}
+
+.healthDisabled {
+  background: var(--text-quaternary);
+}
+
+.healthLegend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  b {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.healthKey {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.typeBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding-top: $spacing-md;
+  border-top: 1px solid var(--border-color);
+}
+
+.typeBreakdownLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.typeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.typeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  b {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ---------- 运行参数表 ---------- */
+
+.specList {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.specRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.specLabel {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.specValue {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  @include text-ellipsis;
+}
+
+.specMono {
+  font-family: $font-mono;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.toggleList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.togglePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  b {
+    font-weight: 650;
+  }
+}
+
+.toggleOn {
+  border-color: color-mix(in srgb, var(--viz-success) 40%, transparent);
+  background: color-mix(in srgb, var(--viz-success) 10%, transparent);
+
+  b {
+    color: var(--success-badge-text);
+  }
+}
+
+.toggleOff {
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+
+  b {
+    color: var(--text-tertiary);
+  }
+}
+
+/* ---------- CTA ---------- */
+
+.ctaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $spacing-md;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ctaCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: $spacing-lg;
+  border-radius: $radius-lg;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 76%, transparent);
+  text-decoration: none;
+  overflow: hidden;
+  transition:
+    transform $transition-fast,
+    border-color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-hover);
+    box-shadow: 0 14px 30px rgb(0 0 0 / 0.12);
+
+    .ctaArrow {
+      transform: translateX(3px);
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover {
+      transform: none;
+
+      .ctaArrow {
+        transform: none;
+      }
+    }
+  }
+}
+
+.ctaIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: $spacing-xs;
+  border-radius: $radius-md;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  color: var(--primary-active);
+}
+
+.ctaTitle {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.ctaDescription {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.ctaArrow {
+  position: absolute;
+  top: $spacing-lg;
+  right: $spacing-lg;
+  font-size: 15px;
+  color: var(--text-tertiary);
+  opacity: 0.55;
+  transition:
+    transform $transition-fast,
+    opacity $transition-fast;
+}
+
+@keyframes driftOne {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(36px, 22px, 0) scale(1.08);
+  }
+}
+
+@keyframes driftTwo {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.04);
+  }
+  to {
+    transform: translate3d(-30px, 18px, 0) scale(1);
+  }
+}

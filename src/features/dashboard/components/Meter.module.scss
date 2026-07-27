@@ -1,0 +1,20 @@
+.track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: $radius-full;
+  overflow: hidden;
+  // 轨道 = 填充色的淡化步阶，状态在整条上都可读
+  background: color-mix(in srgb, var(--meter-fill) 16%, transparent);
+}
+
+.fill {
+  height: 100%;
+  border-radius: $radius-full;
+  background: var(--meter-fill);
+  transition: width $transition-normal;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}

@@ -1,5 +1,5 @@
 import { Navigate, useRoutes, type Location } from 'react-router-dom';
-import { DashboardPage } from '@/pages/DashboardPage';
+import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ProvidersWorkbenchPage } from '@/features/providers/ProvidersWorkbenchPage';
 import { AuthFilesPage } from '@/pages/AuthFilesPage';
 import { AuthFilesOAuthExcludedEditPage } from '@/pages/AuthFilesOAuthExcludedEditPage';

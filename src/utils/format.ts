@@ -37,6 +37,45 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / Math.pow(k, i)).toFixed(2)} ${units[i]}`;
 }
 
+const COMPACT_SUFFIXES = ['', 'K', 'M', 'B', 'T'] as const;
+
+/**
+ * 将较大的计数压缩为紧凑形式（1284 → 1.3K），用于统计卡片与图表标签
+ */
+export function formatCompactNumber(value: number): string {
+  if (!Number.isFinite(value)) return '0';
+
+  const sign = value < 0 ? '-' : '';
+  let scaled = Math.abs(value);
+  let tier = 0;
+
+  while (scaled >= 1000 && tier < COMPACT_SUFFIXES.length - 1) {
+    scaled /= 1000;
+    tier += 1;
+  }
+
+  // 三位有效数字以内保留一位小数；Number() 顺带去掉 "1.0K" 这类冗余尾巴
+  let rendered = tier === 0 ? Math.round(scaled) : Number(scaled.toFixed(scaled < 100 ? 1 : 0));
+
+  // 四舍五入后又进位到 1000（如 999,999 → 1000K）时再升一档
+  if (rendered >= 1000 && tier < COMPACT_SUFFIXES.length - 1) {
+    rendered = 1;
+    tier += 1;
+  }
+
+  return `${sign}${rendered}${COMPACT_SUFFIXES[tier]}`;
+}
+
+/**
+ * 格式化百分比，去掉无意义的 ".0" 尾巴
+ */
+export function formatPercent(value: number, fractionDigits = 1): string {
+  if (!Number.isFinite(value)) return '—';
+
+  const rendered = value.toFixed(fractionDigits);
+  return `${rendered.replace(/\.0+$/, '')}%`;
+}
+
 /**
  * 将 Unix 时间戳（秒/毫秒/微秒/纳秒）格式化为本地时间字符串
  */
