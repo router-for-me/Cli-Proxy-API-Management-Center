@@ -129,9 +129,15 @@
     "system_info": "運行與診斷資訊"
   },
   "dashboard": {
-    "hero_title": "代理叢集，盡在眼前",
-    "hero_subtitle": "即時吞吐、憑證健康與執行設定，全部直接取自管理 API。",
+    "hero_verdict_good": "運行平穩",
+    "hero_verdict_warning": "略有波動",
+    "hero_verdict_critical": "需要留意",
+    "hero_verdict_idle": "靜候流量",
+    "hero_verdict_offline": "等待連接",
+    "hero_verdict_connecting": "正在連接",
+    "hero_period": "。",
     "hero_requests_label": "已處理請求",
+    "hero_live": "即時",
     "hero_window_meta": "滾動視窗 {{window}} · 每桶 10 分鐘",
     "hero_spark_label": "最近 {{window}} 的請求量",
     "cta_manage_providers": "管理供應商",

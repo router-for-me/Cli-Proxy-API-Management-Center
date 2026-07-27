@@ -129,9 +129,15 @@
     "system_info": "Runtime & diagnostics"
   },
   "dashboard": {
-    "hero_title": "Your proxy fleet, fully in view",
-    "hero_subtitle": "Live throughput, credential health, and runtime configuration — read straight from the management API.",
+    "hero_verdict_good": "All systems steady",
+    "hero_verdict_warning": "Minor turbulence",
+    "hero_verdict_critical": "Needs attention",
+    "hero_verdict_idle": "Quiet for now",
+    "hero_verdict_offline": "Waiting to connect",
+    "hero_verdict_connecting": "Connecting",
+    "hero_period": ".",
     "hero_requests_label": "Requests handled",
+    "hero_live": "Live",
     "hero_window_meta": "Rolling {{window}} window · 10-minute buckets",
     "hero_spark_label": "Request volume over the last {{window}}",
     "cta_manage_providers": "Manage providers",

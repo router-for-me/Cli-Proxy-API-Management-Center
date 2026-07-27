@@ -13,14 +13,23 @@ import { useAuthStore } from '@/stores';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { formatCompactNumber, formatDateValue, formatPercent } from '@/utils/format';
 import { useDashboardOverview } from './hooks/useDashboardOverview';
+import { LiveWire } from './components/LiveWire';
 import { Meter } from './components/Meter';
 import { Sparkline } from './components/Sparkline';
 import { ThroughputChart } from './components/ThroughputChart';
 import { useCountUp, useRevealOnScroll } from './components/motion';
-import { providerLabel, splitWindowMinutes, toneForSuccessRate } from './utils';
+import { providerLabel, splitWindowMinutes, toneForSuccessRate, type MeterTone } from './utils';
 import styles from './dashboard.module.scss';
 
 const DASH = '—';
+
+/** KPI 卡左上角色签：有语义色调的卡用状态色，其余保持中性 */
+const TILE_ACCENTS: Record<MeterTone, string> = {
+  good: 'var(--viz-success)',
+  warning: 'var(--amber-color)',
+  critical: 'var(--viz-failure)',
+  idle: 'var(--text-quaternary)',
+};
 
 /** 大数字：六位以内用千分位，再往上压缩，避免撑破排版 */
 const formatHeadline = (value: number): string =>
@@ -69,15 +78,34 @@ export function DashboardPage() {
   const unknownProviderLabel = t('dashboard.provider_unknown');
   const successRateTone = toneForSuccessRate(traffic.successRate);
 
-  const statusText = serverVersion
-    ? `v${serverVersion.trim().replace(/^[vV]+/, '')}`
-    : t(
-        connectionStatus === 'connected'
-          ? 'common.connected'
-          : connectionStatus === 'connecting'
-            ? 'common.connecting'
-            : 'common.disconnected'
-      );
+  /** 标题是算出来的判词，不是写死的口号；句尾句号充当状态灯 */
+  const verdict = useMemo(() => {
+    if (!connected) {
+      return connectionStatus === 'connecting'
+        ? { key: 'hero_verdict_connecting', accent: 'var(--amber-color)' }
+        : { key: 'hero_verdict_offline', accent: 'var(--text-quaternary)' };
+    }
+    if (traffic.total === 0 || traffic.successRate === null) {
+      return { key: 'hero_verdict_idle', accent: 'var(--text-quaternary)' };
+    }
+    const keyByTone: Record<MeterTone, string> = {
+      good: 'hero_verdict_good',
+      warning: 'hero_verdict_warning',
+      critical: 'hero_verdict_critical',
+      idle: 'hero_verdict_idle',
+    };
+    return { key: keyByTone[successRateTone], accent: TILE_ACCENTS[successRateTone] };
+  }, [connected, connectionStatus, traffic.total, traffic.successRate, successRateTone]);
+
+  const connectionLabel = t(
+    connectionStatus === 'connected'
+      ? 'common.connected'
+      : connectionStatus === 'connecting'
+        ? 'common.connecting'
+        : 'common.disconnected'
+  );
+  const versionLabel = serverVersion ? `v${serverVersion.trim().replace(/^[vV]+/, '')}` : null;
+  const heroMetaLine = [versionLabel, connectionLabel].filter(Boolean).join(' · ');
 
   const statTiles = [
     {
@@ -189,29 +217,20 @@ export function DashboardPage() {
   return (
     <div className={styles.page}>
       <div className={styles.ambient} aria-hidden="true">
-        <span className={styles.glowOne} />
-        <span className={styles.glowTwo} />
+        <span className={styles.washTop} />
         <span className={styles.gridWash} />
       </div>
 
       {/* ---------- Hero ---------- */}
       <section className={styles.hero} ref={heroRef}>
         <div className={styles.heroCopy}>
-          <span className={styles.statusChip}>
-            <span
-              className={`${styles.statusDot} ${
-                connectionStatus === 'connected'
-                  ? styles.dotConnected
-                  : connectionStatus === 'connecting'
-                    ? styles.dotConnecting
-                    : styles.dotOffline
-              }`}
-              aria-hidden="true"
-            />
-            {statusText}
-          </span>
-          <h1 className={styles.heroTitle}>{t('dashboard.hero_title')}</h1>
-          <p className={styles.heroSubtitle}>{t('dashboard.hero_subtitle')}</p>
+          <h1 className={styles.heroTitle}>
+            {t(`dashboard.${verdict.key}`)}
+            <span className={styles.heroPeriod} style={{ color: verdict.accent }}>
+              {t('dashboard.hero_period')}
+            </span>
+          </h1>
+          <p className={styles.heroMeta}>{heroMetaLine}</p>
           <div className={styles.heroActions}>
             <Link to="/ai-providers" className={styles.primaryAction}>
               {t('dashboard.cta_manage_providers')}
@@ -223,18 +242,37 @@ export function DashboardPage() {
         </div>
 
         <div className={styles.heroPanel}>
-          <span className={styles.heroPanelLabel}>{t('dashboard.hero_requests_label')}</span>
+          <div className={styles.heroPanelTop}>
+            <span className={styles.heroPanelLabel}>{t('dashboard.hero_requests_label')}</span>
+            {connected && (
+              <span className={styles.liveBadge}>
+                <i className={styles.liveDot} aria-hidden="true" />
+                {t('dashboard.hero_live')}
+              </span>
+            )}
+          </div>
           <strong className={styles.heroFigure}>
             {connected ? formatHeadline(animatedTotal) : DASH}
           </strong>
           <span className={styles.heroPanelMeta}>
             {t('dashboard.hero_window_meta', { window: windowLabel })}
           </span>
-          <Sparkline
-            points={heroSparkPoints}
-            ariaLabel={t('dashboard.hero_spark_label', { window: windowLabel })}
-            className={styles.heroSpark}
-          />
+          {traffic.total > 0 && (
+            <div className={styles.ratioBar} aria-hidden="true">
+              {traffic.totalSuccess > 0 && (
+                <span
+                  className={`${styles.ratioSegment} ${styles.splitSuccess}`}
+                  style={{ flexGrow: traffic.totalSuccess }}
+                />
+              )}
+              {traffic.totalFailure > 0 && (
+                <span
+                  className={`${styles.ratioSegment} ${styles.splitFailure}`}
+                  style={{ flexGrow: traffic.totalFailure }}
+                />
+              )}
+            </div>
+          )}
           <div className={styles.heroSplit}>
             <span className={styles.heroSplitItem}>
               <i className={`${styles.splitSwatch} ${styles.splitSuccess}`} aria-hidden="true" />
@@ -248,12 +286,27 @@ export function DashboardPage() {
             </span>
           </div>
         </div>
+
+        <div className={styles.heroWire}>
+          <LiveWire
+            points={heroSparkPoints}
+            ariaLabel={t('dashboard.hero_spark_label', { window: windowLabel })}
+          />
+        </div>
       </section>
 
       {/* ---------- KPI ---------- */}
       <section className={styles.statsRow} ref={statsRef} aria-label={t('dashboard.stats_aria')}>
         {statTiles.map((tile) => (
-          <article key={tile.key} className={styles.statTile}>
+          <article
+            key={tile.key}
+            className={styles.statTile}
+            style={
+              {
+                '--tile-accent': tile.tone ? TILE_ACCENTS[tile.tone] : 'var(--border-hover)',
+              } as React.CSSProperties
+            }
+          >
             <span className={styles.statLabel}>{tile.label}</span>
             <strong className={styles.statValue}>{tile.value}</strong>
             {tile.meter !== null && tile.meter !== undefined && (
@@ -295,8 +348,11 @@ export function DashboardPage() {
             <p className={styles.emptyNote}>{t('dashboard.fleet_empty')}</p>
           ) : (
             <ul className={styles.fleetList}>
-              {providers.map((provider) => (
+              {providers.map((provider, index) => (
                 <li key={provider.id} className={styles.fleetRow}>
+                  <span className={styles.fleetRank} aria-hidden="true">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
                   <div className={styles.fleetIdentity}>
                     <span className={styles.fleetName}>
                       {providerLabel(provider.id, unknownProviderLabel)}

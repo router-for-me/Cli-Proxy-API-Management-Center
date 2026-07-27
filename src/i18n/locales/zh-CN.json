@@ -129,9 +129,15 @@
     "system_info": "运行与诊断信息"
   },
   "dashboard": {
-    "hero_title": "代理集群，尽在眼前",
-    "hero_subtitle": "实时吞吐、凭证健康与运行配置，全部直取管理 API。",
+    "hero_verdict_good": "运行平稳",
+    "hero_verdict_warning": "略有波动",
+    "hero_verdict_critical": "需要留意",
+    "hero_verdict_idle": "静候流量",
+    "hero_verdict_offline": "等待连接",
+    "hero_verdict_connecting": "正在连接",
+    "hero_period": "。",
     "hero_requests_label": "已处理请求",
+    "hero_live": "实时",
     "hero_window_meta": "滚动窗口 {{window}} · 每桶 10 分钟",
     "hero_spark_label": "最近 {{window}} 的请求量",
     "cta_manage_providers": "管理供应商",

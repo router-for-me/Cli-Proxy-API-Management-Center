@@ -16,7 +16,7 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: clamp(48px, 7vh, 88px);
+  gap: clamp(44px, 6.5vh, 76px);
 }
 
 :global(html[data-theme='dark']) .page {
@@ -35,37 +35,20 @@
   pointer-events: none;
 }
 
-.glowOne,
-.glowTwo {
+/* 环境层收敛为一道极淡的顶部绿色 wash：绿色只属于"活着的流量" */
+.washTop {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-}
-
-.glowOne {
-  top: -180px;
-  left: 4%;
-  width: 460px;
-  height: 460px;
+  top: -220px;
+  left: 50%;
+  width: min(920px, 92vw);
+  height: 520px;
+  transform: translateX(-50%);
   background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--primary-color) 22%, transparent),
-    transparent 68%
-  );
-  animation: driftOne 26s ease-in-out infinite alternate;
-}
-
-.glowTwo {
-  top: -120px;
-  right: 2%;
-  width: 380px;
-  height: 380px;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--viz-success) 14%, transparent),
+    ellipse at center,
+    color-mix(in srgb, var(--viz-success) 9%, transparent),
     transparent 70%
   );
-  animation: driftTwo 32s ease-in-out infinite alternate;
+  filter: blur(40px);
 }
 
 .gridWash {
@@ -80,13 +63,6 @@
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 78%);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .glowOne,
-  .glowTwo {
-    animation: none;
-  }
-}
-
 /* ---------- Hero ---------- */
 
 .hero {
@@ -97,13 +73,29 @@
   gap: clamp($spacing-lg, 4vw, 56px);
   align-items: center;
   padding-top: clamp($spacing-md, 3vh, 40px);
+  /* 底部留出脉搏线的呼吸空间 */
+  padding-bottom: clamp(64px, 11vh, 120px);
 
   @media (max-width: 900px) {
     grid-template-columns: minmax(0, 1fr);
+    padding-bottom: clamp(48px, 8vh, 72px);
   }
 }
 
+/* 签名元素：横贯 hero 底部的实时流量脉搏线 */
+.heroWire {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  height: clamp(88px, 15vh, 160px);
+  z-index: 0;
+  pointer-events: none;
+}
+
 .heroCopy {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -111,57 +103,29 @@
   min-width: 0;
 }
 
-.statusChip {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
-  padding: 5px 12px 5px 10px;
-  border-radius: $radius-full;
-  border: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-.statusDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex: none;
-}
-
-.dotConnected {
-  background: var(--viz-success);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--viz-success) 20%, transparent);
-}
-
-.dotConnecting {
-  background: var(--amber-color);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber-color) 20%, transparent);
-}
-
-.dotOffline {
-  background: var(--text-quaternary);
-}
-
+/* 判词标题：文案来自实时状态，短，所以敢放大 */
 .heroTitle {
   margin: 0;
-  font-size: clamp(34px, 5vw, 56px);
-  line-height: 1.06;
+  font-size: clamp(44px, 6.2vw, 80px);
+  line-height: 1.05;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   color: var(--text-primary);
   text-wrap: balance;
 }
 
-.heroSubtitle {
+/* 句号即状态灯，颜色由 TSX 按语义色注入 */
+.heroPeriod {
+  display: inline;
+}
+
+.heroMeta {
   margin: 0;
-  max-width: 48ch;
-  font-size: clamp(15px, 1.4vw, 17px);
-  line-height: 1.6;
+  font-family: $font-mono;
+  font-size: 13px;
+  letter-spacing: 0.02em;
   color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .heroActions {
@@ -200,38 +164,43 @@
   }
 }
 
+/* 墨色药丸：浅色主题下是深墨，深色主题自动反相为浅纸 */
 .primaryAction {
-  background: var(--primary-color);
-  color: var(--primary-contrast);
+  background: var(--text-primary);
+  color: var(--bg-secondary);
   border: 1px solid transparent;
 
   &:hover {
-    background: var(--primary-hover);
-    box-shadow: 0 10px 22px color-mix(in srgb, var(--primary-color) 30%, transparent);
+    background: color-mix(in srgb, var(--text-primary) 86%, var(--bg-secondary));
+    box-shadow: 0 12px 26px color-mix(in srgb, var(--text-primary) 22%, transparent);
   }
 }
 
+/* 次要动作降为安静的文字链接，避免双药丸并排 */
 .ghostAction {
-  border: 1px solid var(--border-primary);
-  color: var(--text-primary);
+  padding-left: $spacing-xs;
+  padding-right: $spacing-xs;
+  border: none;
+  color: var(--text-secondary);
   background: transparent;
 
   &:hover {
-    border-color: var(--border-hover);
-    background: var(--bg-hover);
+    color: var(--text-primary);
+    background: transparent;
   }
 }
 
-/* Hero 数字面板 —— 全页唯一的 hero figure */
+/* Hero 数字仪表卡 —— 悬浮在脉搏线之上的玻璃面板 */
 .heroPanel {
   --glass-blur: 14px;
 
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: $spacing-xs;
   padding: clamp($spacing-lg, 2.5vw, 28px);
-  border-radius: $radius-lg;
+  border-radius: 20px;
   border: 1px solid var(--glass-border);
   background: linear-gradient(
     145deg,
@@ -243,31 +212,79 @@
   box-shadow: var(--shadow-lg);
 }
 
+.heroPanelTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
 .heroPanelLabel {
+  font-family: $font-mono;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
 
-/* 大号独立数字使用比例字形（tabular-nums 会让 121 这类数字显得松散） */
-.heroFigure {
-  font-size: clamp(44px, 6vw, 64px);
-  line-height: 1.02;
+.liveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: $radius-full;
+  border: 1px solid color-mix(in srgb, var(--viz-success) 35%, transparent);
+  background: color-mix(in srgb, var(--viz-success) 8%, transparent);
+  font-family: $font-mono;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--success-badge-text);
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--viz-success);
+  animation: livePing 2s ease-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/* 遥测数字统一等宽：这是 CLI 代理，mono 是它的母语 */
+.heroFigure {
+  font-family: $font-mono;
+  font-size: clamp(42px, 5.6vw, 62px);
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .heroPanelMeta {
-  font-size: 13px;
+  font-family: $font-mono;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 
-.heroSpark {
+/* 成功/失败构成比例条 */
+.ratioBar {
+  display: flex;
+  gap: 2px;
+  height: 6px;
   margin-top: $spacing-sm;
-  height: 40px;
+}
+
+.ratioSegment {
+  display: block;
+  min-width: 4px;
+  border-radius: 3px;
 }
 
 .heroSplit {
@@ -286,6 +303,7 @@
   gap: 6px;
 
   b {
+    font-family: $font-mono;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
   }
@@ -329,16 +347,28 @@
   flex-direction: column;
   gap: 6px;
   padding: $spacing-lg;
-  border-radius: $radius-lg;
+  border-radius: 14px;
   border: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
   transition:
     transform $transition-fast,
-    border-color $transition-fast;
+    border-color $transition-fast,
+    box-shadow $transition-fast;
+
+  /* 左上角色签：语义色调由 --tile-accent 注入 */
+  &::before {
+    content: '';
+    width: 28px;
+    height: 3px;
+    margin-bottom: 2px;
+    border-radius: $radius-full;
+    background: var(--tile-accent, var(--border-hover));
+  }
 
   &:hover {
     transform: translateY(-2px);
     border-color: var(--border-hover);
+    box-shadow: var(--shadow-lg);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -357,11 +387,13 @@
 }
 
 .statValue {
-  font-size: 30px;
+  font-family: $font-mono;
+  font-size: 28px;
   line-height: 1.1;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .statMeter {
@@ -390,12 +422,24 @@
   gap: 6px;
 }
 
+/* 终端光标前缀是全页的结构记号 */
 .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: $font-mono;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-tertiary);
+
+  &::before {
+    content: '▍';
+    color: var(--viz-success);
+    font-size: 12px;
+    line-height: 1;
+  }
 }
 
 .sectionTitle {
@@ -421,7 +465,7 @@
   flex-direction: column;
   gap: $spacing-md;
   padding: clamp($spacing-lg, 2.4vw, 28px);
-  border-radius: $radius-lg;
+  border-radius: 16px;
   border: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
 }
@@ -473,7 +517,7 @@
 
 .fleetRow {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(80px, 1fr) auto minmax(96px, 0.7fr);
+  grid-template-columns: auto minmax(0, 1.3fr) minmax(80px, 1fr) auto minmax(96px, 0.7fr);
   align-items: center;
   gap: $spacing-md;
   padding: $spacing-md 0;
@@ -486,6 +530,19 @@
   @media (max-width: 760px) {
     grid-template-columns: minmax(0, 1fr) auto;
     row-gap: $spacing-sm;
+  }
+}
+
+/* 列表按流量排序，位次是真实信息 */
+.fleetRank {
+  font-family: $font-mono;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-quaternary);
+  font-variant-numeric: tabular-nums;
+
+  @media (max-width: 760px) {
+    display: none;
   }
 }
 
@@ -525,8 +582,9 @@
 }
 
 .fleetTotal {
-  font-size: 16px;
-  font-weight: 650;
+  font-family: $font-mono;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
@@ -543,7 +601,8 @@
 }
 
 .fleetRateValue {
-  font-size: 13px;
+  font-family: $font-mono;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
@@ -610,6 +669,7 @@
   }
 
   b {
+    font-family: $font-mono;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
   }
@@ -659,6 +719,7 @@
   color: var(--text-secondary);
 
   b {
+    font-family: $font-mono;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
   }
@@ -770,7 +831,7 @@
   flex-direction: column;
   gap: 6px;
   padding: $spacing-lg;
-  border-radius: $radius-lg;
+  border-radius: 14px;
   border: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--bg-primary) 76%, transparent);
   text-decoration: none;
@@ -813,8 +874,8 @@
   margin-bottom: $spacing-xs;
   border-radius: $radius-md;
   border: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
-  color: var(--primary-active);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-primary);
 }
 
 .ctaTitle {
@@ -841,20 +902,14 @@
     opacity $transition-fast;
 }
 
-@keyframes driftOne {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
+@keyframes livePing {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--viz-success) 40%, transparent);
   }
-  to {
-    transform: translate3d(36px, 22px, 0) scale(1.08);
+  70% {
+    box-shadow: 0 0 0 6px transparent;
   }
-}
-
-@keyframes driftTwo {
-  from {
-    transform: translate3d(0, 0, 0) scale(1.04);
-  }
-  to {
-    transform: translate3d(-30px, 18px, 0) scale(1);
+  100% {
+    box-shadow: 0 0 0 0 transparent;
   }
 }

@@ -1,4 +1,5 @@
 import { useId, useMemo } from 'react';
+import { buildSmoothLinePath } from './curve';
 import styles from './Sparkline.module.scss';
 
 const VIEW_WIDTH = 100;
@@ -38,11 +39,7 @@ export function Sparkline({ points, color, ariaLabel, className }: SparklineProp
       return { x, y };
     });
 
-    const line = coordinates
-      .map(
-        (point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)} ${point.y.toFixed(2)}`
-      )
-      .join(' ');
+    const line = buildSmoothLinePath(coordinates, TOP_PADDING, VIEW_HEIGHT);
 
     const first = coordinates[0];
     const last = coordinates[coordinates.length - 1];

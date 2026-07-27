@@ -128,9 +128,15 @@
     "system_info": "Состояние и диагностика"
   },
   "dashboard": {
-    "hero_title": "Ваш прокси — под полным контролем",
-    "hero_subtitle": "Живой трафик, состояние учётных данных и параметры запуска — напрямую из Management API.",
+    "hero_verdict_good": "Всё стабильно",
+    "hero_verdict_warning": "Небольшие сбои",
+    "hero_verdict_critical": "Требует внимания",
+    "hero_verdict_idle": "Пока тихо",
+    "hero_verdict_offline": "Ожидает подключения",
+    "hero_verdict_connecting": "Подключение",
+    "hero_period": ".",
     "hero_requests_label": "Обработано запросов",
+    "hero_live": "Live",
     "hero_window_meta": "Скользящее окно {{window}} · интервалы по 10 минут",
     "hero_spark_label": "Объём запросов за последние {{window}}",
     "cta_manage_providers": "Управлять провайдерами",

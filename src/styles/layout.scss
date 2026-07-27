@@ -19,7 +19,9 @@
   min-height: 100vh;
   height: 100vh;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-quinary, var(--bg-secondary)));
+  // 与 .page-transition__layer 的不透明填充保持同色：外壳一旦用渐变，
+  // main-content 的 padding 圈就会和内容层拼出一道 4~7 级色差的硬边，看着像每页都有边框。
+  background: var(--bg-secondary);
   color: var(--text-primary);
 
   &.sidebar-is-collapsed {
