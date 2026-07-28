@@ -1050,7 +1050,7 @@ const renderCodexItems = (
   return h(Fragment, null, ...nodes);
 };
 
-const buildClaudeQuotaWindows = (
+export const buildClaudeQuotaWindows = (
   payload: ClaudeUsagePayload,
   t: TFunction
 ): ClaudeQuotaWindow[] => {
@@ -1068,6 +1068,35 @@ const buildClaudeQuotaWindows = (
       labelKey,
       usedPercent,
       resetLabel,
+    });
+  }
+
+  // Per-model weekly limits (Fable, and potentially others) are reported in the
+  // `limits` array as `weekly_scoped` entries rather than as top-level keys. The
+  // legacy per-model keys above now come back null, so without this the rows are
+  // silently dropped — and Fable has no legacy key at all.
+  const renderedModels = new Set(
+    windows.map((existing) => existing.id.replace(/^seven-day-/, '').toLowerCase())
+  );
+
+  for (const limit of payload.limits ?? []) {
+    if (!limit || limit.kind !== 'weekly_scoped') continue;
+
+    const displayName = limit.scope?.model?.display_name?.trim();
+    if (!displayName) continue;
+
+    const slug = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!slug || renderedModels.has(slug)) continue;
+    renderedModels.add(slug);
+
+    windows.push({
+      id: `seven-day-${slug}`,
+      label: t('claude_quota.weekly_scoped', {
+        model: displayName,
+        defaultValue: `7-day ${displayName}`,
+      }),
+      usedPercent: normalizeNumberValue(limit.percent),
+      resetLabel: formatQuotaResetTime(limit.resets_at ?? undefined),
     });
   }
 

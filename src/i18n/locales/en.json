@@ -355,6 +355,7 @@
     "five_hour": "5-hour limit",
     "seven_day": "7-day limit",
     "seven_day_oauth_apps": "7-day OAuth apps",
+    "weekly_scoped": "7-day {{model}}",
     "seven_day_opus": "7-day Opus",
     "seven_day_sonnet": "7-day Sonnet",
     "seven_day_cowork": "7-day Cowork",

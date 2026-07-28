@@ -93,6 +93,25 @@ export interface ClaudeUsageWindow {
   resets_at: string;
 }
 
+/**
+ * Entry in the `limits` array returned by /api/oauth/usage.
+ *
+ * Per-model weekly quota is reported here (`kind: 'weekly_scoped'`, with the tier
+ * named by `scope.model.display_name`) rather than via dedicated top-level keys.
+ * Newer tiers such as Fable have no top-level key at all, so this array is the
+ * only place their utilization is exposed.
+ */
+export interface ClaudeUsageScopedLimit {
+  kind?: string | null;
+  group?: string | null;
+  percent?: number | null;
+  resets_at?: string | null;
+  scope?: {
+    model?: { id?: string | null; display_name?: string | null } | null;
+    surface?: string | null;
+  } | null;
+}
+
 export interface ClaudeExtraUsage {
   is_enabled: boolean;
   monthly_limit: number;
@@ -108,6 +127,7 @@ export interface ClaudeUsagePayload {
   seven_day_sonnet?: ClaudeUsageWindow | null;
   seven_day_cowork?: ClaudeUsageWindow | null;
   iguana_necktie?: ClaudeUsageWindow | null;
+  limits?: ClaudeUsageScopedLimit[] | null;
   extra_usage?: ClaudeExtraUsage | null;
 }
 

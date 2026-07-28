@@ -348,6 +348,7 @@
     "five_hour": "Лимит на 5 часов",
     "seven_day": "Лимит на 7 дней",
     "seven_day_oauth_apps": "7 дней OAuth приложения",
+    "weekly_scoped": "7 дней {{model}}",
     "seven_day_opus": "7 дней Opus",
     "seven_day_sonnet": "7 дней Sonnet",
     "seven_day_cowork": "7 дней Cowork",
