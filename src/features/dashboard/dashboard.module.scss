@@ -34,29 +34,36 @@
 
 /* ---------- 环境层（ambient）---------- */
 
+/*
+ * 页面被 .page-transition（overflow: hidden）裁切，环境层绝不能伸出页面顶端，
+ * 否则会在容器上缘被硬切出一条分界线。因此这里不做越界定位：
+ * 强度用 mask 从顶端 0 平滑升起，任何祖先在哪裁切都只会切到零强度区。
+ */
 .ambient {
   position: absolute;
-  inset: -80px -40px auto;
-  height: 620px;
+  inset: 0 -40px auto;
+  height: 560px;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
 }
 
-/* 环境层收敛为一道极淡的顶部绿色 wash：绿色只属于"活着的流量" */
+/* 环境层收敛为一道极淡的顶部绿色 wash：绿色只属于"活着的流量"。
+ * radial-gradient 本身就是连续的，不需要 blur（blur 的溢出反而会被裁出硬边）。 */
 .washTop {
   position: absolute;
-  top: -220px;
+  top: 0;
   left: 50%;
-  width: min(920px, 92vw);
-  height: 520px;
+  width: min(960px, 96vw);
+  height: 480px;
   transform: translateX(-50%);
   background: radial-gradient(
-    ellipse at center,
-    color-mix(in srgb, var(--viz-success) 9%, transparent),
+    ellipse 75% 70% at 50% 18%,
+    color-mix(in srgb, var(--viz-success) 10%, transparent),
     transparent 70%
   );
-  filter: blur(40px);
+  mask-image: linear-gradient(to bottom, transparent, #000 26%, #000 62%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 26%, #000 62%, transparent);
 }
 
 .gridWash {
@@ -67,8 +74,15 @@
     linear-gradient(to bottom, var(--border-color) 1px, transparent 1px);
   background-size: 72px 72px;
   opacity: 0.24;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 78%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 78%);
+  /* 同样从顶端 0 淡入（intersect 取两层交集），避免网格在裁切线处满强度起步 */
+  mask-image:
+    linear-gradient(to bottom, transparent, #000 48px),
+    radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 78%);
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent, #000 48px),
+    radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 78%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
 }
 
 /* ---------- Hero ---------- */
