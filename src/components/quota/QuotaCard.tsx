@@ -3,7 +3,7 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import type { ReactElement, ReactNode } from 'react';
+import type { CSSProperties, ReactElement, ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
@@ -13,6 +13,106 @@ import { QuotaProgressBar, type QuotaProgressBarProps } from './QuotaProgressBar
 import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaStatus = 'idle' | 'loading' | 'success' | 'error';
+
+/**
+ * Geometric provider marks. Shape distinguishes providers as well as colour, so
+ * identity survives at 18px and doesn't rely on hue alone.
+ */
+const PROVIDER_MARK: Record<string, ReactElement> = {
+  claude: (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+    >
+      <path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4" />
+    </svg>
+  ),
+  antigravity: (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinejoin="round"
+    >
+      <path d="M12 3l8 15H4z" />
+    </svg>
+  ),
+  codex: (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinejoin="round"
+    >
+      <path d="M12 2.8 21.2 12 12 21.2 2.8 12z" />
+    </svg>
+  ),
+  kimi: (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  xai: (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+    >
+      <path d="M5 5l14 14M19 5L5 19" />
+    </svg>
+  ),
+};
+
+const FALLBACK_MARK: ReactElement = (
+  <svg
+    width="11"
+    height="11"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+  >
+    <circle cx="12" cy="12" r="8" />
+  </svg>
+);
+
+/** `#rrggbb` / `#rgb` -> `"r, g, b"` for use inside rgba(). Null when unparseable. */
+function hexToRgbTriple(hex: string): string | null {
+  const value = hex.trim().replace(/^#/, '');
+  const full =
+    value.length === 3
+      ? value
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : value;
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return null;
+  const int = parseInt(full, 16);
+  return `${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}`;
+}
 
 export interface QuotaStatusState {
   status: QuotaStatus;
@@ -81,71 +181,91 @@ export function QuotaCard<TState extends QuotaStatusState>({
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
 
+  // Prefer the human-facing label the API already returns (account email / auth
+  // label); fall back to the filename so the title is never empty.
+  const title = item.label?.trim() || item.email?.trim() || item.name;
+  const showFileName = title !== item.name;
+
+  // Drive the card's provider variables from the existing TYPE_COLORS source of
+  // truth rather than duplicating hexes in SCSS — this also covers providers the
+  // stylesheet doesn't enumerate (qwen, gemini, iflow, vertex, …).
+  const accentRgb = hexToRgbTriple(typeColor.text);
+  const providerVars = {
+    '--provider-accent': typeColor.text,
+    '--provider-chip-bg': typeColor.bg,
+    ...(accentRgb ? { '--provider-rgb': accentRgb } : {}),
+  } as CSSProperties;
+
   return (
-    <div className={`${styles.fileCard} ${cardClassName}`}>
-      <div className={styles.cardHeader}>
-        <span
-          className={styles.typeBadge}
-          style={{
-            backgroundColor: typeColor.bg,
-            color: typeColor.text,
-            ...(typeColor.border ? { border: typeColor.border } : {}),
-          }}
-        >
-          {getTypeLabel(displayType)}
-        </span>
-        <span className={styles.fileName}>{item.name}</span>
+    <div className={`${styles.fileCard} ${cardClassName}`} style={providerVars}>
+      <div className={styles.cardStrip}>
+        <span className={styles.providerMark}>{PROVIDER_MARK[displayType] ?? FALLBACK_MARK}</span>
+        <span className={styles.providerName}>{getTypeLabel(displayType)}</span>
+        <span className={styles.stripSpacer} />
       </div>
 
-      <div className={styles.quotaSection}>
-        {quotaLoading ? (
-          <div className={styles.quotaMessage}>{t(`${i18nPrefix}.loading`)}</div>
-        ) : quotaStatus === 'idle' ? (
-          onRefresh ? (
-            <button
-              type="button"
-              className={`${styles.quotaMessage} ${styles.quotaMessageAction}`}
-              onClick={onRefresh}
-              disabled={!canRefresh}
-            >
-              {t(idleMessageKey)}
-            </button>
-          ) : (
-            <div className={styles.quotaMessage}>{t(idleMessageKey)}</div>
-          )
-        ) : quotaStatus === 'error' ? (
-          <div className={styles.quotaError}>
-            {t(`${i18nPrefix}.load_failed`, {
-              message: quotaErrorMessage,
-            })}
-          </div>
-        ) : quota ? (
-          renderQuotaItems(quota, t, { styles, QuotaProgressBar: BoundQuotaProgressBar })
-        ) : (
-          <div className={styles.quotaMessage}>{t(idleMessageKey)}</div>
-        )}
-      </div>
-
-      {(resetQuotaAction || (onRefresh && quotaStatus !== 'idle')) && (
-        <div className={styles.quotaCardActions}>
-          {resetQuotaAction}
-          {onRefresh && quotaStatus !== 'idle' && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className={styles.quotaRefreshButton}
-              onClick={onRefresh}
-              disabled={!canRefresh || quotaLoading}
-              loading={quotaLoading}
-              title={t('auth_files.quota_refresh_hint')}
-            >
-              {!quotaLoading && <IconRefreshCw size={14} />}
-              {t('auth_files.quota_refresh_single')}
-            </Button>
+      <div className={styles.cardBody}>
+        <div className={styles.cardHeader}>
+          <span className={styles.cardTitle} title={title}>
+            {title}
+          </span>
+          {showFileName && (
+            <span className={styles.fileName} title={item.name}>
+              {item.name}
+            </span>
           )}
         </div>
-      )}
+
+        <div className={styles.quotaSection}>
+          {quotaLoading ? (
+            <div className={styles.quotaMessage}>{t(`${i18nPrefix}.loading`)}</div>
+          ) : quotaStatus === 'idle' ? (
+            onRefresh ? (
+              <button
+                type="button"
+                className={`${styles.quotaMessage} ${styles.quotaMessageAction}`}
+                onClick={onRefresh}
+                disabled={!canRefresh}
+              >
+                {t(idleMessageKey)}
+              </button>
+            ) : (
+              <div className={styles.quotaMessage}>{t(idleMessageKey)}</div>
+            )
+          ) : quotaStatus === 'error' ? (
+            <div className={styles.quotaError}>
+              {t(`${i18nPrefix}.load_failed`, {
+                message: quotaErrorMessage,
+              })}
+            </div>
+          ) : quota ? (
+            renderQuotaItems(quota, t, { styles, QuotaProgressBar: BoundQuotaProgressBar })
+          ) : (
+            <div className={styles.quotaMessage}>{t(idleMessageKey)}</div>
+          )}
+        </div>
+
+        {(resetQuotaAction || (onRefresh && quotaStatus !== 'idle')) && (
+          <div className={styles.quotaCardActions}>
+            {resetQuotaAction}
+            {onRefresh && quotaStatus !== 'idle' && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className={styles.quotaRefreshButton}
+                onClick={onRefresh}
+                disabled={!canRefresh || quotaLoading}
+                loading={quotaLoading}
+                title={t('auth_files.quota_refresh_hint')}
+              >
+                {!quotaLoading && <IconRefreshCw size={14} />}
+                {t('auth_files.quota_refresh_single')}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

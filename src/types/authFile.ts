@@ -23,6 +23,10 @@ export interface AuthFileItem {
   name: string;
   type?: AuthFileType | string;
   provider?: string;
+  /** Human-facing label returned by the management API (usually the account email). */
+  label?: string;
+  /** Account email, when the provider exposes one. */
+  email?: string;
   size?: number;
   authIndex?: string | number | null;
   runtimeOnly?: boolean | string;

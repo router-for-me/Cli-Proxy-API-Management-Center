@@ -216,25 +216,86 @@
   }
 }
 
-// 卡片渐变背景 — 基于 TYPE_COLORS light.bg 转 rgba
+// Per-provider identity.
+//   --provider-accent   strip text, mark glyph, top edge
+//   --provider-chip-bg  mark chip background
+//   --provider-rgb      accent as an rgb triple, for low-alpha strip tints
+//   --provider-grad     original card-gradient colour (TYPE_COLORS light.bg)
+// The gradient moves from the whole card onto .cardBody at half its original
+// alpha, so it begins beneath the strip and stops dulling the limit rows.
 .claudeCard {
-  background-image: linear-gradient(180deg, rgba(251, 236, 228, 0.18), rgba(251, 236, 228, 0));
+  --provider-accent: #e8a882;
+  --provider-chip-bg: #5e2c14;
+  --provider-rgb: 232, 168, 130;
+  --provider-grad: 251, 236, 228;
+
+  .cardBody {
+    background-image: linear-gradient(
+      180deg,
+      rgba(var(--provider-grad), 0.09),
+      rgba(var(--provider-grad), 0)
+    );
+  }
 }
 
 .antigravityCard {
-  background-image: linear-gradient(180deg, rgba(224, 247, 250, 0.12), rgba(224, 247, 250, 0));
+  --provider-accent: #80deea;
+  --provider-chip-bg: #004d40;
+  --provider-rgb: 128, 222, 234;
+  --provider-grad: 224, 247, 250;
+
+  .cardBody {
+    background-image: linear-gradient(
+      180deg,
+      rgba(var(--provider-grad), 0.06),
+      rgba(var(--provider-grad), 0)
+    );
+  }
 }
 
 .codexCard {
-  background-image: linear-gradient(180deg, rgba(234, 231, 255, 0.18), rgba(234, 231, 255, 0));
+  --provider-accent: #b5b0ff;
+  --provider-chip-bg: #262395;
+  --provider-rgb: 181, 176, 255;
+  --provider-grad: 234, 231, 255;
+
+  .cardBody {
+    background-image: linear-gradient(
+      180deg,
+      rgba(var(--provider-grad), 0.09),
+      rgba(var(--provider-grad), 0)
+    );
+  }
 }
 
 .kimiCard {
-  background-image: linear-gradient(180deg, rgba(220, 232, 255, 0.2), rgba(220, 232, 255, 0));
+  --provider-accent: #70b5ff;
+  --provider-chip-bg: #003880;
+  --provider-rgb: 112, 181, 255;
+  --provider-grad: 220, 232, 255;
+
+  .cardBody {
+    background-image: linear-gradient(
+      180deg,
+      rgba(var(--provider-grad), 0.1),
+      rgba(var(--provider-grad), 0)
+    );
+  }
 }
 
 .xaiCard {
-  background-image: linear-gradient(180deg, rgba(243, 244, 246, 0.22), rgba(243, 244, 246, 0));
+  --provider-accent: #f9fafb;
+  --provider-chip-bg: #111827;
+  --provider-rgb: 249, 250, 251;
+  --provider-grad: 243, 244, 246;
+
+  .cardBody {
+    background-image: linear-gradient(
+      180deg,
+      rgba(var(--provider-grad), 0.11),
+      rgba(var(--provider-grad), 0)
+    );
+  }
 }
 
 .quotaSection {
@@ -962,30 +1023,87 @@
 }
 
 .fileCard {
+  position: relative;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
-  padding: $spacing-md;
+  padding: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
   transition:
-    transform $transition-fast,
     box-shadow $transition-fast,
     border-color $transition-fast;
 
   &:hover {
-    transform: translateY(-2px);
     box-shadow: $shadow-md;
-    border-color: rgba(37, 99, 235, 0.2);
+    border-color: var(--border-hover);
   }
+
+  // full-strength accent along the top edge; --provider-accent is set per
+  // provider below, so a card is identifiable before any text is read
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: var(--provider-accent, var(--border-primary));
+    z-index: 2;
+  }
+}
+
+// Inset meta strip: provider identity lives here rather than competing with the
+// credential name on the title line.
+.cardStrip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px $spacing-md 8px;
+  background: rgba(var(--provider-rgb, 139, 134, 128), 0.09);
+  border-bottom: 1px solid rgba(var(--provider-rgb, 139, 134, 128), 0.18);
+}
+
+.providerMark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--provider-chip-bg, var(--bg-tertiary));
+  color: var(--provider-accent, var(--text-secondary));
+
+  svg {
+    display: block;
+  }
+}
+
+.providerName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--provider-accent, var(--text-secondary));
+}
+
+.stripSpacer {
+  flex: 1;
+  min-width: 0;
+}
+
+// Body carries the original card gradient at half strength: the card still
+// reads tinted, but the limit rows sit on a darker, higher-contrast surface.
+.cardBody {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: 12px $spacing-md $spacing-md;
 }
 
 .cardHeader {
   display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  min-height: 28px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .typeBadge {
@@ -997,11 +1115,25 @@
   flex-shrink: 0;
 }
 
-.fileName {
-  font-size: 14px;
-  font-weight: 600;
+// Human-facing label (account email / auth label) is now the title…
+.cardTitle {
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
   color: var(--text-primary);
-  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// …and the auth filename drops to a monospace subtitle.
+.fileName {
+  font-family: $font-mono;
+  font-size: 11px;
+  color: var(--text-quaternary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   line-height: 1.4;
 }
 
