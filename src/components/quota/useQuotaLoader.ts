@@ -10,7 +10,7 @@ import {
   commitIfQuotaCacheCurrent,
   useQuotaStore,
 } from '@/stores';
-import { getStatusFromError } from '@/utils/quota';
+import { getStatusFromError, mapWithConcurrency } from '@/utils/quota';
 import type { QuotaConfig } from './quotaConfigs';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
@@ -54,8 +54,10 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
           return nextState;
         });
 
-        const results = await Promise.all(
-          targets.map(async (file): Promise<LoadQuotaResult<TData>> => {
+        // Bounded fan-out through the board-wide gate — see concurrency.ts.
+        const results = await mapWithConcurrency(
+          targets,
+          async (file): Promise<LoadQuotaResult<TData>> => {
             try {
               const data = await config.fetchQuota(file, t);
               return { name: file.name, status: 'success', data };
@@ -64,7 +66,7 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
               const errorStatus = getStatusFromError(err);
               return { name: file.name, status: 'error', error: message, errorStatus };
             }
-          })
+          }
         );
 
         if (requestId !== requestIdRef.current) return;

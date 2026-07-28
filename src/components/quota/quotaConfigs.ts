@@ -149,7 +149,6 @@ export interface QuotaConfig<TState, TData> {
   buildSuccessState: (data: TData) => TState;
   buildErrorState: (message: string, status?: number) => TState;
   cardClassName: string;
-  gridClassName: string;
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
 }
 
@@ -1338,7 +1337,6 @@ export const CLAUDE_CONFIG: QuotaConfig<
     errorStatus: status,
   }),
   cardClassName: styles.claudeCard,
-  gridClassName: styles.claudeGrid,
   renderQuotaItems: renderClaudeItems,
 };
 
@@ -1370,7 +1368,6 @@ export const ANTIGRAVITY_CONFIG: QuotaConfig<AntigravityQuotaState, AntigravityQ
     errorStatus: status,
   }),
   cardClassName: styles.antigravityCard,
-  gridClassName: styles.antigravityGrid,
   renderQuotaItems: renderAntigravityItems,
 };
 
@@ -1412,7 +1409,6 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> = {
     errorStatus: status,
   }),
   cardClassName: styles.codexCard,
-  gridClassName: styles.codexGrid,
   renderQuotaItems: renderCodexItems,
 };
 
@@ -1904,7 +1900,6 @@ export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaRow[]> = {
     errorStatus: status,
   }),
   cardClassName: styles.kimiCard,
-  gridClassName: styles.kimiGrid,
   renderQuotaItems: renderKimiItems,
 };
 
@@ -1924,6 +1919,5 @@ export const XAI_CONFIG: QuotaConfig<XaiQuotaState, XaiBillingSummary> = {
     errorStatus: status,
   }),
   cardClassName: styles.xaiCard,
-  gridClassName: styles.xaiGrid,
   renderQuotaItems: renderXaiItems,
 };

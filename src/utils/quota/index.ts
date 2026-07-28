@@ -2,6 +2,7 @@
  * Quota utility functions barrel export.
  */
 
+export * from './concurrency';
 export * from './constants';
 export * from './errors';
 export * from './parsers';

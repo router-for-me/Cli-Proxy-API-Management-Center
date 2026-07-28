@@ -2,6 +2,7 @@
  * Generic quota card component.
  */
 
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CSSProperties, ReactElement, ReactNode } from 'react';
 import type { TFunction } from 'i18next';
@@ -145,7 +146,7 @@ interface QuotaCardProps<TState extends QuotaStatusState> {
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
 }
 
-export function QuotaCard<TState extends QuotaStatusState>({
+function QuotaCardImpl<TState extends QuotaStatusState>({
   item,
   quota,
   resolvedTheme,
@@ -269,3 +270,13 @@ export function QuotaCard<TState extends QuotaStatusState>({
     </div>
   );
 }
+
+/**
+ * Memoized: the flat board subscribes to all five store slices in one place, so
+ * without this a single credential's refresh re-renders every card on the page.
+ *
+ * `memo` erases the generic, so the cast restores the call signature. The
+ * default shallow comparison is correct here — every prop is either a stable
+ * config field, a store-owned state object, or a callback the page memoizes.
+ */
+export const QuotaCard = memo(QuotaCardImpl) as typeof QuotaCardImpl;

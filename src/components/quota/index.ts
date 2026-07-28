@@ -2,9 +2,11 @@
  * Quota components barrel export.
  */
 
-export { QuotaSection } from './QuotaSection';
 export { QuotaCard } from './QuotaCard';
 export { QuotaDensityPicker } from './QuotaDensityPicker';
+export { QuotaFilterChips } from './QuotaFilterChips';
+export { useQuotaBoard, QUOTA_PROVIDER_ORDER } from './useQuotaBoard';
+export type { QuotaBoard, QuotaBoardEntry } from './useQuotaBoard';
 export { QuotaSummaryTiles } from './QuotaSummaryTiles';
 export { summarizeProvider, worstRemainingFor, AT_RISK_THRESHOLD } from './quotaSummary';
 export type { QuotaProviderKey, QuotaProviderSummary } from './quotaSummary';

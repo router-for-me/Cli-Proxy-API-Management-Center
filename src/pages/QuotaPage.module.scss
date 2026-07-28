@@ -110,13 +110,17 @@
   align-items: center;
 }
 
-.antigravityGrid,
-.claudeGrid,
-.codexGrid,
-.kimiGrid,
-.xaiGrid {
+// One continuous grid for every credential, regardless of provider. There is
+// deliberately no per-provider grid: a provider-scoped grid needs a heading to
+// explain it, and a full-width heading row is exactly the banding this layout
+// exists to remove.
+//
+// `align-items: start` keeps a tall card (Antigravity carries two model groups)
+// from stretching its whole row.
+.boardGrid {
   display: grid;
   gap: $spacing-md;
+  align-items: start;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
 
   @include mobile {
@@ -1311,12 +1315,14 @@
 // Density picker drives every provider grid through one custom property, so the
 // existing ResizeObserver column measurement still reports the truth.
 .densityScope {
-  .antigravityGrid,
-  .claudeGrid,
-  .codexGrid,
-  .kimiGrid,
-  .xaiGrid {
+  .boardGrid {
     grid-template-columns: repeat(var(--quota-columns, 4), minmax(0, 1fr));
+
+    // Below the breakpoint the explicit column count would force cards
+    // narrower than their content; fall back to intrinsic sizing.
+    @media (max-width: 1040px) {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
 
     @include mobile {
       grid-template-columns: 1fr;
@@ -1329,4 +1335,50 @@
   align-items: center;
   gap: $spacing-sm;
   flex-wrap: wrap;
+}
+
+// Provider filters. These carry what the old section headings carried — which
+// provider, how many — without cutting the grid into bands.
+.filterChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  align-items: center;
+  min-width: 0;
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+  }
+
+  &[aria-pressed='true'] {
+    background: var(--bg-tertiary);
+    border-color: var(--provider-accent, var(--border-hover));
+    color: var(--text-primary);
+  }
+}
+
+// Provider identity at chip scale: a 6px dot is too small for a glyph, so the
+// accent colour carries it. Count badge and label do the rest.
+.filterChipDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--provider-accent, var(--text-quaternary));
 }

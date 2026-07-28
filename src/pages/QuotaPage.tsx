@@ -1,57 +1,45 @@
 /**
- * Quota management page - coordinates the provider quota sections.
+ * Quota management page.
+ *
+ * The page owns one continuous grid of credential cards. It deliberately does
+ * NOT wrap providers in sections: a section emits a full-width header row and a
+ * full-width pagination row, and those spanning rows *are* the banding that the
+ * flat layout exists to remove. Filtering moved to chips, and the per-section
+ * refresh/view controls collapsed into a single board control row.
+ *
+ * Cards are still drawn by each provider's own `renderQuotaItems` over raw
+ * provider state — nothing about the five data shapes is normalized. See
+ * useQuotaBoard for the per-file dispatch.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { IconRefreshCw } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
+import { useAuthStore, useThemeStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
 import {
-  QuotaSection,
-  QuotaSummaryTiles,
+  QuotaCard,
   QuotaDensityPicker,
+  QuotaFilterChips,
+  QuotaSummaryTiles,
+  QUOTA_PROVIDER_ORDER,
   readStoredDensity,
   storeDensity,
   summarizeProvider,
-  ANTIGRAVITY_CONFIG,
-  CLAUDE_CONFIG,
-  CODEX_CONFIG,
-  KIMI_CONFIG,
-  XAI_CONFIG,
+  useQuotaBoard,
 } from '@/components/quota';
-import type { QuotaDensity, QuotaProviderKey } from '@/components/quota';
+import type { QuotaBoardEntry, QuotaDensity, QuotaProviderKey } from '@/components/quota';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import styles from './QuotaPage.module.scss';
-
-/**
- * Section order preserved from before. Each entry keeps its own QuotaSection
- * instance — the per-provider fetch loop, store slice and (destructive) pruning
- * effect are deliberately untouched; only *which* sections render is filtered.
- *
- * Declared at module scope so the config identities stay stable: they sit in
- * QuotaSection's memo/effect dependency lists, and fresh identities each render
- * would re-run the pruning effect.
- */
-const PROVIDERS: { key: QuotaProviderKey; filterFn: (file: AuthFileItem) => boolean }[] = [
-  { key: 'claude', filterFn: CLAUDE_CONFIG.filterFn },
-  { key: 'antigravity', filterFn: ANTIGRAVITY_CONFIG.filterFn },
-  { key: 'codex', filterFn: CODEX_CONFIG.filterFn },
-  { key: 'xai', filterFn: XAI_CONFIG.filterFn },
-  { key: 'kimi', filterFn: KIMI_CONFIG.filterFn },
-];
 
 export function QuotaPage() {
   const { t } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
-
-  const claudeQuota = useQuotaStore((state) => state.claudeQuota);
-  const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
-  const codexQuota = useQuotaStore((state) => state.codexQuota);
-  const kimiQuota = useQuotaStore((state) => state.kimiQuota);
-  const xaiQuota = useQuotaStore((state) => state.xaiQuota);
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,29 +69,27 @@ export function QuotaPage() {
     loadFiles();
   }, [loadFiles]);
 
+  const board = useQuotaBoard({ files, filesLoading: loading, disabled: disableControls });
+  const { entries, filesByProvider, refreshing, refreshAll, refreshFile, resetFile, resettingName } =
+    board;
+
+  /* Auto-load quota once the credential list arrives. Without this the board
+   * renders a wall of "not loaded" cards and empty tiles, which reads as broken.
+   * Fetching is bounded by the shared gate in utils/quota/concurrency, so this
+   * is 4 requests in flight regardless of how many credentials exist. */
+  const autoLoadedRef = useRef(false);
+  useEffect(() => {
+    if (autoLoadedRef.current) return;
+    if (loading || disableControls) return;
+    if (entries.length === 0) return;
+    autoLoadedRef.current = true;
+    refreshAll();
+  }, [loading, disableControls, entries.length, refreshAll]);
+
   const handleDensityChange = useCallback((value: QuotaDensity) => {
     setDensity(value);
     storeDensity(value);
   }, []);
-
-  // Read-only view over the slices the sections already populate — no fetching,
-  // no extra requests, no change to concurrency.
-  const summaries = useMemo(() => {
-    const slices: Record<QuotaProviderKey, Record<string, { status?: string }>> = {
-      claude: claudeQuota,
-      antigravity: antigravityQuota,
-      codex: codexQuota,
-      kimi: kimiQuota,
-      xai: xaiQuota,
-    };
-    return PROVIDERS.map(({ key, filterFn }) =>
-      summarizeProvider(
-        key,
-        files.filter((file) => filterFn(file)).map((file) => file.name),
-        slices[key]
-      )
-    );
-  }, [files, claudeQuota, antigravityQuota, codexQuota, kimiQuota, xaiQuota]);
 
   const labelFor = useCallback(
     (provider: QuotaProviderKey) => {
@@ -115,11 +101,33 @@ export function QuotaPage() {
     [t]
   );
 
-  const shows = useCallback(
-    (provider: QuotaProviderKey) => activeProvider === 'all' || activeProvider === provider,
-    [activeProvider]
+  const summaries = useMemo(
+    () =>
+      QUOTA_PROVIDER_ORDER.map((provider) =>
+        summarizeProvider(
+          provider,
+          filesByProvider[provider].map((file) => file.name),
+          entriesSliceFor(entries, provider)
+        )
+      ),
+    [filesByProvider, entries]
   );
-  const sectionProps = { files, loading, disabled: disableControls };
+
+  const chipProviders = useMemo(
+    () =>
+      QUOTA_PROVIDER_ORDER.filter((provider) => filesByProvider[provider].length > 0).map(
+        (provider) => ({ key: provider, count: filesByProvider[provider].length })
+      ),
+    [filesByProvider]
+  );
+
+  const visibleEntries = useMemo(
+    () =>
+      activeProvider === 'all'
+        ? entries
+        : entries.filter((entry) => entry.provider === activeProvider),
+    [entries, activeProvider]
+  );
 
   return (
     <div
@@ -142,15 +150,130 @@ export function QuotaPage() {
       />
 
       <div className={styles.boardControls}>
+        <QuotaFilterChips
+          providers={chipProviders}
+          total={entries.length}
+          active={activeProvider}
+          onSelect={setActiveProvider}
+          resolvedTheme={resolvedTheme}
+          labelFor={labelFor}
+        />
         <span className={styles.stripSpacer} />
+        <Button
+          variant="secondary"
+          size="sm"
+          className={styles.refreshAllButton}
+          onClick={refreshAll}
+          disabled={disableControls || refreshing || entries.length === 0}
+          loading={refreshing}
+          title={t('quota_management.refresh_all_credentials')}
+        >
+          {!refreshing && <IconRefreshCw size={16} />}
+          {t('quota_management.refresh_all_credentials')}
+        </Button>
         <QuotaDensityPicker value={density} onChange={handleDensityChange} />
       </div>
 
-      {shows('claude') && <QuotaSection config={CLAUDE_CONFIG} {...sectionProps} />}
-      {shows('antigravity') && <QuotaSection config={ANTIGRAVITY_CONFIG} {...sectionProps} />}
-      {shows('codex') && <QuotaSection config={CODEX_CONFIG} {...sectionProps} />}
-      {shows('xai') && <QuotaSection config={XAI_CONFIG} {...sectionProps} />}
-      {shows('kimi') && <QuotaSection config={KIMI_CONFIG} {...sectionProps} />}
+      {visibleEntries.length === 0 ? (
+        <EmptyState
+          title={t('quota_management.empty_title', { defaultValue: t('common.no_data') })}
+          description={t('quota_management.description')}
+        />
+      ) : (
+        <div className={styles.boardGrid}>
+          {visibleEntries.map((entry) => (
+            <BoardCard
+              key={entry.file.name}
+              entry={entry}
+              resolvedTheme={resolvedTheme}
+              disabled={disableControls}
+              resetting={resettingName === entry.file.name}
+              onRefresh={refreshFile}
+              onReset={resetFile}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * One card.
+ *
+ * `QuotaCard` is memoized, so a refresh of one credential should not re-render
+ * the other seven. That only holds if the props are referentially stable, which
+ * is why the board's callbacks are addressed by credential name and bound here
+ * with `useCallback` — an inline `() => onRefresh(entry)` would allocate a new
+ * function every render and defeat the memo entirely.
+ */
+interface BoardCardProps {
+  entry: QuotaBoardEntry;
+  resolvedTheme: ResolvedTheme;
+  disabled: boolean;
+  resetting: boolean;
+  onRefresh: (name: string) => void;
+  onReset: (name: string) => void;
+}
+
+function BoardCard({
+  entry,
+  resolvedTheme,
+  disabled,
+  resetting,
+  onRefresh,
+  onReset,
+}: BoardCardProps) {
+  const { t } = useTranslation();
+  const { file, config, quota } = entry;
+  const name = file.name;
+
+  const handleRefresh = useCallback(() => onRefresh(name), [onRefresh, name]);
+  const handleReset = useCallback(() => onReset(name), [onReset, name]);
+
+  const canUseQuotaAction = !disabled && !file.disabled && quota?.status !== 'loading';
+  const showReset = quota !== undefined && Boolean(config.canResetQuota?.(quota));
+
+  const resetAction =
+    config.resetQuota && showReset ? (
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className={styles.quotaResetCreditButton}
+        onClick={handleReset}
+        disabled={!canUseQuotaAction || resetting}
+        loading={resetting}
+        title={t('codex_quota.reset_button')}
+        aria-label={t('codex_quota.reset_button')}
+      >
+        {!resetting && <IconRefreshCw size={14} />}
+        {t('codex_quota.reset_button')}
+      </Button>
+    ) : undefined;
+
+  return (
+    <QuotaCard
+      item={file}
+      quota={quota}
+      resolvedTheme={resolvedTheme}
+      i18nPrefix={config.i18nPrefix}
+      cardClassName={config.cardClassName}
+      defaultType={config.type}
+      canRefresh={canUseQuotaAction && !resetting}
+      onRefresh={handleRefresh}
+      resetQuotaAction={resetAction}
+      renderQuotaItems={config.renderQuotaItems}
+    />
+  );
+}
+
+/** Rebuild a provider's `{ name -> state }` slice from the flat entry list. */
+function entriesSliceFor(entries: QuotaBoardEntry[], provider: QuotaProviderKey) {
+  const slice: Record<string, { status?: string }> = {};
+  for (const entry of entries) {
+    if (entry.provider !== provider) continue;
+    if (entry.quota) slice[entry.file.name] = entry.quota;
+  }
+  return slice;
 }
