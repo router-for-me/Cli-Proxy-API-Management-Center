@@ -452,12 +452,83 @@
   }
 }
 
+// Single row: note on the left, actions on the right. Deliberately does NOT
+// wrap — a Codex card carries two buttons plus a note, and wrapping would make
+// it a line taller than its neighbours, which is the raggedness this whole
+// footer treatment exists to remove. The note ellipses instead.
 .quotaCardActions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: $spacing-xs;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
   padding-top: $spacing-xs;
+  margin-top: auto; // pin to the bottom so ragged bodies still align actions
+
+  :global(.btn) {
+    flex: none;
+  }
+}
+
+// Optional secondary figure (Claude's paid overflow, Codex's renewal). Shares
+// the footer row with the actions, so its presence never changes card height.
+// Sits on the footer row beside the actions, so an optional value never adds a
+// line and cards with and without it stay the same height.
+//
+// It is *hidden entirely* rather than ellipsed when the row is tight: a card
+// with two buttons (Codex) has no room left at narrow widths, and a clipped
+// value like "8/27/2026," or "Manual r… 1" is actively misleading — worse than
+// absent. The full text stays available via the row's title attribute.
+.cardFooterNote {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-quaternary);
+  overflow: hidden;
+  white-space: nowrap;
+
+  b {
+    flex: none;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @container (max-width: 300px) {
+    display: none;
+  }
+}
+
+// Two actions (Codex: Reset + Refresh) leave far less room than one, so the
+// note gives way earlier there. Keyed off the action count rather than the card
+// width alone, so Claude's single-button footer keeps its note at widths where
+// Codex's cannot fit.
+.quotaCardActionsCrowded {
+  .cardFooterNoteLabel {
+    display: none;
+  }
+
+  @container (max-width: 430px) {
+    .cardFooterNote {
+      display: none;
+    }
+  }
+}
+
+@container (max-width: 330px) {
+  .cardFooterNoteLabel {
+    display: none;
+  }
+}
+
+.cardFooterNoteLabel {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .quotaResetCreditButton:global(.btn.btn-sm),
@@ -1028,6 +1099,10 @@
 
 .fileCard {
   position: relative;
+  // Containment context so footer bits can respond to the *card's* width rather
+  // than the viewport — the density picker changes card width without any
+  // media query firing.
+  container-type: inline-size;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: $radius-lg;
@@ -1065,6 +1140,43 @@
   padding: 10px $spacing-md 8px;
   background: rgba(var(--provider-rgb, 139, 134, 128), 0.09);
   border-bottom: 1px solid rgba(var(--provider-rgb, 139, 134, 128), 0.18);
+}
+
+// Health dot at the strip's right edge — colour only, no text, so the card's
+// worst limit is legible before any number is read.
+.stripDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-quaternary);
+}
+
+// Same three colours the progress bars use — note the medium tier is
+// --quota-medium-color, not --warning-color, which is a red-orange in this
+// theme and would read as "low" beside an amber bar.
+.stripDotHigh {
+  background: var(--success-color, #22c55e);
+}
+
+.stripDotMedium {
+  background: var(--quota-medium-color, #e0aa14);
+}
+
+.stripDotLow {
+  background: var(--danger-color);
+}
+
+// Plan/tier badge. Lives in the strip rather than the body so it costs no
+// vertical space — as a body row it made every card a line taller.
+.stripPlan {
+  flex: none;
+  padding: 1.5px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--count-badge-bg, var(--bg-tertiary));
+  color: var(--count-badge-text, var(--text-secondary));
 }
 
 .providerMark {
@@ -1121,13 +1233,71 @@
 
 // Human-facing label (account email / auth label) is now the title…
 .cardTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
   font-size: 14.5px;
   font-weight: 650;
   letter-spacing: -0.005em;
   color: var(--text-primary);
+}
+
+.cardTitleText {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// Rename affordance: revealed on card hover so it doesn't add permanent
+// chrome, but kept reachable — :focus-visible brings it back for keyboards,
+// where a hover-only control would be invisible and unusable.
+.renameButton {
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  line-height: 0;
+  color: var(--text-quaternary);
+  background: transparent;
+  border: none;
+  border-radius: $radius-sm;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity $transition-fast, color $transition-fast;
+
+  &:hover {
+    color: var(--text-secondary);
+  }
+
+  &:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+  }
+
+  .fileCard:hover & {
+    opacity: 1;
+  }
+}
+
+.cardTitleInput {
+  width: 100%;
+  min-width: 0;
+  padding: 1px 6px;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-hover);
+  border-radius: $radius-sm;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
 }
 
 // …and the auth filename drops to a monospace subtitle.

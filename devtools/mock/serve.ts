@@ -38,6 +38,12 @@ interface Cred {
   authIndex: string;
   /** Antigravity resolves its quota URL per project and errors without one. */
   projectId?: string;
+  /**
+   * Codex renewal date. Read off the *auth file*, not the usage payload —
+   * resolveCodexSubscriptionActiveUntil checks the file, its metadata, its
+   * attributes and its id_token, never the /wham/usage response.
+   */
+  activeUntil?: string;
 }
 
 const CREDENTIALS: Cred[] = [
@@ -46,7 +52,7 @@ const CREDENTIALS: Cred[] = [
   { provider: 'claude', label: 'carol@example.com', name: 'claude-carol@example.com.json', authIndex: 'c3' },
   { provider: 'claude', label: 'dave@example.net', name: 'claude-dave@example.net.json', authIndex: 'c4' },
   { provider: 'antigravity', label: 'erin@example.com', name: 'antigravity-erin@example.com.json', authIndex: 'a1', projectId: 'mock-project' },
-  { provider: 'codex', label: 'erin@example.com', name: 'codex-aa757fd4-erin@example.com-plus.json', authIndex: 'x1' },
+  { provider: 'codex', label: 'erin@example.com', name: 'codex-aa757fd4-erin@example.com-plus.json', authIndex: 'x1', activeUntil: iso(24 * 30) },
   { provider: 'codex', label: 'frank@example.com', name: 'codex-frank@example.com-plus.json', authIndex: 'x2' },
   { provider: 'kimi', label: 'kimi-overnight', name: 'kimi-1784497263307.json', authIndex: 'k1' },
 ];
@@ -180,7 +186,14 @@ function handleApiCall(payload: { url?: string; authIndex?: string }): Response 
   }
   if (url.includes('kimi.com')) return upstream(KIMI_USAGE[idx] ?? {});
   if (url.includes('retrieveUserQuotaSummary')) return upstream(ANTIGRAVITY_QUOTA);
-  if (url.includes('loadCodeAssist')) return upstream({ cloudaicompanionProject: 'mock-project' });
+  // loadCodeAssist doubles as the subscription/plan source: the strip badge
+  // reads currentTier/paidTier from here, not from the quota summary.
+  if (url.includes('loadCodeAssist')) {
+    return upstream({
+      cloudaicompanionProject: 'mock-project',
+      currentTier: { id: 'free-tier', name: 'Google AI Plus' },
+    });
+  }
 
   // Unknown upstream: 404 so the card shows a real error rather than pretending.
   return upstream({ error: `mock: unhandled upstream ${url}` }, 404);
@@ -228,6 +241,7 @@ const server = Bun.serve({
           email: c.label,
           auth_index: c.authIndex,
           ...(c.projectId ? { project_id: c.projectId } : {}),
+          ...(c.activeUntil ? { chatgpt_subscription_active_until: c.activeUntil } : {}),
           disabled: false,
           size: 2048,
           modified: iso(-24),

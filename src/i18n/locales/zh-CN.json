@@ -1139,7 +1139,9 @@
     "filter_all": "全部凭证",
     "empty_title": "暂无可监控的凭证",
     "density_label": "每行卡片数",
-    "density_option": "每行 {{count}} 个"
+    "density_option": "每行 {{count}} 个",
+    "rename": "重命名凭证",
+    "lowest_remaining_value": "最低剩余 {{percent}}%"
   },
   "plugin_management": {
     "title": "插件管理",

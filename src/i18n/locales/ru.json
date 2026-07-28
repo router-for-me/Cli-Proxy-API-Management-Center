@@ -1132,7 +1132,9 @@
     "density_label": "Карточек в ряду",
     "density_option_one": "{{count}} в ряду",
     "density_option_few": "{{count}} в ряду",
-    "density_option_many": "{{count}} в ряду"
+    "density_option_many": "{{count}} в ряду",
+    "rename": "Переименовать",
+    "lowest_remaining_value": "{{percent}}% минимальный остаток"
   },
   "plugin_management": {
     "title": "Управление плагинами",

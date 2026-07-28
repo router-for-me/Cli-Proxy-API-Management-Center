@@ -5,6 +5,13 @@
 export { QuotaCard } from './QuotaCard';
 export { QuotaDensityPicker } from './QuotaDensityPicker';
 export { QuotaFilterChips } from './QuotaFilterChips';
+export {
+  readNicknames,
+  writeNickname,
+  resolveDisplayName,
+  QUOTA_NICKNAME_STORAGE_KEY,
+} from './quotaNicknames';
+export type { NicknameMap } from './quotaNicknames';
 export { useQuotaBoard, QUOTA_PROVIDER_ORDER } from './useQuotaBoard';
 export type { QuotaBoard, QuotaBoardEntry } from './useQuotaBoard';
 export { QuotaSummaryTiles } from './QuotaSummaryTiles';

@@ -2,15 +2,16 @@
  * Generic quota card component.
  */
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CSSProperties, ReactElement, ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import { Button } from '@/components/ui/Button';
-import { IconRefreshCw } from '@/components/ui/icons';
+import { IconPencil, IconRefreshCw } from '@/components/ui/icons';
 import type { AuthFileItem, ResolvedTheme, ThemeColors } from '@/types';
 import { TYPE_COLORS, resolveQuotaErrorMessage } from '@/utils/quota';
 import { QuotaProgressBar, type QuotaProgressBarProps } from './QuotaProgressBar';
+import type { QuotaPlanTier } from './quotaConfigs';
 import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -121,7 +122,24 @@ export interface QuotaStatusState {
   errorStatus?: number;
 }
 
+/**
+ * Health dot colour for the strip. Same thresholds as the progress bars, so a
+ * card's dot and its bars never disagree about what "low" means.
+ */
+function dotClass(percent: number): string {
+  if (percent >= 70) return styles.stripDotHigh;
+  if (percent >= 30) return styles.stripDotMedium;
+  return styles.stripDotLow;
+}
+
 export type { QuotaProgressBarProps } from './QuotaProgressBar';
+
+/** Paid Codex tiers keep the gold/diamond badge treatment on the strip. */
+const PLAN_TIER_CLASS: Record<QuotaPlanTier, string> = {
+  elite: styles.elitePlanValue,
+  premium: styles.premiumPlanValue,
+  standard: '',
+};
 
 /** 配额页外衣的进度条：绑定 QuotaPage 模块样式，满足 QuotaRenderHelpers 契约。 */
 const BoundQuotaProgressBar = (props: QuotaProgressBarProps) => (
@@ -144,6 +162,18 @@ interface QuotaCardProps<TState extends QuotaStatusState> {
   onRefresh?: () => void;
   resetQuotaAction?: ReactNode;
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
+  /** Display name — a local nickname when set, otherwise the account label. */
+  displayName?: string;
+  /** Called with the new name when the inline rename is committed. */
+  onRename?: (nickname: string) => void;
+  /** Plan/tier for the strip badge; omitted when the provider exposes none. */
+  plan?: string | null;
+  /** Badge treatment for that plan — Codex's paid tiers get the gold/diamond look. */
+  planTier?: QuotaPlanTier;
+  /** Lowest remaining percent, for the strip health dot. Null when unknown. */
+  worstRemaining?: number | null;
+  /** Optional secondary figure shown in the footer beside the actions. */
+  footerNote?: { label: string; value: string } | null;
 }
 
 function QuotaCardImpl<TState extends QuotaStatusState>({
@@ -157,8 +187,15 @@ function QuotaCardImpl<TState extends QuotaStatusState>({
   onRefresh,
   resetQuotaAction,
   renderQuotaItems,
+  displayName,
+  onRename,
+  plan,
+  planTier = 'standard',
+  worstRemaining,
+  footerNote,
 }: QuotaCardProps<TState>) {
   const { t } = useTranslation();
+  const [renaming, setRenaming] = useState(false);
 
   const displayType = item.type || item.provider || defaultType;
   const typeColorSet = TYPE_COLORS[displayType] || TYPE_COLORS.unknown;
@@ -182,9 +219,9 @@ function QuotaCardImpl<TState extends QuotaStatusState>({
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
 
-  // Prefer the human-facing label the API already returns (account email / auth
-  // label); fall back to the filename so the title is never empty.
-  const title = item.label?.trim() || item.email?.trim() || item.name;
+  // A local nickname wins; otherwise the human-facing label the API returns
+  // (account email / auth label); finally the filename, so it's never empty.
+  const title = displayName || item.label?.trim() || item.email?.trim() || item.name;
   const showFileName = title !== item.name;
 
   // Drive the card's provider variables from the existing TYPE_COLORS source of
@@ -203,13 +240,57 @@ function QuotaCardImpl<TState extends QuotaStatusState>({
         <span className={styles.providerMark}>{PROVIDER_MARK[displayType] ?? FALLBACK_MARK}</span>
         <span className={styles.providerName}>{getTypeLabel(displayType)}</span>
         <span className={styles.stripSpacer} />
+        {/* Health at a glance, before any number is read. Hidden when quota
+            hasn't loaded — a grey dot would read as a state, not as absence. */}
+        {worstRemaining !== null && worstRemaining !== undefined && (
+          <span
+            className={`${styles.stripDot} ${dotClass(worstRemaining)}`}
+            title={t('quota_management.lowest_remaining_value', {
+              percent: worstRemaining,
+              defaultValue: `${worstRemaining}% lowest remaining`,
+            })}
+          />
+        )}
+        {plan && (
+          <span className={`${styles.stripPlan} ${PLAN_TIER_CLASS[planTier] ?? ''}`}>{plan}</span>
+        )}
       </div>
 
       <div className={styles.cardBody}>
         <div className={styles.cardHeader}>
-          <span className={styles.cardTitle} title={title}>
-            {title}
-          </span>
+          {renaming && onRename ? (
+            <input
+              className={styles.cardTitleInput}
+              defaultValue={displayName ?? title}
+              autoFocus
+              aria-label={t('quota_management.rename', { defaultValue: 'Rename credential' })}
+              // Commit on blur and Enter; Escape abandons. Clearing the field
+              // removes the override rather than blanking the card.
+              onBlur={(event) => {
+                onRename(event.currentTarget.value);
+                setRenaming(false);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') event.currentTarget.blur();
+                if (event.key === 'Escape') setRenaming(false);
+              }}
+            />
+          ) : (
+            <span className={styles.cardTitle} title={title}>
+              <span className={styles.cardTitleText}>{title}</span>
+              {onRename && (
+                <button
+                  type="button"
+                  className={styles.renameButton}
+                  onClick={() => setRenaming(true)}
+                  title={t('quota_management.rename', { defaultValue: 'Rename credential' })}
+                  aria-label={t('quota_management.rename', { defaultValue: 'Rename credential' })}
+                >
+                  <IconPencil size={12} />
+                </button>
+              )}
+            </span>
+          )}
           {showFileName && (
             <span className={styles.fileName} title={item.name}>
               {item.name}
@@ -246,8 +327,29 @@ function QuotaCardImpl<TState extends QuotaStatusState>({
           )}
         </div>
 
-        {(resetQuotaAction || (onRefresh && quotaStatus !== 'idle')) && (
-          <div className={styles.quotaCardActions}>
+        {(footerNote || resetQuotaAction || (onRefresh && quotaStatus !== 'idle')) && (
+          <div
+            className={`${styles.quotaCardActions} ${
+              resetQuotaAction ? styles.quotaCardActionsCrowded : ''
+            }`}
+          >
+            {/* Sits beside the actions rather than above them, so an optional
+                value never adds a row — cards with and without it stay the
+                same height and the grid rows stay level. */}
+            {footerNote && (
+              <span
+                className={styles.cardFooterNote}
+                title={`${footerNote.label} ${footerNote.value}`}
+              >
+                {/* The label is hidden below ~2 buttons' worth of room rather
+                    than ellipsed: "Renewal ti…" reads as broken, whereas the
+                    bare value still informs and the full text is in the
+                    tooltip. */}
+                <span className={styles.cardFooterNoteLabel}>{footerNote.label}</span>
+                <b>{footerNote.value}</b>
+              </span>
+            )}
+            <span className={styles.stripSpacer} />
             {resetQuotaAction}
             {onRefresh && quotaStatus !== 'idle' && (
               <Button

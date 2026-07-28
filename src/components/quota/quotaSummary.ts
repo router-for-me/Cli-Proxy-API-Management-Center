@@ -92,7 +92,13 @@ function minOf(values: (number | null)[] | undefined): number | null {
   return known.length ? Math.min(...known) : null;
 }
 
-type AnyQuotaState = { status?: string } & Record<string, unknown>;
+/**
+ * Provider states are read structurally here — each `worstOf*` casts to the
+ * shape it knows. Only `status` is required, so an interface without an index
+ * signature (QuotaStatusState) is a valid argument; requiring
+ * `Record<string, unknown>` would reject those for no benefit.
+ */
+type AnyQuotaState = { status?: string };
 
 /** Extract the lowest remaining percentage for a single credential's quota state. */
 export function worstRemainingFor(

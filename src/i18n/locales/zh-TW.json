@@ -1165,7 +1165,9 @@
     "filter_all": "全部憑證",
     "empty_title": "暫無可監控的憑證",
     "density_label": "每列卡片數",
-    "density_option": "每列 {{count}} 個"
+    "density_option": "每列 {{count}} 個",
+    "rename": "重新命名憑證",
+    "lowest_remaining_value": "最低剩餘 {{percent}}%"
   },
   "plugin_management": {
     "title": "插件管理",

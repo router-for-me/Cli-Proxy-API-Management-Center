@@ -27,10 +27,14 @@ import {
   QuotaFilterChips,
   QuotaSummaryTiles,
   QUOTA_PROVIDER_ORDER,
+  readNicknames,
   readStoredDensity,
+  resolveDisplayName,
   storeDensity,
   summarizeProvider,
   useQuotaBoard,
+  worstRemainingFor,
+  writeNickname,
 } from '@/components/quota';
 import type { QuotaBoardEntry, QuotaDensity, QuotaProviderKey } from '@/components/quota';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
@@ -46,6 +50,11 @@ export function QuotaPage() {
   const [error, setError] = useState('');
   const [activeProvider, setActiveProvider] = useState<QuotaProviderKey | 'all'>('all');
   const [density, setDensity] = useState<QuotaDensity>(() => readStoredDensity());
+  const [nicknames, setNicknames] = useState(() => readNicknames());
+
+  const handleRename = useCallback((name: string, nickname: string) => {
+    setNicknames((prev) => writeNickname(prev, name, nickname));
+  }, []);
 
   const disableControls = connectionStatus !== 'connected';
 
@@ -108,14 +117,14 @@ export function QuotaPage() {
           provider,
           filesByProvider[provider].map((file) => ({
             name: file.name,
-            // Same precedence QuotaCard uses for its title, so a tile row and
-            // its card agree on what the credential is called.
-            label: file.label?.trim() || file.email?.trim() || file.name,
+            // Same resolution QuotaCard uses for its title — including the local
+            // nickname — so a tile row and its card agree on what to call it.
+            label: resolveDisplayName(file.name, file.label, file.email, nicknames),
           })),
           entriesSliceFor(entries, provider)
         )
       ),
-    [filesByProvider, entries]
+    [filesByProvider, entries, nicknames]
   );
 
   const chipProviders = useMemo(
@@ -193,8 +202,10 @@ export function QuotaPage() {
               resolvedTheme={resolvedTheme}
               disabled={disableControls}
               resetting={resettingName === entry.file.name}
+              nickname={nicknames[entry.file.name]}
               onRefresh={refreshFile}
               onReset={resetFile}
+              onRename={handleRename}
             />
           ))}
         </div>
@@ -217,8 +228,10 @@ interface BoardCardProps {
   resolvedTheme: ResolvedTheme;
   disabled: boolean;
   resetting: boolean;
+  nickname?: string;
   onRefresh: (name: string) => void;
   onReset: (name: string) => void;
+  onRename: (name: string, nickname: string) => void;
 }
 
 function BoardCard({
@@ -226,15 +239,31 @@ function BoardCard({
   resolvedTheme,
   disabled,
   resetting,
+  nickname,
   onRefresh,
   onReset,
+  onRename,
 }: BoardCardProps) {
   const { t } = useTranslation();
-  const { file, config, quota } = entry;
+  const { file, config, quota, provider } = entry;
   const name = file.name;
 
   const handleRefresh = useCallback(() => onRefresh(name), [onRefresh, name]);
   const handleReset = useCallback(() => onReset(name), [onReset, name]);
+  const handleRename = useCallback(
+    (value: string) => onRename(name, value),
+    [onRename, name]
+  );
+
+  // Strip badge / dot / footer note. Each provider declares how to read its own
+  // state; a provider with no plan (Kimi, xAI) simply renders no badge rather
+  // than a fabricated one.
+  const plan = quota?.status === 'success' ? (config.resolvePlan?.(quota, t) ?? null) : null;
+  const planTier =
+    quota?.status === 'success' ? (config.resolvePlanTier?.(quota) ?? 'standard') : 'standard';
+  const footerNote =
+    quota?.status === 'success' ? (config.resolveFooterNote?.(quota, t) ?? null) : null;
+  const worst = worstRemainingFor(provider, quota);
 
   const canUseQuotaAction = !disabled && !file.disabled && quota?.status !== 'loading';
   const showReset = quota !== undefined && Boolean(config.canResetQuota?.(quota));
@@ -269,6 +298,12 @@ function BoardCard({
       onRefresh={handleRefresh}
       resetQuotaAction={resetAction}
       renderQuotaItems={config.renderQuotaItems}
+      displayName={nickname}
+      onRename={handleRename}
+      plan={plan}
+      planTier={planTier}
+      worstRemaining={worst}
+      footerNote={footerNote}
     />
   );
 }

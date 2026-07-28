@@ -149,6 +149,24 @@ export interface QuotaConfig<TState, TData> {
   buildSuccessState: (data: TData) => TState;
   buildErrorState: (message: string, status?: number) => TState;
   cardClassName: string;
+  /**
+   * Plan/tier for the strip badge ("Max", "Plus", "Google AI Plus"), or null
+   * when the provider exposes none — Kimi and xAI genuinely don't, and a badge
+   * is not worth inventing. Declared per provider because the plan lives in a
+   * different place in each state shape.
+   */
+  resolvePlan?: (quota: TState, t: TFunction) => string | null;
+  /**
+   * Tier for the strip badge's treatment. Codex distinguishes Pro 20x (elite)
+   * from the other paid tiers (premium); everything else renders plain.
+   */
+  resolvePlanTier?: (quota: TState) => QuotaPlanTier;
+  /**
+   * Optional secondary figure for the card footer (Claude's paid overflow).
+   * Footer rather than a body row so an optional value never changes the card's
+   * height — cards with and without it stay aligned in the grid.
+   */
+  resolveFooterNote?: (quota: TState, t: TFunction) => { label: string; value: string } | null;
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
 }
 
@@ -801,28 +819,8 @@ const renderAntigravityItems = (
   const { createElement: h, Fragment } = React;
   const groups = quota.groups ?? [];
   const nodes: ReactNode[] = [];
-  const planLabel = getAntigravityPlanLabel(quota.subscription, t);
-  const normalizedPlan = quota.subscription?.plan?.toLowerCase() ?? '';
-  const isPremiumPlan = normalizedPlan === 'ultra' || normalizedPlan === 'ultra-lite';
 
-  if (planLabel) {
-    nodes.push(
-      h(
-        'div',
-        { key: 'plan', className: styleMap.codexPlan },
-        h(
-          'span',
-          { className: styleMap.codexPlanItem },
-          h('span', { className: styleMap.codexPlanLabel }, t('antigravity_quota.plan_label')),
-          h(
-            'span',
-            { className: isPremiumPlan ? styleMap.premiumPlanValue : styleMap.codexPlanValue },
-            planLabel
-          )
-        )
-      )
-    );
-  }
+  /* Plan is hoisted to the strip badge via resolvePlan — see QuotaCard. */
 
   if (groups.length === 0) {
     nodes.push(
@@ -902,10 +900,38 @@ const renderAntigravityItems = (
   return h(Fragment, null, ...nodes);
 };
 
+/** Strip-badge treatment: 'elite' is the diamond Pro 20x, 'premium' the gold tiers. */
+export type QuotaPlanTier = 'elite' | 'premium' | 'standard';
+
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
 // Pro 20x（plan=pro）在金色 premium 之上再进一档：钻石徽章。
 // 金卡亮度已用满（HDR 超白），再上一档只能换材质，不能再加亮。
 const ELITE_CODEX_PLAN_TYPE = 'pro';
+
+/** Shared by the strip badge and the renderer, so both name a plan identically. */
+const getCodexPlanLabel = (planType: string | null | undefined, t: TFunction): string | null => {
+  const normalized = normalizePlanType(planType);
+  if (!normalized) return null;
+  if (normalized === 'pro') return t('codex_quota.plan_pro');
+  if (PREMIUM_CODEX_PLAN_TYPES.has(normalized) && normalized !== 'pro') {
+    return t('codex_quota.plan_prolite');
+  }
+  if (normalized === 'plus') return t('codex_quota.plan_plus');
+  if (normalized === 'team') return t('codex_quota.plan_team');
+  if (normalized === 'free') return t('codex_quota.plan_free');
+  return planType || normalized;
+};
+
+/**
+ * 顺序敏感：'pro' 同时命中 PREMIUM_CODEX_PLAN_TYPES，elite 分支必须留在最前，
+ * 否则 Pro 20x 会静默退回金卡。
+ */
+const getCodexPlanTier = (planType: string | null | undefined): QuotaPlanTier => {
+  const normalized = normalizePlanType(planType) ?? '';
+  if (normalized === ELITE_CODEX_PLAN_TYPE) return 'elite';
+  if (PREMIUM_CODEX_PLAN_TYPES.has(normalized)) return 'premium';
+  return 'standard';
+};
 
 const renderCodexItems = (
   quota: CodexQuotaState,
@@ -915,76 +941,18 @@ const renderCodexItems = (
   const { styles: styleMap, QuotaProgressBar } = helpers;
   const { createElement: h, Fragment } = React;
   const windows = quota.windows ?? [];
-  const planType = quota.planType ?? null;
-  const subscriptionActiveUntil = quota.subscriptionActiveUntil ?? null;
-  const rateLimitResetCreditsAvailableCount = quota.rateLimitResetCreditsAvailableCount ?? null;
   const rateLimitResetCredits = quota.rateLimitResetCredits ?? [];
   const rateLimitResetCreditsError = quota.rateLimitResetCreditsError ?? '';
 
-  const getPlanLabel = (pt?: string | null): string | null => {
-    const normalized = normalizePlanType(pt);
-    if (!normalized) return null;
-    if (normalized === 'pro') return t('codex_quota.plan_pro');
-    if (PREMIUM_CODEX_PLAN_TYPES.has(normalized) && normalized !== 'pro') {
-      return t('codex_quota.plan_prolite');
-    }
-    if (normalized === 'plus') return t('codex_quota.plan_plus');
-    if (normalized === 'team') return t('codex_quota.plan_team');
-    if (normalized === 'free') return t('codex_quota.plan_free');
-    return pt || normalized;
-  };
-
-  const planLabel = getPlanLabel(planType);
-  const normalizedPlanType = normalizePlanType(planType) ?? '';
-  const isPremiumPlan = PREMIUM_CODEX_PLAN_TYPES.has(normalizedPlanType);
-  const isElitePlan = normalizedPlanType === ELITE_CODEX_PLAN_TYPE;
-  const expiryLabel = subscriptionActiveUntil ? formatDateTimeValue(subscriptionActiveUntil) : '';
   const nodes: ReactNode[] = [];
 
-  if (planLabel || expiryLabel || rateLimitResetCreditsAvailableCount !== null) {
-    // 顺序敏感：'pro' 同时命中 PREMIUM_CODEX_PLAN_TYPES，elite 分支必须留在最前，
-    // 否则 Pro 20x 会静默退回金卡（无测试覆盖类名契约，改这里请手动目视）。
-    const planValueClass = isElitePlan
-      ? styleMap.elitePlanValue
-      : isPremiumPlan
-        ? styleMap.premiumPlanValue
-        : styleMap.codexPlanValue;
-    const planNodes: ReactNode[] = [];
-
-    const appendPlanItem = (
-      key: string,
-      label: string,
-      value: string,
-      valueClassName = styleMap.codexPlanValue
-    ) => {
-      planNodes.push(
-        h(
-          'span',
-          { key, className: styleMap.codexPlanItem },
-          h('span', { className: styleMap.codexPlanLabel }, label),
-          h('span', { className: valueClassName }, value)
-        )
-      );
-    };
-
-    if (planLabel) {
-      appendPlanItem('plan-type', t('codex_quota.plan_label'), planLabel, planValueClass);
-    }
-
-    if (expiryLabel) {
-      appendPlanItem('subscription-expiry', t('codex_quota.expires_label'), expiryLabel);
-    }
-
-    if (rateLimitResetCreditsAvailableCount !== null) {
-      appendPlanItem(
-        'reset-credits',
-        t('codex_quota.reset_credits_label'),
-        rateLimitResetCreditsAvailableCount.toString()
-      );
-    }
-
-    nodes.push(h('div', { key: 'plan', className: styleMap.codexPlan }, ...planNodes));
-  }
+  /* Plan moves to the strip badge (resolvePlan). Renewal date and available
+   * reset-credit count move to the footer note — as body rows they cost three
+   * lines on every Codex card and pushed it to roughly twice the height of its
+   * neighbours in the grid.
+   *
+   * The per-credit expiry *table* is only rendered when a reset credit is
+   * actually pending, since that's the case where the exact expiry matters. */
 
   if (rateLimitResetCredits.length > 0) {
     nodes.push(
@@ -1245,32 +1213,11 @@ const renderClaudeItems = (
   const { styles: styleMap, QuotaProgressBar } = helpers;
   const { createElement: h, Fragment } = React;
   const windows = quota.windows ?? [];
-  const extraUsage = quota.extraUsage ?? null;
-  const planType = quota.planType ?? null;
   const nodes: ReactNode[] = [];
 
-  if (planType) {
-    nodes.push(
-      h(
-        'div',
-        { key: 'plan', className: styleMap.codexPlan },
-        h('span', { className: styleMap.codexPlanLabel }, t('claude_quota.plan_label')),
-        h('span', { className: styleMap.codexPlanValue }, t(`claude_quota.${planType}`))
-      )
-    );
-  }
-
-  if (extraUsage && extraUsage.is_enabled) {
-    const usedLabel = `$${(extraUsage.used_credits / 100).toFixed(2)} / $${(extraUsage.monthly_limit / 100).toFixed(2)}`;
-    nodes.push(
-      h(
-        'div',
-        { key: 'extra', className: styleMap.codexPlan },
-        h('span', { className: styleMap.codexPlanLabel }, t('claude_quota.extra_usage_label')),
-        h('span', { className: styleMap.codexPlanValue }, usedLabel)
-      )
-    );
-  }
+  /* Plan and extra usage deliberately do NOT render here — they are hoisted to
+   * the card strip and footer via resolvePlan / resolveFooterNote, so the body
+   * is only quota rows and every card has the same shape. */
 
   if (windows.length === 0) {
     nodes.push(
@@ -1337,6 +1284,16 @@ export const CLAUDE_CONFIG: QuotaConfig<
     errorStatus: status,
   }),
   cardClassName: styles.claudeCard,
+  resolvePlan: (quota, t) => (quota.planType ? t(`claude_quota.${quota.planType}`) : null),
+  resolveFooterNote: (quota, t) => {
+    const extra = quota.extraUsage;
+    if (!extra || !extra.is_enabled) return null;
+    return {
+      label: t('claude_quota.extra_usage_label'),
+      // Both figures arrive in cents.
+      value: `$${(extra.used_credits / 100).toFixed(2)} / $${(extra.monthly_limit / 100).toFixed(2)}`,
+    };
+  },
   renderQuotaItems: renderClaudeItems,
 };
 
@@ -1368,6 +1325,7 @@ export const ANTIGRAVITY_CONFIG: QuotaConfig<AntigravityQuotaState, AntigravityQ
     errorStatus: status,
   }),
   cardClassName: styles.antigravityCard,
+  resolvePlan: (quota, t) => getAntigravityPlanLabel(quota.subscription, t),
   renderQuotaItems: renderAntigravityItems,
 };
 
@@ -1381,6 +1339,31 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> = {
     (quota.rateLimitResetCreditsApplicableAvailableCount ??
       quota.rateLimitResetCreditsAvailableCount ??
       0) > 0,
+  resolvePlan: (quota, t) => getCodexPlanLabel(quota.planType, t),
+  resolvePlanTier: (quota) => getCodexPlanTier(quota.planType),
+  resolveFooterNote: (quota, t) => {
+    // Renewal date and available reset credits: useful, but not worth three
+    // body rows on every card. The label follows whichever value is actually
+    // present — labelling a bare credit count "Renewal time" reads as a broken
+    // date rather than a count.
+    const expiry = quota.subscriptionActiveUntil
+      ? formatDateTimeValue(quota.subscriptionActiveUntil)
+      : '';
+    const credits = quota.rateLimitResetCreditsAvailableCount;
+    const hasCredits = credits !== null && credits !== undefined;
+
+    if (expiry && hasCredits) {
+      return {
+        label: t('codex_quota.expires_label'),
+        value: `${expiry} · ${t('codex_quota.reset_credits_label')} ${credits}`,
+      };
+    }
+    if (expiry) return { label: t('codex_quota.expires_label'), value: expiry };
+    if (hasCredits) {
+      return { label: t('codex_quota.reset_credits_label'), value: String(credits) };
+    }
+    return null;
+  },
   storeSelector: (state) => state.codexQuota,
   storeSetter: 'setCodexQuota',
   buildLoadingState: () => ({

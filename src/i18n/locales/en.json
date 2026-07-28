@@ -1142,7 +1142,9 @@
     "empty_title": "No credentials to monitor",
     "density_label": "Cards per row",
     "density_option_one": "{{count}} per row",
-    "density_option_other": "{{count}} per row"
+    "density_option_other": "{{count}} per row",
+    "rename": "Rename credential",
+    "lowest_remaining_value": "{{percent}}% lowest remaining"
   },
   "plugin_management": {
     "title": "Plugin Management",

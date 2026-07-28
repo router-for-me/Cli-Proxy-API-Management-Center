@@ -30,6 +30,8 @@ const SIMPLE_KEYS = [
   'filter_all',
   'empty_title',
   'density_label',
+  'rename',
+  'lowest_remaining_value',
 ];
 
 /**
