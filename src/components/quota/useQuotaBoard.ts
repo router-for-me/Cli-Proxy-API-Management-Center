@@ -333,15 +333,35 @@ export function useQuotaBoard({
 }
 
 /**
+ * Keep only the entries whose credential still exists in `providerFiles`.
+ *
+ * Exported for tests: this is the operation that silently wipes data if it is
+ * ever run against a mixed provider list, so it is worth pinning down directly.
+ *
+ * Returns `prev` unchanged when nothing was pruned, so the effect below cannot
+ * drive a re-render loop. `next` is always a subset of `prev`'s keys, so equal
+ * key counts implies an identical key set.
+ */
+export function pruneSliceToFiles(
+  prev: Record<string, QuotaStatusState>,
+  providerFiles: readonly AuthFileItem[]
+): Record<string, QuotaStatusState> {
+  if (providerFiles.length === 0) return Object.keys(prev).length === 0 ? prev : {};
+
+  const next: Record<string, QuotaStatusState> = {};
+  for (const file of providerFiles) {
+    const cached = prev[file.name];
+    if (cached) next[file.name] = cached;
+  }
+  return Object.keys(next).length === Object.keys(prev).length ? prev : next;
+}
+
+/**
  * Drop store entries whose credential no longer exists, scoped to one slice.
  *
  * Extracted so the five call sites read as five parallel statements rather than
  * a loop — the per-provider scoping is the whole point and should be visible at
  * the call site.
- *
- * Returns the previous object unchanged when nothing was pruned, so this effect
- * cannot drive a re-render loop. `next` is always a subset of `prev`'s keys, so
- * equal key counts means an identical key set.
  */
 function usePruneSlice(
   providerFiles: AuthFileItem[],
@@ -350,19 +370,6 @@ function usePruneSlice(
 ) {
   useEffect(() => {
     if (filesLoading) return;
-
-    if (providerFiles.length === 0) {
-      setQuota((prev) => (Object.keys(prev).length === 0 ? prev : {}));
-      return;
-    }
-
-    setQuota((prev) => {
-      const next: Record<string, QuotaStatusState> = {};
-      for (const file of providerFiles) {
-        const cached = prev[file.name];
-        if (cached) next[file.name] = cached;
-      }
-      return Object.keys(next).length === Object.keys(prev).length ? prev : next;
-    });
+    setQuota((prev) => pruneSliceToFiles(prev, providerFiles));
   }, [providerFiles, filesLoading, setQuota]);
 }

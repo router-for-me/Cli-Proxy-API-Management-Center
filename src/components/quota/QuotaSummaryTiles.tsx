@@ -13,8 +13,12 @@ import type { ResolvedTheme, ThemeColors } from '@/types';
 import type { QuotaProviderSummary, QuotaProviderKey } from './quotaSummary';
 import { AT_RISK_THRESHOLD } from './quotaSummary';
 import styles from '@/pages/QuotaPage.module.scss';
+import local from './QuotaSummaryTiles.module.scss';
 
 const HIGH_THRESHOLD = 70;
+
+/** Mini list rows before collapsing the tail into a "+N more" line. */
+const MAX_MINI_ACCOUNTS = 5;
 
 function barClass(percent: number | null): string {
   if (percent === null) return styles.quotaBarFillMedium;
@@ -51,6 +55,8 @@ export function QuotaSummaryTiles({
           resolvedTheme === 'dark' && colorSet.dark ? colorSet.dark : colorSet.light;
         const active = activeProvider === summary.provider;
         const percent = summary.worstRemaining;
+        const miniAccounts = summary.accounts.slice(0, MAX_MINI_ACCOUNTS);
+        const overflow = summary.accounts.length - miniAccounts.length;
 
         return (
           <button
@@ -91,19 +97,47 @@ export function QuotaSummaryTiles({
               </span>
             </span>
 
-            <span className={styles.quotaBar}>
-              <span
-                className={`${styles.quotaBarFill} ${barClass(percent)}`}
-                style={{ width: `${percent ?? 0}%` }}
-              />
+            <span className={local.mini}>
+              {miniAccounts.map((account) => (
+                <span key={account.name} className={local.miniRow}>
+                  <span className={local.miniName} title={account.name}>
+                    {account.label}
+                  </span>
+                  <span className={local.miniBar}>
+                    {account.remaining !== null && (
+                      <span
+                        className={`${styles.quotaBarFill} ${barClass(account.remaining)}`}
+                        style={{ width: `${account.remaining}%` }}
+                      />
+                    )}
+                  </span>
+                  <span className={local.miniPercent}>
+                    {account.remaining === null ? '—' : `${account.remaining}%`}
+                  </span>
+                </span>
+              ))}
+              {overflow > 0 && (
+                <span className={local.miniMore}>
+                  {t('quota_management.more_accounts', {
+                    count: overflow,
+                    defaultValue: `+${overflow} more`,
+                  })}
+                </span>
+              )}
             </span>
 
-            <span className={styles.summaryTileFoot}>
-              {t('quota_management.loaded_of', {
-                loaded: summary.loaded,
-                total: summary.total,
-                defaultValue: `${summary.loaded} of ${summary.total} loaded`,
-              })}
+            <span className={`${styles.summaryTileFoot} ${local.foot}`}>
+              <span>
+                {t('quota_management.next_reset', { defaultValue: 'next reset' })}{' '}
+                <b className={local.footValue}>{summary.nextResetLabel ?? '—'}</b>
+              </span>
+              <span>
+                <b className={local.footValue}>{summary.total}</b>{' '}
+                {t('quota_management.credentials', {
+                  count: summary.total,
+                  defaultValue: summary.total === 1 ? 'credential' : 'credentials',
+                })}
+              </span>
             </span>
           </button>
         );

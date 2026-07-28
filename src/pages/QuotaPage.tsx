@@ -106,7 +106,12 @@ export function QuotaPage() {
       QUOTA_PROVIDER_ORDER.map((provider) =>
         summarizeProvider(
           provider,
-          filesByProvider[provider].map((file) => file.name),
+          filesByProvider[provider].map((file) => ({
+            name: file.name,
+            // Same precedence QuotaCard uses for its title, so a tile row and
+            // its card agree on what the credential is called.
+            label: file.label?.trim() || file.email?.trim() || file.name,
+          })),
           entriesSliceFor(entries, provider)
         )
       ),

@@ -10,6 +10,7 @@ export type { QuotaBoard, QuotaBoardEntry } from './useQuotaBoard';
 export { QuotaSummaryTiles } from './QuotaSummaryTiles';
 export { summarizeProvider, worstRemainingFor, AT_RISK_THRESHOLD } from './quotaSummary';
 export type { QuotaProviderKey, QuotaProviderSummary } from './quotaSummary';
+export type { QuotaSummaryCredential, QuotaAccountSummary } from './quotaSummary';
 export {
   QUOTA_DENSITY_OPTIONS,
   QUOTA_DENSITY_DEFAULT,

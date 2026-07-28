@@ -1,0 +1,68 @@
+@use '../../styles/variables' as *;
+
+// Tile internals added for the enriched summary tiles: per-account mini list
+// and the next-reset / credential-count footer. Shared tile chrome (summaryTile,
+// quotaBarFill, countBadge, …) stays in QuotaPage.module.scss.
+
+.mini {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+// Name | thin bar | right-aligned percent — fixed bar and percent columns so
+// the bars align vertically across rows while the name column absorbs overflow.
+.miniRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 78px 34px;
+  gap: 10px;
+  align-items: center;
+}
+
+.miniName {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.miniBar {
+  height: 5px;
+  border-radius: $radius-full;
+  background: var(--bg-hover);
+  overflow: hidden;
+
+  > span {
+    display: block;
+    border-radius: $radius-full;
+    min-width: 3px;
+  }
+}
+
+.miniPercent {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.miniMore {
+  font-size: 11.5px;
+  color: var(--text-quaternary);
+}
+
+// Layout on top of summaryTileFoot's typography: reset on the left, count on
+// the right.
+.foot {
+  display: flex;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.footValue {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
