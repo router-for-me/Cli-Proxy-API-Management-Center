@@ -12,7 +12,8 @@
   height: 100%;
   border-radius: $radius-full;
   background: var(--meter-fill);
-  transition: width $transition-normal;
+  // 数据刷新时填充平滑走位；曲线继承页面级 token，独立使用时退回 ease
+  transition: width 360ms var(--ease-out-strong, ease);
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;

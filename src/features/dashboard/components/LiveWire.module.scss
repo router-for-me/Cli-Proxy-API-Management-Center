@@ -17,6 +17,7 @@
   overflow: visible;
 }
 
+/* 描画排在 hero 文案/面板级联之后：脉搏最后抵达，收束整场入场 */
 .line {
   stroke: var(--wire-stroke);
   stroke-width: 2px;
@@ -24,11 +25,11 @@
   stroke-linejoin: round;
   stroke-dasharray: 1;
   stroke-dashoffset: 0;
-  animation: wireDraw 1.3s cubic-bezier(0.25, 0.6, 0.35, 1) 0.2s backwards;
+  animation: wireDraw 1.3s cubic-bezier(0.25, 0.6, 0.35, 1) 0.55s backwards;
 }
 
 .area {
-  animation: wireFade 0.9s ease-out 0.9s backwards;
+  animation: wireFade 0.9s ease-out 1.25s backwards;
 }
 
 .idleLine {
@@ -47,7 +48,9 @@
   transform: translate(50%, -50%);
   background: var(--wire-stroke);
   box-shadow: 0 0 0 0 color-mix(in srgb, var(--wire-color) 45%, transparent);
-  animation: wirePulse 2.4s ease-out 1.5s infinite;
+  animation: wirePulse 2.4s ease-out 1.9s infinite;
+  /* 数据刷新时光点滑到新位置，而不是瞬移 */
+  transition: top 400ms var(--ease-out-strong, ease-out);
 }
 
 @keyframes wireDraw {
@@ -85,5 +88,9 @@
   .area,
   .pulse {
     animation: none;
+  }
+
+  .pulse {
+    transition: none;
   }
 }

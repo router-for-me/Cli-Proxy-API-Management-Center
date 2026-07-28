@@ -116,6 +116,7 @@
 }
 
 .column {
+  position: relative;
   flex: 1 1 0;
   min-width: 0;
   height: 100%;
@@ -135,11 +136,14 @@
   flex-direction: column;
   justify-content: flex-end;
   animation: barGrow 0.42s cubic-bezier(0.4, 0, 0.2, 1) both;
-  animation-delay: calc(var(--bar-index, 0) * 22ms);
+  /* 级差由 TSX 按桶数归一化写入，整波 ≤360ms */
+  animation-delay: var(--bar-delay, 0ms);
   transform-origin: bottom center;
+  transition: filter 120ms ease-out;
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
+    transition: none;
   }
 }
 
@@ -180,9 +184,9 @@
   background: var(--border-primary);
 }
 
+/* bottom 由 TSX 按柱高写入；柱子全部落定后再淡入 */
 .peakLabel {
   position: absolute;
-  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
   margin-bottom: 6px;
@@ -192,6 +196,11 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   pointer-events: none;
+  animation: peakFade 240ms ease-out 620ms backwards;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .noRequests {
@@ -227,6 +236,19 @@
   font-size: 12px;
   color: var(--text-secondary);
   pointer-events: none;
+  /* 悬停换柱时滑到新位置（可中断，CSS transition 自然 retarget），入场只淡入 */
+  transition:
+    left 200ms var(--ease-out-strong, ease-out),
+    transform 200ms var(--ease-out-strong, ease-out),
+    opacity 150ms ease-out;
+
+  @starting-style {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity 150ms ease-out;
+  }
 }
 
 .tooltipTime {
@@ -342,6 +364,15 @@
   }
   to {
     transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes peakFade {
+  from {
+    opacity: 0;
+  }
+  to {
     opacity: 1;
   }
 }

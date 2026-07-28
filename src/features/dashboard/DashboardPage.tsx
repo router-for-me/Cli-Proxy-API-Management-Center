@@ -17,7 +17,7 @@ import { LiveWire } from './components/LiveWire';
 import { Meter } from './components/Meter';
 import { Sparkline } from './components/Sparkline';
 import { ThroughputChart } from './components/ThroughputChart';
-import { useCountUp, useRevealOnScroll } from './components/motion';
+import { useCountUp, useRevealGroup, useRevealOnScroll } from './components/motion';
 import { providerLabel, splitWindowMinutes, toneForSuccessRate, type MeterTone } from './utils';
 import styles from './dashboard.module.scss';
 
@@ -45,12 +45,13 @@ export function DashboardPage() {
 
   useHeaderRefresh(refresh, connected);
 
-  const heroRef = useRevealOnScroll<HTMLElement>();
-  const statsRef = useRevealOnScroll<HTMLElement>(0.05);
+  /* Hero 与静态网格走分组级联；异步内容区（图表/供应商）保持整块 reveal */
+  const heroRef = useRevealGroup<HTMLElement>();
+  const statsRef = useRevealGroup<HTMLElement>(0.12);
   const trafficRef = useRevealOnScroll<HTMLElement>();
   const fleetRef = useRevealOnScroll<HTMLElement>();
-  const detailRef = useRevealOnScroll<HTMLElement>();
-  const ctaRef = useRevealOnScroll<HTMLElement>();
+  const detailRef = useRevealGroup<HTMLElement>();
+  const ctaRef = useRevealGroup<HTMLElement>();
 
   const animatedTotal = useCountUp(traffic.total, connected);
 
@@ -96,6 +97,9 @@ export function DashboardPage() {
     };
     return { key: keyByTone[successRateTone], accent: TILE_ACCENTS[successRateTone] };
   }, [connected, connectionStatus, traffic.total, traffic.successRate, successRateTone]);
+
+  /* 句号状态灯只在「有活着的流量」时呼吸；离线/静默时保持安静 */
+  const heroAlive = connected && traffic.total > 0;
 
   const connectionLabel = t(
     connectionStatus === 'connected'
@@ -224,24 +228,32 @@ export function DashboardPage() {
       {/* ---------- Hero ---------- */}
       <section className={styles.hero} ref={heroRef}>
         <div className={styles.heroCopy}>
-          <h1 className={styles.heroTitle}>
+          <h1 className={styles.heroTitle} data-reveal>
             {t(`dashboard.${verdict.key}`)}
-            <span className={styles.heroPeriod} style={{ color: verdict.accent }}>
+            <span
+              className={`${styles.heroPeriod} ${heroAlive ? styles.heroPeriodLive : ''}`}
+              style={{ color: verdict.accent }}
+            >
               {t('dashboard.hero_period')}
             </span>
           </h1>
-          <p className={styles.heroMeta}>{heroMetaLine}</p>
-          <div className={styles.heroActions}>
+          <p className={styles.heroMeta} data-reveal>
+            {heroMetaLine}
+          </p>
+          <div className={styles.heroActions} data-reveal>
             <Link to="/ai-providers" className={styles.primaryAction}>
               {t('dashboard.cta_manage_providers')}
             </Link>
             <Link to="/logs" className={styles.ghostAction}>
-              {t('dashboard.cta_inspect_logs')} <span aria-hidden="true">→</span>
+              {t('dashboard.cta_inspect_logs')}{' '}
+              <span className={styles.linkArrow} aria-hidden="true">
+                →
+              </span>
             </Link>
           </div>
         </div>
 
-        <div className={styles.heroPanel}>
+        <div className={styles.heroPanel} data-reveal="scale">
           <div className={styles.heroPanelTop}>
             <span className={styles.heroPanelLabel}>{t('dashboard.hero_requests_label')}</span>
             {connected && (
@@ -301,6 +313,7 @@ export function DashboardPage() {
           <article
             key={tile.key}
             className={styles.statTile}
+            data-reveal
             style={
               {
                 '--tile-accent': tile.tone ? TILE_ACCENTS[tile.tone] : 'var(--border-hover)',
@@ -391,7 +404,7 @@ export function DashboardPage() {
 
       {/* ---------- Credential health + runtime ---------- */}
       <section className={styles.detailGrid} ref={detailRef}>
-        <div className={styles.panel}>
+        <div className={styles.panel} data-reveal>
           <header className={styles.panelHead}>
             <span className={styles.eyebrow}>{t('dashboard.health_eyebrow')}</span>
             <h2 className={styles.panelTitle}>{t('dashboard.health_title')}</h2>
@@ -455,13 +468,16 @@ export function DashboardPage() {
                 </ul>
               </div>
               <Link to="/auth-files" className={styles.panelLink}>
-                {t('dashboard.health_link')} <span aria-hidden="true">→</span>
+                {t('dashboard.health_link')}{' '}
+                <span className={styles.linkArrow} aria-hidden="true">
+                  →
+                </span>
               </Link>
             </>
           )}
         </div>
 
-        <div className={styles.panel}>
+        <div className={styles.panel} data-reveal>
           <header className={styles.panelHead}>
             <span className={styles.eyebrow}>{t('dashboard.runtime_eyebrow')}</span>
             <h2 className={styles.panelTitle}>{t('dashboard.runtime_title')}</h2>
@@ -490,20 +506,23 @@ export function DashboardPage() {
             </ul>
           )}
           <Link to="/config" className={styles.panelLink}>
-            {t('dashboard.runtime_link')} <span aria-hidden="true">→</span>
+            {t('dashboard.runtime_link')}{' '}
+            <span className={styles.linkArrow} aria-hidden="true">
+              →
+            </span>
           </Link>
         </div>
       </section>
 
       {/* ---------- CTA ---------- */}
       <section className={styles.section} ref={ctaRef}>
-        <header className={styles.sectionHead}>
+        <header className={styles.sectionHead} data-reveal>
           <span className={styles.eyebrow}>{t('dashboard.cta_eyebrow')}</span>
           <h2 className={styles.sectionTitle}>{t('dashboard.cta_title')}</h2>
         </header>
         <div className={styles.ctaGrid}>
           {ctaCards.map((card) => (
-            <Link key={card.to} to={card.to} className={styles.ctaCard}>
+            <Link key={card.to} to={card.to} className={styles.ctaCard} data-reveal>
               <span className={styles.ctaIcon}>{card.icon}</span>
               <span className={styles.ctaTitle}>{card.title}</span>
               <span className={styles.ctaDescription}>{card.description}</span>

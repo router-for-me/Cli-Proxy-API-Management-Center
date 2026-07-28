@@ -10,6 +10,14 @@
   --viz-success: #10b981;
   --viz-failure: #c65746;
 
+  /*
+   * 动效词汇表：内置 ease 太弱，交互反馈统一用强减速曲线。
+   * 按压 160ms / 悬停 200ms，UI 动效不超过 300ms。
+   */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-press: 160ms;
+  --dur-hover: 200ms;
+
   position: relative;
   max-width: 1120px;
   width: 100%;
@@ -119,6 +127,15 @@
   display: inline;
 }
 
+/* 有活流量时状态灯极缓呼吸（仅 opacity，inline 元素安全） */
+.heroPeriodLive {
+  animation: periodBreath 3.2s ease-in-out 1.8s infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 .heroMeta {
   margin: 0;
   font-family: $font-mono;
@@ -146,19 +163,21 @@
   font-weight: 600;
   text-decoration: none;
   transition:
-    transform $transition-fast,
+    transform var(--dur-press) var(--ease-out-strong),
     background-color $transition-fast,
     border-color $transition-fast,
-    box-shadow $transition-fast;
+    box-shadow var(--dur-hover) var(--ease-out-strong),
+    color $transition-fast;
 
-  &:hover {
-    transform: translateY(-1px);
+  /* 按下即回应：不等 click，指针落下就缩 */
+  &:active {
+    transform: scale(0.97);
   }
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
 
-    &:hover {
+    &:active {
       transform: none;
     }
   }
@@ -170,13 +189,29 @@
   color: var(--bg-secondary);
   border: 1px solid transparent;
 
-  &:hover {
-    background: color-mix(in srgb, var(--text-primary) 86%, var(--bg-secondary));
-    box-shadow: 0 12px 26px color-mix(in srgb, var(--text-primary) 22%, transparent);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      transform: translateY(-1px);
+      background: color-mix(in srgb, var(--text-primary) 86%, var(--bg-secondary));
+      box-shadow: 0 12px 26px color-mix(in srgb, var(--text-primary) 22%, transparent);
+    }
+  }
+
+  /* 悬停态下按压：抬升让位于回缩 */
+  &:active {
+    transform: translateY(0) scale(0.97);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        transform: none;
+      }
+    }
   }
 }
 
-/* 次要动作降为安静的文字链接，避免双药丸并排 */
+/* 次要动作降为安静的文字链接：不抬升，箭头代它点头 */
 .ghostAction {
   padding-left: $spacing-xs;
   padding-right: $spacing-xs;
@@ -184,9 +219,26 @@
   color: var(--text-secondary);
   background: transparent;
 
-  &:hover {
-    color: var(--text-primary);
-    background: transparent;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: var(--text-primary);
+      background: transparent;
+
+      .linkArrow {
+        transform: translateX(3px);
+      }
+    }
+  }
+}
+
+/* 文字链接末尾的箭头：hover 时前移 3px，暗示去向 */
+.linkArrow {
+  display: inline-block;
+  transition: transform var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    transform: none !important;
   }
 }
 
@@ -350,10 +402,7 @@
   border-radius: 14px;
   border: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
-  transition:
-    transform $transition-fast,
-    border-color $transition-fast,
-    box-shadow $transition-fast;
+  transition: border-color $transition-fast;
 
   /* 左上角色签：语义色调由 --tile-accent 注入 */
   &::before {
@@ -365,18 +414,15 @@
     background: var(--tile-accent, var(--border-hover));
   }
 
-  &:hover {
-    transform: translateY(-2px);
-    border-color: var(--border-hover);
-    box-shadow: var(--shadow-lg);
+  /* 卡片不可点击，因此不抬升不投影——悬停只轻描边框辅助聚焦 */
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      border-color: var(--border-hover);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
-
-    &:hover {
-      transform: none;
-    }
   }
 }
 
@@ -492,8 +538,14 @@
   color: var(--primary-active);
   text-decoration: none;
 
-  &:hover {
-    text-decoration: underline;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      text-decoration: underline;
+
+      .linkArrow {
+        transform: translateX(3px);
+      }
+    }
   }
 }
 
@@ -837,29 +889,42 @@
   text-decoration: none;
   overflow: hidden;
   transition:
-    transform $transition-fast,
+    transform var(--dur-press) var(--ease-out-strong),
     border-color $transition-fast,
-    box-shadow $transition-fast;
+    box-shadow var(--dur-hover) var(--ease-out-strong);
 
-  &:hover {
-    transform: translateY(-2px);
-    border-color: var(--border-hover);
-    box-shadow: 0 14px 30px rgb(0 0 0 / 0.12);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-hover);
+      box-shadow: 0 14px 30px rgb(0 0 0 / 0.12);
 
-    .ctaArrow {
-      transform: translateX(3px);
-      opacity: 1;
+      .ctaArrow {
+        transform: translateX(3px);
+        opacity: 1;
+      }
     }
+  }
+
+  /* 整卡可点：按下回缩，面积大所以比按钮更含蓄 */
+  &:active {
+    transform: translateY(0) scale(0.98);
   }
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
 
-    &:hover {
+    &:active {
       transform: none;
+    }
 
-      .ctaArrow {
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
         transform: none;
+
+        .ctaArrow {
+          transform: none;
+        }
       }
     }
   }
@@ -898,8 +963,18 @@
   color: var(--text-tertiary);
   opacity: 0.55;
   transition:
-    transform $transition-fast,
-    opacity $transition-fast;
+    transform var(--dur-hover) var(--ease-out-strong),
+    opacity var(--dur-hover) var(--ease-out-strong);
+}
+
+@keyframes periodBreath {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 @keyframes livePing {
