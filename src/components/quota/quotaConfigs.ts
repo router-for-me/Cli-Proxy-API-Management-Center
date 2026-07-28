@@ -1058,7 +1058,8 @@ const findFableUsageLimit = (payload: ClaudeUsagePayload) => {
     const modelName = (normalizeStringValue(limit?.scope?.model?.display_name) ?? '')
       .trim()
       .toLowerCase();
-    return kind === 'weekly_scoped' && (modelName === 'fable' || modelName === 'fable 5');
+    const isFable = modelName === 'fable' || modelName === 'fable 5';
+    return kind === 'weekly_scoped' && isFable && normalizeNumberValue(limit?.percent) !== null;
   });
 
   return candidates.find((limit) => limit.is_active === true) ?? candidates[0] ?? null;

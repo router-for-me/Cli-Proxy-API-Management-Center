@@ -59,6 +59,37 @@ describe('Claude Fable quota', () => {
     ]);
   });
 
+  test('falls back to the legacy field when the modern percent is invalid', () => {
+    const windows = buildClaudeQuotaWindows(
+      {
+        iguana_necktie: {
+          utilization: 41,
+          resets_at: legacyReset,
+        },
+        limits: [
+          {
+            kind: 'weekly_scoped',
+            percent: null,
+            resets_at: modernReset,
+            is_active: true,
+            scope: { model: { display_name: 'Fable' } },
+          },
+        ],
+      },
+      t
+    );
+
+    expect(windows).toEqual([
+      {
+        id: 'seven-day-fable',
+        label: 'claude_quota.seven_day_fable',
+        labelKey: 'claude_quota.seven_day_fable',
+        usedPercent: 41,
+        resetLabel: formatQuotaResetTime(legacyReset),
+      },
+    ]);
+  });
+
   test('prefers the active modern field without rendering a duplicate', () => {
     const windows = buildClaudeQuotaWindows(
       {
@@ -92,6 +123,40 @@ describe('Claude Fable quota', () => {
       usedPercent: 64,
       resetLabel: formatQuotaResetTime(modernReset),
     });
+  });
+
+  test('uses a valid modern candidate when the preferred candidate is invalid', () => {
+    const windows = buildClaudeQuotaWindows(
+      {
+        limits: [
+          {
+            kind: 'weekly_scoped',
+            percent: null,
+            resets_at: legacyReset,
+            is_active: true,
+            scope: { model: { display_name: 'Fable' } },
+          },
+          {
+            kind: 'weekly_scoped',
+            percent: 64,
+            resets_at: modernReset,
+            is_active: false,
+            scope: { model: { display_name: 'Fable' } },
+          },
+        ],
+      },
+      t
+    );
+
+    expect(windows).toEqual([
+      {
+        id: 'seven-day-fable',
+        label: 'claude_quota.seven_day_fable',
+        labelKey: 'claude_quota.seven_day_fable',
+        usedPercent: 64,
+        resetLabel: formatQuotaResetTime(modernReset),
+      },
+    ]);
   });
 
   test('ignores malformed and unrelated limits while preserving standard windows', () => {
