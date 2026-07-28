@@ -125,28 +125,32 @@ export function worstRemainingFor(
 }
 
 /**
- * Reset labels from formatQuotaResetTime / formatUnixSeconds are zero-padded
- * "MM/DD, HH:MM", so lexical order equals chronological order within a year.
- * Labels in any other shape (other locales, "-") are skipped rather than
- * mis-ordered; with none left the reset is reported unknown.
+ * Soonest upcoming window reset, chosen by its real instant.
  *
- * KNOWN LIMIT — across a year boundary this picks the wrong label: "12/31" sorts
- * after "01/02", so a January reset wins over a December one. Not worth fixing
- * here: the quota window types (ClaudeQuotaWindow / CodexQuotaWindow) keep only
- * the formatted string, so a correct comparison needs the raw reset timestamp
- * threaded through the parsers first. Until then this is a once-a-year cosmetic
- * mis-pick on a secondary label, and the per-card rows remain correct.
+ * Windows now carry `resetAtMs` alongside the display label, so the comparison
+ * is numeric. It used to compare the formatted "MM/DD, HH:MM" strings, which
+ * ordered wrongly across a year boundary — "12/31" sorts after "01/02", so a
+ * January reset beat a December one.
+ *
+ * Windows without an instant are skipped rather than guessed at; with none
+ * left, the reset is reported unknown. The label still comes from the chosen
+ * window, so display formatting is unchanged.
  */
-const WINDOW_RESET_PATTERN = /^\d{2}\/\d{2}, \d{2}:\d{2}$/;
-
 function soonestWindowReset(states: AnyQuotaState[]): string | null {
-  const labels = states.flatMap((state) => {
-    const windows = (state as { windows?: { resetLabel?: unknown }[] }).windows ?? [];
-    return windows
-      .map((w) => w.resetLabel)
-      .filter((l): l is string => typeof l === 'string' && WINDOW_RESET_PATTERN.test(l));
-  });
-  return labels.length ? labels.reduce((min, l) => (l < min ? l : min)) : null;
+  type Window = { resetLabel?: unknown; resetAtMs?: unknown };
+  let best: { atMs: number; label: string } | null = null;
+
+  for (const state of states) {
+    for (const window of ((state as { windows?: Window[] }).windows ?? [])) {
+      const atMs = window.resetAtMs;
+      const label = window.resetLabel;
+      if (typeof atMs !== 'number' || !Number.isFinite(atMs)) continue;
+      if (typeof label !== 'string' || !label.trim() || label === '-') continue;
+      if (!best || atMs < best.atMs) best = { atMs, label };
+    }
+  }
+
+  return best ? best.label : null;
 }
 
 /** Parse a kimi resetHint ("3h 20m", "7h", "45m", "<1m") into minutes. */

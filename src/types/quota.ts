@@ -156,6 +156,14 @@ export interface ClaudeQuotaWindow {
   labelKey?: string;
   usedPercent: number | null;
   resetLabel: string;
+  /**
+   * Reset instant in epoch ms, kept alongside the display label so callers that
+   * need to compute (ordering, the timeline) aren't stuck comparing formatted
+   * strings. Null when the payload carried no parseable timestamp.
+   */
+  resetAtMs?: number | null;
+  /** Window length in hours — 5 for the rolling window, 168 for the weekly ones. */
+  periodHours?: number | null;
 }
 
 export interface ClaudeQuotaState {
@@ -206,6 +214,10 @@ export interface CodexQuotaWindow {
   labelParams?: Record<string, string | number>;
   usedPercent: number | null;
   resetLabel: string;
+  /** Reset instant in epoch ms; null when the payload carried no timestamp. */
+  resetAtMs?: number | null;
+  /** Window length in hours, from the payload's limit_window_seconds. */
+  periodHours?: number | null;
 }
 
 export interface CodexQuotaState {
@@ -273,6 +285,10 @@ export interface KimiQuotaRow {
   used: number;
   limit: number;
   resetHint?: string;
+  /** Reset instant in epoch ms; null when only a relative hint was available. */
+  resetAtMs?: number | null;
+  /** Window length in hours, inferred from the limit's daily/weekly/monthly scope. */
+  periodHours?: number | null;
 }
 
 export interface KimiQuotaState {

@@ -18,6 +18,7 @@ import type {
   XaiProductUsageSummary,
 } from '@/types';
 import { normalizeNumberValue, normalizeQuotaFraction, normalizeStringValue } from './parsers';
+import { parseOffsetSecondsToMs, resolveResetMs } from './resetInstants';
 
 const ANTIGRAVITY_BUCKET_WINDOW_ORDER = new Map<string, number>([
   ['5h', 0],
@@ -198,10 +199,50 @@ function kimiLimitLabel(
   };
 }
 
+/**
+ * Absolute reset instant for a Kimi row.
+ *
+ * Kimi sends either an absolute timestamp or a relative countdown; the display
+ * hint collapses both to something like "3h 20m", which can't be positioned on
+ * a timeline. This keeps the instant.
+ */
+function kimiResetMs(data: Record<string, unknown>): number | null {
+  const absolute = resolveResetMs([
+    data.reset_at,
+    data.resetAt,
+    data.reset_time,
+    data.resetTime,
+  ]);
+  if (absolute !== null) return absolute;
+
+  const now = Date.now();
+  for (const key of ['reset_in', 'resetIn', 'ttl']) {
+    const relative = parseOffsetSecondsToMs(data[key], now);
+    if (relative !== null) return relative;
+  }
+  return null;
+}
+
+/** Window length in hours implied by a row's label/scope. */
+function kimiPeriodHours(label: string | undefined): number | null {
+  const text = (label ?? '').toLowerCase();
+  if (text.includes('daily') || text.includes('day')) return 24;
+  if (text.includes('weekly') || text.includes('week')) return 24 * 7;
+  if (text.includes('monthly') || text.includes('month')) return 24 * 30;
+  if (text.includes('hour')) return 5;
+  return null;
+}
+
 function toKimiUsageRow(
   data: Record<string, unknown>,
   fallbackLabel: KimiRowLabel
-): (KimiRowLabel & { used: number; limit: number; resetHint?: string }) | null {
+): (KimiRowLabel & {
+  used: number;
+  limit: number;
+  resetHint?: string;
+  resetAtMs?: number | null;
+  periodHours?: number | null;
+}) | null {
   const limit = toInt(data.limit);
   let used = toInt(data.used);
   if (used === null) {
@@ -220,6 +261,10 @@ function toKimiUsageRow(
     used: used ?? 0,
     limit: limit ?? 0,
     resetHint: kimiResetHint(data),
+    resetAtMs: kimiResetMs(data),
+    periodHours: kimiPeriodHours(
+      explicitLabel || fallbackLabel.label || fallbackLabel.labelKey
+    ),
   };
 }
 

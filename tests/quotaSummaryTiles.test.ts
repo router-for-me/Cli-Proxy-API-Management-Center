@@ -4,14 +4,32 @@ import { summarizeProvider, AT_RISK_THRESHOLD } from '@/components/quota/quotaSu
 const cred = (name: string) => ({ name, label: `${name}@example.com` });
 
 // claude / codex store USED percent — remaining = 100 - used.
-const claudeState = (usedPercents: (number | null)[], resetLabels: string[] = []) => ({
+/**
+ * Reset selection is driven by `resetAtMs`, not by the label text, so a fixture
+ * has to supply the instant. Labels are derived from it here so the two can't
+ * silently disagree; pass `resetAtMsList` explicitly to test a mismatch.
+ */
+const labelFromMs = (ms: number) => {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${p(d.getMonth() + 1)}/${p(d.getDate())}, ${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
+const claudeState = (
+  usedPercents: (number | null)[],
+  resetAtMsList: (number | null)[] = []
+) => ({
   status: 'success',
-  windows: usedPercents.map((usedPercent, i) => ({
-    id: `w${i}`,
-    label: `w${i}`,
-    usedPercent,
-    resetLabel: resetLabels[i] ?? '-',
-  })),
+  windows: usedPercents.map((usedPercent, i) => {
+    const resetAtMs = resetAtMsList[i] ?? null;
+    return {
+      id: `w${i}`,
+      label: `w${i}`,
+      usedPercent,
+      resetLabel: resetAtMs === null ? '-' : labelFromMs(resetAtMs),
+      resetAtMs,
+    };
+  }),
 });
 
 // antigravity stores REMAINING as a 0..1 fraction.
@@ -99,19 +117,38 @@ describe('summarizeProvider accounts', () => {
 });
 
 describe('summarizeProvider nextResetLabel', () => {
-  test('claude: picks the soonest formatted window reset across credentials', () => {
+  test('claude: picks the soonest window reset across credentials', () => {
+    const aug1 = Date.UTC(2026, 7, 1, 21, 0);
+    const jul29 = Date.UTC(2026, 6, 29, 14, 59);
+    const jul31 = Date.UTC(2026, 6, 31, 15, 0);
+
     const summary = summarizeProvider('claude', [cred('a'), cred('b')], {
-      a: claudeState([10, 20], ['08/01, 21:00', '07/29, 14:59']),
-      b: claudeState([30], ['07/31, 15:00']),
+      a: claudeState([10, 20], [aug1, jul29]),
+      b: claudeState([30], [jul31]),
     });
-    expect(summary.nextResetLabel).toBe('07/29, 14:59');
+    expect(summary.nextResetLabel).toBe(labelFromMs(jul29));
   });
 
-  test('claude: ignores placeholder "-" labels and reports null with none left', () => {
+  test('claude: reports null when no window carries a reset instant', () => {
     const summary = summarizeProvider('claude', [cred('a')], {
-      a: claudeState([10], ['-']),
+      a: claudeState([10], [null]),
     });
     expect(summary.nextResetLabel).toBeNull();
+  });
+
+  /**
+   * Regression: selection used to compare formatted "MM/DD, HH:MM" strings, so
+   * "12/31" sorted after "01/02" and a January reset beat a December one.
+   */
+  test('claude: picks December over January across a year boundary', () => {
+    const dec31 = Date.UTC(2026, 11, 31, 20, 0);
+    const jan02 = Date.UTC(2027, 0, 2, 9, 0);
+
+    const summary = summarizeProvider('claude', [cred('a'), cred('b')], {
+      a: claudeState([10], [jan02]),
+      b: claudeState([20], [dec31]),
+    });
+    expect(summary.nextResetLabel).toBe(labelFromMs(dec31));
   });
 
   test('kimi: picks the soonest relative reset hint', () => {

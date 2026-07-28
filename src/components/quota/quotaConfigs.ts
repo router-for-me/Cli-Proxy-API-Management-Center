@@ -68,6 +68,10 @@ import {
   resolveCodexSubscriptionActiveUntil,
   formatCodexResetLabel,
   formatQuotaResetTime,
+  claudePeriodHours,
+  parseOffsetSecondsToMs,
+  periodHoursFromSeconds,
+  resolveResetMs,
   formatKimiResetHint,
   buildAntigravityQuotaGroups,
   buildKimiQuotaRows,
@@ -377,12 +381,24 @@ export const buildCodexQuotaWindows = (
     const usedPercentRaw = normalizeNumberValue(window.used_percent ?? window.usedPercent);
     const isLimitReached = Boolean(limitReached) || allowed === false;
     const usedPercent = usedPercentRaw ?? (isLimitReached && resetLabel !== '-' ? 100 : null);
+    // Keep the raw instant beside the label — see utils/quota/resetInstants.
+    const resetAtMs =
+      resolveResetMs([window.reset_at, window.resetAt]) ??
+      parseOffsetSecondsToMs(
+        window.reset_after_seconds ?? window.resetAfterSeconds,
+        Date.now()
+      );
+    const periodHours = periodHoursFromSeconds(
+      window.limit_window_seconds ?? window.limitWindowSeconds
+    );
     windows.push({
       id,
       label,
       labelKey,
       labelParams,
       usedPercent,
+      resetAtMs,
+      periodHours,
       resetLabel,
     });
   };
@@ -1075,6 +1091,10 @@ export const buildClaudeQuotaWindows = (
       labelKey,
       usedPercent,
       resetLabel,
+      // Claude states the period nowhere in the payload, so it comes from the
+      // key: `five_hour` is the rolling window, everything else is weekly.
+      resetAtMs: resolveResetMs([typedWindow.resets_at]),
+      periodHours: claudePeriodHours(key),
     });
   }
 
@@ -1087,6 +1107,10 @@ export const buildClaudeQuotaWindows = (
         labelKey: 'claude_quota.seven_day_fable',
         usedPercent,
         resetLabel: formatQuotaResetTime(fableLimit.resets_at ?? undefined),
+        // `weekly_scoped` is a 7-day window by definition, so the timeline can
+        // place this row alongside the ones derived from the named keys.
+        resetAtMs: resolveResetMs([fableLimit.resets_at]),
+        periodHours: claudePeriodHours('seven_day'),
       });
     }
   }

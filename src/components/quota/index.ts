@@ -5,6 +5,14 @@
 export { QuotaCard } from './QuotaCard';
 export { QuotaDensityPicker } from './QuotaDensityPicker';
 export { QuotaFilterChips } from './QuotaFilterChips';
+export { QuotaTimeline } from './QuotaTimeline';
+export {
+  buildTimelineLane,
+  projectLane,
+  timelineSpan,
+  windowsIn,
+} from './quotaTimelineModel';
+export type { TimelineLane, TimelineMode, TimelineWindow } from './quotaTimelineModel';
 export {
   readNicknames,
   writeNickname,

@@ -26,6 +26,7 @@ import {
   QuotaDensityPicker,
   QuotaFilterChips,
   QuotaSummaryTiles,
+  QuotaTimeline,
   QUOTA_PROVIDER_ORDER,
   readNicknames,
   readStoredDensity,
@@ -55,6 +56,15 @@ export function QuotaPage() {
   const handleRename = useCallback((name: string, nickname: string) => {
     setNicknames((prev) => writeNickname(prev, name, nickname));
   }, []);
+
+  /** Shared name resolution, so cards, tiles and timeline lanes agree. */
+  const displayNameFor = useCallback(
+    (name: string) => {
+      const file = files.find((candidate) => candidate.name === name);
+      return resolveDisplayName(name, file?.label, file?.email, nicknames);
+    },
+    [files, nicknames]
+  );
 
   const disableControls = connectionStatus !== 'connected';
 
@@ -210,6 +220,15 @@ export function QuotaPage() {
           ))}
         </div>
       )}
+
+      {/* Timeline shows every credential regardless of the chip filter: the
+          question it answers — does capacity come back all at once? — is about
+          how lanes relate to each other, so filtering it defeats the purpose. */}
+      <QuotaTimeline
+        entries={entries}
+        displayNameFor={displayNameFor}
+        resolvedTheme={resolvedTheme}
+      />
     </div>
   );
 }
