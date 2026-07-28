@@ -1129,7 +1129,17 @@
   "quota_management": {
     "title": "配额管理",
     "description": "集中查看 OAuth 额度与剩余情况",
-    "refresh_all_credentials": "刷新全部凭证"
+    "refresh_all_credentials": "刷新全部凭证",
+    "at_risk": "{{count}} 个即将耗尽",
+    "lowest_remaining": "最低剩余",
+    "not_loaded": "未加载",
+    "next_reset": "下次重置",
+    "credentials": "个凭证",
+    "more_accounts": "还有 {{count}} 个",
+    "filter_all": "全部凭证",
+    "empty_title": "暂无可监控的凭证",
+    "density_label": "每行卡片数",
+    "density_option": "每行 {{count}} 个"
   },
   "plugin_management": {
     "title": "插件管理",

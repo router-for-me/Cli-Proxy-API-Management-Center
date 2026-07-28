@@ -1155,7 +1155,17 @@
   "quota_management": {
     "title": "配額管理",
     "description": "集中查看 OAuth 配額與剩餘情況",
-    "refresh_all_credentials": "重新整理全部憑證"
+    "refresh_all_credentials": "重新整理全部憑證",
+    "at_risk": "{{count}} 個即將耗盡",
+    "lowest_remaining": "最低剩餘",
+    "not_loaded": "未載入",
+    "next_reset": "下次重設",
+    "credentials": "個憑證",
+    "more_accounts": "還有 {{count}} 個",
+    "filter_all": "全部憑證",
+    "empty_title": "暫無可監控的憑證",
+    "density_label": "每列卡片數",
+    "density_option": "每列 {{count}} 個"
   },
   "plugin_management": {
     "title": "插件管理",

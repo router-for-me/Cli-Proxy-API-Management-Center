@@ -1116,7 +1116,23 @@
   "quota_management": {
     "title": "Управление квотами",
     "description": "Следите за статусом квот OAuth для учётных данных Antigravity, Codex, Claude, Kimi и xAI.",
-    "refresh_all_credentials": "Обновить все учётные данные"
+    "refresh_all_credentials": "Обновить все учётные данные",
+    "at_risk_one": "{{count}} под угрозой",
+    "at_risk_few": "{{count}} под угрозой",
+    "at_risk_many": "{{count}} под угрозой",
+    "lowest_remaining": "минимальный остаток",
+    "not_loaded": "не загружено",
+    "next_reset": "следующий сброс",
+    "credentials_one": "учётная запись",
+    "credentials_few": "учётные записи",
+    "credentials_many": "учётных записей",
+    "more_accounts": "ещё {{count}}",
+    "filter_all": "Все учётные данные",
+    "empty_title": "Нет учётных данных для мониторинга",
+    "density_label": "Карточек в ряду",
+    "density_option_one": "{{count}} в ряду",
+    "density_option_few": "{{count}} в ряду",
+    "density_option_many": "{{count}} в ряду"
   },
   "plugin_management": {
     "title": "Управление плагинами",

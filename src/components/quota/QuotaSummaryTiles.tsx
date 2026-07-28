@@ -132,6 +132,9 @@ export function QuotaSummaryTiles({
                 <b className={local.footValue}>{summary.nextResetLabel ?? '—'}</b>
               </span>
               <span>
+                {/* The number lives here, not in the translation — `count` is
+                    passed only so i18next picks the right plural form. A string
+                    that also interpolates {{count}} renders "4 4 个凭证". */}
                 <b className={local.footValue}>{summary.total}</b>{' '}
                 {t('quota_management.credentials', {
                   count: summary.total,
