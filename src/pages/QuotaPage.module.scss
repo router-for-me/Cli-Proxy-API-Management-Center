@@ -1183,3 +1183,150 @@
     line-height: 1.6;
   }
 }
+
+// Columns-per-row picker. Glyph-only buttons; the icon communicates the layout.
+.densityPicker {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+
+  button {
+    display: grid;
+    place-items: center;
+    padding: 5px 8px;
+    line-height: 0;
+    color: var(--text-quaternary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: var(--text-secondary);
+    }
+
+    &[aria-pressed='true'] {
+      background: var(--floating-surface, var(--bg-primary));
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+    }
+
+    svg {
+      display: block;
+    }
+  }
+}
+
+// Per-provider summary tiles. Equal height (stretch) so the row has a flat
+// bottom edge regardless of how many credentials each provider has.
+.summaryTiles {
+  display: grid;
+  gap: $spacing-md;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  align-items: stretch;
+}
+
+.summaryTile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  padding: $spacing-md;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: var(--border-hover);
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--provider-accent, var(--border-hover));
+    background: var(--bg-tertiary);
+  }
+}
+
+.summaryTileHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.summaryTileBadge {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.summaryTileRisk {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--failure-badge-text, var(--danger-color));
+  background: var(--failure-badge-bg, transparent);
+  border: 1px solid var(--failure-badge-border, var(--danger-color));
+}
+
+.summaryTileFigures {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-sm;
+}
+
+.summaryTileValue {
+  font-size: 26px;
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.summaryTileCaption {
+  font-size: 11.5px;
+  color: var(--text-quaternary);
+}
+
+.summaryTileFoot {
+  margin-top: auto;
+  padding-top: 2px;
+  font-size: 11.5px;
+  color: var(--text-quaternary);
+  font-variant-numeric: tabular-nums;
+}
+
+// Density picker drives every provider grid through one custom property, so the
+// existing ResizeObserver column measurement still reports the truth.
+.densityScope {
+  .antigravityGrid,
+  .claudeGrid,
+  .codexGrid,
+  .kimiGrid,
+  .xaiGrid {
+    grid-template-columns: repeat(var(--quota-columns, 4), minmax(0, 1fr));
+
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.boardControls {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
