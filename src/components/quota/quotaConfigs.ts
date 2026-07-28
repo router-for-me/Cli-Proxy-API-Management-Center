@@ -1050,18 +1050,35 @@ const renderCodexItems = (
   return h(Fragment, null, ...nodes);
 };
 
-const buildClaudeQuotaWindows = (
+const findFableUsageLimit = (payload: ClaudeUsagePayload) => {
+  if (!Array.isArray(payload.limits)) return null;
+
+  const candidates = payload.limits.filter((limit) => {
+    const kind = (normalizeStringValue(limit?.kind) ?? '').trim().toLowerCase();
+    const modelName = (normalizeStringValue(limit?.scope?.model?.display_name) ?? '')
+      .trim()
+      .toLowerCase();
+    const isFable = modelName === 'fable' || modelName === 'fable 5';
+    return kind === 'weekly_scoped' && isFable && normalizeNumberValue(limit?.percent) !== null;
+  });
+
+  return candidates.find((limit) => limit.is_active === true) ?? candidates[0] ?? null;
+};
+
+export const buildClaudeQuotaWindows = (
   payload: ClaudeUsagePayload,
   t: TFunction
 ): ClaudeQuotaWindow[] => {
   const windows: ClaudeQuotaWindow[] = [];
+  const fableLimit = findFableUsageLimit(payload);
 
   for (const { key, id, labelKey } of CLAUDE_USAGE_WINDOW_KEYS) {
+    if (key === 'iguana_necktie' && fableLimit) continue;
     const window = payload[key as keyof ClaudeUsagePayload];
     if (!window || typeof window !== 'object' || !('utilization' in window)) continue;
-    const typedWindow = window as { utilization: number; resets_at: string };
+    const typedWindow = window as { utilization: number; resets_at: string | null };
     const usedPercent = normalizeNumberValue(typedWindow.utilization);
-    const resetLabel = formatQuotaResetTime(typedWindow.resets_at);
+    const resetLabel = formatQuotaResetTime(typedWindow.resets_at ?? undefined);
     windows.push({
       id,
       label: t(labelKey),
@@ -1069,6 +1086,19 @@ const buildClaudeQuotaWindows = (
       usedPercent,
       resetLabel,
     });
+  }
+
+  if (fableLimit) {
+    const usedPercent = normalizeNumberValue(fableLimit.percent);
+    if (usedPercent !== null) {
+      windows.push({
+        id: 'seven-day-fable',
+        label: t('claude_quota.seven_day_fable'),
+        labelKey: 'claude_quota.seven_day_fable',
+        usedPercent,
+        resetLabel: formatQuotaResetTime(fableLimit.resets_at ?? undefined),
+      });
+    }
   }
 
   return windows;
