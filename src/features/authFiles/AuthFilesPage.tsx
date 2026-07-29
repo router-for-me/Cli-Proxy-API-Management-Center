@@ -29,6 +29,7 @@ import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelA
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { VaultHeader } from '@/features/authFiles/components/VaultHeader';
 import { VaultPulse } from '@/features/authFiles/components/VaultPulse';
+import { invalidateAuthFileDerivedCaches } from '@/features/authFiles/cacheInvalidation';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
 import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
@@ -110,6 +111,11 @@ export function AuthFilesPage() {
     invalidateModels,
   } = useAuthFilesModels();
 
+  const invalidateDerivedCaches = useCallback(
+    (names?: string[]) => invalidateAuthFileDerivedCaches(invalidateModels, names),
+    [invalidateModels]
+  );
+
   const {
     files,
     selectedFiles,
@@ -139,7 +145,7 @@ export function AuthFilesPage() {
     batchDownload,
     batchSetStatus,
     batchDelete,
-  } = useAuthFilesData({ onFilesMutated: invalidateModels });
+  } = useAuthFilesData({ onFilesMutated: invalidateDerivedCaches });
 
   const statusBarCache = useAuthFilesStatusBarCache(files);
 

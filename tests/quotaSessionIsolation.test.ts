@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
+import { invalidateAuthFileDerivedCaches } from '../src/features/authFiles/cacheInvalidation';
 import {
   captureQuotaCacheGeneration,
   commitIfQuotaCacheCurrent,
@@ -34,5 +35,36 @@ describe('quota cache session isolation', () => {
       })
     ).toBe(true);
     expect(committed).toBe(true);
+  });
+
+  test('clears same-name quota and rejects an in-flight commit after auth mutation', () => {
+    const fileName = 'shared-codex.json';
+    useQuotaStore.getState().setCodexQuota({
+      [fileName]: {
+        status: 'success',
+        windows: [],
+        planType: 'account-a',
+      },
+    });
+    const accountARequest = captureQuotaCacheGeneration();
+    let invalidatedNames: string[] | undefined;
+
+    invalidateAuthFileDerivedCaches(
+      (names) => {
+        invalidatedNames = names;
+      },
+      [fileName]
+    );
+
+    expect(invalidatedNames).toEqual([fileName]);
+    expect(useQuotaStore.getState().codexQuota[fileName]).toBeUndefined();
+
+    let committed = false;
+    expect(
+      commitIfQuotaCacheCurrent(accountARequest, () => {
+        committed = true;
+      })
+    ).toBe(false);
+    expect(committed).toBe(false);
   });
 });
