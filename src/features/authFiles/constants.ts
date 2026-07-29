@@ -111,9 +111,6 @@ export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
   return String(raw).trim();
 };
 
-export const hasAuthFileStatusMessage = (file: AuthFileItem): boolean =>
-  getAuthFileStatusMessage(file).length > 0;
-
 /** 这些 status_message 视为健康，不触发告警态。 */
 export const HEALTHY_AUTH_FILE_STATUS_MESSAGES = new Set([
   'ok',
@@ -127,6 +124,16 @@ export const HEALTHY_AUTH_FILE_STATUS_MESSAGES = new Set([
 export const hasAuthFileStatusWarning = (file: AuthFileItem): boolean => {
   const message = getAuthFileStatusMessage(file);
   return Boolean(message) && !HEALTHY_AUTH_FILE_STATUS_MESSAGES.has(message.toLowerCase());
+};
+
+/**
+ * 是否为需要用户处理的问题凭证。
+ * 主动停用是独立状态，不应进入“问题”筛选或“删除问题凭证”的批量操作。
+ */
+export const isProblemAuthFile = (file: AuthFileItem): boolean => {
+  const status = typeof file.status === 'string' ? file.status.trim().toLowerCase() : '';
+  if (file.disabled === true || status === 'disabled') return false;
+  return file.unavailable === true || status === 'error' || hasAuthFileStatusWarning(file);
 };
 
 export const getTypeLabel = (t: TFunction, type: string): string => {

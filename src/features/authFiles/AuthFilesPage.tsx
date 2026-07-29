@@ -13,7 +13,7 @@ import {
   QUOTA_PROVIDER_TYPES,
   clampCardPageSize,
   getTypeLabel,
-  hasAuthFileStatusMessage,
+  isProblemAuthFile,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   type QuotaProviderType,
@@ -386,7 +386,7 @@ export function AuthFilesPage() {
       files.filter((file) => {
         if (enabledOnly && file.disabled === true) return false;
         if (disabledOnly && file.disabled !== true) return false;
-        if (problemOnly && !hasAuthFileStatusMessage(file)) return false;
+        if (problemOnly && !isProblemAuthFile(file)) return false;
         return true;
       }),
     [disabledOnly, enabledOnly, files, problemOnly]
@@ -494,7 +494,7 @@ export function AuthFilesPage() {
     () => files.filter((file) => file.disabled !== true).length,
     [files]
   );
-  const problemCount = useMemo(() => files.filter(hasAuthFileStatusMessage).length, [files]);
+  const problemCount = useMemo(() => files.filter(isProblemAuthFile).length, [files]);
 
   /* ---------- 首屏卡片一次性级联入场 ----------
    * 首批数据渲染后立即翻转 cardsAnimated；已挂载的卡片在挂载时捕获过
