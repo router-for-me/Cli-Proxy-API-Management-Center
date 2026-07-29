@@ -312,6 +312,7 @@
     "batch_delete_title": "删除选中文件",
     "batch_delete_confirm": "确定要删除 {{count}} 个文件吗？",
     "batch_selected": "已选 {{count}} 项",
+    "batch_toolbar_label": "批量操作",
     "batch_select_all": "全选",
     "batch_select_page": "全选当前页",
     "batch_select_filtered": "全选筛选结果",

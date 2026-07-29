@@ -311,6 +311,7 @@
     "batch_delete_title": "Удалить выбранные файлы",
     "batch_delete_confirm": "Удалить {{count}} файлов?",
     "batch_selected": "{{count}} выбрано",
+    "batch_toolbar_label": "Групповые действия",
     "batch_select_all": "Выбрать все",
     "batch_select_page": "Выбрать страницу",
     "batch_select_filtered": "Выбрать по фильтру",

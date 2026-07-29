@@ -312,6 +312,7 @@
     "batch_delete_title": "刪除已選檔案",
     "batch_delete_confirm": "確定要刪除 {{count}} 個檔案嗎？",
     "batch_selected": "已選 {{count}} 項",
+    "batch_toolbar_label": "批次操作",
     "batch_select_all": "全選",
     "batch_select_page": "全選目前頁",
     "batch_select_filtered": "全選篩選結果",

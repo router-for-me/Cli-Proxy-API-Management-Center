@@ -2,20 +2,15 @@ import {
   useCallback,
   type CSSProperties,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type ChangeEvent,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { animate } from 'motion/mini';
-import type { AnimationPlaybackControlsWithThen } from 'motion-dom';
 import { useInterval } from '@/hooks/useInterval';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { useActionBarHeightVar } from '@/hooks/useActionBarHeightVar';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -44,7 +39,8 @@ import {
 } from '@/features/authFiles/constants';
 import { AuthFileCard } from '@/features/authFiles/components/AuthFileCard';
 import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
-import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components/AuthFilesPrefixProxyEditorModal';
+import { AuthFileDetailsSheet } from '@/features/authFiles/components/AuthFileDetailsSheet';
+import { BatchActionBar } from '@/features/authFiles/components/BatchActionBar';
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
 import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelAliasCard';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
@@ -65,10 +61,6 @@ import {
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import styles from './AuthFilesPage.module.scss';
 
-const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
-const easePower2In = (progress: number) => progress ** 3;
-const BATCH_BAR_BASE_TRANSFORM = 'translateX(-50%)';
-const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
 
@@ -116,12 +108,7 @@ export function AuthFilesPage() {
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
-  const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
-  const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
-  const batchActionAnimationRef = useRef<AnimationPlaybackControlsWithThen | null>(null);
-  const previousSelectionCountRef = useRef(0);
-  const selectionCountRef = useRef(0);
   const displaySettingsRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -561,75 +548,6 @@ export function AuthFilesPage() {
     [filter, navigate]
   );
 
-  useActionBarHeightVar(
-    floatingBatchActionsRef,
-    '--auth-files-action-bar-height',
-    batchActionBarVisible
-  );
-
-  useEffect(() => {
-    selectionCountRef.current = selectionCount;
-    if (selectionCount > 0) {
-      setBatchActionBarVisible(true);
-    }
-  }, [selectionCount]);
-
-  useLayoutEffect(() => {
-    if (!batchActionBarVisible) return;
-    const currentCount = selectionCount;
-    const previousCount = previousSelectionCountRef.current;
-    const actionsEl = floatingBatchActionsRef.current;
-    if (!actionsEl) return;
-
-    batchActionAnimationRef.current?.stop();
-    batchActionAnimationRef.current = null;
-
-    if (currentCount > 0 && previousCount === 0) {
-      batchActionAnimationRef.current = animate(
-        actionsEl,
-        {
-          transform: [BATCH_BAR_HIDDEN_TRANSFORM, BATCH_BAR_BASE_TRANSFORM],
-          opacity: [0, 1],
-        },
-        {
-          duration: 0.28,
-          ease: easePower3Out,
-          onComplete: () => {
-            actionsEl.style.transform = BATCH_BAR_BASE_TRANSFORM;
-            actionsEl.style.opacity = '1';
-          },
-        }
-      );
-    } else if (currentCount === 0 && previousCount > 0) {
-      batchActionAnimationRef.current = animate(
-        actionsEl,
-        {
-          transform: [BATCH_BAR_BASE_TRANSFORM, BATCH_BAR_HIDDEN_TRANSFORM],
-          opacity: [1, 0],
-        },
-        {
-          duration: 0.22,
-          ease: easePower2In,
-          onComplete: () => {
-            if (selectionCountRef.current === 0) {
-              setBatchActionBarVisible(false);
-            }
-          },
-        }
-      );
-    }
-
-    previousSelectionCountRef.current = currentCount;
-  }, [batchActionBarVisible, selectionCount]);
-
-  useEffect(
-    () => () => {
-      batchActionAnimationRef.current?.stop();
-      batchActionAnimationRef.current = null;
-    },
-    []
-  );
-
   const renderFilterTags = () => (
     <div className={styles.filterRail}>
       <div className={styles.filterTags}>
@@ -975,7 +893,7 @@ export function AuthFilesPage() {
         onCopyText={copyTextWithNotification}
       />
 
-      <AuthFilesPrefixProxyEditorModal
+      <AuthFileDetailsSheet
         disableControls={disableControls}
         editor={prefixProxyEditor}
         updatedText={prefixProxyUpdatedText}
@@ -986,80 +904,21 @@ export function AuthFilesPage() {
         onChange={handlePrefixProxyChange}
       />
 
-      {batchActionBarVisible && typeof document !== 'undefined'
-        ? createPortal(
-            <div className={styles.batchActionContainer} ref={floatingBatchActionsRef}>
-              <div className={styles.batchActionBar}>
-                <div className={styles.batchActionLeft}>
-                  <span className={styles.batchSelectionText}>
-                    {t('auth_files.batch_selected', { count: selectionCount })}
-                  </span>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => selectAllVisible(pageItems)}
-                    disabled={selectablePageItems.length === 0}
-                  >
-                    {t('auth_files.batch_select_page')}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => selectAllVisible(sorted)}
-                    disabled={selectableFilteredItems.length === 0}
-                  >
-                    {t('auth_files.batch_select_filtered')}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => invertVisibleSelection(pageItems)}
-                    disabled={selectablePageItems.length === 0}
-                  >
-                    {t('auth_files.batch_invert_page')}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={deselectAll}>
-                    {t('auth_files.batch_deselect')}
-                  </Button>
-                </div>
-                <div className={styles.batchActionRight}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void batchDownload(selectedNames)}
-                    disabled={disableControls || selectedNames.length === 0}
-                  >
-                    {t('auth_files.batch_download')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => batchSetStatus(selectedNames, true)}
-                    disabled={batchStatusButtonsDisabled}
-                  >
-                    {t('auth_files.batch_enable')}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => batchSetStatus(selectedNames, false)}
-                    disabled={batchStatusButtonsDisabled}
-                  >
-                    {t('auth_files.batch_disable')}
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => batchDelete(selectedNames)}
-                    disabled={disableControls || selectedNames.length === 0}
-                  >
-                    {t('common.delete')}
-                  </Button>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
+      <BatchActionBar
+        selectionCount={selectionCount}
+        selectablePageCount={selectablePageItems.length}
+        selectableFilteredCount={selectableFilteredItems.length}
+        disableControls={disableControls}
+        batchStatusDisabled={batchStatusButtonsDisabled}
+        onSelectPage={() => selectAllVisible(pageItems)}
+        onSelectFiltered={() => selectAllVisible(sorted)}
+        onInvertPage={() => invertVisibleSelection(pageItems)}
+        onDeselectAll={deselectAll}
+        onDownload={() => void batchDownload(selectedNames)}
+        onEnable={() => batchSetStatus(selectedNames, true)}
+        onDisable={() => batchSetStatus(selectedNames, false)}
+        onDelete={() => batchDelete(selectedNames)}
+      />
     </div>
   );
 }

@@ -23,7 +23,7 @@ import {
   QuotaProgressBar,
   type QuotaProgressBarProps,
 } from '@/components/quota/QuotaProgressBar';
-import styles from '@/pages/AuthFilesPage.module.scss';
+import styles from './AuthFileQuota.module.scss';
 
 /** 认证文件卡片外衣的进度条：绑定本页样式，满足 quotaConfigs 的 helpers 契约。 */
 const BoundQuotaProgressBar = (props: QuotaProgressBarProps) => (

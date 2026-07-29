@@ -1,0 +1,268 @@
+@use '../../../styles/mixins' as *;
+
+/* ============================================================
+ * 认证文件卡片的配额区外衣。
+ *
+ * 契约：quotaConfigs.renderQuotaItems 通过 helpers.styles 按名查找
+ * 以下类（antigravity/claude/codex/kimi/xai 五条渲染路径共 23 个），
+ * 另加本组件宿主类与 QuotaProgressBar 的 5 个注入类。
+ * 漏名会静默渲染 class="undefined" —— 增删前先对照 quotaConfigs.ts。
+ * ============================================================ */
+
+/* ---------- 宿主 ---------- */
+
+.quotaSection {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 55%, transparent);
+}
+
+.quotaMessage {
+  font-family: $font-mono;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 5px 4px;
+}
+
+button.quotaMessageAction {
+  cursor: pointer;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  transition: color $transition-fast;
+
+  &:hover:not(:disabled) {
+    color: var(--primary-hover);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    color: var(--text-quaternary);
+  }
+}
+
+.quotaError {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--danger-color);
+  overflow-wrap: anywhere;
+}
+
+.quotaCardActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.quotaResetCreditButton {
+  white-space: nowrap;
+}
+
+/* ---------- 配额行（全 provider 通用） ---------- */
+
+.quotaRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quotaRowHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.quotaModel {
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  @include text-ellipsis;
+}
+
+.quotaMeta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-shrink: 0;
+  font-family: $font-mono;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.quotaPercent {
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.quotaReset {
+  color: var(--text-quaternary);
+}
+
+.quotaAmount {
+  font-family: $font-mono;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+/* ---------- 进度条（QuotaProgressBar 注入，Meter 风 6px 轨道） ---------- */
+
+.quotaBar {
+  height: 6px;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  overflow: hidden;
+}
+
+.quotaBarFill {
+  height: 100%;
+  border-radius: $radius-full;
+  transition: width 360ms var(--ease-out-strong, ease);
+}
+
+.quotaBarFillHigh {
+  background: var(--viz-success);
+}
+
+.quotaBarFillMedium {
+  background: var(--quota-medium-color);
+}
+
+.quotaBarFillLow {
+  background: var(--viz-failure);
+}
+
+/* ---------- 计划徽章（codexPlan*：antigravity/claude/xai 复用） ---------- */
+
+.codexPlan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.codexPlanItem {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
+}
+
+.codexPlanLabel {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+}
+
+.codexPlanValue {
+  font-family: $font-mono;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--text-secondary);
+}
+
+.premiumPlanValue {
+  font-family: $font-mono;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--amber-text);
+}
+
+/* ---------- Antigravity 分组 ---------- */
+
+.antigravityQuotaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  & + & {
+    margin-top: 3px;
+    padding-top: 8px;
+    border-top: 1px dashed color-mix(in srgb, var(--border-color) 80%, transparent);
+  }
+}
+
+.antigravityQuotaGroupHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.antigravityQuotaGroupTitle {
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.antigravityQuotaGroupDescription {
+  font-size: 10.5px;
+  color: var(--text-quaternary);
+}
+
+/* ---------- Codex 重置积分 ---------- */
+
+.codexResetCredits {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+}
+
+.codexResetCreditsTitle {
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.codexResetCreditRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+}
+
+.codexResetCreditLabel {
+  min-width: 0;
+  color: var(--text-secondary);
+  @include text-ellipsis;
+}
+
+.codexResetCreditTime {
+  flex-shrink: 0;
+  font-family: $font-mono;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.codexResetCreditsError {
+  font-size: 11px;
+  color: var(--danger-color);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 降级 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .quotaBarFill {
+    transition: none;
+  }
+}

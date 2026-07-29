@@ -1,0 +1,489 @@
+@use '../../../styles/mixins' as *;
+
+/* ============================================================
+ * 凭证卡片 — statTile 配方（14px 圆角 / 1px 边框 / 82% 透感纸面）
+ * 遥测内容一律 mono + tabular-nums；品牌色只出现在头像与类型徽章。
+ * ============================================================ */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  transition:
+    transform var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
+    border-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
+    box-shadow var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    transform: translateY(-1px);
+    border-color: var(--border-hover);
+    box-shadow: 0 12px 26px -14px rgb(0 0 0 / 0.16);
+  }
+}
+
+.cardCompact {
+  gap: 10px;
+  padding: 13px 14px;
+}
+
+.cardSelected {
+  border-color: color-mix(in srgb, var(--primary-color) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-color) 40%, transparent);
+}
+
+.cardDisabled {
+  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
+
+  .head,
+  .note,
+  .health,
+  .metaRow {
+    opacity: 0.55;
+  }
+}
+
+/* 首次数据到达时的一次性级联入场；过滤/翻页/轮询不重播 */
+.cardEnter {
+  animation: card-in 0.45s var(--ease-out-strong, ease-out) both;
+  animation-delay: var(--card-delay, 0s);
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+}
+
+/* ---------- 头部：勾选 + 品牌头像 + 身份 ---------- */
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.selection {
+  margin-top: 8px;
+}
+
+.avatar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.avatarImage {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.avatarFallback {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.identity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.badgeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.typeBadge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.stateBadge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.6;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.stateDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-quaternary);
+}
+
+.stateActive {
+  color: var(--success-badge-text);
+  border-color: color-mix(in srgb, var(--viz-success) 35%, transparent);
+  background: color-mix(in srgb, var(--viz-success) 8%, transparent);
+
+  .stateDot {
+    background: var(--viz-success);
+  }
+}
+
+.stateWarning {
+  color: var(--amber-text);
+  border-color: var(--amber-30);
+  background: var(--amber-10);
+
+  .stateDot {
+    background: var(--amber-color);
+  }
+}
+
+.stateDisabled {
+  color: var(--text-tertiary);
+  border-color: var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.stateVirtual {
+  color: var(--text-secondary);
+  border-style: dashed;
+  border-color: var(--border-hover);
+}
+
+.fileName {
+  font-family: $font-mono;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  @include text-ellipsis;
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  @include text-ellipsis;
+}
+
+/* ---------- 告警行 ---------- */
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--warning-text);
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  padding: 7px 9px;
+
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    @include text-ellipsis-multiline(2);
+  }
+}
+
+.warningIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---------- 健康区：eyebrow + 计数 + 状态条 ---------- */
+
+.health {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.healthHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.healthLabel {
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.healthCounts {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: $font-mono;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.countOk {
+  color: var(--text-quaternary);
+}
+
+.countFail {
+  color: var(--text-quaternary);
+}
+
+/* 绿色只给活的流量：有计数才点亮 */
+.countLive.countOk {
+  color: var(--viz-success);
+}
+
+.countLive.countFail {
+  color: var(--viz-failure);
+}
+
+/* ---------- ProviderStatusBar 注入样式（18 个契约类名） ---------- */
+
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusBlocks {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.statusBlockWrapper {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 3px;
+}
+
+.statusBlock {
+  height: 14px;
+  border-radius: 2px;
+}
+
+.statusBlockIdle {
+  background: color-mix(in srgb, var(--text-quaternary) 26%, transparent);
+}
+
+.statusBlockActive .statusBlock {
+  outline: 1px solid var(--text-secondary);
+  outline-offset: 1px;
+}
+
+.statusRate {
+  font-family: $font-mono;
+  font-size: 11.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-quaternary);
+  min-width: 40px;
+  text-align: right;
+}
+
+.statusRateHigh {
+  color: var(--viz-success);
+}
+
+.statusRateMedium {
+  color: var(--quota-medium-color);
+}
+
+.statusRateLow {
+  color: var(--viz-failure);
+}
+
+.statusTooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--floating-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--floating-shadow);
+  pointer-events: none;
+  font-family: $font-mono;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.statusTooltipLeft {
+  left: 0;
+  transform: none;
+}
+
+.statusTooltipRight {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.tooltipTime {
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+}
+
+.tooltipStats {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--text-secondary);
+}
+
+.tooltipSuccess {
+  color: var(--viz-success);
+}
+
+.tooltipFailure {
+  color: var(--viz-failure);
+}
+
+.tooltipRate {
+  color: var(--text-secondary);
+}
+
+/* ---------- 元数据行：size · modified · P{n} ---------- */
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  font-family: $font-mono;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+.metaDivider {
+  color: var(--text-quaternary);
+  user-select: none;
+}
+
+.metaPriority {
+  font-weight: 650;
+  color: var(--text-secondary);
+}
+
+/* ---------- 页脚动作区 ---------- */
+
+.actions {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+}
+
+.actionsMain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.utilityActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 图标按钮：方形紧凑，覆盖全局 .btn-sm 的内边距 */
+.actions .iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+}
+
+/* 按压反馈：所有可点元素 scale 0.96（reduced-motion 下豁免） */
+.actions :global(.btn) {
+  transition:
+    transform var(--dur-press, 160ms) var(--ease-out-strong, ease-out),
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+}
+
+.actions :global(.btn:active:not(:disabled)) {
+  transform: scale(0.96);
+}
+
+.toggleWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.toggleLabel {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* ---------- 降级 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .cardEnter {
+    animation: none;
+  }
+
+  .actions :global(.btn) {
+    transition: none;
+  }
+
+  .actions :global(.btn:active:not(:disabled)) {
+    transform: none;
+  }
+}

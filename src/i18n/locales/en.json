@@ -312,6 +312,7 @@
     "batch_delete_title": "Delete Selected Files",
     "batch_delete_confirm": "Are you sure you want to delete {{count}} files?",
     "batch_selected": "{{count}} selected",
+    "batch_toolbar_label": "Batch actions",
     "batch_select_all": "Select All",
     "batch_select_page": "Select page",
     "batch_select_filtered": "Select filtered",
