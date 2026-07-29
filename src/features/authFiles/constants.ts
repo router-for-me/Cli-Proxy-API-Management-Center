@@ -114,6 +114,21 @@ export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
 export const hasAuthFileStatusMessage = (file: AuthFileItem): boolean =>
   getAuthFileStatusMessage(file).length > 0;
 
+/** 这些 status_message 视为健康，不触发告警态。 */
+export const HEALTHY_AUTH_FILE_STATUS_MESSAGES = new Set([
+  'ok',
+  'healthy',
+  'ready',
+  'success',
+  'available',
+]);
+
+/** 是否存在非健康的 status_message（卡片告警态 / 谱条琥珀色共用判定）。 */
+export const hasAuthFileStatusWarning = (file: AuthFileItem): boolean => {
+  const message = getAuthFileStatusMessage(file);
+  return Boolean(message) && !HEALTHY_AUTH_FILE_STATUS_MESSAGES.has(message.toLowerCase());
+};
+
 export const getTypeLabel = (t: TFunction, type: string): string => {
   const providerKey = normalizeProviderKey(type);
   const key = `auth_files.filter_${providerKey}`;

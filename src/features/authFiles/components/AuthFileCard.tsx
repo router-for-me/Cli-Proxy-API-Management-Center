@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -23,6 +23,7 @@ import {
   getAuthFileIcon,
   getAuthFileStatusMessage,
   getThemeSurfaceIconBackground,
+  hasAuthFileStatusWarning,
   getTypeColor,
   getTypeLabel,
   isRuntimeOnlyAuthFile,
@@ -35,8 +36,6 @@ import {
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import styles from './AuthFileCard.module.scss';
-
-const HEALTHY_STATUS_MESSAGES = new Set(['ok', 'healthy', 'ready', 'success', 'available']);
 
 export type AuthFileCardProps = {
   file: AuthFileItem;
@@ -113,8 +112,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     statusBarDataFromRecentRequests(file.recentRequests ?? []);
 
   const rawStatusMessage = getAuthFileStatusMessage(file);
-  const hasStatusWarning =
-    Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(rawStatusMessage.toLowerCase());
+  const hasStatusWarning = hasAuthFileStatusWarning(file);
 
   const priorityValue = typeof file.priority === 'number' ? file.priority : undefined;
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
@@ -136,18 +134,20 @@ export function AuthFileCard(props: AuthFileCardProps) {
         ? styles.stateWarning
         : styles.stateActive;
 
+  // 挂载时捕获一次入场延迟：父级随后传 null 也不会中断已开始的动画
+  const [mountEntranceDelayMs] = useState<number | null>(entranceDelayMs ?? null);
   const cardClasses = [
     styles.card,
     compact ? styles.cardCompact : '',
     selected ? styles.cardSelected : '',
     file.disabled ? styles.cardDisabled : '',
-    entranceDelayMs != null ? styles.cardEnter : '',
+    mountEntranceDelayMs != null ? styles.cardEnter : '',
   ]
     .filter(Boolean)
     .join(' ');
   const cardStyle =
-    entranceDelayMs != null
-      ? ({ '--card-delay': `${entranceDelayMs}ms` } as CSSProperties)
+    mountEntranceDelayMs != null
+      ? ({ '--card-delay': `${mountEntranceDelayMs}ms` } as CSSProperties)
       : undefined;
 
   return (

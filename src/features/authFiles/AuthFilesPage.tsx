@@ -1,48 +1,34 @@
-import {
-  useCallback,
-  type CSSProperties,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useInterval } from '@/hooks/useInterval';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
+import { useRevealOnScroll } from '@/hooks/motion';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import { IconFilterAll, IconSearch, IconSlidersHorizontal } from '@/components/ui/icons';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { copyToClipboard } from '@/utils/clipboard';
 import {
-  MAX_CARD_PAGE_SIZE,
-  MIN_CARD_PAGE_SIZE,
   QUOTA_PROVIDER_TYPES,
   clampCardPageSize,
-  getAuthFileIcon,
-  getThemeSurfaceIconBackground,
-  getTypeColor,
   getTypeLabel,
   hasAuthFileStatusMessage,
   isRuntimeOnlyAuthFile,
-  isThemeSurfaceIconProvider,
   normalizeProviderKey,
-  parsePriorityValue,
   type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import { AuthFileCard } from '@/features/authFiles/components/AuthFileCard';
-import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
 import { AuthFileDetailsSheet } from '@/features/authFiles/components/AuthFileDetailsSheet';
+import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
+import { AuthFilesToolbar } from '@/features/authFiles/components/AuthFilesToolbar';
 import { BatchActionBar } from '@/features/authFiles/components/BatchActionBar';
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
 import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelAliasCard';
+import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
+import { VaultHeader } from '@/features/authFiles/components/VaultHeader';
+import { VaultPulse } from '@/features/authFiles/components/VaultPulse';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
 import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
@@ -63,6 +49,9 @@ import styles from './AuthFilesPage.module.scss';
 
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
+const SKELETON_CARD_COUNT = 6;
+/** 首屏卡片级联入场总预算，与 useRevealGroup 同一 360ms 语汇。 */
+const CARD_ENTRANCE_BUDGET_MS = 360;
 
 const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -107,15 +96,26 @@ export function AuthFilesPage() {
   const [pageSizeInput, setPageSizeInput] = useState('9');
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
-  const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
-  const displaySettingsRef = useRef<HTMLDivElement>(null);
+
+  const {
+    modelsModalOpen,
+    modelsLoading,
+    modelsList,
+    modelsFileName,
+    modelsFileType,
+    modelsError,
+    showModels,
+    closeModelsModal,
+    invalidateModels,
+  } = useAuthFilesModels();
 
   const {
     files,
     selectedFiles,
     selectionCount,
     loading,
+    refreshing,
     error,
     uploading,
     deleting,
@@ -139,7 +139,7 @@ export function AuthFilesPage() {
     batchDownload,
     batchSetStatus,
     batchDelete,
-  } = useAuthFilesData();
+  } = useAuthFilesData({ onFilesMutated: invalidateModels });
 
   const statusBarCache = useAuthFilesStatusBarCache(files);
 
@@ -159,17 +159,6 @@ export function AuthFilesPage() {
     handleRenameAlias,
     handleDeleteAlias,
   } = useAuthFilesOauth({ viewMode, files });
-
-  const {
-    modelsModalOpen,
-    modelsLoading,
-    modelsList,
-    modelsFileName,
-    modelsFileType,
-    modelsError,
-    showModels,
-    closeModelsModal,
-  } = useAuthFilesModels();
 
   const {
     prefixProxyEditor,
@@ -196,27 +185,7 @@ export function AuthFilesPage() {
   const disabledOnly = statusFilterMode === 'disabled';
   const enabledOnly = statusFilterMode === 'enabled';
 
-  useEffect(() => {
-    if (!displaySettingsOpen) return;
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!displaySettingsRef.current?.contains(event.target as Node)) {
-        setDisplaySettingsOpen(false);
-      }
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setDisplaySettingsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [displaySettingsOpen]);
+  /* ---------- uiState 水合与持久化（localStorage key/形状与旧版完全一致） ---------- */
 
   useEffect(() => {
     const persistedCompactMode = readPersistedAuthFilesCompactMode();
@@ -319,41 +288,48 @@ export function AuthFilesPage() {
     [compactMode]
   );
 
-  const commitPageSizeInput = (rawValue: string) => {
-    const trimmed = rawValue.trim();
-    if (!trimmed) {
-      setPageSizeInput(String(pageSize));
-      return;
-    }
+  const commitPageSizeInput = useCallback(
+    (rawValue: string) => {
+      const trimmed = rawValue.trim();
+      if (!trimmed) {
+        setPageSizeInput(String(pageSize));
+        return;
+      }
 
-    const value = Number(trimmed);
-    if (!Number.isFinite(value)) {
-      setPageSizeInput(String(pageSize));
-      return;
-    }
+      const value = Number(trimmed);
+      if (!Number.isFinite(value)) {
+        setPageSizeInput(String(pageSize));
+        return;
+      }
 
-    const next = clampCardPageSize(value);
-    setCurrentModePageSize(next);
-    setPageSizeInput(String(next));
-    setPage(1);
-  };
+      const next = clampCardPageSize(value);
+      setCurrentModePageSize(next);
+      setPageSizeInput(String(next));
+      setPage(1);
+    },
+    [pageSize, setCurrentModePageSize]
+  );
 
-  const handlePageSizeChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const rawValue = event.currentTarget.value;
-    setPageSizeInput(rawValue);
+  const handlePageSizeChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const rawValue = event.currentTarget.value;
+      setPageSizeInput(rawValue);
 
-    const trimmed = rawValue.trim();
-    if (!trimmed) return;
+      const trimmed = rawValue.trim();
+      if (!trimmed) return;
 
-    const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed)) return;
+      const parsed = Number(trimmed);
+      if (!Number.isFinite(parsed)) return;
 
-    const rounded = Math.round(parsed);
-    if (rounded < MIN_CARD_PAGE_SIZE || rounded > MAX_CARD_PAGE_SIZE) return;
+      const rounded = Math.round(parsed);
+      // 超出 [MIN, MAX] 时不提交（clamp 后不等于原值即越界）
+      if (clampCardPageSize(rounded) !== rounded) return;
 
-    setCurrentModePageSize(rounded);
-    setPage(1);
-  };
+      setCurrentModePageSize(rounded);
+      setPage(1);
+    },
+    [setCurrentModePageSize]
+  );
 
   const handleSortModeChange = useCallback(
     (value: string) => {
@@ -369,25 +345,32 @@ export function AuthFilesPage() {
     setPage(1);
   }, []);
 
+  /* ---------- 数据加载：首载前台（骨架屏），此后一律后台（不清空网格） ---------- */
+
+  const initialLoadDoneRef = useRef(false);
+
   const handleHeaderRefresh = useCallback(async () => {
-    await Promise.all([loadFiles(), loadExcluded(), loadModelAlias()]);
+    await Promise.all([loadFiles({ background: true }), loadExcluded(), loadModelAlias()]);
   }, [loadFiles, loadExcluded, loadModelAlias]);
 
   useHeaderRefresh(handleHeaderRefresh);
 
   useEffect(() => {
     if (!isCurrentLayer) return;
-    loadFiles();
+    void loadFiles(initialLoadDoneRef.current ? { background: true } : undefined);
+    initialLoadDoneRef.current = true;
     loadExcluded();
     loadModelAlias();
   }, [isCurrentLayer, loadFiles, loadExcluded, loadModelAlias]);
 
   useInterval(
     () => {
-      void loadFiles().catch(() => {});
+      void loadFiles({ background: true }).catch(() => {});
     },
     isCurrentLayer ? 240_000 : null
   );
+
+  /* ---------- 过滤 / 排序 / 分页 memos ---------- */
 
   const existingTypes = useMemo(() => {
     const types = new Set<string>(['all']);
@@ -474,8 +457,8 @@ export function AuthFilesPage() {
       copy.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortMode === 'priority') {
       copy.sort((a, b) => {
-        const pa = parsePriorityValue(a.priority) ?? 0;
-        const pb = parsePriorityValue(b.priority) ?? 0;
+        const pa = typeof a.priority === 'number' ? a.priority : 0;
+        const pb = typeof b.priority === 'number' ? b.priority : 0;
         return pb - pa; // 高优先级排前面
       });
     }
@@ -504,6 +487,35 @@ export function AuthFilesPage() {
     selectedNames.length === 0 ||
     batchStatusUpdating ||
     selectedHasStatusUpdating;
+
+  /* ---------- 头部遥测计数 ---------- */
+
+  const activeCount = useMemo(
+    () => files.filter((file) => file.disabled !== true).length,
+    [files]
+  );
+  const problemCount = useMemo(() => files.filter(hasAuthFileStatusMessage).length, [files]);
+
+  /* ---------- 首屏卡片一次性级联入场 ----------
+   * 首批数据渲染后立即翻转 cardsAnimated；已挂载的卡片在挂载时捕获过
+   * 自己的延迟（AuthFileCard 内 useState 初始化），不受后续 null 影响，
+   * 而过滤/翻页/轮询新挂载的卡片拿到 null——不重播。 */
+
+  const [cardsAnimated, setCardsAnimated] = useState(false);
+  const enableCardEntrance =
+    !cardsAnimated && isCurrentLayer && !loading && pageItems.length > 0;
+  useEffect(() => {
+    if (enableCardEntrance) {
+      setCardsAnimated(true);
+    }
+  }, [enableCardEntrance]);
+  const cardEntranceDelay = (index: number): number | null => {
+    if (!enableCardEntrance) return null;
+    if (pageItems.length <= 1) return 0;
+    return Math.round((index / (pageItems.length - 1)) * CARD_ENTRANCE_BUDGET_MS);
+  };
+
+  /* ---------- 杂项 ---------- */
 
   const copyTextWithNotification = useCallback(
     async (text: string) => {
@@ -548,75 +560,12 @@ export function AuthFilesPage() {
     [filter, navigate]
   );
 
-  const renderFilterTags = () => (
-    <div className={styles.filterRail}>
-      <div className={styles.filterTags}>
-        {existingTypes.map((type) => {
-          const isActive = normalizedFilter === type;
-          const iconSrc = getAuthFileIcon(type, resolvedTheme);
-          const color =
-            type === 'all'
-              ? { bg: 'var(--bg-tertiary)', text: 'var(--text-primary)' }
-              : getTypeColor(type, resolvedTheme);
-          const buttonStyle = {
-            '--filter-color': color.text,
-            '--filter-surface': color.bg,
-            '--filter-active-text': resolvedTheme === 'dark' ? '#111827' : '#ffffff',
-          } as CSSProperties;
-
-          return (
-            <button
-              key={type}
-              className={`${styles.filterTag} ${isActive ? styles.filterTagActive : ''}`}
-              style={buttonStyle}
-              onClick={() => {
-                setFilter(type);
-                setPage(1);
-              }}
-            >
-              <span className={styles.filterTagLabel}>
-                {type === 'all' ? (
-                  <span className={`${styles.filterTagIconWrap} ${styles.filterAllIconWrap}`}>
-                    <IconFilterAll className={styles.filterAllIcon} size={16} />
-                  </span>
-                ) : (
-                  <span
-                    className={styles.filterTagIconWrap}
-                    style={
-                      // 与 AI 提供商界面一致：Kimi 图标底座随主题切换颜色
-                      isThemeSurfaceIconProvider(type)
-                        ? {
-                            background: getThemeSurfaceIconBackground(resolvedTheme),
-                            borderColor: 'transparent',
-                          }
-                        : undefined
-                    }
-                  >
-                    {iconSrc ? (
-                      <img src={iconSrc} alt="" className={styles.filterTagIcon} />
-                    ) : (
-                      <span className={styles.filterTagIconFallback}>
-                        {getTypeLabel(t, type).slice(0, 1).toUpperCase()}
-                      </span>
-                    )}
-                  </span>
-                )}
-                <span className={styles.filterTagText}>{getTypeLabel(t, type)}</span>
-              </span>
-              <span className={styles.filterTagCount}>{typeCounts[type] ?? 0}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const titleNode = (
-    <div className={styles.titleWrapper}>
-      <span>{t('auth_files.title_section')}</span>
-      {files.length > 0 && <span className={styles.countBadge}>{files.length}</span>}
-    </div>
-  );
+  const clearFilters = useCallback(() => {
+    setFilter('all');
+    setStatusFilterMode('all');
+    setSearch('');
+    setPage(1);
+  }, []);
 
   const deleteAllButtonLabel = (() => {
     if (enabledOnly || disabledOnly) {
@@ -634,252 +583,212 @@ export function AuthFilesPage() {
       : `${t('common.delete')} ${getTypeLabel(t, normalizedFilter)}`;
   })();
 
+  const oauthSectionRef = useRevealOnScroll<HTMLDivElement>();
+
+  const isFirstRunEmpty = !loading && files.length === 0 && !error;
+  const isNoResults = !loading && files.length > 0 && pageItems.length === 0;
+
+  const gridClasses = [
+    styles.grid,
+    compactMode ? styles.gridCompact : '',
+    quotaFilterType ? styles.gridQuota : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('auth_files.title')}</h1>
-        <p className={styles.description}>{t('auth_files.description')}</p>
-      </div>
+    <div className={styles.page}>
+      <VaultHeader
+        totalCount={files.length}
+        activeCount={activeCount}
+        problemCount={problemCount}
+        loading={loading}
+        refreshing={refreshing}
+        uploading={uploading}
+        disableControls={disableControls}
+        onUpload={handleUploadClick}
+        onRefresh={() => void handleHeaderRefresh()}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        multiple
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
 
-      <Card
-        title={titleNode}
-        extra={
-          <div className={styles.headerActions}>
-            <Button variant="secondary" size="sm" onClick={handleHeaderRefresh} disabled={loading}>
-              {t('common.refresh')}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleUploadClick}
-              disabled={disableControls || uploading}
-              loading={uploading}
-            >
-              {t('auth_files.upload_button')}
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() =>
-                handleDeleteAll({
-                  filter,
-                  problemOnly,
-                  disabledOnly,
-                  enabledOnly,
-                  onResetFilterToAll: () => setFilter('all'),
-                  onResetProblemOnly: () => setStatusFilterMode('all'),
-                  onResetDisabledOnly: () => setStatusFilterMode('all'),
-                  onResetEnabledOnly: () => setStatusFilterMode('all'),
-                })
-              }
-              disabled={disableControls || loading || deletingAll}
-              loading={deletingAll}
-            >
-              {deleteAllButtonLabel}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json,application/json"
-              multiple
-              style={{ display: 'none' }}
-              onChange={handleFileChange}
-            />
+      <VaultPulse files={files} statusBarCache={statusBarCache} />
+
+      <section className={styles.workbench} aria-label={t('auth_files.title_section')}>
+        <ProviderTabs
+          types={existingTypes}
+          counts={typeCounts}
+          active={normalizedFilter}
+          resolvedTheme={resolvedTheme}
+          onChange={(type) => {
+            setFilter(type);
+            setPage(1);
+          }}
+        />
+
+        <AuthFilesToolbar
+          search={search}
+          onSearchChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          statusFilterMode={statusFilterMode}
+          statusFilterOptions={statusFilterOptions}
+          onStatusFilterChange={handleStatusFilterModeChange}
+          sortMode={sortMode}
+          sortOptions={sortOptions}
+          onSortModeChange={handleSortModeChange}
+          pageSizeInput={pageSizeInput}
+          onPageSizeInputChange={handlePageSizeChange}
+          onPageSizeCommit={commitPageSizeInput}
+          compactMode={compactMode}
+          onCompactModeChange={setCompactMode}
+          deleteLabel={deleteAllButtonLabel}
+          deleteDisabled={disableControls || loading || deletingAll || files.length === 0}
+          deleteLoading={deletingAll}
+          onDelete={() =>
+            handleDeleteAll({
+              filter,
+              problemOnly,
+              disabledOnly,
+              enabledOnly,
+              onResetFilterToAll: () => setFilter('all'),
+              onResetProblemOnly: () => setStatusFilterMode('all'),
+              onResetDisabledOnly: () => setStatusFilterMode('all'),
+              onResetEnabledOnly: () => setStatusFilterMode('all'),
+            })
+          }
+        />
+
+        {error && (
+          <div className={styles.errorBanner} role="alert">
+            {error}
           </div>
-        }
-      >
-        {error && <div className={styles.errorBox}>{error}</div>}
+        )}
 
-        <div className={styles.filterSection}>
-          {renderFilterTags()}
-
-          <div className={styles.filterToolbar}>
-            <div className={styles.toolbarSearch}>
-              <Input
-                className={styles.searchInput}
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-                placeholder={t('auth_files.search_placeholder')}
-                aria-label={t('auth_files.search_label')}
-                rightElement={<IconSearch className={styles.searchIcon} size={18} />}
+        {loading ? (
+          <div className={gridClasses} aria-hidden="true">
+            {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
+              <Skeleton key={index} height={188} rounded={14} />
+            ))}
+          </div>
+        ) : isFirstRunEmpty ? (
+          <EmptyState
+            title={t('auth_files.empty_title')}
+            description={t('auth_files.empty_desc')}
+            action={
+              <div className={styles.emptyActions}>
+                <Button size="sm" onClick={handleUploadClick} disabled={disableControls}>
+                  {t('auth_files.upload_button')}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/oauth')}>
+                  {t('auth_files.empty_oauth_link')}
+                </Button>
+              </div>
+            }
+          />
+        ) : isNoResults ? (
+          <EmptyState
+            title={t('auth_files.search_empty_title')}
+            description={t('auth_files.search_empty_desc')}
+            action={
+              <Button variant="secondary" size="sm" onClick={clearFilters}>
+                {t('auth_files.no_results_clear')}
+              </Button>
+            }
+          />
+        ) : (
+          <div className={gridClasses}>
+            {pageItems.map((file, index) => (
+              <AuthFileCard
+                key={file.name}
+                file={file}
+                compact={compactMode}
+                selected={selectedFiles.has(file.name)}
+                resolvedTheme={resolvedTheme}
+                disableControls={disableControls}
+                deleting={deleting}
+                statusUpdating={statusUpdating}
+                manualRefreshing={manualRefreshing}
+                quotaFilterType={quotaFilterType}
+                statusBarCache={statusBarCache}
+                entranceDelayMs={cardEntranceDelay(index)}
+                onShowModels={showModels}
+                onDownload={handleDownload}
+                onManualRefresh={handleManualRefresh}
+                onOpenPrefixProxyEditor={openPrefixProxyEditor}
+                onDelete={handleDelete}
+                onToggleStatus={handleStatusToggle}
+                onToggleSelect={toggleSelect}
               />
-            </div>
+            ))}
+          </div>
+        )}
 
-            <div
-              className={styles.statusFilterGroup}
-              role="group"
-              aria-label={t('auth_files.problem_filter_label')}
+        {!loading && sorted.length > pageSize && (
+          <div className={styles.pagination}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage <= 1}
             >
-              {statusFilterOptions.map((option) => {
-                const isActive = statusFilterMode === option.value;
-                const isProblem = option.value === 'problem';
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`${styles.statusFilterButton} ${isActive ? styles.statusFilterButtonActive : ''} ${isProblem ? styles.statusFilterButtonProblem : ''}`}
-                    aria-pressed={isActive}
-                    onClick={() => handleStatusFilterModeChange(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                );
+              {t('auth_files.pagination_prev')}
+            </Button>
+            <div className={styles.pageInfo}>
+              {t('auth_files.pagination_info', {
+                current: currentPage,
+                total: totalPages,
+                count: sorted.length,
               })}
             </div>
-
-            <div className={styles.sortControl}>
-              <span className={styles.toolbarControlLabel}>{t('auth_files.sort_label')}</span>
-              <Select
-                className={styles.sortSelect}
-                value={sortMode}
-                options={sortOptions}
-                onChange={handleSortModeChange}
-                ariaLabel={t('auth_files.sort_label')}
-                fullWidth
-              />
-            </div>
-
-            <div className={styles.displaySettings} ref={displaySettingsRef}>
-              <button
-                type="button"
-                className={`${styles.displaySettingsButton} ${displaySettingsOpen ? styles.displaySettingsButtonActive : ''}`}
-                aria-expanded={displaySettingsOpen}
-                aria-controls="auth-files-display-settings"
-                onClick={() => setDisplaySettingsOpen((open) => !open)}
-              >
-                <IconSlidersHorizontal size={17} />
-                <span>{t('auth_files.display_options_label')}</span>
-              </button>
-
-              {displaySettingsOpen && (
-                <div id="auth-files-display-settings" className={styles.displaySettingsPopover}>
-                  <div className={styles.displaySettingsRow}>
-                    <label htmlFor="auth-files-page-size">{t('auth_files.page_size_label')}</label>
-                    <input
-                      id="auth-files-page-size"
-                      className={styles.pageSizeSelect}
-                      type="number"
-                      min={MIN_CARD_PAGE_SIZE}
-                      max={MAX_CARD_PAGE_SIZE}
-                      step={1}
-                      value={pageSizeInput}
-                      onChange={handlePageSizeChange}
-                      onBlur={(e) => commitPageSizeInput(e.currentTarget.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.currentTarget.blur();
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className={styles.displaySettingsRow}>
-                    <span>{t('auth_files.compact_mode_label')}</span>
-                    <ToggleSwitch
-                      checked={compactMode}
-                      onChange={(value) => setCompactMode(value)}
-                      ariaLabel={t('auth_files.compact_mode_label')}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {loading ? (
-            <div className={styles.hint}>{t('common.loading')}</div>
-          ) : pageItems.length === 0 ? (
-            <EmptyState
-              title={t('auth_files.search_empty_title')}
-              description={t('auth_files.search_empty_desc')}
-            />
-          ) : (
-            <div
-              className={`${styles.fileGrid} ${quotaFilterType ? styles.fileGridQuotaManaged : ''} ${compactMode ? styles.fileGridCompact : ''}`}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage >= totalPages}
             >
-              {pageItems.map((file) => (
-                <AuthFileCard
-                  key={file.name}
-                  file={file}
-                  compact={compactMode}
-                  selected={selectedFiles.has(file.name)}
-                  resolvedTheme={resolvedTheme}
-                  disableControls={disableControls}
-                  deleting={deleting}
-                  statusUpdating={statusUpdating}
-                  manualRefreshing={manualRefreshing}
-                  quotaFilterType={quotaFilterType}
-                  statusBarCache={statusBarCache}
-                  onShowModels={showModels}
-                  onDownload={handleDownload}
-                  onManualRefresh={handleManualRefresh}
-                  onOpenPrefixProxyEditor={openPrefixProxyEditor}
-                  onDelete={handleDelete}
-                  onToggleStatus={handleStatusToggle}
-                  onToggleSelect={toggleSelect}
-                />
-              ))}
-            </div>
-          )}
+              {t('auth_files.pagination_next')}
+            </Button>
+          </div>
+        )}
+      </section>
 
-          {!loading && sorted.length > pageSize && (
-            <div className={styles.pagination}>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage <= 1}
-              >
-                {t('auth_files.pagination_prev')}
-              </Button>
-              <div className={styles.pageInfo}>
-                {t('auth_files.pagination_info', {
-                  current: currentPage,
-                  total: totalPages,
-                  count: sorted.length,
-                })}
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage >= totalPages}
-              >
-                {t('auth_files.pagination_next')}
-              </Button>
-            </div>
-          )}
-        </div>
-      </Card>
+      <div className={styles.configGrid} ref={oauthSectionRef}>
+        <OAuthExcludedCard
+          disableControls={disableControls}
+          excludedError={excludedError}
+          excluded={excluded}
+          onRetry={loadExcluded}
+          onAdd={() => openExcludedEditor()}
+          onEdit={openExcludedEditor}
+          onDelete={deleteExcluded}
+        />
 
-      <OAuthExcludedCard
-        disableControls={disableControls}
-        excludedError={excludedError}
-        excluded={excluded}
-        onRetry={loadExcluded}
-        onAdd={() => openExcludedEditor()}
-        onEdit={openExcludedEditor}
-        onDelete={deleteExcluded}
-      />
-
-      <OAuthModelAliasCard
-        disableControls={disableControls}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onRetry={loadModelAlias}
-        onAdd={() => openModelAliasEditor()}
-        onEditProvider={openModelAliasEditor}
-        onDeleteProvider={deleteModelAlias}
-        modelAliasError={modelAliasError}
-        modelAlias={modelAlias}
-        allProviderModels={allProviderModels}
-        onUpdate={handleMappingUpdate}
-        onDeleteLink={handleDeleteLink}
-        onToggleFork={handleToggleFork}
-        onRenameAlias={handleRenameAlias}
-        onDeleteAlias={handleDeleteAlias}
-      />
+        <OAuthModelAliasCard
+          disableControls={disableControls}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onRetry={loadModelAlias}
+          onAdd={() => openModelAliasEditor()}
+          onEditProvider={openModelAliasEditor}
+          onDeleteProvider={deleteModelAlias}
+          modelAliasError={modelAliasError}
+          modelAlias={modelAlias}
+          allProviderModels={allProviderModels}
+          onUpdate={handleMappingUpdate}
+          onDeleteLink={handleDeleteLink}
+          onToggleFork={handleToggleFork}
+          onRenameAlias={handleRenameAlias}
+          onDeleteAlias={handleDeleteAlias}
+        />
+      </div>
 
       <AuthFileModelsModal
         open={modelsModalOpen}
