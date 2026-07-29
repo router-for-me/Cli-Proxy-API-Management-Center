@@ -504,17 +504,16 @@
     "pay_as_you_go_disabled": "未啟用"
   },
   "qwen_quota": {
-    "title": "通義千問（百煉）餘額",
+    "title": "通義千問 Token Plan",
     "empty_title": "無通義千問憑證",
-    "empty_desc": "請先在 OAuth 頁面登入通義千問，以檢視帳戶餘額。",
-    "idle": "點擊此處重新整理餘額",
-    "loading": "正在載入餘額...",
-    "load_failed": "載入餘額失敗：{{message}}",
+    "empty_desc": "請先在 OAuth 頁面登入通義千問，以檢視 Token Plan 用量。",
+    "idle": "點擊此處重新整理 Token Plan 用量",
+    "loading": "正在載入 Token Plan 用量...",
+    "load_failed": "載入用量失敗：{{message}}",
     "missing_auth_index": "驗證檔案缺少 auth_index",
-    "empty_data": "暫無餘額資料",
-    "available_amount": "可用餘額",
-    "cash_amount": "現金餘額",
-    "credit_amount": "代金券餘額"
+    "empty_data": "未找到有效的 Token Plan",
+    "expires_at": "{{date}} 到期",
+    "console_link": "前往百煉控制台"
   },
   "vertex_import": {
     "title": "Vertex JSON 登入",
@@ -767,19 +766,7 @@
     "iflow_cookie_result_expired": "到期時間",
     "iflow_cookie_result_path": "儲存路徑",
     "iflow_cookie_result_type": "類型",
-    "remote_access_disabled": "遠端存取不支援此登入方式，請從本地（localhost）存取",
-    "qwen_quota": {
-      "title": "通義千問 Token Plan",
-      "empty_title": "無通義千問憑證",
-      "empty_desc": "請先在 OAuth 頁面登入通義千問，以檢視 Token Plan 用量。",
-      "idle": "點擊此處重新整理 Token Plan 用量",
-      "loading": "正在載入 Token Plan 用量...",
-      "load_failed": "載入用量失敗：{{message}}",
-      "missing_auth_index": "驗證檔案缺少 auth_index",
-      "empty_data": "未找到有效的 Token Plan",
-      "expires_at": "{{date}} 到期",
-      "console_link": "前往百煉控制台"
-    }
+    "remote_access_disabled": "遠端存取不支援此登入方式，請從本地（localhost）存取"
   },
   "stats": {
     "success": "成功",

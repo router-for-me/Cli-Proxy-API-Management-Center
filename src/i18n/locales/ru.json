@@ -491,17 +491,16 @@
     "pay_as_you_go_disabled": "Отключено"
   },
   "qwen_quota": {
-    "title": "Баланс Qwen (Bailian)",
+    "title": "Qwen Token Plan",
     "empty_title": "Нет файлов авторизации Qianwen",
-    "empty_desc": "Войдите в Qianwen через OAuth на странице OAuth, чтобы увидеть баланс.",
-    "idle": "Нажмите, чтобы обновить баланс",
-    "loading": "Загрузка баланса...",
-    "load_failed": "Не удалось загрузить баланс: {{message}}",
+    "empty_desc": "Войдите в Qianwen через OAuth на странице OAuth, чтобы увидеть использование Token Plan.",
+    "idle": "Нажмите, чтобы обновить использование Token Plan",
+    "loading": "Загрузка использования Token Plan...",
+    "load_failed": "Не удалось загрузить использование: {{message}}",
     "missing_auth_index": "В файле авторизации нет auth_index",
-    "empty_data": "Нет данных о балансе",
-    "available_amount": "Доступный баланс",
-    "cash_amount": "Денежный баланс",
-    "credit_amount": "Кредитный баланс"
+    "empty_data": "Активный Token Plan не найден",
+    "expires_at": "истекает {{date}}",
+    "console_link": "Открыть консоль Bailian"
   },
   "vertex_import": {
     "title": "Вход с Vertex JSON",
@@ -728,19 +727,7 @@
     "iflow_oauth_status_error": "Ошибка аутентификации:",
     "iflow_oauth_start_error": "Не удалось запустить iFlow OAuth:",
     "iflow_oauth_polling_error": "Не удалось проверить статус аутентификации:",
-    "remote_access_disabled": "Этот способ входа недоступен при удалённом доступе. Подключитесь с localhost.",
-    "qwen_quota": {
-      "title": "Qwen Token Plan",
-      "empty_title": "Нет файлов авторизации Qianwen",
-      "empty_desc": "Войдите в Qianwen через OAuth на странице OAuth, чтобы увидеть использование Token Plan.",
-      "idle": "Нажмите, чтобы обновить использование Token Plan",
-      "loading": "Загрузка использования Token Plan...",
-      "load_failed": "Не удалось загрузить использование: {{message}}",
-      "missing_auth_index": "В файле авторизации нет auth_index",
-      "empty_data": "Активный Token Plan не найден",
-      "expires_at": "истекает {{date}}",
-      "console_link": "Открыть консоль Bailian"
-    }
+    "remote_access_disabled": "Этот способ входа недоступен при удалённом доступе. Подключитесь с localhost."
   },
   "stats": {
     "success": "Успех",

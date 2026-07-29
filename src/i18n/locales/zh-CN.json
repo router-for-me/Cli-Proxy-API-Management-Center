@@ -504,17 +504,16 @@
     "pay_as_you_go_disabled": "未启用"
   },
   "qwen_quota": {
-    "title": "通义千问（百炼）余额",
+    "title": "通义千问 Token Plan",
     "empty_title": "无通义千问凭证",
-    "empty_desc": "请先在 OAuth 页面登录通义千问，以查看账户余额。",
-    "idle": "点击此处刷新余额",
-    "loading": "正在加载余额...",
-    "load_failed": "加载余额失败：{{message}}",
+    "empty_desc": "请先在 OAuth 页面登录通义千问，以查看 Token Plan 用量。",
+    "idle": "点击此处刷新 Token Plan 用量",
+    "loading": "正在加载 Token Plan 用量...",
+    "load_failed": "加载用量失败：{{message}}",
     "missing_auth_index": "认证文件缺少 auth_index",
-    "empty_data": "暂无余额数据",
-    "available_amount": "可用余额",
-    "cash_amount": "现金余额",
-    "credit_amount": "代金券余额"
+    "empty_data": "未找到有效的 Token Plan",
+    "expires_at": "{{date}} 到期",
+    "console_link": "前往百炼控制台"
   },
   "vertex_import": {
     "title": "Vertex JSON 登录",
@@ -741,19 +740,7 @@
     "iflow_oauth_status_error": "认证失败:",
     "iflow_oauth_start_error": "启动 iFlow OAuth 失败:",
     "iflow_oauth_polling_error": "检查认证状态失败:",
-    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问",
-    "qwen_quota": {
-      "title": "通义千问 Token Plan",
-      "empty_title": "无通义千问凭证",
-      "empty_desc": "请先在 OAuth 页面登录通义千问，以查看 Token Plan 用量。",
-      "idle": "点击此处刷新 Token Plan 用量",
-      "loading": "正在加载 Token Plan 用量...",
-      "load_failed": "加载用量失败：{{message}}",
-      "missing_auth_index": "认证文件缺少 auth_index",
-      "empty_data": "未找到有效的 Token Plan",
-      "expires_at": "{{date}} 到期",
-      "console_link": "前往百炼控制台"
-    }
+    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问"
   },
   "stats": {
     "success": "成功",

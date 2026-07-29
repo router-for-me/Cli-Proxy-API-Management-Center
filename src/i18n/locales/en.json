@@ -504,17 +504,16 @@
     "pay_as_you_go_disabled": "Disabled"
   },
   "qwen_quota": {
-    "title": "Qwen (Bailian) Balance",
+    "title": "Qwen Token Plan",
     "empty_title": "No Qianwen Auth Files",
-    "empty_desc": "Login to Qianwen via OAuth on the OAuth page to view account balance.",
-    "idle": "Click here to refresh balance",
-    "loading": "Loading balance...",
-    "load_failed": "Failed to load balance: {{message}}",
+    "empty_desc": "Login to Qianwen via OAuth on the OAuth page to view Token Plan usage.",
+    "idle": "Click here to refresh Token Plan usage",
+    "loading": "Loading Token Plan usage...",
+    "load_failed": "Failed to load usage: {{message}}",
     "missing_auth_index": "Auth file missing auth_index",
-    "empty_data": "No balance data available",
-    "available_amount": "Available balance",
-    "cash_amount": "Cash balance",
-    "credit_amount": "Credit balance"
+    "empty_data": "No active Token Plan found",
+    "expires_at": "expires {{date}}",
+    "console_link": "Open Bailian Console"
   },
   "vertex_import": {
     "title": "Vertex JSON Login",
@@ -741,19 +740,7 @@
     "iflow_oauth_status_error": "Authentication failed:",
     "iflow_oauth_start_error": "Failed to start iFlow OAuth:",
     "iflow_oauth_polling_error": "Failed to check authentication status:",
-    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost.",
-    "qwen_quota": {
-      "title": "Qwen Token Plan",
-      "empty_title": "No Qianwen Auth Files",
-      "empty_desc": "Login to Qianwen via OAuth on the OAuth page to view Token Plan usage.",
-      "idle": "Click here to refresh Token Plan usage",
-      "loading": "Loading Token Plan usage...",
-      "load_failed": "Failed to load usage: {{message}}",
-      "missing_auth_index": "Auth file missing auth_index",
-      "empty_data": "No active Token Plan found",
-      "expires_at": "expires {{date}}",
-      "console_link": "Open Bailian Console"
-    }
+    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost."
   },
   "stats": {
     "success": "Success",
