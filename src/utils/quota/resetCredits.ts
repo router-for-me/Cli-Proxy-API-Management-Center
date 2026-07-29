@@ -7,6 +7,7 @@ export interface CodexResetCredit {
 
 export interface CodexResetCreditsSummary {
   availableCount: number | null;
+  applicableAvailableCount: number | null;
   credits: CodexResetCredit[];
   invalidPayload: boolean;
 }
@@ -75,22 +76,41 @@ export const normalizeCodexResetCreditsPayload = (payload: unknown): CodexResetC
   if (typeof payload === 'string') {
     const trimmed = payload.trim();
     if (!trimmed) {
-      return { availableCount: null, credits: [], invalidPayload: true };
+      return {
+        availableCount: null,
+        applicableAvailableCount: null,
+        credits: [],
+        invalidPayload: true,
+      };
     }
     try {
       parsedPayload = JSON.parse(trimmed);
     } catch {
-      return { availableCount: null, credits: [], invalidPayload: true };
+      return {
+        availableCount: null,
+        applicableAvailableCount: null,
+        credits: [],
+        invalidPayload: true,
+      };
     }
   }
 
   const record = asRecord(parsedPayload);
   if (!record) {
-    return { availableCount: null, credits: [], invalidPayload: true };
+    return {
+      availableCount: null,
+      applicableAvailableCount: null,
+      credits: [],
+      invalidPayload: true,
+    };
   }
 
   const hasExpectedShape =
-    'credits' in record || 'available_count' in record || 'availableCount' in record;
+    'credits' in record ||
+    'available_count' in record ||
+    'availableCount' in record ||
+    'applicable_available_count' in record ||
+    'applicableAvailableCount' in record;
   const credits = Array.isArray(record.credits)
     ? record.credits
         .map((item) => normalizeCredit(item))
@@ -99,6 +119,9 @@ export const normalizeCodexResetCreditsPayload = (payload: unknown): CodexResetC
 
   return {
     availableCount: normalizeNumberValue(record.available_count ?? record.availableCount),
+    applicableAvailableCount: normalizeNumberValue(
+      record.applicable_available_count ?? record.applicableAvailableCount
+    ),
     credits,
     invalidPayload: !hasExpectedShape,
   };
