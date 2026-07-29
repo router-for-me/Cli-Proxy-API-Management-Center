@@ -904,6 +904,9 @@ const renderAntigravityItems = (
 };
 
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
+// Pro 20x（plan=pro）在金色 premium 之上再进一档：钻石徽章。
+// 金卡亮度已用满（HDR 超白），再上一档只能换材质，不能再加亮。
+const ELITE_CODEX_PLAN_TYPE = 'pro';
 
 const renderCodexItems = (
   quota: CodexQuotaState,
@@ -933,12 +936,20 @@ const renderCodexItems = (
   };
 
   const planLabel = getPlanLabel(planType);
-  const isPremiumPlan = PREMIUM_CODEX_PLAN_TYPES.has(normalizePlanType(planType) ?? '');
+  const normalizedPlanType = normalizePlanType(planType) ?? '';
+  const isPremiumPlan = PREMIUM_CODEX_PLAN_TYPES.has(normalizedPlanType);
+  const isElitePlan = normalizedPlanType === ELITE_CODEX_PLAN_TYPE;
   const expiryLabel = subscriptionActiveUntil ? formatDateTimeValue(subscriptionActiveUntil) : '';
   const nodes: ReactNode[] = [];
 
   if (planLabel || expiryLabel || rateLimitResetCreditsAvailableCount !== null) {
-    const planValueClass = isPremiumPlan ? styleMap.premiumPlanValue : styleMap.codexPlanValue;
+    // 顺序敏感：'pro' 同时命中 PREMIUM_CODEX_PLAN_TYPES，elite 分支必须留在最前，
+    // 否则 Pro 20x 会静默退回金卡（无测试覆盖类名契约，改这里请手动目视）。
+    const planValueClass = isElitePlan
+      ? styleMap.elitePlanValue
+      : isPremiumPlan
+        ? styleMap.premiumPlanValue
+        : styleMap.codexPlanValue;
     const planNodes: ReactNode[] = [];
 
     const appendPlanItem = (

@@ -432,6 +432,20 @@
   gap: 4px;
 }
 
+/* Button 会用 span 包裹 children；将包裹层也设为 flex，避免 SVG 按文本基线偏移。 */
+.actions :global(.btn > span) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.actions :global(.btn svg) {
+  display: block;
+  flex-shrink: 0;
+}
+
 /* 图标按钮：方形紧凑的安静描边风——危险动作静默存在，hover 才显色块 */
 .card .actions .iconButton {
   display: inline-flex;
