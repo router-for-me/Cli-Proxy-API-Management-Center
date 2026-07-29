@@ -1392,7 +1392,8 @@
       "code0": "Code0",
       "fennoAI": "FennoAI",
       "qiniuCloud": "Qiniu Cloud",
-      "kimi": "Kimi"
+      "kimi": "Kimi",
+      "qwen": "Qwen"
     },
     "table": {
       "key": "Key",
