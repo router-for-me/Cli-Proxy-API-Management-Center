@@ -215,8 +215,8 @@ const mergeAuthFileEntries = (entries: AuthFileEntry[]): AuthFileEntry => {
 
 const INTEGER_STRING_PATTERN = /^[+-]?\d+$/;
 
-const readPriorityField = (value: unknown): number | undefined => {
-  if (typeof value === 'number') return Number.isInteger(value) ? value : undefined;
+const readIntegerField = (value: unknown): number | undefined => {
+  if (typeof value === 'number') return Number.isSafeInteger(value) ? value : undefined;
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   if (!trimmed || !INTEGER_STRING_PATTERN.test(trimmed)) return undefined;
@@ -242,7 +242,8 @@ const normalizeAuthFileEntry = (entry: AuthFileEntry): AuthFileEntry => {
   const statusMessage = readTextField(entry, 'status_message') || declaredStatusMessage;
   const note = readTextField(entry, 'note');
   const modified = readDateField(entry);
-  const priority = readPriorityField(entry['priority']);
+  const priority = readIntegerField(entry['priority']);
+  const weight = readIntegerField(entry['weight']);
 
   return {
     ...entry,
@@ -253,12 +254,13 @@ const normalizeAuthFileEntry = (entry: AuthFileEntry): AuthFileEntry => {
     failureCount: normalizeUsageTotal(entry.failed),
     ...(statusMessage ? { statusMessage } : {}),
     ...(modified > 0 ? { modified } : {}),
-    ...(priority !== undefined ? { priority } : {}),
+    priority,
+    weight,
     ...(note ? { note } : {}),
   };
 };
 
-const dedupeAuthFilesResponse = (payload: AuthFilesResponse): AuthFilesResponse => {
+export const normalizeAuthFilesResponse = (payload: AuthFilesResponse): AuthFilesResponse => {
   const files = Array.isArray(payload?.files) ? payload.files : [];
   const grouped = new Map<string, AuthFileEntry[]>();
 
@@ -398,7 +400,8 @@ export const buildManualRefreshExpiredAt = (nowMs = Date.now()): string =>
   new Date(nowMs - MANUAL_REFRESH_EXPIRY_OFFSET_MS).toISOString();
 
 export const authFilesApi = {
-  list: async () => dedupeAuthFilesResponse(await apiClient.get<AuthFilesResponse>('/auth-files')),
+  list: async () =>
+    normalizeAuthFilesResponse(await apiClient.get<AuthFilesResponse>('/auth-files')),
 
   setStatus: (name: string, disabled: boolean) =>
     apiClient.patch<AuthFileStatusResponse>('/auth-files/status', { name, disabled }),

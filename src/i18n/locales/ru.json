@@ -283,6 +283,7 @@
     "sort_az": "A-Z Имя",
     "sort_priority": "Приоритет",
     "priority_display": "Приоритет",
+    "weight_display": "Вес WRR",
     "page_size_label": "На странице",
     "view_mode_paged": "Постранично",
     "view_mode_all": "Показать все",

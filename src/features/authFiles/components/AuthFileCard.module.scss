@@ -383,7 +383,7 @@
   color: var(--text-secondary);
 }
 
-/* ---------- 元数据行：size · modified · P{n} ---------- */
+/* ---------- 元数据行：size · modified · priority · WRR weight ---------- */
 
 .metaRow {
   display: flex;
@@ -401,9 +401,36 @@
   user-select: none;
 }
 
-.metaPriority {
+.metaPriority,
+.metaWeight {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: $radius-full;
   font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.metaPriority {
   color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-quaternary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--text-quaternary) 24%, transparent);
+}
+
+.metaWeight {
+  color: var(--primary-active);
+  background: var(--primary-10);
+  border-color: var(--primary-30);
+}
+
+.metaMetricLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: currentColor;
+  opacity: 0.78;
 }
 
 /* ---------- 页脚动作区 ---------- */

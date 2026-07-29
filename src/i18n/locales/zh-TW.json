@@ -284,6 +284,7 @@
     "sort_az": "A-Z 名稱",
     "sort_priority": "優先順序",
     "priority_display": "優先順序",
+    "weight_display": "WRR 權重",
     "page_size_label": "單頁數量",
     "view_mode_paged": "分頁顯示",
     "view_mode_all": "顯示全部",

@@ -114,7 +114,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const rawStatusMessage = getAuthFileStatusMessage(file);
   const hasStatusWarning = hasAuthFileStatusWarning(file);
 
-  const priorityValue = typeof file.priority === 'number' ? file.priority : undefined;
+  const priorityValue = Number.isSafeInteger(file.priority) ? file.priority : undefined;
+  const weightValue = Number.isSafeInteger(file.weight) ? file.weight : undefined;
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
 
   const stateLabel = isRuntimeOnly
@@ -243,9 +244,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
       </div>
 
       <div className={styles.metaRow}>
-        <span title={t('auth_files.file_size')}>
-          {file.size ? formatFileSize(file.size) : '-'}
-        </span>
+        <span title={t('auth_files.file_size')}>{file.size ? formatFileSize(file.size) : '-'}</span>
         <span className={styles.metaDivider} aria-hidden="true">
           ·
         </span>
@@ -255,8 +254,20 @@ export function AuthFileCard(props: AuthFileCardProps) {
             <span className={styles.metaDivider} aria-hidden="true">
               ·
             </span>
-            <span className={styles.metaPriority} title={t('auth_files.priority_display')}>
-              P{priorityValue}
+            <span className={styles.metaPriority} title={t('auth_files.priority_hint')}>
+              <span className={styles.metaMetricLabel}>{t('auth_files.priority_display')}</span>
+              <span>{priorityValue}</span>
+            </span>
+          </>
+        )}
+        {weightValue !== undefined && (
+          <>
+            <span className={styles.metaDivider} aria-hidden="true">
+              ·
+            </span>
+            <span className={styles.metaWeight} title={t('auth_files.weight_hint')}>
+              <span className={styles.metaMetricLabel}>{t('auth_files.weight_display')}</span>
+              <span>{weightValue}</span>
             </span>
           </>
         )}
