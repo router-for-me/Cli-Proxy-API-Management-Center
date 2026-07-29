@@ -15,6 +15,7 @@ import {
   supportsAuthFileUsingApi,
   supportsAuthFileWebsockets,
 } from '@/features/authFiles/constants';
+import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 import styles from './AuthFileDetailsSheet.module.scss';
 
 /** API 边界归一化补写的派生字段——INFO 视图里只展示后端原始形状，避免重复噪音。 */
@@ -134,7 +135,8 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
               editor?.saving === true ||
               !dirty ||
               !editor?.json ||
-              Boolean(editor?.headersTouched && editor.headersError)
+              Boolean(editor?.headersTouched && editor.headersError) ||
+              Boolean(editor?.weightError)
             }
           >
             {t('common.save')}
@@ -163,12 +165,7 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
                     : t('auth_files.prefix_proxy_invalid_content_label')}
                 </label>
                 {editor.json ? (
-                  <textarea
-                    className={styles.textarea}
-                    rows={10}
-                    readOnly
-                    value={previewText}
-                  />
+                  <textarea className={styles.textarea} rows={10} readOnly value={previewText} />
                 ) : (
                   <pre className={styles.invalidPreview}>{invalidContentPreview}</pre>
                 )}
@@ -195,6 +192,18 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
                     hint={t('auth_files.priority_hint')}
                     disabled={disableControls || editor.saving || !editor.json}
                     onChange={(e) => onChange('priority', e.target.value)}
+                  />
+                  <Input
+                    label={t('auth_files.weight_label')}
+                    type="number"
+                    step="1"
+                    max={MAX_CREDENTIAL_WEIGHT}
+                    value={editor.weight}
+                    placeholder="1"
+                    hint={t('auth_files.weight_hint')}
+                    error={editor.weightError ?? undefined}
+                    disabled={disableControls || editor.saving || !editor.json}
+                    onChange={(e) => onChange('weight', e.target.value)}
                   />
                   {supportsAuthFileWebsockets(editor.providerKey) && (
                     <div className="form-group">

@@ -29,6 +29,7 @@ import { ApiKeyEntriesEditor } from './ApiKeyEntriesEditor';
 import { ModelEntriesEditor } from './ModelEntriesEditor';
 import styles from './sharedForm.module.scss';
 import { CLAUDE_API_BASE_URL } from '../../claudeApi';
+import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 
 interface BaseProviderFormProps {
   brand: ProviderBrand;
@@ -45,6 +46,7 @@ const emptyModel = (): ModelEntryInput => ({ name: '', alias: '' });
 const emptyApiKeyEntry = (): ApiKeyEntryInput => ({
   apiKey: '',
   proxyUrl: '',
+  weight: undefined,
 });
 const XAI_API_BASE_URL = 'https://api.x.ai/v1';
 
@@ -75,6 +77,7 @@ function buildInitialForm(
       disabled: false,
       disableCooling: false,
       priority: undefined,
+      weight: undefined,
       models: [emptyModel()],
       headers: [emptyHeader()],
       excludedModelsText: '',
@@ -127,6 +130,7 @@ function buildInitialForm(
             apiKey: '',
             existingApiKey: entry.apiKey,
             proxyUrl: entry.proxyUrl ?? '',
+            weight: entry.weight,
             authIndex: entry.authIndex,
           }))
         : [emptyApiKeyEntry()],
@@ -149,6 +153,7 @@ function buildInitialForm(
     disabled,
     disableCooling: cfg.disableCooling === true,
     priority: cfg.priority,
+    weight: cfg.weight,
     models: cfg.models?.length
       ? cfg.models.map((m) => ({
           name: m.name,
@@ -375,6 +380,18 @@ export function BaseProviderForm({
     if (descriptor.baseUrlRequired && !form.baseUrl.trim()) {
       return t('providersPage.form.validation.baseUrlRequired');
     }
+    const weights = [
+      ...(brand === 'openaiCompatibility'
+        ? (form.apiKeyEntries ?? []).map((entry) => entry.weight)
+        : []),
+      ...(brand !== 'openaiCompatibility' ? [form.weight] : []),
+    ];
+    if (weights.some((weight) => weight !== undefined && !Number.isSafeInteger(weight))) {
+      return t('providersPage.form.validation.weightInteger');
+    }
+    if (weights.some((weight) => weight !== undefined && weight > MAX_CREDENTIAL_WEIGHT)) {
+      return t('providersPage.form.validation.weightMax', { max: MAX_CREDENTIAL_WEIGHT });
+    }
     return null;
   };
 
@@ -575,6 +592,28 @@ export function BaseProviderForm({
                 />
               </div>
             ) : null}
+          </div>
+        ) : null}
+
+        {brand !== 'openaiCompatibility' ? (
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${fid}-weight`}>
+              {t('providersPage.form.weight')}
+            </label>
+            <input
+              id={`${fid}-weight`}
+              type="number"
+              step="1"
+              max={MAX_CREDENTIAL_WEIGHT}
+              className={styles.input}
+              value={form.weight ?? ''}
+              placeholder="1"
+              onChange={(e) =>
+                updateField('weight', e.target.value === '' ? undefined : Number(e.target.value))
+              }
+              disabled={mutating}
+            />
+            <span className={styles.labelHint}>{t('providersPage.form.weightHint')}</span>
           </div>
         ) : null}
 

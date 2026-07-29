@@ -1,11 +1,10 @@
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
 export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';
+export type RoutingStrategy = 'round-robin' | 'weighted-round-robin' | 'fill-first';
 export type PluginStoreAuthType = 'none' | 'bearer' | 'basic' | 'header' | 'github-token';
 export type PluginStoreAuthApplyTo = 'registry' | 'metadata' | 'artifact';
 export type PayloadParamValidationErrorCode =
-  | 'payload_invalid_number'
-  | 'payload_invalid_boolean'
-  | 'payload_invalid_json';
+  'payload_invalid_number' | 'payload_invalid_boolean' | 'payload_invalid_json';
 
 export type VisualConfigFieldPath =
   | 'port'
@@ -21,9 +20,7 @@ export type VisualConfigFieldPath =
   | 'streaming.nonstreamKeepaliveInterval';
 
 export type VisualConfigValidationErrorCode =
-  | 'port_range'
-  | 'non_negative_integer'
-  | 'integer_range_1_3600';
+  'port_range' | 'non_negative_integer' | 'integer_range_1_3600';
 
 export type VisualConfigValidationErrors = Partial<
   Record<VisualConfigFieldPath, VisualConfigValidationErrorCode>
@@ -121,7 +118,7 @@ export type VisualConfigValues = {
   quotaSwitchProject: boolean;
   quotaSwitchPreviewModel: boolean;
   quotaAntigravityCredits: boolean;
-  routingStrategy: 'round-robin' | 'fill-first';
+  routingStrategy: RoutingStrategy;
   routingSessionAffinity: boolean;
   routingSessionAffinityTTL: string;
   wsAuth: boolean;

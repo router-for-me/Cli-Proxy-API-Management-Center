@@ -211,6 +211,7 @@
     "request_log_warning": "Оставьте выключенным, если подробная диагностика не нужна.",
     "ws_auth_enable": "Требовать аутентификацию для /ws/*",
     "routing_strategy_round_robin": "round-robin (цикл)",
+    "routing_strategy_weighted_round_robin": "weighted-round-robin (взвешенный цикл)",
     "routing_strategy_fill_first": "fill-first (приоритет)"
   },
   "auth_files": {
@@ -339,6 +340,10 @@
     "priority_label": "Приоритет (priority)",
     "priority_placeholder": "например: 10 или -1",
     "priority_hint": "Только целые числа. Некорректные значения игнорируются. Чем больше число, тем выше приоритет.",
+    "weight_label": "Вес планирования (weight)",
+    "weight_hint": "По умолчанию 1. Значения ≤ 0 исключают эти учётные данные из взвешенного планирования; максимум 1 000 000.",
+    "weight_invalid_integer": "Вес должен быть целым числом.",
+    "weight_invalid_max": "Вес не может превышать 1 000 000.",
     "websockets_label": "WebSockets (websockets)",
     "websockets_hint": "Включает websocket-транспорт Responses API для этих учётных данных.",
     "using_api_label": "Использовать официальный API (using_api)",
@@ -977,6 +982,7 @@
           "routing_strategy": "Стратегия маршрутизации",
           "routing_strategy_hint": "Выберите стратегию подбора учётных данных",
           "strategy_round_robin": "По кругу",
+          "strategy_weighted_round_robin": "Взвешенный круговой алгоритм",
           "strategy_fill_first": "Сначала заполнить",
           "session_affinity_ttl": "TTL привязки сессии",
           "force_model_prefix": "Принудительный префикс модели",
@@ -1497,6 +1503,8 @@
       "proxyUrl": "Proxy URL",
       "prefix": "Префикс",
       "priority": "Приоритет",
+      "weight": "Вес планирования",
+      "weightHint": "По умолчанию 1 · ≤ 0 исключает запись · максимум 1 000 000",
       "disabled": "Отключить эту запись",
       "disabledHint": "Отключённые записи не используются шлюзом",
       "websockets": "Включить WebSockets",
@@ -1538,7 +1546,9 @@
       "validation": {
         "nameRequired": "Название обязательно",
         "apiKeyRequired": "Нужен хотя бы один API-ключ",
-        "baseUrlRequired": "Base URL обязателен"
+        "baseUrlRequired": "Base URL обязателен",
+        "weightInteger": "Вес планирования должен быть целым числом",
+        "weightMax": "Вес планирования не может превышать {{max}}"
       }
     },
     "delete": {

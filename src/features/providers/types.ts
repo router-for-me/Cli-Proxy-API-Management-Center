@@ -155,6 +155,7 @@ export interface SponsorKeyEntryInput {
   disabled: boolean;
   disableCooling?: boolean;
   priority?: number;
+  weight?: number;
   models: ModelEntryInput[];
 }
 
@@ -162,6 +163,7 @@ export interface ApiKeyEntryInput {
   apiKey: string;
   existingApiKey?: string;
   proxyUrl: string;
+  weight?: number;
   authIndex?: string;
 }
 
@@ -183,6 +185,7 @@ export interface ProviderEntryFormInput {
   disabled: boolean;
   disableCooling?: boolean;
   priority?: number;
+  weight?: number;
 
   /** 高级折叠区 */
   models: ModelEntryInput[];

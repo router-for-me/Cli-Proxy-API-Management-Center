@@ -212,6 +212,7 @@
     "request_log_warning": "仅在需要排查问题时开启，日常请保持关闭。",
     "ws_auth_enable": "启用 /ws/* 鉴权",
     "routing_strategy_round_robin": "round-robin (轮询)",
+    "routing_strategy_weighted_round_robin": "weighted-round-robin (加权轮询)",
     "routing_strategy_fill_first": "fill-first (优先填充)"
   },
   "auth_files": {
@@ -340,6 +341,10 @@
     "priority_label": "优先级（priority）",
     "priority_placeholder": "例如: 10 或 -1",
     "priority_hint": "仅支持整数；非法值会被忽略。数值越大优先级越高。",
+    "weight_label": "调度权重（weight）",
+    "weight_hint": "默认值为 1；小于或等于 0 时不参与加权调度；最大值为 1,000,000。",
+    "weight_invalid_integer": "权重必须是整数。",
+    "weight_invalid_max": "权重不能超过 1,000,000。",
     "websockets_label": "WebSockets（websockets）",
     "websockets_hint": "为该凭证开启 Responses API 的 websocket 传输。",
     "using_api_label": "使用官方 API（using_api）",
@@ -990,6 +995,7 @@
           "routing_strategy": "路由策略",
           "routing_strategy_hint": "选择凭据选择策略",
           "strategy_round_robin": "轮询 (Round Robin)",
+          "strategy_weighted_round_robin": "加权轮询 (Weighted Round Robin)",
           "strategy_fill_first": "填充优先 (Fill First)",
           "session_affinity_ttl": "会话粘性 TTL",
           "force_model_prefix": "强制模型前缀",
@@ -1519,6 +1525,8 @@
       "proxyUrl": "代理 URL",
       "prefix": "前缀",
       "priority": "优先级",
+      "weight": "调度权重",
+      "weightHint": "默认 1 · ≤ 0 时不参与 · 最大 1,000,000",
       "disabled": "停用此条目",
       "disabledHint": "停用后不会被网关使用",
       "websockets": "启用 WebSockets",
@@ -1560,7 +1568,9 @@
       "validation": {
         "nameRequired": "名称必填",
         "apiKeyRequired": "至少填写一个 API 密钥",
-        "baseUrlRequired": "服务地址必填"
+        "baseUrlRequired": "服务地址必填",
+        "weightInteger": "调度权重必须是整数",
+        "weightMax": "调度权重不能超过 {{max}}"
       }
     },
     "delete": {

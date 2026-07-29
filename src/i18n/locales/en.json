@@ -212,6 +212,7 @@
     "request_log_warning": "Keep this off unless you need detailed troubleshooting.",
     "ws_auth_enable": "Require auth for /ws/*",
     "routing_strategy_round_robin": "round-robin (cycle)",
+    "routing_strategy_weighted_round_robin": "weighted-round-robin (weighted cycle)",
     "routing_strategy_fill_first": "fill-first (prioritize)"
   },
   "auth_files": {
@@ -340,6 +341,10 @@
     "priority_label": "Priority (priority)",
     "priority_placeholder": "e.g. 10 or -1",
     "priority_hint": "Integers only. Invalid values are ignored. Larger value means higher priority.",
+    "weight_label": "Scheduling weight (weight)",
+    "weight_hint": "Defaults to 1. Values at or below 0 exclude this credential from weighted scheduling; maximum 1,000,000.",
+    "weight_invalid_integer": "Weight must be an integer.",
+    "weight_invalid_max": "Weight cannot exceed 1,000,000.",
     "websockets_label": "WebSockets (websockets)",
     "websockets_hint": "Enable Responses API websocket transport for this credential.",
     "using_api_label": "Use official API (using_api)",
@@ -990,6 +995,7 @@
           "routing_strategy": "Routing Strategy",
           "routing_strategy_hint": "Select credential selection strategy",
           "strategy_round_robin": "Round Robin",
+          "strategy_weighted_round_robin": "Weighted Round Robin",
           "strategy_fill_first": "Fill First",
           "session_affinity_ttl": "Session Affinity TTL",
           "force_model_prefix": "Force Model Prefix",
@@ -1519,6 +1525,8 @@
       "proxyUrl": "Proxy URL",
       "prefix": "Prefix",
       "priority": "Priority",
+      "weight": "Scheduling weight",
+      "weightHint": "Default 1 · ≤ 0 is excluded · maximum 1,000,000",
       "disabled": "Disable this entry",
       "disabledHint": "Disabled entries won't be used by the gateway",
       "websockets": "Enable WebSockets",
@@ -1560,7 +1568,9 @@
       "validation": {
         "nameRequired": "Name is required",
         "apiKeyRequired": "At least one API key is required",
-        "baseUrlRequired": "Base URL is required"
+        "baseUrlRequired": "Base URL is required",
+        "weightInteger": "Scheduling weight must be an integer",
+        "weightMax": "Scheduling weight cannot exceed {{max}}"
       }
     },
     "delete": {

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/icons';
 import { hasDisableAllModelsRule } from '@/components/providers/utils';
 import { maskApiKey } from '@/utils/format';
+import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 import type { ModelInfo } from '@/utils/models';
 import type { ApiKeyFunUsageSummary } from '../../sponsor';
 import { isSponsorPartialMutationError } from '../../sponsorMutationRecovery';
@@ -90,6 +91,7 @@ const emptySponsorKeyEntry = (
   disabled: false,
   disableCooling: false,
   priority: undefined,
+  weight: undefined,
   models: [emptyModel()],
 });
 
@@ -102,6 +104,7 @@ const emptySponsorForm = (definition: SponsorProviderDefinition): ProviderEntryF
   disabled: false,
   disableCooling: false,
   priority: undefined,
+  weight: undefined,
   models: [],
   headers: [],
   excludedModelsText: '',
@@ -138,8 +141,7 @@ const isHealthyUsageSummary = (summary: ApiKeyFunUsageSummary): boolean => {
 
 const modelsFromConfig = (
   models:
-    | Array<{ name?: string; alias?: string; priority?: number; testModel?: string }>
-    | undefined
+    Array<{ name?: string; alias?: string; priority?: number; testModel?: string }> | undefined
 ): ModelEntryInput[] =>
   models?.length
     ? models.map((model) => ({
@@ -166,6 +168,7 @@ const sponsorEntryFromProviderKey = (
   disabled: hasDisableAllModelsRule(config.excludedModels),
   disableCooling: config.disableCooling === true,
   priority: config.priority,
+  weight: config.weight,
   models: modelsFromConfig(config.models),
 });
 
@@ -183,6 +186,7 @@ const sponsorEntryFromOpenAI = (
     disabled: config.disabled === true,
     disableCooling: config.disableCooling === true,
     priority: config.priority,
+    weight: firstEntry?.weight,
     models: modelsFromConfig(config.models),
   };
 };
@@ -698,6 +702,28 @@ function SponsorKeyEntryCard({
             </div>
           </div>
 
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${formId}-group-${index}-weight`}>
+              {t('providersPage.form.weight')}
+            </label>
+            <input
+              id={`${formId}-group-${index}-weight`}
+              type="number"
+              step="1"
+              max={MAX_CREDENTIAL_WEIGHT}
+              className={styles.input}
+              value={entry.weight ?? ''}
+              placeholder="1"
+              onChange={(event) =>
+                updateEntry({
+                  weight: event.target.value === '' ? undefined : Number(event.target.value),
+                })
+              }
+              disabled={mutating}
+            />
+            <span className={styles.labelHint}>{t('providersPage.form.weightHint')}</span>
+          </div>
+
           <label className={styles.checkboxRow}>
             <input
               type="checkbox"
@@ -823,6 +849,16 @@ export function SponsorProviderForm({
     const protocolSet = new Set(entries.map((entry) => entry.protocol));
     if (protocolSet.size !== entries.length) {
       return t('providersPage.sponsor.validation.protocolDuplicate');
+    }
+    if (
+      entries.some((entry) => entry.weight !== undefined && !Number.isSafeInteger(entry.weight))
+    ) {
+      return t('providersPage.form.validation.weightInteger');
+    }
+    if (
+      entries.some((entry) => entry.weight !== undefined && entry.weight > MAX_CREDENTIAL_WEIGHT)
+    ) {
+      return t('providersPage.form.validation.weightMax', { max: MAX_CREDENTIAL_WEIGHT });
     }
     return null;
   };

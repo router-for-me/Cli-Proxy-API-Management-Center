@@ -72,6 +72,9 @@ export function DashboardPage() {
     const raw = config?.routingStrategy?.trim() ?? '';
     if (!raw) return DASH;
     if (raw === 'round-robin') return t('basic_settings.routing_strategy_round_robin');
+    if (raw === 'weighted-round-robin') {
+      return t('basic_settings.routing_strategy_weighted_round_robin');
+    }
     if (raw === 'fill-first') return t('basic_settings.routing_strategy_fill_first');
     return raw;
   }, [config?.routingStrategy, t]);
