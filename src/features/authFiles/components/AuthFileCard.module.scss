@@ -490,6 +490,26 @@
   white-space: nowrap;
 }
 
+@include mobile {
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .actionsMain {
+    width: 100%;
+  }
+
+  .actionsMain > :global(.btn) {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .toggleWrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
 /* ---------- 降级 ---------- */
 
 @media (prefers-reduced-motion: reduce) {

@@ -259,6 +259,21 @@ button.quotaMessageAction {
   overflow-wrap: anywhere;
 }
 
+@include mobile {
+  .quotaRowHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .quotaModel {
+    width: 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+}
+
 /* ---------- 降级 ---------- */
 
 @media (prefers-reduced-motion: reduce) {
