@@ -15,16 +15,20 @@ import {
   useQuotaStore,
 } from '@/stores';
 import type { AuthFileItem } from '@/types';
-import { getStatusFromError } from '@/utils/quota';
-import {
-  isRuntimeOnlyAuthFile,
-  resolveQuotaErrorMessage,
-  type QuotaProviderType,
-} from '@/features/authFiles/constants';
+import { getStatusFromError, resolveQuotaErrorMessage } from '@/utils/quota';
+import { isRuntimeOnlyAuthFile, type QuotaProviderType } from '@/features/authFiles/constants';
 import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
-import { QuotaProgressBar } from '@/features/authFiles/components/QuotaProgressBar';
+import {
+  QuotaProgressBar,
+  type QuotaProgressBarProps,
+} from '@/components/quota/QuotaProgressBar';
 import styles from '@/pages/AuthFilesPage.module.scss';
+
+/** 认证文件卡片外衣的进度条：绑定本页样式，满足 quotaConfigs 的 helpers 契约。 */
+const BoundQuotaProgressBar = (props: QuotaProgressBarProps) => (
+  <QuotaProgressBar {...props} styles={styles} />
+);
 
 type QuotaState = { status?: string; error?: string; errorStatus?: number } | undefined;
 
@@ -229,7 +233,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       ) : quota ? (
         (config.renderQuotaItems(quota, t, {
           styles,
-          QuotaProgressBar,
+          QuotaProgressBar: BoundQuotaProgressBar,
         }) as ReactNode)
       ) : (
         <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.idle`)}</div>

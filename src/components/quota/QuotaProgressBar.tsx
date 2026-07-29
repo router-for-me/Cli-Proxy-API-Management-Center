@@ -1,16 +1,27 @@
-import styles from '@/pages/AuthFilesPage.module.scss';
+/**
+ * Shared quota progress bar.
+ *
+ * 样式注入型组件：进度条在不同宿主（配额页 / 认证文件卡片）穿不同外衣，
+ * 宿主通过 `styles` 传入自己的 CSS Module，需提供 5 个类名：
+ * `quotaBar` `quotaBarFill` `quotaBarFillHigh` `quotaBarFillMedium` `quotaBarFillLow`。
+ */
 
-export type QuotaProgressBarProps = {
+export interface QuotaProgressBarProps {
   percent: number | null;
   highThreshold: number;
   mediumThreshold: number;
-};
+}
+
+export interface StyledQuotaProgressBarProps extends QuotaProgressBarProps {
+  styles: Record<string, string>;
+}
 
 export function QuotaProgressBar({
   percent,
   highThreshold,
   mediumThreshold,
-}: QuotaProgressBarProps) {
+  styles,
+}: StyledQuotaProgressBarProps) {
   const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
   const normalized = percent === null ? null : clamp(percent, 0, 100);
   const fillClass =
