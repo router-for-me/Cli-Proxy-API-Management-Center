@@ -21,6 +21,7 @@ import {
   kimiToResource,
   vertexToResource,
   xaiToResource,
+  qwenToResource,
 } from './adapters';
 import { PROVIDER_BRAND_ORDER } from './descriptors';
 import type {
@@ -145,7 +146,7 @@ const buildModelAliases = (
     .filter((m) => m.name);
 
 const buildProviderKeyConfig = (
-  brand: 'gemini' | 'codex' | 'xai' | 'claude' | 'vertex',
+  brand: 'gemini' | 'codex' | 'xai' | 'qwen' | 'claude' | 'vertex',
   input: ProviderEntryFormInput,
   existing?: ProviderKeyConfig | GeminiKeyConfig | null
 ): ProviderKeyConfig | GeminiKeyConfig => {
@@ -446,6 +447,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
         case 'xai':
           resources = (config.xaiApiKeys ?? []).map((item, index) => xaiToResource(item, index));
           break;
+        case 'qwen':
+          resources = (config.qwenApiKeys ?? []).map((item, index) => qwenToResource(item, index));
+          break;
         case 'claude':
           resources = (config.claudeApiKeys ?? []).reduce<ProviderResource[]>(
             (out, item, index) => {
@@ -658,6 +662,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.createXAIConfig(
             buildProviderKeyConfig('xai', input) as ProviderKeyConfig
           );
+        } else if (brand === 'qwen') {
+          await providersApi.createQwenConfig(
+            buildProviderKeyConfig('qwen', input) as ProviderKeyConfig
+          );
         } else if (brand === 'claude') {
           await providersApi.createClaudeConfig(
             buildProviderKeyConfig('claude', input) as ProviderKeyConfig
@@ -713,6 +721,13 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             selector.apiKey,
             selector.baseUrl,
             buildProviderKeyConfig('xai', input, existing) as ProviderKeyConfig
+          );
+        } else if (brand === 'qwen' && selector.brand === 'qwen') {
+          const existing = resource.raw as ProviderKeyConfig;
+          await providersApi.updateQwenConfig(
+            selector.apiKey,
+            selector.baseUrl,
+            buildProviderKeyConfig('qwen', input, existing) as ProviderKeyConfig
           );
         } else if (brand === 'claude' && selector.brand === 'claude') {
           const existing = resource.raw as ProviderKeyConfig;
@@ -774,6 +789,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.deleteXAIConfig(sel.apiKey, sel.baseUrl);
           const next = (config?.xaiApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('xai-api-key', next);
+        } else if (sel.brand === 'qwen') {
+          await providersApi.deleteQwenConfig(sel.apiKey, sel.baseUrl);
+          const next = (config?.qwenApiKeys ?? []).filter((_, i) => i !== sel.index);
+          updateConfigValue('qwen-api-key', next);
         } else if (sel.brand === 'claude') {
           await providersApi.deleteClaudeConfig(sel.apiKey, sel.baseUrl);
           const next = (config?.claudeApiKeys ?? []).filter((_, i) => i !== sel.index);
@@ -844,6 +863,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
         } else if (
           (brand === 'codex' && selector.brand === 'codex') ||
           (brand === 'xai' && selector.brand === 'xai') ||
+          (brand === 'qwen' && selector.brand === 'qwen') ||
           (brand === 'claude' && selector.brand === 'claude') ||
           (brand === 'claudeApi' && selector.brand === 'claudeApi') ||
           (brand === 'vertex' && selector.brand === 'vertex')
@@ -857,6 +877,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             await providersApi.updateCodexConfig(selector.apiKey, selector.baseUrl, next);
           } else if (selector.brand === 'xai') {
             await providersApi.updateXAIConfig(selector.apiKey, selector.baseUrl, next);
+          } else if (selector.brand === 'qwen') {
+            await providersApi.updateQwenConfig(selector.apiKey, selector.baseUrl, next);
           } else if (selector.brand === 'claude' || selector.brand === 'claudeApi') {
             await providersApi.updateClaudeConfig(selector.apiKey, selector.baseUrl, next);
           } else if (selector.brand === 'vertex') {

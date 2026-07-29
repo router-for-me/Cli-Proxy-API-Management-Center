@@ -33,6 +33,7 @@ const PROVIDER_COMMON_KEY_FIELDS = [
 const GEMINI_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
 const CODEX_KEY_FIELDS = [...PROVIDER_COMMON_KEY_FIELDS, 'websockets'] as const;
 const XAI_KEY_FIELDS = CODEX_KEY_FIELDS;
+const QWEN_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
 const CLAUDE_KEY_FIELDS = [
   ...PROVIDER_COMMON_KEY_FIELDS,
   'cloak',
@@ -480,6 +481,26 @@ export const providersApi = {
 
   deleteXAIConfig: (apiKey: string, baseUrl?: string) =>
     apiClient.delete(`/xai-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+
+  createQwenConfig: (config: ProviderKeyConfig) =>
+    mutateLatestProviderList('qwen-api-key', (latestItems) =>
+      appendLatestProviderRecord(latestItems, serializeProviderKey(config), (raw, payload) =>
+        mergeProviderKeyPayload(raw, payload, QWEN_KEY_FIELDS)
+      )
+    ),
+
+  updateQwenConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
+    mutateLatestProviderList('qwen-api-key', (latestItems) =>
+      replaceLatestProviderRecord(
+        latestItems,
+        (record) => matchesProviderKey(record, apiKey, baseUrl),
+        serializeProviderKey(config),
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, QWEN_KEY_FIELDS)
+      )
+    ),
+
+  deleteQwenConfig: (apiKey: string, baseUrl?: string) =>
+    apiClient.delete(`/qwen-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
 
   createClaudeConfig: (config: ProviderKeyConfig) =>
     mutateLatestProviderList('claude-api-key', (latestItems) =>
