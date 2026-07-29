@@ -91,6 +91,8 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
   const loadRequestIdRef = useRef(0);
   const invalidateInFlightLoads = useCallback(() => {
     loadRequestIdRef.current += 1;
+    setLoading(false);
+    setRefreshing(false);
   }, []);
   const onFilesMutatedRef = useRef(onFilesMutated);
   useEffect(() => {
@@ -206,10 +208,9 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
         const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');
         setError(errorMessage);
       } finally {
-        if (background) {
-          setRefreshing(false);
-        } else {
+        if (requestId === loadRequestIdRef.current) {
           setLoading(false);
+          setRefreshing(false);
         }
       }
     },
