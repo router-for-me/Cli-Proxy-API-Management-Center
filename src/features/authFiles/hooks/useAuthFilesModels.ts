@@ -16,6 +16,8 @@ export type UseAuthFilesModelsResult = {
   modelsError: ModelsError;
   showModels: (item: AuthFileItem) => Promise<void>;
   closeModelsModal: () => void;
+  /** 文件集变更后失效缓存；不传 names 则全部清空。 */
+  invalidateModels: (names?: string[]) => void;
 };
 
 export function useAuthFilesModels(): UseAuthFilesModelsResult {
@@ -32,6 +34,14 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
 
   const closeModelsModal = useCallback(() => {
     setModelsModalOpen(false);
+  }, []);
+
+  const invalidateModels = useCallback((names?: string[]) => {
+    if (!names) {
+      modelsCacheRef.current.clear();
+      return;
+    }
+    names.forEach((name) => modelsCacheRef.current.delete(name));
   }, []);
 
   const showModels = useCallback(
@@ -81,5 +91,6 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
     modelsError,
     showModels,
     closeModelsModal,
+    invalidateModels,
   };
 }
