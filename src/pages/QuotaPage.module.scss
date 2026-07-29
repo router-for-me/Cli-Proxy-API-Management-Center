@@ -369,6 +369,35 @@
   padding: $spacing-sm 0;
 }
 
+.qwenConsoleLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: $spacing-xs;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border: 1px solid var(--border-color, rgba(125, 125, 125, 0.25));
+  border-radius: 999px;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: var(--text-tertiary);
+    background-color: var(--bg-hover, rgba(125, 125, 125, 0.08));
+  }
+
+  &::after {
+    content: '↗';
+    font-size: 11px;
+    opacity: 0.7;
+  }
+}
+
 .quotaMessageAction {
   width: 100%;
   border: none;

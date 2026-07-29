@@ -751,7 +751,8 @@
       "load_failed": "加载用量失败：{{message}}",
       "missing_auth_index": "认证文件缺少 auth_index",
       "empty_data": "未找到有效的 Token Plan",
-      "expires_at": "{{date}} 到期"
+      "expires_at": "{{date}} 到期",
+      "console_link": "前往百炼控制台"
     }
   },
   "stats": {

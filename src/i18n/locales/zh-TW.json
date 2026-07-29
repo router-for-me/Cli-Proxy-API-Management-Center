@@ -777,7 +777,8 @@
       "load_failed": "載入用量失敗：{{message}}",
       "missing_auth_index": "驗證檔案缺少 auth_index",
       "empty_data": "未找到有效的 Token Plan",
-      "expires_at": "{{date}} 到期"
+      "expires_at": "{{date}} 到期",
+      "console_link": "前往百煉控制台"
     }
   },
   "stats": {

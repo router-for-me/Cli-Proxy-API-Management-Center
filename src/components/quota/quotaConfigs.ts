@@ -2019,6 +2019,8 @@ const formatQianwenExpiry = (t: TFunction, endTime: number | null): string => {
   return t('qwen_quota.expires_at', { date: date.toLocaleDateString() });
 };
 
+const QIANWEN_CONSOLE_URL = 'https://bailian.console.aliyun.com/';
+
 const renderQianwenItems = (
   quota: QianwenQuotaState,
   t: TFunction,
@@ -2028,11 +2030,26 @@ const renderQianwenItems = (
   const { createElement: h } = React;
   const plans = quota.plans ?? [];
 
+  const consoleLink = h(
+    'a',
+    {
+      key: 'qianwen-console',
+      className: styleMap.qwenConsoleLink,
+      href: QIANWEN_CONSOLE_URL,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+    },
+    t('qwen_quota.console_link')
+  );
+
   if (plans.length === 0) {
-    return h('div', { className: styleMap.quotaMessage }, t('qwen_quota.empty_data'));
+    return [
+      h('div', { key: 'qianwen-empty', className: styleMap.quotaMessage }, t('qwen_quota.empty_data')),
+      consoleLink,
+    ];
   }
 
-  return plans.map((plan, index) => {
+  const rows = plans.map((plan, index) => {
     const remainingPct = Math.max(0, Math.min(100, 100 - plan.usedPercent));
     const creditsLabel = `${plan.remainingCredits.toLocaleString()} / ${plan.totalCredits.toLocaleString()} ${plan.unit}`;
     const expiryLabel = formatQianwenExpiry(t, plan.endTime);
@@ -2058,6 +2075,8 @@ const renderQianwenItems = (
       })
     );
   });
+
+  return [...rows, consoleLink];
 };
 
 export const QIANWEN_CONFIG: QuotaConfig<QianwenQuotaState, QianwenTokenPlan[]> = {

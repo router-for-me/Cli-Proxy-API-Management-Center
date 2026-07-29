@@ -738,7 +738,8 @@
       "load_failed": "Не удалось загрузить использование: {{message}}",
       "missing_auth_index": "В файле авторизации нет auth_index",
       "empty_data": "Активный Token Plan не найден",
-      "expires_at": "истекает {{date}}"
+      "expires_at": "истекает {{date}}",
+      "console_link": "Открыть консоль Bailian"
     }
   },
   "stats": {

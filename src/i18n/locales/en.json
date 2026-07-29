@@ -751,7 +751,8 @@
       "load_failed": "Failed to load usage: {{message}}",
       "missing_auth_index": "Auth file missing auth_index",
       "empty_data": "No active Token Plan found",
-      "expires_at": "expires {{date}}"
+      "expires_at": "expires {{date}}",
+      "console_link": "Open Bailian Console"
     }
   },
   "stats": {
