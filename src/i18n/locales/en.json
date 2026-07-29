@@ -216,7 +216,6 @@
   },
   "auth_files": {
     "title": "Auth Files Management",
-    "eyebrow": "Credential vault",
     "meta_total": "{{count}} credentials",
     "meta_active": "{{count}} active",
     "meta_problem": "{{count}} problem",

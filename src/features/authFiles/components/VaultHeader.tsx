@@ -38,9 +38,6 @@ export function VaultHeader(props: VaultHeaderProps) {
   return (
     <header className={styles.header} ref={revealRef}>
       <div className={styles.copy}>
-        <span className={styles.eyebrow} data-reveal>
-          {t('auth_files.eyebrow')}
-        </span>
         <h1 className={styles.title} data-reveal>
           {t('auth_files.title')}
         </h1>

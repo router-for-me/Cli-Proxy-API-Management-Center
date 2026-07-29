@@ -215,7 +215,6 @@
   },
   "auth_files": {
     "title": "Управление файлами авторизации",
-    "eyebrow": "Хранилище учётных данных",
     "meta_total": "{{count}} учётных данных",
     "meta_active": "{{count}} активно",
     "meta_problem": "{{count}} с проблемами",
